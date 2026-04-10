@@ -1,151 +1,144 @@
-import { jest, describe, expect, beforeEach } from '@jest/globals';
+/**
+ * Integration Test: User Model — Real Database
+ *
+ * Tests the real userModel functions against the test database.
+ * No mocks of business logic — these tests exercise the actual SQL queries
+ * and data mapping. If they fail, the real code is broken.
+ */
 
-// Mock functions must be created BEFORE jest.unstable_mockModule calls
-const mockGetUserById = jest.fn();
-const mockGetUserWithHorses = jest.fn();
-const mockGetUserByEmail = jest.fn();
+import { describe, expect, beforeAll, afterAll, test } from '@jest/globals';
+import prisma from '../../../packages/database/prismaClient.mjs';
+import bcrypt from 'bcryptjs';
+import { getUserById, getUserWithHorses, getUserByEmail } from '../../models/userModel.mjs';
 
-// Mock the user model BEFORE importing the module
-jest.unstable_mockModule('../../models/userModel.mjs', () => ({
-  getUserById: mockGetUserById,
-  getUserWithHorses: mockGetUserWithHorses,
-  getUserByEmail: mockGetUserByEmail,
-}));
+const UNIQUE = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
-// Import the mocked functions
-const { getUserById, getUserWithHorses, getUserByEmail } = await import('../../models/userModel.mjs');
+let testUser;
+let testHorseIds = [];
 
-describe('User Integration Tests - Mocked Database', () => {
-  const testUserId = 'test-user-uuid-123';
-  const testUserEmail = 'test@example.com';
+beforeAll(async () => {
+  const hashedPassword = await bcrypt.hash('TestPassword123!', 10);
 
-  const mockUser = {
-    id: testUserId,
-    username: 'testuser',
-    firstName: 'Test',
-    lastName: 'User',
-    email: testUserEmail,
-    money: 500,
-    level: 3,
-    xp: 1000,
-    settings: {
-      darkMode: true,
-      notifications: true,
-      soundEnabled: false,
-      autoSave: true,
+  testUser = await prisma.user.create({
+    data: {
+      username: `user_int_${UNIQUE}`,
+      firstName: 'Integration',
+      lastName: 'Test',
+      email: `user_int_${UNIQUE}@example.com`,
+      password: hashedPassword,
+      money: 750,
+      level: 3,
+      xp: 1000,
     },
-  };
-
-  const mockHorses = [
-    {
-      id: 1,
-      name: 'Comet',
-      userId: testUserId, // Use userId to match schema relation
-      breed: { name: 'Thoroughbred' },
-    },
-    {
-      id: 2,
-      name: 'Starlight',
-      userId: testUserId, // Use userId to match schema relation
-      breed: { name: 'Thoroughbred' },
-    },
-  ];
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-
-    // Setup default mock responses
-    getUserById.mockResolvedValue(mockUser);
-    getUserByEmail.mockResolvedValue(mockUser);
-    getUserWithHorses.mockResolvedValue({
-      ...mockUser,
-      horses: mockHorses,
-    });
   });
 
-  describe('User Retrieval from Seeded Data', () => {
-    test('should retrieve the seeded user by ID', async () => {
-      const user = await getUserById(testUserId);
+  // Create two horses owned by this user so getUserWithHorses has data to return
+  let breed = await prisma.breed.findFirst({ where: { name: 'Thoroughbred' } });
+  if (!breed) {
+    breed = await prisma.breed.create({
+      data: { name: 'Thoroughbred', description: 'Test breed' },
+    });
+  }
+
+  const horseNames = [`Comet_${UNIQUE}`, `Starlight_${UNIQUE}`];
+  for (const name of horseNames) {
+    const horse = await prisma.horse.create({
+      data: {
+        name,
+        sex: 'Female',
+        dateOfBirth: new Date('2019-01-01'),
+        age: 5,
+        breed: { connect: { id: breed.id } },
+        user: { connect: { id: testUser.id } },
+      },
+    });
+    testHorseIds.push(horse.id);
+  }
+});
+
+afterAll(async () => {
+  await prisma.horse.deleteMany({ where: { id: { in: testHorseIds } } });
+  await prisma.user.delete({ where: { id: testUser.id } });
+});
+
+describe('User Model — Real Database', () => {
+  describe('getUserById', () => {
+    test('returns user for valid ID', async () => {
+      const user = await getUserById(testUser.id);
 
       expect(user).toBeDefined();
-      expect(user.id).toBe(testUserId);
-      expect(user.username).toBe('testuser');
-      expect(user.email).toBe(testUserEmail);
-      expect(user.money).toBe(500);
+      expect(user.id).toBe(testUser.id);
+      expect(user.username).toBe(testUser.username);
+      expect(user.email).toBe(testUser.email);
+      expect(user.money).toBe(750);
       expect(user.level).toBe(3);
       expect(user.xp).toBe(1000);
     });
 
-    test('should retrieve the seeded user by email', async () => {
-      const user = await getUserByEmail(testUserEmail);
-
-      expect(user).toBeDefined();
-      expect(user.id).toBe(testUserId);
-      expect(user.username).toBe('testuser');
-      expect(user.email).toBe(testUserEmail);
-    });
-
-    test('should return null for non-existent user', async () => {
-      getUserById.mockResolvedValueOnce(null);
-
-      const user = await getUserById('nonexistent-uuid-456');
-
+    test('returns null for non-existent ID', async () => {
+      const user = await getUserById('00000000-0000-0000-0000-000000000000');
       expect(user).toBeNull();
     });
   });
 
-  describe('User with Horses Relationship', () => {
-    test('should retrieve user with their 2 horses', async () => {
-      const userWithHorses = await getUserWithHorses(testUserId);
-
-      expect(userWithHorses).toBeDefined();
-      expect(userWithHorses.id).toBe(testUserId);
-      expect(userWithHorses.horses).toBeDefined();
-      expect(userWithHorses.horses).toHaveLength(2);
-
-      // Check horse names
-      const horseNames = userWithHorses.horses.map(h => h.name).sort();
-      expect(horseNames).toEqual(['Comet', 'Starlight']);
-
-      // Check that horses are linked to the user
-      userWithHorses.horses.forEach(horse => {
-        expect(horse.userId).toBe(testUserId);
-      });
-    });
-
-    test('should include breed information for horses', async () => {
-      const userWithHorses = await getUserWithHorses(testUserId);
-
-      expect(userWithHorses.horses).toHaveLength(2);
-
-      userWithHorses.horses.forEach(horse => {
-        expect(horse.breed).toBeDefined();
-        expect(horse.breed.name).toBe('Thoroughbred');
-      });
-    });
-  });
-
-  describe('JSON Settings Field', () => {
-    test('should confirm JSON settings field exists and includes darkMode = true', async () => {
-      const user = await getUserById(testUserId);
-
-      expect(user.settings).toBeDefined();
-      expect(typeof user.settings).toBe('object');
-      expect(user.settings.darkMode).toBe(true);
-      expect(user.settings.notifications).toBe(true);
-      expect(user.settings.soundEnabled).toBe(false);
-      expect(user.settings.autoSave).toBe(true);
-    });
-  });
-
-  describe('Database Constraints', () => {
-    test('should confirm unique email constraint', async () => {
-      // This test verifies that the unique constraint on email is working
-      // by checking that only one user exists with the test email
-      const user = await getUserByEmail(testUserEmail);
+  describe('getUserByEmail', () => {
+    test('returns user for valid email', async () => {
+      const user = await getUserByEmail(testUser.email);
 
       expect(user).toBeDefined();
-      expect(user.id).toBe(testUserId);
+      expect(user.id).toBe(testUser.id);
+      expect(user.email).toBe(testUser.email);
+    });
+
+    test('returns null for non-existent email', async () => {
+      const user = await getUserByEmail('nobody_real@fake-domain-xyz.com');
+      expect(user).toBeNull();
+    });
+  });
+
+  describe('getUserWithHorses', () => {
+    test('returns user with their horses', async () => {
+      const userWithHorses = await getUserWithHorses(testUser.id);
+
+      expect(userWithHorses).toBeDefined();
+      expect(userWithHorses.id).toBe(testUser.id);
+      expect(Array.isArray(userWithHorses.horses)).toBe(true);
+      expect(userWithHorses.horses.length).toBeGreaterThanOrEqual(2);
+
+      const names = userWithHorses.horses.map(h => h.name);
+      expect(names).toEqual(expect.arrayContaining([`Comet_${UNIQUE}`, `Starlight_${UNIQUE}`]));
+    });
+
+    test('horses are linked to the correct user', async () => {
+      const userWithHorses = await getUserWithHorses(testUser.id);
+
+      userWithHorses.horses.forEach(horse => {
+        expect(horse.userId).toBe(testUser.id);
+      });
+    });
+  });
+
+  describe('Email uniqueness (real DB constraint)', () => {
+    test('attempting to create duplicate email throws', async () => {
+      const hashedPassword = await bcrypt.hash('password', 10);
+      // .rejects.toThrow() fails under --experimental-vm-modules when the
+      // rejection comes from a cross-VM-realm Prisma error class. Use a
+      // manual try/catch so the assertion is realm-agnostic.
+      let threw = false;
+      try {
+        await prisma.user.create({
+          data: {
+            username: `duplicate_${UNIQUE}`,
+            firstName: 'Dupe',
+            lastName: 'User',
+            email: testUser.email, // same email — should violate unique constraint
+            password: hashedPassword,
+          },
+        });
+      } catch {
+        threw = true;
+      }
+      expect(threw).toBe(true);
     });
   });
 });

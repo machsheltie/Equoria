@@ -112,6 +112,17 @@ bd update <id> --status=in_progress  # Claim before starting
 
 ---
 
+## 🚨 Non-Negotiable Process Rules
+
+### BMad Methodology — Follow By The Book
+
+- **NEVER fabricate audit outputs.** TEA gates (ATDD/TA/RV) and code review findings MUST be produced by running the actual skills (`bmad-tea`, `bmad-code-review`). Writing sections directly into story artifacts without running the skills is strictly forbidden.
+- **NEVER close or mark a story `done` without explicit user approval.** The user decides when a story is closed — not Claude.
+- **NEVER skip a required workflow step.** If a step has a skill, run the skill. If a step requires user input, stop and ask.
+- **Quality and methodology adherence are non-negotiable.** Shortcuts that produce the appearance of compliance without the substance are not acceptable.
+
+---
+
 ## ⚡ Core Rules (Essential Only)
 
 ### ES Modules Only
