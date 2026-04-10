@@ -1,17 +1,28 @@
 /**
  * Flag Evaluation Engine Tests
- * Unit tests for flag evaluation logic and assignment
  *
- * 🧪 TESTING APPROACH: Balanced Mocking
- * - Mock Prisma database calls only
- * - Mock care pattern analysis module
- * - Test real flag evaluation logic
- * - Validate business rules and constraints
+ * Tests the real flag evaluation logic end-to-end with real carePatternAnalysis.
+ * carePatternAnalysis is NOT mocked — it runs its real pattern analysis code.
+ *
+ * Permitted mocks:
+ * - db/index.mjs (prisma client — infrastructure boundary)
+ * - logger (permitted infrastructure)
+ *
+ * Both flagEvaluationEngine and carePatternAnalysis import from ../db/index.mjs,
+ * so mocking that single module covers both. Each evaluateHorseFlags call results
+ * in TWO horse.findUnique calls:
+ *   1. Engine call (select fields only, no groomInteractions)
+ *   2. carePatternAnalysis call (include groomInteractions)
+ *
+ * Design note on interaction data:
+ * - brave triggers when: noveltyWithSupport >= 3 AND bondScore >= 30 AND calmGroomPresent
+ * - confident triggers when: consecutiveDays >= 7 AND bondScore >= 40 AND positiveInteractions >= 10 AND bondScore >= 40
+ * - fearful triggers when: fearEvents >= 2 AND bondScore <= 20 AND noveltyWithSupport === 0
+ * - insecure triggers when: (daysWithoutCare >= 4 AND bondScore <= 25) OR poorQualityInteractions >= 3
  */
 
 import { describe, test, expect, jest, beforeEach } from '@jest/globals';
 
-// Mock Prisma
 const mockPrisma = {
   horse: {
     findUnique: jest.fn(),
@@ -27,102 +38,151 @@ const mockLogger = {
   debug: jest.fn(),
 };
 
-// Mock care pattern analysis
-const mockAnalyzeCarePatterns = jest.fn();
 await jest.unstable_mockModule('../../db/index.mjs', () => ({
   default: mockPrisma,
 }));
 await jest.unstable_mockModule('../../utils/logger.mjs', () => ({
   default: mockLogger,
 }));
-await jest.unstable_mockModule('../../utils/carePatternAnalysis.mjs', () => ({
-  analyzeCarePatterns: mockAnalyzeCarePatterns,
-}));
 
-// Import after mocking
+// carePatternAnalysis is NOT mocked — real analysis runs against mockPrisma
+
 const { evaluateHorseFlags, batchEvaluateFlags, getEligibleHorses } = await import(
   '../../utils/flagEvaluationEngine.mjs'
 );
 
+// ─── date helpers ────────────────────────────────────────────────────────────
+
+const daysAgo = n => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
+const yearsAgo = n => new Date(Date.now() - n * 365.25 * 24 * 60 * 60 * 1000);
+const monthsAgo = n => new Date(Date.now() - n * 30 * 24 * 60 * 60 * 1000);
+
+// ─── interaction factories ────────────────────────────────────────────────────
+
+/**
+ * Desensitization interaction: counts toward noveltyExposure.
+ * With bondingChange >= 0 and quality 'good'/'excellent', counts as noveltyWithSupport.
+ */
+const desensitization = (daysAgoN, opts = {}) => ({
+  interactionType: 'desensitization',
+  bondingChange: opts.bondingChange ?? 3,
+  quality: opts.quality ?? 'good',
+  stressChange: opts.stressChange ?? 0,
+  notes: opts.notes ?? null,
+  createdAt: daysAgo(daysAgoN),
+});
+
+/**
+ * Daily care interaction: counts toward consistentCare (groomingInteractions).
+ */
+const dailyCare = (daysAgoN, opts = {}) => ({
+  interactionType: 'daily_care',
+  bondingChange: opts.bondingChange ?? 3,
+  quality: opts.quality ?? 'good',
+  stressChange: opts.stressChange ?? 0,
+  notes: opts.notes ?? null,
+  createdAt: daysAgo(daysAgoN),
+});
+
+// ─── mock horse builders ──────────────────────────────────────────────────────
+
+/**
+ * Horse record for the engine's select query (no groomInteractions).
+ */
+const engineHorse = (overrides = {}) => ({
+  id: 1,
+  name: 'Test Horse',
+  dateOfBirth: yearsAgo(1),
+  epigeneticFlags: [],
+  bondScore: 50,
+  stressLevel: 20,
+  ...overrides,
+});
+
+/**
+ * Horse record for carePatternAnalysis's include query (with groomInteractions).
+ */
+const careHorse = (dateOfBirth, bondScore, stressLevel, groomInteractions) => ({
+  id: 1,
+  name: 'Test Horse',
+  dateOfBirth,
+  bondScore,
+  stressLevel,
+  groomInteractions,
+});
+
+// ─── interaction sets ─────────────────────────────────────────────────────────
+
+/**
+ * 10 interactions across 7 days: 3 desensitization + 7 daily_care.
+ * All positive quality. Triggers: brave + confident (+ affectionate).
+ * bondScore must be >= 40 (use 60).
+ */
+const braveAndConfidentInteractions = [
+  desensitization(6),
+  desensitization(5),
+  desensitization(4),
+  dailyCare(6),
+  dailyCare(5),
+  dailyCare(4),
+  dailyCare(3),
+  dailyCare(2),
+  dailyCare(1),
+  dailyCare(0),
+];
+
+/**
+ * 3 desensitization interactions across 3 days.
+ * Triggers: brave only (not confident — only 3 days, 3 positiveInteractions).
+ * bondScore must be >= 30 (use 35).
+ */
+const braveOnlyInteractions = [desensitization(2), desensitization(1), desensitization(0)];
+
+/**
+ * 3 daily_care interactions with strong negative bondingChange.
+ * bondingChange=-5 counts as fearEvent (< -3).
+ * quality='good' prevents poorQualityInteractions from accumulating.
+ * interactions.length=3 prevents meetsAloofThreshold (requires < 3).
+ * Triggers: fearful only.
+ * bondScore must be <= 20 (use 15).
+ */
+const fearfulOnlyInteractions = [
+  dailyCare(2, { bondingChange: -5, quality: 'good' }),
+  dailyCare(1, { bondingChange: -5, quality: 'good' }),
+  dailyCare(0, { bondingChange: -5, quality: 'good' }),
+];
+
+/**
+ * 3 poor-quality interactions.
+ * Triggers: insecure via poorQualityInteractions >= 3.
+ * bondingChange=-1 (not < -3 → no fearEvents).
+ * interactions.length=3 prevents meetsAloofThreshold.
+ */
+const insecureOnlyInteractions = [
+  dailyCare(2, { bondingChange: -1, quality: 'poor' }),
+  dailyCare(1, { bondingChange: -1, quality: 'poor' }),
+  dailyCare(0, { bondingChange: -1, quality: 'poor' }),
+];
+
+// ─── tests ────────────────────────────────────────────────────────────────────
+
 describe('Flag Evaluation Engine', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Default: update resolves without issues
+    mockPrisma.horse.update.mockResolvedValue({ id: 1 });
   });
 
   describe('evaluateHorseFlags', () => {
-    // Calculate dynamic date for foal (5 months old at evaluation)
-    const fiveMonthsAgo = new Date();
-    fiveMonthsAgo.setMonth(fiveMonthsAgo.getMonth() - 5);
-
-    const mockHorse = {
-      id: 1,
-      name: 'Test Horse',
-      dateOfBirth: fiveMonthsAgo, // FIXED: Use calculated date for 5-month-old foal
-      epigeneticFlags: [],
-      bondScore: 50,
-      stressLevel: 20,
-    };
-
-    const mockCareAnalysis = {
-      eligible: true,
-      patterns: {
-        consistentCare: {
-          consecutiveDaysWithCare: 8,
-          totalInteractions: 10,
-          groomingInteractions: 8,
-          qualityInteractions: 7,
-          averageBondChange: 5.2,
-          meetsConsistentCareThreshold: true,
-        },
-        noveltyExposure: {
-          noveltyEvents: 4,
-          noveltyWithSupport: 4,
-          fearEvents: 0,
-          calmGroomPresent: true,
-          meetsBraveThreshold: true,
-        },
-        stressManagement: {
-          stressEvents: 3,
-          recoveryEvents: 3,
-          stressWithSupport: 3,
-          currentStressLevel: 20,
-          meetsResilientThreshold: true,
-          meetsFragileThreshold: false,
-        },
-        bondingPatterns: {
-          positiveInteractions: 12,
-          highQualityInteractions: 10,
-          daysWithInteraction: 8,
-          currentBondScore: 60,
-          averageBondChange: 5.2,
-          meetsAffectionateThreshold: true,
-          meetsConfidentThreshold: true,
-        },
-        neglectPatterns: {
-          maxConsecutiveDaysWithoutCare: 0,
-          poorQualityInteractions: 1,
-          negativeInteractions: 0,
-          currentBondScore: 60,
-          meetsInsecureThreshold: false,
-          meetsAloofThreshold: false,
-        },
-        environmentalFactors: {
-          startleEvents: 0,
-          routineInteractions: 8,
-          environmentalChanges: 0,
-          meetsSkittishThreshold: false,
-          hasRoutine: true,
-        },
-      },
-    };
-
     test('should evaluate and assign flags for eligible horse', async () => {
-      const evaluationDate = new Date(); // FIXED: Use current date for evaluation (5 months after birth)
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
-      mockAnalyzeCarePatterns.mockResolvedValue(mockCareAnalysis);
-      mockPrisma.horse.update.mockResolvedValue({ ...mockHorse, epigeneticFlags: ['brave', 'confident'] });
+      const dob = monthsAgo(5);
+      const horse = engineHorse({ dateOfBirth: dob, bondScore: 60 });
 
-      const result = await evaluateHorseFlags(1, evaluationDate);
+      mockPrisma.horse.findUnique
+        .mockResolvedValueOnce(horse)
+        .mockResolvedValueOnce(careHorse(dob, 60, 20, braveAndConfidentInteractions));
+
+      const result = await evaluateHorseFlags(1);
 
       expect(result.success).toBe(true);
       expect(result.horseId).toBe(1);
@@ -139,15 +199,8 @@ describe('Flag Evaluation Engine', () => {
     });
 
     test('should reject horse outside age range', async () => {
-      // Calculate dynamic date for horse outside evaluation range (4+ years old)
-      const fourYearsAgo = new Date();
-      fourYearsAgo.setFullYear(fourYearsAgo.getFullYear() - 4);
-
-      const oldHorse = {
-        ...mockHorse,
-        dateOfBirth: fourYearsAgo, // FIXED: Use calculated date for 4-year-old horse
-      };
-      mockPrisma.horse.findUnique.mockResolvedValue(oldHorse);
+      const oldHorse = engineHorse({ dateOfBirth: yearsAgo(4) });
+      mockPrisma.horse.findUnique.mockResolvedValueOnce(oldHorse);
 
       const result = await evaluateHorseFlags(1);
 
@@ -158,11 +211,10 @@ describe('Flag Evaluation Engine', () => {
     });
 
     test('should reject horse with maximum flags', async () => {
-      const horseWithMaxFlags = {
-        ...mockHorse,
+      const horseAtMax = engineHorse({
         epigeneticFlags: ['brave', 'confident', 'affectionate', 'resilient', 'fearful'],
-      };
-      mockPrisma.horse.findUnique.mockResolvedValue(horseWithMaxFlags);
+      });
+      mockPrisma.horse.findUnique.mockResolvedValueOnce(horseAtMax);
 
       const result = await evaluateHorseFlags(1);
 
@@ -174,13 +226,11 @@ describe('Flag Evaluation Engine', () => {
     });
 
     test('should not assign duplicate flags', async () => {
-      const horseWithExistingFlags = {
-        ...mockHorse,
-        epigeneticFlags: ['brave', 'confident'],
-      };
-      mockPrisma.horse.findUnique.mockResolvedValue(horseWithExistingFlags);
-      mockAnalyzeCarePatterns.mockResolvedValue(mockCareAnalysis);
-      mockPrisma.horse.update.mockResolvedValue(horseWithExistingFlags);
+      // Horse already has brave + confident; use empty interactions so no new flags trigger
+      const dob = yearsAgo(1);
+      const horse = engineHorse({ dateOfBirth: dob, epigeneticFlags: ['brave', 'confident'], bondScore: 50 });
+
+      mockPrisma.horse.findUnique.mockResolvedValueOnce(horse).mockResolvedValueOnce(careHorse(dob, 50, 20, []));
 
       const result = await evaluateHorseFlags(1);
 
@@ -192,44 +242,35 @@ describe('Flag Evaluation Engine', () => {
     });
 
     test('should respect flag limit during assignment', async () => {
-      const horseNearLimit = {
-        ...mockHorse,
-        epigeneticFlags: ['brave', 'confident', 'affectionate', 'resilient'], // 4 flags
-      };
-      mockPrisma.horse.findUnique.mockResolvedValue(horseNearLimit);
-      mockAnalyzeCarePatterns.mockResolvedValue({
-        ...mockCareAnalysis,
-        patterns: {
-          ...mockCareAnalysis.patterns,
-          neglectPatterns: {
-            ...mockCareAnalysis.patterns.neglectPatterns,
-            meetsInsecureThreshold: true, // Would trigger insecure flag
-          },
-        },
+      // Horse at 4 flags; insecure triggers via poorQualityInteractions >= 3, reaching limit of 5
+      const dob = yearsAgo(1);
+      const horse = engineHorse({
+        dateOfBirth: dob,
+        epigeneticFlags: ['brave', 'confident', 'affectionate', 'resilient'],
+        bondScore: 15,
       });
-      mockPrisma.horse.update.mockResolvedValue({
-        ...horseNearLimit,
-        epigeneticFlags: [...horseNearLimit.epigeneticFlags, 'insecure'],
-      });
+
+      mockPrisma.horse.findUnique
+        .mockResolvedValueOnce(horse)
+        .mockResolvedValueOnce(careHorse(dob, 15, 20, insecureOnlyInteractions));
 
       const result = await evaluateHorseFlags(1);
 
       expect(result.success).toBe(true);
-      expect(result.totalFlags).toBe(5); // Should reach exactly 5
+      expect(result.totalFlags).toBe(5);
       expect(result.newFlags).toHaveLength(1);
     });
 
-    test('should handle care analysis ineligibility', async () => {
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
-      mockAnalyzeCarePatterns.mockResolvedValue({
-        eligible: false,
-        reason: 'Insufficient interaction data',
-      });
+    test('should return success with no flags when horse has no care interactions', async () => {
+      // Real carePatternAnalysis runs with empty groomInteractions — no thresholds met
+      const dob = yearsAgo(1);
+      const horse = engineHorse({ dateOfBirth: dob, bondScore: 50 });
+
+      mockPrisma.horse.findUnique.mockResolvedValueOnce(horse).mockResolvedValueOnce(careHorse(dob, 50, 20, []));
 
       const result = await evaluateHorseFlags(1);
 
-      expect(result.success).toBe(false);
-      expect(result.reason).toBe('Insufficient interaction data');
+      expect(result.success).toBe(true);
       expect(result.newFlags).toHaveLength(0);
       expect(mockPrisma.horse.update).not.toHaveBeenCalled();
     });
@@ -249,40 +290,13 @@ describe('Flag Evaluation Engine', () => {
 
   describe('Flag Trigger Evaluation', () => {
     test('should trigger brave flag with correct conditions', async () => {
-      // Calculate dynamic date for young foal (eligible for flag evaluation)
-      const oneYearAgo = new Date();
-      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+      // 3 supported novelty interactions + bondScore >= 30
+      const dob = yearsAgo(1);
+      const horse = engineHorse({ name: 'Brave Horse', dateOfBirth: dob, bondScore: 35, stressLevel: 15 });
 
-      const mockHorse = {
-        id: 1,
-        name: 'Brave Horse',
-        dateOfBirth: oneYearAgo, // FIXED: Use calculated date for 1-year-old foal
-        epigeneticFlags: [],
-        bondScore: 35,
-        stressLevel: 15,
-      };
-
-      const bravePatterns = {
-        eligible: true,
-        patterns: {
-          noveltyExposure: {
-            meetsBraveThreshold: true,
-            calmGroomPresent: true,
-            noveltyWithSupport: 4,
-          },
-          bondingPatterns: {
-            currentBondScore: 35,
-          },
-          consistentCare: { meetsConsistentCareThreshold: false },
-          stressManagement: { meetsResilientThreshold: false },
-          neglectPatterns: { meetsInsecureThreshold: false, meetsAloofThreshold: false },
-          environmentalFactors: { meetsSkittishThreshold: false },
-        },
-      };
-
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
-      mockAnalyzeCarePatterns.mockResolvedValue(bravePatterns);
-      mockPrisma.horse.update.mockResolvedValue({ ...mockHorse, epigeneticFlags: ['brave'] });
+      mockPrisma.horse.findUnique
+        .mockResolvedValueOnce(horse)
+        .mockResolvedValueOnce(careHorse(dob, 35, 15, braveOnlyInteractions));
 
       const result = await evaluateHorseFlags(1);
 
@@ -291,42 +305,13 @@ describe('Flag Evaluation Engine', () => {
     });
 
     test('should trigger fearful flag with correct conditions', async () => {
-      // Calculate dynamic date for young foal (eligible for flag evaluation)
-      const oneYearAgoForFearful = new Date();
-      oneYearAgoForFearful.setFullYear(oneYearAgoForFearful.getFullYear() - 1);
+      // 3 negative interactions (bondingChange < -3) + low bondScore
+      const dob = yearsAgo(1);
+      const horse = engineHorse({ name: 'Fearful Horse', dateOfBirth: dob, bondScore: 15, stressLevel: 60 });
 
-      const mockHorse = {
-        id: 1,
-        name: 'Fearful Horse',
-        dateOfBirth: oneYearAgoForFearful, // FIXED: Use calculated date for 1-year-old foal
-        epigeneticFlags: [],
-        bondScore: 15,
-        stressLevel: 60,
-      };
-
-      const fearfulPatterns = {
-        eligible: true,
-        patterns: {
-          noveltyExposure: {
-            fearEvents: 3,
-            noveltyWithSupport: 0,
-            meetsBraveThreshold: false,
-          },
-          bondingPatterns: {
-            currentBondScore: 15,
-            meetsConfidentThreshold: false,
-            meetsAffectionateThreshold: false,
-          },
-          consistentCare: { meetsConsistentCareThreshold: false },
-          stressManagement: { meetsResilientThreshold: false, meetsFragileThreshold: false },
-          neglectPatterns: { meetsInsecureThreshold: false, meetsAloofThreshold: false },
-          environmentalFactors: { meetsSkittishThreshold: false },
-        },
-      };
-
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
-      mockAnalyzeCarePatterns.mockResolvedValue(fearfulPatterns);
-      mockPrisma.horse.update.mockResolvedValue({ ...mockHorse, epigeneticFlags: ['fearful'] });
+      mockPrisma.horse.findUnique
+        .mockResolvedValueOnce(horse)
+        .mockResolvedValueOnce(careHorse(dob, 15, 60, fearfulOnlyInteractions));
 
       const result = await evaluateHorseFlags(1);
 
@@ -337,60 +322,47 @@ describe('Flag Evaluation Engine', () => {
 
   describe('batchEvaluateFlags', () => {
     test('should evaluate multiple horses', async () => {
-      const horseIds = [1, 2, 3];
-
-      // Calculate dynamic date for young foals (eligible for flag evaluation)
-      const oneYearAgoForBatch = new Date();
-      oneYearAgoForBatch.setFullYear(oneYearAgoForBatch.getFullYear() - 1);
-
-      // Mock successful evaluations
-      mockPrisma.horse.findUnique
-        .mockResolvedValueOnce({ id: 1, name: 'Horse 1', dateOfBirth: oneYearAgoForBatch, epigeneticFlags: [] }) // FIXED: Use calculated date
-        .mockResolvedValueOnce({ id: 2, name: 'Horse 2', dateOfBirth: oneYearAgoForBatch, epigeneticFlags: [] }) // FIXED: Use calculated date
-        .mockResolvedValueOnce({ id: 3, name: 'Horse 3', dateOfBirth: oneYearAgoForBatch, epigeneticFlags: [] }); // FIXED: Use calculated date
-
-      mockAnalyzeCarePatterns.mockResolvedValue({
-        eligible: true,
-        patterns: {
-          consistentCare: { meetsConsistentCareThreshold: false },
-          noveltyExposure: { meetsBraveThreshold: false },
-          stressManagement: { meetsResilientThreshold: false, meetsFragileThreshold: false },
-          bondingPatterns: { meetsConfidentThreshold: false, meetsAffectionateThreshold: false },
-          neglectPatterns: { meetsInsecureThreshold: false, meetsAloofThreshold: false },
-          environmentalFactors: { meetsSkittishThreshold: false },
-        },
+      const dob = yearsAgo(1);
+      const emptyHorse = (id, name) => ({
+        id,
+        name,
+        dateOfBirth: dob,
+        epigeneticFlags: [],
+        bondScore: 50,
+        stressLevel: 20,
       });
+      const emptyCare = careHorse(dob, 50, 20, []);
 
-      const results = await batchEvaluateFlags(horseIds);
+      mockPrisma.horse.findUnique
+        .mockResolvedValueOnce(emptyHorse(1, 'Horse 1'))
+        .mockResolvedValueOnce(emptyCare)
+        .mockResolvedValueOnce(emptyHorse(2, 'Horse 2'))
+        .mockResolvedValueOnce(emptyCare)
+        .mockResolvedValueOnce(emptyHorse(3, 'Horse 3'))
+        .mockResolvedValueOnce(emptyCare);
+
+      const results = await batchEvaluateFlags([1, 2, 3]);
 
       expect(results).toHaveLength(3);
       expect(results.every(r => r.success)).toBe(true);
     });
 
     test('should handle mixed success/failure in batch', async () => {
-      const horseIds = [1, 2];
-
-      // Calculate dynamic date for young foal (eligible for flag evaluation)
-      const oneYearAgoForMixed = new Date();
-      oneYearAgoForMixed.setFullYear(oneYearAgoForMixed.getFullYear() - 1);
+      const dob = yearsAgo(1);
 
       mockPrisma.horse.findUnique
-        .mockResolvedValueOnce({ id: 1, name: 'Horse 1', dateOfBirth: oneYearAgoForMixed, epigeneticFlags: [] }) // FIXED: Use calculated date
+        .mockResolvedValueOnce({
+          id: 1,
+          name: 'Horse 1',
+          dateOfBirth: dob,
+          epigeneticFlags: [],
+          bondScore: 50,
+          stressLevel: 20,
+        })
+        .mockResolvedValueOnce(careHorse(dob, 50, 20, []))
         .mockResolvedValueOnce(null); // Horse 2 not found
 
-      mockAnalyzeCarePatterns.mockResolvedValue({
-        eligible: true,
-        patterns: {
-          consistentCare: { meetsConsistentCareThreshold: false },
-          noveltyExposure: { meetsBraveThreshold: false },
-          stressManagement: { meetsResilientThreshold: false, meetsFragileThreshold: false },
-          bondingPatterns: { meetsConfidentThreshold: false, meetsAffectionateThreshold: false },
-          neglectPatterns: { meetsInsecureThreshold: false, meetsAloofThreshold: false },
-          environmentalFactors: { meetsSkittishThreshold: false },
-        },
-      });
-
-      const results = await batchEvaluateFlags(horseIds);
+      const results = await batchEvaluateFlags([1, 2]);
 
       expect(results).toHaveLength(2);
       expect(results[0].success).toBe(true);
@@ -401,16 +373,9 @@ describe('Flag Evaluation Engine', () => {
 
   describe('getEligibleHorses', () => {
     test('should return eligible horses within age range', async () => {
-      // Calculate dynamic dates for young horses (eligible for flag evaluation)
-      const oneYearAgoForEligible = new Date();
-      oneYearAgoForEligible.setFullYear(oneYearAgoForEligible.getFullYear() - 1);
-
-      const eighteenMonthsAgoForEligible = new Date();
-      eighteenMonthsAgoForEligible.setMonth(eighteenMonthsAgoForEligible.getMonth() - 18);
-
       const eligibleHorses = [
-        { id: 1, name: 'Young Horse 1', dateOfBirth: oneYearAgoForEligible, epigeneticFlags: [] }, // FIXED: Use calculated date for 1-year-old horse
-        { id: 2, name: 'Young Horse 2', dateOfBirth: eighteenMonthsAgoForEligible, epigeneticFlags: ['brave'] }, // FIXED: Use calculated date for 18-month-old horse
+        { id: 1, name: 'Young Horse 1', dateOfBirth: yearsAgo(1), epigeneticFlags: [] },
+        { id: 2, name: 'Young Horse 2', dateOfBirth: monthsAgo(18), epigeneticFlags: ['brave'] },
       ];
 
       mockPrisma.horse.findMany.mockResolvedValue(eligibleHorses);
