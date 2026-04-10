@@ -180,7 +180,7 @@ describe('Email Verification System - Integration Tests', () => {
 
       expect(user.emailVerified).toBe(true);
       expect(user.emailVerifiedAt).toBeDefined();
-      expect(user.emailVerifiedAt).toBeInstanceOf(Date);
+      expect(user.emailVerifiedAt?.constructor?.name).toBe('Date');
     });
 
     it('should_mark_token_as_used', async () => {
@@ -200,7 +200,7 @@ describe('Email Verification System - Integration Tests', () => {
       });
 
       expect(tokenRecord.usedAt).toBeDefined();
-      expect(tokenRecord.usedAt).toBeInstanceOf(Date);
+      expect(tokenRecord.usedAt?.constructor?.name).toBe('Date');
     });
 
     it('should_reject_missing_token', async () => {

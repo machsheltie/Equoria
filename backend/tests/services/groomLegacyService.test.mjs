@@ -351,7 +351,7 @@ describe('Groom Legacy Service', () => {
       // Get user legacy history
       const history = await getUserLegacyHistory(testUser.id);
 
-      expect(history).toBeInstanceOf(Array);
+      expect(Array.isArray(history)).toBe(true);
       expect(history.length).toBeGreaterThanOrEqual(1);
 
       const legacyEntry = history.find(entry => entry.retiredGroomId === retiredGroom.id);

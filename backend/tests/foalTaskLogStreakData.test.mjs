@@ -520,7 +520,8 @@ describe('Foal Task Log and Streak Data', () => {
       expect(typeof foal.taskLog).toBe('object');
       expect(typeof foal.taskLog.trust_building).toBe('number');
       expect(typeof foal.consecutiveDaysFoalCare).toBe('number');
-      expect(foal.lastGroomed).toBeInstanceOf(Date);
+      // Use constructor.name check to avoid cross-realm Date mismatch with --experimental-vm-modules
+      expect(foal.lastGroomed?.constructor?.name).toBe('Date');
     });
   });
 });

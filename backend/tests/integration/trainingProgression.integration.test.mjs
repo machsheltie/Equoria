@@ -382,7 +382,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
         },
       });
       expect(dressageLog).toBeTruthy();
-      expect(dressageLog.trainedAt).toBeInstanceOf(Date);
+      expect(dressageLog.trainedAt?.constructor?.name).toBe('Date');
 
       // STEP 7: Verify XP was awarded (real progression system test)
       const finalUser = await prisma.user.findUnique({

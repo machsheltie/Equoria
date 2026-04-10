@@ -77,9 +77,11 @@ describe('🔌 INTEGRATION: Database Connection - Core Infrastructure Validation
   });
 
   it('should handle database errors gracefully', async () => {
-    // Test error handling with an invalid query
-    await expect(async () => {
-      await prisma.$queryRaw`SELECT * FROM nonexistent_table`;
-    }).rejects.toThrow();
+    // Use a SQL syntax error (guaranteed to fail on any Postgres database)
+    // Avoid table-name lookups since a table named "nonexistent_table" could
+    // theoretically exist; a syntax error is always rejected.
+    await expect(
+      prisma.$queryRaw`SELECT this_is_invalid_syntax_xyz_not_a_column FROM 1`,
+    ).rejects.toThrow();
   });
 });

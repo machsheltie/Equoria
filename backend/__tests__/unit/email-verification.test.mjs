@@ -224,7 +224,7 @@ describe('Email Verification Service - Unit Tests', () => {
       });
 
       expect(tokenRecord.usedAt).toBeDefined();
-      expect(tokenRecord.usedAt).toBeInstanceOf(Date);
+      expect(tokenRecord.usedAt?.constructor?.name).toBe('Date');
     });
 
     it('should_reject_invalid_token', async () => {

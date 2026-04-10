@@ -128,7 +128,8 @@ describe('Groom Retirement Service', () => {
     });
 
     test('should throw error for non-existent groom', async () => {
-      await expect(incrementCareerWeeks(99999)).rejects.toThrow();
+      // Use max INT value (2147483647) — guaranteed never reached by autoincrement in tests
+      await expect(incrementCareerWeeks(2147483647)).rejects.toThrow();
     });
   });
 
