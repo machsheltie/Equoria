@@ -20,11 +20,16 @@ import type { CategoryRanking, BestRanking } from '@/components/leaderboard/User
 
 /**
  * API response for a leaderboard query.
- * Matches the actual backend response shape with leaderboard array + pagination.
+ * Matches the actual backend response shape.
  */
 export interface LeaderboardResponse {
-  leaderboard: LeaderboardEntryData[];
-  pagination: {
+  entries: LeaderboardEntryData[];
+  currentPage: number;
+  totalPages: number;
+  totalEntries?: number;
+  /** Legacy shape — kept for backwards compatibility */
+  leaderboard?: LeaderboardEntryData[];
+  pagination?: {
     total: number;
     limit: number;
     offset: number;
@@ -88,17 +93,7 @@ export interface FetchLeaderboardParams {
 export async function fetchLeaderboard(
   params: FetchLeaderboardParams
 ): Promise<LeaderboardResponse> {
-  // Map frontend category names to actual backend route paths
-  const categoryToPath: Record<string, string> = {
-    level: '/api/leaderboards/players/level',
-    xp: '/api/leaderboards/players/xp',
-    earnings: '/api/leaderboards/horses/earnings',
-    performance: '/api/leaderboards/horses/performance',
-    'horse-earnings': '/api/leaderboards/players/horse-earnings',
-    'recent-winners': '/api/leaderboards/recent-winners',
-  };
-
-  const path = categoryToPath[params.category] ?? `/api/leaderboards/players/${params.category}`;
+  const path = `/api/leaderboards/${params.category}`;
 
   const queryParams = new URLSearchParams();
 
@@ -108,13 +103,13 @@ export async function fetchLeaderboard(
     queryParams.append('discipline', params.discipline);
   }
 
-  // Convert page-based pagination to offset-based
-  const limit = params.limit ?? 50;
-  const page = params.page ?? 1;
-  const offset = (page - 1) * limit;
+  if (params.page != null) {
+    queryParams.append('page', params.page.toString());
+  }
 
-  queryParams.append('limit', limit.toString());
-  queryParams.append('offset', offset.toString());
+  if (params.limit != null) {
+    queryParams.append('limit', params.limit.toString());
+  }
 
   const queryString = queryParams.toString() ? `?${queryParams.toString()}` : '';
   return apiClient.get<LeaderboardResponse>(`${path}${queryString}`);
@@ -133,12 +128,8 @@ export async function fetchLeaderboard(
  * const summary = await fetchUserRankSummary('user-123');
  * console.log(`User has rankings in ${summary.rankings.length} categories`);
  */
-/**
- * NOTE: The user-rank-summary endpoint does not exist in the backend yet.
- * This function is stubbed to return null until the endpoint is implemented.
- */
 export async function fetchUserRankSummary(
-  _userId: string
+  userId: string
 ): Promise<UserRankSummaryResponse | null> {
-  return null;
+  return apiClient.get<UserRankSummaryResponse>(`/api/leaderboards/user-summary/${userId}`);
 }
