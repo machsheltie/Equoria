@@ -39,10 +39,11 @@ export interface CompetitionEntry {
   competitionName: string;
   discipline: string;
   date: string;
-  rank: number;
+  /** Final placement (1 = first). Aliased as `rank` for display convenience. */
+  placement: number;
   totalParticipants: number;
-  score: number;
-  prizeWon: number;
+  finalScore: number;
+  prizeMoney: number;
   xpGained: number;
 }
 
@@ -428,7 +429,7 @@ const CompetitionEntryCard = memo(
               </span>
             </div>
           </div>
-          <PlacementBadge rank={entry.rank} />
+          <PlacementBadge rank={entry.placement} />
         </div>
 
         {/* Details Row */}
@@ -437,14 +438,14 @@ const CompetitionEntryCard = memo(
           <div className="flex items-center gap-1">
             <Target className="h-4 w-4 text-[rgb(148,163,184)]" aria-hidden="true" />
             <span className="text-[rgb(148,163,184)]">Score:</span>
-            <span className="font-medium text-[rgb(220,235,255)]">{entry.score.toFixed(1)}</span>
+            <span className="font-medium text-[rgb(220,235,255)]">{entry.finalScore.toFixed(1)}</span>
           </div>
 
           {/* Prize */}
           <div className="flex items-center gap-1">
             <DollarSign className="h-4 w-4 text-emerald-400" aria-hidden="true" />
             <span className="font-medium text-[rgb(220,235,255)]">
-              {formatCurrency(entry.prizeWon)}
+              {formatCurrency(entry.prizeMoney)}
             </span>
           </div>
 
@@ -458,7 +459,7 @@ const CompetitionEntryCard = memo(
           {/* Participants */}
           <div className="flex items-center gap-1 text-[rgb(148,163,184)]">
             <span>
-              ({entry.rank}/{entry.totalParticipants})
+              ({entry.placement}/{entry.totalParticipants})
             </span>
           </div>
 
@@ -698,11 +699,11 @@ const CompetitionHistory: React.FC<CompetitionHistoryProps> = ({
 
     // Apply placement filter
     if (placementFilter === 'wins') {
-      filtered = filtered.filter((c) => c.rank === 1);
+      filtered = filtered.filter((c) => c.placement === 1);
     } else if (placementFilter === 'top3') {
-      filtered = filtered.filter((c) => c.rank <= 3);
+      filtered = filtered.filter((c) => c.placement <= 3);
     } else if (placementFilter === 'top10') {
-      filtered = filtered.filter((c) => c.rank <= 10);
+      filtered = filtered.filter((c) => c.placement <= 10);
     }
 
     // Sort by date (most recent first)
