@@ -25,12 +25,11 @@ COPY backend/package*.json ./
 RUN npm ci --omit=dev --ignore-scripts
 
 # Install database package dependencies
-# --omit=dev: skip test deps (jest etc.) for a fast, lean build
-# --ignore-scripts: skip postinstall scripts; Prisma CLI (devDep) must remain
-#   available so `prisma generate` can run in the next step
+# --ignore-scripts: skip postinstall scripts while still installing all deps,
+#   including devDependencies (e.g. Prisma CLI) needed for `prisma generate`
 WORKDIR /app/packages/database
 COPY packages/database/package*.json ./
-RUN npm ci --omit=dev --ignore-scripts
+RUN npm ci --ignore-scripts
 
 # Copy application source
 WORKDIR /app
