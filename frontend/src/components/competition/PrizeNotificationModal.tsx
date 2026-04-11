@@ -163,7 +163,7 @@ const PrizeNotificationModal = memo(function PrizeNotificationModal({
   autoDismiss = true,
   autoDismissDelay = 5000,
 }: PrizeNotificationModalProps) {
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onCloseRef = useRef(onClose);
   onCloseRef.current = onClose;
 

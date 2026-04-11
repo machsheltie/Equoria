@@ -77,7 +77,7 @@ const HorseSearchBar = ({
   autoFocus = false,
 }: HorseSearchBarProps) => {
   const [localValue, setLocalValue] = useState(value);
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Sync local value with prop value changes

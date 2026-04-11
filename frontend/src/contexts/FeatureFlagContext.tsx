@@ -221,7 +221,7 @@ ABTestGate.Variant = Variant;
 export function FeatureFlagDebug() {
   const { flags, isLoading, isError } = useFeatureFlagContext();
 
-  if (process.env.NODE_ENV !== 'development') {
+  if (import.meta.env.MODE !== 'development') {
     return null;
   }
 

@@ -78,7 +78,7 @@ export function useClaimPrizes() {
     onError: (error) => {
       // Error is already properly structured by the API client
       // Log for debugging purposes (will be suppressed in tests)
-      if (process.env.NODE_ENV !== 'test') {
+      if (import.meta.env.MODE !== 'test') {
         console.error('Failed to claim prizes:', error.message);
       }
     },
