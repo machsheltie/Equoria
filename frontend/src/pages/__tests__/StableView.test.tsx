@@ -6,14 +6,8 @@ import StableView from '../StableView';
 import * as useHorsesModule from '../../hooks/api/useHorses';
 import * as useAuthModule from '../../hooks/useAuth';
 
-const horseCardMock = vi.fn();
-
-vi.mock('../../components/HorseCard', () => ({
-  default: (props: unknown) => {
-    horseCardMock(props);
-    return null;
-  },
-}));
+// StableView uses an internal StableHorseCard — the external HorseCard import was
+// removed during the Celestial Night refactor. Tests now assert on rendered DOM output.
 
 vi.mock('../../components/FantasyTabs', () => ({
   FantasyTabs: ({
@@ -55,7 +49,6 @@ describe('StableView', () => {
   };
 
   beforeEach(() => {
-    horseCardMock.mockClear();
     vi.mocked(useHorsesModule.useHorses).mockReturnValue({
       data: [],
       isLoading: false,
@@ -72,7 +65,7 @@ describe('StableView', () => {
     } as unknown as ReturnType<typeof useAuthModule.useProfile>);
   });
 
-  it('uses horse stats and primary discipline from API data', () => {
+  it('renders horse name and stats from API data', () => {
     vi.mocked(useHorsesModule.useHorses).mockReturnValue({
       data: [
         {
@@ -80,17 +73,13 @@ describe('StableView', () => {
           name: 'Aurora',
           ageYears: 5,
           sex: 'mare',
+          breed: 'Thoroughbred',
           stats: {
             speed: 92,
             stamina: 81,
             agility: 74,
             strength: 69,
             intelligence: 88,
-            health: 95,
-          },
-          disciplineScores: {
-            dressage: 72,
-            show_jumping: 88,
           },
         },
       ],
@@ -107,21 +96,17 @@ describe('StableView', () => {
       </Wrapper>
     );
 
-    expect(horseCardMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        horseName: 'Aurora',
-        age: 5,
-        stats: {
-          speed: 92,
-          stamina: 81,
-          agility: 74,
-          strength: 69,
-          intelligence: 88,
-          health: 95,
-        },
-        discipline: 'Show Jumping',
-      })
-    );
+    // Horse name is rendered by StableHorseCard
+    expect(screen.getByText('Aurora')).toBeInTheDocument();
+
+    // Card is accessible via aria-label
+    expect(screen.getByRole('button', { name: /view aurora/i })).toBeInTheDocument();
+
+    // Speed stat value (from horse.stats.speed = 92) appears in the stat grid
+    expect(screen.getByText('92')).toBeInTheDocument();
+
+    // Subtitle shows breed · sex · age
+    expect(screen.getByText('Thoroughbred · mare · 5 yrs')).toBeInTheDocument();
   });
 
   it('renders player stats from profile data', () => {
