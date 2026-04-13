@@ -1,4 +1,4 @@
-import { chromium, type FullConfig } from '@playwright/test';
+import { chromium, expect, type FullConfig } from '@playwright/test';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
@@ -63,20 +63,35 @@ async function globalSetup(config: FullConfig) {
     // If redirected to /onboarding, complete it so the user is fully set up
     if (page.url().includes('/onboarding')) {
       console.log('Completing onboarding wizard...');
-      // Step 1 → Step 2 → Step 3 → finish
-      for (let step = 0; step < 3; step++) {
-        const nextBtn = page.locator('[data-testid="onboarding-next"]');
-        if (await nextBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
-          await nextBtn.click();
-          await page.waitForTimeout(1000);
-        }
-      }
-      // After onboarding completes, user navigates to /bank or /
+
+      // Step 0 (Welcome) → click Continue
+      await expect(page.locator('h1')).toContainText('Welcome to Equoria', { timeout: 15000 });
+      await page.locator('[data-testid="onboarding-next"]').click();
+
+      // Step 1 (Choose Your Horse) → select breed, gender, name, then click Continue
+      await expect(page.locator('h1')).toContainText('Choose Your Horse', { timeout: 10000 });
+      // Wait for breeds to load and select the first one
+      const firstBreedBtn = page.locator('[role="listbox"] button').first();
+      await firstBreedBtn.waitFor({ state: 'visible', timeout: 15000 });
+      await firstBreedBtn.click();
+      // Select Mare gender
+      await page.locator('button', { hasText: '♀ Mare' }).click();
+      // Enter horse name
+      await page.locator('[data-testid="horse-name-input"]').fill(`E2E Setup Horse ${timestamp}`);
+      // Continue to step 2
+      await page.locator('[data-testid="onboarding-next"]').click();
+
+      // Step 2 (Ready) → click "Begin" — triggers POST /api/horses + advance-onboarding
+      await expect(page.locator('h1')).toContainText("You're Ready!", { timeout: 10000 });
+      await page.locator('[data-testid="onboarding-next"]').click();
+
+      // After onboarding completes, navigate to /stable
       try {
         await page.waitForURL(
-          new RegExp(`${baseURL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/(bank)?$`),
-          { timeout: 15000 }
+          new RegExp(`${baseURL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/stable`),
+          { timeout: 20000 }
         );
+        console.log('Onboarding complete — landed on /stable');
       } catch {
         console.log('Post-onboarding navigation URL:', page.url());
       }

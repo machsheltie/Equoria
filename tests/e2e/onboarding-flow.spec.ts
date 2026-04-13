@@ -60,12 +60,8 @@ test.describe('Onboarding Flow', () => {
 
     // After registration, user should land on / or /onboarding
     // (depends on whether OnboardingGuard triggers)
-    try {
-      await page.waitForURL(/\/(onboarding)?$/, { timeout: 30000 });
-    } catch {
-      // May also land on /bank if onboarding completes automatically
-      await page.waitForURL(/\/(onboarding|bank)?$/, { timeout: 10000 });
-    }
+    // After registration: OnboardingGuard redirects new users to /onboarding
+    await page.waitForURL(/\/(onboarding)?$/, { timeout: 30000 });
 
     // Verify the page loaded (not stuck on register)
     const url = page.url();
@@ -129,6 +125,13 @@ test.describe('Onboarding Flow', () => {
     await page.locator('[data-testid="onboarding-next"]').click();
     await expect(page.locator('h1')).toContainText('Choose Your Horse', { timeout: 10000 });
 
+    // Step 2 requires breed, gender, and name before Continue is enabled
+    const firstBreedBtn = page.locator('[role="listbox"] button').first();
+    await firstBreedBtn.waitFor({ state: 'visible', timeout: 15000 });
+    await firstBreedBtn.click();
+    await page.locator('button', { hasText: '♀ Mare' }).click();
+    await page.locator('[data-testid="horse-name-input"]').fill('Stardust');
+
     // Advance to step 3
     await page.locator('[data-testid="onboarding-next"]').click();
 
@@ -169,12 +172,13 @@ test.describe('Onboarding Flow', () => {
     await expect(tabs.nth(1)).toHaveAttribute('aria-selected', 'false');
     await expect(tabs.nth(2)).toHaveAttribute('aria-selected', 'false');
 
-    // Advance to step 2
+    // Advance to step 2 — clicking Continue on Welcome step
     await page.locator('[data-testid="onboarding-next"]').click();
     await expect(page.locator('h1')).toContainText('Choose Your Horse', { timeout: 10000 });
 
-    // Second tab should now be selected
+    // Second tab should now be selected (step 2 is active)
     await expect(tabs.nth(0)).toHaveAttribute('aria-selected', 'false');
     await expect(tabs.nth(1)).toHaveAttribute('aria-selected', 'true');
+    await expect(tabs.nth(2)).toHaveAttribute('aria-selected', 'false');
   });
 });
