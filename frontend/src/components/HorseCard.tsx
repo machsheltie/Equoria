@@ -6,7 +6,6 @@ import {
   FrostedPanelContent as CardContent,
   GameBadge as Badge,
 } from '@/components/ui/game';
-import { Progress } from '@/components/ui/progress';
 
 interface CareStatus {
   lastShod?: Date | string | null;
@@ -185,17 +184,19 @@ const HorseCard = ({
                   </span>
                   <span className={getStatColor(value)}>{value}</span>
                 </div>
-                <Progress
-                  value={value}
-                  className="h-1 bg-white/10"
-                  indicatorClassName={cn(
-                    value >= 90
-                      ? 'bg-celestial-gold'
-                      : value >= 75
-                        ? 'bg-emerald-500'
-                        : 'bg-blue-500'
-                  )}
-                />
+                <div className="h-1 w-full rounded-full bg-white/10 overflow-hidden">
+                  <div
+                    className={cn(
+                      'h-full rounded-full transition-all',
+                      value >= 90
+                        ? 'bg-celestial-gold'
+                        : value >= 75
+                          ? 'bg-emerald-500'
+                          : 'bg-blue-500'
+                    )}
+                    style={{ width: `${value}%` }}
+                  />
+                </div>
               </div>
             ))}
         </div>
