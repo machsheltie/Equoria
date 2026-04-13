@@ -1,200 +1,75 @@
 /**
  * MilestoneEvaluationDisplay Component
  *
- * Main component for displaying milestone evaluation results.
- * Shows evaluation modal, score breakdown, trait confirmation,
- * and evaluation history.
+ * Displays foal development progress using real API data.
+ * Detailed milestone evaluation history (scores, trait confirmations) is not
+ * supported by the current backend API contract and is excluded from beta.
  *
- * Story 6-4: Milestone Evaluation Display
+ * Story 21R-2: Remove production frontend mocks from beta-facing code
+ * (Replaces mockApi with breedingApi.getFoalDevelopment; evaluation history deferred)
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Award, History, AlertCircle, Sparkles } from 'lucide-react';
-import BaseModal from '@/components/common/BaseModal';
-import EvaluationScoreDisplay from './EvaluationScoreDisplay';
-import ScoreBreakdownPanel from './ScoreBreakdownPanel';
-import TraitConfirmationCard from './TraitConfirmationCard';
-import EvaluationHistoryItem from './EvaluationHistoryItem';
-import EvaluationExplanation from './EvaluationExplanation';
-import type {
-  MilestoneType,
-  MilestoneEvaluation,
-  MilestoneEvaluationHistory,
-  EpigeneticTrait,
-} from '@/types/foal';
-import { formatMilestoneName, getMilestoneDescription } from '@/types/foal';
+import { Award, AlertCircle } from 'lucide-react';
+import { breedingApi } from '@/lib/api-client';
+import BetaExcludedNotice from '@/components/beta/BetaExcludedNotice';
+import type { MilestoneType } from '@/types/foal';
 
 export interface MilestoneEvaluationDisplayProps {
   foalId: number;
-  milestoneType?: MilestoneType; // If showing specific evaluation
+  milestoneType?: MilestoneType;
   showHistory?: boolean;
-  autoShowLatest?: boolean; // Automatically show latest evaluation
+  autoShowLatest?: boolean;
 }
 
 /**
- * Mock API - Replace with actual API calls
- */
-const mockApi = {
-  getEvaluationHistory: async (_foalId: number): Promise<MilestoneEvaluationHistory> => {
-    // Mock data - replace with actual API call
-    return {
-      evaluations: [
-        {
-          milestone: 'socialization',
-          milestoneName: 'Socialization',
-          score: 4,
-          traitsConfirmed: ['peopleOriented'],
-          evaluatedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
-          bondModifier: 2,
-          taskConsistency: 2,
-          careQuality: 0,
-          scoreBreakdown: {
-            bondModifier: 2,
-            taskConsistency: 2,
-            careQuality: 0,
-          },
-        },
-        {
-          milestone: 'imprinting',
-          milestoneName: 'Imprinting',
-          score: 2,
-          traitsConfirmed: ['confident'],
-          evaluatedAt: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000).toISOString(),
-          bondModifier: 1,
-          taskConsistency: 1,
-          careQuality: 0,
-          scoreBreakdown: {
-            bondModifier: 1,
-            taskConsistency: 1,
-            careQuality: 0,
-          },
-        },
-      ],
-      completedMilestones: ['imprinting', 'socialization'],
-      currentMilestone: 'curiosity_play',
-    };
-  },
-
-  getTraitDefinitions: async (): Promise<{ traits: EpigeneticTrait[] }> => {
-    // Mock data - replace with actual API call
-    return {
-      traits: [
-        {
-          id: 'peopleOriented',
-          name: 'People-Oriented',
-          category: 'Social',
-          description: 'Bonds quickly with handlers and seeks human interaction',
-          effects: [
-            {
-              type: 'Training XP Gain',
-              value: 15,
-              description: '+15% XP gain from training sessions',
-            },
-            {
-              type: 'Handler Bonding',
-              value: 20,
-              description: 'Bonds 20% faster with handlers',
-            },
-          ],
-          isPositive: true,
-        },
-        {
-          id: 'confident',
-          name: 'Confident',
-          category: 'Temperament',
-          description: 'Shows self-assurance and boldness in new situations',
-          effects: [
-            {
-              type: 'Stress Resistance',
-              value: 10,
-              description: '-10% stress from competitions',
-            },
-          ],
-          isPositive: true,
-        },
-      ],
-    };
-  },
-};
-
-/**
  * MilestoneEvaluationDisplay Component
+ *
+ * Uses real foal development data for progress display.
+ * Detailed evaluation history is excluded from beta.
  */
 const MilestoneEvaluationDisplay: React.FC<MilestoneEvaluationDisplayProps> = ({
   foalId,
-  milestoneType: _milestoneType,
-  showHistory = true,
-  autoShowLatest = false,
+  showHistory: _showHistory,
+  autoShowLatest: _autoShowLatest,
 }) => {
-  const [selectedEvaluation, setSelectedEvaluation] = useState<MilestoneEvaluation | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  // Fetch evaluation history
+  // Fetch real foal development data
   const {
-    data: evaluationHistory,
-    isLoading: historyLoading,
-    error: historyError,
-  } = useQuery<MilestoneEvaluationHistory>({
-    queryKey: ['milestone-evaluations', foalId],
-    queryFn: () => mockApi.getEvaluationHistory(foalId),
+    data: development,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['foalDevelopment', foalId],
+    queryFn: () => breedingApi.getFoalDevelopment(foalId),
+    enabled: !!foalId,
     staleTime: 60000,
     refetchOnWindowFocus: true,
   });
 
-  // Fetch trait definitions
-  const { data: traitData, isLoading: traitsLoading } = useQuery({
-    queryKey: ['trait-definitions'],
-    queryFn: mockApi.getTraitDefinitions,
-    staleTime: 600000,
-  });
-
-  // Get latest evaluation
-  const latestEvaluation = evaluationHistory?.evaluations?.[0];
-
-  // Auto-show latest evaluation if enabled
-  React.useEffect(() => {
-    if (autoShowLatest && latestEvaluation && !isModalOpen) {
-      setSelectedEvaluation(latestEvaluation);
-      setIsModalOpen(true);
-    }
-  }, [autoShowLatest, latestEvaluation, isModalOpen]);
-
-  // Get traits for selected evaluation
-  const getTraitsForEvaluation = (evaluation: MilestoneEvaluation): EpigeneticTrait[] => {
-    if (!traitData || !evaluation.traitsConfirmed) return [];
-    return evaluation.traitsConfirmed
-      .map((traitId) => traitData.traits.find((t) => t.id === traitId))
-      .filter((t): t is EpigeneticTrait => t !== undefined);
-  };
-
-  const handleViewEvaluation = (evaluation: MilestoneEvaluation) => {
-    setSelectedEvaluation(evaluation);
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    // Keep selectedEvaluation for potential reopening
-  };
-
-  if (historyLoading || traitsLoading) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div
+        className="flex items-center justify-center py-12"
+        data-testid="milestone-evaluation-loading"
+      >
         <div className="h-8 w-8 border-4 border-[var(--gold-primary)] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
-  if (historyError) {
+  if (error) {
     return (
-      <div className="rounded-lg border border-red-500/30 bg-[rgba(239,68,68,0.1)] p-6">
+      <div
+        className="rounded-lg border border-red-500/30 bg-[rgba(239,68,68,0.1)] p-6"
+        data-testid="milestone-evaluation-error"
+      >
         <div className="flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-[rgb(220,235,255)]">Error loading evaluations</p>
+            <p className="font-semibold text-[rgb(220,235,255)]">Error loading foal development</p>
             <p className="text-sm text-[rgb(148,163,184)] mt-1">
-              {historyError instanceof Error ? historyError.message : 'An error occurred'}
+              {error instanceof Error ? error.message : 'An error occurred'}
             </p>
           </div>
         </div>
@@ -202,127 +77,64 @@ const MilestoneEvaluationDisplay: React.FC<MilestoneEvaluationDisplayProps> = ({
     );
   }
 
-  if (!evaluationHistory || evaluationHistory.evaluations.length === 0) {
+  if (!development) {
     return (
-      <div className="text-center py-12">
+      <div className="text-center py-12" data-testid="milestone-evaluation-empty">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[rgba(15,35,70,0.5)] mb-4">
           <Award className="h-8 w-8 text-[rgb(148,163,184)]" />
         </div>
-        <p className="text-[rgb(148,163,184)] text-sm">No milestone evaluations yet</p>
-        <p className="text-[rgb(148,163,184)] text-xs mt-1">
-          Evaluations will appear as your foal completes developmental milestones
-        </p>
+        <p className="text-[rgb(148,163,184)] text-sm">No development data available</p>
       </div>
     );
   }
 
-  const traits = selectedEvaluation ? getTraitsForEvaluation(selectedEvaluation) : [];
-
   return (
-    <div className="space-y-6">
-      {/* Evaluation History */}
-      {showHistory && (
-        <div className="glass-panel rounded-lg p-6">
-          <div className="flex items-center gap-2 mb-4">
-            <History className="h-5 w-5 text-[rgb(148,163,184)]" />
-            <h3 className="text-lg font-bold text-[rgb(220,235,255)]">
-              Milestone Evaluation History
-            </h3>
-          </div>
-
-          <div className="space-y-3">
-            {evaluationHistory.evaluations.map((evaluation, index) => (
-              <EvaluationHistoryItem
-                key={`${evaluation.milestone}-${evaluation.evaluatedAt}`}
-                evaluation={evaluation}
-                onViewDetails={() => handleViewEvaluation(evaluation)}
-                defaultExpanded={index === 0 && !autoShowLatest}
-              />
-            ))}
-          </div>
+    <div className="space-y-6" data-testid="milestone-evaluation-display">
+      {/* Development progress using real data */}
+      <div className="glass-panel rounded-lg p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Award className="h-5 w-5 text-[rgb(148,163,184)]" />
+          <h3 className="text-lg font-bold text-[rgb(220,235,255)]">Foal Development</h3>
         </div>
-      )}
 
-      {/* Evaluation Results Modal */}
-      {selectedEvaluation && (
-        <BaseModal
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-          title="Milestone Evaluation Results"
-          size="xl"
-        >
-          <div className="space-y-6">
-            {/* Header */}
-            <div className="text-center pb-4 border-b border-[rgba(37,99,235,0.3)]">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[rgba(37,99,235,0.15)] mb-4">
-                <Sparkles className="h-8 w-8 text-blue-400" />
-              </div>
-              <h2 className="text-2xl font-bold text-[rgb(220,235,255)] mb-2">
-                {selectedEvaluation.milestoneName ||
-                  formatMilestoneName(selectedEvaluation.milestone)}{' '}
-                Complete!
-              </h2>
-              <p className="text-sm text-[rgb(148,163,184)]">
-                Completed:{' '}
-                {new Date(selectedEvaluation.evaluatedAt).toLocaleDateString('en-US', {
-                  month: 'long',
-                  day: 'numeric',
-                  year: 'numeric',
-                })}
-              </p>
-              <p className="text-xs text-[rgb(148,163,184)] mt-1">
-                {getMilestoneDescription(selectedEvaluation.milestone)}
-              </p>
-            </div>
-
-            {/* Overall Score */}
-            <EvaluationScoreDisplay score={selectedEvaluation.score} size="large" />
-
-            {/* Score Breakdown */}
-            <ScoreBreakdownPanel
-              bondModifier={selectedEvaluation.bondModifier}
-              taskConsistency={selectedEvaluation.taskConsistency}
-              careQuality={selectedEvaluation.careQuality}
-              totalScore={selectedEvaluation.score}
-            />
-
-            {/* Traits Confirmed */}
-            {traits.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="text-lg font-bold text-[rgb(220,235,255)] flex items-center gap-2">
-                  <Award className="h-5 w-5 text-emerald-400" />
-                  Traits Confirmed
-                </h3>
-                {traits.map((trait) => (
-                  <TraitConfirmationCard
-                    key={trait.id}
-                    trait={trait}
-                    score={selectedEvaluation.score}
-                    showReason
-                  />
-                ))}
-              </div>
-            )}
-
-            {/* Explanation */}
-            <EvaluationExplanation
-              score={selectedEvaluation.score}
-              milestone={selectedEvaluation.milestone}
-              traits={selectedEvaluation.traitsConfirmed}
-            />
-
-            {/* Continue Button */}
-            <div className="pt-4 border-t border-[rgba(37,99,235,0.3)]">
-              <button
-                onClick={handleCloseModal}
-                className="w-full px-4 py-3 text-base font-medium text-[var(--text-primary)] bg-blue-600 rounded-lg hover:bg-[var(--gold-dim)] transition-colors"
-              >
-                Continue
-              </button>
-            </div>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-[rgb(148,163,184)]">Day</span>
+            <span className="text-sm font-medium text-[rgb(220,235,255)]">
+              {development.currentDay} / {development.maxDay}
+            </span>
           </div>
-        </BaseModal>
-      )}
+
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-[rgb(148,163,184)]">Bonding Level</span>
+            <span className="text-sm font-medium text-[rgb(220,235,255)]">
+              {development.bondingLevel}
+            </span>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-[rgb(148,163,184)]">Stress Level</span>
+            <span className="text-sm font-medium text-[rgb(220,235,255)]">
+              {development.stressLevel}
+            </span>
+          </div>
+
+          {development.stage && (
+            <div className="flex items-center justify-between">
+              <span className="text-sm text-[rgb(148,163,184)]">Stage</span>
+              <span className="text-sm font-medium text-[rgb(220,235,255)]">
+                {development.stage}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Detailed evaluation history — beta-readonly (not available in this beta) */}
+      <BetaExcludedNotice
+        testId="milestone-evaluation-beta-notice"
+        message="Detailed milestone evaluation history and trait confirmation records are not available in this beta."
+      />
     </div>
   );
 };

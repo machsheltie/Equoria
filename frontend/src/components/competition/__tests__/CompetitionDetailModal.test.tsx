@@ -6,9 +6,11 @@
  * - Modal behavior (close, backdrop, escape key)
  * - Competition details display (name, discipline, date, prize, fee)
  * - Prize distribution breakdown
- * - Entry action functionality
+ * - Beta-excluded entry notice (competition entry is not available in this beta)
  * - Accessibility compliance (ARIA, focus trap, scroll lock)
  *
+ * Story 21R-2: Remove production frontend mocks from beta-facing code
+ * (Updated: horse-selector-placeholder replaced with competition-entry-beta-notice)
  * Story 5-1: Competition Entry System - Task 4
  */
 
@@ -22,7 +24,6 @@ import CompetitionDetailModal, {
 
 describe('CompetitionDetailModal', () => {
   const mockOnClose = vi.fn();
-  const mockOnEnter = vi.fn();
 
   const sampleCompetition: Competition = {
     id: 1,
@@ -46,7 +47,6 @@ describe('CompetitionDetailModal', () => {
     isOpen: true,
     onClose: mockOnClose,
     competition: sampleCompetition,
-    onEnter: mockOnEnter,
   };
 
   beforeEach(() => {
@@ -77,25 +77,28 @@ describe('CompetitionDetailModal', () => {
     it('should display all competition details correctly', () => {
       render(<CompetitionDetailModal {...defaultProps} />);
 
-      expect(screen.getByTestId('competition-name')).toHaveTextContent('Spring Grand Prix');
+      expect(screen.getByTestId('competition-detail-modal-title')).toHaveTextContent(
+        'Spring Grand Prix'
+      );
       expect(screen.getByTestId('competition-discipline')).toBeInTheDocument();
       expect(screen.getByTestId('competition-date')).toBeInTheDocument();
       expect(screen.getByTestId('competition-prize-pool')).toBeInTheDocument();
       expect(screen.getByTestId('competition-entry-fee')).toBeInTheDocument();
     });
 
-    it('should show placeholder for horse selector', () => {
+    it('should show beta-excluded notice for competition entry', () => {
       render(<CompetitionDetailModal {...defaultProps} />);
 
-      expect(screen.getByTestId('horse-selector-placeholder')).toBeInTheDocument();
-      expect(screen.getByText(/select a horse/i)).toBeInTheDocument();
+      expect(screen.getByTestId('competition-entry-beta-notice')).toBeInTheDocument();
+      expect(
+        screen.getByText(/competition entry is not available in this beta/i)
+      ).toBeInTheDocument();
     });
 
-    it('should render action buttons', () => {
+    it('should render close button', () => {
       render(<CompetitionDetailModal {...defaultProps} />);
 
-      expect(screen.getByTestId('enter-button')).toBeInTheDocument();
-      expect(screen.getByTestId('close-modal-button')).toBeInTheDocument();
+      expect(screen.getByTestId('competition-detail-modal-close-button')).toBeInTheDocument();
     });
   });
 
@@ -115,7 +118,7 @@ describe('CompetitionDetailModal', () => {
       const user = userEvent.setup();
       render(<CompetitionDetailModal {...defaultProps} />);
 
-      const closeButton = screen.getByTestId('close-modal-button');
+      const closeButton = screen.getByTestId('competition-detail-modal-close-button');
       await user.click(closeButton);
 
       expect(mockOnClose).toHaveBeenCalledTimes(1);
@@ -125,7 +128,7 @@ describe('CompetitionDetailModal', () => {
       const user = userEvent.setup();
       render(<CompetitionDetailModal {...defaultProps} />);
 
-      const backdrop = screen.getByTestId('modal-backdrop');
+      const backdrop = screen.getByTestId('competition-detail-modal-backdrop');
       await user.click(backdrop);
 
       expect(mockOnClose).toHaveBeenCalledTimes(1);
@@ -143,7 +146,7 @@ describe('CompetitionDetailModal', () => {
       const user = userEvent.setup();
       render(<CompetitionDetailModal {...defaultProps} />);
 
-      await user.click(screen.getByTestId('close-modal-button'));
+      await user.click(screen.getByTestId('competition-detail-modal-close-button'));
 
       expect(mockOnClose).toHaveBeenCalled();
     });
@@ -188,7 +191,7 @@ describe('CompetitionDetailModal', () => {
 
       const disciplineBadge = screen.getByTestId('competition-discipline');
       expect(disciplineBadge).toHaveTextContent('Show Jumping');
-      expect(disciplineBadge).toHaveClass('bg-blue-100');
+      expect(disciplineBadge.className).toMatch(/bg-\[rgba\(37,99,235/);
     });
 
     it('should format event date correctly', () => {
@@ -252,45 +255,26 @@ describe('CompetitionDetailModal', () => {
     });
   });
 
-  // ==================== ENTRY ACTION (5 tests) ====================
-  describe('Entry Action', () => {
-    it('should display visible entry button', () => {
+  // ==================== BETA-EXCLUDED ENTRY NOTICE (3 tests) ====================
+  describe('Beta-Excluded Entry Notice', () => {
+    it('should show beta-excluded notice instead of horse selector', () => {
       render(<CompetitionDetailModal {...defaultProps} />);
 
-      const entryButton = screen.getByTestId('enter-button');
-      expect(entryButton).toBeVisible();
-      expect(entryButton).toHaveTextContent(/enter/i);
+      // horse-selector-placeholder must NOT be present
+      expect(screen.queryByTestId('horse-selector-placeholder')).not.toBeInTheDocument();
+      // beta notice MUST be present
+      expect(screen.getByTestId('competition-entry-beta-notice')).toBeInTheDocument();
     });
 
-    it('should call onEnter with competition ID when entry button is clicked (when enabled)', async () => {
-      // Note: Entry button is disabled as placeholder until horse selector (Task 5) is implemented
-      // This test verifies the handler is wired up correctly
-      const user = userEvent.setup();
+    it('should display honest beta-excluded copy', () => {
       render(<CompetitionDetailModal {...defaultProps} />);
 
-      const entryButton = screen.getByTestId('enter-button');
-      // Button is intentionally disabled until horse selector is implemented
-      // Test that the button exists and has correct handler bound
-      expect(entryButton).toBeInTheDocument();
-      expect(entryButton).toHaveAttribute('type', 'button');
+      expect(
+        screen.getByText(/competition entry is not available in this beta/i)
+      ).toBeInTheDocument();
     });
 
-    it('should disable entry button when no horse is selected (placeholder)', () => {
-      render(<CompetitionDetailModal {...defaultProps} />);
-
-      const entryButton = screen.getByTestId('enter-button');
-      expect(entryButton).toBeDisabled();
-    });
-
-    it('should show loading state during submission', () => {
-      render(<CompetitionDetailModal {...defaultProps} isSubmitting={true} />);
-
-      const entryButton = screen.getByTestId('enter-button');
-      expect(entryButton).toBeDisabled();
-      expect(screen.getByTestId('loading-spinner')).toBeInTheDocument();
-    });
-
-    it('should display error message on failure', () => {
+    it('should display error message when error prop is provided', () => {
       render(
         <CompetitionDetailModal
           {...defaultProps}
@@ -316,9 +300,9 @@ describe('CompetitionDetailModal', () => {
       render(<CompetitionDetailModal {...defaultProps} />);
 
       const modal = screen.getByTestId('competition-detail-modal');
-      expect(modal).toHaveAttribute('aria-labelledby', 'competition-modal-title');
+      expect(modal).toHaveAttribute('aria-labelledby', 'competition-detail-modal-title');
 
-      const title = document.getElementById('competition-modal-title');
+      const title = document.getElementById('competition-detail-modal-title');
       expect(title).toBeInTheDocument();
     });
 
@@ -355,24 +339,6 @@ describe('CompetitionDetailModal', () => {
       expect(screen.queryByTestId('competition-detail-modal')).not.toBeInTheDocument();
     });
 
-    it('should handle missing onEnter callback', async () => {
-      const user = userEvent.setup();
-      render(
-        <CompetitionDetailModal
-          isOpen={true}
-          onClose={mockOnClose}
-          competition={sampleCompetition}
-        />
-      );
-
-      // Entry button should be present but clicking should not throw
-      const entryButton = screen.getByTestId('enter-button');
-      await user.click(entryButton);
-
-      // Should not throw
-      expect(entryButton).toBeInTheDocument();
-    });
-
     it('should format free entry correctly', () => {
       const freeCompetition: Competition = {
         ...sampleCompetition,
@@ -393,8 +359,9 @@ describe('CompetitionDetailModal', () => {
 
       render(<CompetitionDetailModal {...defaultProps} competition={longNameCompetition} />);
 
-      const name = screen.getByTestId('competition-name');
-      expect(name).toHaveClass('truncate');
+      // Long names render inside the BaseModal title element
+      const name = screen.getByTestId('competition-detail-modal-title');
+      expect(name).toHaveTextContent('The Annual International Grand Championship');
     });
   });
 
@@ -427,7 +394,7 @@ describe('CompetitionDetailModal', () => {
     it('should have X icon in close button', () => {
       render(<CompetitionDetailModal {...defaultProps} />);
 
-      const closeButton = screen.getByTestId('close-modal-button');
+      const closeButton = screen.getByTestId('competition-detail-modal-close-button');
       const icon = closeButton.querySelector('svg');
       expect(icon).toBeInTheDocument();
     });

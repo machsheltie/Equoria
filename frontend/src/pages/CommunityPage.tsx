@@ -16,6 +16,8 @@ import PageHero from '@/components/layout/PageHero';
 import { useThreads } from '@/hooks/api/useForum';
 import { useUnreadCount } from '@/hooks/api/useMessages';
 import { useClubs } from '@/hooks/api/useClubs';
+import { isBetaMode } from '@/config/betaRouteScope';
+import BetaExcludedNotice from '@/components/beta/BetaExcludedNotice';
 
 const MOCK_RECENT_ACTIVITY = [
   {
@@ -83,6 +85,18 @@ const CommunityPage: React.FC = () => {
   const { total: threadTotal } = useThreads();
   const { data: unreadData } = useUnreadCount();
   const { data: clubsData } = useClubs();
+
+  // In beta mode, this route is beta-hidden — render honest beta-excluded state.
+  if (isBetaMode) {
+    return (
+      <BetaExcludedNotice
+        fullPage
+        testId="community-beta-excluded"
+        redirectTo="/"
+        redirectLabel="Return to Home"
+      />
+    );
+  }
 
   const unreadCount = unreadData?.count ?? 0;
   const disciplineCount = clubsData?.clubs.filter((c) => c.type === 'discipline').length ?? 0;

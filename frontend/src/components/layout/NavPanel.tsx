@@ -3,19 +3,22 @@
  *
  * Frosted glass sidebar with gold icons + Cinzel labels.
  * Closes on item click, X button, or backdrop click.
+ *
+ * In beta mode, beta-hidden routes (e.g. /community) are omitted from the list.
  */
 
 import { Link, useLocation } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect } from 'react';
+import { isBetaMode, isBetaHidden } from '@/config/betaRouteScope';
 
 interface NavPanelProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const NAV_SECTIONS = [
+const ALL_NAV_SECTIONS = [
   { name: 'Home', href: '/', icon: '🏠' },
   { name: 'My Stable', href: '/stable', icon: '🐎' },
   { name: 'Training', href: '/training', icon: '🏋️' },
@@ -28,6 +31,11 @@ const NAV_SECTIONS = [
   { name: 'Bank', href: '/bank', icon: '🏦' },
   { name: 'Settings', href: '/settings', icon: '⚙️' },
 ];
+
+/** In beta mode, hide beta-hidden routes from the nav panel. */
+const NAV_SECTIONS = isBetaMode
+  ? ALL_NAV_SECTIONS.filter((item) => !isBetaHidden(item.href))
+  : ALL_NAV_SECTIONS;
 
 export function NavPanel({ isOpen, onClose }: NavPanelProps) {
   const location = useLocation();

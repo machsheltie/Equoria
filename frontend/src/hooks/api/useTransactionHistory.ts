@@ -2,7 +2,13 @@
  * useTransactionHistory Hook
  *
  * React Query hook for fetching paginated transaction history.
- * Currently a stub — backend endpoint `/api/v1/users/transactions` is not yet implemented.
+ *
+ * Backend endpoint `/api/v1/users/transactions` is not yet implemented.
+ * This hook returns a disabled query (no fake empty success) so consumers
+ * receive `data: undefined` and can render honest beta-excluded copy.
+ *
+ * Story 21R-2: Remove production frontend mocks from beta-facing code
+ * (Removed fake empty-array stub; hook is disabled until real endpoint exists)
  *
  * Story 2.3: Currency Management - AC-3
  */
@@ -33,7 +39,9 @@ export interface TransactionHistoryResponse {
 /**
  * Hook to fetch paginated transaction history for a user.
  *
- * Stub implementation — returns empty data until the backend endpoint is available.
+ * Returns a disabled query until the backend endpoint is available.
+ * Consumers should check `data === undefined` and render explicit
+ * beta-excluded copy rather than assuming empty means no transactions.
  *
  * @param userId - The user's ID (0 or undefined disables the query)
  * @param page - Page number (1-indexed)
@@ -41,17 +49,20 @@ export interface TransactionHistoryResponse {
  *
  * @example
  * const { data, isLoading } = useTransactionHistory(userId);
+ * if (data === undefined) {
+ *   // Show beta-excluded notice — not available in this beta
+ * }
  */
-export function useTransactionHistory(userId: number, page = 1, pageSize = 20) {
+export function useTransactionHistory(userId: number, page = 1, _pageSize = 20) {
   return useQuery<TransactionHistoryResponse>({
-    queryKey: ['transactions', userId, page, pageSize],
+    queryKey: ['transactions', userId, page],
+    // Backend endpoint is not yet implemented — query is permanently disabled.
+    // This queryFn would throw if the query were ever enabled, ensuring no
+    // fake empty data is returned to consumers.
     queryFn: async (): Promise<TransactionHistoryResponse> => {
-      // TODO: replace with real API call when backend implements /api/v1/users/transactions
-      // const response = await apiClient.get(`/api/v1/users/${userId}/transactions?page=${page}&pageSize=${pageSize}`);
-      // return response.data;
-      return { transactions: [], total: 0, page, pageSize };
+      throw new Error('Transaction history is not available in this beta.');
     },
-    enabled: !!userId && userId > 0,
+    enabled: false,
     staleTime: 2 * 60 * 1000,
   });
 }

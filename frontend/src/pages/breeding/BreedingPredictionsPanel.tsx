@@ -1,30 +1,19 @@
 /**
  * BreedingPredictionsPanel Component
  *
- * Main panel for displaying breeding predictions including trait inheritance,
- * ultra-rare trait potential, and breeding insights.
+ * Displays basic breeding pair information using real horse data from the API.
+ * Advanced trait inheritance predictions are not available in this beta —
+ * a beta-readonly notice is shown in place of fabricated prediction data.
  *
- * Story 6-5: Breeding Predictions (P1)
+ * Story 21R-2: Remove production frontend mocks from beta-facing code
+ * (Replaces mockApi with horsesApi.get; advanced predictions deferred to post-beta)
  */
 
-import React, { useMemo } from 'react';
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Sparkles, RefreshCw, AlertCircle } from 'lucide-react';
-import TraitPredictionCard from '@/components/breeding/TraitPredictionCard';
-import UltraRareTraitPanel from '@/components/breeding/UltraRareTraitPanel';
-import BreedingInsightsCard from '@/components/breeding/BreedingInsightsCard';
-import type {
-  Horse,
-  TraitPrediction,
-  UltraRareTraitPotential,
-  BreedingInsights,
-} from '@/types/breeding';
-import {
-  calculateTraitProbability,
-  getTraitSource,
-  calculateLineageQuality,
-  getPredictionConfidence,
-} from '@/types/breeding';
+import { Sparkles, AlertCircle } from 'lucide-react';
+import { horsesApi } from '@/lib/api-client';
+import BetaExcludedNotice from '@/components/beta/BetaExcludedNotice';
 
 export interface BreedingPredictionsPanelProps {
   sireId: number;
@@ -32,218 +21,43 @@ export interface BreedingPredictionsPanelProps {
 }
 
 /**
- * Mock API - Replace with actual API calls
- */
-const mockApi = {
-  getHorse: async (horseId: number): Promise<Horse> => {
-    // Mock data - replace with actual API call
-    return {
-      id: horseId,
-      name: horseId === 1 ? 'Thunder' : 'Lightning',
-      age: 5,
-      sex: horseId === 1 ? 'Male' : 'Female',
-      healthStatus: 'Healthy',
-      level: 10,
-      dateOfBirth: '2021-01-01',
-      stats: {
-        speed: 85,
-        stamina: 80,
-        agility: 90,
-        strength: 75,
-        intelligence: 88,
-        health: 95,
-      },
-      traits: ['peopleOriented', 'confident', 'athletic', 'resilient', 'explorative'],
-      canBreed: true,
-    };
-  },
-};
-
-/**
- * Generate client-side predictions
- */
-function generatePredictions(sire: Horse, dam: Horse) {
-  const sireTraits = Array.isArray(sire.traits)
-    ? sire.traits.map((t) => (typeof t === 'string' ? t : t.name))
-    : [];
-  const damTraits = Array.isArray(dam.traits)
-    ? dam.traits.map((t) => (typeof t === 'string' ? t : t.name))
-    : [];
-
-  // Combine all unique traits
-  const allTraits = Array.from(new Set([...sireTraits, ...damTraits]));
-
-  // Generate trait predictions
-  const traitPredictions: TraitPrediction[] = allTraits.map((traitName) => ({
-    traitId: traitName,
-    traitName,
-    probability: calculateTraitProbability(traitName, sireTraits, damTraits),
-    source: getTraitSource(traitName, sireTraits, damTraits),
-    isPositive: true, // Simplified - in reality would come from trait definitions
-    category: 'Behavioral',
-  }));
-
-  // Sort by probability (highest first)
-  traitPredictions.sort((a, b) => b.probability - a.probability);
-
-  // Generate ultra-rare trait potential (mock data)
-  const ultraRareTraits: UltraRareTraitPotential[] = [];
-
-  // Phoenix-Born potential (conditional on care pattern)
-  if (traitPredictions.some((t) => t.traitName === 'resilient')) {
-    ultraRareTraits.push({
-      traitId: 'phoenix-born',
-      traitName: 'Phoenix-Born',
-      tier: 'ultra-rare',
-      baseProbability: 45,
-      requirements: [
-        '3+ stress events during development',
-        '2+ successful recoveries',
-        'No skipped milestones',
-      ],
-      isAchievable: false,
-      groomInfluence: {
-        groomType: 'Mindful Handler',
-        bonusPercentage: 15,
-      },
-      description:
-        'Exceptional resilience trait that allows horse to perform under extreme pressure',
-    });
-  }
-
-  // Iron-Willed potential (achievable with perfect care)
-  if (traitPredictions.some((t) => t.traitName === 'confident')) {
-    ultraRareTraits.push({
-      traitId: 'iron-willed',
-      traitName: 'Iron-Willed',
-      tier: 'exotic',
-      baseProbability: 25,
-      requirements: [
-        'Perfect milestone completion (all 5 milestones)',
-        'No negative traits',
-        '80%+ lineage quality score',
-      ],
-      isAchievable: true,
-      description:
-        'Unshakeable determination that prevents performance drops from stress or fatigue',
-    });
-  }
-
-  // Generate breeding insights
-  const lineageQuality = calculateLineageQuality(sire, dam);
-  const confidence = getPredictionConfidence(sireTraits.length, damTraits.length);
-
-  const insights: BreedingInsights = {
-    strengths: [],
-    recommendations: [],
-    considerations: [],
-    warnings: [],
-    optimalCareStrategies: [],
-    lineageQualityScore: lineageQuality,
-  };
-
-  // Add strengths based on trait synergies
-  const athleticProbability = traitPredictions.find((t) => t.traitName === 'athletic')?.probability;
-  if (athleticProbability && athleticProbability >= 90) {
-    insights.strengths.push(
-      `Excellent athletic trait synergy (${athleticProbability}% chance of athletic foal)`
-    );
-  }
-
-  // Add recommendations
-  if (ultraRareTraits.some((t) => t.traitId === 'phoenix-born')) {
-    insights.recommendations.push(
-      'Assign Mindful Handler groom to increase Phoenix-Born trait potential'
-    );
-  }
-
-  if (ultraRareTraits.some((t) => t.traitId === 'iron-willed')) {
-    insights.recommendations.push(
-      'Maintain perfect milestone schedule to achieve Iron-Willed trait'
-    );
-  }
-
-  insights.recommendations.push('Focus on trust-building enrichment activities during first week');
-
-  // Add care strategies
-  insights.optimalCareStrategies.push('Complete all 5 enrichment activities daily');
-  insights.optimalCareStrategies.push(
-    'Maintain consistent groom interactions (once per day minimum)'
-  );
-  insights.optimalCareStrategies.push(
-    'Focus on socialization milestone for best trait development'
-  );
-
-  // Add considerations
-  const explorativeProbability = traitPredictions.find(
-    (t) => t.traitName === 'explorative'
-  )?.probability;
-  if (explorativeProbability && explorativeProbability >= 50) {
-    insights.considerations.push(
-      `${explorativeProbability}% chance of explorative trait (requires extra attention and enrichment)`
-    );
-  }
-
-  insights.considerations.push('Monitor stress levels daily for optimal trait development');
-
-  // Add warnings if lineage quality is low
-  if (lineageQuality < 50) {
-    insights.warnings = ['Below-average lineage quality may result in fewer positive traits'];
-  }
-
-  return {
-    traitPredictions,
-    ultraRareTraits,
-    insights,
-    confidence,
-  };
-}
-
-/**
  * BreedingPredictionsPanel Component
+ *
+ * Uses real horse data for the breeding pair header.
+ * Trait-level prediction details are beta-readonly pending backend support.
  */
 const BreedingPredictionsPanel: React.FC<BreedingPredictionsPanelProps> = ({ sireId, damId }) => {
-  // Fetch sire data
+  // Fetch sire using real API
   const {
     data: sire,
     isLoading: sireLoading,
     error: sireError,
-    refetch: refetchSire,
   } = useQuery({
     queryKey: ['horse', sireId],
-    queryFn: () => mockApi.getHorse(sireId),
+    queryFn: () => horsesApi.get(sireId),
     enabled: !!sireId,
   });
 
-  // Fetch dam data
+  // Fetch dam using real API
   const {
     data: dam,
     isLoading: damLoading,
     error: damError,
-    refetch: refetchDam,
   } = useQuery({
     queryKey: ['horse', damId],
-    queryFn: () => mockApi.getHorse(damId),
+    queryFn: () => horsesApi.get(damId),
     enabled: !!damId,
   });
-
-  // Generate predictions when both horses are loaded
-  const predictions = useMemo(() => {
-    if (!sire || !dam) return null;
-    return generatePredictions(sire, dam);
-  }, [sire, dam]);
 
   const isLoading = sireLoading || damLoading;
   const error = sireError || damError;
 
-  const handleRefresh = () => {
-    refetchSire();
-    refetchDam();
-  };
-
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div
+        className="flex items-center justify-center py-12"
+        data-testid="breeding-predictions-loading"
+      >
         <div className="h-8 w-8 border-4 border-[var(--gold-light)] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
@@ -251,11 +65,14 @@ const BreedingPredictionsPanel: React.FC<BreedingPredictionsPanelProps> = ({ sir
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-500/30 bg-[rgba(239,68,68,0.1)] p-6">
+      <div
+        className="rounded-lg border border-red-500/30 bg-[rgba(239,68,68,0.1)] p-6"
+        data-testid="breeding-predictions-error"
+      >
         <div className="flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-[rgb(220,235,255)]">Error loading predictions</p>
+            <p className="font-semibold text-[rgb(220,235,255)]">Error loading horse data</p>
             <p className="text-sm text-red-400 mt-1">
               {error instanceof Error ? error.message : 'An error occurred'}
             </p>
@@ -265,67 +82,30 @@ const BreedingPredictionsPanel: React.FC<BreedingPredictionsPanelProps> = ({ sir
     );
   }
 
-  if (!predictions || !sire || !dam) {
+  if (!sire || !dam) {
     return null;
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="space-y-6" data-testid="breeding-predictions-panel">
+      {/* Header — uses real horse names from API */}
       <div className="rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] p-6 shadow-sm">
-        <div className="flex items-start justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="h-6 w-6 text-blue-400" />
-              <h2 className="text-2xl font-bold text-[rgb(220,235,255)]">Breeding Predictions</h2>
-            </div>
-            <p className="text-[rgb(220,235,255)] font-medium">
+        <div className="flex items-start gap-3">
+          <Sparkles className="h-6 w-6 text-blue-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <h2 className="text-2xl font-bold text-[rgb(220,235,255)]">Breeding Predictions</h2>
+            <p className="text-[rgb(220,235,255)] font-medium mt-1">
               {sire.name} (Sire) × {dam.name} (Dam)
             </p>
-            <p className="text-sm text-[rgb(148,163,184)] mt-1">
-              Prediction Confidence:{' '}
-              {predictions.confidence.level.charAt(0).toUpperCase() +
-                predictions.confidence.level.slice(1)}{' '}
-              ({predictions.confidence.percentage}%)
-            </p>
           </div>
-
-          <button
-            onClick={handleRefresh}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-400 bg-[rgba(15,35,70,0.4)] border border-blue-500/30 rounded-lg hover:bg-[rgba(37,99,235,0.1)] transition-colors"
-            aria-label="Refresh predictions"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Refresh
-          </button>
         </div>
       </div>
 
-      {/* Trait Inheritance Predictions */}
-      <div className="rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] p-6 shadow-sm">
-        <h3 className="text-lg font-bold text-[rgb(220,235,255)] mb-4">
-          Trait Inheritance Predictions
-        </h3>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          {predictions.traitPredictions.map((prediction) => (
-            <TraitPredictionCard key={prediction.traitId} prediction={prediction} />
-          ))}
-        </div>
-      </div>
-
-      {/* Ultra-Rare Trait Potential */}
-      <div className="rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] p-6 shadow-sm">
-        <h3 className="text-lg font-bold text-[rgb(220,235,255)] mb-4">
-          Ultra-Rare Trait Potential
-        </h3>
-        <UltraRareTraitPanel traits={predictions.ultraRareTraits} />
-      </div>
-
-      {/* Breeding Insights */}
-      <div className="rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] p-6 shadow-sm">
-        <h3 className="text-lg font-bold text-[rgb(220,235,255)] mb-4">Breeding Insights</h3>
-        <BreedingInsightsCard insights={predictions.insights} />
-      </div>
+      {/* Trait predictions — beta-readonly (advanced API not available in this beta) */}
+      <BetaExcludedNotice
+        testId="breeding-predictions-beta-notice"
+        message="Advanced trait inheritance predictions, ultra-rare trait potential, and breeding insights are not available in this beta."
+      />
     </div>
   );
 };

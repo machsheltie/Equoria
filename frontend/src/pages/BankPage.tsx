@@ -191,7 +191,7 @@ const BankPage: React.FC = () => {
                   No recent transactions this session.
                 </p>
                 <p className="text-xs text-[var(--text-muted)] mt-1 opacity-60">
-                  Full transaction history coming soon.
+                  Full transaction history is not available in this beta.
                 </p>
               </div>
             )}

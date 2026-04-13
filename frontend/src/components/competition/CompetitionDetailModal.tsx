@@ -7,19 +7,20 @@
  * - Prize pool with breakdown (1st: 50%, 2nd: 30%, 3rd: 20%)
  * - Entry fee display
  * - Entry requirements list
- * - Horse selector placeholder (Task 5)
- * - Entry action button with loading/error states
+ * - Beta-readonly notice for competition entry (entry is excluded from beta)
  *
  * Features:
  * - Uses BaseModal for portal, focus trap, scroll lock, escape key, backdrop click
  * - Responsive design (mobile/tablet/desktop)
  * - WCAG 2.1 AA compliance
  *
+ * Story 21R-2: Remove production frontend mocks from beta-facing code
+ * (Replaced horse-selector-placeholder with honest beta-excluded entry notice)
  * Story 5-1: Competition Entry System - Task 4
  */
 
-import React, { memo, useCallback } from 'react';
-import { Calendar, DollarSign, Trophy, Users, AlertCircle, Loader2 } from 'lucide-react';
+import React, { memo } from 'react';
+import { Calendar, DollarSign, Trophy, Users, AlertCircle } from 'lucide-react';
 import BaseModal from '@/components/common/BaseModal';
 
 /**
@@ -49,9 +50,7 @@ export interface CompetitionDetailModalProps {
   onClose: () => void;
   /** Competition data to display (null hides modal) */
   competition: Competition | null;
-  /** Callback when entry button is clicked */
-  onEnter?: (competitionId: number) => void;
-  /** Loading state during submission */
+  /** Loading state (kept for interface compatibility; entry is beta-excluded) */
   isSubmitting?: boolean;
   /** Error message to display */
   error?: string;
@@ -97,24 +96,16 @@ const calculatePrizeDistribution = (
 /**
  * CompetitionDetailModal Component
  *
- * Displays detailed competition information with entry functionality.
+ * Displays detailed competition information with beta-readonly entry notice.
  * Delegates portal, focus trap, scroll lock, and keyboard handling to BaseModal.
  */
 const CompetitionDetailModal = memo(function CompetitionDetailModal({
   isOpen,
   onClose,
   competition,
-  onEnter,
   isSubmitting = false,
   error,
 }: CompetitionDetailModalProps) {
-  // Handle entry button click
-  const handleEnterClick = useCallback(() => {
-    if (competition && onEnter) {
-      onEnter(competition.id);
-    }
-  }, [competition, onEnter]);
-
   // Don't render if no competition
   if (!competition && isOpen) {
     return null;
@@ -125,38 +116,14 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
     competition?.entryRequirements && competition.entryRequirements.length > 0;
 
   const footerContent = (
-    <>
-      <button
-        type="button"
-        onClick={onClose}
-        disabled={isSubmitting}
-        className="px-4 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-      >
-        Cancel
-      </button>
-      <button
-        type="button"
-        onClick={handleEnterClick}
-        disabled
-        className="px-6 py-2 bg-blue-600 text-[var(--text-primary)] rounded-lg hover:bg-[var(--gold-dim)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-        aria-busy={isSubmitting}
-        data-testid="enter-button"
-        data-onboarding-target="competition-enter-button"
-      >
-        {isSubmitting ? (
-          <>
-            <Loader2
-              className="animate-spin -ml-1 mr-2 h-4 w-4"
-              data-testid="loading-spinner"
-              aria-hidden="true"
-            />
-            <span>Entering...</span>
-          </>
-        ) : (
-          'Enter Competition'
-        )}
-      </button>
-    </>
+    <button
+      type="button"
+      onClick={onClose}
+      disabled={isSubmitting}
+      className="px-4 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      Close
+    </button>
   );
 
   return (
@@ -323,15 +290,18 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
             </div>
           )}
 
-          {/* Horse Selector Placeholder */}
+          {/* Competition entry — beta-readonly */}
           <div
-            className="border-2 border-dashed border-[rgba(37,99,235,0.3)] rounded-lg p-6 text-center"
-            data-testid="horse-selector-placeholder"
+            className="rounded-lg border border-[var(--glass-border)] bg-[rgba(10,14,26,0.6)] p-6 text-center"
+            data-testid="competition-entry-beta-notice"
           >
-            <Users className="h-8 w-8 text-[rgb(148,163,184)] mx-auto mb-2" aria-hidden="true" />
-            <p className="text-[rgb(148,163,184)] font-medium">Select a Horse</p>
-            <p className="text-sm text-[rgb(148,163,184)] mt-1">
-              Horse selector will be implemented in Task 5
+            <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[rgba(200,168,78,0.1)] mb-3">
+              <span className="text-xl" aria-hidden="true">
+                🔒
+              </span>
+            </div>
+            <p className="text-[rgb(220,235,255)] font-medium text-sm">
+              Competition entry is not available in this beta.
             </p>
           </div>
 

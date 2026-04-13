@@ -16,6 +16,8 @@ import { Wrench, Lock, CheckCircle, Package, AlertCircle, Loader2 } from 'lucide
 import PageHero from '@/components/layout/PageHero';
 import { useCraftingMaterials, useCraftingRecipes, useCraftItem } from '@/hooks/api/useCrafting';
 import type { CraftingRecipe, CraftingMaterials } from '@/lib/api-client';
+import { isBetaMode } from '@/config/betaRouteScope';
+import BetaExcludedNotice from '@/components/beta/BetaExcludedNotice';
 
 // ── Tier labels ───────────────────────────────────────────────────────────────
 const TIER_LABELS: Record<number, string> = {
@@ -187,6 +189,18 @@ const CraftingPage: React.FC = () => {
   const { data: materialsData, isLoading: matLoading, error: matError } = useCraftingMaterials();
   const { data: recipesData, isLoading: recLoading, error: recError } = useCraftingRecipes();
   const craftMutation = useCraftItem();
+
+  // In beta mode, this route is beta-hidden — render honest beta-excluded state.
+  if (isBetaMode) {
+    return (
+      <BetaExcludedNotice
+        fullPage
+        testId="crafting-beta-excluded"
+        redirectTo="/world"
+        redirectLabel="Return to World Hub"
+      />
+    );
+  }
 
   const isLoading = matLoading || recLoading;
   const hasError = matError || recError;

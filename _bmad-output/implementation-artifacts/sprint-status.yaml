@@ -1,5 +1,5 @@
 # generated: 2026-03-25
-# last_updated: 2026-04-10 22-7 done, 22-1 through 22-7 TEA+code review complete, 22-5 button decisions resolved
+# last_updated: 2026-04-13 21R-2 implementation complete — review
 # project: Equoria
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,13 +35,35 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-25
-last_updated: 2026-04-09 epic-31e done, epic-31f done, epic-31e retrospective done, story artifacts reconstructed, 21-2 done
+last_updated: 2026-04-13 21R-2 implementation complete — review
 project: Equoria
 project_key: NOKEY
 tracking_system: file-system
 story_location: '{project-root}/_bmad-output/implementation-artifacts'
 
 development_status:
+  # ============================================================
+  # Beta Deployment Readiness Gate
+  # Source: docs/sprint-change-proposal-2026-04-11.md
+  # Status: BLOCKED until Epic 21R acceptance criteria pass
+  # ============================================================
+
+  beta-deployment-readiness: blocked
+
+  # ============================================================
+  # Epic 21R: Beta Deployment Readiness Remediation
+  # Source: docs/sprint-change-proposal-2026-04-11.md and docs/epics.md
+  # ============================================================
+
+  epic-21r: in-progress
+  21r-1-define-beta-scope-and-navigation-truth-table: done
+  21r-2-remove-production-frontend-mocks-from-beta-facing-code: review
+  21r-3-remove-e2e-skips-and-test-only-bypasses-from-beta-critical-flows: backlog
+  21r-4-remove-or-harden-runtime-test-cleanup-routes: backlog
+  21r-5-reclassify-and-strengthen-integration-tests: backlog
+  21r-6-add-beta-deployment-readiness-gate: backlog
+  epic-21r-retrospective: optional
+
   # ============================================================
   # Epic 21: Test Architecture Quality Sprint
   # Source: docs/epic-21-test-quality-sprint.md
@@ -56,7 +78,7 @@ development_status:
   # --- P0 stories (BLOCK/MITIGATE — required before production deploy) ---
   21-1-establish-module-test-convention: done
   21-2-fix-redis-circuit-breaker-flaky-tests: done
-  21-3-community-trainers-riders-api-tests: backlog
+  21-3-community-trainers-riders-api-tests: in-progress
   # --- P1 stories (HIGH risk — complete before Epic 22 resumes) ---
   21-4-fix-e2e-breeding-spec-quality: backlog
   21-5-react-query-hook-tests: backlog

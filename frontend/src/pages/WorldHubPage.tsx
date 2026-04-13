@@ -3,12 +3,15 @@
  *
  * 10 location cards for the game world with atmospheric header.
  * This is the map screen — exploring the world should feel expansive.
+ *
+ * In beta mode, beta-hidden locations (e.g. /crafting) are omitted from the grid.
  */
 
 import React from 'react';
 import { Globe } from 'lucide-react';
 import LocationCard, { type LocationCardProps } from '@/components/LocationCard';
 import PageHero from '@/components/layout/PageHero';
+import { isBetaMode, isBetaHidden } from '@/config/betaRouteScope';
 
 const worldLocations: LocationCardProps[] = [
   {
@@ -114,6 +117,11 @@ const worldLocations: LocationCardProps[] = [
   },
 ];
 
+/** In beta mode, filter out beta-hidden locations. */
+const visibleLocations = isBetaMode
+  ? worldLocations.filter((loc) => !isBetaHidden(loc.href))
+  : worldLocations;
+
 const WorldHubPage: React.FC = () => (
   <div className="min-h-screen" data-testid="world-hub-page">
     <PageHero
@@ -130,7 +138,7 @@ const WorldHubPage: React.FC = () => (
         aria-label="World locations"
         data-onboarding-target="world-hub-explore"
       >
-        {worldLocations.map((location) => (
+        {visibleLocations.map((location) => (
           <LocationCard key={location.id} {...location} />
         ))}
       </section>

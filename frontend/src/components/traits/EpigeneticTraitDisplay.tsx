@@ -1,222 +1,51 @@
 /**
  * EpigeneticTraitDisplay Component
  *
- * Main integration component for displaying all traits for a horse.
- * Groups traits by tier, shows discovery status, and integrates all
- * trait-related subcomponents with React Query for data management.
+ * Displays epigenetic traits for a horse using real API data from
+ * the horse genetics hooks.
  *
- * Story 6-6: Epigenetic Trait System
+ * Advanced features (trait history timeline, ultra-rare trait discovery tracking,
+ * competition impact details) that require endpoints not yet available in
+ * this beta are shown as beta-readonly notices.
+ *
+ * Story 21R-2: Remove production frontend mocks from beta-facing code
+ * (Replaces mockApi with useHorseEpigeneticInsights; discovery tracking deferred)
  */
 
-import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import React from 'react';
 import { Sparkles, AlertCircle } from 'lucide-react';
-import TraitCard from './TraitCard';
-import TraitDetailModal from './TraitDetailModal';
-import HiddenTraitIndicator from './HiddenTraitIndicator';
-import type {
-  EpigeneticTrait,
-  TraitDiscoveryStatus,
-  TraitHistory,
-  TraitTier,
-} from '@/types/traits';
-import { groupTraitsByTier, getTierDisplayName } from '@/types/traits';
+import { useHorseEpigeneticInsights } from '@/hooks/useHorseGenetics';
+import BetaExcludedNotice from '@/components/beta/BetaExcludedNotice';
 
 export interface EpigeneticTraitDisplayProps {
   horseId: number;
 }
 
 /**
- * Mock API - Replace with actual API calls
+ * Rarity badge color helper
  */
-const mockApi = {
-  getTraits: async (_horseId: number): Promise<EpigeneticTrait[]> => {
-    // Mock trait data
-    return [
-      {
-        id: 'athletic-prowess',
-        name: 'Athletic Prowess',
-        tier: 'ultra-rare',
-        category: 'Physical',
-        description:
-          'Exceptional natural athleticism that enhances performance across multiple disciplines',
-        discoveryStatus: 'discovered',
-        epigeneticFlags: ['genetic-only', 'milestone-triggered'],
-        competitionImpact: {
-          dressage: 3,
-          show_jumping: 5,
-          cross_country: 4,
-          endurance: 3,
-          racing: 4,
-          western: 2,
-        },
-        discoveredAt: new Date('2026-01-15'),
-        discoverySource: 'milestone_confidence_reactivity',
-        isPositive: true,
-      },
-      {
-        id: 'calm-temperament',
-        name: 'Calm Temperament',
-        tier: 'common',
-        category: 'Behavioral',
-        description:
-          'Even-tempered disposition that remains composed under pressure and unfamiliar situations',
-        discoveryStatus: 'discovered',
-        epigeneticFlags: ['care-influenced', 'genetic-only'],
-        competitionImpact: {
-          dressage: 2,
-          show_jumping: 1,
-          cross_country: 1,
-          endurance: 2,
-          racing: 0,
-          western: 2,
-        },
-        discoveredAt: new Date('2026-01-10'),
-        discoverySource: 'enrichment_trust',
-        isPositive: true,
-      },
-      {
-        id: 'resilient-spirit',
-        name: 'Resilient Spirit',
-        tier: 'rare',
-        category: 'Mental',
-        description: 'Remarkable ability to bounce back from setbacks and perform under stress',
-        discoveryStatus: 'discovered',
-        epigeneticFlags: ['stress-induced', 'milestone-triggered'],
-        competitionImpact: {
-          dressage: 1,
-          show_jumping: 3,
-          cross_country: 4,
-          endurance: 4,
-          racing: 2,
-          western: 2,
-        },
-        discoveredAt: new Date('2026-01-20'),
-        discoverySource: 'stress_recovery',
-        isPositive: true,
-      },
-      {
-        id: 'phoenix-born',
-        name: 'Phoenix-Born',
-        tier: 'exotic',
-        category: 'Mental',
-        description:
-          'Legendary trait allowing exceptional performance under extreme pressure. Horse seems to thrive in high-stakes situations.',
-        discoveryStatus: 'partially_discovered',
-        epigeneticFlags: ['stress-induced', 'care-influenced', 'milestone-triggered'],
-        competitionImpact: {
-          dressage: 7,
-          show_jumping: 8,
-          cross_country: 9,
-          endurance: 7,
-          racing: 8,
-          western: 6,
-          synergyBonuses: [
-            {
-              requiredTraitIds: ['resilient-spirit', 'athletic-prowess'],
-              bonusDisciplines: ['show_jumping', 'cross_country'],
-              bonusAmount: 3,
-              description:
-                'Perfect Storm: Combines resilience and athleticism for unstoppable performance',
-            },
-          ],
-        },
-        isPositive: true,
-      },
-    ];
-  },
-
-  getDiscoveryStatus: async (horseId: number): Promise<TraitDiscoveryStatus> => {
-    return {
-      horseId,
-      totalTraits: 10,
-      discoveredTraits: 3,
-      partiallyDiscoveredTraits: 1,
-      hiddenTraits: 6,
-      nextDiscoveryHint: 'Complete the Trust Handling milestone to unlock a new behavioral trait',
-      discoveryProgress: 35,
-    };
-  },
-
-  getTraitHistory: async (horseId: number, traitId: string): Promise<TraitHistory> => {
-    return {
-      horseId,
-      events: [
-        {
-          id: '1',
-          traitId: traitId,
-          traitName: 'Athletic Prowess',
-          tier: 'ultra-rare',
-          timestamp: new Date('2026-01-15T10:30:00'),
-          eventType: 'discovery',
-          trigger: 'Milestone: Confidence & Reactivity',
-          description:
-            'Trait discovered during confidence milestone evaluation with exceptional performance',
-        },
-        {
-          id: '2',
-          traitId: traitId,
-          traitName: 'Athletic Prowess',
-          tier: 'ultra-rare',
-          timestamp: new Date('2026-01-16T14:20:00'),
-          eventType: 'activation',
-          trigger: 'First Competition Participation',
-          description:
-            'Trait activated and provided significant performance boost in debut competition',
-        },
-      ],
-    };
-  },
-};
+function rarityColor(rarity: string): string {
+  switch (rarity) {
+    case 'legendary':
+      return 'text-amber-400';
+    case 'rare':
+      return 'text-violet-400';
+    default:
+      return 'text-[rgb(148,163,184)]';
+  }
+}
 
 /**
  * EpigeneticTraitDisplay Component
  */
 const EpigeneticTraitDisplay: React.FC<EpigeneticTraitDisplayProps> = ({ horseId }) => {
-  const [selectedTrait, setSelectedTrait] = useState<EpigeneticTrait | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-
-  // Fetch traits
-  const {
-    data: traits,
-    isLoading: traitsLoading,
-    error: traitsError,
-  } = useQuery({
-    queryKey: ['horseTraits', horseId],
-    queryFn: () => mockApi.getTraits(horseId),
-    staleTime: 60000, // 1 minute
-  });
-
-  // Fetch discovery status
-  const { data: discoveryStatus, isLoading: discoveryLoading } = useQuery({
-    queryKey: ['traitDiscoveryStatus', horseId],
-    queryFn: () => mockApi.getDiscoveryStatus(horseId),
-    staleTime: 60000, // 1 minute
-  });
-
-  // Fetch trait history for selected trait
-  const { data: traitHistory } = useQuery({
-    queryKey: ['traitHistory', horseId, selectedTrait?.id],
-    queryFn: () => mockApi.getTraitHistory(horseId, selectedTrait!.id),
-    enabled: modalOpen && !!selectedTrait,
-    staleTime: 300000, // 5 minutes
-  });
-
-  const handleTraitClick = (trait: EpigeneticTrait) => {
-    setSelectedTrait(trait);
-    setModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setModalOpen(false);
-    // Delay clearing selected trait to allow modal animation to complete
-    setTimeout(() => setSelectedTrait(null), 300);
-  };
+  // Use real epigenetic insights hook
+  const { data: insightsData, isLoading, error } = useHorseEpigeneticInsights(horseId);
 
   // Loading state
-  if (traitsLoading || discoveryLoading) {
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
+      <div className="flex items-center justify-center py-12" data-testid="epigenetic-loading">
         <div className="text-center">
           <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-500 border-r-transparent" />
           <p className="mt-3 text-sm text-[rgb(148,163,184)]">Loading traits...</p>
@@ -226,15 +55,18 @@ const EpigeneticTraitDisplay: React.FC<EpigeneticTraitDisplayProps> = ({ horseId
   }
 
   // Error state
-  if (traitsError) {
+  if (error) {
     return (
-      <div className="rounded-lg border border-red-500/30 bg-[rgba(239,68,68,0.1)] p-6">
+      <div
+        className="rounded-lg border border-red-500/30 bg-[rgba(239,68,68,0.1)] p-6"
+        data-testid="epigenetic-error"
+      >
         <div className="flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
           <div>
             <p className="font-semibold text-red-300">Error loading traits</p>
             <p className="text-sm text-red-400 mt-1">
-              {traitsError instanceof Error ? traitsError.message : 'An error occurred'}
+              {error instanceof Error ? error.message : 'An error occurred'}
             </p>
           </div>
         </div>
@@ -242,16 +74,10 @@ const EpigeneticTraitDisplay: React.FC<EpigeneticTraitDisplayProps> = ({ horseId
     );
   }
 
-  if (!traits || !discoveryStatus) {
-    return null;
-  }
-
-  // Group traits by tier
-  const groupedTraits = groupTraitsByTier(traits);
-  const tierOrder: TraitTier[] = ['exotic', 'ultra-rare', 'rare', 'uncommon', 'common'];
+  const traits = insightsData?.traits ?? [];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-testid="epigenetic-trait-display">
       {/* Header */}
       <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] p-6">
         <div className="flex items-center gap-3">
@@ -259,55 +85,48 @@ const EpigeneticTraitDisplay: React.FC<EpigeneticTraitDisplayProps> = ({ horseId
           <div className="flex-1">
             <h2 className="text-2xl font-bold text-[rgb(220,235,255)]">Epigenetic Traits</h2>
             <p className="text-sm text-[rgb(148,163,184)] mt-1">
-              {discoveryStatus.discoveredTraits} of {discoveryStatus.totalTraits} traits discovered
-              ({discoveryStatus.discoveryProgress}%)
+              {traits.length} trait{traits.length !== 1 ? 's' : ''} on record
             </p>
           </div>
         </div>
       </div>
 
-      {/* Discovered Traits by Tier */}
-      {tierOrder.map((tier) => {
-        const tierTraits = groupedTraits.get(tier);
-        if (!tierTraits || tierTraits.length === 0) return null;
-
-        return (
-          <div key={tier} className="space-y-3">
-            <h3 className="text-lg font-bold text-[rgb(220,235,255)]">
-              {getTierDisplayName(tier)} Traits
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {tierTraits.map((trait) => (
-                <TraitCard
-                  key={trait.id}
-                  trait={trait}
-                  onClick={handleTraitClick}
-                  showCompetitionImpact={true}
-                />
-              ))}
+      {/* Traits list from real API */}
+      {traits.length > 0 ? (
+        <div
+          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+          data-testid="epigenetic-traits-list"
+        >
+          {traits.map((trait) => (
+            <div
+              key={trait.name}
+              className="rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] p-4"
+              data-testid="epigenetic-trait-card"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <p className="font-semibold text-[rgb(220,235,255)]">{trait.name}</p>
+                <span className={`text-xs font-medium capitalize ${rarityColor(trait.rarity)}`}>
+                  {trait.rarity}
+                </span>
+              </div>
+              {trait.description && (
+                <p className="text-xs text-[rgb(148,163,184)] mt-1">{trait.description}</p>
+              )}
+              <p className="text-xs text-[rgb(148,163,184)] mt-2 capitalize">Type: {trait.type}</p>
             </div>
-          </div>
-        );
-      })}
-
-      {/* Hidden Traits Indicator */}
-      {discoveryStatus.hiddenTraits > 0 && (
-        <HiddenTraitIndicator
-          discoveryStatus={discoveryStatus}
-          showProgress={true}
-          showHint={true}
-        />
+          ))}
+        </div>
+      ) : (
+        <div className="text-center py-8" data-testid="epigenetic-traits-empty">
+          <p className="text-[rgb(148,163,184)] text-sm">No traits discovered yet.</p>
+        </div>
       )}
 
-      {/* Trait Detail Modal */}
-      {selectedTrait && (
-        <TraitDetailModal
-          isOpen={modalOpen}
-          onClose={handleCloseModal}
-          trait={selectedTrait}
-          traitHistory={traitHistory}
-        />
-      )}
+      {/* Advanced trait features — beta-readonly */}
+      <BetaExcludedNotice
+        testId="epigenetic-trait-beta-notice"
+        message="Detailed trait discovery history, competition impact analysis, and trait interaction details are not available in this beta."
+      />
     </div>
   );
 };

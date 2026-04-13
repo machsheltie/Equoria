@@ -13,6 +13,8 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, Trophy, Heart, Award, Flame, ChevronRight } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
+import { isBetaMode } from '@/config/betaRouteScope';
+import BetaExcludedNotice from '@/components/beta/BetaExcludedNotice';
 
 type StableTab = 'profile' | 'legacy';
 
@@ -242,6 +244,18 @@ const HallOfFameCard: React.FC<{ entry: HallOfFameEntry; rank: number }> = ({ en
 
 const MyStablePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<StableTab>('profile');
+
+  // In beta mode, this route is beta-hidden — render honest beta-excluded state.
+  if (isBetaMode) {
+    return (
+      <BetaExcludedNotice
+        fullPage
+        testId="my-stable-beta-excluded"
+        redirectTo="/"
+        redirectLabel="Return to Home"
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen">
