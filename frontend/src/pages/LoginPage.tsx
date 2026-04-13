@@ -12,6 +12,7 @@ import { loginSchema, type LoginFormData } from '../lib/validation-schemas';
 import { useLogin } from '../hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { usePageBackground, PageBackground } from '@/components/layout/PageBackground';
+import { isBetaMode } from '@/config/betaRouteScope';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -149,15 +150,17 @@ const LoginPage: React.FC = () => {
               )}
             </div>
 
-            {/* Forgot password */}
-            <div className="text-right">
-              <Link
-                to="/forgot-password"
-                className="text-xs text-[rgb(148,163,184)] hover:text-white transition-colors"
-              >
-                Forgot Your Password?
-              </Link>
-            </div>
+            {/* Forgot password — hidden in beta mode (/forgot-password is beta-hidden) */}
+            {!isBetaMode && (
+              <div className="text-right">
+                <Link
+                  to="/forgot-password"
+                  className="text-xs text-[rgb(148,163,184)] hover:text-white transition-colors"
+                >
+                  Forgot Your Password?
+                </Link>
+              </div>
+            )}
 
             {/* Login CTA */}
             <Button type="submit" disabled={isPending} size="default" className="w-full">

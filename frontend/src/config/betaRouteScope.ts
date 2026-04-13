@@ -10,6 +10,8 @@
  * Story 21R-2: Remove production frontend mocks from beta-facing code
  */
 
+import { matchPath } from 'react-router-dom';
+
 /** Beta mode switch — reads from VITE_BETA_MODE env var; defaults to false */
 export const isBetaMode = import.meta.env.VITE_BETA_MODE === 'true';
 
@@ -75,12 +77,29 @@ export const BETA_SCOPE: Record<string, BetaScope> = {
 
 /**
  * Returns the beta scope for a given route path.
- * Strips trailing slashes and normalizes before lookup.
+ *
+ * Tries exact lookup first (fast path), then falls back to React Router
+ * `matchPath` pattern matching to handle parameterized routes like
+ * `/horses/:id` and `/message-board/:threadId`.
+ *
  * Returns 'beta-readonly' as a safe default for unknown routes.
  */
 export function getBetaScope(path: string): BetaScope {
   const normalized = path === '/' ? '/' : path.replace(/\/$/, '');
-  return BETA_SCOPE[normalized] ?? 'beta-readonly';
+
+  // 1. Fast path: exact string match
+  if (Object.prototype.hasOwnProperty.call(BETA_SCOPE, normalized)) {
+    return BETA_SCOPE[normalized];
+  }
+
+  // 2. Pattern match: iterate over keys that contain ':' (parameterized patterns)
+  for (const [pattern, scope] of Object.entries(BETA_SCOPE)) {
+    if (pattern.includes(':') && matchPath(pattern, normalized)) {
+      return scope;
+    }
+  }
+
+  return 'beta-readonly';
 }
 
 /**

@@ -27,6 +27,7 @@ import {
   useTrainingStatus,
 } from '@/hooks/api/useTraining';
 import type { TrainableHorse, TrainingResult } from '@/lib/api-client';
+import { isBetaMode } from '@/config/betaRouteScope';
 import DisciplineSelector from './DisciplineSelector';
 import HorseStatsCard from './HorseStatsCard';
 import TrainingResultsDisplay from './TrainingResultsDisplay';
@@ -203,9 +204,9 @@ const TrainingSessionModal = ({ horse, onClose, onCompleted }: TrainingSessionMo
   /**
    * Handler for "Learn More" button click.
    * Opens trait documentation or information modal (future implementation).
+   * Not exposed in beta mode — action has no implementation yet.
    */
   const handleLearnMore = () => {
-    console.log('Learn more about traits clicked');
     // Future: Open trait documentation or modal
   };
 
@@ -288,20 +289,23 @@ const TrainingSessionModal = ({ horse, onClose, onCompleted }: TrainingSessionMo
             <div className="mt-4" data-testid="trait-modifiers-section">
               <div className="flex items-center gap-2 mb-3">
                 <h3 className="text-sm font-semibold text-[rgb(220,235,255)]">Trait Modifiers</h3>
-                <button
-                  onClick={handleLearnMore}
-                  className="text-[var(--gold-400)] hover:text-[var(--gold-300)]"
-                  aria-label="Learn more about traits"
-                  type="button"
-                >
-                  <HelpCircle className="w-4 h-4" data-testid="help-circle-icon" />
-                </button>
+                {/* Help button hidden in beta mode — handleLearnMore has no implementation yet */}
+                {!isBetaMode && (
+                  <button
+                    onClick={handleLearnMore}
+                    className="text-[var(--gold-400)] hover:text-[var(--gold-300)]"
+                    aria-label="Learn more about traits"
+                    type="button"
+                  >
+                    <HelpCircle className="w-4 h-4" data-testid="help-circle-icon" />
+                  </button>
+                )}
               </div>
               <TraitModifierList
                 modifiers={traitModifiers}
                 baseGain={BASE_GAIN}
                 showNetEffect={true}
-                onLearnMore={handleLearnMore}
+                onLearnMore={isBetaMode ? undefined : handleLearnMore}
               />
             </div>
 

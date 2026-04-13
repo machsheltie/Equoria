@@ -13,6 +13,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import EnrichmentActivityPanel from '../EnrichmentActivityPanel';
 import type { Foal } from '@/types/foal';
 
+// Beta-excluded notice is conditional on isBetaMode — set true for tests.
+vi.mock('@/config/betaRouteScope', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/config/betaRouteScope')>();
+  return { ...actual, isBetaMode: true };
+});
+
 // Mock the real API boundary
 vi.mock('@/lib/api-client', () => ({
   breedingApi: {

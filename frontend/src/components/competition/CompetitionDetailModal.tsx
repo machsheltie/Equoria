@@ -22,6 +22,7 @@
 import React, { memo } from 'react';
 import { Calendar, DollarSign, Trophy, Users, AlertCircle } from 'lucide-react';
 import BaseModal from '@/components/common/BaseModal';
+import { isBetaMode } from '@/config/betaRouteScope';
 
 /**
  * Competition data structure for the modal
@@ -290,20 +291,22 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
             </div>
           )}
 
-          {/* Competition entry — beta-readonly */}
-          <div
-            className="rounded-lg border border-[var(--glass-border)] bg-[rgba(10,14,26,0.6)] p-6 text-center"
-            data-testid="competition-entry-beta-notice"
-          >
-            <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[rgba(200,168,78,0.1)] mb-3">
-              <span className="text-xl" aria-hidden="true">
-                🔒
-              </span>
+          {/* Competition entry — beta-readonly: notice only shown in beta mode */}
+          {isBetaMode && (
+            <div
+              className="rounded-lg border border-[var(--glass-border)] bg-[rgba(10,14,26,0.6)] p-6 text-center"
+              data-testid="competition-entry-beta-notice"
+            >
+              <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[rgba(200,168,78,0.1)] mb-3">
+                <span className="text-xl" aria-hidden="true">
+                  🔒
+                </span>
+              </div>
+              <p className="text-[rgb(220,235,255)] font-medium text-sm">
+                Competition entry is not available in this beta.
+              </p>
             </div>
-            <p className="text-[rgb(220,235,255)] font-medium text-sm">
-              Competition entry is not available in this beta.
-            </p>
-          </div>
+          )}
 
           {/* Error Message */}
           {error && (

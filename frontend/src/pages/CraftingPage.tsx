@@ -184,23 +184,13 @@ function RecipeCard({
   );
 }
 
-// ── Main Page ─────────────────────────────────────────────────────────────────
-const CraftingPage: React.FC = () => {
+// ── CraftingPageContent — rendered only when isBetaMode is false ──────────────
+// Hooks must not be called before the beta guard (would fire API calls to
+// beta-hidden crafting endpoints). Outer CraftingPage wrapper gate is authoritative.
+const CraftingPageContent: React.FC = () => {
   const { data: materialsData, isLoading: matLoading, error: matError } = useCraftingMaterials();
   const { data: recipesData, isLoading: recLoading, error: recError } = useCraftingRecipes();
   const craftMutation = useCraftItem();
-
-  // In beta mode, this route is beta-hidden — render honest beta-excluded state.
-  if (isBetaMode) {
-    return (
-      <BetaExcludedNotice
-        fullPage
-        testId="crafting-beta-excluded"
-        redirectTo="/world"
-        redirectLabel="Return to World Hub"
-      />
-    );
-  }
 
   const isLoading = matLoading || recLoading;
   const hasError = matError || recError;
@@ -315,6 +305,22 @@ const CraftingPage: React.FC = () => {
       </div>
     </div>
   );
+};
+
+// ── CraftingPage — beta gate wrapper ──────────────────────────────────────────
+// Beta guard runs before hooks to prevent API calls to beta-hidden endpoints.
+const CraftingPage: React.FC = () => {
+  if (isBetaMode) {
+    return (
+      <BetaExcludedNotice
+        fullPage
+        testId="crafting-beta-excluded"
+        redirectTo="/world"
+        redirectLabel="Return to World Hub"
+      />
+    );
+  }
+  return <CraftingPageContent />;
 };
 
 export default CraftingPage;

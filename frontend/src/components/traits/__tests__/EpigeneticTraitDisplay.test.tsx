@@ -11,6 +11,12 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
+// Beta-excluded notice is conditional on isBetaMode — set true for tests.
+vi.mock('@/config/betaRouteScope', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/config/betaRouteScope')>();
+  return { ...actual, isBetaMode: true };
+});
+
 // Mock the real genetics hook at the boundary
 vi.mock('@/hooks/useHorseGenetics', () => ({
   useHorseEpigeneticInsights: vi.fn(() => ({

@@ -9,6 +9,12 @@ import { render, screen } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { BrowserRouter } from '@/test/utils';
 
+// Mock betaRouteScope — default to non-beta (override per-test as needed)
+vi.mock('@/config/betaRouteScope', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/config/betaRouteScope')>();
+  return { ...actual, isBetaMode: false };
+});
+
 // Mock the hook
 vi.mock('@/hooks/api/useNextActions', () => ({
   useNextActions: vi.fn(),
@@ -122,7 +128,7 @@ describe('NextActionsBar', () => {
     );
     // The priority 1 action should have a gold border class
     const trainLink = screen.getByLabelText('Thunder is ready to train!');
-    expect(trainLink.className).toContain('border-[var(--gold-500)]');
+    expect(trainLink.className).toContain('border-[var(--gold-primary)]');
   });
 
   it('renders correct href links for each action type', () => {

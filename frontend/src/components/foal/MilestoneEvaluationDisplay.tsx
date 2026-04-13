@@ -14,6 +14,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Award, AlertCircle } from 'lucide-react';
 import { breedingApi } from '@/lib/api-client';
 import BetaExcludedNotice from '@/components/beta/BetaExcludedNotice';
+import { isBetaMode } from '@/config/betaRouteScope';
 import type { MilestoneType } from '@/types/foal';
 
 export interface MilestoneEvaluationDisplayProps {
@@ -130,11 +131,13 @@ const MilestoneEvaluationDisplay: React.FC<MilestoneEvaluationDisplayProps> = ({
         </div>
       </div>
 
-      {/* Detailed evaluation history — beta-readonly (not available in this beta) */}
-      <BetaExcludedNotice
-        testId="milestone-evaluation-beta-notice"
-        message="Detailed milestone evaluation history and trait confirmation records are not available in this beta."
-      />
+      {/* Detailed evaluation history — beta-readonly: notice only shown in beta mode */}
+      {isBetaMode && (
+        <BetaExcludedNotice
+          testId="milestone-evaluation-beta-notice"
+          message="Detailed milestone evaluation history and trait confirmation records are not available in this beta."
+        />
+      )}
     </div>
   );
 };

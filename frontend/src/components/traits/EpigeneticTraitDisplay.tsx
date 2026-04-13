@@ -16,6 +16,7 @@ import React from 'react';
 import { Sparkles, AlertCircle } from 'lucide-react';
 import { useHorseEpigeneticInsights } from '@/hooks/useHorseGenetics';
 import BetaExcludedNotice from '@/components/beta/BetaExcludedNotice';
+import { isBetaMode } from '@/config/betaRouteScope';
 
 export interface EpigeneticTraitDisplayProps {
   horseId: number;
@@ -122,11 +123,13 @@ const EpigeneticTraitDisplay: React.FC<EpigeneticTraitDisplayProps> = ({ horseId
         </div>
       )}
 
-      {/* Advanced trait features — beta-readonly */}
-      <BetaExcludedNotice
-        testId="epigenetic-trait-beta-notice"
-        message="Detailed trait discovery history, competition impact analysis, and trait interaction details are not available in this beta."
-      />
+      {/* Advanced trait features — beta-readonly: notice only shown in beta mode */}
+      {isBetaMode && (
+        <BetaExcludedNotice
+          testId="epigenetic-trait-beta-notice"
+          message="Detailed trait discovery history, competition impact analysis, and trait interaction details are not available in this beta."
+        />
+      )}
     </div>
   );
 };

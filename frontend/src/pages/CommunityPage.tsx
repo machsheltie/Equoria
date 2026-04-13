@@ -81,22 +81,14 @@ const activityTypeLabel: Record<string, string> = {
   art: '🎨',
 };
 
-const CommunityPage: React.FC = () => {
+// ── CommunityPageContent — rendered only when isBetaMode is false ─────────────
+// Hooks must not be called before the beta guard (would fire API calls to
+// beta-hidden feature endpoints). The outer CommunityPage wrapper gate is the
+// authoritative check; this inner component only mounts in non-beta builds.
+const CommunityPageContent: React.FC = () => {
   const { total: threadTotal } = useThreads();
   const { data: unreadData } = useUnreadCount();
   const { data: clubsData } = useClubs();
-
-  // In beta mode, this route is beta-hidden — render honest beta-excluded state.
-  if (isBetaMode) {
-    return (
-      <BetaExcludedNotice
-        fullPage
-        testId="community-beta-excluded"
-        redirectTo="/"
-        redirectLabel="Return to Home"
-      />
-    );
-  }
 
   const unreadCount = unreadData?.count ?? 0;
   const disciplineCount = clubsData?.clubs.filter((c) => c.type === 'discipline').length ?? 0;
@@ -287,6 +279,22 @@ const CommunityPage: React.FC = () => {
       </div>
     </div>
   );
+};
+
+// ── CommunityPage — beta gate wrapper ─────────────────────────────────────────
+// Beta guard runs before hooks to prevent API calls to beta-hidden endpoints.
+const CommunityPage: React.FC = () => {
+  if (isBetaMode) {
+    return (
+      <BetaExcludedNotice
+        fullPage
+        testId="community-beta-excluded"
+        redirectTo="/"
+        redirectLabel="Return to Home"
+      />
+    );
+  }
+  return <CommunityPageContent />;
 };
 
 export default CommunityPage;

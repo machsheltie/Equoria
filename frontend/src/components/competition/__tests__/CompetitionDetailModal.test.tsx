@@ -22,6 +22,13 @@ import CompetitionDetailModal, {
   type Competition,
 } from '../CompetitionDetailModal';
 
+// The beta-excluded notice is conditional on isBetaMode — set to true so the
+// test can verify the notice behavior. Non-beta behavior is covered separately.
+vi.mock('@/config/betaRouteScope', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/config/betaRouteScope')>();
+  return { ...actual, isBetaMode: true };
+});
+
 describe('CompetitionDetailModal', () => {
   const mockOnClose = vi.fn();
 

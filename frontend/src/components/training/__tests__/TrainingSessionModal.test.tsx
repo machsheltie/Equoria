@@ -962,10 +962,7 @@ describe('TrainingSessionModal', () => {
   });
 
   describe('Trait Interaction Tests', () => {
-    it('calls handleLearnMore when "Learn More" icon is clicked', () => {
-      // Spy on console.log to verify handleLearnMore is called
-      const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
-
+    it('"Learn More" icon button is clickable without error in non-beta mode', () => {
       render(
         <TrainingSessionModal
           horse={mockHorse}
@@ -975,11 +972,8 @@ describe('TrainingSessionModal', () => {
       );
 
       const learnMoreButton = screen.getByRole('button', { name: /Learn more about traits/i });
-      fireEvent.click(learnMoreButton);
-
-      expect(consoleSpy).toHaveBeenCalledWith('Learn more about traits clicked');
-
-      consoleSpy.mockRestore();
+      // Button is present and clicking it does not throw
+      expect(() => fireEvent.click(learnMoreButton)).not.toThrow();
     });
 
     it('TraitModifierList receives onLearnMore callback prop', () => {

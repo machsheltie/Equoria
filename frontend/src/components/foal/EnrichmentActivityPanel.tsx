@@ -14,6 +14,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Activity, AlertCircle, History } from 'lucide-react';
 import { breedingApi } from '@/lib/api-client';
 import BetaExcludedNotice from '@/components/beta/BetaExcludedNotice';
+import { isBetaMode } from '@/config/betaRouteScope';
 import type { Foal } from '@/types/foal';
 
 export interface EnrichmentActivityPanelProps {
@@ -83,11 +84,13 @@ const EnrichmentActivityPanel: React.FC<EnrichmentActivityPanelProps> = ({ foal 
         </p>
       </div>
 
-      {/* Interactive enrichment — beta-readonly (enrichment status API not available) */}
-      <BetaExcludedNotice
-        testId="enrichment-activity-beta-notice"
-        message="Interactive enrichment activities are not available in this beta."
-      />
+      {/* Interactive enrichment — beta-readonly: notice only shown in beta mode */}
+      {isBetaMode && (
+        <BetaExcludedNotice
+          testId="enrichment-activity-beta-notice"
+          message="Interactive enrichment activities are not available in this beta."
+        />
+      )}
 
       {/* Activity History using real API data */}
       <div className="glass-panel rounded-lg p-6">

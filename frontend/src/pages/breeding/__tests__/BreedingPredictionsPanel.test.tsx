@@ -12,6 +12,13 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import BreedingPredictionsPanel from '../BreedingPredictionsPanel';
 
+// Beta-excluded notice is conditional on isBetaMode — set true so tests can
+// verify the notice. Non-beta behavior (notice absent) is the default build.
+vi.mock('@/config/betaRouteScope', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/config/betaRouteScope')>();
+  return { ...actual, isBetaMode: true };
+});
+
 // Mock the horsesApi — real API boundary
 vi.mock('@/lib/api-client', () => ({
   horsesApi: {

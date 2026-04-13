@@ -13,6 +13,8 @@ import GallopingLoader from '@/components/ui/GallopingLoader';
 import { CelestialThemeProvider } from '@/components/theme/CelestialThemeProvider';
 import { WhileYouWereGone } from '@/components/hub/WhileYouWereGone';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { isBetaMode } from '@/config/betaRouteScope';
+import BetaExcludedNotice from '@/components/beta/BetaExcludedNotice';
 
 // Auth pages — lazy loaded
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
@@ -57,8 +59,35 @@ const App = () => (
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/verify-email" element={<VerifyEmailPage />} />
-                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/reset-password" element={<ResetPasswordPage />} />
+                {/* beta-hidden: render notice for direct navigation in beta mode */}
+                <Route
+                  path="/forgot-password"
+                  element={
+                    isBetaMode ? (
+                      <BetaExcludedNotice
+                        fullPage
+                        redirectTo="/login"
+                        redirectLabel="Return to Login"
+                      />
+                    ) : (
+                      <ForgotPasswordPage />
+                    )
+                  }
+                />
+                <Route
+                  path="/reset-password"
+                  element={
+                    isBetaMode ? (
+                      <BetaExcludedNotice
+                        fullPage
+                        redirectTo="/login"
+                        redirectLabel="Return to Login"
+                      />
+                    ) : (
+                      <ResetPasswordPage />
+                    )
+                  }
+                />
 
                 {/* Authenticated routes — DashboardLayout provides persistent nav */}
                 <Route

@@ -15,6 +15,7 @@ import { Dumbbell, Trophy, Heart, Star, Coins, Stethoscope, ChevronRight } from 
 import { cn } from '@/lib/utils';
 import { useNextActions } from '@/hooks/api/useNextActions';
 import type { NextAction } from '@/hooks/api/useNextActions';
+import { isBetaMode } from '@/config/betaRouteScope';
 
 /* ─── Narrative copy for each action type ───────────────────────────────── */
 const NARRATIVES: Record<NextAction['type'], (a: NextAction) => string> = {
@@ -110,8 +111,10 @@ function ActionCard({ action, isTopPriority }: ActionCardProps) {
   );
 }
 
-/* ─── NextActionsBar ────────────────────────────────────────────────────── */
-export function NextActionsBar() {
+/* ─── NextActionsBarContent — renders after beta guard ─────────────────── */
+// Beta guard must run before useNextActions() to avoid firing API calls
+// to /api/v1/next-actions in beta mode. Outer wrapper handles the check.
+function NextActionsBarContent() {
   const { data: actions, isLoading, error } = useNextActions();
 
   if (isLoading) {
@@ -150,4 +153,11 @@ export function NextActionsBar() {
       </div>
     </section>
   );
+}
+
+/* ─── NextActionsBar — beta gate wrapper ────────────────────────────────── */
+// Beta guard runs before the hook to prevent unnecessary API calls in beta.
+export function NextActionsBar() {
+  if (isBetaMode) return null;
+  return <NextActionsBarContent />;
 }

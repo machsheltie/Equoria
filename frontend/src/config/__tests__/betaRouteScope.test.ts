@@ -43,6 +43,16 @@ describe('betaRouteScope', () => {
       expect(getBetaScope('/some/nested/path')).toBe('beta-readonly');
     });
 
+    it('resolves dynamic /horses/:id paths to beta-readonly', () => {
+      expect(getBetaScope('/horses/123')).toBe('beta-readonly');
+      expect(getBetaScope('/horses/456')).toBe('beta-readonly');
+    });
+
+    it('resolves dynamic /message-board/:threadId paths to beta-readonly', () => {
+      expect(getBetaScope('/message-board/abc')).toBe('beta-readonly');
+      expect(getBetaScope('/message-board/1')).toBe('beta-readonly');
+    });
+
     it('strips trailing slashes before lookup', () => {
       expect(getBetaScope('/training/')).toBe('beta-readonly');
       expect(getBetaScope('/community/')).toBe('beta-hidden');

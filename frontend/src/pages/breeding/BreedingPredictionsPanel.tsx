@@ -14,6 +14,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Sparkles, AlertCircle } from 'lucide-react';
 import { horsesApi } from '@/lib/api-client';
 import BetaExcludedNotice from '@/components/beta/BetaExcludedNotice';
+import { isBetaMode } from '@/config/betaRouteScope';
 
 export interface BreedingPredictionsPanelProps {
   sireId: number;
@@ -101,11 +102,13 @@ const BreedingPredictionsPanel: React.FC<BreedingPredictionsPanelProps> = ({ sir
         </div>
       </div>
 
-      {/* Trait predictions — beta-readonly (advanced API not available in this beta) */}
-      <BetaExcludedNotice
-        testId="breeding-predictions-beta-notice"
-        message="Advanced trait inheritance predictions, ultra-rare trait potential, and breeding insights are not available in this beta."
-      />
+      {/* Trait predictions — beta-readonly: notice only shown in beta mode */}
+      {isBetaMode && (
+        <BetaExcludedNotice
+          testId="breeding-predictions-beta-notice"
+          message="Advanced trait inheritance predictions, ultra-rare trait potential, and breeding insights are not available in this beta."
+        />
+      )}
     </div>
   );
 };
