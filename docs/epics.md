@@ -187,6 +187,30 @@ Epic 23: Hub & Daily Loop ──────────────────
 
 ---
 
+## Epic 21R: Beta Deployment Readiness Remediation
+
+**Goal:** Ensure Equoria reaches selected beta testers with only real, supportable gameplay. All authenticated routes are classified by beta scope, mock-backed or placeholder routes are gated or removed, and a production-parity E2E suite validates the beta-live route set.
+
+**Status:** In progress (Stories 21R-1 through 21R-6)
+
+**Route Classification Source:** [`docs/beta-route-truth-table.md`](./beta-route-truth-table.md) — complete per-route inventory of beta-live / beta-readonly / beta-hidden status, required API endpoints, known blockers, and remediation assignments.
+
+| Story | Title                                           | Status      |
+| ----- | ----------------------------------------------- | ----------- |
+| 21R-1 | Define Beta Scope and Navigation Truth Table    | done        |
+| 21R-2 | Remove Production Frontend Mocks from Beta Code | in-progress |
+| 21R-3 | Production-Parity E2E for Beta-Live Route Set   | open        |
+| 21R-4 | Harden Runtime Cleanup Routes Before Groom Beta | open        |
+| 21R-5 | Community / Trainers / Riders Real Integration  | open        |
+| 21R-6 | Beta Readiness Gate — Final Sign-Off            | open        |
+
+**Planning Artifacts:**
+
+- `docs/sprint-change-proposal-2026-04-11.md` — approved course correction and beta readiness gate
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — `beta-deployment-readiness: blocked`
+
+---
+
 ## Epic 22: Celestial Night Foundation
 
 **Goal:** Transform Equoria's visual identity from generic developer UI to an immersive Celestial Night fantasy world. Every page should feel like a game the moment this epic ships — deep navy skies, gold accents, serif typography, animated starfield. This is the foundation that every subsequent epic builds upon.

@@ -77,7 +77,7 @@ const BankPage: React.FC = () => {
     <div className="min-h-screen">
       <PageHero
         title="The Vault"
-        subtitle="Manage your coins, claim weekly rewards, and review your transaction ledger."
+        subtitle="Manage your coins, claim weekly rewards, and view recent session transactions."
         mood="golden"
         icon={<Coins className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
       >
@@ -250,7 +250,10 @@ const BankPage: React.FC = () => {
           <ul className="space-y-1 list-disc list-inside text-xs leading-relaxed">
             <li>Coins are earned through competitions, breeding sales, and weekly rewards</li>
             <li>Weekly rewards of 500 coins reset every Sunday at midnight</li>
-            <li>Transaction history shows the last 30 days of activity</li>
+            <li>
+              Transaction history shows current session activity only; full ledger available after
+              beta
+            </li>
             <li>Coins are spent at the Tack Shop, Vet Clinic, Feed Shop, and Farrier</li>
             <li>Larger balances unlock access to premium auctions and breeding fees</li>
           </ul>

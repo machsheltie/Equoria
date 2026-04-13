@@ -149,4 +149,20 @@ describe('NextActionsBar', () => {
     const prizeLink = screen.getByLabelText('You have unclaimed prizes!');
     expect(prizeLink).toHaveAttribute('href', '/competitions');
   });
+
+  it('links visit-vet action to /vet (not /veterinarian)', () => {
+    mockUseNextActions.mockReturnValue({
+      data: [{ type: 'visit-vet' as const, priority: 1, horseId: 5, horseName: 'Blaze' }],
+      isLoading: false,
+      error: null,
+    } as any);
+
+    render(
+      <BrowserRouter>
+        <NextActionsBar />
+      </BrowserRouter>
+    );
+    const vetLink = screen.getByLabelText('Blaze needs veterinary care');
+    expect(vetLink).toHaveAttribute('href', '/vet?horseId=5');
+  });
 });

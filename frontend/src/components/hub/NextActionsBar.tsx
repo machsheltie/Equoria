@@ -45,7 +45,7 @@ const ACTION_LINKS: Record<NextAction['type'], string> = {
   'groom-foal': '/grooms',
   'claim-prize': '/competitions',
   'check-results': '/competitions',
-  'visit-vet': '/veterinarian',
+  'visit-vet': '/vet',
 };
 
 /* ─── ActionCard ────────────────────────────────────────────────────────── */
