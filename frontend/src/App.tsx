@@ -13,7 +13,7 @@ import GallopingLoader from '@/components/ui/GallopingLoader';
 import { CelestialThemeProvider } from '@/components/theme/CelestialThemeProvider';
 import { WhileYouWereGone } from '@/components/hub/WhileYouWereGone';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { isBetaMode } from '@/config/betaRouteScope';
+import { isBetaMode, isBetaLive } from '@/config/betaRouteScope';
 import BetaExcludedNotice from '@/components/beta/BetaExcludedNotice';
 
 // Auth pages — lazy loaded
@@ -97,9 +97,38 @@ const App = () => (
                     </ProtectedRoute>
                   }
                 >
-                  <Route path="/horses/:id" element={<HorseDetailPage />} />
+                  {/* /horses/:id — beta-readonly: block direct access in beta */}
+                  <Route
+                    path="/horses/:id"
+                    element={
+                      isBetaMode && !isBetaLive('/horses/:id') ? (
+                        <BetaExcludedNotice
+                          fullPage
+                          redirectTo="/stable"
+                          redirectLabel="Return to Stable"
+                        />
+                      ) : (
+                        <HorseDetailPage />
+                      )
+                    }
+                  />
+                  {/* Authenticated nav routes — beta-readonly routes blocked in beta mode */}
                   {navItems.map(({ to, Page }) => (
-                    <Route key={to} path={to} element={<Page />} />
+                    <Route
+                      key={to}
+                      path={to}
+                      element={
+                        isBetaMode && !isBetaLive(to) ? (
+                          <BetaExcludedNotice
+                            fullPage
+                            redirectTo="/"
+                            redirectLabel="Return to Home"
+                          />
+                        ) : (
+                          <Page />
+                        )
+                      }
+                    />
                   ))}
                 </Route>
               </Routes>

@@ -102,6 +102,32 @@
   - [x] 10.6 Test run and lint verified in sixth-pass course correction (see Dev Agent Record).
   - [x] 10.7 Dev Agent Record updated (see below).
 
+- [x] **Task 11 - Beta-live-only NavPanel + direct-route blocking — seventh-pass correction 2026-04-13**
+  - [x] 11.1 `frontend/src/components/layout/NavPanel.tsx`: replace `!isBetaHidden` import and filter with `isBetaLive`. Beta nav now shows only routes where `isBetaLive(href)` is true — result: Home (`/`) and My Stable (`/stable`) only.
+  - [x] 11.2 `frontend/src/App.tsx`: wrap `/horses/:id` and all `navItems` routes with a beta-mode check. In beta mode, routes where `!isBetaLive(to)` render `<BetaExcludedNotice fullPage redirectTo="/" />`. Direct-URL access to `/training`, `/competitions`, `/breeding`, and all other beta-readonly routes now shows BetaExcludedNotice.
+  - [x] 11.3 New `frontend/src/components/layout/__tests__/NavPanel.beta.test.tsx`: 3 tests — (a) beta nav shows only Home and My Stable, (b) beta-readonly routes absent, (c) beta-hidden routes absent.
+  - [x] 11.4 `docs/beta-route-truth-table.md` status semantics section updated: `beta-readonly` = planning classification only, no nav presence, direct-URL renders BetaExcludedNotice.
+  - [x] 11.5 `CLAUDE.md` testing philosophy updated: no-mocks policy baked in.
+
+- [x] **Task 12 - E2E critical path — seventh-pass correction 2026-04-13**
+  - [x] 12.1 `tests/e2e/beta-critical-path.spec.ts` — Path 1 already implemented: `register → onboard (breed/gender/name) → POST /api/horses intercept → /stable asserts horse card`. Real credentials, no bypass headers (rate-limit bypass only), no `test.skip`.
+  - [x] 12.2 AC4 satisfied: `GET /api/horses` asserted to return array containing the horse with the exact name entered during onboarding.
+  - [x] 12.3 AC3 ordering: `POST /api/horses` response intercepted and horse ID extracted before asserting `/stable` renders the name.
+
+- [x] **Task 13 - Backend registration integration test (real DB, no mocks) — seventh-pass correction 2026-04-13**
+  - [x] 13.1 New `backend/__tests__/integration/register-starter-horse.test.mjs` — 3 tests: (a) registration creates a user AND a starter horse in real DB, (b) starter horse has non-zero core stats, (c) starter horse has a name and healthStatus.
+  - [x] 13.2 No mocked Prisma, no `vi.mock`, no `jest.mock`. Pure integration test against the test database.
+  - [x] 13.3 Fail-fast: if `authController.mjs:140` catch swallows a horse-creation failure, the DB query in test (a) fails immediately with 0 horses found.
+
+- [x] **Task 14 - Docs/config drift guard — seventh-pass correction 2026-04-13**
+  - [x] 14.1 New `frontend/src/config/__tests__/betaRouteScopeSync.test.ts` — reads `docs/beta-route-truth-table.md` at test time and asserts every `beta-live` route in the markdown is `'beta-live'` in `BETA_SCOPE`. Fails with a descriptive diff message if they diverge.
+  - [x] 14.2 Known-minimum-set test asserts `/login`, `/register`, `/onboarding`, `/`, `/stable` are all `beta-live`.
+
+- [x] **Task 15 - Mock-backed route tracking issues — seventh-pass correction 2026-04-13**
+  - [x] 15.1 `bd` issues created for all remaining mock-backed production surfaces with real API contracts assigned.
+  - [x] 15.2 Mock surfaces inventoried: `MOCK_RECENT_ACTIVITY` (CommunityPage) → Epic 27 / 21R-5; `MOCK_STABLE` + `MOCK_HALL_OF_FAME` (MyStablePage) → Epic 24 / 21R-5; `MOCK_VET_HISTORY` (HorseDetailPage) → Epic 24 / 21R-5.
+  - [x] 15.3 21R-1 fifth-pass `[ ]` markers updated to `[x]` for findings F1–F7 (sixth-pass fixes confirmed against live code).
+
 ---
 
 ## Dev Notes

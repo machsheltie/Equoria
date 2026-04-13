@@ -10,7 +10,7 @@
 ## Status Semantics
 
 - **beta-live:** Visible to beta users. Uses real authenticated account data. Advertised primary actions work through real APIs. Must be covered later by production-parity E2E in 21R-3/21R-6.
-- **beta-readonly:** May be visible to beta users only if unsupported actions are absent, disabled with honest copy, or clearly excluded from beta. It must not look like playable unsupported gameplay.
+- **beta-readonly:** Planning classification only. These routes are NOT shown in beta navigation and direct-URL access renders `BetaExcludedNotice`. A beta-readonly route is scheduled for upgrade to beta-live in a future story; it has no nav presence or direct-URL access until that upgrade is complete.
 - **beta-hidden:** Must not be reachable from beta navigation or beta route links. Direct-route blocking can be implemented in 21R-2.
 
 Routes are classified by real behavior, not visual polish or historical completion claims.

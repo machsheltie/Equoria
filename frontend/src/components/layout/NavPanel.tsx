@@ -8,33 +8,53 @@
  */
 
 import { Link, useLocation } from 'react-router-dom';
-import { X } from 'lucide-react';
+import {
+  X,
+  Home,
+  Building2,
+  Dumbbell,
+  Trophy,
+  Dna,
+  Globe,
+  ShoppingCart,
+  MessageSquare,
+  Mail,
+  Landmark,
+  Settings,
+  type LucideIcon,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect } from 'react';
-import { isBetaMode, isBetaHidden } from '@/config/betaRouteScope';
+import { isBetaMode, isBetaLive } from '@/config/betaRouteScope';
 
 interface NavPanelProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-const ALL_NAV_SECTIONS = [
-  { name: 'Home', href: '/', icon: '🏠' },
-  { name: 'My Stable', href: '/stable', icon: '🐎' },
-  { name: 'Training', href: '/training', icon: '🏋️' },
-  { name: 'Competitions', href: '/competitions', icon: '🏆' },
-  { name: 'Breeding', href: '/breeding', icon: '🧬' },
-  { name: 'World', href: '/world', icon: '🌍' },
-  { name: 'Marketplace', href: '/marketplace', icon: '🛒' },
-  { name: 'Community', href: '/community', icon: '💬' },
-  { name: 'Messages', href: '/messages', icon: '✉️' },
-  { name: 'Bank', href: '/bank', icon: '🏦' },
-  { name: 'Settings', href: '/settings', icon: '⚙️' },
+interface NavItem {
+  name: string;
+  href: string;
+  Icon: LucideIcon;
+}
+
+const ALL_NAV_SECTIONS: NavItem[] = [
+  { name: 'Home', href: '/', Icon: Home },
+  { name: 'My Stable', href: '/stable', Icon: Building2 },
+  { name: 'Training', href: '/training', Icon: Dumbbell },
+  { name: 'Competitions', href: '/competitions', Icon: Trophy },
+  { name: 'Breeding', href: '/breeding', Icon: Dna },
+  { name: 'World', href: '/world', Icon: Globe },
+  { name: 'Marketplace', href: '/marketplace', Icon: ShoppingCart },
+  { name: 'Community', href: '/community', Icon: MessageSquare },
+  { name: 'Messages', href: '/messages', Icon: Mail },
+  { name: 'Bank', href: '/bank', Icon: Landmark },
+  { name: 'Settings', href: '/settings', Icon: Settings },
 ];
 
-/** In beta mode, hide beta-hidden routes from the nav panel. */
+/** In beta mode, show only beta-live routes. beta-readonly and beta-hidden are both excluded. */
 const NAV_SECTIONS = isBetaMode
-  ? ALL_NAV_SECTIONS.filter((item) => !isBetaHidden(item.href))
+  ? ALL_NAV_SECTIONS.filter((item) => isBetaLive(item.href))
   : ALL_NAV_SECTIONS;
 
 export function NavPanel({ isOpen, onClose }: NavPanelProps) {
@@ -85,7 +105,7 @@ export function NavPanel({ isOpen, onClose }: NavPanelProps) {
         aria-label="Navigation menu"
         className={cn(
           'fixed top-0 left-0 z-[var(--z-modal)] h-full w-72',
-          'bg-[rgba(10,14,26,0.92)] backdrop-blur-xl',
+          'bg-[var(--glass-surface-heavy-bg)] backdrop-blur-xl',
           'border-r border-[var(--glass-border)]',
           'flex flex-col',
           'animate-in slide-in-from-left duration-200'
@@ -121,12 +141,12 @@ export function NavPanel({ isOpen, onClose }: NavPanelProps) {
                   'flex items-center gap-3 px-3 py-3 rounded-[var(--radius-md)] mb-0.5',
                   'text-sm transition-all',
                   active
-                    ? 'bg-[rgba(200,168,78,0.1)] border-0 border-l-2 border-l-[var(--gold-primary)] text-[var(--gold-light)]'
+                    ? 'bg-[var(--glass-border-gold-subtle)] border-0 border-l-2 border-l-[var(--gold-primary)] text-[var(--gold-light)]'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] border border-transparent'
                 )}
                 aria-current={active ? 'page' : undefined}
               >
-                <span className="text-base w-6 text-center">{item.icon}</span>
+                <item.Icon className="w-5 h-5 flex-shrink-0" aria-hidden="true" />
                 <span style={{ fontFamily: 'var(--font-heading)' }}>{item.name}</span>
               </Link>
             );

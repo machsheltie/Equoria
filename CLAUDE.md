@@ -145,11 +145,14 @@ module.exports = myFunction;
 
 ### Testing Philosophy
 
-- **Balanced mocking:** External dependencies only (DB, HTTP, logger)
-- **Real business logic:** Test actual implementations
-- **Backend:** 3530+ tests passing (221 suites)
-- **Frontend:** Vitest + MSW (`onUnhandledRequest: 'error'` strict mode)
-- **E2E:** Playwright (Epic 9A-2)
+- **No mocks. Ever.** All backend tests run against the real test database. No mocked Prisma calls. A test that passes while hiding a broken feature is worse than no test.
+- **Integration by default:** Backend tests call real controllers, real services, real DB. Mocking a DB call is testing nothing.
+- **Frontend unit tests:** Existing tests with mocked API responses may remain. Do NOT add new `vi.mock`-of-API-client tests. Prefer Playwright E2E for all new user-facing feature coverage.
+- **E2E tests (Playwright):** Real credentials, real backend, real DB. No bypass headers, no `x-test-user`, no `test.skip` on beta-critical paths. Rate-limit bypass headers are the only exception (prevents 429 in test runs).
+- **Fail fast:** Tests must fail immediately when the real implementation is broken — not be silenced by mocked return values.
+- **Backend:** 3617+ tests passing (226 suites)
+- **Frontend:** Vitest + React Testing Library (component behavior); Playwright E2E (full-stack coverage)
+- **E2E:** Playwright (Epic 9A-2) — `tests/e2e/`
 
 ### Issue Tracking
 
