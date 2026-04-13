@@ -235,7 +235,9 @@ If full frontend tests are too slow or fail from unrelated existing issues, run 
 - 2026-04-13: Created story from Epic 21R course correction, 21R-1 truth table, route/nav inspection, and target mock scans.
 - 2026-04-13: Implementation complete — all tasks done, all tests passing, lint clean.
 - 2026-04-13: Task 9 implemented (course correction from 21R-1 second-pass): gated /forgot-password link in LoginPage; removed console.log no-op from TrainingSessionModal.handleLearnMore and hid HelpCircle in beta mode. 7 tests added/updated, all pass.
-- 2026-04-13: Code review course correction applied — all 9 high/medium findings resolved. 92 tests passing across 9 targeted test files. Low (raw colors) deferred as cosmetic.
+- 2026-04-13: Code review course correction applied — all 9 high/medium findings resolved. 92 tests passing across 9 targeted test files.
+- 2026-04-13: Low finding resolved — replaced raw rgb/rgba with design tokens (text-midnight-ink, text-mystic-silver, text-aged-bronze, bg-saddle-leather/*, bg-red-500/10, bg-forest-green/*, border-forest-green/*, bg-[var(--glass-bg)], bg-[var(--glass-border-gold-subtle)], bg-[var(--glass-surface-heavy-bg)], bg-burnished-gold/10, bg-emerald-500/10); replaced 🔒 emoji with Lucide Lock in BetaExcludedNotice and CompetitionDetailModal; converted NavPanel emoji to Lucide icons with typed NavItem interface. 94 tests passing.
+- 2026-04-13: Fourth-pass correction applied — all 5 findings resolved: MessageThreadPage gated incrementView/handleReply/reply-box behind !isBetaMode and converted /community link to plain text in beta; MessageThreadPage.beta.test.tsx added (4 tests); HorseDetailPage HealthVetTab gates MOCK_VET_HISTORY behind !isBetaMode with BetaExcludedNotice (no deferral); CompetitionDetailModal onEnter prop restored for non-beta with "Enter Competition" button; CompetitionDetailModal.nonbeta.test.tsx added (4 tests). Full targeted suite: 16 test files, all passing.
 
 ### Change Log
 
@@ -284,6 +286,11 @@ If full frontend tests are too slow or fail from unrelated existing issues, run 
 - `frontend/src/pages/__tests__/LoginPage.beta.test.tsx` (NEW)
 - `frontend/src/components/training/__tests__/TrainingSessionModal.beta.test.tsx` (NEW)
 - `frontend/src/components/training/__tests__/TrainingSessionModal.test.tsx` (UPDATED: fix console.log assertion)
+- `frontend/src/pages/MessageThreadPage.tsx` (UPDATED: gate incrementView/handleReply/reply-box behind !isBetaMode; plain text /community breadcrumb in beta)
+- `frontend/src/pages/__tests__/MessageThreadPage.beta.test.tsx` (NEW)
+- `frontend/src/pages/HorseDetailPage.tsx` (UPDATED: gate MOCK_VET_HISTORY section behind !isBetaMode; show BetaExcludedNotice in beta)
+- `frontend/src/components/competition/CompetitionDetailModal.tsx` (UPDATED: restore onEnter prop; Enter Competition button shown for !isBetaMode && onEnter)
+- `frontend/src/components/competition/__tests__/CompetitionDetailModal.nonbeta.test.tsx` (NEW)
 
 ---
 
@@ -328,7 +335,7 @@ If full frontend tests are too slow or fail from unrelated existing issues, run 
 
 - [x] [Review][Patch][Medium] Targeted tests are currently not clean in the working tree. Running `npm --prefix frontend run test:run -- --run src/components/hub/__tests__/NextActionsBar.test.tsx src/components/layout/__tests__/NavPanel.test.tsx src/config/__tests__/betaRouteScope.test.ts src/hooks/api/__tests__/useTransactionHistory.test.ts` produced one failure: `NextActionsBar.test.tsx` expects `border-[var(--gold-500)]`, while the component renders `border-[var(--gold-primary)]`. Fix the stale assertion or component class, then rerun the targeted suite.
 
-- [ ] [Review][Patch][Low] New and changed frontend files use raw `rgb(...)`, `rgba(...)`, and emoji glyphs in component markup. This conflicts with the project context rule to prefer design tokens and avoid raw component colors. Clean this up where practical while correcting the beta gating. (Deferred — scope is cosmetic; does not block beta readiness.)
+- [x] [Review][Patch][Low] New and changed frontend files use raw `rgb(...)`, `rgba(...)`, and emoji glyphs in component markup. This conflicts with the project context rule to prefer design tokens and avoid raw component colors. Clean this up where practical while correcting the beta gating. (Resolved 2026-04-13: replaced raw rgb/rgba with Tailwind token utilities in all new/rewritten files; replaced 🔒 emoji with Lucide `Lock` in BetaExcludedNotice and CompetitionDetailModal; replaced NavPanel emoji strings with Lucide icons and typed NavItem interface. 94 tests passing.)
 
 ### Correction Plan For Course Correct
 
@@ -342,3 +349,56 @@ If full frontend tests are too slow or fail from unrelated existing issues, run 
 8. Rewrite BankPage transaction-history copy to match the disabled full-ledger behavior.
 9. Add the missing AC6 tests listed above and rerun the targeted Vitest suite. Record exact command output in the Dev Agent Record.
 10. After fixes, update this story status and sprint status only after the corrected tests pass and the review findings above are checked off.
+
+---
+
+## Fourth-Pass Course Correct Handoff - 21R-2 Code Review
+
+**Review date:** 2026-04-13  
+**Review target:** Story 21R-2 after prior course-correct fixes, current working tree.  
+**Review outcome:** **Do not mark done yet.** The previous high/medium findings are mostly corrected and the focused 21R-2 test suite passes, but one beta-readonly community route was missed and two scope/behavior decisions still need explicit correction or documentation.
+
+### What Is Working Now
+
+- Focused verification passes: `npm --prefix frontend run test:run -- --run src/components/hub/__tests__/NextActionsBar.test.tsx src/components/layout/__tests__/NavPanel.test.tsx src/config/__tests__/betaRouteScope.test.ts src/hooks/api/__tests__/useTransactionHistory.test.ts src/pages/__tests__/LoginPage.beta.test.tsx src/pages/__tests__/StableView.beta.test.tsx src/components/training/__tests__/TrainingSessionModal.beta.test.tsx src/components/competition/__tests__/CompetitionDetailModal.test.tsx src/pages/breeding/__tests__/BreedingPredictionsPanel.test.tsx src/components/foal/__tests__/MilestoneEvaluationDisplay.test.tsx src/components/foal/__tests__/EnrichmentActivityPanel.test.tsx src/components/traits/__tests__/EpigeneticTraitDisplay.test.tsx` -> **12 files, 107 tests passed**.
+- `frontend/src/config/betaRouteScope.ts` now uses `matchPath` and correctly classifies concrete dynamic routes such as `/horses/123` and `/message-board/abc`.
+- `/forgot-password` and `/reset-password` now render `BetaExcludedNotice` for direct beta navigation, and `/login` hides the forgot-password link in beta.
+- `CommunityPage` and `CraftingPage` now gate before hooks mount, preventing direct beta visits from firing hidden feature API calls.
+- `NavPanel` and `WorldHubPage` filter beta-hidden routes/cards in beta mode.
+- `NextActionsBar` now returns before calling `useNextActions()` in beta mode.
+- `BankPage` transaction-history copy and `useTransactionHistory` no longer fake an empty successful ledger.
+- Most community readonly write controls were handled: message-board new thread, messages compose, club create/join/nominate/vote controls are hidden in beta.
+
+### Findings Still To Correct
+
+- [x] [Review][Patch][High] `/message-board/:threadId` still exposes beta-readonly write behavior. The truth table classifies this route as `beta-readonly`, but `MessageThreadPage` still performs write-like mutations in beta: `frontend/src/pages/MessageThreadPage.tsx:67` calls `incrementView.mutate(id)` on mount, `frontend/src/pages/MessageThreadPage.tsx:74` posts replies through `createPost.mutateAsync`, and `frontend/src/pages/MessageThreadPage.tsx:172` renders the reply box. In beta mode, skip the view increment and hide/replace the reply UI with honest readonly copy. **Resolved 2026-04-13: gated `incrementView.mutate` and `handleReply` behind `!isBetaMode`; reply box now rendered only when `!isBetaMode && !isLoading && thread`.**
+
+- [x] [Review][Patch][Medium] `MessageThreadPage` still links beta users back to beta-hidden `/community`. Other community subroutes converted this breadcrumb to plain text in beta, but `frontend/src/pages/MessageThreadPage.tsx:100` still renders `<Link to="/community">`. In beta mode, render plain text or target a safe beta-live route. **Resolved 2026-04-13: `/community` breadcrumb is plain `<span>Community</span>` in beta.**
+
+- [x] [Review][Patch][Medium] AC6 is incomplete because the missed route has no beta regression test. Add `frontend/src/pages/__tests__/MessageThreadPage.beta.test.tsx` or equivalent coverage proving beta mode renders thread read state without `/community` link, without `reply-box` / `submit-reply`, and without calling `useIncrementView().mutate`. **Resolved 2026-04-13: added `frontend/src/pages/__tests__/MessageThreadPage.beta.test.tsx` — 4 tests, all pass.**
+
+- [x] [Review][Decision][Medium] `HorseDetailPage` still renders `MOCK_VET_HISTORY` on a beta-visible `/horses/:id` route. This was previously recorded as deferred, but it conflicts with AC1 wording that `MOCK_*` should be removed from beta-facing production paths. Evidence: `frontend/src/pages/HorseDetailPage.tsx:2034` defines `MOCK_VET_HISTORY`; `frontend/src/pages/HorseDetailPage.tsx:2096` renders it. Decide whether to patch in this story with beta-mode honest readonly/excluded copy, or explicitly narrow/defer AC1 in the story so the review gate does not claim full mock removal. **Resolved 2026-04-13 (patched, not deferred): `HealthVetTab` now imports `isBetaMode` and `BetaExcludedNotice`; in beta mode renders `<BetaExcludedNotice message="Veterinary history is not available in this beta." />` instead of `MOCK_VET_HISTORY`.**
+
+- [x] [Review][Decision][Medium] `CompetitionDetailModal` no longer renders the beta notice unconditionally, but entry behavior appears removed globally rather than restored for non-beta. The current prop contract has no `onEnter` and the footer only exposes Close (`frontend/src/components/competition/CompetitionDetailModal.tsx:47`, `frontend/src/components/competition/CompetitionDetailModal.tsx:119`). Decide whether to restore non-beta `onEnter` entry controls behind `!isBetaMode`, or document this as an intentional global product change outside the beta-remediation scope. **Resolved 2026-04-13 (restored, not removed globally): added `onEnter?: (competitionId: number) => void` prop; footer shows "Enter Competition" button when `!isBetaMode && onEnter != null`; beta notice remains for `isBetaMode`. Added `CompetitionDetailModal.nonbeta.test.tsx` — 4 tests, all pass.**
+
+### Correction Plan For Course Corrector
+
+1. Patch `frontend/src/pages/MessageThreadPage.tsx`:
+   - import `isBetaMode`;
+   - convert the `/community` breadcrumb link to plain text in beta;
+   - change the view-count effect to `if (!isBetaMode && id) incrementView.mutate(id)`;
+   - hide or replace the reply box in beta mode with honest readonly copy;
+   - guard `handleReply` with `if (isBetaMode) return` as a defensive fallback.
+2. Add focused `MessageThreadPage` beta tests:
+   - thread content still renders for beta read access;
+   - `/community` is not a link;
+   - reply UI and submit button are absent;
+   - `useIncrementView().mutate` is not called.
+3. Resolve the `HorseDetailPage` mock-vet-history conflict:
+   - preferred: gate the vet history section in beta and show honest copy that veterinary history is not available in this beta;
+   - acceptable only if intentional: update AC1/dev notes to explicitly defer `MOCK_VET_HISTORY` and keep sprint status blocked.
+4. Resolve non-beta competition entry behavior:
+   - if non-beta entry should still exist, restore `onEnter` and the entry action for `!isBetaMode`;
+   - if not, update component docs/tests/story notes to record the global removal as intentional.
+5. Re-run the focused suite above plus the new `MessageThreadPage.beta.test.tsx`.
+6. Keep story status in `review` or move back to `in-progress` until all unchecked fourth-pass findings are resolved or explicitly deferred by the owner.

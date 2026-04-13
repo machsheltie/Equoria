@@ -78,6 +78,8 @@ import { getBreedName } from '@/lib/utils';
 // Competition history (Story 5-3)
 import CompetitionHistory from '@/components/competition/CompetitionHistory';
 import { useHorseCompetitionHistory } from '@/hooks/api/useHorseCompetitionHistory';
+import { isBetaMode } from '@/config/betaRouteScope';
+import BetaExcludedNotice from '@/components/beta/BetaExcludedNotice';
 
 // Types
 interface HorseStats {
@@ -2086,7 +2088,9 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       {/* Vet History */}
       <div>
         <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-3">Veterinary History</h3>
-        {MOCK_VET_HISTORY.length === 0 ? (
+        {isBetaMode ? (
+          <BetaExcludedNotice message="Veterinary history is not available in this beta." />
+        ) : MOCK_VET_HISTORY.length === 0 ? (
           <div className="text-center py-8 bg-[rgba(15,35,70,0.3)] rounded-lg border border-[rgba(37,99,235,0.15)]">
             <Stethoscope className="w-8 h-8 text-[rgb(160,175,200)]/40 mx-auto mb-2" />
             <p className="fantasy-body text-[rgb(160,175,200)]">No vet records on file.</p>
