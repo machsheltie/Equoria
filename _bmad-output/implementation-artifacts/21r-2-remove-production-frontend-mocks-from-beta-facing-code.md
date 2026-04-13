@@ -255,6 +255,7 @@ If full frontend tests are too slow or fail from unrelated existing issues, run 
 - 2026-04-13: Story created with comprehensive frontend beta-scope implementation guidance.
 - 2026-04-13: Implementation complete by dev agent. Status → review.
 - 2026-04-13: Task 9 applied (21R-1 course correction): LoginPage forgot-password link gating + TrainingSessionModal no-op removal.
+- 2026-04-13: Task 10 applied (onboarding horse persistence): `horsesApi.create` added to api-client.ts; `OnboardingPage.tsx` `completeMutation` rewritten to chain POST /api/horses → advance-onboarding → navigate /stable; `/onboarding` upgraded to `beta-live` in betaRouteScope.ts; 5 tests added (all pass); lint clean.
 
 ### Completion Notes List
 
@@ -300,6 +301,10 @@ If full frontend tests are too slow or fail from unrelated existing issues, run 
 - `frontend/src/pages/MessageThreadPage.tsx` (UPDATED: gate incrementView/handleReply/reply-box behind !isBetaMode; plain text /community breadcrumb in beta)
 - `frontend/src/pages/__tests__/MessageThreadPage.beta.test.tsx` (NEW)
 - `frontend/src/pages/HorseDetailPage.tsx` (UPDATED: gate MOCK_VET_HISTORY section behind !isBetaMode; show BetaExcludedNotice in beta)
+- `frontend/src/lib/api-client.ts` (UPDATED: Task 10 — added `horsesApi.create`)
+- `frontend/src/pages/OnboardingPage.tsx` (UPDATED: Task 10 — rewritten completeMutation to persist horse via POST /api/horses before advancing onboarding; navigate to /stable)
+- `frontend/src/config/betaRouteScope.ts` (UPDATED: Task 10 — /onboarding → beta-live)
+- `frontend/src/pages/__tests__/OnboardingPage.test.tsx` (NEW: Task 10 — 5 horse-persistence tests)
 - `frontend/src/components/competition/CompetitionDetailModal.tsx` (UPDATED: restore onEnter prop; Enter Competition button shown for !isBetaMode && onEnter)
 - `frontend/src/components/competition/__tests__/CompetitionDetailModal.nonbeta.test.tsx` (NEW)
 

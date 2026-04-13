@@ -854,6 +854,13 @@ export const breedingApi = {
  * Horses API surface
  */
 export const horsesApi = {
+  create: (data: {
+    name: string;
+    breedId: number;
+    sex?: 'stallion' | 'mare' | 'gelding';
+    gender?: 'STALLION' | 'MARE' | 'GELDING';
+    age?: number;
+  }) => apiClient.post<HorseSummary>('/api/horses', data),
   list: () => apiClient.get<HorseSummary[]>(`/api/horses?t=${Date.now()}`),
   get: (horseId: number) => apiClient.get<HorseSummary>(`/api/horses/${horseId}?t=${Date.now()}`),
   getTrainingHistory: (horseId: number) =>
@@ -2018,10 +2025,14 @@ export const authApi = {
 
   /**
    * Advance the authenticated user's onboarding step by 1.
+   * Optionally sends horse customization data (name, breedId, gender).
    * Sets completedOnboarding: true when step 10 is reached.
    */
-  advanceOnboarding: () =>
-    apiClient.post<{ step: number; completed: boolean }>('/api/auth/advance-onboarding', {}),
+  advanceOnboarding: (horseData?: { horseName?: string; breedId?: number; gender?: string }) =>
+    apiClient.post<{ step: number; completed: boolean }>(
+      '/api/auth/advance-onboarding',
+      horseData ?? {}
+    ),
 
   /**
    * Request password reset email

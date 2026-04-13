@@ -19,9 +19,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { ChevronRight, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { authApi } from '@/lib/api-client';
+import { authApi, horsesApi } from '@/lib/api-client';
 import { usePageBackground } from '@/components/layout/PageBackground';
 import { type BreedSelectionValue, type Gender } from '@/components/onboarding/BreedSelector';
+import { getHorseImage } from '@/lib/breed-images';
 import { useBreeds } from '@/hooks/api/useBreeds';
 
 // ── Step definitions ───────────────────────────────────────────────────────────
@@ -205,7 +206,16 @@ interface ReadyStepProps {
 
 const ReadyStep: React.FC<ReadyStepProps> = ({ horseName, breedName, gender }) => (
   <div className="text-center space-y-5">
-    {/* Stable preview chip */}
+    {/* Breed-specific horse image */}
+    <div className="flex items-center justify-center">
+      <img
+        src={getHorseImage(null, breedName)}
+        alt={horseName || 'Your new horse'}
+        className="rounded-xl object-contain w-[160px] h-[129px] sm:w-[248px] sm:h-[200px]"
+      />
+    </div>
+
+    {/* Horse details */}
     {horseName && (
       <div className="inline-flex flex-col items-center gap-1 px-5 py-3 rounded-2xl bg-[rgba(201,162,39,0.1)] border border-[rgba(201,162,39,0.25)] shadow-[0_0_18px_rgba(201,162,39,0.08)]">
         <span
@@ -222,13 +232,6 @@ const ReadyStep: React.FC<ReadyStepProps> = ({ horseName, breedName, gender }) =
       </div>
     )}
 
-    {!horseName && (
-      <div className="relative inline-flex items-center justify-center">
-        <div className="absolute inset-0 rounded-full bg-[rgba(201,162,39,0.15)] blur-xl" />
-        <Sparkles className="w-14 h-14 text-[var(--gold-400)] relative" aria-hidden="true" />
-      </div>
-    )}
-
     <div>
       <h2
         className="text-lg font-bold text-[var(--cream)] mb-2"
@@ -237,23 +240,39 @@ const ReadyStep: React.FC<ReadyStepProps> = ({ horseName, breedName, gender }) =
         Your stable awaits
       </h2>
       <p className="text-[var(--text-muted)] text-sm leading-relaxed max-w-sm mx-auto font-[var(--font-body)]">
-        Head to the Stable to acquire your first horse, then visit the Tack Shop to equip it. A
-        guided tour will show you the way — your legend begins now.
+        Head to your Stable to view your first horse, then visit the Tack Shop to equip it. A guided
+        tour will show you the way — your legend begins now.
       </p>
     </div>
 
     {/* Next steps */}
-    <ul className="space-y-2 text-sm text-left">
+    <ul className="space-y-3 text-sm text-left">
       {[
-        { symbol: '🏠', path: '/stable', label: 'Visit your stable' },
-        { symbol: '🎒', path: '/inventory', label: 'Equip saddle & bridle' },
-        { symbol: '🏆', path: '/competitions', label: 'Enter your first show' },
-      ].map(({ symbol, path, label }) => (
+        {
+          img: '/images/horses/stableicon.png',
+          path: '/my-stable',
+          label: 'View your horse in the stable',
+        },
+        {
+          img: '/images/horses/inventoryicon.png',
+          path: '/inventory',
+          label: 'Equip saddle & bridle',
+        },
+        {
+          img: '/images/horses/showicon.png',
+          path: '/competitions',
+          label: 'Enter your first show',
+        },
+      ].map(({ img, path, label }) => (
         <li
           key={path}
           className="flex items-center gap-3 px-3 py-2 rounded-xl bg-[rgba(10,22,50,0.5)] border border-[rgba(100,130,165,0.15)]"
         >
-          <span className="text-lg flex-shrink-0">{symbol}</span>
+          <img
+            src={img}
+            alt={label}
+            className="flex-shrink-0 object-contain w-8 h-8 sm:w-[50px] sm:h-[50px]"
+          />
           <div>
             <span className="text-[var(--cream)]/80 font-[var(--font-body)]">{label}</span>
             <span className="ml-1.5 text-[10px] text-[var(--text-muted)]">{path}</span>
@@ -266,22 +285,88 @@ const ReadyStep: React.FC<ReadyStepProps> = ({ horseName, breedName, gender }) =
 
 // ── OnboardingPage ─────────────────────────────────────────────────────────────
 
+const STORAGE_KEY_STEP = 'equoria-onboarding-step';
+const STORAGE_KEY_HORSE = 'equoria-onboarding-horse';
+
+function loadSavedStep(): number {
+  try {
+    const saved = sessionStorage.getItem(STORAGE_KEY_STEP);
+    return saved ? Math.min(Number(saved), 2) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function loadSavedHorse(): Partial<BreedSelectionValue> {
+  try {
+    const saved = sessionStorage.getItem(STORAGE_KEY_HORSE);
+    return saved ? JSON.parse(saved) : {};
+  } catch {
+    return {};
+  }
+}
+
 const OnboardingPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [currentStep, setCurrentStep] = useState(0);
-  const [horseSelection, setHorseSelection] = useState<Partial<BreedSelectionValue>>({});
+  const [currentStep, setCurrentStep] = useState(loadSavedStep);
+  const [horseSelection, setHorseSelection] =
+    useState<Partial<BreedSelectionValue>>(loadSavedHorse);
+
+  // Persist step and horse selection to sessionStorage
+  function advanceStep(nextStep: number) {
+    setCurrentStep(nextStep);
+    try {
+      sessionStorage.setItem(STORAGE_KEY_STEP, String(nextStep));
+    } catch {
+      /* noop */
+    }
+  }
+
+  function updateHorse(value: Partial<BreedSelectionValue>) {
+    setHorseSelection(value);
+    try {
+      sessionStorage.setItem(STORAGE_KEY_HORSE, JSON.stringify(value));
+    } catch {
+      /* noop */
+    }
+  }
+
+  function clearOnboardingStorage() {
+    try {
+      sessionStorage.removeItem(STORAGE_KEY_STEP);
+      sessionStorage.removeItem(STORAGE_KEY_HORSE);
+      // Mark onboarding as locally completed so the guard doesn't redirect back
+      localStorage.setItem('equoria-onboarding-done', 'true');
+    } catch {
+      /* noop */
+    }
+  }
 
   const completeMutation = useMutation({
-    mutationFn: () => authApi.advanceOnboarding(),
+    mutationFn: async () => {
+      const genderDisplay = horseSelection.gender; // 'Mare' | 'Stallion'
+      const sexMap: Record<string, 'mare' | 'stallion'> = { Mare: 'mare', Stallion: 'stallion' };
+      const genderMap: Record<string, 'MARE' | 'STALLION'> = { Mare: 'MARE', Stallion: 'STALLION' };
+
+      await horsesApi.create({
+        name: horseSelection.horseName!.trim(),
+        breedId: horseSelection.breedId!,
+        sex: genderDisplay ? sexMap[genderDisplay] : undefined,
+        gender: genderDisplay ? genderMap[genderDisplay] : undefined,
+        age: 0,
+      });
+      await authApi.advanceOnboarding();
+    },
     onSuccess: () => {
+      clearOnboardingStorage();
+      queryClient.invalidateQueries({ queryKey: ['horses'] });
       queryClient.invalidateQueries({ queryKey: ['profile'] });
-      toast.success('Welcome to Equoria! Starting your guided tour…');
-      navigate('/bank', { replace: true });
+      toast.success('Welcome to Equoria! Your horse is waiting in the stable.');
+      navigate('/stable', { replace: true });
     },
     onError: () => {
-      toast.info('Starting your adventure…');
-      navigate('/bank', { replace: true });
+      toast.error('Something went wrong creating your horse. Please try again.');
     },
   });
 
@@ -300,7 +385,7 @@ const OnboardingPage: React.FC = () => {
     if (isLastStep) {
       completeMutation.mutate();
     } else {
-      setCurrentStep((s) => s + 1);
+      advanceStep(currentStep + 1);
     }
   }
 
@@ -366,9 +451,7 @@ const OnboardingPage: React.FC = () => {
           {/* Step content */}
           <div className="mb-6" role="tabpanel" aria-label={step.title}>
             {currentStep === 0 && <WelcomeStep />}
-            {currentStep === 1 && (
-              <HorseStep selection={horseSelection} onChange={setHorseSelection} />
-            )}
+            {currentStep === 1 && <HorseStep selection={horseSelection} onChange={updateHorse} />}
             {currentStep === 2 && (
               <ReadyStep
                 horseName={horseSelection.horseName ?? ''}
