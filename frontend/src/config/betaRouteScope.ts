@@ -36,10 +36,10 @@ export const BETA_SCOPE: Record<string, BetaScope> = {
   '/register': 'beta-live',
   '/': 'beta-live',
   '/stable': 'beta-live',
+  '/onboarding': 'beta-live',
 
   // beta-readonly routes
   '/verify-email': 'beta-readonly',
-  '/onboarding': 'beta-live',
   '/horses/:id': 'beta-readonly',
   '/profile': 'beta-readonly',
   '/settings': 'beta-readonly',

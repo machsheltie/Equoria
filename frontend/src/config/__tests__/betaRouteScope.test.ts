@@ -22,6 +22,7 @@ describe('betaRouteScope', () => {
       expect(getBetaScope('/stable')).toBe('beta-live');
       expect(getBetaScope('/login')).toBe('beta-live');
       expect(getBetaScope('/register')).toBe('beta-live');
+      expect(getBetaScope('/onboarding')).toBe('beta-live');
     });
 
     it('returns beta-readonly for readonly routes', () => {
@@ -101,7 +102,7 @@ describe('betaRouteScope', () => {
   });
 
   describe('BETA_SCOPE map', () => {
-    it('contains all four beta-live routes', () => {
+    it('contains all five beta-live routes', () => {
       const liveRoutes = Object.entries(BETA_SCOPE)
         .filter(([, scope]) => scope === 'beta-live')
         .map(([route]) => route);
@@ -109,6 +110,7 @@ describe('betaRouteScope', () => {
       expect(liveRoutes).toContain('/stable');
       expect(liveRoutes).toContain('/login');
       expect(liveRoutes).toContain('/register');
+      expect(liveRoutes).toContain('/onboarding');
     });
 
     it('classifies /community as beta-hidden', () => {

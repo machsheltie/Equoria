@@ -11,6 +11,10 @@
  *   - Legacy accounts with undefined completedOnboarding are NOT redirected
  *   - Already on /onboarding → no redirect (avoids infinite loop)
  *   - Auth still loading → no redirect (wait for profile)
+ *
+ * Server state is the sole source of truth. localStorage flags are not
+ * consulted — they can be stale or manipulated and must not gate
+ * beta-critical routing.
  */
 
 import React, { useEffect } from 'react';

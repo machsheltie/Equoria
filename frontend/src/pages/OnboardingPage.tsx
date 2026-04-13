@@ -9,8 +9,8 @@
  *   1. Your Horse  — breed dropdown, gender, name (all required)
  *   2. Ready       — stable preview + CTA to start guided tour
  *
- * On completion calls POST /api/auth/advance-onboarding (step 0 → 1)
- * then navigates to /bank for the OnboardingSpotlight tour.
+ * On completion calls POST /api/horses then POST /api/auth/advance-onboarding,
+ * then navigates to /stable so the tester sees their persisted horse.
  */
 
 import React, { useState } from 'react';
@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { ChevronRight, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { authApi, horsesApi } from '@/lib/api-client';
+import { isBetaMode } from '@/config/betaRouteScope';
 import { usePageBackground } from '@/components/layout/PageBackground';
 import { type BreedSelectionValue, type Gender } from '@/components/onboarding/BreedSelector';
 import { getHorseImage } from '@/lib/breed-images';
@@ -336,8 +337,6 @@ const OnboardingPage: React.FC = () => {
     try {
       sessionStorage.removeItem(STORAGE_KEY_STEP);
       sessionStorage.removeItem(STORAGE_KEY_HORSE);
-      // Mark onboarding as locally completed so the guard doesn't redirect back
-      localStorage.setItem('equoria-onboarding-done', 'true');
     } catch {
       /* noop */
     }
@@ -487,14 +486,14 @@ const OnboardingPage: React.FC = () => {
             )}
           </Button>
 
-          {/* Skip link */}
-          {currentStep === 0 && (
+          {/* Skip link — hidden in beta (horse selection is mandatory); in non-beta
+              it skips the welcome step and goes directly to horse selection */}
+          {currentStep === 0 && !isBetaMode && (
             <p className="text-center mt-3">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => completeMutation.mutate()}
-                disabled={completeMutation.isPending}
+                onClick={() => advanceStep(1)}
                 data-testid="onboarding-skip"
               >
                 Skip intro
