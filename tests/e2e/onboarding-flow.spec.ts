@@ -126,9 +126,11 @@ test.describe('Onboarding Flow', () => {
     await expect(page.locator('h1')).toContainText('Choose Your Horse', { timeout: 10000 });
 
     // Step 2 requires breed, gender, and name before Continue is enabled
-    const firstBreedBtn = page.locator('[role="listbox"] button').first();
-    await firstBreedBtn.waitFor({ state: 'visible', timeout: 15000 });
-    await firstBreedBtn.click();
+    // Onboarding uses a native <select data-testid="breed-select">, not a listbox
+    const breedSelect = page.locator('[data-testid="breed-select"]');
+    await breedSelect.waitFor({ state: 'visible', timeout: 15000 });
+    // index 0 is the disabled placeholder; index 1 is the first real breed
+    await breedSelect.selectOption({ index: 1 });
     await page.locator('button', { hasText: '♀ Mare' }).click();
     await page.locator('[data-testid="horse-name-input"]').fill('Stardust');
 

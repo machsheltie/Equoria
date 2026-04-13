@@ -33,7 +33,9 @@ async function globalSetup(config: FullConfig) {
 
     // ── 1. Register test user via UI ─────────────────────────────────────────
     console.log('Navigating to:', baseURL + '/register');
-    await page.goto(baseURL + '/register', { waitUntil: 'networkidle', timeout: 60000 });
+    // Use 'load' (not 'networkidle') — Vite's HMR WebSocket keeps the page permanently
+    // "active" so networkidle never fires, causing a 60-second timeout per navigation.
+    await page.goto(baseURL + '/register', { waitUntil: 'load', timeout: 60000 });
 
     console.log('Registering user:', username);
     await page.fill('input[name="firstName"]', 'E2E');
@@ -70,10 +72,11 @@ async function globalSetup(config: FullConfig) {
 
       // Step 1 (Choose Your Horse) → select breed, gender, name, then click Continue
       await expect(page.locator('h1')).toContainText('Choose Your Horse', { timeout: 10000 });
-      // Wait for breeds to load and select the first one
-      const firstBreedBtn = page.locator('[role="listbox"] button').first();
-      await firstBreedBtn.waitFor({ state: 'visible', timeout: 15000 });
-      await firstBreedBtn.click();
+      // Wait for breed select to load (native <select data-testid="breed-select">)
+      const breedSelect = page.locator('[data-testid="breed-select"]');
+      await breedSelect.waitFor({ state: 'visible', timeout: 15000 });
+      // index 0 is the disabled placeholder; index 1 is the first real breed
+      await breedSelect.selectOption({ index: 1 });
       // Select Mare gender
       await page.locator('button', { hasText: '♀ Mare' }).click();
       // Enter horse name

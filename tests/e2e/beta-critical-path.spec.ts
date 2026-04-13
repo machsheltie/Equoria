@@ -34,14 +34,17 @@ async function bypassAuthRateLimit(page: Page) {
 }
 
 /** Fill step 1 (Choose Your Horse) of the onboarding wizard.
- *  Selects the first available breed, chooses Mare, and sets the horse name. */
+ *  Selects the first available breed from the native select, chooses Mare,
+ *  and sets the horse name. */
 async function fillOnboardingHorseStep(page: Page, horseName: string) {
   await expect(page.locator('h1')).toContainText('Choose Your Horse', { timeout: 10000 });
 
-  // Wait for breed list to load (requires GET /api/v1/breeds)
-  const firstBreedBtn = page.locator('[role="listbox"] button').first();
-  await firstBreedBtn.waitFor({ state: 'visible', timeout: 20000 });
-  await firstBreedBtn.click();
+  // Wait for breed select to load with real options (GET /api/v1/breeds)
+  // The onboarding page renders a native <select data-testid="breed-select">
+  const breedSelect = page.locator('[data-testid="breed-select"]');
+  await breedSelect.waitFor({ state: 'visible', timeout: 20000 });
+  // index 0 is the disabled placeholder; index 1 is the first real breed
+  await breedSelect.selectOption({ index: 1 });
 
   // Select Mare gender
   await page.locator('button', { hasText: '♀ Mare' }).click();
@@ -126,8 +129,9 @@ test.describe('Path 1: New-player critical path', () => {
     expect(starterHorse?.id).toBe(horseId);
 
     // ── 9. /stable renders a horse card with the correct name ─────────────
-    await expect(page.locator('h1')).toContainText('My Stable', { timeout: 15000 });
-    await expect(page.getByText(horseName)).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('h1')).toContainText('Your Stable', { timeout: 15000 });
+    // Horse name may appear in multiple places (card + sidebar); assert the first visible one
+    await expect(page.getByText(horseName).first()).toBeVisible({ timeout: 10000 });
   });
 });
 
@@ -167,7 +171,7 @@ test.describe('Path 2: Returning-player login smoke', () => {
 
     // Navigate to /stable
     await page.goto('/stable', { waitUntil: 'domcontentloaded' });
-    await expect(page.locator('h1')).toContainText('My Stable', { timeout: 15000 });
+    await expect(page.locator('h1')).toContainText('Your Stable', { timeout: 15000 });
 
     // At least one horse card is visible (global-setup created a horse)
     await expect(page.locator('[data-testid="horse-card"]').first()).toBeVisible({
@@ -180,15 +184,37 @@ test.describe('Path 2: Returning-player login smoke', () => {
 // Path 3 — Horse detail smoke (AC1)
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('Path 3: Horse detail smoke', () => {
-  // Uses storageState from global-setup (authenticated session)
+  // Fresh session — logs in with global-setup credentials so the session is
+  // guaranteed fresh regardless of how long the test suite takes to reach this point.
+  // (storageState access-token cookies expire in 15 min; a long setup run invalidates them.)
+  test.use({ storageState: { cookies: [], origins: [] } });
 
   test('navigate to /horses/:id from stable — renders name and breed, no core BetaExcludedNotice', async ({
     page,
   }) => {
     test.setTimeout(60000);
 
+    await bypassAuthRateLimit(page);
+
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const credsPath = path.resolve(__dirname, 'test-credentials.json');
+
+    if (!fs.existsSync(credsPath)) {
+      test.skip(true, 'test-credentials.json not found — global-setup did not run');
+      return;
+    }
+
+    const { email, password } = JSON.parse(fs.readFileSync(credsPath, 'utf-8'));
+
+    await page.goto('/login', { waitUntil: 'domcontentloaded' });
+    await expect(page.locator('h2')).toContainText('Welcome Back', { timeout: 15000 });
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', password);
+    await page.click('button[type="submit"]');
+    await page.waitForURL('/', { timeout: 20000 });
+
     await page.goto('/stable', { waitUntil: 'domcontentloaded' });
-    await expect(page.locator('h1')).toContainText('My Stable', { timeout: 15000 });
+    await expect(page.locator('h1')).toContainText('Your Stable', { timeout: 15000 });
 
     // Click the first horse card to go to /horses/:id
     const firstCard = page.locator('[data-testid="horse-card"]').first();

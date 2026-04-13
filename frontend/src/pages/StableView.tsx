@@ -77,6 +77,7 @@ function StableHorseCard({ horse, onClick }: { horse: HorseSummary; onClick: () 
         isLegendary ? 'border-[var(--gold-dim)]' : 'border-[var(--glass-border)]'
       }`}
       aria-label={`View ${horse.name}`}
+      data-testid="horse-card"
     >
       {/* Top: portrait + info */}
       <div className="flex gap-4 p-4 pb-0">
