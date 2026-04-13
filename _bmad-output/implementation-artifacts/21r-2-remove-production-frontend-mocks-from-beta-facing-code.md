@@ -93,6 +93,15 @@
   - [x] 9.4 New `LoginPage.beta.test.tsx`: 3 tests — forgot-password link absent in beta, form still renders, register link still present. All pass.
   - [x] 9.5 New `TrainingSessionModal.beta.test.tsx`: 4 tests — help button absent in beta, HelpCircle icon absent, trait modifiers section still renders, core action buttons still present. All pass.
 
+- [ ] **Task 10 - Onboarding starter-horse persistence (beta-critical must-fix) — course correction 2026-04-13**
+  - [ ] 10.1 Add `horsesApi.create` to `frontend/src/lib/api-client.ts`. Endpoint: `POST /api/horses`. Confirm the request body shape from `backend/modules/horses/` (controller or routes file) before hardcoding it. Expected shape based on `api_specs.markdown`: `{ name: string, breedId: number, sex: 'M' | 'F', age: number, userId: number }`. Map `OnboardingPage` gender values: `'Mare'` → `'F'`, `'Stallion'` → `'M'`. Use `age: 1` for starter foals unless the backend requires a different default.
+  - [ ] 10.2 In `frontend/src/pages/OnboardingPage.tsx`, replace the `completeMutation` with a two-step chain: (1) call `horsesApi.create(...)` with the collected `horseSelection` and the current user's ID from auth context; (2) on success, call `authApi.advanceOnboarding()`; (3) invalidate `['horses']` and `['profile']` query keys; (4) clear `sessionStorage`; (5) navigate to `/stable`, not `/bank` — the tester must immediately see the persisted horse. If horse creation fails, surface a user-facing error toast and do not advance onboarding state.
+  - [ ] 10.3 Update `frontend/src/config/betaRouteScope.ts`: change `/onboarding` from `beta-readonly` to `beta-live`.
+  - [ ] 10.4 Update `docs/beta-route-truth-table.md` `/onboarding` row: confirm `beta-live`, `POST /api/horses` in Required APIs, known blocker resolved, Follow-up = `21R-3`. (Truth table already updated by course correction — verify it matches the implementation.)
+  - [ ] 10.5 Add or update `frontend/src/pages/__tests__/OnboardingPage.test.tsx` with focused tests: (a) `horsesApi.create` is called with correct payload on final step submit; (b) `authApi.advanceOnboarding` is called only after horse creation succeeds; (c) navigation goes to `/stable`; (d) if `horsesApi.create` fails, `advanceOnboarding` is not called and an error toast is shown; (e) `sessionStorage` is cleared on both success and failure paths.
+  - [ ] 10.6 Run `npm --prefix frontend run test:run -- --run src/pages/__tests__/OnboardingPage.test.tsx` and confirm all new tests pass. Run `npm --prefix frontend run lint` on changed files.
+  - [ ] 10.7 Update Dev Agent Record with file list, targeted test output, and any backend endpoint shape discrepancy found during implementation.
+
 ---
 
 ## Dev Notes
@@ -100,6 +109,8 @@
 ### Scope Boundary
 
 This story is a frontend beta-scope enforcement story. It may add frontend route gating, beta-excluded UI, real API hook wiring, and frontend tests. It must not create backend endpoints, weaken auth/security, edit Playwright bypass behavior, or change runtime cleanup routes. Those belong to 21R-3 through 21R-5.
+
+**Onboarding (added 2026-04-13 course correction):** Task 10 makes `/onboarding` beta-live. `OnboardingPage.tsx` must persist the starter horse via `POST /api/horses` before advancing onboarding state — the stable would be empty without it. Backend endpoint exists (`api_specs.markdown:30`). Confirm request body from `backend/modules/horses/` before wiring. Post-create navigation must go to `/stable`, not `/bank`.
 
 The safest implementation is not "make every route live." The safest implementation is: real data where the existing API contract is already present; otherwise hide, route-block, or render clear beta-excluded copy.
 

@@ -111,6 +111,20 @@ These findings were produced on the third review pass after prior 21R-1/21R-2 co
 
 ---
 
+### Fourth-Pass Review Finding - 2026-04-13
+
+- [ ] [Review][Patch][Critical] `/onboarding` is classified `beta-readonly` in the truth table, but this is wrong — onboarding is the mandatory front door of the beta. A beta tester who registers, picks a horse, and clicks "Begin" must arrive at `/stable` with that horse in the database. The current `OnboardingPage.tsx` collects breed, gender, and horse name across three steps, but its `completeMutation` calls only `authApi.advanceOnboarding()` and then discards all horse data (stored only in `sessionStorage`). `POST /api/horses` is never called. `horsesApi.create` does not exist in `api-client.ts`. The truth table must classify `/onboarding` as `beta-live`, the Known Blockers must name the missing horse persistence explicitly, and 21R-2 must fix it as a must-fix — not a "decide whether to upgrade" decision. Evidence: `docs/beta-route-truth-table.md:29`, `frontend/src/pages/OnboardingPage.tsx:321-327`, `frontend/src/lib/api-client.ts:856-860`, `backend/.augment/docs/api_specs.markdown:30`.
+
+### Fourth-Pass Correction Plan
+
+1. Update `docs/beta-route-truth-table.md` row for `/onboarding`: upgrade to `beta-live`; add `POST /api/horses` to Required APIs; update Primary Actions and Known Blockers; set Follow-up to `21R-2` only. **Applied 2026-04-13.**
+2. Add `/onboarding` to the beta-live minimum set section in the truth table. **Applied 2026-04-13.**
+3. Update Mandatory Follow-Up Decisions to strike the ambiguous "decide whether to upgrade" language and replace with the explicit horse-persistence must-fix. **Applied 2026-04-13.**
+4. Add Task 10 to 21R-2 covering `horsesApi.create`, `OnboardingPage` mutation chain, `betaRouteScope.ts` upgrade, and focused tests. **Applied 2026-04-13.**
+5. Record in the 21R-3 story when it is created that the first production-parity E2E path is: `register → login → onboarding → create starter horse → stable shows that horse`.
+
+---
+
 ## Dev Notes
 
 ### Scope Boundary
