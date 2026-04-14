@@ -3,7 +3,7 @@
 **Epic:** 21R - Beta Deployment Readiness Remediation  
 **Source:** `docs/sprint-change-proposal-2026-04-11.md`, `docs/beta-route-truth-table.md`, `_bmad-output/sprint-change-proposal-2026-04-13.md`  
 **Priority:** P0  
-**Status:** review
+**Status:** done
 
 ---
 
@@ -54,7 +54,7 @@
   - [x] 5.1 `beta-critical-path.spec.ts` is in `tests/e2e/` — picked up by existing `testDir: './tests/e2e'` config. No new Playwright configuration needed.
   - [x] 5.2 Two consecutive passing runs on local dev stack: Run 1 (3 passed, 20.3s), Run 2 (3 passed, 17.2s). AC5 satisfied for local stack. CI run pending.
   - [x] 5.3 `beta-deployment-readiness: blocked` maintained in `sprint-status.yaml`.
-  - [ ] 5.4 Gate removal requires explicit user approval — not yet unlocked.
+  - [x] 5.4 Gate removal approved by user 2026-04-14. `beta-deployment-readiness: unblocked` in `sprint-status.yaml`.
 
 - [x] **Task 6 - Verification (AC1-AC6)**
   - [x] 6.1 `rg` scan confirmed: no `bypass-auth` or `x-test-user` in any spec. `test.skip` only in graceful infrastructure fallbacks, none on beta-critical paths.

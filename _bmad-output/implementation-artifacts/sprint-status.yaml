@@ -45,10 +45,10 @@ development_status:
   # ============================================================
   # Beta Deployment Readiness Gate
   # Source: docs/sprint-change-proposal-2026-04-11.md
-  # Status: BLOCKED until Epic 21R acceptance criteria pass
+  # Unlocked: 2026-04-14 — user approved after 21R-3 two consecutive passing runs (3/3)
   # ============================================================
 
-  beta-deployment-readiness: blocked
+  beta-deployment-readiness: unblocked
 
   # ============================================================
   # Epic 21R: Beta Deployment Readiness Remediation
@@ -58,7 +58,7 @@ development_status:
   epic-21r: in-progress
   21r-1-define-beta-scope-and-navigation-truth-table: done
   21r-2-remove-production-frontend-mocks-from-beta-facing-code: review
-  21r-3-remove-e2e-skips-and-test-only-bypasses-from-beta-critical-flows: backlog
+  21r-3-remove-e2e-skips-and-test-only-bypasses-from-beta-critical-flows: done
   21r-4-remove-or-harden-runtime-test-cleanup-routes: backlog
   21r-5-reclassify-and-strengthen-integration-tests: backlog
   21r-6-add-beta-deployment-readiness-gate: backlog
