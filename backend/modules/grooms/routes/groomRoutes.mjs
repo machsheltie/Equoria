@@ -9,7 +9,6 @@ import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 import {
   assignGroom,
-  cleanupTestData,
   ensureDefaultAssignment,
   getFoalAssignments,
   recordInteraction,
@@ -622,9 +621,6 @@ router.put(
   requireOwnership('groom'),
   updateGroomBonusTraits,
 );
-
-// Test cleanup endpoint (for testing only)
-router.delete('/test/cleanup', cleanupTestData);
 
 // ===== RETIREMENT MANAGEMENT ENDPOINTS =====
 

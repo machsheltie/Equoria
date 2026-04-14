@@ -818,44 +818,6 @@ export async function getGroomDefinitions(_req, res) {
 }
 
 /**
- * DELETE /api/grooms/test/cleanup
- * Clean up test data (for testing only)
- */
-export async function cleanupTestData(_req, res) {
-  try {
-    logger.info('[groomController.cleanupTestData] Cleaning up test data');
-
-    // Delete all groom interactions
-    const deletedInteractions = await prisma.groomInteraction.deleteMany({});
-    logger.info(
-      `[groomController.cleanupTestData] Deleted ${deletedInteractions.count} interactions`,
-    );
-
-    // Delete all groom assignments
-    const deletedAssignments = await prisma.groomAssignment.deleteMany({});
-    logger.info(
-      `[groomController.cleanupTestData] Deleted ${deletedAssignments.count} assignments`,
-    );
-
-    res.status(200).json({
-      success: true,
-      message: 'Test data cleaned up successfully',
-      data: {
-        deletedInteractions: deletedInteractions.count,
-        deletedAssignments: deletedAssignments.count,
-      },
-    });
-  } catch (error) {
-    logger.error(`[groomController.cleanupTestData] Error: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to cleanup test data',
-      error: error.message,
-    });
-  }
-}
-
-/**
  * Get groom profile including personality information
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object

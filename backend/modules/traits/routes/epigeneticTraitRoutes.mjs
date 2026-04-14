@@ -15,7 +15,6 @@ import {
   getTraitHistory,
   getTraitDevelopmentSummary,
   getBreedingInsights,
-  cleanupTraitHistory,
 } from '../../../services/traitHistoryService.mjs';
 import { EPIGENETIC_FLAGS, GROOM_PERSONALITIES } from '../../../utils/epigeneticFlags.mjs';
 import { PrismaClient } from '../../../../packages/database/node_modules/@prisma/client/index.js';
@@ -399,30 +398,6 @@ async function getGroomCareHistory(horseId) {
     bondHistory: [], // Would be populated from bond tracking
     stressHistory: [], // Would be populated from stress tracking
   };
-}
-
-/**
- * Development/testing cleanup endpoint
- */
-if (process.env.NODE_ENV !== 'production') {
-  router.delete('/test/cleanup', authenticateToken, async (req, res) => {
-    try {
-      const userId = req.user.id;
-      const result = await cleanupTraitHistory(userId);
-
-      res.json({
-        success: true,
-        message: 'Trait history cleaned up successfully',
-        data: result,
-      });
-    } catch (error) {
-      logger.error('Error cleaning up trait history:', error);
-      res.status(500).json({
-        success: false,
-        error: 'Failed to cleanup trait history',
-      });
-    }
-  });
 }
 
 export default router;
