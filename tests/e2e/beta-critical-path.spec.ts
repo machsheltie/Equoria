@@ -97,22 +97,21 @@ test.describe('Path 1: New-player critical path', () => {
     await page.locator('[data-testid="onboarding-next"]').click();
     await expect(page.locator('h1')).toContainText("You're Ready!", { timeout: 10000 });
 
-    // ── 6. Step 2 → click "Begin" — intercept POST /api/horses response ──
-    const horsesCreatePromise = page.waitForResponse(
-      (res) => res.url().includes('/api/horses') && res.request().method() === 'POST',
+    // ── 6. Step 2 → click "Let's Go!" — intercept POST /api/auth/advance-onboarding ──
+    // Onboarding calls advance-onboarding to update the starter horse (name/breed/gender)
+    // that was created atomically by POST /api/auth/register.
+    const advanceOnboardingPromise = page.waitForResponse(
+      (res) =>
+        res.url().includes('/api/auth/advance-onboarding') && res.request().method() === 'POST',
       { timeout: 30000 }
     );
 
     await page.locator('[data-testid="onboarding-next"]').click();
 
-    const horsesCreateResponse = await horsesCreatePromise;
-    expect(horsesCreateResponse.status()).toBe(201);
+    const advanceOnboardingResponse = await advanceOnboardingPromise;
+    expect(advanceOnboardingResponse.status()).toBe(200);
 
-    const createdHorse = await horsesCreateResponse.json();
-    const horseId: number = createdHorse?.data?.id ?? createdHorse?.id ?? createdHorse?.horse?.id;
-    expect(typeof horseId).toBe('number');
-
-    // ── 7. Onboarding navigates to /stable ────────────────────────────────
+    // ── 7. Onboarding navigates to /stable (beta-live stable route) ───────
     await page.waitForURL(/\/stable$/, { timeout: 20000 });
 
     // ── 8. GET /api/horses — assert starter horse persisted in backend ─────
@@ -123,10 +122,13 @@ test.describe('Path 1: New-player critical path', () => {
     const horsesList: Array<{ id: number; name: string }> =
       horsesListJson?.data ?? horsesListJson ?? [];
     expect(Array.isArray(horsesList)).toBe(true);
+    expect(horsesList.length).toBeGreaterThanOrEqual(1);
 
     const starterHorse = horsesList.find((h) => h.name === horseName);
     expect(starterHorse).toBeDefined();
-    expect(starterHorse?.id).toBe(horseId);
+
+    const horseId = starterHorse?.id;
+    expect(typeof horseId).toBe('number');
 
     // ── 9. /stable renders a horse card with the correct name ─────────────
     await expect(page.locator('h1')).toContainText('Your Stable', { timeout: 15000 });

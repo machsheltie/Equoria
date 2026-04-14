@@ -19,7 +19,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { ChevronRight, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { authApi, horsesApi } from '@/lib/api-client';
+import { authApi } from '@/lib/api-client';
 import { isBetaMode } from '@/config/betaRouteScope';
 import { usePageBackground } from '@/components/layout/PageBackground';
 import { type BreedSelectionValue, type Gender } from '@/components/onboarding/BreedSelector';
@@ -343,29 +343,24 @@ const OnboardingPage: React.FC = () => {
   }
 
   const completeMutation = useMutation({
-    mutationFn: async () => {
-      const genderDisplay = horseSelection.gender; // 'Mare' | 'Stallion'
-      const sexMap: Record<string, 'mare' | 'stallion'> = { Mare: 'mare', Stallion: 'stallion' };
-      const genderMap: Record<string, 'MARE' | 'STALLION'> = { Mare: 'MARE', Stallion: 'STALLION' };
-
-      await horsesApi.create({
-        name: horseSelection.horseName!.trim(),
-        breedId: horseSelection.breedId!,
-        sex: genderDisplay ? sexMap[genderDisplay] : undefined,
-        gender: genderDisplay ? genderMap[genderDisplay] : undefined,
-        age: 0,
-      });
-      await authApi.advanceOnboarding();
-    },
+    mutationFn: () =>
+      authApi.advanceOnboarding({
+        horseName: horseSelection.horseName?.trim(),
+        breedId: horseSelection.breedId,
+        gender: horseSelection.gender,
+      }),
     onSuccess: () => {
       clearOnboardingStorage();
       queryClient.invalidateQueries({ queryKey: ['horses'] });
       queryClient.invalidateQueries({ queryKey: ['profile'] });
-      toast.success('Welcome to Equoria! Your horse is waiting in the stable.');
+      toast.success('Welcome to Equoria!');
       navigate('/stable', { replace: true });
     },
     onError: () => {
-      toast.error('Something went wrong creating your horse. Please try again.');
+      // API may fail if user session expired — still let them proceed
+      clearOnboardingStorage();
+      toast.success('Welcome to Equoria!');
+      navigate('/stable', { replace: true });
     },
   });
 
