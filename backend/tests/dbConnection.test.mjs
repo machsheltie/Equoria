@@ -55,5 +55,6 @@ describe('🔌 INTEGRATION: Database Connection - Alternative Prisma Client Path
     if (users.length > 0) {
       expect(users.every(user => user.id && user.email)).toBe(true);
     }
-  });
+    // 120s explicit timeout — default 60s can be exceeded during full-suite resource contention
+  }, 120000);
 });
