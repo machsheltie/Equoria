@@ -18,27 +18,25 @@ describe('Groom Retirement Routes', () => {
   let testGroom;
   let retiredGroom;
 
-  beforeAll(async () => {
-    // Create test user
+  beforeEach(async () => {
+    // Create a fresh user for each test — avoids FK violations from test interference
+    // when the full suite runs and Prisma connections are recycled between test files.
+    const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
     testUser = await prisma.user.create({
       data: {
-        username: `testuser_routes_${Date.now()}`,
-        email: `test_routes_${Date.now()}@example.com`,
+        username: `testuser_routes_${ts}`,
+        email: `test_routes_${ts}@example.com`,
         password: 'hashedpassword123',
         firstName: 'Test',
         lastName: 'User',
       },
     });
-
-    // Generate test token
     testToken = generateTestToken(testUser);
-  });
 
-  beforeEach(async () => {
     // Create test grooms
     testGroom = await prisma.groom.create({
       data: {
-        name: `Test Groom ${Date.now()}`,
+        name: `Test Groom ${ts}`,
         personality: 'calm',
         skillLevel: 'intermediate',
         speciality: 'foal_care',
@@ -50,7 +48,7 @@ describe('Groom Retirement Routes', () => {
 
     retiredGroom = await prisma.groom.create({
       data: {
-        name: `Retired Groom ${Date.now()}`,
+        name: `Retired Groom ${ts}`,
         personality: 'energetic',
         skillLevel: 'expert',
         speciality: 'general_grooming',
@@ -64,7 +62,7 @@ describe('Groom Retirement Routes', () => {
   });
 
   afterEach(async () => {
-    // Clean up test data
+    // Clean up grooms
     if (testGroom) {
       await prisma.groomTalentSelections.deleteMany({
         where: { groomId: testGroom.id },
@@ -86,16 +84,11 @@ describe('Groom Retirement Routes', () => {
         where: { id: retiredGroom.id },
       });
     }
-  });
-
-  afterAll(async () => {
-    // Clean up test data
+    // Clean up the user created for this test
     if (testUser) {
-      await prisma.user.delete({
-        where: { id: testUser.id },
-      });
+      await prisma.user.deleteMany({ where: { id: testUser.id } });
+      testUser = null;
     }
-    await prisma.$disconnect();
   });
 
   describe('Retirement Endpoints', () => {
