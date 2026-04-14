@@ -64,6 +64,7 @@ export default {
         },
       },
       maxWorkers: 1,
+      testTimeout: 60000,
       clearMocks: true,
       restoreMocks: true,
       errorOnDeprecated: true,

@@ -1,4 +1,4 @@
-// Integration tests for conformationShowController.mjs (Story 31F-2)
+// Unit tests for conformationShowController.mjs (Story 31F-2)
 // Co-located per CONTRIBUTING.md convention (Epic 21-1):
 //   backend/modules/competition/__tests__/conformationShowEntry.test.mjs
 // Covers: enterConformationShow (POST /enter) and checkConformationEligibility (GET /eligibility/:id)

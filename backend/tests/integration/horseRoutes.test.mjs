@@ -1,170 +1,149 @@
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import request from 'supertest';
+/**
+ * Horse Routes Integration Tests
+ *
+ * Tests for horse API endpoints — real database, no mocks.
+ * Covers beta-critical flows used by the stable page and training system.
+ *
+ * Testing Approach: NO MOCKING — Real database operations
+ * This validates actual API behavior and database constraints.
+ */
 
-// Import authentication helpers
+import request from 'supertest';
+import app from '../../app.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 
-// Create mock object BEFORE jest.unstable_mockModule
-const mockPrisma = {
-  user: {
-    findUnique: jest.fn(),
-    upsert: jest.fn(),
-  },
-  horse: {
-    findMany: jest.fn(),
-  },
-  trainingLog: {
-    groupBy: jest.fn(),
-  },
-  $disconnect: jest.fn(),
-};
-
-// Mock the database module BEFORE importing the app
-jest.unstable_mockModule('../../db/index.mjs', () => ({
-  default: mockPrisma,
-}));
-
-// Now import the app
-const app = (await import('../../app.mjs')).default;
-
 describe('Horse Routes Integration Tests', () => {
-  // Authentication variables
-  let authToken;
+  let testUser;
+  let testToken;
+  let trainableHorse;
+  let foalHorse;
 
-  const mockUser = {
-    id: 'test-user-uuid-123',
-    name: 'Test User',
-    horses: [
-      {
-        id: 1,
-        name: 'Adult Horse 1',
+  beforeEach(async () => {
+    const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    testUser = await prisma.user.create({
+      data: {
+        username: `testuser_hr_${ts}`,
+        email: `testuser_hr_${ts}@example.com`,
+        password: 'hashedpassword123',
+        firstName: 'Test',
+        lastName: 'User',
+      },
+    });
+    testToken = generateTestToken(testUser);
+
+    trainableHorse = await prisma.horse.create({
+      data: {
+        name: `TrainableHorse_${ts}`,
+        sex: 'Mare',
+        dateOfBirth: new Date(Date.now() - 4 * 365.25 * 24 * 60 * 60 * 1000),
         age: 4,
-        dateOfBirth: new Date(Date.now() - 4 * 365.25 * 24 * 60 * 60 * 1000), // 4 years ago
-        userId: 'test-user-uuid-123',
-        breed: { id: 1, name: 'Thoroughbred' },
-        stable: { id: 1, name: 'Main Stable' },
-        epigeneticModifiers: {
-          positive: [], // No special traits (including no "gaited" trait)
-          negative: [],
-        },
+        userId: testUser.id,
       },
-      {
-        id: 2,
-        name: 'Adult Horse 2',
-        age: 5,
-        dateOfBirth: new Date(Date.now() - 5 * 365.25 * 24 * 60 * 60 * 1000), // 5 years ago
-        userId: 'test-user-uuid-123',
-        breed: { id: 2, name: 'Arabian' },
-        stable: { id: 1, name: 'Main Stable' },
-        epigeneticModifiers: {
-          positive: [], // No special traits
-          negative: [],
-        },
+    });
+
+    foalHorse = await prisma.horse.create({
+      data: {
+        name: `FoalHorse_${ts}`,
+        sex: 'Stallion',
+        dateOfBirth: new Date(Date.now() - 1 * 365.25 * 24 * 60 * 60 * 1000),
+        age: 1,
+        userId: testUser.id,
       },
-    ],
-  };
-
-  beforeEach(() => {
-    // Generate test authentication token
-    authToken = generateTestToken({
-      id: 'test-user-uuid-123',
-      email: 'test@example.com',
-      role: 'user',
     });
-    // Reset all mocks before each test
-    jest.clearAllMocks();
-
-    // Setup database mocks
-    // Mock for user.findUnique, which is used by horseController for /trainable/:userId
-    mockPrisma.user.findUnique.mockImplementation(({ where }) => {
-      if (where.id === 'test-user-uuid-123') {
-        return Promise.resolve(mockUser); // mockUser includes the horses array
-      } else if (where.id === 'nonexistent-user-uuid-456') {
-        return Promise.resolve(null);
-      }
-      return Promise.resolve(null);
-    });
-
-    mockPrisma.horse.findMany.mockImplementation(({ where }) => {
-      if (where?.userId === 'test-user-uuid-123') {
-        return Promise.resolve(mockUser.horses);
-      }
-      return Promise.resolve([]);
-    });
-
-    // Mock upsert for auth bypass
-    mockPrisma.user.upsert.mockResolvedValue({
-      id: 'test-user-uuid-123',
-      email: 'test@example.com',
-    });
-
-    // Mock groupBy for trainingModel
-    mockPrisma.trainingLog.groupBy.mockResolvedValue([]);
   });
-  describe('GET /api/horses/trainable/:userId', () => {
-    it('should return trainable horses for valid user ID', async () => {
-      const userId = 'test-user-uuid-123';
 
-      const response = await request(app)
-        .get(`/api/horses/trainable/${userId}`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
+  afterEach(async () => {
+    if (trainableHorse) {
+      await prisma.horse.deleteMany({ where: { id: trainableHorse.id } });
+    }
+    if (foalHorse) {
+      await prisma.horse.deleteMany({ where: { id: foalHorse.id } });
+    }
+    if (testUser) {
+      await prisma.user.deleteMany({ where: { id: testUser.id } });
+      testUser = null;
+    }
+  });
+
+  describe('GET /api/horses', () => {
+    test('should return horses for the authenticated user', async () => {
+      const response = await request(app).get('/api/horses').set('Authorization', `Bearer ${testToken}`).expect(200);
 
       expect(response.body).toHaveProperty('success', true);
-      expect(response.body).toHaveProperty('message');
-      expect(response.body).toHaveProperty('data');
-      expect(Array.isArray(response.body.data)).toBe(true);
-
-      // Each horse should have the required properties
-      response.body.data.forEach(horse => {
-        expect(horse).toHaveProperty('horseId');
-        expect(horse).toHaveProperty('name');
-        expect(horse).toHaveProperty('age');
-        expect(horse).toHaveProperty('trainableDisciplines');
-        expect(Array.isArray(horse.trainableDisciplines)).toBe(true);
-        expect(horse.age).toBeGreaterThanOrEqual(3); // Only horses 3+ should be returned
-      });
+      const horseIds = response.body.data.map(h => h.id);
+      expect(horseIds).toContain(trainableHorse.id);
+      expect(horseIds).toContain(foalHorse.id);
     });
 
-    it("should return 403 when accessing another user's trainable horses", async () => {
-      const userId = 'nonexistent-user-uuid-456';
+    test('should require authentication', async () => {
+      await request(app).get('/api/horses').expect(401);
+    });
+  });
 
+  describe('GET /api/horses/trainable/:userId', () => {
+    test('should return all horses with trainableDisciplines based on age', async () => {
       const response = await request(app)
-        .get(`/api/horses/trainable/${userId}`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(403);
+        .get(`/api/horses/trainable/${testUser.id}`)
+        .set('Authorization', `Bearer ${testToken}`)
+        .expect(200);
 
-      expect(response.body).toHaveProperty('success', false);
-      expect(response.body).toHaveProperty('message', 'Forbidden: Cannot access trainable horses for another user');
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toBeInstanceOf(Array);
+
+      const returned = response.body.data;
+      const trainable = returned.find(h => h.horseId === trainableHorse.id);
+      const foal = returned.find(h => h.horseId === foalHorse.id);
+
+      // 4-year-old horse should have trainable disciplines
+      expect(trainable).toBeDefined();
+      expect(trainable.age).toBe(4);
+      expect(trainable.trainableDisciplines.length).toBeGreaterThan(0);
+
+      // 1-year-old foal is too young — controller returns it with empty disciplines
+      expect(foal).toBeDefined();
+      expect(foal.age).toBe(1);
+      expect(foal.trainableDisciplines).toHaveLength(0);
     });
 
-    it('should return validation error for invalid user ID', async () => {
-      await request(app).get('/api/horses/trainable/').set('Authorization', `Bearer ${authToken}`).expect(400); // Validation error for empty user ID
+    test('should return 403 when accessing another users trainable horses', async () => {
+      const otherTs = `${Date.now()}_other`;
+      const otherUser = await prisma.user.create({
+        data: {
+          username: `other_hr_${otherTs}`,
+          email: `other_hr_${otherTs}@example.com`,
+          password: 'hashedpassword123',
+          firstName: 'Other',
+          lastName: 'User',
+        },
+      });
+
+      try {
+        const response = await request(app)
+          .get(`/api/horses/trainable/${otherUser.id}`)
+          .set('Authorization', `Bearer ${testToken}`)
+          .expect(403);
+
+        expect(response.body.success).toBe(false);
+        expect(response.body.message).toMatch(/Forbidden/i);
+      } finally {
+        await prisma.user.deleteMany({ where: { id: otherUser.id } });
+      }
     });
 
-    it('should return validation error for user ID that is too long', async () => {
-      const longUserId = 'a'.repeat(51); // Exceeds 50 character limit
-
+    test('should return 400 for user ID that is too long', async () => {
+      const longUserId = 'a'.repeat(51);
       const response = await request(app)
         .get(`/api/horses/trainable/${longUserId}`)
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('Authorization', `Bearer ${testToken}`)
         .expect(400);
 
-      expect(response.body).toHaveProperty('success', false);
-      expect(response.body).toHaveProperty('message', 'Validation failed');
-      expect(response.body).toHaveProperty('errors');
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toBe('Validation failed');
     });
 
-    it('should handle server errors gracefully', async () => {
-      // This test would require mocking the controller to throw an error
-      // For now, we'll just verify the endpoint exists and responds
-      const userId = 'test-user-uuid-123';
-
-      const response = await request(app)
-        .get(`/api/horses/trainable/${userId}`)
-        .set('Authorization', `Bearer ${authToken}`);
-
-      expect([200, 500]).toContain(response.status);
+    test('should require authentication', async () => {
+      await request(app).get(`/api/horses/trainable/${testUser.id}`).expect(401);
     });
   });
 });

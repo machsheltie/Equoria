@@ -1,5 +1,5 @@
 /**
- * Integration tests for conformationShowController.mjs — execute + titles (Story 31F-3)
+ * Unit tests for conformationShowController.mjs — execute + titles (Story 31F-3)
  *
  * Co-located per CONTRIBUTING.md convention (Epic 21-1):
  *   backend/modules/competition/__tests__/conformationShowExecution.test.mjs
