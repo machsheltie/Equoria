@@ -95,7 +95,9 @@ export function responseOptimization(options = {}) {
           const responseSize = JSON.stringify(optimizedData).length;
 
           if (responseSize > maxResponseSize) {
-            logger.error(`[ResponseOptimization] Response size exceeds limit: ${responseSize} bytes for ${req.method} ${req.path}`);
+            logger.error(
+              `[ResponseOptimization] Response size exceeds limit: ${responseSize} bytes for ${req.method} ${req.path}`,
+            );
             return res.status(413).json({
               success: false,
               message: 'Response payload too large',
@@ -104,7 +106,9 @@ export function responseOptimization(options = {}) {
           }
 
           if (responseSize > warningSizeThreshold) {
-            logger.warn(`[ResponseOptimization] Large response detected: ${responseSize} bytes for ${req.method} ${req.path}`);
+            logger.warn(
+              `[ResponseOptimization] Large response detected: ${responseSize} bytes for ${req.method} ${req.path}`,
+            );
           }
 
           // Add response size to headers for debugging
@@ -144,11 +148,7 @@ export function responseOptimization(options = {}) {
  * Pagination middleware for automatic pagination support
  */
 export function paginationMiddleware(options = {}) {
-  const {
-    defaultLimit = 20,
-    maxLimit = 100,
-    enableCursor = true,
-  } = options;
+  const { defaultLimit = 20, maxLimit = 100, enableCursor = true } = options;
 
   return (req, res, next) => {
     // Parse pagination parameters
@@ -192,10 +192,7 @@ export function paginationMiddleware(options = {}) {
  * Lazy loading middleware for related data
  */
 export function lazyLoadingMiddleware(options = {}) {
-  const {
-    enableLazyLoading = true,
-    defaultIncludes = [],
-  } = options;
+  const { enableLazyLoading = true, defaultIncludes = [] } = options;
 
   return (req, res, next) => {
     if (!enableLazyLoading) {
@@ -203,8 +200,12 @@ export function lazyLoadingMiddleware(options = {}) {
     }
 
     // Parse include parameters
-    const includes = req.query.include ? req.query.include.split(',').map(i => i.trim()) : defaultIncludes;
-    const excludeIncludes = req.query.excludeInclude ? req.query.excludeInclude.split(',').map(i => i.trim()) : [];
+    const includes = req.query.include
+      ? req.query.include.split(',').map(i => i.trim())
+      : defaultIncludes;
+    const excludeIncludes = req.query.excludeInclude
+      ? req.query.excludeInclude.split(',').map(i => i.trim())
+      : [];
 
     // Filter includes
     const filteredIncludes = includes.filter(include => !excludeIncludes.includes(include));
@@ -223,11 +224,7 @@ export function lazyLoadingMiddleware(options = {}) {
  * Response compression middleware wrapper
  */
 export function compressionMiddleware(options = {}) {
-  const {
-    _threshold = 1024,
-    _level = 6,
-    enableBrotli = true,
-  } = options;
+  const { _threshold = 1024, _level = 6, enableBrotli = true } = options;
 
   return (req, res, next) => {
     // Set compression preferences
@@ -262,18 +259,25 @@ export function performanceMonitoring(options = {}) {
     const originalEnd = res.end;
 
     res.end = function (...args) {
-      const endTime = Date.now();
-      const duration = endTime - startTime;
+      // Only wrap header-setting in try-catch; originalEnd is called unconditionally
+      // so the response is ALWAYS sent even if header-setting fails.
+      try {
+        const endTime = Date.now();
+        const duration = endTime - startTime;
 
-      // Log slow requests
-      if (logSlowRequests && duration > slowRequestThreshold) {
-        logger.warn(`[Performance] Slow request detected: ${req.method} ${req.path} took ${duration}ms`);
+        if (logSlowRequests && duration > slowRequestThreshold) {
+          logger.warn(
+            `[Performance] Slow request detected: ${req.method} ${req.path} took ${duration}ms`,
+          );
+        }
+
+        if (!res.headersSent) {
+          res.setHeader('X-Response-Time', `${duration}ms`);
+          res.setHeader('X-Timestamp', new Date().toISOString());
+        }
+      } catch {
+        // Header-setting failed — proceed to send response anyway
       }
-
-      // Add performance headers
-      res.setHeader('X-Response-Time', `${duration}ms`);
-      res.setHeader('X-Timestamp', new Date().toISOString());
-
       return originalEnd.apply(this, args);
     };
 

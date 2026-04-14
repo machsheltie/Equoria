@@ -35,7 +35,8 @@ export function createResourceManagementMiddleware(options = {}) {
   };
 
   return (req, res, next) => {
-    const requestId = req.headers['x-request-id'] || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    const requestId =
+      req.headers['x-request-id'] || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     const startTime = performance.now();
     const startMemory = config.trackMemoryUsage ? process.memoryUsage() : null;
 
@@ -75,10 +76,14 @@ export function createResourceManagementMiddleware(options = {}) {
     // Override setTimeout to track timers
     const originalSetTimeout = global.setTimeout;
     req.setTimeout = (callback, delay, ...args) => {
-      const timer = originalSetTimeout((...callbackArgs) => {
-        req.untrackResource('timers', timer);
-        callback(...callbackArgs);
-      }, delay, ...args);
+      const timer = originalSetTimeout(
+        (...callbackArgs) => {
+          req.untrackResource('timers', timer);
+          callback(...callbackArgs);
+        },
+        delay,
+        ...args,
+      );
 
       req.trackResource('timers', timer);
       return timer;
@@ -161,43 +166,46 @@ export function createResourceManagementMiddleware(options = {}) {
       req.resources.connections.clear();
 
       if (config.logResourceUsage && cleanedCount > 0) {
-        logger.debug(`[ResourceManagement] Request ${requestId}: Cleaned ${cleanedCount} resources`);
+        logger.debug(
+          `[ResourceManagement] Request ${requestId}: Cleaned ${cleanedCount} resources`,
+        );
       }
 
       return cleanedCount;
     };
 
-    // Override res.end to add headers before response is sent
+    // Override res.end to add headers before response is sent.
+    // IMPORTANT: originalEnd.apply is called unconditionally OUTSIDE the try-catch
+    // so the response is always sent even if header-setting throws.
     const originalEnd = res.end;
     res.end = function (...args) {
-      const endTime = performance.now();
-      const duration = endTime - startTime;
-      const endMemory = config.trackMemoryUsage ? process.memoryUsage() : null;
+      try {
+        const endTime = performance.now();
+        const duration = endTime - startTime;
+        const endMemory = config.trackMemoryUsage ? process.memoryUsage() : null;
 
-      // Calculate memory usage
-      let memoryDelta = null;
-      if (startMemory && endMemory) {
-        memoryDelta = {
-          rss: endMemory.rss - startMemory.rss,
-          heapTotal: endMemory.heapTotal - startMemory.heapTotal,
-          heapUsed: endMemory.heapUsed - startMemory.heapUsed,
-          external: endMemory.external - startMemory.external,
-        };
-      }
-
-      // Add performance headers before response is sent
-      if (config.trackPerformance && !res.headersSent) {
-        try {
-          res.setHeader('X-Response-Time', `${Math.round(duration)}ms`);
-          res.setHeader('X-Memory-Delta', memoryDelta ? `${Math.round(memoryDelta.heapUsed / 1024)}KB` : 'unknown');
-          res.setHeader('X-Resources-Cleaned', '0'); // Will be updated in finish event
-        } catch (error) {
-          logger.debug(`[ResourceManagement] Could not set headers: ${error.message}`);
+        let memoryDelta = null;
+        if (startMemory && endMemory) {
+          memoryDelta = {
+            rss: endMemory.rss - startMemory.rss,
+            heapTotal: endMemory.heapTotal - startMemory.heapTotal,
+            heapUsed: endMemory.heapUsed - startMemory.heapUsed,
+            external: endMemory.external - startMemory.external,
+          };
         }
-      }
 
-      // Call original end method
-      originalEnd.apply(this, args);
+        if (config.trackPerformance && !res.headersSent) {
+          res.setHeader('X-Response-Time', `${Math.round(duration)}ms`);
+          res.setHeader(
+            'X-Memory-Delta',
+            memoryDelta ? `${Math.round(memoryDelta.heapUsed / 1024)}KB` : 'unknown',
+          );
+          res.setHeader('X-Resources-Cleaned', '0');
+        }
+      } catch {
+        // Header-setting failed — proceed to send response anyway
+      }
+      return originalEnd.apply(this, args);
     };
 
     // Setup cleanup on response finish
@@ -235,11 +243,15 @@ export function createResourceManagementMiddleware(options = {}) {
 
           // Check for performance issues
           if (duration > config.performanceThreshold) {
-            logger.warn(`[ResourceManagement] Slow request detected: ${req.method} ${req.url} took ${Math.round(duration)}ms`);
+            logger.warn(
+              `[ResourceManagement] Slow request detected: ${req.method} ${req.url} took ${Math.round(duration)}ms`,
+            );
           }
 
           if (memoryDelta && memoryDelta.heapUsed > config.memoryThreshold) {
-            logger.warn(`[ResourceManagement] High memory usage: ${req.method} ${req.url} used ${Math.round(memoryDelta.heapUsed / 1024 / 1024)}MB`);
+            logger.warn(
+              `[ResourceManagement] High memory usage: ${req.method} ${req.url} used ${Math.round(memoryDelta.heapUsed / 1024 / 1024)}MB`,
+            );
           }
 
           if (config.logResourceUsage) {
@@ -253,7 +265,7 @@ export function createResourceManagementMiddleware(options = {}) {
         req.cleanupResources();
       });
 
-      req.on('error', (error) => {
+      req.on('error', error => {
         logger.error(`[ResourceManagement] Request error: ${error.message}`);
         req.cleanupResources();
       });
@@ -285,7 +297,9 @@ export function memoryMonitoringMiddleware(options = {}) {
 
     // Check memory threshold
     if (memUsage.heapUsed > config.threshold) {
-      logger.warn(`[MemoryMonitoring] Memory threshold exceeded: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`);
+      logger.warn(
+        `[MemoryMonitoring] Memory threshold exceeded: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`,
+      );
 
       if (config.enableGC && global.gc) {
         try {
@@ -323,22 +337,21 @@ export function databaseConnectionMiddleware(prisma) {
       return originalExecute.apply(prisma, args);
     };
 
-    // Override res.end to add DB headers before response is sent
+    // Override res.end to add DB headers before response is sent.
+    // IMPORTANT: originalEnd.apply is called unconditionally OUTSIDE the try-catch
+    // so the response is always sent even if header-setting throws.
     const originalEnd = res.end;
     res.end = function (...args) {
-      const duration = Date.now() - startTime;
-
-      if (queryCount > 0 && !res.headersSent) {
-        try {
+      try {
+        const duration = Date.now() - startTime;
+        if (queryCount > 0 && !res.headersSent) {
           res.setHeader('X-DB-Queries', queryCount.toString());
           res.setHeader('X-DB-Time', `${duration}ms`);
-        } catch (error) {
-          logger.debug(`[DatabaseMonitoring] Could not set headers: ${error.message}`);
         }
+      } catch {
+        // Header-setting failed — proceed to send response anyway
       }
-
-      // Call original end method
-      originalEnd.apply(this, args);
+      return originalEnd.apply(this, args);
     };
 
     // Restore original methods and log stats on response
@@ -346,7 +359,9 @@ export function databaseConnectionMiddleware(prisma) {
       const duration = Date.now() - startTime;
 
       if (queryCount > 10) {
-        logger.warn(`[DatabaseMonitoring] High query count: ${queryCount} queries in ${duration}ms for ${req.method} ${req.url}`);
+        logger.warn(
+          `[DatabaseMonitoring] High query count: ${queryCount} queries in ${duration}ms for ${req.method} ${req.url}`,
+        );
       }
 
       // Restore original methods
