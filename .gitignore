@@ -143,6 +143,13 @@ IMPLEMENTATION_*.md
 frontend/node_modules/
 packages/*/node_modules/
 
+# === Local BMad / Research Artifacts ===
+_bmad/
+docs/.archive/
+resize-lusitano.html
+test-breeding-performance.mjs
+**/.claude/settings.local.json
+
 # === Playwright / E2E Artifacts ===
 playwright-report/
 storageState.json
