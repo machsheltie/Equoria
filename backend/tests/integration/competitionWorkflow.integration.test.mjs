@@ -69,7 +69,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
 
     // Clean up test data
     await cleanupTestData();
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   async function cleanupTestData() {

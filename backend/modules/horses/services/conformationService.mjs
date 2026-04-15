@@ -39,7 +39,9 @@ const DEFAULT_UNKNOWN_BREED_SCORES = Object.freeze({
 export function normalRandom(mean, stdDev) {
   // Avoid Math.log(0) = -Infinity by clamping u1 away from 0
   let u1 = Math.random();
-  if (u1 === 0) u1 = Number.EPSILON;
+  if (u1 === 0) {
+    u1 = Number.EPSILON;
+  }
   const u2 = Math.random();
   const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
   // Guard against negative std_dev from corrupted profile data
@@ -52,7 +54,9 @@ export function normalRandom(mean, stdDev) {
  * @returns {number} Integer clamped to [0, 100]
  */
 export function clampScore(value) {
-  if (!Number.isFinite(value)) return 50; // Fallback for NaN/Infinity
+  if (!Number.isFinite(value)) {
+    return 50;
+  } // Fallback for NaN/Infinity
   return Math.round(Math.min(100, Math.max(0, value)));
 }
 
@@ -64,7 +68,9 @@ export function clampScore(value) {
 export function calculateOverallConformation(scores) {
   // CONF-2: return neutral midpoint (50) not 0 — a score of 0 is a real competitive value
   // and would permanently disadvantage any horse created with corrupted scores
-  if (!scores || typeof scores !== 'object') return 50;
+  if (!scores || typeof scores !== 'object') {
+    return 50;
+  }
   const values = CONFORMATION_REGIONS.map(region => scores[region] ?? 0);
   const sum = values.reduce((acc, val) => acc + val, 0);
   return Math.round(sum / CONFORMATION_REGIONS.length);
@@ -186,7 +192,9 @@ export function generateInheritedConformationScores(breedId, sireScores, damScor
  * @returns {boolean} True if the object has at least one finite numeric region score
  */
 export function hasValidConformationScores(scores) {
-  if (!scores || typeof scores !== 'object') return false;
+  if (!scores || typeof scores !== 'object') {
+    return false;
+  }
   return CONFORMATION_REGIONS.some(region => Number.isFinite(scores[region]));
 }
 

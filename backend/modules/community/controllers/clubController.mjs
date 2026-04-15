@@ -12,8 +12,12 @@ const USER_SELECT = { id: true, username: true };
 export async function getClubs(req, res) {
   const { type, category } = req.query;
   const where = {};
-  if (type) where.type = type;
-  if (category) where.category = category;
+  if (type) {
+    where.type = type;
+  }
+  if (category) {
+    where.category = category;
+  }
 
   try {
     const clubs = await prisma.club.findMany({
@@ -54,7 +58,9 @@ export async function getMyClubs(req, res) {
 /** GET /api/clubs/:id */
 export async function getClub(req, res) {
   const id = parseInt(req.params.id, 10);
-  if (!id || id <= 0) return res.status(400).json({ success: false, message: 'Invalid club ID' });
+  if (!id || id <= 0) {
+    return res.status(400).json({ success: false, message: 'Invalid club ID' });
+  }
   try {
     const club = await prisma.club.findUnique({
       where: { id },
@@ -63,7 +69,9 @@ export async function getClub(req, res) {
         members: { include: { user: { select: USER_SELECT } }, orderBy: { joinedAt: 'asc' } },
       },
     });
-    if (!club) return res.status(404).json({ success: false, message: 'Club not found' });
+    if (!club) {
+      return res.status(404).json({ success: false, message: 'Club not found' });
+    }
     return res.json({ success: true, data: { club } });
   } catch (error) {
     logger.error(`[clubController.getClub] ${error.message}`);
@@ -77,8 +85,9 @@ export async function createClub(req, res) {
   const leaderId = req.user.id;
   try {
     const existing = await prisma.club.findUnique({ where: { name } });
-    if (existing)
+    if (existing) {
       return res.status(409).json({ success: false, message: 'Club name already taken' });
+    }
 
     const club = await prisma.$transaction(async tx => {
       const c = await tx.club.create({ data: { name, type, category, description, leaderId } });
@@ -100,16 +109,21 @@ export async function createClub(req, res) {
 export async function joinClub(req, res) {
   const clubId = parseInt(req.params.id, 10);
   const userId = req.user.id;
-  if (!clubId || clubId <= 0)
+  if (!clubId || clubId <= 0) {
     return res.status(400).json({ success: false, message: 'Invalid club ID' });
+  }
   try {
     const club = await prisma.club.findUnique({ where: { id: clubId } });
-    if (!club) return res.status(404).json({ success: false, message: 'Club not found' });
+    if (!club) {
+      return res.status(404).json({ success: false, message: 'Club not found' });
+    }
 
     const existing = await prisma.clubMembership.findUnique({
       where: { clubId_userId: { clubId, userId } },
     });
-    if (existing) return res.status(409).json({ success: false, message: 'Already a member' });
+    if (existing) {
+      return res.status(409).json({ success: false, message: 'Already a member' });
+    }
 
     const membership = await prisma.clubMembership.create({
       data: { clubId, userId, role: 'member' },
@@ -125,13 +139,16 @@ export async function joinClub(req, res) {
 export async function leaveClub(req, res) {
   const clubId = parseInt(req.params.id, 10);
   const userId = req.user.id;
-  if (!clubId || clubId <= 0)
+  if (!clubId || clubId <= 0) {
     return res.status(400).json({ success: false, message: 'Invalid club ID' });
+  }
   try {
     const membership = await prisma.clubMembership.findUnique({
       where: { clubId_userId: { clubId, userId } },
     });
-    if (!membership) return res.status(404).json({ success: false, message: 'Not a member' });
+    if (!membership) {
+      return res.status(404).json({ success: false, message: 'Not a member' });
+    }
     if (membership.role === 'president') {
       return res
         .status(400)
@@ -148,8 +165,9 @@ export async function leaveClub(req, res) {
 /** GET /api/clubs/:id/elections */
 export async function getElections(req, res) {
   const clubId = parseInt(req.params.id, 10);
-  if (!clubId || clubId <= 0)
+  if (!clubId || clubId <= 0) {
     return res.status(400).json({ success: false, message: 'Invalid club ID' });
+  }
   try {
     const elections = await prisma.clubElection.findMany({
       where: { clubId },
@@ -168,8 +186,9 @@ export async function createElection(req, res) {
   const clubId = parseInt(req.params.id, 10);
   const userId = req.user.id;
   const { position, startsAt, endsAt } = req.body;
-  if (!clubId || clubId <= 0)
+  if (!clubId || clubId <= 0) {
     return res.status(400).json({ success: false, message: 'Invalid club ID' });
+  }
   try {
     const membership = await prisma.clubMembership.findUnique({
       where: { clubId_userId: { clubId, userId } },
@@ -196,26 +215,33 @@ export async function nominate(req, res) {
   const electionId = parseInt(req.params.id, 10);
   const userId = req.user.id;
   const { statement = '' } = req.body;
-  if (!electionId || electionId <= 0)
+  if (!electionId || electionId <= 0) {
     return res.status(400).json({ success: false, message: 'Invalid election ID' });
+  }
   try {
     const election = await prisma.clubElection.findUnique({ where: { id: electionId } });
-    if (!election) return res.status(404).json({ success: false, message: 'Election not found' });
-    if (election.status === 'closed')
+    if (!election) {
+      return res.status(404).json({ success: false, message: 'Election not found' });
+    }
+    if (election.status === 'closed') {
       return res.status(400).json({ success: false, message: 'Election is closed' });
+    }
 
     const membership = await prisma.clubMembership.findUnique({
       where: { clubId_userId: { clubId: election.clubId, userId } },
     });
-    if (!membership)
+    if (!membership) {
       return res
         .status(403)
         .json({ success: false, message: 'You must be a club member to nominate' });
+    }
 
     const existing = await prisma.clubCandidate.findUnique({
       where: { electionId_userId: { electionId, userId } },
     });
-    if (existing) return res.status(409).json({ success: false, message: 'Already nominated' });
+    if (existing) {
+      return res.status(409).json({ success: false, message: 'Already nominated' });
+    }
 
     const candidate = await prisma.clubCandidate.create({
       data: { electionId, userId, statement },
@@ -232,19 +258,24 @@ export async function vote(req, res) {
   const electionId = parseInt(req.params.id, 10);
   const voterId = req.user.id;
   const { candidateId } = req.body;
-  if (!electionId || electionId <= 0)
+  if (!electionId || electionId <= 0) {
     return res.status(400).json({ success: false, message: 'Invalid election ID' });
+  }
   try {
     const election = await prisma.clubElection.findUnique({ where: { id: electionId } });
-    if (!election) return res.status(404).json({ success: false, message: 'Election not found' });
-    if (election.status !== 'open')
+    if (!election) {
+      return res.status(404).json({ success: false, message: 'Election not found' });
+    }
+    if (election.status !== 'open') {
       return res.status(400).json({ success: false, message: 'Election is not open' });
+    }
 
     const membership = await prisma.clubMembership.findUnique({
       where: { clubId_userId: { clubId: election.clubId, userId: voterId } },
     });
-    if (!membership)
+    if (!membership) {
       return res.status(403).json({ success: false, message: 'You must be a club member to vote' });
+    }
 
     const candidate = await prisma.clubCandidate.findUnique({ where: { id: candidateId } });
     if (!candidate || candidate.electionId !== electionId) {
@@ -257,13 +288,15 @@ export async function vote(req, res) {
       const ballot = await prisma.clubBallot.create({ data: { electionId, candidateId, voterId } });
       return res.status(201).json({ success: true, data: { ballot } });
     } catch (uniqueError) {
-      if (uniqueError.code === 'P2002')
+      if (uniqueError.code === 'P2002') {
         return res.status(409).json({ success: false, message: 'Already voted in this election' });
+      }
       throw uniqueError;
     }
   } catch (error) {
-    if (error.status)
+    if (error.status) {
       return res.status(error.status).json({ success: false, message: error.message });
+    }
     logger.error(`[clubController.vote] ${error.message}`);
     return res.status(500).json({ success: false, message: 'Failed to cast vote' });
   }
@@ -272,11 +305,14 @@ export async function vote(req, res) {
 /** GET /api/clubs/elections/:id/results */
 export async function getElectionResults(req, res) {
   const electionId = parseInt(req.params.id, 10);
-  if (!electionId || electionId <= 0)
+  if (!electionId || electionId <= 0) {
     return res.status(400).json({ success: false, message: 'Invalid election ID' });
+  }
   try {
     const election = await prisma.clubElection.findUnique({ where: { id: electionId } });
-    if (!election) return res.status(404).json({ success: false, message: 'Election not found' });
+    if (!election) {
+      return res.status(404).json({ success: false, message: 'Election not found' });
+    }
 
     const candidates = await prisma.clubCandidate.findMany({
       where: { electionId },
@@ -314,14 +350,17 @@ export async function transferLeadership(req, res) {
   const userId = req.user.id;
   const { newPresidentId } = req.body;
 
-  if (!clubId || clubId <= 0)
+  if (!clubId || clubId <= 0) {
     return res.status(400).json({ success: false, message: 'Invalid club ID' });
-  if (!newPresidentId)
+  }
+  if (!newPresidentId) {
     return res.status(400).json({ success: false, message: 'newPresidentId is required' });
-  if (userId === newPresidentId)
+  }
+  if (userId === newPresidentId) {
     return res
       .status(400)
       .json({ success: false, message: 'Cannot transfer leadership to yourself' });
+  }
 
   try {
     const [currentMembership, targetMembership] = await Promise.all([

@@ -73,7 +73,9 @@ export async function getThreads(req, res) {
  */
 export async function getThread(req, res) {
   const id = parseInt(req.params.id, 10);
-  if (!id || id <= 0) return res.status(400).json({ success: false, message: 'Invalid thread ID' });
+  if (!id || id <= 0) {
+    return res.status(400).json({ success: false, message: 'Invalid thread ID' });
+  }
 
   try {
     const thread = await prisma.forumThread.findUnique({
@@ -87,7 +89,9 @@ export async function getThread(req, res) {
       },
     });
 
-    if (!thread) return res.status(404).json({ success: false, message: 'Thread not found' });
+    if (!thread) {
+      return res.status(404).json({ success: false, message: 'Thread not found' });
+    }
 
     const { posts, ...threadData } = thread;
     return res.json({ success: true, data: { thread: threadData, posts } });
@@ -137,12 +141,15 @@ export async function createPost(req, res) {
   const { content } = req.body;
   const authorId = req.user.id;
 
-  if (!threadId || threadId <= 0)
+  if (!threadId || threadId <= 0) {
     return res.status(400).json({ success: false, message: 'Invalid thread ID' });
+  }
 
   try {
     const thread = await prisma.forumThread.findUnique({ where: { id: threadId } });
-    if (!thread) return res.status(404).json({ success: false, message: 'Thread not found' });
+    if (!thread) {
+      return res.status(404).json({ success: false, message: 'Thread not found' });
+    }
 
     const [post] = await prisma.$transaction([
       prisma.forumPost.create({
@@ -169,7 +176,9 @@ export async function createPost(req, res) {
 export async function incrementView(req, res) {
   const id = parseInt(req.params.id, 10);
   const userId = req.user.id;
-  if (!id || id <= 0) return res.status(400).json({ success: false, message: 'Invalid thread ID' });
+  if (!id || id <= 0) {
+    return res.status(400).json({ success: false, message: 'Invalid thread ID' });
+  }
 
   const key = `${userId}:${id}`;
   const now = Date.now();
@@ -181,7 +190,9 @@ export async function incrementView(req, res) {
 
   // Prune entries older than the cooldown window to prevent unbounded growth
   for (const [k, ts] of _viewLog) {
-    if (now - ts >= VIEW_COOLDOWN_MS) _viewLog.delete(k);
+    if (now - ts >= VIEW_COOLDOWN_MS) {
+      _viewLog.delete(k);
+    }
   }
 
   try {
@@ -202,11 +213,15 @@ export async function incrementView(req, res) {
  */
 export async function pinThread(req, res) {
   const id = parseInt(req.params.id, 10);
-  if (!id || id <= 0) return res.status(400).json({ success: false, message: 'Invalid thread ID' });
+  if (!id || id <= 0) {
+    return res.status(400).json({ success: false, message: 'Invalid thread ID' });
+  }
 
   try {
     const thread = await prisma.forumThread.findUnique({ where: { id } });
-    if (!thread) return res.status(404).json({ success: false, message: 'Thread not found' });
+    if (!thread) {
+      return res.status(404).json({ success: false, message: 'Thread not found' });
+    }
 
     const updated = await prisma.forumThread.update({
       where: { id },

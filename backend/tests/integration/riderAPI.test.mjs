@@ -267,7 +267,9 @@ describe('🏇 INTEGRATION: Rider API', () => {
     });
 
     it('should assign a rider to a horse', async () => {
-      if (!hiredRiderId) return; // Skip if hire failed
+      if (!hiredRiderId) {
+        return;
+      } // Skip if hire failed
 
       const res = await request(app)
         .post('/api/riders/assignments')
@@ -285,7 +287,9 @@ describe('🏇 INTEGRATION: Rider API', () => {
     });
 
     it('should reject double-assigning the same rider', async () => {
-      if (!hiredRiderId) return;
+      if (!hiredRiderId) {
+        return;
+      }
 
       const res = await request(app)
         .post('/api/riders/assignments')
@@ -307,7 +311,9 @@ describe('🏇 INTEGRATION: Rider API', () => {
     });
 
     it('should unassign a rider (soft delete)', async () => {
-      if (!assignmentId) return;
+      if (!assignmentId) {
+        return;
+      }
 
       const res = await request(app)
         .delete(`/api/riders/assignments/${assignmentId}`)
@@ -319,7 +325,9 @@ describe('🏇 INTEGRATION: Rider API', () => {
     });
 
     it('should dismiss a rider', async () => {
-      if (!hiredRiderId) return;
+      if (!hiredRiderId) {
+        return;
+      }
 
       const res = await request(app)
         .delete(`/api/riders/${hiredRiderId}/dismiss`)

@@ -159,7 +159,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
     if (server) {
       await new Promise(resolve => server.close(resolve));
     }
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   beforeEach(async () => {

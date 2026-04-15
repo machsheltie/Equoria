@@ -69,7 +69,7 @@ describe('🐴 INTEGRATION: Horse Trader Store API', () => {
     } catch {
       /* ignore */
     }
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   // ─── Happy path ──────────────────────────────────────────────────────────────

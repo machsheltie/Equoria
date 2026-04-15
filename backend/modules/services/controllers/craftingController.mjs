@@ -16,6 +16,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { CRAFTING_RECIPES, findRecipe } from '../data/craftingRecipes.mjs';
+import { recordTransaction } from '../../../services/financialLedgerService.mjs';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -26,9 +27,13 @@ import { CRAFTING_RECIPES, findRecipe } from '../data/craftingRecipes.mjs';
  */
 function getMaterials(settings) {
   const defaults = { leather: 0, cloth: 0, dye: 0, metal: 0, thread: 0 };
-  if (!settings || typeof settings !== 'object') return defaults;
+  if (!settings || typeof settings !== 'object') {
+    return defaults;
+  }
   const m = settings.craftingMaterials;
-  if (!m || typeof m !== 'object') return defaults;
+  if (!m || typeof m !== 'object') {
+    return defaults;
+  }
   return {
     leather: Number(m.leather) || 0,
     cloth: Number(m.cloth) || 0,
@@ -44,11 +49,17 @@ function getMaterials(settings) {
  * @returns {number}
  */
 function getWorkshopTier(settings) {
-  if (!settings || typeof settings !== 'object') return 0;
+  if (!settings || typeof settings !== 'object') {
+    return 0;
+  }
   const tier = settings.workshopTier;
   const parsed = parseInt(tier, 10);
-  if (isNaN(parsed) || parsed < 0) return 0;
-  if (parsed > 3) return 3;
+  if (isNaN(parsed) || parsed < 0) {
+    return 0;
+  }
+  if (parsed > 3) {
+    return 3;
+  }
   return parsed;
 }
 
@@ -58,7 +69,9 @@ function getWorkshopTier(settings) {
  * @returns {Array}
  */
 function getInventory(settings) {
-  if (!settings || typeof settings !== 'object') return [];
+  if (!settings || typeof settings !== 'object') {
+    return [];
+  }
   const inv = settings.inventory;
   return Array.isArray(inv) ? inv : [];
 }
@@ -74,7 +87,9 @@ function getMaterialDeficit(have, need) {
   const deficits = [];
   for (const mat of ['leather', 'cloth', 'dye', 'metal', 'thread']) {
     const gap = (need[mat] || 0) - (have[mat] || 0);
-    if (gap > 0) deficits.push(`${gap} ${mat}`);
+    if (gap > 0) {
+      deficits.push(`${gap} ${mat}`);
+    }
   }
   return deficits.length > 0 ? deficits.join(', ') : null;
 }
@@ -235,12 +250,28 @@ export async function craftItem(req, res) {
       inventory: [...existingInventory, newItem],
     };
 
-    await prisma.user.update({
-      where: { id: userId },
-      data: {
-        money: { decrement: recipe.cost },
-        settings: updatedSettings,
-      },
+    const updatedUser = await prisma.$transaction(async tx => {
+      const userUpdate = await tx.user.update({
+        where: { id: userId },
+        data: {
+          money: { decrement: recipe.cost },
+          settings: updatedSettings,
+        },
+        select: { money: true },
+      });
+      await recordTransaction(
+        {
+          userId,
+          type: 'debit',
+          amount: recipe.cost,
+          category: 'crafting',
+          description: `Crafted ${recipe.resultName}`,
+          balanceAfter: userUpdate.money,
+          metadata: { recipeId, result: recipe.result },
+        },
+        tx,
+      );
+      return userUpdate;
     });
 
     logger.info(
@@ -254,7 +285,7 @@ export async function craftItem(req, res) {
         item: newItem,
         remainingMaterials: newMaterials,
         coinsSpent: recipe.cost,
-        newBalance: user.money - recipe.cost,
+        newBalance: updatedUser.money,
       },
     });
   } catch (err) {

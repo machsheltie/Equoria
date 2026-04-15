@@ -34,7 +34,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
     // Create test horse with good stats for competition
     testHorse = await createTestHorse({
       userId: testUser.id,
-      name: 'API Test Horse',
+      name: 'CompetitionAPIHorse',
       age: 35, // 5 years * 7 days/year = 35 days
       speed: 80,
       stamina: 75,
@@ -56,7 +56,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
 
     // Create test show
     testShow = await createTestShow({
-      name: 'API Test Racing Show',
+      name: 'CompetitionAPIShow',
       discipline: 'Racing',
       levelMin: 1,
       levelMax: 10,

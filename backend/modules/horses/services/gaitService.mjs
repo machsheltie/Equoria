@@ -38,7 +38,9 @@ const DEFAULT_UNKNOWN_BREED_GAIT_SCORES = Object.freeze({
  */
 export function calculateConformationBonus(conformationScores, gaitKey) {
   const regions = CONFORMATION_GAIT_MAPPING[gaitKey];
-  if (!regions || !conformationScores) return 0;
+  if (!regions || !conformationScores) {
+    return 0;
+  }
   const avg = regions.reduce((sum, r) => sum + (conformationScores[r] ?? 70), 0) / regions.length;
   return (avg - 70) * 0.15;
 }
@@ -50,7 +52,9 @@ export function calculateConformationBonus(conformationScores, gaitKey) {
  * @returns {boolean} True if the object has at least one finite numeric standard gait score
  */
 export function hasValidGaitScores(scores) {
-  if (!scores || typeof scores !== 'object') return false;
+  if (!scores || typeof scores !== 'object') {
+    return false;
+  }
   return STANDARD_GAITS.some(gait => Number.isFinite(scores[gait]));
 }
 

@@ -136,7 +136,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
       where: { id: testUser.id },
     });
 
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   describe('API Endpoints', () => {

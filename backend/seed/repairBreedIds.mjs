@@ -92,7 +92,7 @@ async function repairBreedIds() {
     }
   }
 
-  console.log(`\n📊 Summary:`);
+  console.log('\n📊 Summary:');
   console.log(`   Fixed:      ${fixed}`);
   console.log(`   Already OK: ${alreadyOk}`);
   console.log(`   Skipped:    ${notFound} (missing breed in DB)`);

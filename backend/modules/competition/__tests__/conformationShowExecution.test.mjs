@@ -76,7 +76,9 @@ let _mockExecuteError = null; // set per test to simulate thrown errors
 
 jest.unstable_mockModule('../../../services/conformationShowService.mjs', () => ({
   executeConformationShow: async _showId => {
-    if (_mockExecuteError) throw _mockExecuteError;
+    if (_mockExecuteError) {
+      throw _mockExecuteError;
+    }
     return _mockExecuteResult ?? [];
   },
   // Re-export pure helpers unchanged so service-unit tests below can use real logic
@@ -89,14 +91,24 @@ jest.unstable_mockModule('../../../services/conformationShowService.mjs', () => 
     return table[placement] ?? { ribbon: 'White', titlePoints: 2, breedingBoostDelta: 0 };
   },
   resolveTitle: points => {
-    if (points >= 200) return 'Grand Champion';
-    if (points >= 100) return 'Champion';
-    if (points >= 50) return 'Distinguished';
-    if (points >= 25) return 'Noteworthy';
+    if (points >= 200) {
+      return 'Grand Champion';
+    }
+    if (points >= 100) {
+      return 'Champion';
+    }
+    if (points >= 50) {
+      return 'Distinguished';
+    }
+    if (points >= 25) {
+      return 'Noteworthy';
+    }
     return null;
   },
   applyBreedingValueBoost: (current, delta) => {
-    if (delta <= 0) return current;
+    if (delta <= 0) {
+      return current;
+    }
     return Math.min(0.15, current + delta);
   },
   validateConformationEntry: jest.fn(),

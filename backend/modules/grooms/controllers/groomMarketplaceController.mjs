@@ -17,6 +17,7 @@ import {
 } from '../../../services/groomMarketplace.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { recordTransaction } from '../../../services/financialLedgerService.mjs';
 
 // In-memory marketplace storage (in production, this would be in Redis or database)
 const userMarketplaces = new Map();
@@ -257,26 +258,41 @@ export async function hireFromMarketplace(req, res) {
       });
     }
 
-    // Create the groom in database
-    const newGroom = await prisma.groom.create({
-      data: {
-        userId,
-        name: `${groomData.firstName} ${groomData.lastName}`,
-        speciality: groomData.specialty,
-        skillLevel: groomData.skillLevel,
-        personality: groomData.personality,
-        experience: groomData.experience,
-        sessionRate: Number(groomData.sessionRate),
-        bio: groomData.bio,
-        availability: JSON.stringify({ available: true }),
-        hiredDate: new Date(),
-      },
-    });
+    const { newGroom, updatedUser } = await prisma.$transaction(async tx => {
+      const groom = await tx.groom.create({
+        data: {
+          userId,
+          name: `${groomData.firstName} ${groomData.lastName}`,
+          speciality: groomData.specialty,
+          skillLevel: groomData.skillLevel,
+          personality: groomData.personality,
+          experience: groomData.experience,
+          sessionRate: Number(groomData.sessionRate),
+          bio: groomData.bio,
+          availability: JSON.stringify({ available: true }),
+          hiredDate: new Date(),
+        },
+      });
 
-    // Deduct hiring cost
-    await prisma.user.update({
-      where: { id: userId },
-      data: { money: { decrement: hiringCost } },
+      const userUpdate = await tx.user.update({
+        where: { id: userId },
+        data: { money: { decrement: hiringCost } },
+        select: { money: true },
+      });
+      await recordTransaction(
+        {
+          userId,
+          type: 'debit',
+          amount: hiringCost,
+          category: 'groom_hire',
+          description: `Hired groom ${groom.name}`,
+          balanceAfter: userUpdate.money,
+          metadata: { groomId: groom.id, marketplaceId },
+        },
+        tx,
+      );
+
+      return { newGroom: groom, updatedUser: userUpdate };
     });
 
     // Remove groom from marketplace
@@ -294,7 +310,7 @@ export async function hireFromMarketplace(req, res) {
           sessionRate: Number(newGroom.sessionRate), // Convert Decimal to number
         },
         cost: hiringCost,
-        remainingMoney: user.money - hiringCost,
+        remainingMoney: updatedUser.money,
       },
     });
   } catch (error) {
@@ -314,7 +330,9 @@ export async function hireFromMarketplace(req, res) {
  * @param {string} userId - The user whose marketplace to expire
  */
 export function forceExpireMarketplace(userId) {
-  if (process.env.NODE_ENV !== 'test') return;
+  if (process.env.NODE_ENV !== 'test') {
+    return;
+  }
   const marketplace = userMarketplaces.get(userId);
   if (marketplace) {
     userMarketplaces.set(userId, { ...marketplace, lastRefresh: new Date(0) });

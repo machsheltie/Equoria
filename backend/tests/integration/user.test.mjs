@@ -14,7 +14,7 @@ import { getUserById, getUserWithHorses, getUserByEmail } from '../../models/use
 const UNIQUE = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
 
 let testUser;
-let testHorseIds = [];
+const testHorseIds = [];
 
 beforeAll(async () => {
   const hashedPassword = await bcrypt.hash('TestPassword123!', 10);

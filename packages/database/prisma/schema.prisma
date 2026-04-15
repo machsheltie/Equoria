@@ -48,6 +48,8 @@ model User {
   trainers                Trainer[]
   trainerAssignments      TrainerAssignment[]
   refreshTokens           RefreshToken[]
+  passwordResetTokens     PasswordResetToken[]
+  transactions            UserTransaction[]
   shows                   Show[]
   xpEvents                XpEvent[]
   facilities              Facility[]
@@ -600,6 +602,40 @@ model EmailVerificationToken {
   @@index([expiresAt])
   @@index([email])
   @@map("email_verification_tokens")
+}
+
+model PasswordResetToken {
+  id        Int       @id @default(autoincrement())
+  tokenHash String    @unique
+  userId    String
+  email     String
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  ipAddress String?
+  userAgent String?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
+model UserTransaction {
+  id           Int      @id @default(autoincrement())
+  userId       String
+  type         String
+  amount       Int
+  category     String
+  description  String
+  balanceAfter Int?
+  metadata     Json     @default("{}")
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([category])
+  @@map("user_transactions")
 }
 
 model HorseXpEvent {

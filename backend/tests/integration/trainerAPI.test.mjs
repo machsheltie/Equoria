@@ -269,7 +269,9 @@ describe('🎓 INTEGRATION: Trainer API', () => {
     });
 
     it('should assign a trainer to a horse', async () => {
-      if (!hiredTrainerId) return;
+      if (!hiredTrainerId) {
+        return;
+      }
 
       const res = await request(app)
         .post('/api/trainers/assignments')
@@ -287,7 +289,9 @@ describe('🎓 INTEGRATION: Trainer API', () => {
     });
 
     it('should reject double-assigning the same trainer', async () => {
-      if (!hiredTrainerId) return;
+      if (!hiredTrainerId) {
+        return;
+      }
 
       const res = await request(app)
         .post('/api/trainers/assignments')
@@ -309,7 +313,9 @@ describe('🎓 INTEGRATION: Trainer API', () => {
     });
 
     it('should unassign a trainer (soft delete)', async () => {
-      if (!assignmentId) return;
+      if (!assignmentId) {
+        return;
+      }
 
       const res = await request(app)
         .delete(`/api/trainers/assignments/${assignmentId}`)
@@ -321,7 +327,9 @@ describe('🎓 INTEGRATION: Trainer API', () => {
     });
 
     it('should dismiss a trainer', async () => {
-      if (!hiredTrainerId) return;
+      if (!hiredTrainerId) {
+        return;
+      }
 
       const res = await request(app)
         .delete(`/api/trainers/${hiredTrainerId}/dismiss`)

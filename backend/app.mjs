@@ -37,6 +37,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
@@ -448,6 +449,10 @@ setupSwaggerDocs(app);
 // Public routes (health, ping, auth, docs)
 app.use('/', publicRouter);
 
+// Public breed routes (no auth — needed for onboarding before login)
+app.use('/api/v1/breeds', breedRoutes);
+app.use('/api/breeds', breedRoutes);
+
 // Admin routes (requires auth + admin role)
 app.use('/api/v1/admin', adminRouter);
 app.use('/api/admin', adminRouter);
@@ -462,17 +467,28 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static(join(__dirname, 'public')));
 }
 
+// Cache index.html in memory at startup to avoid sendFile streaming issues
+let spaHtml = null;
+if (process.env.NODE_ENV === 'production') {
+  try {
+    spaHtml = readFileSync(join(__dirname, 'public', 'index.html'), 'utf-8');
+  } catch {
+    logger.warn('[SPA] Could not read index.html — SPA fallback disabled');
+  }
+}
+
 // 404 handler for undefined routes
 // In production: serve index.html for non-API routes (SPA client-side routing)
 // In development: return JSON 404 so API callers get useful errors
 app.use('*', (req, res) => {
   if (
+    spaHtml &&
     process.env.NODE_ENV === 'production' &&
     !req.path.startsWith('/api') &&
     !req.path.startsWith('/health') &&
     !req.path.startsWith('/api-docs')
   ) {
-    return res.sendFile(join(__dirname, 'public', 'index.html'));
+    return res.type('html').send(spaHtml);
   }
 
   logger.warn(`404 - Route not found: ${req.method} ${req.originalUrl} from ${req.ip}`);

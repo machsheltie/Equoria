@@ -98,7 +98,9 @@ describe('getBreedingColorPrediction controller', () => {
 
   test('AC5: returns 404 when sire not found', async () => {
     mockPrisma.horse.findUnique.mockImplementation(({ where }) => {
-      if (where.id === 1) return null; // sire not found
+      if (where.id === 1) {
+        return null;
+      } // sire not found
       return { id: 2, name: 'Dam', colorGenotype: MOCK_GENOTYPE, userId: 'user-123', breedId: 1 };
     });
 

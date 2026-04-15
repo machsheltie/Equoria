@@ -43,8 +43,9 @@ const VALID_DISCIPLINES = [
 export async function createShow(req, res) {
   try {
     const userId = req.user?.id;
-    if (!userId)
+    if (!userId) {
       return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
 
     const { name, discipline, entryFee = 0, maxEntries, description } = req.body;
 
@@ -104,8 +105,12 @@ export async function getShows(req, res) {
     const skip = (pageNum - 1) * limitNum;
 
     const where = {};
-    if (status) where.status = status;
-    if (discipline) where.discipline = discipline;
+    if (status) {
+      where.status = status;
+    }
+    if (discipline) {
+      where.discipline = discipline;
+    }
 
     const [shows, total] = await Promise.all([
       prisma.show.findMany({
@@ -146,8 +151,9 @@ export async function getShows(req, res) {
 export async function enterShow(req, res) {
   try {
     const userId = req.user?.id;
-    if (!userId)
+    if (!userId) {
       return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
 
     const showId = parseInt(req.params.id, 10);
     const { horseId } = req.body;
@@ -162,7 +168,9 @@ export async function enterShow(req, res) {
       include: { _count: { select: { entries: true } } },
     });
 
-    if (!show) return res.status(404).json({ success: false, message: 'Show not found' });
+    if (!show) {
+      return res.status(404).json({ success: false, message: 'Show not found' });
+    }
     if (show.status !== 'open') {
       return res
         .status(409)

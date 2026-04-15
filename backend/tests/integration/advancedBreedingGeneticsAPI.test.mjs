@@ -155,7 +155,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       await prisma.user.delete({ where: { id: testUser.id } }).catch(() => {});
     }
     // Disconnect Prisma to prevent open handles
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   describe('🎯 Enhanced Genetic Probability API', () => {

@@ -270,7 +270,9 @@ describe('getTemperamentDefinitions', () => {
       status: jest.fn().mockReturnThis(),
       json: jest.fn().mockImplementation(_body => {
         callCount++;
-        if (callCount === 1) throw new Error('Simulated serialization failure');
+        if (callCount === 1) {
+          throw new Error('Simulated serialization failure');
+        }
         return res;
       }),
     };

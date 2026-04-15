@@ -15,7 +15,9 @@ const POLL_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
 let schedulerTimer = null;
 
 export function startShowScheduler() {
-  if (schedulerTimer) return; // already running
+  if (schedulerTimer) {
+    return;
+  } // already running
 
   logger.info('Show scheduler started (10-minute poll interval)');
 

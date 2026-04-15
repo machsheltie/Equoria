@@ -73,7 +73,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
 
     // Clean up test data
     await cleanupTestData();
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   async function cleanupTestData() {

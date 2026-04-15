@@ -350,7 +350,12 @@ export async function validateConformationEntry(horse, groom, className, userId)
 
     // Groom assignment to horse — guard undefined IDs before querying
     let assignment = null;
-    if (horse.id != null && groom.id != null) {
+    if (
+      horse.id !== null &&
+      horse.id !== undefined &&
+      groom.id !== null &&
+      groom.id !== undefined
+    ) {
       assignment = await prisma.groomAssignment.findFirst({
         where: {
           groomId: groom.id,
@@ -488,7 +493,9 @@ export function resolveTitle(accumulatedPoints) {
  * @returns {number} New capped boost value
  */
 export function applyBreedingValueBoost(currentBoost, delta) {
-  if (delta <= 0) return currentBoost;
+  if (delta <= 0) {
+    return currentBoost;
+  }
   return Math.min(BREEDING_BOOST_CAP, currentBoost + delta);
 }
 

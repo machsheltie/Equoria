@@ -55,7 +55,7 @@ router.post(
   [
     body('section')
       .isIn(VALID_SECTIONS)
-      .withMessage('section must be one of: ' + VALID_SECTIONS.join(', ')),
+      .withMessage(`section must be one of: ${VALID_SECTIONS.join(', ')}`),
     body('title')
       .trim()
       .notEmpty()

@@ -236,8 +236,26 @@ export async function cleanupTestData() {
       where: {
         horse: {
           name: {
+            in: ['CompetitionAPIHorse'],
+          },
+        },
+      },
+    });
+
+    await prisma.competitionResult.deleteMany({
+      where: {
+        horse: {
+          name: {
             startsWith: 'TestHorse_',
           },
+        },
+      },
+    });
+
+    await prisma.horse.deleteMany({
+      where: {
+        name: {
+          in: ['CompetitionAPIHorse'],
         },
       },
     });
@@ -253,7 +271,23 @@ export async function cleanupTestData() {
     await prisma.show.deleteMany({
       where: {
         name: {
+          startsWith: 'CompetitionAPIShow_',
+        },
+      },
+    });
+
+    await prisma.show.deleteMany({
+      where: {
+        name: {
           startsWith: 'TestShow_',
+        },
+      },
+    });
+
+    await prisma.user.deleteMany({
+      where: {
+        username: {
+          startsWith: 'competitionapi_',
         },
       },
     });

@@ -123,8 +123,12 @@ export const TEMPERAMENT_GROOM_SYNERGY = Object.freeze({
 const CANONICAL_GROOM_PERSONALITIES = new Set(['gentle', 'energetic', 'patient', 'strict']);
 
 export function getTemperamentGroomSynergy(temperament, groomPersonality) {
-  if (!temperament || typeof temperament !== 'string') return 0;
-  if (!groomPersonality || typeof groomPersonality !== 'string') return 0;
+  if (!temperament || typeof temperament !== 'string') {
+    return 0;
+  }
+  if (!groomPersonality || typeof groomPersonality !== 'string') {
+    return 0;
+  }
 
   const synergyMap = TEMPERAMENT_GROOM_SYNERGY[temperament.trim()];
   if (!synergyMap) {
@@ -183,7 +187,9 @@ export function weightedRandomSelect(weights) {
   let roll = Math.random() * total;
   for (const [type, weight] of entries) {
     roll -= weight;
-    if (roll <= 0) return type;
+    if (roll <= 0) {
+      return type;
+    }
   }
 
   // Fallback for floating-point edge cases

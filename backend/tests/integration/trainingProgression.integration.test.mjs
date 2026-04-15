@@ -78,7 +78,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
 
     // Clean up test data
     await cleanupTestData();
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   async function cleanupTestData() {

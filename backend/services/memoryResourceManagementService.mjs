@@ -27,6 +27,11 @@ class MemoryResourceManager extends EventEmitter {
   constructor(options = {}) {
     super();
 
+    // Prevent unhandled 'error' events from crashing the process
+    this.on('error', err => {
+      logger.debug(`[MemoryManager] Suppressed error event: ${err?.message || err}`);
+    });
+
     this.options = {
       memoryThreshold: options.memoryThreshold || 500 * 1024 * 1024, // 500MB default
       gcInterval: options.gcInterval || 30000, // 30 seconds
@@ -153,7 +158,9 @@ class MemoryResourceManager extends EventEmitter {
    */
   checkMemoryThresholds() {
     const current = this.metrics.memoryUsage[this.metrics.memoryUsage.length - 1];
-    if (!current) { return; }
+    if (!current) {
+      return;
+    }
 
     const alertThreshold = this.options.memoryThreshold * this.options.alertThreshold;
 
@@ -172,7 +179,9 @@ class MemoryResourceManager extends EventEmitter {
       this.metrics.alerts.push(alert);
       this.emit('alert', alert);
 
-      logger.warn(`[MemoryManager] Memory threshold alert: ${Math.round(current.heapUsed / 1024 / 1024)}MB used`);
+      logger.warn(
+        `[MemoryManager] Memory threshold alert: ${Math.round(current.heapUsed / 1024 / 1024)}MB used`,
+      );
     }
   }
 
@@ -180,13 +189,16 @@ class MemoryResourceManager extends EventEmitter {
    * Detect potential memory leaks
    */
   detectMemoryLeaks() {
-    if (this.metrics.memoryUsage.length < 10) { return; }
+    if (this.metrics.memoryUsage.length < 10) {
+      return;
+    }
 
     const recent = this.metrics.memoryUsage.slice(-10);
     const trend = this.calculateMemoryTrend(recent);
 
     // Check for consistent memory growth
-    if (trend.slope > 1024 * 1024 && trend.correlation > 0.8) { // 1MB/sample with high correlation
+    if (trend.slope > 1024 * 1024 && trend.correlation > 0.8) {
+      // 1MB/sample with high correlation
       const alert = {
         type: 'memory_leak_detected',
         severity: 'warning',
@@ -194,7 +206,7 @@ class MemoryResourceManager extends EventEmitter {
         data: {
           trend: trend.slope,
           correlation: trend.correlation,
-          growthRate: `${Math.round(trend.slope / 1024 / 1024 * 100) / 100}MB per sample`,
+          growthRate: `${Math.round((trend.slope / 1024 / 1024) * 100) / 100}MB per sample`,
         },
       };
 
@@ -264,9 +276,10 @@ class MemoryResourceManager extends EventEmitter {
         this.metrics.gcEvents = this.metrics.gcEvents.slice(-100);
       }
 
-      logger.debug(`[MemoryManager] GC completed: freed ${Math.round(gcEvent.memoryFreed / 1024 / 1024)}MB in ${Math.round(duration)}ms`);
+      logger.debug(
+        `[MemoryManager] GC completed: freed ${Math.round(gcEvent.memoryFreed / 1024 / 1024)}MB in ${Math.round(duration)}ms`,
+      );
       this.emit('gc:completed', gcEvent);
-
     } catch (error) {
       logger.error(`[MemoryManager] GC optimization failed: ${error.message}`);
     }
@@ -413,16 +426,14 @@ class MemoryResourceManager extends EventEmitter {
       this.cleanupAllResources();
     });
 
-    // Handle uncaught exceptions
-    process.on('uncaughtException', (error) => {
+    // Handle uncaught exceptions — log but do not re-emit to avoid crash loops
+    process.on('uncaughtException', error => {
       logger.error(`[MemoryManager] Uncaught exception: ${error.message}`);
-      this.emit('error', error);
     });
 
-    // Handle unhandled promise rejections
-    process.on('unhandledRejection', (reason, promise) => {
+    // Handle unhandled promise rejections — log but do not re-emit to avoid crash loops
+    process.on('unhandledRejection', reason => {
       logger.error(`[MemoryManager] Unhandled promise rejection: ${reason}`);
-      this.emit('error', { reason, promise });
     });
 
     // Handle SIGTERM and SIGINT for graceful shutdown
@@ -447,8 +458,10 @@ class MemoryResourceManager extends EventEmitter {
       timestamp: Date.now(),
       memory: {
         current: currentMetrics,
-        trend: this.metrics.memoryUsage.length > 1 ?
-          this.calculateMemoryTrend(this.metrics.memoryUsage.slice(-10)) : null,
+        trend:
+          this.metrics.memoryUsage.length > 1
+            ? this.calculateMemoryTrend(this.metrics.memoryUsage.slice(-10))
+            : null,
         alerts: this.metrics.alerts.slice(-10),
       },
       resources: {

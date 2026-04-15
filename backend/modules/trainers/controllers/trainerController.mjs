@@ -88,10 +88,14 @@ export async function assignTrainer(req, res) {
     const { trainerId, horseId, notes } = req.body;
 
     const trainer = await prisma.trainer.findFirst({ where: { id: trainerId, userId } });
-    if (!trainer) return res.status(404).json({ success: false, message: 'Trainer not found' });
+    if (!trainer) {
+      return res.status(404).json({ success: false, message: 'Trainer not found' });
+    }
 
     const horse = await prisma.horse.findFirst({ where: { id: horseId, userId } });
-    if (!horse) return res.status(404).json({ success: false, message: 'Horse not found' });
+    if (!horse) {
+      return res.status(404).json({ success: false, message: 'Horse not found' });
+    }
 
     const existingAssignment = await prisma.trainerAssignment.findFirst({
       where: { trainerId, isActive: true },
@@ -133,8 +137,9 @@ export async function deleteTrainerAssignment(req, res) {
     const assignment = await prisma.trainerAssignment.findFirst({
       where: { id: assignmentId, userId },
     });
-    if (!assignment)
+    if (!assignment) {
       return res.status(404).json({ success: false, message: 'Assignment not found' });
+    }
 
     await prisma.trainerAssignment.update({
       where: { id: assignmentId },
@@ -157,7 +162,9 @@ export async function dismissTrainer(req, res) {
     const trainerId = parseInt(req.params.id, 10);
 
     const trainer = await prisma.trainer.findFirst({ where: { id: trainerId, userId } });
-    if (!trainer) return res.status(404).json({ success: false, message: 'Trainer not found' });
+    if (!trainer) {
+      return res.status(404).json({ success: false, message: 'Trainer not found' });
+    }
 
     await prisma.trainerAssignment.updateMany({
       where: { trainerId, isActive: true },

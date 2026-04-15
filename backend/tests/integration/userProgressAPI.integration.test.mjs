@@ -127,7 +127,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
     });
 
     // Ensure proper database connection cleanup
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   describe('🔐 STEP 1: User Setup & Initial Progress State', () => {

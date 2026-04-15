@@ -24,7 +24,9 @@ import { TACK_INVENTORY } from './tackShopController.mjs';
  * @returns {Array}
  */
 function getInventoryFromSettings(settings) {
-  if (!settings || typeof settings !== 'object') return [];
+  if (!settings || typeof settings !== 'object') {
+    return [];
+  }
   const inv = settings.inventory;
   return Array.isArray(inv) ? inv : [];
 }
@@ -40,9 +42,13 @@ function deriveInventoryFromHorseTack(horses) {
   for (const horse of horses) {
     const tack = typeof horse.tack === 'object' && horse.tack !== null ? horse.tack : {};
     for (const itemId of Object.values(tack)) {
-      if (!itemId) continue;
+      if (!itemId) {
+        continue;
+      }
       const def = TACK_INVENTORY.find(i => i.id === itemId);
-      if (!def) continue;
+      if (!def) {
+        continue;
+      }
       items.push({
         id: `${horse.id}-${itemId}`,
         itemId: def.id,

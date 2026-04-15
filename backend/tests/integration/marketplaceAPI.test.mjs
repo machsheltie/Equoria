@@ -20,7 +20,7 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
   let seller, sellerToken;
   let buyer, buyerToken;
   let testHorse;
-  let createdHorseIds = [];
+  const createdHorseIds = [];
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -84,7 +84,7 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
     } catch {
       /* ignore */
     }
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   // ─── Listing ─────────────────────────────────────────────────────────────────
@@ -367,7 +367,7 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
 
     beforeAll(async () => {
       // Create a fresh horse to delist (buyer now owns testHorse)
-      let breed = await prisma.breed.findFirst();
+      const breed = await prisma.breed.findFirst();
       delistHorse = await prisma.horse.create({
         data: {
           name: `DelistHorse_${Date.now()}`,

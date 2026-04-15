@@ -11,6 +11,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { recordTransaction } from '../../../services/financialLedgerService.mjs';
 
 // Feed catalog
 export const FEED_CATALOG = [
@@ -105,17 +106,34 @@ export async function purchaseFeed(req, res) {
     const currentEnergy = horse.energyLevel ?? 100;
     const newEnergy = Math.min(100, currentEnergy + feed.energyBoost);
 
-    const [updatedHorse] = await prisma.$transaction([
-      prisma.horse.update({
+    const { updatedHorse, updatedUser } = await prisma.$transaction(async tx => {
+      const horseUpdate = await tx.horse.update({
         where: { id: horseId },
         data: {
           currentFeed: feed.feedType,
           lastFedDate: new Date(),
           energyLevel: newEnergy,
         },
-      }),
-      prisma.user.update({ where: { id: userId }, data: { money: { decrement: feed.cost } } }),
-    ]);
+      });
+      const userUpdate = await tx.user.update({
+        where: { id: userId },
+        data: { money: { decrement: feed.cost } },
+        select: { money: true },
+      });
+      await recordTransaction(
+        {
+          userId,
+          type: 'debit',
+          amount: feed.cost,
+          category: 'feed_purchase',
+          description: `${feed.name} for ${horse.name}`,
+          balanceAfter: userUpdate.money,
+          metadata: { horseId, feedId },
+        },
+        tx,
+      );
+      return { updatedHorse: horseUpdate, updatedUser: userUpdate };
+    });
 
     logger.info(
       `[feedShopController] User ${userId} purchased "${feed.name}" for horse ${horseId} — cost $${feed.cost}`,
@@ -134,7 +152,7 @@ export async function purchaseFeed(req, res) {
         },
         feed,
         cost: feed.cost,
-        remainingMoney: user.money - feed.cost,
+        remainingMoney: updatedUser.money,
       },
     });
   } catch (error) {

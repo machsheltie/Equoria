@@ -17,15 +17,25 @@
  *   null = horse is 3+ years old (graduated, development window closed)
  */
 export function computeAgeStage(dateOfBirth) {
-  if (!dateOfBirth) return null;
+  if (!dateOfBirth) {
+    return null;
+  }
   const birth = new Date(dateOfBirth);
   const nowMs = Date.now() - birth.getTime();
   const weeks = nowMs / (1000 * 60 * 60 * 24 * 7);
 
-  if (weeks < 4) return 'newborn';
-  if (weeks < 26) return 'weanling';
-  if (weeks < 52) return 'yearling';
-  if (weeks < 104) return 'two_year_old';
+  if (weeks < 4) {
+    return 'newborn';
+  }
+  if (weeks < 26) {
+    return 'weanling';
+  }
+  if (weeks < 52) {
+    return 'yearling';
+  }
+  if (weeks < 104) {
+    return 'two_year_old';
+  }
   return null; // graduated
 }
 
@@ -33,7 +43,9 @@ export function computeAgeStage(dateOfBirth) {
  * Compute age in weeks from dateOfBirth.
  */
 export function computeAgeInWeeks(dateOfBirth) {
-  if (!dateOfBirth) return 0;
+  if (!dateOfBirth) {
+    return 0;
+  }
   const nowMs = Date.now() - new Date(dateOfBirth).getTime();
   return Math.floor(nowMs / (1000 * 60 * 60 * 24 * 7));
 }

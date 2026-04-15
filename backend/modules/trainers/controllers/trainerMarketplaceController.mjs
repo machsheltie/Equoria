@@ -11,6 +11,7 @@ import {
 } from '../../../services/trainerMarketplace.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { recordTransaction } from '../../../services/financialLedgerService.mjs';
 
 const userTrainerMarketplaces = new Map();
 
@@ -70,8 +71,9 @@ export async function refreshTrainerMarketplace(req, res) {
 
     if (refreshCost > 0 && force) {
       const user = await prisma.user.findUnique({ where: { id: userId }, select: { money: true } });
-      if (!user)
+      if (!user) {
         return res.status(404).json({ success: false, message: 'User not found', data: null });
+      }
       if (user.money < refreshCost) {
         return res.status(400).json({
           success: false,
@@ -158,8 +160,9 @@ export async function hireTrainerFromMarketplace(req, res) {
     const hiringCost = trainerData.sessionRate * 4; // One month of sessions upfront
 
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { money: true } });
-    if (!user)
+    if (!user) {
       return res.status(404).json({ success: false, message: 'User not found', data: null });
+    }
 
     if (user.money < hiringCost) {
       return res.status(400).json({
@@ -169,20 +172,40 @@ export async function hireTrainerFromMarketplace(req, res) {
       });
     }
 
-    const newTrainer = await prisma.trainer.create({
-      data: {
-        userId,
-        firstName: trainerData.firstName,
-        lastName: trainerData.lastName,
-        personality: trainerData.personality,
-        skillLevel: trainerData.skillLevel,
-        speciality: trainerData.speciality,
-        sessionRate: trainerData.sessionRate,
-        bio: trainerData.bio,
-      },
-    });
+    const { newTrainer, updatedUser } = await prisma.$transaction(async tx => {
+      const trainer = await tx.trainer.create({
+        data: {
+          userId,
+          firstName: trainerData.firstName,
+          lastName: trainerData.lastName,
+          personality: trainerData.personality,
+          skillLevel: trainerData.skillLevel,
+          speciality: trainerData.speciality,
+          sessionRate: trainerData.sessionRate,
+          bio: trainerData.bio,
+        },
+      });
 
-    await prisma.user.update({ where: { id: userId }, data: { money: { decrement: hiringCost } } });
+      const userUpdate = await tx.user.update({
+        where: { id: userId },
+        data: { money: { decrement: hiringCost } },
+        select: { money: true },
+      });
+      await recordTransaction(
+        {
+          userId,
+          type: 'debit',
+          amount: hiringCost,
+          category: 'trainer_hire',
+          description: `Hired trainer ${trainer.firstName} ${trainer.lastName}`,
+          balanceAfter: userUpdate.money,
+          metadata: { trainerId: trainer.id, marketplaceId },
+        },
+        tx,
+      );
+
+      return { newTrainer: trainer, updatedUser: userUpdate };
+    });
 
     userMarketplace.trainers.splice(trainerIndex, 1);
     userTrainerMarketplaces.set(userId, userMarketplace);
@@ -197,7 +220,7 @@ export async function hireTrainerFromMarketplace(req, res) {
       data: {
         trainer: { ...newTrainer, name: `${newTrainer.firstName} ${newTrainer.lastName}` },
         cost: hiringCost,
-        remainingMoney: user.money - hiringCost,
+        remainingMoney: updatedUser.money,
       },
     });
   } catch (error) {

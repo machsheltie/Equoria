@@ -12,6 +12,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { recordTransaction } from '../../../services/financialLedgerService.mjs';
 
 // Predefined service catalog
 export const VET_SERVICES = [
@@ -101,10 +102,27 @@ export async function bookVetAppointment(req, res) {
       updateData.healthStatus = service.healthOutcome;
     }
 
-    const [updatedHorse] = await prisma.$transaction([
-      prisma.horse.update({ where: { id: horseId }, data: updateData }),
-      prisma.user.update({ where: { id: userId }, data: { money: { decrement: service.cost } } }),
-    ]);
+    const { updatedHorse, updatedUser } = await prisma.$transaction(async tx => {
+      const horseUpdate = await tx.horse.update({ where: { id: horseId }, data: updateData });
+      const userUpdate = await tx.user.update({
+        where: { id: userId },
+        data: { money: { decrement: service.cost } },
+        select: { money: true },
+      });
+      await recordTransaction(
+        {
+          userId,
+          type: 'debit',
+          amount: service.cost,
+          category: 'vet_service',
+          description: `${service.name} for ${horse.name}`,
+          balanceAfter: userUpdate.money,
+          metadata: { horseId, serviceId },
+        },
+        tx,
+      );
+      return { updatedHorse: horseUpdate, updatedUser: userUpdate };
+    });
 
     logger.info(
       `[vetController] User ${userId} booked "${service.name}" for horse ${horseId} — cost $${service.cost}`,
@@ -122,7 +140,7 @@ export async function bookVetAppointment(req, res) {
         },
         service,
         cost: service.cost,
-        remainingMoney: user.money - service.cost,
+        remainingMoney: updatedUser.money,
       },
     });
   } catch (error) {

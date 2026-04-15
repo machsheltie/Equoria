@@ -18,6 +18,7 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { recordTransaction } from '../../../services/financialLedgerService.mjs';
 
 // ── Tack inventory catalog ──────────────────────────────────────────────────
 
@@ -462,8 +463,12 @@ const CATEGORY_DISPLAY = {
  */
 function applyConditionPenalty(rawBonus, condition) {
   const cond = typeof condition === 'number' ? condition : 100;
-  if (cond <= 0) return 0;
-  if (cond < 50) return Math.floor(rawBonus / 2);
+  if (cond <= 0) {
+    return 0;
+  }
+  if (cond < 50) {
+    return Math.floor(rawBonus / 2);
+  }
   return rawBonus;
 }
 
@@ -612,10 +617,30 @@ export async function purchaseTackItem(req, res) {
       }
     }
 
-    const [updatedHorse] = await prisma.$transaction([
-      prisma.horse.update({ where: { id: horseId }, data: { tack: updatedTack } }),
-      prisma.user.update({ where: { id: userId }, data: { money: { decrement: item.cost } } }),
-    ]);
+    const { updatedHorse, updatedUser } = await prisma.$transaction(async tx => {
+      const horseUpdate = await tx.horse.update({
+        where: { id: horseId },
+        data: { tack: updatedTack },
+      });
+      const userUpdate = await tx.user.update({
+        where: { id: userId },
+        data: { money: { decrement: item.cost } },
+        select: { money: true },
+      });
+      await recordTransaction(
+        {
+          userId,
+          type: 'debit',
+          amount: item.cost,
+          category: 'tack_purchase',
+          description: `${item.name} for ${horse.name}`,
+          balanceAfter: userUpdate.money,
+          metadata: { horseId, itemId: item.id, category: item.category },
+        },
+        tx,
+      );
+      return { updatedHorse: horseUpdate, updatedUser: userUpdate };
+    });
 
     logger.info(
       `[tackShopController] User ${userId} purchased "${item.name}" for horse ${horseId} — cost $${item.cost}`,
@@ -632,7 +657,7 @@ export async function purchaseTackItem(req, res) {
         },
         item,
         cost: item.cost,
-        remainingMoney: user.money - item.cost,
+        remainingMoney: updatedUser.money,
       },
     });
   } catch (error) {
@@ -683,10 +708,14 @@ export async function degradeTackCondition(horseId, usedCategories = COMPETITION
 
     for (const category of usedCategories) {
       const itemId = currentTack[category];
-      if (!itemId) continue; // no item equipped in this category
+      if (!itemId) {
+        continue;
+      } // no item equipped in this category
 
       const item = TACK_INVENTORY.find(i => i.id === itemId && i.category === category);
-      if (!item) continue;
+      if (!item) {
+        continue;
+      }
 
       const conditionKey = `${category}_condition`;
       const previousCondition =
@@ -755,7 +784,7 @@ export async function unequipDecoration(req, res) {
 
     res.status(200).json({
       success: true,
-      message: `Decoration removed successfully`,
+      message: 'Decoration removed successfully',
       data: {
         horse: { id: updatedHorse.id, name: updatedHorse.name, tack: updatedHorse.tack },
         removedItemId: itemId,
@@ -831,10 +860,30 @@ export async function repairTackItem(req, res) {
 
     const updatedTack = { ...tack, [conditionKey]: 100 };
 
-    const [updatedHorse] = await prisma.$transaction([
-      prisma.horse.update({ where: { id: horseId }, data: { tack: updatedTack } }),
-      prisma.user.update({ where: { id: userId }, data: { money: { decrement: repairCost } } }),
-    ]);
+    const { updatedHorse, updatedUser } = await prisma.$transaction(async tx => {
+      const horseUpdate = await tx.horse.update({
+        where: { id: horseId },
+        data: { tack: updatedTack },
+      });
+      const userUpdate = await tx.user.update({
+        where: { id: userId },
+        data: { money: { decrement: repairCost } },
+        select: { money: true },
+      });
+      await recordTransaction(
+        {
+          userId,
+          type: 'debit',
+          amount: repairCost,
+          category: 'tack_repair',
+          description: `Repaired ${item.name}`,
+          balanceAfter: userUpdate.money,
+          metadata: { horseId, itemId, category, previousCondition: currentCondition },
+        },
+        tx,
+      );
+      return { updatedHorse: horseUpdate, updatedUser: userUpdate };
+    });
 
     logger.info(
       `[tackShopController] User ${userId} repaired "${item.name}" (${category}) on horse ${horseId} — cost $${repairCost}`,
@@ -854,7 +903,7 @@ export async function repairTackItem(req, res) {
         repairCost,
         previousCondition: currentCondition,
         newCondition: 100,
-        remainingMoney: user.money - repairCost,
+        remainingMoney: updatedUser.money,
       },
     });
   } catch (error) {

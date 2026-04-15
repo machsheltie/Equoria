@@ -167,7 +167,9 @@ describe('Temperament Assignment Service', () => {
       let stat = 0;
       let df = 0;
       for (const type of Object.keys(expected)) {
-        if (expected[type] < 5) continue; // Skip low-expected categories
+        if (expected[type] < 5) {
+          continue;
+        } // Skip low-expected categories
         const o = observed[type] || 0;
         const e = expected[type];
         stat += (o - e) ** 2 / e;

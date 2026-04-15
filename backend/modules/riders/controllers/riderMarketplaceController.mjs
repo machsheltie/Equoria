@@ -14,6 +14,7 @@ import {
 } from '../../../services/riderMarketplace.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import { recordTransaction } from '../../../services/financialLedgerService.mjs';
 
 // In-memory marketplace storage per user
 const userRiderMarketplaces = new Map();
@@ -77,8 +78,9 @@ export async function refreshRiderMarketplace(req, res) {
 
     if (refreshCost > 0 && force) {
       const user = await prisma.user.findUnique({ where: { id: userId }, select: { money: true } });
-      if (!user)
+      if (!user) {
         return res.status(404).json({ success: false, message: 'User not found', data: null });
+      }
       if (user.money < refreshCost) {
         return res.status(400).json({
           success: false,
@@ -165,8 +167,9 @@ export async function hireRiderFromMarketplace(req, res) {
     const hiringCost = riderData.weeklyRate; // One week upfront
 
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { money: true } });
-    if (!user)
+    if (!user) {
       return res.status(404).json({ success: false, message: 'User not found', data: null });
+    }
 
     if (user.money < hiringCost) {
       return res.status(400).json({
@@ -176,21 +179,41 @@ export async function hireRiderFromMarketplace(req, res) {
       });
     }
 
-    const newRider = await prisma.rider.create({
-      data: {
-        userId,
-        firstName: riderData.firstName,
-        lastName: riderData.lastName,
-        personality: riderData.personality,
-        skillLevel: riderData.skillLevel,
-        speciality: riderData.speciality,
-        weeklyRate: riderData.weeklyRate,
-        experience: riderData.experience,
-        bio: riderData.bio,
-      },
-    });
+    const { newRider, updatedUser } = await prisma.$transaction(async tx => {
+      const rider = await tx.rider.create({
+        data: {
+          userId,
+          firstName: riderData.firstName,
+          lastName: riderData.lastName,
+          personality: riderData.personality,
+          skillLevel: riderData.skillLevel,
+          speciality: riderData.speciality,
+          weeklyRate: riderData.weeklyRate,
+          experience: riderData.experience,
+          bio: riderData.bio,
+        },
+      });
 
-    await prisma.user.update({ where: { id: userId }, data: { money: { decrement: hiringCost } } });
+      const userUpdate = await tx.user.update({
+        where: { id: userId },
+        data: { money: { decrement: hiringCost } },
+        select: { money: true },
+      });
+      await recordTransaction(
+        {
+          userId,
+          type: 'debit',
+          amount: hiringCost,
+          category: 'rider_hire',
+          description: `Hired rider ${rider.firstName} ${rider.lastName}`,
+          balanceAfter: userUpdate.money,
+          metadata: { riderId: rider.id, marketplaceId },
+        },
+        tx,
+      );
+
+      return { newRider: rider, updatedUser: userUpdate };
+    });
 
     userMarketplace.riders.splice(riderIndex, 1);
     userRiderMarketplaces.set(userId, userMarketplace);
@@ -203,7 +226,7 @@ export async function hireRiderFromMarketplace(req, res) {
       data: {
         rider: { ...newRider, name: `${newRider.firstName} ${newRider.lastName}` },
         cost: hiringCost,
-        remainingMoney: user.money - hiringCost,
+        remainingMoney: updatedUser.money,
       },
     });
   } catch (error) {

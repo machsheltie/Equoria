@@ -51,7 +51,9 @@ function selectByDistribution(distribution) {
   let cumulative = 0;
   for (const [item, percentage] of Object.entries(distribution)) {
     cumulative += percentage;
-    if (random <= cumulative) return item;
+    if (random <= cumulative) {
+      return item;
+    }
   }
   return Object.keys(distribution)[0];
 }
@@ -209,7 +211,9 @@ export function generateRiderMarketplace(size = RIDER_MARKETPLACE_CONFIG.DEFAULT
  * @returns {boolean}
  */
 export function riderMarketplaceNeedsRefresh(lastRefresh) {
-  if (!lastRefresh) return true;
+  if (!lastRefresh) {
+    return true;
+  }
   const hoursDiff = (Date.now() - new Date(lastRefresh).getTime()) / (1000 * 60 * 60);
   return hoursDiff >= RIDER_MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS;
 }

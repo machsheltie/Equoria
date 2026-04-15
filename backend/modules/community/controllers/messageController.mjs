@@ -80,8 +80,9 @@ export async function getUnreadCount(req, res) {
 export async function getMessage(req, res) {
   const id = parseInt(req.params.id, 10);
   const userId = req.user.id;
-  if (!id || id <= 0)
+  if (!id || id <= 0) {
     return res.status(400).json({ success: false, message: 'Invalid message ID' });
+  }
 
   try {
     const message = await prisma.directMessage.findUnique({
@@ -92,7 +93,9 @@ export async function getMessage(req, res) {
       },
     });
 
-    if (!message) return res.status(404).json({ success: false, message: 'Message not found' });
+    if (!message) {
+      return res.status(404).json({ success: false, message: 'Message not found' });
+    }
     if (message.senderId !== userId && message.recipientId !== userId) {
       return res.status(403).json({ success: false, message: 'Access denied' });
     }
@@ -121,8 +124,9 @@ export async function sendMessage(req, res) {
 
   try {
     const recipientExists = await prisma.user.findUnique({ where: { id: recipientId } });
-    if (!recipientExists)
+    if (!recipientExists) {
       return res.status(404).json({ success: false, message: 'Recipient not found' });
+    }
 
     const message = await prisma.directMessage.create({
       data: { senderId, recipientId, subject, content, tag },
@@ -144,14 +148,18 @@ export async function sendMessage(req, res) {
 export async function markRead(req, res) {
   const id = parseInt(req.params.id, 10);
   const userId = req.user.id;
-  if (!id || id <= 0)
+  if (!id || id <= 0) {
     return res.status(400).json({ success: false, message: 'Invalid message ID' });
+  }
 
   try {
     const message = await prisma.directMessage.findUnique({ where: { id } });
-    if (!message) return res.status(404).json({ success: false, message: 'Message not found' });
-    if (message.recipientId !== userId)
+    if (!message) {
+      return res.status(404).json({ success: false, message: 'Message not found' });
+    }
+    if (message.recipientId !== userId) {
       return res.status(403).json({ success: false, message: 'Access denied' });
+    }
 
     await prisma.directMessage.update({ where: { id }, data: { isRead: true } });
     return res.json({ success: true });

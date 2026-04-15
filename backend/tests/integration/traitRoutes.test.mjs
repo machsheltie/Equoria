@@ -88,7 +88,7 @@ describe('Trait Routes Integration Tests', () => {
     } catch (error) {
       console.error('[ERROR] Cleanup failed:', error);
     } finally {
-      await prisma.$disconnect();
+      // prisma.$disconnect() removed — global teardown handles disconnection
     }
   });
 

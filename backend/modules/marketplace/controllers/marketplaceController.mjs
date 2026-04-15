@@ -11,6 +11,7 @@ import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import { BREED_GENETIC_PROFILES } from '../../horses/data/breedGeneticProfiles.mjs';
 import { createHorse } from '../../../models/horseModel.mjs';
+import { recordTransaction } from '../../../services/financialLedgerService.mjs';
 
 // ── Horse Trader store constants ──────────────────────────────────────────────
 
@@ -303,15 +304,17 @@ export async function buyHorse(req, res) {
       }
 
       // Deduct from buyer
-      await tx.user.update({
+      const updatedBuyer = await tx.user.update({
         where: { id: buyerId },
         data: { money: { decrement: salePrice } },
+        select: { money: true },
       });
 
       // Credit seller
-      await tx.user.update({
+      const updatedSeller = await tx.user.update({
         where: { id: sellerId },
         data: { money: { increment: salePrice } },
+        select: { money: true },
       });
 
       // Transfer horse ownership
@@ -330,6 +333,31 @@ export async function buyHorse(req, res) {
           horseName: horse.name,
         },
       });
+
+      await recordTransaction(
+        {
+          userId: buyerId,
+          type: 'debit',
+          amount: salePrice,
+          category: 'marketplace_purchase',
+          description: `Purchased ${horse.name}`,
+          balanceAfter: updatedBuyer.money,
+          metadata: { horseId, saleId: saleRecord.id, sellerId },
+        },
+        tx,
+      );
+      await recordTransaction(
+        {
+          userId: sellerId,
+          type: 'credit',
+          amount: salePrice,
+          category: 'marketplace_sale',
+          description: `Sold ${horse.name}`,
+          balanceAfter: updatedSeller.money,
+          metadata: { horseId, saleId: saleRecord.id, buyerId },
+        },
+        tx,
+      );
 
       // Re-fetch buyer balance from within the transaction for an accurate post-purchase value
       const postPurchaseBuyer = await tx.user.findUnique({
@@ -438,6 +466,18 @@ export async function buyStoreHorse(req, res) {
         data: { money: { decrement: STORE_PRICE } },
         select: { money: true },
       });
+      await recordTransaction(
+        {
+          userId: buyerId,
+          type: 'debit',
+          amount: STORE_PRICE,
+          category: 'horse_trader_purchase',
+          description: `Purchased ${breedRecord.name} from Horse Trader`,
+          balanceAfter: updated.money,
+          metadata: { breedId: parsedBreedId, sex },
+        },
+        tx,
+      );
       return { updatedUser: updated, breed: breedRecord };
     });
 
