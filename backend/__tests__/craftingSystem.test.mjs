@@ -26,9 +26,15 @@ const mockPrisma = {
     findUnique: mockUserFindUnique,
     update: mockUserUpdate,
   },
+  $transaction: jest.fn(async fn => fn(mockPrisma)),
 };
 jest.unstable_mockModule('../../packages/database/prismaClient.mjs', () => ({
   default: mockPrisma,
+}));
+
+jest.unstable_mockModule('../services/financialLedgerService.mjs', () => ({
+  recordTransaction: jest.fn().mockResolvedValue({}),
+  ensureLedgerTable: jest.fn().mockResolvedValue(undefined),
 }));
 
 // ── Dynamic imports (after mocks) ────────────────────────────────────────────
@@ -262,7 +268,7 @@ describe('getRecipes()', () => {
 
 describe('craftItem()', () => {
   beforeEach(() => {
-    jest.resetAllMocks();
+    jest.clearAllMocks();
   });
 
   it('crafts a Tier-0 recipe when user has sufficient materials and coins', async () => {
