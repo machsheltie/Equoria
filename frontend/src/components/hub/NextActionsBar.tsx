@@ -15,10 +15,9 @@ import { Dumbbell, Trophy, Heart, Star, Coins, Stethoscope, ChevronRight } from 
 import { cn } from '@/lib/utils';
 import { useNextActions } from '@/hooks/api/useNextActions';
 import type { NextAction } from '@/hooks/api/useNextActions';
-import { isBetaMode } from '@/config/betaRouteScope';
 
 /* ─── Narrative copy for each action type ───────────────────────────────── */
-const NARRATIVES: Record<NextAction['type'], (a: NextAction) => string> = {
+const NARRATIVES: Record<NextAction['type'], (_a: NextAction) => string> = {
   train: (a) => (a.horseName ? `${a.horseName} is ready to train!` : 'A horse is ready to train'),
   compete: (a) => (a.horseName ? `Enter ${a.horseName} in a show` : 'Browse open competitions'),
   breed: (a) => (a.horseName ? `${a.horseName} is ready to breed` : 'Check breeding pairs'),
@@ -111,10 +110,7 @@ function ActionCard({ action, isTopPriority }: ActionCardProps) {
   );
 }
 
-/* ─── NextActionsBarContent — renders after beta guard ─────────────────── */
-// Beta guard must run before useNextActions() to avoid firing API calls
-// to /api/v1/next-actions in beta mode. Outer wrapper handles the check.
-function NextActionsBarContent() {
+export function NextActionsBar() {
   const { data: actions, isLoading, error } = useNextActions();
 
   if (isLoading) {
@@ -153,11 +149,4 @@ function NextActionsBarContent() {
       </div>
     </section>
   );
-}
-
-/* ─── NextActionsBar — beta gate wrapper ────────────────────────────────── */
-// Beta guard runs before the hook to prevent unnecessary API calls in beta.
-export function NextActionsBar() {
-  if (isBetaMode) return null;
-  return <NextActionsBarContent />;
 }

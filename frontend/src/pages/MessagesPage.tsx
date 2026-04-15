@@ -6,7 +6,7 @@
  *   Sent  — sent messages
  *
  * Wired to live API in Epic 19B-2:
- *   - useInbox() / useSentMessages() replace MOCK_INBOX / MOCK_SENT
+ *   - useInbox() / useSentMessages() read live backend message data
  *   - useUnreadCount() drives the header badge
  *   - Loading skeleton and empty states included
  *
@@ -20,7 +20,6 @@ import PageHero from '@/components/layout/PageHero';
 import { useInbox, useSentMessages, useUnreadCount, useSendMessage } from '@/hooks/api/useMessages';
 import { usersApi } from '@/lib/api-client';
 import type { DirectMessage } from '@/lib/api-client';
-import { isBetaMode } from '@/config/betaRouteScope';
 
 type MessageTab = 'inbox' | 'sent';
 
@@ -79,30 +78,22 @@ const MessagesPage: React.FC = () => {
               Home
             </Link>
             <span>/</span>
-            {/* /community is beta-hidden — render as plain text in beta mode */}
-            {isBetaMode ? (
-              <span className="text-[var(--cream)]/60">Community</span>
-            ) : (
-              <Link to="/community" className="hover:text-[var(--cream)] transition-colors">
-                Community
-              </Link>
-            )}
+            <Link to="/community" className="hover:text-[var(--cream)] transition-colors">
+              Community
+            </Link>
             <span>/</span>
             <span className="text-[var(--cream)]">Messages</span>
           </div>
-          {/* Compose — write action hidden in beta-readonly mode */}
-          {!isBetaMode && (
-            <button
-              type="button"
-              onClick={() => setComposeOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 text-sm font-medium hover:bg-emerald-600/30 hover:border-emerald-500/40 transition-all"
-              title="Compose a new message"
-              data-testid="compose-button"
-            >
-              <PlusCircle className="w-4 h-4" />
-              Compose
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setComposeOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 text-sm font-medium hover:bg-emerald-600/30 hover:border-emerald-500/40 transition-all"
+            title="Compose a new message"
+            data-testid="compose-button"
+          >
+            <PlusCircle className="w-4 h-4" />
+            Compose
+          </button>
         </div>
       </PageHero>
 

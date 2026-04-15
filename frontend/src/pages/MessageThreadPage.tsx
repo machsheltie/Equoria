@@ -13,7 +13,6 @@ import { MessageSquare, ArrowLeft, Send, Pin, Clock } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
 import { useThread, useCreatePost, useIncrementView } from '@/hooks/api/useForum';
 import type { ForumPost } from '@/lib/api-client';
-import { isBetaMode } from '@/config/betaRouteScope';
 
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -65,11 +64,10 @@ const MessageThreadPage: React.FC = () => {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (id && !isBetaMode) incrementView.mutate(id);
+    if (id) incrementView.mutate(id);
   }, [id]); // incrementView ref is stable — intentionally omitted
 
   const handleReply = async () => {
-    if (isBetaMode) return;
     if (!reply.trim() || submitting) return;
     setSubmitting(true);
     try {
@@ -99,13 +97,9 @@ const MessageThreadPage: React.FC = () => {
             Home
           </Link>
           <span>/</span>
-          {isBetaMode ? (
-            <span>Community</span>
-          ) : (
-            <Link to="/community" className="hover:text-[var(--cream)] transition-colors">
-              Community
-            </Link>
-          )}
+          <Link to="/community" className="hover:text-[var(--cream)] transition-colors">
+            Community
+          </Link>
           <span>/</span>
           <Link to="/message-board" className="hover:text-[var(--cream)] transition-colors">
             Message Board
@@ -174,7 +168,7 @@ const MessageThreadPage: React.FC = () => {
           </div>
         )}
 
-        {!isBetaMode && !isLoading && thread && (
+        {!isLoading && thread && (
           <div className="p-4 rounded-xl bg-white/5 border border-white/10" data-testid="reply-box">
             <h3 className="text-sm font-semibold text-white/60 mb-3">Leave a reply</h3>
             <textarea

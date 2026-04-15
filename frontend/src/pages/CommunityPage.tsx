@@ -16,75 +16,7 @@ import PageHero from '@/components/layout/PageHero';
 import { useThreads } from '@/hooks/api/useForum';
 import { useUnreadCount } from '@/hooks/api/useMessages';
 import { useClubs } from '@/hooks/api/useClubs';
-import { isBetaMode } from '@/config/betaRouteScope';
-import BetaExcludedNotice from '@/components/beta/BetaExcludedNotice';
 
-const MOCK_RECENT_ACTIVITY = [
-  {
-    id: 'act-1',
-    type: 'thread',
-    user: 'StarlightStables',
-    action: 'posted in',
-    target: 'General Chat',
-    content: 'Anyone else excited for the Spring Classic next month?',
-    time: '2 min ago',
-  },
-  {
-    id: 'act-2',
-    type: 'club',
-    user: 'IronHoof Racing',
-    action: 'joined',
-    target: 'Thoroughbred Breed Club',
-    content: '',
-    time: '14 min ago',
-  },
-  {
-    id: 'act-3',
-    type: 'sale',
-    user: 'MidnightMane',
-    action: 'listed in',
-    target: 'Horse Sales',
-    content: 'WB mare, 5yo, Dressage-bred — 2,400 coins',
-    time: '28 min ago',
-  },
-  {
-    id: 'act-4',
-    type: 'art',
-    user: 'CanvasAndCanter',
-    action: 'posted in',
-    target: 'Art & Photography',
-    content: 'Drew my bay gelding Copperfield — feedback welcome!',
-    time: '1 hr ago',
-  },
-  {
-    id: 'act-5',
-    type: 'club',
-    user: 'ArabiaNights',
-    action: 'opened elections in',
-    target: 'Arabian Breed Club',
-    content: 'Vote for your next club president!',
-    time: '2 hr ago',
-  },
-];
-
-const activityTypeColor: Record<string, string> = {
-  thread: 'bg-violet-500/20 text-violet-400',
-  club: 'bg-celestial-gold/20 text-celestial-gold',
-  sale: 'bg-emerald-500/20 text-emerald-400',
-  art: 'bg-pink-500/20 text-pink-400',
-};
-
-const activityTypeLabel: Record<string, string> = {
-  thread: '💬',
-  club: '👥',
-  sale: '🐴',
-  art: '🎨',
-};
-
-// ── CommunityPageContent — rendered only when isBetaMode is false ─────────────
-// Hooks must not be called before the beta guard (would fire API calls to
-// beta-hidden feature endpoints). The outer CommunityPage wrapper gate is the
-// authoritative check; this inner component only mounts in non-beta builds.
 const CommunityPageContent: React.FC = () => {
   const { total: threadTotal } = useThreads();
   const { data: unreadData } = useUnreadCount();
@@ -235,45 +167,20 @@ const CommunityPageContent: React.FC = () => {
           ))}
         </div>
 
-        {/* Recent Activity Feed — placeholder until live activity endpoint is implemented */}
+        {/* Recent Activity Feed */}
         <div>
           <div className="flex items-center gap-3 mb-4">
             <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide">
               Recent Community Activity
             </h2>
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 uppercase tracking-wide font-semibold">
-              Coming Soon
-            </span>
           </div>
-          <div className="space-y-2">
-            {MOCK_RECENT_ACTIVITY.map((activity) => (
-              <div
-                key={activity.id}
-                className="flex items-start gap-3 p-4 rounded-xl bg-white/3 border border-white/8 hover:bg-white/5 transition-colors"
-                data-testid={`activity-item-${activity.id}`}
-              >
-                <span className="text-lg mt-0.5 flex-shrink-0">
-                  {activityTypeLabel[activity.type]}
-                </span>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                    <span className="text-sm font-semibold text-white/80">{activity.user}</span>
-                    <span className="text-xs text-white/40">{activity.action}</span>
-                    <span
-                      className={`text-xs font-medium px-2 py-0.5 rounded-full ${activityTypeColor[activity.type]}`}
-                    >
-                      {activity.target}
-                    </span>
-                  </div>
-                  {activity.content && (
-                    <p className="text-xs text-white/50 truncate">{activity.content}</p>
-                  )}
-                </div>
-                <span className="text-[11px] text-white/30 flex-shrink-0 mt-0.5">
-                  {activity.time}
-                </span>
-              </div>
-            ))}
+          <div className="flex flex-col items-center justify-center min-h-40 rounded-xl bg-white/3 border border-white/8 text-center px-6">
+            <MessageSquare className="w-8 h-8 text-white/20 mb-3" />
+            <h3 className="text-sm font-semibold text-white/70 mb-1">No recent activity yet</h3>
+            <p className="text-xs text-white/40 max-w-md">
+              Community posts, club updates, and messages will appear here once players create
+              activity through the live community tools.
+            </p>
           </div>
         </div>
       </div>
@@ -281,19 +188,7 @@ const CommunityPageContent: React.FC = () => {
   );
 };
 
-// ── CommunityPage — beta gate wrapper ─────────────────────────────────────────
-// Beta guard runs before hooks to prevent API calls to beta-hidden endpoints.
 const CommunityPage: React.FC = () => {
-  if (isBetaMode) {
-    return (
-      <BetaExcludedNotice
-        fullPage
-        testId="community-beta-excluded"
-        redirectTo="/"
-        redirectLabel="Return to Home"
-      />
-    );
-  }
   return <CommunityPageContent />;
 };
 

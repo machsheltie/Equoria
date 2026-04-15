@@ -1,8 +1,7 @@
 /**
  * EpigeneticTraitDisplay Tests
  *
- * Verifies the component uses real useHorseEpigeneticInsights hook and shows
- * honest beta-readonly notice for advanced trait features.
+ * Verifies the component uses real useHorseEpigeneticInsights hook and real empty states.
  *
  * Story 21R-2: Remove production frontend mocks from beta-facing code
  */
@@ -10,12 +9,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-
-// Beta-excluded notice is conditional on isBetaMode — set true for tests.
-vi.mock('@/config/betaRouteScope', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/config/betaRouteScope')>();
-  return { ...actual, isBetaMode: true };
-});
 
 // Mock the real genetics hook at the boundary
 vi.mock('@/hooks/useHorseGenetics', () => ({
@@ -43,13 +36,6 @@ vi.mock('@/hooks/useHorseGenetics', () => ({
     isLoading: false,
     error: null,
   })),
-}));
-
-// Mock BetaExcludedNotice to simplify assertions
-vi.mock('@/components/beta/BetaExcludedNotice', () => ({
-  default: ({ testId, message }: { testId?: string; message?: string }) => (
-    <div data-testid={testId ?? 'beta-excluded-notice'}>{message}</div>
-  ),
 }));
 
 // Import after mocks are registered
@@ -152,13 +138,11 @@ describe('EpigeneticTraitDisplay', () => {
     expect(screen.queryByTestId('epigenetic-traits-list')).not.toBeInTheDocument();
   });
 
-  it('shows beta-readonly notice for advanced trait features', () => {
+  it('does not show beta-exclusion copy for advanced trait features', () => {
     render(<EpigeneticTraitDisplay horseId={1} />, { wrapper: makeWrapper() });
 
-    expect(screen.getByTestId('epigenetic-trait-beta-notice')).toBeInTheDocument();
-    expect(
-      screen.getByText(/Detailed trait discovery history.*not available in this beta/i)
-    ).toBeInTheDocument();
+    expect(screen.getByTestId('epigenetic-trait-display')).toBeInTheDocument();
+    expect(screen.queryByText(/not available in this beta/i)).not.toBeInTheDocument();
   });
 
   it('does not render mock trait data (no mockApi)', () => {

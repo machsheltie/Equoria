@@ -78,8 +78,6 @@ import { getBreedName } from '@/lib/utils';
 // Competition history (Story 5-3)
 import CompetitionHistory from '@/components/competition/CompetitionHistory';
 import { useHorseCompetitionHistory } from '@/hooks/api/useHorseCompetitionHistory';
-import { isBetaMode } from '@/config/betaRouteScope';
-import BetaExcludedNotice from '@/components/beta/BetaExcludedNotice';
 
 // Types
 interface HorseStats {
@@ -570,7 +568,16 @@ const HorseDetailPage: React.FC = () => {
             {activeTab === 'pedigree' && <PedigreeTab horse={horse} />}
             {activeTab === 'health' && <HealthVetTab horse={horse} />}
             {activeTab === 'tack' && <TackTab horse={horse} />}
-            {activeTab === 'stud-sale' && <StudSaleTab horse={horse} />}
+            {activeTab === 'stud-sale' && (
+              <StudSaleTab
+                horse={horse}
+                onListForSale={() => setShowListModal(true)}
+                onDelist={() =>
+                  delistHorseMutation.mutate(horse.id, { onSuccess: () => refetch() })
+                }
+                isDelisting={delistHorseMutation.isPending}
+              />
+            )}
           </div>
         </div>
       </div>
@@ -1646,13 +1653,10 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       .map((d) => d.discipline);
   }
 
-  // Calculate trait modifiers for the selected discipline (mock for frontend-first)
+  // Calculate trait modifiers for the selected discipline from real horse traits.
   function getTraitModifiers(_disciplineId: string): TraitModifier[] {
-    // In Phase 1 (frontend-first), return mock trait modifiers
-    // In Phase 2, this will be fetched from the backend
     if (!horse.traits || horse.traits.length === 0) return [];
 
-    // Simulate trait modifiers based on horse traits
     const modifiers: TraitModifier[] = [];
 
     if (horse.traits.includes('Fast Learner')) {
@@ -2025,7 +2029,6 @@ const PedigreeTab: React.FC<{ horse: Horse }> = ({ horse }) => {
 };
 
 // Health & Vet Tab Component — Story 12-4
-// Mock vet history — replaced by live API in Story 12-5 wire-up
 interface VetRecord {
   date: string;
   type: string;
@@ -2033,26 +2036,7 @@ interface VetRecord {
   vet: string;
 }
 
-const MOCK_VET_HISTORY: VetRecord[] = [
-  {
-    date: '2026-02-10',
-    type: 'Health Check',
-    result: 'Excellent — cleared for competition',
-    vet: 'Dr. Ashwood',
-  },
-  {
-    date: '2026-01-15',
-    type: 'Injury Assessment',
-    result: 'Minor strain — 3 days rest advised',
-    vet: 'Dr. Whitmore',
-  },
-  {
-    date: '2025-12-01',
-    type: 'Annual Vaccination',
-    result: 'Complete — all vaccines administered',
-    vet: 'Dr. Ashwood',
-  },
-];
+const vetHistory: VetRecord[] = [];
 
 const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   const healthColor =
@@ -2088,16 +2072,14 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       {/* Vet History */}
       <div>
         <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-3">Veterinary History</h3>
-        {isBetaMode ? (
-          <BetaExcludedNotice message="Veterinary history is not available in this beta." />
-        ) : MOCK_VET_HISTORY.length === 0 ? (
+        {vetHistory.length === 0 ? (
           <div className="text-center py-8 bg-[rgba(15,35,70,0.3)] rounded-lg border border-[rgba(37,99,235,0.15)]">
             <Stethoscope className="w-8 h-8 text-[rgb(160,175,200)]/40 mx-auto mb-2" />
             <p className="fantasy-body text-[rgb(160,175,200)]">No vet records on file.</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {MOCK_VET_HISTORY.map((record, idx) => (
+            {vetHistory.map((record, idx) => (
               <div
                 key={idx}
                 className="p-4 bg-[rgba(15,35,70,0.4)] rounded-lg border border-[rgba(37,99,235,0.2)] hover:border-burnished-gold/40 transition-colors"
@@ -2142,7 +2124,12 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
 };
 
 // Stud / Sale Tab Component — Story 12-4 / 15-5
-const StudSaleTab: React.FC<{ horse: Horse }> = ({ horse }) => {
+const StudSaleTab: React.FC<{
+  horse: Horse;
+  onListForSale: () => void;
+  onDelist: () => void;
+  isDelisting: boolean;
+}> = ({ horse, onListForSale, onDelist, isDelisting }) => {
   const isMale =
     horse.gender?.toLowerCase() === 'stallion' || horse.gender?.toLowerCase() === 'male';
   const isFemale =
@@ -2153,8 +2140,7 @@ const StudSaleTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       <div>
         <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-2">Listing Options</h3>
         <p className="fantasy-body text-[rgb(160,175,200)] text-sm">
-          List {horse.name} as a stud service or for outright sale. Pricing and listing management
-          will be wired to the live API in a future update.
+          List {horse.name} for outright sale, manage active listings, and browse the marketplace.
         </p>
       </div>
 
@@ -2163,7 +2149,11 @@ const StudSaleTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         <p className="fantasy-caption text-[rgb(160,175,200)] text-xs uppercase tracking-wider mb-1">
           Current Status
         </p>
-        <p className="fantasy-title text-lg text-[rgb(220,235,255)]">Not Listed</p>
+        <p className="fantasy-title text-lg text-[rgb(220,235,255)]">
+          {horse.forSale
+            ? `Listed for ${(horse.salePrice ?? 0).toLocaleString()} coins`
+            : 'Not Listed'}
+        </p>
       </div>
 
       {/* Listing Type Buttons */}
@@ -2171,9 +2161,13 @@ const StudSaleTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         {isMale && (
           <button
             type="button"
-            onClick={() => toast.info('Stud listing is coming in a future update. Stay tuned!')}
+            onClick={() =>
+              toast.info(
+                'Stud services use the breeding flow; set stud status from breeding management.'
+              )
+            }
             className="w-full flex items-center justify-between p-4 bg-[rgba(15,35,70,0.3)] rounded-lg border border-[rgba(37,99,235,0.15)] text-left hover:border-[rgba(37,99,235,0.3)] transition-colors"
-            title="Stud listing — coming in a future update"
+            title="Open breeding management for stud service setup"
             data-testid="stud-listing-btn"
           >
             <div>
@@ -2182,7 +2176,7 @@ const StudSaleTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                 Other players can pay a breeding fee to use {horse.name}
               </p>
             </div>
-            <span className="text-xs fantasy-caption text-[rgb(160,175,200)]">Coming Soon</span>
+            <span className="text-xs fantasy-caption text-[rgb(160,175,200)]">Breeding</span>
           </button>
         )}
 
@@ -2196,20 +2190,25 @@ const StudSaleTab: React.FC<{ horse: Horse }> = ({ horse }) => {
 
         <button
           type="button"
-          onClick={() =>
-            toast.info('Horse marketplace listing is coming in a future update. Stay tuned!')
-          }
+          onClick={horse.forSale ? onDelist : onListForSale}
+          disabled={isDelisting}
           className="w-full flex items-center justify-between p-4 bg-[rgba(15,35,70,0.3)] rounded-lg border border-[rgba(37,99,235,0.15)] text-left hover:border-[rgba(37,99,235,0.3)] transition-colors"
-          title="Sale listing — coming in a future update"
+          title={horse.forSale ? 'Remove marketplace listing' : 'List horse for sale'}
           data-testid="sale-listing-btn"
         >
           <div>
-            <p className="fantasy-title text-[rgb(220,235,255)] text-sm">List for Sale</p>
+            <p className="fantasy-title text-[rgb(220,235,255)] text-sm">
+              {horse.forSale ? 'Remove Sale Listing' : 'List for Sale'}
+            </p>
             <p className="fantasy-body text-[rgb(160,175,200)] text-xs mt-0.5">
-              Place {horse.name} on the Marketplace for other players to purchase
+              {horse.forSale
+                ? 'Take this horse off the Marketplace'
+                : `Place ${horse.name} on the Marketplace for other players to purchase`}
             </p>
           </div>
-          <span className="text-xs fantasy-caption text-[rgb(160,175,200)]">Coming Soon</span>
+          <span className="text-xs fantasy-caption text-[rgb(160,175,200)]">
+            {isDelisting ? 'Saving...' : horse.forSale ? 'Delist' : 'Set Price'}
+          </span>
         </button>
       </div>
 

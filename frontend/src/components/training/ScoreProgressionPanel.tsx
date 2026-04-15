@@ -30,38 +30,43 @@ interface ScoreProgressionPanelProps {
   className?: string;
 }
 
-/**
- * Mock horse discipline scores for display (Phase 1)
- * In Phase 2, this will be fetched from the API with the horse data
- */
-function getMockDisciplineScores(horseId: number): Record<string, number> {
-  // Generate scores based on horseId for consistent mock data
-  const seed = horseId * 17;
-  return {
-    'western-pleasure': (seed + 20) % 100,
-    reining: (seed + 15) % 100,
-    cutting: (seed + 10) % 100,
-    'barrel-racing': (seed + 25) % 100,
-    roping: (seed + 5) % 100,
-    'team-penning': (seed + 0) % 100,
-    rodeo: (seed + 0) % 100,
-    hunter: (seed + 35) % 100,
-    saddleseat: (seed + 40) % 100,
-    dressage: (seed + 45) % 100,
-    'show-jumping': (seed + 30) % 100,
-    eventing: (seed + 55) % 100,
-    'cross-country': (seed + 50) % 100,
-    endurance: (seed + 70) % 100,
-    vaulting: (seed + 0) % 100,
-    polo: (seed + 15) % 100,
-    'combined-driving': (seed + 20) % 100,
-    'fine-harness': (seed + 10) % 100,
-    gaited: (seed + 25) % 100,
-    gymkhana: (seed + 30) % 100,
-    racing: (seed + 60) % 100,
-    steeplechase: (seed + 45) % 100,
-    'harness-racing': (seed + 35) % 100,
-  };
+const DISCIPLINES = [
+  'western-pleasure',
+  'reining',
+  'cutting',
+  'barrel-racing',
+  'roping',
+  'team-penning',
+  'rodeo',
+  'hunter',
+  'saddleseat',
+  'dressage',
+  'show-jumping',
+  'eventing',
+  'cross-country',
+  'endurance',
+  'vaulting',
+  'polo',
+  'combined-driving',
+  'fine-harness',
+  'gaited',
+  'gymkhana',
+  'racing',
+  'steeplechase',
+  'harness-racing',
+];
+
+function buildDisciplineScores(
+  history: Array<{ discipline?: string; score?: number }>
+): Record<string, number> {
+  const scores = Object.fromEntries(DISCIPLINES.map((discipline) => [discipline, 0]));
+
+  for (const entry of history) {
+    if (!entry.discipline || typeof entry.score !== 'number') continue;
+    scores[entry.discipline] = Math.max(scores[entry.discipline] ?? 0, entry.score);
+  }
+
+  return scores;
 }
 
 /**
@@ -133,9 +138,7 @@ const ScoreProgressionPanel: React.FC<ScoreProgressionPanelProps> = ({
   // Fetch training history using React Query hook
   const { data: trainingHistory, isLoading, error, refetch } = useHorseTrainingHistory(horseId);
 
-  // Get mock discipline scores (Phase 1)
-  // In Phase 2, this will come from horse data via another hook
-  const disciplineScores = getMockDisciplineScores(horseId);
+  const disciplineScores = buildDisciplineScores(trainingHistory ?? []);
 
   // Handle retry button click
   const handleRetry = () => {

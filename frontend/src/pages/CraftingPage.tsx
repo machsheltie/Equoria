@@ -16,8 +16,6 @@ import { Wrench, Lock, CheckCircle, Package, AlertCircle, Loader2 } from 'lucide
 import PageHero from '@/components/layout/PageHero';
 import { useCraftingMaterials, useCraftingRecipes, useCraftItem } from '@/hooks/api/useCrafting';
 import type { CraftingRecipe, CraftingMaterials } from '@/lib/api-client';
-import { isBetaMode } from '@/config/betaRouteScope';
-import BetaExcludedNotice from '@/components/beta/BetaExcludedNotice';
 
 // ── Tier labels ───────────────────────────────────────────────────────────────
 const TIER_LABELS: Record<number, string> = {
@@ -184,10 +182,7 @@ function RecipeCard({
   );
 }
 
-// ── CraftingPageContent — rendered only when isBetaMode is false ──────────────
-// Hooks must not be called before the beta guard (would fire API calls to
-// beta-hidden crafting endpoints). Outer CraftingPage wrapper gate is authoritative.
-const CraftingPageContent: React.FC = () => {
+const CraftingPage: React.FC = () => {
   const { data: materialsData, isLoading: matLoading, error: matError } = useCraftingMaterials();
   const { data: recipesData, isLoading: recLoading, error: recError } = useCraftingRecipes();
   const craftMutation = useCraftItem();
@@ -305,22 +300,6 @@ const CraftingPageContent: React.FC = () => {
       </div>
     </div>
   );
-};
-
-// ── CraftingPage — beta gate wrapper ──────────────────────────────────────────
-// Beta guard runs before hooks to prevent API calls to beta-hidden endpoints.
-const CraftingPage: React.FC = () => {
-  if (isBetaMode) {
-    return (
-      <BetaExcludedNotice
-        fullPage
-        testId="crafting-beta-excluded"
-        redirectTo="/world"
-        redirectLabel="Return to World Hub"
-      />
-    );
-  }
-  return <CraftingPageContent />;
 };
 
 export default CraftingPage;

@@ -8,7 +8,7 @@
  * Follows the "Hire → Assign → Discover → Retire" staff system pattern.
  * Mirrors RidersPage.tsx (Epic 9C) and GroomsPage.tsx (Epic 7).
  *
- * All data is mock — wire to /api/trainers/* when Story 13-5 is scheduled.
+ * Data is loaded through the trainer API hooks.
  */
 
 import React, { useState } from 'react';

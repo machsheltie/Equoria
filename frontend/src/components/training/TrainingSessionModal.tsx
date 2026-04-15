@@ -27,7 +27,6 @@ import {
   useTrainingStatus,
 } from '@/hooks/api/useTraining';
 import type { TrainableHorse, TrainingResult } from '@/lib/api-client';
-import { isBetaMode } from '@/config/betaRouteScope';
 import DisciplineSelector from './DisciplineSelector';
 import HorseStatsCard from './HorseStatsCard';
 import TrainingResultsDisplay from './TrainingResultsDisplay';
@@ -41,13 +40,13 @@ interface TrainingSessionModalProps {
 }
 
 /**
- * Returns mock trait modifiers based on the selected discipline.
+ * Returns discipline trait modifiers based on the selected discipline.
  * Different disciplines have different trait combinations:
  * - Physical disciplines: Athletic + Stubborn
  * - Mental disciplines: Intelligent + Calm
  * - Other disciplines: Quick Learner
  */
-const getMockTraitModifiers = (discipline: string): TraitModifier[] => {
+const getDisciplineTraitModifiers = (discipline: string): TraitModifier[] => {
   // Normalize discipline for comparison (lowercase, no spaces/hyphens)
   const normalizedDiscipline = discipline.toLowerCase().replace(/[\s-]/g, '');
 
@@ -143,7 +142,7 @@ const TrainingSessionModal = ({ horse, onClose, onCompleted }: TrainingSessionMo
 
   // Calculate trait modifiers based on selected discipline
   const traitModifiers = useMemo(() => {
-    return getMockTraitModifiers(discipline);
+    return getDisciplineTraitModifiers(discipline);
   }, [discipline]);
 
   // Calculate net effect for expected score display
@@ -204,7 +203,6 @@ const TrainingSessionModal = ({ horse, onClose, onCompleted }: TrainingSessionMo
   /**
    * Handler for "Learn More" button click.
    * Opens trait documentation or information modal (future implementation).
-   * Not exposed in beta mode — action has no implementation yet.
    */
   const handleLearnMore = () => {
     // Future: Open trait documentation or modal
@@ -289,23 +287,20 @@ const TrainingSessionModal = ({ horse, onClose, onCompleted }: TrainingSessionMo
             <div className="mt-4" data-testid="trait-modifiers-section">
               <div className="flex items-center gap-2 mb-3">
                 <h3 className="text-sm font-semibold text-[rgb(220,235,255)]">Trait Modifiers</h3>
-                {/* Help button hidden in beta mode — handleLearnMore has no implementation yet */}
-                {!isBetaMode && (
-                  <button
-                    onClick={handleLearnMore}
-                    className="text-[var(--gold-400)] hover:text-[var(--gold-300)]"
-                    aria-label="Learn more about traits"
-                    type="button"
-                  >
-                    <HelpCircle className="w-4 h-4" data-testid="help-circle-icon" />
-                  </button>
-                )}
+                <button
+                  onClick={handleLearnMore}
+                  className="text-[var(--gold-400)] hover:text-[var(--gold-300)]"
+                  aria-label="Learn more about traits"
+                  type="button"
+                >
+                  <HelpCircle className="w-4 h-4" data-testid="help-circle-icon" />
+                </button>
               </div>
               <TraitModifierList
                 modifiers={traitModifiers}
                 baseGain={BASE_GAIN}
                 showNetEffect={true}
-                onLearnMore={isBetaMode ? undefined : handleLearnMore}
+                onLearnMore={handleLearnMore}
               />
             </div>
 

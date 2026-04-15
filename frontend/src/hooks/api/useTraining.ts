@@ -9,8 +9,7 @@
  * - Training eligibility checks
  * - Discipline status tracking
  *
- * Phase 1: Mock implementation for frontend-first development
- * Phase 2: Will connect to real backend API
+ * Uses the real training backend via trainingApi.
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';

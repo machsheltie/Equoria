@@ -1,8 +1,7 @@
 /**
  * BreedingPredictionsPanel Tests
  *
- * Verifies the panel uses real horsesApi.get calls and shows honest
- * beta-readonly notice for advanced predictions.
+ * Verifies the panel uses real horsesApi.get calls and does not show beta exclusions.
  *
  * Story 21R-2: Remove production frontend mocks from beta-facing code
  */
@@ -11,13 +10,6 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import BreedingPredictionsPanel from '../BreedingPredictionsPanel';
-
-// Beta-excluded notice is conditional on isBetaMode — set true so tests can
-// verify the notice. Non-beta behavior (notice absent) is the default build.
-vi.mock('@/config/betaRouteScope', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/config/betaRouteScope')>();
-  return { ...actual, isBetaMode: true };
-});
 
 // Mock the horsesApi — real API boundary
 vi.mock('@/lib/api-client', () => ({
@@ -47,13 +39,6 @@ vi.mock('@/lib/api-client', () => ({
       disciplineScores: {},
     })),
   },
-}));
-
-// Mock BetaExcludedNotice to simplify assertion
-vi.mock('@/components/beta/BetaExcludedNotice', () => ({
-  default: ({ testId, message }: { testId?: string; message?: string }) => (
-    <div data-testid={testId ?? 'beta-excluded-notice'}>{message}</div>
-  ),
 }));
 
 const makeWrapper = () => {
@@ -87,18 +72,16 @@ describe('BreedingPredictionsPanel', () => {
     expect(screen.getByText(/Dam Horse/)).toBeInTheDocument();
   });
 
-  it('shows beta-readonly notice for advanced predictions', async () => {
+  it('does not show beta-exclusion copy for advanced predictions', async () => {
     render(<BreedingPredictionsPanel sireId={1} damId={2} />, {
       wrapper: makeWrapper(),
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId('breeding-predictions-beta-notice')).toBeInTheDocument();
+      expect(screen.getByTestId('breeding-predictions-panel')).toBeInTheDocument();
     });
 
-    expect(
-      screen.getByText(/Advanced trait inheritance predictions.*not available in this beta/i)
-    ).toBeInTheDocument();
+    expect(screen.queryByText(/not available in this beta/i)).not.toBeInTheDocument();
   });
 
   it('shows error state when horsesApi fails', async () => {

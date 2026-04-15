@@ -1,8 +1,7 @@
 /**
  * EnrichmentActivityPanel Tests
  *
- * Verifies the component uses real breedingApi.getFoalActivities and shows
- * honest beta-readonly notice for interactive enrichment features.
+ * Verifies the component uses real breedingApi.getFoalActivities and real empty states.
  *
  * Story 21R-2: Remove production frontend mocks from beta-facing code
  */
@@ -13,12 +12,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import EnrichmentActivityPanel from '../EnrichmentActivityPanel';
 import type { Foal } from '@/types/foal';
 
-// Beta-excluded notice is conditional on isBetaMode — set true for tests.
-vi.mock('@/config/betaRouteScope', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/config/betaRouteScope')>();
-  return { ...actual, isBetaMode: true };
-});
-
 // Mock the real API boundary
 vi.mock('@/lib/api-client', () => ({
   breedingApi: {
@@ -27,13 +20,6 @@ vi.mock('@/lib/api-client', () => ({
       { id: 2, activity: 'Sound Exposure', createdAt: '2026-04-09T10:00:00Z' },
     ]),
   },
-}));
-
-// Mock BetaExcludedNotice to simplify assertions
-vi.mock('@/components/beta/BetaExcludedNotice', () => ({
-  default: ({ testId, message }: { testId?: string; message?: string }) => (
-    <div data-testid={testId ?? 'beta-excluded-notice'}>{message}</div>
-  ),
 }));
 
 const mockFoal: Foal = {
@@ -73,16 +59,14 @@ describe('EnrichmentActivityPanel', () => {
     expect(screen.getByText('Sound Exposure')).toBeInTheDocument();
   });
 
-  it('shows beta-readonly notice for interactive enrichment features', async () => {
+  it('does not show beta-exclusion copy for interactive enrichment features', async () => {
     render(<EnrichmentActivityPanel foal={mockFoal} />, { wrapper: makeWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByTestId('enrichment-activity-beta-notice')).toBeInTheDocument();
+      expect(screen.getByTestId('enrichment-activity-panel')).toBeInTheDocument();
     });
 
-    expect(
-      screen.getByText(/Interactive enrichment activities are not available in this beta/i)
-    ).toBeInTheDocument();
+    expect(screen.queryByText(/not available in this beta/i)).not.toBeInTheDocument();
   });
 
   it('shows error state when API fails', async () => {

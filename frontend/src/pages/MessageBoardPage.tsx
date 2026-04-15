@@ -22,7 +22,6 @@ import {
 import PageHero from '@/components/layout/PageHero';
 import { useThreads, useCreateThread } from '@/hooks/api/useForum';
 import type { ForumThread, ForumSection } from '@/lib/api-client';
-import { isBetaMode } from '@/config/betaRouteScope';
 
 const THREADS_PER_PAGE = 20;
 
@@ -129,29 +128,21 @@ const MessageBoardPage: React.FC = () => {
               Home
             </Link>
             <span>/</span>
-            {/* /community is beta-hidden — render as plain text in beta mode */}
-            {isBetaMode ? (
-              <span className="text-[var(--cream)]/60">Community</span>
-            ) : (
-              <Link to="/community" className="hover:text-[var(--cream)] transition-colors">
-                Community
-              </Link>
-            )}
+            <Link to="/community" className="hover:text-[var(--cream)] transition-colors">
+              Community
+            </Link>
             <span>/</span>
             <span className="text-[var(--cream)]">Message Board</span>
           </div>
-          {/* New Post — write action hidden in beta-readonly mode */}
-          {!isBetaMode && (
-            <button
-              type="button"
-              onClick={() => setShowNewThread(true)}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600/20 border border-violet-500/30 text-violet-400 text-sm font-medium hover:bg-violet-600/30 transition-colors"
-              data-testid="new-post-button"
-            >
-              <PlusCircle className="w-4 h-4" />
-              New Post
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={() => setShowNewThread(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600/20 border border-violet-500/30 text-violet-400 text-sm font-medium hover:bg-violet-600/30 transition-colors"
+            data-testid="new-post-button"
+          >
+            <PlusCircle className="w-4 h-4" />
+            New Post
+          </button>
         </div>
       </PageHero>
 

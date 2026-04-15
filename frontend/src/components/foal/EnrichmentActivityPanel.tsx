@@ -2,19 +2,15 @@
  * EnrichmentActivityPanel Component
  *
  * Displays recent foal activity history using real API data.
- * Interactive enrichment activity selection and performance requires backend
- * enrichment status endpoints not yet available in this beta.
  *
  * Story 21R-2: Remove production frontend mocks from beta-facing code
- * (Replaces mockApi with breedingApi.getFoalActivities; interactive features deferred)
+ * Uses breedingApi.getFoalActivities with live empty/error states.
  */
 
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Activity, AlertCircle, History } from 'lucide-react';
 import { breedingApi } from '@/lib/api-client';
-import BetaExcludedNotice from '@/components/beta/BetaExcludedNotice';
-import { isBetaMode } from '@/config/betaRouteScope';
 import type { Foal } from '@/types/foal';
 
 export interface EnrichmentActivityPanelProps {
@@ -25,7 +21,6 @@ export interface EnrichmentActivityPanelProps {
  * EnrichmentActivityPanel Component
  *
  * Uses real foal activity history from the API.
- * Interactive enrichment selection is excluded from beta pending backend support.
  */
 const EnrichmentActivityPanel: React.FC<EnrichmentActivityPanelProps> = ({ foal }) => {
   // Fetch real foal activity history
@@ -53,16 +48,14 @@ const EnrichmentActivityPanel: React.FC<EnrichmentActivityPanelProps> = ({ foal 
   if (error) {
     return (
       <div
-        className="rounded-lg border border-red-500/30 bg-[rgba(239,68,68,0.1)] p-6"
+        className="rounded-lg border border-red-500/30 bg-red-500/10 p-6"
         data-testid="enrichment-activity-error"
       >
         <div className="flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-[rgb(220,235,255)]">
-              Error loading enrichment activities
-            </p>
-            <p className="text-sm text-[rgb(148,163,184)] mt-1">
+            <p className="font-semibold text-midnight-ink">Error loading enrichment activities</p>
+            <p className="text-sm text-mystic-silver mt-1">
               {error instanceof Error ? error.message : 'An error occurred'}
             </p>
           </div>
@@ -77,26 +70,17 @@ const EnrichmentActivityPanel: React.FC<EnrichmentActivityPanelProps> = ({ foal 
       <div className="glass-panel rounded-lg p-6">
         <div className="flex items-center gap-2">
           <Activity className="h-6 w-6 text-emerald-400" />
-          <h2 className="text-2xl font-bold text-[rgb(220,235,255)]">Enrichment Activities</h2>
+          <h2 className="text-2xl font-bold text-midnight-ink">Enrichment Activities</h2>
         </div>
-        <p className="text-[rgb(148,163,184)] mt-1">
+        <p className="text-mystic-silver mt-1">
           Build trust, discover traits, and support your foal&apos;s development
         </p>
       </div>
-
-      {/* Interactive enrichment — beta-readonly: notice only shown in beta mode */}
-      {isBetaMode && (
-        <BetaExcludedNotice
-          testId="enrichment-activity-beta-notice"
-          message="Interactive enrichment activities are not available in this beta."
-        />
-      )}
-
       {/* Activity History using real API data */}
       <div className="glass-panel rounded-lg p-6">
         <div className="flex items-center gap-2 mb-4">
-          <History className="h-5 w-5 text-[rgb(148,163,184)]" />
-          <h3 className="text-lg font-bold text-[rgb(220,235,255)]">Recent Activity History</h3>
+          <History className="h-5 w-5 text-mystic-silver" />
+          <h3 className="text-lg font-bold text-midnight-ink">Recent Activity History</h3>
         </div>
 
         {activities && activities.length > 0 ? (
@@ -104,11 +88,11 @@ const EnrichmentActivityPanel: React.FC<EnrichmentActivityPanelProps> = ({ foal 
             {activities.slice(0, 5).map((activity, index) => (
               <li
                 key={activity.id ?? index}
-                className="flex items-center justify-between p-3 rounded-lg bg-[rgba(15,35,70,0.5)]"
+                className="flex items-center justify-between p-3 rounded-lg bg-saddle-leather/50"
               >
-                <span className="text-sm text-[rgb(220,235,255)]">{activity.activity}</span>
+                <span className="text-sm text-midnight-ink">{activity.activity}</span>
                 {activity.createdAt && (
-                  <span className="text-xs text-[rgb(148,163,184)]">
+                  <span className="text-xs text-mystic-silver">
                     {new Date(activity.createdAt).toLocaleDateString()}
                   </span>
                 )}
@@ -117,7 +101,7 @@ const EnrichmentActivityPanel: React.FC<EnrichmentActivityPanelProps> = ({ foal 
           </ul>
         ) : (
           <p
-            className="text-sm text-[rgb(148,163,184)] text-center py-4"
+            className="text-sm text-mystic-silver text-center py-4"
             data-testid="enrichment-activity-empty"
           >
             No activity history yet for this foal.

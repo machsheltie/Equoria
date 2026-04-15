@@ -428,12 +428,9 @@ export function groupModifiersByCategory(modifiers: TraitModifier[]): {
 }
 
 /**
- * Mock trait database for trait modifier lookups
- *
- * NOTE: In production, this would be fetched from the backend API.
- * This is a mock implementation for client-side calculations.
+ * Client-side trait catalog for modifier lookups.
  */
-const traitDatabase: Record<string, TraitModifier> = {
+const traitModifierCatalog: Record<string, TraitModifier> = {
   athletic: {
     traitId: 'athletic',
     traitName: 'Athletic',
@@ -479,9 +476,6 @@ const traitDatabase: Record<string, TraitModifier> = {
 /**
  * Gets trait modifiers that apply to a specific discipline
  *
- * NOTE: This is a mock implementation. In production, this would query horse traits
- * from the backend API.
- *
  * @param horseTraits - Array of trait IDs the horse has (e.g., ['athletic', 'stubborn'])
  * @param discipline - Discipline ID (e.g., 'racing', 'dressage')
  * @returns Array of trait modifiers that affect this discipline
@@ -494,7 +488,7 @@ export function getTraitModifiersForDiscipline(
   const modifiers: TraitModifier[] = [];
 
   for (const traitId of horseTraits) {
-    const trait = traitDatabase[traitId];
+    const trait = traitModifierCatalog[traitId];
     if (!trait) continue;
 
     // Check if trait affects this discipline

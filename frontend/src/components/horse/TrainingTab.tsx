@@ -85,13 +85,10 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       .map((d) => d.discipline);
   }
 
-  // Calculate trait modifiers for the selected discipline (mock for frontend-first)
+  // Calculate trait modifiers for the selected discipline from real horse traits.
   function getTraitModifiers(_disciplineId: string): TraitModifier[] {
-    // In Phase 1 (frontend-first), return mock trait modifiers
-    // In Phase 2, this will be fetched from the backend
     if (!horse.traits || horse.traits.length === 0) return [];
 
-    // Simulate trait modifiers based on horse traits
     const modifiers: TraitModifier[] = [];
 
     if (horse.traits.includes('Fast Learner')) {

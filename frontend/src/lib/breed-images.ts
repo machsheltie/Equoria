@@ -18,18 +18,20 @@ const BREED_PLACEHOLDERS: Record<string, string> = {
   hanoverian: '/images/breeds/warmblood.png',
   oldenburg: '/images/breeds/warmblood.png',
   trakehner: '/images/breeds/warmblood.png',
-  'andalusian': '/images/breeds/andalusian.png',
+  andalusian: '/images/breeds/andalusian.png',
   friesian: '/images/breeds/friesian.png',
   mustang: '/images/breeds/mustang.png',
   appaloosa: '/images/breeds/appaloosa.png',
   'paint horse': '/images/breeds/paint.png',
   morgan: '/images/breeds/morgan.png',
   'tennessee walking horse': '/images/breeds/walking-horse.png',
-  saddlebred: '/images/breeds/saddlebred.png',
+  saddlebred: '/images/breeds/american_saddlebred.png',
+  'american saddlebred': '/images/breeds/american_saddlebred.png',
   standardbred: '/images/breeds/standardbred.png',
   clydesdale: '/images/breeds/clydesdale.png',
   percheron: '/images/breeds/percheron.png',
   shire: '/images/breeds/shire.png',
+  'american cream draft': '/images/breeds/american_cream_draft.png',
 };
 
 const GENERIC_PLACEHOLDER = '/placeholder.svg';
@@ -50,13 +52,15 @@ export function getHorseImage(
 ): string {
   if (imageUrl) return imageUrl;
 
-  const breedName =
-    typeof breed === 'string'
-      ? breed
-      : breed?.name ?? '';
+  const breedName = typeof breed === 'string' ? breed : (breed?.name ?? '');
 
   const key = breedName.toLowerCase().trim();
-  return BREED_PLACEHOLDERS[key] ?? GENERIC_PLACEHOLDER;
+  if (BREED_PLACEHOLDERS[key]) return BREED_PLACEHOLDERS[key];
+  // Partial match — e.g. "American Quarter Horse" matches "quarter horse"
+  const partialKey = Object.keys(BREED_PLACEHOLDERS).find(
+    (k) => key.includes(k) || k.includes(key)
+  );
+  return partialKey ? BREED_PLACEHOLDERS[partialKey] : GENERIC_PLACEHOLDER;
 }
 
 /**
@@ -72,7 +76,7 @@ export function getHorseImage(
  */
 export function getHorseImageStyle(
   imageUrl: string | null | undefined,
-  breed: string | { id?: number; name?: string; description?: string } | null | undefined
+  _breed: string | { id?: number; name?: string; description?: string } | null | undefined
 ): CSSProperties {
   if (imageUrl) return {};
   // Placeholder images look better with contain + a subtle background

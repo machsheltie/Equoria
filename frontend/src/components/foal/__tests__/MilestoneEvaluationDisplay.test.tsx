@@ -1,8 +1,7 @@
 /**
  * MilestoneEvaluationDisplay Tests
  *
- * Verifies the component uses real breedingApi.getFoalDevelopment and shows
- * honest beta-readonly notice for evaluation history.
+ * Verifies the component uses real breedingApi.getFoalDevelopment and real empty states.
  *
  * Story 21R-2: Remove production frontend mocks from beta-facing code
  */
@@ -11,12 +10,6 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import MilestoneEvaluationDisplay from '../MilestoneEvaluationDisplay';
-
-// Beta-excluded notice is conditional on isBetaMode — set true for tests.
-vi.mock('@/config/betaRouteScope', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/config/betaRouteScope')>();
-  return { ...actual, isBetaMode: true };
-});
 
 // Mock the real API boundary
 vi.mock('@/lib/api-client', () => ({
@@ -30,13 +23,6 @@ vi.mock('@/lib/api-client', () => ({
       stage: 'early',
     })),
   },
-}));
-
-// Mock BetaExcludedNotice to simplify assertions
-vi.mock('@/components/beta/BetaExcludedNotice', () => ({
-  default: ({ testId, message }: { testId?: string; message?: string }) => (
-    <div data-testid={testId ?? 'beta-excluded-notice'}>{message}</div>
-  ),
 }));
 
 const makeWrapper = () => {
@@ -66,16 +52,14 @@ describe('MilestoneEvaluationDisplay', () => {
     expect(screen.getByText('early')).toBeInTheDocument();
   });
 
-  it('shows beta-readonly notice for evaluation history', async () => {
+  it('does not show beta-exclusion copy for evaluation history', async () => {
     render(<MilestoneEvaluationDisplay foalId={1} />, { wrapper: makeWrapper() });
 
     await waitFor(() => {
-      expect(screen.getByTestId('milestone-evaluation-beta-notice')).toBeInTheDocument();
+      expect(screen.getByTestId('milestone-evaluation-display')).toBeInTheDocument();
     });
 
-    expect(
-      screen.getByText(/Detailed milestone evaluation history.*not available in this beta/i)
-    ).toBeInTheDocument();
+    expect(screen.queryByText(/not available in this beta/i)).not.toBeInTheDocument();
   });
 
   it('shows error state when API fails', async () => {

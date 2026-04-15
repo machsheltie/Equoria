@@ -35,7 +35,6 @@ import {
   useElectionResults,
 } from '@/hooks/api/useClubs';
 import type { Club, ClubType, ClubElection, ElectionCandidate } from '@/lib/api-client';
-import { isBetaMode } from '@/config/betaRouteScope';
 
 type ClubsTab = 'discipline' | 'breed' | 'my-club';
 
@@ -103,8 +102,7 @@ const ElectionCard: React.FC<{ election: ClubElection; isMember: boolean }> = ({
             {election.status}
           </span>
         </div>
-        {/* Nominate — write action hidden in beta-readonly mode */}
-        {!isBetaMode && isMember && election.status === 'open' && (
+        {isMember && election.status === 'open' && (
           <button
             type="button"
             onClick={() => setShowNominate((v) => !v)}
@@ -150,8 +148,7 @@ const ElectionCard: React.FC<{ election: ClubElection; isMember: boolean }> = ({
               <span className="font-medium">{c.user.username}</span>
               <div className="flex items-center gap-3">
                 <span className="text-white/40">{c.voteCount} votes</span>
-                {/* Vote — write action hidden in beta-readonly mode */}
-                {!isBetaMode && isMember && election.status === 'open' && (
+                {isMember && election.status === 'open' && (
                   <button
                     type="button"
                     disabled={vote.isPending}
@@ -254,82 +251,79 @@ const MyClubTab: React.FC<{ allClubs: Club[] }> = ({ allClubs }) => {
         </div>
       )}
 
-      {/* Create Club — write action hidden in beta-readonly mode */}
-      {!isBetaMode && (
-        <div className="mb-8">
-          <button
-            type="button"
-            onClick={() => setShowCreate((v) => !v)}
-            className="flex items-center gap-2 text-sm text-white/50 hover:text-white/80 transition-colors"
-            data-testid="create-club-toggle"
-          >
-            <PlusCircle className="w-4 h-4" />
-            Create a new club
-          </button>
+      <div className="mb-8">
+        <button
+          type="button"
+          onClick={() => setShowCreate((v) => !v)}
+          className="flex items-center gap-2 text-sm text-white/50 hover:text-white/80 transition-colors"
+          data-testid="create-club-toggle"
+        >
+          <PlusCircle className="w-4 h-4" />
+          Create a new club
+        </button>
 
-          {showCreate && (
-            <div className="mt-4 p-4 rounded-xl bg-white/5 border border-white/10">
-              <h3 className="text-sm font-semibold text-white/70 mb-3">New Club</h3>
+        {showCreate && (
+          <div className="mt-4 p-4 rounded-xl bg-white/5 border border-white/10">
+            <h3 className="text-sm font-semibold text-white/70 mb-3">New Club</h3>
+            <input
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/30 focus:outline-none focus:border-violet-500/40 mb-2"
+              placeholder="Club name"
+              value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              maxLength={100}
+              data-testid="create-club-name"
+            />
+            <div className="flex gap-2 mb-2">
+              <select
+                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 focus:outline-none focus:border-violet-500/40"
+                value={newType}
+                onChange={(e) => setNewType(e.target.value as ClubType)}
+                data-testid="create-club-type"
+              >
+                <option value="discipline">Discipline</option>
+                <option value="breed">Breed</option>
+              </select>
               <input
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/30 focus:outline-none focus:border-violet-500/40 mb-2"
-                placeholder="Club name"
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                maxLength={100}
-                data-testid="create-club-name"
+                className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/30 focus:outline-none focus:border-violet-500/40"
+                placeholder="Category (e.g. Dressage)"
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                data-testid="create-club-category"
               />
-              <div className="flex gap-2 mb-2">
-                <select
-                  className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 focus:outline-none focus:border-violet-500/40"
-                  value={newType}
-                  onChange={(e) => setNewType(e.target.value as ClubType)}
-                  data-testid="create-club-type"
-                >
-                  <option value="discipline">Discipline</option>
-                  <option value="breed">Breed</option>
-                </select>
-                <input
-                  className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/30 focus:outline-none focus:border-violet-500/40"
-                  placeholder="Category (e.g. Dressage)"
-                  value={newCategory}
-                  onChange={(e) => setNewCategory(e.target.value)}
-                  data-testid="create-club-category"
-                />
-              </div>
-              <textarea
-                className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/30 focus:outline-none focus:border-violet-500/40 resize-none mb-3 h-20"
-                placeholder="Club description"
-                value={newDescription}
-                onChange={(e) => setNewDescription(e.target.value)}
-                data-testid="create-club-description"
-              />
-              <div className="flex gap-3 justify-end">
-                <button
-                  type="button"
-                  className="text-sm text-white/40 hover:text-white/70 transition-colors px-3 py-1.5"
-                  onClick={() => setShowCreate(false)}
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  disabled={
-                    !newName.trim() ||
-                    !newCategory.trim() ||
-                    !newDescription.trim() ||
-                    createClub.isPending
-                  }
-                  onClick={handleCreate}
-                  className="px-4 py-1.5 rounded-lg bg-violet-600/20 border border-violet-500/30 text-violet-300 text-sm font-medium hover:bg-violet-600/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                  data-testid="create-club-submit"
-                >
-                  {createClub.isPending ? 'Creating…' : 'Create Club'}
-                </button>
-              </div>
             </div>
-          )}
-        </div>
-      )}
+            <textarea
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/30 focus:outline-none focus:border-violet-500/40 resize-none mb-3 h-20"
+              placeholder="Club description"
+              value={newDescription}
+              onChange={(e) => setNewDescription(e.target.value)}
+              data-testid="create-club-description"
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                className="text-sm text-white/40 hover:text-white/70 transition-colors px-3 py-1.5"
+                onClick={() => setShowCreate(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={
+                  !newName.trim() ||
+                  !newCategory.trim() ||
+                  !newDescription.trim() ||
+                  createClub.isPending
+                }
+                onClick={handleCreate}
+                className="px-4 py-1.5 rounded-lg bg-violet-600/20 border border-violet-500/30 text-violet-300 text-sm font-medium hover:bg-violet-600/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                data-testid="create-club-submit"
+              >
+                {createClub.isPending ? 'Creating…' : 'Create Club'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Global Leaderboard */}
       <div>
@@ -476,19 +470,16 @@ const ClubGrid: React.FC<{
                 ✓ Member
               </div>
             ) : (
-              /* Join — write action hidden in beta-readonly mode */
-              !isBetaMode && (
-                <button
-                  type="button"
-                  onClick={() => joinClub.mutate(club.id)}
-                  disabled={joinClub.isPending}
-                  className="w-full py-2 text-xs font-medium rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-[var(--text-primary)] hover:bg-white/10 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                  data-testid={`join-button-${club.id}`}
-                >
-                  <ChevronRight className="w-3.5 h-3.5" />
-                  {joinClub.isPending ? 'Joining…' : 'Join Club'}
-                </button>
-              )
+              <button
+                type="button"
+                onClick={() => joinClub.mutate(club.id)}
+                disabled={joinClub.isPending}
+                className="w-full py-2 text-xs font-medium rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-[var(--text-primary)] hover:bg-white/10 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                data-testid={`join-button-${club.id}`}
+              >
+                <ChevronRight className="w-3.5 h-3.5" />
+                {joinClub.isPending ? 'Joining…' : 'Join Club'}
+              </button>
             )}
           </div>
         );
@@ -525,14 +516,9 @@ const ClubsPage: React.FC = () => {
               Home
             </Link>
             <span>/</span>
-            {/* /community is beta-hidden — render as plain text in beta mode */}
-            {isBetaMode ? (
-              <span className="text-[var(--cream)]/60">Community</span>
-            ) : (
-              <Link to="/community" className="hover:text-[var(--cream)] transition-colors">
-                Community
-              </Link>
-            )}
+            <Link to="/community" className="hover:text-[var(--cream)] transition-colors">
+              Community
+            </Link>
             <span>/</span>
             <span className="text-[var(--cream)]">Clubs</span>
           </div>

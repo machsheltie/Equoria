@@ -3,7 +3,6 @@
  *
  * Displays a trainer's current horse assignment.
  * Used within MyTrainersDashboard to list active assignments.
- * Unassign action is disabled pending auth wire-up.
  *
  * Mirrors RiderAssignmentCard.tsx for the Trainer System.
  */
@@ -11,7 +10,6 @@
 import React from 'react';
 import { Trash2 } from 'lucide-react';
 
-// Replace with /api/trainers/assignments response shape when 13-5 is wired
 export interface TrainerAssignment {
   id: number;
   trainerId: number;
@@ -22,7 +20,7 @@ export interface TrainerAssignment {
 
 interface TrainerAssignmentCardProps {
   assignment: TrainerAssignment;
-  onUnassign?: (_assignmentId: number) => void;
+  onUnassign: (_assignmentId: number) => void;
   isUnassigning?: boolean;
 }
 
@@ -33,7 +31,7 @@ const TrainerAssignmentCard: React.FC<TrainerAssignmentCardProps> = ({
 }) => {
   const handleUnassign = () => {
     if (window.confirm(`Remove trainer from ${assignment.horseName}?`)) {
-      onUnassign?.(assignment.id);
+      onUnassign(assignment.id);
     }
   };
 
@@ -59,8 +57,8 @@ const TrainerAssignmentCard: React.FC<TrainerAssignmentCardProps> = ({
       <button
         type="button"
         onClick={handleUnassign}
-        disabled={isUnassigning || !onUnassign}
-        title={onUnassign ? 'Unassign trainer' : 'Sign in to unassign'}
+        disabled={isUnassigning}
+        title="Unassign trainer"
         aria-label="Unassign trainer"
         className="p-1.5 text-white/30 hover:text-red-400 hover:bg-red-900/20 rounded transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
