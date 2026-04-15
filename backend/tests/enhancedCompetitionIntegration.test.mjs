@@ -181,7 +181,10 @@ describe('🏆 INTEGRATION: Enhanced Competition Integration - Trait Scoring Val
 
     it('should demonstrate that trait integration is working', () => {
       // This test verifies that the integration is working by checking
-      // that horses with traits can potentially score higher than those without
+      // that horses with traits score higher on average than those without.
+      // We compare totals over 100 runs: the +5 trait bonus on a ~130 base
+      // produces a reliable ~500-point aggregate gap, far exceeding the ±9%
+      // luck variance (combined SD ≈ 97), making failure probability < 1e-6.
       const horseWithTrait = createTestHorse({
         epigeneticModifiers: {
           positive: ['discipline_affinity_racing'],
@@ -192,20 +195,17 @@ describe('🏆 INTEGRATION: Enhanced Competition Integration - Trait Scoring Val
 
       const horseWithoutTrait = createTestHorse();
 
-      // Get multiple scores to find the maximum potential
-      const scoresWithTrait = [];
-      const scoresWithoutTrait = [];
+      const RUNS = 100;
+      let totalWithTrait = 0;
+      let totalWithoutTrait = 0;
 
-      for (let i = 0; i < 20; i++) {
-        scoresWithTrait.push(calculateCompetitionScore(horseWithTrait, 'Racing'));
-        scoresWithoutTrait.push(calculateCompetitionScore(horseWithoutTrait, 'Racing'));
+      for (let i = 0; i < RUNS; i++) {
+        totalWithTrait += calculateCompetitionScore(horseWithTrait, 'Racing');
+        totalWithoutTrait += calculateCompetitionScore(horseWithoutTrait, 'Racing');
       }
 
-      const maxWithTrait = Math.max(...scoresWithTrait);
-      const maxWithoutTrait = Math.max(...scoresWithoutTrait);
-
-      // The horse with trait should be able to achieve higher scores
-      expect(maxWithTrait).toBeGreaterThan(maxWithoutTrait);
+      // The horse with the trait bonus should average higher over many runs
+      expect(totalWithTrait).toBeGreaterThan(totalWithoutTrait);
     });
   });
 });
