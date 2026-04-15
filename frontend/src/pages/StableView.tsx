@@ -9,7 +9,6 @@
 import { useState } from 'react';
 import { Award, Coins, Grid3X3, List, Star, Users } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
-import { isBetaMode } from '@/config/betaRouteScope';
 import { FantasyTabs } from '../components/FantasyTabs';
 import { SkeletonBase } from '@/components/ui/SkeletonCard';
 import { ErrorCard } from '@/components/ui/ErrorCard';
@@ -249,7 +248,7 @@ const StableView = () => {
                 ? 'Breed or purchase your first horse to get started.'
                 : 'You have no horses in this category yet.'}
             </p>
-            {isAll && !isBetaMode && (
+            {isAll && (
               <div className="flex gap-3 justify-center">
                 <Button asChild>
                   <Link to="/breeding">Go to Breeding</Link>

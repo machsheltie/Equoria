@@ -4,7 +4,7 @@
  * Displays the player's stable profile (name, banner, bio, stats) and a
  * Legacy Hall of Fame showcasing retired horses.
  * Distinct from ProfilePage (/profile) which handles account/auth settings.
- * Backend routes deferred; UI is mock-ready.
+ * Uses live horse/profile data and honest empty states.
  *
  * Uses Celestial Night theme (consistent with other standalone pages).
  */
@@ -13,26 +13,12 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Star, Trophy, Heart, Award, Flame, ChevronRight } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
-import { isBetaMode } from '@/config/betaRouteScope';
-import BetaExcludedNotice from '@/components/beta/BetaExcludedNotice';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUpdateProfile } from '@/hooks/useAuth';
+import { useHorses } from '@/hooks/api/useHorses';
+import { getBreedName } from '@/lib/utils';
 
 type StableTab = 'profile' | 'legacy';
-
-// Mock stable data — replaced by live API in Story 12-5 wire-up
-const MOCK_STABLE = {
-  name: 'Celestial Stables',
-  founded: '2024',
-  bio: 'A dedicated breeding and training stable focused on producing championship-calibre horses with exceptional genetics.',
-  banner: '🌙',
-  stats: {
-    totalHorses: 12,
-    activeRacers: 5,
-    competitionsEntered: 47,
-    firstPlaceFinishes: 8,
-    totalEarnings: 24_500,
-    breedingPairs: 3,
-  },
-};
 
 interface HallOfFameEntry {
   id: string;
@@ -48,57 +34,90 @@ interface HallOfFameEntry {
   icon: string;
 }
 
-// Mock Hall of Fame — replaced by live API in Story 12-5 wire-up
-const MOCK_HALL_OF_FAME: HallOfFameEntry[] = [
-  {
-    id: 'hof-001',
-    name: 'Midnight Eclipse',
-    breed: 'Andalusian',
-    retiredAge: 18,
-    discipline: 'Dressage',
-    career: { competitions: 32, wins: 14, earnings: 8_400 },
-    icon: '🌙',
-  },
-  {
-    id: 'hof-002',
-    name: 'Golden Arrow',
-    breed: 'Thoroughbred',
-    retiredAge: 16,
-    discipline: 'Racing',
-    career: { competitions: 28, wins: 11, earnings: 12_200 },
-    icon: '⭐',
-  },
-  {
-    id: 'hof-003',
-    name: 'Storm Dancer',
-    breed: 'Lipizzan',
-    retiredAge: 20,
-    discipline: 'Show Jumping',
-    career: { competitions: 41, wins: 9, earnings: 6_700 },
-    icon: '⚡',
-  },
-];
+interface StableProfile {
+  name: string;
+  founded: string;
+  bio: string;
+  banner: string;
+  stats: {
+    totalHorses: number;
+    activeRacers: number;
+    competitionsEntered: number;
+    firstPlaceFinishes: number;
+    totalEarnings: number;
+    breedingPairs: number;
+  };
+}
 
-const StableProfileTab: React.FC = () => (
+const StableProfileTab: React.FC<{
+  stable: StableProfile;
+  isLoading: boolean;
+  isEditing: boolean;
+  draftStableName: string;
+  onDraftStableNameChange: (_value: string) => void;
+  onStartEditing: () => void;
+  onCancelEditing: () => void;
+  onSave: () => void;
+  isSaving: boolean;
+}> = ({
+  stable,
+  isLoading,
+  isEditing,
+  draftStableName,
+  onDraftStableNameChange,
+  onStartEditing,
+  onCancelEditing,
+  onSave,
+  isSaving,
+}) => (
   <div className="space-y-6" data-testid="stable-profile-tab">
     {/* Stable Banner */}
     <div className="flex items-center gap-5 p-6 bg-white/5 border border-white/10 rounded-xl">
       <div className="text-5xl select-none" aria-hidden="true">
-        {MOCK_STABLE.banner}
+        {stable.banner}
       </div>
       <div className="flex-1">
-        <h2 className="text-2xl font-bold text-white/90">{MOCK_STABLE.name}</h2>
-        <p className="text-sm text-white/50 mt-1">Founded {MOCK_STABLE.founded}</p>
-        <p className="text-sm text-white/60 mt-2 max-w-lg">{MOCK_STABLE.bio}</p>
+        <h2 className="text-2xl font-bold text-white/90">{stable.name}</h2>
+        <p className="text-sm text-white/50 mt-1">Founded {stable.founded}</p>
+        <p className="text-sm text-white/60 mt-2 max-w-lg">
+          {isLoading ? 'Loading stable records...' : stable.bio}
+        </p>
       </div>
-      <button
-        type="button"
-        disabled
-        className="px-4 py-2 text-sm font-medium rounded-lg bg-white/5 border border-white/10 text-white/30 cursor-not-allowed"
-        title="Edit stable profile — coming soon"
-      >
-        Edit Profile
-      </button>
+      {isEditing ? (
+        <div className="flex flex-col sm:flex-row gap-2">
+          <input
+            type="text"
+            value={draftStableName}
+            onChange={(event) => onDraftStableNameChange(event.target.value)}
+            className="rounded-lg bg-white/10 border border-white/20 px-3 py-2 text-sm text-white/90"
+            aria-label="Stable profile name"
+          />
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={isSaving || draftStableName.trim().length < 3}
+            className="px-4 py-2 text-sm font-medium rounded-lg bg-celestial-gold/20 border border-celestial-gold/40 text-celestial-gold disabled:opacity-50"
+          >
+            {isSaving ? 'Saving...' : 'Save'}
+          </button>
+          <button
+            type="button"
+            onClick={onCancelEditing}
+            disabled={isSaving}
+            className="px-4 py-2 text-sm font-medium rounded-lg bg-white/5 border border-white/10 text-white/60 disabled:opacity-50"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={onStartEditing}
+          className="px-4 py-2 text-sm font-medium rounded-lg bg-white/5 border border-white/10 text-white/70 hover:text-white/90 hover:bg-white/10"
+        >
+          Edit Profile
+        </button>
+      )}
     </div>
 
     {/* Stable Statistics */}
@@ -109,32 +128,32 @@ const StableProfileTab: React.FC = () => (
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4" data-testid="stable-stats">
         <StatBlock
           label="Total Horses"
-          value={MOCK_STABLE.stats.totalHorses}
+          value={stable.stats.totalHorses}
           icon={<Heart className="w-4 h-4 text-rose-400" />}
         />
         <StatBlock
           label="Active Racers"
-          value={MOCK_STABLE.stats.activeRacers}
+          value={stable.stats.activeRacers}
           icon={<Flame className="w-4 h-4 text-orange-400" />}
         />
         <StatBlock
           label="Competitions"
-          value={MOCK_STABLE.stats.competitionsEntered}
+          value={stable.stats.competitionsEntered}
           icon={<Trophy className="w-4 h-4 text-celestial-gold" />}
         />
         <StatBlock
           label="First Place Wins"
-          value={MOCK_STABLE.stats.firstPlaceFinishes}
+          value={stable.stats.firstPlaceFinishes}
           icon={<Award className="w-4 h-4 text-celestial-gold" />}
         />
         <StatBlock
           label="Total Earnings"
-          value={`${MOCK_STABLE.stats.totalEarnings.toLocaleString()} coins`}
+          value={`${stable.stats.totalEarnings.toLocaleString()} coins`}
           icon={<Star className="w-4 h-4 text-violet-400" />}
         />
         <StatBlock
           label="Breeding Pairs"
-          value={MOCK_STABLE.stats.breedingPairs}
+          value={stable.stats.breedingPairs}
           icon={<Heart className="w-4 h-4 text-pink-400" />}
         />
       </div>
@@ -171,13 +190,13 @@ const StatBlock: React.FC<{ label: string; value: number | string; icon: React.R
   </div>
 );
 
-const LegacyHallTab: React.FC = () => (
+const LegacyHallTab: React.FC<{ entries: HallOfFameEntry[] }> = ({ entries }) => (
   <div className="space-y-4" data-testid="legacy-hall-tab">
     <p className="text-sm text-white/50">
       Retired horses live on in the Hall of Fame, their careers immortalised for future generations.
     </p>
 
-    {MOCK_HALL_OF_FAME.length === 0 ? (
+    {entries.length === 0 ? (
       <div className="flex flex-col items-center justify-center min-h-48 text-center p-8">
         <Trophy className="w-12 h-12 text-white/20 mb-4" />
         <h3 className="text-base font-semibold text-white/60 mb-2">No Retired Horses Yet</h3>
@@ -188,7 +207,7 @@ const LegacyHallTab: React.FC = () => (
       </div>
     ) : (
       <div className="space-y-4">
-        {MOCK_HALL_OF_FAME.map((entry, index) => (
+        {entries.map((entry, index) => (
           <HallOfFameCard key={entry.id} entry={entry} rank={index + 1} />
         ))}
       </div>
@@ -244,18 +263,71 @@ const HallOfFameCard: React.FC<{ entry: HallOfFameEntry; rank: number }> = ({ en
 
 const MyStablePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<StableTab>('profile');
+  const { user } = useAuth();
+  const updateProfile = useUpdateProfile();
+  const [isEditingStable, setIsEditingStable] = useState(false);
+  const [draftStableName, setDraftStableName] = useState(user?.username ?? '');
+  const { data: horses = [], isLoading } = useHorses();
+  const retiredHorses = horses.filter((horse) => (horse.ageYears ?? horse.age ?? 0) >= 21);
+  const hallOfFameEntries: HallOfFameEntry[] = retiredHorses.map((horse) => ({
+    id: String(horse.id),
+    name: horse.name,
+    breed: getBreedName(horse.breed),
+    retiredAge: horse.ageYears ?? horse.age ?? 21,
+    discipline: 'All disciplines',
+    career: {
+      competitions: 0,
+      wins: 0,
+      earnings: Number(horse.totalEarnings ?? horse.earnings ?? 0),
+    },
+    icon: '*',
+  }));
+  const activeRacers = horses.filter((horse) => (horse.ageYears ?? horse.age ?? 0) >= 3).length;
+  const breedingPairs =
+    Math.min(
+      horses.filter((horse) => (horse.sex ?? horse.gender ?? '').toLowerCase() === 'stallion')
+        .length,
+      horses.filter((horse) => (horse.sex ?? horse.gender ?? '').toLowerCase() === 'mare').length
+    ) || 0;
+  const totalEarnings = horses.reduce(
+    (sum, horse) => sum + Number(horse.totalEarnings ?? horse.earnings ?? 0),
+    0
+  );
+  const stable: StableProfile = {
+    name: user?.username ? `${user.username}'s Stable` : 'My Stable',
+    founded: 'active account',
+    bio:
+      horses.length > 0
+        ? 'Live stable profile based on your current horses and account records.'
+        : 'Your stable profile will grow as you add horses and enter competitions.',
+    banner: 'EQ',
+    stats: {
+      totalHorses: horses.length,
+      activeRacers,
+      competitionsEntered: 0,
+      firstPlaceFinishes: 0,
+      totalEarnings,
+      breedingPairs,
+    },
+  };
 
-  // In beta mode, this route is beta-hidden — render honest beta-excluded state.
-  if (isBetaMode) {
-    return (
-      <BetaExcludedNotice
-        fullPage
-        testId="my-stable-beta-excluded"
-        redirectTo="/"
-        redirectLabel="Return to Home"
-      />
+  const handleStartEditing = () => {
+    setDraftStableName(user?.username ?? '');
+    setIsEditingStable(true);
+  };
+
+  const handleSaveStableProfile = () => {
+    const username = draftStableName.trim();
+    if (username.length < 3) return;
+    updateProfile.mutate(
+      { username },
+      {
+        onSuccess: () => {
+          setIsEditingStable(false);
+        },
+      }
     );
-  }
+  };
 
   return (
     <div className="min-h-screen">
@@ -314,7 +386,21 @@ const MyStablePage: React.FC = () => {
 
         {/* Tab Content */}
         <div role="tabpanel">
-          {activeTab === 'profile' ? <StableProfileTab /> : <LegacyHallTab />}
+          {activeTab === 'profile' ? (
+            <StableProfileTab
+              stable={stable}
+              isLoading={isLoading}
+              isEditing={isEditingStable}
+              draftStableName={draftStableName}
+              onDraftStableNameChange={setDraftStableName}
+              onStartEditing={handleStartEditing}
+              onCancelEditing={() => setIsEditingStable(false)}
+              onSave={handleSaveStableProfile}
+              isSaving={updateProfile.isPending}
+            />
+          ) : (
+            <LegacyHallTab entries={hallOfFameEntries} />
+          )}
         </div>
 
         {/* Info Panel */}
@@ -325,7 +411,7 @@ const MyStablePage: React.FC = () => {
             <li>Horses retired at level 8 or higher are inducted into the Hall of Fame</li>
             <li>Hall of Fame horses can be shown in breeding lineages for prestige</li>
             <li>Total earnings and win count contribute to your stable ranking</li>
-            <li>Customise your stable name and banner in the profile settings</li>
+            <li>Edit your stable display name from this profile panel</li>
           </ul>
         </div>
       </div>

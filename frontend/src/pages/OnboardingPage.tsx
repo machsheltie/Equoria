@@ -9,8 +9,9 @@
  *   1. Your Horse  — breed dropdown, gender, name (all required)
  *   2. Ready       — stable preview + CTA to start guided tour
  *
- * On completion calls POST /api/horses then POST /api/auth/advance-onboarding,
- * then navigates to /stable so the tester sees their persisted horse.
+ * Registration creates the starter horse. On completion this page calls
+ * POST /api/auth/advance-onboarding to customize that starter horse, then
+ * navigates to /stable so the tester sees their persisted horse.
  */
 
 import React, { useState } from 'react';
@@ -356,11 +357,12 @@ const OnboardingPage: React.FC = () => {
       toast.success('Welcome to Equoria!');
       navigate('/stable', { replace: true });
     },
-    onError: () => {
-      // API may fail if user session expired — still let them proceed
-      clearOnboardingStorage();
-      toast.success('Welcome to Equoria!');
-      navigate('/stable', { replace: true });
+    onError: (error) => {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'We could not save your starter horse. Please try again.';
+      toast.error(message);
     },
   });
 

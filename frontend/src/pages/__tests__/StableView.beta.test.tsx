@@ -1,9 +1,7 @@
 /**
  * StableView — Beta Mode Tests
  *
- * Verifies that the empty-state CTAs linking to /breeding and /marketplace/horses
- * are hidden when isBetaMode is true, since both routes are classified beta-readonly
- * in docs/beta-route-truth-table.md and must not be linked from a beta-live surface.
+ * Verifies that empty-state CTAs remain available when isBetaMode is true.
  *
  * Story 21R-1 Third-Pass Course Correction (2026-04-13)
  */
@@ -89,7 +87,7 @@ describe('StableView — beta mode', () => {
     } as unknown as ReturnType<typeof useAuthModule.useProfile>);
   });
 
-  it('hides the /breeding CTA in beta mode when stable is empty', () => {
+  it('shows the /breeding CTA in beta mode when stable is empty', () => {
     const Wrapper = createWrapper();
     render(
       <Wrapper>
@@ -97,11 +95,13 @@ describe('StableView — beta mode', () => {
       </Wrapper>
     );
 
-    // The "Go to Breeding" link must not be present in beta mode
-    expect(screen.queryByRole('link', { name: /go to breeding/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /go to breeding/i })).toHaveAttribute(
+      'href',
+      '/breeding'
+    );
   });
 
-  it('hides the /marketplace/horses CTA in beta mode when stable is empty', () => {
+  it('shows the /marketplace/horses CTA in beta mode when stable is empty', () => {
     const Wrapper = createWrapper();
     render(
       <Wrapper>
@@ -109,8 +109,10 @@ describe('StableView — beta mode', () => {
       </Wrapper>
     );
 
-    // The "Browse Marketplace" link must not be present in beta mode
-    expect(screen.queryByRole('link', { name: /browse marketplace/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /browse marketplace/i })).toHaveAttribute(
+      'href',
+      '/marketplace/horses'
+    );
   });
 
   it('still renders the empty-state message in beta mode', () => {

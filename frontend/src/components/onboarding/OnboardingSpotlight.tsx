@@ -18,6 +18,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdvanceOnboarding, useCompleteOnboarding } from '@/hooks/api/useOnboarding';
+import { Button } from '@/components/ui/button';
 
 /** Step definition for the guided onboarding tour */
 interface OnboardingStep {
@@ -200,22 +201,22 @@ const OnboardingSpotlight: React.FC = () => {
         </p>
         <p className="text-[var(--cream)] text-sm mb-4 leading-relaxed">{activeStep.message}</p>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => navigate(activeStep.route)}
-            disabled={isPending}
-            className="flex-1 px-4 py-2 rounded-lg bg-[var(--celestial-primary)] text-[var(--text-primary)] text-sm
-              font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
-            Go to {locationLabel} →
-          </button>
-          <button
-            onClick={() => skipTutorial()}
-            disabled={isPending}
-            className="text-xs text-[var(--text-muted)] hover:text-[var(--cream)] transition-colors
-              disabled:opacity-50"
-          >
+          {isOnCorrectRoute ? (
+            <Button onClick={() => advanceStep()} disabled={isPending} className="flex-1">
+              {isPending ? 'Saving…' : 'Next →'}
+            </Button>
+          ) : (
+            <Button
+              onClick={() => navigate(activeStep.route)}
+              disabled={isPending}
+              className="flex-1"
+            >
+              Go to {locationLabel} →
+            </Button>
+          )}
+          <Button variant="ghost" size="sm" onClick={() => skipTutorial()} disabled={isPending}>
             Skip
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -265,26 +266,16 @@ const OnboardingSpotlight: React.FC = () => {
         </p>
         <p className="text-[var(--cream)] text-sm mb-3 leading-relaxed">{activeStep.message}</p>
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => advanceStep()}
-            disabled={isPending}
-            className="flex-1 px-3 py-1.5 rounded-lg bg-[var(--celestial-primary)] text-[var(--text-primary)]
-              text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
-          >
+          <Button onClick={() => advanceStep()} disabled={isPending} className="flex-1">
             {isPending
               ? 'Saving…'
               : activeStep.step === ONBOARDING_STEPS.length
                 ? 'Finish!'
                 : 'Next →'}
-          </button>
-          <button
-            onClick={() => skipTutorial()}
-            disabled={isPending}
-            className="text-xs text-[var(--text-muted)] hover:text-[var(--cream)] transition-colors
-              disabled:opacity-50"
-          >
+          </Button>
+          <Button variant="ghost" size="sm" onClick={() => skipTutorial()} disabled={isPending}>
             Skip tutorial
-          </button>
+          </Button>
         </div>
       </div>
     </>

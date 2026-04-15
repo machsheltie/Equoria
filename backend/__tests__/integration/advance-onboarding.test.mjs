@@ -52,8 +52,11 @@ describe('POST /api/auth/advance-onboarding', () => {
 
   afterAll(async () => {
     await prisma.refreshToken.deleteMany({ where: { userId: testUser.id } });
+    await prisma.horse.deleteMany({ where: { userId: testUser.id } });
     await prisma.user.deleteMany({ where: { id: testUser.id } });
-    if (server) await new Promise(resolve => server.close(resolve));
+    if (server) {
+      await new Promise(resolve => server.close(resolve));
+    }
     await prisma.$disconnect();
   });
 
@@ -63,6 +66,7 @@ describe('POST /api/auth/advance-onboarding', () => {
       where: { id: testUser.id },
       data: { settings: { completedOnboarding: false, onboardingStep: 0 } },
     });
+    await prisma.horse.deleteMany({ where: { userId: testUser.id } });
   });
 
   it('should advance onboarding step from 0 to 1', async () => {
@@ -124,6 +128,54 @@ describe('POST /api/auth/advance-onboarding', () => {
     const updated = await prisma.user.findUnique({ where: { id: testUser.id } });
     expect(updated.settings.onboardingStep).toBe(10);
     expect(updated.settings.completedOnboarding).toBe(true);
+  });
+
+  it('should persist selected starter horse data transactionally and create no duplicate starter horses', async () => {
+    const breed = await prisma.breed.findFirst({ select: { id: true, name: true } });
+    expect(breed).toBeTruthy();
+
+    await prisma.horse.create({
+      data: {
+        name: 'Uncustomized Starter',
+        sex: 'Mare',
+        age: 3,
+        dateOfBirth: new Date(2023, 0, 1),
+        userId: testUser.id,
+        healthStatus: 'Excellent',
+      },
+    });
+
+    const response = await request(app)
+      .post('/api/auth/advance-onboarding')
+      .set('Cookie', cookieHeader)
+      .set('X-Test-Bypass-Auth', 'true')
+      .set('X-Test-Email', testUserData.email)
+      .set(rateLimitBypassHeader)
+      .send({ horseName: 'Beta Star', breedId: breed.id, gender: 'Stallion' })
+      .expect(200);
+
+    expect(response.body.data.completed).toBe(true);
+    expect(response.body.data.horse).toMatchObject({
+      name: 'Beta Star',
+      breedId: breed.id,
+      breed: breed.name,
+      gender: 'Stallion',
+    });
+
+    const horses = await prisma.horse.findMany({
+      where: { userId: testUser.id },
+      include: { breed: true },
+    });
+    expect(horses).toHaveLength(1);
+    expect(horses[0]).toMatchObject({
+      name: 'Beta Star',
+      breedId: breed.id,
+      sex: 'Stallion',
+    });
+
+    const updated = await prisma.user.findUnique({ where: { id: testUser.id } });
+    expect(updated.settings.completedOnboarding).toBe(true);
+    expect(updated.settings.onboardingStep).toBe(10);
   });
 
   it('should return 401 when not authenticated', async () => {

@@ -41,7 +41,9 @@ describe('POST /api/auth/register — starter horse integration', () => {
       await prisma.horse.deleteMany({ where: { userId: registeredUserId } });
       await prisma.user.deleteMany({ where: { id: registeredUserId } });
     }
-    if (server) await new Promise(resolve => server.close(resolve));
+    if (server) {
+      await new Promise(resolve => server.close(resolve));
+    }
     await prisma.$disconnect();
   });
 

@@ -1,14 +1,13 @@
 /**
  * OnboardingPage Tests — Story 21R-2 Task 10
  *
- * Verifies horse persistence: the onboarding wizard must POST /api/horses
- * before advancing onboarding, then navigate to /stable.
+ * Verifies horse persistence: the onboarding wizard submits selected horse
+ * data through advanceOnboarding, which customizes the registration starter horse.
  *
  * AC coverage:
- *   - horsesApi.create called with correct payload (name, breedId, sex, gender, age)
- *   - authApi.advanceOnboarding called only after horsesApi.create succeeds
+ *   - authApi.advanceOnboarding called with correct payload (name, breedId, gender)
  *   - navigation goes to /stable on success
- *   - if horsesApi.create fails, advanceOnboarding is NOT called and error toast shown
+ *   - if advanceOnboarding fails, storage is preserved and user stays on onboarding
  *   - sessionStorage cleared on success path
  */
 
@@ -22,13 +21,9 @@ import { TestRouter } from '@/test/utils';
 
 // ── Mock API client ────────────────────────────────────────────────────────────
 
-const mockHorsesCreate = vi.fn();
 const mockAdvanceOnboarding = vi.fn();
 
 vi.mock('@/lib/api-client', () => ({
-  horsesApi: {
-    create: mockHorsesCreate,
-  },
   authApi: {
     advanceOnboarding: mockAdvanceOnboarding,
   },
@@ -104,10 +99,11 @@ describe('OnboardingPage — Task 10 horse persistence', () => {
     localStorage.removeItem('equoria-onboarding-done');
   });
 
-  it('calls horsesApi.create with correct payload on completion', async () => {
+  it('calls advanceOnboarding with selected starter horse data on completion', async () => {
     const { default: OnboardingPage } = await import('../OnboardingPage');
-    mockHorsesCreate.mockResolvedValue({ data: { id: 42, name: 'Starlight' } });
-    mockAdvanceOnboarding.mockResolvedValue({ data: { step: 1, completed: true } });
+    mockAdvanceOnboarding.mockResolvedValue({
+      data: { step: 10, completed: true, horse: { id: 42, name: 'Starlight' } },
+    });
 
     seedStep2Horse();
 
@@ -117,42 +113,19 @@ describe('OnboardingPage — Task 10 horse persistence', () => {
     await userEvent.click(beginBtn);
 
     await waitFor(() => {
-      expect(mockHorsesCreate).toHaveBeenCalledWith({
-        name: 'Starlight',
+      expect(mockAdvanceOnboarding).toHaveBeenCalledWith({
+        horseName: 'Starlight',
         breedId: 7,
-        sex: 'mare',
-        gender: 'MARE',
-        age: 0,
+        gender: 'Mare',
       });
     });
   });
 
-  it('calls advanceOnboarding only after horsesApi.create succeeds', async () => {
-    const { default: OnboardingPage } = await import('../OnboardingPage');
-    mockHorsesCreate.mockResolvedValue({ data: { id: 42, name: 'Starlight' } });
-    mockAdvanceOnboarding.mockResolvedValue({ data: { step: 1, completed: true } });
-
-    seedStep2Horse();
-
-    render(<OnboardingPage />, { wrapper: makeWrapper() });
-
-    const beginBtn = await screen.findByTestId('onboarding-next');
-    await userEvent.click(beginBtn);
-
-    await waitFor(() => {
-      expect(mockAdvanceOnboarding).toHaveBeenCalledTimes(1);
-    });
-
-    // Verify order: create was called before advanceOnboarding
-    const createOrder = mockHorsesCreate.mock.invocationCallOrder[0];
-    const advanceOrder = mockAdvanceOnboarding.mock.invocationCallOrder[0];
-    expect(createOrder).toBeLessThan(advanceOrder);
-  });
-
   it('navigates to /stable on successful completion', async () => {
     const { default: OnboardingPage } = await import('../OnboardingPage');
-    mockHorsesCreate.mockResolvedValue({ data: { id: 42, name: 'Starlight' } });
-    mockAdvanceOnboarding.mockResolvedValue({ data: { step: 1, completed: true } });
+    mockAdvanceOnboarding.mockResolvedValue({
+      data: { step: 10, completed: true, horse: { id: 42, name: 'Starlight' } },
+    });
 
     seedStep2Horse();
 
@@ -166,9 +139,9 @@ describe('OnboardingPage — Task 10 horse persistence', () => {
     });
   });
 
-  it('does not call advanceOnboarding and shows error toast when horsesApi.create fails', async () => {
+  it('preserves selections and stays on onboarding when advanceOnboarding fails', async () => {
     const { default: OnboardingPage } = await import('../OnboardingPage');
-    mockHorsesCreate.mockRejectedValue(new Error('Network error'));
+    mockAdvanceOnboarding.mockRejectedValue(new Error('Network error'));
 
     seedStep2Horse();
 
@@ -178,8 +151,12 @@ describe('OnboardingPage — Task 10 horse persistence', () => {
     await userEvent.click(beginBtn);
 
     await waitFor(() => {
-      expect(mockAdvanceOnboarding).not.toHaveBeenCalled();
+      expect(mockAdvanceOnboarding).toHaveBeenCalledTimes(1);
     });
+
+    expect(mockNavigate).not.toHaveBeenCalledWith('/stable', { replace: true });
+    expect(sessionStorage.getItem('equoria-onboarding-step')).toBe('2');
+    expect(sessionStorage.getItem('equoria-onboarding-horse')).toContain('Starlight');
 
     const { toast } = await import('sonner');
     expect(toast.error).toHaveBeenCalled();
@@ -187,8 +164,9 @@ describe('OnboardingPage — Task 10 horse persistence', () => {
 
   it('clears sessionStorage on successful completion', async () => {
     const { default: OnboardingPage } = await import('../OnboardingPage');
-    mockHorsesCreate.mockResolvedValue({ data: { id: 42, name: 'Starlight' } });
-    mockAdvanceOnboarding.mockResolvedValue({ data: { step: 1, completed: true } });
+    mockAdvanceOnboarding.mockResolvedValue({
+      data: { step: 10, completed: true, horse: { id: 42, name: 'Starlight' } },
+    });
 
     seedStep2Horse();
 
