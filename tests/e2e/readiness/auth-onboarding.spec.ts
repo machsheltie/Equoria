@@ -8,6 +8,7 @@ import {
 
 test('auth, email verification signal, onboarding persistence, and password reset use production paths', async ({
   page,
+  browser,
 }) => {
   const guard = installProductionParityNetworkGuard(page);
   const suffix = `${Date.now()}_auth`;
@@ -20,38 +21,43 @@ test('auth, email verification signal, onboarding persistence, and password rese
   expect(verificationEmail.preview).toContain('/verify-email');
   expect(verificationEmail.preview).toContain('token=');
 
-  await page.goto('/forgot-password', { waitUntil: 'domcontentloaded' });
-  await expect(page.locator('h2')).toContainText('Forgot Password?');
-  await page.fill('input[name="email"]', player.email);
-  const forgotResponse = page.waitForResponse(
+  const recoveryPage = await browser.newPage();
+  const recoveryGuard = installProductionParityNetworkGuard(recoveryPage);
+
+  await recoveryPage.goto('/forgot-password', { waitUntil: 'domcontentloaded' });
+  await expect(recoveryPage.locator('h2')).toContainText('Forgot Password?');
+  await recoveryPage.fill('input[name="email"]', player.email);
+  const forgotResponse = recoveryPage.waitForResponse(
     (response) =>
       response.url().includes('/api/auth/forgot-password') && response.request().method() === 'POST'
   );
-  await page.getByRole('button', { name: /Send Reset Link/i }).click();
+  await recoveryPage.getByRole('button', { name: /Send Reset Link/i }).click();
   expect((await forgotResponse).status()).toBe(200);
-  await expect(page.locator('h2')).toContainText('Check Your Inbox');
+  await expect(recoveryPage.locator('h2')).toContainText('Check Your Inbox');
 
   const resetEmail = await latestCapturedEmail('password-reset', player.email);
   expect(resetEmail.preview).toContain('/reset-password');
   expect(resetEmail.preview).toContain('token=');
 
-  await page.goto(resetEmail.preview, { waitUntil: 'domcontentloaded' });
-  await expect(page.locator('h2')).toContainText('Create New Password');
-  await page.fill('input[name="password"]', newPassword);
-  await page.fill('input[name="confirmPassword"]', newPassword);
+  await recoveryPage.goto(resetEmail.preview, { waitUntil: 'domcontentloaded' });
+  await expect(recoveryPage.locator('h2')).toContainText('Create New Password');
+  await recoveryPage.fill('input[name="password"]', newPassword);
+  await recoveryPage.fill('input[name="confirmPassword"]', newPassword);
 
-  const resetResponse = page.waitForResponse(
+  const resetResponse = recoveryPage.waitForResponse(
     (response) =>
       response.url().includes('/api/auth/reset-password') && response.request().method() === 'POST'
   );
-  await page.getByRole('button', { name: /Reset Password/i }).click();
+  await recoveryPage.getByRole('button', { name: /Reset Password/i }).click();
   expect((await resetResponse).status()).toBe(200);
-  await expect(page.locator('h2')).toContainText('Password Reset!');
+  await expect(recoveryPage.locator('h2')).toContainText('Password Reset!');
 
-  await page.getByRole('button', { name: /Go to Login/i }).click();
-  await expect(page.locator('h2')).toContainText('Welcome Back');
-  await loginViaUi(page, { email: player.email, password: newPassword });
-  await expect(page.locator('body')).not.toContainText(originalPassword);
+  await recoveryPage.getByRole('button', { name: /Go to Login/i }).click();
+  await expect(recoveryPage.locator('h2')).toContainText('Welcome Back');
+  await loginViaUi(recoveryPage, { email: player.email, password: newPassword });
+  await expect(recoveryPage.locator('body')).not.toContainText(originalPassword);
 
   guard.assertClean();
+  recoveryGuard.assertClean();
+  await recoveryPage.close();
 });

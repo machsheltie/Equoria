@@ -179,41 +179,36 @@ export async function hireRiderFromMarketplace(req, res) {
       });
     }
 
-    const { newRider, updatedUser } = await prisma.$transaction(async tx => {
-      const rider = await tx.rider.create({
-        data: {
-          userId,
-          firstName: riderData.firstName,
-          lastName: riderData.lastName,
-          personality: riderData.personality,
-          skillLevel: riderData.skillLevel,
-          speciality: riderData.speciality,
-          weeklyRate: riderData.weeklyRate,
-          experience: riderData.experience,
-          bio: riderData.bio,
-        },
-      });
-
-      const userUpdate = await tx.user.update({
-        where: { id: userId },
-        data: { money: { decrement: hiringCost } },
-        select: { money: true },
-      });
-      await recordTransaction(
-        {
-          userId,
-          type: 'debit',
-          amount: hiringCost,
-          category: 'rider_hire',
-          description: `Hired rider ${rider.firstName} ${rider.lastName}`,
-          balanceAfter: userUpdate.money,
-          metadata: { riderId: rider.id, marketplaceId },
-        },
-        tx,
-      );
-
-      return { newRider: rider, updatedUser: userUpdate };
+    const newRider = await prisma.rider.create({
+      data: {
+        userId,
+        firstName: riderData.firstName,
+        lastName: riderData.lastName,
+        personality: riderData.personality,
+        skillLevel: riderData.skillLevel,
+        speciality: riderData.speciality,
+        weeklyRate: riderData.weeklyRate,
+        experience: riderData.experience,
+        bio: riderData.bio,
+      },
     });
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { money: { decrement: hiringCost } },
+      select: { money: true },
+    });
+
+    // Record financial transaction as best-effort (non-blocking)
+    recordTransaction({
+      userId,
+      type: 'debit',
+      amount: hiringCost,
+      category: 'rider_hire',
+      description: `Hired rider ${newRider.firstName} ${newRider.lastName}`,
+      balanceAfter: updatedUser.money,
+      metadata: { riderId: newRider.id, marketplaceId },
+    }).catch(err => logger.error(`[riderMarketplace] ledger error: ${err.message}`));
 
     userMarketplace.riders.splice(riderIndex, 1);
     userRiderMarketplaces.set(userId, userMarketplace);

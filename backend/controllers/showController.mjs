@@ -186,7 +186,7 @@ export async function enterShow(req, res) {
     // Verify horse ownership
     const horse = await prisma.horse.findUnique({
       where: { id: horseId },
-      select: { id: true, name: true, userId: true, age: true, health: true },
+      select: { id: true, name: true, userId: true, age: true, healthStatus: true },
     });
 
     if (!horse || horse.userId !== userId) {
@@ -199,7 +199,7 @@ export async function enterShow(req, res) {
         .status(400)
         .json({ success: false, message: 'Horse must be at least 3 years old to compete' });
     }
-    if (horse.health === 'injured' || horse.health === 'INJURED') {
+    if (String(horse.healthStatus).toLowerCase() === 'injured') {
       return res.status(400).json({ success: false, message: 'Injured horses cannot compete' });
     }
 

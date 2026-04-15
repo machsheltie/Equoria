@@ -192,14 +192,33 @@ export function generateRandomRider() {
   };
 }
 
+function generateStarterRider() {
+  const firstName = generateFirstName();
+  const specialty = 'Dressage';
+
+  return {
+    marketplaceId: `mkt_rider_${crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}_${Math.random()}`}`,
+    firstName,
+    lastName: generateLastName(),
+    skillLevel: 'rookie',
+    personality: 'methodical',
+    speciality: specialty,
+    weeklyRate: RIDER_MARKETPLACE_CONFIG.WEEKLY_RATE_RANGES.rookie.min,
+    experience: 0,
+    bio: generateBio(firstName, 'rookie', specialty),
+    availability: true,
+    knownAffinities: [],
+  };
+}
+
 /**
  * Generate a full marketplace of riders.
  * @param {number} size - Number of riders to generate
  * @returns {Array}
  */
 export function generateRiderMarketplace(size = RIDER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE) {
-  const marketplace = [];
-  for (let i = 0; i < size; i++) {
+  const marketplace = [generateStarterRider()];
+  for (let i = 1; i < size; i++) {
     marketplace.push(generateRandomRider());
   }
   return marketplace;

@@ -43,17 +43,6 @@ function getMaterials(settings) {
   };
 }
 
-function hasCraftingMaterials(settings) {
-  return Boolean(
-    settings &&
-      typeof settings === 'object' &&
-      settings.craftingMaterials &&
-      typeof settings.craftingMaterials === 'object',
-  );
-}
-
-const STARTER_CRAFTING_MATERIALS = { leather: 2, cloth: 2, dye: 1, metal: 0, thread: 1 };
-
 /**
  * Returns the workshop tier from User.settings (integer 0-3).
  * @param {object|null} settings
@@ -122,22 +111,7 @@ export async function getMaterials_endpoint(req, res) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    let materials = getMaterials(user.settings);
-    if (!hasCraftingMaterials(user.settings)) {
-      const existingSettings =
-        user.settings && typeof user.settings === 'object' ? user.settings : {};
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          settings: {
-            ...existingSettings,
-            craftingMaterials: STARTER_CRAFTING_MATERIALS,
-            workshopTier: getWorkshopTier(existingSettings),
-          },
-        },
-      });
-      materials = STARTER_CRAFTING_MATERIALS;
-    }
+    const materials = getMaterials(user.settings);
     const workshopTier = getWorkshopTier(user.settings);
 
     logger.info(`[craftingController] getMaterials for user ${userId}`);
@@ -276,29 +250,26 @@ export async function craftItem(req, res) {
       inventory: [...existingInventory, newItem],
     };
 
-    const updatedUser = await prisma.$transaction(async tx => {
-      const userUpdate = await tx.user.update({
-        where: { id: userId },
-        data: {
-          money: { decrement: recipe.cost },
-          settings: updatedSettings,
-        },
-        select: { money: true },
-      });
-      await recordTransaction(
-        {
-          userId,
-          type: 'debit',
-          amount: recipe.cost,
-          category: 'crafting',
-          description: `Crafted ${recipe.resultName}`,
-          balanceAfter: userUpdate.money,
-          metadata: { recipeId, result: recipe.result },
-        },
-        tx,
-      );
-      return userUpdate;
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        money: { decrement: recipe.cost },
+        settings: updatedSettings,
+      },
+      select: { money: true },
     });
+    const newBalance = user.money - recipe.cost;
+
+    // Record financial transaction as best-effort (non-blocking)
+    recordTransaction({
+      userId,
+      type: 'debit',
+      amount: recipe.cost,
+      category: 'crafting',
+      description: `Crafted ${recipe.resultName}`,
+      balanceAfter: newBalance,
+      metadata: { recipeId, result: recipe.result },
+    }).catch(err => logger.error(`[craftingController] ledger error: ${err.message}`));
 
     logger.info(
       `[craftingController] craftItem: user ${userId} crafted ${recipe.resultName} (recipe: ${recipeId})`,
@@ -311,7 +282,7 @@ export async function craftItem(req, res) {
         item: newItem,
         remainingMaterials: newMaterials,
         coinsSpent: recipe.cost,
-        newBalance: updatedUser.money,
+        newBalance,
       },
     });
   } catch (err) {

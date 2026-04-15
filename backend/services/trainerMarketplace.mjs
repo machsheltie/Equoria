@@ -167,6 +167,23 @@ export function generateRandomTrainer() {
   };
 }
 
+function generateStarterTrainer() {
+  const firstName = generateFirstName();
+  const specialty = 'Dressage';
+
+  return {
+    marketplaceId: `mkt_trainer_${crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}_${Math.random()}`}`,
+    firstName,
+    lastName: generateLastName(),
+    skillLevel: 'novice',
+    personality: 'patient',
+    speciality: specialty,
+    sessionRate: TRAINER_MARKETPLACE_CONFIG.SESSION_RATE_RANGES.novice.min,
+    bio: generateBio(firstName, 'novice', specialty),
+    availability: true,
+  };
+}
+
 /**
  * Generate a full trainer marketplace.
  * @param {number} size
@@ -175,8 +192,8 @@ export function generateRandomTrainer() {
 export function generateTrainerMarketplace(
   size = TRAINER_MARKETPLACE_CONFIG.DEFAULT_MARKETPLACE_SIZE,
 ) {
-  const marketplace = [];
-  for (let i = 0; i < size; i++) {
+  const marketplace = [generateStarterTrainer()];
+  for (let i = 1; i < size; i++) {
     marketplace.push(generateRandomTrainer());
   }
   return marketplace;

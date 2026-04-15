@@ -44,9 +44,7 @@ const mockLogger = {
 jest.unstable_mockModule('../db/index.mjs', () => ({ default: mockPrisma }));
 jest.unstable_mockModule('../utils/logger.mjs', () => ({ default: mockLogger }));
 
-const { createShow, getShows, enterShow, executeClosedShows } = await import(
-  '../controllers/showController.mjs'
-);
+const { createShow, getShows, enterShow, executeClosedShows } = await import('../controllers/showController.mjs');
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -225,11 +223,29 @@ describe('createShow', () => {
 
   it('accepts all 23 valid disciplines', async () => {
     const validDisciplines = [
-      'Western Pleasure', 'Reining', 'Cutting', 'Barrel Racing', 'Roping',
-      'Team Penning', 'Rodeo', 'Hunter', 'Saddleseat', 'Endurance',
-      'Eventing', 'Dressage', 'Show Jumping', 'Vaulting', 'Polo',
-      'Cross Country', 'Combined Driving', 'Fine Harness', 'Gaited',
-      'Gymkhana', 'Steeplechase', 'Racing', 'Harness Racing',
+      'Western Pleasure',
+      'Reining',
+      'Cutting',
+      'Barrel Racing',
+      'Roping',
+      'Team Penning',
+      'Rodeo',
+      'Hunter',
+      'Saddleseat',
+      'Endurance',
+      'Eventing',
+      'Dressage',
+      'Show Jumping',
+      'Vaulting',
+      'Polo',
+      'Cross Country',
+      'Combined Driving',
+      'Fine Harness',
+      'Gaited',
+      'Gymkhana',
+      'Steeplechase',
+      'Racing',
+      'Harness Racing',
     ];
     for (const disc of validDisciplines) {
       jest.clearAllMocks();
@@ -388,7 +404,7 @@ describe('enterShow', () => {
     name: 'Thunder',
     userId: 'test-user-id',
     age: 5,
-    health: 'healthy',
+    healthStatus: 'healthy',
   };
 
   it('successfully enters a horse in a show and returns 201', async () => {
@@ -526,7 +542,7 @@ describe('enterShow', () => {
 
   it('returns 400 when horse is injured', async () => {
     mockPrisma.show.findUnique.mockResolvedValue(openShow);
-    mockPrisma.horse.findUnique.mockResolvedValue({ ...ownedHorse, health: 'injured' });
+    mockPrisma.horse.findUnique.mockResolvedValue({ ...ownedHorse, healthStatus: 'injured' });
     const { req, res } = createMockReqRes({
       params: { id: '1' },
       body: { horseId: 100 },
@@ -538,7 +554,7 @@ describe('enterShow', () => {
 
   it('returns 400 when horse health is INJURED (uppercase)', async () => {
     mockPrisma.show.findUnique.mockResolvedValue(openShow);
-    mockPrisma.horse.findUnique.mockResolvedValue({ ...ownedHorse, health: 'INJURED' });
+    mockPrisma.horse.findUnique.mockResolvedValue({ ...ownedHorse, healthStatus: 'INJURED' });
     const { req, res } = createMockReqRes({
       params: { id: '1' },
       body: { horseId: 100 },
@@ -689,12 +705,32 @@ describe('executeClosedShows', () => {
           {
             horseId: 10,
             userId: 'user-a',
-            horse: { id: 10, name: 'Fast', userId: 'user-a', speed: 80, stamina: 70, agility: 75, balance: 60, precision: 90, boldness: 65 },
+            horse: {
+              id: 10,
+              name: 'Fast',
+              userId: 'user-a',
+              speed: 80,
+              stamina: 70,
+              agility: 75,
+              balance: 60,
+              precision: 90,
+              boldness: 65,
+            },
           },
           {
             horseId: 20,
             userId: 'user-b',
-            horse: { id: 20, name: 'Slow', userId: 'user-b', speed: 40, stamina: 40, agility: 40, balance: 40, precision: 40, boldness: 40 },
+            horse: {
+              id: 20,
+              name: 'Slow',
+              userId: 'user-b',
+              speed: 40,
+              stamina: 40,
+              agility: 40,
+              balance: 40,
+              precision: 40,
+              boldness: 40,
+            },
           },
         ],
       },
@@ -727,10 +763,66 @@ describe('executeClosedShows', () => {
         prize: 1000,
         discipline: 'Racing',
         entries: [
-          { horseId: 1, userId: 'u1', horse: { id: 1, name: 'A', userId: 'u1', speed: 90, stamina: 90, agility: 90, balance: 90, precision: 90, boldness: 90 } },
-          { horseId: 2, userId: 'u2', horse: { id: 2, name: 'B', userId: 'u2', speed: 70, stamina: 70, agility: 70, balance: 70, precision: 70, boldness: 70 } },
-          { horseId: 3, userId: 'u3', horse: { id: 3, name: 'C', userId: 'u3', speed: 50, stamina: 50, agility: 50, balance: 50, precision: 50, boldness: 50 } },
-          { horseId: 4, userId: 'u4', horse: { id: 4, name: 'D', userId: 'u4', speed: 30, stamina: 30, agility: 30, balance: 30, precision: 30, boldness: 30 } },
+          {
+            horseId: 1,
+            userId: 'u1',
+            horse: {
+              id: 1,
+              name: 'A',
+              userId: 'u1',
+              speed: 90,
+              stamina: 90,
+              agility: 90,
+              balance: 90,
+              precision: 90,
+              boldness: 90,
+            },
+          },
+          {
+            horseId: 2,
+            userId: 'u2',
+            horse: {
+              id: 2,
+              name: 'B',
+              userId: 'u2',
+              speed: 70,
+              stamina: 70,
+              agility: 70,
+              balance: 70,
+              precision: 70,
+              boldness: 70,
+            },
+          },
+          {
+            horseId: 3,
+            userId: 'u3',
+            horse: {
+              id: 3,
+              name: 'C',
+              userId: 'u3',
+              speed: 50,
+              stamina: 50,
+              agility: 50,
+              balance: 50,
+              precision: 50,
+              boldness: 50,
+            },
+          },
+          {
+            horseId: 4,
+            userId: 'u4',
+            horse: {
+              id: 4,
+              name: 'D',
+              userId: 'u4',
+              speed: 30,
+              stamina: 30,
+              agility: 30,
+              balance: 30,
+              precision: 30,
+              boldness: 30,
+            },
+          },
         ],
       },
     ]);
@@ -749,7 +841,7 @@ describe('executeClosedShows', () => {
     expect(prizes).toContain(500); // 1st place
     expect(prizes).toContain(300); // 2nd place
     expect(prizes).toContain(200); // 3rd place
-    expect(prizes).toContain(0);   // 4th place
+    expect(prizes).toContain(0); // 4th place
   });
 
   it('updates show status to completed after execution', async () => {
@@ -760,7 +852,21 @@ describe('executeClosedShows', () => {
         prize: 0,
         discipline: 'Polo',
         entries: [
-          { horseId: 1, userId: 'u1', horse: { id: 1, name: 'X', userId: 'u1', speed: 50, stamina: 50, agility: 50, balance: 50, precision: 50, boldness: 50 } },
+          {
+            horseId: 1,
+            userId: 'u1',
+            horse: {
+              id: 1,
+              name: 'X',
+              userId: 'u1',
+              speed: 50,
+              stamina: 50,
+              agility: 50,
+              balance: 50,
+              precision: 50,
+              boldness: 50,
+            },
+          },
         ],
       },
     ]);
@@ -773,9 +879,7 @@ describe('executeClosedShows', () => {
 
     // Last update call should set status to completed
     const updateCalls = mockPrisma.show.update.mock.calls;
-    const completedCall = updateCalls.find(
-      c => c[0].where.id === 5 && c[0].data.status === 'completed',
-    );
+    const completedCall = updateCalls.find(c => c[0].where.id === 5 && c[0].data.status === 'completed');
     expect(completedCall).toBeDefined();
     expect(completedCall[0].data.executedAt).toBeDefined();
   });
@@ -815,7 +919,21 @@ describe('executeClosedShows', () => {
         prize: 0,
         discipline: 'Dressage',
         entries: [
-          { horseId: 1, userId: 'winner-user', horse: { id: 1, name: 'Champ', userId: 'winner-user', speed: 99, stamina: 99, agility: 99, balance: 99, precision: 99, boldness: 99 } },
+          {
+            horseId: 1,
+            userId: 'winner-user',
+            horse: {
+              id: 1,
+              name: 'Champ',
+              userId: 'winner-user',
+              speed: 99,
+              stamina: 99,
+              agility: 99,
+              balance: 99,
+              precision: 99,
+              boldness: 99,
+            },
+          },
         ],
       },
     ]);
@@ -828,13 +946,9 @@ describe('executeClosedShows', () => {
     await executeClosedShows(req, res);
 
     // Should have called user.findUnique and user.update for milestone
-    expect(mockPrisma.user.findUnique).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 'winner-user' } }),
-    );
+    expect(mockPrisma.user.findUnique).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'winner-user' } }));
     // user.update should set firstWin milestone
-    const milestoneUpdate = mockPrisma.user.update.mock.calls.find(
-      c => c[0].data?.settings?.milestones?.firstWin,
-    );
+    const milestoneUpdate = mockPrisma.user.update.mock.calls.find(c => c[0].data?.settings?.milestones?.firstWin);
     expect(milestoneUpdate).toBeDefined();
   });
 
@@ -846,7 +960,21 @@ describe('executeClosedShows', () => {
         prize: 0,
         discipline: 'Racing',
         entries: [
-          { horseId: 1, userId: 'u1', horse: { id: 1, name: 'Champ', userId: 'u1', speed: 99, stamina: 99, agility: 99, balance: 99, precision: 99, boldness: 99 } },
+          {
+            horseId: 1,
+            userId: 'u1',
+            horse: {
+              id: 1,
+              name: 'Champ',
+              userId: 'u1',
+              speed: 99,
+              stamina: 99,
+              agility: 99,
+              balance: 99,
+              precision: 99,
+              boldness: 99,
+            },
+          },
         ],
       },
     ]);
@@ -861,9 +989,7 @@ describe('executeClosedShows', () => {
     await executeClosedShows(req, res);
 
     // user.update should NOT have been called for milestone (only show.update calls)
-    const milestoneUpdate = mockPrisma.user.update.mock.calls.find(
-      c => c[0].data?.settings?.milestones,
-    );
+    const milestoneUpdate = mockPrisma.user.update.mock.calls.find(c => c[0].data?.settings?.milestones);
     expect(milestoneUpdate).toBeUndefined();
   });
 
@@ -879,9 +1005,15 @@ describe('executeClosedShows', () => {
             horseId: 1,
             userId: 'u1',
             horse: {
-              id: 1, name: 'NullHorse', userId: 'u1',
-              speed: null, stamina: null, agility: null,
-              balance: null, precision: null, boldness: null,
+              id: 1,
+              name: 'NullHorse',
+              userId: 'u1',
+              speed: null,
+              stamina: null,
+              agility: null,
+              balance: null,
+              precision: null,
+              boldness: null,
             },
           },
         ],

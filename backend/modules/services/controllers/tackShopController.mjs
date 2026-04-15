@@ -617,30 +617,27 @@ export async function purchaseTackItem(req, res) {
       }
     }
 
-    const { updatedHorse, updatedUser } = await prisma.$transaction(async tx => {
-      const horseUpdate = await tx.horse.update({
+    const [updatedHorse, updatedUser] = await prisma.$transaction([
+      prisma.horse.update({
         where: { id: horseId },
         data: { tack: updatedTack },
-      });
-      const userUpdate = await tx.user.update({
+      }),
+      prisma.user.update({
         where: { id: userId },
         data: { money: { decrement: item.cost } },
         select: { money: true },
-      });
-      await recordTransaction(
-        {
-          userId,
-          type: 'debit',
-          amount: item.cost,
-          category: 'tack_purchase',
-          description: `${item.name} for ${horse.name}`,
-          balanceAfter: userUpdate.money,
-          metadata: { horseId, itemId: item.id, category: item.category },
-        },
-        tx,
-      );
-      return { updatedHorse: horseUpdate, updatedUser: userUpdate };
-    });
+      }),
+    ]);
+    // Record financial transaction as best-effort (non-blocking)
+    recordTransaction({
+      userId,
+      type: 'debit',
+      amount: item.cost,
+      category: 'tack_purchase',
+      description: `${item.name} for ${horse.name ?? horseId}`,
+      balanceAfter: updatedUser?.money,
+      metadata: { horseId, itemId: item.id, category: item.category },
+    }).catch(err => logger.error(`[tackShopController] ledger error: ${err.message}`));
 
     logger.info(
       `[tackShopController] User ${userId} purchased "${item.name}" for horse ${horseId} — cost $${item.cost}`,
@@ -860,30 +857,27 @@ export async function repairTackItem(req, res) {
 
     const updatedTack = { ...tack, [conditionKey]: 100 };
 
-    const { updatedHorse, updatedUser } = await prisma.$transaction(async tx => {
-      const horseUpdate = await tx.horse.update({
+    const [updatedHorse, updatedUser] = await prisma.$transaction([
+      prisma.horse.update({
         where: { id: horseId },
         data: { tack: updatedTack },
-      });
-      const userUpdate = await tx.user.update({
+      }),
+      prisma.user.update({
         where: { id: userId },
         data: { money: { decrement: repairCost } },
         select: { money: true },
-      });
-      await recordTransaction(
-        {
-          userId,
-          type: 'debit',
-          amount: repairCost,
-          category: 'tack_repair',
-          description: `Repaired ${item.name}`,
-          balanceAfter: userUpdate.money,
-          metadata: { horseId, itemId, category, previousCondition: currentCondition },
-        },
-        tx,
-      );
-      return { updatedHorse: horseUpdate, updatedUser: userUpdate };
-    });
+      }),
+    ]);
+    // Record financial transaction as best-effort (non-blocking)
+    recordTransaction({
+      userId,
+      type: 'debit',
+      amount: repairCost,
+      category: 'tack_repair',
+      description: `Repaired ${item.name}`,
+      balanceAfter: updatedUser?.money,
+      metadata: { horseId, itemId, category, previousCondition: currentCondition },
+    }).catch(err => logger.error(`[tackShopController] ledger error: ${err.message}`));
 
     logger.info(
       `[tackShopController] User ${userId} repaired "${item.name}" (${category}) on horse ${horseId} — cost $${repairCost}`,

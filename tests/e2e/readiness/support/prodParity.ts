@@ -71,8 +71,9 @@ export async function registerAndCompleteOnboarding(
   suffix: string,
   horseName = `Readiness Horse ${suffix}`
 ): Promise<RegisteredPlayer> {
-  const email = `readiness_${suffix}@example.com`;
-  const username = `readiness_${suffix}`;
+  const safeSuffix = suffix.replace(/[^a-zA-Z0-9_]/g, '_');
+  const email = `readiness_${safeSuffix}@example.com`;
+  const username = `rd_${safeSuffix}`.slice(0, 30);
   const password = 'Password123!';
 
   await page.goto('/register', { waitUntil: 'domcontentloaded' });
