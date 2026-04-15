@@ -14,6 +14,7 @@ import { getAllDisciplines, getDisciplineConfig } from '../../../utils/competiti
 import auth from '../../../middleware/auth.mjs';
 import { queryRateLimiter, mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import logger from '../../../utils/logger.mjs';
+import { recordTransaction } from '../../../services/financialLedgerService.mjs';
 
 const router = express.Router();
 
@@ -299,26 +300,49 @@ router.post(
         });
       }
 
-      // Deduct entry fee
-      await prisma.user.update({
-        where: { id: userId },
-        data: {
-          money: { decrement: show.entryFee },
-        },
-      });
+      const entry = await prisma.$transaction(async tx => {
+        const updatedUser = await tx.user.update({
+          where: { id: userId },
+          data: {
+            money: { decrement: show.entryFee },
+          },
+          select: { money: true },
+        });
 
-      // Create entry record (placeholder result)
-      const entry = await prisma.competitionResult.create({
-        data: {
-          horseId,
-          showId,
-          score: 0, // Will be updated when competition runs
-          placement: null,
-          discipline: show.discipline,
-          runDate: show.runDate,
-          showName: show.name,
-          prizeWon: 0,
-        },
+        const createdEntry = await tx.competitionResult.create({
+          data: {
+            horseId,
+            showId,
+            score: 0, // Will be updated when competition runs
+            placement: null,
+            discipline: show.discipline,
+            runDate: show.runDate,
+            showName: show.name,
+            prizeWon: 0,
+          },
+        });
+
+        if (show.entryFee > 0) {
+          await recordTransaction(
+            {
+              userId,
+              type: 'debit',
+              amount: show.entryFee,
+              category: 'competition_entry',
+              description: `Entry fee for ${show.name}`,
+              balanceAfter: updatedUser.money,
+              metadata: {
+                horseId,
+                showId,
+                entryId: createdEntry.id,
+                discipline: show.discipline,
+              },
+            },
+            tx,
+          );
+        }
+
+        return createdEntry;
       });
 
       logger.info(
@@ -568,7 +592,11 @@ router.post(
   '/:competitionId/claim-prizes',
   mutationRateLimiter,
   auth,
-  [param('competitionId').isInt({ min: 1 }).withMessage('Competition ID must be a positive integer')],
+  [
+    param('competitionId')
+      .isInt({ min: 1 })
+      .withMessage('Competition ID must be a positive integer'),
+  ],
   async (req, res) => {
     try {
       const errors = validationResult(req);
@@ -634,9 +662,7 @@ router.post(
         },
       });
     } catch (error) {
-      logger.error(
-        `[competitionRoutes.POST /:competitionId/claim-prizes] Error: ${error.message}`,
-      );
+      logger.error(`[competitionRoutes.POST /:competitionId/claim-prizes] Error: ${error.message}`);
       return res.status(500).json({
         success: false,
         message: 'Internal server error',

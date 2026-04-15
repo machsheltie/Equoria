@@ -7,22 +7,18 @@
  * - Prize pool with breakdown (1st: 50%, 2nd: 30%, 3rd: 20%)
  * - Entry fee display
  * - Entry requirements list
- * - Beta-readonly notice for competition entry (entry is excluded from beta)
  *
  * Features:
  * - Uses BaseModal for portal, focus trap, scroll lock, escape key, backdrop click
  * - Responsive design (mobile/tablet/desktop)
  * - WCAG 2.1 AA compliance
  *
- * Story 21R-2: Remove production frontend mocks from beta-facing code
- * (Replaced horse-selector-placeholder with honest beta-excluded entry notice)
  * Story 5-1: Competition Entry System - Task 4
  */
 
 import React, { memo } from 'react';
-import { Calendar, DollarSign, Trophy, Users, AlertCircle, Lock } from 'lucide-react';
+import { Calendar, DollarSign, Trophy, Users, AlertCircle } from 'lucide-react';
 import BaseModal from '@/components/common/BaseModal';
-import { isBetaMode } from '@/config/betaRouteScope';
 
 /**
  * Competition data structure for the modal
@@ -51,8 +47,14 @@ export interface CompetitionDetailModalProps {
   onClose: () => void;
   /** Competition data to display (null hides modal) */
   competition: Competition | null;
-  /** Called with competitionId when user clicks Enter Competition (non-beta only) */
+  /** Called with competitionId when user clicks Enter Competition */
   onEnter?: (_competitionId: number) => void;
+  /** User-owned horses eligible for entry selection */
+  entryHorses?: Array<{ id: number; name: string }>;
+  /** Selected horse id for the entry form */
+  selectedHorseId?: number | '';
+  /** Called when the selected horse changes */
+  onSelectedHorseIdChange?: (_horseId: number) => void;
   /** Loading state for entry submission */
   isSubmitting?: boolean;
   /** Error message to display */
@@ -99,7 +101,7 @@ const calculatePrizeDistribution = (
 /**
  * CompetitionDetailModal Component
  *
- * Displays detailed competition information with beta-readonly entry notice.
+ * Displays detailed competition information and entry actions.
  * Delegates portal, focus trap, scroll lock, and keyboard handling to BaseModal.
  */
 const CompetitionDetailModal = memo(function CompetitionDetailModal({
@@ -107,6 +109,9 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
   onClose,
   competition,
   onEnter,
+  entryHorses = [],
+  selectedHorseId = '',
+  onSelectedHorseIdChange,
   isSubmitting = false,
   error,
 }: CompetitionDetailModalProps) {
@@ -119,7 +124,7 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
   const hasRequirements =
     competition?.entryRequirements && competition.entryRequirements.length > 0;
 
-  const canEnter = !isBetaMode && onEnter != null && competition != null;
+  const canEnter = onEnter != null && competition != null;
 
   const footerContent = (
     <div className="flex items-center gap-3">
@@ -136,7 +141,7 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
           type="button"
           data-testid="enter-competition-button"
           onClick={() => onEnter!(competition!.id)}
-          disabled={isSubmitting}
+          disabled={isSubmitting || entryHorses.length === 0 || !selectedHorseId}
           className="px-4 py-2 bg-forest-green/20 border border-forest-green/40 rounded-lg text-midnight-ink font-medium hover:bg-forest-green/30 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSubmitting ? 'Entering…' : 'Enter Competition'}
@@ -291,6 +296,43 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
             )}
           </div>
 
+          {canEnter && (
+            <div
+              className="bg-forest-green/10 border border-forest-green/30 rounded-lg p-4"
+              data-testid="competition-entry-form"
+            >
+              <label
+                htmlFor="competition-entry-horse"
+                className="text-sm font-semibold text-midnight-ink mb-2 block"
+              >
+                Select horse to enter
+              </label>
+              {entryHorses.length > 0 ? (
+                <select
+                  id="competition-entry-horse"
+                  data-testid="competition-entry-horse-select"
+                  value={selectedHorseId}
+                  onChange={(event) =>
+                    onSelectedHorseIdChange?.(Number.parseInt(event.target.value, 10))
+                  }
+                  disabled={isSubmitting}
+                  className="w-full rounded-lg border border-forest-green/30 bg-white/80 px-3 py-2 text-sm text-midnight-ink"
+                >
+                  <option value="">Choose a horse</option>
+                  {entryHorses.map((horse) => (
+                    <option key={horse.id} value={horse.id}>
+                      {horse.name}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <p className="text-sm text-mystic-silver">
+                  Add a horse to your stable before entering competitions.
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Participants Info */}
           {competition.maxParticipants !== undefined && (
             <div className="flex items-center justify-between p-3 bg-saddle-leather/50 rounded-lg">
@@ -298,21 +340,6 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
               <span className="font-medium text-midnight-ink">
                 {competition.currentParticipants ?? 0} / {competition.maxParticipants}
               </span>
-            </div>
-          )}
-
-          {/* Competition entry — beta-readonly: notice only shown in beta mode */}
-          {isBetaMode && (
-            <div
-              className="rounded-lg border border-[var(--glass-border)] bg-[var(--glass-bg)] p-6 text-center"
-              data-testid="competition-entry-beta-notice"
-            >
-              <div className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[var(--glass-border-gold-subtle)] mb-3">
-                <Lock className="h-5 w-5 text-[var(--gold-primary)]" aria-hidden="true" />
-              </div>
-              <p className="text-midnight-ink font-medium text-sm">
-                Competition entry is not available in this beta.
-              </p>
             </div>
           )}
 

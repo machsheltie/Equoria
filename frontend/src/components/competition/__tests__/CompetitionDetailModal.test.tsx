@@ -6,11 +6,9 @@
  * - Modal behavior (close, backdrop, escape key)
  * - Competition details display (name, discipline, date, prize, fee)
  * - Prize distribution breakdown
- * - Beta-excluded entry notice (competition entry is not available in this beta)
+ * - Live entry action and horse selection
  * - Accessibility compliance (ARIA, focus trap, scroll lock)
  *
- * Story 21R-2: Remove production frontend mocks from beta-facing code
- * (Updated: horse-selector-placeholder replaced with competition-entry-beta-notice)
  * Story 5-1: Competition Entry System - Task 4
  */
 
@@ -22,15 +20,10 @@ import CompetitionDetailModal, {
   type Competition,
 } from '../CompetitionDetailModal';
 
-// The beta-excluded notice is conditional on isBetaMode — set to true so the
-// test can verify the notice behavior. Non-beta behavior is covered separately.
-vi.mock('@/config/betaRouteScope', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/config/betaRouteScope')>();
-  return { ...actual, isBetaMode: true };
-});
-
 describe('CompetitionDetailModal', () => {
   const mockOnClose = vi.fn();
+  const mockOnEnter = vi.fn();
+  const mockOnSelectedHorseIdChange = vi.fn();
 
   const sampleCompetition: Competition = {
     id: 1,
@@ -54,6 +47,10 @@ describe('CompetitionDetailModal', () => {
     isOpen: true,
     onClose: mockOnClose,
     competition: sampleCompetition,
+    onEnter: mockOnEnter,
+    entryHorses: [{ id: 10, name: 'Starlight' }],
+    selectedHorseId: 10,
+    onSelectedHorseIdChange: mockOnSelectedHorseIdChange,
   };
 
   beforeEach(() => {
@@ -93,13 +90,12 @@ describe('CompetitionDetailModal', () => {
       expect(screen.getByTestId('competition-entry-fee')).toBeInTheDocument();
     });
 
-    it('should show beta-excluded notice for competition entry', () => {
+    it('should show live competition entry controls', () => {
       render(<CompetitionDetailModal {...defaultProps} />);
 
-      expect(screen.getByTestId('competition-entry-beta-notice')).toBeInTheDocument();
-      expect(
-        screen.getByText(/competition entry is not available in this beta/i)
-      ).toBeInTheDocument();
+      expect(screen.getByTestId('competition-entry-form')).toBeInTheDocument();
+      expect(screen.getByTestId('competition-entry-horse-select')).toHaveValue('10');
+      expect(screen.getByTestId('enter-competition-button')).toBeEnabled();
     });
 
     it('should render close button', () => {
@@ -198,7 +194,7 @@ describe('CompetitionDetailModal', () => {
 
       const disciplineBadge = screen.getByTestId('competition-discipline');
       expect(disciplineBadge).toHaveTextContent('Show Jumping');
-      expect(disciplineBadge.className).toMatch(/bg-\[rgba\(37,99,235/);
+      expect(disciplineBadge.className).toMatch(/bg-forest-green\/10/);
     });
 
     it('should format event date correctly', () => {
@@ -262,23 +258,22 @@ describe('CompetitionDetailModal', () => {
     });
   });
 
-  // ==================== BETA-EXCLUDED ENTRY NOTICE (3 tests) ====================
-  describe('Beta-Excluded Entry Notice', () => {
-    it('should show beta-excluded notice instead of horse selector', () => {
+  // ==================== LIVE ENTRY CONTROLS (3 tests) ====================
+  describe('Live Entry Controls', () => {
+    it('should show horse selector for live entry', () => {
       render(<CompetitionDetailModal {...defaultProps} />);
 
-      // horse-selector-placeholder must NOT be present
-      expect(screen.queryByTestId('horse-selector-placeholder')).not.toBeInTheDocument();
-      // beta notice MUST be present
-      expect(screen.getByTestId('competition-entry-beta-notice')).toBeInTheDocument();
+      expect(screen.queryByTestId('competition-entry-beta-notice')).not.toBeInTheDocument();
+      expect(screen.getByTestId('competition-entry-horse-select')).toBeInTheDocument();
     });
 
-    it('should display honest beta-excluded copy', () => {
+    it('should call onEnter when the entry button is clicked', async () => {
+      const user = userEvent.setup();
       render(<CompetitionDetailModal {...defaultProps} />);
 
-      expect(
-        screen.getByText(/competition entry is not available in this beta/i)
-      ).toBeInTheDocument();
+      await user.click(screen.getByTestId('enter-competition-button'));
+
+      expect(mockOnEnter).toHaveBeenCalledWith(sampleCompetition.id);
     });
 
     it('should display error message when error prop is provided', () => {

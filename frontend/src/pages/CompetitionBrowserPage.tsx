@@ -6,8 +6,12 @@
  */
 
 import { useState, useCallback } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Trophy } from 'lucide-react';
 import { useCompetitions } from '@/hooks/api/useCompetitions';
+import { useHorses } from '@/hooks/api/useHorses';
+import { useAuth } from '@/contexts/AuthContext';
+import { competitionsApi, ApiError } from '@/lib/api-client';
 import CompetitionFilters, {
   type DisciplineFilter,
   type DateRangeFilter,
@@ -22,11 +26,36 @@ import { Button } from '@/components/ui/button';
 
 const CompetitionBrowserPage = (): JSX.Element => {
   const { data, isLoading, error, refetch } = useCompetitions();
+  const { data: horses = [] } = useHorses();
+  const { refetchProfile } = useAuth();
+  const queryClient = useQueryClient();
 
   const [disciplineFilter, setDisciplineFilter] = useState<DisciplineFilter>('all');
   const [dateRangeFilter, setDateRangeFilter] = useState<DateRangeFilter>('all');
   const [entryFeeFilter, setEntryFeeFilter] = useState<EntryFeeFilter>('all');
   const [selectedCompetition, setSelectedCompetition] = useState<ModalCompetition | null>(null);
+  const [selectedHorseId, setSelectedHorseId] = useState<number | ''>('');
+  const [entryError, setEntryError] = useState<string | undefined>();
+
+  const enterCompetition = useMutation<
+    { entryId: number; horseId: number; showId: number; entryFee: number },
+    ApiError,
+    { competitionId: number; horseId: number }
+  >({
+    mutationFn: ({ competitionId, horseId }) => competitionsApi.enter({ competitionId, horseId }),
+    onSuccess: async () => {
+      setEntryError(undefined);
+      setSelectedCompetition(null);
+      await Promise.all([
+        refetch(),
+        refetchProfile(),
+        queryClient.invalidateQueries({ queryKey: ['transactions'] }),
+      ]);
+    },
+    onError: (apiError) => {
+      setEntryError(apiError?.message ?? 'Failed to enter competition.');
+    },
+  });
 
   const handleClearFilters = useCallback(() => {
     setDisciplineFilter('all');
@@ -50,8 +79,21 @@ const CompetitionBrowserPage = (): JSX.Element => {
         maxParticipants: found.maxEntries,
         currentParticipants: found.currentEntries,
       });
+      setSelectedHorseId(horses[0]?.id ?? '');
+      setEntryError(undefined);
     },
-    [data]
+    [data, horses]
+  );
+
+  const handleEnterCompetition = useCallback(
+    (competitionId: number) => {
+      if (!selectedHorseId) {
+        setEntryError('Choose a horse before entering this competition.');
+        return;
+      }
+      enterCompetition.mutate({ competitionId, horseId: selectedHorseId });
+    },
+    [enterCompetition, selectedHorseId]
   );
 
   // Loading state
@@ -152,6 +194,12 @@ const CompetitionBrowserPage = (): JSX.Element => {
         isOpen={selectedCompetition !== null}
         onClose={() => setSelectedCompetition(null)}
         competition={selectedCompetition}
+        onEnter={handleEnterCompetition}
+        entryHorses={horses.map((horse) => ({ id: horse.id, name: horse.name }))}
+        selectedHorseId={selectedHorseId}
+        onSelectedHorseIdChange={setSelectedHorseId}
+        isSubmitting={enterCompetition.isPending}
+        error={entryError}
       />
     </div>
   );
