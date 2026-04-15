@@ -1,0 +1,44 @@
+# Beta Deployment Signoff Record
+#
+# This file is updated after every successful run of scripts/check-beta-readiness.sh.
+# It MUST be signed off by the project lead before beta testers are invited.
+#
+# Process:
+#   1. Run: bash scripts/check-beta-readiness.sh
+#   2. If all gates pass, update this file with the run details below.
+#   3. Request project lead sign-off (update signed_off_by + signed_off_date).
+#   4. Deploy to beta testers only after signed_off_by is set.
+#
+# Gate checklist (must all be PASS before signoff):
+#   - backend_lint:        Backend ESLint 0 errors
+#   - frontend_typecheck:  TypeScript noEmit clean
+#   - routes_tests:        All backend route tests passing
+#   - integration_tests:   All real-DB integration tests passing
+#   - e2e_critical_path:   Playwright beta-critical-path.spec.ts 3/3
+#   - no_http_cleanup:     No DELETE /test/cleanup routes in HTTP layer
+#   - no_db_mocks:         No jest.mock(prisma) in integration tests
+#   - no_bypass_headers:   No x-test-user/bypass-auth in E2E specs
+#   - no_beta_skips:       No test.skip in beta-critical-path.spec.ts
+# ============================================================================
+
+last_gate_run:
+  commit: d2af510d
+  date: '2026-04-15 06:13:50'
+  gates_passed: 8
+  gates_skipped: 1
+  skipped: e2e_critical_path (--skip-e2e; requires running backend+frontend servers)
+  gate_detail:
+    backend_lint: PASS
+    frontend_typecheck: PASS
+    routes_tests: PASS
+    integration_tests: PASS
+    e2e_critical_path: SKIP
+    no_http_cleanup: PASS
+    no_db_mocks: PASS
+    no_bypass_headers: PASS
+    no_beta_skips: PASS
+
+signoff:
+  signed_off_by: ~
+  signed_off_date: ~
+  notes: 'Awaiting project lead approval before beta deployment.'
