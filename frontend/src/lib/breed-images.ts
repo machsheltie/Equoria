@@ -40,10 +40,17 @@ const BREED_PLACEHOLDERS: Record<string, string> = {
 const GENERIC_PLACEHOLDER = '/placeholder.svg';
 
 /**
+ * URLs that are Prisma schema defaults or otherwise known to be non-existent.
+ * Treated as "no real image set" so breed-specific lookup runs instead.
+ */
+const PLACEHOLDER_DEFAULTS = new Set(['/images/samplehorse.JPG', '/images/samplehorse.jpg']);
+
+/**
  * Resolve the display image URL for a horse.
  *
- * Returns the provided imageUrl if truthy, otherwise looks up a
- * breed-specific placeholder, falling back to the generic placeholder.
+ * Returns the provided imageUrl if truthy (and not a known dead placeholder),
+ * otherwise looks up a breed-specific placeholder, falling back to the generic
+ * placeholder.
  *
  * @param imageUrl - The horse's stored portrait URL (may be null/undefined)
  * @param breed    - The horse's breed name or breed object
@@ -53,7 +60,7 @@ export function getHorseImage(
   imageUrl: string | null | undefined,
   breed: string | { id?: number; name?: string; description?: string } | null | undefined
 ): string {
-  if (imageUrl) return imageUrl;
+  if (imageUrl && !PLACEHOLDER_DEFAULTS.has(imageUrl)) return imageUrl;
 
   const breedName = typeof breed === 'string' ? breed : (breed?.name ?? '');
 
@@ -81,7 +88,7 @@ export function getHorseImageStyle(
   imageUrl: string | null | undefined,
   _breed: string | { id?: number; name?: string; description?: string } | null | undefined
 ): CSSProperties {
-  if (imageUrl) return {};
+  if (imageUrl && !PLACEHOLDER_DEFAULTS.has(imageUrl)) return {};
   // Placeholder images look better with contain + a subtle background
   return { objectFit: 'contain', padding: '8px' };
 }
