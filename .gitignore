@@ -156,5 +156,6 @@ tests/e2e/test-credentials.json
 .playwright-mcp/
 
 # === Backend Local Data ===
+backend/_ul
 backend/_ul/
 backend/data/

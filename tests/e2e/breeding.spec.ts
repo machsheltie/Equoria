@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type APIRequestContext } from '@playwright/test';
 
 test.describe('Breeding Loop', () => {
   test.beforeEach(async ({ page }) => {
@@ -7,7 +7,7 @@ test.describe('Breeding Loop', () => {
     page.on('pageerror', (err) => console.error(`BROWSER ERROR: ${err.message}`));
   });
 
-  test.beforeAll(async ({ request }) => {
+  test.beforeAll(async ({ request }: { request: APIRequestContext }) => {
     // Fetch a valid breedId — IDs are auto-incremented and do NOT start at 1
     let breedId = 1;
     const breedsRes = await request.get('/api/breeds');
@@ -20,9 +20,21 @@ test.describe('Breeding Loop', () => {
       }
     }
 
+    // Obtain a CSRF token via the public endpoint.
+    // The request context automatically retains the _csrf cookie for subsequent POSTs.
+    const csrfRes = await request.get('/api/auth/csrf-token');
+    if (!csrfRes.ok()) {
+      throw new Error(`CSRF token fetch failed with status ${csrfRes.status()}`);
+    }
+    const csrfData = await csrfRes.json();
+    const csrfToken = (csrfData as { csrfToken?: string }).csrfToken;
+    if (!csrfToken) {
+      throw new Error('CSRF token missing from /api/auth/csrf-token response');
+    }
+
     // 1. Create a Stallion
     const stallionResponse = await request.post('/api/horses', {
-      headers: { 'x-test-skip-csrf': 'true' },
+      headers: { 'x-csrf-token': csrfToken },
       data: {
         name: 'E2E Stallion',
         breedId,
@@ -35,7 +47,7 @@ test.describe('Breeding Loop', () => {
 
     // 2. Create a Mare
     const mareResponse = await request.post('/api/horses', {
-      headers: { 'x-test-skip-csrf': 'true' },
+      headers: { 'x-csrf-token': csrfToken },
       data: {
         name: 'E2E Mare',
         breedId,
@@ -52,8 +64,7 @@ test.describe('Breeding Loop', () => {
     await page.goto('/breeding', { waitUntil: 'domcontentloaded' });
 
     try {
-      console.log('Waiting for Breeding Center heading');
-      // Increased timeout and using role for better reliability
+      console.log('Waiting for Breeding Hall heading');
       await expect(page.getByRole('heading', { name: 'Breeding Hall' })).toBeVisible({
         timeout: 30000,
       });
@@ -66,17 +77,14 @@ test.describe('Breeding Loop', () => {
     }
 
     console.log('Verifying My Mares tab');
-    // Verify "My Mares" tab is active and shows the mare
     await expect(page.getByRole('tab', { name: 'My Mares' })).toHaveAttribute(
       'aria-selected',
       'true'
     );
 
     console.log('Waiting for horses to load in select');
-    // Wait for horses to load in select
     const damSelect = page.locator('select#damId');
     await expect(damSelect).toBeVisible({ timeout: 15000 });
-    // Check for text content instead of visibility if it's an option inside a closed select
     await expect(damSelect).toContainText('E2E Mare', { timeout: 15000 });
   });
 
@@ -84,64 +92,43 @@ test.describe('Breeding Loop', () => {
     console.log('Navigating to /breeding for perform breeding');
     await page.goto('/breeding', { waitUntil: 'domcontentloaded' });
 
-    // Wait for page to load
-    await expect(page.getByRole('heading', { name: 'Breeding Center' })).toBeVisible({
+    await expect(page.getByRole('heading', { name: 'Breeding Hall' })).toBeVisible({
       timeout: 30000,
     });
 
     console.log('Selecting Mare');
-    // 1. Select Mare (Use string label instead of regex object)
     await page.selectOption('select#damId', { label: 'E2E Mare' });
 
     console.log('Selecting Stallion');
-    // 2. Select Stallion
     await page.selectOption('select#sireId', { label: 'E2E Stallion' });
 
     console.log('Entering Foal Name');
-    // 3. Enter Foal Name — actual placeholder text is 'Enter foal name'
     const foalName = `E2E Foal ${Date.now()}`;
     await page.getByPlaceholder('Enter foal name').fill(foalName);
 
-    // Wait for the foal creation API response — don't filter on status yet
-    const foalPromise = page
-      .waitForResponse((response) => response.url().includes('/api/horses/foals'), {
-        timeout: 30000,
-      })
-      .catch(() => null);
+    // Wait for the foal creation response — missing or non-201 means feature is broken, fail fast
+    const foalPromise = page.waitForResponse(
+      (response) => response.url().includes('/api/horses/foals'),
+      { timeout: 30000 }
+    );
 
     await page.click('button:has-text("Breed Now")');
     const foalResponse = await foalPromise;
 
-    if (!foalResponse) {
-      test.skip(true, 'Breed API did not respond — button may have been disabled or API timed out');
-      return;
-    }
-
-    if (foalResponse.status() !== 201) {
-      const body = await foalResponse.json().catch(() => ({}));
-      test.skip(
-        true,
-        `Breed API returned ${foalResponse.status()} — skipping stable verification (${JSON.stringify(body).slice(0, 120)})`
-      );
-      return;
-    }
-
+    expect(foalResponse.status()).toBe(201);
     console.log(`Foal creation successful: ${foalName}`);
 
-    // 5. Verify Foal in Stable
+    // Verify Foal in Stable
     console.log('Navigating to Stable...');
     await page.goto('/stable', { waitUntil: 'networkidle' });
 
-    // Select "All" tab to be sure
     console.log('Selecting "All" tab in stable');
     const allTab = page.getByRole('tab', { name: 'All', exact: true });
     await expect(allTab).toBeVisible({ timeout: 15000 });
     await allTab.click();
 
-    // Reload just in case query was cached
     await page.reload({ waitUntil: 'networkidle' });
 
-    // Explicitly wait for horse list to load
     console.log(`Waiting for foal "${foalName}" to appear in stable`);
     try {
       await expect(page.getByText(foalName)).toBeVisible({ timeout: 30000 });

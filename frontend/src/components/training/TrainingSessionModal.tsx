@@ -20,7 +20,6 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { HelpCircle } from 'lucide-react';
 import {
   useTrainingEligibility,
   useTrainingSession,
@@ -200,14 +199,6 @@ const TrainingSessionModal = ({ horse, onClose, onCompleted }: TrainingSessionMo
     setErrorMessage(null);
   };
 
-  /**
-   * Handler for "Learn More" button click.
-   * Opens trait documentation or information modal (future implementation).
-   */
-  const handleLearnMore = () => {
-    // Future: Open trait documentation or modal
-  };
-
   return createPortal(
     <div
       className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
@@ -287,20 +278,11 @@ const TrainingSessionModal = ({ horse, onClose, onCompleted }: TrainingSessionMo
             <div className="mt-4" data-testid="trait-modifiers-section">
               <div className="flex items-center gap-2 mb-3">
                 <h3 className="text-sm font-semibold text-[rgb(220,235,255)]">Trait Modifiers</h3>
-                <button
-                  onClick={handleLearnMore}
-                  className="text-[var(--gold-400)] hover:text-[var(--gold-300)]"
-                  aria-label="Learn more about traits"
-                  type="button"
-                >
-                  <HelpCircle className="w-4 h-4" data-testid="help-circle-icon" />
-                </button>
               </div>
               <TraitModifierList
                 modifiers={traitModifiers}
                 baseGain={BASE_GAIN}
                 showNetEffect={true}
-                onLearnMore={handleLearnMore}
               />
             </div>
 

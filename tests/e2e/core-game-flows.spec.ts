@@ -113,22 +113,23 @@ test.describe('AC3: Stable Page', () => {
 // AC4 — Training Session: initiate → result displayed
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('AC4: Training Session', () => {
+  // Always create a fresh horse so it has no training cooldown.
+  // Reusing the global-setup horse risks cooldown from previous test runs.
   let trainingHorseId: number | null = null;
 
   test.beforeAll(async ({ request }: { request: APIRequestContext }) => {
-    // Try to reuse the horse created in global-setup; fall back to creating one
-    try {
-      const creds = readCredentials();
-      if (creds.testHorseId) {
-        trainingHorseId = Number(creds.testHorseId);
-        console.log('Using global-setup horse id:', trainingHorseId);
-        return;
-      }
-    } catch {
-      // ignore
+    // Obtain a CSRF token — the request context retains the _csrf cookie for subsequent POSTs
+    const csrfRes = await request.get('/api/auth/csrf-token');
+    if (!csrfRes.ok()) {
+      throw new Error(`CSRF token fetch failed: ${csrfRes.status()}`);
+    }
+    const csrfData = await csrfRes.json();
+    const csrfToken = (csrfData as { csrfToken?: string }).csrfToken;
+    if (!csrfToken) {
+      throw new Error('CSRF token missing from /api/auth/csrf-token response');
     }
 
-    // Create a fresh horse — fetch a valid breedId first (IDs are auto-incremented)
+    // Fetch a valid breedId — IDs are auto-incremented and do NOT start at 1
     let breedId = 1;
     const breedsRes = await request.get('/api/breeds');
     if (breedsRes.ok()) {
@@ -138,17 +139,21 @@ test.describe('AC4: Training Session', () => {
         breedId = breeds[0].id;
       }
     }
+
+    // Create a fresh training horse with proper auth + CSRF (no bypass headers)
     const res = await request.post('/api/horses', {
-      headers: { 'x-test-skip-csrf': 'true' },
+      headers: { 'x-csrf-token': csrfToken },
       data: { name: `Training Horse ${Date.now()}`, breedId, age: 5, sex: 'stallion' },
     });
-    if (res.ok()) {
-      const json = await res.json();
-      trainingHorseId = json?.data?.id ?? json?.id ?? null;
-      console.log('Created training horse id:', trainingHorseId);
-    } else {
-      console.warn('Horse creation for training failed:', res.status());
+    if (!res.ok()) {
+      throw new Error(`Horse creation for training failed: ${res.status()} ${await res.text()}`);
     }
+    const json = await res.json();
+    trainingHorseId = json?.data?.id ?? json?.id ?? null;
+    if (!trainingHorseId) {
+      throw new Error(`Horse creation succeeded but returned no id: ${JSON.stringify(json)}`);
+    }
+    console.log('Created training horse id:', trainingHorseId);
   });
 
   test('training dashboard loads with Training Dashboard heading', async ({ page }) => {
@@ -161,59 +166,40 @@ test.describe('AC4: Training Session', () => {
   });
 
   test('clicking train button opens TrainingSessionModal', async ({ page }) => {
-    if (!trainingHorseId) {
-      test.skip(true, 'No training horse available — global-setup horse creation failed');
-      return;
-    }
+    // trainingHorseId is guaranteed by beforeAll (throws if horse not created)
+    expect(trainingHorseId).not.toBeNull();
 
     await page.goto('/training', { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('[data-testid="training-dashboard-page"]', { timeout: 20000 });
 
-    // Wait for horses to load in the ready section
+    // Wait for the fresh horse's train button — fresh horse has no cooldown
     const trainBtn = page.locator(`[data-testid="train-button-${trainingHorseId}"]`);
-    const btnVisible = await trainBtn.isVisible({ timeout: 10000 }).catch(() => false);
-
-    if (!btnVisible) {
-      // Horse might be on cooldown or ineligible in this test run — still pass the page load test
-      test.skip(true, 'Train button not visible (horse on cooldown or ineligible)');
-      return;
-    }
-
+    await expect(trainBtn).toBeVisible({ timeout: 15000 });
     await trainBtn.click();
 
-    // Training modal should open — look for the "Start Training" button
+    // Training modal must open — if it doesn't, the training flow is broken
     await expect(page.getByRole('button', { name: 'Start Training' })).toBeVisible({
       timeout: 10000,
     });
   });
 
   test('confirming training shows Training Results', async ({ page }) => {
-    if (!trainingHorseId) {
-      test.skip(true, 'No training horse available');
-      return;
-    }
+    expect(trainingHorseId).not.toBeNull();
 
     await page.goto('/training', { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('[data-testid="training-dashboard-page"]', { timeout: 20000 });
 
     const trainBtn = page.locator(`[data-testid="train-button-${trainingHorseId}"]`);
-    const btnVisible = await trainBtn.isVisible({ timeout: 10000 }).catch(() => false);
-
-    if (!btnVisible) {
-      test.skip(true, 'Train button not visible (horse on cooldown or ineligible)');
-      return;
-    }
-
+    await expect(trainBtn).toBeVisible({ timeout: 15000 });
     await trainBtn.click();
 
-    // Modal is open — click Start Training
+    // Modal opens — click Start Training
     const startBtn = page.getByRole('button', { name: 'Start Training' });
     await expect(startBtn).toBeVisible({ timeout: 10000 });
     await startBtn.click();
 
-    // Wait for Training Results heading (rendered by TrainingResultsDisplay)
+    // Training Results must appear — if not, the training execution is broken
     await expect(page.getByText('Training Results')).toBeVisible({ timeout: 20000 });
-    // Verify result details are shown
     await expect(page.getByText('Next Training:')).toBeVisible({ timeout: 5000 });
   });
 });
@@ -236,22 +222,17 @@ test.describe('AC5: Competition Entry', () => {
     await page.goto('/competitions', { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('[data-testid="competition-browser-page"]', { timeout: 20000 });
 
-    // Wait for competition cards to load (seeded by global-setup)
+    // Competition cards must be present — if absent, the test DB has no shows seeded
+    // and setup must be fixed, not the test skipped
     const cards = page.locator('[data-testid="competition-card"]');
-    const cardCount = await cards.count();
-
-    if (cardCount === 0) {
-      test.skip(true, 'No competition cards visible — test DB may have no shows');
-      return;
-    }
+    await expect(cards.first()).toBeVisible({ timeout: 15000 });
 
     await cards.first().click();
 
-    // CompetitionDetailModal should open
+    // CompetitionDetailModal must open
     await expect(page.locator('[data-testid="competition-detail-modal"]')).toBeVisible({
       timeout: 10000,
     });
-    // Verify competition name is shown in the modal
     await expect(page.locator('[data-testid="competition-name"]')).toBeVisible({ timeout: 5000 });
   });
 
@@ -264,11 +245,9 @@ test.describe('AC5: Competition Entry', () => {
     await page.goto('/competitions', { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('[data-testid="competition-browser-page"]', { timeout: 20000 });
 
+    // Competitions must exist — absent data is a setup failure, not a skip condition
     const cards = page.locator('[data-testid="competition-card"]');
-    if ((await cards.count()) === 0) {
-      test.skip(true, 'No competitions available');
-      return;
-    }
+    await expect(cards.first()).toBeVisible({ timeout: 15000 });
 
     // Open detail modal
     await cards.first().click();
@@ -276,45 +255,39 @@ test.describe('AC5: Competition Entry', () => {
       timeout: 10000,
     });
 
-    // Click "Enter Competition" button (only proceed if it's enabled — disabled means not yet implemented)
+    // Enter Competition button must be enabled — a disabled button means the feature
+    // is broken or the horse is ineligible, both of which are failures, not skip conditions
     const enterBtn = page.locator('[data-testid="enter-button"]');
-    if (!(await enterBtn.isEnabled({ timeout: 5000 }).catch(() => false))) {
-      test.skip(
-        true,
-        'Enter Competition button not enabled — entry flow not yet fully implemented'
-      );
-      return;
-    }
+    await expect(enterBtn).toBeEnabled({ timeout: 10000 });
     await enterBtn.click();
 
-    // EntryConfirmationModal should open
+    // EntryConfirmationModal must open
     await expect(page.locator('[data-testid="entry-confirmation-modal"]')).toBeVisible({
       timeout: 10000,
     });
 
-    // Select horse from the selector (if we have one)
+    // Select horse from the selector
     if (horseId) {
       const horseOption = page.locator(`[data-testid="horse-option-${horseId}"]`);
       if (await horseOption.isVisible({ timeout: 3000 }).catch(() => false)) {
         await horseOption.click();
       } else {
-        // Try first available horse option
         const firstHorse = page.locator('[data-testid^="horse-option-"]').first();
-        if (await firstHorse.isVisible({ timeout: 3000 }).catch(() => false)) {
-          await firstHorse.click();
-        }
+        await expect(firstHorse).toBeVisible({ timeout: 5000 });
+        await firstHorse.click();
       }
+    } else {
+      const firstHorse = page.locator('[data-testid^="horse-option-"]').first();
+      await expect(firstHorse).toBeVisible({ timeout: 5000 });
+      await firstHorse.click();
     }
 
-    // Click Confirm Entry
+    // Confirm Entry must be enabled — if not, horse eligibility or feature is broken
     const confirmBtn = page.locator('[data-testid="confirm-button"]');
-    if (!(await confirmBtn.isEnabled({ timeout: 5000 }).catch(() => false))) {
-      test.skip(true, 'Confirm button not enabled — horse may not be eligible');
-      return;
-    }
+    await expect(confirmBtn).toBeEnabled({ timeout: 5000 });
     await confirmBtn.click();
 
-    // Verify success message appears
+    // Success message must appear
     await expect(page.locator('[data-testid="success-message"]')).toBeVisible({ timeout: 15000 });
   });
 });

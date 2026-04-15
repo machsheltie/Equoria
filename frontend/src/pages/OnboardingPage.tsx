@@ -21,7 +21,6 @@ import { toast } from 'sonner';
 import { ChevronRight, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { authApi } from '@/lib/api-client';
-import { isBetaMode } from '@/config/betaRouteScope';
 import { usePageBackground } from '@/components/layout/PageBackground';
 import { type BreedSelectionValue, type Gender } from '@/components/onboarding/BreedSelector';
 import { getHorseImage } from '@/lib/breed-images';
@@ -483,9 +482,8 @@ const OnboardingPage: React.FC = () => {
             )}
           </Button>
 
-          {/* Skip link — hidden in beta (horse selection is mandatory); in non-beta
-              it skips the welcome step and goes directly to horse selection */}
-          {currentStep === 0 && !isBetaMode && (
+          {/* Skip intro link — skips the welcome step and goes directly to horse selection */}
+          {currentStep === 0 && (
             <p className="text-center mt-3">
               <Button
                 variant="ghost"

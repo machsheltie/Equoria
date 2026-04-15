@@ -199,8 +199,10 @@ test.describe('Path 2: Returning-player login smoke', () => {
     const credsPath = path.resolve(__dirname, 'test-credentials.json');
 
     if (!fs.existsSync(credsPath)) {
-      test.skip(true, 'test-credentials.json not found — global-setup did not run');
-      return;
+      throw new Error(
+        'test-credentials.json not found — global-setup did not run. ' +
+          'Ensure the E2E global setup completed successfully before running beta-critical-path tests.'
+      );
     }
 
     const { email, password } = JSON.parse(fs.readFileSync(credsPath, 'utf-8'));
@@ -247,8 +249,10 @@ test.describe('Path 3: Horse detail smoke', () => {
     const credsPath = path.resolve(__dirname, 'test-credentials.json');
 
     if (!fs.existsSync(credsPath)) {
-      test.skip(true, 'test-credentials.json not found — global-setup did not run');
-      return;
+      throw new Error(
+        'test-credentials.json not found — global-setup did not run. ' +
+          'Ensure the E2E global setup completed successfully before running beta-critical-path tests.'
+      );
     }
 
     const { email, password } = JSON.parse(fs.readFileSync(credsPath, 'utf-8'));

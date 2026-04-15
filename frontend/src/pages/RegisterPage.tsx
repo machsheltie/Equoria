@@ -133,7 +133,7 @@ const RegisterPage: React.FC = () => {
             <h2 className="fantasy-header text-xl" style={{ color: 'var(--gold-500)' }}>
               Join the Realm
             </h2>
-            <p className="text-xs text-[rgb(148,163,184)]">
+            <p className="text-xs text-[var(--text-secondary)]">
               Create your account and begin your journey
             </p>
           </div>
@@ -151,7 +151,7 @@ const RegisterPage: React.FC = () => {
               <div className="space-y-1">
                 <label
                   htmlFor="firstName"
-                  className="block text-xs text-[rgb(148,163,184)] uppercase tracking-wider"
+                  className="block text-xs text-[var(--text-secondary)] uppercase tracking-wider"
                 >
                   First Name
                 </label>
@@ -173,7 +173,7 @@ const RegisterPage: React.FC = () => {
               <div className="space-y-1">
                 <label
                   htmlFor="lastName"
-                  className="block text-xs text-[rgb(148,163,184)] uppercase tracking-wider"
+                  className="block text-xs text-[var(--text-secondary)] uppercase tracking-wider"
                 >
                   Last Name
                 </label>
@@ -198,7 +198,7 @@ const RegisterPage: React.FC = () => {
             <div className="space-y-1">
               <label
                 htmlFor="username"
-                className="block text-xs text-[rgb(148,163,184)] uppercase tracking-wider"
+                className="block text-xs text-[var(--text-secondary)] uppercase tracking-wider"
               >
                 Username
               </label>
@@ -225,7 +225,7 @@ const RegisterPage: React.FC = () => {
             <div className="space-y-1">
               <label
                 htmlFor="email"
-                className="block text-xs text-[rgb(148,163,184)] uppercase tracking-wider"
+                className="block text-xs text-[var(--text-secondary)] uppercase tracking-wider"
               >
                 Email Address
               </label>
@@ -252,7 +252,7 @@ const RegisterPage: React.FC = () => {
             <div className="space-y-1">
               <label
                 htmlFor="password"
-                className="block text-xs text-[rgb(148,163,184)] uppercase tracking-wider"
+                className="block text-xs text-[var(--text-secondary)] uppercase tracking-wider"
               >
                 Password
               </label>
@@ -323,7 +323,7 @@ const RegisterPage: React.FC = () => {
             <div className="space-y-1">
               <label
                 htmlFor="confirmPassword"
-                className="block text-xs text-[rgb(148,163,184)] uppercase tracking-wider"
+                className="block text-xs text-[var(--text-secondary)] uppercase tracking-wider"
               >
                 Confirm Password
               </label>
@@ -365,7 +365,7 @@ const RegisterPage: React.FC = () => {
           </form>
 
           {/* Login link */}
-          <p className="text-center text-xs text-[rgb(148,163,184)] pt-1 border-t border-[rgba(30,55,100,0.5)]">
+          <p className="text-center text-xs text-[var(--text-secondary)] pt-1 border-t border-[rgba(30,55,100,0.5)]">
             Already have an account?{' '}
             <Link
               to="/login"

@@ -8,11 +8,12 @@
  * Mocks: prismaClient.mjs and logger.mjs ONLY (per spec balanced-mocking policy).
  * The riderMarketplace service is NOT mocked — it is a pure internal domain module.
  *
- * Map isolation: each test uses a unique userId (Date.now() + Math.random()) so the
- * module-level `userRiderMarketplaces` Map never leaks state across test cases.
+ * State isolation: each test uses a unique userId and controls mockPrisma.staffMarketplaceState
+ * directly, simulating the DB-backed state per test.
  */
 
 import { jest, describe, beforeEach, it, expect } from '@jest/globals';
+import { generateRiderMarketplace } from '../../../services/riderMarketplace.mjs';
 
 // ── Mock setup ────────────────────────────────────────────────────────────────
 
@@ -23,6 +24,11 @@ const mockPrisma = {
   },
   rider: {
     create: jest.fn(),
+  },
+  staffMarketplaceState: {
+    findUnique: jest.fn(),
+    upsert: jest.fn(),
+    update: jest.fn(),
   },
 };
 
@@ -48,7 +54,7 @@ const { getRiderMarketplace, refreshRiderMarketplace, hireRiderFromMarketplace }
 
 function mockReqRes(overrides = {}) {
   const req = {
-    user: { id: `user-${Date.now()}-${Math.random()}` }, // unique per test to avoid shared Map state
+    user: { id: `user-${Date.now()}-${Math.random()}` },
     body: {},
     params: {},
     query: {},
@@ -61,14 +67,17 @@ function mockReqRes(overrides = {}) {
   return { req, res };
 }
 
-/**
- * Prime the module-level Map for userId by browsing the marketplace.
- * Returns the list of riders that were generated so callers can use real marketplaceIds.
- */
-async function primeMarketplace(userId) {
-  const { req, res } = mockReqRes({ user: { id: userId } });
-  await getRiderMarketplace(req, res);
-  return res.json.mock.calls[0][0].data.riders;
+/** Build a realistic DB state row with fresh offers. */
+function makeDbState(overrides = {}) {
+  const offers = generateRiderMarketplace();
+  return {
+    userId: 'some-user',
+    staffType: 'rider',
+    offers,
+    lastRefresh: new Date(),
+    refreshCount: 1,
+    ...overrides,
+  };
 }
 
 // ── getRiderMarketplace ───────────────────────────────────────────────────────
@@ -77,6 +86,11 @@ describe('getRiderMarketplace', () => {
   beforeEach(() => jest.clearAllMocks());
 
   it('generates and returns marketplace for a new user', async () => {
+    // No existing DB record — controller generates and upserts
+    mockPrisma.staffMarketplaceState.findUnique.mockResolvedValue(null);
+    const state = makeDbState();
+    mockPrisma.staffMarketplaceState.upsert.mockResolvedValue(state);
+
     const { req, res } = mockReqRes();
     await getRiderMarketplace(req, res);
 
@@ -85,10 +99,8 @@ describe('getRiderMarketplace', () => {
     expect(success).toBe(true);
     expect(Array.isArray(data.riders)).toBe(true);
     expect(data.riders.length).toBeGreaterThan(0);
-    // After generating, lastRefresh is now — response includes refresh metadata
     expect(typeof data.refreshCost).toBe('number');
     expect(typeof data.canRefreshFree).toBe('boolean');
-    // Each rider has the expected shape
     const rider = data.riders[0];
     expect(rider).toMatchObject({
       marketplaceId: expect.stringMatching(/^mkt_rider_/),
@@ -98,6 +110,19 @@ describe('getRiderMarketplace', () => {
       personality: expect.any(String),
       weeklyRate: expect.any(Number),
     });
+  });
+
+  it('returns existing marketplace when refresh is not needed', async () => {
+    const state = makeDbState({ lastRefresh: new Date() }); // recent — no refresh needed
+    mockPrisma.staffMarketplaceState.findUnique.mockResolvedValue(state);
+
+    const { req, res } = mockReqRes();
+    await getRiderMarketplace(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(200);
+    expect(mockPrisma.staffMarketplaceState.upsert).not.toHaveBeenCalled();
+    const { data } = res.json.mock.calls[0][0];
+    expect(Array.isArray(data.riders)).toBe(true);
   });
 
   it('returns 500 on unexpected error', async () => {
@@ -116,7 +141,11 @@ describe('refreshRiderMarketplace', () => {
   beforeEach(() => jest.clearAllMocks());
 
   it('refreshes free when no prior marketplace exists (cost is 0)', async () => {
-    // Fresh userId — no Map entry — getRiderRefreshCost(undefined) returns 0
+    // null record → getRiderRefreshCost(null) returns 0
+    mockPrisma.staffMarketplaceState.findUnique.mockResolvedValue(null);
+    const state = makeDbState({ refreshCount: 1 });
+    mockPrisma.staffMarketplaceState.upsert.mockResolvedValue(state);
+
     const { req, res } = mockReqRes({ body: {} });
     await refreshRiderMarketplace(req, res);
 
@@ -128,12 +157,11 @@ describe('refreshRiderMarketplace', () => {
   });
 
   it('returns 400 when paid refresh attempted without force=true', async () => {
-    // Prime the Map so lastRefresh = now → cost = PREMIUM_REFRESH_COST (50)
-    const userId = `paid-noforce-${Date.now()}-${Math.random()}`;
-    await primeMarketplace(userId);
-    jest.clearAllMocks();
+    // Recent lastRefresh → cost = PREMIUM_REFRESH_COST (50)
+    const state = makeDbState({ lastRefresh: new Date() });
+    mockPrisma.staffMarketplaceState.findUnique.mockResolvedValue(state);
 
-    const { req, res } = mockReqRes({ user: { id: userId }, body: { force: false } });
+    const { req, res } = mockReqRes({ body: { force: false } });
     await refreshRiderMarketplace(req, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
@@ -143,14 +171,14 @@ describe('refreshRiderMarketplace', () => {
   });
 
   it('deducts cost and refreshes when force=true and user has enough money', async () => {
-    const userId = `paid-force-${Date.now()}-${Math.random()}`;
-    await primeMarketplace(userId);
-    jest.clearAllMocks();
-
+    const state = makeDbState({ lastRefresh: new Date() }); // cost > 0
+    mockPrisma.staffMarketplaceState.findUnique.mockResolvedValue(state);
     mockPrisma.user.findUnique.mockResolvedValue({ money: 500 });
     mockPrisma.user.update.mockResolvedValue({});
+    const newState = makeDbState({ refreshCount: 2 });
+    mockPrisma.staffMarketplaceState.upsert.mockResolvedValue(newState);
 
-    const { req, res } = mockReqRes({ user: { id: userId }, body: { force: true } });
+    const { req, res } = mockReqRes({ body: { force: true } });
     await refreshRiderMarketplace(req, res);
 
     // PREMIUM_REFRESH_COST = 50
@@ -161,13 +189,11 @@ describe('refreshRiderMarketplace', () => {
   });
 
   it('returns 400 when user has insufficient funds for paid refresh', async () => {
-    const userId = `broke-refresh-${Date.now()}-${Math.random()}`;
-    await primeMarketplace(userId);
-    jest.clearAllMocks();
-
+    const state = makeDbState({ lastRefresh: new Date() }); // cost > 0
+    mockPrisma.staffMarketplaceState.findUnique.mockResolvedValue(state);
     mockPrisma.user.findUnique.mockResolvedValue({ money: 10 }); // less than 50
 
-    const { req, res } = mockReqRes({ user: { id: userId }, body: { force: true } });
+    const { req, res } = mockReqRes({ body: { force: true } });
     await refreshRiderMarketplace(req, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
@@ -194,9 +220,10 @@ describe('hireRiderFromMarketplace', () => {
   });
 
   it('returns 404 when no marketplace has been generated for user', async () => {
-    // Fresh userId — no Map entry
+    // DB has no record for this user
+    mockPrisma.staffMarketplaceState.findUnique.mockResolvedValue(null);
+
     const { req, res } = mockReqRes({
-      user: { id: `fresh-hire-${Date.now()}-${Math.random()}` },
       body: { marketplaceId: 'mkt_rider_nonexistent' },
     });
     await hireRiderFromMarketplace(req, res);
@@ -208,11 +235,13 @@ describe('hireRiderFromMarketplace', () => {
   });
 
   it('hires rider, deducts weeklyRate, returns 201 with rider data', async () => {
-    const userId = `hire-ok-${Date.now()}-${Math.random()}`;
-    const riders = await primeMarketplace(userId);
-    jest.clearAllMocks();
+    const userId = `hire-ok-${Date.now()}`;
+    const state = makeDbState();
+    const rider = state.offers[0];
 
-    const rider = riders[0];
+    mockPrisma.staffMarketplaceState.findUnique.mockResolvedValue(state);
+    mockPrisma.user.findUnique.mockResolvedValue({ money: 9999 });
+
     const createdRider = {
       id: 42,
       userId,
@@ -225,10 +254,9 @@ describe('hireRiderFromMarketplace', () => {
       experience: rider.experience,
       bio: rider.bio,
     };
-
-    mockPrisma.user.findUnique.mockResolvedValue({ money: 9999 });
-    mockPrisma.user.update.mockResolvedValue({});
     mockPrisma.rider.create.mockResolvedValue(createdRider);
+    mockPrisma.user.update.mockResolvedValue({ money: 9999 - rider.weeklyRate });
+    mockPrisma.staffMarketplaceState.update.mockResolvedValue({});
 
     const { req, res } = mockReqRes({
       user: { id: userId },
@@ -249,18 +277,22 @@ describe('hireRiderFromMarketplace', () => {
     expect(mockPrisma.user.update).toHaveBeenCalledWith(
       expect.objectContaining({ data: { money: { decrement: rider.weeklyRate } } }),
     );
+    // Hired rider is removed from persisted offers
+    expect(mockPrisma.staffMarketplaceState.update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ offers: expect.any(Array) }),
+      }),
+    );
   });
 
   it('returns 400 when user has insufficient funds to hire', async () => {
-    const userId = `hire-broke-${Date.now()}-${Math.random()}`;
-    const riders = await primeMarketplace(userId);
-    jest.clearAllMocks();
+    const state = makeDbState();
+    const rider = state.offers[0];
 
-    const rider = riders[0];
-    mockPrisma.user.findUnique.mockResolvedValue({ money: 0 }); // guaranteed insufficient
+    mockPrisma.staffMarketplaceState.findUnique.mockResolvedValue(state);
+    mockPrisma.user.findUnique.mockResolvedValue({ money: 0 });
 
     const { req, res } = mockReqRes({
-      user: { id: userId },
       body: { marketplaceId: rider.marketplaceId },
     });
     await hireRiderFromMarketplace(req, res);

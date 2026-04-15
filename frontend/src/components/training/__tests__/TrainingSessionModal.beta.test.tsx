@@ -1,25 +1,18 @@
 /**
- * TrainingSessionModal — Beta Mode Tests
+ * TrainingSessionModal — Active Feature Tests
  *
- * Verifies that the "Learn More" HelpCircle button is hidden when isBetaMode is true.
- * handleLearnMore has no implementation yet and must not appear as a live action in beta.
+ * Verifies that training modal exposes live training actions universally.
+ * The "Learn More" HelpCircle button was a no-op placeholder and has been
+ * removed universally — this is not a beta-specific behavior.
  *
- * Story 21R-2: Remove production frontend mocks from beta-facing code (course correction)
+ * Story 21R-2: Remove beta-hidden behavior — training modal must expose
+ * all real actions consistently across beta and production.
  */
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
-
-// ── Mock betaRouteScope with isBetaMode: true ─────────────────────────────────
-vi.mock('@/config/betaRouteScope', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/config/betaRouteScope')>();
-  return {
-    ...actual,
-    isBetaMode: true,
-  };
-});
 
 // Mock training hooks
 vi.mock('@/hooks/api/useTraining', () => ({
@@ -41,38 +34,35 @@ const mockHorse = {
   nextEligibleAt: null,
 };
 
-describe('TrainingSessionModal — beta mode', () => {
+describe('TrainingSessionModal — active training UX', () => {
   const mockOnClose = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('hides the "Learn more about traits" help button in beta mode', () => {
-    render(<TrainingSessionModal horse={mockHorse} onClose={mockOnClose} />);
-
-    expect(
-      screen.queryByRole('button', { name: /learn more about traits/i })
-    ).not.toBeInTheDocument();
-  });
-
-  it('hides the HelpCircle icon in beta mode', () => {
-    render(<TrainingSessionModal horse={mockHorse} onClose={mockOnClose} />);
-
-    expect(screen.queryByTestId('help-circle-icon')).not.toBeInTheDocument();
-  });
-
-  it('still renders the trait modifiers section in beta mode', () => {
+  it('renders the trait modifiers section', () => {
     render(<TrainingSessionModal horse={mockHorse} onClose={mockOnClose} />);
 
     expect(screen.getByTestId('trait-modifiers-section')).toBeInTheDocument();
     expect(screen.getByText('Trait Modifiers')).toBeInTheDocument();
   });
 
-  it('still renders Start Training and Check Eligibility buttons in beta mode', () => {
+  it('renders Start Training and Check Eligibility action buttons', () => {
     render(<TrainingSessionModal horse={mockHorse} onClose={mockOnClose} />);
 
     expect(screen.getByRole('button', { name: /start training/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /check eligibility/i })).toBeInTheDocument();
+  });
+
+  it('does not render a no-op "Learn more about traits" button — it has no implementation', () => {
+    render(<TrainingSessionModal horse={mockHorse} onClose={mockOnClose} />);
+
+    // The help button was a placeholder with no implementation and was removed universally.
+    // If this button is needed in future, implement it before re-adding it.
+    expect(
+      screen.queryByRole('button', { name: /learn more about traits/i })
+    ).not.toBeInTheDocument();
+    expect(screen.queryByTestId('help-circle-icon')).not.toBeInTheDocument();
   });
 });

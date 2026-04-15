@@ -46,7 +46,7 @@ This Architecture Decision Document (ADD) captures the key technical decisions f
 
 **Scope:** Frontend Completion (Auth UI, Training UI, Breeding UI, API Integration)
 
-**Context:** Brownfield project with production-ready backend (~95% complete) and partial frontend (~60% complete)
+**Context:** Brownfield project with feature-complete backend and frontend. ⚠️ Beta deployment BLOCKED pending readiness gates in `docs/sprint-change-proposal-2026-04-15.md`.
 
 ---
 
@@ -60,81 +60,81 @@ _Enhanced through 5 elicitation methods with BMAD agent collaboration_
 
 The Equoria frontend completion is a **thin UI layer** over a production-ready backend. Key insight: We're not building business logic—we're building views.
 
-| System | Backend Status | Frontend Need |
-|--------|---------------|---------------|
-| Authentication | 100% Complete | 5 UI pages |
-| Training | 100% Complete | Dashboard + Modal |
-| Breeding | 100% Complete | Center + Selector + Tracker |
-| Competition | 100% Complete | Already has CompetitionBrowser |
-| Grooms | 100% Complete | Already has MyGroomsDashboard |
+| System         | Backend Status | Frontend Need                  |
+| -------------- | -------------- | ------------------------------ |
+| Authentication | 100% Complete  | 5 UI pages                     |
+| Training       | 100% Complete  | Dashboard + Modal              |
+| Breeding       | 100% Complete  | Center + Selector + Tracker    |
+| Competition    | 100% Complete  | Already has CompetitionBrowser |
+| Grooms         | 100% Complete  | Already has MyGroomsDashboard  |
 
 **Non-Functional Requirements:**
 
-| NFR | Requirement | Enforcement |
-|-----|-------------|-------------|
-| API Latency | <200ms @ p95 | Backend handles |
-| Dashboard Load | <500ms | React Query caching |
-| Auth Rate Limit | 5 req/15 min | Backend enforced |
-| Test Coverage | 80% minimum | CI/CD gate |
+| NFR             | Requirement  | Enforcement         |
+| --------------- | ------------ | ------------------- |
+| API Latency     | <200ms @ p95 | Backend handles     |
+| Dashboard Load  | <500ms       | React Query caching |
+| Auth Rate Limit | 5 req/15 min | Backend enforced    |
+| Test Coverage   | 80% minimum  | CI/CD gate          |
 
 ### Architecture Decisions Made
 
-| ADR | Decision | Choice | Rationale |
-|-----|----------|--------|-----------|
-| ADR-001 | State Management | React Query only | Server is source of truth, no client store needed |
-| ADR-002 | Form Handling | useState + Zod | 5 forms don't justify a library |
-| ADR-003 | Auth Storage | HttpOnly cookies | Already implemented in backend |
-| ADR-004 | API Client | Centralized fetch wrapper | Single point for `credentials: 'include'` |
+| ADR     | Decision         | Choice                    | Rationale                                         |
+| ------- | ---------------- | ------------------------- | ------------------------------------------------- |
+| ADR-001 | State Management | React Query only          | Server is source of truth, no client store needed |
+| ADR-002 | Form Handling    | useState + Zod            | 5 forms don't justify a library                   |
+| ADR-003 | Auth Storage     | HttpOnly cookies          | Already implemented in backend                    |
+| ADR-004 | API Client       | Centralized fetch wrapper | Single point for `credentials: 'include'`         |
 
 ### Scale & Complexity Assessment
 
-| Indicator | Value | Implication |
-|-----------|-------|-------------|
-| Complexity Level | Medium | UI layer over complex domain |
-| Primary Pattern | Fetch → Render → Mutate → Invalidate | Simple data flow |
-| Risk Level | Low | Backend stability de-risks frontend |
-| New Components | 15-20 | Auth (5), Training (3), Breeding (4+) |
-| API Endpoints Used | ~15 | Subset of 130+ available |
+| Indicator          | Value                                | Implication                           |
+| ------------------ | ------------------------------------ | ------------------------------------- |
+| Complexity Level   | Medium                               | UI layer over complex domain          |
+| Primary Pattern    | Fetch → Render → Mutate → Invalidate | Simple data flow                      |
+| Risk Level         | Low                                  | Backend stability de-risks frontend   |
+| New Components     | 15-20                                | Auth (5), Training (3), Breeding (4+) |
+| API Endpoints Used | ~15                                  | Subset of 130+ available              |
 
 ### Technical Constraints & Dependencies
 
-| Constraint | Description | Mitigation |
-|------------|-------------|------------|
-| Cookie Auth | Must use `credentials: 'include'` on ALL fetches | Centralized API client in `lib/api.ts` |
-| 23 Disciplines | Large dataset for training UI | Category grouping (Western/English/Racing/Specialty) |
-| Breeding Predictions | Can return empty for horses without history | Handle `hasInsufficientData` flag explicitly |
-| Training Cooldown | 7-day global cooldown per horse | Display countdown timer, disable train button |
-| Token Rotation | Access tokens expire in 15 minutes | React Query will refetch, cookies auto-refresh |
+| Constraint           | Description                                      | Mitigation                                           |
+| -------------------- | ------------------------------------------------ | ---------------------------------------------------- |
+| Cookie Auth          | Must use `credentials: 'include'` on ALL fetches | Centralized API client in `lib/api.ts`               |
+| 23 Disciplines       | Large dataset for training UI                    | Category grouping (Western/English/Racing/Specialty) |
+| Breeding Predictions | Can return empty for horses without history      | Handle `hasInsufficientData` flag explicitly         |
+| Training Cooldown    | 7-day global cooldown per horse                  | Display countdown timer, disable train button        |
+| Token Rotation       | Access tokens expire in 15 minutes               | React Query will refetch, cookies auto-refresh       |
 
 ### Cross-Cutting Concerns (Prioritized)
 
-| Priority | Concern | Implementation | Owner |
-|----------|---------|----------------|-------|
-| P0 | Auth State | React Context `AuthProvider` wrapping app | Frontend |
-| P0 | API Error Handling | Centralized error handler with toast notifications | Frontend |
-| P1 | Loading States | Skeleton components for data-heavy views | Frontend |
-| P1 | Form Validation | Zod schemas matching backend rules | Frontend |
-| P1 | Double-click Prevention | Disable buttons during mutation `isPending` | Frontend |
-| P2 | Trait Display | Reusable `TraitBadge` component | Frontend |
+| Priority | Concern                 | Implementation                                     | Owner    |
+| -------- | ----------------------- | -------------------------------------------------- | -------- |
+| P0       | Auth State              | React Context `AuthProvider` wrapping app          | Frontend |
+| P0       | API Error Handling      | Centralized error handler with toast notifications | Frontend |
+| P1       | Loading States          | Skeleton components for data-heavy views           | Frontend |
+| P1       | Form Validation         | Zod schemas matching backend rules                 | Frontend |
+| P1       | Double-click Prevention | Disable buttons during mutation `isPending`        | Frontend |
+| P2       | Trait Display           | Reusable `TraitBadge` component                    | Frontend |
 
 ### Risk Mitigations (from Pre-mortem Analysis)
 
-| Risk | Scenario | Mitigation | Test Coverage |
-|------|----------|------------|---------------|
-| Token Loss | `credentials: 'include'` forgotten | Centralized API client | Integration test |
-| Timezone Bug | Cooldown shows wrong time | UTC on server, local on display | Unit test |
-| Empty Data Crash | Breeding prediction null | Check `hasInsufficientData` flag | Component test |
-| Registration Block | Email verification broken | E2E test full registration flow | E2E test |
-| Race Condition | Double-click creates duplicate | `disabled={isPending}` on buttons | Manual QA |
+| Risk               | Scenario                           | Mitigation                        | Test Coverage    |
+| ------------------ | ---------------------------------- | --------------------------------- | ---------------- |
+| Token Loss         | `credentials: 'include'` forgotten | Centralized API client            | Integration test |
+| Timezone Bug       | Cooldown shows wrong time          | UTC on server, local on display   | Unit test        |
+| Empty Data Crash   | Breeding prediction null           | Check `hasInsufficientData` flag  | Component test   |
+| Registration Block | Email verification broken          | E2E test full registration flow   | E2E test         |
+| Race Condition     | Double-click creates duplicate     | `disabled={isPending}` on buttons | Manual QA        |
 
 ### Security Hardening (from Red Team Analysis)
 
-| Attack Vector | Defense | Status |
-|---------------|---------|--------|
-| CSRF | `sameSite: 'strict'` cookies | ✅ Backend implemented |
-| XSS via Forms | React escaping + Zod validation | ✅ Double defense |
-| Token Theft | HttpOnly cookies (no JS access) | ✅ Backend implemented |
-| Brute Force | Rate limiting (5/15min) | ✅ Backend implemented |
+| Attack Vector | Defense                         | Status                 |
+| ------------- | ------------------------------- | ---------------------- |
+| CSRF          | `sameSite: 'strict'` cookies    | ✅ Backend implemented |
+| XSS via Forms | React escaping + Zod validation | ✅ Double defense      |
+| Token Theft   | HttpOnly cookies (no JS access) | ✅ Backend implemented |
+| Brute Force   | Rate limiting (5/15min)         | ✅ Backend implemented |
 
 ### MVP Prioritization (from War Room)
 
@@ -166,16 +166,19 @@ PHASE 4 - Polish & Tests (~3 hours):
 ### First Principles Summary
 
 **What this project IS:**
+
 - A thin UI layer over a complete backend
 - Views that fetch, render, mutate, and invalidate
 - Cookie-based auth that "just works"
 
 **What this project IS NOT:**
+
 - A complex client-side application
 - A system that needs Redux or complex state
 - Something that requires building backend logic
 
 **Core Implementation Pattern:**
+
 ```typescript
 // Every component follows this pattern:
 const { data, isLoading, error } = useQuery({...});
@@ -204,16 +207,16 @@ This is a **brownfield project** with an established, production-ready technolog
 
 ### Established Stack
 
-| Layer | Technology | Version | Status |
-|-------|------------|---------|--------|
-| **Frontend** | React + Vite | React 18, Vite 5 | ~60% complete |
-| **Backend** | Node.js + Express | Node 20 LTS, Express 4 | ~95% complete |
-| **Database** | PostgreSQL + Prisma | PG 15+, Prisma 5 | Production ready |
-| **State** | React Query | TanStack Query v5 | Established pattern |
-| **Styling** | TailwindCSS | v3.x | Fully configured |
-| **UI Components** | Radix UI | Latest | Available |
-| **Icons** | Lucide React | Latest | Installed |
-| **Testing** | Jest + RTL | Jest 29 | 942+ tests |
+| Layer             | Technology          | Version                | Status              |
+| ----------------- | ------------------- | ---------------------- | ------------------- |
+| **Frontend**      | React + Vite        | React 18, Vite 5       | ~60% complete       |
+| **Backend**       | Node.js + Express   | Node 20 LTS, Express 4 | ~95% complete       |
+| **Database**      | PostgreSQL + Prisma | PG 15+, Prisma 5       | Production ready    |
+| **State**         | React Query         | TanStack Query v5      | Established pattern |
+| **Styling**       | TailwindCSS         | v3.x                   | Fully configured    |
+| **UI Components** | Radix UI            | Latest                 | Available           |
+| **Icons**         | Lucide React        | Latest                 | Installed           |
+| **Testing**       | Jest + RTL          | Jest 29                | 942+ tests          |
 
 ### Why No Starter Template
 
@@ -250,26 +253,26 @@ Most architectural decisions are inherited from the existing production codebase
 
 ### Confirmed Decisions (ADR-005 through ADR-008)
 
-| ADR | Decision | Choice | Rationale |
-|-----|----------|--------|-----------|
-| ADR-005 | Error Display | Toast for mutations, inline for forms | Toasts don't block UI; inline errors guide form correction |
-| ADR-006 | Loading States | Skeleton for lists, spinner for buttons | Skeletons reduce layout shift; spinners show action feedback |
-| ADR-007 | File Organization | Feature-based folders | `/training/`, `/breeding/` keep related code together |
-| ADR-008 | Test Organization | Colocated with components | Tests next to source for easy maintenance |
+| ADR     | Decision          | Choice                                  | Rationale                                                    |
+| ------- | ----------------- | --------------------------------------- | ------------------------------------------------------------ |
+| ADR-005 | Error Display     | Toast for mutations, inline for forms   | Toasts don't block UI; inline errors guide form correction   |
+| ADR-006 | Loading States    | Skeleton for lists, spinner for buttons | Skeletons reduce layout shift; spinners show action feedback |
+| ADR-007 | File Organization | Feature-based folders                   | `/training/`, `/breeding/` keep related code together        |
+| ADR-008 | Test Organization | Colocated with components               | Tests next to source for easy maintenance                    |
 
 ### Inherited Decisions (From Existing Stack)
 
-| Category | Decision | Source |
-|----------|----------|--------|
-| Database | PostgreSQL 15+ with Prisma 5 ORM | Production backend |
-| Data Validation | Zod schemas (frontend) + Express validators (backend) | Existing patterns |
-| Authentication | HttpOnly cookies with 15-min access tokens | Backend implemented |
-| Authorization | Role-based (User/Admin) via middleware | Backend implemented |
-| API Style | REST with JSON, standardized response format | 130+ existing endpoints |
-| State Management | React Query v5 (TanStack Query) | ADR-001 |
-| Styling | TailwindCSS 3.x + Radix UI primitives | Existing frontend |
-| Build | Vite 5 with React 18 | Existing frontend |
-| Testing | Jest 29 + React Testing Library | 942+ existing tests |
+| Category         | Decision                                              | Source                  |
+| ---------------- | ----------------------------------------------------- | ----------------------- |
+| Database         | PostgreSQL 15+ with Prisma 5 ORM                      | Production backend      |
+| Data Validation  | Zod schemas (frontend) + Express validators (backend) | Existing patterns       |
+| Authentication   | HttpOnly cookies with 15-min access tokens            | Backend implemented     |
+| Authorization    | Role-based (User/Admin) via middleware                | Backend implemented     |
+| API Style        | REST with JSON, standardized response format          | 130+ existing endpoints |
+| State Management | React Query v5 (TanStack Query)                       | ADR-001                 |
+| Styling          | TailwindCSS 3.x + Radix UI primitives                 | Existing frontend       |
+| Build            | Vite 5 with React 18                                  | Existing frontend       |
+| Testing          | Jest 29 + React Testing Library                       | 942+ existing tests     |
 
 ### File Structure Pattern
 
@@ -332,39 +335,40 @@ _Step 5 - Enhanced through 5 elicitation methods with party agent review_
 
 ### Critical Rules (Must Follow)
 
-| Rule | Rationale |
-|------|-----------|
+| Rule                        | Rationale                                                              |
+| --------------------------- | ---------------------------------------------------------------------- |
 | **NEVER use raw `fetch()`** | Always use `apiRequest()` from `lib/api.ts` - ensures cookies included |
-| **No `any` types** | TypeScript strict mode - find proper type or use `unknown` |
-| **No `@ts-ignore`** | Fix the type issue instead of suppressing |
-| **No direct API URLs** | All endpoints go through centralized client |
+| **No `any` types**          | TypeScript strict mode - find proper type or use `unknown`             |
+| **No `@ts-ignore`**         | Fix the type issue instead of suppressing                              |
+| **No direct API URLs**      | All endpoints go through centralized client                            |
 
 ### Naming Patterns
 
 **API Client Functions:**
+
 ```typescript
 // Queries (GET)
-fetchHorses()           // List all
-fetchHorseById(id)      // Single by ID
-fetchTrainingStatus(horseId)  // Nested resource
+fetchHorses(); // List all
+fetchHorseById(id); // Single by ID
+fetchTrainingStatus(horseId); // Nested resource
 
 // Mutations (POST/PUT/DELETE)
-createTrainingSession(data)
-updateHorse(id, data)
-deleteBreedingRecord(id)
+createTrainingSession(data);
+updateHorse(id, data);
+deleteBreedingRecord(id);
 ```
 
 **React Query Keys:**
+
 ```typescript
 // Pattern: ['domain', ...identifiers]
-['horses']                      // All horses
-['horses', horseId]             // Single horse
-['training', horseId, 'status'] // Nested resource
-['currentUser']                 // Singleton
-['breeding', 'predictions', mareId, stallionId]  // Compound
+['horses'][('horses', horseId)][('training', horseId, 'status')]['currentUser'][ // All horses // Single horse // Nested resource // Singleton
+  ('breeding', 'predictions', mareId, stallionId)
+]; // Compound
 ```
 
 **Component & File Naming:**
+
 ```
 ComponentName.tsx       # PascalCase for components
 ComponentName.test.tsx  # Colocated test
@@ -375,6 +379,7 @@ api.ts                  # lowercase for utilities
 ### Import Patterns
 
 **Import Order (enforced by ESLint):**
+
 ```typescript
 // 1. React
 import React, { useState, useEffect } from 'react';
@@ -395,6 +400,7 @@ import type { Horse, TrainingSession } from '@/types';
 ```
 
 **Barrel Exports for Hooks:**
+
 ```typescript
 // hooks/api/index.ts
 export { useAuth, useLogin, useLogout, useCurrentUser } from './useAuth';
@@ -407,14 +413,15 @@ import { useAuth, useTraining } from '@/hooks/api';
 
 ### Error Handling Hierarchy
 
-| Error Type | Source | Display Method | Example |
-|------------|--------|----------------|---------|
-| **Validation** | Zod schema | Inline under field | "Email is required" |
-| **API 4xx** | Backend validation | Inline OR Toast | "Email already exists" |
-| **API 5xx** | Server error | Toast only | "Server error, please retry" |
-| **Network** | Connection failed | Toast + Retry button | "Network error" |
+| Error Type     | Source             | Display Method       | Example                      |
+| -------------- | ------------------ | -------------------- | ---------------------------- |
+| **Validation** | Zod schema         | Inline under field   | "Email is required"          |
+| **API 4xx**    | Backend validation | Inline OR Toast      | "Email already exists"       |
+| **API 5xx**    | Server error       | Toast only           | "Server error, please retry" |
+| **Network**    | Connection failed  | Toast + Retry button | "Network error"              |
 
 **Implementation:**
+
 ```typescript
 // Zod validation → Inline
 const result = schema.safeParse(formData);
@@ -440,12 +447,12 @@ const { mutate } = useMutation({
 
 ### Loading State Patterns
 
-| Context | Pattern | Component |
-|---------|---------|-----------|
-| **List loading** | Skeleton | `<HorseListSkeleton count={5} />` |
-| **Button action** | Spinner + disabled | `<Button disabled={isPending}>` |
-| **Page loading** | Full skeleton | `<PageSkeleton />` |
-| **Inline refresh** | Subtle spinner | Background refetch indicator |
+| Context            | Pattern            | Component                         |
+| ------------------ | ------------------ | --------------------------------- |
+| **List loading**   | Skeleton           | `<HorseListSkeleton count={5} />` |
+| **Button action**  | Spinner + disabled | `<Button disabled={isPending}>`   |
+| **Page loading**   | Full skeleton      | `<PageSkeleton />`                |
+| **Inline refresh** | Subtle spinner     | Background refetch indicator      |
 
 ### Optimistic Update Pattern
 
@@ -480,6 +487,7 @@ const { mutate } = useMutation({
 ### Testing Patterns
 
 **API Mocking with MSW:**
+
 ```typescript
 // test/mocks/handlers.ts
 import { http, HttpResponse } from 'msw';
@@ -490,18 +498,16 @@ export const handlers = [
     if (email === 'test@example.com') {
       return HttpResponse.json({
         status: 'success',
-        data: { user: { id: '1', email } }
+        data: { user: { id: '1', email } },
       });
     }
-    return HttpResponse.json(
-      { status: 'error', message: 'Invalid credentials' },
-      { status: 401 }
-    );
+    return HttpResponse.json({ status: 'error', message: 'Invalid credentials' }, { status: 401 });
   }),
 ];
 ```
 
 **Test Data Factories:**
+
 ```typescript
 // test/factories/horse.ts
 export const createMockHorse = (overrides = {}): Horse => ({
@@ -518,6 +524,7 @@ const horse = createMockHorse({ name: 'Custom Name' });
 ```
 
 **Component Test Pattern:**
+
 ```typescript
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -588,14 +595,14 @@ const LoginPage = () => {
 
 ### Anti-Patterns (Never Do)
 
-| Anti-Pattern | Why It's Bad | Correct Pattern |
-|--------------|--------------|-----------------|
-| `fetch('/api/...')` | Missing credentials | `apiRequest('/api/...')` |
-| `any` type | Loses type safety | Find correct type |
-| `// @ts-ignore` | Hides real issues | Fix the type |
-| `useState` for server data | No caching/sync | `useQuery` |
-| Inline styles | Hard to maintain | Tailwind classes |
-| `console.log` in production | Performance/security | Remove or use logger |
+| Anti-Pattern                | Why It's Bad         | Correct Pattern          |
+| --------------------------- | -------------------- | ------------------------ |
+| `fetch('/api/...')`         | Missing credentials  | `apiRequest('/api/...')` |
+| `any` type                  | Loses type safety    | Find correct type        |
+| `// @ts-ignore`             | Hides real issues    | Fix the type             |
+| `useState` for server data  | No caching/sync      | `useQuery`               |
+| Inline styles               | Hard to maintain     | Tailwind classes         |
+| `console.log` in production | Performance/security | Remove or use logger     |
 
 ---
 
@@ -730,17 +737,17 @@ frontend/src/
 
 ### Requirements to Structure Mapping
 
-| Requirement | Primary Location | Supporting Files |
-|-------------|------------------|------------------|
-| **Login** | `pages/LoginPage.tsx` | `hooks/api/useAuth.ts`, `lib/schemas.ts` |
-| **Register** | `pages/RegisterPage.tsx` | `components/auth/PasswordStrength.tsx` |
-| **Password Reset** | `pages/ForgotPasswordPage.tsx`, `ResetPasswordPage.tsx` | `hooks/api/useAuth.ts` |
-| **Email Verify** | `pages/EmailVerificationPage.tsx` | `hooks/api/useAuth.ts` |
-| **Training Dashboard** | `components/training/TrainingDashboard.tsx` | `hooks/api/useTraining.ts` |
-| **Training Session** | `components/training/TrainingSessionModal.tsx` | `DisciplineSelector.tsx` |
-| **Breeding Center** | `components/breeding/BreedingCenter.tsx` | `hooks/api/useBreeding.ts` |
-| **Pair Selection** | `components/breeding/BreedingPairSelector.tsx` | `TraitBadge.tsx` |
-| **Foal Tracking** | `components/breeding/FoalDevelopmentTracker.tsx` | `hooks/api/useBreeding.ts` |
+| Requirement            | Primary Location                                        | Supporting Files                         |
+| ---------------------- | ------------------------------------------------------- | ---------------------------------------- |
+| **Login**              | `pages/LoginPage.tsx`                                   | `hooks/api/useAuth.ts`, `lib/schemas.ts` |
+| **Register**           | `pages/RegisterPage.tsx`                                | `components/auth/PasswordStrength.tsx`   |
+| **Password Reset**     | `pages/ForgotPasswordPage.tsx`, `ResetPasswordPage.tsx` | `hooks/api/useAuth.ts`                   |
+| **Email Verify**       | `pages/EmailVerificationPage.tsx`                       | `hooks/api/useAuth.ts`                   |
+| **Training Dashboard** | `components/training/TrainingDashboard.tsx`             | `hooks/api/useTraining.ts`               |
+| **Training Session**   | `components/training/TrainingSessionModal.tsx`          | `DisciplineSelector.tsx`                 |
+| **Breeding Center**    | `components/breeding/BreedingCenter.tsx`                | `hooks/api/useBreeding.ts`               |
+| **Pair Selection**     | `components/breeding/BreedingPairSelector.tsx`          | `TraitBadge.tsx`                         |
+| **Foal Tracking**      | `components/breeding/FoalDevelopmentTracker.tsx`        | `hooks/api/useBreeding.ts`               |
 
 ### Architectural Boundaries
 
@@ -822,20 +829,20 @@ import { TrainingDashboard, TrainingCard } from '@/components/training';
 
 ### File Count Summary
 
-| Category | Files | Tests | Total |
-|----------|-------|-------|-------|
-| Pages | 5 | 5 | 10 |
-| Auth Components | 2 | 2 | 4 |
-| Training Components | 4 | 4 | 8 |
-| Breeding Components | 4 | 4 | 8 |
-| Shared Components | 4 | 1 | 5 |
-| Stable Components | 1 | 1 | 2 |
-| Contexts | 1 | 1 | 2 |
-| Hooks | 4 | 4 | 8 |
-| Lib | 4 | 1 | 5 |
-| Types | 5 | 0 | 5 |
-| Test Utils | 5 | 0 | 5 |
-| **TOTAL** | **39** | **23** | **62** |
+| Category            | Files  | Tests  | Total  |
+| ------------------- | ------ | ------ | ------ |
+| Pages               | 5      | 5      | 10     |
+| Auth Components     | 2      | 2      | 4      |
+| Training Components | 4      | 4      | 8      |
+| Breeding Components | 4      | 4      | 8      |
+| Shared Components   | 4      | 1      | 5      |
+| Stable Components   | 1      | 1      | 2      |
+| Contexts            | 1      | 1      | 2      |
+| Hooks               | 4      | 4      | 8      |
+| Lib                 | 4      | 1      | 5      |
+| Types               | 5      | 0      | 5      |
+| Test Utils          | 5      | 0      | 5      |
+| **TOTAL**           | **39** | **23** | **62** |
 
 ### Future Extensibility
 
@@ -866,27 +873,28 @@ _Step 7 - Comprehensive validation completed_
 
 ### Requirements Coverage ✅
 
-| Requirement Category | Coverage | Components |
-|---------------------|----------|------------|
-| Authentication UI | 100% | 5 pages + AuthContext |
-| Training UI | 100% | Dashboard + Modal + Selector |
-| Breeding UI | 100% | Center + Selector + Tracker |
-| API Integration | 100% | lib/api.ts + 4 hook files |
-| Test Infrastructure | 100% | MSW + factories + setup |
+| Requirement Category | Coverage | Components                   |
+| -------------------- | -------- | ---------------------------- |
+| Authentication UI    | 100%     | 5 pages + AuthContext        |
+| Training UI          | 100%     | Dashboard + Modal + Selector |
+| Breeding UI          | 100%     | Center + Selector + Tracker  |
+| API Integration      | 100%     | lib/api.ts + 4 hook files    |
+| Test Infrastructure  | 100%     | MSW + factories + setup      |
 
 ### Implementation Readiness ✅
 
-| Criterion | Status |
-|-----------|--------|
-| All critical decisions documented | ✅ 8 ADRs |
-| Implementation patterns comprehensive | ✅ 15+ patterns |
-| Code examples provided | ✅ Every pattern |
-| Project structure complete | ✅ 62 files mapped |
-| Boundaries clearly defined | ✅ Diagram + flow |
+| Criterion                             | Status             |
+| ------------------------------------- | ------------------ |
+| All critical decisions documented     | ✅ 8 ADRs          |
+| Implementation patterns comprehensive | ✅ 15+ patterns    |
+| Code examples provided                | ✅ Every pattern   |
+| Project structure complete            | ✅ 62 files mapped |
+| Boundaries clearly defined            | ✅ Diagram + flow  |
 
 ### Architecture Completeness Checklist
 
 **✅ Requirements Analysis**
+
 - [x] Project context analyzed (10 PRD documents)
 - [x] Scale assessed (Medium complexity)
 - [x] Technical constraints identified (5 constraints)
@@ -894,6 +902,7 @@ _Step 7 - Comprehensive validation completed_
 - [x] Risk mitigations defined (5 risks)
 
 **✅ Architectural Decisions**
+
 - [x] ADR-001: State Management → React Query
 - [x] ADR-002: Form Handling → useState + Zod
 - [x] ADR-003: Auth Storage → HttpOnly cookies
@@ -904,6 +913,7 @@ _Step 7 - Comprehensive validation completed_
 - [x] ADR-008: Test Organization → Colocated
 
 **✅ Implementation Patterns**
+
 - [x] Naming conventions (API, Query keys, Components, Files)
 - [x] Import patterns (Order, Barrel exports)
 - [x] Error handling hierarchy (Validation/4xx/5xx/Network)
@@ -914,6 +924,7 @@ _Step 7 - Comprehensive validation completed_
 - [x] Anti-patterns documented
 
 **✅ Project Structure**
+
 - [x] Complete directory structure (62 files)
 - [x] Component boundaries established
 - [x] Dependency flow documented (one-way)
@@ -922,25 +933,27 @@ _Step 7 - Comprehensive validation completed_
 
 ### Validation Metrics
 
-| Metric | Value |
-|--------|-------|
-| ADRs Documented | 8 |
-| Patterns Defined | 15+ |
-| Files Mapped | 62 |
-| Elicitation Methods Used | 15 |
-| Party Agent Reviews | 5 |
-| Requirements Covered | 100% |
+| Metric                   | Value |
+| ------------------------ | ----- |
+| ADRs Documented          | 8     |
+| Patterns Defined         | 15+   |
+| Files Mapped             | 62    |
+| Elicitation Methods Used | 15    |
+| Party Agent Reviews      | 5     |
+| Requirements Covered     | 100%  |
 
 ### Architecture Readiness Assessment
 
 **Overall Status:** 🟢 READY FOR IMPLEMENTATION
 
 **Confidence Level:** HIGH
+
 - Validated through 15 elicitation methods
 - Reviewed by 5 party agents (Architect, Developer, PM, Test Architect, UX Designer)
 - All conflicts and gaps resolved
 
 **Key Strengths:**
+
 1. Thin UI layer - simple "fetch → render → mutate → invalidate" pattern
 2. Single auth boundary - all cookies in `lib/api.ts`
 3. Feature-based organization - easy navigation
@@ -997,15 +1010,15 @@ PHASE 5 - Polish:
 
 ### Quick Reference for Agents
 
-| Question | Answer |
-|----------|--------|
-| Where do auth pages go? | `frontend/src/pages/` |
-| Where do training components go? | `frontend/src/components/training/` |
-| Where do API hooks go? | `frontend/src/hooks/api/` |
-| How to make API calls? | `import { apiRequest } from '@/lib/api'` |
-| How to validate forms? | Zod schema → `safeParse()` → show errors |
-| How to handle loading? | `if (isLoading) return <Skeleton />` |
-| How to handle errors? | Validation=inline, API=toast, 5xx=toast |
+| Question                         | Answer                                   |
+| -------------------------------- | ---------------------------------------- |
+| Where do auth pages go?          | `frontend/src/pages/`                    |
+| Where do training components go? | `frontend/src/components/training/`      |
+| Where do API hooks go?           | `frontend/src/hooks/api/`                |
+| How to make API calls?           | `import { apiRequest } from '@/lib/api'` |
+| How to validate forms?           | Zod schema → `safeParse()` → show errors |
+| How to handle loading?           | `if (isLoading) return <Skeleton />`     |
+| How to handle errors?            | Validation=inline, API=toast, 5xx=toast  |
 
 ---
 
@@ -1015,28 +1028,31 @@ _Step 8 - Workflow finalized_
 
 ### Workflow Completion
 
-| Metric | Value |
-|--------|-------|
-| **Status** | ✅ COMPLETE |
-| **Steps Completed** | 8/8 |
-| **Date Completed** | 2025-12-02 |
+| Metric                | Value                  |
+| --------------------- | ---------------------- |
+| **Status**            | ✅ COMPLETE            |
+| **Steps Completed**   | 8/8                    |
+| **Date Completed**    | 2025-12-02             |
 | **Document Location** | `docs/architecture.md` |
 
 ### Final Deliverables
 
 **📋 Architecture Decision Document**
+
 - 8 ADRs with clear rationale
 - 15+ implementation patterns
 - 62 files mapped in project structure
 - 100% requirements coverage
 
 **🔧 AI Agent Implementation Guide**
+
 - Technology stack with verified versions
 - Consistency rules preventing conflicts
 - Code examples for every pattern
 - Anti-patterns to avoid
 
 **✅ Validation Results**
+
 - Coherence: All decisions compatible
 - Coverage: All requirements supported
 - Readiness: Implementation-ready
@@ -1050,14 +1066,14 @@ _Step 8 - Workflow finalized_
 
 ### Document Stats
 
-| Category | Count |
-|----------|-------|
-| PRD Documents Analyzed | 10 |
-| ADRs Created | 8 |
-| Patterns Defined | 15+ |
-| Files Mapped | 62 |
-| Elicitation Methods Used | 15 |
-| Party Agent Reviews | 3 rounds |
+| Category                 | Count    |
+| ------------------------ | -------- |
+| PRD Documents Analyzed   | 10       |
+| ADRs Created             | 8        |
+| Patterns Defined         | 15+      |
+| Files Mapped             | 62       |
+| Elicitation Methods Used | 15       |
+| Party Agent Reviews      | 3 rounds |
 
 ---
 

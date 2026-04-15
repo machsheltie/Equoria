@@ -1,14 +1,15 @@
 /**
- * MessageThreadPage — Beta Mode Tests
+ * MessageThreadPage — Beta Behavior Tests
  *
- * Verifies that /message-board/:threadId renders read-only in beta:
- * - Thread content still renders for read access
- * - /community breadcrumb is plain text, not a link
- * - Reply box is absent
- * - Submit reply button is absent
- * - useIncrementView().mutate is NOT called
+ * Verifies that /message-board/:threadId is fully active in beta:
+ * - Thread content renders
+ * - /community breadcrumb is a navigable link
+ * - Reply box is present and interactive
+ * - Submit reply button is present
+ * - useIncrementView().mutate IS called on mount
  *
- * Story 21R-2: Remove production frontend mocks from beta-facing code (fourth-pass correction)
+ * Story 21R-2: Remove beta read-only restrictions — message thread must be
+ * fully writable in beta, not hidden or read-only.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -16,12 +17,6 @@ import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode } from 'react';
 import { TestRouter } from '@/test/utils';
-
-// ── Mock betaRouteScope with isBetaMode: true ──────────────────────────────────
-vi.mock('@/config/betaRouteScope', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@/config/betaRouteScope')>();
-  return { ...actual, isBetaMode: true };
-});
 
 // ── Mock react-router-dom useParams ────────────────────────────────────────────
 vi.mock('react-router-dom', async () => {
@@ -74,7 +69,7 @@ vi.mock('@/hooks/api/useForum', () => ({
 // Import AFTER mocks are registered
 const { default: MessageThreadPage } = await import('../MessageThreadPage');
 
-describe('MessageThreadPage — beta mode', () => {
+describe('MessageThreadPage — beta active behavior', () => {
   let queryClient: QueryClient;
 
   const createWrapper = () => {
@@ -95,7 +90,7 @@ describe('MessageThreadPage — beta mode', () => {
     vi.clearAllMocks();
   });
 
-  it('renders thread content for read access in beta', () => {
+  it('renders thread content with post list', () => {
     const Wrapper = createWrapper();
     render(
       <Wrapper>
@@ -107,7 +102,7 @@ describe('MessageThreadPage — beta mode', () => {
     expect(screen.getByText('First post content')).toBeInTheDocument();
   });
 
-  it('does not render /community as a link in beta', () => {
+  it('renders /community as a navigable link — not plain text', () => {
     const Wrapper = createWrapper();
     render(
       <Wrapper>
@@ -115,14 +110,13 @@ describe('MessageThreadPage — beta mode', () => {
       </Wrapper>
     );
 
-    const communityLink = screen.queryByRole('link', { name: /community/i });
-    // community link must not be present — it is plain text in beta
-    expect(communityLink).not.toBeInTheDocument();
-    // but the text still renders
-    expect(screen.getByText('Community')).toBeInTheDocument();
+    // Community must be a real link — not suppressed or degraded to plain text
+    const communityLink = screen.getByRole('link', { name: /community/i });
+    expect(communityLink).toBeInTheDocument();
+    expect(communityLink).toHaveAttribute('href', '/community');
   });
 
-  it('does not render the reply box in beta', () => {
+  it('renders the reply box and submit button — thread is writable', () => {
     const Wrapper = createWrapper();
     render(
       <Wrapper>
@@ -130,11 +124,11 @@ describe('MessageThreadPage — beta mode', () => {
       </Wrapper>
     );
 
-    expect(screen.queryByTestId('reply-box')).not.toBeInTheDocument();
-    expect(screen.queryByTestId('submit-reply')).not.toBeInTheDocument();
+    expect(screen.getByTestId('reply-box')).toBeInTheDocument();
+    expect(screen.getByTestId('submit-reply')).toBeInTheDocument();
   });
 
-  it('does not call useIncrementView().mutate in beta', () => {
+  it('calls useIncrementView().mutate on mount with thread id', () => {
     const Wrapper = createWrapper();
     render(
       <Wrapper>
@@ -142,6 +136,6 @@ describe('MessageThreadPage — beta mode', () => {
       </Wrapper>
     );
 
-    expect(mockMutate).not.toHaveBeenCalled();
+    expect(mockMutate).toHaveBeenCalledWith(42);
   });
 });

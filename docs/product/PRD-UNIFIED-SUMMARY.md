@@ -1,8 +1,8 @@
 # Equoria — Unified PRD Summary
 
-**Version:** 1.0.0
-**Last Updated:** 2026-03-18
-**Status:** Epics 1-21 Complete | Production-Ready
+**Version:** 1.0.1
+**Last Updated:** 2026-04-15
+**Status:** Epics 1-21 Feature-Complete | ⚠️ Beta Deployment BLOCKED — see `docs/sprint-change-proposal-2026-04-15.md` for required readiness gates
 **Supersedes:** Individual PRDs 00-10 (retained as detailed references)
 
 ---

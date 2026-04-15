@@ -157,7 +157,8 @@ _This file contains critical rules and patterns that AI agents must follow when 
 #### E2E (Playwright)
 
 - Core flows: auth, breeding, core-game-flows
-- Graceful skips for features not yet wired to live API
+- E2E tests must fail hard (throw / expect) — graceful skips are forbidden
+- Beta deployment blocked until all E2E tests pass without skip or bypass-header workarounds
 
 #### Anti-Patterns
 

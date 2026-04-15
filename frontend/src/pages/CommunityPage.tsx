@@ -76,8 +76,8 @@ const CommunityPageContent: React.FC = () => {
       accent: 'bg-amber-500/10 border-amber-500/30',
       borderAccent: 'hover:border-amber-500/50',
       stats: [
-        { label: 'Inductees', value: '3' },
-        { label: 'Total wins', value: '47' },
+        { label: 'Inductees', value: '…' },
+        { label: 'Total wins', value: '…' },
       ],
     },
   ];
@@ -142,17 +142,29 @@ const CommunityPageContent: React.FC = () => {
           ))}
         </div>
 
-        {/* Community Stats Banner */}
+        {/* Community Stats Banner — live stats where available, honest empty state otherwise */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-10">
           {[
-            { label: 'Community Members', value: '1,284', icon: <Users className="w-4 h-4" /> },
-            { label: 'Active Clubs', value: '13', icon: <Trophy className="w-4 h-4" /> },
             {
-              label: 'Board Posts Today',
-              value: '47',
+              label: 'Active Threads',
+              value: threadTotal > 0 ? String(threadTotal) : '…',
               icon: <MessageSquare className="w-4 h-4" />,
             },
-            { label: 'Messages Sent Today', value: '215', icon: <Mail className="w-4 h-4" /> },
+            {
+              label: 'Discipline Clubs',
+              value: disciplineCount > 0 ? String(disciplineCount) : '…',
+              icon: <Trophy className="w-4 h-4" />,
+            },
+            {
+              label: 'Breed Clubs',
+              value: breedCount > 0 ? String(breedCount) : '…',
+              icon: <Users className="w-4 h-4" />,
+            },
+            {
+              label: 'Unread Messages',
+              value: String(unreadCount),
+              icon: <Mail className="w-4 h-4" />,
+            },
           ].map((stat) => (
             <div
               key={stat.label}

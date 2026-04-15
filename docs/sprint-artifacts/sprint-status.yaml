@@ -1,6 +1,11 @@
 # Sprint Status - Equoria Frontend Implementation
 # Generated: 2025-12-03
 # Source: docs/epics.md
+#
+# ⚠️  BETA DEPLOYMENT STATUS: BLOCKED (2026-04-15)
+# Active correction sprint: 21R-2 (docs/sprint-change-proposal-2026-04-15.md)
+# Beta launch is blocked until all P0 and P1 items in the change proposal pass.
+# Do not remove this block comment until the readiness gate document is satisfied.
 
 # Definition of Done (updated 2026-02-17, action-6-4)
 # A story is COMPLETE when ALL of the following are true:

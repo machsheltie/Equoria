@@ -720,7 +720,7 @@ describe('TrainingSessionModal', () => {
       expect(screen.getByText('Base Gain:')).toBeInTheDocument();
     });
 
-    it('renders "Learn More" icon button', () => {
+    it('does not render a no-op "Learn more about traits" button (removed — no implementation)', () => {
       render(
         <TrainingSessionModal
           horse={mockHorse}
@@ -729,8 +729,9 @@ describe('TrainingSessionModal', () => {
         />
       );
 
-      const learnMoreButton = screen.getByRole('button', { name: /Learn more about traits/i });
-      expect(learnMoreButton).toBeInTheDocument();
+      expect(
+        screen.queryByRole('button', { name: /Learn more about traits/i })
+      ).not.toBeInTheDocument();
     });
 
     it('renders section with correct heading "Trait Modifiers"', () => {
@@ -962,7 +963,7 @@ describe('TrainingSessionModal', () => {
   });
 
   describe('Trait Interaction Tests', () => {
-    it('"Learn More" icon button is clickable without error in non-beta mode', () => {
+    it('trait section renders with modifier list content', () => {
       render(
         <TrainingSessionModal
           horse={mockHorse}
@@ -971,25 +972,11 @@ describe('TrainingSessionModal', () => {
         />
       );
 
-      const learnMoreButton = screen.getByRole('button', { name: /Learn more about traits/i });
-      // Button is present and clicking it does not throw
-      expect(() => fireEvent.click(learnMoreButton)).not.toThrow();
-    });
-
-    it('TraitModifierList receives onLearnMore callback prop', () => {
-      // This is verified by the component working without errors
-      // The TraitModifierList should render with the callback
-      render(
-        <TrainingSessionModal
-          horse={mockHorse}
-          onClose={mockOnClose}
-          onCompleted={mockOnCompleted}
-        />
-      );
-
-      // If TraitModifierList didn't receive onLearnMore, it would still render
-      // but clicking "Learn More" in tooltips wouldn't work
-      // Verify TraitModifierList is rendered with its content
+      // Trait modifiers section is present
+      expect(screen.getByTestId('trait-modifiers-section')).toBeInTheDocument();
+      // Section heading is present
+      expect(screen.getByText('Trait Modifiers')).toBeInTheDocument();
+      // Modifier list renders content
       expect(screen.getByText('Base Gain:')).toBeInTheDocument();
     });
 
@@ -1039,7 +1026,7 @@ describe('TrainingSessionModal', () => {
       });
     });
 
-    it('HelpCircle icon is rendered', () => {
+    it('HelpCircle icon is not rendered (removed — no implementation)', () => {
       render(
         <TrainingSessionModal
           horse={mockHorse}
@@ -1048,8 +1035,7 @@ describe('TrainingSessionModal', () => {
         />
       );
 
-      const helpIcon = screen.getByTestId('help-circle-icon');
-      expect(helpIcon).toBeInTheDocument();
+      expect(screen.queryByTestId('help-circle-icon')).not.toBeInTheDocument();
     });
   });
 

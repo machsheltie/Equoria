@@ -1,6 +1,8 @@
 /**
  * Trainer Marketplace Controller
  * Handles GET /marketplace, POST /marketplace/hire, POST /marketplace/refresh.
+ *
+ * State is persisted in the database (staff_marketplace_state table, staffType='trainer').
  */
 
 import {
@@ -13,7 +15,40 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { recordTransaction } from '../../../services/financialLedgerService.mjs';
 
-const userTrainerMarketplaces = new Map();
+const STAFF_TYPE = 'trainer';
+
+/**
+ * Load (or auto-generate) the persisted marketplace state for a user.
+ */
+async function loadOrCreateMarketplace(userId) {
+  const record = await prisma.staffMarketplaceState.findUnique({
+    where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
+  });
+
+  if (!record || trainerMarketplaceNeedsRefresh(record.lastRefresh)) {
+    const trainers = generateTrainerMarketplace();
+    const refreshCount = (record?.refreshCount ?? 0) + 1;
+    const updated = await prisma.staffMarketplaceState.upsert({
+      where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
+      create: { userId, staffType: STAFF_TYPE, offers: trainers, refreshCount },
+      update: { offers: trainers, lastRefresh: new Date(), refreshCount },
+    });
+    logger.info(
+      `[trainerMarketplace] Generated new marketplace for user ${userId} with ${trainers.length} trainers`,
+    );
+    return {
+      offers: updated.offers,
+      lastRefresh: updated.lastRefresh,
+      refreshCount: updated.refreshCount,
+    };
+  }
+
+  return {
+    offers: record.offers,
+    lastRefresh: record.lastRefresh,
+    refreshCount: record.refreshCount,
+  };
+}
 
 /**
  * GET /api/trainers/marketplace
@@ -21,34 +56,24 @@ const userTrainerMarketplaces = new Map();
 export async function getTrainerMarketplace(req, res) {
   try {
     const userId = req.user.id;
-    let userMarketplace = userTrainerMarketplaces.get(userId);
+    const { offers, lastRefresh, refreshCount } = await loadOrCreateMarketplace(userId);
 
-    if (!userMarketplace || trainerMarketplaceNeedsRefresh(userMarketplace.lastRefresh)) {
-      const trainers = generateTrainerMarketplace();
-      userMarketplace = {
-        trainers,
-        lastRefresh: new Date(),
-        refreshCount: (userMarketplace?.refreshCount || 0) + 1,
-      };
-      userTrainerMarketplaces.set(userId, userMarketplace);
-    }
-
-    const nextFreeRefresh = new Date(userMarketplace.lastRefresh);
+    const nextFreeRefresh = new Date(lastRefresh);
     nextFreeRefresh.setHours(
       nextFreeRefresh.getHours() + TRAINER_MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS,
     );
-    const refreshCost = getTrainerRefreshCost(userMarketplace.lastRefresh);
+    const refreshCost = getTrainerRefreshCost(lastRefresh);
 
     res.status(200).json({
       success: true,
       message: 'Trainer marketplace retrieved successfully',
       data: {
-        trainers: userMarketplace.trainers,
-        lastRefresh: userMarketplace.lastRefresh,
+        trainers: offers,
+        lastRefresh,
         nextFreeRefresh,
         refreshCost,
         canRefreshFree: refreshCost === 0,
-        refreshCount: userMarketplace.refreshCount,
+        refreshCount,
       },
     });
   } catch (error) {
@@ -66,8 +91,11 @@ export async function refreshTrainerMarketplace(req, res) {
   try {
     const userId = req.user.id;
     const { force = false } = req.body;
-    const userMarketplace = userTrainerMarketplaces.get(userId);
-    const refreshCost = getTrainerRefreshCost(userMarketplace?.lastRefresh);
+
+    const record = await prisma.staffMarketplaceState.findUnique({
+      where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
+    });
+    const refreshCost = getTrainerRefreshCost(record?.lastRefresh ?? null);
 
     if (refreshCost > 0 && force) {
       const user = await prisma.user.findUnique({ where: { id: userId }, select: { money: true } });
@@ -94,14 +122,14 @@ export async function refreshTrainerMarketplace(req, res) {
     }
 
     const trainers = generateTrainerMarketplace();
-    const newMarketplace = {
-      trainers,
-      lastRefresh: new Date(),
-      refreshCount: (userMarketplace?.refreshCount || 0) + 1,
-    };
-    userTrainerMarketplaces.set(userId, newMarketplace);
+    const refreshCount = (record?.refreshCount ?? 0) + 1;
+    const updated = await prisma.staffMarketplaceState.upsert({
+      where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
+      create: { userId, staffType: STAFF_TYPE, offers: trainers, refreshCount },
+      update: { offers: trainers, lastRefresh: new Date(), refreshCount },
+    });
 
-    const nextFreeRefresh = new Date(newMarketplace.lastRefresh);
+    const nextFreeRefresh = new Date(updated.lastRefresh);
     nextFreeRefresh.setHours(
       nextFreeRefresh.getHours() + TRAINER_MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS,
     );
@@ -110,12 +138,12 @@ export async function refreshTrainerMarketplace(req, res) {
       success: true,
       message: 'Trainer marketplace refreshed successfully',
       data: {
-        trainers: newMarketplace.trainers,
-        lastRefresh: newMarketplace.lastRefresh,
+        trainers: updated.offers,
+        lastRefresh: updated.lastRefresh,
         nextFreeRefresh,
         refreshCost: 0,
         canRefreshFree: true,
-        refreshCount: newMarketplace.refreshCount,
+        refreshCount: updated.refreshCount,
       },
     });
   } catch (error) {
@@ -140,8 +168,10 @@ export async function hireTrainerFromMarketplace(req, res) {
         .json({ success: false, message: 'marketplaceId is required', data: null });
     }
 
-    const userMarketplace = userTrainerMarketplaces.get(userId);
-    if (!userMarketplace) {
+    const record = await prisma.staffMarketplaceState.findUnique({
+      where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
+    });
+    if (!record) {
       return res.status(404).json({
         success: false,
         message: 'No marketplace found. Please refresh first.',
@@ -149,14 +179,15 @@ export async function hireTrainerFromMarketplace(req, res) {
       });
     }
 
-    const trainerIndex = userMarketplace.trainers.findIndex(t => t.marketplaceId === marketplaceId);
+    const offers = Array.isArray(record.offers) ? record.offers : [];
+    const trainerIndex = offers.findIndex(t => t.marketplaceId === marketplaceId);
     if (trainerIndex === -1) {
       return res
         .status(404)
         .json({ success: false, message: 'Trainer not found in marketplace', data: null });
     }
 
-    const trainerData = userMarketplace.trainers[trainerIndex];
+    const trainerData = offers[trainerIndex];
     const hiringCost = trainerData.sessionRate * 4; // One month of sessions upfront
 
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { money: true } });
@@ -207,8 +238,12 @@ export async function hireTrainerFromMarketplace(req, res) {
       return { newTrainer: trainer, updatedUser: userUpdate };
     });
 
-    userMarketplace.trainers.splice(trainerIndex, 1);
-    userTrainerMarketplaces.set(userId, userMarketplace);
+    // Remove hired trainer from persisted offer list
+    const updatedOffers = offers.filter((_, i) => i !== trainerIndex);
+    await prisma.staffMarketplaceState.update({
+      where: { userId_staffType: { userId, staffType: STAFF_TYPE } },
+      data: { offers: updatedOffers },
+    });
 
     logger.info(
       `[trainerMarketplace] User ${userId} hired trainer ${newTrainer.id} for $${hiringCost}`,

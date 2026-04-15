@@ -66,6 +66,7 @@ model User {
   horsesBought            HorseSale[]              @relation("HorseSalesBought")
   showsCreated            Show[]                   @relation("ShowCreator")
   showEntries             ShowEntry[]              @relation("ShowEntries")
+  staffMarketplaceStates  StaffMarketplaceState[]
 
   @@index([email])
   @@index([emailVerified])
@@ -1338,6 +1339,25 @@ model ShowEntry {
   @@index([horseId])
   @@index([userId])
   @@map("show_entries")
+}
+
+// ── Staff Marketplace State ────────────────────────────────────────────────────
+// Persists per-user marketplace offers and refresh state across server restarts.
+
+model StaffMarketplaceState {
+  id           Int      @id @default(autoincrement())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// 'groom' | 'rider' | 'trainer'
+  staffType    String
+  /// JSON array of currently available staff offers
+  offers       Json     @default("[]")
+  lastRefresh  DateTime @default(now())
+  refreshCount Int      @default(0)
+
+  @@unique([userId, staffType])
+  @@index([userId])
+  @@map("staff_marketplace_state")
 }
 
 // ── BB-1: Foal age stage enum ──────────────────────────────────────────────────

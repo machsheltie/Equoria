@@ -74,7 +74,7 @@ const LoginPage: React.FC = () => {
             <h2 className="fantasy-header text-xl" style={{ color: 'var(--gold-500)' }}>
               Welcome Back
             </h2>
-            <p className="text-xs text-[rgb(148,163,184)]">
+            <p className="text-xs text-[var(--text-secondary)]">
               Enter your credentials to continue playing
             </p>
           </div>
@@ -91,7 +91,7 @@ const LoginPage: React.FC = () => {
             <div className="space-y-1">
               <label
                 htmlFor="email"
-                className="block text-xs text-[rgb(148,163,184)] uppercase tracking-wider"
+                className="block text-xs text-[var(--text-secondary)] uppercase tracking-wider"
               >
                 Email Address
               </label>
@@ -118,7 +118,7 @@ const LoginPage: React.FC = () => {
             <div className="space-y-1">
               <label
                 htmlFor="password"
-                className="block text-xs text-[rgb(148,163,184)] uppercase tracking-wider"
+                className="block text-xs text-[var(--text-secondary)] uppercase tracking-wider"
               >
                 Password
               </label>
@@ -152,7 +152,7 @@ const LoginPage: React.FC = () => {
             <div className="text-right">
               <Link
                 to="/forgot-password"
-                className="text-xs text-[rgb(148,163,184)] hover:text-white transition-colors"
+                className="text-xs text-[var(--text-secondary)] hover:text-white transition-colors"
               >
                 Forgot Your Password?
               </Link>
