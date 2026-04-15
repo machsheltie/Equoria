@@ -6,7 +6,7 @@ info:
   contact:
     name: 'Equoria Team'
   x-generated:
-    timestamp: '2026-04-15T10:02:03.064Z'
+    timestamp: '2026-04-15T10:15:32.663Z'
     endpointCount: 2
     schemaCount: 2
     generator: ApiDocumentationService
@@ -760,8 +760,8 @@ components:
           timestamp: { type: string, format: date-time },
         }
       required: [id, name]
-      registeredAt: '2026-04-15T10:02:02.466Z'
+      registeredAt: '2026-04-15T10:15:32.330Z'
     CreateTestSchema:
       type: object
       properties: { name: { type: string } }
-      registeredAt: '2026-04-15T10:02:03.026Z'
+      registeredAt: '2026-04-15T10:15:32.639Z'

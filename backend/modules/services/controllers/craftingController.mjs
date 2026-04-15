@@ -43,6 +43,17 @@ function getMaterials(settings) {
   };
 }
 
+function hasCraftingMaterials(settings) {
+  return Boolean(
+    settings &&
+      typeof settings === 'object' &&
+      settings.craftingMaterials &&
+      typeof settings.craftingMaterials === 'object',
+  );
+}
+
+const STARTER_CRAFTING_MATERIALS = { leather: 2, cloth: 2, dye: 1, metal: 0, thread: 1 };
+
 /**
  * Returns the workshop tier from User.settings (integer 0-3).
  * @param {object|null} settings
@@ -111,7 +122,22 @@ export async function getMaterials_endpoint(req, res) {
       return res.status(404).json({ success: false, message: 'User not found' });
     }
 
-    const materials = getMaterials(user.settings);
+    let materials = getMaterials(user.settings);
+    if (!hasCraftingMaterials(user.settings)) {
+      const existingSettings =
+        user.settings && typeof user.settings === 'object' ? user.settings : {};
+      await prisma.user.update({
+        where: { id: userId },
+        data: {
+          settings: {
+            ...existingSettings,
+            craftingMaterials: STARTER_CRAFTING_MATERIALS,
+            workshopTier: getWorkshopTier(existingSettings),
+          },
+        },
+      });
+      materials = STARTER_CRAFTING_MATERIALS;
+    }
     const workshopTier = getWorkshopTier(user.settings);
 
     logger.info(`[craftingController] getMaterials for user ${userId}`);

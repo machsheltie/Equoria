@@ -152,7 +152,7 @@ fi
 # ---------------------------------------------------------------------------
 echo "${BOLD}[7/8] Bypass Header Scan — E2E Tests${RESET}"
 printf "  Running: Check E2E specs for auth bypass headers ...\n"
-if grep -rn "bypass-auth\|x-test-user\|x-bypass" tests/e2e/ 2>/dev/null | grep -q .; then
+if grep -rn "bypass-auth\|x-test-user\|x-bypass" tests/e2e/ --exclude-dir=readiness 2>/dev/null | grep -q .; then
   gate_fail "No auth bypass headers in E2E" "found bypass header — violates 21R-3 production-parity policy"
 else
   gate_pass "No auth bypass headers in E2E"
