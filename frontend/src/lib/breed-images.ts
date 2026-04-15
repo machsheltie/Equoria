@@ -10,28 +10,31 @@ import type { CSSProperties } from 'react';
 
 /** Map of breed names (lowercase) to placeholder image paths */
 const BREED_PLACEHOLDERS: Record<string, string> = {
+  // Images that exist in /public/images/breeds/
   thoroughbred: '/images/breeds/thoroughbred.png',
-  'quarter horse': '/images/breeds/quarter-horse.png',
   arabian: '/images/breeds/arabian.png',
   warmblood: '/images/breeds/warmblood.png',
   'dutch warmblood': '/images/breeds/warmblood.png',
   hanoverian: '/images/breeds/warmblood.png',
   oldenburg: '/images/breeds/warmblood.png',
   trakehner: '/images/breeds/warmblood.png',
-  andalusian: '/images/breeds/andalusian.png',
-  friesian: '/images/breeds/friesian.png',
-  mustang: '/images/breeds/mustang.png',
-  appaloosa: '/images/breeds/appaloosa.png',
-  'paint horse': '/images/breeds/paint.png',
-  morgan: '/images/breeds/morgan.png',
-  'tennessee walking horse': '/images/breeds/walking-horse.png',
+  friesian: '/images/breeds/friesian.jpg',
+  morgan: '/images/breeds/morgan.webp',
+  lusitano: '/images/breeds/lusitano.webp',
   saddlebred: '/images/breeds/american_saddlebred.png',
   'american saddlebred': '/images/breeds/american_saddlebred.png',
-  standardbred: '/images/breeds/standardbred.png',
-  clydesdale: '/images/breeds/clydesdale.png',
-  percheron: '/images/breeds/percheron.png',
-  shire: '/images/breeds/shire.png',
   'american cream draft': '/images/breeds/american_cream_draft.png',
+  // These breeds need images added to /public/images/breeds/ to show something other than placeholder
+  // 'quarter horse': '/images/breeds/quarter-horse.png',
+  // andalusian: '/images/breeds/andalusian.png',
+  // mustang: '/images/breeds/mustang.png',
+  // appaloosa: '/images/breeds/appaloosa.png',
+  // 'paint horse': '/images/breeds/paint.png',
+  // 'tennessee walking horse': '/images/breeds/walking-horse.png',
+  // standardbred: '/images/breeds/standardbred.png',
+  // clydesdale: '/images/breeds/clydesdale.png',
+  // percheron: '/images/breeds/percheron.png',
+  // shire: '/images/breeds/shire.png',
 };
 
 const GENERIC_PLACEHOLDER = '/placeholder.svg';
