@@ -33,10 +33,11 @@ export function usePageBackground(options?: UsePageBackgroundOptions): CSSProper
   return {
     backgroundColor: 'var(--bg-deep-space)',
     // Readability veil layered over the image (AC5: rgba(5,10,20,0.45)).
-    // image-set() provides WebP + JPEG fallback for browsers that don't support WebP.
+    // Simple url() for maximum browser compatibility — no image-set() type() hints
+    // which require Chrome 113+/Safari 17.2+ and need JPEG fallback files to exist.
     // Guard against url('undefined') when webpPath is empty.
     backgroundImage: webpPath
-      ? `linear-gradient(rgba(5,10,20,0.45), rgba(5,10,20,0.45)), image-set(url('${webpPath}') type('image/webp'), url('${webpPath.replace(/\.webp$/, '.jpg')}') type('image/jpeg'))`
+      ? `linear-gradient(rgba(5,10,20,0.45), rgba(5,10,20,0.45)), url('${webpPath}')`
       : undefined,
     backgroundSize: 'cover',
     backgroundPosition: 'center center',
