@@ -1,17 +1,21 @@
 /**
  * useTransactionHistory Hook Tests
  *
- * Verifies the hook is permanently disabled (no fake empty-array stub)
- * and returns data: undefined so consumers can render honest beta-excluded copy.
- *
- * Story 21R-2: Remove production frontend mocks from beta-facing code
+ * Verifies the hook fetches the persisted transaction ledger.
  */
 
-import { renderHook } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 import React from 'react';
 import { useTransactionHistory } from '../useTransactionHistory';
+import { bankApi } from '@/lib/api-client';
+
+vi.mock('@/lib/api-client', () => ({
+  bankApi: {
+    getTransactions: vi.fn(),
+  },
+}));
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -22,57 +26,60 @@ function createWrapper() {
 }
 
 describe('useTransactionHistory', () => {
-  it('returns data: undefined (not a fake empty array)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(bankApi.getTransactions).mockResolvedValue({
+      transactions: [
+        {
+          id: 1,
+          type: 'credit',
+          amount: 500,
+          category: 'weekly_reward',
+          description: 'Weekly reward claim',
+          balanceAfter: 1500,
+          metadata: {},
+          timestamp: '2026-04-14T12:00:00.000Z',
+        },
+      ],
+      total: 1,
+      page: 1,
+      pageSize: 20,
+    });
+  });
+
+  it('fetches persisted transactions for the authenticated user', async () => {
     const { result } = renderHook(() => useTransactionHistory(1), {
       wrapper: createWrapper(),
     });
 
-    // Hook is disabled — must not return fake success data
-    expect(result.current.data).toBeUndefined();
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    expect(bankApi.getTransactions).toHaveBeenCalledWith(1, 20);
+    expect(result.current.data?.transactions[0]).toMatchObject({
+      id: 1,
+      type: 'credit',
+      amount: 500,
+      description: 'Weekly reward claim',
+    });
   });
 
-  it('is not in loading state (disabled query never fetches)', () => {
-    const { result } = renderHook(() => useTransactionHistory(1), {
+  it('stays idle when disabled by missing user id', () => {
+    const { result } = renderHook(() => useTransactionHistory(undefined), {
       wrapper: createWrapper(),
     });
 
     expect(result.current.isLoading).toBe(false);
-  });
-
-  it('is not in error state (disabled query never runs)', () => {
-    const { result } = renderHook(() => useTransactionHistory(1), {
-      wrapper: createWrapper(),
-    });
-
-    expect(result.current.isError).toBe(false);
-  });
-
-  it('returns isPending: false (disabled = never pending)', () => {
-    const { result } = renderHook(() => useTransactionHistory(1), {
-      wrapper: createWrapper(),
-    });
-
-    expect(result.current.isPending).toBe(true); // disabled queries are in 'pending' status
-    // but isLoading (isFetching && isPending) must be false
-    expect(result.current.isLoading).toBe(false);
     expect(result.current.isFetching).toBe(false);
+    expect(bankApi.getTransactions).not.toHaveBeenCalled();
   });
 
-  it('is not fetching (no network request made)', () => {
-    const { result } = renderHook(() => useTransactionHistory(1), {
+  it('passes pagination to the API client', async () => {
+    const { result } = renderHook(() => useTransactionHistory(1, 3, 10), {
       wrapper: createWrapper(),
     });
 
-    expect(result.current.isFetching).toBe(false);
-  });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-  it('does not return a fake empty transactions array', () => {
-    const { result } = renderHook(() => useTransactionHistory(1), {
-      wrapper: createWrapper(),
-    });
-
-    // Old stub returned { transactions: [], total: 0, page: 1, pageSize: 20 }
-    // The new hook must NOT do that
-    expect(result.current.data?.transactions).toBeUndefined();
+    expect(bankApi.getTransactions).toHaveBeenCalledWith(3, 10);
   });
 });

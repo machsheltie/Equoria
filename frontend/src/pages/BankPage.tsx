@@ -11,21 +11,18 @@ import { Coins, Gift, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle } from 'lu
 import PageHero from '@/components/layout/PageHero';
 import { useAuth } from '@/contexts/AuthContext';
 import { bankApi } from '@/lib/api-client';
-
-interface Transaction {
-  id: string;
-  type: 'credit' | 'debit';
-  amount: number;
-  description: string;
-  date: string;
-}
+import { useTransactionHistory } from '@/hooks/api/useTransactionHistory';
 
 const BankPage: React.FC = () => {
   const { user, refetchProfile } = useAuth();
   const [claimed, setClaimed] = useState(false);
   const [claiming, setClaiming] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
-  const [recentClaims, setRecentClaims] = useState<Transaction[]>([]);
+  const {
+    data: transactionHistory,
+    isLoading: transactionsLoading,
+    refetch: refetchTransactions,
+  } = useTransactionHistory(user?.id, 1, 20);
 
   const balance = user?.money ?? 0;
 
@@ -49,18 +46,7 @@ const BankPage: React.FC = () => {
     try {
       await bankApi.claimWeekly();
       setClaimed(true);
-      // Track this claim in the session transaction list
-      setRecentClaims((prev) => [
-        {
-          id: `claim-${Date.now()}`,
-          type: 'credit',
-          amount: 500,
-          description: 'Weekly reward claim',
-          date: new Date().toISOString(),
-        },
-        ...prev,
-      ]);
-      // Refresh profile so balance updates across the app immediately
+      await refetchTransactions();
       await refetchProfile();
     } catch (err: unknown) {
       const msg =
@@ -77,7 +63,7 @@ const BankPage: React.FC = () => {
     <div className="min-h-screen">
       <PageHero
         title="The Vault"
-        subtitle="Manage your coins, claim weekly rewards, and view recent session transactions."
+        subtitle="Manage your coins, claim weekly rewards, and review your account ledger."
         mood="golden"
         icon={<Coins className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
       >
@@ -185,17 +171,20 @@ const BankPage: React.FC = () => {
             </h2>
           </div>
           <div className="space-y-2">
-            {recentClaims.length === 0 && (
+            {transactionsLoading && (
+              <div className="glass-panel-subtle rounded-xl p-6 text-center">
+                <p className="text-sm text-[var(--text-muted)]">Loading transactions...</p>
+              </div>
+            )}
+            {!transactionsLoading && (transactionHistory?.transactions.length ?? 0) === 0 && (
               <div className="glass-panel-subtle rounded-xl p-6 text-center">
                 <p className="text-sm text-[var(--text-muted)]">
-                  No recent transactions this session.
-                </p>
-                <p className="text-xs text-[var(--text-muted)] mt-1 opacity-60">
-                  Full transaction history is not available in this beta.
+                  No transactions recorded yet. Claim a reward or enter a competition to start your
+                  ledger.
                 </p>
               </div>
             )}
-            {recentClaims.map((tx) => (
+            {transactionHistory?.transactions.map((tx) => (
               <div
                 key={tx.id}
                 className="flex items-center justify-between p-4 glass-panel-subtle rounded-xl hover:border-[rgba(201,162,39,0.3)] transition-all"
@@ -219,11 +208,14 @@ const BankPage: React.FC = () => {
                     <p className="text-sm font-medium text-[var(--cream)]">{tx.description}</p>
                     <span className="text-xs text-[var(--text-muted)] flex items-center gap-1 mt-0.5">
                       <Clock className="w-3 h-3" />
-                      {new Date(tx.date).toLocaleDateString('en-GB', {
+                      {new Date(tx.timestamp).toLocaleDateString('en-GB', {
                         day: 'numeric',
                         month: 'short',
                         year: 'numeric',
                       })}
+                      {tx.balanceAfter !== null && (
+                        <span className="ml-2">Balance {tx.balanceAfter.toLocaleString()}</span>
+                      )}
                     </span>
                   </div>
                 </div>
@@ -250,10 +242,7 @@ const BankPage: React.FC = () => {
           <ul className="space-y-1 list-disc list-inside text-xs leading-relaxed">
             <li>Coins are earned through competitions, breeding sales, and weekly rewards</li>
             <li>Weekly rewards of 500 coins reset every Sunday at midnight</li>
-            <li>
-              Transaction history shows current session activity only; full ledger available after
-              beta
-            </li>
+            <li>Transaction history is persisted to your account ledger</li>
             <li>Coins are spent at the Tack Shop, Vet Clinic, Feed Shop, and Farrier</li>
             <li>Larger balances unlock access to premium auctions and breeding fees</li>
           </ul>

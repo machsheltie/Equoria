@@ -19,6 +19,7 @@ import {
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { queryRateLimiter, mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import logger from '../../../utils/logger.mjs';
+import { getTransactionHistory } from '../../services/controllers/bankController.mjs';
 
 const router = express.Router();
 
@@ -125,6 +126,8 @@ router.get('/search', queryRateLimiter, authenticateToken, async (req, res) => {
     return res.status(500).json({ success: false, message: 'Search failed' });
   }
 });
+
+router.get('/transactions', queryRateLimiter, authenticateToken, getTransactionHistory);
 
 /**
  * @swagger

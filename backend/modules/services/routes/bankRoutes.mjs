@@ -6,11 +6,16 @@
  */
 
 import express from 'express';
-import { claimWeeklyReward, getClaimStatus } from '../controllers/bankController.mjs';
+import {
+  claimWeeklyReward,
+  getClaimStatus,
+  getTransactionHistory,
+} from '../controllers/bankController.mjs';
 
 const router = express.Router();
 
 router.post('/claim', claimWeeklyReward);
 router.get('/claim-status', getClaimStatus);
+router.get('/transactions', getTransactionHistory);
 
 export default router;
