@@ -1,5 +1,5 @@
 # generated: 2026-03-25
-# last_updated: 2026-04-13 21R-2 implementation complete — review
+# last_updated: 2026-04-14 21R-1 through 21R-3 corrections complete — beta readiness remains blocked pending later 21R hardening stories
 # project: Equoria
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-25
-last_updated: 2026-04-13 21R-2 implementation complete — review
+last_updated: 2026-04-14 21R-1 through 21R-3 corrections complete — beta readiness remains blocked pending later 21R hardening stories
 project: Equoria
 project_key: NOKEY
 tracking_system: file-system
@@ -45,10 +45,10 @@ development_status:
   # ============================================================
   # Beta Deployment Readiness Gate
   # Source: docs/sprint-change-proposal-2026-04-11.md
-  # Unlocked: 2026-04-14 — user approved after 21R-3 two consecutive passing runs (3/3)
+  # Re-blocked: 2026-04-14 — source review found false completion claims; 21R-1 through 21R-3 are corrected, later 21R hardening remains.
   # ============================================================
 
-  beta-deployment-readiness: unblocked
+  beta-deployment-readiness: blocked
 
   # ============================================================
   # Epic 21R: Beta Deployment Readiness Remediation
@@ -57,7 +57,7 @@ development_status:
 
   epic-21r: in-progress
   21r-1-define-beta-scope-and-navigation-truth-table: done
-  21r-2-remove-production-frontend-mocks-from-beta-facing-code: review
+  21r-2-remove-production-frontend-mocks-from-beta-facing-code: done
   21r-3-remove-e2e-skips-and-test-only-bypasses-from-beta-critical-flows: done
   21r-4-remove-or-harden-runtime-test-cleanup-routes: backlog
   21r-5-reclassify-and-strengthen-integration-tests: backlog

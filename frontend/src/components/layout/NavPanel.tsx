@@ -4,7 +4,7 @@
  * Frosted glass sidebar with gold icons + Cinzel labels.
  * Closes on item click, X button, or backdrop click.
  *
- * In beta mode, beta-hidden routes (e.g. /community) are omitted from the list.
+ * Active beta exposes the same primary navigation as production.
  */
 
 import { Link, useLocation } from 'react-router-dom';
@@ -52,7 +52,7 @@ const ALL_NAV_SECTIONS: NavItem[] = [
   { name: 'Settings', href: '/settings', Icon: Settings },
 ];
 
-/** In beta mode, show only beta-live routes. beta-readonly and beta-hidden are both excluded. */
+/** In beta mode, show every route marked live in the active beta scope. */
 const NAV_SECTIONS = isBetaMode
   ? ALL_NAV_SECTIONS.filter((item) => isBetaLive(item.href))
   : ALL_NAV_SECTIONS;

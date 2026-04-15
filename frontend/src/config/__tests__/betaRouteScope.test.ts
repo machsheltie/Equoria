@@ -7,13 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  getBetaScope,
-  isBetaLive,
-  isBetaReadonly,
-  isBetaHidden,
-  BETA_SCOPE,
-} from '../betaRouteScope';
+import { getBetaScope, isBetaLive, BETA_SCOPE } from '../betaRouteScope';
 
 describe('betaRouteScope', () => {
   describe('getBetaScope', () => {
@@ -25,38 +19,33 @@ describe('betaRouteScope', () => {
       expect(getBetaScope('/onboarding')).toBe('beta-live');
     });
 
-    it('returns beta-readonly for readonly routes', () => {
-      expect(getBetaScope('/training')).toBe('beta-readonly');
-      expect(getBetaScope('/breeding')).toBe('beta-readonly');
-      expect(getBetaScope('/competitions')).toBe('beta-readonly');
-      expect(getBetaScope('/bank')).toBe('beta-readonly');
+    it('returns beta-live for active beta feature routes', () => {
+      expect(getBetaScope('/training')).toBe('beta-live');
+      expect(getBetaScope('/breeding')).toBe('beta-live');
+      expect(getBetaScope('/competitions')).toBe('beta-live');
+      expect(getBetaScope('/bank')).toBe('beta-live');
+      expect(getBetaScope('/community')).toBe('beta-live');
+      expect(getBetaScope('/crafting')).toBe('beta-live');
     });
 
-    it('returns beta-hidden for hidden routes', () => {
-      expect(getBetaScope('/community')).toBe('beta-hidden');
-      expect(getBetaScope('/my-stable')).toBe('beta-hidden');
-      expect(getBetaScope('/crafting')).toBe('beta-hidden');
-      expect(getBetaScope('/forgot-password')).toBe('beta-hidden');
+    it('returns beta-live as default for unknown routes', () => {
+      expect(getBetaScope('/unknown-route')).toBe('beta-live');
+      expect(getBetaScope('/some/nested/path')).toBe('beta-live');
     });
 
-    it('returns beta-readonly as safe default for unknown routes', () => {
-      expect(getBetaScope('/unknown-route')).toBe('beta-readonly');
-      expect(getBetaScope('/some/nested/path')).toBe('beta-readonly');
+    it('resolves dynamic /horses/:id paths to beta-live', () => {
+      expect(getBetaScope('/horses/123')).toBe('beta-live');
+      expect(getBetaScope('/horses/456')).toBe('beta-live');
     });
 
-    it('resolves dynamic /horses/:id paths to beta-readonly', () => {
-      expect(getBetaScope('/horses/123')).toBe('beta-readonly');
-      expect(getBetaScope('/horses/456')).toBe('beta-readonly');
-    });
-
-    it('resolves dynamic /message-board/:threadId paths to beta-readonly', () => {
-      expect(getBetaScope('/message-board/abc')).toBe('beta-readonly');
-      expect(getBetaScope('/message-board/1')).toBe('beta-readonly');
+    it('resolves dynamic /message-board/:threadId paths to beta-live', () => {
+      expect(getBetaScope('/message-board/abc')).toBe('beta-live');
+      expect(getBetaScope('/message-board/1')).toBe('beta-live');
     });
 
     it('strips trailing slashes before lookup', () => {
-      expect(getBetaScope('/training/')).toBe('beta-readonly');
-      expect(getBetaScope('/community/')).toBe('beta-hidden');
+      expect(getBetaScope('/training/')).toBe('beta-live');
+      expect(getBetaScope('/community/')).toBe('beta-live');
     });
 
     it('preserves the root slash correctly', () => {
@@ -70,59 +59,21 @@ describe('betaRouteScope', () => {
       expect(isBetaLive('/stable')).toBe(true);
     });
 
-    it('returns false for non-live routes', () => {
-      expect(isBetaLive('/training')).toBe(false);
-      expect(isBetaLive('/community')).toBe(false);
-    });
-  });
-
-  describe('isBetaReadonly', () => {
-    it('returns true for readonly routes', () => {
-      expect(isBetaReadonly('/training')).toBe(true);
-      expect(isBetaReadonly('/bank')).toBe(true);
-    });
-
-    it('returns false for non-readonly routes', () => {
-      expect(isBetaReadonly('/')).toBe(false);
-      expect(isBetaReadonly('/community')).toBe(false);
-    });
-  });
-
-  describe('isBetaHidden', () => {
-    it('returns true for hidden routes', () => {
-      expect(isBetaHidden('/community')).toBe(true);
-      expect(isBetaHidden('/my-stable')).toBe(true);
-      expect(isBetaHidden('/crafting')).toBe(true);
-    });
-
-    it('returns false for visible routes', () => {
-      expect(isBetaHidden('/')).toBe(false);
-      expect(isBetaHidden('/training')).toBe(false);
+    it('returns true for all active beta routes', () => {
+      expect(isBetaLive('/training')).toBe(true);
+      expect(isBetaLive('/community')).toBe(true);
     });
   });
 
   describe('BETA_SCOPE map', () => {
-    it('contains all five beta-live routes', () => {
+    it('classifies every configured route as beta-live', () => {
       const liveRoutes = Object.entries(BETA_SCOPE)
         .filter(([, scope]) => scope === 'beta-live')
         .map(([route]) => route);
-      expect(liveRoutes).toContain('/');
-      expect(liveRoutes).toContain('/stable');
-      expect(liveRoutes).toContain('/login');
-      expect(liveRoutes).toContain('/register');
-      expect(liveRoutes).toContain('/onboarding');
-    });
-
-    it('classifies /community as beta-hidden', () => {
-      expect(BETA_SCOPE['/community']).toBe('beta-hidden');
-    });
-
-    it('classifies /crafting as beta-hidden', () => {
-      expect(BETA_SCOPE['/crafting']).toBe('beta-hidden');
-    });
-
-    it('classifies /my-stable as beta-hidden', () => {
-      expect(BETA_SCOPE['/my-stable']).toBe('beta-hidden');
+      expect(liveRoutes).toHaveLength(Object.keys(BETA_SCOPE).length);
+      expect(BETA_SCOPE['/community']).toBe('beta-live');
+      expect(BETA_SCOPE['/crafting']).toBe('beta-live');
+      expect(BETA_SCOPE['/my-stable']).toBe('beta-live');
     });
   });
 });

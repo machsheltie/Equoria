@@ -1,8 +1,7 @@
 /**
  * NavPanel Beta Mode Tests
  *
- * Verifies that beta-hidden navigation links are absent when VITE_BETA_MODE=true.
- * Also verifies that non-hidden links remain visible.
+ * Verifies active beta navigation exposes working routes.
  *
  * Story 21R-2: Remove production frontend mocks from beta-facing code
  */
@@ -36,10 +35,10 @@ describe('NavPanel — beta mode', () => {
     vi.clearAllMocks();
   });
 
-  it('does not show /community link in beta mode', () => {
+  it('shows /community link in beta mode', () => {
     renderPanel();
 
-    expect(screen.queryByRole('link', { name: /community/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /community/i })).toBeInTheDocument();
   });
 
   it('shows /stable link in beta mode (beta-live route)', () => {
@@ -48,13 +47,13 @@ describe('NavPanel — beta mode', () => {
     expect(screen.getByRole('link', { name: /my stable/i })).toBeInTheDocument();
   });
 
-  it('shows /training link in beta mode (beta-readonly route)', () => {
+  it('shows /training link in beta mode', () => {
     renderPanel();
 
     expect(screen.getByRole('link', { name: /training/i })).toBeInTheDocument();
   });
 
-  it('shows /bank link in beta mode (beta-readonly route)', () => {
+  it('shows /bank link in beta mode', () => {
     renderPanel();
 
     expect(screen.getByRole('link', { name: /bank/i })).toBeInTheDocument();

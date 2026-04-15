@@ -1,8 +1,7 @@
 /**
  * NavPanel Beta Mode Tests — Story 21R-2 Task 11
  *
- * Verifies that in beta mode, NavPanel shows ONLY beta-live routes.
- * Beta-readonly and beta-hidden routes must not appear in beta navigation.
+ * Verifies that active beta navigation exposes working routes.
  *
  * Non-beta regression: all 11 nav items must still appear in non-beta mode.
  */
@@ -17,24 +16,8 @@ import { MemoryRouter } from 'react-router-dom';
 // Beta mode ON for most tests — overridden per-test where needed
 vi.mock('@/config/betaRouteScope', () => ({
   isBetaMode: true,
-  isBetaLive: (path: string) => ['/', '/stable'].includes(path),
-  isBetaHidden: (path: string) => ['/community', '/my-stable', '/crafting'].includes(path),
-  isBetaReadonly: (path: string) =>
-    ![
-      '/',
-      '/stable',
-      '/login',
-      '/register',
-      '/onboarding',
-      '/community',
-      '/my-stable',
-      '/crafting',
-    ].includes(path),
-  getBetaScope: (path: string) => {
-    if (['/', '/stable', '/login', '/register', '/onboarding'].includes(path)) return 'beta-live';
-    if (['/community', '/my-stable', '/crafting'].includes(path)) return 'beta-hidden';
-    return 'beta-readonly';
-  },
+  isBetaLive: () => true,
+  getBetaScope: () => 'beta-live',
 }));
 
 // ── Import after mock ──────────────────────────────────────────────────────────
@@ -52,29 +35,19 @@ function renderNavPanel(props = {}) {
 // ── Tests ──────────────────────────────────────────────────────────────────────
 
 describe('NavPanel — beta mode', () => {
-  it('shows only Home and My Stable nav links in beta mode', () => {
+  it('shows all primary working nav links in beta mode', () => {
     renderNavPanel();
 
     expect(screen.getByRole('link', { name: /home/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /my stable/i })).toBeInTheDocument();
-  });
-
-  it('does not show beta-readonly routes in beta nav', () => {
-    renderNavPanel();
-
-    expect(screen.queryByRole('link', { name: /training/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /competitions/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /breeding/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /marketplace/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /messages/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /bank/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /settings/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /world/i })).not.toBeInTheDocument();
-  });
-
-  it('does not show beta-hidden routes in beta nav', () => {
-    renderNavPanel();
-
-    expect(screen.queryByRole('link', { name: /community/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /training/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /competitions/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /breeding/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /marketplace/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /messages/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /bank/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /settings/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /world/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /community/i })).toBeInTheDocument();
   });
 });

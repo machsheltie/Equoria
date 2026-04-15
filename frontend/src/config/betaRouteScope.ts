@@ -18,13 +18,9 @@ export const isBetaMode = import.meta.env.VITE_BETA_MODE === 'true';
 /**
  * Beta scope classification for a route.
  *
- * - beta-live:     Fully functional in beta; shows real data and accepts real actions.
- * - beta-readonly: Route is visible and loads real data where available, but actions
- *                  that require unsupported backend features show beta-excluded copy.
- * - beta-hidden:   Route is intentionally excluded from beta. Nav links are removed;
- *                  direct navigation renders BetaExcludedNotice or redirects to /.
+ * - beta-live: Fully functional in beta; shows real data and accepts real actions.
  */
-export type BetaScope = 'beta-live' | 'beta-readonly' | 'beta-hidden';
+export type BetaScope = 'beta-live';
 
 /**
  * Static map of all known routes to their beta scope status.
@@ -38,41 +34,38 @@ export const BETA_SCOPE: Record<string, BetaScope> = {
   '/stable': 'beta-live',
   '/onboarding': 'beta-live',
 
-  // beta-readonly routes
-  '/verify-email': 'beta-readonly',
-  '/horses/:id': 'beta-readonly',
-  '/profile': 'beta-readonly',
-  '/settings': 'beta-readonly',
-  '/bank': 'beta-readonly',
-  '/leaderboards': 'beta-readonly',
-  '/training': 'beta-readonly',
-  '/breeding': 'beta-readonly',
-  '/competitions': 'beta-readonly',
-  '/competition-results': 'beta-readonly',
-  '/prizes': 'beta-readonly',
-  '/world': 'beta-readonly',
-  '/grooms': 'beta-readonly',
-  '/riders': 'beta-readonly',
-  '/trainers': 'beta-readonly',
-  '/vet': 'beta-readonly',
-  '/farrier': 'beta-readonly',
-  '/feed-shop': 'beta-readonly',
-  '/tack-shop': 'beta-readonly',
-  '/marketplace': 'beta-readonly',
-  '/marketplace/horses': 'beta-readonly',
-  '/marketplace/horse-trader': 'beta-readonly',
-  '/inventory': 'beta-readonly',
-  '/message-board': 'beta-readonly',
-  '/message-board/:threadId': 'beta-readonly',
-  '/clubs': 'beta-readonly',
-  '/messages': 'beta-readonly',
-
-  // beta-hidden routes
-  '/forgot-password': 'beta-hidden',
-  '/reset-password': 'beta-hidden',
-  '/crafting': 'beta-hidden',
-  '/my-stable': 'beta-hidden',
-  '/community': 'beta-hidden',
+  '/verify-email': 'beta-live',
+  '/horses/:id': 'beta-live',
+  '/profile': 'beta-live',
+  '/settings': 'beta-live',
+  '/bank': 'beta-live',
+  '/leaderboards': 'beta-live',
+  '/training': 'beta-live',
+  '/breeding': 'beta-live',
+  '/competitions': 'beta-live',
+  '/competition-results': 'beta-live',
+  '/prizes': 'beta-live',
+  '/world': 'beta-live',
+  '/grooms': 'beta-live',
+  '/riders': 'beta-live',
+  '/trainers': 'beta-live',
+  '/vet': 'beta-live',
+  '/farrier': 'beta-live',
+  '/feed-shop': 'beta-live',
+  '/tack-shop': 'beta-live',
+  '/marketplace': 'beta-live',
+  '/marketplace/horses': 'beta-live',
+  '/marketplace/horse-trader': 'beta-live',
+  '/inventory': 'beta-live',
+  '/message-board': 'beta-live',
+  '/message-board/:threadId': 'beta-live',
+  '/clubs': 'beta-live',
+  '/messages': 'beta-live',
+  '/forgot-password': 'beta-live',
+  '/reset-password': 'beta-live',
+  '/crafting': 'beta-live',
+  '/my-stable': 'beta-live',
+  '/community': 'beta-live',
 };
 
 /**
@@ -82,7 +75,8 @@ export const BETA_SCOPE: Record<string, BetaScope> = {
  * `matchPath` pattern matching to handle parameterized routes like
  * `/horses/:id` and `/message-board/:threadId`.
  *
- * Returns 'beta-readonly' as a safe default for unknown routes.
+ * Returns 'beta-live' for unknown routes during active beta so routing does not
+ * hide broken integrations behind scope configuration.
  */
 export function getBetaScope(path: string): BetaScope {
   const normalized = path === '/' ? '/' : path.replace(/\/$/, '');
@@ -99,7 +93,7 @@ export function getBetaScope(path: string): BetaScope {
     }
   }
 
-  return 'beta-readonly';
+  return 'beta-live';
 }
 
 /**
@@ -107,18 +101,4 @@ export function getBetaScope(path: string): BetaScope {
  */
 export function isBetaLive(path: string): boolean {
   return getBetaScope(path) === 'beta-live';
-}
-
-/**
- * Returns true if the given route is beta-readonly.
- */
-export function isBetaReadonly(path: string): boolean {
-  return getBetaScope(path) === 'beta-readonly';
-}
-
-/**
- * Returns true if the given route is beta-hidden.
- */
-export function isBetaHidden(path: string): boolean {
-  return getBetaScope(path) === 'beta-hidden';
 }
