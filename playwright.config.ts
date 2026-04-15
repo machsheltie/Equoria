@@ -16,7 +16,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 1,
   workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
+  reporter: [['list'], ['html', { open: 'never' }]],
   use: {
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
@@ -43,7 +43,9 @@ export default defineConfig({
       stderr: 'pipe',
       timeout: 60000,
       env: {
+        ...process.env,
         VITE_E2E_TEST: 'true',
+        VITE_BETA_MODE: 'true',
       },
     },
   ],

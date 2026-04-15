@@ -84,7 +84,7 @@ async function globalSetup(config: FullConfig) {
       // Continue to step 2
       await page.locator('[data-testid="onboarding-next"]').click();
 
-      // Step 2 (Ready) → click "Begin" — triggers POST /api/horses + advance-onboarding
+      // Step 2 (Ready) -> click "Begin" to customize the starter horse via advance-onboarding.
       await expect(page.locator('h1')).toContainText("You're Ready!", { timeout: 10000 });
       await page.locator('[data-testid="onboarding-next"]').click();
 
@@ -109,45 +109,20 @@ async function globalSetup(config: FullConfig) {
     fs.writeFileSync(CREDENTIALS_FILE, JSON.stringify(creds, null, 2), 'utf-8');
     console.log('Credentials saved:', CREDENTIALS_FILE);
 
-    // ── 5. Create a test horse (used by training + competition tests) ─────────
-    // Fetch a valid breedId first (IDs are auto-incremented, not starting at 1)
-    console.log('Fetching available breeds...');
-    let breedId = 1;
-    const breedsRes = await page.request.get(`${baseURL}/api/breeds`);
-    if (breedsRes.ok()) {
-      const breedsJson = await breedsRes.json();
-      const breeds = breedsJson?.data ?? breedsJson ?? [];
-      if (Array.isArray(breeds) && breeds.length > 0) {
-        breedId = breeds[0].id;
-        console.log('Using breedId:', breedId);
+    // ── 5. Reuse the real starter horse created by registration/onboarding ───
+    console.log('Fetching starter horse created during onboarding...');
+    const horsesRes = await page.request.get(`${baseURL}/api/horses`);
+    if (horsesRes.ok()) {
+      const horsesJson = await horsesRes.json();
+      const horses = horsesJson?.data ?? horsesJson ?? [];
+      const starterHorse = Array.isArray(horses) ? horses[0] : null;
+      if (starterHorse?.id) {
+        console.log('Starter horse id:', starterHorse.id);
+        creds.testHorseId = starterHorse.id;
+        fs.writeFileSync(CREDENTIALS_FILE, JSON.stringify(creds, null, 2), 'utf-8');
       }
-    }
-
-    console.log('Creating test horse via API...');
-    const horseRes = await page.request.post(`${baseURL}/api/horses`, {
-      headers: { 'x-test-skip-csrf': 'true' },
-      data: { name: `E2E Horse ${timestamp}`, breedId, age: 5, sex: 'mare' },
-    });
-    if (horseRes.ok()) {
-      const horseJson = await horseRes.json();
-      const horseId = horseJson?.data?.id ?? horseJson?.id ?? null;
-      console.log('Test horse id:', horseId);
-      creds.testHorseId = horseId;
-      fs.writeFileSync(CREDENTIALS_FILE, JSON.stringify(creds, null, 2), 'utf-8');
     } else {
-      console.warn('Horse creation failed:', horseRes.status(), await horseRes.text());
-    }
-
-    // ── 6. Seed test competition shows ────────────────────────────────────────
-    console.log('Seeding competition shows...');
-    const showRes = await page.request.post(`${baseURL}/api/competition/test/setup`, {
-      headers: { 'x-test-skip-csrf': 'true' },
-    });
-    if (showRes.ok()) {
-      const showJson = await showRes.json();
-      console.log('Shows created:', showJson?.data?.length ?? 0);
-    } else {
-      console.warn('Show seeding failed:', showRes.status(), await showRes.text());
+      console.warn('Starter horse lookup failed:', horsesRes.status(), await horsesRes.text());
     }
 
     console.log('Global setup complete.');

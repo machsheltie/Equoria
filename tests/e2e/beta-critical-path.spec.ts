@@ -5,8 +5,8 @@
  * backend data. No test-only bypass headers that avoid the auth flow,
  * no pre-seeded horses, no test.skip on any critical path.
  *
- * AC3 (required first): register → onboarding → POST /api/horses → /stable shows horse
- * AC4: GET /api/horses asserts the starter horse exists in the backend
+ * AC3 (required first): register → onboarding → POST /api/auth/advance-onboarding → /stable shows horse
+ * AC4: GET /api/horses asserts the customized starter horse exists in the backend
  *
  * Paths covered:
  *   Path 1 — New-player critical path (AC3, AC4)
@@ -18,6 +18,8 @@ import { test, expect, type Page } from '@playwright/test';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+
+test.describe.configure({ mode: 'serial' });
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -44,6 +46,13 @@ async function fillOnboardingHorseStep(page: Page, horseName: string) {
   const breedSelect = page.locator('[data-testid="breed-select"]');
   await breedSelect.waitFor({ state: 'visible', timeout: 20000 });
   // index 0 is the disabled placeholder; index 1 is the first real breed
+  const options = await breedSelect.locator('option').evaluateAll((nodes) =>
+    nodes.map((node) => ({
+      value: (node as HTMLOptionElement).value,
+      label: (node.textContent ?? '').trim(),
+    }))
+  );
+  const selectedBreed = options[1];
   await breedSelect.selectOption({ index: 1 });
 
   // Select Mare gender
@@ -51,6 +60,24 @@ async function fillOnboardingHorseStep(page: Page, horseName: string) {
 
   // Enter horse name
   await page.locator('[data-testid="horse-name-input"]').fill(horseName);
+
+  return {
+    breedId: Number(selectedBreed.value),
+    breedName: selectedBreed.label,
+    gender: 'Mare',
+  };
+}
+
+function getHorseBreedName(horse: { breed?: string | { name?: string }; breedName?: string }) {
+  if (typeof horse.breed === 'string') {
+    return horse.breed;
+  }
+
+  return horse.breed?.name ?? horse.breedName ?? '';
+}
+
+function getHorseGender(horse: { sex?: string; gender?: string }) {
+  return horse.sex ?? horse.gender ?? '';
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -59,7 +86,7 @@ async function fillOnboardingHorseStep(page: Page, horseName: string) {
 test.describe('Path 1: New-player critical path', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
-  test('register → onboarding → POST /api/horses → /stable renders starter horse', async ({
+  test('register → onboarding customizes starter horse → /stable renders persisted horse', async ({
     page,
   }) => {
     test.setTimeout(120000);
@@ -91,7 +118,7 @@ test.describe('Path 1: New-player critical path', () => {
     await page.locator('[data-testid="onboarding-next"]').click();
 
     // ── 4. Step 1 (Choose Your Horse) → fill selection ───────────────────
-    await fillOnboardingHorseStep(page, horseName);
+    const selectedHorse = await fillOnboardingHorseStep(page, horseName);
 
     // ── 5. Step 1 → click Continue → step 2 (Ready) ──────────────────────
     await page.locator('[data-testid="onboarding-next"]').click();
@@ -110,6 +137,12 @@ test.describe('Path 1: New-player critical path', () => {
 
     const advanceOnboardingResponse = await advanceOnboardingPromise;
     expect(advanceOnboardingResponse.status()).toBe(200);
+    const submittedHorse = advanceOnboardingResponse.request().postDataJSON();
+    expect(submittedHorse).toMatchObject({
+      horseName,
+      breedId: selectedHorse.breedId,
+      gender: selectedHorse.gender,
+    });
 
     // ── 7. Onboarding navigates to /stable (beta-live stable route) ───────
     await page.waitForURL(/\/stable$/, { timeout: 20000 });
@@ -119,13 +152,23 @@ test.describe('Path 1: New-player critical path', () => {
     expect(horsesListResponse.ok()).toBe(true);
 
     const horsesListJson = await horsesListResponse.json();
-    const horsesList: Array<{ id: number; name: string }> =
-      horsesListJson?.data ?? horsesListJson ?? [];
+    const horsesList: Array<{
+      id: number;
+      name: string;
+      breed?: string | { name?: string };
+      breedName?: string;
+      breedId?: number;
+      sex?: string;
+      gender?: string;
+    }> = horsesListJson?.data ?? horsesListJson ?? [];
     expect(Array.isArray(horsesList)).toBe(true);
     expect(horsesList.length).toBeGreaterThanOrEqual(1);
 
     const starterHorse = horsesList.find((h) => h.name === horseName);
     expect(starterHorse).toBeDefined();
+    expect(starterHorse?.breedId ?? selectedHorse.breedId).toBe(selectedHorse.breedId);
+    expect(getHorseBreedName(starterHorse!)).toContain(selectedHorse.breedName);
+    expect(getHorseGender(starterHorse!)).toBe(selectedHorse.gender);
 
     const horseId = starterHorse?.id;
     expect(typeof horseId).toBe('number');
@@ -134,6 +177,8 @@ test.describe('Path 1: New-player critical path', () => {
     await expect(page.locator('h1')).toContainText('Your Stable', { timeout: 15000 });
     // Horse name may appear in multiple places (card + sidebar); assert the first visible one
     await expect(page.getByText(horseName).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(selectedHorse.breedName).first()).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText(selectedHorse.gender).first()).toBeVisible({ timeout: 10000 });
   });
 });
 
