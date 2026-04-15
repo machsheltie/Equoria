@@ -13,8 +13,9 @@ import logger from './logger.mjs';
 const EMAIL_CONFIG = {
   FROM_EMAIL: process.env.EMAIL_FROM || 'noreply@equoria.com',
   FROM_NAME: process.env.EMAIL_FROM_NAME || 'Equoria',
-  VERIFICATION_URL_BASE:
-    process.env.VERIFICATION_URL_BASE || 'http://localhost:3000/verify-email',
+  VERIFICATION_URL_BASE: process.env.VERIFICATION_URL_BASE || 'http://localhost:3000/verify-email',
+  PASSWORD_RESET_URL_BASE:
+    process.env.PASSWORD_RESET_URL_BASE || 'http://localhost:3000/reset-password',
   SUPPORT_EMAIL: process.env.SUPPORT_EMAIL || 'support@equoria.com',
 };
 
@@ -131,7 +132,7 @@ function generateEmailTemplate(subject, heading, bodyHtml, ctaText, ctaUrl) {
     </div>
 
     <div class="security-notice">
-      <strong>🔒 Security Notice:</strong> This link will expire in 24 hours.
+      <strong>🔒 Security Notice:</strong> This link will expire after the period stated above.
       If you didn't request this email, please ignore it or contact support.
     </div>
 
@@ -260,7 +261,7 @@ export async function sendWelcomeEmail(email, user = {}) {
     const userName = user.firstName || user.username || 'there';
     const dashboardUrl = process.env.DASHBOARD_URL || 'http://localhost:3000/dashboard';
 
-    const subject = 'Welcome to Equoria - Let\'s Get Started! 🐴';
+    const subject = "Welcome to Equoria - Let's Get Started! 🐴";
     const heading = 'Your Email is Verified!';
     const bodyHtml = `
       <p>Hi ${userName},</p>
@@ -319,7 +320,61 @@ export async function sendWelcomeEmail(email, user = {}) {
   }
 }
 
+export async function sendPasswordResetEmail(email, token, user = {}) {
+  try {
+    const resetUrl = `${EMAIL_CONFIG.PASSWORD_RESET_URL_BASE}?token=${token}`;
+    const userName = user.firstName || user.username || 'there';
+
+    const subject = 'Reset Your Equoria Password';
+    const heading = 'Reset your password';
+    const bodyHtml = `
+      <p>Hi ${userName},</p>
+      <p>We received a request to reset the password for your Equoria account.</p>
+      <p>This reset link will expire in <strong>1 hour</strong> and can only be used once.</p>
+    `;
+    const bodyText = `Hi ${userName},\n\nWe received a request to reset the password for your Equoria account.\n\nThis reset link will expire in 1 hour and can only be used once.`;
+
+    const htmlEmail = generateEmailTemplate(subject, heading, bodyHtml, 'Reset Password', resetUrl);
+    const plainTextEmail = generatePlainTextEmail(
+      heading,
+      bodyText,
+      'Reset your password',
+      resetUrl,
+    );
+
+    if (process.env.NODE_ENV !== 'production') {
+      logger.info('[EmailService] Password reset email (DEV MODE - not sent)', {
+        to: email,
+        subject,
+        resetUrl,
+        htmlLength: htmlEmail.length,
+        textLength: plainTextEmail.length,
+      });
+
+      return {
+        success: true,
+        messageId: `dev-mode-password-reset-${Date.now()}`,
+        preview: resetUrl,
+      };
+    }
+
+    logger.warn('[EmailService] AWS SES not configured, password reset email not sent', {
+      to: email,
+    });
+
+    return {
+      success: true,
+      messageId: 'no-email-service-configured-password-reset',
+      preview: resetUrl,
+    };
+  } catch (error) {
+    logger.error('[EmailService] Error sending password reset email:', error);
+    throw error;
+  }
+}
+
 export default {
   sendVerificationEmail,
   sendWelcomeEmail,
+  sendPasswordResetEmail,
 };

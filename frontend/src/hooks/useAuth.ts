@@ -196,8 +196,7 @@ export function useVerificationStatus() {
 }
 
 /**
- * Hook to request password reset email
- * Note: Requires backend endpoint (not yet implemented)
+ * Hook to request password reset email.
  */
 export function useForgotPassword() {
   return useMutation<{ message: string }, ApiError, string>({
@@ -206,8 +205,7 @@ export function useForgotPassword() {
 }
 
 /**
- * Hook to reset password with token
- * Note: Requires backend endpoint (not yet implemented)
+ * Hook to reset password with token.
  */
 export function useResetPassword() {
   return useMutation<{ message: string }, ApiError, { token: string; newPassword: string }>({

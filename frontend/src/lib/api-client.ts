@@ -194,6 +194,9 @@ interface HorseSummary {
   lastShod?: string;
   lastGroomed?: string;
   trainingCooldown?: string;
+  // Earnings fields (API may return either name)
+  totalEarnings?: number;
+  earnings?: number;
   // Coat color from genetics system
   finalDisplayColor?: string;
   // Full phenotype JSONB — returned by GET /horses/:id; colorName is the player-visible color
@@ -1604,6 +1607,24 @@ export interface ClaimStatusResponse {
   rewardAmount: number;
 }
 
+export interface TransactionHistoryItem {
+  id: number;
+  type: 'credit' | 'debit';
+  amount: number;
+  category: string;
+  description: string;
+  balanceAfter: number | null;
+  metadata: Record<string, unknown>;
+  timestamp: string;
+}
+
+export interface TransactionHistoryResponse {
+  transactions: TransactionHistoryItem[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 /**
  * Bank API surface
  *   POST /api/v1/bank/claim        → Claim weekly reward
@@ -1612,6 +1633,10 @@ export interface ClaimStatusResponse {
 export const bankApi = {
   claimWeekly: () => apiClient.post<WeeklyClaimResponse>('/api/v1/bank/claim', {}),
   getClaimStatus: () => apiClient.get<ClaimStatusResponse>('/api/v1/bank/claim-status'),
+  getTransactions: (page = 1, pageSize = 20) =>
+    apiClient.get<TransactionHistoryResponse>(
+      `/api/v1/users/transactions?page=${page}&pageSize=${pageSize}`
+    ),
 };
 
 /**
@@ -1758,10 +1783,13 @@ export const competitionsApi = {
       eligibility: EligibilityResult;
     }>(`/api/competition/eligibility/${horseId}/${encodeURIComponent(discipline)}`),
   enter: (data: { horseId: number; competitionId: number }) =>
-    apiClient.post<{ success: boolean; data: { entryId: number } }>('/api/v1/competition/enter', {
-      horseId: data.horseId,
-      showId: data.competitionId,
-    }),
+    apiClient.post<{ entryId: number; horseId: number; showId: number; entryFee: number }>(
+      '/api/v1/competition/enter',
+      {
+        horseId: data.horseId,
+        showId: data.competitionId,
+      }
+    ),
 };
 
 /**
@@ -2035,16 +2063,14 @@ export const authApi = {
     ),
 
   /**
-   * Request password reset email
-   * Note: Requires backend endpoint (not yet implemented)
+   * Request password reset email.
    */
   forgotPassword: (email: string) => {
     return apiClient.post<{ message: string }>('/api/auth/forgot-password', { email });
   },
 
   /**
-   * Reset password with token
-   * Note: Requires backend endpoint (not yet implemented)
+   * Reset password with token.
    */
   resetPassword: (token: string, newPassword: string) => {
     return apiClient.post<{ message: string }>('/api/auth/reset-password', {

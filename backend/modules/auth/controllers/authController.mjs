@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { AppError, ValidationError } from '../../../errors/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../db/index.mjs';
@@ -13,7 +14,11 @@ import {
   resendVerificationEmail,
   checkVerificationStatus,
 } from '../../../utils/emailVerificationService.mjs';
-import { sendVerificationEmail, sendWelcomeEmail } from '../../../utils/emailService.mjs';
+import {
+  sendPasswordResetEmail,
+  sendVerificationEmail,
+  sendWelcomeEmail,
+} from '../../../utils/emailService.mjs';
 import { COOKIE_OPTIONS, CLEAR_COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
 
 // Starter kit seeded for every new user at registration (Story 15-2)
@@ -36,6 +41,33 @@ const STARTER_KIT_INVENTORY = [
   },
 ];
 const STARTER_BONUS_COINS = 500;
+const PASSWORD_RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
+
+async function ensurePasswordResetTokenTable(client = prisma) {
+  await client.$executeRawUnsafe(`
+    CREATE TABLE IF NOT EXISTS password_reset_tokens (
+      id SERIAL PRIMARY KEY,
+      "tokenHash" TEXT NOT NULL UNIQUE,
+      "userId" TEXT NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
+      email TEXT NOT NULL,
+      "expiresAt" TIMESTAMPTZ NOT NULL,
+      "usedAt" TIMESTAMPTZ,
+      "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      "ipAddress" TEXT,
+      "userAgent" TEXT
+    )
+  `);
+  await client.$executeRawUnsafe(
+    'CREATE INDEX IF NOT EXISTS password_reset_tokens_user_idx ON password_reset_tokens ("userId")',
+  );
+  await client.$executeRawUnsafe(
+    'CREATE INDEX IF NOT EXISTS password_reset_tokens_expires_idx ON password_reset_tokens ("expiresAt")',
+  );
+}
+
+function hashPasswordResetToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
 
 /**
  * Register a new user and create a corresponding user record.
@@ -96,16 +128,18 @@ export const register = async (req, res, next) => {
           age: 3,
           dateOfBirth,
           userId: user.id,
-          speed: 20,
-          stamina: 20,
-          agility: 20,
-          balance: 20,
-          precision: 20,
-          intelligence: 20,
-          boldness: 20,
-          flexibility: 20,
-          obedience: 20,
-          focus: 20,
+          speed: 17,
+          stamina: 17,
+          agility: 17,
+          balance: 17,
+          precision: 17,
+          intelligence: 17,
+          boldness: 17,
+          flexibility: 17,
+          obedience: 17,
+          focus: 17,
+          endurance: 17,
+          strength: 17,
           healthStatus: 'Excellent',
         },
       });
@@ -635,6 +669,156 @@ export const changePassword = async (req, res, next) => {
   }
 };
 
+export const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      throw new ValidationError('Email is required');
+    }
+
+    await ensurePasswordResetTokenTable();
+
+    const user = await prisma.user.findUnique({
+      where: { email },
+      select: { id: true, email: true, username: true, firstName: true },
+    });
+
+    const responseMessage =
+      'If an account exists for that email, password reset instructions have been sent.';
+
+    if (!user) {
+      logger.info('[authController.forgotPassword] Password reset requested for unknown email', {
+        email,
+      });
+      return res.status(200).json({
+        status: 'success',
+        message: responseMessage,
+      });
+    }
+
+    const rawToken = crypto.randomBytes(32).toString('hex');
+    const tokenHash = hashPasswordResetToken(rawToken);
+    const expiresAt = new Date(Date.now() + PASSWORD_RESET_TOKEN_TTL_MS);
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+
+    await prisma.$transaction(async tx => {
+      await ensurePasswordResetTokenTable(tx);
+      await tx.$executeRawUnsafe(
+        `UPDATE password_reset_tokens
+         SET "usedAt" = NOW()
+         WHERE "userId" = $1 AND "usedAt" IS NULL`,
+        user.id,
+      );
+      await tx.$executeRawUnsafe(
+        `INSERT INTO password_reset_tokens
+           ("tokenHash", "userId", email, "expiresAt", "ipAddress", "userAgent")
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        tokenHash,
+        user.id,
+        user.email,
+        expiresAt,
+        ipAddress,
+        userAgent,
+      );
+    });
+
+    await sendPasswordResetEmail(user.email, rawToken, user);
+
+    logger.info('[authController.forgotPassword] Password reset email prepared', {
+      userId: user.id,
+      email: user.email,
+      expiresAt,
+    });
+
+    return res.status(200).json({
+      status: 'success',
+      message: responseMessage,
+    });
+  } catch (error) {
+    logger.error('[authController.forgotPassword] Error:', error);
+    if (error instanceof AppError || error instanceof ValidationError) {
+      return next(error);
+    }
+    next(new AppError('Failed to request password reset.', 500));
+  }
+};
+
+export const resetPassword = async (req, res, next) => {
+  try {
+    const { token, newPassword, password } = req.body;
+    const candidatePassword = newPassword || password;
+
+    if (!token || !candidatePassword) {
+      throw new ValidationError('Token and new password are required');
+    }
+    if (candidatePassword.length < 8) {
+      throw new ValidationError('New password must be at least 8 characters long');
+    }
+
+    await ensurePasswordResetTokenTable();
+
+    const tokenHash = hashPasswordResetToken(token);
+    const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
+    const hashedPassword = await bcrypt.hash(candidatePassword, saltRounds);
+
+    const result = await prisma.$transaction(async tx => {
+      await ensurePasswordResetTokenTable(tx);
+      const rows = await tx.$queryRawUnsafe(
+        `SELECT id, "userId", "expiresAt", "usedAt"
+         FROM password_reset_tokens
+         WHERE "tokenHash" = $1
+         FOR UPDATE`,
+        tokenHash,
+      );
+
+      const resetToken = rows[0];
+      if (!resetToken || resetToken.usedAt || new Date(resetToken.expiresAt) <= new Date()) {
+        return { ok: false };
+      }
+
+      await tx.user.update({
+        where: { id: resetToken.userId },
+        data: { password: hashedPassword },
+      });
+      await tx.$executeRawUnsafe(
+        `UPDATE password_reset_tokens
+         SET "usedAt" = NOW()
+         WHERE id = $1`,
+        resetToken.id,
+      );
+      await tx.refreshToken.deleteMany({
+        where: { userId: resetToken.userId },
+      });
+
+      return { ok: true, userId: resetToken.userId };
+    });
+
+    if (!result.ok) {
+      throw new AppError('Password reset token is invalid or expired', 400);
+    }
+
+    res.clearCookie('accessToken', CLEAR_COOKIE_OPTIONS.accessToken);
+    res.clearCookie('refreshToken', CLEAR_COOKIE_OPTIONS.refreshToken);
+
+    logger.info('[authController.resetPassword] Password reset successfully', {
+      userId: result.userId,
+    });
+
+    return res.status(200).json({
+      status: 'success',
+      message: 'Password reset successfully. Please login again.',
+    });
+  } catch (error) {
+    logger.error('[authController.resetPassword] Error:', error);
+    if (error instanceof AppError || error instanceof ValidationError) {
+      return next(error);
+    }
+    next(new AppError('Failed to reset password.', 500));
+  }
+};
+
 /**
  * Verify Email
  * Validates email verification token and marks email as verified
@@ -821,9 +1005,97 @@ export const completeOnboarding = async (req, res, next) => {
  * When the user reaches step 10, also sets completedOnboarding: true.
  * Used by the OnboardingSpotlight component to drive the 10-step guided tour.
  */
+import { createRequire } from 'module';
+const requireJson = createRequire(import.meta.url);
+const BREED_STARTER_STATS = requireJson('../../../data/breedStarterStats.json');
+
+/**
+ * Generate breed-specific starter stats using mean + std_dev from breed data.
+ * Uses normal distribution (Box-Muller) around the breed's mean for each stat.
+ * Clamps each stat to [1, 100] and ensures total does not exceed 200.
+ */
+function generateStarterStats(breedName) {
+  const statNames = [
+    'speed',
+    'stamina',
+    'agility',
+    'balance',
+    'precision',
+    'intelligence',
+    'boldness',
+    'flexibility',
+    'obedience',
+    'focus',
+    'endurance',
+    'strength',
+  ];
+  const breedData = breedName ? BREED_STARTER_STATS[breedName] : null;
+
+  const stats = {};
+
+  if (breedData) {
+    // Box-Muller transform for normal distribution
+    function normalRandom(mean, std) {
+      const u1 = Math.random();
+      const u2 = Math.random();
+      const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
+      return Math.round(mean + z * std);
+    }
+
+    for (const stat of statNames) {
+      const def = breedData[stat];
+      if (def) {
+        stats[stat] = Math.max(1, Math.min(100, normalRandom(def.mean, def.std)));
+      } else {
+        stats[stat] = Math.max(1, Math.min(100, normalRandom(15, 3)));
+      }
+    }
+
+    // Enforce total cap of 200
+    let total = Object.values(stats).reduce((a, b) => a + b, 0);
+    while (total > 200) {
+      // Reduce the highest stat by 1
+      const highest = statNames.reduce((a, b) => (stats[a] >= stats[b] ? a : b));
+      if (stats[highest] > 1) {
+        stats[highest]--;
+        total--;
+      } else {
+        break;
+      }
+    }
+  } else {
+    // Fallback: balanced stats, ~17 each across 12 stats
+    statNames.forEach(s => {
+      stats[s] = 17;
+    });
+  }
+
+  return stats;
+}
+
 export const advanceOnboarding = async (req, res, next) => {
   try {
     const userId = req.user.id;
+    const { horseName, breedId, gender } = req.body || {};
+    const hasHorseCustomization =
+      typeof horseName === 'string' || breedId !== undefined || typeof gender === 'string';
+    const trimmedHorseName = typeof horseName === 'string' ? horseName.trim().slice(0, 40) : '';
+    const normalizedBreedId =
+      breedId !== undefined && Number.isInteger(Number(breedId)) ? Number(breedId) : null;
+    const normalizedGender =
+      gender === 'Mare' || gender === 'Stallion' || gender === 'Gelding' ? gender : null;
+
+    if (hasHorseCustomization) {
+      if (!trimmedHorseName) {
+        throw new AppError('Starter horse name is required.', 400);
+      }
+      if (!normalizedBreedId) {
+        throw new AppError('Starter horse breed is required.', 400);
+      }
+      if (!normalizedGender) {
+        throw new AppError('Starter horse gender is required.', 400);
+      }
+    }
 
     const user = await prisma.user.findUnique({
       where: { id: userId },
@@ -838,7 +1110,7 @@ export const advanceOnboarding = async (req, res, next) => {
       typeof user.settings === 'object' && user.settings !== null ? user.settings : {};
     const currentStep =
       typeof currentSettings.onboardingStep === 'number' ? currentSettings.onboardingStep : 0;
-    const newStep = currentStep + 1;
+    const newStep = hasHorseCustomization ? 10 : currentStep + 1;
     const isComplete = newStep >= 10;
 
     const updatedSettings = {
@@ -847,10 +1119,63 @@ export const advanceOnboarding = async (req, res, next) => {
       ...(isComplete ? { completedOnboarding: true } : {}),
     };
 
-    await prisma.user.update({
-      where: { id: userId },
-      data: { settings: updatedSettings },
+    let persistedHorse = null;
+    await prisma.$transaction(async tx => {
+      if (hasHorseCustomization) {
+        const breed = await tx.breed.findUnique({
+          where: { id: normalizedBreedId },
+          select: { id: true, name: true },
+        });
+
+        if (!breed) {
+          throw new AppError('Selected starter horse breed was not found.', 400);
+        }
+
+        const updateData = {
+          name: trimmedHorseName,
+          breedId: breed.id,
+          sex: normalizedGender,
+          ...generateStarterStats(breed.name),
+        };
+
+        const starterHorse = await tx.horse.findFirst({
+          where: { userId },
+          orderBy: { id: 'asc' },
+        });
+
+        if (starterHorse) {
+          persistedHorse = await tx.horse.update({
+            where: { id: starterHorse.id },
+            data: updateData,
+            include: { breed: { select: { id: true, name: true } } },
+          });
+        } else {
+          const today = new Date();
+          const dateOfBirth = new Date(today.getFullYear() - 3, today.getMonth(), today.getDate());
+          persistedHorse = await tx.horse.create({
+            data: {
+              ...updateData,
+              age: 3,
+              dateOfBirth,
+              userId,
+              healthStatus: 'Excellent',
+            },
+            include: { breed: { select: { id: true, name: true } } },
+          });
+        }
+      }
+
+      await tx.user.update({
+        where: { id: userId },
+        data: { settings: updatedSettings },
+      });
     });
+
+    if (persistedHorse) {
+      logger.info(
+        `[authController.advanceOnboarding] Persisted starter horse ${persistedHorse.id} for user ${userId}`,
+      );
+    }
 
     logger.info(
       `[authController.advanceOnboarding] User ${userId} advanced to step ${newStep}${isComplete ? ' (onboarding complete)' : ''}`,
@@ -859,7 +1184,19 @@ export const advanceOnboarding = async (req, res, next) => {
     res.status(200).json({
       status: 'success',
       message: isComplete ? 'Onboarding complete' : 'Onboarding step advanced',
-      data: { step: newStep, completed: isComplete },
+      data: {
+        step: newStep,
+        completed: isComplete,
+        horse: persistedHorse
+          ? {
+              id: persistedHorse.id,
+              name: persistedHorse.name,
+              breedId: persistedHorse.breedId,
+              breed: persistedHorse.breed?.name ?? null,
+              gender: persistedHorse.sex,
+            }
+          : null,
+      },
     });
   } catch (error) {
     logger.error('[authController.advanceOnboarding] Error:', error);

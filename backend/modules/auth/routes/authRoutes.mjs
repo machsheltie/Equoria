@@ -565,6 +565,42 @@ router.post(
   authController.changePassword,
 );
 
+router.post(
+  '/forgot-password',
+  authRateLimiter,
+  [
+    body('email').isEmail().withMessage('Valid email is required').normalizeEmail().trim(),
+    handleValidationErrors,
+  ],
+  authController.forgotPassword,
+);
+
+router.post(
+  '/reset-password',
+  authRateLimiter,
+  [
+    body('token').isLength({ min: 32 }).withMessage('Reset token is required').trim(),
+    body('newPassword')
+      .optional()
+      .isLength({ min: 8, max: 128 })
+      .withMessage('New password must be between 8 and 128 characters long')
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+      .withMessage(
+        'New password must contain at least one lowercase letter, one uppercase letter, and one number',
+      ),
+    body('password')
+      .optional()
+      .isLength({ min: 8, max: 128 })
+      .withMessage('Password must be between 8 and 128 characters long')
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+      .withMessage(
+        'Password must contain at least one lowercase letter, one uppercase letter, and one number',
+      ),
+    handleValidationErrors,
+  ],
+  authController.resetPassword,
+);
+
 /**
  * @swagger
  * /api/auth/verify-email:
