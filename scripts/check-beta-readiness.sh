@@ -107,7 +107,7 @@ run_gate "Frontend tsc --noEmit" bash -c "cd frontend && npx tsc --noEmit 2>&1"
 # ---------------------------------------------------------------------------
 echo "${BOLD}[3/8] Backend Tests — Routes + Integration${RESET}"
 run_gate "Routes tests" bash -c "npm test -- --testPathPattern='backend/tests/routes' --forceExit 2>&1"
-run_gate "Integration tests" bash -c "npm test -- --testPathPattern='backend/tests/integration' --forceExit 2>&1"
+run_gate "Integration tests" bash -c "npm test -- --testPathPattern='backend/tests/integration' --maxWorkers=1 --forceExit 2>&1"
 
 # ---------------------------------------------------------------------------
 # GATE 4 — E2E beta critical path

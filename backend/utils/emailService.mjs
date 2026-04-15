@@ -8,6 +8,8 @@
  */
 
 import logger from './logger.mjs';
+import fs from 'fs';
+import path from 'path';
 
 // Email configuration
 const EMAIL_CONFIG = {
@@ -18,6 +20,31 @@ const EMAIL_CONFIG = {
     process.env.PASSWORD_RESET_URL_BASE || 'http://localhost:3000/reset-password',
   SUPPORT_EMAIL: process.env.SUPPORT_EMAIL || 'support@equoria.com',
 };
+
+/**
+ * Capture non-production emails for local readiness gates.
+ *
+ * This is a real email-service sink, not a test bypass: callers still execute
+ * the same send*Email service path and receive the same preview URL that the
+ * development email adapter would log.
+ */
+function captureEmailPreview(kind, payload) {
+  const captureFile = process.env.EMAIL_CAPTURE_FILE;
+  if (!captureFile || process.env.NODE_ENV === 'production') {
+    return;
+  }
+
+  try {
+    fs.mkdirSync(path.dirname(captureFile), { recursive: true });
+    fs.appendFileSync(
+      captureFile,
+      `${JSON.stringify({ kind, capturedAt: new Date().toISOString(), ...payload })}\n`,
+      'utf-8',
+    );
+  } catch (error) {
+    logger.error('[EmailService] Failed to capture email preview:', error);
+  }
+}
 
 /**
  * Generate HTML Email Template
@@ -217,6 +244,12 @@ export async function sendVerificationEmail(email, token, user = {}) {
 
     // In development/testing, log email instead of sending
     if (process.env.NODE_ENV !== 'production') {
+      captureEmailPreview('verification', {
+        to: email,
+        subject,
+        preview: verificationUrl,
+      });
+
       logger.info('[EmailService] Email verification (DEV MODE - not sent)', {
         to: email,
         subject,
@@ -294,6 +327,11 @@ export async function sendWelcomeEmail(email, user = {}) {
 
     // In development/testing, log email instead of sending
     if (process.env.NODE_ENV !== 'production') {
+      captureEmailPreview('welcome', {
+        to: email,
+        subject,
+      });
+
       logger.info('[EmailService] Welcome email (DEV MODE - not sent)', {
         to: email,
         subject,
@@ -343,6 +381,12 @@ export async function sendPasswordResetEmail(email, token, user = {}) {
     );
 
     if (process.env.NODE_ENV !== 'production') {
+      captureEmailPreview('password-reset', {
+        to: email,
+        subject,
+        preview: resetUrl,
+      });
+
       logger.info('[EmailService] Password reset email (DEV MODE - not sent)', {
         to: email,
         subject,
