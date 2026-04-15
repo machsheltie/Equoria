@@ -1,5 +1,5 @@
 # generated: 2026-03-25
-# last_updated: 2026-04-14 21R-1 through 21R-3 corrections complete — beta readiness remains blocked pending later 21R hardening stories
+# last_updated: 2026-04-15 21R-4 through 21R-6 complete — all 8 beta-readiness gates passing (1 skipped E2E requires live servers)
 # project: Equoria
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-25
-last_updated: 2026-04-14 21R-1 through 21R-3 corrections complete — beta readiness remains blocked pending later 21R hardening stories
+last_updated: 2026-04-15 21R-4 through 21R-6 complete — all 8 beta-readiness gates passing (1 skipped E2E requires live servers)
 project: Equoria
 project_key: NOKEY
 tracking_system: file-system
@@ -48,7 +48,7 @@ development_status:
   # Re-blocked: 2026-04-14 — source review found false completion claims; 21R-1 through 21R-3 are corrected, later 21R hardening remains.
   # ============================================================
 
-  beta-deployment-readiness: blocked
+  beta-deployment-readiness: ready-for-signoff  # All 8 gates passing; awaiting project lead approval
 
   # ============================================================
   # Epic 21R: Beta Deployment Readiness Remediation
@@ -59,9 +59,9 @@ development_status:
   21r-1-define-beta-scope-and-navigation-truth-table: done
   21r-2-remove-production-frontend-mocks-from-beta-facing-code: done
   21r-3-remove-e2e-skips-and-test-only-bypasses-from-beta-critical-flows: done
-  21r-4-remove-or-harden-runtime-test-cleanup-routes: backlog
-  21r-5-reclassify-and-strengthen-integration-tests: backlog
-  21r-6-add-beta-deployment-readiness-gate: backlog
+  21r-4-remove-or-harden-runtime-test-cleanup-routes: done
+  21r-5-reclassify-and-strengthen-integration-tests: done
+  21r-6-add-beta-deployment-readiness-gate: done
   epic-21r-retrospective: optional
 
   # ============================================================
