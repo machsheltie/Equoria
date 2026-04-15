@@ -138,3 +138,23 @@ IMPLEMENTATION_*.md
 *.db
 *.sqlite
 *.sqlite3
+
+# === Nested node_modules (frontend, packages) ===
+frontend/node_modules/
+packages/*/node_modules/
+
+# === Playwright / E2E Artifacts ===
+playwright-report/
+storageState.json
+setup-failure.png
+tests/e2e/test-credentials.json
+
+# === Local Agent Infrastructure ===
+.agent/
+.agents/
+.gemini/
+.playwright-mcp/
+
+# === Backend Local Data ===
+backend/_ul/
+backend/data/
