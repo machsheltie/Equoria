@@ -65,6 +65,14 @@ export const buildDatabaseUrl = (baseUrl, env = process.env) => {
     }
   });
 
+  // Supabase Transaction mode pooler uses port 6543.
+  // Prisma requires pgbouncer=true in Transaction mode to disable prepared statements.
+  const isSupabaseTransactionMode =
+    url.hostname.includes('pooler.supabase.com') && url.port === '6543';
+  if (isSupabaseTransactionMode && !url.searchParams.has('pgbouncer')) {
+    url.searchParams.set('pgbouncer', 'true');
+  }
+
   return url.toString();
 };
 

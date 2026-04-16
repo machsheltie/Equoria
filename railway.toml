@@ -8,7 +8,7 @@ dockerfilePath = "Dockerfile"
 [deploy]
 # Run database migrations before starting the server on every deploy.
 # prisma migrate deploy is idempotent — safe to run even with no new migrations.
-startCommand = "sh -c 'cd /app/packages/database && (npx prisma migrate deploy || echo \"[railway] Migrations skipped — pool exhausted, schema already current\") && cd /app/backend && node server.mjs'"
+startCommand = "sh -c 'cd /app/packages/database && (DATABASE_URL=\"${DIRECT_URL:-$DATABASE_URL}\" npx prisma migrate deploy || echo \"[railway] Migrations skipped — schema already current\") && cd /app/backend && node server.mjs'"
 healthcheckPath = "/health"
 healthcheckTimeout = 300
 restartPolicyType = "ON_FAILURE"
