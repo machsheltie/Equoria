@@ -61,8 +61,8 @@ interface PageBackgroundProps {
 
 /**
  * Renders an invisible marker div carrying the resolved WebP path in
- * `data-bg` (used by tests to assert scene paths without relying on
- * jsdom's incomplete image-set() parsing). Does NOT apply any style to
+ * `data-bg` (used by tests to assert resolved paths without relying on
+ * jsdom's incomplete backgroundImage parsing). Does NOT apply any style to
  * document.body — callers that need the background should use
  * `usePageBackground()` instead.
  */

@@ -37,13 +37,33 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
-import { readFileSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 
 // ESM equivalents of __filename / __dirname
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+const backendPublicDir = join(__dirname, 'public');
+const frontendDistDir = join(__dirname, '..', 'frontend', 'dist');
+const frontendPublicDir = join(__dirname, '..', 'frontend', 'public');
+const requiredFrontendAssets = [
+  'index.html',
+  'images/bg-stable.webp',
+  'images/bg-horse-detail.webp',
+  'assets/art/farrier.webp',
+  'images/farriershop.webp',
+];
+const hasRequiredFrontendAssets = publicDir =>
+  requiredFrontendAssets.every(assetPath => existsSync(join(publicDir, assetPath)));
+const staticAssetDirs = [backendPublicDir, frontendDistDir, frontendPublicDir].filter(publicDir =>
+  existsSync(publicDir),
+);
+const spaPublicDir = hasRequiredFrontendAssets(backendPublicDir)
+  ? backendPublicDir
+  : existsSync(join(frontendDistDir, 'index.html'))
+    ? frontendDistDir
+    : null;
 import config from './config/config.mjs';
 import logger from './utils/logger.mjs';
 
@@ -461,17 +481,18 @@ app.use('/api/admin', adminRouter);
 app.use('/api/v1', authRouter);
 app.use('/api', authRouter);
 
-// Serve frontend static assets in production (CSS/JS/images from dist/)
+// Serve frontend static assets in every environment so direct backend-port
+// image requests work for local development, non-Docker production, and Docker.
 // Must come before the 404 handler so asset requests are served, not rejected
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(join(__dirname, 'public')));
+for (const staticAssetDir of staticAssetDirs) {
+  app.use(express.static(staticAssetDir));
 }
 
 // Cache index.html in memory at startup to avoid sendFile streaming issues
 let spaHtml = null;
-if (process.env.NODE_ENV === 'production') {
+if (process.env.NODE_ENV === 'production' && spaPublicDir) {
   try {
-    spaHtml = readFileSync(join(__dirname, 'public', 'index.html'), 'utf-8');
+    spaHtml = readFileSync(join(spaPublicDir, 'index.html'), 'utf-8');
   } catch {
     logger.warn('[SPA] Could not read index.html — SPA fallback disabled');
   }

@@ -12,6 +12,7 @@ COPY frontend/ ./
 
 # Build — tsc + vite build (VITE_API_URL unset for relative /api/... URLs)
 RUN npm run build
+RUN npm run verify:assets
 
 # ─── Stage 2: Production backend ────────────────────────────────────────────
 FROM node:22-alpine AS production
@@ -44,6 +45,14 @@ RUN node node_modules/prisma/build/index.js generate --schema=prisma/schema.pris
 # Embed the frontend build into the backend's public folder
 # Express will serve these as static assets in production
 COPY --from=frontend-builder /app/frontend/dist /app/backend/public
+RUN for file in \
+      /app/backend/public/index.html \
+      /app/backend/public/images/bg-stable.webp \
+      /app/backend/public/images/bg-horse-detail.webp \
+      /app/backend/public/assets/art/farrier.webp \
+      /app/backend/public/images/farriershop.webp; do \
+        test -f "$file" || { echo "Missing frontend asset in Docker image: $file"; exit 1; }; \
+    done
 
 # Security: run as non-root user
 RUN addgroup -g 1001 -S nodejs && \

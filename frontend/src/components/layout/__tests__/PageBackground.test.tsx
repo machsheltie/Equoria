@@ -42,9 +42,10 @@ describe('usePageBackground', () => {
     expect(result.current.backgroundImage).toContain('/images/backgrounds/auth/bg-');
   });
 
-  it('uses scene-specific path when scene="hub"', () => {
+  it('falls back to the generic path when scene="hub" has no delivered art', () => {
     const { result } = renderHook(() => usePageBackground({ scene: 'hub' }));
-    expect(result.current.backgroundImage).toContain('/images/backgrounds/hub/bg-');
+    expect(result.current.backgroundImage).toContain('/images/bg-');
+    expect(result.current.backgroundImage).not.toContain('/images/backgrounds/hub/');
   });
 
   it('prefers src over scene when both provided', () => {
@@ -53,6 +54,33 @@ describe('usePageBackground', () => {
     );
     expect(result.current.backgroundImage).toContain('bg-stable.webp');
     expect(result.current.backgroundImage).not.toContain('backgrounds/hub');
+  });
+
+  it('uses the stable WebP background as a plain URL', () => {
+    const { result } = renderHook(() => usePageBackground({ src: '/images/bg-stable.webp' }));
+    const bg = result.current.backgroundImage as string;
+
+    expect(bg).toContain("url('/images/bg-stable.webp')");
+    expect(bg).not.toContain('image-set');
+    expect(bg).not.toContain('.jpg');
+  });
+
+  it('uses the horse detail WebP background as a plain URL', () => {
+    const { result } = renderHook(() => usePageBackground({ src: '/images/bg-horse-detail.webp' }));
+    const bg = result.current.backgroundImage as string;
+
+    expect(bg).toContain("url('/images/bg-horse-detail.webp')");
+    expect(bg).not.toContain('image-set');
+    expect(bg).not.toContain('.jpg');
+  });
+
+  it('uses the farrier WebP background as a plain URL', () => {
+    const { result } = renderHook(() => usePageBackground({ src: '/assets/art/farrier.webp' }));
+    const bg = result.current.backgroundImage as string;
+
+    expect(bg).toContain("url('/assets/art/farrier.webp')");
+    expect(bg).not.toContain('image-set');
+    expect(bg).not.toContain('.jpg');
   });
 
   it('default scene resolves to generic path (not /backgrounds/default/)', () => {

@@ -579,7 +579,15 @@ jobs:
             -e DATABASE_URL=postgresql://test:test@localhost/test \
             -e JWT_SECRET=test-secret-minimum-32-characters-long \
             equoria:${{ github.sha }} \
-            sh -c "test -f /app/backend/public/index.html && echo '✅ Frontend embedded' || (echo '❌ Frontend not embedded' && exit 1)"
+            sh -c "for file in \
+              /app/backend/public/index.html \
+              /app/backend/public/images/bg-stable.webp \
+              /app/backend/public/images/bg-horse-detail.webp \
+              /app/backend/public/assets/art/farrier.webp \
+              /app/backend/public/images/farriershop.webp; do \
+                test -f \"\$file\" || { echo \"Missing frontend asset: \$file\"; exit 1; }; \
+              done; \
+              echo 'Frontend shell and required image assets embedded'"
 
   # ──────────────────────────────────────────────────────────────────────────────
   # JOB 10 — Deployment Gate (master only)
