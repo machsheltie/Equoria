@@ -165,4 +165,5 @@ tests/e2e/test-credentials.json
 # === Backend Local Data ===
 backend/_ul
 backend/_ul/
-backend/data/
+backend/data/*
+!backend/data/breedStarterStats.json
