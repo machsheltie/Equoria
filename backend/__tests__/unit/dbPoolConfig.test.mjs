@@ -41,7 +41,7 @@ describe('dbPoolConfig', () => {
     const baseUrl = 'postgresql://user:pass@localhost:5432/equoria';
     const url = new URL(buildDatabaseUrl(baseUrl, env));
 
-    expect(url.searchParams.get('connection_limit')).toBe('20');
+    expect(url.searchParams.get('connection_limit')).toBe('3');
     expect(url.searchParams.get('pool_timeout')).toBe('30');
     expect(url.searchParams.get('connect_timeout')).toBe('30');
   });
