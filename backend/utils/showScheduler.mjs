@@ -11,15 +11,17 @@ import logger from './logger.mjs';
 import { executeClosedShows } from '../controllers/showController.mjs';
 
 const POLL_INTERVAL_MS = 10 * 60 * 1000; // 10 minutes
+const INITIAL_DELAY_MS = 60 * 1000; // Let Railway health checks and pool startup settle.
 
 let schedulerTimer = null;
+let initialRunTimer = null;
 
 export function startShowScheduler() {
   if (schedulerTimer) {
     return;
   } // already running
 
-  logger.info('Show scheduler started (10-minute poll interval)');
+  logger.info('Show scheduler started (10-minute poll interval, first run delayed 60 seconds)');
 
   async function runCycle() {
     try {
@@ -29,12 +31,21 @@ export function startShowScheduler() {
     }
   }
 
-  // Run once immediately on startup, then on interval
-  runCycle();
+  // Delay the first DB-heavy cycle so startup health checks do not compete
+  // with background jobs for Supabase Session-mode pool clients.
+  initialRunTimer = setTimeout(() => {
+    initialRunTimer = null;
+    runCycle();
+  }, INITIAL_DELAY_MS);
   schedulerTimer = setInterval(runCycle, POLL_INTERVAL_MS);
 }
 
 export function stopShowScheduler() {
+  if (initialRunTimer) {
+    clearTimeout(initialRunTimer);
+    initialRunTimer = null;
+  }
+
   if (schedulerTimer) {
     clearInterval(schedulerTimer);
     schedulerTimer = null;

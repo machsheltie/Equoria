@@ -372,9 +372,7 @@ app.use(requestTimeoutMiddleware(30000)); // 30 second timeout
  * 4. Labs routes (experimental, authenticated)
  */
 
-// PUBLIC ROUTES - No authentication required
-// Health check endpoint — performs a real DB ping so "database: healthy" is never a lie
-publicRouter.get('/health', async (req, res) => {
+const getRedisHealthInfo = async () => {
   // Check Redis connection status
   const redisConnected = isRedisConnected();
   const redisClient = getRedisClient();
@@ -401,9 +399,34 @@ publicRouter.get('/health', async (req, res) => {
     }
   }
 
-  // Real database liveness check — SELECT 1 confirms Postgres is reachable
+  return redisInfo;
+};
+
+// PUBLIC ROUTES - No authentication required
+// Health check endpoint — keep lightweight for Railway liveness probes.
+// Database readiness is exposed separately at /ready so health probes do not
+// consume scarce Supabase Session-mode pool clients.
+publicRouter.get('/health', async (req, res) => {
+  const redisInfo = await getRedisHealthInfo();
+
+  res.status(200).json({
+    success: true,
+    status: 'healthy',
+    message: 'Server is healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    environment: config.env,
+    services: {
+      api: 'healthy',
+      redis: redisInfo,
+    },
+  });
+});
+
+// Readiness endpoint — performs a real DB ping for operators and deploy smoke tests.
+publicRouter.get('/ready', async (req, res) => {
+  const redisInfo = await getRedisHealthInfo();
   let dbInfo = { status: 'healthy' };
-  let overallStatus = 'healthy';
   let statusCode = 200;
 
   try {
@@ -412,15 +435,14 @@ publicRouter.get('/health', async (req, res) => {
     dbInfo.responseTime = `${Date.now() - dbStart}ms`;
   } catch (error) {
     dbInfo = { status: 'unhealthy', error: error.message };
-    overallStatus = 'unhealthy';
     statusCode = 503;
-    logger.error(`[HealthCheck] Database unreachable: ${error.message}`);
+    logger.error(`[ReadinessCheck] Database unreachable: ${error.message}`);
   }
 
   res.status(statusCode).json({
     success: statusCode === 200,
-    status: overallStatus,
-    message: statusCode === 200 ? 'Server is healthy' : 'Database unreachable',
+    status: statusCode === 200 ? 'ready' : 'not_ready',
+    message: statusCode === 200 ? 'Server is ready' : 'Database unreachable',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: config.env,
