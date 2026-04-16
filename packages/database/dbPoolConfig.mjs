@@ -7,7 +7,9 @@ export const getPoolConfig = (env = process.env) => {
   const isTestEnv = env.NODE_ENV === 'test' || env.JEST_WORKER_ID !== undefined;
 
   const defaults = {
-    connection_limit: 20,
+    // Railway PgBouncer Session mode has a limited pool_size (typically ≤10 on Hobby tier).
+    // Keep production connections small; override with DB_POOL_SIZE env var if needed.
+    connection_limit: isTestEnv ? 20 : 3,
     pool_timeout: 30,
     connect_timeout: 30,
   };
