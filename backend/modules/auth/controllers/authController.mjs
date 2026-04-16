@@ -14,11 +14,7 @@ import {
   resendVerificationEmail,
   checkVerificationStatus,
 } from '../../../utils/emailVerificationService.mjs';
-import {
-  sendPasswordResetEmail,
-  sendVerificationEmail,
-  sendWelcomeEmail,
-} from '../../../utils/emailService.mjs';
+import emailService from '../../../utils/emailService.mjs';
 import { COOKIE_OPTIONS, CLEAR_COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
 
 // Starter kit seeded for every new user at registration (Story 15-2)
@@ -113,6 +109,11 @@ export const register = async (req, res, next) => {
         settings: settings || {
           completedOnboarding: false,
           inventory: STARTER_KIT_INVENTORY,
+          // Starter crafting materials — enough to craft at least one Tier 0 recipe (4.3 fix)
+          // Tier 0 recipes: simple-bridle (leather:1, dye:1, cost:100),
+          //                 basic-halter (leather:1, cost:75),
+          //                 cloth-blanket (cloth:2, dye:2, thread:1, cost:120)
+          craftingMaterials: { leather: 2, cloth: 2, dye: 2, metal: 0, thread: 1 },
         },
       },
     });
@@ -188,7 +189,7 @@ export const register = async (req, res, next) => {
 
     // Send verification email (don't block registration on email send failure)
     try {
-      await sendVerificationEmail(user.email, verificationToken.token, user);
+      await emailService.sendVerificationEmail(user.email, verificationToken.token, user);
       logger.info('[authController.register] Verification email sent', {
         userId: user.id,
         email: user.email,
@@ -699,12 +700,15 @@ export const forgotPassword = async (req, res, next) => {
 
     const rawToken = crypto.randomBytes(32).toString('hex');
     const tokenHash = hashPasswordResetToken(rawToken);
-    const expiresAt = new Date(Date.now() + PASSWORD_RESET_TOKEN_TTL_MS);
     const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     const userAgent = req.headers['user-agent'];
+    const ttlSeconds = Math.floor(PASSWORD_RESET_TOKEN_TTL_MS / 1000);
 
+    // Invalidate existing unused tokens and insert the new one atomically.
+    // DDL (ensurePasswordResetTokenTable) is kept outside the transaction to avoid
+    // DDL-inside-Prisma-interactive-transaction issues; table is guaranteed to exist here.
+    // expiresAt uses NOW() server-side to avoid client timezone serialization issues.
     await prisma.$transaction(async tx => {
-      await ensurePasswordResetTokenTable(tx);
       await tx.$executeRawUnsafe(
         `UPDATE password_reset_tokens
          SET "usedAt" = NOW()
@@ -714,22 +718,21 @@ export const forgotPassword = async (req, res, next) => {
       await tx.$executeRawUnsafe(
         `INSERT INTO password_reset_tokens
            ("tokenHash", "userId", email, "expiresAt", "ipAddress", "userAgent")
-         VALUES ($1, $2, $3, $4, $5, $6)`,
+         VALUES ($1, $2, $3, NOW() + ($4 || ' seconds')::interval, $5, $6)`,
         tokenHash,
         user.id,
         user.email,
-        expiresAt,
+        String(ttlSeconds),
         ipAddress,
         userAgent,
       );
     });
 
-    await sendPasswordResetEmail(user.email, rawToken, user);
+    await emailService.sendPasswordResetEmail(user.email, rawToken, user);
 
     logger.info('[authController.forgotPassword] Password reset email prepared', {
       userId: user.id,
       email: user.email,
-      expiresAt,
     });
 
     return res.status(200).json({
@@ -763,47 +766,41 @@ export const resetPassword = async (req, res, next) => {
     const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
     const hashedPassword = await bcrypt.hash(candidatePassword, saltRounds);
 
-    const result = await prisma.$transaction(async tx => {
-      await ensurePasswordResetTokenTable(tx);
-      const rows = await tx.$queryRawUnsafe(
-        `SELECT id, "userId", "expiresAt", "usedAt"
-         FROM password_reset_tokens
-         WHERE "tokenHash" = $1
-         FOR UPDATE`,
-        tokenHash,
-      );
+    // Look up a valid (non-expired, non-used) token — expiry checked server-side with
+    // NOW() to avoid client timezone serialization issues with TIMESTAMP columns.
+    const rows = await prisma.$queryRawUnsafe(
+      `SELECT id, "userId"
+       FROM password_reset_tokens
+       WHERE "tokenHash" = $1
+         AND "usedAt" IS NULL
+         AND "expiresAt" > NOW()`,
+      tokenHash,
+    );
+    const resetToken = rows[0];
+    if (!resetToken) {
+      throw new AppError('Password reset token is invalid or expired', 400);
+    }
 
-      const resetToken = rows[0];
-      if (!resetToken || resetToken.usedAt || new Date(resetToken.expiresAt) <= new Date()) {
-        return { ok: false };
-      }
-
+    // Apply writes atomically: update password, mark token used, invalidate sessions.
+    await prisma.$transaction(async tx => {
       await tx.user.update({
         where: { id: resetToken.userId },
         data: { password: hashedPassword },
       });
       await tx.$executeRawUnsafe(
-        `UPDATE password_reset_tokens
-         SET "usedAt" = NOW()
-         WHERE id = $1`,
+        `UPDATE password_reset_tokens SET "usedAt" = NOW() WHERE id = $1`,
         resetToken.id,
       );
       await tx.refreshToken.deleteMany({
         where: { userId: resetToken.userId },
       });
-
-      return { ok: true, userId: resetToken.userId };
     });
-
-    if (!result.ok) {
-      throw new AppError('Password reset token is invalid or expired', 400);
-    }
 
     res.clearCookie('accessToken', CLEAR_COOKIE_OPTIONS.accessToken);
     res.clearCookie('refreshToken', CLEAR_COOKIE_OPTIONS.refreshToken);
 
     logger.info('[authController.resetPassword] Password reset successfully', {
-      userId: result.userId,
+      userId: resetToken.userId,
     });
 
     return res.status(200).json({
@@ -845,7 +842,7 @@ export const verifyEmail = async (req, res, next) => {
 
     // Send welcome email (optional, don't block on failure)
     try {
-      await sendWelcomeEmail(result.user.email, result.user);
+      await emailService.sendWelcomeEmail(result.user.email, result.user);
     } catch (emailError) {
       logger.error('[authController.verifyEmail] Failed to send welcome email:', emailError);
       // Continue even if welcome email fails
@@ -900,7 +897,7 @@ export const resendVerification = async (req, res, next) => {
 
     // Send verification email (don't block on failure)
     try {
-      await sendVerificationEmail(user.email, result.token, user);
+      await emailService.sendVerificationEmail(user.email, result.token, user);
     } catch (emailError) {
       logger.error('[authController.resendVerification] Failed to send email:', emailError);
       throw new AppError('Failed to send verification email. Please try again later.', 500);
