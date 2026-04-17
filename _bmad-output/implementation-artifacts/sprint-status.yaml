@@ -1,5 +1,5 @@
 # generated: 2026-03-25
-# last_updated: 2026-04-20 BLOCKED — 21R no-deferrals correction plan in progress (see docs/sprint-change-proposal-2026-04-20-21r-no-deferrals-correction-plan.md)
+# last_updated: '2026-04-16 Epic 21S opened — adversarial review found 21R-3 and 21R-6 were marked done prematurely; beta readiness re-blocked until 21S-1..21S-11 close real gaps'
 # project: Equoria
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-25
-last_updated: 2026-04-20 BLOCKED — 21R no-deferrals correction plan in progress (see docs/sprint-change-proposal-2026-04-20-21r-no-deferrals-correction-plan.md)
+last_updated: '2026-04-16 Epic 21S opened — adversarial review found 21R-3 and 21R-6 were marked done prematurely; beta readiness re-blocked until 21S-1..21S-11 close real gaps'
 project: Equoria
 project_key: NOKEY
 tracking_system: file-system
@@ -46,13 +46,11 @@ development_status:
   # Beta Deployment Readiness Gate
   # Source: docs/sprint-change-proposal-2026-04-11.md
   # Re-blocked: 2026-04-14 — source review found false completion claims; 21R-1 through 21R-3 are corrected, later 21R hardening remains.
+  # Re-blocked: 2026-04-16 — adversarial review found 21R-3 and 21R-6 were marked done prematurely. Epic 21S opened with 11 stories to close real gaps.
+  # Source: docs/sprint-change-proposal-2026-04-16-beta-readiness-gap-fixes.md
   # ============================================================
 
-  # 2026-04-20 correction: adversarial review of 21R found reworded deferrals, graceful E2E skips
-  # in CI, beta-readiness runtime that refused to start, skipped backend tests, and fabricated UI
-  # values. All of these are being fixed — no beta signoff until scripts/check-beta-readiness.sh
-  # runs clean end-to-end (no --skip-e2e, no test.skip, no bypass headers, no placeholders).
-  beta-deployment-readiness: blocked  # BLOCKED 2026-04-20 — see docs/sprint-change-proposal-2026-04-20-21r-no-deferrals-correction-plan.md
+  beta-deployment-readiness: blocked  # Re-blocked 2026-04-16 — 21R-3 and 21R-6 reopened; Epic 21S must close P0 gaps before signoff
 
   # ============================================================
   # Epic 21R: Beta Deployment Readiness Remediation
@@ -60,13 +58,37 @@ development_status:
   # ============================================================
 
   epic-21r: in-progress
-  21r-1-define-beta-scope-and-navigation-truth-table: done  # Only beta-live scope exists; no beta-readonly/beta-hidden classifications.
-  21r-2-remove-production-frontend-mocks-from-beta-facing-code: done  # Verified clean; no mock patterns remain in frontend/src outside tests.
-  21r-3-remove-e2e-skips-and-test-only-bypasses-from-beta-critical-flows: in-progress  # 2026-04-20: beta-readiness runtime fixed (validateEnvironment accepts beta-readiness, env flags removed), all it.skip/test.skip removed from backend beta-relevant tests, x-test-skip-csrf expectation removed from HorseDetailPage.test.tsx. Full gate run pending live infra.
-  21r-4-remove-or-harden-runtime-test-cleanup-routes: in-progress  # HTTP cleanup routes verified removed; awaiting final gate evidence.
-  21r-5-reclassify-and-strengthen-integration-tests: in-progress  # All previously-skipped beta-relevant integration tests now pass real-DB against real controllers.
-  21r-6-add-beta-deployment-readiness-gate: in-progress  # 2026-04-20: scripts/check-beta-readiness.sh no longer accepts --skip-e2e (any args rejected). CI job renamed to "Static Beta-Parity Checks (not signoff)" — cannot claim readiness. Full E2E signoff requires local run with live backend+frontend+PostgreSQL.
+  21r-1-define-beta-scope-and-navigation-truth-table: done
+  21r-2-remove-production-frontend-mocks-from-beta-facing-code: done
+  21r-3-remove-e2e-skips-and-test-only-bypasses-from-beta-critical-flows: in-progress  # Reopened 2026-04-16 — bypasses still present in api-client.ts and specs; closes when 21S-2 lands
+  21r-4-remove-or-harden-runtime-test-cleanup-routes: done
+  21r-5-reclassify-and-strengthen-integration-tests: done
+  21r-6-add-beta-deployment-readiness-gate: in-progress  # Reopened 2026-04-16 — e2e_critical_path gate is SKIP not PASS; closes when 21S-6 lands
   epic-21r-retrospective: optional
+
+  # ============================================================
+  # Epic 21S: Beta Readiness Gap Closure
+  # Source: docs/sprint-change-proposal-2026-04-16-beta-readiness-gap-fixes.md
+  # Purpose: close the real gaps behind the prematurely-marked-done 21R-3 and 21R-6,
+  # plus wire /my-stable, /settings, and /leaderboards to real APIs, and clean audit debt.
+  # ============================================================
+
+  epic-21s: in-progress
+  # --- P0: blocks beta signoff ---
+  21s-1-implement-user-rank-summary-endpoint: backlog
+  21s-2-remove-csrf-rate-limit-bypasses-from-production-and-specs: backlog
+  21s-3-switch-playwright-to-beta-profile: backlog
+  21s-4-wire-my-stable-career-stats-to-real-apis: backlog
+  21s-5-persist-settings-via-backend-endpoint: backlog
+  21s-6-make-e2e-critical-path-gate-non-skippable: backlog
+  # --- P1: audit debt ---
+  21s-7-delete-dead-multi-horse-comparison: backlog
+  21s-8-require-admin-role-on-memory-cleanup: backlog
+  21s-9-flatten-duplicated-email-error-branches: backlog
+  # --- P2: administrative ---
+  21s-10-revert-sprint-status-and-reopen-21r-3-21r-6: done  # Handled as part of this correct-course pass 2026-04-16
+  21s-11-scrub-truth-table-defer-language: backlog
+  epic-21s-retrospective: optional
 
   # ============================================================
   # Epic 21: Test Architecture Quality Sprint

@@ -1,9 +1,10 @@
 # Equoria Beta Route Truth Table
 
-**Date:** 2026-04-11 (corrected 2026-04-14)  
+**Date:** 2026-04-11 (corrected 2026-04-14, re-blocked 2026-04-16)  
 **Source Story:** `_bmad-output/implementation-artifacts/21r-1-define-beta-scope-and-navigation-truth-table.md`  
 **Parent Correction:** `docs/sprint-change-proposal-2026-04-11.md`  
-**Status:** Beta deployment remains blocked until every beta-live route passes the readiness gate.
+**Active Correction:** `docs/sprint-change-proposal-2026-04-16-beta-readiness-gap-fixes.md` (Epic 21S)  
+**Status:** Beta deployment remains blocked. The 2026-04-16 adversarial review proved 21R-3 and 21R-6 were marked done before the gaps were closed. Epic 21S must finish before signoff.
 
 ---
 
@@ -11,6 +12,7 @@
 
 - **beta-live:** Visible to beta users. Uses real authenticated account data. Advertised primary actions work through real APIs and honest empty/error states.
 - Historical `beta-readonly` and `beta-hidden` labels are not accepted as completion states for active beta routes. If a route remains in scope, it is implemented as `beta-live`; if product removes a route from beta scope later, that decision must be recorded explicitly.
+- **Leaving a row `beta-live` with hedged "cannot be beta-live / hide / defer / read-only" notes is prohibited.** If a row's gap cannot be closed before beta, the route MUST be removed from `frontend/src/config/betaRouteScope.ts` `BETA_SCOPE` and from this table as an explicit product decision.
 
 Routes are classified by real behavior, not visual polish or historical completion claims.
 
