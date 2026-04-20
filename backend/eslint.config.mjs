@@ -79,7 +79,11 @@ export default [
       'computed-property-spacing': ['error', 'never'],
       'eol-last': ['error', 'always'],
       'func-call-spacing': ['error', 'never'],
-      indent: ['error', 2, { SwitchCase: 1 }],
+      // `indent` disabled: conflicts with Prettier for nested object/ternary
+      // expressions (e.g. `opts ? { \n  foo: 1\n }` — eslint's indent rule
+      // and Prettier disagree on the inner indent level). Prettier runs via
+      // lint-staged and is the source of truth for whitespace.
+      indent: 'off',
       'key-spacing': ['error', { beforeColon: false, afterColon: true }],
       'keyword-spacing': ['error', { before: true, after: true }],
       'linebreak-style': 'off', // Disabled for Windows compatibility (git handles line endings)
@@ -127,7 +131,14 @@ export default [
     },
   },
   {
-    files: ['**/*.test.mjs', '**/*.test.js', '__tests__/**/*.mjs', '__tests__/**/*.js', 'tests/**/*.mjs', 'tests/**/*.js'],
+    files: [
+      '**/*.test.mjs',
+      '**/*.test.js',
+      '__tests__/**/*.mjs',
+      '__tests__/**/*.js',
+      'tests/**/*.mjs',
+      'tests/**/*.js',
+    ],
     languageOptions: {
       globals: {
         describe: 'readonly',
