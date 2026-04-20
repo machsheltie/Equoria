@@ -1,5 +1,5 @@
 # generated: 2026-03-25
-# last_updated: '2026-04-20 21S-6 + 21R-6 DONE — readiness gate is non-skippable. All six P0 stories closed. Remaining: 21S-7/8/9 (P1), 21S-11 (P2).'
+# last_updated: '2026-04-20 21S-7 DONE — dead MultiHorseComparison component + test deleted (883 LOC + ~350 LOC). Typecheck clean. Remaining: 21S-8, 21S-9 (P1), 21S-11 (P2).'
 # project: Equoria
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-25
-last_updated: '2026-04-20 21S-6 + 21R-6 DONE — readiness gate is non-skippable. All six P0 stories closed. Remaining: 21S-7/8/9 (P1), 21S-11 (P2).'
+last_updated: '2026-04-20 21S-7 DONE — dead MultiHorseComparison component + test deleted (883 LOC + ~350 LOC). Typecheck clean. Remaining: 21S-8, 21S-9 (P1), 21S-11 (P2).'
 project: Equoria
 project_key: NOKEY
 tracking_system: file-system
@@ -82,7 +82,7 @@ development_status:
   21s-5-persist-settings-via-backend-endpoint: done  # 2026-04-20: shipped PATCH /api/auth/profile/preferences + SettingsPage wired. 6/6 backend + 4/4 frontend tests passing. Account/password UX out of scope.
   21s-6-make-e2e-critical-path-gate-non-skippable: done  # 2026-04-20: removed --skip-e2e; Playwright manages server lifecycle; signoff YAML writer refuses gates_skipped > 0; beta-critical-path 3/3 green. 21R-6 also closes.
   # --- P1: audit debt ---
-  21s-7-delete-dead-multi-horse-comparison: backlog
+  21s-7-delete-dead-multi-horse-comparison: done  # 2026-04-20: deleted 883-line dead component + orphaned colocated test. Typecheck clean.
   21s-8-require-admin-role-on-memory-cleanup: backlog
   21s-9-flatten-duplicated-email-error-branches: backlog
   # --- P2: administrative ---
