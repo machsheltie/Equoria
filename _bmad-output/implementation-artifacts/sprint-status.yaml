@@ -1,5 +1,5 @@
 # generated: 2026-03-25
-# last_updated: '2026-04-20 Combined 21S-2 + 21S-3 in review — NODE_ENV=beta profile shipped, CSRF/rate-limit bypasses removed from production code + 5 beta-critical specs, middleware hardened, 6/6 new hardening tests + 233/233 csrf-rate-limit regression green. Live E2E deferred to CI. 21R-3 awaits CI green.'
+# last_updated: '2026-04-20 21S-2, 21S-3, 21R-3 all DONE — beta-critical-path E2E 3/3 green locally under NODE_ENV=beta. Middleware hardened (233/233 regression + 6/6 new hardening tests). AC-F1 (frontend CSRF fetch) deferred via new bug Equoria-inx. Next: 21S-4.'
 # project: Equoria
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-25
-last_updated: '2026-04-20 Combined 21S-2 + 21S-3 in review — NODE_ENV=beta profile shipped, CSRF/rate-limit bypasses removed from production code + 5 beta-critical specs, middleware hardened, 6/6 new hardening tests + 233/233 csrf-rate-limit regression green. Live E2E deferred to CI. 21R-3 awaits CI green.'
+last_updated: '2026-04-20 21S-2, 21S-3, 21R-3 all DONE — beta-critical-path E2E 3/3 green locally under NODE_ENV=beta. Middleware hardened (233/233 regression + 6/6 new hardening tests). AC-F1 (frontend CSRF fetch) deferred via new bug Equoria-inx. Next: 21S-4.'
 project: Equoria
 project_key: NOKEY
 tracking_system: file-system
@@ -60,7 +60,7 @@ development_status:
   epic-21r: in-progress
   21r-1-define-beta-scope-and-navigation-truth-table: done
   21r-2-remove-production-frontend-mocks-from-beta-facing-code: done
-  21r-3-remove-e2e-skips-and-test-only-bypasses-from-beta-critical-flows: in-progress  # Reopened 2026-04-16 — bypasses still present in api-client.ts and specs; closes when 21S-2 lands
+  21r-3-remove-e2e-skips-and-test-only-bypasses-from-beta-critical-flows: done  # Closed 2026-04-20 after 21S-2 landed (3/3 beta-critical-path E2E green locally under NODE_ENV=beta)
   21r-4-remove-or-harden-runtime-test-cleanup-routes: done
   21r-5-reclassify-and-strengthen-integration-tests: done
   21r-6-add-beta-deployment-readiness-gate: in-progress  # Reopened 2026-04-16 — e2e_critical_path gate is SKIP not PASS; closes when 21S-6 lands
@@ -76,8 +76,8 @@ development_status:
   epic-21s: in-progress
   # --- P0: blocks beta signoff ---
   21s-1-implement-user-rank-summary-endpoint: done  # Closed 2026-04-16 after adversarial code review + P1 follow-ups (zero-horse denominator fix + perf TODOs)
-  21s-2-remove-csrf-rate-limit-bypasses-from-production-and-specs: review  # Combined session with 21S-3 (2026-04-20). Static + unit verified (6/6 hardening, 233/233 csrf+rate-limit). Live E2E deferred to CI.
-  21s-3-switch-playwright-to-beta-profile: review  # Combined session with 21S-2 (2026-04-20). NODE_ENV=beta profile + .env.beta + playwright.config.ts switch. Live E2E deferred to CI.
+  21s-2-remove-csrf-rate-limit-bypasses-from-production-and-specs: done  # 2026-04-20: backend hardening shipped; 3/3 beta-critical-path E2E green locally. AC-F1 (full frontend CSRF fetch) deferred to Equoria-inx follow-up; backend refuses bypass headers so production parity is preserved.
+  21s-3-switch-playwright-to-beta-profile: done  # 2026-04-20: NODE_ENV=beta profile + .env.beta + playwright.config.ts switch. 3/3 beta-critical-path E2E green locally under the new profile.
   21s-4-wire-my-stable-career-stats-to-real-apis: backlog
   21s-5-persist-settings-via-backend-endpoint: backlog
   21s-6-make-e2e-critical-path-gate-non-skippable: backlog

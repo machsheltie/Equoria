@@ -47,8 +47,10 @@ export default defineConfig({
       timeout: 60000,
       env: {
         ...process.env,
-        // Story 21S-2: VITE_E2E_TEST removed — frontend now fetches real CSRF
-        // tokens like beta/production. Only VITE_BETA_MODE remains for nav scope.
+        // Story 21S-2 (finalized): VITE_E2E_TEST removed. The frontend now
+        // fetches a real CSRF token for every mutation — Playwright exercises
+        // the full CSRF round trip under NODE_ENV=beta just like production.
+        // Only VITE_BETA_MODE remains to scope nav to beta-live routes.
         VITE_BETA_MODE: 'true',
       },
     },

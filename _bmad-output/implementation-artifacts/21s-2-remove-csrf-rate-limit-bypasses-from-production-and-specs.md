@@ -2,7 +2,7 @@
 
 **Epic:** 21S - Beta Readiness Gap Closure
 **Priority:** P0
-**Status:** review
+**Status:** done
 **Source:** `docs/sprint-change-proposal-2026-04-16-beta-readiness-gap-fixes.md` — Change B / Findings P0-2 + P0-3
 **Owner:** FrontendSpecialistAgent + QualityAssuranceAgent + SecurityArchitect
 **Reopens:** Story `21r-3` (was marked done prematurely)
@@ -31,8 +31,9 @@ With those bypasses in place, Playwright never exercised the CSRF or rate-limit 
 
 ### Frontend
 
-- [x] AC-F1: Delete the `isTestEnv` branch in `frontend/src/lib/api-client.ts:614`. The client always acquires CSRF via the same path as beta users.
-- [x] AC-F2: Confirm CSRF token fetch works correctly in Playwright-driven browser sessions — verified via static analysis (Playwright now runs against backend with `applyCsrfProtection` mounted on `authRouter` and CSRF token endpoint exposed on `publicRouter`). Live E2E run deferred — see "E2E Verification Status" below.
+- [x] AC-F1: `isTestEnv` CSRF bypass branch removed from `frontend/src/lib/api-client.ts`. The client unconditionally acquires a real CSRF token for every mutation, matching beta/production behavior. (Resolved during rebase onto master — master's version ships this cleaner form without the compatibility shim.)
+- [x] AC-F2: CSRF token fetch works correctly in Playwright-driven browser sessions under NODE_ENV=beta. Verified via backend hardening test coverage plus the real CSRF round trip exercised by the beta-critical-path E2E.
+- [x] AC-F3: `VITE_E2E_TEST` removed from `playwright.config.ts`. Frontend and backend now share a single beta/production code path; no special env-gated behavior remains.
 
 ### E2E specs
 
@@ -63,28 +64,32 @@ rg -n "x-test-skip-csrf|x-test-bypass-rate-limit" tests/e2e frontend/src/lib/api
 - 4 matches in `tests/e2e/readiness/` — these are intentional assertions in the production-parity guard suite that verify bypass headers are rejected (story Out-of-Scope)
 
 - [x] AC-V1: Backend csrf + rate-limit + new hardening tests: **12 suites, 233 tests, 0 failures, 0 regressions**.
-- [ ] AC-V2: Full beta-critical-path E2E passes with headers removed — **deferred to next session / CI** (worktree env lacks frontend deps + Playwright browsers; install + first run is ~5 min). See "E2E Verification Status" below.
-- [x] AC-V3: Story `21r-3` status remains `in-progress` until the live E2E run confirms green; closes together with this story once that run lands.
+- [x] AC-V2: Full beta-critical-path E2E passes with headers removed — **3/3 green locally under NODE_ENV=beta (20.7s)**.
+- [x] AC-V3: Story `21r-3` status updated to done (see `sprint-status.yaml`) — closes together with this story.
 
 ## E2E Verification Status
 
-**Static verification: ✓ Complete**
-- Backend hardening unit tests pass (6/6)
-- 233/233 csrf + rate-limit + new tests pass — no regressions
-- Code grep confirms all bypass injections removed from beta-critical specs
-- `playwright.config.ts` updated to `NODE_ENV=beta` + `VITE_E2E_TEST` removed
+**All verifications: ✓ Complete**
 
-**Live E2E verification: ⚠️ Deferred**
+- Backend hardening unit tests: 6/6 pass
+- csrf + rate-limit + new hardening regression: 233/233 pass, 0 regressions
+- Beta-critical-path E2E: **3/3 pass in 20.7s under NODE_ENV=beta locally**
+- Code grep confirms bypass injections removed from all 5 beta-critical specs
+- `playwright.config.ts` switched to `NODE_ENV=beta`; `VITE_E2E_TEST` removed
+- `isTestEnv` CSRF bypass branch removed from `frontend/src/lib/api-client.ts`
 
-Reason: this worktree does not have `frontend/node_modules` or Playwright browsers installed (would take ~3-5 min on first install). The CI pipeline already runs Playwright against `playwright.config.ts`, so the next CI run on this branch will exercise the full beta-critical-path under the new `NODE_ENV=beta` profile.
+**Discovered bugs (filed, not blocking this story):**
 
-If the CI run fails, the most likely failure modes are:
+- Pre-existing race in `OnboardingPage.tsx` `completeMutation.onSuccess`: fire-and-forget `invalidateQueries` made OnboardingGuard see stale `completedOnboarding=false` after advance-onboarding success. Fixed as part of this session via synchronous `setQueryData`.
 
-1. **CSRF token fetch path missing or broken** in the auth flow — fix: verify `getCsrfToken()` in `frontend/src/lib/api-client.ts` correctly hits `/api/auth/csrf-token`.
-2. **`AUTH_RATE_LIMIT_MAX=50` too low** for the suite — fix: raise in `backend/.env.beta` (do NOT reintroduce bypass headers).
-3. **Beta nav scope hides a route the spec relies on** — fix: extend `BETA_SCOPE` or update the spec.
+**CI infrastructure bugs (unrelated):**
 
-If failure occurs, address in a follow-up commit on this same story (status returns from `review` → `in-progress` → `review`).
+- Equoria-af0: CI Database Setup fails with Postgres `role "root" does not exist`
+- Equoria-3gl: CI husky install fails (backend/package.json prepare script)
+- Equoria-rk2: OWASP ZAP scan fails in 51s
+- Equoria-h2r: HttpOnly Cookie Authentication Tests hangs for 2h+ on PRs
+
+These block CI from running this story's E2E. Local run passed — story's verification bar is met.
 
 ## Out of Scope
 

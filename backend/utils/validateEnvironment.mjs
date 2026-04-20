@@ -6,7 +6,9 @@ import logger from './logger.mjs';
 const REQUIRED_ENV_VARS = [
   { name: 'DATABASE_URL', minLength: 20 },
   { name: 'JWT_SECRET', minLength: 32 },
-  { name: 'NODE_ENV', values: ['development', 'production', 'test', 'beta-readiness'] },
+  // Story 21S-3: 'beta' added — production-parity Playwright profile.
+  // Master 21R: 'beta-readiness' — full readiness-gate runner profile.
+  { name: 'NODE_ENV', values: ['development', 'production', 'test', 'beta', 'beta-readiness'] },
   { name: 'PORT', type: 'number' },
 ];
 

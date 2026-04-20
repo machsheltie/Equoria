@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { ChevronRight, Sparkles, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { authApi } from '@/lib/api-client';
+import type { User } from '@/hooks/useAuth';
 import { usePageBackground } from '@/components/layout/PageBackground';
 import { type BreedSelectionValue, type Gender } from '@/components/onboarding/BreedSelector';
 import { getHorseImage } from '@/lib/breed-images';
@@ -349,10 +350,25 @@ const OnboardingPage: React.FC = () => {
         breedId: horseSelection.breedId,
         gender: horseSelection.gender,
       }),
-    onSuccess: () => {
-      clearOnboardingStorage();
+    onSuccess: async () => {
+      // Story 21S-2/21S-3: Synchronously patch the profile query cache so
+      // OnboardingGuard sees `completedOnboarding=true` BEFORE navigation.
+      // Previously used fire-and-forget `invalidateQueries`, which caused a
+      // race — the guard read stale user and bounced back to /onboarding.
+      // Setting the data directly guarantees the next render has fresh flags.
+      const existingProfile = queryClient.getQueryData<{ user: User }>(['profile']);
+      if (existingProfile?.user) {
+        queryClient.setQueryData(['profile'], {
+          ...existingProfile,
+          user: {
+            ...existingProfile.user,
+            completedOnboarding: true,
+            onboardingStep: 10,
+          },
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ['horses'] });
-      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      clearOnboardingStorage();
       toast.success('Welcome to Equoria!');
       navigate('/stable', { replace: true });
     },
