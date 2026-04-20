@@ -735,4 +735,18 @@ router.post('/complete-onboarding', authenticateToken, authController.completeOn
  */
 router.post('/advance-onboarding', authenticateToken, authController.advanceOnboarding);
 
+/**
+ * PATCH /api/auth/profile/preferences
+ *
+ * Merge-update the authenticated user's preferences (notification + display
+ * toggles surfaced on /settings). Whitelist-validated in the controller —
+ * unknown keys return 400, non-boolean values return 400. Story 21S-5.
+ */
+router.patch(
+  '/profile/preferences',
+  profileRateLimiter,
+  authenticateToken,
+  authController.updateUserPreferences,
+);
+
 export default router;

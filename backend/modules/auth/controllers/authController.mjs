@@ -487,6 +487,12 @@ export const getProfile = async (req, res, next) => {
     const display =
       typeof settings.display === 'object' && settings.display !== null ? settings.display : null;
 
+    // Story 21S-5: flatten user preferences for the /settings page
+    const preferences =
+      typeof settings.preferences === 'object' && settings.preferences !== null
+        ? settings.preferences
+        : {};
+
     res.status(200).json({
       status: 'success',
       data: {
@@ -507,6 +513,7 @@ export const getProfile = async (req, res, next) => {
           milestones,
           notifications,
           display,
+          preferences,
         },
       },
     });
@@ -1257,12 +1264,12 @@ export const advanceOnboarding = async (req, res, next) => {
         completed: isComplete,
         horse: persistedHorse
           ? {
-              id: persistedHorse.id,
-              name: persistedHorse.name,
-              breedId: persistedHorse.breedId,
-              breed: persistedHorse.breed?.name ?? null,
-              gender: persistedHorse.sex,
-            }
+            id: persistedHorse.id,
+            name: persistedHorse.name,
+            breedId: persistedHorse.breedId,
+            breed: persistedHorse.breed?.name ?? null,
+            gender: persistedHorse.sex,
+          }
           : null,
       },
     });
@@ -1272,5 +1279,117 @@ export const advanceOnboarding = async (req, res, next) => {
       return next(error);
     }
     next(new AppError('Failed to advance onboarding.', 500));
+  }
+};
+
+/**
+ * Whitelisted preference keys persisted under `settings.preferences`.
+ *
+ * Shape mirrors what `frontend/src/pages/SettingsPage.tsx` renders:
+ *   - Notification toggles (email/in-app)
+ *   - Display toggles (accessibility + density)
+ *
+ * Story 21S-5 — when adding a new preference, extend this list AND the
+ * frontend types; unknown keys are rejected by the validator.
+ */
+const ALLOWED_PREFERENCE_KEYS = [
+  // Email notifications
+  'emailCompetition',
+  'emailBreeding',
+  'emailSystem',
+  // In-app notifications
+  'inAppTraining',
+  'inAppAchievements',
+  'inAppNews',
+  // Display / accessibility
+  'reducedMotion',
+  'highContrast',
+  'compactCards',
+];
+
+/**
+ * PATCH /api/auth/profile/preferences
+ *
+ * Merges the request body into the authenticated user's stored preferences.
+ * Only whitelisted keys are accepted and each value must be boolean. Returns
+ * the full merged preferences object so the client can update its cache
+ * without re-fetching.
+ *
+ * Story 21S-5: closes the /settings persistence gap.
+ */
+export const updateUserPreferences = async (req, res, next) => {
+  try {
+    if (!req.user || !req.user.id) {
+      throw new AppError('Authentication required', 401);
+    }
+    const body = req.body || {};
+    const submittedKeys = Object.keys(body);
+
+    if (submittedKeys.length === 0) {
+      throw new AppError('At least one preference must be provided', 400);
+    }
+
+    // Whitelist validation — reject unknown keys
+    const unknownKeys = submittedKeys.filter((k) => !ALLOWED_PREFERENCE_KEYS.includes(k));
+    if (unknownKeys.length > 0) {
+      throw new AppError(`Unknown preference key(s): ${unknownKeys.join(', ')}`, 400);
+    }
+
+    // Type validation — every allowed key must be boolean
+    for (const k of submittedKeys) {
+      if (typeof body[k] !== 'boolean') {
+        throw new AppError(`Preference '${k}' must be a boolean`, 400);
+      }
+    }
+
+    // Merge into existing settings.preferences inside a transaction with a
+    // row lock to prevent lost updates when two toggles PATCH concurrently
+    // (CodeRabbit Major, 2026-04-20).
+    const mergedPreferences = await prisma.$transaction(async (tx) => {
+      // Lock the row so parallel writes serialize.
+      await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${req.user.id} FOR UPDATE`;
+
+      const user = await tx.user.findUnique({
+        where: { id: req.user.id },
+        select: { settings: true },
+      });
+      if (!user) {
+        throw new AppError('User not found', 404);
+      }
+      const currentSettings =
+        typeof user.settings === 'object' && user.settings !== null ? user.settings : {};
+      const currentPreferences =
+        typeof currentSettings.preferences === 'object' && currentSettings.preferences !== null
+          ? currentSettings.preferences
+          : {};
+
+      const merged = {
+        ...currentPreferences,
+        ...body,
+      };
+
+      const updatedSettings = {
+        ...currentSettings,
+        preferences: merged,
+      };
+
+      await tx.user.update({
+        where: { id: req.user.id },
+        data: { settings: updatedSettings },
+      });
+
+      return merged;
+    });
+
+    return res.status(200).json({
+      status: 'success',
+      data: { preferences: mergedPreferences },
+    });
+  } catch (error) {
+    logger.error(`[authController.updateUserPreferences] Error: ${error.message}`);
+    if (error instanceof AppError) {
+      return next(error);
+    }
+    return next(new AppError('Failed to update preferences.', 500));
   }
 };

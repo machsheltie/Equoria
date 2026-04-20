@@ -1953,6 +1953,26 @@ export const craftingApi = {
     apiClient.post<CraftResult>('/api/v1/crafting/craft', { recipeId }),
 };
 
+/**
+ * User preference shape persisted server-side and surfaced on /settings.
+ * Must stay aligned with ALLOWED_PREFERENCE_KEYS in
+ * backend/modules/auth/controllers/authController.mjs (Story 21S-5).
+ */
+export interface UserPreferences {
+  // Email notifications
+  emailCompetition: boolean;
+  emailBreeding: boolean;
+  emailSystem: boolean;
+  // In-app notifications
+  inAppTraining: boolean;
+  inAppAchievements: boolean;
+  inAppNews: boolean;
+  // Display / accessibility
+  reducedMotion: boolean;
+  highContrast: boolean;
+  compactCards: boolean;
+}
+
 export const authApi = {
   /**
    * Login user
@@ -2039,6 +2059,19 @@ export const authApi = {
         display?: Record<string, boolean | string | number> | null;
       };
     }>('/api/auth/profile', updates);
+  },
+
+  /**
+   * Update user preferences (Story 21S-5)
+   *
+   * Merge-updates the authenticated user's notification + display
+   * preferences. Unknown keys are rejected server-side.
+   */
+  updatePreferences: (updates: Partial<UserPreferences>) => {
+    return apiClient.patch<{
+      status: string;
+      data: { preferences: UserPreferences };
+    }>('/api/auth/profile/preferences', updates);
   },
 
   /**
