@@ -84,6 +84,152 @@ export async function getHorseHistory(req, res) {
 }
 
 /**
+ * GET /api/horses/:horseId/competition-history
+ *
+ * Returns per-horse competition history + aggregated statistics in the
+ * `CompetitionHistoryData` shape consumed by the
+ * `useHorseCompetitionHistory` frontend hook. Powers the /my-stable Hall of
+ * Fame career display.
+ *
+ * Story 21S-4: closes the missing endpoint.
+ */
+export async function getHorseCompetitionHistory(req, res, next) {
+  try {
+    const { horseId: horseIdParam } = req.params;
+    const horseId = parseInt(horseIdParam, 10);
+
+    if (isNaN(horseId) || horseId <= 0) {
+      return res.status(400).json({ success: false, message: 'Invalid horse ID' });
+    }
+
+    const horse = await prisma.horse.findUnique({
+      where: { id: horseId },
+      select: { id: true, name: true },
+    });
+
+    if (!horse) {
+      return res.status(404).json({ success: false, message: 'Horse not found' });
+    }
+
+    const results = await prisma.competitionResult.findMany({
+      where: { horseId },
+      select: {
+        id: true,
+        score: true,
+        placement: true,
+        discipline: true,
+        runDate: true,
+        showName: true,
+        prizeWon: true,
+        showId: true,
+        show: { select: { id: true, name: true } },
+      },
+      orderBy: { runDate: 'desc' },
+    });
+
+    const totalCompetitions = results.length;
+
+    if (totalCompetitions === 0) {
+      return res.json({
+        horseId,
+        horseName: horse.name,
+        statistics: {
+          totalCompetitions: 0,
+          wins: 0,
+          top3Finishes: 0,
+          winRate: 0,
+          totalPrizeMoney: 0,
+          averagePlacement: 0,
+          bestPlacement: 0,
+        },
+        competitions: [],
+      });
+    }
+
+    let wins = 0;
+    let top3Finishes = 0;
+    let totalPrizeMoney = 0;
+    let placementSum = 0;
+    let placementCount = 0;
+    let bestPlacement = Number.POSITIVE_INFINITY;
+
+    for (const r of results) {
+      const p = parseCompetitionPlacement(r.placement);
+      if (p === 1) {
+        wins += 1;
+      }
+      if (p > 0 && p <= 3) {
+        top3Finishes += 1;
+      }
+      if (p > 0) {
+        placementSum += p;
+        placementCount += 1;
+        if (p < bestPlacement) {
+          bestPlacement = p;
+        }
+      }
+      totalPrizeMoney += Number(r.prizeWon ?? 0);
+    }
+
+    if (bestPlacement === Number.POSITIVE_INFINITY) {
+      bestPlacement = 0;
+    }
+
+    const winRate = totalCompetitions > 0 ? (wins / totalCompetitions) * 100 : 0;
+    const averagePlacement = placementCount > 0 ? placementSum / placementCount : 0;
+
+    const competitions = results.map((r) => ({
+      competitionId: r.showId,
+      competitionName: r.show?.name ?? r.showName,
+      discipline: r.discipline,
+      date: r.runDate,
+      placement: parseCompetitionPlacement(r.placement),
+      totalParticipants: 0,
+      finalScore: Number(r.score),
+      prizeMoney: Number(r.prizeWon ?? 0),
+      xpGained: 0,
+    }));
+
+    return res.json({
+      horseId,
+      horseName: horse.name,
+      statistics: {
+        totalCompetitions,
+        wins,
+        top3Finishes,
+        winRate: Math.round(winRate * 100) / 100,
+        totalPrizeMoney,
+        averagePlacement: Math.round(averagePlacement * 100) / 100,
+        bestPlacement,
+      },
+      competitions,
+    });
+  } catch (error) {
+    logger.error(`[horseController.getHorseCompetitionHistory] Error: ${error.message}`);
+    return next ? next(error) : res.status(500).json({ success: false, message: 'Internal error' });
+  }
+}
+
+/**
+ * Parse a placement string like "1st", "3rd", "5th", or "4" into its
+ * numeric rank. Returns 0 when no numeric prefix is found.
+ *
+ * Duplicated locally for locality — shared util can be extracted if a
+ * third consumer shows up.
+ */
+function parseCompetitionPlacement(placement) {
+  if (placement === null || placement === undefined) {
+    return 0;
+  }
+  if (typeof placement === 'number') {
+    return placement;
+  }
+  const str = String(placement).trim();
+  const match = str.match(/^(\d+)/);
+  return match ? parseInt(match[1], 10) : 0;
+}
+
+/**
  * Create a new foal with epigenetic traits applied at birth
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
@@ -808,9 +954,9 @@ export async function getConformationAnalysis(req, res) {
     const overallScore = scores.overallConformation ?? calculateOverallConformation(scores);
     const overallBreedMean = breedConformation
       ? Math.round(
-          CONFORMATION_REGIONS.reduce((sum, r) => sum + breedConformation[r].mean, 0) /
+        CONFORMATION_REGIONS.reduce((sum, r) => sum + breedConformation[r].mean, 0) /
             CONFORMATION_REGIONS.length,
-        )
+      )
       : 50;
 
     let overallPercentile;

@@ -1,5 +1,5 @@
 # generated: 2026-03-25
-# last_updated: '2026-04-20 21S-2, 21S-3, 21R-3 all DONE — beta-critical-path E2E 3/3 green locally under NODE_ENV=beta. Middleware hardened (233/233 regression + 6/6 new hardening tests). AC-F1 (frontend CSRF fetch) deferred via new bug Equoria-inx. Next: 21S-4.'
+# last_updated: '2026-04-20 21S-4 DONE — /my-stable wired to 2 new backend endpoints (competition-stats + competition-history). 6/6 backend integration + 3/3 focused vitest + lint clean. Grep gates on hardcoded zeros: 0 matches. Next: 21S-5 or 21S-6.'
 # project: Equoria
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-25
-last_updated: '2026-04-20 21S-2, 21S-3, 21R-3 all DONE — beta-critical-path E2E 3/3 green locally under NODE_ENV=beta. Middleware hardened (233/233 regression + 6/6 new hardening tests). AC-F1 (frontend CSRF fetch) deferred via new bug Equoria-inx. Next: 21S-4.'
+last_updated: '2026-04-20 21S-4 DONE — /my-stable wired to 2 new backend endpoints (competition-stats + competition-history). 6/6 backend integration + 3/3 focused vitest + lint clean. Grep gates on hardcoded zeros: 0 matches. Next: 21S-5 or 21S-6.'
 project: Equoria
 project_key: NOKEY
 tracking_system: file-system
@@ -78,7 +78,7 @@ development_status:
   21s-1-implement-user-rank-summary-endpoint: done  # Closed 2026-04-16 after adversarial code review + P1 follow-ups (zero-horse denominator fix + perf TODOs)
   21s-2-remove-csrf-rate-limit-bypasses-from-production-and-specs: done  # 2026-04-20: backend hardening shipped; 3/3 beta-critical-path E2E green locally. AC-F1 (full frontend CSRF fetch) deferred to Equoria-inx follow-up; backend refuses bypass headers so production parity is preserved.
   21s-3-switch-playwright-to-beta-profile: done  # 2026-04-20: NODE_ENV=beta profile + .env.beta + playwright.config.ts switch. 3/3 beta-critical-path E2E green locally under the new profile.
-  21s-4-wire-my-stable-career-stats-to-real-apis: backlog
+  21s-4-wire-my-stable-career-stats-to-real-apis: done  # 2026-04-20: shipped 2 new backend endpoints (competition-stats + competition-history) with 6/6 real-DB integration tests + MyStablePage wired with 3/3 focused vitest. Lint clean. Truth table updated.
   21s-5-persist-settings-via-backend-endpoint: backlog
   21s-6-make-e2e-critical-path-gate-non-skippable: backlog
   # --- P1: audit debt ---

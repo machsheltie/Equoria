@@ -11,6 +11,7 @@ import {
   getGenetics,
   getColor,
   getBreedingColorPrediction,
+  getHorseCompetitionHistory,
 } from '../controllers/horseController.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
@@ -958,6 +959,36 @@ router.get(
       });
     }
   },
+);
+
+/**
+ * GET /api/horses/:horseId/competition-history
+ *
+ * Per-horse competition history + statistics for the /my-stable Hall of
+ * Fame career display (Story 21S-4). Response shape matches the
+ * `CompetitionHistoryData` TypeScript interface used by
+ * `useHorseCompetitionHistory` on the frontend.
+ *
+ * Security: horse ownership required.
+ */
+router.get(
+  '/:horseId/competition-history',
+  queryRateLimiter,
+  authenticateToken,
+  [
+    param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
+    (req, res, next) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res
+          .status(400)
+          .json({ success: false, message: 'Validation failed', errors: errors.array() });
+      }
+      return next();
+    },
+  ],
+  requireOwnership('horse', { idParam: 'horseId' }),
+  getHorseCompetitionHistory,
 );
 
 /**
