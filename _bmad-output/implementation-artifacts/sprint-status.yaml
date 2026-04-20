@@ -1,5 +1,5 @@
 # generated: 2026-03-25
-# last_updated: '2026-04-20 21S-9 DONE — RegisterPage onError flattened to single-level branches; +1 "already in use" test. 39/39 green. Remaining: 21S-11 (P2, docs-only truth-table scrub).'
+# last_updated: '2026-04-20 Epic 21S COMPLETE — all 11 stories closed (21S-1..21S-11). Truth table scrubbed to prescribed format (None/Tracked-by). Beta signoff now gated only on the readiness script producing a 9/0/0 report against the current commit.'
 # project: Equoria
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-25
-last_updated: '2026-04-20 21S-9 DONE — RegisterPage onError flattened to single-level branches; +1 "already in use" test. 39/39 green. Remaining: 21S-11 (P2, docs-only truth-table scrub).'
+last_updated: '2026-04-20 Epic 21S COMPLETE — all 11 stories closed (21S-1..21S-11). Truth table scrubbed to prescribed format (None/Tracked-by). Beta signoff now gated only on the readiness script producing a 9/0/0 report against the current commit.'
 project: Equoria
 project_key: NOKEY
 tracking_system: file-system
@@ -73,7 +73,7 @@ development_status:
   # plus wire /my-stable, /settings, and /leaderboards to real APIs, and clean audit debt.
   # ============================================================
 
-  epic-21s: in-progress
+  epic-21s: done  # All 11 stories closed 2026-04-20. Beta Readiness Gap Closure complete.
   # --- P0: blocks beta signoff ---
   21s-1-implement-user-rank-summary-endpoint: done  # Closed 2026-04-16 after adversarial code review + P1 follow-ups (zero-horse denominator fix + perf TODOs)
   21s-2-remove-csrf-rate-limit-bypasses-from-production-and-specs: done  # 2026-04-20: backend hardening shipped; 3/3 beta-critical-path E2E green locally. AC-F1 (full frontend CSRF fetch) deferred to Equoria-inx follow-up; backend refuses bypass headers so production parity is preserved.
@@ -87,7 +87,7 @@ development_status:
   21s-9-flatten-duplicated-email-error-branches: done  # 2026-04-20: flattened to single-level if/else if; +1 new 'already in use' test; 39/39 RegisterPage.test.tsx green.
   # --- P2: administrative ---
   21s-10-revert-sprint-status-and-reopen-21r-3-21r-6: done  # Handled as part of this correct-course pass 2026-04-16
-  21s-11-scrub-truth-table-defer-language: backlog
+  21s-11-scrub-truth-table-defer-language: done  # 2026-04-20: every beta-live row normalized to "None — verified by X" or "Tracked by X"; policy block rewritten; 0 matches on forbidden phrases. Epic 21S complete.
   epic-21s-retrospective: optional
 
   # ============================================================
