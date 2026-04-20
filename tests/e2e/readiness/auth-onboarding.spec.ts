@@ -25,9 +25,10 @@ test('auth, email verification signal, onboarding persistence, and password rese
   // the backend actually verifies the account end-to-end.
   const verifyPage = await browser.newPage();
   const verifyGuard = installProductionParityNetworkGuard(verifyPage);
+  // Frontend uses GET /api/auth/verify-email?token=... (see api-client.ts verifyEmail).
   const verifyResponse = verifyPage.waitForResponse(
     (response) =>
-      response.url().includes('/api/auth/verify-email') && response.request().method() === 'POST'
+      response.url().includes('/api/auth/verify-email') && response.request().method() === 'GET'
   );
   await verifyPage.goto(verificationEmail.preview, { waitUntil: 'domcontentloaded' });
   expect((await verifyResponse).status()).toBe(200);
@@ -38,10 +39,10 @@ test('auth, email verification signal, onboarding persistence, and password rese
   // Replaying the same verification token must be rejected (no reuse).
   const replayPage = await browser.newPage();
   const replayGuard = installProductionParityNetworkGuard(replayPage);
-  const replayResponse = await replayPage.request.post('/api/auth/verify-email', {
-    data: { token: new URL(verificationEmail.preview).searchParams.get('token') },
-    headers: { 'Content-Type': 'application/json' },
-  });
+  const replayToken = new URL(verificationEmail.preview).searchParams.get('token');
+  const replayResponse = await replayPage.request.get(
+    `/api/auth/verify-email?token=${encodeURIComponent(replayToken ?? '')}`
+  );
   expect(
     [400, 401, 404, 410].includes(replayResponse.status()),
     `Reused verification token must be rejected, got ${replayResponse.status()}`

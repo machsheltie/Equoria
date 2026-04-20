@@ -194,12 +194,15 @@ jobs:
       - name: Create .env file
         working-directory: backend
         run: |
+          # JWT_REFRESH_SECRET (not REFRESH_SECRET) is required by
+          # backend/config/config.mjs:25 — the server refuses to start without it.
+          # That missing var was the root cause of the ZAP job failing at 51s.
           cat > .env << EOF
           NODE_ENV=test
           PORT=3000
           DATABASE_URL=postgresql://postgres:postgres@localhost:5432/equoria_test
           JWT_SECRET=test_jwt_secret_key_minimum_32_characters_long
-          REFRESH_SECRET=test_refresh_secret_key_minimum_32_characters
+          JWT_REFRESH_SECRET=test_refresh_secret_key_minimum_32_characters
           REDIS_HOST=localhost
           REDIS_PORT=6379
           SESSION_SECRET=test_session_secret_minimum_32_characters_long
@@ -218,8 +221,8 @@ jobs:
         run: |
           npm start &
           echo $! > server.pid
-          # Wait for server to be ready
-          npx wait-on http://localhost:3000/health -t 30000
+          # Wait for server to be ready — 30s was too short for cold-start + migrations.
+          npx wait-on http://localhost:3000/health -t 90000
 
       - name: Generate OpenAPI spec for ZAP
         working-directory: backend

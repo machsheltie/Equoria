@@ -14,6 +14,11 @@ const emailCaptureFile = path.resolve(
   'beta-readiness-email-outbox.jsonl'
 );
 
+// Export to the Playwright test process as well so latestCapturedEmail() in
+// support/prodParity.ts reads the same path the backend writes to, regardless
+// of cwd or OS path quoting.
+process.env.EMAIL_CAPTURE_FILE = emailCaptureFile;
+
 export default defineConfig({
   testDir: './tests/e2e/readiness',
   fullyParallel: false,
@@ -26,7 +31,11 @@ export default defineConfig({
     ['junit', { outputFile: 'test-results/beta-readiness/results.xml' }],
   ],
   outputDir: 'test-results/beta-readiness',
-  timeout: 120000,
+  // Route-families registers 3 players, makes 30+ mutations, and visits 27
+  // beta-live routes. Production-parity rate limits (even at the beta-readiness
+  // 1000 req/15 min cap) plus real backend round-trips put a realistic run
+  // around 2-3 minutes. 5 min gives headroom without masking a hang.
+  timeout: 300000,
   expect: { timeout: 10000 },
   use: {
     baseURL: 'http://localhost:3000',
@@ -38,17 +47,21 @@ export default defineConfig({
   },
   webServer: [
     {
-      command:
-        process.platform === 'win32'
-          ? "powershell -NoProfile -Command \"$env:PORT=3001; $env:NODE_ENV='test'; $env:EMAIL_CAPTURE_FILE='" +
-            emailCaptureFile.replace(/\\/g, '\\\\') +
-            '\'; node backend/server.mjs"'
-          : `PORT=3001 NODE_ENV=test EMAIL_CAPTURE_FILE="${emailCaptureFile}" node backend/server.mjs`,
+      command: 'node backend/server.mjs',
       url: 'http://localhost:3001/health',
-      reuseExistingServer: !process.env.CI,
+      // Always start fresh so EMAIL_CAPTURE_FILE reflects the current run.
+      // Stale backends from earlier sessions can hold the old env and silently
+      // drop email capture, causing latestCapturedEmail() to hang.
+      reuseExistingServer: false,
       stdout: 'pipe',
       stderr: 'pipe',
       timeout: 90000,
+      env: {
+        ...process.env,
+        PORT: '3001',
+        NODE_ENV: 'beta-readiness',
+        EMAIL_CAPTURE_FILE: emailCaptureFile,
+      },
     },
     {
       command: 'npm --prefix frontend run dev',

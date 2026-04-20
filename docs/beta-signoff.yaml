@@ -22,25 +22,32 @@
 # ============================================================================
 
 last_gate_run:
-  commit: ~
-  date: ~
-  gates_passed: 0
+  commit: dee5dcdd
+  date: '2026-04-20 13:03:33'
+  gates_passed: 10
+  gates_failed: 0
+  duration_seconds: 849
   gate_detail:
-    backend_lint: NOT_RUN
-    frontend_typecheck: NOT_RUN
-    routes_tests: NOT_RUN
-    integration_tests: NOT_RUN
-    e2e_readiness: NOT_RUN
-    no_http_cleanup: NOT_RUN
-    no_db_mocks: NOT_RUN
-    no_bypass_headers: NOT_RUN
-    no_beta_skips: NOT_RUN
+    backend_lint: PASS
+    frontend_typecheck: PASS
+    routes_tests: PASS
+    integration_tests: PASS
+    e2e_readiness: PASS
+    no_http_cleanup: PASS
+    no_db_mocks: PASS
+    no_mock_data_frontend: PASS
+    no_bypass_headers: PASS
+    no_beta_skips: PASS
 
 signoff:
   signed_off_by: ~
   signed_off_date: ~
   notes: >
-    Awaiting full beta-readiness gate run with live backend + frontend + PostgreSQL.
-    The previous run on 2026-04-15 used --skip-e2e and is no longer valid evidence.
-    Per the 2026-04-20 no-deferrals correction plan, signoff requires every gate
-    to PASS with no skips.
+    2026-04-20 13:03:33 — First clean readiness gate run after the no-deferrals
+    correction plan (dee5dcdd) plus follow-up fixes: backend rate-limit cap
+    includes beta-readiness, Playwright timeout raised to 5 min, verify-email
+    test uses real GET method, EMAIL_CAPTURE_FILE is set on both backend and
+    Playwright processes. All 10 gates PASS with no skips, no bypass headers,
+    no mock data, and no test.skip. Awaiting project lead signoff before
+    updating _bmad-output/implementation-artifacts/sprint-status.yaml
+    beta-deployment-readiness from blocked to ready-for-signoff.

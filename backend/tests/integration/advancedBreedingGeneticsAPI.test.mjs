@@ -37,8 +37,14 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
   };
 
   beforeAll(async () => {
-    testSuffix = `${Date.now()}`;
-    usernameSuffix = testSuffix.slice(-8);
+    // Include PID + a random segment so parallel Jest workers cannot produce
+    // the same usernameSuffix/email — Date.now() alone collides when two
+    // worker processes spin up in the same millisecond, which was the source
+    // of "parallel isolation" flakes.
+    const workerId = process.env.JEST_WORKER_ID || String(process.pid);
+    const random = Math.random().toString(36).slice(2, 8);
+    testSuffix = `${Date.now()}_${workerId}_${random}`;
+    usernameSuffix = testSuffix.replace(/[^a-zA-Z0-9]/g, '').slice(-16);
 
     // Create test user using helper function for more reliable authentication
     const { user, token } = await createTestUser({

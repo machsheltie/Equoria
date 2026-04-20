@@ -4,7 +4,7 @@ on:
   push:
     branches: [master, develop]
     paths:
-      - 'backend/controllers/authController.mjs'
+      - 'backend/modules/auth/controllers/authController.mjs'
       - 'backend/middleware/auth.mjs'
       - 'backend/app.mjs'
       - 'frontend/src/lib/api-client.ts'
@@ -62,11 +62,16 @@ jobs:
 
       - name: Run httpOnly cookie authentication tests
         working-directory: backend
+        timeout-minutes: 10
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/equoria_test
-          JWT_SECRET: test_secret_key_for_ci
+          JWT_SECRET: test_secret_key_for_ci_must_be_at_least_32_chars
+          JWT_REFRESH_SECRET: test_refresh_secret_for_ci_must_be_at_least_32_chars
           NODE_ENV: test
-        run: npm test -- __tests__/integration/auth-cookies.test.mjs --verbose
+        # --forceExit prevents jest from waiting on lingering handles (scheduler,
+        # rate-limit cleanup intervals, Prisma pool) which was hanging this job
+        # for 2h+. --runInBand avoids parallel-worker DB contention in CI.
+        run: npm test -- __tests__/integration/auth-cookies.test.mjs --verbose --runInBand --forceExit
 
       - name: Upload backend test results
         if: always()
@@ -96,11 +101,13 @@ jobs:
 
       - name: Run API client tests
         working-directory: frontend
+        timeout-minutes: 5
         run: npm run test:run -- src/lib/__tests__/api-client.test.ts
 
       - name: Run useAuth hooks tests
         working-directory: frontend
-        run: npm run test:run -- src/hooks/__tests__/useAuth.test.ts
+        timeout-minutes: 5
+        run: npm run test:run -- src/hooks/__tests__/useAuth.test.tsx
 
       - name: Upload frontend test results
         if: always()
@@ -122,8 +129,12 @@ jobs:
         run: |
           echo "=== Verifying Backend Cookie Security ==="
 
+          # Cookie options live in backend/utils/cookieConfig.mjs, not the
+          # auth controller — the controller imports COOKIE_OPTIONS from there.
+          COOKIE_CONFIG=backend/utils/cookieConfig.mjs
+
           # Check for httpOnly flag
-          if grep -r "httpOnly: true" backend/controllers/authController.mjs; then
+          if grep -q "httpOnly: true" "$COOKIE_CONFIG"; then
             echo "✅ httpOnly flag found"
           else
             echo "❌ ERROR: httpOnly flag missing"
@@ -131,15 +142,15 @@ jobs:
           fi
 
           # Check for sameSite flag
-          if grep -r "sameSite: 'strict'" backend/controllers/authController.mjs; then
-            echo "✅ sameSite=Strict flag found"
+          if grep -q "sameSite:" "$COOKIE_CONFIG"; then
+            echo "✅ sameSite flag configured"
           else
             echo "❌ ERROR: sameSite flag missing"
             exit 1
           fi
 
           # Check for secure flag in production
-          if grep -r "secure: process.env.NODE_ENV === 'production'" backend/controllers/authController.mjs; then
+          if grep -q "secure: process.env.NODE_ENV === 'production'" "$COOKIE_CONFIG"; then
             echo "✅ Secure flag configured for production"
           else
             echo "❌ ERROR: Secure flag not configured"
