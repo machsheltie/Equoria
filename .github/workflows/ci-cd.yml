@@ -420,9 +420,17 @@ jobs:
         working-directory: ./frontend
         run: npm audit --audit-level=moderate
 
-  # Job 9: Deployment Readiness Check
-  deployment-readiness:
-    name: 'Deployment Readiness Check'
+  # Job 9: Static Beta-Parity Checks (NOT a beta-readiness signoff)
+  #
+  # This job runs the static-only portion of the beta-parity gates (mock scan,
+  # bypass-header scan, skip scan, HTTP cleanup-route scan). It is NOT a
+  # beta-readiness signoff. Beta signoff requires the full
+  # scripts/check-beta-readiness.sh run (including Playwright E2E against a
+  # live backend + frontend + PostgreSQL). That run must be performed on an
+  # environment that can host all three services; this CI job intentionally
+  # does not attempt it and therefore cannot be cited as readiness evidence.
+  static-beta-parity-checks:
+    name: 'Static Beta-Parity Checks (not signoff)'
     runs-on: ubuntu-latest
     needs: [build-validation, security-scan, performance-tests]
     if: github.ref == 'refs/heads/master'
@@ -431,34 +439,66 @@ jobs:
       - name: 'Checkout Repository'
         uses: actions/checkout@v4
 
-      - name: 'Download Build Artifacts'
-        uses: actions/download-artifact@v4
+      - name: 'Setup Node.js'
+        uses: actions/setup-node@v4
         with:
-          name: build-artifacts
+          node-version: '20'
+          cache: 'npm'
 
-      - name: 'Download Coverage Reports'
-        uses: actions/download-artifact@v4
-        with:
-          name: backend-coverage
-          path: ./coverage/
+      - name: 'Install Dependencies'
+        run: npm ci
 
-      - name: 'Validate Deployment Readiness'
+      - name: 'Scan for test/cleanup routes in HTTP layer'
         run: |
-          echo "✅ All tests passed"
-          echo "✅ Build artifacts created"
-          echo "✅ Security scans completed"
-          echo "✅ Performance tests passed"
-          echo "🚀 Ready for deployment"
+          if grep -rn "test/cleanup\|testCleanup\|test-cleanup" \
+              backend/modules/*/routes/ \
+              backend/routes/ \
+              2>/dev/null | grep -v "^Binary" | grep -q .; then
+            echo "FAIL: HTTP test-cleanup routes found"
+            exit 1
+          fi
 
-      - name: 'Create Deployment Summary'
+      - name: 'Scan integration tests for DB mocks'
         run: |
-          echo "## 🚀 Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          if grep -rn \
+              "jest\.unstable_mockModule.*prisma\|jest\.unstable_mockModule.*db/\|jest\.mock.*prisma\|jest\.mock.*db/" \
+              backend/tests/integration/ \
+              2>/dev/null | grep -v "^Binary" | grep -q .; then
+            echo "FAIL: DB mocks found in integration tests"
+            exit 1
+          fi
+
+      - name: 'Scan frontend production code for mock data'
+        run: |
+          if grep -rn "mockApi\|MOCK_\|allMockHorses\|mockSummary" \
+              frontend/src/ \
+              --include="*.tsx" --include="*.ts" \
+              2>/dev/null | grep -v "__tests__\|\.test\.\|\.spec\." | grep -v "^Binary" | grep -q .; then
+            echo "FAIL: Mock data in frontend production code"
+            exit 1
+          fi
+
+      - name: 'Scan E2E specs and api-client for bypass headers'
+        run: |
+          if grep -rn "x-test-bypass-rate-limit\|x-test-skip-csrf\|bypass-auth\|x-test-user\|x-bypass\|VITE_E2E_TEST" \
+              tests/e2e/ frontend/src/lib/api-client.ts \
+              --exclude-dir=readiness \
+              2>/dev/null | grep -v "^Binary" | grep -q .; then
+            echo "FAIL: Bypass headers in E2E/api-client"
+            exit 1
+          fi
+
+      - name: 'Create Static-Parity Summary (NOT readiness signoff)'
+        if: always()
+        run: |
+          echo "## Static Beta-Parity Checks" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Tests**: All passed ✅" >> $GITHUB_STEP_SUMMARY
-          echo "- **Build**: Successful ✅" >> $GITHUB_STEP_SUMMARY
-          echo "- **Security**: No critical issues ✅" >> $GITHUB_STEP_SUMMARY
-          echo "- **Performance**: Within acceptable limits ✅" >> $GITHUB_STEP_SUMMARY
+          echo "- **Scope**: static scans only (mocks, bypass headers, cleanup routes)" >> $GITHUB_STEP_SUMMARY
+          echo "- **Not included**: lint, typecheck, backend tests, E2E readiness suite" >> $GITHUB_STEP_SUMMARY
+          echo "- **This job does NOT produce beta-readiness signoff.**" >> $GITHUB_STEP_SUMMARY
+          echo "  Run \`bash scripts/check-beta-readiness.sh\` locally with a live" >> $GITHUB_STEP_SUMMARY
+          echo "  backend + frontend + PostgreSQL to perform full signoff." >> $GITHUB_STEP_SUMMARY
 
   # Job 10: Docker Image Build Validation (master only)
   build-docker:

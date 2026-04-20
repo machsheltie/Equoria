@@ -719,7 +719,6 @@ describe('HorseDetailPage Component', () => {
           expect.objectContaining({
             headers: expect.objectContaining({
               'Content-Type': 'application/json',
-              'x-test-skip-csrf': 'true',
             }),
           })
         );

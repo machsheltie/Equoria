@@ -14,7 +14,6 @@
  * Co-located per backend/modules/<domain>/__tests__/ convention (Story 21-1).
  * Real DB — no mocks. Cleanup in afterAll.
  *
- * Remove test.skip() from each test block once implementation is verified green.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -56,7 +55,6 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
 
   describe('POST /api/clubs', () => {
     it('[P0] happy path — creates club and returns 201 with club data', async () => {
-      // ATDD RED PHASE: remove skip after confirming green
       const res = await request(app)
         .post('/api/clubs')
         .set('Authorization', `Bearer ${userToken}`)
@@ -76,7 +74,6 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
     });
 
     it('[P0] auth guard — returns 401 when no token provided', async () => {
-      // ATDD RED PHASE: remove skip after confirming green
       const res = await request(app)
         .post('/api/clubs')
         .set('x-test-skip-csrf', 'true')
@@ -91,7 +88,6 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
     });
 
     it('[P0] validation error — returns 400 when required fields missing', async () => {
-      // ATDD RED PHASE: remove skip after confirming green
       const res = await request(app)
         .post('/api/clubs')
         .set('Authorization', `Bearer ${userToken}`)
@@ -112,7 +108,6 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
 
   describe('GET /api/clubs', () => {
     it('[P0] happy path — returns 200 with clubs array', async () => {
-      // ATDD RED PHASE: remove skip after confirming green
       const res = await request(app).get('/api/clubs').set('Authorization', `Bearer ${userToken}`);
 
       expect(res.status).toBe(200);
@@ -121,7 +116,6 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
     });
 
     it('[P0] auth guard — returns 401 when no token provided', async () => {
-      // ATDD RED PHASE: remove skip after confirming green
       const res = await request(app).get('/api/clubs');
 
       expect(res.status).toBe(401);
@@ -132,7 +126,6 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
 
   describe('GET /api/forum/threads', () => {
     it('[P1] happy path — returns 200 with threads array', async () => {
-      // ATDD RED PHASE: remove skip after confirming green
       const res = await request(app).get('/api/forum/threads').set('Authorization', `Bearer ${userToken}`);
 
       expect(res.status).toBe(200);
@@ -141,7 +134,6 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
     });
 
     it('[P1] auth guard — returns 401 when no token provided', async () => {
-      // ATDD RED PHASE: remove skip after confirming green
       const res = await request(app).get('/api/forum/threads');
 
       expect(res.status).toBe(401);
@@ -152,7 +144,6 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
 
   describe('POST /api/forum/threads', () => {
     it('[P1] auth guard — returns 401 when no token provided', async () => {
-      // ATDD RED PHASE: remove skip after confirming green
       const res = await request(app)
         .post('/api/forum/threads')
         .set('x-test-skip-csrf', 'true')
@@ -162,7 +153,6 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
     });
 
     it('[P1] validation error — returns 400 when required fields missing', async () => {
-      // ATDD RED PHASE: remove skip after confirming green
       const res = await request(app)
         .post('/api/forum/threads')
         .set('Authorization', `Bearer ${userToken}`)
@@ -181,7 +171,6 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
 
   describe('POST /api/messages', () => {
     it('[P1] auth guard — returns 401 when no token provided', async () => {
-      // ATDD RED PHASE: remove skip after confirming green
       const res = await request(app).post('/api/messages').set('x-test-skip-csrf', 'true').send({
         recipientId: 'some-user-id',
         subject: 'Hello',
@@ -192,7 +181,6 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
     });
 
     it('[P1] validation error — returns 400 when recipientId missing', async () => {
-      // ATDD RED PHASE: remove skip after confirming green
       const res = await request(app)
         .post('/api/messages')
         .set('Authorization', `Bearer ${userToken}`)
@@ -209,7 +197,6 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
     });
 
     it('[P1] validation error — returns 400 when subject missing', async () => {
-      // ATDD RED PHASE: remove skip after confirming green
       const res = await request(app)
         .post('/api/messages')
         .set('Authorization', `Bearer ${userToken}`)

@@ -12,8 +12,13 @@
 #   - Dependencies installed: npm install at root, frontend, and packages/database
 #
 # Usage:
-#   bash scripts/check-beta-readiness.sh                  # all gates
-#   bash scripts/check-beta-readiness.sh --skip-e2e       # skip E2E (CI without server)
+#   bash scripts/check-beta-readiness.sh                  # all gates (required for signoff)
+#
+# This script has NO skip options. Beta readiness is not valid unless every
+# gate — including full E2E — passes. If an environment cannot run the full
+# gate (e.g., a CI runner without Playwright browsers or a database), that
+# environment cannot produce beta-readiness signoff and must run a different,
+# clearly-labelled static check job instead.
 #
 # Signoff process (after all gates pass):
 #   1. Record the commit hash and gate run date in docs/beta-signoff.yaml
@@ -23,14 +28,14 @@
 
 set -euo pipefail
 
-SKIP_E2E=false
-if [[ "${1:-}" == "--skip-e2e" ]]; then
-  SKIP_E2E=true
+if [[ $# -gt 0 ]]; then
+  echo "ERROR: check-beta-readiness.sh does not accept any arguments." >&2
+  echo "All gates are required for beta signoff. No skip flags are supported." >&2
+  exit 2
 fi
 
 PASS=0
 FAIL=0
-SKIPPED=0
 REPORT_LINES=()
 
 # Colour codes (disabled if not a tty)
@@ -59,12 +64,6 @@ gate_fail() {
   local detail="${2:-}"
   REPORT_LINES+=("${RED}  FAIL${RESET}  $name${detail:+ — $detail}")
   ((FAIL++)) || true
-}
-
-gate_skip() {
-  local name="$1"
-  REPORT_LINES+=("${YELLOW}  SKIP${RESET}  $name")
-  ((SKIPPED++)) || true
 }
 
 run_gate() {
@@ -110,14 +109,10 @@ run_gate "Routes tests" bash -c "npm test -- --testPathPattern='backend/tests/ro
 run_gate "Integration tests" bash -c "npm test -- --testPathPattern='backend/tests/integration' --maxWorkers=1 --forceExit 2>&1"
 
 # ---------------------------------------------------------------------------
-# GATE 4 — E2E beta critical path
+# GATE 4 — E2E beta readiness route coverage (production-parity)
 # ---------------------------------------------------------------------------
-echo "${BOLD}[4/8] E2E Smoke Tests — Beta Critical Path${RESET}"
-if [ "$SKIP_E2E" = true ]; then
-  gate_skip "E2E beta-critical-path.spec.ts (--skip-e2e passed)"
-else
-  run_gate "Playwright beta-critical-path.spec.ts" bash -c "npx playwright test tests/e2e/beta-critical-path.spec.ts 2>&1"
-fi
+echo "${BOLD}[4/8] E2E Readiness Gate — Full Beta Route Coverage${RESET}"
+run_gate "Playwright beta-readiness suite" bash -c "npm run test:e2e:beta-readiness 2>&1"
 
 # ---------------------------------------------------------------------------
 # GATE 5 — Security scan: no HTTP test-cleanup routes
@@ -134,9 +129,9 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# GATE 6 — Mock scan: no DB mocks in integration tests
+# GATE 6 — Mock scan: no DB mocks in integration tests + no frontend mocks
 # ---------------------------------------------------------------------------
-echo "${BOLD}[6/8] Mock Scan — Integration Tests${RESET}"
+echo "${BOLD}[6/8] Mock Scan — Integration Tests + Frontend${RESET}"
 printf "  Running: Check integration tests for DB mocks ...\n"
 if grep -rn \
     "jest\.unstable_mockModule.*prisma\|jest\.unstable_mockModule.*db/\|jest\.mock.*prisma\|jest\.mock.*db/" \
@@ -147,15 +142,28 @@ else
   gate_pass "No DB mocks in integration tests"
 fi
 
-# ---------------------------------------------------------------------------
-# GATE 7 — Bypass header scan: no auth bypass in E2E tests
-# ---------------------------------------------------------------------------
-echo "${BOLD}[7/8] Bypass Header Scan — E2E Tests${RESET}"
-printf "  Running: Check E2E specs for auth bypass headers ...\n"
-if grep -rn "bypass-auth\|x-test-user\|x-bypass" tests/e2e/ --exclude-dir=readiness 2>/dev/null | grep -q .; then
-  gate_fail "No auth bypass headers in E2E" "found bypass header — violates 21R-3 production-parity policy"
+printf "  Running: Check frontend production code for mock data ...\n"
+if grep -rn "mockApi\|MOCK_\|allMockHorses\|mockSummary" \
+    frontend/src/ \
+    --include="*.tsx" --include="*.ts" \
+    2>/dev/null | grep -v "__tests__\|\.test\.\|\.spec\." | grep -v "^Binary" | grep -q .; then
+  gate_fail "No mock data in frontend production code" "found mock patterns in frontend/src — run 21R-2"
 else
-  gate_pass "No auth bypass headers in E2E"
+  gate_pass "No mock data in frontend production code"
+fi
+
+# ---------------------------------------------------------------------------
+# GATE 7 — Bypass header scan: no test bypass headers in E2E or api-client
+# ---------------------------------------------------------------------------
+echo "${BOLD}[7/8] Bypass Header Scan — E2E Tests + API Client${RESET}"
+printf "  Running: Check E2E specs and api-client for bypass headers ...\n"
+if grep -rn "x-test-bypass-rate-limit\|x-test-skip-csrf\|bypass-auth\|x-test-user\|x-bypass\|VITE_E2E_TEST" \
+    tests/e2e/ frontend/src/lib/api-client.ts \
+    --exclude-dir=readiness \
+    2>/dev/null | grep -v "^Binary" | grep -q .; then
+  gate_fail "No bypass headers in E2E/api-client" "found bypass header — violates 21R-3 production-parity policy"
+else
+  gate_pass "No bypass headers in E2E/api-client"
 fi
 
 # ---------------------------------------------------------------------------
@@ -191,7 +199,6 @@ done
 echo ""
 echo "  Passed : $PASS"
 echo "  Failed : $FAIL"
-echo "  Skipped: $SKIPPED"
 echo "  Time   : ${ELAPSED}s"
 echo ""
 
@@ -202,7 +209,7 @@ if [ "$FAIL" -eq 0 ]; then
   echo "  1. Record this run in docs/beta-signoff.yaml:"
   echo "     commit: $GIT_COMMIT"
   echo "     date:   $RUN_DATE"
-  echo "     gates:  $PASS passed, $SKIPPED skipped"
+  echo "     gates:  $PASS passed"
   echo "  2. Get explicit approval from project lead."
   echo "  3. Deploy to beta testers."
   exit 0

@@ -333,10 +333,10 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
                         experience: rider.experience,
                         level: rider.level,
                         careerWeeks: rider.careerWeeks,
-                        hiredDate: new Date().toISOString(), // placeholder
-                        retired: false,
+                        hiredDate: rider.hiredDate,
+                        retired: rider.retired,
                         totalWins: rider.totalWins,
-                        totalCompetitions: rider.totalWins * 3, // estimate
+                        totalCompetitions: rider.totalCompetitions,
                         prestige: rider.prestige,
                       }}
                       assignmentCount={assignments.length}

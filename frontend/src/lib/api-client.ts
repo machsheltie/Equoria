@@ -595,14 +595,13 @@ async function fetchWithAuth<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
-  const isTestEnv = import.meta.env.MODE === 'test' || import.meta.env.VITE_E2E_TEST === 'true';
   const isMutation = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(
     (options.method || 'GET').toUpperCase()
   );
 
-  // Fetch CSRF token for mutations in non-test environments
+  // Fetch CSRF token for all mutations — no test bypasses in production code
   const csrfHeader: Record<string, string> = {};
-  if (isMutation && !isTestEnv) {
+  if (isMutation) {
     const token = await getCsrfToken();
     if (token) csrfHeader['X-CSRF-Token'] = token;
   }
@@ -611,7 +610,7 @@ async function fetchWithAuth<T>(
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      ...(isTestEnv ? { 'x-test-skip-csrf': 'true' } : csrfHeader),
+      ...csrfHeader,
       ...options.headers,
     },
     credentials: 'include', // CRITICAL: Send httpOnly cookies with request
@@ -938,10 +937,13 @@ interface Rider {
   weeklyRate: number;
   careerWeeks: number;
   totalWins: number;
+  totalCompetitions: number; // real total; 0 when not yet recorded
   prestige: number; // 0–100
   isActive: boolean;
+  retired: boolean;
   assignedHorseId?: number | null;
   bio: string;
+  hiredDate: string; // ISO timestamp (backend createdAt)
 }
 
 interface RiderAssignment {
@@ -1755,6 +1757,11 @@ export const userProgressApi = {
     apiClient.get<DashboardData>(`/api/users/dashboard/${userId}`),
   getActivity: (userId: string | number) =>
     apiClient.get<ActivityFeedItem[]>(`/api/users/${userId}/activity`),
+
+  /** Get global community activity feed */
+  getCommunityActivity: () => apiClient.get<ActivityFeedItem[]>('/api/users/community/activity'),
+
+  /** Get user details */
   getUser: (userId: string | number) =>
     apiClient.get<{
       id: string;
@@ -1966,19 +1973,25 @@ export const authApi = {
         role?: 'user' | 'admin' | 'moderator';
         completedOnboarding?: boolean;
         onboardingStep?: number;
+        notifications?: Record<string, boolean | string | number> | null;
+        display?: Record<string, boolean | string | number> | null;
       };
     }>('/api/auth/profile');
   },
 
   /**
    * Update user profile
-   * Supports updating username (display name), bio, and avatar
+   * Supports updating username/email plus notification and display preferences.
+   * Preference payloads are merged into User.settings on the backend and persist
+   * across sessions and devices (production parity with beta testing).
    */
   updateProfile: (updates: {
     username?: string;
     email?: string;
     bio?: string;
     avatarUrl?: string;
+    notifications?: Record<string, boolean | string | number>;
+    display?: Record<string, boolean | string | number>;
   }) => {
     return apiClient.put<{
       user: {
@@ -1987,6 +2000,8 @@ export const authApi = {
         email: string;
         bio?: string;
         avatarUrl?: string;
+        notifications?: Record<string, boolean | string | number> | null;
+        display?: Record<string, boolean | string | number> | null;
       };
     }>('/api/auth/profile', updates);
   },
@@ -2077,6 +2092,26 @@ export const authApi = {
       token,
       newPassword,
     });
+  },
+
+  /**
+   * Change password for authenticated user.
+   * Requires current password and new password.
+   * Invalidates all sessions on success (CWE-613).
+   */
+  changePassword: (oldPassword: string, newPassword: string) => {
+    return apiClient.post<{ message: string }>('/api/auth/change-password', {
+      oldPassword,
+      newPassword,
+    });
+  },
+
+  /**
+   * Delete authenticated user's account.
+   * Requires user ID. Permanently removes all user data.
+   */
+  deleteAccount: (userId: number) => {
+    return apiClient.delete<{ message: string }>(`/api/users/${userId}`);
   },
 };
 

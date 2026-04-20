@@ -367,7 +367,7 @@ export const login = async (req, res, next) => {
  */
 export const refreshToken = async (req, res, next) => {
   try {
-    if (process.env.NODE_ENV === 'test' && req.headers['x-test-bypass-auth'] === 'true') {
+    if (process.env.JEST_WORKER_ID !== undefined && req.headers['x-test-bypass-auth'] === 'true') {
       const email = req.headers['x-test-email'] || 'cookietest@example.com';
       let user = await prisma.user.findUnique({ where: { email } });
       if (!user) {
@@ -473,13 +473,19 @@ export const getProfile = async (req, res, next) => {
       throw new AppError('User not found', 404);
     }
 
-    // Extract completedOnboarding, onboardingStep, and milestones from settings
+    // Extract completedOnboarding, onboardingStep, milestones, notifications, display from settings
     const settings =
       typeof user.settings === 'object' && user.settings !== null ? user.settings : {};
     const completedOnboarding = settings.completedOnboarding === true;
     const onboardingStep =
       typeof settings.onboardingStep === 'number' ? settings.onboardingStep : 0;
     const milestones = settings.milestones ?? {};
+    const notifications =
+      typeof settings.notifications === 'object' && settings.notifications !== null
+        ? settings.notifications
+        : null;
+    const display =
+      typeof settings.display === 'object' && settings.display !== null ? settings.display : null;
 
     res.status(200).json({
       status: 'success',
@@ -499,6 +505,8 @@ export const getProfile = async (req, res, next) => {
           completedOnboarding,
           onboardingStep,
           milestones,
+          notifications,
+          display,
         },
       },
     });
@@ -516,25 +524,69 @@ export const getProfile = async (req, res, next) => {
  */
 export const updateProfile = async (req, res, next) => {
   try {
-    const { username, email } = req.body;
+    const { username, email, notifications, display } = req.body;
+
+    const hasPreferenceUpdate =
+      (notifications !== undefined && notifications !== null) ||
+      (display !== undefined && display !== null);
 
     // Validate input
-    if (!username && !email) {
+    if (!username && !email && !hasPreferenceUpdate) {
       throw new ValidationError('At least one field is required');
     }
 
-    // Check for existing username or email
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [{ email: email || '' }, { username: username || '' }],
-        NOT: {
-          id: req.user.id,
+    // Check for existing username or email (only if those are being changed)
+    if (username || email) {
+      const existingUser = await prisma.user.findFirst({
+        where: {
+          OR: [{ email: email || '' }, { username: username || '' }],
+          NOT: {
+            id: req.user.id,
+          },
         },
-      },
-    });
+      });
 
-    if (existingUser) {
-      throw new AppError('Username or email already in use', 400);
+      if (existingUser) {
+        throw new AppError('Username or email already in use', 400);
+      }
+    }
+
+    // Validate preference payloads: must be plain objects of primitives
+    const isPlainPrefs = value => {
+      if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+      return Object.values(value).every(
+        v => typeof v === 'boolean' || typeof v === 'string' || typeof v === 'number',
+      );
+    };
+
+    if (notifications !== undefined && notifications !== null && !isPlainPrefs(notifications)) {
+      throw new ValidationError('notifications must be an object of primitive values');
+    }
+    if (display !== undefined && display !== null && !isPlainPrefs(display)) {
+      throw new ValidationError('display must be an object of primitive values');
+    }
+
+    // Merge preferences into existing settings JSON without clobbering onboarding state
+    let settingsUpdate;
+    if (hasPreferenceUpdate) {
+      const currentUser = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { settings: true },
+      });
+      const currentSettings =
+        typeof currentUser?.settings === 'object' && currentUser.settings !== null
+          ? currentUser.settings
+          : {};
+      settingsUpdate = { ...currentSettings };
+      if (notifications !== undefined && notifications !== null) {
+        settingsUpdate.notifications = {
+          ...(currentSettings.notifications ?? {}),
+          ...notifications,
+        };
+      }
+      if (display !== undefined && display !== null) {
+        settingsUpdate.display = { ...(currentSettings.display ?? {}), ...display };
+      }
     }
 
     // Update user
@@ -543,6 +595,7 @@ export const updateProfile = async (req, res, next) => {
       data: {
         username: username || undefined,
         email: email || undefined,
+        ...(settingsUpdate ? { settings: settingsUpdate } : {}),
       },
       select: {
         id: true,
@@ -550,12 +603,28 @@ export const updateProfile = async (req, res, next) => {
         email: true,
         createdAt: true,
         updatedAt: true,
+        settings: true,
       },
     });
 
+    const updatedSettings =
+      typeof updatedUser.settings === 'object' && updatedUser.settings !== null
+        ? updatedUser.settings
+        : {};
+
     res.status(200).json({
       status: 'success',
-      data: { user: updatedUser },
+      data: {
+        user: {
+          id: updatedUser.id,
+          username: updatedUser.username,
+          email: updatedUser.email,
+          createdAt: updatedUser.createdAt,
+          updatedAt: updatedUser.updatedAt,
+          notifications: updatedSettings.notifications ?? null,
+          display: updatedSettings.display ?? null,
+        },
+      },
     });
   } catch (error) {
     logger.error('[authController.updateProfile] Error updating profile:', error);
@@ -788,7 +857,7 @@ export const resetPassword = async (req, res, next) => {
         data: { password: hashedPassword },
       });
       await tx.$executeRawUnsafe(
-        `UPDATE password_reset_tokens SET "usedAt" = NOW() WHERE id = $1`,
+        'UPDATE password_reset_tokens SET "usedAt" = NOW() WHERE id = $1',
         resetToken.id,
       );
       await tx.refreshToken.deleteMany({

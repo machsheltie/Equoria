@@ -13,7 +13,6 @@
  * Co-located per backend/modules/<domain>/__tests__/ convention (Story 21-1).
  * Real DB — no mocks. Cleanup in afterAll.
  *
- * Remove test.skip() from each test block once implementation is verified green.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -43,7 +42,6 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
 
   describe('GET /api/riders/marketplace', () => {
     it('[P0] happy path — returns 200 with marketplace listing', async () => {
-      // ATDD RED PHASE: remove skip after confirming green
       const res = await request(app).get('/api/riders/marketplace').set('Authorization', `Bearer ${userToken}`);
 
       expect(res.status).toBe(200);
@@ -51,7 +49,6 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
     });
 
     it('[P0] auth guard — returns 401 when no token provided', async () => {
-      // ATDD RED PHASE: remove skip after confirming green
       const res = await request(app).get('/api/riders/marketplace');
 
       expect(res.status).toBe(401);
@@ -62,7 +59,6 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
 
   describe('POST /api/riders/marketplace/hire', () => {
     it('[P0] auth guard — returns 401 when no token provided', async () => {
-      // ATDD RED PHASE: remove skip after confirming green
       const res = await request(app)
         .post('/api/riders/marketplace/hire')
         .set('x-test-skip-csrf', 'true')
@@ -72,7 +68,6 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
     });
 
     it('[P0] validation error — returns 400 when marketplaceId missing', async () => {
-      // ATDD RED PHASE: remove skip after confirming green
       const res = await request(app)
         .post('/api/riders/marketplace/hire')
         .set('Authorization', `Bearer ${userToken}`)
@@ -87,7 +82,6 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
     });
 
     it('[P0] happy path — hires rider from marketplace', async () => {
-      // ATDD RED PHASE: remove skip after confirming green
       // First fetch a valid marketplace ID
       const marketplaceRes = await request(app)
         .get('/api/riders/marketplace')
@@ -117,7 +111,6 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
 
   describe('GET /api/riders/assignments', () => {
     it('[P0] happy path — returns 200 with assignments array', async () => {
-      // ATDD RED PHASE: remove skip after confirming green
       const res = await request(app).get('/api/riders/assignments').set('Authorization', `Bearer ${userToken}`);
 
       expect(res.status).toBe(200);
@@ -125,7 +118,6 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
     });
 
     it('[P0] auth guard — returns 401 when no token provided', async () => {
-      // ATDD RED PHASE: remove skip after confirming green
       const res = await request(app).get('/api/riders/assignments');
 
       expect(res.status).toBe(401);
@@ -136,7 +128,6 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
 
   describe('POST /api/riders/assignments', () => {
     it('[P0] auth guard — returns 401 when no token provided', async () => {
-      // ATDD RED PHASE: remove skip after confirming green
       const res = await request(app)
         .post('/api/riders/assignments')
         .set('x-test-skip-csrf', 'true')
@@ -146,7 +137,6 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
     });
 
     it('[P0] validation error — returns 400 when riderId missing', async () => {
-      // ATDD RED PHASE: remove skip after confirming green
       const res = await request(app)
         .post('/api/riders/assignments')
         .set('Authorization', `Bearer ${userToken}`)
@@ -162,7 +152,6 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
     });
 
     it('[P0] validation error — returns 400 when horseId missing', async () => {
-      // ATDD RED PHASE: remove skip after confirming green
       const res = await request(app)
         .post('/api/riders/assignments')
         .set('Authorization', `Bearer ${userToken}`)

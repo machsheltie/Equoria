@@ -47,6 +47,9 @@ import { authenticateToken } from '../../middleware/auth.mjs';
 import { handleValidationErrors } from '../../middleware/validationErrorHandler.mjs';
 import documentationRoutes from '../../routes/documentationRoutes.mjs';
 import { setupSwaggerDocs } from '../../middleware/swaggerSetup.mjs';
+import { cpSync, mkdtempSync, rmSync, existsSync } from 'fs';
+import { join } from 'path';
+import os from 'os';
 import { getApiDocumentationService } from '../../services/apiDocumentationService.mjs';
 import prisma from '../../db/index.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
@@ -134,15 +137,35 @@ describe('📚 Documentation System Integration Tests', () => {
   let authToken;
   let _docService;
   let server;
+  let docTempDir;
+  let originalSwaggerPath;
 
   beforeAll(async () => {
     app = createTestApp();
     // Start server once for all tests
     server = app.listen(0);
     _docService = getApiDocumentationService();
+
+    // Redirect docService to a temp copy so POST /api/docs/generate in these
+    // tests cannot mutate the curated backend/docs/swagger.yaml on disk.
+    const canonicalSwaggerPath = join(process.cwd(), 'docs', 'swagger.yaml');
+    const sourcePath = existsSync(canonicalSwaggerPath) ? canonicalSwaggerPath : _docService.swaggerPath;
+    originalSwaggerPath = _docService.swaggerPath;
+    docTempDir = mkdtempSync(join(os.tmpdir(), 'equoria-docs-itest-'));
+    const testSwaggerPath = join(docTempDir, 'swagger.yaml');
+    cpSync(sourcePath, testSwaggerPath);
+    _docService.swaggerPath = testSwaggerPath;
   });
 
   afterAll(async () => {
+    // Restore service pointer and clean temp copy.
+    if (_docService && originalSwaggerPath) {
+      _docService.swaggerPath = originalSwaggerPath;
+    }
+    if (docTempDir && existsSync(docTempDir)) {
+      rmSync(docTempDir, { recursive: true, force: true });
+    }
+
     // Clean up all test data
     await prisma.refreshToken.deleteMany({
       where: { user: { email: { contains: 'docintegration' } } },
