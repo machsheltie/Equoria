@@ -181,15 +181,24 @@ jobs:
         working-directory: backend
         run: npm ci
 
+      - name: Install database dependencies
+        # Needed for npx prisma migrate deploy below (schema lives here).
+        working-directory: packages/database
+        run: npm ci
+
       - name: Setup database schema
-        working-directory: backend
+        # Prisma schema lives in packages/database, not backend. Run migrate
+        # from that directory so prisma finds prisma/schema.prisma. Backend
+        # was failing OWASP ZAP at the 'Setup database schema' step with
+        # "Could not find Prisma Schema that is required for this command."
+        working-directory: packages/database
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/equoria_test
-        run: npx prisma migrate deploy
+        run: npx prisma migrate deploy --schema=prisma/schema.prisma
 
       - name: Generate Prisma Client
-        working-directory: backend
-        run: npx prisma generate
+        working-directory: packages/database
+        run: npx prisma generate --schema=prisma/schema.prisma
 
       - name: Create .env file
         working-directory: backend

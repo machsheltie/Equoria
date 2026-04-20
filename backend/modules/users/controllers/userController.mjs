@@ -351,6 +351,70 @@ export const getUserActivity = async (req, res, next) => {
 };
 
 /**
+ * Get global community activity feed
+ * Aggregates public events from across the game
+ *
+ * @route GET /api/users/community/activity
+ */
+export const getCommunityActivity = async (req, res, next) => {
+  try {
+    // 1. Get latest forum threads
+    const threads = await prisma.forumThread.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+      include: { author: { select: { username: true } } },
+    });
+
+    // 2. Get latest clubs
+    const clubs = await prisma.club.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+    });
+
+    // 3. Get latest top competition wins (1st place)
+    const wins = await prisma.competitionResult.findMany({
+      where: { placement: { in: ['1', '1st'] } },
+      orderBy: { runDate: 'desc' },
+      take: 5,
+      include: { horse: { select: { name: true, user: { select: { username: true } } } } },
+    });
+
+    // Map all to common activity format
+    const activities = [
+      ...threads.map(t => ({
+        id: `thread-${t.id}`,
+        type: 'FORUM_POST',
+        description: `${t.author.username} started a new thread: "${t.title}"`,
+        timestamp: t.createdAt,
+        metadata: { threadId: t.id, section: t.section },
+      })),
+      ...clubs.map(c => ({
+        id: `club-${c.id}`,
+        type: 'CLUB_CREATED',
+        description: `New club formed: ${c.name}`,
+        timestamp: c.createdAt,
+        metadata: { clubId: c.id, type: c.type },
+      })),
+      ...wins.map(w => ({
+        id: `win-${w.id}`,
+        type: 'COMPETITION_WIN',
+        description: `${w.horse.user?.username || 'Someone'}'s horse ${w.horse.name} won the ${w.showName}!`,
+        timestamp: w.runDate,
+        metadata: { horseId: w.horseId, score: w.score },
+      })),
+    ].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+    res.json({
+      success: true,
+      data: activities.slice(0, 20),
+    });
+  } catch (error) {
+    logger.error(`[userController.getCommunityActivity] Error: ${error.message}`);
+    next(error);
+  }
+};
+
+/**
  * Get user by ID
  * @route GET /api/user/:id
  */

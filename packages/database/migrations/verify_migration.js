@@ -7,11 +7,6 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // Initialize Prisma client
 const prisma = new PrismaClient({
@@ -94,11 +89,13 @@ async function testConnection() {
 async function verifyHorseColumns() {
   console.log('\n📋 Verifying Horse table columns...');
 
-  const bondScoreExists = await checkColumnExists('Horse', 'bond_score');
-  const stressLevelExists = await checkColumnExists('Horse', 'stress_level');
+  // Prisma schema uses camelCase field names without @map, so the underlying
+  // DB columns are camelCase too ("bondScore", "stressLevel"), not snake_case.
+  const bondScoreExists = await checkColumnExists('Horse', 'bondScore');
+  const stressLevelExists = await checkColumnExists('Horse', 'stressLevel');
 
-  console.log(`   bond_score column: ${bondScoreExists ? '✅' : '❌'}`);
-  console.log(`   stress_level column: ${stressLevelExists ? '✅' : '❌'}`);
+  console.log(`   bondScore column: ${bondScoreExists ? '✅' : '❌'}`);
+  console.log(`   stressLevel column: ${stressLevelExists ? '✅' : '❌'}`);
 
   return bondScoreExists && stressLevelExists;
 }
@@ -178,13 +175,15 @@ async function testBasicOperations() {
     const historyCount = await prisma.foalTrainingHistory.count();
     console.log(`   ✅ Can read foal training history (found ${historyCount} records)`);
 
-    // Test if we can query horses with new fields
+    // Test if we can query horses with new fields. Prisma uses camelCase
+    // field names even though the underlying columns are snake_case — use
+    // `bondScore` / `stressLevel` here, not `bond_score` / `stress_level`.
     const horsesWithBonding = await prisma.horse.findMany({
       select: {
         id: true,
         name: true,
-        bond_score: true,
-        stress_level: true,
+        bondScore: true,
+        stressLevel: true,
       },
       take: 1,
     });
@@ -192,7 +191,7 @@ async function testBasicOperations() {
     if (horsesWithBonding.length > 0) {
       const horse = horsesWithBonding[0];
       console.log(
-        `   ✅ Can query new fields (horse "${horse.name}": bond=${horse.bond_score}, stress=${horse.stress_level})`
+        `   ✅ Can query new fields (horse "${horse.name}": bond=${horse.bondScore}, stress=${horse.stressLevel})`
       );
     } else {
       console.log(`   ⚠️  No horses found to test new fields`);

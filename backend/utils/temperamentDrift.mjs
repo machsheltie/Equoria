@@ -74,7 +74,7 @@ export function calculateTemperamentDrift(horse, factors = {}) {
     );
 
     // Get trait effects
-    const traits = horse.epigenetic_modifiers || { positive: [], negative: [], hidden: [] };
+    const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
     const allTraits = [...(traits.positive || []), ...(traits.negative || [])];
     const traitEffects = getCombinedTraitEffects(allTraits);
 
@@ -96,11 +96,11 @@ export function calculateTemperamentDrift(horse, factors = {}) {
 
     // Environmental factors that increase drift probability
     const {
-      stressLevel = horse.stress_level || 0,
+      stressLevel = horse.stressLevel || 0,
       recentTraining = false,
       recentCompetition = false,
-      healthStatus = horse.health_status || 'Good',
-      bondScore = horse.bond_score || 50,
+      healthStatus = horse.healthStatus || 'Good',
+      bondScore = horse.bondScore || 50,
       age = horse.age || 1,
     } = factors;
 
@@ -290,7 +290,7 @@ export function getTemperamentCharacteristics(temperament) {
  * @returns {boolean} True if temperament is stable
  */
 export function isTemperamentStable(horse) {
-  const traits = horse.epigenetic_modifiers || { positive: [], negative: [], hidden: [] };
+  const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
   const allTraits = [...(traits.positive || []), ...(traits.negative || [])];
   const traitEffects = getCombinedTraitEffects(allTraits);
 

@@ -550,9 +550,9 @@ describe('🍼 UNIT: Foal Model - Foal Development & Activity Management', () =>
       expect(result.success).toBe(true);
       expect(result.foal.name).toBe('Test Foal');
       expect(result.activity.name).toBe('Gentle Touch');
-      expect(result.levels).toHaveProperty('bond_score');
-      expect(result.levels).toHaveProperty('stress_level');
-      expect(result.training_record_id).toBe(1);
+      expect(result.levels).toHaveProperty('bondScore');
+      expect(result.levels).toHaveProperty('stressLevel');
+      expect(result.trainingRecordId).toBe(1);
     });
 
     it('should validate day parameter (0-6)', async () => {
@@ -596,8 +596,8 @@ describe('🍼 UNIT: Foal Model - Foal Development & Activity Management', () =>
       const result = await completeEnrichmentActivity(1, 0, 'gentle_touch');
 
       // Verify bounds are enforced
-      expect(result.levels.bond_score).toBeLessThanOrEqual(100);
-      expect(result.levels.stress_level).toBeGreaterThanOrEqual(0);
+      expect(result.levels.bondScore).toBeLessThanOrEqual(100);
+      expect(result.levels.stressLevel).toBeGreaterThanOrEqual(0);
     });
 
     it('should handle null bondScore and stressLevel with defaults', async () => {
@@ -617,8 +617,8 @@ describe('🍼 UNIT: Foal Model - Foal Development & Activity Management', () =>
 
       expect(result.success).toBe(true);
       // Should use defaults: bondScore: 50, stressLevel: 0
-      expect(result.levels).toHaveProperty('bond_score');
-      expect(result.levels).toHaveProperty('stress_level');
+      expect(result.levels).toHaveProperty('bondScore');
+      expect(result.levels).toHaveProperty('stressLevel');
     });
 
     it('should throw error for horse that is not a foal', async () => {

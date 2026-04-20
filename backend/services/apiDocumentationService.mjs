@@ -126,7 +126,7 @@ class ApiDocumentationService {
         const existingPathCount = Object.keys(spec.paths ?? {}).length;
         if (existingPathCount > 0) {
           logger.info(
-            `[ApiDocService] generateDocumentation called with 0 registered endpoints; ` +
+            '[ApiDocService] generateDocumentation called with 0 registered endpoints; ' +
               `preserving ${existingPathCount} existing paths in the loaded spec.`,
           );
         }

@@ -13,8 +13,13 @@ if (process.env.NODE_ENV === 'test') {
   global.console.info = () => {};
 }
 
-// Load test environment variables (override any existing env vars)
-dotenv.config({ path: join(__dirname, '..', '.env.test'), override: true });
+// Load test environment variables — do NOT override. CI workflows set
+// DATABASE_URL / JWT_SECRET to match the service container they spin up
+// (e.g. postgres:postgres in test-auth-cookies.yml). Overriding with the
+// committed .env.test (which has a dev-only strong password) breaks CI
+// Prisma auth. Local dev still picks up .env.test because the shell
+// typically does not pre-set these.
+dotenv.config({ path: join(__dirname, '..', '.env.test') });
 
 // Normalize mime API across versions for test-only dependencies.
 try {
@@ -67,7 +72,7 @@ const { cleanupPrismaInstances } = await import('../jest.setup.mjs');
 afterAll(async () => {
   try {
     await cleanupPrismaInstances();
-  } catch (error) {
+  } catch {
     // Silently ignore cleanup errors to avoid breaking tests
   }
 });

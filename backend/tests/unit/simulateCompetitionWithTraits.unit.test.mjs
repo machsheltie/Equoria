@@ -31,7 +31,7 @@ describe('Competition Simulation with Trait Impact', () => {
       bridleBonus: 3,
     },
     trainingScore: 50,
-    epigenetic_modifiers: { positive: [], negative: [], hidden: [] },
+    epigeneticModifiers: { positive: [], negative: [], hidden: [] },
   };
 
   const testShow = {
@@ -60,7 +60,7 @@ describe('Competition Simulation with Trait Impact', () => {
     it('should apply positive trait bonuses', () => {
       const horseWithTraits = {
         ...baseHorse,
-        epigenetic_modifiers: {
+        epigeneticModifiers: {
           positive: ['bold', 'athletic'],
           negative: [],
           hidden: [],
@@ -89,7 +89,7 @@ describe('Competition Simulation with Trait Impact', () => {
     it('should apply negative trait penalties', () => {
       const horseWithNegativeTraits = {
         ...baseHorse,
-        epigenetic_modifiers: {
+        epigeneticModifiers: {
           positive: [],
           negative: ['nervous', 'fragile'],
           hidden: [],
@@ -116,7 +116,7 @@ describe('Competition Simulation with Trait Impact', () => {
     it('should handle mixed traits correctly', () => {
       const horseWithMixedTraits = {
         ...baseHorse,
-        epigenetic_modifiers: {
+        epigeneticModifiers: {
           positive: ['bold', 'calm'],
           negative: ['nervous'],
           hidden: [],
@@ -142,19 +142,19 @@ describe('Competition Simulation with Trait Impact', () => {
           ...baseHorse,
           id: 1,
           name: 'Bold Horse',
-          epigenetic_modifiers: { positive: ['bold', 'athletic'], negative: [], hidden: [] },
+          epigeneticModifiers: { positive: ['bold', 'athletic'], negative: [], hidden: [] },
         },
         {
           ...baseHorse,
           id: 2,
           name: 'Nervous Horse',
-          epigenetic_modifiers: { positive: [], negative: ['nervous', 'fragile'], hidden: [] },
+          epigeneticModifiers: { positive: [], negative: ['nervous', 'fragile'], hidden: [] },
         },
         {
           ...baseHorse,
           id: 3,
           name: 'Plain Horse',
-          epigenetic_modifiers: { positive: [], negative: [], hidden: [] },
+          epigeneticModifiers: { positive: [], negative: [], hidden: [] },
         },
       ];
 
@@ -176,13 +176,13 @@ describe('Competition Simulation with Trait Impact', () => {
           ...baseHorse,
           id: 1,
           name: 'Legendary Horse',
-          epigenetic_modifiers: { positive: ['legendaryBloodline'], negative: [], hidden: [] },
+          epigeneticModifiers: { positive: ['legendaryBloodline'], negative: [], hidden: [] },
         },
         {
           ...baseHorse,
           id: 2,
           name: 'Regular Horse',
-          epigenetic_modifiers: { positive: ['bold'], negative: [], hidden: [] },
+          epigeneticModifiers: { positive: ['bold'], negative: [], hidden: [] },
         },
       ];
 
@@ -224,14 +224,14 @@ describe('Competition Simulation with Trait Impact', () => {
           ...baseHorse,
           id: 1,
           name: 'Favored Horse',
-          epigenetic_modifiers: { positive: favoredTraits, negative: [], hidden: [] },
+          epigeneticModifiers: { positive: favoredTraits, negative: [], hidden: [] },
         };
 
         const unfavoredHorse = {
           ...baseHorse,
           id: 2,
           name: 'Unfavored Horse',
-          epigenetic_modifiers: { positive: [], negative: unfavoredTraits, hidden: [] },
+          epigeneticModifiers: { positive: [], negative: unfavoredTraits, hidden: [] },
         };
 
         const testShowForDiscipline = { ...testShow, discipline };
@@ -257,7 +257,7 @@ describe('Competition Simulation with Trait Impact', () => {
         flexibility: 20,
         obedience: 20,
         focus: 20,
-        epigenetic_modifiers: {
+        epigeneticModifiers: {
           positive: ['legendary_bloodline', 'athletic', 'bold', 'intelligent'],
           negative: [],
           hidden: [],
@@ -272,7 +272,7 @@ describe('Competition Simulation with Trait Impact', () => {
         flexibility: 95,
         obedience: 95,
         focus: 95,
-        epigenetic_modifiers: { positive: [], negative: [], hidden: [] },
+        epigeneticModifiers: { positive: [], negative: [], hidden: [] },
       };
 
       const results = simulateCompetition([superTraitHorse, goodStatsHorse], testShow);
@@ -288,7 +288,7 @@ describe('Competition Simulation with Trait Impact', () => {
       const manyTraitsHorse = {
         ...baseHorse,
         id: 1,
-        epigenetic_modifiers: {
+        epigeneticModifiers: {
           positive: ['bold', 'resilient', 'intelligent', 'calm', 'athletic'],
           negative: [],
           hidden: [],
@@ -298,7 +298,7 @@ describe('Competition Simulation with Trait Impact', () => {
       const fewTraitsHorse = {
         ...baseHorse,
         id: 2,
-        epigenetic_modifiers: { positive: ['bold'], negative: [], hidden: [] },
+        epigeneticModifiers: { positive: ['bold'], negative: [], hidden: [] },
       };
 
       const results = simulateCompetition([manyTraitsHorse, fewTraitsHorse], testShow);
@@ -315,7 +315,7 @@ describe('Competition Simulation with Trait Impact', () => {
     it('should handle horses with malformed trait data', () => {
       const malformedHorse = {
         ...baseHorse,
-        epigenetic_modifiers: null,
+        epigeneticModifiers: null,
       };
 
       const results = simulateCompetition([malformedHorse], testShow);
@@ -328,7 +328,7 @@ describe('Competition Simulation with Trait Impact', () => {
     it('should handle unknown traits gracefully', () => {
       const unknownTraitHorse = {
         ...baseHorse,
-        epigenetic_modifiers: {
+        epigeneticModifiers: {
           positive: ['unknown_trait', 'bold'],
           negative: ['another_unknown'],
           hidden: [],

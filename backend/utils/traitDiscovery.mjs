@@ -15,7 +15,7 @@ const DISCOVERY_CONDITIONS = {
   // Bonding-based discoveries
   HIGH_BOND: {
     name: 'High Bond',
-    condition: horse => (horse.bondScore || horse.bond_score || 0) >= 80,
+    condition: horse => (horse.bondScore || 0) >= 80,
     description: 'Strong bond formed',
     priority: 'high',
     category: 'bonding',
@@ -24,7 +24,7 @@ const DISCOVERY_CONDITIONS = {
 
   EXCELLENT_BOND: {
     name: 'Excellent Bond',
-    condition: horse => (horse.bondScore || horse.bond_score || 0) >= 95,
+    condition: horse => (horse.bondScore || 0) >= 95,
     description: 'Exceptional bond achieved',
     priority: 'legendary',
     category: 'bonding',
@@ -34,7 +34,7 @@ const DISCOVERY_CONDITIONS = {
   // Stress-based discoveries
   LOW_STRESS: {
     name: 'Low Stress',
-    condition: horse => (horse.stressLevel || horse.stress_level || 100) <= 20,
+    condition: horse => (horse.stressLevel || 100) <= 20,
     description: 'Stress levels minimized',
     priority: 'medium',
     category: 'stress',
@@ -43,7 +43,7 @@ const DISCOVERY_CONDITIONS = {
 
   MINIMAL_STRESS: {
     name: 'Minimal Stress',
-    condition: horse => (horse.stressLevel || horse.stress_level || 100) <= 5,
+    condition: horse => (horse.stressLevel || 100) <= 5,
     description: 'Perfect stress management',
     priority: 'high',
     category: 'stress',
@@ -53,7 +53,7 @@ const DISCOVERY_CONDITIONS = {
   // Combined conditions
   PERFECT_CARE: {
     name: 'Perfect Care',
-    condition: horse => (horse.bondScore || horse.bond_score || 0) >= 80 && (horse.stressLevel || horse.stress_level || 100) <= 20,
+    condition: horse => (horse.bondScore || 0) >= 80 && (horse.stressLevel || 100) <= 20,
     description: 'Perfect care conditions achieved',
     priority: 'legendary',
     category: 'milestones',
@@ -63,7 +63,7 @@ const DISCOVERY_CONDITIONS = {
   // Age-based discoveries
   MATURE_BOND: {
     name: 'Mature Bond',
-    condition: horse => horse.age >= 3 && (horse.bondScore || horse.bond_score || 0) >= 70,
+    condition: horse => horse.age >= 3 && (horse.bondScore || 0) >= 70,
     description: 'Mature relationship developed with adult horse',
     priority: 'medium',
     category: 'milestones',
@@ -158,9 +158,9 @@ export async function revealTraits(horseId, options = {}) {
         breed: true,
         foalActivities: options.checkEnrichment
           ? {
-            orderBy: { createdAt: 'desc' },
-            take: 20,
-          }
+              orderBy: { createdAt: 'desc' },
+              take: 20,
+            }
           : false,
       },
     });
@@ -174,11 +174,13 @@ export async function revealTraits(horseId, options = {}) {
     const isEligibleForTraitDiscovery = isFoalAge(horse.age) || horse.age >= FOAL_LIMITS.ADULT_AGE;
 
     if (!isEligibleForTraitDiscovery) {
-      throw new Error(`Horse with ID ${horseIdInt} is not eligible for trait discovery (age: ${horse.age}).`);
+      throw new Error(
+        `Horse with ID ${horseIdInt} is not eligible for trait discovery (age: ${horse.age}).`,
+      );
     }
 
     // Parse current traits - handle both camelCase and snake_case for compatibility
-    const currentTraits = horse.epigeneticModifiers || horse.epigenetic_modifiers || { positive: [], negative: [], hidden: [] };
+    const currentTraits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
     const hiddenTraits = currentTraits.hidden || [];
 
     logger.info(
@@ -186,7 +188,9 @@ export async function revealTraits(horseId, options = {}) {
     );
 
     if (hiddenTraits.length === 0) {
-      logger.info(`[traitDiscovery.revealTraits] No hidden traits to reveal for horse ${horseIdInt}`);
+      logger.info(
+        `[traitDiscovery.revealTraits] No hidden traits to reveal for horse ${horseIdInt}`,
+      );
       return {
         success: true,
         horseId: horseIdInt,
@@ -212,22 +216,28 @@ export async function revealTraits(horseId, options = {}) {
 
     // Filter conditions based on horse age
     const isAdult = horse.age >= FOAL_LIMITS.ADULT_AGE;
-    const ageAppropriateConditions = [...metConditions, ...enrichmentConditions].filter(condition => {
-      // Adults (3+) can trigger mature bonds and milestone conditions
-      if (isAdult) {
-        return condition.name === 'Mature Bond' ||
-               condition.category === 'milestones' ||
-               condition.category === 'bonding' ||
-               condition.category === 'stress';
-      }
-      // Foals (under 3) can trigger all conditions except mature bond
-      return condition.name !== 'Mature Bond';
-    });
+    const ageAppropriateConditions = [...metConditions, ...enrichmentConditions].filter(
+      condition => {
+        // Adults (3+) can trigger mature bonds and milestone conditions
+        if (isAdult) {
+          return (
+            condition.name === 'Mature Bond' ||
+            condition.category === 'milestones' ||
+            condition.category === 'bonding' ||
+            condition.category === 'stress'
+          );
+        }
+        // Foals (under 3) can trigger all conditions except mature bond
+        return condition.name !== 'Mature Bond';
+      },
+    );
 
     const allConditions = ageAppropriateConditions;
 
     if (allConditions.length === 0) {
-      logger.info(`[traitDiscovery.revealTraits] No discovery conditions met for horse ${horseIdInt}`);
+      logger.info(
+        `[traitDiscovery.revealTraits] No discovery conditions met for horse ${horseIdInt}`,
+      );
       return {
         success: true,
         horseId: horseIdInt,
@@ -548,7 +558,11 @@ export async function getDiscoveryProgress(horseId) {
     }
 
     // Get traits from epigeneticModifiers JSON field
-    const epigeneticModifiers = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
+    const epigeneticModifiers = horse.epigeneticModifiers || {
+      positive: [],
+      negative: [],
+      hidden: [],
+    };
     const hiddenTraits = epigeneticModifiers.hidden || [];
     const visibleTraits = [
       ...(epigeneticModifiers.positive || []),
@@ -562,8 +576,8 @@ export async function getDiscoveryProgress(horseId) {
 
     // Get current stats for condition checking
     const currentStats = {
-      bondScore: horse.bondScore || horse.bond_score || 50,
-      stressLevel: horse.stressLevel || horse.stress_level || 0,
+      bondScore: horse.bondScore || 50,
+      stressLevel: horse.stressLevel || 0,
       developmentDay: horse.foalDevelopment?.currentDay || 0,
     };
 

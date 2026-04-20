@@ -73,8 +73,17 @@ router.get('/status', getCronStatus);
 
 /**
  * POST /api/groom-salaries/process
- * Manually trigger salary processing (for testing/admin use)
+ * Manually trigger salary processing (admin only)
  */
-router.post('/process', triggerSalaryProcessingEndpoint);
+router.post(
+  '/process',
+  (req, res, next) => {
+    if (!req.user || req.user.role !== 'admin') {
+      return res.status(403).json({ success: false, message: 'Admin access required' });
+    }
+    next();
+  },
+  triggerSalaryProcessingEndpoint,
+);
 
 export default router;

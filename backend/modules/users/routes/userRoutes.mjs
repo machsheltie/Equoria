@@ -8,6 +8,7 @@ import { param, body, validationResult } from 'express-validator';
 import {
   getUserProgressAPI,
   getUserActivity,
+  getCommunityActivity,
   getDashboardData,
   getUser,
   createUserController,
@@ -22,6 +23,9 @@ import logger from '../../../utils/logger.mjs';
 import { getTransactionHistory } from '../../services/controllers/bankController.mjs';
 
 const router = express.Router();
+
+/** GET /api/users/community/activity — get global community activity feed (max 20) */
+router.get('/community/activity', queryRateLimiter, authenticateToken, getCommunityActivity);
 
 /**
  * Validation middleware for user ID parameter

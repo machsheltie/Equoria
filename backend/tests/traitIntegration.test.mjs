@@ -54,8 +54,8 @@ describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', ()
     it('should apply trait bonuses to grooming bonding', () => {
       const horse = {
         id: 1,
-        bond_score: 50,
-        epigenetic_modifiers: {
+        bondScore: 50,
+        epigeneticModifiers: {
           positive: ['social', 'calm'],
           negative: [],
           hidden: [],
@@ -74,7 +74,7 @@ describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', ()
       const horse = {
         id: 1,
         bondScore: 50,
-        epigenetic_modifiers: {
+        epigeneticModifiers: {
           positive: [],
           negative: ['antisocial', 'nervous'],
           hidden: [],
@@ -92,8 +92,8 @@ describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', ()
     it('should calculate competition bonding with placement modifiers', () => {
       const horse = {
         id: 1,
-        bond_score: 70,
-        epigenetic_modifiers: {
+        bondScore: 70,
+        epigeneticModifiers: {
           positive: ['social'],
           negative: [],
           hidden: [],
@@ -165,7 +165,7 @@ describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', ()
       const horse = {
         id: 1,
         name: 'Horse Without Traits',
-        // No epigenetic_modifiers field
+        // No epigeneticModifiers field
       };
 
       const result = calculateBondingChange(horse, 'grooming', { duration: 30 });
@@ -178,7 +178,7 @@ describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', ()
     it('should handle malformed trait data', () => {
       const horse = {
         id: 1,
-        epigenetic_modifiers: 'invalid_data', // Should be an object
+        epigeneticModifiers: 'invalid_data', // Should be an object
       };
 
       const result = calculateBondingChange(horse, 'training', { success: true });
@@ -190,7 +190,7 @@ describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', ()
     it('should handle invalid activity types gracefully', () => {
       const horse = {
         id: 1,
-        epigenetic_modifiers: {
+        epigeneticModifiers: {
           positive: ['social'],
           negative: [],
           hidden: [],

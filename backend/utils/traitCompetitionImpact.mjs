@@ -171,7 +171,10 @@ const TRAIT_COMPETITION_EFFECTS = {
     disciplines: {
       'Show Jumping': { scoreModifier: 0.03, description: 'Comfortable performing for audiences' },
       Dressage: { scoreModifier: 0.035, description: 'Enjoys the attention and presentation' },
-      'Western Pleasure': { scoreModifier: 0.03, description: 'Calm and confident in group settings' },
+      'Western Pleasure': {
+        scoreModifier: 0.03,
+        description: 'Calm and confident in group settings',
+      },
     },
   },
 
@@ -261,15 +264,21 @@ const TRAIT_COMPETITION_EFFECTS = {
     },
     disciplines: {
       Dressage: { scoreModifier: -0.05, description: 'Uncomfortable with audience attention' },
-      'Show Jumping': { scoreModifier: -0.045, description: 'Distracted by crowd noise and activity' },
-      'Western Pleasure': { scoreModifier: -0.04, description: 'Stressed in group competition settings' },
+      'Show Jumping': {
+        scoreModifier: -0.045,
+        description: 'Distracted by crowd noise and activity',
+      },
+      'Western Pleasure': {
+        scoreModifier: -0.04,
+        description: 'Stressed in group competition settings',
+      },
     },
   },
 };
 
 /**
  * Calculate trait-based competition impact for a horse using the new trait effects system
- * @param {Object} horse - Horse object with epigenetic_modifiers
+ * @param {Object} horse - Horse object with epigeneticModifiers
  * @param {string} discipline - Competition discipline
  * @param {number} baseScore - Base competition score before trait modifiers
  * @returns {Object} Trait impact results
@@ -296,7 +305,7 @@ export function calculateTraitCompetitionImpact(horse, discipline, baseScore) {
     };
 
     // Get horse traits
-    const traits = horse.epigenetic_modifiers || { positive: [], negative: [], hidden: [] };
+    const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
     const allVisibleTraits = [...(traits.positive || []), ...(traits.negative || [])];
 
     if (allVisibleTraits.length === 0) {

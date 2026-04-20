@@ -311,7 +311,7 @@ export async function getDiscoveryStatus(req, res) {
     const metConditions = await checkDiscoveryConditions(horse);
     const enrichmentConditions = checkEnrichmentDiscoveries(horse.foalActivities || []);
 
-    const traits = horse.epigenetic_modifiers || { positive: [], negative: [], hidden: [] };
+    const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
 
     res.status(200).json({
       success: true,
@@ -320,8 +320,8 @@ export async function getDiscoveryStatus(req, res) {
         horseId: parsedHorseId,
         horseName: horse.name,
         currentStats: {
-          bondScore: horse.bondScore || horse.bond_score,
-          stressLevel: horse.stressLevel || horse.stress_level,
+          bondScore: horse.bondScore || 0,
+          stressLevel: horse.stressLevel || 0,
           age: horse.age,
         },
         traitCounts: {

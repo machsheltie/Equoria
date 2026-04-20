@@ -14,10 +14,10 @@ export default async function globalTeardown() {
   console.log('🧹 Running global teardown...');
 
   try {
-    // 1. Load environment variables (required for imports)
+    // 1. Load environment variables — do NOT override env already set by the
+    // runner (e.g. CI service-container credentials). See tests/setup.mjs.
     dotenv.config({
       path: path.join(__dirname, '..', '.env.test'),
-      override: true,
     });
 
     // 2. Import and cleanup Prisma instances (must be after env vars loaded)

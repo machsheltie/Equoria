@@ -16,6 +16,8 @@ const NODE_ENV = process.env.NODE_ENV || 'development';
 // Load environment-specific .env file
 if (NODE_ENV === 'test') {
   dotenv.config({ path: path.resolve(projectRoot, 'env.test') }); // Use env.test without leading dot
+} else if (NODE_ENV === 'beta-readiness') {
+  dotenv.config({ path: path.resolve(projectRoot, 'env.beta-readiness') }); // Beta E2E readiness gates
 } else {
   dotenv.config({ path: path.resolve(projectRoot, '.env') }); // Load .env for other environments
 }
@@ -58,8 +60,8 @@ const config = {
   jwtRefreshSecret: JWT_REFRESH_SECRET,
   allowedOrigins: ALLOWED_ORIGINS
     ? ALLOWED_ORIGINS.split(',')
-      .map(origin => origin.trim())
-      .filter(origin => origin)
+        .map(origin => origin.trim())
+        .filter(origin => origin)
     : [],
 };
 

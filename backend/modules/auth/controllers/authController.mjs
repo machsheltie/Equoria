@@ -553,7 +553,9 @@ export const updateProfile = async (req, res, next) => {
 
     // Validate preference payloads: must be plain objects of primitives
     const isPlainPrefs = value => {
-      if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+      if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+        return false;
+      }
       return Object.values(value).every(
         v => typeof v === 'boolean' || typeof v === 'string' || typeof v === 'number',
       );

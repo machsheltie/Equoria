@@ -37,8 +37,8 @@
 
 import request from 'supertest';
 import express from 'express';
-import { readFileSync as _readFileSync, existsSync as _existsSync } from 'fs';
-import { join as _join, dirname } from 'path';
+import { readFileSync as _readFileSync, existsSync as _existsSync, cpSync, mkdtempSync, rmSync, existsSync } from 'fs';
+import { join as _join, dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 import _YAML from 'js-yaml';
 import { body } from 'express-validator';
@@ -47,8 +47,6 @@ import { authenticateToken } from '../../middleware/auth.mjs';
 import { handleValidationErrors } from '../../middleware/validationErrorHandler.mjs';
 import documentationRoutes from '../../routes/documentationRoutes.mjs';
 import { setupSwaggerDocs } from '../../middleware/swaggerSetup.mjs';
-import { cpSync, mkdtempSync, rmSync, existsSync } from 'fs';
-import { join } from 'path';
 import os from 'os';
 import { getApiDocumentationService } from '../../services/apiDocumentationService.mjs';
 import prisma from '../../db/index.mjs';

@@ -10,7 +10,7 @@
  * - Trait name validation: Non-empty strings required for trait operations
  * - Category validation: Only 'positive' and 'negative' categories allowed
  * - Error handling: Graceful handling of non-existent horses
- * - Data structure validation: epigenetic_modifiers JSON structure compliance
+ * - Data structure validation: epigeneticModifiers JSON structure compliance
  * - Integration compatibility: Existing createHorse functionality preservation
  * - Type safety: Proper return type validation and error messaging
  *
@@ -22,7 +22,7 @@
  * 5. createHorse() - Existing functionality preservation verification
  * 6. Input validation: Invalid IDs, empty strings, null values, wrong types
  * 7. Error scenarios: Non-existent horses, invalid categories, malformed data
- * 8. Data structure: epigenetic_modifiers JSON schema validation
+ * 8. Data structure: epigeneticModifiers JSON schema validation
  *
  * 🔄 BALANCED MOCKING APPROACH:
  * ✅ REAL: Input validation logic, error handling, function signature validation
@@ -66,7 +66,7 @@ describe('🐴 UNIT: Horse Model Task 7 - Instance-Style Helper Methods Validati
       expect(addTrait.length).toBe(3); // Should accept 3 parameters: horseId, traitName, category
     });
 
-    it('should validate createHorse still works with epigenetic_modifiers', () => {
+    it('should validate createHorse still works with epigeneticModifiers', () => {
       expect(typeof createHorse).toBe('function');
       // createHorse should still exist and be callable
     });
@@ -153,7 +153,7 @@ describe('🐴 UNIT: Horse Model Task 7 - Instance-Style Helper Methods Validati
   });
 
   describe('Integration with Existing System', () => {
-    it('should verify epigenetic_modifiers default structure is supported', () => {
+    it('should verify epigeneticModifiers default structure is supported', () => {
       const defaultStructure = { positive: [], negative: [], hidden: [] };
 
       // Verify the structure has the expected properties
@@ -200,7 +200,7 @@ describe('🐴 UNIT: Horse Model Task 7 - Instance-Style Helper Methods Validati
       expect(addTrait.length).toBe(3); // horseId, traitName, category
     });
 
-    it('should verify epigenetic_modifiers field structure', () => {
+    it('should verify epigeneticModifiers field structure', () => {
       // The field should support JSON/JSONB structure with default value
       const expectedDefault = { positive: [], negative: [], hidden: [] };
 

@@ -228,14 +228,14 @@ describe('🏇 UNIT: Competition Simulation System - Horse Performance & Ranking
       for (let i = 0; i < totalRuns; i++) {
         const horses = [
           createTestHorse(1, 'TraitMatch', {
-            epigenetic_modifiers: {
+            epigeneticModifiers: {
               positive: ['discipline_affinity_racing'], // Matches show discipline
               negative: [],
               hidden: [],
             },
           }),
           createTestHorse(2, 'NoTraitMatch', {
-            epigenetic_modifiers: {
+            epigeneticModifiers: {
               positive: [], // No matching trait
               negative: [],
               hidden: [],

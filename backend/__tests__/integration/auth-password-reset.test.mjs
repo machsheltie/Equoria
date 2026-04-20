@@ -40,7 +40,7 @@ describe('Auth — Password Reset Integration', () => {
     if (ids.length > 0) {
       await prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } });
       // Clean up password_reset_tokens via raw SQL (no Prisma model for this table)
-      await prisma.$executeRawUnsafe(`DELETE FROM password_reset_tokens WHERE "userId" = ANY($1::text[])`, ids);
+      await prisma.$executeRawUnsafe('DELETE FROM password_reset_tokens WHERE "userId" = ANY($1::text[])', ids);
       await prisma.user.deleteMany({ where: { id: { in: ids } } });
     }
   });
@@ -90,7 +90,7 @@ describe('Auth — Password Reset Integration', () => {
     let diagRows;
     try {
       diagRows = await prisma.$queryRawUnsafe(
-        `SELECT "tokenHash", "userId", "usedAt", "expiresAt" FROM password_reset_tokens WHERE "userId" = $1`,
+        'SELECT "tokenHash", "userId", "usedAt", "expiresAt" FROM password_reset_tokens WHERE "userId" = $1',
         user.id,
       );
     } catch (e) {

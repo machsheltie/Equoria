@@ -52,7 +52,7 @@ export function calculateBondingChange(horse, activity, activityData = {}) {
     );
 
     // Get trait effects
-    const traits = horse.epigenetic_modifiers || { positive: [], negative: [], hidden: [] };
+    const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
     const allTraits = [...(traits.positive || []), ...(traits.negative || [])];
     const traitEffects = getCombinedTraitEffects(allTraits);
 
@@ -222,7 +222,7 @@ function calculateBaseBondingChange(activity, activityData, baseRate) {
  */
 export function applyBondingChange(horse, activity, activityData = {}) {
   try {
-    const currentBondScore = horse.bond_score || 50;
+    const currentBondScore = horse.bondScore || 50;
     const bondingResult = calculateBondingChange(horse, activity, activityData);
 
     const newBondScore = Math.min(
@@ -249,8 +249,8 @@ export function applyBondingChange(horse, activity, activityData = {}) {
     return {
       success: false,
       error: error.message,
-      oldBondScore: horse.bond_score || 50,
-      newBondScore: horse.bond_score || 50,
+      oldBondScore: horse.bondScore || 50,
+      newBondScore: horse.bondScore || 50,
       bondingChange: 0,
     };
   }
@@ -262,7 +262,7 @@ export function applyBondingChange(horse, activity, activityData = {}) {
  * @returns {Object} Bonding efficiency information
  */
 export function getBondingEfficiency(horse) {
-  const traits = horse.epigenetic_modifiers || { positive: [], negative: [], hidden: [] };
+  const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
   const allTraits = [...(traits.positive || []), ...(traits.negative || [])];
   const traitEffects = getCombinedTraitEffects(allTraits);
 
@@ -318,7 +318,7 @@ export function getBondingEfficiency(horse) {
  * @returns {Object} Simulation results
  */
 export function simulateBondingProgression(horse, activities) {
-  let currentBondScore = horse.bond_score || 50;
+  let currentBondScore = horse.bondScore || 50;
   const progression = [];
 
   activities.forEach((activity, index) => {
@@ -335,9 +335,9 @@ export function simulateBondingProgression(horse, activities) {
   });
 
   return {
-    initialBondScore: horse.bond_score || 50,
+    initialBondScore: horse.bondScore || 50,
     finalBondScore: currentBondScore,
-    totalChange: currentBondScore - (horse.bond_score || 50),
+    totalChange: currentBondScore - (horse.bondScore || 50),
     progression,
     averageTraitModifier:
       progression.reduce((sum, p) => sum + p.traitModifier, 0) / progression.length,

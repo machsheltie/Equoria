@@ -42,11 +42,8 @@ test.describe('AC1: Login Flow', () => {
   test('valid credentials redirect to home dashboard', async ({ page }) => {
     const { email, password } = readCredentials();
 
-    // Bypass auth rate limit so repeated test runs don't hit 429
-    await page.route('**/api/auth/**', (route) => {
-      const headers = { ...route.request().headers(), 'x-test-bypass-rate-limit': 'true' };
-      route.continue({ headers });
-    });
+    // Auth rate limiter uses skipSuccessfulRequests:true with max:200 failed attempts.
+    // Successful logins are never counted, so no bypass needed.
 
     await page.goto('/login', { waitUntil: 'domcontentloaded' });
 

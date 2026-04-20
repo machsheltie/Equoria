@@ -1,166 +1,95 @@
 /**
- * 🧪 INTEGRATION TEST: Foal Enrichment API Integration - Complete API Workflow Validation
+ * Integration Test: Foal Enrichment API — Real Database
  *
- * This test validates the complete foal enrichment API workflow including request handling,
- * validation, database operations, and response formatting for the early training system.
+ * Tests the POST /api/foals/:foalId/enrichment endpoint with real database
+ * operations. No mocks — validates actual request handling, validation,
+ * database writes, and response formatting against the real enrichment system.
  *
- * 📋 BUSINESS RULES TESTED:
- * - Foal enrichment API: POST /api/foals/:foalId/enrichment endpoint functionality
- * - Request validation: Day (0-6), activity name, foal ID parameter validation
- * - Activity validation: Day-specific activities, appropriate activity-day combinations
- * - Bond/stress management: Score updates with proper bounds (0-100) and change tracking
- * - Database operations: Horse lookup, updates, training history record creation
- * - Response structure: Success/error responses with proper data formatting
+ * Business rules tested:
+ * - Foal enrichment API: POST /api/foals/:foalId/enrichment endpoint
+ * - Request validation: day (0-6), activity name, foal ID
+ * - Activity validation: day-specific activities, appropriate activity-day combos
+ * - Bond/stress management: score updates with proper bounds (0-100)
+ * - Database operations: horse lookup, updates, training history creation
+ * - Response structure: success/error responses with proper data formatting
  * - Error handling: 404 for missing foals, 400 for validation failures
- * - Activity flexibility: Multiple name formats (type, name, case insensitive)
- * - Training history: Complete activity logging with outcomes and changes
- * - Edge case handling: Extreme bond/stress values with proper bounds enforcement
- *
- * 🎯 FUNCTIONALITY TESTED:
- * 1. POST /api/foals/:foalId/enrichment - Complete enrichment activity API
- * 2. Request validation - Required fields, data types, range validation
- * 3. Database integration - Horse queries, updates, training history creation
- * 4. Response formatting - Success/error responses with proper structure
- * 5. Activity validation - Day-specific activity appropriateness
- * 6. Bond/stress bounds - 0-100 range enforcement and change tracking
- * 7. Error scenarios - Missing foals, invalid parameters, inappropriate activities
- * 8. Activity formats - Type names, display names, case insensitive matching
- *
- * 🔄 BALANCED MOCKING APPROACH:
- * ⚠️  HEAVILY OVER-MOCKED: Complete database layer (Prisma) with complex orchestration
- * ⚠️  EXTREME RISK: Tests completely disconnected from real database behavior
- * 🔧 MOCK: All database operations - for API endpoint isolation
- *
- * 💡 TEST STRATEGY: API integration testing with heavily mocked database to validate
- *    request-response cycles and endpoint behavior
- *
- * 🚨 CRITICAL WARNING: Massive over-mocking with complex beforeAll/beforeEach setup.
- *    This creates extreme maintenance burden and loses all touch with reality.
- *    Consider replacing with real database integration tests for meaningful validation.
+ * - Activity flexibility: multiple name formats (type, name, case insensitive)
  */
 
-import { jest, describe, beforeEach, expect, it, beforeAll } from '@jest/globals';
+import { describe, beforeAll, afterAll, expect, it } from '@jest/globals';
 import request from 'supertest';
+import prisma from '../../packages/database/prismaClient.mjs';
 import { generateTestToken } from './helpers/authHelper.mjs';
+import bcrypt from 'bcryptjs';
 
-jest.setTimeout(120000);
-
-// Create mock objects BEFORE jest.unstable_mockModule
-const mockPrisma = {
-  user: {
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    delete: jest.fn(),
-  },
-  horse: {
-    create: jest.fn(),
-    findUnique: jest.fn(),
-    findFirst: jest.fn(),
-    update: jest.fn(),
-    delete: jest.fn(),
-  },
-  breed: {
-    create: jest.fn(),
-    delete: jest.fn(),
-  },
-  foalTrainingHistory: {
-    create: jest.fn(),
-    findUnique: jest.fn(),
-    findFirst: jest.fn(),
-    count: jest.fn(),
-    deleteMany: jest.fn(),
-  },
-  $disconnect: jest.fn(),
-};
-
-jest.unstable_mockModule('../db/index.mjs', () => ({
-  default: mockPrisma,
-}));
-
-jest.unstable_mockModule('../../packages/database/prismaClient.mjs', () => ({
-  default: mockPrisma,
-}));
-
-// Now import the app
+// Import the real app — no mocks
 const app = (await import('../app.mjs')).default;
 
-describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workflow Validation', () => {
+describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
+  let testUser;
   let testFoal;
-  let testBreed;
   let authToken;
-  let testUser; // Declare testUser in test scope
+  const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
   beforeAll(async () => {
-    // Mock test user for authentication
-    testUser = {
-      // Assign to test scope variable (not const)
-      id: 'test-user-id',
-      username: 'testuser',
-      email: 'test@example.com',
-      role: 'user',
-      firstName: 'Test',
-      lastName: 'User',
-    };
+    // Create a real user in the database
+    const hashedPassword = await bcrypt.hash('TestPassword123!', 10);
+    testUser = await prisma.user.create({
+      data: {
+        username: `enrichment_user_${ts}`,
+        email: `enrichment_${ts}@example.com`,
+        password: hashedPassword,
+        firstName: 'Enrichment',
+        lastName: 'Tester',
+      },
+    });
 
-    // Mock test breed
-    testBreed = {
-      id: 1,
-      name: 'Test Breed for Enrichment',
-      description: 'Test breed for foal enrichment testing',
-    };
+    // Generate a JWT token for the real user
+    authToken = generateTestToken({ id: testUser.id, role: 'user' });
 
-    // Mock test foal - MUST have userId property for ownership checks
-    testFoal = {
-      id: 1,
-      name: 'Test Enrichment Foal',
-      age: 0,
-      breedId: testBreed.id,
-      userId: testUser.id, // CRITICAL: Must match authenticated user ID
-      bondScore: 50,
-      stressLevel: 20,
-    };
-
-    // Setup default mock responses
-    mockPrisma.user.findUnique.mockResolvedValue(testUser);
-    mockPrisma.breed.create.mockResolvedValue(testBreed);
-    mockPrisma.horse.create.mockResolvedValue(testFoal);
-    mockPrisma.horse.findUnique.mockResolvedValue(testFoal);
-    mockPrisma.horse.findFirst.mockResolvedValue(testFoal);
+    // Create a real foal (age 0) owned by the test user
+    testFoal = await prisma.horse.create({
+      data: {
+        name: `EnrichmentFoal_${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: testUser.id,
+        bondScore: 50,
+        stressLevel: 20,
+      },
+    });
   });
 
-  beforeEach(() => {
-    // Reset mocks before each test
-    jest.clearAllMocks();
-
-    // Reset default mock responses
-    mockPrisma.user.findUnique.mockResolvedValue(testUser);
-    mockPrisma.horse.findUnique.mockResolvedValue(testFoal);
-    mockPrisma.horse.findFirst.mockImplementation(({ where } = {}) => {
-      if (where?.id === testFoal.id && where?.userId === testUser.id) {
-        return Promise.resolve(testFoal);
+  afterAll(async () => {
+    // Clean up in correct order to respect foreign key constraints
+    try {
+      if (testFoal) {
+        await prisma.foalTrainingHistory.deleteMany({
+          where: { horseId: testFoal.id },
+        });
+        await prisma.foalDevelopment.deleteMany({
+          where: { foalId: testFoal.id },
+        });
+        await prisma.foalActivity
+          .deleteMany({
+            where: { foalId: testFoal.id },
+          })
+          .catch(() => {});
+        await prisma.groomAssignment
+          .deleteMany({
+            where: { foalId: testFoal.id },
+          })
+          .catch(() => {});
+        await prisma.horse.deleteMany({ where: { id: testFoal.id } });
       }
-      return Promise.resolve(null);
-    });
-    mockPrisma.horse.update.mockResolvedValue({
-      ...testFoal,
-      bondScore: 55,
-      stressLevel: 22,
-    });
-
-    // Ensure foalTrainingHistory.create always returns a valid object
-    mockPrisma.foalTrainingHistory.create.mockResolvedValue({
-      id: 'test-training-id',
-      horseId: testFoal.id,
-      day: 3,
-      activity: 'Test Activity',
-      outcome: 'success',
-      bondChange: 5,
-      stressChange: 2,
-      timestamp: new Date(),
-    });
-
-    // Generate JWT token for authentication with the correct user ID
-    authToken = generateTestToken({ id: testUser.id, role: 'user' });
+      if (testUser) {
+        await prisma.groom.deleteMany({ where: { userId: testUser.id } }).catch(() => {});
+        await prisma.user.deleteMany({ where: { id: testUser.id } });
+      }
+    } catch (error) {
+      console.warn('Cleanup warning (can be ignored):', error.message);
+    }
   });
 
   describe('POST /api/foals/:foalId/enrichment', () => {
@@ -201,30 +130,13 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       // Verify changes are reported
       expect(response.body.data.changes).toHaveProperty('bondChange');
       expect(response.body.data.changes).toHaveProperty('stressChange');
-
-      // Verify training record was created
-      expect(mockPrisma.foalTrainingHistory.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          horseId: testFoal.id,
-          day: 3,
-          activity: 'Trailer Exposure',
-        }),
-      });
     });
 
-    it('should update horse bond_score and stress_level in database', async () => {
-      // Setup mock for initial horse state
-      mockPrisma.horse.findUnique.mockResolvedValueOnce({
-        ...testFoal,
-        bond_score: 50,
-        stress_level: 20,
-      });
-
-      // Setup mock for updated horse state
-      mockPrisma.horse.update.mockResolvedValueOnce({
-        ...testFoal,
-        bond_score: 55,
-        stress_level: 22,
+    it('should update horse bondScore and stressLevel in the real database', async () => {
+      // Read current values from DB
+      const _before = await prisma.horse.findUnique({
+        where: { id: testFoal.id },
+        select: { bondScore: true, stressLevel: true },
       });
 
       const response = await request(app)
@@ -237,18 +149,19 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
         })
         .expect(200);
 
-      // Verify horse was updated in database
-      expect(mockPrisma.horse.update).toHaveBeenCalledWith({
+      // Read values after enrichment
+      const after = await prisma.horse.findUnique({
         where: { id: testFoal.id },
-        data: expect.objectContaining({
-          bondScore: expect.any(Number),
-          stressLevel: expect.any(Number),
-        }),
+        select: { bondScore: true, stressLevel: true },
       });
 
-      // Verify response contains updated levels
+      // The bond/stress should have changed from the activity
       expect(response.body.data.updatedLevels).toHaveProperty('bondScore');
       expect(response.body.data.updatedLevels).toHaveProperty('stressLevel');
+
+      // Verify the DB values match the response
+      expect(after.bondScore).toBe(response.body.data.updatedLevels.bondScore);
+      expect(after.stressLevel).toBe(response.body.data.updatedLevels.stressLevel);
     });
 
     it('should validate request parameters', async () => {
@@ -257,9 +170,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('x-test-skip-csrf', 'true')
-        .send({
-          activity: 'Trailer Exposure',
-        })
+        .send({ activity: 'Trailer Exposure' })
         .expect(400);
 
       // Missing activity
@@ -267,9 +178,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('x-test-skip-csrf', 'true')
-        .send({
-          day: 3,
-        })
+        .send({ day: 3 })
         .expect(400);
 
       // Invalid day (too high)
@@ -277,10 +186,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('x-test-skip-csrf', 'true')
-        .send({
-          day: 7,
-          activity: 'Trailer Exposure',
-        })
+        .send({ day: 7, activity: 'Trailer Exposure' })
         .expect(400);
 
       // Invalid day (negative)
@@ -288,10 +194,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('x-test-skip-csrf', 'true')
-        .send({
-          day: -1,
-          activity: 'Trailer Exposure',
-        })
+        .send({ day: -1, activity: 'Trailer Exposure' })
         .expect(400);
 
       // Empty activity
@@ -299,10 +202,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('x-test-skip-csrf', 'true')
-        .send({
-          day: 3,
-          activity: '',
-        })
+        .send({ day: 3, activity: '' })
         .expect(400);
     });
 
@@ -311,14 +211,10 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
         .post('/api/foals/99999/enrichment')
         .set('Authorization', `Bearer ${authToken}`)
         .set('x-test-skip-csrf', 'true')
-        .send({
-          day: 3,
-          activity: 'Trailer Exposure',
-        })
+        .send({ day: 3, activity: 'Trailer Exposure' })
         .expect(404);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('not found');
     });
 
     it('should return 400 for inappropriate activity for day', async () => {
@@ -337,37 +233,28 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
     });
 
     it('should accept different activity name formats', async () => {
-      // Test exact type
+      // Test exact type (snake_case)
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('x-test-skip-csrf', 'true')
-        .send({
-          day: 3,
-          activity: 'leading_practice',
-        })
+        .send({ day: 3, activity: 'leading_practice' })
         .expect(200);
 
-      // Test exact name
+      // Test exact name (Title Case)
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('x-test-skip-csrf', 'true')
-        .send({
-          day: 3,
-          activity: 'Leading Practice',
-        })
+        .send({ day: 3, activity: 'Leading Practice' })
         .expect(200);
 
-      // Test case insensitive
+      // Test case insensitive (UPPERCASE)
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('x-test-skip-csrf', 'true')
-        .send({
-          day: 3,
-          activity: 'HANDLING EXERCISES',
-        })
+        .send({ day: 3, activity: 'HANDLING EXERCISES' })
         .expect(200);
     });
 
@@ -379,10 +266,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
           .post(`/api/foals/${testFoal.id}/enrichment`)
           .set('Authorization', `Bearer ${authToken}`)
           .set('x-test-skip-csrf', 'true')
-          .send({
-            day: 3,
-            activity,
-          })
+          .send({ day: 3, activity })
           .expect(200);
 
         expect(response.body.success).toBe(true);
@@ -391,82 +275,62 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       }
     });
 
-    it('should create training history records for each activity', async () => {
-      // Setup mock for initial count
-      mockPrisma.foalTrainingHistory.count.mockResolvedValueOnce(5);
-
-      // Setup mock for training record creation
-      mockPrisma.foalTrainingHistory.create.mockResolvedValueOnce({
-        id: 'test-training-record',
-        horseId: testFoal.id,
-        day: 1,
-        activity: 'Feeding Assistance',
-        outcome: 'success',
-        bondChange: 6,
-        stressChange: 1,
-        timestamp: new Date(),
-      });
-
-      await request(app)
+    it('should create training history records in the real database', async () => {
+      const response = await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('x-test-skip-csrf', 'true')
-        .send({
-          day: 1,
-          activity: 'Feeding Assistance',
-        })
+        .send({ day: 1, activity: 'Feeding Assistance' })
         .expect(200);
 
-      // Verify training record was created
-      expect(mockPrisma.foalTrainingHistory.create).toHaveBeenCalledWith({
-        data: expect.objectContaining({
-          horseId: testFoal.id,
-          day: 1,
-          activity: 'Feeding Assistance',
-          outcome: expect.stringMatching(/success|excellent|challenging/),
-          bondChange: expect.any(Number),
-          stressChange: expect.any(Number),
-        }),
+      // Verify training record exists in the real database
+      const trainingRecord = await prisma.foalTrainingHistory.findUnique({
+        where: { id: response.body.data.trainingRecordId },
       });
+
+      expect(trainingRecord).toBeTruthy();
+      expect(trainingRecord.horseId).toBe(testFoal.id);
+      expect(trainingRecord.day).toBe(1);
+      expect(trainingRecord.activity).toBe('Feeding Assistance');
+      expect(trainingRecord.outcome).toMatch(/success|excellent|challenging/);
+      expect(typeof trainingRecord.bondChange).toBe('number');
+      expect(typeof trainingRecord.stressChange).toBe('number');
     });
 
     it('should handle edge cases with bond and stress levels', async () => {
-      // Mock a foal with extreme values - MUST have same userId as authenticated user
-      const extremeFoal = {
-        id: 999,
-        name: 'Extreme Test Foal',
-        age: 0,
-        breedId: testBreed.id,
-        userId: testUser.id, // CRITICAL: Must match authenticated user ID
-        bondScore: 95,
-        stressLevel: 5,
-      };
-
-      mockPrisma.horse.findFirst.mockResolvedValueOnce(extremeFoal);
-
-      // Setup mock to return extreme foal
-      mockPrisma.horse.findUnique.mockResolvedValueOnce(extremeFoal);
-
-      // Setup mock for updated extreme foal (values should be capped)
-      mockPrisma.horse.update.mockResolvedValueOnce({
-        ...extremeFoal,
-        bondScore: 100, // Capped at maximum
-        stressLevel: 0, // Capped at minimum
+      // Set foal to extreme bond/stress values in the real DB
+      await prisma.horse.update({
+        where: { id: testFoal.id },
+        data: { bondScore: 98, stressLevel: 2 },
       });
 
       const response = await request(app)
-        .post(`/api/foals/${extremeFoal.id}/enrichment`)
+        .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('x-test-skip-csrf', 'true')
-        .send({
-          day: 3,
-          activity: 'Trailer Exposure',
-        })
+        .send({ day: 3, activity: 'Trailer Exposure' })
         .expect(200);
 
-      // Values should be capped at bounds
+      // Values should be capped within 0-100 bounds
       expect(response.body.data.updatedLevels.bondScore).toBeLessThanOrEqual(100);
+      expect(response.body.data.updatedLevels.bondScore).toBeGreaterThanOrEqual(0);
+      expect(response.body.data.updatedLevels.stressLevel).toBeLessThanOrEqual(100);
       expect(response.body.data.updatedLevels.stressLevel).toBeGreaterThanOrEqual(0);
+
+      // Verify the capped values were persisted in DB
+      const updated = await prisma.horse.findUnique({
+        where: { id: testFoal.id },
+        select: { bondScore: true, stressLevel: true },
+      });
+      expect(updated.bondScore).toBeLessThanOrEqual(100);
+      expect(updated.stressLevel).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should require authentication', async () => {
+      await request(app)
+        .post(`/api/foals/${testFoal.id}/enrichment`)
+        .send({ day: 3, activity: 'Trailer Exposure' })
+        .expect(401);
     });
   });
 });

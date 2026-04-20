@@ -8,7 +8,7 @@
  * - Discipline affinity traits: discipline_affinity_racing, discipline_affinity_dressage, etc.
  * - Trait matching: Horse trait must match competition discipline for bonus
  * - Flat bonus application: +5 points added to final competition score
- * - Trait validation: epigenetic_modifiers.positive array includes matching trait
+ * - Trait validation: epigeneticModifiers.positive array includes matching trait
  * - Cross-discipline testing: Racing, Dressage, Show Jumping, Cross Country, Endurance
  * - Negative cases: Wrong discipline affinity should not provide bonus
  * - Score comparison: Horses with affinity should score higher than without
@@ -19,7 +19,7 @@
  * 2. Discipline affinity detection: Trait name matching with competition discipline
  * 3. Score bonus application: +5 flat bonus for matching discipline affinity
  * 4. Multiple disciplines: Racing, Dressage, Show Jumping, Cross Country, Endurance
- * 5. Trait validation: epigenetic_modifiers.positive array checking
+ * 5. Trait validation: epigeneticModifiers.positive array checking
  * 6. Negative testing: Wrong affinity traits should not provide bonus
  * 7. Score comparison: Statistical validation of trait effects on competition results
  * 8. Variance tolerance: Account for random factors in competition scoring
@@ -55,7 +55,7 @@ describe('🏆 INTEGRATION: Task 9 Integration Example - Discipline Affinity Tra
       trainingScore: 0, // No training bonus
       // No tack bonuses
       // No rider bonuses
-      epigenetic_modifiers: {
+      epigeneticModifiers: {
         positive: disciplineAffinityTrait ? [disciplineAffinityTrait] : [],
         negative: [],
         hidden: [],
@@ -117,7 +117,7 @@ describe('🏆 INTEGRATION: Task 9 Integration Example - Discipline Affinity Tra
       health: 'Good',
       stress_level: 0,
       trainingScore: 0,
-      epigenetic_modifiers: {
+      epigeneticModifiers: {
         positive: [affinityTrait], // Contains 'discipline_affinity_show_jumping'
         negative: [],
         hidden: [],
@@ -136,7 +136,7 @@ describe('🏆 INTEGRATION: Task 9 Integration Example - Discipline Affinity Tra
       health: 'Good',
       stress_level: 0,
       trainingScore: 0,
-      epigenetic_modifiers: {
+      epigeneticModifiers: {
         positive: [], // Empty - no discipline affinity trait
         negative: [],
         hidden: [],
@@ -150,8 +150,8 @@ describe('🏆 INTEGRATION: Task 9 Integration Example - Discipline Affinity Tra
     };
 
     // Verify the trait check logic works as specified in TASK 9
-    expect(horseWithTrait.epigenetic_modifiers?.positive?.includes(affinityTrait)).toBe(true);
-    expect(horseWithoutTrait.epigenetic_modifiers?.positive?.includes(affinityTrait)).toBe(false);
+    expect(horseWithTrait.epigeneticModifiers?.positive?.includes(affinityTrait)).toBe(true);
+    expect(horseWithoutTrait.epigeneticModifiers?.positive?.includes(affinityTrait)).toBe(false);
 
     // Run the competition
     const results = simulateCompetition([horseWithTrait, horseWithoutTrait], show);
