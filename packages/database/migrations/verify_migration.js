@@ -89,10 +89,12 @@ async function testConnection() {
 async function verifyHorseColumns() {
   console.log('\n📋 Verifying Horse table columns...');
 
-  // Prisma schema uses camelCase field names without @map, so the underlying
-  // DB columns are camelCase too ("bondScore", "stressLevel"), not snake_case.
-  const bondScoreExists = await checkColumnExists('Horse', 'bondScore');
-  const stressLevelExists = await checkColumnExists('Horse', 'stressLevel');
+  // Prisma schema maps `model Horse` to the lowercase table `horses`
+  // (see @@map in schema.prisma). information_schema uses the real DB
+  // table name, so check 'horses' — not 'Horse'. Column names are kept
+  // camelCase because there is no @map on the field.
+  const bondScoreExists = await checkColumnExists('horses', 'bondScore');
+  const stressLevelExists = await checkColumnExists('horses', 'stressLevel');
 
   console.log(`   bondScore column: ${bondScoreExists ? '✅' : '❌'}`);
   console.log(`   stressLevel column: ${stressLevelExists ? '✅' : '❌'}`);
