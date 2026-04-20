@@ -154,6 +154,63 @@ export async function deleteTrainerAssignment(req, res) {
 }
 
 /**
+ * GET /api/trainers/:id/discovery
+ * Returns discovery slots for a trainer (career affinity discoveries).
+ * Mirrors the rider discovery endpoint — 3 categories × 2 slots = 6 total.
+ * Discovery unlocks at level thresholds (level 2, 4, 6, 8, 10, 12+).
+ */
+export async function getTrainerDiscovery(req, res) {
+  try {
+    const userId = req.user.id;
+    const trainerId = parseInt(req.params.id, 10);
+
+    const trainer = await prisma.trainer.findFirst({ where: { id: trainerId, userId } });
+    if (!trainer) {
+      return res.status(404).json({ success: false, message: 'Trainer not found' });
+    }
+
+    const discoveredCount = Math.min(Math.floor(trainer.level / 2), 6);
+    const categories = ['discipline_specialization', 'training_method', 'horse_compatibility'];
+
+    const slots = Array.from({ length: 6 }, (_, i) => {
+      const category = categories[Math.floor(i / 2)];
+      const discovered = i < discoveredCount;
+      return {
+        slotIndex: i,
+        category,
+        discovered,
+        trait: discovered
+          ? {
+              id: `${category}_${i}`,
+              label: `${trainer.speciality} Focus`,
+              description: `Discovered ${trainer.speciality} focus through coaching experience.`,
+              icon: '🎓',
+              strength: i < 2 ? 'mild' : i < 4 ? 'moderate' : 'strong',
+            }
+          : undefined,
+      };
+    });
+
+    res.status(200).json({
+      success: true,
+      message: 'Trainer discovery data retrieved',
+      data: {
+        trainerId,
+        totalSlots: 6,
+        discoveredCount,
+        slots,
+        nextDiscoveryAt: discoveredCount < 6 ? (discoveredCount + 1) * 2 : undefined,
+      },
+    });
+  } catch (error) {
+    logger.error(`[trainerController] getTrainerDiscovery error: ${error.message}`);
+    res
+      .status(500)
+      .json({ success: false, message: 'Failed to get trainer discovery', data: null });
+  }
+}
+
+/**
  * DELETE /api/trainers/:id/dismiss
  */
 export async function dismissTrainer(req, res) {

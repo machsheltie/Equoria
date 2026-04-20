@@ -4,7 +4,7 @@
  * Frosted glass sidebar with gold icons + Cinzel labels.
  * Closes on item click, X button, or backdrop click.
  *
- * Active beta exposes the same primary navigation as production.
+ * All routes are exposed during beta — no feature-flag filtering.
  */
 
 import { Link, useLocation } from 'react-router-dom';
@@ -25,7 +25,6 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect } from 'react';
-import { isBetaMode, isBetaLive } from '@/config/betaRouteScope';
 
 interface NavPanelProps {
   isOpen: boolean;
@@ -38,7 +37,11 @@ interface NavItem {
   Icon: LucideIcon;
 }
 
-const ALL_NAV_SECTIONS: NavItem[] = [
+/**
+ * Navigation sections exposed in the full-nav panel.
+ * Beta testers need ALL features reachable; no feature-flag gating here.
+ */
+const NAV_SECTIONS: NavItem[] = [
   { name: 'Home', href: '/', Icon: Home },
   { name: 'My Stable', href: '/stable', Icon: Building2 },
   { name: 'Training', href: '/training', Icon: Dumbbell },
@@ -51,11 +54,6 @@ const ALL_NAV_SECTIONS: NavItem[] = [
   { name: 'Bank', href: '/bank', Icon: Landmark },
   { name: 'Settings', href: '/settings', Icon: Settings },
 ];
-
-/** In beta mode, show every route marked live in the active beta scope. */
-const NAV_SECTIONS = isBetaMode
-  ? ALL_NAV_SECTIONS.filter((item) => isBetaLive(item.href))
-  : ALL_NAV_SECTIONS;
 
 export function NavPanel({ isOpen, onClose }: NavPanelProps) {
   const location = useLocation();
@@ -108,7 +106,7 @@ export function NavPanel({ isOpen, onClose }: NavPanelProps) {
           'bg-[var(--glass-surface-heavy-bg)] backdrop-blur-xl',
           'border-r border-[var(--glass-border)]',
           'flex flex-col',
-          'animate-in slide-in-from-left duration-200'
+          'animate-in slide-in-from-left duration-300'
         )}
       >
         {/* Header */}

@@ -19,10 +19,17 @@ import {
   TrainerAssignmentEntry,
   MarketplaceTrainer,
   TrainerMarketplaceData,
+  TrainerDiscoveryData,
 } from '@/lib/api-client';
 
 // Re-export types for convenience
-export type { TrainerEntry, TrainerAssignmentEntry, MarketplaceTrainer, TrainerMarketplaceData };
+export type {
+  TrainerEntry,
+  TrainerAssignmentEntry,
+  MarketplaceTrainer,
+  TrainerMarketplaceData,
+  TrainerDiscoveryData,
+};
 
 // Query Keys
 export const trainerKeys = {
@@ -30,6 +37,7 @@ export const trainerKeys = {
   user: (userId: string | number) => [...trainerKeys.all, 'user', userId] as const,
   assignments: () => [...trainerKeys.all, 'assignments'] as const,
   marketplace: () => [...trainerKeys.all, 'marketplace'] as const,
+  discovery: (trainerId: number) => [...trainerKeys.all, 'discovery', trainerId] as const,
 };
 
 // Hooks
@@ -125,5 +133,18 @@ export function useDismissTrainer() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: trainerKeys.all });
     },
+  });
+}
+
+/**
+ * Trainer discovery slots — 3 categories × 2 slots, unlocked by trainer level.
+ * Returns the live server-generated profile (never a client-side empty stub).
+ */
+export function useTrainerDiscovery(trainerId: number | null | undefined) {
+  return useQuery<TrainerDiscoveryData, ApiError>({
+    queryKey: trainerId ? trainerKeys.discovery(trainerId) : trainerKeys.all,
+    queryFn: () => trainersApi.getDiscovery(trainerId as number),
+    enabled: Boolean(trainerId),
+    staleTime: 60 * 1000, // 1 minute — recompiles on trainer level up
   });
 }

@@ -88,16 +88,18 @@ export function CelestialThemeProvider() {
     } else {
       const stored = safeLocalStorageGet(THEME_KEY);
 
-      // First-time visitor with no stored preference — show welcome toast once
+      // First-time visitor with no stored preference — show welcome toast once.
+      // Order: toast first, then mark as shown. If toast() throws (unlikely),
+      // the "shown" flag isn't prematurely set and the toast retries next visit.
       if (stored === null) {
         const alreadyShown = safeLocalStorageGet(WELCOME_SHOWN_KEY);
         if (!alreadyShown) {
+          toast('Equoria has a new look! Use ?theme=default in the URL to revert.');
           try {
             localStorage.setItem(WELCOME_SHOWN_KEY, 'true');
           } catch {
             // Storage write failure is non-fatal — toast may re-appear on next visit
           }
-          toast('Equoria has a new look! Use ?theme=default in the URL to revert.');
         }
       }
     }

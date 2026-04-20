@@ -44,15 +44,16 @@ export type SceneKey =
  * Any scene NOT in this set falls back to the generic /images/bg-{ratio}.webp
  * files so a background is always shown rather than a blank page.
  *
- * Current state (2026-04-07):
- *   - 'auth'        → ✅ Art committed (story 22-7 placeholders)
- *   - 'hub'         → ❌ No art yet — falls back to generic
- *   - 'stable'      → ❌ No art yet — falls back to generic
- *   - 'horse-detail'→ ❌ No art yet — falls back to generic
- *   - 'training'    → ❌ No art yet — falls back to generic
- *   - 'competition' → ❌ No art yet — falls back to generic
- *   - 'breeding'    → ❌ No art yet — falls back to generic
- *   - 'world'       → ❌ No art yet — falls back to generic
+ * Current state (2026-04-20, Story 22.3 remediation):
+ *   - 'auth'        → ✅ Art committed
+ *   - 'hub'         → ⏳ Folder exists; art in production — falls back to generic
+ *   - 'stable'      → ⏳ Folder exists; art in production — falls back to generic
+ *   - 'horse-detail'→ ⏳ Folder exists; art in production — falls back to generic
+ *   - 'training'    → ⏳ Folder exists; art in production — falls back to generic
+ *   - 'competition' → ⏳ Folder exists; art in production — falls back to generic
+ *   - 'breeding'    → ⏳ Folder exists; art in production — falls back to generic
+ *   - 'world'       → ⏳ Folder exists; art in production — falls back to generic
+ *   - 'default'     → ⏳ Folder exists; art in production — falls back to generic
  *
  * Generic files that DO exist (always used as fallback):
  *   /images/bg-16.9.webp, bg-21.9.webp, bg-3.2.webp, bg-4.3.webp,

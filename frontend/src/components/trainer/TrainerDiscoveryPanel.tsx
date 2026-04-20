@@ -10,7 +10,10 @@
  * Alert appears when a new trait is first discovered.
  *
  * Mirrors RiderDiscoveryPanel.tsx for the Trainer System.
- * Discovery is triggered by training sessions (replace MOCK data with /api/trainers/:id/discovery).
+ * Live data comes from the `useTrainerDiscovery(trainerId)` hook which
+ * calls `GET /api/trainers/:id/discovery`. The `buildEmptyTrainerDiscoveryProfile`
+ * helper is a loading placeholder only — never shown in production UX once
+ * the query resolves.
  */
 
 import React from 'react';
@@ -194,3 +197,58 @@ const TrainerDiscoveryPanel: React.FC<TrainerDiscoveryPanelProps> = ({
 };
 
 export default TrainerDiscoveryPanel;
+
+/* ─────────────────────────────────────────────────────────────────────── */
+/*  Live data wrapper                                                     */
+/* ─────────────────────────────────────────────────────────────────────── */
+
+import { useTrainerDiscovery } from '@/hooks/api/useTrainers';
+
+interface TrainerDiscoveryPanelLiveProps {
+  trainerId: number;
+}
+
+/**
+ * Fetches the discovery profile from `GET /api/trainers/:id/discovery` and
+ * renders the presentational panel. Shows a skeleton while loading; falls
+ * back to the empty profile placeholder only during the initial fetch.
+ */
+export function TrainerDiscoveryPanelLive({ trainerId }: TrainerDiscoveryPanelLiveProps) {
+  const { data, isLoading, error } = useTrainerDiscovery(trainerId);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3" data-testid="trainer-discovery-panel-loading">
+        <div className="h-4 w-28 bg-white/10 rounded animate-pulse" />
+        <div className="h-1.5 w-full bg-white/5 rounded-full" />
+        <div className="h-12 w-full bg-white/5 rounded-lg" />
+        <div className="h-12 w-full bg-white/5 rounded-lg" />
+        <div className="h-12 w-full bg-white/5 rounded-lg" />
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div
+        className="text-xs text-white/40 italic px-2 py-3"
+        data-testid="trainer-discovery-panel-error"
+      >
+        Could not load discovery data right now. Please try again shortly.
+      </div>
+    );
+  }
+
+  // Server sends back { slots, totalSlots, discoveredCount, nextDiscoveryAt } —
+  // the presentational component wants a TrainerDiscoveryProfile with a trainerId
+  // attached. We already know the trainerId from props.
+  const profile: TrainerDiscoveryProfile = {
+    trainerId,
+    slots: data.slots as TrainerDiscoverySlot[],
+    discoveredCount: data.discoveredCount,
+    totalSlots: data.totalSlots,
+    nextDiscoveryAt: data.nextDiscoveryAt,
+  };
+
+  return <TrainerDiscoveryPanel profile={profile} />;
+}

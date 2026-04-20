@@ -10,6 +10,7 @@
  *   GET  /assignments             → get all active assignments for current user
  *   POST /assignments             → assign a trainer to a horse
  *   DELETE /assignments/:id       → remove a trainer assignment
+ *   GET  /:id/discovery           → get trainer discovery slots
  *   DELETE /:id/dismiss           → dismiss (retire) a trainer
  */
 
@@ -27,6 +28,7 @@ import {
   assignTrainer,
   deleteTrainerAssignment,
   dismissTrainer,
+  getTrainerDiscovery,
 } from '../controllers/trainerController.mjs';
 
 const router = express.Router();
@@ -107,6 +109,15 @@ router.get(
 );
 
 // ── Per-trainer routes ───────────────────────────────────────────────────────
+
+router.get(
+  '/:id/discovery',
+  [
+    param('id').isInt({ min: 1 }).withMessage('trainer id must be a positive integer'),
+    handleValidationErrors,
+  ],
+  getTrainerDiscovery,
+);
 
 router.delete(
   '/:id/dismiss',

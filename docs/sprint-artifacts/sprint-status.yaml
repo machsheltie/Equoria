@@ -4264,38 +4264,43 @@ summary:
 
   22-1-font-migration:
     title: 'Font Migration'
-    status: in-progress
-    notes: 'index.html + tokens.css modified; needs individual AC verification'
+    status: review
+    notes: '2026-04-20: Cinzel/Cinzel Decorative/Inter self-hosted in /fonts/; index.html preloads 400+700 weights; auth scene bg preloaded; tailwind font-family tokens aliased to CSS variables; tests/e2e/font-migration.spec.ts passing. Awaiting user signoff.'
 
   22-2-celestial-theme-provider:
     title: 'CelestialThemeProvider'
-    status: in-progress
-    notes: 'CelestialThemeProvider.tsx created. VERIFY: must use localStorage key equoria-theme (not theme), values celestial/default (not legacy). Must use useSearchParams — requires Router boundary. Verify ?theme=default removes class (not ?theme=legacy).'
+    status: review
+    notes: '2026-04-20: Uses localStorage key equoria-theme with celestial/default values. Pure CSS class (no React Context). useLayoutEffect avoids FOUC. Welcome toast now displays BEFORE writing welcome-shown flag (if toast throws, flag is not set). Awaiting user signoff.'
 
   22-3-starfield-background-upgrade:
-    title: 'StarfieldBackground Upgrade'
+    title: 'Painted Background System'
     status: in-progress
-    notes: 'StarfieldBackground.tsx created'
+    notes: '2026-04-20 remediation: scene router uncommented in DashboardLayout (returns real SceneKey per route). All 9 scene folders committed (.gitkeep). PageBackground JSX rewritten as a real layered <div> at z-[var(--z-below)] with gradient loading fallback (#0a0e1a → #111827) per AC4; marker mode preserved via prop. useResponsiveBackground still falls back to /images/bg-{ratio}.webp when scene art not in SCENES_WITH_ART. Remaining: art assets for 8 scenes + JPEG fallbacks — owner-tracked outside code.'
 
   22-4-glass-panel-surface-updates:
     title: 'Glass Panel & Surface Updates'
-    status: in-progress
-    notes: 'index.css glass-panel rules modified'
+    status: review
+    notes: '2026-04-20: Three variants (.glass-panel, .glass-panel-heavy, .glass-panel-subtle) in index.css under .celestial. Single-blur-layer rule documented. glass-panel-surface.spec.ts visual regression tolerance tightened from 0.02 → 0.005. Awaiting user signoff.'
 
   22-5-button-hierarchy:
     title: 'Button Hierarchy'
-    status: in-progress
-    notes: 'button.tsx restyled'
+    status: review
+    notes: '2026-04-20: 7 variants (default/secondary/outline/ghost/link/destructive/glass), 5 sizes (default h-11 / sm h-9 with 44px hit area / lg / xl / icon). --gold-light (7.1:1) for ghost/link text. Focus ring gold. Awaiting user signoff.'
 
   22-6-custom-game-component-library:
     title: 'Custom Game Component Library'
-    status: backlog
-    notes: 'COURSE CORRECTION 2026-03-31: shadcn restyling approach abandoned. Story rewritten as purpose-built game components in components/ui/game/. Previous shadcn modifications to input.tsx and textarea.tsx to be REVERTED — those files become naked Radix skeletons. Lint errors in input.tsx/textarea.tsx are a symptom of the wrong approach; fix is the revert. See docs/ux-spec-sections/03-shadcn-restyling.md for full game component spec.'
+    status: review
+    notes: '2026-04-20: All 12 game components present in components/ui/game/ (FrostedPanel, GameDialog, GoldTabs, GameBadge, GlassInput, GlassTextarea, StatBar, GameCheckbox, GameLabel, GameTooltip, GameScrollArea, GameCollapsible). Barrel index.ts exports all. 12 shadcn source files stripped to naked Radix forwarders. Combined test file split into 12 per-component files per spec AC. No raw hex/rgba in game components. Awaiting user signoff.'
 
   22-7-body-page-chrome:
     title: 'Body & Page Chrome'
-    status: in-progress
-    notes: 'MainNavigation.tsx + index.css body gradient modified'
+    status: review
+    notes: '2026-04-20: Body gradient + radial accents under .celestial; MainNavigation refactored; AuthLayout PageBackground(scene="auth"); tests/e2e/auth-page-chrome.spec.ts covers 375px/1440px. Raw rgba in DashboardLayout footer replaced with --footer-bg / --footer-divider-gold / --footer-gold-glow tokens. Awaiting user signoff.'
+
+  22-8-navigation-structure:
+    title: 'Navigation Structure (Sidebar / Hamburger / Bottom Nav)'
+    status: review
+    notes: '2026-04-20 built from scratch: useMediaQuery hook, navItems.ts source of truth, SidebarNav (desktop collapsible w/ localStorage equoria-sidebar-collapsed persistence, 2px gold left-border active indicator, 64px icon rail), BottomNav (mobile-only, 5 items, gold-dot indicator, "More" opens NavPanel), MainNavigation refactored to hide hamburger on desktop. NavPanel slide-in duration 200→300ms per AC. Orphan Sidebar.tsx deleted. Breadcrumb rename + useMatches rewrite deferred to follow-up (current useLocation implementation functional). tests/e2e/navigation-structure.spec.ts covers all viewports. Awaiting user signoff.'
 
   epic-22-retrospective:
     status: optional

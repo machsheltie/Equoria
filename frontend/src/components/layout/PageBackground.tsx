@@ -1,15 +1,23 @@
 /**
  * PageBackground — Story 22.3: Painted Background System
  *
- * NOT a standalone positioned element. Returns null and instead provides
- * its resolved background URL via the usePageBackground() hook, which
- * callers apply as inline style on their own root div. This mirrors the
- * original DashboardLayout pattern (backgroundAttachment: 'fixed') that
- * worked reliably before Story 22.3.
+ * Two consumption patterns, both supported:
  *
- * Callers (DashboardLayout, auth pages) use:
- *   const bgStyle = usePageBackground({ scene, src });
- *   <div style={bgStyle}> ... </div>
+ *   1. <PageBackground scene="auth" /> — a real layered <div> rendered at
+ *      z-[var(--z-below)] (−1), fixed to the viewport, behind all content.
+ *      Apply when the parent does NOT control its own background.
+ *
+ *   2. `usePageBackground({ scene })` — returns CSSProperties for callers
+ *      that want to paint their own root div. DashboardLayout uses this so
+ *      the gradient/image lives on the same element as `min-h-screen` and
+ *      scrolls naturally on iOS Safari (which ignores `background-attachment: fixed`).
+ *
+ * AC coverage (Story 22.3):
+ *   AC1  — layered at z-[var(--z-below)]
+ *   AC3  — background-size: cover fills all viewports
+ *   AC4  — deep-navy gradient fallback (#0a0e1a → #111827) while art loads
+ *   AC5  — semi-transparent overlay rgba(5,10,20,0.45) over the image
+ *   AC8  — useResponsiveBackground scene parameter resolves the right path
  */
 
 import type { CSSProperties } from 'react';
@@ -22,55 +30,94 @@ interface UsePageBackgroundOptions {
 }
 
 /**
- * Returns a CSSProperties object for applying a full-viewport background
- * image to a container div. Includes cover sizing, fixed attachment, and
- * deep-space fallback color.
+ * Deep-navy gradient fallback — shown while WebP loads AND as the floor
+ * layer when a scene falls back to generic or has no art yet. Matches
+ * AC4 literally: #0a0e1a → #111827.
+ */
+const LOADING_GRADIENT = 'linear-gradient(180deg, #0a0e1a 0%, #111827 100%)';
+
+/** Readability veil layered OVER the image — AC5. */
+const VEIL = 'linear-gradient(rgba(5,10,20,0.45), rgba(5,10,20,0.45))';
+
+/**
+ * Returns CSSProperties for applying a full-viewport background image to
+ * a container div. Includes gradient fallback, readability veil, cover
+ * sizing, and an iOS-safe attachment strategy.
+ *
+ * The gradient sits in the base `background` layer (always visible) while
+ * the WebP image + veil override it once loaded. If no image path resolves
+ * (missing scene art AND missing generic set), the gradient remains — the
+ * user never sees a blank rectangle.
  */
 export function usePageBackground(options?: UsePageBackgroundOptions): CSSProperties {
   const hookPath = useResponsiveBackground(options?.scene);
   const webpPath = options?.src ?? hookPath;
 
+  const isTouch =
+    typeof window !== 'undefined' &&
+    window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+
   return {
-    backgroundColor: 'var(--bg-deep-space)',
-    // Readability veil layered over the image (AC5: rgba(5,10,20,0.45)).
-    // Simple url() for maximum browser compatibility — no image-set() type() hints
-    // which require Chrome 113+/Safari 17.2+ and need JPEG fallback files to exist.
-    // Guard against url('undefined') when webpPath is empty.
-    backgroundImage: webpPath
-      ? `linear-gradient(rgba(5,10,20,0.45), rgba(5,10,20,0.45)), url('${webpPath}')`
-      : undefined,
+    // Gradient floor — always painted first, visible while image loads or
+    // when the hook returned no path (missing art + missing generic set).
+    background: LOADING_GRADIENT,
+    backgroundImage: webpPath ? `${VEIL}, url('${webpPath}'), ${LOADING_GRADIENT}` : undefined,
     backgroundSize: 'cover',
     backgroundPosition: 'center center',
     backgroundRepeat: 'no-repeat',
-    // iOS Safari ignores background-attachment: fixed — use scroll on touch devices
-    // so the background behaves consistently rather than silently falling back.
-    backgroundAttachment:
-      typeof window !== 'undefined' &&
-      window.matchMedia('(hover: none) and (pointer: coarse)').matches
-        ? 'scroll'
-        : 'fixed',
+    backgroundAttachment: isTouch ? 'scroll' : 'fixed',
   };
 }
 
-/* ── Backward-compat named export used by tests and OnboardingPage ── */
+/* ───────────────────────────────────────────────────────────────────────── */
+/*  JSX component — used by auth pages and tests                            */
+/* ───────────────────────────────────────────────────────────────────────── */
 
 interface PageBackgroundProps {
   scene?: SceneKey;
   src?: string;
+  /**
+   * Test hook — renders a hidden marker instead of the real layered div.
+   * Tests that assert path resolution set this to true; production never does.
+   */
+  marker?: boolean;
 }
 
 /**
- * Renders an invisible marker div carrying the resolved WebP path in
- * `data-bg` (used by tests to assert resolved paths without relying on
- * jsdom's incomplete backgroundImage parsing). Does NOT apply any style to
- * document.body — callers that need the background should use
- * `usePageBackground()` instead.
+ * PageBackground — renders a fixed, full-viewport layered div at
+ * z-[var(--z-below)] behind all content. Apply on routes whose layout
+ * does not already paint its own background via `usePageBackground()`.
+ *
+ * The `data-bg` attribute carries the resolved WebP path (used by tests
+ * to assert path resolution, since jsdom does not parse complex
+ * `background-image` values reliably).
  */
-export function PageBackground({ scene, src }: PageBackgroundProps) {
+export function PageBackground({ scene, src, marker = false }: PageBackgroundProps) {
   const hookPath = useResponsiveBackground(scene);
   const webpPath = src ?? hookPath;
 
-  return <div data-testid="page-background" data-bg={webpPath} style={{ display: 'none' }} />;
+  // Legacy marker mode preserved so existing tests keep working without change.
+  if (marker) {
+    return <div data-testid="page-background" data-bg={webpPath} style={{ display: 'none' }} />;
+  }
+
+  const bgStyle: CSSProperties = {
+    position: 'fixed',
+    inset: 0,
+    zIndex: 'var(--z-below)' as unknown as number,
+    pointerEvents: 'none',
+    background: LOADING_GRADIENT,
+    backgroundImage: webpPath ? `${VEIL}, url('${webpPath}'), ${LOADING_GRADIENT}` : undefined,
+    backgroundSize: 'cover',
+    backgroundPosition: 'center center',
+    backgroundRepeat: 'no-repeat',
+  };
+
+  return (
+    <>
+      <div aria-hidden="true" data-testid="page-background" data-bg={webpPath} style={bgStyle} />
+    </>
+  );
 }
 
 export default PageBackground;

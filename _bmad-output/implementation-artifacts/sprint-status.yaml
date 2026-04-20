@@ -48,7 +48,7 @@ development_status:
   # Re-blocked: 2026-04-14 — source review found false completion claims; 21R-1 through 21R-3 are corrected, later 21R hardening remains.
   # ============================================================
 
-  beta-deployment-readiness: ready-for-signoff  # All 8 gates passing; awaiting project lead approval
+  beta-deployment-readiness: ready-for-signoff # All 8 gates passing; awaiting project lead approval
 
   # ============================================================
   # Epic 21R: Beta Deployment Readiness Remediation
@@ -95,15 +95,18 @@ development_status:
   # ============================================================
 
   # Epic 22: Celestial Night Foundation (re-spec'd 2026-03-31 — stories match docs/epics.md §Epic22)
+  # 2026-04-20: statuses realigned to reality per COMPLETION_VERIFICATION_POLICY.
+  # Stories marked `review` are implementation-complete and await user signoff.
+  # 22-3 remains in-progress because scene art assets are still being produced.
   epic-22: in-progress
-  22-1-font-migration: done
-  22-2-celestial-theme-provider: done
-  22-3-painted-background-system: done
-  22-4-glass-panel-surface-updates: done
-  22-5-button-hierarchy: done
-  22-6-custom-game-component-library: done
-  22-7-body-and-page-chrome: done
-  22-8-navigation-structure: backlog
+  22-1-font-migration: review
+  22-2-celestial-theme-provider: review
+  22-3-painted-background-system: in-progress
+  22-4-glass-panel-surface-updates: review
+  22-5-button-hierarchy: review
+  22-6-custom-game-component-library: review
+  22-7-body-and-page-chrome: review
+  22-8-navigation-structure: review
   epic-22-retrospective: optional
 
   # Epic 23: Hub Dashboard

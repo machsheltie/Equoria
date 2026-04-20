@@ -63,9 +63,15 @@ export default {
         },
       },
       fontFamily: {
-        'fantasy-title': ['Cinzel Decorative', 'serif'],
-        'fantasy-header': ['Cinzel', 'serif'],
-        'fantasy-body': ['Inter', 'sans-serif'],
+        // Celestial Night token-referencing aliases (Story 22-1) — prefer these
+        display: ['var(--font-display)', 'Georgia', 'serif'],
+        heading: ['var(--font-heading)', 'Georgia', 'serif'],
+        body: ['var(--font-body)', 'system-ui', 'sans-serif'],
+        mono: ['var(--font-mono)', 'monospace'],
+        // Legacy names retained for existing usages (do not use in new code)
+        'fantasy-title': ['Cinzel Decorative', 'Georgia', 'serif'],
+        'fantasy-header': ['Cinzel', 'Georgia', 'serif'],
+        'fantasy-body': ['Inter', 'system-ui', 'sans-serif'],
       },
       borderRadius: {
         lg: 'var(--radius)',

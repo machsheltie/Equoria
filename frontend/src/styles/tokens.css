@@ -499,4 +499,9 @@
   --dialog-footer-border: rgba(200, 168, 78, 0.15);
   --dialog-close-hover-bg: rgba(200, 168, 78, 0.1);
   --checkbox-border-color: rgba(100, 130, 165, 0.5);
+
+  /* ── Footer chrome (Story 22-7) ─────────────────────────────────────── */
+  --footer-bg: rgba(15, 25, 50, 0.55);
+  --footer-divider-gold: rgba(201, 162, 39, 0.2);
+  --footer-gold-glow: 0 0 20px rgba(201, 162, 39, 0.3);
 }

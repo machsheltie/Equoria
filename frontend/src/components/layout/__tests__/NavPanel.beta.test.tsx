@@ -1,27 +1,15 @@
 /**
- * NavPanel Beta Mode Tests — Story 21R-2 Task 11
+ * NavPanel — full-exposure regression test (post-22-8)
  *
- * Verifies that active beta navigation exposes working routes.
- *
- * Non-beta regression: all 11 nav items must still appear in non-beta mode.
+ * Confirms all 11 navigation items render unconditionally. Beta-mode
+ * filtering has been removed — all routes are `beta-live` and must be
+ * reachable by testers.
  */
 
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-
-// ── Mock betaRouteScope ────────────────────────────────────────────────────────
-
-// Beta mode ON for most tests — overridden per-test where needed
-vi.mock('@/config/betaRouteScope', () => ({
-  isBetaMode: true,
-  isBetaLive: () => true,
-  getBetaScope: () => 'beta-live',
-}));
-
-// ── Import after mock ──────────────────────────────────────────────────────────
-
 import { NavPanel } from '../NavPanel';
 
 function renderNavPanel(props = {}) {
@@ -32,10 +20,8 @@ function renderNavPanel(props = {}) {
   );
 }
 
-// ── Tests ──────────────────────────────────────────────────────────────────────
-
-describe('NavPanel — beta mode', () => {
-  it('shows all primary working nav links in beta mode', () => {
+describe('NavPanel — full exposure', () => {
+  it('shows every primary nav link regardless of environment', () => {
     renderNavPanel();
 
     expect(screen.getByRole('link', { name: /home/i })).toBeInTheDocument();

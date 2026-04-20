@@ -45,9 +45,11 @@ test.describe('Glass Panel Surface — Story 22-4', () => {
     // "none" or empty string means no blur applied — both are acceptable
     expect(subtleBlur === 'none' || subtleBlur === '').toBe(true);
 
-    // Screenshot with all three variants simultaneously in viewport — satisfies AC
+    // Screenshot with all three variants simultaneously in viewport — satisfies AC.
+    // Tightened tolerance: 0.005 (0.5%) catches real regressions while allowing
+    // for sub-pixel AA differences across platforms.
     await expect(page).toHaveScreenshot('glass-panels-all-variants.png', {
-      maxDiffPixelRatio: 0.02,
+      maxDiffPixelRatio: 0.005,
     });
   });
 

@@ -24,9 +24,7 @@ import { Link } from 'react-router-dom';
 import { SkeletonBase } from '@/components/ui/SkeletonCard';
 import TrainerPersonalityBadge from './trainer/TrainerPersonalityBadge';
 import TrainerCareerPanel, { type TrainerCareerData } from './trainer/TrainerCareerPanel';
-import TrainerDiscoveryPanel, {
-  buildEmptyTrainerDiscoveryProfile,
-} from './trainer/TrainerDiscoveryPanel';
+import { TrainerDiscoveryPanelLive } from './trainer/TrainerDiscoveryPanel';
 import TrainerAssignmentCard from './trainer/TrainerAssignmentCard';
 import {
   useUserTrainers,
@@ -321,9 +319,7 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
                   )}
 
                   {expandedSection === 'discovery' && (
-                    <TrainerDiscoveryPanel
-                      profile={buildEmptyTrainerDiscoveryProfile(trainer.id)}
-                    />
+                    <TrainerDiscoveryPanelLive trainerId={trainer.id} />
                   )}
                 </div>
               )}
