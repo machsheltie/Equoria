@@ -1,7 +1,7 @@
 # ZAP Scanning Rules Configuration
 # Format: ID	THRESHOLD	[IGNORE]	[COMMENT]
 # ID: ZAP rule identifier
-# THRESHOLD: OFF, DEFAULT, LOW, MEDIUM, HIGH
+# THRESHOLD: IGNORE, INFO, WARN, FAIL, PASS
 # IGNORE: Optional, set to IGNORE to disable alerts
 # COMMENT: Optional explanation
 
