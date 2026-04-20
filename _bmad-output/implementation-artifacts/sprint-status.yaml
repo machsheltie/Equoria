@@ -1,5 +1,5 @@
 # generated: 2026-03-25
-# last_updated: '2026-04-20 21S-7 DONE — dead MultiHorseComparison component + test deleted (883 LOC + ~350 LOC). Typecheck clean. Remaining: 21S-8, 21S-9 (P1), 21S-11 (P2).'
+# last_updated: '2026-04-20 21S-8 DONE — admin guard on /api/memory/cleanup + /gc; pre-existing requireRole bug fixed (JWT had no role → lazy DB lookup). 6/6 new + 33/33 regression green. Remaining: 21S-9 (P1), 21S-11 (P2).'
 # project: Equoria
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-25
-last_updated: '2026-04-20 21S-7 DONE — dead MultiHorseComparison component + test deleted (883 LOC + ~350 LOC). Typecheck clean. Remaining: 21S-8, 21S-9 (P1), 21S-11 (P2).'
+last_updated: '2026-04-20 21S-8 DONE — admin guard on /api/memory/cleanup + /gc; pre-existing requireRole bug fixed (JWT had no role → lazy DB lookup). 6/6 new + 33/33 regression green. Remaining: 21S-9 (P1), 21S-11 (P2).'
 project: Equoria
 project_key: NOKEY
 tracking_system: file-system
@@ -83,7 +83,7 @@ development_status:
   21s-6-make-e2e-critical-path-gate-non-skippable: done  # 2026-04-20: removed --skip-e2e; Playwright manages server lifecycle; signoff YAML writer refuses gates_skipped > 0; beta-critical-path 3/3 green. 21R-6 also closes.
   # --- P1: audit debt ---
   21s-7-delete-dead-multi-horse-comparison: done  # 2026-04-20: deleted 883-line dead component + orphaned colocated test. Typecheck clean.
-  21s-8-require-admin-role-on-memory-cleanup: backlog
+  21s-8-require-admin-role-on-memory-cleanup: done  # 2026-04-20: admin guard on /cleanup + /gc; fixed pre-existing requireRole non-functionality (JWT had no role) via DB lookup. 6/6 + 33/33 regression green.
   21s-9-flatten-duplicated-email-error-branches: backlog
   # --- P2: administrative ---
   21s-10-revert-sprint-status-and-reopen-21r-3-21r-6: done  # Handled as part of this correct-course pass 2026-04-16

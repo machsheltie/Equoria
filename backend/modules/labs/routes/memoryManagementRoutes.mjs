@@ -18,7 +18,7 @@
 
 import express from 'express';
 import { body, query, validationResult } from 'express-validator';
-import { authenticateToken } from '../../../middleware/auth.mjs';
+import { authenticateToken, requireRole } from '../../../middleware/auth.mjs';
 import {
   getMemoryManager,
   getMemoryReport as _getMemoryReport,
@@ -188,10 +188,14 @@ router.get('/resources', authenticateToken, async (req, res) => {
 /**
  * POST /api/memory/gc
  * Trigger garbage collection manually
+ *
+ * Story 21S-8: admin-only — this is a process-wide destructive action
+ * that should never be reachable by a beta tester's session.
  */
 router.post(
   '/gc',
   authenticateToken,
+  requireRole('admin'),
   body('force').optional().isBoolean().withMessage('force must be boolean'),
   validateRequest,
   async (req, res) => {
@@ -250,10 +254,15 @@ router.post(
 /**
  * POST /api/memory/cleanup
  * Cleanup tracked resources
+ *
+ * Story 21S-8: admin-only — any authenticated user could previously
+ * trigger memoryManager.cleanupAllResources() and affect operational
+ * state for everyone. Now gated by role.
  */
 router.post(
   '/cleanup',
   authenticateToken,
+  requireRole('admin'),
   body('resourceTypes').optional().isArray().withMessage('resourceTypes must be array'),
   validateRequest,
   async (req, res) => {

@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { AppError } from '../errors/index.mjs';
 import logger from '../utils/logger.mjs';
+import prisma from '../db/index.mjs';
 
 /**
  * Suspicious Activity Cache
@@ -190,10 +191,31 @@ export const optionalAuth = (req, res, next) => {
  * Requires specific roles to access endpoints
  */
 export const requireRole = (...roles) => {
-  return (req, res, next) => {
+  return async (req, res, next) => {
     try {
       if (!req.user) {
         throw new AppError('Authentication required', 401);
+      }
+
+      // Story 21S-8: the JWT payload does not include `role` (see
+      // `createTokenPair` in utils/tokenRotationService.mjs), so `req.user.role`
+      // is typically undefined after `authenticateToken`. Lazy-look it up from
+      // the DB only for role-guarded endpoints — keeps authenticateToken fast
+      // while making requireRole actually enforce roles.
+      if (!req.user.role && req.user.id) {
+        try {
+          const record = await prisma.user.findUnique({
+            where: { id: req.user.id },
+            select: { role: true },
+          });
+          if (record?.role) {
+            req.user.role = record.role;
+          }
+        } catch (lookupError) {
+          logger.error(
+            `[auth] requireRole DB lookup failed for user ${req.user.id}: ${lookupError.message}`,
+          );
+        }
       }
 
       if (!req.user.role || !roles.includes(req.user.role)) {
