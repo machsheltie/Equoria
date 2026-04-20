@@ -134,22 +134,22 @@ export async function generateTraitTimeline(horseId) {
         timestamp: trait.timestamp,
         groomContext: trait.groom
           ? {
-              groomId: trait.groom.id,
-              groomName: trait.groom.name,
-              speciality: trait.groom.speciality,
-              personality: trait.groom.epigeneticInfluenceType,
-              bondScore: trait.bondScore,
-              stressLevel: trait.stressLevel,
-            }
+            groomId: trait.groom.id,
+            groomName: trait.groom.name,
+            speciality: trait.groom.speciality,
+            personality: trait.groom.epigeneticInfluenceType,
+            bondScore: trait.bondScore,
+            stressLevel: trait.stressLevel,
+          }
           : null,
         milestoneContext: milestoneContext
           ? {
-              milestoneType: milestoneContext.milestoneType,
-              score: milestoneContext.score,
-              taskConsistency: milestoneContext.taskConsistency,
-              taskDiversity: milestoneContext.taskDiversity,
-              bondScore: milestoneContext.bondScore,
-            }
+            milestoneType: milestoneContext.milestoneType,
+            score: milestoneContext.score,
+            taskConsistency: milestoneContext.taskConsistency,
+            taskDiversity: milestoneContext.taskDiversity,
+            bondScore: milestoneContext.bondScore,
+          }
           : null,
       };
     });

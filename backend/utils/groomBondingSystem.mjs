@@ -300,9 +300,9 @@ export async function processGroomingSession(horseId, groomId, groomingTask, dur
     // Fetch groom personality for synergy calculation (null if groomId not provided)
     const groom = groomId
       ? await prisma.groom.findUnique({
-          where: { id: groomId },
-          select: { personality: true },
-        })
+        where: { id: groomId },
+        select: { personality: true },
+      })
       : null;
 
     // Validate eligibility

@@ -277,7 +277,9 @@ const MyStablePage: React.FC = () => {
   const { data: horses = [], isLoading } = useHorses();
 
   // Story 21S-4: real user-level career totals via /api/users/:userId/competition-stats
-  const { data: userCompetitionStats } = useUserCompetitionStats(user?.id ?? null);
+  // User.id is declared as `number` in useAuth but the server returns a UUID
+  // string; stringify defensively so the hook receives the shape it expects.
+  const { data: userCompetitionStats } = useUserCompetitionStats(user?.id ? String(user.id) : null);
 
   const retiredHorses = horses.filter((horse) => (horse.ageYears ?? horse.age ?? 0) >= 21);
 

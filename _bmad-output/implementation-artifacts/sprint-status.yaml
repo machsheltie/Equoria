@@ -1,5 +1,5 @@
 # generated: 2026-03-25
-# last_updated: '2026-04-20 21S-5 DONE — /settings now persists via PATCH /api/auth/profile/preferences. 6/6 backend integration + 4/4 frontend vitest + lint clean. Next: 21S-6 (now the only remaining P0).'
+# last_updated: '2026-04-20 21S-6 + 21R-6 DONE — readiness gate is non-skippable. All six P0 stories closed. Remaining: 21S-7/8/9 (P1), 21S-11 (P2).'
 # project: Equoria
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-25
-last_updated: '2026-04-20 21S-5 DONE — /settings now persists via PATCH /api/auth/profile/preferences. 6/6 backend integration + 4/4 frontend vitest + lint clean. Next: 21S-6 (now the only remaining P0).'
+last_updated: '2026-04-20 21S-6 + 21R-6 DONE — readiness gate is non-skippable. All six P0 stories closed. Remaining: 21S-7/8/9 (P1), 21S-11 (P2).'
 project: Equoria
 project_key: NOKEY
 tracking_system: file-system
@@ -63,7 +63,7 @@ development_status:
   21r-3-remove-e2e-skips-and-test-only-bypasses-from-beta-critical-flows: done  # Closed 2026-04-20 after 21S-2 landed (3/3 beta-critical-path E2E green locally under NODE_ENV=beta)
   21r-4-remove-or-harden-runtime-test-cleanup-routes: done
   21r-5-reclassify-and-strengthen-integration-tests: done
-  21r-6-add-beta-deployment-readiness-gate: in-progress  # Reopened 2026-04-16 — e2e_critical_path gate is SKIP not PASS; closes when 21S-6 lands
+  21r-6-add-beta-deployment-readiness-gate: done  # Closed 2026-04-20 after 21S-6 landed — gate is now non-skippable, signoff YAML writer enforces gates_skipped=0
   epic-21r-retrospective: optional
 
   # ============================================================
@@ -80,7 +80,7 @@ development_status:
   21s-3-switch-playwright-to-beta-profile: done  # 2026-04-20: NODE_ENV=beta profile + .env.beta + playwright.config.ts switch. 3/3 beta-critical-path E2E green locally under the new profile.
   21s-4-wire-my-stable-career-stats-to-real-apis: done  # 2026-04-20: shipped 2 new backend endpoints (competition-stats + competition-history) with 6/6 real-DB integration tests + MyStablePage wired with 3/3 focused vitest. Lint clean. Truth table updated.
   21s-5-persist-settings-via-backend-endpoint: done  # 2026-04-20: shipped PATCH /api/auth/profile/preferences + SettingsPage wired. 6/6 backend + 4/4 frontend tests passing. Account/password UX out of scope.
-  21s-6-make-e2e-critical-path-gate-non-skippable: backlog
+  21s-6-make-e2e-critical-path-gate-non-skippable: done  # 2026-04-20: removed --skip-e2e; Playwright manages server lifecycle; signoff YAML writer refuses gates_skipped > 0; beta-critical-path 3/3 green. 21R-6 also closes.
   # --- P1: audit debt ---
   21s-7-delete-dead-multi-horse-comparison: backlog
   21s-8-require-admin-role-on-memory-cleanup: backlog

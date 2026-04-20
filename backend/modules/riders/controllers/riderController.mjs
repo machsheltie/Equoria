@@ -195,15 +195,15 @@ export async function getRiderDiscovery(req, res) {
       trait:
         i < discoveredCount
           ? {
-              id: `${categories[Math.floor(i / 2)]}_${i}`,
-              category: categories[Math.floor(i / 2)],
-              label: `${rider.speciality} Affinity`,
-              value: rider.speciality,
-              strength: i < 2 ? 'minor' : i < 4 ? 'moderate' : 'strong',
-              discoveredAt: rider.createdAt,
-              icon: '✨',
-              description: `Discovered ${rider.speciality} affinity through competitive experience.`,
-            }
+            id: `${categories[Math.floor(i / 2)]}_${i}`,
+            category: categories[Math.floor(i / 2)],
+            label: `${rider.speciality} Affinity`,
+            value: rider.speciality,
+            strength: i < 2 ? 'minor' : i < 4 ? 'moderate' : 'strong',
+            discoveredAt: rider.createdAt,
+            icon: '✨',
+            description: `Discovered ${rider.speciality} affinity through competitive experience.`,
+          }
           : undefined,
     }));
 
