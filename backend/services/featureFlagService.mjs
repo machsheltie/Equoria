@@ -50,10 +50,16 @@ function getRawFlagValue(flagName) {
   const envValue = process.env[flagName];
   if (envValue !== undefined) {
     // Parse boolean strings
-    if (envValue.toLowerCase() === 'true') { return true; }
-    if (envValue.toLowerCase() === 'false') { return false; }
+    if (envValue.toLowerCase() === 'true') {
+      return true;
+    }
+    if (envValue.toLowerCase() === 'false') {
+      return false;
+    }
     // Parse numeric strings
-    if (!isNaN(Number(envValue))) { return Number(envValue); }
+    if (!isNaN(Number(envValue))) {
+      return Number(envValue);
+    }
     return envValue;
   }
 
@@ -114,10 +120,8 @@ export async function isFeatureEnabled(flagName, context = {}) {
 
     // User whitelist
     if (definition?.type === 'USER_LIST' && typeof rawValue === 'string') {
-      const whitelist = rawValue.split(',').map((s) => s.trim());
-      const enabled =
-        whitelist.includes(context.userId) ||
-        whitelist.includes(context.email);
+      const whitelist = rawValue.split(',').map(s => s.trim());
+      const enabled = whitelist.includes(context.userId) || whitelist.includes(context.email);
       trackEvaluation(flagName, enabled);
       return enabled;
     }

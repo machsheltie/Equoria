@@ -22,7 +22,7 @@ import logger from '../utils/logger.mjs';
 
 // Constants for bonus trait validation
 const MAX_BONUS_TRAITS = 3;
-const MAX_TRAIT_BONUS = 0.30; // 30%
+const MAX_TRAIT_BONUS = 0.3; // 30%
 const MIN_BOND_SCORE = 60;
 const MIN_COVERAGE_PERCENTAGE = 0.75; // 75%
 
@@ -34,7 +34,9 @@ const MIN_COVERAGE_PERCENTAGE = 0.75; // 75%
  */
 export async function assignBonusTraits(groomId, bonusTraits) {
   try {
-    logger.info(`[groomBonusTraitService.assignBonusTraits] Assigning bonus traits to groom ${groomId}`);
+    logger.info(
+      `[groomBonusTraitService.assignBonusTraits] Assigning bonus traits to groom ${groomId}`,
+    );
 
     // Validate bonus traits
     const validation = validateBonusTraits(bonusTraits);
@@ -49,7 +51,9 @@ export async function assignBonusTraits(groomId, bonusTraits) {
       select: { id: true, name: true, bonusTraitMap: true },
     });
 
-    logger.info(`[groomBonusTraitService.assignBonusTraits] Successfully assigned bonus traits to groom ${groomId}`);
+    logger.info(
+      `[groomBonusTraitService.assignBonusTraits] Successfully assigned bonus traits to groom ${groomId}`,
+    );
 
     return {
       success: true,
@@ -58,7 +62,9 @@ export async function assignBonusTraits(groomId, bonusTraits) {
       bonusTraits: updatedGroom.bonusTraitMap,
     };
   } catch (error) {
-    logger.error(`[groomBonusTraitService.assignBonusTraits] Error assigning bonus traits to groom ${groomId}: ${error.message}`);
+    logger.error(
+      `[groomBonusTraitService.assignBonusTraits] Error assigning bonus traits to groom ${groomId}: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -70,7 +76,9 @@ export async function assignBonusTraits(groomId, bonusTraits) {
  */
 export async function getBonusTraits(groomId) {
   try {
-    logger.info(`[groomBonusTraitService.getBonusTraits] Getting bonus traits for groom ${groomId}`);
+    logger.info(
+      `[groomBonusTraitService.getBonusTraits] Getting bonus traits for groom ${groomId}`,
+    );
 
     const groom = await prisma.groom.findUnique({
       where: { id: groomId },
@@ -81,11 +89,15 @@ export async function getBonusTraits(groomId) {
       throw new Error(`Groom with ID ${groomId} not found`);
     }
 
-    logger.info(`[groomBonusTraitService.getBonusTraits] Retrieved bonus traits for groom ${groomId}`);
+    logger.info(
+      `[groomBonusTraitService.getBonusTraits] Retrieved bonus traits for groom ${groomId}`,
+    );
 
     return groom.bonusTraitMap || {};
   } catch (error) {
-    logger.error(`[groomBonusTraitService.getBonusTraits] Error getting bonus traits for groom ${groomId}: ${error.message}`);
+    logger.error(
+      `[groomBonusTraitService.getBonusTraits] Error getting bonus traits for groom ${groomId}: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -127,7 +139,9 @@ export function validateBonusTraits(bonusTraits) {
 
     // Check bonus range
     if (bonus < 0 || bonus > MAX_TRAIT_BONUS) {
-      errors.push(`Bonus for trait '${traitName}' must be between 0 and ${MAX_TRAIT_BONUS} (${MAX_TRAIT_BONUS * 100}%)`);
+      errors.push(
+        `Bonus for trait '${traitName}' must be between 0 and ${MAX_TRAIT_BONUS} (${MAX_TRAIT_BONUS * 100}%)`,
+      );
     }
   }
 
@@ -145,7 +159,9 @@ export function validateBonusTraits(bonusTraits) {
  */
 export async function checkBonusEligibility(horseId, groomId) {
   try {
-    logger.info(`[groomBonusTraitService.checkBonusEligibility] Checking bonus eligibility for horse ${horseId} and groom ${groomId}`);
+    logger.info(
+      `[groomBonusTraitService.checkBonusEligibility] Checking bonus eligibility for horse ${horseId} and groom ${groomId}`,
+    );
 
     // Get horse age to determine milestone window
     const horse = await prisma.horse.findUnique({
@@ -157,7 +173,9 @@ export async function checkBonusEligibility(horseId, groomId) {
       throw new Error(`Horse with ID ${horseId} not found`);
     }
 
-    const ageInDays = Math.floor((Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24));
+    const ageInDays = Math.floor(
+      (Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24),
+    );
     const milestoneWindowDays = Math.min(ageInDays, 30); // Consider up to 30 days for milestone window
 
     // Get groom assignment coverage
@@ -196,16 +214,20 @@ export async function checkBonusEligibility(horseId, groomId) {
     });
 
     // Calculate cumulative bond score from interactions (bondingChange is per interaction)
-    const totalBondingChange = interactions.length > 0
-      ? interactions.reduce((sum, interaction) => sum + interaction.bondingChange, 0)
-      : 0;
+    const totalBondingChange =
+      interactions.length > 0
+        ? interactions.reduce((sum, interaction) => sum + interaction.bondingChange, 0)
+        : 0;
 
     // Assume starting bond score of 50 and add cumulative changes
     const averageBondScore = 50 + totalBondingChange;
 
-    const eligible = averageBondScore >= MIN_BOND_SCORE && coveragePercentage >= MIN_COVERAGE_PERCENTAGE;
+    const eligible =
+      averageBondScore >= MIN_BOND_SCORE && coveragePercentage >= MIN_COVERAGE_PERCENTAGE;
 
-    logger.info(`[groomBonusTraitService.checkBonusEligibility] Eligibility check complete for horse ${horseId} and groom ${groomId}: ${eligible}`);
+    logger.info(
+      `[groomBonusTraitService.checkBonusEligibility] Eligibility check complete for horse ${horseId} and groom ${groomId}: ${eligible}`,
+    );
 
     return {
       eligible,
@@ -221,7 +243,9 @@ export async function checkBonusEligibility(horseId, groomId) {
         : 'Eligible for bonus',
     };
   } catch (error) {
-    logger.error(`[groomBonusTraitService.checkBonusEligibility] Error checking bonus eligibility: ${error.message}`);
+    logger.error(
+      `[groomBonusTraitService.checkBonusEligibility] Error checking bonus eligibility: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -233,7 +257,9 @@ export async function checkBonusEligibility(horseId, groomId) {
  */
 export async function getUserGroomsWithBonusTraits(userId) {
   try {
-    logger.info(`[groomBonusTraitService.getUserGroomsWithBonusTraits] Getting grooms with bonus traits for user ${userId}`);
+    logger.info(
+      `[groomBonusTraitService.getUserGroomsWithBonusTraits] Getting grooms with bonus traits for user ${userId}`,
+    );
 
     const grooms = await prisma.groom.findMany({
       where: { userId },
@@ -248,7 +274,9 @@ export async function getUserGroomsWithBonusTraits(userId) {
       orderBy: { name: 'asc' },
     });
 
-    logger.info(`[groomBonusTraitService.getUserGroomsWithBonusTraits] Retrieved ${grooms.length} grooms for user ${userId}`);
+    logger.info(
+      `[groomBonusTraitService.getUserGroomsWithBonusTraits] Retrieved ${grooms.length} grooms for user ${userId}`,
+    );
 
     return grooms.map(groom => ({
       ...groom,
@@ -256,7 +284,9 @@ export async function getUserGroomsWithBonusTraits(userId) {
       hasBonusTraits: Object.keys(groom.bonusTraitMap || {}).length > 0,
     }));
   } catch (error) {
-    logger.error(`[groomBonusTraitService.getUserGroomsWithBonusTraits] Error getting grooms for user ${userId}: ${error.message}`);
+    logger.error(
+      `[groomBonusTraitService.getUserGroomsWithBonusTraits] Error getting grooms for user ${userId}: ${error.message}`,
+    );
     throw error;
   }
 }

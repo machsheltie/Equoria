@@ -11,7 +11,7 @@ const prismaInstances = new Set();
 /**
  * Register a Prisma instance for cleanup after tests
  */
-export const registerPrismaForCleanup = (prismaInstance) => {
+export const registerPrismaForCleanup = prismaInstance => {
   prismaInstances.add(prismaInstance);
 };
 

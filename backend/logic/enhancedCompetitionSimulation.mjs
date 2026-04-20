@@ -156,7 +156,14 @@ export async function executeEnhancedCompetition(show, entries) {
       }
 
       // Convert placement number to ordinal string
-      const placementString = placement === 1 ? '1st' : placement === 2 ? '2nd' : placement === 3 ? '3rd' : `${placement}th`;
+      const placementString =
+        placement === 1
+          ? '1st'
+          : placement === 2
+            ? '2nd'
+            : placement === 3
+              ? '3rd'
+              : `${placement}th`;
 
       // Save competition result (updates placeholder if exists, creates new if not)
       await saveResult({
@@ -170,10 +177,10 @@ export async function executeEnhancedCompetition(show, entries) {
         prizeWon,
         statGains: statGain
           ? {
-            stat: statGain.stat,
-            amount: statGain.amount,
-            awarded: true,
-          }
+              stat: statGain.stat,
+              amount: statGain.amount,
+              awarded: true,
+            }
           : null,
       });
 
@@ -217,11 +224,7 @@ export async function executeEnhancedCompetition(show, entries) {
 
       // Award Horse XP for competition participation
       try {
-        const horseXpResult = await awardCompetitionXp(
-          horse.id,
-          placementString,
-          show.discipline,
-        );
+        const horseXpResult = await awardCompetitionXp(horse.id, placementString, show.discipline);
 
         if (horseXpResult.success) {
           logger.info(
@@ -250,9 +253,9 @@ export async function executeEnhancedCompetition(show, entries) {
         xpGained,
         statGain: statGain
           ? {
-            stat: statGain.stat,
-            amount: statGain.amount,
-          }
+              stat: statGain.stat,
+              amount: statGain.amount,
+            }
           : null,
       });
     }
@@ -283,10 +286,7 @@ export async function executeEnhancedCompetition(show, entries) {
       totalXPAwarded: results.reduce((sum, r) => sum + r.xpGained, 0),
     };
   } catch (error) {
-    logger.error(
-      '[enhancedCompetitionSimulation.executeEnhancedCompetition] Error:',
-      error,
-    );
+    logger.error('[enhancedCompetitionSimulation.executeEnhancedCompetition] Error:', error);
     return {
       success: false,
       error: error?.message || error?.toString() || 'Unknown error occurred',

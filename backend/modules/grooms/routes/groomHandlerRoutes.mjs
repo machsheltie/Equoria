@@ -204,11 +204,11 @@ router.get('/statistics', async (req, res) => {
       handlerStats.averagePlacementWithoutHandler > 0 &&
       handlerStats.averagePlacementWithHandler > 0
         ? Math.round(
-          ((handlerStats.averagePlacementWithoutHandler -
+            ((handlerStats.averagePlacementWithoutHandler -
               handlerStats.averagePlacementWithHandler) /
               handlerStats.averagePlacementWithoutHandler) *
               100,
-        )
+          )
         : 0;
 
     res.status(200).json({

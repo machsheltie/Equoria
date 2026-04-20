@@ -263,7 +263,6 @@ export async function validateTalentSelection(groomId, tier, talentId) {
       requiredLevel,
       talent: availableTalents.find(t => t.id === talentId),
     };
-
   } catch (error) {
     logger.error(`Error validating talent selection for groom ${groomId}:`, error);
     throw error;
@@ -304,7 +303,6 @@ export async function selectTalent(groomId, tier, talentId) {
       selection,
       talent: validation.talent,
     };
-
   } catch (error) {
     logger.error(`Error selecting talent for groom ${groomId}:`, error);
     throw error;
@@ -357,7 +355,9 @@ export async function applyTalentEffects(groomId, baseInteraction) {
 
           // Apply stress reduction (make stress change more negative)
           if (talent.effect.stressReduction) {
-            const reduction = Math.ceil(Math.abs(enhancedInteraction.stressChange) * talent.effect.stressReduction);
+            const reduction = Math.ceil(
+              Math.abs(enhancedInteraction.stressChange) * talent.effect.stressReduction,
+            );
             enhancedInteraction.stressChange -= reduction;
           }
 
@@ -365,7 +365,8 @@ export async function applyTalentEffects(groomId, baseInteraction) {
           if (talent.effect.qualityBonus || talent.effect.taskQuality) {
             const qualityBonus = talent.effect.qualityBonus || talent.effect.taskQuality;
             // Quality improvement logic would be implemented here
-            enhancedInteraction.qualityModifier = (enhancedInteraction.qualityModifier || 1) + qualityBonus;
+            enhancedInteraction.qualityModifier =
+              (enhancedInteraction.qualityModifier || 1) + qualityBonus;
           }
         }
       }
@@ -373,7 +374,6 @@ export async function applyTalentEffects(groomId, baseInteraction) {
 
     enhancedInteraction.talentBonuses = talentBonuses;
     return enhancedInteraction;
-
   } catch (error) {
     logger.error(`Error applying talent effects for groom ${groomId}:`, error);
     throw error;

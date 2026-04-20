@@ -18,11 +18,11 @@ const __dirname = path.dirname(__filename);
 // Badge configuration
 const BADGE_CONFIG = {
   colors: {
-    excellent: '#4c1',      // 90%+ coverage
-    good: '#97ca00',        // 80-89% coverage
-    fair: '#dfb317',        // 70-79% coverage
-    poor: '#fe7d37',        // 60-69% coverage
-    critical: '#e05d44',     // <60% coverage
+    excellent: '#4c1', // 90%+ coverage
+    good: '#97ca00', // 80-89% coverage
+    fair: '#dfb317', // 70-79% coverage
+    poor: '#fe7d37', // 60-69% coverage
+    critical: '#e05d44', // <60% coverage
   },
   thresholds: {
     excellent: 90,
@@ -68,12 +68,7 @@ function calculateOverallCoverage(coverageData) {
     return 0;
   }
 
-  const metrics = [
-    total.lines.pct,
-    total.statements.pct,
-    total.functions.pct,
-    total.branches.pct,
-  ];
+  const metrics = [total.lines.pct, total.statements.pct, total.functions.pct, total.branches.pct];
 
   const validMetrics = metrics.filter(metric => typeof metric === 'number' && !isNaN(metric));
 
@@ -124,8 +119,8 @@ function generateSvgBadge(label, message, color) {
     <rect width="${totalWidth}" height="20" fill="url(#s)"/>
   </g>
   <g fill="#fff" text-anchor="middle" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" text-rendering="geometricPrecision" font-size="110">
-    <text aria-hidden="true" x="${labelWidth / 2 * 10}" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="${(label.length * 6 + 10) * 10}">${label}</text>
-    <text x="${labelWidth / 2 * 10}" y="140" transform="scale(.1)" fill="#fff" textLength="${(label.length * 6 + 10) * 10}">${label}</text>
+    <text aria-hidden="true" x="${(labelWidth / 2) * 10}" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="${(label.length * 6 + 10) * 10}">${label}</text>
+    <text x="${(labelWidth / 2) * 10}" y="140" transform="scale(.1)" fill="#fff" textLength="${(label.length * 6 + 10) * 10}">${label}</text>
     <text aria-hidden="true" x="${(labelWidth + messageWidth / 2) * 10}" y="150" fill="#010101" fill-opacity=".3" transform="scale(.1)" textLength="${(message.length * 6 + 10) * 10}">${message}</text>
     <text x="${(labelWidth + messageWidth / 2) * 10}" y="140" transform="scale(.1)" fill="#fff" textLength="${(message.length * 6 + 10) * 10}">${message}</text>
   </g>
@@ -166,14 +161,30 @@ function generateBadgeData(coveragePercentage) {
  * Get coverage grade
  */
 function getCoverageGrade(percentage) {
-  if (percentage >= 95) { return 'A+'; }
-  if (percentage >= 90) { return 'A'; }
-  if (percentage >= 85) { return 'B+'; }
-  if (percentage >= 80) { return 'B'; }
-  if (percentage >= 75) { return 'C+'; }
-  if (percentage >= 70) { return 'C'; }
-  if (percentage >= 65) { return 'D+'; }
-  if (percentage >= 60) { return 'D'; }
+  if (percentage >= 95) {
+    return 'A+';
+  }
+  if (percentage >= 90) {
+    return 'A';
+  }
+  if (percentage >= 85) {
+    return 'B+';
+  }
+  if (percentage >= 80) {
+    return 'B';
+  }
+  if (percentage >= 75) {
+    return 'C+';
+  }
+  if (percentage >= 70) {
+    return 'C';
+  }
+  if (percentage >= 65) {
+    return 'D+';
+  }
+  if (percentage >= 60) {
+    return 'D';
+  }
   return 'F';
 }
 
@@ -200,7 +211,11 @@ function generateDetailedBadges(coverageData) {
       badges[metric] = generateBadgeData(percentage);
       badges[metric].label = metric;
       badges[metric].svg = generateSvgBadge(metric, badges[metric].message, badges[metric].color);
-      badges[metric].shieldsUrl = generateShieldsUrl(metric, badges[metric].message, badges[metric].color);
+      badges[metric].shieldsUrl = generateShieldsUrl(
+        metric,
+        badges[metric].message,
+        badges[metric].color,
+      );
     }
   });
 
@@ -230,17 +245,24 @@ async function saveBadgeFiles(badgeData, detailedBadges) {
 
   // Save badge data as JSON
   const badgeDataPath = path.join(badgesDir, 'badge-data.json');
-  await fs.writeFile(badgeDataPath, JSON.stringify({
-    timestamp: new Date().toISOString(),
-    overall: badgeData,
-    detailed: detailedBadges,
-    urls: {
-      overall: badgeData.shieldsUrl,
-      detailed: Object.fromEntries(
-        Object.entries(detailedBadges).map(([metric, badge]) => [metric, badge.shieldsUrl]),
-      ),
-    },
-  }, null, 2));
+  await fs.writeFile(
+    badgeDataPath,
+    JSON.stringify(
+      {
+        timestamp: new Date().toISOString(),
+        overall: badgeData,
+        detailed: detailedBadges,
+        urls: {
+          overall: badgeData.shieldsUrl,
+          detailed: Object.fromEntries(
+            Object.entries(detailedBadges).map(([metric, badge]) => [metric, badge.shieldsUrl]),
+          ),
+        },
+      },
+      null,
+      2,
+    ),
+  );
   savedFiles.push(badgeDataPath);
 
   // Save README snippet
@@ -313,7 +335,6 @@ async function generateCoverageBadge() {
     });
 
     console.log('\n✅ Coverage badge generation completed successfully');
-
   } catch (error) {
     console.error('❌ Coverage badge generation failed:', error.message);
     process.exit(1);

@@ -15,7 +15,9 @@ import logger from '../utils/logger.mjs';
  */
 export async function calculateAdvancedGeneticDiversity(horseIds) {
   try {
-    logger.info(`[geneticDiversityTrackingService.calculateAdvancedGeneticDiversity] Analyzing ${horseIds.length} horses`);
+    logger.info(
+      `[geneticDiversityTrackingService.calculateAdvancedGeneticDiversity] Analyzing ${horseIds.length} horses`,
+    );
 
     // Get all horses with their genetic data
     const horses = await prisma.horse.findMany({
@@ -67,7 +69,11 @@ export async function calculateAdvancedGeneticDiversity(horseIds) {
     const geneticDistance = calculateGeneticDistance(horses);
 
     // Calculate overall diversity score (0-100)
-    const diversityScore = calculateOverallDiversityScore(shannonIndex, simpsonIndex, expectedHeterozygosity);
+    const diversityScore = calculateOverallDiversityScore(
+      shannonIndex,
+      simpsonIndex,
+      expectedHeterozygosity,
+    );
 
     return {
       shannonIndex: Math.round(shannonIndex * 100) / 100,
@@ -77,9 +83,10 @@ export async function calculateAdvancedGeneticDiversity(horseIds) {
       geneticDistance,
       diversityScore: Math.round(diversityScore),
     };
-
   } catch (error) {
-    logger.error(`[geneticDiversityTrackingService.calculateAdvancedGeneticDiversity] Error: ${error.message}`);
+    logger.error(
+      `[geneticDiversityTrackingService.calculateAdvancedGeneticDiversity] Error: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -90,7 +97,9 @@ export async function calculateAdvancedGeneticDiversity(horseIds) {
  * @returns {number} Shannon diversity index
  */
 function calculateShannonIndex(traits) {
-  if (traits.length === 0) { return 0; }
+  if (traits.length === 0) {
+    return 0;
+  }
 
   const frequencies = {};
   traits.forEach(trait => {
@@ -114,7 +123,9 @@ function calculateShannonIndex(traits) {
  * @returns {number} Simpson diversity index
  */
 function calculateSimpsonIndex(traits) {
-  if (traits.length === 0) { return 0; }
+  if (traits.length === 0) {
+    return 0;
+  }
 
   const frequencies = {};
   traits.forEach(trait => {
@@ -138,7 +149,9 @@ function calculateSimpsonIndex(traits) {
  * @returns {number} Expected heterozygosity
  */
 function calculateExpectedHeterozygosity(traits) {
-  if (traits.length === 0) { return 0; }
+  if (traits.length === 0) {
+    return 0;
+  }
 
   const frequencies = {};
   traits.forEach(trait => {
@@ -216,8 +229,8 @@ function calculateGeneticDistance(horses) {
     }
   }
 
-  const avgDistance = distances.length > 0 ?
-    distances.reduce((sum, d) => sum + d.distance, 0) / distances.length : 0;
+  const avgDistance =
+    distances.length > 0 ? distances.reduce((sum, d) => sum + d.distance, 0) / distances.length : 0;
 
   return {
     pairwiseDistances: distances,
@@ -284,7 +297,7 @@ function calculateOverallDiversityScore(shannon, simpson, heterozygosity) {
   const normalizedShannon = Math.min(shannon / 4, 1);
 
   // Weight the different indices
-  const score = (normalizedShannon * 0.4) + (simpson * 0.3) + (heterozygosity * 0.3);
+  const score = normalizedShannon * 0.4 + simpson * 0.3 + heterozygosity * 0.3;
 
   return score * 100;
 }
@@ -311,7 +324,9 @@ function getDefaultDiversityMetrics() {
  */
 export async function calculateEffectivePopulationSize(horseIds) {
   try {
-    logger.info(`[geneticDiversityTrackingService.calculateEffectivePopulationSize] Calculating for ${horseIds.length} horses`);
+    logger.info(
+      `[geneticDiversityTrackingService.calculateEffectivePopulationSize] Calculating for ${horseIds.length} horses`,
+    );
 
     const horses = await prisma.horse.findMany({
       where: { id: { in: horseIds } },
@@ -323,8 +338,7 @@ export async function calculateEffectivePopulationSize(horseIds) {
     const actualSize = horses.length;
 
     // Calculate effective population size using the formula: Ne = 4NmNf / (Nm + Nf)
-    const effectiveSize = males > 0 && females > 0 ?
-      (4 * males * females) / (males + females) : 0;
+    const effectiveSize = males > 0 && females > 0 ? (4 * males * females) / (males + females) : 0;
 
     // Count breeding contributors (horses with offspring)
     const breedingContributors = await countBreedingContributors(horseIds);
@@ -339,9 +353,10 @@ export async function calculateEffectivePopulationSize(horseIds) {
         total: breedingContributors.total,
       },
     };
-
   } catch (error) {
-    logger.error(`[geneticDiversityTrackingService.calculateEffectivePopulationSize] Error: ${error.message}`);
+    logger.error(
+      `[geneticDiversityTrackingService.calculateEffectivePopulationSize] Error: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -382,7 +397,9 @@ async function countBreedingContributors(horseIds) {
  */
 export async function identifyGeneticFounders(horseIds) {
   try {
-    logger.info(`[geneticDiversityTrackingService.identifyGeneticFounders] Identifying founders in ${horseIds.length} horses`);
+    logger.info(
+      `[geneticDiversityTrackingService.identifyGeneticFounders] Identifying founders in ${horseIds.length} horses`,
+    );
 
     const horses = await prisma.horse.findMany({
       where: { id: { in: horseIds } },
@@ -396,7 +413,8 @@ export async function identifyGeneticFounders(horseIds) {
 
     for (const horse of horses) {
       // A founder is a horse with no parents in the population or with significant offspring
-      const hasParentsInPopulation = horseIds.includes(horse.sireId) || horseIds.includes(horse.damId);
+      const hasParentsInPopulation =
+        horseIds.includes(horse.sireId) || horseIds.includes(horse.damId);
       const offspringCount = horse.sireOffspring.length + horse.damOffspring.length;
 
       if (!hasParentsInPopulation || offspringCount >= 2) {
@@ -419,9 +437,10 @@ export async function identifyGeneticFounders(horseIds) {
     founders.sort((a, b) => b.geneticInfluence - a.geneticInfluence);
 
     return founders;
-
   } catch (error) {
-    logger.error(`[geneticDiversityTrackingService.identifyGeneticFounders] Error: ${error.message}`);
+    logger.error(
+      `[geneticDiversityTrackingService.identifyGeneticFounders] Error: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -439,15 +458,14 @@ async function getDescendants(horseId, populationIds) {
 
   while (toProcess.length > 0) {
     const currentId = toProcess.pop();
-    if (processed.has(currentId)) { continue; }
+    if (processed.has(currentId)) {
+      continue;
+    }
     processed.add(currentId);
 
     const offspring = await prisma.horse.findMany({
       where: {
-        OR: [
-          { sireId: currentId },
-          { damId: currentId },
-        ],
+        OR: [{ sireId: currentId }, { damId: currentId }],
         id: { in: populationIds },
       },
       select: { id: true },
@@ -472,7 +490,9 @@ async function getDescendants(horseId, populationIds) {
  * @returns {number} Genetic influence score
  */
 function calculateGeneticInfluence(founder, descendants, populationSize) {
-  if (populationSize === 0) { return 0; }
+  if (populationSize === 0) {
+    return 0;
+  }
 
   // Base influence from direct descendants
   const directInfluence = descendants.length / populationSize;
@@ -494,7 +514,9 @@ function calculateGeneticInfluence(founder, descendants, populationSize) {
  */
 export async function calculateDetailedInbreedingCoefficient(stallionId, mareId) {
   try {
-    logger.info(`[geneticDiversityTrackingService.calculateDetailedInbreedingCoefficient] Analyzing stallion ${stallionId} and mare ${mareId}`);
+    logger.info(
+      `[geneticDiversityTrackingService.calculateDetailedInbreedingCoefficient] Analyzing stallion ${stallionId} and mare ${mareId}`,
+    );
 
     // Get lineage for both horses up to 5 generations
     const stallionLineage = await getLineage(stallionId, 5);
@@ -511,7 +533,11 @@ export async function calculateDetailedInbreedingCoefficient(stallionId, mareId)
     const riskAssessment = assessInbreedingRisk(coefficient, commonAncestors);
 
     // Generate recommendations
-    const recommendations = generateInbreedingRecommendations(coefficient, riskAssessment, commonAncestors);
+    const recommendations = generateInbreedingRecommendations(
+      coefficient,
+      riskAssessment,
+      commonAncestors,
+    );
 
     return {
       coefficient: Math.round(coefficient * 1000) / 1000,
@@ -526,9 +552,10 @@ export async function calculateDetailedInbreedingCoefficient(stallionId, mareId)
       riskAssessment,
       recommendations,
     };
-
   } catch (error) {
-    logger.error(`[geneticDiversityTrackingService.calculateDetailedInbreedingCoefficient] Error: ${error.message}`);
+    logger.error(
+      `[geneticDiversityTrackingService.calculateDetailedInbreedingCoefficient] Error: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -547,7 +574,9 @@ async function getLineage(horseId, generations) {
   while (toProcess.length > 0) {
     const { id, path, generation } = toProcess.shift();
 
-    if (processed.has(id) || generation >= generations) { continue; }
+    if (processed.has(id) || generation >= generations) {
+      continue;
+    }
     processed.add(id);
 
     const horse = await prisma.horse.findUnique({
@@ -635,7 +664,8 @@ function calculatePathAnalysis(stallionId, mareId, commonAncestors) {
     marePath: ancestor.marePath.join(' -> '),
     pathLength: ancestor.stallionGeneration + ancestor.mareGeneration,
     contribution: ancestor.contribution,
-    significance: ancestor.contribution > 0.0625 ? 'high' : ancestor.contribution > 0.03125 ? 'medium' : 'low',
+    significance:
+      ancestor.contribution > 0.0625 ? 'high' : ancestor.contribution > 0.03125 ? 'medium' : 'low',
   }));
 }
 
@@ -662,13 +692,19 @@ function assessInbreedingRisk(coefficient, commonAncestors) {
 
   if (commonAncestors.length > 3) {
     factors.push(`Multiple common ancestors (${commonAncestors.length})`);
-    if (level === 'low') { level = 'medium'; }
+    if (level === 'low') {
+      level = 'medium';
+    }
   }
 
-  const recentAncestors = commonAncestors.filter(a => a.stallionGeneration <= 2 || a.mareGeneration <= 2);
+  const recentAncestors = commonAncestors.filter(
+    a => a.stallionGeneration <= 2 || a.mareGeneration <= 2,
+  );
   if (recentAncestors.length > 0) {
     factors.push('Recent common ancestors detected');
-    if (level === 'low') { level = 'medium'; }
+    if (level === 'low') {
+      level = 'medium';
+    }
   }
 
   return {
@@ -753,7 +789,9 @@ function generateInbreedingRecommendations(coefficient, riskAssessment, commonAn
  */
 export async function trackPopulationGeneticHealth(horseIds) {
   try {
-    logger.info(`[geneticDiversityTrackingService.trackPopulationGeneticHealth] Tracking health for ${horseIds.length} horses`);
+    logger.info(
+      `[geneticDiversityTrackingService.trackPopulationGeneticHealth] Tracking health for ${horseIds.length} horses`,
+    );
 
     // Calculate current diversity metrics
     const diversity = await calculateAdvancedGeneticDiversity(horseIds);
@@ -766,10 +804,19 @@ export async function trackPopulationGeneticHealth(horseIds) {
     const geneticBottlenecks = await identifyPopulationBottlenecks(horseIds);
 
     // Calculate overall health score
-    const overallHealth = calculatePopulationHealthScore(diversity, effectiveSize, inbreedingLevels);
+    const overallHealth = calculatePopulationHealthScore(
+      diversity,
+      effectiveSize,
+      inbreedingLevels,
+    );
 
     // Generate recommendations
-    const recommendations = generatePopulationRecommendations(overallHealth, diversity, inbreedingLevels, geneticBottlenecks);
+    const recommendations = generatePopulationRecommendations(
+      overallHealth,
+      diversity,
+      inbreedingLevels,
+      geneticBottlenecks,
+    );
 
     return {
       overallHealth,
@@ -782,9 +829,10 @@ export async function trackPopulationGeneticHealth(horseIds) {
       geneticBottlenecks,
       recommendations,
     };
-
   } catch (error) {
-    logger.error(`[geneticDiversityTrackingService.trackPopulationGeneticHealth] Error: ${error.message}`);
+    logger.error(
+      `[geneticDiversityTrackingService.trackPopulationGeneticHealth] Error: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -909,13 +957,21 @@ function calculatePopulationHealthScore(diversity, effectiveSize, inbreedingLeve
   score += sizeScore * 0.3;
 
   // Inbreeding component (30% weight) - lower is better
-  const inbreedingScore = Math.max(0, 100 - (inbreedingLevels.averageCoefficient * 1000));
+  const inbreedingScore = Math.max(0, 100 - inbreedingLevels.averageCoefficient * 1000);
   score += inbreedingScore * 0.3;
 
   const finalScore = Math.round(score);
 
   let grade = 'F';
-  if (finalScore >= 90) { grade = 'A'; } else if (finalScore >= 80) { grade = 'B'; } else if (finalScore >= 70) { grade = 'C'; } else if (finalScore >= 60) { grade = 'D'; }
+  if (finalScore >= 90) {
+    grade = 'A';
+  } else if (finalScore >= 80) {
+    grade = 'B';
+  } else if (finalScore >= 70) {
+    grade = 'C';
+  } else if (finalScore >= 60) {
+    grade = 'D';
+  }
 
   return {
     score: finalScore,
@@ -936,7 +992,12 @@ function calculatePopulationHealthScore(diversity, effectiveSize, inbreedingLeve
  * @param {Array} geneticBottlenecks - Genetic bottlenecks
  * @returns {Array} Recommendations
  */
-function generatePopulationRecommendations(overallHealth, diversity, inbreedingLevels, geneticBottlenecks) {
+function generatePopulationRecommendations(
+  overallHealth,
+  diversity,
+  inbreedingLevels,
+  geneticBottlenecks,
+) {
   const recommendations = [];
 
   // Health-based recommendations
@@ -945,7 +1006,8 @@ function generatePopulationRecommendations(overallHealth, diversity, inbreedingL
       priority: 'urgent',
       category: 'population_health',
       action: 'Implement genetic rescue program',
-      description: 'Population health is critically low - introduce new genetic material immediately',
+      description:
+        'Population health is critically low - introduce new genetic material immediately',
     });
   } else if (overallHealth.score < 80) {
     recommendations.push({
@@ -996,7 +1058,9 @@ function generatePopulationRecommendations(overallHealth, diversity, inbreedingL
  */
 export async function analyzeGeneticTrends(horseIds) {
   try {
-    logger.info(`[geneticDiversityTrackingService.analyzeGeneticTrends] Analyzing trends for ${horseIds.length} horses`);
+    logger.info(
+      `[geneticDiversityTrackingService.analyzeGeneticTrends] Analyzing trends for ${horseIds.length} horses`,
+    );
 
     const horses = await prisma.horse.findMany({
       where: { id: { in: horseIds } },
@@ -1019,7 +1083,9 @@ export async function analyzeGeneticTrends(horseIds) {
     const generationMap = {};
     horses.forEach(horse => {
       const year = new Date(horse.dateOfBirth).getFullYear();
-      if (!generationMap[year]) { generationMap[year] = []; }
+      if (!generationMap[year]) {
+        generationMap[year] = [];
+      }
       generationMap[year].push(horse);
     });
 
@@ -1061,7 +1127,6 @@ export async function analyzeGeneticTrends(horseIds) {
       traitEvolution,
       predictions,
     };
-
   } catch (error) {
     logger.error(`[geneticDiversityTrackingService.analyzeGeneticTrends] Error: ${error.message}`);
     throw error;
@@ -1074,7 +1139,9 @@ export async function analyzeGeneticTrends(horseIds) {
  * @returns {Object} Average stats
  */
 function calculateAverageStats(horses) {
-  if (horses.length === 0) { return { speed: 50, stamina: 50, agility: 50, intelligence: 50 }; }
+  if (horses.length === 0) {
+    return { speed: 50, stamina: 50, agility: 50, intelligence: 50 };
+  }
 
   const totals = { speed: 0, stamina: 0, agility: 0, intelligence: 0 };
 
@@ -1139,7 +1206,11 @@ function calculateProgression(values) {
   const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
 
   let trend = 'stable';
-  if (slope > 0.5) { trend = 'increasing'; } else if (slope < -0.5) { trend = 'decreasing'; }
+  if (slope > 0.5) {
+    trend = 'increasing';
+  } else if (slope < -0.5) {
+    trend = 'decreasing';
+  }
 
   return {
     trend,
@@ -1190,8 +1261,10 @@ function analyzeTraitEvolution(generationalAnalysis) {
     traitTrends[trait] = {
       trend: progression.trend,
       currentFrequency: frequencies[frequencies.length - 1] || 0,
-      change: frequencies.length > 1 ?
-        Math.round((frequencies[frequencies.length - 1] - frequencies[0]) * 100) / 100 : 0,
+      change:
+        frequencies.length > 1
+          ? Math.round((frequencies[frequencies.length - 1] - frequencies[0]) * 100) / 100
+          : 0,
       significance: Math.abs(progression.slope) > 0.1 ? 'significant' : 'minor',
     };
   });
@@ -1261,7 +1334,9 @@ function generateGeneticPredictions(generationalAnalysis) {
  */
 export async function generateOptimalBreedingRecommendations(horseIds) {
   try {
-    logger.info(`[geneticDiversityTrackingService.generateOptimalBreedingRecommendations] Generating recommendations for ${horseIds.length} horses`);
+    logger.info(
+      `[geneticDiversityTrackingService.generateOptimalBreedingRecommendations] Generating recommendations for ${horseIds.length} horses`,
+    );
 
     const horses = await prisma.horse.findMany({
       where: { id: { in: horseIds } },
@@ -1307,7 +1382,10 @@ export async function generateOptimalBreedingRecommendations(horseIds) {
             mareId: mare.id,
             mareName: mare.name,
             compatibilityScore: compatibility.overallScore,
-            riskFactors: compatibility.inbreedingRisk > 0.125 ? ['High inbreeding risk'] : ['Low genetic compatibility'],
+            riskFactors:
+              compatibility.inbreedingRisk > 0.125
+                ? ['High inbreeding risk']
+                : ['Low genetic compatibility'],
             reasoning: `Low compatibility (${compatibility.overallScore}%) - ${compatibility.recommendation}`,
           });
         }
@@ -1333,9 +1411,10 @@ export async function generateOptimalBreedingRecommendations(horseIds) {
       diversityGoals,
       timeline,
     };
-
   } catch (error) {
-    logger.error(`[geneticDiversityTrackingService.generateOptimalBreedingRecommendations] Error: ${error.message}`);
+    logger.error(
+      `[geneticDiversityTrackingService.generateOptimalBreedingRecommendations] Error: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -1348,7 +1427,9 @@ export async function generateOptimalBreedingRecommendations(horseIds) {
  */
 export async function assessBreedingPairCompatibility(stallionId, mareId) {
   try {
-    logger.info(`[geneticDiversityTrackingService.assessBreedingPairCompatibility] Assessing stallion ${stallionId} and mare ${mareId}`);
+    logger.info(
+      `[geneticDiversityTrackingService.assessBreedingPairCompatibility] Assessing stallion ${stallionId} and mare ${mareId}`,
+    );
 
     const [stallion, mare] = await Promise.all([
       prisma.horse.findUnique({
@@ -1395,7 +1476,11 @@ export async function assessBreedingPairCompatibility(stallionId, mareId) {
     const expectedTraits = predictOffspringTraits(stallion, mare);
 
     // Calculate overall score
-    const overallScore = calculateCompatibilityScore(geneticCompatibility, diversityImpact, inbreedingRisk);
+    const overallScore = calculateCompatibilityScore(
+      geneticCompatibility,
+      diversityImpact,
+      inbreedingRisk,
+    );
 
     // Generate recommendation
     const recommendation = generateCompatibilityRecommendation(overallScore, inbreedingRisk);
@@ -1408,9 +1493,10 @@ export async function assessBreedingPairCompatibility(stallionId, mareId) {
       expectedTraits,
       recommendation,
     };
-
   } catch (error) {
-    logger.error(`[geneticDiversityTrackingService.assessBreedingPairCompatibility] Error: ${error.message}`);
+    logger.error(
+      `[geneticDiversityTrackingService.assessBreedingPairCompatibility] Error: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -1450,8 +1536,18 @@ function calculateGeneticCompatibility(stallion, mare) {
   }
 
   // Calculate stat complementarity
-  const stallionStats = [stallion.speed || 50, stallion.stamina || 50, stallion.agility || 50, stallion.intelligence || 50];
-  const mareStats = [mare.speed || 50, mare.stamina || 50, mare.agility || 50, mare.intelligence || 50];
+  const stallionStats = [
+    stallion.speed || 50,
+    stallion.stamina || 50,
+    stallion.agility || 50,
+    stallion.intelligence || 50,
+  ];
+  const mareStats = [
+    mare.speed || 50,
+    mare.stamina || 50,
+    mare.agility || 50,
+    mare.intelligence || 50,
+  ];
 
   let statScore = 0;
   for (let i = 0; i < stallionStats.length; i++) {
@@ -1518,10 +1614,7 @@ function predictOffspringTraits(stallion, mare) {
   };
 
   // Predict likely traits (50% chance from each parent)
-  const likelyTraits = [
-    ...stallionTraits.positive.slice(0, 2),
-    ...mareTraits.positive.slice(0, 2),
-  ];
+  const likelyTraits = [...stallionTraits.positive.slice(0, 2), ...mareTraits.positive.slice(0, 2)];
 
   return {
     expectedStats,
@@ -1539,7 +1632,7 @@ function predictOffspringTraits(stallion, mare) {
  */
 function calculateCompatibilityScore(geneticCompatibility, diversityImpact, inbreedingRisk) {
   // Weight the components
-  let score = (geneticCompatibility * 0.4) + (diversityImpact * 0.3);
+  let score = geneticCompatibility * 0.4 + diversityImpact * 0.3;
 
   // Inbreeding penalty
   const inbreedingPenalty = inbreedingRisk * 300; // Convert to percentage and amplify
@@ -1558,11 +1651,21 @@ function calculateCompatibilityScore(geneticCompatibility, diversityImpact, inbr
  * @returns {string} Recommendation
  */
 function generateCompatibilityRecommendation(overallScore, inbreedingRisk) {
-  if (inbreedingRisk > 0.25) { return 'avoid'; }
-  if (overallScore >= 90) { return 'excellent'; }
-  if (overallScore >= 80) { return 'good'; }
-  if (overallScore >= 60) { return 'fair'; }
-  if (overallScore >= 40) { return 'poor'; }
+  if (inbreedingRisk > 0.25) {
+    return 'avoid';
+  }
+  if (overallScore >= 90) {
+    return 'excellent';
+  }
+  if (overallScore >= 80) {
+    return 'good';
+  }
+  if (overallScore >= 60) {
+    return 'fair';
+  }
+  if (overallScore >= 40) {
+    return 'poor';
+  }
   return 'avoid';
 }
 
@@ -1639,7 +1742,9 @@ function generateBreedingTimeline(optimalPairs, priorityBreedings) {
  */
 export async function trackGeneticDiversityOverTime(horseIds) {
   try {
-    logger.info(`[geneticDiversityTrackingService.trackGeneticDiversityOverTime] Tracking diversity for ${horseIds.length} horses`);
+    logger.info(
+      `[geneticDiversityTrackingService.trackGeneticDiversityOverTime] Tracking diversity for ${horseIds.length} horses`,
+    );
 
     const horses = await prisma.horse.findMany({
       where: { id: { in: horseIds } },
@@ -1659,7 +1764,9 @@ export async function trackGeneticDiversityOverTime(horseIds) {
 
     horses.forEach(horse => {
       const year = new Date(horse.dateOfBirth).getFullYear();
-      if (!yearGroups[year]) { yearGroups[year] = []; }
+      if (!yearGroups[year]) {
+        yearGroups[year] = [];
+      }
       yearGroups[year].push(horse);
     });
 
@@ -1691,16 +1798,21 @@ export async function trackGeneticDiversityOverTime(horseIds) {
       timeline,
       diversityMetrics: {
         current: currentDiversity.diversityScore,
-        trend: timeline.length > 1 ?
-          (timeline[timeline.length - 1].diversity > timeline[0].diversity ? 'improving' : 'declining') : 'stable',
+        trend:
+          timeline.length > 1
+            ? timeline[timeline.length - 1].diversity > timeline[0].diversity
+              ? 'improving'
+              : 'declining'
+            : 'stable',
         volatility: calculateVolatility(timeline.map(t => t.diversity)),
       },
       milestones,
       alerts,
     };
-
   } catch (error) {
-    logger.error(`[geneticDiversityTrackingService.trackGeneticDiversityOverTime] Error: ${error.message}`);
+    logger.error(
+      `[geneticDiversityTrackingService.trackGeneticDiversityOverTime] Error: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -1790,7 +1902,9 @@ function identifyGeneticMilestones(timeline) {
  * @returns {number} Volatility measure
  */
 function calculateVolatility(values) {
-  if (values.length < 2) { return 0; }
+  if (values.length < 2) {
+    return 0;
+  }
 
   const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
   const variance = values.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / values.length;
@@ -1805,22 +1919,19 @@ function calculateVolatility(values) {
  */
 export async function generateGeneticDiversityReport(horseIds) {
   try {
-    logger.info(`[geneticDiversityTrackingService.generateGeneticDiversityReport] Generating report for ${horseIds.length} horses`);
+    logger.info(
+      `[geneticDiversityTrackingService.generateGeneticDiversityReport] Generating report for ${horseIds.length} horses`,
+    );
 
     // Gather all necessary data
-    const [
-      diversity,
-      populationHealth,
-      trends,
-      breedingRecommendations,
-      tracking,
-    ] = await Promise.all([
-      calculateAdvancedGeneticDiversity(horseIds),
-      trackPopulationGeneticHealth(horseIds),
-      analyzeGeneticTrends(horseIds),
-      generateOptimalBreedingRecommendations(horseIds),
-      trackGeneticDiversityOverTime(horseIds),
-    ]);
+    const [diversity, populationHealth, trends, breedingRecommendations, tracking] =
+      await Promise.all([
+        calculateAdvancedGeneticDiversity(horseIds),
+        trackPopulationGeneticHealth(horseIds),
+        analyzeGeneticTrends(horseIds),
+        generateOptimalBreedingRecommendations(horseIds),
+        trackGeneticDiversityOverTime(horseIds),
+      ]);
 
     // Generate executive summary
     const executiveSummary = {
@@ -1857,9 +1968,10 @@ export async function generateGeneticDiversityReport(horseIds) {
         tracking: tracking.diversityMetrics,
       },
     };
-
   } catch (error) {
-    logger.error(`[geneticDiversityTrackingService.generateGeneticDiversityReport] Error: ${error.message}`);
+    logger.error(
+      `[geneticDiversityTrackingService.generateGeneticDiversityReport] Error: ${error.message}`,
+    );
     throw error;
   }
 }

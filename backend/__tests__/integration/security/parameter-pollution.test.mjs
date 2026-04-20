@@ -17,7 +17,11 @@
 import { describe, it, expect, beforeEach, afterAll, jest as _jest } from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.mjs';
-import { createMockUser as _createMockUser, createMockToken, createMockHorse as _createMockHorse } from '../../factories/index.mjs';
+import {
+  createMockUser as _createMockUser,
+  createMockToken,
+  createMockHorse as _createMockHorse,
+} from '../../factories/index.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 describe('Parameter Pollution Attack Integration Tests', () => {
@@ -303,7 +307,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
   describe('Query String Pollution', () => {
     it('should reject SQL injection in query parameters', async () => {
       const response = await request(app)
-        .get('/api/horses?breed=Thoroughbred\' OR \'1\'=\'1')
+        .get("/api/horses?breed=Thoroughbred' OR '1'='1")
         .set('Authorization', `Bearer ${validToken}`)
         .expect(400);
 

@@ -170,11 +170,7 @@ class UserDocumentationService {
    */
   searchDocumentation(query, options = {}) {
     try {
-      const {
-        limit = 10,
-        includeContent = false,
-        highlightMatches = true,
-      } = options;
+      const { limit = 10, includeContent = false, highlightMatches = true } = options;
 
       // Track search analytics
       this.trackSearch(query);
@@ -244,16 +240,16 @@ class UserDocumentationService {
    */
   getAnalytics() {
     try {
-      const totalViews = Array.from(this.analytics.viewCounts.values())
-        .reduce((sum, count) => sum + count, 0);
+      const totalViews = Array.from(this.analytics.viewCounts.values()).reduce(
+        (sum, count) => sum + count,
+        0,
+      );
 
       const popularDocs = Array.from(this.analytics.viewCounts.entries())
         .sort(([, a], [, b]) => b - a)
         .slice(0, 5);
 
-      const recentSearches = this.analytics.searchQueries
-        .slice(-10)
-        .reverse();
+      const recentSearches = this.analytics.searchQueries.slice(-10).reverse();
 
       return {
         totalDocuments: this.contentCache.size,
@@ -372,8 +368,7 @@ class UserDocumentationService {
     return content
       .replace(/[#*`[\]()]/g, '') // Remove markdown syntax
       .split(/\s+/)
-      .filter(word => word.length > 0)
-      .length;
+      .filter(word => word.length > 0).length;
   }
 
   /**
@@ -414,10 +409,45 @@ class UserDocumentationService {
    */
   isStopWord(word) {
     const stopWords = new Set([
-      'the', 'and', 'for', 'are', 'but', 'not', 'you', 'all', 'can', 'had',
-      'her', 'was', 'one', 'our', 'out', 'day', 'get', 'has', 'him', 'his',
-      'how', 'its', 'may', 'new', 'now', 'old', 'see', 'two', 'who', 'boy',
-      'did', 'she', 'use', 'way', 'will', 'with', 'this', 'that', 'have',
+      'the',
+      'and',
+      'for',
+      'are',
+      'but',
+      'not',
+      'you',
+      'all',
+      'can',
+      'had',
+      'her',
+      'was',
+      'one',
+      'our',
+      'out',
+      'day',
+      'get',
+      'has',
+      'him',
+      'his',
+      'how',
+      'its',
+      'may',
+      'new',
+      'now',
+      'old',
+      'see',
+      'two',
+      'who',
+      'boy',
+      'did',
+      'she',
+      'use',
+      'way',
+      'will',
+      'with',
+      'this',
+      'that',
+      'have',
     ]);
 
     return stopWords.has(word);

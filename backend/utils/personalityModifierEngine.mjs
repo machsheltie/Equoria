@@ -105,7 +105,9 @@ export function applyPersonalityEffectsToMilestone(params) {
 
     return result;
   } catch (error) {
-    logger.error(`[personalityModifierEngine] Error applying personality effects: ${error.message}`);
+    logger.error(
+      `[personalityModifierEngine] Error applying personality effects: ${error.message}`,
+    );
 
     // Return original values with no modifications on error
     return {
@@ -193,7 +195,9 @@ export function calculateTraitDevelopmentBonus(params) {
       personalityEffectApplied: true,
     };
   } catch (error) {
-    logger.error(`[personalityModifierEngine] Error calculating trait development bonus: ${error.message}`);
+    logger.error(
+      `[personalityModifierEngine] Error calculating trait development bonus: ${error.message}`,
+    );
 
     return {
       traitModifier: 0,
@@ -225,17 +229,23 @@ export function getPersonalityEffectPreview(groomPersonality, foalTemperament, b
 
     return {
       isCompatible: compatibility.isMatch,
-      compatibilityLevel: compatibility.isStrongMatch ? 'strong' : compatibility.isMatch ? 'good' : 'poor',
+      compatibilityLevel: compatibility.isStrongMatch
+        ? 'strong'
+        : compatibility.isMatch
+          ? 'good'
+          : 'poor',
       traitBonus: compatibility.traitModifierScore,
       stressReduction: Math.abs(compatibility.stressResistanceBonus * 100), // Convert to percentage
       bondingBonus: compatibility.bondModifier,
       description: compatibility.description,
       recommendation: compatibility.isMatch
-        ? 'This groom is well-suited for this foal\'s temperament'
-        : 'This groom may not be the best match for this foal\'s temperament',
+        ? "This groom is well-suited for this foal's temperament"
+        : "This groom may not be the best match for this foal's temperament",
     };
   } catch (error) {
-    logger.error(`[personalityModifierEngine] Error getting personality effect preview: ${error.message}`);
+    logger.error(
+      `[personalityModifierEngine] Error getting personality effect preview: ${error.message}`,
+    );
 
     return {
       isCompatible: false,

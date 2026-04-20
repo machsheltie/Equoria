@@ -52,7 +52,8 @@ export async function evaluateHorseFlags(horseId, evaluationDate = new Date()) {
     }
 
     // Check age eligibility
-    const ageInYears = (evaluationDate - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24 * 365.25);
+    const ageInYears =
+      (evaluationDate - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24 * 365.25);
 
     if (ageInYears < FLAG_EVALUATION_AGE_RANGE.MIN || ageInYears >= FLAG_EVALUATION_AGE_RANGE.MAX) {
       return {
@@ -113,7 +114,7 @@ export async function evaluateHorseFlags(horseId, evaluationDate = new Date()) {
       });
 
       // If triggered and we haven't reached the limit, assign the flag
-      if (evaluation.triggered && (currentFlags.length + newFlags.length) < MAX_FLAGS_PER_HORSE) {
+      if (evaluation.triggered && currentFlags.length + newFlags.length < MAX_FLAGS_PER_HORSE) {
         newFlags.push(flagDef.name);
         logger.info(`[flagEvaluationEngine] Flag '${flagDef.name}' triggered for horse ${horseId}`);
       }
@@ -129,7 +130,9 @@ export async function evaluateHorseFlags(horseId, evaluationDate = new Date()) {
         },
       });
 
-      logger.info(`[flagEvaluationEngine] Assigned ${newFlags.length} new flags to horse ${horseId}: ${newFlags.join(', ')}`);
+      logger.info(
+        `[flagEvaluationEngine] Assigned ${newFlags.length} new flags to horse ${horseId}: ${newFlags.join(', ')}`,
+      );
     }
 
     return {
@@ -144,9 +147,10 @@ export async function evaluateHorseFlags(horseId, evaluationDate = new Date()) {
       flagEvaluations,
       evaluationDate,
     };
-
   } catch (error) {
-    logger.error(`[flagEvaluationEngine] Error evaluating flags for horse ${horseId}: ${error.message}`);
+    logger.error(
+      `[flagEvaluationEngine] Error evaluating flags for horse ${horseId}: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -200,7 +204,7 @@ function evaluateFlagTriggers(flagDefinition, carePatterns) {
   // Calculate overall score
   const conditionCount = Object.keys(evaluationResults).length;
   const metConditions = Object.values(evaluationResults).filter(Boolean).length;
-  const score = conditionCount > 0 ? (metConditions / conditionCount) : 0;
+  const score = conditionCount > 0 ? metConditions / conditionCount : 0;
 
   return {
     triggered,
@@ -290,7 +294,9 @@ export async function batchEvaluateFlags(horseIds, evaluationDate = new Date()) 
       const result = await evaluateHorseFlags(horseId, evaluationDate);
       results.push(result);
     } catch (error) {
-      logger.error(`[flagEvaluationEngine] Error in batch evaluation for horse ${horseId}: ${error.message}`);
+      logger.error(
+        `[flagEvaluationEngine] Error in batch evaluation for horse ${horseId}: ${error.message}`,
+      );
       results.push({
         success: false,
         horseId,
@@ -309,8 +315,12 @@ export async function batchEvaluateFlags(horseIds, evaluationDate = new Date()) 
  */
 export async function getEligibleHorses(evaluationDate = new Date()) {
   try {
-    const minBirthDate = new Date(evaluationDate.getTime() - (FLAG_EVALUATION_AGE_RANGE.MAX * 365.25 * 24 * 60 * 60 * 1000));
-    const maxBirthDate = new Date(evaluationDate.getTime() - (FLAG_EVALUATION_AGE_RANGE.MIN * 365.25 * 24 * 60 * 60 * 1000));
+    const minBirthDate = new Date(
+      evaluationDate.getTime() - FLAG_EVALUATION_AGE_RANGE.MAX * 365.25 * 24 * 60 * 60 * 1000,
+    );
+    const maxBirthDate = new Date(
+      evaluationDate.getTime() - FLAG_EVALUATION_AGE_RANGE.MIN * 365.25 * 24 * 60 * 60 * 1000,
+    );
 
     const eligibleHorses = await prisma.horse.findMany({
       where: {
@@ -328,8 +338,8 @@ export async function getEligibleHorses(evaluationDate = new Date()) {
     });
 
     // Filter horses with less than max flags in JavaScript
-    const filteredHorses = eligibleHorses.filter(horse =>
-      (horse.epigeneticFlags || []).length < MAX_FLAGS_PER_HORSE,
+    const filteredHorses = eligibleHorses.filter(
+      horse => (horse.epigeneticFlags || []).length < MAX_FLAGS_PER_HORSE,
     );
 
     return filteredHorses.map(horse => horse.id);

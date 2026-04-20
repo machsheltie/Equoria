@@ -150,8 +150,14 @@ async function seedPerformanceShows() {
   });
 
   const disciplines = [
-    'racing', 'dressage', 'showJumping', 'crossCountry',
-    'western', 'gaited', 'endurance', 'eventing',
+    'racing',
+    'dressage',
+    'showJumping',
+    'crossCountry',
+    'western',
+    'gaited',
+    'endurance',
+    'eventing',
   ];
 
   const shows = [];
@@ -216,14 +222,9 @@ async function seedPerformanceCompetitionResults() {
   const results = [];
 
   for (const horse of horses) {
-    const numResults = Math.min(
-      PERFORMANCE_DATA_CONFIG.competitionResultsPerHorse,
-      shows.length,
-    );
+    const numResults = Math.min(PERFORMANCE_DATA_CONFIG.competitionResultsPerHorse, shows.length);
 
-    const selectedShows = shows
-      .sort(() => 0.5 - Math.random())
-      .slice(0, numResults);
+    const selectedShows = shows.sort(() => 0.5 - Math.random()).slice(0, numResults);
 
     for (const show of selectedShows) {
       const placement = Math.floor(Math.random() * 10) + 1;
@@ -431,7 +432,6 @@ async function seedPerformanceData() {
 
     logger.info('✅ Performance data seeding completed successfully!');
     logger.info('📊 Performance test database ready for load testing');
-
   } catch (error) {
     logger.error('❌ Performance data seeding failed:', error);
     throw error;
@@ -447,7 +447,7 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       console.log('✅ Performance data seeding completed');
       process.exit(0);
     })
-    .catch((error) => {
+    .catch(error => {
       console.error('❌ Performance data seeding failed:', error);
       process.exit(1);
     });

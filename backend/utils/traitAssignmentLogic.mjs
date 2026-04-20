@@ -30,9 +30,16 @@ import logger from '../utils/logger.mjs';
  * @param {number} groomId - ID of the assigned groom (optional)
  * @returns {Object} Probability calculation result with bonus details
  */
-export async function calculateTraitProbabilityWithBonus(horseId, traitName, baseProbability, groomId = null) {
+export async function calculateTraitProbabilityWithBonus(
+  horseId,
+  traitName,
+  baseProbability,
+  groomId = null,
+) {
   try {
-    logger.info(`[traitAssignmentLogic.calculateTraitProbabilityWithBonus] Calculating probability for trait '${traitName}' on horse ${horseId}`);
+    logger.info(
+      `[traitAssignmentLogic.calculateTraitProbabilityWithBonus] Calculating probability for trait '${traitName}' on horse ${horseId}`,
+    );
 
     // Initialize result with base values
     const result = {
@@ -48,7 +55,9 @@ export async function calculateTraitProbabilityWithBonus(horseId, traitName, bas
 
     // If no groom assigned, return base probability
     if (!groomId) {
-      logger.info(`[traitAssignmentLogic.calculateTraitProbabilityWithBonus] No groom assigned, using base probability ${baseProbability}`);
+      logger.info(
+        `[traitAssignmentLogic.calculateTraitProbabilityWithBonus] No groom assigned, using base probability ${baseProbability}`,
+      );
       return result;
     }
 
@@ -58,7 +67,9 @@ export async function calculateTraitProbabilityWithBonus(horseId, traitName, bas
     // Check if groom has bonus for this trait
     if (!bonusTraits[traitName]) {
       result.reason = 'Groom has no bonus for this trait';
-      logger.info(`[traitAssignmentLogic.calculateTraitProbabilityWithBonus] Groom ${groomId} has no bonus for trait '${traitName}'`);
+      logger.info(
+        `[traitAssignmentLogic.calculateTraitProbabilityWithBonus] Groom ${groomId} has no bonus for trait '${traitName}'`,
+      );
       return result;
     }
 
@@ -72,7 +83,9 @@ export async function calculateTraitProbabilityWithBonus(horseId, traitName, bas
         coveragePercentage: eligibility.coveragePercentage,
         milestoneWindowDays: eligibility.milestoneWindowDays,
       };
-      logger.info(`[traitAssignmentLogic.calculateTraitProbabilityWithBonus] Groom ${groomId} not eligible for bonus: ${eligibility.reason}`);
+      logger.info(
+        `[traitAssignmentLogic.calculateTraitProbabilityWithBonus] Groom ${groomId} not eligible for bonus: ${eligibility.reason}`,
+      );
       return result;
     }
 
@@ -90,11 +103,15 @@ export async function calculateTraitProbabilityWithBonus(horseId, traitName, bas
       milestoneWindowDays: eligibility.milestoneWindowDays,
     };
 
-    logger.info(`[traitAssignmentLogic.calculateTraitProbabilityWithBonus] Applied ${bonusAmount * 100}% bonus to trait '${traitName}' for horse ${horseId}`);
+    logger.info(
+      `[traitAssignmentLogic.calculateTraitProbabilityWithBonus] Applied ${bonusAmount * 100}% bonus to trait '${traitName}' for horse ${horseId}`,
+    );
 
     return result;
   } catch (error) {
-    logger.error(`[traitAssignmentLogic.calculateTraitProbabilityWithBonus] Error calculating trait probability: ${error.message}`);
+    logger.error(
+      `[traitAssignmentLogic.calculateTraitProbabilityWithBonus] Error calculating trait probability: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -108,10 +125,14 @@ export async function calculateTraitProbabilityWithBonus(horseId, traitName, bas
  */
 export async function applyGroomBonusesToTraitCandidates(horseId, traitCandidates, groomId = null) {
   try {
-    logger.info(`[traitAssignmentLogic.applyGroomBonusesToTraitCandidates] Applying groom bonuses to ${traitCandidates.length} trait candidates for horse ${horseId}`);
+    logger.info(
+      `[traitAssignmentLogic.applyGroomBonusesToTraitCandidates] Applying groom bonuses to ${traitCandidates.length} trait candidates for horse ${horseId}`,
+    );
 
     if (!groomId) {
-      logger.info('[traitAssignmentLogic.applyGroomBonusesToTraitCandidates] No groom assigned, returning original probabilities');
+      logger.info(
+        '[traitAssignmentLogic.applyGroomBonusesToTraitCandidates] No groom assigned, returning original probabilities',
+      );
       return traitCandidates.map(candidate => ({
         ...candidate,
         finalProbability: candidate.baseProbability,
@@ -147,11 +168,15 @@ export async function applyGroomBonusesToTraitCandidates(horseId, traitCandidate
     });
 
     const bonusesApplied = updatedCandidates.filter(c => c.bonusApplied).length;
-    logger.info(`[traitAssignmentLogic.applyGroomBonusesToTraitCandidates] Applied bonuses to ${bonusesApplied} out of ${traitCandidates.length} trait candidates`);
+    logger.info(
+      `[traitAssignmentLogic.applyGroomBonusesToTraitCandidates] Applied bonuses to ${bonusesApplied} out of ${traitCandidates.length} trait candidates`,
+    );
 
     return updatedCandidates;
   } catch (error) {
-    logger.error(`[traitAssignmentLogic.applyGroomBonusesToTraitCandidates] Error applying groom bonuses: ${error.message}`);
+    logger.error(
+      `[traitAssignmentLogic.applyGroomBonusesToTraitCandidates] Error applying groom bonuses: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -164,19 +189,32 @@ export async function applyGroomBonusesToTraitCandidates(horseId, traitCandidate
  * @param {number} maxTraits - Maximum number of traits to select (default: 1)
  * @returns {Object} Selection result with selected traits and details
  */
-export async function selectTraitsWithGroomBonuses(horseId, traitCandidates, groomId = null, maxTraits = 1) {
+export async function selectTraitsWithGroomBonuses(
+  horseId,
+  traitCandidates,
+  groomId = null,
+  maxTraits = 1,
+) {
   try {
-    logger.info(`[traitAssignmentLogic.selectTraitsWithGroomBonuses] Selecting up to ${maxTraits} traits for horse ${horseId}`);
+    logger.info(
+      `[traitAssignmentLogic.selectTraitsWithGroomBonuses] Selecting up to ${maxTraits} traits for horse ${horseId}`,
+    );
 
     // Apply groom bonuses to candidates
-    const candidatesWithBonuses = await applyGroomBonusesToTraitCandidates(horseId, traitCandidates, groomId);
+    const candidatesWithBonuses = await applyGroomBonusesToTraitCandidates(
+      horseId,
+      traitCandidates,
+      groomId,
+    );
 
     // Perform randomized selection
     const selectedTraits = [];
     const selectionDetails = [];
 
     for (const candidate of candidatesWithBonuses) {
-      if (selectedTraits.length >= maxTraits) { break; }
+      if (selectedTraits.length >= maxTraits) {
+        break;
+      }
 
       const randomValue = Math.random();
       const selected = randomValue < candidate.finalProbability;
@@ -213,11 +251,15 @@ export async function selectTraitsWithGroomBonuses(horseId, traitCandidates, gro
       traitsSelected: selectedTraits.length,
     };
 
-    logger.info(`[traitAssignmentLogic.selectTraitsWithGroomBonuses] Selected ${selectedTraits.length} traits for horse ${horseId}`);
+    logger.info(
+      `[traitAssignmentLogic.selectTraitsWithGroomBonuses] Selected ${selectedTraits.length} traits for horse ${horseId}`,
+    );
 
     return result;
   } catch (error) {
-    logger.error(`[traitAssignmentLogic.selectTraitsWithGroomBonuses] Error selecting traits: ${error.message}`);
+    logger.error(
+      `[traitAssignmentLogic.selectTraitsWithGroomBonuses] Error selecting traits: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -230,7 +272,9 @@ export async function selectTraitsWithGroomBonuses(horseId, traitCandidates, gro
  */
 export async function getTraitAssignmentSummary(horseId, groomId) {
   try {
-    logger.info(`[traitAssignmentLogic.getTraitAssignmentSummary] Getting trait assignment summary for horse ${horseId} and groom ${groomId}`);
+    logger.info(
+      `[traitAssignmentLogic.getTraitAssignmentSummary] Getting trait assignment summary for horse ${horseId} and groom ${groomId}`,
+    );
 
     const bonusTraits = await getBonusTraits(groomId);
     const eligibility = await checkBonusEligibility(horseId, groomId);
@@ -247,11 +291,15 @@ export async function getTraitAssignmentSummary(horseId, groomId) {
         : `Groom cannot apply bonuses: ${eligibility.reason}`,
     };
 
-    logger.info(`[traitAssignmentLogic.getTraitAssignmentSummary] Generated summary for horse ${horseId} and groom ${groomId}`);
+    logger.info(
+      `[traitAssignmentLogic.getTraitAssignmentSummary] Generated summary for horse ${horseId} and groom ${groomId}`,
+    );
 
     return summary;
   } catch (error) {
-    logger.error(`[traitAssignmentLogic.getTraitAssignmentSummary] Error generating summary: ${error.message}`);
+    logger.error(
+      `[traitAssignmentLogic.getTraitAssignmentSummary] Error generating summary: ${error.message}`,
+    );
     throw error;
   }
 }

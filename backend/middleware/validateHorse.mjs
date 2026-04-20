@@ -16,9 +16,7 @@ const validateCreateHorse = [
     .isString()
     .withMessage('Sex must be a string.')
     .isIn(HORSE_SEX_VALUES)
-    .withMessage(
-      `Invalid sex. Must be one of: ${HORSE_SEX_VALUES.join(', ')}.`,
-    ),
+    .withMessage(`Invalid sex. Must be one of: ${HORSE_SEX_VALUES.join(', ')}.`),
   body('date_of_birth')
     .isISO8601()
     .withMessage('Date of birth must be a valid ISO8601 date.')

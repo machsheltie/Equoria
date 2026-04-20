@@ -22,7 +22,10 @@ function fixFile(filePath) {
   const content = readFileSync(filePath, 'utf8');
 
   // Only fix files that have the problematic pattern: jest.mock() followed by await import
-  if (!content.includes('jest.mock(') || !content.match(/const\s+\{[^}]+\}\s+=\s+await\s+import\(/)) {
+  if (
+    !content.includes('jest.mock(') ||
+    !content.match(/const\s+\{[^}]+\}\s+=\s+await\s+import\(/)
+  ) {
     return false;
   }
 

@@ -1,6 +1,7 @@
 # Database Schema - Equoria Game Database
 
 ## Database Overview
+
 - **Database Engine**: PostgreSQL 14+
 - **ORM**: Prisma with JavaScript ES6+ modules
 - **Schema Management**: Prisma migrations
@@ -9,7 +10,9 @@
 ## Core Tables
 
 ### 1. users
+
 Primary user account management with UUID-based identifiers
+
 ```sql
 CREATE TABLE users (
   id VARCHAR PRIMARY KEY DEFAULT uuid(),
@@ -25,12 +28,14 @@ CREATE TABLE users (
 ```
 
 **Key Features:**
+
 - UUID primary keys for security and scalability
 - Unique email constraint for account management
 - JSONB settings for flexible user preferences
 - Progression tracking with money, level, and XP
 
 **Sample Settings JSONB:**
+
 ```json
 {
   "darkMode": true,
@@ -47,7 +52,9 @@ CREATE TABLE users (
 ```
 
 ### 2. horses
+
 Main horse entities with comprehensive attributes and relationships
+
 ```sql
 CREATE TABLE horses (
   id SERIAL PRIMARY KEY,
@@ -80,6 +87,7 @@ CREATE TABLE horses (
 ```
 
 **Key Features:**
+
 - Flexible relationship support (both legacy user and new user systems)
 - JSONB discipline scores for training progression
 - JSONB epigenetic modifiers for complex trait storage
@@ -87,6 +95,7 @@ CREATE TABLE horses (
 - Comprehensive stat tracking for competition mechanics
 
 **Sample Discipline Scores JSONB:**
+
 ```json
 {
   "Racing": 25,
@@ -98,6 +107,7 @@ CREATE TABLE horses (
 ```
 
 **Sample Epigenetic Modifiers JSONB:**
+
 ```json
 {
   "positive": ["resilient", "bold", "intelligent"],
@@ -107,7 +117,9 @@ CREATE TABLE horses (
 ```
 
 ### 3. foals
+
 Specialized table for foal development and breeding mechanics
+
 ```sql
 CREATE TABLE foals (
   id SERIAL PRIMARY KEY,
@@ -126,12 +138,14 @@ CREATE TABLE foals (
 ```
 
 **Key Features:**
+
 - Parent tracking with sire and dam relationships
 - Complex genetics storage in JSONB format
 - Trait development system integration
 - Development metrics for foal progression
 
 **Sample Genetics JSONB:**
+
 ```json
 {
   "dominant_alleles": {
@@ -153,7 +167,9 @@ CREATE TABLE foals (
 ```
 
 ### 4. shows
+
 Competition and show management
+
 ```sql
 CREATE TABLE shows (
   id SERIAL PRIMARY KEY,
@@ -170,13 +186,16 @@ CREATE TABLE shows (
 ```
 
 **Key Features:**
+
 - Competition management with level restrictions
 - Financial system integration (fees and prizes)
 - Scheduling with run dates
 - Unique constraint on show names
 
 ### 5. competition_results
+
 Competition history and result tracking
+
 ```sql
 CREATE TABLE competition_results (
   id SERIAL PRIMARY KEY,
@@ -191,13 +210,16 @@ CREATE TABLE competition_results (
 ```
 
 **Key Features:**
+
 - Competition history tracking with relationships
 - Performance scoring system with float precision
 - Placement tracking for top 3 finishers
 - Discipline-specific results with timestamps
 
 ### 6. training_logs
+
 Training session history and cooldown tracking
+
 ```sql
 CREATE TABLE training_logs (
   id SERIAL PRIMARY KEY,
@@ -208,6 +230,7 @@ CREATE TABLE training_logs (
 ```
 
 **Key Features:**
+
 - Training history for cooldown calculations
 - Discipline-specific tracking
 - Timestamp precision for cooldown enforcement
@@ -215,7 +238,9 @@ CREATE TABLE training_logs (
 ## Supporting Tables
 
 ### 7. breeds
+
 Horse breed definitions and characteristics
+
 ```sql
 CREATE TABLE breeds (
   id SERIAL PRIMARY KEY,
@@ -226,7 +251,9 @@ CREATE TABLE breeds (
 ```
 
 ### 8. users (Legacy Support)
+
 Legacy user system maintained for backward compatibility
+
 ```sql
 CREATE TABLE users (
   id SERIAL PRIMARY KEY,
@@ -239,7 +266,9 @@ CREATE TABLE users (
 ```
 
 ### 9. stables
+
 Stable management and horse location tracking
+
 ```sql
 CREATE TABLE stables (
   id SERIAL PRIMARY KEY,
@@ -251,7 +280,9 @@ CREATE TABLE stables (
 ```
 
 ### 10. foal_development
+
 Detailed foal development tracking
+
 ```sql
 CREATE TABLE foal_development (
   id SERIAL PRIMARY KEY,
@@ -265,12 +296,15 @@ CREATE TABLE foal_development (
 ```
 
 **Key Features:**
+
 - Development tracking with day-by-day progression
 - Activity history for trait discovery
 - Milestone system for achievement tracking
 
 ### 11. foal_training_history
+
 Enrichment activity tracking for foal development
+
 ```sql
 CREATE TABLE foal_training_history (
   id SERIAL PRIMARY KEY,
@@ -283,6 +317,7 @@ CREATE TABLE foal_training_history (
 ```
 
 **Key Features:**
+
 - Enrichment activity tracking
 - Impact measurement on bonding and stress
 - Historical analysis for trait discovery
@@ -290,6 +325,7 @@ CREATE TABLE foal_training_history (
 ## Database Relationships
 
 ### Primary Relationships
+
 ```
 users (1) ←→ (N) horses
 horses (N) ←→ (1) breeds
@@ -302,6 +338,7 @@ horses (1) ←→ (N) foal_training_history
 ```
 
 ### Foreign Key Constraints
+
 - **Cascading Deletes**: competition_results, training_logs, foal_development, foal_training_history
 - **Referential Integrity**: All foreign keys enforced with proper constraints
 - **Nullable References**: Some relationships allow null for flexibility
@@ -309,10 +346,12 @@ horses (1) ←→ (N) foal_training_history
 ## Indexes and Performance
 
 ### Primary Indexes (Automatic)
+
 - All primary keys have automatic indexes
 - Unique constraints create automatic indexes (email, show names)
 
 ### Custom Indexes
+
 ```sql
 -- Training system optimization
 CREATE INDEX idx_horses_training_cooldown ON horses(training_cooldown);
@@ -337,6 +376,7 @@ CREATE INDEX idx_foals_user_id ON foals(user_id);
 ```
 
 ### JSONB Indexes
+
 ```sql
 -- Discipline score queries
 CREATE INDEX idx_horses_discipline_scores ON horses USING GIN (discipline_scores);
@@ -353,21 +393,22 @@ CREATE INDEX idx_users_settings ON users USING GIN (settings);
 ## Data Validation and Constraints
 
 ### Check Constraints
+
 ```sql
 -- Horse gender validation
-ALTER TABLE horses ADD CONSTRAINT check_gender 
+ALTER TABLE horses ADD CONSTRAINT check_gender
 CHECK (gender IN ('Mare', 'Stallion', 'Gelding'));
 
 -- Competition placement validation
-ALTER TABLE competition_results ADD CONSTRAINT check_placement 
+ALTER TABLE competition_results ADD CONSTRAINT check_placement
 CHECK (placement IN ('1st', '2nd', '3rd') OR placement IS NULL);
 
 -- Score range validation
-ALTER TABLE competition_results ADD CONSTRAINT check_score_range 
+ALTER TABLE competition_results ADD CONSTRAINT check_score_range
 CHECK (score >= 0 AND score <= 1000);
 
 -- Age validation
-ALTER TABLE horses ADD CONSTRAINT check_age 
+ALTER TABLE horses ADD CONSTRAINT check_age
 CHECK (age >= 0 AND age <= 30);
 
 -- User progression validation
@@ -377,6 +418,7 @@ ALTER TABLE users ADD CONSTRAINT check_xp CHECK (xp >= 0);
 ```
 
 ### Business Rule Constraints
+
 - **Training Age Limit**: Enforced at application layer (3+ years)
 - **Training Cooldown**: 7-day global cooldown per horse
 - **Competition Eligibility**: Age 3-20, level restrictions, no duplicates
@@ -385,6 +427,7 @@ ALTER TABLE users ADD CONSTRAINT check_xp CHECK (xp >= 0);
 ## Migration History
 
 ### Key Migrations
+
 1. **20241201000000_initial**: Basic tables and relationships
 2. **20241215000000_add_users**: UUID-based user accounts
 3. **20241220000000_training_cooldown**: Training restriction system
@@ -394,6 +437,7 @@ ALTER TABLE users ADD CONSTRAINT check_xp CHECK (xp >= 0);
 7. **20250101000000_show_management**: Competition management system
 
 ### Migration Commands
+
 ```bash
 # Generate new migration
 npx prisma migrate dev --name migration_name
@@ -411,6 +455,7 @@ npx prisma generate
 ## Sample Queries
 
 ### Common Game Queries
+
 ```sql
 -- Get user with all horses
 SELECT p.*, h.name as horse_name, h.age, b.name as breed_name
@@ -440,6 +485,7 @@ WHERE h.epigenetic_modifiers->'positive' ? 'resilient';
 ```
 
 ### Performance Queries
+
 ```sql
 -- Efficient discipline score lookup
 SELECT h.name, h.discipline_scores->>'Racing' as racing_score
@@ -447,8 +493,8 @@ FROM horses h
 WHERE (h.discipline_scores->>'Racing')::int > 20;
 
 -- Complex breeding query
-SELECT f.*, 
-       s.name as sire_name, 
+SELECT f.*,
+       s.name as sire_name,
        d.name as dam_name,
        f.genetics->'dominant_alleles' as dominant_traits
 FROM foals f
@@ -460,6 +506,7 @@ WHERE f.user_id = $1;
 ## Backup and Recovery
 
 ### Backup Strategy
+
 ```bash
 # Daily automated backups
 pg_dump equoria_production > backup_$(date +%Y%m%d).sql
@@ -469,6 +516,7 @@ pg_dump --compress=9 --format=custom equoria_production > backup.dump
 ```
 
 ### Recovery Procedures
+
 ```bash
 # Restore from backup
 pg_restore --clean --if-exists backup.dump
@@ -480,6 +528,7 @@ pg_basebackup -D recovery_directory -Ft -z -P
 ## Environment Configuration
 
 ### Connection Strings
+
 ```bash
 # Development
 DATABASE_URL="postgresql://dev_user:dev_pass@localhost:5432/equoria_dev"
@@ -492,6 +541,7 @@ DATABASE_URL="postgresql://user:pass@host:5432/equoria_prod?sslmode=require&conn
 ```
 
 ## References
+
 - **Architecture Overview**: `@docs/architecture.markdown`
 - **API Specifications**: `@docs/api_specs.markdown`
 - **Backend Implementation**: `@docs/backend-overview.md`

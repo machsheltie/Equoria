@@ -16,7 +16,16 @@ import logger from './logger.mjs';
 const requiredSchemaElements = [
   {
     model: 'Horse',
-    fields: ['id', 'name', 'breed', 'age', 'userId', 'consecutiveDaysFoalCare', 'taskLog', 'epigeneticModifiers'],
+    fields: [
+      'id',
+      'name',
+      'breed',
+      'age',
+      'userId',
+      'consecutiveDaysFoalCare',
+      'taskLog',
+      'epigeneticModifiers',
+    ],
   },
   {
     model: 'User',
@@ -45,7 +54,7 @@ export async function validateDatabaseSchema({ throwOnError = false } = {}) {
       try {
         // Try to query the model to see if it exists
         // We use findFirst with a limit of 0 to avoid retrieving actual data
-        // eslint-disable-next-line no-await-in-loop
+
         await prisma[model.toLowerCase()].findFirst({
           select: fields.reduce((acc, field) => ({ ...acc, [field]: true }), {}),
           take: 0,

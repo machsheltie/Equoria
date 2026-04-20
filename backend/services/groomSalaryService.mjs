@@ -12,17 +12,17 @@ import logger from '../utils/logger.mjs';
 export const SALARY_CONFIG = {
   // Base weekly salaries by skill level
   WEEKLY_SALARIES: {
-    novice: 50,      // $50/week
+    novice: 50, // $50/week
     intermediate: 75, // $75/week
-    expert: 100,     // $100/week
-    master: 150,      // $150/week
+    expert: 100, // $100/week
+    master: 150, // $150/week
   },
 
   // Specialty bonuses (added to base salary)
   SPECIALTY_BONUSES: {
-    foalCare: 10,        // +$10/week for foal care specialty
-    showHandling: 15,    // +$15/week for show handling specialty
-    general: 0,           // No bonus for general grooms
+    foalCare: 10, // +$10/week for foal care specialty
+    showHandling: 15, // +$15/week for show handling specialty
+    general: 0, // No bonus for general grooms
   },
 
   // Payment processing day (0 = Sunday, 1 = Monday, etc.)
@@ -42,12 +42,15 @@ export const SALARY_CONFIG = {
  */
 export function calculateWeeklySalary(groom) {
   try {
-    const baseSalary = SALARY_CONFIG.WEEKLY_SALARIES[groom.skillLevel] || SALARY_CONFIG.WEEKLY_SALARIES.novice;
+    const baseSalary =
+      SALARY_CONFIG.WEEKLY_SALARIES[groom.skillLevel] || SALARY_CONFIG.WEEKLY_SALARIES.novice;
     const specialtyBonus = SALARY_CONFIG.SPECIALTY_BONUSES[groom.speciality] || 0;
 
     return baseSalary + specialtyBonus;
   } catch (error) {
-    logger.error(`[groomSalaryService] Error calculating salary for groom ${groom.id}: ${error.message}`);
+    logger.error(
+      `[groomSalaryService] Error calculating salary for groom ${groom.id}: ${error.message}`,
+    );
     return SALARY_CONFIG.WEEKLY_SALARIES.novice; // Default to novice salary
   }
 }
@@ -139,25 +142,31 @@ export async function processWeeklySalaries() {
             },
           });
 
-          logger.info(`[groomSalaryService] Paid $${salary} salary to groom ${groom.name} for user ${user.username}`);
+          logger.info(
+            `[groomSalaryService] Paid $${salary} salary to groom ${groom.name} for user ${user.username}`,
+          );
         }
 
         results.successful++;
         results.totalAmount += userGroup.totalSalary;
 
-        logger.info(`[groomSalaryService] Processed $${userGroup.totalSalary} in salaries for user ${user.username}`);
-
+        logger.info(
+          `[groomSalaryService] Processed $${userGroup.totalSalary} in salaries for user ${user.username}`,
+        );
       } catch (error) {
         results.failed++;
         results.errors.push(`Error processing salaries for user ${userId}: ${error.message}`);
-        logger.error(`[groomSalaryService] Error processing salaries for user ${userId}: ${error.message}`);
+        logger.error(
+          `[groomSalaryService] Error processing salaries for user ${userId}: ${error.message}`,
+        );
       }
     }
 
-    logger.info(`[groomSalaryService] Weekly salary processing complete. Processed: ${results.processed}, Successful: ${results.successful}, Failed: ${results.failed}, Total: $${results.totalAmount}`);
+    logger.info(
+      `[groomSalaryService] Weekly salary processing complete. Processed: ${results.processed}, Successful: ${results.successful}, Failed: ${results.failed}, Total: $${results.totalAmount}`,
+    );
 
     return results;
-
   } catch (error) {
     logger.error(`[groomSalaryService] Error in weekly salary processing: ${error.message}`);
     return {
@@ -191,7 +200,9 @@ async function handleInsufficientFunds(userId, userGroup) {
         },
       });
 
-      logger.warn(`[groomSalaryService] Started grace period for user ${user.username} - insufficient funds for groom salaries`);
+      logger.warn(
+        `[groomSalaryService] Started grace period for user ${user.username} - insufficient funds for groom salaries`,
+      );
 
       // Log missed payment
       for (const { groom, salary } of userGroup.assignments) {
@@ -206,7 +217,6 @@ async function handleInsufficientFunds(userId, userGroup) {
           },
         });
       }
-
     } else {
       // Check if grace period has expired
       const gracePeriodEnd = new Date(gracePeriodStart);
@@ -215,10 +225,14 @@ async function handleInsufficientFunds(userId, userGroup) {
       if (new Date() > gracePeriodEnd) {
         // Grace period expired - terminate all groom assignments
         await terminateGroomsForNonPayment(userId, userGroup);
-        logger.warn(`[groomSalaryService] Terminated all grooms for user ${user.username} - grace period expired`);
+        logger.warn(
+          `[groomSalaryService] Terminated all grooms for user ${user.username} - grace period expired`,
+        );
       } else {
         // Still in grace period
-        logger.warn(`[groomSalaryService] User ${user.username} still in grace period for groom salary payments`);
+        logger.warn(
+          `[groomSalaryService] User ${user.username} still in grace period for groom salary payments`,
+        );
 
         // Log missed payment
         for (const { groom, salary } of userGroup.assignments) {
@@ -235,9 +249,10 @@ async function handleInsufficientFunds(userId, userGroup) {
         }
       }
     }
-
   } catch (error) {
-    logger.error(`[groomSalaryService] Error handling insufficient funds for user ${userId}: ${error.message}`);
+    logger.error(
+      `[groomSalaryService] Error handling insufficient funds for user ${userId}: ${error.message}`,
+    );
   }
 }
 
@@ -283,10 +298,13 @@ async function terminateGroomsForNonPayment(userId, userGroup) {
       });
     }
 
-    logger.info(`[groomSalaryService] Terminated ${userGroup.assignments.length} groom assignments for user ${userId} due to non-payment`);
-
+    logger.info(
+      `[groomSalaryService] Terminated ${userGroup.assignments.length} groom assignments for user ${userId} due to non-payment`,
+    );
   } catch (error) {
-    logger.error(`[groomSalaryService] Error terminating grooms for user ${userId}: ${error.message}`);
+    logger.error(
+      `[groomSalaryService] Error terminating grooms for user ${userId}: ${error.message}`,
+    );
   }
 }
 
@@ -319,9 +337,10 @@ export async function getSalaryPaymentHistory(userId, limit = 50) {
     });
 
     return payments;
-
   } catch (error) {
-    logger.error(`[groomSalaryService] Error getting salary payment history for user ${userId}: ${error.message}`);
+    logger.error(
+      `[groomSalaryService] Error getting salary payment history for user ${userId}: ${error.message}`,
+    );
     return [];
   }
 }
@@ -364,9 +383,10 @@ export async function calculateUserSalaryCost(userId) {
       groomCount: activeAssignments.length,
       breakdown,
     };
-
   } catch (error) {
-    logger.error(`[groomSalaryService] Error calculating salary cost for user ${userId}: ${error.message}`);
+    logger.error(
+      `[groomSalaryService] Error calculating salary cost for user ${userId}: ${error.message}`,
+    );
     return {
       totalWeeklyCost: 0,
       groomCount: 0,

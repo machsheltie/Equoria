@@ -50,7 +50,7 @@ export function featureFlagMiddleware() {
        * @param {string} flagName
        * @returns {Promise<boolean>}
        */
-      isEnabled: (flagName) => isFeatureEnabled(flagName, context),
+      isEnabled: flagName => isFeatureEnabled(flagName, context),
 
       /**
        * Get all flags for this request

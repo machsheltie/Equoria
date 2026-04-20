@@ -19,18 +19,8 @@ const __dirname = path.dirname(__filename);
 
 // Environment validation configuration
 const ENV_CONFIG = {
-  requiredVars: [
-    'DATABASE_URL',
-    'JWT_SECRET',
-    'JWT_REFRESH_SECRET',
-    'NODE_ENV',
-  ],
-  optionalVars: [
-    'PORT',
-    'REDIS_URL',
-    'LOG_LEVEL',
-    'CORS_ORIGIN',
-  ],
+  requiredVars: ['DATABASE_URL', 'JWT_SECRET', 'JWT_REFRESH_SECRET', 'NODE_ENV'],
+  optionalVars: ['PORT', 'REDIS_URL', 'LOG_LEVEL', 'CORS_ORIGIN'],
   nodeVersionMin: '18.0.0',
   jwtSecretMinLength: 32,
 };
@@ -57,7 +47,9 @@ function validateNodeVersion() {
       break;
     }
     // If equal, continue to next part
-    if (i === 2) { isValid = true; }
+    if (i === 2) {
+      isValid = true;
+    }
   }
 
   if (isValid) {
@@ -68,7 +60,9 @@ function validateNodeVersion() {
       required: requiredVersion,
     };
   } else {
-    console.error(`❌ Node.js version ${currentVersion} does not meet requirement (>= ${requiredVersion})`);
+    console.error(
+      `❌ Node.js version ${currentVersion} does not meet requirement (>= ${requiredVersion})`,
+    );
     return {
       valid: false,
       current: currentVersion,
@@ -165,8 +159,8 @@ function validateJwtSecrets() {
     const hasNumbers = /[0-9]/.test(secret);
     const hasSpecialChars = /[^A-Za-z0-9]/.test(secret);
 
-    const isStrong = length >= ENV_CONFIG.jwtSecretMinLength &&
-                    hasUppercase && hasLowercase && hasNumbers;
+    const isStrong =
+      length >= ENV_CONFIG.jwtSecretMinLength && hasUppercase && hasLowercase && hasNumbers;
 
     results.secrets[varName] = {
       present: true,
@@ -184,9 +178,13 @@ function validateJwtSecrets() {
     if (isStrong) {
       console.log(`✅ ${varName}: Strong (${length} characters)`);
     } else {
-      results.errors.push(`${varName} is weak (length: ${length}, min: ${ENV_CONFIG.jwtSecretMinLength})`);
+      results.errors.push(
+        `${varName} is weak (length: ${length}, min: ${ENV_CONFIG.jwtSecretMinLength})`,
+      );
       results.valid = false;
-      console.error(`❌ ${varName}: Weak (${length} characters, needs ${ENV_CONFIG.jwtSecretMinLength}+)`);
+      console.error(
+        `❌ ${varName}: Weak (${length} characters, needs ${ENV_CONFIG.jwtSecretMinLength}+)`,
+      );
     }
   }
 
@@ -242,7 +240,6 @@ function validateDatabaseUrl() {
         hasCredentials,
       },
     };
-
   } catch (error) {
     console.error(`❌ DATABASE_URL: Invalid URL format - ${error.message}`);
     return {
@@ -295,7 +292,6 @@ async function validateDependencies() {
       packageName: packageJson.name,
       packageVersion: packageJson.version,
     };
-
   } catch (error) {
     console.error(`❌ Dependencies: Error reading package.json - ${error.message}`);
     return {
@@ -338,7 +334,6 @@ async function validateModuleConfiguration() {
       mainFile,
       moduleType: isESModule ? 'module' : 'commonjs',
     };
-
   } catch (error) {
     console.error(`❌ Module configuration: Error - ${error.message}`);
     return {
@@ -401,7 +396,6 @@ async function validateEnvironment() {
     }
 
     return results;
-
   } catch (error) {
     console.error('❌ Environment validation failed:', error.message);
     results.valid = false;
@@ -430,7 +424,6 @@ async function runEnvironmentValidation() {
       console.log('\n❌ Environment validation FAILED');
       process.exit(1);
     }
-
   } catch (error) {
     console.error('❌ Environment validation execution failed:', error.message);
     process.exit(1);

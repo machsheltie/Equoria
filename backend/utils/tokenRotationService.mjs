@@ -94,8 +94,12 @@ export async function createTokenPair(userId, familyId) {
     // Store refresh token in database (best-effort in tests)
     const ensureUserExists = async () => {
       const existing = await prisma.user.findUnique({ where: { id: userId } });
-      if (existing) { return existing; }
-      if (process.env.NODE_ENV !== 'test') { return null; }
+      if (existing) {
+        return existing;
+      }
+      if (process.env.NODE_ENV !== 'test') {
+        return null;
+      }
       // Create a minimal user record for test environments if missing
       return prisma.user.create({
         data: {

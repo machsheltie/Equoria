@@ -32,26 +32,42 @@ const AGE_CUTOFF_DAYS = 1460; // 4 years in days
 
 // Trait categorization
 const RARE_TRAITS = [
-  'sensitive', 'noble', 'legacy_talent', 'exceptional', 'prodigy',
-  'natural_leader', 'empathic', 'intuitive', 'charismatic', 'legendary',
+  'sensitive',
+  'noble',
+  'legacy_talent',
+  'exceptional',
+  'prodigy',
+  'natural_leader',
+  'empathic',
+  'intuitive',
+  'charismatic',
+  'legendary',
 ];
 
 const NEGATIVE_TRAITS = [
-  'stubborn', 'anxious', 'aggressive', 'fearful', 'lazy', 'unpredictable',
-  'difficult', 'nervous', 'spooky', 'resistant',
+  'stubborn',
+  'anxious',
+  'aggressive',
+  'fearful',
+  'lazy',
+  'unpredictable',
+  'difficult',
+  'nervous',
+  'spooky',
+  'resistant',
 ];
 
 const NEGATIVE_TRAIT_PENALTIES = {
-  'stubborn': -2,
-  'anxious': -1,
-  'aggressive': -3,
-  'fearful': -2,
-  'lazy': -2,
-  'unpredictable': -3,
-  'difficult': -2,
-  'nervous': -1,
-  'spooky': -1,
-  'resistant': -2,
+  stubborn: -2,
+  anxious: -1,
+  aggressive: -3,
+  fearful: -2,
+  lazy: -2,
+  unpredictable: -3,
+  difficult: -2,
+  nervous: -1,
+  spooky: -1,
+  resistant: -2,
 };
 
 /**
@@ -61,7 +77,9 @@ const NEGATIVE_TRAIT_PENALTIES = {
  */
 export async function calculateTraitScore(horseId) {
   try {
-    logger.info(`[legacyScoreTraitCalculator.calculateTraitScore] Calculating trait score for horse ${horseId}`);
+    logger.info(
+      `[legacyScoreTraitCalculator.calculateTraitScore] Calculating trait score for horse ${horseId}`,
+    );
 
     // Get trait history for traits gained before age 4
     const traitHistory = await prisma.traitHistoryLog.findMany({
@@ -113,17 +131,15 @@ export async function calculateTraitScore(horseId) {
     const groomCareScore = calculateGroomCareConsistency(milestoneData);
 
     // Calculate total trait score
-    const totalScore = Math.max(0,
-      traitCountScore +
-      diversityScore +
-      rareTraitScore +
-      groomCareScore +
-      negativeTraitPenalty,
+    const totalScore = Math.max(
+      0,
+      traitCountScore + diversityScore + rareTraitScore + groomCareScore + negativeTraitPenalty,
     );
 
     const result = {
       totalScore,
-      maxScore: MAX_TRAIT_COUNT_SCORE + MAX_DIVERSITY_SCORE + MAX_RARE_TRAIT_SCORE + MAX_GROOM_CARE_SCORE,
+      maxScore:
+        MAX_TRAIT_COUNT_SCORE + MAX_DIVERSITY_SCORE + MAX_RARE_TRAIT_SCORE + MAX_GROOM_CARE_SCORE,
       breakdown: {
         traitCount: traitCountScore,
         diversity: diversityScore,
@@ -154,11 +170,15 @@ export async function calculateTraitScore(horseId) {
       },
     };
 
-    logger.info(`[legacyScoreTraitCalculator.calculateTraitScore] Calculated trait score ${totalScore}/${result.maxScore} for horse ${horseId}`);
+    logger.info(
+      `[legacyScoreTraitCalculator.calculateTraitScore] Calculated trait score ${totalScore}/${result.maxScore} for horse ${horseId}`,
+    );
 
     return result;
   } catch (error) {
-    logger.error(`[legacyScoreTraitCalculator.calculateTraitScore] Error calculating trait score for horse ${horseId}: ${error.message}`);
+    logger.error(
+      `[legacyScoreTraitCalculator.calculateTraitScore] Error calculating trait score for horse ${horseId}: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -174,9 +194,12 @@ function calculateGroomCareConsistency(milestoneData) {
   }
 
   // Calculate average task consistency and diversity
-  const avgTaskConsistency = milestoneData.reduce((sum, m) => sum + (m.taskConsistency || 0), 0) / milestoneData.length;
-  const avgTaskDiversity = milestoneData.reduce((sum, m) => sum + (m.taskDiversity || 0), 0) / milestoneData.length;
-  const avgBondScore = milestoneData.reduce((sum, m) => sum + (m.bondScore || 50), 0) / milestoneData.length;
+  const avgTaskConsistency =
+    milestoneData.reduce((sum, m) => sum + (m.taskConsistency || 0), 0) / milestoneData.length;
+  const avgTaskDiversity =
+    milestoneData.reduce((sum, m) => sum + (m.taskDiversity || 0), 0) / milestoneData.length;
+  const avgBondScore =
+    milestoneData.reduce((sum, m) => sum + (m.bondScore || 50), 0) / milestoneData.length;
 
   // Score based on consistency and diversity (0-10 scale each)
   const consistencyScore = avgTaskConsistency / 10; // Convert to 0-1 scale
@@ -184,7 +207,8 @@ function calculateGroomCareConsistency(milestoneData) {
   const bondScore = (avgBondScore - 50) / 50; // Convert to 0-1 scale (50-100 -> 0-1)
 
   // Weighted average: 40% consistency, 30% diversity, 30% bond
-  const combinedScore = (consistencyScore * 0.4) + (diversityScore * 0.3) + (Math.max(0, bondScore) * 0.3);
+  const combinedScore =
+    consistencyScore * 0.4 + diversityScore * 0.3 + Math.max(0, bondScore) * 0.3;
 
   // Scale to 0-5 points
   return Math.round(combinedScore * MAX_GROOM_CARE_SCORE);
@@ -197,7 +221,9 @@ function calculateGroomCareConsistency(milestoneData) {
  */
 export async function getTraitScoreSummary(horseId) {
   try {
-    logger.info(`[legacyScoreTraitCalculator.getTraitScoreSummary] Getting trait score summary for horse ${horseId}`);
+    logger.info(
+      `[legacyScoreTraitCalculator.getTraitScoreSummary] Getting trait score summary for horse ${horseId}`,
+    );
 
     const traitScore = await calculateTraitScore(horseId);
 
@@ -244,11 +270,15 @@ export async function getTraitScoreSummary(horseId) {
       summary.recommendations.push('Work toward acquiring rare traits');
     }
 
-    logger.info(`[legacyScoreTraitCalculator.getTraitScoreSummary] Generated summary for horse ${horseId}: ${summary.currentScore}/${summary.maxPossibleScore} (${summary.percentage.toFixed(1)}%)`);
+    logger.info(
+      `[legacyScoreTraitCalculator.getTraitScoreSummary] Generated summary for horse ${horseId}: ${summary.currentScore}/${summary.maxPossibleScore} (${summary.percentage.toFixed(1)}%)`,
+    );
 
     return summary;
   } catch (error) {
-    logger.error(`[legacyScoreTraitCalculator.getTraitScoreSummary] Error generating summary for horse ${horseId}: ${error.message}`);
+    logger.error(
+      `[legacyScoreTraitCalculator.getTraitScoreSummary] Error generating summary for horse ${horseId}: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -264,7 +294,8 @@ export function getTraitScoringDefinitions() {
       diversity: MAX_DIVERSITY_SCORE,
       rareTraits: MAX_RARE_TRAIT_SCORE,
       groomCare: MAX_GROOM_CARE_SCORE,
-      total: MAX_TRAIT_COUNT_SCORE + MAX_DIVERSITY_SCORE + MAX_RARE_TRAIT_SCORE + MAX_GROOM_CARE_SCORE,
+      total:
+        MAX_TRAIT_COUNT_SCORE + MAX_DIVERSITY_SCORE + MAX_RARE_TRAIT_SCORE + MAX_GROOM_CARE_SCORE,
     },
     ageCutoff: {
       days: AGE_CUTOFF_DAYS,

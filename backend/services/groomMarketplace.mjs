@@ -25,18 +25,18 @@ export const MARKETPLACE_CONFIG = {
 
   // Quality distribution (percentages)
   QUALITY_DISTRIBUTION: {
-    novice: 40,     // 40% novice grooms
+    novice: 40, // 40% novice grooms
     intermediate: 35, // 35% intermediate grooms
-    expert: 20,     // 20% expert grooms
-    master: 5,       // 5% master grooms
+    expert: 20, // 20% expert grooms
+    master: 5, // 5% master grooms
   },
 
   // Specialty distribution
   SPECIALTY_DISTRIBUTION: {
-    general: 40,    // 40% general grooms
-    foalCare: 25,   // 25% foal care specialists
-    training: 20,   // 20% training specialists
-    medical: 15,     // 15% medical specialists
+    general: 40, // 40% general grooms
+    foalCare: 25, // 25% foal care specialists
+    training: 20, // 20% training specialists
+    medical: 15, // 15% medical specialists
   },
 
   // Experience ranges by skill level
@@ -78,7 +78,9 @@ export function generateRandomGroom() {
 
   // Generate experience within skill level range
   const experienceRange = MARKETPLACE_CONFIG.EXPERIENCE_RANGES[skillLevel];
-  const experience = Math.floor(Math.random() * (experienceRange.max - experienceRange.min + 1)) + experienceRange.min;
+  const experience =
+    Math.floor(Math.random() * (experienceRange.max - experienceRange.min + 1)) +
+    experienceRange.min;
 
   // Select random personality
   const personality = PERSONALITIES[Math.floor(Math.random() * PERSONALITIES.length)];
@@ -135,11 +137,42 @@ function selectByDistribution(distribution) {
  */
 function generateRandomName() {
   const names = [
-    'Alex', 'Jordan', 'Casey', 'Morgan', 'Riley', 'Avery', 'Quinn', 'Sage',
-    'Blake', 'Cameron', 'Dakota', 'Emery', 'Finley', 'Harper', 'Hayden',
-    'Jamie', 'Kendall', 'Logan', 'Parker', 'Peyton', 'Reese', 'River',
-    'Rowan', 'Skyler', 'Taylor', 'Tatum', 'Drew', 'Ellis', 'Emerson',
-    'Gray', 'Kai', 'Lane', 'Marlowe', 'Phoenix', 'Remy', 'Shay',
+    'Alex',
+    'Jordan',
+    'Casey',
+    'Morgan',
+    'Riley',
+    'Avery',
+    'Quinn',
+    'Sage',
+    'Blake',
+    'Cameron',
+    'Dakota',
+    'Emery',
+    'Finley',
+    'Harper',
+    'Hayden',
+    'Jamie',
+    'Kendall',
+    'Logan',
+    'Parker',
+    'Peyton',
+    'Reese',
+    'River',
+    'Rowan',
+    'Skyler',
+    'Taylor',
+    'Tatum',
+    'Drew',
+    'Ellis',
+    'Emerson',
+    'Gray',
+    'Kai',
+    'Lane',
+    'Marlowe',
+    'Phoenix',
+    'Remy',
+    'Shay',
   ];
 
   return names[Math.floor(Math.random() * names.length)];
@@ -151,11 +184,42 @@ function generateRandomName() {
  */
 function generateRandomLastName() {
   const lastNames = [
-    'Anderson', 'Brooks', 'Carter', 'Davis', 'Evans', 'Foster', 'Garcia',
-    'Harris', 'Johnson', 'Kelly', 'Lewis', 'Miller', 'Nelson', 'Parker',
-    'Roberts', 'Smith', 'Taylor', 'Turner', 'Walker', 'Wilson', 'Young',
-    'Adams', 'Baker', 'Clark', 'Cooper', 'Edwards', 'Fisher', 'Green',
-    'Hall', 'Hill', 'King', 'Lee', 'Moore', 'Phillips', 'Reed', 'Scott',
+    'Anderson',
+    'Brooks',
+    'Carter',
+    'Davis',
+    'Evans',
+    'Foster',
+    'Garcia',
+    'Harris',
+    'Johnson',
+    'Kelly',
+    'Lewis',
+    'Miller',
+    'Nelson',
+    'Parker',
+    'Roberts',
+    'Smith',
+    'Taylor',
+    'Turner',
+    'Walker',
+    'Wilson',
+    'Young',
+    'Adams',
+    'Baker',
+    'Clark',
+    'Cooper',
+    'Edwards',
+    'Fisher',
+    'Green',
+    'Hall',
+    'Hill',
+    'King',
+    'Lee',
+    'Moore',
+    'Phillips',
+    'Reed',
+    'Scott',
   ];
 
   return lastNames[Math.floor(Math.random() * lastNames.length)];
@@ -245,7 +309,9 @@ export function generateMarketplace(size = MARKETPLACE_CONFIG.DEFAULT_MARKETPLAC
  * @returns {boolean} True if refresh is needed
  */
 export function needsRefresh(lastRefresh) {
-  if (!lastRefresh) { return true; }
+  if (!lastRefresh) {
+    return true;
+  }
 
   const now = new Date();
   const timeDiff = now - new Date(lastRefresh);

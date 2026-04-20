@@ -3,7 +3,9 @@ class RedisMock {
     this.status = 'ready';
   }
   on(event, callback) {
-    if (event === 'ready' || event === 'connect') { callback(); }
+    if (event === 'ready' || event === 'connect') {
+      callback();
+    }
     return this;
   }
   async get(_key) {

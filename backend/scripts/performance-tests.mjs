@@ -24,13 +24,7 @@ const PERFORMANCE_CONFIG = {
   memoryThreshold: 100 * 1024 * 1024, // 100MB
   concurrentUsers: 10,
   testDuration: 30000, // 30 seconds
-  endpoints: [
-    '/ping',
-    '/health',
-    '/api/auth/login',
-    '/api/horses',
-    '/api/competition/disciplines',
-  ],
+  endpoints: ['/ping', '/health', '/api/auth/login', '/api/horses', '/api/competition/disciplines'],
 };
 
 // Performance metrics storage
@@ -62,7 +56,7 @@ async function startTestServer() {
 
     let serverReady = false;
 
-    server.stdout.on('data', (data) => {
+    server.stdout.on('data', data => {
       const output = data.toString();
       if (output.includes('Server running') && !serverReady) {
         serverReady = true;
@@ -71,11 +65,11 @@ async function startTestServer() {
       }
     });
 
-    server.stderr.on('data', (data) => {
+    server.stderr.on('data', data => {
       console.error('Server error:', data.toString());
     });
 
-    server.on('error', (error) => {
+    server.on('error', error => {
       reject(error);
     });
 
@@ -157,9 +151,10 @@ async function runLoadTest() {
 
   while (Date.now() < endTime) {
     for (let i = 0; i < PERFORMANCE_CONFIG.concurrentUsers; i++) {
-      const endpoint = PERFORMANCE_CONFIG.endpoints[
-        Math.floor(Math.random() * PERFORMANCE_CONFIG.endpoints.length)
-      ];
+      const endpoint =
+        PERFORMANCE_CONFIG.endpoints[
+          Math.floor(Math.random() * PERFORMANCE_CONFIG.endpoints.length)
+        ];
 
       const promise = testEndpointPerformance(endpoint).then(result => {
         totalRequests++;
@@ -187,7 +182,9 @@ async function runLoadTest() {
   performanceMetrics.errorRate = ((totalRequests - successfulRequests) / totalRequests) * 100;
   performanceMetrics.throughput = totalRequests / (PERFORMANCE_CONFIG.testDuration / 1000);
 
-  console.log(`✅ Load test completed: ${totalRequests} requests, ${successfulRequests} successful`);
+  console.log(
+    `✅ Load test completed: ${totalRequests} requests, ${successfulRequests} successful`,
+  );
 }
 
 /**
@@ -212,12 +209,12 @@ function analyzePerformanceResults() {
   const p99ResponseTime = sortedTimes[Math.floor(sortedTimes.length * 0.99)];
 
   // Memory analysis
-  const avgMemoryUsage = memoryUsages.length > 0
-    ? memoryUsages.reduce((sum, usage) => sum + usage.heapUsed, 0) / memoryUsages.length
-    : 0;
-  const maxMemoryUsage = memoryUsages.length > 0
-    ? Math.max(...memoryUsages.map(usage => usage.heapUsed))
-    : 0;
+  const avgMemoryUsage =
+    memoryUsages.length > 0
+      ? memoryUsages.reduce((sum, usage) => sum + usage.heapUsed, 0) / memoryUsages.length
+      : 0;
+  const maxMemoryUsage =
+    memoryUsages.length > 0 ? Math.max(...memoryUsages.map(usage => usage.heapUsed)) : 0;
 
   return {
     responseTime: {
@@ -263,14 +260,21 @@ async function generatePerformanceReport(results) {
 
   // Write summary for CI
   const summaryPath = path.join(resultsDir, 'performance-summary.json');
-  await fs.writeFile(summaryPath, JSON.stringify({
-    timestamp: report.timestamp,
-    passed: Object.values(report.passed).every(Boolean),
-    avgResponseTime: results.responseTime.average,
-    maxMemoryUsage: results.memory.max,
-    errorRate: results.errorRate,
-    throughput: results.throughput,
-  }, null, 2));
+  await fs.writeFile(
+    summaryPath,
+    JSON.stringify(
+      {
+        timestamp: report.timestamp,
+        passed: Object.values(report.passed).every(Boolean),
+        avgResponseTime: results.responseTime.average,
+        maxMemoryUsage: results.memory.max,
+        errorRate: results.errorRate,
+        throughput: results.throughput,
+      },
+      null,
+      2,
+    ),
+  );
 
   return report;
 }
@@ -332,7 +336,6 @@ async function runPerformanceTests() {
       });
       process.exit(1);
     }
-
   } catch (error) {
     console.error('❌ Performance test failed:', error.message);
     process.exit(1);

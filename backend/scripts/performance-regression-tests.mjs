@@ -23,16 +23,16 @@ const REGRESSION_CONFIG = {
   baselineFile: '../performance-results/baseline-performance.json',
   thresholds: {
     responseTime: {
-      warning: 1.2,    // 20% slower than baseline
-      critical: 1.5,    // 50% slower than baseline
+      warning: 1.2, // 20% slower than baseline
+      critical: 1.5, // 50% slower than baseline
     },
     memory: {
-      warning: 1.3,    // 30% more memory than baseline
-      critical: 1.8,    // 80% more memory than baseline
+      warning: 1.3, // 30% more memory than baseline
+      critical: 1.8, // 80% more memory than baseline
     },
     throughput: {
-      warning: 0.8,    // 20% less throughput than baseline
-      critical: 0.6,    // 40% less throughput than baseline
+      warning: 0.8, // 20% less throughput than baseline
+      critical: 0.6, // 40% less throughput than baseline
     },
   },
   testDuration: 30000, // 30 seconds
@@ -41,7 +41,12 @@ const REGRESSION_CONFIG = {
   endpoints: [
     { path: '/ping', method: 'GET', weight: 1 },
     { path: '/health', method: 'GET', weight: 1 },
-    { path: '/api/auth/login', method: 'POST', weight: 2, body: { email: 'test@example.com', password: 'testpass' } },
+    {
+      path: '/api/auth/login',
+      method: 'POST',
+      weight: 2,
+      body: { email: 'test@example.com', password: 'testpass' },
+    },
     { path: '/api/horses', method: 'GET', weight: 3, requiresAuth: true },
     { path: '/api/competition/disciplines', method: 'GET', weight: 2 },
   ],
@@ -80,7 +85,7 @@ async function startPerformanceTestServer() {
 
     let serverReady = false;
 
-    server.stdout.on('data', (data) => {
+    server.stdout.on('data', data => {
       const output = data.toString();
       if (output.includes('Server running') && !serverReady) {
         serverReady = true;
@@ -89,11 +94,11 @@ async function startPerformanceTestServer() {
       }
     });
 
-    server.stderr.on('data', (data) => {
+    server.stderr.on('data', data => {
       console.error('Server error:', data.toString());
     });
 
-    server.on('error', (error) => {
+    server.on('error', error => {
       reject(error);
     });
 
@@ -191,7 +196,6 @@ async function runPerformanceBenchmark() {
     console.log('🔥 Warming up...');
     const warmupEnd = Date.now() + REGRESSION_CONFIG.warmupDuration;
     while (Date.now() < warmupEnd) {
-      // eslint-disable-next-line prefer-destructuring
       const endpoint = REGRESSION_CONFIG.endpoints[0]; // Use simple endpoint for warmup
       await performRequest(endpoint);
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -208,7 +212,7 @@ async function runPerformanceBenchmark() {
         const totalWeight = REGRESSION_CONFIG.endpoints.reduce((sum, ep) => sum + ep.weight, 0);
         const random = Math.random() * totalWeight;
         let currentWeight = 0;
-        // eslint-disable-next-line prefer-destructuring
+
         let selectedEndpoint = REGRESSION_CONFIG.endpoints[0];
 
         for (const endpoint of REGRESSION_CONFIG.endpoints) {
@@ -241,7 +245,6 @@ async function runPerformanceBenchmark() {
 
     console.log(`✅ Performance benchmark completed: ${results.requests.length} requests`);
     return results;
-
   } catch (error) {
     clearInterval(memoryMonitor);
     throw error;
@@ -278,9 +281,8 @@ function calculatePerformanceSummary(results) {
 
   // Memory statistics
   const memoryUsages = memoryProfile.map(m => m.heapUsed);
-  const avgMemoryUsage = memoryUsages.length > 0
-    ? memoryUsages.reduce((a, b) => a + b, 0) / memoryUsages.length
-    : 0;
+  const avgMemoryUsage =
+    memoryUsages.length > 0 ? memoryUsages.reduce((a, b) => a + b, 0) / memoryUsages.length : 0;
   const maxMemoryUsage = memoryUsages.length > 0 ? Math.max(...memoryUsages) : 0;
   const minMemoryUsage = memoryUsages.length > 0 ? Math.min(...memoryUsages) : 0;
 
@@ -294,7 +296,8 @@ function calculatePerformanceSummary(results) {
         requests: endpointRequests.length,
         avgResponseTime: endpointTimes.reduce((a, b) => a + b, 0) / endpointTimes.length,
         maxResponseTime: Math.max(...endpointTimes),
-        successRate: (endpointRequests.filter(r => r.success).length / endpointRequests.length) * 100,
+        successRate:
+          (endpointRequests.filter(r => r.success).length / endpointRequests.length) * 100,
       };
     }
   });
@@ -363,7 +366,9 @@ function compareWithBaseline(currentResults, baseline) {
       ratio: responseTimeRatio,
       message: `Response time is ${((responseTimeRatio - 1) * 100).toFixed(1)}% slower than baseline`,
     });
-    if (comparison.status === 'passed') { comparison.status = 'warning'; }
+    if (comparison.status === 'passed') {
+      comparison.status = 'warning';
+    }
   } else if (responseTimeRatio < 0.9) {
     comparison.improvements.push({
       metric: 'responseTime',
@@ -395,7 +400,9 @@ function compareWithBaseline(currentResults, baseline) {
       ratio: memoryRatio,
       message: `Memory usage is ${((memoryRatio - 1) * 100).toFixed(1)}% higher than baseline`,
     });
-    if (comparison.status === 'passed') { comparison.status = 'warning'; }
+    if (comparison.status === 'passed') {
+      comparison.status = 'warning';
+    }
   }
 
   // Throughput comparison
@@ -419,7 +426,9 @@ function compareWithBaseline(currentResults, baseline) {
       ratio: throughputRatio,
       message: `Throughput decreased by ${((1 - throughputRatio) * 100).toFixed(1)}%`,
     });
-    if (comparison.status === 'passed') { comparison.status = 'warning'; }
+    if (comparison.status === 'passed') {
+      comparison.status = 'warning';
+    }
   } else if (throughputRatio > 1.1) {
     comparison.improvements.push({
       metric: 'throughput',
@@ -443,33 +452,54 @@ async function savePerformanceResults(results, comparison) {
   // Save current results
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const resultsPath = path.join(resultsDir, `performance-${timestamp}.json`);
-  await fs.writeFile(resultsPath, JSON.stringify({
-    timestamp: new Date().toISOString(),
-    results,
-    comparison,
-  }, null, 2));
+  await fs.writeFile(
+    resultsPath,
+    JSON.stringify(
+      {
+        timestamp: new Date().toISOString(),
+        results,
+        comparison,
+      },
+      null,
+      2,
+    ),
+  );
 
   // Update baseline if no regressions or if no baseline exists
   if (!comparison.hasBaseline || comparison.status !== 'failed') {
     const baselinePath = path.join(resultsDir, 'baseline-performance.json');
-    await fs.writeFile(baselinePath, JSON.stringify({
-      timestamp: new Date().toISOString(),
-      summary: results.summary,
-      config: REGRESSION_CONFIG,
-    }, null, 2));
+    await fs.writeFile(
+      baselinePath,
+      JSON.stringify(
+        {
+          timestamp: new Date().toISOString(),
+          summary: results.summary,
+          config: REGRESSION_CONFIG,
+        },
+        null,
+        2,
+      ),
+    );
     console.log('📊 Baseline performance data updated');
   }
 
   // Save summary for CI
   const summaryPath = path.join(resultsDir, 'performance-regression-summary.json');
-  await fs.writeFile(summaryPath, JSON.stringify({
-    timestamp: new Date().toISOString(),
-    status: comparison.status,
-    hasBaseline: comparison.hasBaseline,
-    regressions: comparison.regressions?.length || 0,
-    improvements: comparison.improvements?.length || 0,
-    summary: results.summary,
-  }, null, 2));
+  await fs.writeFile(
+    summaryPath,
+    JSON.stringify(
+      {
+        timestamp: new Date().toISOString(),
+        status: comparison.status,
+        hasBaseline: comparison.hasBaseline,
+        regressions: comparison.regressions?.length || 0,
+        improvements: comparison.improvements?.length || 0,
+        summary: results.summary,
+      },
+      null,
+      2,
+    ),
+  );
 
   return {
     resultsPath,
@@ -562,7 +592,6 @@ async function runPerformanceRegressionTests() {
       console.log('\n✅ Performance regression tests PASSED');
       process.exit(0);
     }
-
   } catch (error) {
     console.error('❌ Performance regression tests failed:', error.message);
     process.exit(1);

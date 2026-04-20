@@ -74,7 +74,9 @@ export const MILESTONE_TRAIT_POOLS = {
  */
 export async function evaluateEnhancedMilestone(horseId, milestoneType, options = {}) {
   try {
-    logger.info(`[enhancedMilestoneEvaluationSystem.evaluateEnhancedMilestone] Starting evaluation for horse ${horseId}, milestone ${milestoneType}`);
+    logger.info(
+      `[enhancedMilestoneEvaluationSystem.evaluateEnhancedMilestone] Starting evaluation for horse ${horseId}, milestone ${milestoneType}`,
+    );
 
     // Validate milestone type
     if (!Object.values(MILESTONE_TYPES).includes(milestoneType)) {
@@ -97,7 +99,9 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
     }
 
     // Calculate horse age in days
-    const ageInDays = Math.floor((Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24));
+    const ageInDays = Math.floor(
+      (Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24),
+    );
 
     // Only evaluate horses under 3 years (1095 days)
     if (ageInDays >= 1095) {
@@ -154,7 +158,8 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
     const careGapsPenalty = calculateCareGapsPenalty(groomCareHistory, window);
 
     // Calculate base score before personality effects
-    const baseScoreBeforePersonality = baseScore + bondModifier + taskConsistencyModifier - careGapsPenalty;
+    const baseScoreBeforePersonality =
+      baseScore + bondModifier + taskConsistencyModifier - careGapsPenalty;
 
     // Apply personality compatibility effects if groom and horse temperament are available
     let personalityEffects = null;
@@ -202,20 +207,28 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
           bondModifier,
           taskConsistencyModifier,
           careGapsPenalty,
-          personalityEffects: personalityEffects ? {
-            groomPersonality: currentGroom.personality,
-            foalTemperament: horse.temperament,
-            traitModifier: personalityEffects.personalityMatchScore,
-            stressReduction: personalityEffects.effects.stressReduction,
-            bondingBonus: personalityEffects.effects.bondingRateChange,
-          } : null,
+          personalityEffects: personalityEffects
+            ? {
+                groomPersonality: currentGroom.personality,
+                foalTemperament: horse.temperament,
+                traitModifier: personalityEffects.personalityMatchScore,
+                stressReduction: personalityEffects.effects.stressReduction,
+                bondingBonus: personalityEffects.effects.bondingRateChange,
+              }
+            : null,
         },
-        reasoning: traitOutcome.reasoning + (personalityEffects ? ` (Personality: ${personalityEffects.personalityMatchScore > 0 ? '+' : ''}${personalityEffects.personalityMatchScore})` : ''),
+        reasoning:
+          traitOutcome.reasoning +
+          (personalityEffects
+            ? ` (Personality: ${personalityEffects.personalityMatchScore > 0 ? '+' : ''}${personalityEffects.personalityMatchScore})`
+            : ''),
         ageInDays,
       },
     });
 
-    logger.info(`[enhancedMilestoneEvaluationSystem.evaluateEnhancedMilestone] Completed evaluation for horse ${horseId}: ${traitOutcome.trait || 'no trait'} (score: ${finalScore})`);
+    logger.info(
+      `[enhancedMilestoneEvaluationSystem.evaluateEnhancedMilestone] Completed evaluation for horse ${horseId}: ${traitOutcome.trait || 'no trait'} (score: ${finalScore})`,
+    );
 
     return {
       success: true,
@@ -231,9 +244,10 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
       groomCareHistory,
       personalityCompatibility: personalityEffects?.personalityCompatibility || null,
     };
-
   } catch (error) {
-    logger.error(`[enhancedMilestoneEvaluationSystem.evaluateEnhancedMilestone] Error: ${error.message}`);
+    logger.error(
+      `[enhancedMilestoneEvaluationSystem.evaluateEnhancedMilestone] Error: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -245,8 +259,8 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
  * @returns {Object} Groom care history data
  */
 async function getGroomCareHistory(horseId, window) {
-  const windowStart = new Date(Date.now() - (window.end * 24 * 60 * 60 * 1000));
-  const windowEnd = new Date(Date.now() - (window.start * 24 * 60 * 60 * 1000));
+  const windowStart = new Date(Date.now() - window.end * 24 * 60 * 60 * 1000);
+  const windowEnd = new Date(Date.now() - window.start * 24 * 60 * 60 * 1000);
 
   const interactions = await prisma.groomInteraction.findMany({
     where: {
@@ -270,9 +284,7 @@ async function getGroomCareHistory(horseId, window) {
 
   // Calculate task consistency
   const totalDays = window.end - window.start + 1;
-  const daysWithInteractions = new Set(
-    interactions.map(i => i.timestamp.toDateString()),
-  ).size;
+  const daysWithInteractions = new Set(interactions.map(i => i.timestamp.toDateString())).size;
   const taskConsistency = Math.round((daysWithInteractions / totalDays) * 5); // Max 5 points for consistency
 
   return {
@@ -280,9 +292,10 @@ async function getGroomCareHistory(horseId, window) {
     taskDiversity,
     taskConsistency,
     totalInteractions: interactions.length,
-    averageQuality: interactions.length > 0
-      ? interactions.reduce((sum, i) => sum + (i.qualityScore || 0.75), 0) / interactions.length
-      : 0,
+    averageQuality:
+      interactions.length > 0
+        ? interactions.reduce((sum, i) => sum + (i.qualityScore || 0.75), 0) / interactions.length
+        : 0,
   };
 }
 
@@ -293,10 +306,18 @@ async function getGroomCareHistory(horseId, window) {
  * @returns {number} Bond modifier (-2 to +2)
  */
 function calculateBondModifier(groomCareHistory, currentBondScore) {
-  if (currentBondScore >= 80) { return 2; }
-  if (currentBondScore >= 60) { return 1; }
-  if (currentBondScore >= 40) { return 0; }
-  if (currentBondScore >= 20) { return -1; }
+  if (currentBondScore >= 80) {
+    return 2;
+  }
+  if (currentBondScore >= 60) {
+    return 1;
+  }
+  if (currentBondScore >= 40) {
+    return 0;
+  }
+  if (currentBondScore >= 20) {
+    return -1;
+  }
   return -2;
 }
 

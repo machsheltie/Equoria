@@ -144,13 +144,7 @@ if (!fs.existsSync(configPath)) {
 }
 
 // Prepare Jest command
-const jestPath = path.join(
-  process.cwd(),
-  'node_modules',
-  'jest',
-  'bin',
-  'jest.js',
-);
+const jestPath = path.join(process.cwd(), 'node_modules', 'jest', 'bin', 'jest.js');
 
 const jestCommand = 'node';
 const jestArgs = [

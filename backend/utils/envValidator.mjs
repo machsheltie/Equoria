@@ -23,13 +23,7 @@ import logger from './logger.mjs';
 /**
  * Required environment variables for test environment
  */
-const REQUIRED_ENV_VARS = [
-  'NODE_ENV',
-  'DATABASE_URL',
-  'JWT_SECRET',
-  'JWT_REFRESH_SECRET',
-  'PORT',
-];
+const REQUIRED_ENV_VARS = ['NODE_ENV', 'DATABASE_URL', 'JWT_SECRET', 'JWT_REFRESH_SECRET', 'PORT'];
 
 /**
  * Optional but recommended environment variables
@@ -76,7 +70,9 @@ export function validateRequiredEnvVars(throwOnMissing = true) {
       }
 
       if (varName === 'DATABASE_URL' && !value.includes('equoria_test')) {
-        warnings.push('DATABASE_URL does not appear to point to test database (should contain "equoria_test")');
+        warnings.push(
+          'DATABASE_URL does not appear to point to test database (should contain "equoria_test")',
+        );
       }
 
       if ((varName === 'JWT_SECRET' || varName === 'JWT_REFRESH_SECRET') && value.length < 32) {
@@ -104,7 +100,9 @@ export function validateRequiredEnvVars(throwOnMissing = true) {
 
   // Log results
   if (result.success) {
-    logger.info(`[envValidator] ✅ All ${REQUIRED_ENV_VARS.length} required environment variables are present`);
+    logger.info(
+      `[envValidator] ✅ All ${REQUIRED_ENV_VARS.length} required environment variables are present`,
+    );
   } else {
     logger.error(`[envValidator] ❌ Missing required environment variables: ${missing.join(', ')}`);
   }
@@ -123,7 +121,7 @@ export function validateRequiredEnvVars(throwOnMissing = true) {
   if (!result.success && throwOnMissing) {
     throw new Error(
       `Missing required environment variables: ${missing.join(', ')}. ` +
-      'Please check your .env.test file and ensure all required variables are set.',
+        'Please check your .env.test file and ensure all required variables are set.',
     );
   }
 
@@ -144,7 +142,9 @@ export function validateTestEnvironment() {
 
   // Check that we're actually in test mode
   if (process.env.NODE_ENV !== 'test') {
-    testSpecificWarnings.push('NODE_ENV is not set to "test" - this may cause issues with test configuration');
+    testSpecificWarnings.push(
+      'NODE_ENV is not set to "test" - this may cause issues with test configuration',
+    );
   }
 
   // Check database URL points to test database
@@ -153,7 +153,11 @@ export function validateTestEnvironment() {
   }
 
   // Check for test-friendly settings
-  if (process.env.LOG_LEVEL && process.env.LOG_LEVEL !== 'error' && process.env.LOG_LEVEL !== 'warn') {
+  if (
+    process.env.LOG_LEVEL &&
+    process.env.LOG_LEVEL !== 'error' &&
+    process.env.LOG_LEVEL !== 'warn'
+  ) {
     testSpecificWarnings.push('LOG_LEVEL is not set to "error" or "warn" - tests may be noisy');
   }
 

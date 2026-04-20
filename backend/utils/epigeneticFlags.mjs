@@ -12,11 +12,15 @@ export const EPIGENETIC_FLAGS = {
   BRAVE: {
     name: 'brave',
     description: 'Horse shows exceptional courage and confidence',
-    triggers: ['novelty_exposure_with_support', 'consistent_desensitization', 'positive_stress_handling'],
+    triggers: [
+      'novelty_exposure_with_support',
+      'consistent_desensitization',
+      'positive_stress_handling',
+    ],
     effects: {
-      traitProbability: { 'Fearless': +0.3, 'Bold': +0.2, 'Confident': +0.25 },
-      temperamentBonus: { 'bold': +0.15, 'calm': +0.1 },
-      competitionBonus: { 'showJumping': +0.05, 'crossCountry': +0.08 },
+      traitProbability: { Fearless: +0.3, Bold: +0.2, Confident: +0.25 },
+      temperamentBonus: { bold: +0.15, calm: +0.1 },
+      competitionBonus: { showJumping: +0.05, crossCountry: +0.08 },
     },
     conflictsWith: ['FEARFUL', 'INSECURE'],
   },
@@ -26,9 +30,9 @@ export const EPIGENETIC_FLAGS = {
     description: 'Horse shows heightened fear responses and anxiety',
     triggers: ['neglected_care', 'traumatic_experiences', 'inconsistent_handling'],
     effects: {
-      traitProbability: { 'Nervous': +0.3, 'Skittish': +0.25, 'Anxious': +0.2 },
-      temperamentPenalty: { 'bold': -0.2, 'energetic': -0.15 },
-      competitionPenalty: { 'showJumping': -0.1, 'crossCountry': -0.15 },
+      traitProbability: { Nervous: +0.3, Skittish: +0.25, Anxious: +0.2 },
+      temperamentPenalty: { bold: -0.2, energetic: -0.15 },
+      competitionPenalty: { showJumping: -0.1, crossCountry: -0.15 },
     },
     conflictsWith: ['BRAVE', 'CONFIDENT'],
   },
@@ -36,11 +40,15 @@ export const EPIGENETIC_FLAGS = {
   CONFIDENT: {
     name: 'confident',
     description: 'Horse displays self-assurance and composure',
-    triggers: ['consistent_positive_reinforcement', 'successful_milestone_completion', 'high_bond_maintenance'],
+    triggers: [
+      'consistent_positive_reinforcement',
+      'successful_milestone_completion',
+      'high_bond_maintenance',
+    ],
     effects: {
-      traitProbability: { 'Confident': +0.3, 'Composed': +0.2, 'Self-Assured': +0.25 },
-      temperamentBonus: { 'calm': +0.1, 'bold': +0.1 },
-      competitionBonus: { 'dressage': +0.05, 'conformation': +0.08 },
+      traitProbability: { Confident: +0.3, Composed: +0.2, 'Self-Assured': +0.25 },
+      temperamentBonus: { calm: +0.1, bold: +0.1 },
+      competitionBonus: { dressage: +0.05, conformation: +0.08 },
     },
     conflictsWith: ['INSECURE', 'FEARFUL'],
   },
@@ -50,8 +58,8 @@ export const EPIGENETIC_FLAGS = {
     description: 'Horse lacks confidence and seeks constant reassurance',
     triggers: ['inconsistent_care', 'low_bond_scores', 'frequent_groom_changes'],
     effects: {
-      traitProbability: { 'Insecure': +0.3, 'Dependent': +0.2, 'Anxious': +0.15 },
-      temperamentPenalty: { 'bold': -0.15, 'independent': -0.2 },
+      traitProbability: { Insecure: +0.3, Dependent: +0.2, Anxious: +0.15 },
+      temperamentPenalty: { bold: -0.15, independent: -0.2 },
       bondingRequirement: +0.2, // Needs 20% more bonding for same effects
     },
     conflictsWith: ['CONFIDENT', 'BRAVE'],
@@ -63,9 +71,9 @@ export const EPIGENETIC_FLAGS = {
     description: 'Horse forms strong emotional bonds with handlers',
     triggers: ['daily_grooming_routine', 'consistent_gentle_handling', 'high_quality_interactions'],
     effects: {
-      traitProbability: { 'Affectionate': +0.35, 'Bonded': +0.25, 'Trusting': +0.2 },
+      traitProbability: { Affectionate: +0.35, Bonded: +0.25, Trusting: +0.2 },
       bondingBonus: +0.25, // 25% faster bonding
-      temperamentBonus: { 'gentle': +0.15, 'calm': +0.1 },
+      temperamentBonus: { gentle: +0.15, calm: +0.1 },
     },
     conflictsWith: ['ANTISOCIAL', 'ALOOF'],
   },
@@ -73,11 +81,15 @@ export const EPIGENETIC_FLAGS = {
   ANTISOCIAL: {
     name: 'antisocial',
     description: 'Horse prefers isolation and resists social interaction',
-    triggers: ['minimal_human_contact', 'negative_social_experiences', 'isolation_during_critical_periods'],
+    triggers: [
+      'minimal_human_contact',
+      'negative_social_experiences',
+      'isolation_during_critical_periods',
+    ],
     effects: {
-      traitProbability: { 'Antisocial': +0.3, 'Aloof': +0.25, 'Independent': +0.2 },
+      traitProbability: { Antisocial: +0.3, Aloof: +0.25, Independent: +0.2 },
       bondingPenalty: -0.3, // 30% slower bonding
-      temperamentPenalty: { 'gentle': -0.2, 'social': -0.25 },
+      temperamentPenalty: { gentle: -0.2, social: -0.25 },
     },
     conflictsWith: ['AFFECTIONATE', 'SOCIAL'],
   },
@@ -87,8 +99,8 @@ export const EPIGENETIC_FLAGS = {
     description: 'Horse thrives in social environments and enjoys interaction',
     triggers: ['group_activities', 'positive_peer_interaction', 'varied_handler_exposure'],
     effects: {
-      traitProbability: { 'Social': +0.3, 'Friendly': +0.25, 'Outgoing': +0.2 },
-      temperamentBonus: { 'energetic': +0.1, 'playful': +0.15 },
+      traitProbability: { Social: +0.3, Friendly: +0.25, Outgoing: +0.2 },
+      temperamentBonus: { energetic: +0.1, playful: +0.15 },
       groupActivityBonus: +0.1,
     },
     conflictsWith: ['ANTISOCIAL', 'ALOOF'],
@@ -98,9 +110,13 @@ export const EPIGENETIC_FLAGS = {
   RESILIENT: {
     name: 'resilient',
     description: 'Horse adapts well to stress and recovers quickly',
-    triggers: ['gradual_stress_exposure', 'consistent_recovery_support', 'varied_environmental_exposure'],
+    triggers: [
+      'gradual_stress_exposure',
+      'consistent_recovery_support',
+      'varied_environmental_exposure',
+    ],
     effects: {
-      traitProbability: { 'Resilient': +0.3, 'Hardy': +0.25, 'Adaptable': +0.2 },
+      traitProbability: { Resilient: +0.3, Hardy: +0.25, Adaptable: +0.2 },
       stressRecovery: +0.3, // 30% faster stress recovery
       healthBonus: +0.1,
     },
@@ -112,7 +128,7 @@ export const EPIGENETIC_FLAGS = {
     description: 'Horse is highly responsive to environmental changes',
     triggers: ['overstimulation', 'inconsistent_environment', 'high_stress_exposure'],
     effects: {
-      traitProbability: { 'Sensitive': +0.3, 'Reactive': +0.25, 'High-Strung': +0.2 },
+      traitProbability: { Sensitive: +0.3, Reactive: +0.25, 'High-Strung': +0.2 },
       stressAccumulation: +0.2, // 20% faster stress accumulation
       environmentalSensitivity: +0.25,
     },
@@ -126,18 +142,18 @@ export const GROOM_PERSONALITIES = {
     name: 'gentle',
     description: 'Calm, patient, and nurturing approach',
     traitBonuses: {
-      'AFFECTIONATE': +0.2,
-      'CONFIDENT': +0.15,
-      'RESILIENT': +0.1,
+      AFFECTIONATE: +0.2,
+      CONFIDENT: +0.15,
+      RESILIENT: +0.1,
     },
     traitPenalties: {
-      'FEARFUL': -0.15,
-      'INSECURE': -0.1,
+      FEARFUL: -0.15,
+      INSECURE: -0.1,
     },
     temperamentSynergy: {
-      'nervous': +0.2,
-      'sensitive': +0.15,
-      'gentle': +0.1,
+      nervous: +0.2,
+      sensitive: +0.15,
+      gentle: +0.1,
     },
   },
 
@@ -145,18 +161,18 @@ export const GROOM_PERSONALITIES = {
     name: 'energetic',
     description: 'Active, enthusiastic, and motivating approach',
     traitBonuses: {
-      'BRAVE': +0.2,
-      'SOCIAL': +0.15,
-      'CONFIDENT': +0.1,
+      BRAVE: +0.2,
+      SOCIAL: +0.15,
+      CONFIDENT: +0.1,
     },
     traitPenalties: {
-      'SENSITIVE': -0.1,
-      'FEARFUL': -0.05,
+      SENSITIVE: -0.1,
+      FEARFUL: -0.05,
     },
     temperamentSynergy: {
-      'energetic': +0.2,
-      'playful': +0.15,
-      'bold': +0.1,
+      energetic: +0.2,
+      playful: +0.15,
+      bold: +0.1,
     },
   },
 
@@ -164,18 +180,18 @@ export const GROOM_PERSONALITIES = {
     name: 'patient',
     description: 'Methodical, consistent, and understanding approach',
     traitBonuses: {
-      'RESILIENT': +0.2,
-      'CONFIDENT': +0.15,
-      'AFFECTIONATE': +0.1,
+      RESILIENT: +0.2,
+      CONFIDENT: +0.15,
+      AFFECTIONATE: +0.1,
     },
     traitPenalties: {
-      'INSECURE': -0.2,
-      'FEARFUL': -0.15,
+      INSECURE: -0.2,
+      FEARFUL: -0.15,
     },
     temperamentSynergy: {
-      'calm': +0.2,
-      'stubborn': +0.15,
-      'independent': +0.1,
+      calm: +0.2,
+      stubborn: +0.15,
+      independent: +0.1,
     },
   },
 
@@ -183,18 +199,18 @@ export const GROOM_PERSONALITIES = {
     name: 'firm',
     description: 'Assertive, structured, and disciplined approach',
     traitBonuses: {
-      'BRAVE': +0.15,
-      'CONFIDENT': +0.2,
-      'RESILIENT': +0.1,
+      BRAVE: +0.15,
+      CONFIDENT: +0.2,
+      RESILIENT: +0.1,
     },
     traitPenalties: {
-      'SENSITIVE': -0.15,
-      'INSECURE': -0.1,
+      SENSITIVE: -0.15,
+      INSECURE: -0.1,
     },
     temperamentSynergy: {
-      'bold': +0.2,
-      'stubborn': +0.1,
-      'independent': +0.15,
+      bold: +0.2,
+      stubborn: +0.1,
+      independent: +0.15,
     },
   },
 
@@ -203,23 +219,23 @@ export const GROOM_PERSONALITIES = {
     description: 'Adaptable approach that adjusts to horse needs',
     traitBonuses: {
       // Moderate bonuses to all positive traits
-      'CONFIDENT': +0.1,
-      'AFFECTIONATE': +0.1,
-      'SOCIAL': +0.1,
-      'RESILIENT': +0.1,
+      CONFIDENT: +0.1,
+      AFFECTIONATE: +0.1,
+      SOCIAL: +0.1,
+      RESILIENT: +0.1,
     },
     traitPenalties: {
       // Moderate penalties to negative traits
-      'FEARFUL': -0.1,
-      'INSECURE': -0.1,
-      'ANTISOCIAL': -0.1,
+      FEARFUL: -0.1,
+      INSECURE: -0.1,
+      ANTISOCIAL: -0.1,
     },
     temperamentSynergy: {
       // Small bonuses to all temperaments
-      'calm': +0.05,
-      'energetic': +0.05,
-      'gentle': +0.05,
-      'bold': +0.05,
+      calm: +0.05,
+      energetic: +0.05,
+      gentle: +0.05,
+      bold: +0.05,
     },
   },
 };
@@ -279,7 +295,9 @@ export const CARE_PATTERN_TRIGGERS = {
  */
 export function evaluateEpigeneticFlags(careHistory, groomData, horseData) {
   const flagsToApply = [];
-  const ageInDays = Math.floor((Date.now() - new Date(horseData.dateOfBirth)) / (1000 * 60 * 60 * 24));
+  const ageInDays = Math.floor(
+    (Date.now() - new Date(horseData.dateOfBirth)) / (1000 * 60 * 60 * 24),
+  );
 
   // Only apply epigenetic flags to horses under 3 years (1095 days)
   if (ageInDays >= 1095) {
@@ -310,7 +328,9 @@ function resolveConflictingFlags(flags) {
 
   for (const flagName of flags) {
     const flag = EPIGENETIC_FLAGS[flagName];
-    if (!flag) { continue; }
+    if (!flag) {
+      continue;
+    }
 
     // Check if this flag conflicts with any already resolved flags
     const hasConflict = flag.conflictsWith?.some(conflict =>
@@ -348,10 +368,18 @@ function evaluateTriggerPattern(trigger, careHistory, _groomData, _horseData) {
       return evaluateDailyGroomingPattern(careHistory, trigger.minimumBondScore);
 
     case 'new_experiences_with_high_bond':
-      return evaluateNoveltyPattern(careHistory, trigger.minimumBondScore, trigger.requiredInteractions);
+      return evaluateNoveltyPattern(
+        careHistory,
+        trigger.minimumBondScore,
+        trigger.requiredInteractions,
+      );
 
     case 'missed_care_sessions':
-      return evaluateNeglectPattern(careHistory, trigger.missedSessionThreshold, trigger.bondScoreThreshold);
+      return evaluateNeglectPattern(
+        careHistory,
+        trigger.missedSessionThreshold,
+        trigger.bondScoreThreshold,
+      );
 
     default:
       return false;

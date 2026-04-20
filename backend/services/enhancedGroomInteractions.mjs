@@ -130,7 +130,7 @@ export const SPECIAL_EVENTS = {
   PLAYFUL_INTERACTION: {
     id: 'playful_interaction',
     name: 'Playful Moment',
-    probability: 0.10, // 10% chance
+    probability: 0.1, // 10% chance
     conditions: ['horse_age < 730', 'stress_level < 40'], // Under 2 years, low stress
     effects: { bonding: 10, stress: -8, joy: 5 },
   },
@@ -186,11 +186,18 @@ export function calculateRelationshipLevel(totalBondingPoints) {
  * @returns {Object|null} Special event or null
  */
 export function checkForSpecialEvent(context) {
-  const { groom: _groom, horse: _horse, relationshipLevel: _relationshipLevel, interactionType: _interactionType } = context;
+  const {
+    groom: _groom,
+    horse: _horse,
+    relationshipLevel: _relationshipLevel,
+    interactionType: _interactionType,
+  } = context;
 
   for (const [eventId, event] of Object.entries(SPECIAL_EVENTS)) {
     // Check probability
-    if (Math.random() > event.probability) { continue; }
+    if (Math.random() > event.probability) {
+      continue;
+    }
 
     // Check conditions
     let conditionsMet = true;
@@ -266,7 +273,8 @@ export function calculateEnhancedEffects(groom, horse, interactionType, variatio
     }
 
     // Find specific variation
-    const variationData = interaction.variations.find(v => v.name === variation) || interaction.variations[0];
+    const variationData =
+      interaction.variations.find(v => v.name === variation) || interaction.variations[0];
 
     // Calculate relationship level
     const totalBonding = horse.bondScore || 0;
@@ -321,10 +329,11 @@ export function calculateEnhancedEffects(groom, horse, interactionType, variatio
       cost: calculateInteractionCost(groom, duration),
     };
 
-    logger.info(`[enhancedGroomInteractions] Calculated effects: +${bonding} bonding, ${stress} stress, quality: ${result.quality}`);
+    logger.info(
+      `[enhancedGroomInteractions] Calculated effects: +${bonding} bonding, ${stress} stress, quality: ${result.quality}`,
+    );
 
     return result;
-
   } catch (error) {
     logger.error(`[enhancedGroomInteractions] Error calculating effects: ${error.message}`);
     throw error;
@@ -340,10 +349,18 @@ export function calculateEnhancedEffects(groom, horse, interactionType, variatio
 function calculateInteractionQuality(bonding, stress) {
   const score = bonding + Math.abs(stress);
 
-  if (score >= 20) { return 'exceptional'; }
-  if (score >= 15) { return 'excellent'; }
-  if (score >= 10) { return 'good'; }
-  if (score >= 5) { return 'fair'; }
+  if (score >= 20) {
+    return 'exceptional';
+  }
+  if (score >= 15) {
+    return 'excellent';
+  }
+  if (score >= 10) {
+    return 'good';
+  }
+  if (score >= 5) {
+    return 'fair';
+  }
   return 'poor';
 }
 
@@ -398,7 +415,14 @@ export function getAvailableInteractions(groom, horse) {
  * @param {number} duration - Duration in minutes
  * @returns {Object} Complete interaction result with performance tracking
  */
-export async function processInteractionWithPerformance(groom, horse, userId, interactionType, variation, duration) {
+export async function processInteractionWithPerformance(
+  groom,
+  horse,
+  userId,
+  interactionType,
+  variation,
+  duration,
+) {
   try {
     // Calculate interaction effects
     const effects = calculateEnhancedEffects(groom, horse, interactionType, variation, duration);
@@ -421,7 +445,9 @@ export async function processInteractionWithPerformance(groom, horse, userId, in
       logger.error(`[enhancedGroomInteractions] Failed to record performance: ${error.message}`);
     });
 
-    logger.info(`[enhancedGroomInteractions] Processed interaction with performance tracking: ${interactionType} (${variation})`);
+    logger.info(
+      `[enhancedGroomInteractions] Processed interaction with performance tracking: ${interactionType} (${variation})`,
+    );
 
     return {
       ...effects,
@@ -429,9 +455,10 @@ export async function processInteractionWithPerformance(groom, horse, userId, in
       taskSuccess,
       wellbeingImpact,
     };
-
   } catch (error) {
-    logger.error(`[enhancedGroomInteractions] Error processing interaction with performance: ${error.message}`);
+    logger.error(
+      `[enhancedGroomInteractions] Error processing interaction with performance: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -445,7 +472,9 @@ export async function processInteractionWithPerformance(groom, horse, userId, in
  */
 function canPerformInteraction(groom, horse, interaction) {
   // Basic availability - all grooms can do basic care
-  if (interaction.category === 'care') { return true; }
+  if (interaction.category === 'care') {
+    return true;
+  }
 
   // Specialty-based restrictions
   if (interaction.category === 'medical' && groom.speciality !== 'medical') {
@@ -453,11 +482,16 @@ function canPerformInteraction(groom, horse, interaction) {
   }
 
   if (interaction.category === 'training' && groom.speciality !== 'training') {
-    return groom.skillLevel === 'intermediate' || groom.skillLevel === 'expert' || groom.skillLevel === 'master';
+    return (
+      groom.skillLevel === 'intermediate' ||
+      groom.skillLevel === 'expert' ||
+      groom.skillLevel === 'master'
+    );
   }
 
   // Age-based restrictions
-  if (interaction.category === 'enrichment' && horse.age > 1095) { // Over 3 years
+  if (interaction.category === 'enrichment' && horse.age > 1095) {
+    // Over 3 years
     return false;
   }
 

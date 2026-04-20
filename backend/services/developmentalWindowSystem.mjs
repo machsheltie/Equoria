@@ -103,12 +103,24 @@ const DEVELOPMENTAL_WINDOWS = {
 // Developmental milestones
 const DEVELOPMENTAL_MILESTONES = {
   basic_trust: { window: 'imprinting', requirement: 'positive_bonding_interactions', score: 10 },
-  environmental_comfort: { window: 'early_socialization', requirement: 'varied_exposure', score: 15 },
+  environmental_comfort: {
+    window: 'early_socialization',
+    requirement: 'varied_exposure',
+    score: 15,
+  },
   fear_resilience: { window: 'fear_period_1', requirement: 'stress_management', score: 20 },
-  learning_motivation: { window: 'curiosity_development', requirement: 'exploration_activities', score: 25 },
+  learning_motivation: {
+    window: 'curiosity_development',
+    requirement: 'exploration_activities',
+    score: 25,
+  },
   emotional_stability: { window: 'fear_period_2', requirement: 'consistent_care', score: 30 },
   social_competence: { window: 'social_hierarchy', requirement: 'social_interactions', score: 35 },
-  self_confidence: { window: 'independence_development', requirement: 'independence_training', score: 40 },
+  self_confidence: {
+    window: 'independence_development',
+    requirement: 'independence_training',
+    score: 40,
+  },
 };
 
 /**
@@ -127,7 +139,9 @@ export async function identifyDevelopmentalWindows(horseId) {
       throw new Error(`Horse not found: ${horseId}`);
     }
 
-    const currentAge = Math.floor((Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24));
+    const currentAge = Math.floor(
+      (Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24),
+    );
 
     const activeWindows = [];
     const upcomingWindows = [];
@@ -153,7 +167,8 @@ export async function identifyDevelopmentalWindows(horseId) {
         upcomingWindows.push({
           ...window,
           daysUntilStart,
-          preparationTime: daysUntilStart > 7 ? 'adequate' : daysUntilStart > 3 ? 'limited' : 'urgent',
+          preparationTime:
+            daysUntilStart > 7 ? 'adequate' : daysUntilStart > 3 ? 'limited' : 'urgent',
         });
       } else {
         // Closed window
@@ -168,8 +183,9 @@ export async function identifyDevelopmentalWindows(horseId) {
 
     // Calculate overall criticality score
     const criticalityScore = activeWindows.reduce((score, window) => {
-      const urgencyMultiplier = window.urgency === 'critical' ? 3 : window.urgency === 'high' ? 2 : 1;
-      return score + (window.sensitivity * urgencyMultiplier);
+      const urgencyMultiplier =
+        window.urgency === 'critical' ? 3 : window.urgency === 'high' ? 2 : 1;
+      return score + window.sensitivity * urgencyMultiplier;
     }, 0);
 
     return {
@@ -181,7 +197,6 @@ export async function identifyDevelopmentalWindows(horseId) {
       criticalityScore,
       analysisTimestamp: new Date(),
     };
-
   } catch (error) {
     logger.error(`Error identifying developmental windows for horse ${horseId}:`, error);
     throw error;
@@ -206,7 +221,9 @@ export async function calculateWindowSensitivity(horseId, windowName) {
       throw new Error(`Unknown developmental window: ${windowName}`);
     }
 
-    const currentAge = Math.floor((Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24));
+    const currentAge = Math.floor(
+      (Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24),
+    );
 
     // Base sensitivity from window definition
     const baseSensitivity = window.sensitivity;
@@ -215,7 +232,10 @@ export async function calculateWindowSensitivity(horseId, windowName) {
     let ageModifier = 0;
     if (currentAge >= window.startDay && currentAge <= window.endDay) {
       const distanceFromPeak = Math.abs(currentAge - window.peakDay);
-      const maxDistance = Math.max(window.peakDay - window.startDay, window.endDay - window.peakDay);
+      const maxDistance = Math.max(
+        window.peakDay - window.startDay,
+        window.endDay - window.peakDay,
+      );
       ageModifier = 1.0 - (distanceFromPeak / maxDistance) * 0.3; // 30% reduction at edges for higher sensitivity
     } else if (currentAge < window.startDay) {
       // Before window - minimal sensitivity
@@ -248,7 +268,17 @@ export async function calculateWindowSensitivity(horseId, windowName) {
 
     // Determine sensitivity level
     let sensitivityLevel;
-    if (finalSensitivity >= 0.8) { sensitivityLevel = 'critical'; } else if (finalSensitivity >= 0.6) { sensitivityLevel = 'high'; } else if (finalSensitivity >= 0.4) { sensitivityLevel = 'moderate'; } else if (finalSensitivity >= 0.2) { sensitivityLevel = 'low'; } else { sensitivityLevel = 'minimal'; }
+    if (finalSensitivity >= 0.8) {
+      sensitivityLevel = 'critical';
+    } else if (finalSensitivity >= 0.6) {
+      sensitivityLevel = 'high';
+    } else if (finalSensitivity >= 0.4) {
+      sensitivityLevel = 'moderate';
+    } else if (finalSensitivity >= 0.2) {
+      sensitivityLevel = 'low';
+    } else {
+      sensitivityLevel = 'minimal';
+    }
 
     return {
       horseId,
@@ -260,9 +290,11 @@ export async function calculateWindowSensitivity(horseId, windowName) {
       sensitivityLevel,
       analysisTimestamp: new Date(),
     };
-
   } catch (error) {
-    logger.error(`Error calculating window sensitivity for horse ${horseId}, window ${windowName}:`, error);
+    logger.error(
+      `Error calculating window sensitivity for horse ${horseId}, window ${windowName}:`,
+      error,
+    );
     throw error;
   }
 }
@@ -304,7 +336,11 @@ export async function evaluateTraitDevelopmentOpportunity(horseId, traitName, wi
       const hasRelatedTarget = relatedTraits.some(trait => window.targetTraits.includes(trait));
       const hasRelatedRisk = relatedTraits.some(trait => window.riskTraits.includes(trait));
 
-      if (hasRelatedTarget) { windowAlignment = 0.7; } else if (hasRelatedRisk) { windowAlignment = 0.3; }
+      if (hasRelatedTarget) {
+        windowAlignment = 0.7;
+      } else if (hasRelatedRisk) {
+        windowAlignment = 0.3;
+      }
     }
 
     // Environmental support assessment
@@ -325,13 +361,18 @@ export async function evaluateTraitDevelopmentOpportunity(horseId, traitName, wi
     environmentalSupport = Math.max(0, Math.min(1, environmentalSupport));
 
     // Calculate development potential
-    const developmentPotential = sensitivity.finalSensitivity * 0.4 + windowAlignment * 0.4 + environmentalSupport * 0.2;
+    const developmentPotential =
+      sensitivity.finalSensitivity * 0.4 + windowAlignment * 0.4 + environmentalSupport * 0.2;
 
     // Overall opportunity score
     const overallOpportunity = Math.max(0, Math.min(1, developmentPotential));
 
     // Generate recommended actions
-    const recommendedActions = generateDevelopmentRecommendations(traitName, windowName, overallOpportunity);
+    const recommendedActions = generateDevelopmentRecommendations(
+      traitName,
+      windowName,
+      overallOpportunity,
+    );
 
     return {
       horseId,
@@ -344,7 +385,6 @@ export async function evaluateTraitDevelopmentOpportunity(horseId, traitName, wi
       recommendedActions,
       analysisTimestamp: new Date(),
     };
-
   } catch (error) {
     logger.error(`Error evaluating trait development opportunity for horse ${horseId}:`, error);
     throw error;
@@ -363,7 +403,9 @@ export async function trackDevelopmentalMilestones(horseId) {
       select: { dateOfBirth: true, bondScore: true, stressLevel: true },
     });
 
-    const currentAge = Math.floor((Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24));
+    const currentAge = Math.floor(
+      (Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24),
+    );
 
     // Get interaction history for milestone assessment
     const interactions = await prisma.groomInteraction.findMany({
@@ -377,7 +419,13 @@ export async function trackDevelopmentalMilestones(horseId) {
 
     Object.entries(DEVELOPMENTAL_MILESTONES).forEach(([milestoneName, milestone]) => {
       const window = DEVELOPMENTAL_WINDOWS[milestone.window];
-      const progress = assessMilestoneProgress(milestoneName, milestone, interactions, currentAge, horse);
+      const progress = assessMilestoneProgress(
+        milestoneName,
+        milestone,
+        interactions,
+        currentAge,
+        horse,
+      );
 
       milestoneProgress[milestoneName] = progress;
 
@@ -399,7 +447,10 @@ export async function trackDevelopmentalMilestones(horseId) {
     });
 
     // Calculate overall developmental score
-    const totalPossibleScore = Object.values(DEVELOPMENTAL_MILESTONES).reduce((sum, m) => sum + m.score, 0);
+    const totalPossibleScore = Object.values(DEVELOPMENTAL_MILESTONES).reduce(
+      (sum, m) => sum + m.score,
+      0,
+    );
     const achievedScore = achievedMilestones.reduce((sum, m) => sum + m.score, 0);
     const developmentalScore = achievedScore / totalPossibleScore;
 
@@ -415,7 +466,6 @@ export async function trackDevelopmentalMilestones(horseId) {
       nextMilestones,
       analysisTimestamp: new Date(),
     };
-
   } catch (error) {
     logger.error(`Error tracking developmental milestones for horse ${horseId}:`, error);
     throw error;
@@ -440,7 +490,9 @@ export async function assessWindowClosure(horseId, windowName) {
       select: { dateOfBirth: true },
     });
 
-    const currentAge = Math.floor((Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24));
+    const currentAge = Math.floor(
+      (Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24),
+    );
 
     let closureStatus;
     let closureDate = null;
@@ -500,9 +552,11 @@ export async function assessWindowClosure(horseId, windowName) {
       futureImpact,
       analysisTimestamp: new Date(),
     };
-
   } catch (error) {
-    logger.error(`Error assessing window closure for horse ${horseId}, window ${windowName}:`, error);
+    logger.error(
+      `Error assessing window closure for horse ${horseId}, window ${windowName}:`,
+      error,
+    );
     throw error;
   }
 }
@@ -535,7 +589,11 @@ export async function coordinateMultiWindowDevelopment(horseId) {
     const priorityMatrix = createPriorityMatrix(windows.activeWindows);
 
     // Generate coordinated plan
-    const coordinatedPlan = generateCoordinatedPlan(windows.activeWindows, windowInteractions, priorityMatrix);
+    const coordinatedPlan = generateCoordinatedPlan(
+      windows.activeWindows,
+      windowInteractions,
+      priorityMatrix,
+    );
 
     // Identify and resolve conflicts
     const conflictResolution = resolveWindowConflicts(windows.activeWindows, windowInteractions);
@@ -549,7 +607,6 @@ export async function coordinateMultiWindowDevelopment(horseId) {
       conflictResolution,
       analysisTimestamp: new Date(),
     };
-
   } catch (error) {
     logger.error(`Error coordinating multi-window development for horse ${horseId}:`, error);
     throw error;
@@ -568,10 +625,14 @@ export async function analyzeCriticalPeriodSensitivity(horseId) {
       select: { dateOfBirth: true, stressLevel: true, bondScore: true, epigeneticFlags: true },
     });
 
-    const currentAge = Math.floor((Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24));
+    const currentAge = Math.floor(
+      (Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24),
+    );
 
     // Identify all critical periods
-    const criticalPeriods = Object.values(DEVELOPMENTAL_WINDOWS).filter(window => window.sensitivity >= 0.7);
+    const criticalPeriods = Object.values(DEVELOPMENTAL_WINDOWS).filter(
+      window => window.sensitivity >= 0.7,
+    );
 
     // Calculate sensitivity profile
     const sensitivityProfile = {
@@ -593,7 +654,10 @@ export async function analyzeCriticalPeriodSensitivity(horseId) {
       }
 
       if (currentAge >= window.startDay && currentAge <= window.endDay) {
-        sensitivityProfile.currentSensitivity = Math.max(sensitivityProfile.currentSensitivity, sensitivity.finalSensitivity);
+        sensitivityProfile.currentSensitivity = Math.max(
+          sensitivityProfile.currentSensitivity,
+          sensitivity.finalSensitivity,
+        );
       }
     }
 
@@ -601,16 +665,30 @@ export async function analyzeCriticalPeriodSensitivity(horseId) {
 
     // Identify risk factors
     const riskFactors = [];
-    if (horse.stressLevel > 5) { riskFactors.push('High stress environment'); }
-    if (horse.bondScore < 20) { riskFactors.push('Poor bonding relationship'); }
-    if (currentAge < 30 && horse.epigeneticFlags.includes('fearful')) { riskFactors.push('Early fear trait development'); }
-    if (currentAge < 14 && horse.stressLevel > 4) { riskFactors.push('Stress during critical early development'); }
+    if (horse.stressLevel > 5) {
+      riskFactors.push('High stress environment');
+    }
+    if (horse.bondScore < 20) {
+      riskFactors.push('Poor bonding relationship');
+    }
+    if (currentAge < 30 && horse.epigeneticFlags.includes('fearful')) {
+      riskFactors.push('Early fear trait development');
+    }
+    if (currentAge < 14 && horse.stressLevel > 4) {
+      riskFactors.push('Stress during critical early development');
+    }
 
     // Identify protective factors
     const protectiveFactors = [];
-    if (horse.stressLevel < 4) { protectiveFactors.push('Low stress environment'); }
-    if (horse.bondScore > 25) { protectiveFactors.push('Strong bonding relationship'); }
-    if (horse.epigeneticFlags.includes('confident')) { protectiveFactors.push('Confidence trait present'); }
+    if (horse.stressLevel < 4) {
+      protectiveFactors.push('Low stress environment');
+    }
+    if (horse.bondScore > 25) {
+      protectiveFactors.push('Strong bonding relationship');
+    }
+    if (horse.epigeneticFlags.includes('confident')) {
+      protectiveFactors.push('Confidence trait present');
+    }
 
     // Generate intervention recommendations
     const interventionRecommendations = generateInterventionRecommendations(
@@ -629,7 +707,6 @@ export async function analyzeCriticalPeriodSensitivity(horseId) {
       interventionRecommendations,
       analysisTimestamp: new Date(),
     };
-
   } catch (error) {
     logger.error(`Error analyzing critical period sensitivity for horse ${horseId}:`, error);
     throw error;
@@ -649,24 +726,30 @@ export async function generateDevelopmentalForecast(horseId, forecastDays) {
       select: { dateOfBirth: true, epigeneticFlags: true, stressLevel: true, bondScore: true },
     });
 
-    const currentAge = Math.floor((Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24));
+    const currentAge = Math.floor(
+      (Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24),
+    );
     const forecastEndAge = currentAge + forecastDays;
 
     // Identify upcoming windows
-    const upcomingWindows = Object.values(DEVELOPMENTAL_WINDOWS).filter(window =>
-      window.startDay <= forecastEndAge && window.endDay >= currentAge,
-    ).map(window => ({
-      ...window,
-      daysUntilStart: Math.max(0, window.startDay - currentAge),
-      daysUntilEnd: Math.max(0, window.endDay - currentAge),
-      isActive: currentAge >= window.startDay && currentAge <= window.endDay,
-    }));
+    const upcomingWindows = Object.values(DEVELOPMENTAL_WINDOWS)
+      .filter(window => window.startDay <= forecastEndAge && window.endDay >= currentAge)
+      .map(window => ({
+        ...window,
+        daysUntilStart: Math.max(0, window.startDay - currentAge),
+        daysUntilEnd: Math.max(0, window.endDay - currentAge),
+        isActive: currentAge >= window.startDay && currentAge <= window.endDay,
+      }));
 
     // Generate developmental trajectory
     const developmentalTrajectory = generateTrajectory(currentAge, forecastDays, upcomingWindows);
 
     // Predict trait development
-    const traitDevelopmentPredictions = await generateTraitPredictions(horseId, upcomingWindows, horse);
+    const traitDevelopmentPredictions = await generateTraitPredictions(
+      horseId,
+      upcomingWindows,
+      horse,
+    );
 
     // Project milestones
     const milestoneProjections = projectMilestones(currentAge, forecastDays, upcomingWindows);
@@ -675,7 +758,11 @@ export async function generateDevelopmentalForecast(horseId, forecastDays) {
     const riskAssessment = assessDevelopmentalRisks(horse, upcomingWindows, forecastDays);
 
     // Generate recommendations
-    const recommendations = generateForecastRecommendations(upcomingWindows, riskAssessment, traitDevelopmentPredictions);
+    const recommendations = generateForecastRecommendations(
+      upcomingWindows,
+      riskAssessment,
+      traitDevelopmentPredictions,
+    );
 
     return {
       horseId,
@@ -688,7 +775,6 @@ export async function generateDevelopmentalForecast(horseId, forecastDays) {
       recommendations,
       analysisTimestamp: new Date(),
     };
-
   } catch (error) {
     logger.error(`Error generating developmental forecast for horse ${horseId}:`, error);
     throw error;
@@ -720,10 +806,14 @@ function generateDevelopmentRecommendations(traitName, windowName, opportunity) 
   const window = DEVELOPMENTAL_WINDOWS[windowName];
 
   if (opportunity > 0.7) {
-    recommendations.push(`Excellent opportunity to develop ${traitName} - implement intensive ${window.interventions[0]}`);
+    recommendations.push(
+      `Excellent opportunity to develop ${traitName} - implement intensive ${window.interventions[0]}`,
+    );
     recommendations.push(`Focus on ${window.interventions.join(', ')} during this critical period`);
   } else if (opportunity > 0.5) {
-    recommendations.push(`Good opportunity for ${traitName} development - use ${window.interventions[0]}`);
+    recommendations.push(
+      `Good opportunity for ${traitName} development - use ${window.interventions[0]}`,
+    );
     recommendations.push('Monitor progress and adjust approach based on response');
   } else if (opportunity > 0.3) {
     recommendations.push(`Limited opportunity for ${traitName} - gentle approach recommended`);
@@ -755,22 +845,33 @@ function assessMilestoneProgress(milestoneName, milestone, interactions, current
   if (currentAge > window.endDay) {
     // Assess based on interactions during the window
     const windowInteractions = interactions.filter(interaction => {
-      const interactionAge = Math.floor((interaction.createdAt.getTime() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24));
+      const interactionAge = Math.floor(
+        (interaction.createdAt.getTime() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24),
+      );
       return interactionAge >= window.startDay && interactionAge <= window.endDay;
     });
 
-    const achieved = assessMilestoneAchievement(milestoneName, milestone, windowInteractions, horse);
+    const achieved = assessMilestoneAchievement(
+      milestoneName,
+      milestone,
+      windowInteractions,
+      horse,
+    );
 
     return {
       achieved,
-      achievedAt: achieved ? new Date(horse.dateOfBirth.getTime() + window.endDay * 24 * 60 * 60 * 1000) : null,
+      achievedAt: achieved
+        ? new Date(horse.dateOfBirth.getTime() + window.endDay * 24 * 60 * 60 * 1000)
+        : null,
       score: achieved ? milestone.score : 0,
       completionPercentage: achieved ? 100 : calculatePartialCompletion(windowInteractions),
     };
   } else if (currentAge >= window.startDay) {
     // Currently in window - assess progress
     const windowInteractions = interactions.filter(interaction => {
-      const interactionAge = Math.floor((interaction.createdAt.getTime() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 1000));
+      const interactionAge = Math.floor(
+        (interaction.createdAt.getTime() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 1000),
+      );
       return interactionAge >= window.startDay;
     });
 
@@ -801,7 +902,9 @@ function assessMilestoneAchievement(milestoneName, milestone, interactions, hors
     case 'basic_trust':
       return interactions.some(i => i.bondingChange > 1) || horse.bondScore > 10;
     case 'environmental_comfort':
-      return interactions.length >= 2 || interactions.some(i => i.taskType === 'showground_exposure');
+      return (
+        interactions.length >= 2 || interactions.some(i => i.taskType === 'showground_exposure')
+      );
     case 'fear_resilience':
       return interactions.some(i => i.stressChange <= 0) || horse.stressLevel < 7;
     case 'learning_motivation':
@@ -823,12 +926,15 @@ function assessMilestoneAchievement(milestoneName, milestone, interactions, hors
  * Calculate partial completion percentage
  */
 function calculatePartialCompletion(interactions) {
-  if (interactions.length === 0) { return 0; }
+  if (interactions.length === 0) {
+    return 0;
+  }
 
-  const qualityScore = interactions.reduce((sum, i) => {
-    const scores = { poor: 1, fair: 2, good: 3, excellent: 4 };
-    return sum + (scores[i.quality] || 2);
-  }, 0) / interactions.length;
+  const qualityScore =
+    interactions.reduce((sum, i) => {
+      const scores = { poor: 1, fair: 2, good: 3, excellent: 4 };
+      return sum + (scores[i.quality] || 2);
+    }, 0) / interactions.length;
 
   const frequencyScore = Math.min(1, interactions.length / 5) * 100;
   const qualityPercentage = (qualityScore / 4) * 100;
@@ -913,8 +1019,8 @@ function analyzeWindowInteractions(activeWindows) {
       const window2 = activeWindows[j];
 
       // Check for trait conflicts
-      const conflictingTraits = window1.targetTraits.filter(trait =>
-        window2.riskTraits.includes(trait) || window1.riskTraits.includes(trait),
+      const conflictingTraits = window1.targetTraits.filter(
+        trait => window2.riskTraits.includes(trait) || window1.riskTraits.includes(trait),
       );
 
       // Check for synergistic traits
@@ -927,8 +1033,12 @@ function analyzeWindowInteractions(activeWindows) {
         window2: window2.name,
         conflictingTraits,
         synergisticTraits,
-        interactionType: conflictingTraits.length > 0 ? 'conflicting' :
-          synergisticTraits.length > 0 ? 'synergistic' : 'neutral',
+        interactionType:
+          conflictingTraits.length > 0
+            ? 'conflicting'
+            : synergisticTraits.length > 0
+              ? 'synergistic'
+              : 'neutral',
       });
     }
   }
@@ -946,10 +1056,20 @@ function createPriorityMatrix(activeWindows) {
     let priority = window.sensitivity; // Base priority on sensitivity
 
     // Adjust for urgency
-    if (window.urgency === 'critical') { priority += 0.3; } else if (window.urgency === 'high') { priority += 0.2; } else if (window.urgency === 'moderate') { priority += 0.1; }
+    if (window.urgency === 'critical') {
+      priority += 0.3;
+    } else if (window.urgency === 'high') {
+      priority += 0.2;
+    } else if (window.urgency === 'moderate') {
+      priority += 0.1;
+    }
 
     // Adjust for days remaining
-    if (window.daysRemaining <= 1) { priority += 0.2; } else if (window.daysRemaining <= 3) { priority += 0.1; }
+    if (window.daysRemaining <= 1) {
+      priority += 0.2;
+    } else if (window.daysRemaining <= 3) {
+      priority += 0.1;
+    }
 
     matrix[window.name] = Math.min(1.0, priority);
   });
@@ -964,8 +1084,8 @@ function generateCoordinatedPlan(activeWindows, interactions, priorityMatrix) {
   const phases = [];
 
   // Sort windows by priority
-  const sortedWindows = activeWindows.sort((a, b) =>
-    priorityMatrix[b.name] - priorityMatrix[a.name],
+  const sortedWindows = activeWindows.sort(
+    (a, b) => priorityMatrix[b.name] - priorityMatrix[a.name],
   );
 
   // Create phases based on compatibility and priority
@@ -977,10 +1097,13 @@ function generateCoordinatedPlan(activeWindows, interactions, priorityMatrix) {
   };
 
   sortedWindows.forEach(window => {
-    const hasConflicts = interactions.some(interaction =>
-      (interaction.window1 === window.name || interaction.window2 === window.name) &&
-      interaction.interactionType === 'conflicting' &&
-      currentPhase.windows.some(w => w.name === interaction.window1 || w.name === interaction.window2),
+    const hasConflicts = interactions.some(
+      interaction =>
+        (interaction.window1 === window.name || interaction.window2 === window.name) &&
+        interaction.interactionType === 'conflicting' &&
+        currentPhase.windows.some(
+          w => w.name === interaction.window1 || w.name === interaction.window2,
+        ),
     );
 
     if (!hasConflicts && currentPhase.windows.length < 2) {
@@ -1031,11 +1154,18 @@ function resolveWindowConflicts(activeWindows, interactions) {
 /**
  * Generate intervention recommendations
  */
-function generateInterventionRecommendations(sensitivityProfile, riskFactors, protectiveFactors, currentAge) {
+function generateInterventionRecommendations(
+  sensitivityProfile,
+  riskFactors,
+  protectiveFactors,
+  currentAge,
+) {
   const recommendations = [];
 
   if (sensitivityProfile.currentSensitivity > 0.8) {
-    recommendations.push('Immediate intervention required - horse is in critical developmental period');
+    recommendations.push(
+      'Immediate intervention required - horse is in critical developmental period',
+    );
     recommendations.push('Implement gentle, consistent care protocols');
     recommendations.push('Monitor stress levels closely and adjust approach as needed');
   }
@@ -1060,7 +1190,9 @@ function generateInterventionRecommendations(sensitivityProfile, riskFactors, pr
   if (currentAge < 14) {
     recommendations.push('Critical early development period - maximize positive experiences');
   } else if (currentAge < 60) {
-    recommendations.push('Important socialization period - provide varied but controlled experiences');
+    recommendations.push(
+      'Important socialization period - provide varied but controlled experiences',
+    );
   }
 
   return recommendations;
@@ -1072,10 +1204,11 @@ function generateInterventionRecommendations(sensitivityProfile, riskFactors, pr
 function generateTrajectory(currentAge, forecastDays, upcomingWindows) {
   const trajectory = [];
 
-  for (let day = 0; day <= forecastDays; day += 7) { // Weekly points
+  for (let day = 0; day <= forecastDays; day += 7) {
+    // Weekly points
     const projectedAge = currentAge + day;
-    const activeWindows = upcomingWindows.filter(window =>
-      projectedAge >= window.startDay && projectedAge <= window.endDay,
+    const activeWindows = upcomingWindows.filter(
+      window => projectedAge >= window.startDay && projectedAge <= window.endDay,
     );
 
     trajectory.push({
@@ -1083,8 +1216,8 @@ function generateTrajectory(currentAge, forecastDays, upcomingWindows) {
       projectedAge,
       activeWindows: activeWindows.map(w => w.name),
       developmentalIntensity: activeWindows.reduce((sum, w) => sum + w.sensitivity, 0),
-      criticalityLevel: activeWindows.length > 0 ?
-        Math.max(...activeWindows.map(w => w.sensitivity)) : 0,
+      criticalityLevel:
+        activeWindows.length > 0 ? Math.max(...activeWindows.map(w => w.sensitivity)) : 0,
     });
   }
 
@@ -1106,11 +1239,11 @@ async function generateTraitPredictions(horseId, upcomingWindows, horse) {
     // Find best development window for this trait
     for (const window of upcomingWindows) {
       if (window.targetTraits.includes(trait)) {
-        projectedProbability = Math.min(0.9, currentProbability + (window.sensitivity * 0.3));
+        projectedProbability = Math.min(0.9, currentProbability + window.sensitivity * 0.3);
         developmentWindow = window.name;
         break;
       } else if (window.riskTraits.includes(trait)) {
-        projectedProbability = Math.max(0.1, currentProbability - (window.sensitivity * 0.2));
+        projectedProbability = Math.max(0.1, currentProbability - window.sensitivity * 0.2);
         developmentWindow = window.name;
         break;
       }
@@ -1217,8 +1350,8 @@ function generateForecastRecommendations(upcomingWindows, riskAssessment, traitP
   });
 
   // Trait-based recommendations
-  const highPotentialTraits = traitPredictions.filter(p =>
-    p.projectedProbability > p.currentProbability + 0.2,
+  const highPotentialTraits = traitPredictions.filter(
+    p => p.projectedProbability > p.currentProbability + 0.2,
   );
 
   highPotentialTraits.forEach(trait => {

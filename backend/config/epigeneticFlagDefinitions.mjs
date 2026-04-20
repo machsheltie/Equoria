@@ -304,8 +304,7 @@ export function getFlagDefinition(flagName) {
  * @returns {Array} Array of flag definitions
  */
 export function getFlagsByType(type) {
-  return Object.values(EPIGENETIC_FLAG_DEFINITIONS)
-    .filter(flag => flag.type === type);
+  return Object.values(EPIGENETIC_FLAG_DEFINITIONS).filter(flag => flag.type === type);
 }
 
 /**

@@ -41,13 +41,29 @@ const TRAIT_CATEGORIES = {
 };
 
 const RARE_TRAITS = [
-  'sensitive', 'noble', 'legacy_talent', 'exceptional', 'prodigy',
-  'natural_leader', 'empathic', 'intuitive', 'charismatic', 'legendary',
+  'sensitive',
+  'noble',
+  'legacy_talent',
+  'exceptional',
+  'prodigy',
+  'natural_leader',
+  'empathic',
+  'intuitive',
+  'charismatic',
+  'legendary',
 ];
 
 const NEGATIVE_TRAITS = [
-  'stubborn', 'anxious', 'aggressive', 'fearful', 'lazy', 'unpredictable',
-  'difficult', 'nervous', 'spooky', 'resistant',
+  'stubborn',
+  'anxious',
+  'aggressive',
+  'fearful',
+  'lazy',
+  'unpredictable',
+  'difficult',
+  'nervous',
+  'spooky',
+  'resistant',
 ];
 
 /**
@@ -58,7 +74,9 @@ const NEGATIVE_TRAITS = [
  */
 export async function calculateInheritanceProbabilities(stallionId, mareId) {
   try {
-    logger.info(`[breedingPredictionService.calculateInheritanceProbabilities] Calculating inheritance for stallion ${stallionId} and mare ${mareId}`);
+    logger.info(
+      `[breedingPredictionService.calculateInheritanceProbabilities] Calculating inheritance for stallion ${stallionId} and mare ${mareId}`,
+    );
 
     // Get trait history for both parents (before age 4)
     const stallionTraits = await prisma.traitHistoryLog.findMany({
@@ -108,57 +126,59 @@ export async function calculateInheritanceProbabilities(stallionId, mareId) {
     });
 
     // Calculate probabilities for each trait
-    const traitProbabilities = Array.from(traitMap.values()).map(trait => {
-      let probability = 0;
-      let hasStacking = false;
-      let stackingBonus = 0;
+    const traitProbabilities = Array.from(traitMap.values())
+      .map(trait => {
+        let probability = 0;
+        let hasStacking = false;
+        let stackingBonus = 0;
 
-      if (trait.stallionHas && trait.mareHas) {
-        // Both parents have trait - stacking bonus
-        probability = BASE_INHERITANCE_RATE + 25; // 50% base for both parents
-        stackingBonus = 15; // Additional 15% for stacking
-        probability = Math.min(probability + stackingBonus, MAX_INHERITANCE_RATE);
-        hasStacking = true;
-      } else if (trait.stallionHas || trait.mareHas) {
-        // One parent has trait
-        probability = BASE_INHERITANCE_RATE;
+        if (trait.stallionHas && trait.mareHas) {
+          // Both parents have trait - stacking bonus
+          probability = BASE_INHERITANCE_RATE + 25; // 50% base for both parents
+          stackingBonus = 15; // Additional 15% for stacking
+          probability = Math.min(probability + stackingBonus, MAX_INHERITANCE_RATE);
+          hasStacking = true;
+        } else if (trait.stallionHas || trait.mareHas) {
+          // One parent has trait
+          probability = BASE_INHERITANCE_RATE;
 
-        // Bonus for rare traits
-        if (trait.isRare) {
-          probability += 10;
+          // Bonus for rare traits
+          if (trait.isRare) {
+            probability += 10;
+          }
+
+          // Penalty for negative traits
+          if (trait.isNegative) {
+            probability -= 5;
+          }
+
+          // Bonus for epigenetic traits
+          if (trait.isEpigenetic) {
+            probability += 5;
+          }
+
+          probability = Math.min(probability, MAX_SINGLE_TRAIT_RATE);
         }
 
-        // Penalty for negative traits
-        if (trait.isNegative) {
-          probability -= 5;
-        }
-
-        // Bonus for epigenetic traits
-        if (trait.isEpigenetic) {
-          probability += 5;
-        }
-
-        probability = Math.min(probability, MAX_SINGLE_TRAIT_RATE);
-      }
-
-      return {
-        traitName: trait.traitName,
-        probability: Math.max(0, probability),
-        hasStacking,
-        stackingBonus,
-        isRare: trait.isRare,
-        isNegative: trait.isNegative,
-        isEpigenetic: trait.isEpigenetic,
-        parentSources: {
-          stallion: trait.stallionHas,
-          mare: trait.mareHas,
-        },
-        sourceData: {
-          stallion: trait.stallionData,
-          mare: trait.mareData,
-        },
-      };
-    }).filter(trait => trait.probability > 0);
+        return {
+          traitName: trait.traitName,
+          probability: Math.max(0, probability),
+          hasStacking,
+          stackingBonus,
+          isRare: trait.isRare,
+          isNegative: trait.isNegative,
+          isEpigenetic: trait.isEpigenetic,
+          parentSources: {
+            stallion: trait.stallionHas,
+            mare: trait.mareHas,
+          },
+          sourceData: {
+            stallion: trait.stallionData,
+            mare: trait.mareData,
+          },
+        };
+      })
+      .filter(trait => trait.probability > 0);
 
     // Calculate summary statistics
     const summary = {
@@ -167,9 +187,11 @@ export async function calculateInheritanceProbabilities(stallionId, mareId) {
       rareTraits: traitProbabilities.filter(t => t.isRare).length,
       negativeTraits: traitProbabilities.filter(t => t.isNegative).length,
       stackingTraits: traitProbabilities.filter(t => t.hasStacking).length,
-      averageInheritanceChance: traitProbabilities.length > 0
-        ? traitProbabilities.reduce((sum, t) => sum + t.probability, 0) / traitProbabilities.length
-        : 0,
+      averageInheritanceChance:
+        traitProbabilities.length > 0
+          ? traitProbabilities.reduce((sum, t) => sum + t.probability, 0) /
+            traitProbabilities.length
+          : 0,
     };
 
     const result = {
@@ -181,11 +203,15 @@ export async function calculateInheritanceProbabilities(stallionId, mareId) {
       calculatedAt: new Date(),
     };
 
-    logger.info(`[breedingPredictionService.calculateInheritanceProbabilities] Calculated ${traitProbabilities.length} trait probabilities`);
+    logger.info(
+      `[breedingPredictionService.calculateInheritanceProbabilities] Calculated ${traitProbabilities.length} trait probabilities`,
+    );
 
     return result;
   } catch (error) {
-    logger.error(`[breedingPredictionService.calculateInheritanceProbabilities] Error calculating inheritance: ${error.message}`);
+    logger.error(
+      `[breedingPredictionService.calculateInheritanceProbabilities] Error calculating inheritance: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -198,7 +224,9 @@ export async function calculateInheritanceProbabilities(stallionId, mareId) {
  */
 export async function calculateFlagInheritanceScore(stallionId, mareId) {
   try {
-    logger.info(`[breedingPredictionService.calculateFlagInheritanceScore] Calculating flag inheritance for stallion ${stallionId} and mare ${mareId}`);
+    logger.info(
+      `[breedingPredictionService.calculateFlagInheritanceScore] Calculating flag inheritance for stallion ${stallionId} and mare ${mareId}`,
+    );
 
     const inheritanceData = await calculateInheritanceProbabilities(stallionId, mareId);
 
@@ -221,7 +249,9 @@ export async function calculateFlagInheritanceScore(stallionId, mareId) {
     const mareFlags = await calculateIndividualFlags(mareId);
 
     // Calculate combined inheritance score
-    const combinedScore = Object.values(inheritanceCategories).reduce((sum, score) => sum + score, 0) / Object.keys(inheritanceCategories).length;
+    const combinedScore =
+      Object.values(inheritanceCategories).reduce((sum, score) => sum + score, 0) /
+      Object.keys(inheritanceCategories).length;
 
     const result = {
       stallionId,
@@ -233,11 +263,15 @@ export async function calculateFlagInheritanceScore(stallionId, mareId) {
       calculatedAt: new Date(),
     };
 
-    logger.info(`[breedingPredictionService.calculateFlagInheritanceScore] Calculated flag inheritance score: ${combinedScore.toFixed(1)}`);
+    logger.info(
+      `[breedingPredictionService.calculateFlagInheritanceScore] Calculated flag inheritance score: ${combinedScore.toFixed(1)}`,
+    );
 
     return result;
   } catch (error) {
-    logger.error(`[breedingPredictionService.calculateFlagInheritanceScore] Error calculating flag inheritance: ${error.message}`);
+    logger.error(
+      `[breedingPredictionService.calculateFlagInheritanceScore] Error calculating flag inheritance: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -282,7 +316,9 @@ async function calculateIndividualFlags(horseId) {
  */
 export async function calculateTemperamentInfluence(stallionId, mareId) {
   try {
-    logger.info(`[breedingPredictionService.calculateTemperamentInfluence] Calculating temperament influence for stallion ${stallionId} and mare ${mareId}`);
+    logger.info(
+      `[breedingPredictionService.calculateTemperamentInfluence] Calculating temperament influence for stallion ${stallionId} and mare ${mareId}`,
+    );
 
     // Get horse temperaments
     const stallion = await prisma.horse.findUnique({
@@ -327,10 +363,12 @@ export async function calculateTemperamentInfluence(stallionId, mareId) {
 
     // Calculate trait influence modifiers
     const traitInfluenceModifiers = {
-      boldness: stallion.temperament === 'spirited' ? 1.2 : mare.temperament === 'spirited' ? 1.1 : 1.0,
+      boldness:
+        stallion.temperament === 'spirited' ? 1.2 : mare.temperament === 'spirited' ? 1.1 : 1.0,
       empathy: mare.temperament === 'gentle' ? 1.3 : stallion.temperament === 'gentle' ? 1.2 : 1.0,
       calmness: stallion.temperament === 'calm' ? 1.2 : mare.temperament === 'calm' ? 1.1 : 1.0,
-      energy: stallion.temperament === 'spirited' ? 1.3 : mare.temperament === 'spirited' ? 1.2 : 1.0,
+      energy:
+        stallion.temperament === 'spirited' ? 1.3 : mare.temperament === 'spirited' ? 1.2 : 1.0,
     };
 
     const result = {
@@ -344,11 +382,15 @@ export async function calculateTemperamentInfluence(stallionId, mareId) {
       calculatedAt: new Date(),
     };
 
-    logger.info(`[breedingPredictionService.calculateTemperamentInfluence] Calculated temperament compatibility: ${compatibilityScore}`);
+    logger.info(
+      `[breedingPredictionService.calculateTemperamentInfluence] Calculated temperament compatibility: ${compatibilityScore}`,
+    );
 
     return result;
   } catch (error) {
-    logger.error(`[breedingPredictionService.calculateTemperamentInfluence] Error calculating temperament influence: ${error.message}`);
+    logger.error(
+      `[breedingPredictionService.calculateTemperamentInfluence] Error calculating temperament influence: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -361,7 +403,9 @@ export async function calculateTemperamentInfluence(stallionId, mareId) {
  */
 export async function predictOffspringTraits(stallionId, mareId) {
   try {
-    logger.info(`[breedingPredictionService.predictOffspringTraits] Predicting offspring traits for stallion ${stallionId} and mare ${mareId}`);
+    logger.info(
+      `[breedingPredictionService.predictOffspringTraits] Predicting offspring traits for stallion ${stallionId} and mare ${mareId}`,
+    );
 
     const inheritanceData = await calculateInheritanceProbabilities(stallionId, mareId);
     const flagData = await calculateFlagInheritanceScore(stallionId, mareId);
@@ -378,9 +422,12 @@ export async function predictOffspringTraits(stallionId, mareId) {
     };
 
     // Calculate confidence level
-    const confidenceLevel = inheritanceData.hasInsufficientData ? 'low'
-      : parentTraitCounts >= 6 ? 'high'
-        : parentTraitCounts >= 3 ? 'medium'
+    const confidenceLevel = inheritanceData.hasInsufficientData
+      ? 'low'
+      : parentTraitCounts >= 6
+        ? 'high'
+        : parentTraitCounts >= 3
+          ? 'medium'
           : 'low';
 
     const result = {
@@ -398,11 +445,15 @@ export async function predictOffspringTraits(stallionId, mareId) {
       calculatedAt: new Date(),
     };
 
-    logger.info(`[breedingPredictionService.predictOffspringTraits] Predicted ${estimatedTraitCount.expected} traits with ${confidenceLevel} confidence`);
+    logger.info(
+      `[breedingPredictionService.predictOffspringTraits] Predicted ${estimatedTraitCount.expected} traits with ${confidenceLevel} confidence`,
+    );
 
     return result;
   } catch (error) {
-    logger.error(`[breedingPredictionService.predictOffspringTraits] Error predicting offspring traits: ${error.message}`);
+    logger.error(
+      `[breedingPredictionService.predictOffspringTraits] Error predicting offspring traits: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -414,7 +465,9 @@ export async function predictOffspringTraits(stallionId, mareId) {
  */
 export async function generateBreedingData(horseId) {
   try {
-    logger.info(`[breedingPredictionService.generateBreedingData] Generating breeding data for horse ${horseId}`);
+    logger.info(
+      `[breedingPredictionService.generateBreedingData] Generating breeding data for horse ${horseId}`,
+    );
 
     // Get horse basic info
     const horse = await prisma.horse.findUnique({
@@ -454,12 +507,14 @@ export async function generateBreedingData(horseId) {
         breeding: traitHistory.filter(t => t.sourceType === 'breeding').length,
         environmental: traitHistory.filter(t => t.sourceType === 'environmental').length,
       },
-      averageBondScore: traitHistory.length > 0
-        ? traitHistory.reduce((sum, t) => sum + (t.bondScore || 50), 0) / traitHistory.length
-        : 50,
-      averageInfluenceScore: traitHistory.length > 0
-        ? traitHistory.reduce((sum, t) => sum + (t.influenceScore || 0), 0) / traitHistory.length
-        : 0,
+      averageBondScore:
+        traitHistory.length > 0
+          ? traitHistory.reduce((sum, t) => sum + (t.bondScore || 50), 0) / traitHistory.length
+          : 50,
+      averageInfluenceScore:
+        traitHistory.length > 0
+          ? traitHistory.reduce((sum, t) => sum + (t.influenceScore || 0), 0) / traitHistory.length
+          : 0,
     };
 
     // Categorize traits
@@ -477,19 +532,40 @@ export async function generateBreedingData(horseId) {
       positive: horse.epigeneticModifiers?.positive || [],
       negative: horse.epigeneticModifiers?.negative || [],
       hidden: horse.epigeneticModifiers?.hidden || [],
-      totalFlags: (horse.epigeneticModifiers?.positive?.length || 0) +
-                  (horse.epigeneticModifiers?.negative?.length || 0) +
-                  (horse.epigeneticModifiers?.hidden?.length || 0),
+      totalFlags:
+        (horse.epigeneticModifiers?.positive?.length || 0) +
+        (horse.epigeneticModifiers?.negative?.length || 0) +
+        (horse.epigeneticModifiers?.hidden?.length || 0),
     };
 
     // Calculate temperament influence data
     const temperamentInfluence = {
       temperament: horse.temperament,
       traitAffinities: {
-        boldness: horse.temperament === 'spirited' ? 'high' : horse.temperament === 'calm' ? 'low' : 'medium',
-        empathy: horse.temperament === 'gentle' ? 'high' : horse.temperament === 'spirited' ? 'low' : 'medium',
-        calmness: horse.temperament === 'calm' ? 'high' : horse.temperament === 'spirited' ? 'low' : 'medium',
-        energy: horse.temperament === 'spirited' ? 'high' : horse.temperament === 'calm' ? 'low' : 'medium',
+        boldness:
+          horse.temperament === 'spirited'
+            ? 'high'
+            : horse.temperament === 'calm'
+              ? 'low'
+              : 'medium',
+        empathy:
+          horse.temperament === 'gentle'
+            ? 'high'
+            : horse.temperament === 'spirited'
+              ? 'low'
+              : 'medium',
+        calmness:
+          horse.temperament === 'calm'
+            ? 'high'
+            : horse.temperament === 'spirited'
+              ? 'low'
+              : 'medium',
+        energy:
+          horse.temperament === 'spirited'
+            ? 'high'
+            : horse.temperament === 'calm'
+              ? 'low'
+              : 'medium',
       },
       breedingCompatibility: {
         bestMatches: getCompatibleTemperaments(horse.temperament),
@@ -510,11 +586,15 @@ export async function generateBreedingData(horseId) {
       generatedAt: new Date(),
     };
 
-    logger.info(`[breedingPredictionService.generateBreedingData] Generated breeding data for horse ${horseId} with ${traitSummary.totalTraits} traits`);
+    logger.info(
+      `[breedingPredictionService.generateBreedingData] Generated breeding data for horse ${horseId} with ${traitSummary.totalTraits} traits`,
+    );
 
     return result;
   } catch (error) {
-    logger.error(`[breedingPredictionService.generateBreedingData] Error generating breeding data for horse ${horseId}: ${error.message}`);
+    logger.error(
+      `[breedingPredictionService.generateBreedingData] Error generating breeding data for horse ${horseId}: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -557,24 +637,48 @@ function calculateBreedingQuality(traitSummary, epigeneticFlags) {
   let score = 0;
 
   // Trait quantity (max 3 points)
-  if (traitSummary.totalTraits >= 6) { score += 3; } else if (traitSummary.totalTraits >= 4) { score += 2; } else if (traitSummary.totalTraits >= 2) { score += 1; }
+  if (traitSummary.totalTraits >= 6) {
+    score += 3;
+  } else if (traitSummary.totalTraits >= 4) {
+    score += 2;
+  } else if (traitSummary.totalTraits >= 2) {
+    score += 1;
+  }
 
   // Rare traits (max 2 points)
-  if (traitSummary.rareTraits >= 2) { score += 2; } else if (traitSummary.rareTraits >= 1) { score += 1; }
+  if (traitSummary.rareTraits >= 2) {
+    score += 2;
+  } else if (traitSummary.rareTraits >= 1) {
+    score += 1;
+  }
 
   // Epigenetic flags (max 2 points)
-  if (epigeneticFlags.totalFlags >= 3) { score += 2; } else if (epigeneticFlags.totalFlags >= 1) { score += 1; }
+  if (epigeneticFlags.totalFlags >= 3) {
+    score += 2;
+  } else if (epigeneticFlags.totalFlags >= 1) {
+    score += 1;
+  }
 
   // Negative trait penalty
   score -= traitSummary.negativeTraits;
 
   // Bond score bonus (max 1 point)
-  if (traitSummary.averageBondScore >= 80) { score += 1; }
+  if (traitSummary.averageBondScore >= 80) {
+    score += 1;
+  }
 
   // Determine quality level
-  if (score >= 7) { return 'exceptional'; }
-  if (score >= 5) { return 'excellent'; }
-  if (score >= 3) { return 'good'; }
-  if (score >= 1) { return 'fair'; }
+  if (score >= 7) {
+    return 'exceptional';
+  }
+  if (score >= 5) {
+    return 'excellent';
+  }
+  if (score >= 3) {
+    return 'good';
+  }
+  if (score >= 1) {
+    return 'fair';
+  }
   return 'poor';
 }

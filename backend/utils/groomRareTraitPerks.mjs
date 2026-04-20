@@ -193,8 +193,10 @@ function evaluatePerkEligibility(groomData, perkDef) {
  */
 function isRareTraitBonus(traitName) {
   const normalizedName = traitName.toLowerCase().replace(/[^a-z0-9]/g, '-');
-  return Object.keys(ULTRA_RARE_TRAITS).includes(normalizedName) ||
-         Object.keys(EXOTIC_TRAITS).includes(normalizedName);
+  return (
+    Object.keys(ULTRA_RARE_TRAITS).includes(normalizedName) ||
+    Object.keys(EXOTIC_TRAITS).includes(normalizedName)
+  );
 }
 
 /**
@@ -245,7 +247,9 @@ export function applyRareTraitBoosterEffects(traitName, baseChance, groomData, c
         // Check if perk should be revealed
         if (!perkData.revealed && shouldRevealPerk(perkData, perkDef)) {
           perkData.revealed = true;
-          logger.info(`[groomRareTraitPerks] Perk revealed: ${perkDef.name} for groom ${groomData.id}`);
+          logger.info(
+            `[groomRareTraitPerks] Perk revealed: ${perkDef.name} for groom ${groomData.id}`,
+          );
         }
       }
     }

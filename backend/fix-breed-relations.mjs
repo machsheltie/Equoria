@@ -3,7 +3,7 @@
 // This configuration is tailored for a Node.mjs environment with ES module support,
 // ensuring compatibility with both .mjs and .mjs files, and includes necessary setup for Jest globals.
 // It also includes custom module name mappings for utility files and error handling.
-/* eslint-disable no-console */
+
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';

@@ -69,7 +69,9 @@ const EVOLVED_TRAITS = {
  */
 export async function evolveGroomPersonality(groomId) {
   try {
-    logger.info(`[personalityEvolutionSystem.evolveGroomPersonality] Starting evolution analysis for groom ${groomId}`);
+    logger.info(
+      `[personalityEvolutionSystem.evolveGroomPersonality] Starting evolution analysis for groom ${groomId}`,
+    );
 
     // Get groom data
     const groom = await prisma.groom.findUnique({
@@ -138,7 +140,6 @@ export async function evolveGroomPersonality(groomId) {
       patterns,
       stabilityScore: patterns.consistency,
     };
-
   } catch (error) {
     logger.error(`[personalityEvolutionSystem.evolveGroomPersonality] Error: ${error.message}`);
     throw error;
@@ -152,7 +153,9 @@ export async function evolveGroomPersonality(groomId) {
  */
 export async function evolveHorseTemperament(horseId) {
   try {
-    logger.info(`[personalityEvolutionSystem.evolveHorseTemperament] Starting evolution analysis for horse ${horseId}`);
+    logger.info(
+      `[personalityEvolutionSystem.evolveHorseTemperament] Starting evolution analysis for horse ${horseId}`,
+    );
 
     // Get horse data
     const horse = await prisma.horse.findUnique({
@@ -225,7 +228,6 @@ export async function evolveHorseTemperament(horseId) {
       stabilityScore: carePatterns.consistency,
       careQualityScore: carePatterns.qualityScore,
     };
-
   } catch (error) {
     logger.error(`[personalityEvolutionSystem.evolveHorseTemperament] Error: ${error.message}`);
     throw error;
@@ -240,20 +242,23 @@ export async function evolveHorseTemperament(horseId) {
  */
 export async function calculatePersonalityEvolutionTriggers(entityId, entityType = 'groom') {
   try {
-    logger.info(`[personalityEvolutionSystem.calculatePersonalityEvolutionTriggers] Analyzing triggers for ${entityType} ${entityId}`);
+    logger.info(
+      `[personalityEvolutionSystem.calculatePersonalityEvolutionTriggers] Analyzing triggers for ${entityType} ${entityId}`,
+    );
 
     const config = EVOLUTION_CONFIG[entityType];
 
     // Get entity data based on type
-    const entity = entityType === 'groom'
-      ? await prisma.groom.findUnique({
-        where: { id: entityId },
-        include: { groomInteractions: { take: 50 } },
-      })
-      : await prisma.horse.findUnique({
-        where: { id: entityId },
-        include: { groomInteractions: { take: 30 } },
-      });
+    const entity =
+      entityType === 'groom'
+        ? await prisma.groom.findUnique({
+            where: { id: entityId },
+            include: { groomInteractions: { take: 50 } },
+          })
+        : await prisma.horse.findUnique({
+            where: { id: entityId },
+            include: { groomInteractions: { take: 30 } },
+          });
 
     if (!entity) {
       throw new Error(`${entityType} with ID ${entityId} not found`);
@@ -261,16 +266,18 @@ export async function calculatePersonalityEvolutionTriggers(entityId, entityType
 
     // Calculate trigger factors
     const triggers = {
-      experienceThreshold: entityType === 'groom'
-        ? entity.experience >= config.minimumExperience
-        : entity.age >= config.minimumAge,
+      experienceThreshold:
+        entityType === 'groom'
+          ? entity.experience >= config.minimumExperience
+          : entity.age >= config.minimumAge,
       interactionConsistency: entity.groomInteractions.length >= config.minimumInteractions,
       performanceQuality: calculatePerformanceQuality(entity.groomInteractions),
       specialization: entityType === 'groom' ? calculateSpecializationLevel(entity) : null,
     };
 
     // Calculate overall evolution readiness
-    const readinessScore = Object.values(triggers).filter(Boolean).length / Object.keys(triggers).length;
+    const readinessScore =
+      Object.values(triggers).filter(Boolean).length / Object.keys(triggers).length;
 
     return {
       success: true,
@@ -279,9 +286,10 @@ export async function calculatePersonalityEvolutionTriggers(entityId, entityType
       nextEvolutionEstimate: estimateNextEvolution(entity, entityType),
       recommendedActions: generateEvolutionRecommendations(triggers, entityType),
     };
-
   } catch (error) {
-    logger.error(`[personalityEvolutionSystem.calculatePersonalityEvolutionTriggers] Error: ${error.message}`);
+    logger.error(
+      `[personalityEvolutionSystem.calculatePersonalityEvolutionTriggers] Error: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -294,7 +302,9 @@ export async function calculatePersonalityEvolutionTriggers(entityId, entityType
  */
 export async function analyzePersonalityStability(entityId, entityType) {
   try {
-    logger.info(`[personalityEvolutionSystem.analyzePersonalityStability] Analyzing stability for ${entityType} ${entityId}`);
+    logger.info(
+      `[personalityEvolutionSystem.analyzePersonalityStability] Analyzing stability for ${entityType} ${entityId}`,
+    );
 
     // Get recent interactions and evolution history
     const interactions = await prisma.groomInteraction.findMany({
@@ -312,7 +322,9 @@ export async function analyzePersonalityStability(entityId, entityType) {
     };
 
     // Calculate overall stability score
-    const stabilityScore = Object.values(stabilityFactors).reduce((sum, factor) => sum + factor, 0) / Object.keys(stabilityFactors).length;
+    const stabilityScore =
+      Object.values(stabilityFactors).reduce((sum, factor) => sum + factor, 0) /
+      Object.keys(stabilityFactors).length;
 
     return {
       success: true,
@@ -321,9 +333,10 @@ export async function analyzePersonalityStability(entityId, entityType) {
       evolutionRisk: 1 - stabilityScore,
       recommendedActions: generateStabilityRecommendations(stabilityFactors),
     };
-
   } catch (error) {
-    logger.error(`[personalityEvolutionSystem.analyzePersonalityStability] Error: ${error.message}`);
+    logger.error(
+      `[personalityEvolutionSystem.analyzePersonalityStability] Error: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -337,7 +350,9 @@ export async function analyzePersonalityStability(entityId, entityType) {
  */
 export async function predictPersonalityEvolution(entityId, entityType, timeframeDays = 30) {
   try {
-    logger.info(`[personalityEvolutionSystem.predictPersonalityEvolution] Predicting evolution for ${entityType} ${entityId} over ${timeframeDays} days`);
+    logger.info(
+      `[personalityEvolutionSystem.predictPersonalityEvolution] Predicting evolution for ${entityType} ${entityId} over ${timeframeDays} days`,
+    );
 
     // Get current state and trends
     const currentState = await getCurrentPersonalityState(entityId, entityType);
@@ -363,9 +378,10 @@ export async function predictPersonalityEvolution(entityId, entityType, timefram
       influencingFactors: trends.influencingFactors,
       recommendedActions: generatePredictionRecommendations(predictions),
     };
-
   } catch (error) {
-    logger.error(`[personalityEvolutionSystem.predictPersonalityEvolution] Error: ${error.message}`);
+    logger.error(
+      `[personalityEvolutionSystem.predictPersonalityEvolution] Error: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -378,7 +394,9 @@ export async function predictPersonalityEvolution(entityId, entityType, timefram
  */
 export async function getPersonalityEvolutionHistory(entityId, entityType) {
   try {
-    logger.info(`[personalityEvolutionSystem.getPersonalityEvolutionHistory] Getting history for ${entityType} ${entityId}`);
+    logger.info(
+      `[personalityEvolutionSystem.getPersonalityEvolutionHistory] Getting history for ${entityType} ${entityId}`,
+    );
 
     // For now, return mock data structure since we don't have evolution history table yet
     // In a full implementation, this would query a PersonalityEvolutionLog table
@@ -391,9 +409,10 @@ export async function getPersonalityEvolutionHistory(entityId, entityType) {
       personalityTrajectory: [],
       stabilityTrends: [],
     };
-
   } catch (error) {
-    logger.error(`[personalityEvolutionSystem.getPersonalityEvolutionHistory] Error: ${error.message}`);
+    logger.error(
+      `[personalityEvolutionSystem.getPersonalityEvolutionHistory] Error: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -405,7 +424,9 @@ export async function getPersonalityEvolutionHistory(entityId, entityType) {
  */
 export async function applyPersonalityEvolutionEffects(evolutionData) {
   try {
-    logger.info(`[personalityEvolutionSystem.applyPersonalityEvolutionEffects] Applying effects for ${evolutionData.entityType} ${evolutionData.entityId}`);
+    logger.info(
+      `[personalityEvolutionSystem.applyPersonalityEvolutionEffects] Applying effects for ${evolutionData.entityType} ${evolutionData.entityId}`,
+    );
 
     const effectsApplied = [];
 
@@ -415,8 +436,13 @@ export async function applyPersonalityEvolutionEffects(evolutionData) {
     }
 
     // Apply personality change if applicable
-    if (evolutionData.newPersonality && evolutionData.newPersonality !== evolutionData.oldPersonality) {
-      effectsApplied.push(`Personality changed: ${evolutionData.oldPersonality} → ${evolutionData.newPersonality}`);
+    if (
+      evolutionData.newPersonality &&
+      evolutionData.newPersonality !== evolutionData.oldPersonality
+    ) {
+      effectsApplied.push(
+        `Personality changed: ${evolutionData.oldPersonality} → ${evolutionData.newPersonality}`,
+      );
     }
 
     // Set stability period
@@ -433,9 +459,10 @@ export async function applyPersonalityEvolutionEffects(evolutionData) {
       stabilityPeriodSet: true,
       evolutionLogged: true,
     };
-
   } catch (error) {
-    logger.error(`[personalityEvolutionSystem.applyPersonalityEvolutionEffects] Error: ${error.message}`);
+    logger.error(
+      `[personalityEvolutionSystem.applyPersonalityEvolutionEffects] Error: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -468,11 +495,16 @@ function analyzeInteractionPatterns(interactions) {
 
   const qualityScores = interactions.map(i => {
     switch (i.quality) {
-      case 'excellent': return 4;
-      case 'good': return 3;
-      case 'fair': return 2;
-      case 'poor': return 1;
-      default: return 2;
+      case 'excellent':
+        return 4;
+      case 'good':
+        return 3;
+      case 'fair':
+        return 2;
+      case 'poor':
+        return 1;
+      default:
+        return 2;
     }
   });
 
@@ -494,7 +526,8 @@ function calculateEvolution(entity, patterns, entityType) {
   const config = EVOLUTION_CONFIG[entityType];
 
   // Determine if evolution should occur
-  const shouldEvolve = patterns.consistency >= config.consistencyThreshold && patterns.qualityScore >= 0.6;
+  const shouldEvolve =
+    patterns.consistency >= config.consistencyThreshold && patterns.qualityScore >= 0.6;
 
   if (!shouldEvolve) {
     return { shouldEvolve: false };
@@ -508,8 +541,10 @@ function calculateEvolution(entity, patterns, entityType) {
     shouldEvolve: true,
     type: EVOLUTION_TYPES.TRAIT_STRENGTHENING,
     newTraits: availableTraits.slice(0, 2), // Add first 2 available traits
-    newPersonality: entityType === 'horse' ? determineNewTemperament(entity.temperament, patterns) : null,
-    newTemperament: entityType === 'horse' ? determineNewTemperament(entity.temperament, patterns) : null,
+    newPersonality:
+      entityType === 'horse' ? determineNewTemperament(entity.temperament, patterns) : null,
+    newTemperament:
+      entityType === 'horse' ? determineNewTemperament(entity.temperament, patterns) : null,
     strength: patterns.qualityScore,
   };
 }
@@ -525,14 +560,17 @@ function determineNewTemperament(currentTemperament, patterns) {
 }
 
 function calculateConsistency(scores) {
-  if (scores.length < 2) { return 0; }
+  if (scores.length < 2) {
+    return 0;
+  }
 
   const mean = scores.reduce((sum, score) => sum + score, 0) / scores.length;
-  const variance = scores.reduce((sum, score) => sum + Math.pow(score - mean, 2), 0) / scores.length;
+  const variance =
+    scores.reduce((sum, score) => sum + Math.pow(score - mean, 2), 0) / scores.length;
   const standardDeviation = Math.sqrt(variance);
 
   // Lower standard deviation = higher consistency
-  return Math.max(0, 1 - (standardDeviation / mean));
+  return Math.max(0, 1 - standardDeviation / mean);
 }
 
 function identifyPatterns(_interactions) {
@@ -585,7 +623,7 @@ async function analyzePersonalityTrends(_entityId, _entityType) {
 }
 
 function calculateEvolutionProbability(state, trends, days) {
-  return Math.min(0.8, days / 30 * 0.3);
+  return Math.min(0.8, (days / 30) * 0.3);
 }
 
 function predictPersonalityChanges(_state, _trends, _days) {
@@ -593,7 +631,7 @@ function predictPersonalityChanges(_state, _trends, _days) {
 }
 
 function calculatePredictionConfidence(trends, days) {
-  return Math.max(0.5, 1 - (days / 90));
+  return Math.max(0.5, 1 - days / 90);
 }
 
 function generatePredictionRecommendations(_predictions) {

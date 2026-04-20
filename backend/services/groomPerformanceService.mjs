@@ -21,12 +21,12 @@ export const PERFORMANCE_CONFIG = {
 
   // Performance metrics weights
   METRIC_WEIGHTS: {
-    bondingEffectiveness: 0.25,    // 25% - How well groom builds bonds
-    taskCompletion: 0.20,          // 20% - Task completion rate
-    horseWellbeing: 0.20,          // 20% - Impact on horse health/happiness
-    showPerformance: 0.15,         // 15% - Conformation show results
-    consistency: 0.10,             // 10% - Consistency over time
-    playerSatisfaction: 0.10,       // 10% - Player ratings
+    bondingEffectiveness: 0.25, // 25% - How well groom builds bonds
+    taskCompletion: 0.2, // 20% - Task completion rate
+    horseWellbeing: 0.2, // 20% - Impact on horse health/happiness
+    showPerformance: 0.15, // 15% - Conformation show results
+    consistency: 0.1, // 10% - Consistency over time
+    playerSatisfaction: 0.1, // 10% - Player ratings
   },
 
   // Minimum interactions for reliable reputation
@@ -78,10 +78,11 @@ export async function recordGroomPerformance(groomId, userId, interactionType, p
     // Update groom's aggregate performance metrics
     await updateGroomMetrics(groomId);
 
-    logger.info(`[groomPerformanceService] Recorded performance for groom ${groomId}: ${interactionType}`);
+    logger.info(
+      `[groomPerformanceService] Recorded performance for groom ${groomId}: ${interactionType}`,
+    );
 
     return performanceRecord;
-
   } catch (error) {
     logger.error(`[groomPerformanceService] Error recording groom performance: ${error.message}`);
     throw error;
@@ -101,7 +102,9 @@ async function updateGroomMetrics(groomId) {
       take: 100, // Consider last 100 interactions for metrics
     });
 
-    if (records.length === 0) { return; }
+    if (records.length === 0) {
+      return;
+    }
 
     // Calculate metrics
     const metrics = calculatePerformanceMetrics(records);
@@ -121,7 +124,6 @@ async function updateGroomMetrics(groomId) {
     });
 
     logger.info(`[groomPerformanceService] Updated metrics for groom ${groomId}`);
-
   } catch (error) {
     logger.error(`[groomPerformanceService] Error updating groom metrics: ${error.message}`);
   }
@@ -145,7 +147,7 @@ function calculatePerformanceMetrics(records) {
 
   // Horse wellbeing impact (average wellbeing improvement)
   const avgWellbeingImpact = records.reduce((sum, r) => sum + r.wellbeingImpact, 0) / totalRecords;
-  const horseWellbeing = Math.max(0, Math.min(100, 50 + (avgWellbeingImpact * 10))); // Normalize around 50
+  const horseWellbeing = Math.max(0, Math.min(100, 50 + avgWellbeingImpact * 10)); // Normalize around 50
 
   // Show performance (placeholder - would be calculated from actual show results)
   const showPerformance = 75; // Default value, would be calculated from actual show data
@@ -153,22 +155,23 @@ function calculatePerformanceMetrics(records) {
   // Consistency (variance in performance)
   const bondGains = records.map(r => r.bondGain);
   const variance = calculateVariance(bondGains);
-  const consistency = Math.max(0, 100 - (variance * 20)); // Lower variance = higher consistency
+  const consistency = Math.max(0, 100 - variance * 20); // Lower variance = higher consistency
 
   // Player satisfaction (average rating)
   const ratingsRecords = records.filter(r => r.playerRating !== null);
-  const playerSatisfaction = ratingsRecords.length > 0
-    ? (ratingsRecords.reduce((sum, r) => sum + r.playerRating, 0) / ratingsRecords.length) * 20 // Convert 1-5 to 0-100
-    : 75; // Default if no ratings
+  const playerSatisfaction =
+    ratingsRecords.length > 0
+      ? (ratingsRecords.reduce((sum, r) => sum + r.playerRating, 0) / ratingsRecords.length) * 20 // Convert 1-5 to 0-100
+      : 75; // Default if no ratings
 
   // Calculate overall reputation score
   const reputationScore = Math.round(
-    (bondingEffectiveness * PERFORMANCE_CONFIG.METRIC_WEIGHTS.bondingEffectiveness) +
-    (taskCompletion * PERFORMANCE_CONFIG.METRIC_WEIGHTS.taskCompletion) +
-    (horseWellbeing * PERFORMANCE_CONFIG.METRIC_WEIGHTS.horseWellbeing) +
-    (showPerformance * PERFORMANCE_CONFIG.METRIC_WEIGHTS.showPerformance) +
-    (consistency * PERFORMANCE_CONFIG.METRIC_WEIGHTS.consistency) +
-    (playerSatisfaction * PERFORMANCE_CONFIG.METRIC_WEIGHTS.playerSatisfaction),
+    bondingEffectiveness * PERFORMANCE_CONFIG.METRIC_WEIGHTS.bondingEffectiveness +
+      taskCompletion * PERFORMANCE_CONFIG.METRIC_WEIGHTS.taskCompletion +
+      horseWellbeing * PERFORMANCE_CONFIG.METRIC_WEIGHTS.horseWellbeing +
+      showPerformance * PERFORMANCE_CONFIG.METRIC_WEIGHTS.showPerformance +
+      consistency * PERFORMANCE_CONFIG.METRIC_WEIGHTS.consistency +
+      playerSatisfaction * PERFORMANCE_CONFIG.METRIC_WEIGHTS.playerSatisfaction,
   );
 
   return {
@@ -189,7 +192,9 @@ function calculatePerformanceMetrics(records) {
  * @returns {number} Variance
  */
 function calculateVariance(values) {
-  if (values.length === 0) { return 0; }
+  if (values.length === 0) {
+    return 0;
+  }
 
   const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
   const squaredDiffs = values.map(val => Math.pow(val - mean, 2));
@@ -249,11 +254,13 @@ export async function getGroomPerformanceSummary(groomId) {
       reputationTier,
       recentRecords,
       trends,
-      hasReliableReputation: (metrics?.totalInteractions || 0) >= PERFORMANCE_CONFIG.MIN_INTERACTIONS_FOR_REPUTATION,
+      hasReliableReputation:
+        (metrics?.totalInteractions || 0) >= PERFORMANCE_CONFIG.MIN_INTERACTIONS_FOR_REPUTATION,
     };
-
   } catch (error) {
-    logger.error(`[groomPerformanceService] Error getting groom performance summary: ${error.message}`);
+    logger.error(
+      `[groomPerformanceService] Error getting groom performance summary: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -287,14 +294,19 @@ function calculatePerformanceTrends(records) {
   const olderBondGains = records.slice(5, 10).map(r => r.bondGain);
 
   const recentAvg = recentBondGains.reduce((sum, val) => sum + val, 0) / recentBondGains.length;
-  const olderAvg = olderBondGains.length > 0
-    ? olderBondGains.reduce((sum, val) => sum + val, 0) / olderBondGains.length
-    : recentAvg;
+  const olderAvg =
+    olderBondGains.length > 0
+      ? olderBondGains.reduce((sum, val) => sum + val, 0) / olderBondGains.length
+      : recentAvg;
 
   const improvement = recentAvg - olderAvg;
 
   let direction = 'stable';
-  if (improvement > 0.5) { direction = 'improving'; } else if (improvement < -0.5) { direction = 'declining'; }
+  if (improvement > 0.5) {
+    direction = 'improving';
+  } else if (improvement < -0.5) {
+    direction = 'declining';
+  }
 
   return {
     trend: 'calculated',
@@ -351,7 +363,6 @@ export async function getTopPerformingGrooms(userId, limit = 5) {
       reputationTier: getReputationTier(groom.groomMetrics?.reputationScore || 50),
       totalInteractions: groom.groomMetrics?.totalInteractions || 0,
     }));
-
   } catch (error) {
     logger.error(`[groomPerformanceService] Error getting top performing grooms: ${error.message}`);
     return [];

@@ -24,18 +24,20 @@ const baseSpec = {
 for (const schema of allSchemas) {
   const normalizedPath = schema.path.startsWith('/') ? schema.path : `/${schema.path}`;
   const fullPath = `/api/v1${normalizedPath}`;
-  if (!baseSpec.paths[fullPath]) { baseSpec.paths[fullPath] = {}; }
+  if (!baseSpec.paths[fullPath]) {
+    baseSpec.paths[fullPath] = {};
+  }
   baseSpec.paths[fullPath][schema.method] = {
     summary: schema.summary,
     tags: schema.tags,
     requestBody: schema.request
       ? {
-        content: {
-          'application/json': {
-            schema: schema.request.body,
+          content: {
+            'application/json': {
+              schema: schema.request.body,
+            },
           },
-        },
-      }
+        }
       : undefined,
     responses: schema.responses || { 200: { description: 'OK' } },
   };
@@ -52,7 +54,9 @@ const yaml = (obj, indent = 0) => {
   if (obj && typeof obj === 'object') {
     return Object.entries(obj)
       .map(([key, val]) => {
-        if (val === undefined) { return ''; }
+        if (val === undefined) {
+          return '';
+        }
         if (val && typeof val === 'object') {
           return `${pad}${key}:\n${yaml(val, indent + 1)}`;
         }

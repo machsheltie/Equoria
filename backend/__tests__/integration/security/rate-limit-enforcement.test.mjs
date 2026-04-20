@@ -58,13 +58,10 @@ describe('Rate Limit Enforcement Integration Tests', () => {
     });
 
     it('should include rate limit headers on auth endpoints', async () => {
-      const response = await request(app)
-        .post('/api/auth/login')
-        .set('x-test-skip-csrf', 'true')
-        .send({
-          email: 'nonexistent@test.com',
-          password: 'wrongpassword',
-        });
+      const response = await request(app).post('/api/auth/login').set('x-test-skip-csrf', 'true').send({
+        email: 'nonexistent@test.com',
+        password: 'wrongpassword',
+      });
 
       // Rate limit headers should be present (RFC 6585 compliant)
       const hasRateLimitHeader =
@@ -77,9 +74,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
     });
 
     it('should include rate limit headers on authenticated endpoints', async () => {
-      const response = await request(app)
-        .get('/api/horses')
-        .set('Authorization', `Bearer ${validToken}`);
+      const response = await request(app).get('/api/horses').set('Authorization', `Bearer ${validToken}`);
 
       // Authenticated endpoints should also have rate limiting active
       expect([200, 429]).toContain(response.status);
@@ -97,8 +92,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
     });
 
     it('should reject requests without tokens', async () => {
-      const response = await request(app)
-        .get('/api/horses');
+      const response = await request(app).get('/api/horses');
 
       expect(response.status).toBe(401);
     });
@@ -112,17 +106,13 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       // Small delay to ensure token expiry takes effect
       await new Promise(resolve => setTimeout(resolve, 50));
 
-      const response = await request(app)
-        .get('/api/horses')
-        .set('Authorization', `Bearer ${expiredToken}`);
+      const response = await request(app).get('/api/horses').set('Authorization', `Bearer ${expiredToken}`);
 
       expect(response.status).toBe(401);
     });
 
     it('should reject requests with malformed tokens', async () => {
-      const response = await request(app)
-        .get('/api/horses')
-        .set('Authorization', 'Bearer invalid.token.here');
+      const response = await request(app).get('/api/horses').set('Authorization', 'Bearer invalid.token.here');
 
       expect(response.status).toBe(401);
     });
@@ -132,13 +122,10 @@ describe('Rate Limit Enforcement Integration Tests', () => {
     it('should return proper error structure when rate limited', async () => {
       // This test validates the rate limit response format
       // In test environments, rate limits are increased so we verify the infrastructure
-      const response = await request(app)
-        .post('/api/auth/login')
-        .set('x-test-skip-csrf', 'true')
-        .send({
-          email: 'test@example.com',
-          password: 'wrong',
-        });
+      const response = await request(app).post('/api/auth/login').set('x-test-skip-csrf', 'true').send({
+        email: 'test@example.com',
+        password: 'wrong',
+      });
 
       // Whether rate limited or not, the response should have proper structure
       if (response.status === 429) {

@@ -37,7 +37,8 @@ function loadSwaggerSpec() {
     swaggerDocument.servers = [
       {
         url: `${baseUrl}/api`,
-        description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
+        description:
+          process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
       },
     ];
 
@@ -67,12 +68,12 @@ const swaggerOptions = {
     filter: true,
     showRequestDuration: true,
     tryItOutEnabled: true,
-    requestInterceptor: (req) => {
+    requestInterceptor: req => {
       // Add custom headers or modify requests
       req.headers['X-API-Client'] = 'Swagger-UI';
       return req;
     },
-    responseInterceptor: (res) => {
+    responseInterceptor: res => {
       // Log API responses for debugging
       if (process.env.NODE_ENV === 'development') {
         logger.debug(`[SwaggerUI] API Response: ${res.status} ${res.url}`);
@@ -228,10 +229,13 @@ export function setupSwaggerDocs(app) {
 
     // Serve Swagger UI at /api-docs
     app.use('/api-docs', swaggerUi.serve);
-    app.get('/api-docs', swaggerUi.setup(swaggerDocument, {
-      ...swaggerOptions,
-      customCss,
-    }));
+    app.get(
+      '/api-docs',
+      swaggerUi.setup(swaggerDocument, {
+        ...swaggerOptions,
+        customCss,
+      }),
+    );
 
     // Serve raw OpenAPI spec at /api-docs/swagger.json
     app.get('/api-docs/swagger.json', (req, res) => {
@@ -270,7 +274,6 @@ export function setupSwaggerDocs(app) {
     logger.info('[SwaggerSetup] Interactive docs available at: /api-docs');
     logger.info('[SwaggerSetup] OpenAPI JSON available at: /api-docs/swagger.json');
     logger.info('[SwaggerSetup] OpenAPI YAML available at: /api-docs/swagger.yaml');
-
   } catch (error) {
     logger.error(`[SwaggerSetup] Failed to setup Swagger documentation: ${error.message}`);
     throw error;
