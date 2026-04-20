@@ -1,6 +1,10 @@
 // DO NOT MODIFY: Configuration locked for consistency
+// EXCEPTION (Story 21S-3, 2026-04-17): added NODE_ENV=beta branch for
+// production-parity Playwright runs. Approved by sprint change proposal
+// docs/sprint-change-proposal-2026-04-16-beta-readiness-gap-fixes.md.
 
 import path from 'path';
+import fs from 'fs';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
@@ -18,6 +22,18 @@ if (NODE_ENV === 'test') {
   dotenv.config({ path: path.resolve(projectRoot, 'env.test') }); // Use env.test without leading dot
 } else if (NODE_ENV === 'beta-readiness') {
   dotenv.config({ path: path.resolve(projectRoot, 'env.beta-readiness') }); // Beta E2E readiness gates
+} else if (NODE_ENV === 'beta') {
+  // Story 21S-3: production-parity beta profile for Playwright. Loads env.beta
+  // (a throwaway-DB beta env) so middleware behaves like beta/production while
+  // keeping a separate database from local dev. Naming matches env.test (no
+  // leading dot) per CodeRabbit review on 2026-04-17.
+  // Falls back to env.test if env.beta is not present (CI-friendly default).
+  const betaPath = path.resolve(projectRoot, 'env.beta');
+  if (fs.existsSync(betaPath)) {
+    dotenv.config({ path: betaPath });
+  } else {
+    dotenv.config({ path: path.resolve(projectRoot, 'env.test') });
+  }
 } else {
   dotenv.config({ path: path.resolve(projectRoot, '.env') }); // Load .env for other environments
 }

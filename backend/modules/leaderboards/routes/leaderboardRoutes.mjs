@@ -119,6 +119,63 @@ router.get('/players/level', auth, getTopPlayersByLevel);
 
 /**
  * @swagger
+ * /api/leaderboards/user-summary/{userId}:
+ *   get:
+ *     summary: Get a user's rank summary across all leaderboard categories
+ *     description: |
+ *       Returns rankings per category (level, xp, horse-earnings, horse-performance)
+ *       plus best ranking achievements (Top 10 / Top 100). Story 21S-1.
+ *     tags: [Leaderboard]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: Target user UUID
+ *     responses:
+ *       200:
+ *         description: User rank summary. Returns empty arrays when the user does not exist.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 userId:
+ *                   type: string
+ *                 userName:
+ *                   type: string
+ *                 rankings:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       category: { type: string }
+ *                       categoryLabel: { type: string }
+ *                       rank: { type: integer }
+ *                       totalEntries: { type: integer }
+ *                       rankChange: { type: integer }
+ *                       primaryStat: { type: number }
+ *                       statLabel: { type: string }
+ *                 bestRankings:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       category: { type: string }
+ *                       categoryLabel: { type: string }
+ *                       rank: { type: integer }
+ *                       achievement: { type: string }
+ *       401:
+ *         description: Unauthenticated
+ */
+router.get('/user-summary/:userId', auth, getUserRankSummary);
+
+/**
+ * @swagger
  * /api/leaderboard/players/xp:
  *   get:
  *     summary: Get top players ranked by XP earned

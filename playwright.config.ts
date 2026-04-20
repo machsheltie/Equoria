@@ -24,11 +24,14 @@ export default defineConfig({
   },
   webServer: [
     {
-      // Cross-platform: Windows uses set, Unix uses inline env assignment
+      // Story 21S-3: NODE_ENV=beta — production-parity profile that loads
+      // backend/env.beta (no leading dot, matches env.test naming) and enforces
+      // real CSRF + real rate-limit middleware.
+      // Cross-platform: Windows uses set, Unix uses inline env assignment.
       command:
         process.platform === 'win32'
-          ? 'set "PORT=3001" && set "NODE_ENV=development" && node backend/server.mjs'
-          : 'PORT=3001 NODE_ENV=development node backend/server.mjs',
+          ? 'set "PORT=3001" && set "NODE_ENV=beta" && node backend/server.mjs'
+          : 'PORT=3001 NODE_ENV=beta node backend/server.mjs',
       url: 'http://localhost:3001/health',
       reuseExistingServer: !process.env.CI,
       stdout: 'pipe',
@@ -44,6 +47,8 @@ export default defineConfig({
       timeout: 60000,
       env: {
         ...process.env,
+        // Story 21S-2: VITE_E2E_TEST removed — frontend now fetches real CSRF
+        // tokens like beta/production. Only VITE_BETA_MODE remains for nav scope.
         VITE_BETA_MODE: 'true',
       },
     },

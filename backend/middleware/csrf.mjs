@@ -103,10 +103,10 @@ export const getCsrfToken = (req, res) => {
     const responseBody = useMockSafePath
       ? { success: true, csrfToken: token }
       : {
-          success: true,
-          csrfToken: token,
-          code: 'CSRF_TOKEN_CREATED',
-        };
+        success: true,
+        csrfToken: token,
+        code: 'CSRF_TOKEN_CREATED',
+      };
 
     return res.json(responseBody);
   } catch (error) {
@@ -181,9 +181,16 @@ export const applyCsrfProtection = (req, res, next) => {
   req.body = req.body || {};
   req.session = req.session || {};
 
-  // Test helper escape hatch for integration scenarios where CSRF is orthogonal
-  // Gated on JEST_WORKER_ID — cannot fire in production even if NODE_ENV is misconfigured
-  if (process.env.JEST_WORKER_ID !== undefined && req.headers['x-test-skip-csrf'] === 'true') {
+  // Test helper escape hatch for integration scenarios where CSRF is orthogonal.
+  // Gated on JEST_WORKER_ID — cannot fire in production/beta even if NODE_ENV is misconfigured.
+  // Story 21S-2: explicit production/beta refusal as defence in depth.
+  const inProductionOrBeta =
+    process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'beta';
+  if (
+    !inProductionOrBeta &&
+    process.env.JEST_WORKER_ID !== undefined &&
+    req.headers['x-test-skip-csrf'] === 'true'
+  ) {
     return next();
   }
 
@@ -196,16 +203,16 @@ export const applyCsrfProtection = (req, res, next) => {
 
     const invalidPayload = res.json?.mock
       ? {
-          success: false,
-          message: 'Invalid CSRF token',
-          status: 'error',
-        }
+        success: false,
+        message: 'Invalid CSRF token',
+        status: 'error',
+      }
       : {
-          success: false,
-          message: 'Invalid CSRF token. Please refresh the page and try again.',
-          status: 'error',
-          code: 'INVALID_CSRF_TOKEN',
-        };
+        success: false,
+        message: 'Invalid CSRF token. Please refresh the page and try again.',
+        status: 'error',
+        code: 'INVALID_CSRF_TOKEN',
+      };
 
     const invalidResponse = () => {
       if (res.status) {

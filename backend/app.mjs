@@ -309,24 +309,29 @@ app.use(cors(corsOptions));
 
 // Rate limiting - using factory for consistency and test support
 // ⚠️ DEV WORKFLOW NOTE: Limits are intentionally high for local development.
-// DO NOT reduce the development/test/beta-readiness limits — they exist to
-// prevent lockouts during active dev and testing sessions.
-// Production: 100 req / 15 min | Development: 500 req / 15 min |
+// DO NOT reduce the development/test/beta/beta-readiness limits — they exist
+// to prevent lockouts during active dev and testing sessions.
+// Production: 100 req / 15 min | Beta: 500 req / 15 min | Development: 500 req / 15 min |
 // Test / beta-readiness: 1000 req / 15 min
+//
+// Story 21S-3: NODE_ENV=beta (Playwright) sits between dev and prod — high
+// enough that E2E without bypass headers does not 429, low enough that an
+// abusive client would still be throttled.
 //
 // beta-readiness runs the full Playwright readiness suite against production
 // middleware; at production's 100-req cap the suite self-rate-limits before
 // reaching the end of a single flow. Treating beta-readiness like test for
 // this limit keeps production parity where it matters (auth, CSRF, ownership,
 // email delivery) without turning the gate into a rate-limiter test.
+const RATE_LIMIT_MAX_BY_ENV = {
+  test: 1000,
+  'beta-readiness': 1000,
+  beta: 500,
+  development: 500,
+};
 const apiLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
-  max:
-    process.env.NODE_ENV === 'test' || process.env.NODE_ENV === 'beta-readiness'
-      ? 1000
-      : process.env.NODE_ENV === 'development'
-        ? 500
-        : 100,
+  max: RATE_LIMIT_MAX_BY_ENV[process.env.NODE_ENV] ?? 100,
   keyPrefix: 'rl:global',
   useEnvOverride: false, // Don't let tests override the global limit
 });

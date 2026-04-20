@@ -595,6 +595,11 @@ async function fetchWithAuth<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
+  // Story 21S-2 (finalized on master): CSRF test-skip-header branch removed from
+  // production frontend code. The client always acquires a real CSRF token for
+  // mutations, matching beta/production behavior. Playwright exercises the real
+  // CSRF round trip end-to-end; Vitest unit tests mock api-client at the module
+  // boundary so this path is not exercised during unit-test runs.
   const isMutation = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(
     (options.method || 'GET').toUpperCase()
   );

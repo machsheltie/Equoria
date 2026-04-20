@@ -1,5 +1,5 @@
 # generated: 2026-03-25
-# last_updated: '2026-04-16 Epic 21S opened — adversarial review found 21R-3 and 21R-6 were marked done prematurely; beta readiness re-blocked until 21S-1..21S-11 close real gaps'
+# last_updated: '2026-04-20 Combined 21S-2 + 21S-3 in review — NODE_ENV=beta profile shipped, CSRF/rate-limit bypasses removed from production code + 5 beta-critical specs, middleware hardened, 6/6 new hardening tests + 233/233 csrf-rate-limit regression green. Live E2E deferred to CI. 21R-3 awaits CI green.'
 # project: Equoria
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-25
-last_updated: '2026-04-16 Epic 21S opened — adversarial review found 21R-3 and 21R-6 were marked done prematurely; beta readiness re-blocked until 21S-1..21S-11 close real gaps'
+last_updated: '2026-04-20 Combined 21S-2 + 21S-3 in review — NODE_ENV=beta profile shipped, CSRF/rate-limit bypasses removed from production code + 5 beta-critical specs, middleware hardened, 6/6 new hardening tests + 233/233 csrf-rate-limit regression green. Live E2E deferred to CI. 21R-3 awaits CI green.'
 project: Equoria
 project_key: NOKEY
 tracking_system: file-system
@@ -75,9 +75,9 @@ development_status:
 
   epic-21s: in-progress
   # --- P0: blocks beta signoff ---
-  21s-1-implement-user-rank-summary-endpoint: backlog
-  21s-2-remove-csrf-rate-limit-bypasses-from-production-and-specs: backlog
-  21s-3-switch-playwright-to-beta-profile: backlog
+  21s-1-implement-user-rank-summary-endpoint: done  # Closed 2026-04-16 after adversarial code review + P1 follow-ups (zero-horse denominator fix + perf TODOs)
+  21s-2-remove-csrf-rate-limit-bypasses-from-production-and-specs: review  # Combined session with 21S-3 (2026-04-20). Static + unit verified (6/6 hardening, 233/233 csrf+rate-limit). Live E2E deferred to CI.
+  21s-3-switch-playwright-to-beta-profile: review  # Combined session with 21S-2 (2026-04-20). NODE_ENV=beta profile + .env.beta + playwright.config.ts switch. Live E2E deferred to CI.
   21s-4-wire-my-stable-career-stats-to-real-apis: backlog
   21s-5-persist-settings-via-backend-endpoint: backlog
   21s-6-make-e2e-critical-path-gate-non-skippable: backlog
@@ -121,18 +121,15 @@ development_status:
   # ============================================================
 
   # Epic 22: Celestial Night Foundation (re-spec'd 2026-03-31 — stories match docs/epics.md §Epic22)
-  # 2026-04-20: statuses realigned to reality per COMPLETION_VERIFICATION_POLICY.
-  # Stories marked `review` are implementation-complete and await user signoff.
-  # 22-3 remains in-progress because scene art assets are still being produced.
   epic-22: in-progress
-  22-1-font-migration: review
-  22-2-celestial-theme-provider: review
-  22-3-painted-background-system: in-progress
-  22-4-glass-panel-surface-updates: review
-  22-5-button-hierarchy: review
-  22-6-custom-game-component-library: review
-  22-7-body-and-page-chrome: review
-  22-8-navigation-structure: review
+  22-1-font-migration: done
+  22-2-celestial-theme-provider: done
+  22-3-painted-background-system: done
+  22-4-glass-panel-surface-updates: done
+  22-5-button-hierarchy: done
+  22-6-custom-game-component-library: done
+  22-7-body-and-page-chrome: done
+  22-8-navigation-structure: backlog
   epic-22-retrospective: optional
 
   # Epic 23: Hub Dashboard
