@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 env:
-  NODE_VERSION: '18.x'
+  NODE_VERSION: '22.x'
   DATABASE_URL: 'postgresql://test:test@localhost:5432/equoria_test'
   JWT_SECRET: 'test-jwt-secret-for-ci'
   JWT_REFRESH_SECRET: 'test-refresh-secret-for-ci'

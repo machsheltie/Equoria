@@ -24,7 +24,7 @@ jobs:
         image: postgres:14
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: ci_test_pg_strong_pass_42
           POSTGRES_DB: equoria_test
         options: >-
           --health-cmd pg_isready
@@ -41,7 +41,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: backend/package-lock.json
 
@@ -56,7 +56,7 @@ jobs:
       - name: Run database migrations
         working-directory: packages/database
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/equoria_test
+          DATABASE_URL: postgresql://postgres:ci_test_pg_strong_pass_42@localhost:5432/equoria_test
           NODE_ENV: test
         run: npx prisma migrate deploy --schema=prisma/schema.prisma
 
@@ -64,7 +64,7 @@ jobs:
         working-directory: backend
         timeout-minutes: 10
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/equoria_test
+          DATABASE_URL: postgresql://postgres:ci_test_pg_strong_pass_42@localhost:5432/equoria_test
           JWT_SECRET: test_secret_key_for_ci_must_be_at_least_32_chars
           JWT_REFRESH_SECRET: test_refresh_secret_for_ci_must_be_at_least_32_chars
           NODE_ENV: test
@@ -91,7 +91,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
           cache: 'npm'
           cache-dependency-path: frontend/package-lock.json
 
@@ -187,7 +187,7 @@ jobs:
         image: postgres:14
         env:
           POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
+          POSTGRES_PASSWORD: ci_test_pg_strong_pass_42
           POSTGRES_DB: equoria_test
         options: >-
           --health-cmd pg_isready
@@ -204,7 +204,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18'
+          node-version: '22'
 
       - name: Install backend dependencies
         working-directory: backend
@@ -221,13 +221,13 @@ jobs:
       - name: Run database migrations
         working-directory: packages/database
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/equoria_test
+          DATABASE_URL: postgresql://postgres:ci_test_pg_strong_pass_42@localhost:5432/equoria_test
         run: npx prisma migrate deploy --schema=prisma/schema.prisma
 
       - name: Start backend server
         working-directory: backend
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/equoria_test
+          DATABASE_URL: postgresql://postgres:ci_test_pg_strong_pass_42@localhost:5432/equoria_test
           JWT_SECRET: test_secret_key_for_ci
           NODE_ENV: test
         run: |
