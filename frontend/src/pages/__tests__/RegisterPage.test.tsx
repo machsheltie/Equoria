@@ -752,6 +752,35 @@ describe('RegisterPage', () => {
       });
     });
 
+    it('maps "already in use" email server error to inline email field error (Story 21S-9)', async () => {
+      const user = userEvent.setup();
+      const TestWrapper = createTestWrapper();
+
+      vi.mocked(apiClient.authApi.register).mockRejectedValueOnce({
+        message: 'Email is already in use',
+        statusCode: 400,
+      });
+
+      render(
+        <TestWrapper>
+          <RegisterPage />
+        </TestWrapper>
+      );
+
+      await user.type(screen.getByLabelText(/first name/i), 'John');
+      await user.type(screen.getByLabelText(/last name/i), 'Doe');
+      await user.type(screen.getByLabelText(/username/i), 'johndoe');
+      await user.type(screen.getByLabelText(/email/i), 'inuse@example.com');
+      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
+
+      await user.click(screen.getByRole('button', { name: /begin your journey/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/this email address is already registered/i)).toBeInTheDocument();
+      });
+    });
+
     it('maps "username" server error to inline username field error', async () => {
       const user = userEvent.setup();
       const TestWrapper = createTestWrapper();
