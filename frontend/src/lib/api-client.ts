@@ -1118,6 +1118,34 @@ export interface TrainerAssignmentEntry {
   isActive: boolean;
 }
 
+export type TrainerDiscoveryCategory =
+  | 'discipline_specialization'
+  | 'training_method'
+  | 'horse_compatibility';
+
+export interface TrainerDiscoveryTrait {
+  id: string;
+  label: string;
+  description: string;
+  icon: string;
+  strength: 'mild' | 'moderate' | 'strong';
+}
+
+export interface TrainerDiscoverySlot {
+  slotIndex: number;
+  category: TrainerDiscoveryCategory;
+  discovered: boolean;
+  trait?: TrainerDiscoveryTrait;
+}
+
+export interface TrainerDiscoveryData {
+  trainerId: number;
+  totalSlots: number;
+  discoveredCount: number;
+  slots: TrainerDiscoverySlot[];
+  nextDiscoveryAt?: number;
+}
+
 export const trainersApi = {
   getUserTrainers: (userId: string | number) =>
     apiClient.get<TrainerEntry[]>(`/api/trainers/user/${userId}`),
@@ -1136,6 +1164,8 @@ export const trainersApi = {
     apiClient.delete<{ success: boolean }>(`/api/trainers/assignments/${assignmentId}`),
   dismissTrainer: (trainerId: number) =>
     apiClient.delete<{ success: boolean }>(`/api/trainers/${trainerId}/dismiss`),
+  getDiscovery: (trainerId: number) =>
+    apiClient.get<TrainerDiscoveryData>(`/api/trainers/${trainerId}/discovery`),
 };
 
 // ── Vet Clinic types ──────────────────────────────────────────────────────────

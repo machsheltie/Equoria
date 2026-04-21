@@ -22,12 +22,14 @@ beforeEach(() => {
 });
 
 describe('usePageBackground', () => {
-  it('returns background style with cover and fixed attachment', () => {
+  it('returns background style with cover, fixed attachment, and gradient loading fallback', () => {
     const { result } = renderHook(() => usePageBackground());
     expect(result.current.backgroundSize).toBe('cover');
     expect(result.current.backgroundAttachment).toBe('fixed');
     expect(result.current.backgroundPosition).toBe('center center');
-    expect(result.current.backgroundColor).toBe('var(--bg-deep-space)');
+    // AC4: deep navy gradient fallback (#0a0e1a → #111827) painted while art loads
+    expect(result.current.background).toContain('#0a0e1a');
+    expect(result.current.background).toContain('#111827');
   });
 
   it('uses generic /images/bg-* path when no scene is provided', () => {
@@ -117,16 +119,25 @@ describe('useResponsiveBackground resize', () => {
   });
 });
 
-describe('PageBackground marker', () => {
-  it('renders data-testid and data-bg for test inspection', () => {
+describe('PageBackground component', () => {
+  it('renders a layered div with data-bg at z-[var(--z-below)]', () => {
     render(<PageBackground scene="stable" />);
     const el = screen.getByTestId('page-background');
     expect(el.getAttribute('data-bg')).toContain('.webp');
+    // AC1: the layer is positioned below content
+    expect((el as HTMLElement).style.position).toBe('fixed');
+    expect(el.getAttribute('aria-hidden')).toBe('true');
   });
 
   it('uses generic path when no scene', () => {
     render(<PageBackground />);
     const el = screen.getByTestId('page-background');
     expect(el.getAttribute('data-bg')).toContain('/images/bg-');
+  });
+
+  it('marker mode renders display:none div for legacy tests', () => {
+    render(<PageBackground scene="auth" marker />);
+    const el = screen.getByTestId('page-background');
+    expect((el as HTMLElement).style.display).toBe('none');
   });
 });

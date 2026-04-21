@@ -5,16 +5,29 @@
  * Matches direction-4-hybrid.html mockup.
  */
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { Bell, LogOut, User } from 'lucide-react';
 import { useUnreadCount } from '@/hooks/api/useMessages';
 import { useAuth } from '@/contexts/AuthContext';
 import { Breadcrumb } from '@/components/layout/Breadcrumb';
-import { NavPanel } from '@/components/layout/NavPanel';
 
-const MainNavigation: React.FC = () => {
-  const [isNavOpen, setIsNavOpen] = useState(false);
+interface MainNavigationProps {
+  /**
+   * Hamburger click handler — lifted to DashboardLayout so both the
+   * top-bar hamburger and the bottom-nav "More" button can open the same
+   * NavPanel overlay. When omitted (e.g. in standalone tests), the button
+   * still renders but does nothing.
+   */
+  onOpenNav?: () => void;
+  /**
+   * When true, hides the hamburger trigger — used on desktop (≥1024px)
+   * where SidebarNav replaces the overlay.
+   */
+  hideHamburger?: boolean;
+}
+
+const MainNavigation: React.FC<MainNavigationProps> = ({ onOpenNav, hideHamburger = false }) => {
   const { data: unreadData } = useUnreadCount();
   const { user, logout } = useAuth();
 
@@ -27,7 +40,7 @@ const MainNavigation: React.FC = () => {
         role="banner"
         className="sticky top-0 z-[var(--z-sticky)] flex items-center justify-between px-4 md:px-8 py-3 border-b border-[var(--glass-border)]"
         style={{
-          background: 'rgba(15, 25, 50, 0.55)',
+          background: 'var(--footer-bg)',
           backdropFilter: 'blur(10px) saturate(1.3) brightness(1.1)',
           WebkitBackdropFilter: 'blur(10px) saturate(1.3) brightness(1.1)',
         }}
@@ -35,18 +48,20 @@ const MainNavigation: React.FC = () => {
       >
         {/* Left: hamburger + logo + breadcrumb */}
         <div className="flex items-center gap-4 md:gap-6">
-          {/* Hamburger */}
-          <button
-            onClick={() => setIsNavOpen(true)}
-            className="w-8 h-8 flex flex-col items-center justify-center gap-1 rounded-[var(--radius-sm)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--glass-hover)] transition-colors cursor-pointer"
-            aria-label="Open menu"
-            data-testid="hamburger-menu"
-            data-onboarding-target="nav-menu"
-          >
-            <span className="block w-4 h-0.5 bg-current rounded-sm" />
-            <span className="block w-4 h-0.5 bg-current rounded-sm" />
-            <span className="block w-4 h-0.5 bg-current rounded-sm" />
-          </button>
+          {/* Hamburger — hidden on desktop when SidebarNav is present */}
+          {!hideHamburger && (
+            <button
+              onClick={() => onOpenNav?.()}
+              className="w-8 h-8 flex flex-col items-center justify-center gap-1 rounded-[var(--radius-sm)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--glass-hover)] transition-colors cursor-pointer"
+              aria-label="Open menu"
+              data-testid="hamburger-menu"
+              data-onboarding-target="nav-menu"
+            >
+              <span className="block w-4 h-0.5 bg-current rounded-sm" />
+              <span className="block w-4 h-0.5 bg-current rounded-sm" />
+              <span className="block w-4 h-0.5 bg-current rounded-sm" />
+            </button>
+          )}
 
           {/* Logo */}
           <Link
@@ -121,9 +136,6 @@ const MainNavigation: React.FC = () => {
           </button>
         </div>
       </header>
-
-      {/* Full nav panel overlay */}
-      <NavPanel isOpen={isNavOpen} onClose={() => setIsNavOpen(false)} />
     </>
   );
 };
