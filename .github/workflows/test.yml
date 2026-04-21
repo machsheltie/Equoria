@@ -221,11 +221,16 @@ jobs:
           SHARD_PATTERN: ${{ matrix.pattern }}
         run: |
           # Security: SHARD_PATTERN passed through env: to prevent script injection
+          # coverage reporters:
+          #   - lcov: Codecov upload
+          #   - json-summary: human-readable per-shard totals
+          #   - json: coverage-final.json, required by `nyc merge` in Coverage Gate
           node --experimental-vm-modules node_modules/jest/bin/jest.js \
             --testPathPattern="$SHARD_PATTERN" \
             --coverage \
             --coverageReporters=lcov \
             --coverageReporters=json-summary \
+            --coverageReporters=json \
             --ci \
             --forceExit
 
