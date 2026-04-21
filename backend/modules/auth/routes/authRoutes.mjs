@@ -727,13 +727,23 @@ router.get('/verification-status', authenticateToken, authController.getVerifica
  * POST /api/auth/complete-onboarding
  * Marks authenticated user's onboarding as complete in User.settings.
  */
-router.post('/complete-onboarding', authenticateToken, authController.completeOnboarding);
+router.post(
+  '/complete-onboarding',
+  profileRateLimiter,
+  authenticateToken,
+  authController.completeOnboarding,
+);
 
 /**
  * POST /api/auth/advance-onboarding
  * Increments the user's onboarding step. Sets completedOnboarding: true at step 10.
  */
-router.post('/advance-onboarding', authenticateToken, authController.advanceOnboarding);
+router.post(
+  '/advance-onboarding',
+  profileRateLimiter,
+  authenticateToken,
+  authController.advanceOnboarding,
+);
 
 /**
  * PATCH /api/auth/profile/preferences
