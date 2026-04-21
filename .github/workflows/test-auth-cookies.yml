@@ -149,8 +149,10 @@ jobs:
             exit 1
           fi
 
-          # Check for secure flag in production
-          if grep -q "secure: process.env.NODE_ENV === 'production'" "$COOKIE_CONFIG"; then
+          # Check for secure flag in production.
+          # Accepts either the original literal or the refactored `isProduction`
+          # alias (cookieConfig.mjs line ~28: `const isProduction = config.env === 'production'`).
+          if grep -qE "secure: (process\.env\.NODE_ENV === 'production'|isProduction)" "$COOKIE_CONFIG"; then
             echo "✅ Secure flag configured for production"
           else
             echo "❌ ERROR: Secure flag not configured"
@@ -228,7 +230,11 @@ jobs:
         working-directory: backend
         env:
           DATABASE_URL: postgresql://postgres:ci_test_pg_strong_pass_42@localhost:5432/equoria_test
-          JWT_SECRET: test_secret_key_for_ci
+          JWT_SECRET: test_secret_key_for_ci_must_be_at_least_32_chars
+          JWT_REFRESH_SECRET: test_refresh_secret_for_ci_must_be_at_least_32_chars
+          # Backend defaults to port 3001 in test mode (see backend/server.mjs).
+          # The E2E flow below hits localhost:3000, so pin PORT explicitly to match.
+          PORT: '3000'
           NODE_ENV: test
         run: |
           npm start &
@@ -239,16 +245,17 @@ jobs:
         run: |
           echo "=== Testing Register → Login → Profile → Logout ==="
 
-          # Register
+          # Register — firstName/lastName are required by authRoutes.mjs:184-193
           REGISTER_RESPONSE=$(curl -i -X POST http://localhost:3000/api/auth/register \
             -H "Content-Type: application/json" \
-            -d '{"username":"e2etest","email":"e2e@test.com","password":"Test123!"}' \
+            -d '{"username":"e2etest","email":"e2e@test.com","password":"Test123!","firstName":"E2E","lastName":"Test"}' \
             -c cookies.txt)
 
           if echo "$REGISTER_RESPONSE" | grep -q "Set-Cookie.*accessToken"; then
             echo "✅ Register sets httpOnly cookies"
           else
-            echo "❌ Register failed to set cookies"
+            echo "❌ Register failed to set cookies. Response:"
+            echo "$REGISTER_RESPONSE"
             exit 1
           fi
 
