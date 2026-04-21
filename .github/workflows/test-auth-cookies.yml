@@ -245,16 +245,17 @@ jobs:
         run: |
           echo "=== Testing Register → Login → Profile → Logout ==="
 
-          # Register
+          # Register — firstName/lastName are required by authRoutes.mjs:184-193
           REGISTER_RESPONSE=$(curl -i -X POST http://localhost:3000/api/auth/register \
             -H "Content-Type: application/json" \
-            -d '{"username":"e2etest","email":"e2e@test.com","password":"Test123!"}' \
+            -d '{"username":"e2etest","email":"e2e@test.com","password":"Test123!","firstName":"E2E","lastName":"Test"}' \
             -c cookies.txt)
 
           if echo "$REGISTER_RESPONSE" | grep -q "Set-Cookie.*accessToken"; then
             echo "✅ Register sets httpOnly cookies"
           else
-            echo "❌ Register failed to set cookies"
+            echo "❌ Register failed to set cookies. Response:"
+            echo "$REGISTER_RESPONSE"
             exit 1
           fi
 
