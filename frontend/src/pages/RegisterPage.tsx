@@ -83,17 +83,21 @@ const RegisterPage: React.FC = () => {
       {
         onSuccess: () => navigate('/verify-email'),
         onError: (err) => {
+          // Story 21S-9: flattened branches. Server returns one of several
+          // duplicate phrasings ("already exists", "already in use",
+          // "already taken"/"is taken") — treat any of them as a duplicate
+          // signal, then route to the right inline field by which identifier
+          // the message mentions. Non-duplicate errors fall through to the
+          // top-level error banner.
           const message = (err.message ?? '').toLowerCase();
-          // Backend returns 'already exists' or 'already in use' for duplicate email/username
-          if (message.includes('already exists') || message.includes('already in use')) {
-            if (message.includes('email')) {
-              setValidationErrors({ email: 'This email address is already registered.' });
-            } else {
-              setValidationErrors({ username: 'This username is already taken.' });
-            }
-          } else if (message.includes('email')) {
+          const isDuplicate =
+            message.includes('already exists') ||
+            message.includes('already in use') ||
+            message.includes('taken');
+
+          if (isDuplicate && message.includes('email')) {
             setValidationErrors({ email: 'This email address is already registered.' });
-          } else if (message.includes('username')) {
+          } else if (isDuplicate && message.includes('username')) {
             setValidationErrors({ username: 'This username is already taken.' });
           }
         },

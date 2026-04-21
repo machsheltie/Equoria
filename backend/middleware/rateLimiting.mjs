@@ -254,6 +254,10 @@ export function createRateLimiter(options = {}) {
     throw new Error('windowMs and max must be positive numbers');
   }
 
+  // Story 21S-2: bypass headers MUST NOT work in `beta` or `production` so the
+  // beta E2E and any future production traffic actually exercise rate limiting.
+  // `isTestEnv` continues to govern Jest test runs (where bypassing is necessary
+  // to avoid 429 cascades during repeated integration tests).
   const isTestEnv = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
 
   const getEffectiveWindowMs = () =>
@@ -267,6 +271,11 @@ export function createRateLimiter(options = {}) {
       : max;
 
   const shouldBypassRequest = req => {
+    // Defence in depth — refuse to honour bypasses in beta or production even
+    // if isTestEnv accidentally evaluates true.
+    if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'beta') {
+      return false;
+    }
     if (!isTestEnv) {
       return false;
     }

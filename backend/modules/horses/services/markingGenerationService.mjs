@@ -392,10 +392,10 @@ export function inheritMarkings(
     // never carry isFlaxen=true even if a chestnut parent had it.
     isFlaxen: isBaseChestnut(colorName)
       ? pickInherited(
-          sireMarkings?.modifiers?.isFlaxen,
-          damMarkings?.modifiers?.isFlaxen,
-          () => rng() < (modifierPrevalence?.flaxen ?? MODIFIER_DEFAULTS.flaxen),
-        )
+        sireMarkings?.modifiers?.isFlaxen,
+        damMarkings?.modifiers?.isFlaxen,
+        () => rng() < (modifierPrevalence?.flaxen ?? MODIFIER_DEFAULTS.flaxen),
+      )
       : false,
     hasPangare: pickInherited(
       sireMarkings?.modifiers?.hasPangare,

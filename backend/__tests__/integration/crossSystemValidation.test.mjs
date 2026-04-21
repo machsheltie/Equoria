@@ -36,7 +36,9 @@ describe('Cross-System Validation Tests', () => {
     const timestamp = Date.now();
     const suffix = timestamp.toString().slice(-6);
 
-    // Create test user with unique username/email
+    // Create test user with unique username/email. 21S-8: elevate to admin
+    // so memory/cleanup + memory/gc routes used later in this suite pass the
+    // role guard.
     testUser = await prisma.user.create({
       data: {
         username: `crossSysUser${suffix}`,
@@ -44,11 +46,13 @@ describe('Cross-System Validation Tests', () => {
         password: 'testPassword123',
         firstName: 'Cross',
         lastName: 'System',
+        role: 'admin',
       },
     });
 
-    // Generate auth token using centralized helper
-    authToken = generateTestToken({ id: testUser.id, email: testUser.email });
+    // Generate auth token using centralized helper (role embedded so the
+    // requireRole middleware accepts without a DB round trip).
+    authToken = generateTestToken({ id: testUser.id, email: testUser.email, role: 'admin' });
 
     // Create test breed with unique name
     testBreed = await prisma.breed.create({

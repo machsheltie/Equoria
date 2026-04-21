@@ -46,7 +46,8 @@ describe('Memory Management Routes', () => {
     // Pre-clean leftover user from previous failed run
     await prisma.user.deleteMany({ where: { email: 'memory@test.com' } });
 
-    // Create test user
+    // Create test user with admin role (21S-8: destructive memory routes
+    // now require the admin role).
     testUser = await prisma.user.create({
       data: {
         username: 'memoryTestUser',
@@ -54,13 +55,17 @@ describe('Memory Management Routes', () => {
         password: 'testPassword123',
         firstName: 'Memory',
         lastName: 'Test',
+        role: 'admin',
       },
     });
 
-    // Generate auth token
-    authToken = jwt.sign({ id: testUser.id, username: testUser.username }, process.env.JWT_SECRET || 'test-secret', {
-      expiresIn: '1h',
-    });
+    // Generate auth token (role embedded so requireRole middleware passes
+    // without a DB lookup).
+    authToken = jwt.sign(
+      { id: testUser.id, username: testUser.username, role: 'admin' },
+      process.env.JWT_SECRET || 'test-secret',
+      { expiresIn: '1h' },
+    );
 
     // Create test Express app
     testApp = express();

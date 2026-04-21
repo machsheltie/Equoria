@@ -520,6 +520,135 @@ export const updateUserController = async (req, res, next) => {
 };
 
 /**
+ * GET /api/users/:userId/competition-stats
+ *
+ * Aggregates competition results across all horses owned by :userId and
+ * returns a `UserCompetitionStats` shape (see
+ * frontend/src/lib/api/competitionResults.ts) for the /my-stable page.
+ *
+ * Story 21S-4: closes the missing backend endpoint that the
+ * `useUserCompetitionStats` frontend hook has been 404-ing against.
+ */
+export const getUserCompetitionStats = async (req, res, next) => {
+  try {
+    const { userId } = req.params;
+
+    // Pull all competition results for horses owned by this user
+    const results = await prisma.competitionResult.findMany({
+      where: { horse: { userId } },
+      select: {
+        id: true,
+        score: true,
+        placement: true,
+        discipline: true,
+        runDate: true,
+        showName: true,
+        prizeWon: true,
+        showId: true,
+        horse: { select: { id: true, name: true } },
+        show: { select: { id: true, name: true } },
+      },
+      orderBy: { runDate: 'desc' },
+    });
+
+    const totalCompetitions = results.length;
+
+    if (totalCompetitions === 0) {
+      return res.json({
+        userId,
+        totalCompetitions: 0,
+        totalWins: 0,
+        totalTop3: 0,
+        winRate: 0,
+        totalPrizeMoney: 0,
+        totalXpGained: 0,
+        bestPlacement: 0,
+        mostSuccessfulDiscipline: '',
+        recentCompetitions: [],
+      });
+    }
+
+    let totalWins = 0;
+    let totalTop3 = 0;
+    let totalPrizeMoney = 0;
+    let bestPlacement = Number.POSITIVE_INFINITY;
+    const disciplineCounts = {};
+
+    for (const r of results) {
+      const placementNum = placementToNumber(r.placement);
+      if (placementNum === 1) {
+        totalWins += 1;
+      }
+      if (placementNum > 0 && placementNum <= 3) {
+        totalTop3 += 1;
+      }
+      if (placementNum > 0 && placementNum < bestPlacement) {
+        bestPlacement = placementNum;
+      }
+      totalPrizeMoney += Number(r.prizeWon ?? 0);
+      disciplineCounts[r.discipline] = (disciplineCounts[r.discipline] ?? 0) + 1;
+    }
+
+    if (bestPlacement === Number.POSITIVE_INFINITY) {
+      bestPlacement = 0;
+    }
+
+    const mostSuccessfulDiscipline =
+      Object.keys(disciplineCounts).length > 0
+        ? Object.entries(disciplineCounts).sort(
+          (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
+        )[0][0]
+        : '';
+
+    const winRate = totalCompetitions > 0 ? (totalWins / totalCompetitions) * 100 : 0;
+
+    const recentCompetitions = results.slice(0, 5).map((r) => ({
+      competitionId: r.showId,
+      competitionName: r.show?.name ?? r.showName,
+      discipline: r.discipline,
+      date: r.runDate,
+      placement: placementToNumber(r.placement),
+      totalParticipants: 0,
+      finalScore: Number(r.score),
+      prizeMoney: Number(r.prizeWon ?? 0),
+      xpGained: 0,
+    }));
+
+    return res.json({
+      userId,
+      totalCompetitions,
+      totalWins,
+      totalTop3,
+      winRate: Math.round(winRate * 100) / 100,
+      totalPrizeMoney,
+      totalXpGained: 0,
+      bestPlacement,
+      mostSuccessfulDiscipline,
+      recentCompetitions,
+    });
+  } catch (error) {
+    logger.error(`[userController.getUserCompetitionStats] Error: ${error.message}`);
+    return next(error);
+  }
+};
+
+/**
+ * Parse a placement string like "1st", "3rd", "5th", or "4" into its
+ * numeric rank. Returns 0 when no numeric prefix is found.
+ */
+function placementToNumber(placement) {
+  if (placement === null || placement === undefined) {
+    return 0;
+  }
+  if (typeof placement === 'number') {
+    return placement;
+  }
+  const str = String(placement).trim();
+  const match = str.match(/^(\d+)/);
+  return match ? parseInt(match[1], 10) : 0;
+}
+
+/**
  * Delete user
  * @route DELETE /api/user/:id
  */

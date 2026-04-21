@@ -41,6 +41,8 @@ export interface User {
   notifications?: Record<string, boolean | string | number> | null;
   /** Backend-persisted display/accessibility preferences (see SettingsPage). */
   display?: Record<string, boolean | string | number> | null;
+  /** Persisted user preferences surfaced on /settings. Story 21S-5. */
+  preferences?: Partial<import('@/lib/api-client').UserPreferences>;
 }
 
 /**

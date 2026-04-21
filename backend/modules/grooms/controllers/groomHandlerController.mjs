@@ -74,20 +74,20 @@ export async function getHorseHandler(req, res) {
         },
         handler: handlerData.hasHandler
           ? {
-              id: handlerData.groom.id,
-              name: handlerData.groom.name,
-              skillLevel: handlerData.groom.skillLevel,
-              speciality: handlerData.groom.speciality,
-              personality: handlerData.groom.personality,
-              experience: handlerData.groom.experience,
-            }
+            id: handlerData.groom.id,
+            name: handlerData.groom.name,
+            skillLevel: handlerData.groom.skillLevel,
+            speciality: handlerData.groom.speciality,
+            personality: handlerData.groom.personality,
+            experience: handlerData.groom.experience,
+          }
           : 'none',
         assignment: handlerData.hasHandler
           ? {
-              id: handlerData.assignment.id,
-              priority: handlerData.assignment.priority,
-              createdAt: handlerData.assignment.createdAt,
-            }
+            id: handlerData.assignment.id,
+            priority: handlerData.assignment.priority,
+            createdAt: handlerData.assignment.createdAt,
+          }
           : 'none',
       },
     });
@@ -181,13 +181,13 @@ export async function checkHandlerEligibility(req, res) {
         bonusBreakdown: eligibility.bonusBreakdown,
         handler: eligibility.groom
           ? {
-              id: eligibility.groom.id,
-              name: eligibility.groom.name,
-              skillLevel: eligibility.groom.skillLevel,
-              speciality: eligibility.groom.speciality,
-              personality: eligibility.groom.personality,
-              experience: eligibility.groom.experience,
-            }
+            id: eligibility.groom.id,
+            name: eligibility.groom.name,
+            skillLevel: eligibility.groom.skillLevel,
+            speciality: eligibility.groom.speciality,
+            personality: eligibility.groom.personality,
+            experience: eligibility.groom.experience,
+          }
           : null,
         isConformationShow: true,
       },
@@ -339,9 +339,9 @@ export async function getHandlerRecommendations(req, res) {
         recommendations,
         currentHandler: currentHandler.hasHandler
           ? {
-              id: currentHandler.groom.id,
-              name: currentHandler.groom.name,
-            }
+            id: currentHandler.groom.id,
+            name: currentHandler.groom.name,
+          }
           : null,
       },
     });

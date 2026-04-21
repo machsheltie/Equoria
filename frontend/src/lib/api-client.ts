@@ -595,6 +595,11 @@ async function fetchWithAuth<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
+  // Story 21S-2 (finalized on master): CSRF test-skip-header branch removed from
+  // production frontend code. The client always acquires a real CSRF token for
+  // mutations, matching beta/production behavior. Playwright exercises the real
+  // CSRF round trip end-to-end; Vitest unit tests mock api-client at the module
+  // boundary so this path is not exercised during unit-test runs.
   const isMutation = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(
     (options.method || 'GET').toUpperCase()
   );
@@ -1948,6 +1953,26 @@ export const craftingApi = {
     apiClient.post<CraftResult>('/api/v1/crafting/craft', { recipeId }),
 };
 
+/**
+ * User preference shape persisted server-side and surfaced on /settings.
+ * Must stay aligned with ALLOWED_PREFERENCE_KEYS in
+ * backend/modules/auth/controllers/authController.mjs (Story 21S-5).
+ */
+export interface UserPreferences {
+  // Email notifications
+  emailCompetition: boolean;
+  emailBreeding: boolean;
+  emailSystem: boolean;
+  // In-app notifications
+  inAppTraining: boolean;
+  inAppAchievements: boolean;
+  inAppNews: boolean;
+  // Display / accessibility
+  reducedMotion: boolean;
+  highContrast: boolean;
+  compactCards: boolean;
+}
+
 export const authApi = {
   /**
    * Login user
@@ -2034,6 +2059,19 @@ export const authApi = {
         display?: Record<string, boolean | string | number> | null;
       };
     }>('/api/auth/profile', updates);
+  },
+
+  /**
+   * Update user preferences (Story 21S-5)
+   *
+   * Merge-updates the authenticated user's notification + display
+   * preferences. Unknown keys are rejected server-side.
+   */
+  updatePreferences: (updates: Partial<UserPreferences>) => {
+    return apiClient.patch<{
+      status: string;
+      data: { preferences: UserPreferences };
+    }>('/api/auth/profile/preferences', updates);
   },
 
   /**

@@ -16,6 +16,7 @@ import {
   deleteUserController,
   addXpController,
   searchUsers,
+  getUserCompetitionStats,
 } from '../controllers/userController.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { queryRateLimiter, mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
@@ -353,6 +354,34 @@ router.delete(
   validateUserId,
   requireSelfAccess(),
   deleteUserController,
+);
+
+/**
+ * GET /api/users/:userId/competition-stats
+ *
+ * Aggregated competition statistics across all horses owned by a user.
+ * Powers the /my-stable page's career totals (Story 21S-4).
+ */
+router.get(
+  '/:userId/competition-stats',
+  queryRateLimiter,
+  authenticateToken,
+  [
+    param('userId').isUUID().withMessage('User ID must be a valid UUID').notEmpty(),
+    (req, res, next) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res
+          .status(400)
+          .json({ success: false, message: 'Validation failed', errors: errors.array() });
+      }
+      return next();
+    },
+  ],
+  // CodeRabbit (2026-04-20): add self-access guard so authenticated users
+  // cannot read another user's aggregated competition stats (IDOR).
+  requireSelfAccess('userId'),
+  getUserCompetitionStats,
 );
 
 /**
