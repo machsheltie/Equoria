@@ -178,8 +178,13 @@ describe('🧠 Memory Management Integration Tests', () => {
     expect(registerResponse.status).toBe(201);
     _testUser = registerResponse.body.data.user;
 
+    // Story 21S-8: destructive memory routes (POST /cleanup, /gc) require the
+    // admin role. Promote the registered test user so the integration tests
+    // can exercise validation and success paths.
+    await prisma.user.update({ where: { id: _testUser.id }, data: { role: 'admin' } });
+
     // Generate JWT token for authentication using test helper
-    authToken = generateTestToken({ id: _testUser.id, email: _testUser.email });
+    authToken = generateTestToken({ id: _testUser.id, email: _testUser.email, role: 'admin' });
   });
 
   afterEach(async () => {
