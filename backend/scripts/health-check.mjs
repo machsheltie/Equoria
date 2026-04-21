@@ -9,7 +9,7 @@
  */
 
 import prisma from '../db/index.mjs';
-import { logger } from '../utils/logger.mjs';
+import logger from '../utils/logger.mjs';
 
 // Health check configuration
 const HEALTH_CONFIG = {

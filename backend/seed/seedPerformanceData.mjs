@@ -9,7 +9,7 @@
 
 import prisma from '../db/index.mjs';
 import bcrypt from 'bcryptjs';
-import { logger } from '../utils/logger.mjs';
+import logger from '../utils/logger.mjs';
 
 // Performance test data configuration
 const PERFORMANCE_DATA_CONFIG = {
