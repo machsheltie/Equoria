@@ -149,8 +149,10 @@ jobs:
             exit 1
           fi
 
-          # Check for secure flag in production
-          if grep -q "secure: process.env.NODE_ENV === 'production'" "$COOKIE_CONFIG"; then
+          # Check for secure flag in production.
+          # Accepts either the original literal or the refactored `isProduction`
+          # alias (cookieConfig.mjs line ~28: `const isProduction = config.env === 'production'`).
+          if grep -qE "secure: (process\.env\.NODE_ENV === 'production'|isProduction)" "$COOKIE_CONFIG"; then
             echo "✅ Secure flag configured for production"
           else
             echo "❌ ERROR: Secure flag not configured"
@@ -228,7 +230,8 @@ jobs:
         working-directory: backend
         env:
           DATABASE_URL: postgresql://postgres:ci_test_pg_strong_pass_42@localhost:5432/equoria_test
-          JWT_SECRET: test_secret_key_for_ci
+          JWT_SECRET: test_secret_key_for_ci_must_be_at_least_32_chars
+          JWT_REFRESH_SECRET: test_refresh_secret_for_ci_must_be_at_least_32_chars
           NODE_ENV: test
         run: |
           npm start &

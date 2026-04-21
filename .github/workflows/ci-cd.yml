@@ -174,7 +174,12 @@ jobs:
 
       - name: 'Run Backend Tests with Coverage'
         working-directory: ./backend
-        run: npm run test:coverage
+        # Backend suite is 3600+ tests; --coverage push heap past the 1.7GB Node default.
+        # 6GB heap + per-worker idle limit keeps the ubuntu-latest 7GB runner safe while
+        # forcing Jest to recycle workers before they balloon.
+        env:
+          NODE_OPTIONS: '--max-old-space-size=6144'
+        run: npm run test:coverage -- --workerIdleMemoryLimit=1G
 
       - name: 'Upload Coverage Reports to Codecov'
         uses: codecov/codecov-action@v3
