@@ -17,7 +17,6 @@
  */
 
 import request from 'supertest';
-import prisma from '../../../packages/database/prismaClient.mjs';
 import {
   createTestUser,
   cleanupTestUser,
