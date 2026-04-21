@@ -179,9 +179,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Shard 1 — unit tests, service tests, model tests (fast)
+          # Shard 1 — everything under tests/ except integration, plus
+          # test files under models/ and seed/. The old pattern anchored on $
+          # so `tests/services/foo.test.mjs` never matched (only bare
+          # `tests/foo.test.mjs` did), leaving 44 test files orphaned — this
+          # was why dozens of services showed 0% coverage despite having
+          # passing tests.
           - shard: 1
-            pattern: 'tests/(unit|services|[^/]+\.test\.mjs)$'
+            pattern: 'tests/(?!integration/)|(models|seed)/[^/]+\.test\.mjs$'
           # Shard 2 — integration tests + module co-located tests
           - shard: 2
             pattern: 'tests/integration|modules/.*/__tests__'
