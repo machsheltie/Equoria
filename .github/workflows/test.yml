@@ -293,11 +293,13 @@ jobs:
           name: coverage-shard-3
           path: ./coverage-shard-3
 
-      - name: Merge shard coverage with nyc
+      - name: Merge shard coverage and enforce threshold
         working-directory: ./backend
         run: |
           # Collect each shard's coverage-final.json into .nyc_output, then
-          # use nyc merge + nyc report to produce a unified coverage-summary.
+          # merge with nyc and let nyc report enforce the thresholds declared
+          # in backend/.nycrc.json (check-coverage: true → 85% lines/statements,
+          # 80% branches/functions). Single source of truth for thresholds.
           mkdir -p .nyc_output merged-coverage
           for shard in 1 2 3; do
             SRC="../coverage-shard-${shard}/coverage-final.json"
@@ -310,37 +312,14 @@ jobs:
             fi
           done
           npx nyc merge .nyc_output .nyc_output/merged.json
-          npx nyc report --reporter=json-summary --temp-dir=.nyc_output --report-dir=./merged-coverage
-
-      - name: Check merged coverage threshold
-        run: |
-          # Enforce the threshold against the MERGED coverage across all shards,
-          # not per-shard (each shard only runs ~1/3 of the suite).
-          THRESHOLD=70
-          SUMMARY="./backend/merged-coverage/coverage-summary.json"
-          if [ ! -f "$SUMMARY" ]; then
-            echo "❌ Merged summary not found at $SUMMARY"
-            exit 1
-          fi
-          LINES=$(node -e "const s=require('$SUMMARY').total; console.log(s.lines.pct)")
-          BRANCHES=$(node -e "const s=require('$SUMMARY').total; console.log(s.branches.pct)")
-          STATEMENTS=$(node -e "const s=require('$SUMMARY').total; console.log(s.statements.pct)")
-          FUNCTIONS=$(node -e "const s=require('$SUMMARY').total; console.log(s.functions.pct)")
-          echo "Merged coverage — lines: $LINES% branches: $BRANCHES% statements: $STATEMENTS% functions: $FUNCTIONS%"
-          FAIL=0
-          if (( $(echo "$LINES < $THRESHOLD" | bc -l) )); then
-            echo "❌ Merged lines coverage $LINES% < $THRESHOLD%"
-            FAIL=1
-          fi
-          if (( $(echo "$BRANCHES < $THRESHOLD" | bc -l) )); then
-            echo "❌ Merged branches coverage $BRANCHES% < $THRESHOLD%"
-            FAIL=1
-          fi
-          if [ "$FAIL" = "1" ]; then
-            echo "Coverage gate failed — minimum threshold is $THRESHOLD%"
-            exit 1
-          fi
-          echo "✅ Coverage gate passed — merged coverage ≥ $THRESHOLD%"
+          # --reporter=text gives a readable per-file table in CI logs,
+          # json-summary writes the structured summary Codecov consumes.
+          npx nyc report \
+            --reporter=text \
+            --reporter=text-summary \
+            --reporter=json-summary \
+            --temp-dir=.nyc_output \
+            --report-dir=./merged-coverage
 
       - name: Upload merged coverage to Codecov
         uses: codecov/codecov-action@v4
