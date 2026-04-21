@@ -419,6 +419,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: |
+            package-lock.json
             backend/package-lock.json
             frontend/package-lock.json
 
@@ -432,6 +433,7 @@ jobs:
 
       - name: Install all dependencies
         run: |
+          npm ci
           cd backend && npm ci
           cd ../frontend && npm ci
           cd ../packages/database && npm ci
@@ -692,6 +694,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
           cache-dependency-path: |
+            package-lock.json
             backend/package-lock.json
             frontend/package-lock.json
             packages/database/package-lock.json
@@ -706,6 +709,7 @@ jobs:
 
       - name: Install all dependencies
         run: |
+          npm ci
           cd backend && npm ci
           cd ../frontend && npm ci
           cd ../packages/database && npm ci
