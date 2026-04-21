@@ -438,7 +438,9 @@ const CompetitionEntryCard = memo(
           <div className="flex items-center gap-1">
             <Target className="h-4 w-4 text-[rgb(148,163,184)]" aria-hidden="true" />
             <span className="text-[rgb(148,163,184)]">Score:</span>
-            <span className="font-medium text-[rgb(220,235,255)]">{entry.finalScore.toFixed(1)}</span>
+            <span className="font-medium text-[rgb(220,235,255)]">
+              {entry.finalScore.toFixed(1)}
+            </span>
           </div>
 
           {/* Prize */}

@@ -19,10 +19,7 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as competitionResultsApi from '@/lib/api/competitionResults';
-import {
-  useUserCompetitionStats,
-  userCompetitionStatsQueryKeys,
-} from '../useUserCompetitionStats';
+import { useUserCompetitionStats, userCompetitionStatsQueryKeys } from '../useUserCompetitionStats';
 import type { UserCompetitionStats } from '@/lib/api/competitionResults';
 
 // Mock API functions
@@ -147,9 +144,7 @@ describe('useUserCompetitionStats', () => {
 
   // Test 1: Fetches stats when userId provided
   it('should fetch competition stats when userId is provided', async () => {
-    vi.mocked(competitionResultsApi.fetchUserCompetitionStats).mockResolvedValue(
-      mockUserStats
-    );
+    vi.mocked(competitionResultsApi.fetchUserCompetitionStats).mockResolvedValue(mockUserStats);
 
     const { result } = renderHook(() => useUserCompetitionStats('user-1'), {
       wrapper: createWrapper(),
@@ -179,9 +174,7 @@ describe('useUserCompetitionStats', () => {
 
   // Test 3: Returns aggregated statistics
   it('should return aggregated statistics across all horses', async () => {
-    vi.mocked(competitionResultsApi.fetchUserCompetitionStats).mockResolvedValue(
-      mockUserStats
-    );
+    vi.mocked(competitionResultsApi.fetchUserCompetitionStats).mockResolvedValue(mockUserStats);
 
     const { result } = renderHook(() => useUserCompetitionStats('user-1'), {
       wrapper: createWrapper(),
@@ -222,9 +215,7 @@ describe('useUserCompetitionStats', () => {
 
   // Test 5: Disabled when userId is null
   it('should not fetch when userId is null', () => {
-    vi.mocked(competitionResultsApi.fetchUserCompetitionStats).mockResolvedValue(
-      mockUserStats
-    );
+    vi.mocked(competitionResultsApi.fetchUserCompetitionStats).mockResolvedValue(mockUserStats);
 
     const { result } = renderHook(() => useUserCompetitionStats(null), {
       wrapper: createWrapper(),
@@ -271,9 +262,7 @@ describe('useUserCompetitionStats', () => {
 
   // Test 7: Uses correct query key
   it('should use correct query key structure', async () => {
-    vi.mocked(competitionResultsApi.fetchUserCompetitionStats).mockResolvedValue(
-      mockUserStats
-    );
+    vi.mocked(competitionResultsApi.fetchUserCompetitionStats).mockResolvedValue(mockUserStats);
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -301,9 +290,7 @@ describe('useUserCompetitionStats', () => {
 
   // Test 8: 2 minute staleTime (most frequent updates)
   it('should use 2 minute staleTime for frequent updates', async () => {
-    vi.mocked(competitionResultsApi.fetchUserCompetitionStats).mockResolvedValue(
-      mockUserStats
-    );
+    vi.mocked(competitionResultsApi.fetchUserCompetitionStats).mockResolvedValue(mockUserStats);
 
     const queryClient = new QueryClient({
       defaultOptions: {
@@ -338,9 +325,7 @@ describe('useUserCompetitionStats', () => {
 
   // Test 9: Recent competitions included
   it('should include recent competitions in the stats', async () => {
-    vi.mocked(competitionResultsApi.fetchUserCompetitionStats).mockResolvedValue(
-      mockUserStats
-    );
+    vi.mocked(competitionResultsApi.fetchUserCompetitionStats).mockResolvedValue(mockUserStats);
 
     const { result } = renderHook(() => useUserCompetitionStats('user-1'), {
       wrapper: createWrapper(),
@@ -365,9 +350,7 @@ describe('useUserCompetitionStats', () => {
 
   // Test 10: Zero stats handled correctly (new users)
   it('should handle zero stats correctly for new users', async () => {
-    vi.mocked(competitionResultsApi.fetchUserCompetitionStats).mockResolvedValue(
-      mockNewUserStats
-    );
+    vi.mocked(competitionResultsApi.fetchUserCompetitionStats).mockResolvedValue(mockNewUserStats);
 
     const { result } = renderHook(() => useUserCompetitionStats('new-user'), {
       wrapper: createWrapper(),
@@ -392,8 +375,14 @@ describe('userCompetitionStatsQueryKeys', () => {
   it('should export query keys for external use', () => {
     expect(userCompetitionStatsQueryKeys).toBeDefined();
     expect(userCompetitionStatsQueryKeys.all).toEqual(['user-competition-stats']);
-    expect(userCompetitionStatsQueryKeys.stats('user-1')).toEqual(['user-competition-stats', 'user-1']);
-    expect(userCompetitionStatsQueryKeys.stats('abc-123')).toEqual(['user-competition-stats', 'abc-123']);
+    expect(userCompetitionStatsQueryKeys.stats('user-1')).toEqual([
+      'user-competition-stats',
+      'user-1',
+    ]);
+    expect(userCompetitionStatsQueryKeys.stats('abc-123')).toEqual([
+      'user-competition-stats',
+      'abc-123',
+    ]);
   });
 
   it('should create unique keys for different user IDs', () => {

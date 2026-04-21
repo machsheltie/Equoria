@@ -29,12 +29,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import {
-  fetchXpHistory,
-  XpGain,
-  XpHistoryFilters,
-  XpApiError,
-} from '@/lib/api/xp';
+import { fetchXpHistory, XpGain, XpHistoryFilters, XpApiError } from '@/lib/api/xp';
 
 /**
  * Query keys for XP history queries
@@ -68,10 +63,7 @@ export const xpHistoryQueryKeys = {
  * - staleTime: 5 minutes - History updates after XP gains
  * - gcTime: 10 minutes - Cache retained for 10 minutes after unmount
  */
-export function useXpHistory(
-  horseId: number,
-  filters?: XpHistoryFilters
-) {
+export function useXpHistory(horseId: number, filters?: XpHistoryFilters) {
   return useQuery<XpGain[], XpApiError>({
     queryKey: filters
       ? xpHistoryQueryKeys.filtered(horseId, filters)

@@ -139,7 +139,11 @@ describe('Button accessibility', () => {
   it('does not fire onClick when disabled', async () => {
     const user = userEvent.setup();
     const handleClick = vi.fn();
-    render(<Button disabled onClick={handleClick}>Disabled</Button>);
+    render(
+      <Button disabled onClick={handleClick}>
+        Disabled
+      </Button>
+    );
     await user.click(screen.getByRole('button', { name: 'Disabled' }));
     expect(handleClick).not.toHaveBeenCalled();
   });

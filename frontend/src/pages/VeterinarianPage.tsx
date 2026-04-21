@@ -31,8 +31,7 @@ function healthBadgeClasses(status: string): string {
   const s = status.toLowerCase();
   if (s === 'excellent' || s === 'good')
     return 'bg-[var(--status-success)]/20 text-[var(--status-success)] border-[var(--status-success)]/30';
-  if (s === 'fair')
-    return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+  if (s === 'fair') return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
   if (s === 'poor' || s === 'injured')
     return 'bg-[var(--status-danger)]/20 text-[var(--status-danger)] border-[var(--status-danger)]/30';
   return 'bg-[var(--glass-bg)] text-[var(--text-muted)] border-[var(--glass-border)]';
@@ -67,10 +66,7 @@ const HorsesHealthTab: React.FC<HorsesHealthTabProps> = ({
 
   if (isLoading) {
     return (
-      <div
-        className="flex items-center justify-center min-h-64"
-        data-testid="horses-health-tab"
-      >
+      <div className="flex items-center justify-center min-h-64" data-testid="horses-health-tab">
         <Loader2 className="w-8 h-8 text-[var(--gold-400)] animate-spin" />
         <span className="ml-3 text-[var(--text-muted)] text-sm">Loading your horses…</span>
       </div>
@@ -98,7 +94,9 @@ const HorsesHealthTab: React.FC<HorsesHealthTabProps> = ({
         data-testid="horses-health-tab"
       >
         <Heart className="w-12 h-12 text-[var(--gold-400)]/30 mb-4" />
-        <h2 className="text-lg font-bold text-[var(--text-secondary)] mb-2">No Horses Registered</h2>
+        <h2 className="text-lg font-bold text-[var(--text-secondary)] mb-2">
+          No Horses Registered
+        </h2>
         <p className="text-sm text-[var(--text-muted)] max-w-sm mb-6">
           Visit your stable to bring horses in for their first health check. Regular vetting keeps
           your horses at peak performance.
@@ -213,10 +211,7 @@ const ServicesTab: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div
-        className="flex items-center justify-center min-h-64"
-        data-testid="vet-services-tab"
-      >
+      <div className="flex items-center justify-center min-h-64" data-testid="vet-services-tab">
         <Loader2 className="w-8 h-8 text-[var(--gold-400)] animate-spin" />
         <span className="ml-3 text-[var(--text-muted)] text-sm">Loading services…</span>
       </div>
@@ -244,7 +239,9 @@ const ServicesTab: React.FC = () => {
         data-testid="vet-services-tab"
       >
         <Activity className="w-12 h-12 text-[var(--gold-400)]/30 mb-4" />
-        <h2 className="text-lg font-bold text-[var(--text-secondary)] mb-2">No Services Available</h2>
+        <h2 className="text-lg font-bold text-[var(--text-secondary)] mb-2">
+          No Services Available
+        </h2>
         <p className="text-sm text-[var(--text-muted)] max-w-sm">
           No services are available at this time. Check back later.
         </p>

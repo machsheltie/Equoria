@@ -68,24 +68,14 @@ describe('EmptyState', () => {
   describe('CTA button', () => {
     it('renders CTA button when action is provided', () => {
       const onClick = vi.fn();
-      render(
-        <EmptyState
-          variant="no-horses"
-          action={{ label: 'Browse Horses', onClick }}
-        />
-      );
+      render(<EmptyState variant="no-horses" action={{ label: 'Browse Horses', onClick }} />);
       const button = screen.getByRole('button', { name: 'Browse Horses' });
       expect(button).toBeInTheDocument();
     });
 
     it('calls onClick when CTA is clicked', () => {
       const onClick = vi.fn();
-      render(
-        <EmptyState
-          variant="no-horses"
-          action={{ label: 'Browse Horses', onClick }}
-        />
-      );
+      render(<EmptyState variant="no-horses" action={{ label: 'Browse Horses', onClick }} />);
       fireEvent.click(screen.getByRole('button', { name: 'Browse Horses' }));
       expect(onClick).toHaveBeenCalledOnce();
     });

@@ -11,7 +11,9 @@ import { CompatibilityPreview, type CompatibilityData } from '../CompatibilityPr
 
 // Mock recharts to avoid rendering issues
 vi.mock('recharts', () => ({
-  ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
+  ResponsiveContainer: ({ children }: any) => (
+    <div data-testid="responsive-container">{children}</div>
+  ),
   RadarChart: ({ children }: any) => <svg data-testid="radar-chart">{children}</svg>,
   PolarGrid: () => <g />,
   PolarAngleAxis: () => <g />,
@@ -31,9 +33,7 @@ const sampleData: CompatibilityData = {
     { name: 'Gentle', probability: 0.4, source: 'dam' },
   ],
   inbreedingCoefficient: 0.05,
-  pedigreeOverlap: [
-    { ancestorName: 'Eclipse', generations: 3 },
-  ],
+  pedigreeOverlap: [{ ancestorName: 'Eclipse', generations: 3 }],
 };
 
 const highInbreedingData: CompatibilityData = {
@@ -43,37 +43,19 @@ const highInbreedingData: CompatibilityData = {
 
 describe('CompatibilityPreview', () => {
   it('renders the component with correct testid', () => {
-    render(
-      <CompatibilityPreview
-        mareName="Luna"
-        stallionName="Atlas"
-        data={sampleData}
-      />
-    );
+    render(<CompatibilityPreview mareName="Luna" stallionName="Atlas" data={sampleData} />);
     expect(screen.getByTestId('compatibility-preview')).toBeInTheDocument();
   });
 
   it('displays mare and stallion names', () => {
-    render(
-      <CompatibilityPreview
-        mareName="Luna"
-        stallionName="Atlas"
-        data={sampleData}
-      />
-    );
+    render(<CompatibilityPreview mareName="Luna" stallionName="Atlas" data={sampleData} />);
     // Names appear in a combined text node: "Luna × Atlas"
     expect(screen.getByText(/Luna/)).toBeInTheDocument();
     expect(screen.getByText(/Atlas/)).toBeInTheDocument();
   });
 
   it('renders all 4 tab buttons', () => {
-    render(
-      <CompatibilityPreview
-        mareName="Luna"
-        stallionName="Atlas"
-        data={sampleData}
-      />
-    );
+    render(<CompatibilityPreview mareName="Luna" stallionName="Atlas" data={sampleData} />);
     const tabList = screen.getByRole('tablist');
     expect(tabList).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: 'Stats' })).toBeInTheDocument();
@@ -84,74 +66,41 @@ describe('CompatibilityPreview', () => {
 
   it('shows loading skeleton when isLoading is true', () => {
     const { container } = render(
-      <CompatibilityPreview
-        mareName="Luna"
-        stallionName="Atlas"
-        data={null}
-        isLoading
-      />
+      <CompatibilityPreview mareName="Luna" stallionName="Atlas" data={null} isLoading />
     );
     expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
   });
 
   it('shows loading skeleton when data is null', () => {
     const { container } = render(
-      <CompatibilityPreview
-        mareName="Luna"
-        stallionName="Atlas"
-        data={null}
-      />
+      <CompatibilityPreview mareName="Luna" stallionName="Atlas" data={null} />
     );
     expect(container.querySelector('.animate-pulse')).toBeInTheDocument();
   });
 
   describe('Tab switching', () => {
     it('shows Stats tab content by default', () => {
-      render(
-        <CompatibilityPreview
-          mareName="Luna"
-          stallionName="Atlas"
-          data={sampleData}
-        />
-      );
+      render(<CompatibilityPreview mareName="Luna" stallionName="Atlas" data={sampleData} />);
       // Stats tab should show the radar chart
       expect(screen.getByTestId('radar-chart')).toBeInTheDocument();
     });
 
     it('switches to Traits tab on click', () => {
-      render(
-        <CompatibilityPreview
-          mareName="Luna"
-          stallionName="Atlas"
-          data={sampleData}
-        />
-      );
+      render(<CompatibilityPreview mareName="Luna" stallionName="Atlas" data={sampleData} />);
       fireEvent.click(screen.getByRole('tab', { name: 'Traits' }));
       expect(screen.getByText('Speed Demon')).toBeInTheDocument();
       expect(screen.getByText('60%')).toBeInTheDocument();
     });
 
     it('switches to Inbreeding tab on click', () => {
-      render(
-        <CompatibilityPreview
-          mareName="Luna"
-          stallionName="Atlas"
-          data={sampleData}
-        />
-      );
+      render(<CompatibilityPreview mareName="Luna" stallionName="Atlas" data={sampleData} />);
       fireEvent.click(screen.getByRole('tab', { name: 'Inbreeding' }));
       expect(screen.getByText('5%')).toBeInTheDocument();
       expect(screen.getByText('Inbreeding coefficient')).toBeInTheDocument();
     });
 
     it('switches to Pedigree tab on click', () => {
-      render(
-        <CompatibilityPreview
-          mareName="Luna"
-          stallionName="Atlas"
-          data={sampleData}
-        />
-      );
+      render(<CompatibilityPreview mareName="Luna" stallionName="Atlas" data={sampleData} />);
       fireEvent.click(screen.getByRole('tab', { name: 'Pedigree' }));
       expect(screen.getByText('Eclipse')).toBeInTheDocument();
       expect(screen.getByText('3 gens back')).toBeInTheDocument();
@@ -161,24 +110,14 @@ describe('CompatibilityPreview', () => {
   describe('Inbreeding warning', () => {
     it('shows warning when coefficient >= 12.5%', () => {
       render(
-        <CompatibilityPreview
-          mareName="Luna"
-          stallionName="Atlas"
-          data={highInbreedingData}
-        />
+        <CompatibilityPreview mareName="Luna" stallionName="Atlas" data={highInbreedingData} />
       );
       fireEvent.click(screen.getByRole('tab', { name: 'Inbreeding' }));
       expect(screen.getByText(/High inbreeding coefficient/)).toBeInTheDocument();
     });
 
     it('shows healthy message when coefficient < 12.5%', () => {
-      render(
-        <CompatibilityPreview
-          mareName="Luna"
-          stallionName="Atlas"
-          data={sampleData}
-        />
-      );
+      render(<CompatibilityPreview mareName="Luna" stallionName="Atlas" data={sampleData} />);
       fireEvent.click(screen.getByRole('tab', { name: 'Inbreeding' }));
       expect(screen.getByText(/Low inbreeding/)).toBeInTheDocument();
     });
@@ -190,13 +129,7 @@ describe('CompatibilityPreview', () => {
         ...sampleData,
         pedigreeOverlap: [],
       };
-      render(
-        <CompatibilityPreview
-          mareName="Luna"
-          stallionName="Atlas"
-          data={noOverlapData}
-        />
-      );
+      render(<CompatibilityPreview mareName="Luna" stallionName="Atlas" data={noOverlapData} />);
       fireEvent.click(screen.getByRole('tab', { name: 'Pedigree' }));
       expect(screen.getByText('No common ancestors')).toBeInTheDocument();
     });

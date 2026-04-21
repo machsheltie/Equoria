@@ -250,10 +250,7 @@ describe('useAddXp', () => {
     const wrapper = createWrapper();
 
     // Pre-populate cache with filtered XP history
-    queryClient.setQueryData(
-      xpHistoryQueryKeys.filtered(1, { dateRange: '30days' }),
-      []
-    );
+    queryClient.setQueryData(xpHistoryQueryKeys.filtered(1, { dateRange: '30days' }), []);
 
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
@@ -394,9 +391,7 @@ describe('useAddXp', () => {
       message: 'XP added - another level up!',
     };
 
-    vi.mocked(xpApi.addXp)
-      .mockResolvedValueOnce(result1)
-      .mockResolvedValueOnce(result2);
+    vi.mocked(xpApi.addXp).mockResolvedValueOnce(result1).mockResolvedValueOnce(result2);
 
     const { result } = renderHook(() => useAddXp(), {
       wrapper: createWrapper(),

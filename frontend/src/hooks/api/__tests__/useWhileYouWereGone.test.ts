@@ -24,29 +24,26 @@ const FIVE_HOURS_AGO = new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString();
 
 describe('useWhileYouWereGone', () => {
   it('does not fetch when enabled is false', () => {
-    const { result } = renderHook(
-      () => useWhileYouWereGone(FIVE_HOURS_AGO, false),
-      { wrapper: createWrapper() }
-    );
+    const { result } = renderHook(() => useWhileYouWereGone(FIVE_HOURS_AGO, false), {
+      wrapper: createWrapper(),
+    });
     // Should not be loading since query is disabled
     expect(result.current.isLoading).toBe(false);
     expect(result.current.fetchStatus).toBe('idle');
   });
 
   it('does not fetch when since is null', () => {
-    const { result } = renderHook(
-      () => useWhileYouWereGone(null, true),
-      { wrapper: createWrapper() }
-    );
+    const { result } = renderHook(() => useWhileYouWereGone(null, true), {
+      wrapper: createWrapper(),
+    });
     expect(result.current.isLoading).toBe(false);
     expect(result.current.fetchStatus).toBe('idle');
   });
 
   it('fetches data when enabled is true and since is provided', async () => {
-    const { result } = renderHook(
-      () => useWhileYouWereGone(FIVE_HOURS_AGO, true),
-      { wrapper: createWrapper() }
-    );
+    const { result } = renderHook(() => useWhileYouWereGone(FIVE_HOURS_AGO, true), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -56,10 +53,9 @@ describe('useWhileYouWereGone', () => {
   });
 
   it('returns items with correct shape', async () => {
-    const { result } = renderHook(
-      () => useWhileYouWereGone(FIVE_HOURS_AGO, true),
-      { wrapper: createWrapper() }
-    );
+    const { result } = renderHook(() => useWhileYouWereGone(FIVE_HOURS_AGO, true), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -73,10 +69,9 @@ describe('useWhileYouWereGone', () => {
   });
 
   it('returns hasMore flag', async () => {
-    const { result } = renderHook(
-      () => useWhileYouWereGone(FIVE_HOURS_AGO, true),
-      { wrapper: createWrapper() }
-    );
+    const { result } = renderHook(() => useWhileYouWereGone(FIVE_HOURS_AGO, true), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 

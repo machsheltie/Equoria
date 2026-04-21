@@ -55,9 +55,7 @@ describe('GoldBorderFrame', () => {
       </GoldBorderFrame>
     );
     const corners = container.querySelectorAll('.gold-corner-animate');
-    const delays = Array.from(corners).map(
-      (c) => (c as HTMLElement).style.animationDelay
-    );
+    const delays = Array.from(corners).map((c) => (c as HTMLElement).style.animationDelay);
     // Expect 4 staggered delays: 0ms, 80ms, 160ms, 240ms
     expect(delays).toEqual(['0ms', '80ms', '160ms', '240ms']);
   });

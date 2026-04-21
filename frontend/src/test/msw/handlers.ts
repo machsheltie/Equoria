@@ -1751,7 +1751,7 @@ export const handlers = [
     const topline = 67 + seed;
     const overallConformation =
       Math.round(
-        ((head + neck + shoulders + back + hindquarters + legs + hooves + topline) / 8) * 10,
+        ((head + neck + shoulders + back + hindquarters + legs + hooves + topline) / 8) * 10
       ) / 10;
     return HttpResponse.json({
       success: true,

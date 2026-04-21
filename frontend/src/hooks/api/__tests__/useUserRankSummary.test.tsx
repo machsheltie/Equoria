@@ -104,10 +104,9 @@ describe('useUserRankSummary', () => {
   it('should fetch user rank summary when a valid userId is provided', async () => {
     vi.mocked(leaderboardsApi.fetchUserRankSummary).mockResolvedValue(mockUserRankSummary);
 
-    const { result } = renderHook(
-      () => useUserRankSummary({ userId: 'user-123' }),
-      { wrapper: createWrapper() }
-    );
+    const { result } = renderHook(() => useUserRankSummary({ userId: 'user-123' }), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -122,10 +121,9 @@ describe('useUserRankSummary', () => {
       () => new Promise(() => {}) // Never resolves to keep loading state
     );
 
-    const { result } = renderHook(
-      () => useUserRankSummary({ userId: 'user-123' }),
-      { wrapper: createWrapper() }
-    );
+    const { result } = renderHook(() => useUserRankSummary({ userId: 'user-123' }), {
+      wrapper: createWrapper(),
+    });
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.isPending).toBe(true);
@@ -142,10 +140,9 @@ describe('useUserRankSummary', () => {
 
     vi.mocked(leaderboardsApi.fetchUserRankSummary).mockRejectedValue(mockError);
 
-    const { result } = renderHook(
-      () => useUserRankSummary({ userId: 'nonexistent-user' }),
-      { wrapper: createWrapper() }
-    );
+    const { result } = renderHook(() => useUserRankSummary({ userId: 'nonexistent-user' }), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
@@ -163,10 +160,9 @@ describe('useUserRankSummary', () => {
       },
     });
 
-    const { result } = renderHook(
-      () => useUserRankSummary({ userId: 'user-123' }),
-      { wrapper: createWrapper(queryClient) }
-    );
+    const { result } = renderHook(() => useUserRankSummary({ userId: 'user-123' }), {
+      wrapper: createWrapper(queryClient),
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -188,10 +184,9 @@ describe('useUserRankSummary', () => {
     });
 
     // First render - should fetch
-    const { result, unmount } = renderHook(
-      () => useUserRankSummary({ userId: 'user-123' }),
-      { wrapper: createWrapper(queryClient) }
-    );
+    const { result, unmount } = renderHook(() => useUserRankSummary({ userId: 'user-123' }), {
+      wrapper: createWrapper(queryClient),
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(leaderboardsApi.fetchUserRankSummary).toHaveBeenCalledTimes(1);
@@ -199,10 +194,9 @@ describe('useUserRankSummary', () => {
     // Unmount and remount - should NOT refetch due to staleTime
     unmount();
 
-    const { result: result2 } = renderHook(
-      () => useUserRankSummary({ userId: 'user-123' }),
-      { wrapper: createWrapper(queryClient) }
-    );
+    const { result: result2 } = renderHook(() => useUserRankSummary({ userId: 'user-123' }), {
+      wrapper: createWrapper(queryClient),
+    });
 
     await waitFor(() => expect(result2.current.isSuccess).toBe(true));
     expect(result2.current.data).toEqual(mockUserRankSummary);
@@ -241,10 +235,9 @@ describe('useUserRankSummary', () => {
       },
     });
 
-    const { result } = renderHook(
-      () => useUserRankSummary({ userId: 'user-123' }),
-      { wrapper: createWrapper(queryClient) }
-    );
+    const { result } = renderHook(() => useUserRankSummary({ userId: 'user-123' }), {
+      wrapper: createWrapper(queryClient),
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.userName).toBe('John Doe');
@@ -280,18 +273,16 @@ describe('useUserRankSummary', () => {
     });
 
     // Fetch user 1
-    const { result: result1 } = renderHook(
-      () => useUserRankSummary({ userId: 'user-111' }),
-      { wrapper: createWrapper(queryClient) }
-    );
+    const { result: result1 } = renderHook(() => useUserRankSummary({ userId: 'user-111' }), {
+      wrapper: createWrapper(queryClient),
+    });
 
     await waitFor(() => expect(result1.current.isSuccess).toBe(true));
 
     // Fetch user 2
-    const { result: result2 } = renderHook(
-      () => useUserRankSummary({ userId: 'user-222' }),
-      { wrapper: createWrapper(queryClient) }
-    );
+    const { result: result2 } = renderHook(() => useUserRankSummary({ userId: 'user-222' }), {
+      wrapper: createWrapper(queryClient),
+    });
 
     await waitFor(() => expect(result2.current.isSuccess).toBe(true));
 

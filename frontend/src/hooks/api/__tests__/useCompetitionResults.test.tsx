@@ -17,10 +17,7 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as competitionResultsApi from '@/lib/api/competitionResults';
-import {
-  useCompetitionResults,
-  competitionResultsQueryKeys,
-} from '../useCompetitionResults';
+import { useCompetitionResults, competitionResultsQueryKeys } from '../useCompetitionResults';
 import type { CompetitionResults } from '@/lib/api/competitionResults';
 
 // Mock API functions
@@ -199,8 +196,16 @@ describe('useCompetitionResults', () => {
 
   // Test 6: Updates when competitionId changes
   it('should fetch new data when competitionId changes', async () => {
-    const results1 = { ...mockCompetitionResults, competitionId: 1, competitionName: 'Competition 1' };
-    const results2 = { ...mockCompetitionResults, competitionId: 2, competitionName: 'Competition 2' };
+    const results1 = {
+      ...mockCompetitionResults,
+      competitionId: 1,
+      competitionName: 'Competition 1',
+    };
+    const results2 = {
+      ...mockCompetitionResults,
+      competitionId: 2,
+      competitionName: 'Competition 2',
+    };
 
     vi.mocked(competitionResultsApi.fetchCompetitionResults).mockImplementation((id) => {
       if (id === 1) return Promise.resolve(results1);

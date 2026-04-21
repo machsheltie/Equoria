@@ -21,12 +21,7 @@ describe('XpProgressBar', () => {
   describe('Rendering with different percentages', () => {
     it('should render with 0% progress', () => {
       render(
-        <XpProgressBar
-          currentXp={0}
-          xpToNextLevel={100}
-          progressPercent={0}
-          colorTier="blue"
-        />
+        <XpProgressBar currentXp={0} xpToNextLevel={100} progressPercent={0} colorTier="blue" />
       );
       const progressBar = screen.getByRole('progressbar');
       expect(progressBar).toBeInTheDocument();
@@ -34,12 +29,7 @@ describe('XpProgressBar', () => {
 
     it('should render with 50% progress', () => {
       render(
-        <XpProgressBar
-          currentXp={50}
-          xpToNextLevel={100}
-          progressPercent={50}
-          colorTier="orange"
-        />
+        <XpProgressBar currentXp={50} xpToNextLevel={100} progressPercent={50} colorTier="orange" />
       );
       const progressBar = screen.getByRole('progressbar');
       expect(progressBar).toHaveAttribute('aria-valuenow', '50');
@@ -47,12 +37,7 @@ describe('XpProgressBar', () => {
 
     it('should render with 100% progress', () => {
       render(
-        <XpProgressBar
-          currentXp={100}
-          xpToNextLevel={100}
-          progressPercent={100}
-          colorTier="gold"
-        />
+        <XpProgressBar currentXp={100} xpToNextLevel={100} progressPercent={100} colorTier="gold" />
       );
       const progressBar = screen.getByRole('progressbar');
       expect(progressBar).toHaveAttribute('aria-valuenow', '100');
@@ -60,12 +45,7 @@ describe('XpProgressBar', () => {
 
     it('should set progress fill width based on progressPercent', () => {
       render(
-        <XpProgressBar
-          currentXp={75}
-          xpToNextLevel={100}
-          progressPercent={75}
-          colorTier="orange"
-        />
+        <XpProgressBar currentXp={75} xpToNextLevel={100} progressPercent={75} colorTier="orange" />
       );
       const progressFill = screen.getByTestId('xp-progress-fill');
       expect(progressFill).toHaveStyle({ width: '75%' });
@@ -75,12 +55,7 @@ describe('XpProgressBar', () => {
   describe('Color tier application', () => {
     it('should apply blue color tier classes', () => {
       render(
-        <XpProgressBar
-          currentXp={30}
-          xpToNextLevel={100}
-          progressPercent={30}
-          colorTier="blue"
-        />
+        <XpProgressBar currentXp={30} xpToNextLevel={100} progressPercent={30} colorTier="blue" />
       );
       const progressFill = screen.getByTestId('xp-progress-fill');
       expect(progressFill).toHaveAttribute('data-color-tier', 'blue');
@@ -88,12 +63,7 @@ describe('XpProgressBar', () => {
 
     it('should apply orange color tier classes', () => {
       render(
-        <XpProgressBar
-          currentXp={60}
-          xpToNextLevel={100}
-          progressPercent={60}
-          colorTier="orange"
-        />
+        <XpProgressBar currentXp={60} xpToNextLevel={100} progressPercent={60} colorTier="orange" />
       );
       const progressFill = screen.getByTestId('xp-progress-fill');
       expect(progressFill).toHaveAttribute('data-color-tier', 'orange');
@@ -101,12 +71,7 @@ describe('XpProgressBar', () => {
 
     it('should apply gold color tier classes', () => {
       render(
-        <XpProgressBar
-          currentXp={95}
-          xpToNextLevel={100}
-          progressPercent={95}
-          colorTier="gold"
-        />
+        <XpProgressBar currentXp={95} xpToNextLevel={100} progressPercent={95} colorTier="gold" />
       );
       const progressFill = screen.getByTestId('xp-progress-fill');
       expect(progressFill).toHaveAttribute('data-color-tier', 'gold');
@@ -116,12 +81,7 @@ describe('XpProgressBar', () => {
   describe('Percentage boundaries', () => {
     it('should use blue tier at 49%', () => {
       render(
-        <XpProgressBar
-          currentXp={49}
-          xpToNextLevel={100}
-          progressPercent={49}
-          colorTier="blue"
-        />
+        <XpProgressBar currentXp={49} xpToNextLevel={100} progressPercent={49} colorTier="blue" />
       );
       const progressFill = screen.getByTestId('xp-progress-fill');
       expect(progressFill).toHaveAttribute('data-color-tier', 'blue');
@@ -129,12 +89,7 @@ describe('XpProgressBar', () => {
 
     it('should use orange tier at exactly 50%', () => {
       render(
-        <XpProgressBar
-          currentXp={50}
-          xpToNextLevel={100}
-          progressPercent={50}
-          colorTier="orange"
-        />
+        <XpProgressBar currentXp={50} xpToNextLevel={100} progressPercent={50} colorTier="orange" />
       );
       const progressFill = screen.getByTestId('xp-progress-fill');
       expect(progressFill).toHaveAttribute('data-color-tier', 'orange');
@@ -142,12 +97,7 @@ describe('XpProgressBar', () => {
 
     it('should use orange tier at 89%', () => {
       render(
-        <XpProgressBar
-          currentXp={89}
-          xpToNextLevel={100}
-          progressPercent={89}
-          colorTier="orange"
-        />
+        <XpProgressBar currentXp={89} xpToNextLevel={100} progressPercent={89} colorTier="orange" />
       );
       const progressFill = screen.getByTestId('xp-progress-fill');
       expect(progressFill).toHaveAttribute('data-color-tier', 'orange');
@@ -155,12 +105,7 @@ describe('XpProgressBar', () => {
 
     it('should use gold tier at exactly 90%', () => {
       render(
-        <XpProgressBar
-          currentXp={90}
-          xpToNextLevel={100}
-          progressPercent={90}
-          colorTier="gold"
-        />
+        <XpProgressBar currentXp={90} xpToNextLevel={100} progressPercent={90} colorTier="gold" />
       );
       const progressFill = screen.getByTestId('xp-progress-fill');
       expect(progressFill).toHaveAttribute('data-color-tier', 'gold');
@@ -196,12 +141,7 @@ describe('XpProgressBar', () => {
 
     it('should hide percentage text by default', () => {
       render(
-        <XpProgressBar
-          currentXp={45}
-          xpToNextLevel={100}
-          progressPercent={45}
-          colorTier="blue"
-        />
+        <XpProgressBar currentXp={45} xpToNextLevel={100} progressPercent={45} colorTier="blue" />
       );
       expect(screen.queryByText('45%')).not.toBeInTheDocument();
     });
@@ -210,12 +150,7 @@ describe('XpProgressBar', () => {
   describe('Edge cases', () => {
     it('should clamp progress width to 0% when progressPercent is negative', () => {
       render(
-        <XpProgressBar
-          currentXp={0}
-          xpToNextLevel={100}
-          progressPercent={-10}
-          colorTier="blue"
-        />
+        <XpProgressBar currentXp={0} xpToNextLevel={100} progressPercent={-10} colorTier="blue" />
       );
       const progressFill = screen.getByTestId('xp-progress-fill');
       expect(progressFill).toHaveStyle({ width: '0%' });
@@ -223,12 +158,7 @@ describe('XpProgressBar', () => {
 
     it('should clamp progress width to 100% when progressPercent exceeds 100', () => {
       render(
-        <XpProgressBar
-          currentXp={150}
-          xpToNextLevel={100}
-          progressPercent={150}
-          colorTier="gold"
-        />
+        <XpProgressBar currentXp={150} xpToNextLevel={100} progressPercent={150} colorTier="gold" />
       );
       const progressFill = screen.getByTestId('xp-progress-fill');
       expect(progressFill).toHaveStyle({ width: '100%' });
@@ -252,12 +182,7 @@ describe('XpProgressBar', () => {
   describe('Accessibility', () => {
     it('should have role="progressbar"', () => {
       render(
-        <XpProgressBar
-          currentXp={50}
-          xpToNextLevel={100}
-          progressPercent={50}
-          colorTier="orange"
-        />
+        <XpProgressBar currentXp={50} xpToNextLevel={100} progressPercent={50} colorTier="orange" />
       );
       const progressBar = screen.getByRole('progressbar');
       expect(progressBar).toBeInTheDocument();
@@ -265,12 +190,7 @@ describe('XpProgressBar', () => {
 
     it('should have aria-valuemin set to 0', () => {
       render(
-        <XpProgressBar
-          currentXp={50}
-          xpToNextLevel={100}
-          progressPercent={50}
-          colorTier="orange"
-        />
+        <XpProgressBar currentXp={50} xpToNextLevel={100} progressPercent={50} colorTier="orange" />
       );
       const progressBar = screen.getByRole('progressbar');
       expect(progressBar).toHaveAttribute('aria-valuemin', '0');
@@ -278,12 +198,7 @@ describe('XpProgressBar', () => {
 
     it('should have aria-valuemax set to 100', () => {
       render(
-        <XpProgressBar
-          currentXp={50}
-          xpToNextLevel={100}
-          progressPercent={50}
-          colorTier="orange"
-        />
+        <XpProgressBar currentXp={50} xpToNextLevel={100} progressPercent={50} colorTier="orange" />
       );
       const progressBar = screen.getByRole('progressbar');
       expect(progressBar).toHaveAttribute('aria-valuemax', '100');
@@ -291,12 +206,7 @@ describe('XpProgressBar', () => {
 
     it('should have aria-valuenow reflecting the progress percent', () => {
       render(
-        <XpProgressBar
-          currentXp={73}
-          xpToNextLevel={100}
-          progressPercent={73}
-          colorTier="orange"
-        />
+        <XpProgressBar currentXp={73} xpToNextLevel={100} progressPercent={73} colorTier="orange" />
       );
       const progressBar = screen.getByRole('progressbar');
       expect(progressBar).toHaveAttribute('aria-valuenow', '73');
@@ -304,12 +214,7 @@ describe('XpProgressBar', () => {
 
     it('should have an accessible aria-label describing progress', () => {
       render(
-        <XpProgressBar
-          currentXp={50}
-          xpToNextLevel={100}
-          progressPercent={50}
-          colorTier="orange"
-        />
+        <XpProgressBar currentXp={50} xpToNextLevel={100} progressPercent={50} colorTier="orange" />
       );
       const progressBar = screen.getByRole('progressbar');
       expect(progressBar).toHaveAttribute('aria-label');

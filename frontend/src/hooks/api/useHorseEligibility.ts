@@ -25,11 +25,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import {
-  fetchHorseEligibility,
-  EligibleHorse,
-  CompetitionApiError,
-} from '@/lib/api/competitions';
+import { fetchHorseEligibility, EligibleHorse, CompetitionApiError } from '@/lib/api/competitions';
 
 /**
  * Query keys for horse eligibility queries
@@ -56,10 +52,7 @@ export const horseEligibilityQueryKeys = {
  * - staleTime: 2 minutes - More frequent updates for accurate entry status
  * - gcTime: 5 minutes - Shorter cache retention for eligibility data
  */
-export function useHorseEligibility(
-  competitionId: number | null,
-  userId: string | null
-) {
+export function useHorseEligibility(competitionId: number | null, userId: string | null) {
   return useQuery<EligibleHorse[], CompetitionApiError>({
     queryKey: horseEligibilityQueryKeys.forCompetition(competitionId!, userId!),
     queryFn: () => fetchHorseEligibility(competitionId!, userId!),

@@ -660,7 +660,10 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
                       >
                         {result.horseName}
                       </span>
-                      <HorseLevelBadge level={horseLevelData?.availableStatPoints ?? 1} size="small" />
+                      <HorseLevelBadge
+                        level={horseLevelData?.availableStatPoints ?? 1}
+                        size="small"
+                      />
                     </div>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
@@ -689,7 +692,11 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
                     <XpProgressTracker
                       currentLevel={horseLevelData?.availableStatPoints ?? 1}
                       currentXp={horseLevelData?.currentXP ?? 0}
-                      xpForCurrentLevel={horseLevelData ? horseLevelData.nextStatPointAt - horseLevelData.xpToNextStatPoint : 0}
+                      xpForCurrentLevel={
+                        horseLevelData
+                          ? horseLevelData.nextStatPointAt - horseLevelData.xpToNextStatPoint
+                          : 0
+                      }
                       xpToNextLevel={horseLevelData?.nextStatPointAt ?? 100}
                       size="small"
                     />

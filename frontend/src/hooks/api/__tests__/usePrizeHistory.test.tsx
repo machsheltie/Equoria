@@ -351,7 +351,12 @@ describe('prizeHistoryQueryKeys', () => {
   it('should export query keys for external use', () => {
     expect(prizeHistoryQueryKeys).toBeDefined();
     expect(prizeHistoryQueryKeys.all).toEqual(['prizes', 'history']);
-    expect(prizeHistoryQueryKeys.history('user-1')).toEqual(['prizes', 'history', 'user-1', undefined]);
+    expect(prizeHistoryQueryKeys.history('user-1')).toEqual([
+      'prizes',
+      'history',
+      'user-1',
+      undefined,
+    ]);
     expect(prizeHistoryQueryKeys.history('user-1', { dateRange: '7days' })).toEqual([
       'prizes',
       'history',

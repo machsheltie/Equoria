@@ -122,7 +122,10 @@ describe('Leaderboard Fixtures', () => {
 
   // Test 8: The current user entry is always at rank 42 in generated leaderboards
   it('should place the current user at rank 42 in every category', () => {
-    const categoriesToCheck: Array<{ category: typeof VALID_CATEGORIES[number]; discipline?: string }> = [
+    const categoriesToCheck: Array<{
+      category: (typeof VALID_CATEGORIES)[number];
+      discipline?: string;
+    }> = [
       { category: 'level' },
       { category: 'prize-money' },
       { category: 'win-rate' },

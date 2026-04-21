@@ -31,11 +31,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import {
-  fetchHorsePrizeSummary,
-  HorsePrizeSummary,
-  PrizeApiError,
-} from '@/lib/api/prizes';
+import { fetchHorsePrizeSummary, HorsePrizeSummary, PrizeApiError } from '@/lib/api/prizes';
 
 /**
  * Query keys for horse prize summary queries

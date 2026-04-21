@@ -16,10 +16,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as competitionsApi from '@/lib/api/competitions';
-import {
-  useCompetitionDetails,
-  competitionDetailsQueryKeys,
-} from '../useCompetitionDetails';
+import { useCompetitionDetails, competitionDetailsQueryKeys } from '../useCompetitionDetails';
 
 // Mock API functions
 vi.mock('@/lib/api/competitions', async () => {
@@ -79,9 +76,7 @@ describe('useCompetitionDetails', () => {
 
   // Test 1: Fetches competition details when ID provided
   it('should fetch competition details when ID is provided', async () => {
-    vi.mocked(competitionsApi.fetchCompetitionDetails).mockResolvedValue(
-      mockCompetitionDetails
-    );
+    vi.mocked(competitionsApi.fetchCompetitionDetails).mockResolvedValue(mockCompetitionDetails);
 
     const { result } = renderHook(() => useCompetitionDetails(1), {
       wrapper: createWrapper(),
@@ -111,9 +106,7 @@ describe('useCompetitionDetails', () => {
 
   // Test 3: Returns data after successful fetch
   it('should return data after successful fetch', async () => {
-    vi.mocked(competitionsApi.fetchCompetitionDetails).mockResolvedValue(
-      mockCompetitionDetails
-    );
+    vi.mocked(competitionsApi.fetchCompetitionDetails).mockResolvedValue(mockCompetitionDetails);
 
     const { result } = renderHook(() => useCompetitionDetails(1), {
       wrapper: createWrapper(),
@@ -149,9 +142,7 @@ describe('useCompetitionDetails', () => {
 
   // Test 5: Disabled when ID is null
   it('should not fetch when ID is null', () => {
-    vi.mocked(competitionsApi.fetchCompetitionDetails).mockResolvedValue(
-      mockCompetitionDetails
-    );
+    vi.mocked(competitionsApi.fetchCompetitionDetails).mockResolvedValue(mockCompetitionDetails);
 
     const { result } = renderHook(() => useCompetitionDetails(null), {
       wrapper: createWrapper(),
@@ -197,9 +188,7 @@ describe('useCompetitionDetails', () => {
 
   // Test 7: Uses separate cache from competitions list
   it('should use separate query key from competitions list', async () => {
-    vi.mocked(competitionsApi.fetchCompetitionDetails).mockResolvedValue(
-      mockCompetitionDetails
-    );
+    vi.mocked(competitionsApi.fetchCompetitionDetails).mockResolvedValue(mockCompetitionDetails);
 
     const queryClient = new QueryClient({
       defaultOptions: {

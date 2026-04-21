@@ -134,9 +134,7 @@ export interface CompetitionResultsApiError {
  * const results = await fetchCompetitionResults(123);
  * console.log(`Winner: ${results.results[0].horseName}`);
  */
-export async function fetchCompetitionResults(
-  competitionId: number
-): Promise<CompetitionResults> {
+export async function fetchCompetitionResults(competitionId: number): Promise<CompetitionResults> {
   return apiClient.get<CompetitionResults>(`/api/competitions/${competitionId}/results`);
 }
 
@@ -172,9 +170,7 @@ export async function fetchHorseCompetitionHistory(
  * const stats = await fetchUserCompetitionStats('user-uuid');
  * console.log(`Total prize money: $${stats.totalPrizeMoney}`);
  */
-export async function fetchUserCompetitionStats(
-  userId: string
-): Promise<UserCompetitionStats> {
+export async function fetchUserCompetitionStats(userId: string): Promise<UserCompetitionStats> {
   return apiClient.get<UserCompetitionStats>(`/api/users/${userId}/competition-stats`);
 }
 

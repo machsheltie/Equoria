@@ -181,7 +181,9 @@ describe('useHorseCompetitionHistory', () => {
 
     // Verify competitions
     expect(result.current.data?.competitions).toHaveLength(3);
-    expect(result.current.data?.competitions[0].competitionName).toBe('Spring Dressage Championship');
+    expect(result.current.data?.competitions[0].competitionName).toBe(
+      'Spring Dressage Championship'
+    );
   });
 
   // Test 4: Handles fetch error correctly
@@ -392,7 +394,10 @@ describe('horseCompetitionHistoryQueryKeys', () => {
     expect(horseCompetitionHistoryQueryKeys).toBeDefined();
     expect(horseCompetitionHistoryQueryKeys.all).toEqual(['horse-competition-history']);
     expect(horseCompetitionHistoryQueryKeys.history(1)).toEqual(['horse-competition-history', 1]);
-    expect(horseCompetitionHistoryQueryKeys.history(456)).toEqual(['horse-competition-history', 456]);
+    expect(horseCompetitionHistoryQueryKeys.history(456)).toEqual([
+      'horse-competition-history',
+      456,
+    ]);
   });
 
   it('should create unique keys for different horse IDs', () => {

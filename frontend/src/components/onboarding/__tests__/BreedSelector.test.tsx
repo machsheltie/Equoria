@@ -64,9 +64,7 @@ describe('BreedSelector', () => {
     render(<BreedSelector breeds={mockBreeds} value={{}} onChange={onChange} />);
     // Click Thoroughbred card (there are multiple buttons, get by text)
     const breedButtons = screen.getAllByRole('button', { pressed: false });
-    const thoroughbredBtn = breedButtons.find(
-      (btn) => btn.textContent?.includes('Thoroughbred')
-    );
+    const thoroughbredBtn = breedButtons.find((btn) => btn.textContent?.includes('Thoroughbred'));
     fireEvent.click(thoroughbredBtn!);
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ breedId: 1, breedName: 'Thoroughbred' })
@@ -105,18 +103,18 @@ describe('BreedSelector', () => {
         (btn) => btn.textContent?.includes('Mare') && btn.textContent?.includes('\u2640')
       );
       fireEvent.click(mareBtn!);
-      expect(onChange).toHaveBeenCalledWith(
-        expect.objectContaining({ gender: 'Mare' })
-      );
+      expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ gender: 'Mare' }));
     });
 
     it('shows selected state for current gender', () => {
       render(
         <BreedSelector breeds={mockBreeds} value={{ gender: 'Stallion' }} onChange={onChange} />
       );
-      const stallionBtn = screen.getAllByRole('button').find(
-        (btn) => btn.textContent?.includes('Stallion') && btn.textContent?.includes('\u2642')
-      );
+      const stallionBtn = screen
+        .getAllByRole('button')
+        .find(
+          (btn) => btn.textContent?.includes('Stallion') && btn.textContent?.includes('\u2642')
+        );
       expect(stallionBtn).toHaveAttribute('aria-pressed', 'true');
     });
   });
@@ -129,14 +127,10 @@ describe('BreedSelector', () => {
 
     it('calls onChange when name is typed', async () => {
       const user = userEvent.setup();
-      render(
-        <BreedSelector breeds={mockBreeds} value={{ horseName: '' }} onChange={onChange} />
-      );
+      render(<BreedSelector breeds={mockBreeds} value={{ horseName: '' }} onChange={onChange} />);
       const input = screen.getByTestId('horse-name-input');
       await user.type(input, 'M');
-      expect(onChange).toHaveBeenCalledWith(
-        expect.objectContaining({ horseName: 'M' })
-      );
+      expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ horseName: 'M' }));
     });
 
     it('shows preview chip when name has content', () => {
@@ -153,9 +147,7 @@ describe('BreedSelector', () => {
     });
 
     it('does not show preview chip when name is empty', () => {
-      render(
-        <BreedSelector breeds={mockBreeds} value={{ horseName: '' }} onChange={onChange} />
-      );
+      render(<BreedSelector breeds={mockBreeds} value={{ horseName: '' }} onChange={onChange} />);
       expect(screen.queryByText('Preview:')).not.toBeInTheDocument();
     });
   });

@@ -34,7 +34,12 @@ describe('RewardToast', () => {
   it('displays the message when provided', () => {
     const onDismiss = vi.fn();
     render(
-      <RewardToast type="prize" title="Won!" message="1st place in Dressage" onDismiss={onDismiss} />
+      <RewardToast
+        type="prize"
+        title="Won!"
+        message="1st place in Dressage"
+        onDismiss={onDismiss}
+      />
     );
     expect(screen.getByText('1st place in Dressage')).toBeInTheDocument();
   });

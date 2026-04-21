@@ -16,10 +16,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as competitionsApi from '@/lib/api/competitions';
-import {
-  useCompetitionsFiltered,
-  competitionFilteredQueryKeys,
-} from '../useCompetitionsFiltered';
+import { useCompetitionsFiltered, competitionFilteredQueryKeys } from '../useCompetitionsFiltered';
 
 // Mock API functions
 vi.mock('@/lib/api/competitions', async () => {

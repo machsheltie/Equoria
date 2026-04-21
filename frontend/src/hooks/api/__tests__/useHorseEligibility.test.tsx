@@ -16,10 +16,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import * as competitionsApi from '@/lib/api/competitions';
-import {
-  useHorseEligibility,
-  horseEligibilityQueryKeys,
-} from '../useHorseEligibility';
+import { useHorseEligibility, horseEligibilityQueryKeys } from '../useHorseEligibility';
 
 // Mock API functions
 vi.mock('@/lib/api/competitions', async () => {
@@ -108,10 +105,9 @@ describe('useHorseEligibility', () => {
   it('should fetch horse eligibility when both IDs are provided', async () => {
     vi.mocked(competitionsApi.fetchHorseEligibility).mockResolvedValue(mockEligibleHorses);
 
-    const { result } = renderHook(
-      () => useHorseEligibility(1, 'user-123'),
-      { wrapper: createWrapper() }
-    );
+    const { result } = renderHook(() => useHorseEligibility(1, 'user-123'), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -126,10 +122,9 @@ describe('useHorseEligibility', () => {
       () => new Promise(() => {}) // Never resolves to keep loading state
     );
 
-    const { result } = renderHook(
-      () => useHorseEligibility(1, 'user-123'),
-      { wrapper: createWrapper() }
-    );
+    const { result } = renderHook(() => useHorseEligibility(1, 'user-123'), {
+      wrapper: createWrapper(),
+    });
 
     expect(result.current.isLoading).toBe(true);
     expect(result.current.isPending).toBe(true);
@@ -140,10 +135,9 @@ describe('useHorseEligibility', () => {
   it('should return eligible horses list with eligibility status', async () => {
     vi.mocked(competitionsApi.fetchHorseEligibility).mockResolvedValue(mockEligibleHorses);
 
-    const { result } = renderHook(
-      () => useHorseEligibility(1, 'user-123'),
-      { wrapper: createWrapper() }
-    );
+    const { result } = renderHook(() => useHorseEligibility(1, 'user-123'), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -166,10 +160,9 @@ describe('useHorseEligibility', () => {
   it('should return horses with correct eligibility structure', async () => {
     vi.mocked(competitionsApi.fetchHorseEligibility).mockResolvedValue(mockEligibleHorses);
 
-    const { result } = renderHook(
-      () => useHorseEligibility(1, 'user-123'),
-      { wrapper: createWrapper() }
-    );
+    const { result } = renderHook(() => useHorseEligibility(1, 'user-123'), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -205,10 +198,9 @@ describe('useHorseEligibility', () => {
 
     vi.mocked(competitionsApi.fetchHorseEligibility).mockRejectedValue(mockError);
 
-    const { result } = renderHook(
-      () => useHorseEligibility(1, 'user-123'),
-      { wrapper: createWrapper() }
-    );
+    const { result } = renderHook(() => useHorseEligibility(1, 'user-123'), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
@@ -220,10 +212,9 @@ describe('useHorseEligibility', () => {
   it('should not fetch when competitionId is null', () => {
     vi.mocked(competitionsApi.fetchHorseEligibility).mockResolvedValue(mockEligibleHorses);
 
-    const { result } = renderHook(
-      () => useHorseEligibility(null, 'user-123'),
-      { wrapper: createWrapper() }
-    );
+    const { result } = renderHook(() => useHorseEligibility(null, 'user-123'), {
+      wrapper: createWrapper(),
+    });
 
     expect(competitionsApi.fetchHorseEligibility).not.toHaveBeenCalled();
     expect(result.current.isPending).toBe(true);
@@ -235,10 +226,7 @@ describe('useHorseEligibility', () => {
   it('should not fetch when userId is null', () => {
     vi.mocked(competitionsApi.fetchHorseEligibility).mockResolvedValue(mockEligibleHorses);
 
-    const { result } = renderHook(
-      () => useHorseEligibility(1, null),
-      { wrapper: createWrapper() }
-    );
+    const { result } = renderHook(() => useHorseEligibility(1, null), { wrapper: createWrapper() });
 
     expect(competitionsApi.fetchHorseEligibility).not.toHaveBeenCalled();
     expect(result.current.isPending).toBe(true);
@@ -251,17 +239,15 @@ describe('useHorseEligibility', () => {
     const horses1 = [mockEligibleHorses[0]];
     const horses2 = [mockEligibleHorses[1], mockEligibleHorses[2]];
 
-    vi.mocked(competitionsApi.fetchHorseEligibility).mockImplementation(
-      (competitionId, userId) => {
-        if (competitionId === 1 && userId === 'user-1') {
-          return Promise.resolve(horses1);
-        }
-        if (competitionId === 2 && userId === 'user-2') {
-          return Promise.resolve(horses2);
-        }
-        return Promise.resolve([]);
+    vi.mocked(competitionsApi.fetchHorseEligibility).mockImplementation((competitionId, userId) => {
+      if (competitionId === 1 && userId === 'user-1') {
+        return Promise.resolve(horses1);
       }
-    );
+      if (competitionId === 2 && userId === 'user-2') {
+        return Promise.resolve(horses2);
+      }
+      return Promise.resolve([]);
+    });
 
     const { result, rerender } = renderHook(
       ({ compId, userId }: { compId: number | null; userId: string | null }) =>

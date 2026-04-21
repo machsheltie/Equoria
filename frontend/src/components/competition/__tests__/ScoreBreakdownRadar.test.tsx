@@ -69,12 +69,8 @@ describe('ScoreBreakdownRadar', () => {
     render(<ScoreBreakdownRadar stats={sampleStats} />);
     const data = lastRadarChartProps?.data;
     expect(data).toHaveLength(5);
-    expect(data[0]).toEqual(
-      expect.objectContaining({ subject: 'Speed', Current: 80 })
-    );
-    expect(data[1]).toEqual(
-      expect.objectContaining({ subject: 'Stamina', Current: 75 })
-    );
+    expect(data[0]).toEqual(expect.objectContaining({ subject: 'Speed', Current: 80 }));
+    expect(data[1]).toEqual(expect.objectContaining({ subject: 'Stamina', Current: 75 }));
   });
 
   it('renders a single Radar for current stats', () => {

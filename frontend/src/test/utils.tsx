@@ -5,7 +5,10 @@
  */
 
 import React from 'react';
-import { BrowserRouter as RouterBrowserRouter, MemoryRouter as RouterMemoryRouter } from 'react-router-dom';
+import {
+  BrowserRouter as RouterBrowserRouter,
+  MemoryRouter as RouterMemoryRouter,
+} from 'react-router-dom';
 
 // Re-export everything from react-router-dom for convenience
 export * from 'react-router-dom';

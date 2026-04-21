@@ -69,10 +69,7 @@ vi.mock('@/components/competition/CompetitionResultsList', () => ({
     }
     return (
       <div data-testid="competition-results-list">
-        <button
-          data-testid="mock-result-item"
-          onClick={() => onResultClick(123)}
-        >
+        <button data-testid="mock-result-item" onClick={() => onResultClick(123)}>
           Mock Competition Result
         </button>
       </div>
@@ -90,10 +87,7 @@ vi.mock('@/components/competition/CompetitionResultsModal', () => ({
         <button data-testid="close-modal-button" onClick={onClose}>
           Close
         </button>
-        <button
-          data-testid="view-performance-button"
-          onClick={() => onViewPerformance?.(456)}
-        >
+        <button data-testid="view-performance-button" onClick={() => onViewPerformance?.(456)}>
           View Performance
         </button>
       </div>
@@ -153,7 +147,10 @@ describe('CompetitionResultsPage', () => {
         <MemoryRouter initialEntries={[route]}>
           <Routes>
             <Route path="/competitions/results" element={<CompetitionResultsPage />} />
-            <Route path="/competitions/results/:competitionId" element={<CompetitionResultsPage />} />
+            <Route
+              path="/competitions/results/:competitionId"
+              element={<CompetitionResultsPage />}
+            />
           </Routes>
         </MemoryRouter>
       </QueryClientProvider>
@@ -177,8 +174,12 @@ describe('CompetitionResultsPage', () => {
     it('renders page header with title and description', () => {
       renderPageSimple();
 
-      expect(screen.getByRole('heading', { name: /competition results/i, level: 1 })).toBeInTheDocument();
-      expect(screen.getByText(/view your competition history and performance/i)).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { name: /competition results/i, level: 1 })
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText(/view your competition history and performance/i)
+      ).toBeInTheDocument();
     });
 
     it('renders breadcrumb navigation', () => {
@@ -294,7 +295,9 @@ describe('CompetitionResultsPage', () => {
 
     it('filters passed correctly to results list', async () => {
       // Import the mocked module dynamically
-      const CompetitionResultsListModule = await import('@/components/competition/CompetitionResultsList');
+      const CompetitionResultsListModule = await import(
+        '@/components/competition/CompetitionResultsList'
+      );
       const MockedResultsList = CompetitionResultsListModule.default as Mock;
 
       renderPageSimple();
