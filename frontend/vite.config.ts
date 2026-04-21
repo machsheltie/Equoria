@@ -89,6 +89,13 @@ export default defineConfig({
     },
   },
   build: {
+    // Tighten the default (4096 B) so only tiny SVG icons and the like get
+    // base64-inlined. Larger assets stay as separate hashed files. This is
+    // defense-in-depth for ZAP rule 10094 ("Base64 Disclosure") — the rule
+    // fires on any base64 ≥24 chars in a response body, and there is no
+    // reason to ship ~4 KB of base64 in CSS when a separate cacheable file
+    // is strictly better for performance too.
+    assetsInlineLimit: 1024,
     rollupOptions: {
       output: {
         // Split large vendor libraries into cacheable separate chunks
