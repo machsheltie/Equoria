@@ -102,17 +102,23 @@ describe('Security Middleware', () => {
   });
 
   describe('Helmet Configuration', () => {
+    // CSP directives are hardened per ZAP scan remediation (issues #68-#71):
+    // - no `https:` wildcard in imgSrc (rule 10055 "CSP: Wildcard Directive")
+    // - frameAncestors / baseUri / formAction explicitly set (defense in depth)
     it('should have proper CSP directives', () => {
       expect(helmetConfig.contentSecurityPolicy.directives).toEqual({
         defaultSrc: ["'self'"],
         styleSrc: ["'self'", "'unsafe-inline'"],
         scriptSrc: ["'self'"],
-        imgSrc: ["'self'", 'data:', 'https:'],
+        imgSrc: ["'self'", 'data:'],
         connectSrc: ["'self'"],
         fontSrc: ["'self'"],
         objectSrc: ["'none'"],
         mediaSrc: ["'self'"],
         frameSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+        baseUri: ["'self'"],
+        formAction: ["'self'"],
       });
     });
 
@@ -124,8 +130,11 @@ describe('Security Middleware', () => {
       });
     });
 
-    it('should disable crossOriginEmbedderPolicy for API compatibility', () => {
-      expect(helmetConfig.crossOriginEmbedderPolicy).toBe(false);
+    // COEP is enabled as `credentialless` (ZAP rule 90004). `credentialless` is
+    // used instead of `require-corp` because the SPA loads cross-origin images
+    // that do not ship CORP headers.
+    it('should enable crossOriginEmbedderPolicy with credentialless policy', () => {
+      expect(helmetConfig.crossOriginEmbedderPolicy).toEqual({ policy: 'credentialless' });
     });
   });
 

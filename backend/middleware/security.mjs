@@ -71,21 +71,34 @@ export const createRateLimiter = (windowMs = 15 * 60 * 1000, max = 100) => {
 };
 
 // Helmet configuration for security headers
+//
+// ZAP scan remediation (issues #68-#71):
+// - imgSrc: removed `https:` wildcard (ZAP rule 10055 "CSP: Wildcard Directive")
+// - crossOriginEmbedderPolicy: enabled as `credentialless` (ZAP rule 90004)
+//   `credentialless` is used instead of `require-corp` because the SPA may
+//   load cross-origin images (horse portraits) that do not ship CORP headers.
+// - baseUri / formAction / frameAncestors added explicitly (defense in depth)
+// - styleSrc still allows `'unsafe-inline'`; removal is tracked as a follow-up
+//   because Radix/shadcn inject runtime style tags.
 export const helmetConfig = {
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
+      // TODO: remove 'unsafe-inline' after migrating Radix/shadcn runtime styles
       styleSrc: ["'self'", "'unsafe-inline'"],
       scriptSrc: ["'self'"],
-      imgSrc: ["'self'", 'data:', 'https:'],
+      imgSrc: ["'self'", 'data:'],
       connectSrc: ["'self'"],
       fontSrc: ["'self'"],
       objectSrc: ["'none'"],
       mediaSrc: ["'self'"],
       frameSrc: ["'none'"],
+      frameAncestors: ["'none'"],
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
     },
   },
-  crossOriginEmbedderPolicy: false, // Disable for API compatibility
+  crossOriginEmbedderPolicy: { policy: 'credentialless' },
   hsts: {
     maxAge: 31536000,
     includeSubDomains: true,

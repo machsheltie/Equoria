@@ -136,6 +136,11 @@ import { applyCsrfProtection, csrfErrorHandler } from './middleware/csrf.mjs';
 // Import Redis rate limiting (for health check and shutdown)
 import { createRateLimiter, isRedisConnected, getRedisClient } from './middleware/rateLimiting.mjs';
 
+// Import shared security configuration
+// (centralized so the helmet CSP, COEP, and response-header middleware stay in
+//  one place — see backend/middleware/security.mjs)
+import { helmetConfig, addSecurityHeaders } from './middleware/security.mjs';
+
 // Public router - No authentication required
 const publicRouter = express.Router();
 
@@ -255,19 +260,11 @@ initializeSentry(app);
 app.set('trust proxy', 1);
 
 // Security middleware
-app.use(
-  helmet({
-    contentSecurityPolicy: {
-      directives: {
-        defaultSrc: ["'self'"],
-        styleSrc: ["'self'", "'unsafe-inline'"],
-        scriptSrc: ["'self'"],
-        imgSrc: ["'self'", 'data:', 'https:'],
-      },
-    },
-    crossOriginEmbedderPolicy: false,
-  }),
-);
+// Order matters: addSecurityHeaders runs first so helmet does not overwrite
+// the Permissions-Policy / Referrer-Policy values, then helmet applies the
+// CSP + COEP + HSTS directives defined in middleware/security.mjs.
+app.use(addSecurityHeaders);
+app.use(helmet(helmetConfig));
 
 // CORS configuration
 const corsOptions = {
