@@ -32,6 +32,10 @@ describe('SQL Injection Attempts Integration Tests', () => {
   let testHorse;
   let _testGroom;
   let _seq = 0; // per-suite counter guarantees unique emails even within the same millisecond
+  // Per-worker prefix isolates this suite's test users from any other suite's
+  // broad pre-clean. Prevents the flaky FK violation where a user committed
+  // on line "user.create" was no longer visible when "horse.create" ran.
+  const RUN_PREFIX = `sqli-${process.pid}-${Math.random().toString(36).slice(2, 8)}`;
   const expectBlocked = response => {
     expect([200, 400, 403, 404]).toContain(response.status);
     const success =
@@ -57,54 +61,73 @@ describe('SQL Injection Attempts Integration Tests', () => {
   });
 
   beforeEach(async () => {
-    const uid = `${Date.now()}-${++_seq}`;
-    // Pre-clean: remove any leftover users from crashed prior runs with this pattern
-    await prisma.user.deleteMany({ where: { username: { startsWith: 'testuser-' } } });
-    // Create test user in database
-    testUser = await prisma.user.create({
-      data: {
-        email: `test-${uid}@example.com`,
-        username: `testuser-${uid}`,
-        password: 'hashedPassword123',
-        firstName: 'Test',
-        lastName: 'User',
-        emailVerified: true,
-      },
+    const uid = `${RUN_PREFIX}-${Date.now()}-${++_seq}`;
+    // Pre-clean: remove only users from THIS worker's prior iterations.
+    // The previous filter (username startsWith 'testuser-') also matched
+    // users other suites owned, which could leave an inconsistent FK
+    // target when horse.create ran on a different pooled connection.
+    await prisma.user.deleteMany({ where: { username: { startsWith: RUN_PREFIX } } });
+
+    // Create the user + horse + groom atomically. With default Prisma
+    // pooling (20 test connections) the previous three-step form exposed a
+    // race window: the user commit landed on connection A, horse.create
+    // arrived on connection B before B saw A's commit, and the FK check
+    // failed with `horses_userId_fkey`. $transaction binds all three
+    // writes to a single connection and single commit, which eliminates
+    // the race outright.
+    const tx = await prisma.$transaction(async client => {
+      const user = await client.user.create({
+        data: {
+          email: `${RUN_PREFIX}-${uid}@example.com`,
+          username: `${RUN_PREFIX}-${uid}`,
+          password: 'hashedPassword123',
+          firstName: 'Test',
+          lastName: 'User',
+          emailVerified: true,
+        },
+      });
+
+      const horse = await client.horse.create({
+        data: {
+          name: `TestHorse-${uid}`,
+          sex: 'mare',
+          dateOfBirth: new Date('2016-01-01'),
+          userId: user.id,
+          age: 5,
+        },
+      });
+
+      const groom = await client.groom.create({
+        data: {
+          name: `TestGroom-${uid}`,
+          userId: user.id,
+          speciality: 'GENERAL',
+          personality: 'calm',
+          experience: 50,
+        },
+      });
+
+      return { user, horse, groom };
     });
+
+    testUser = tx.user;
+    testHorse = tx.horse;
+    _testGroom = tx.groom;
 
     validToken = createMockToken(testUser.id, {
       payload: { email: testUser.email, role: 'user' },
     });
-
-    // Create test horse owned by user
-    testHorse = await prisma.horse.create({
-      data: {
-        name: `TestHorse-${uid}`,
-        sex: 'mare',
-        dateOfBirth: new Date('2016-01-01'),
-        userId: testUser.id, // Matches schema field (line 144)
-        age: 5,
-      },
-    });
-
-    // Create test groom owned by user
-    _testGroom = await prisma.groom.create({
-      data: {
-        name: `TestGroom-${uid}`,
-        userId: testUser.id,
-        speciality: 'GENERAL',
-        personality: 'calm',
-        experience: 50,
-      },
-    });
   });
 
   afterAll(async () => {
-    // Clean up test data
+    // Clean up only this worker's rows. Filtering by a broad 'TestHorse-'
+    // or 'test-' substring would nuke unrelated suites' rows if they
+    // happen to still be mid-run (Jest runs afterAll as soon as THIS
+    // file finishes, even with --runInBand).
     await prisma.groom.deleteMany({
       where: {
         name: {
-          contains: 'TestGroom-',
+          startsWith: `TestGroom-${RUN_PREFIX}-`,
         },
       },
     });
@@ -112,7 +135,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
     await prisma.horse.deleteMany({
       where: {
         name: {
-          contains: 'TestHorse-',
+          startsWith: `TestHorse-${RUN_PREFIX}-`,
         },
       },
     });
@@ -120,7 +143,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
     await prisma.user.deleteMany({
       where: {
         email: {
-          contains: 'test-',
+          startsWith: `${RUN_PREFIX}-`,
         },
       },
     });
