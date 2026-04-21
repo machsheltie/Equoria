@@ -232,6 +232,9 @@ jobs:
           DATABASE_URL: postgresql://postgres:ci_test_pg_strong_pass_42@localhost:5432/equoria_test
           JWT_SECRET: test_secret_key_for_ci_must_be_at_least_32_chars
           JWT_REFRESH_SECRET: test_refresh_secret_for_ci_must_be_at_least_32_chars
+          # Backend defaults to port 3001 in test mode (see backend/server.mjs).
+          # The E2E flow below hits localhost:3000, so pin PORT explicitly to match.
+          PORT: '3000'
           NODE_ENV: test
         run: |
           npm start &
