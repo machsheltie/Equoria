@@ -29,40 +29,38 @@ describe('Dynamic Compatibility Controller API', () => {
 
   let testUser;
   let testToken;
-  const testGrooms = [];
-  const testHorses = [];
+  let testGrooms = [];
+  let testHorses = [];
 
-  beforeAll(async () => {
-    // Create test user
-    testUser = await prisma.user.create({
-      data: {
-        username: `compatibility_api_${Date.now()}`,
-        email: `compatibility_api_${Date.now()}@test.com`,
-        password: 'test_hash',
-        firstName: 'Test',
-        lastName: 'User',
-        money: 1000,
-        xp: 0,
-        level: 1,
-      },
-    });
+  // Per-worker prefix isolates this suite's rows from every other suite so
+  // broad `contains`-style cleanups in other files cannot touch our data.
+  const RUN_PREFIX = `compat-${process.pid}-${Math.random().toString(36).slice(2, 8)}`;
+  let testBreedId = null;
 
-    testToken = generateTestToken({ id: testUser.id, email: testUser.email });
+  // Helper: (re)create the user + 3 grooms + 3 horses atomically. Called from
+  // beforeEach rather than beforeAll because the previous once-only fixture
+  // sometimes had its rows disappear partway through the 11-test run under
+  // the full 4971-test pre-push suite, producing a 404 from requireOwnership
+  // and a non-200 status at the assertion on line ~380. Creating per-test in
+  // a single transaction guarantees every test starts from a known-good state.
+  const createFixture = async () => {
+    // Ensure a breed exists once per suite (findFirst + create).
+    if (testBreedId === null) {
+      const breed =
+        (await prisma.breed.findFirst({ where: { name: `${RUN_PREFIX}-breed` } })) ??
+        (await prisma.breed.create({
+          data: {
+            name: `${RUN_PREFIX}-breed`,
+            description: 'Test breed for compatibility testing',
+          },
+        }));
+      testBreedId = breed.id;
+    }
 
-    // Create test breed (findFirst + create to avoid collision with other test suites)
-    const testBreed =
-      (await prisma.breed.findFirst({ where: { name: 'Test Breed' } })) ??
-      (await prisma.breed.create({
-        data: {
-          name: 'Test Breed',
-          description: 'Test breed for compatibility testing',
-        },
-      }));
-
-    // Create test grooms with different personalities
+    const uid = `${RUN_PREFIX}-${Date.now()}`;
     const groomData = [
       {
-        name: 'Calm Expert',
+        name: `Calm Expert ${uid}`,
         personality: 'calm',
         skillLevel: 'expert',
         experience: 200,
@@ -70,7 +68,7 @@ describe('Dynamic Compatibility Controller API', () => {
         speciality: 'foal_care',
       },
       {
-        name: 'Energetic Novice',
+        name: `Energetic Novice ${uid}`,
         personality: 'energetic',
         skillLevel: 'novice',
         experience: 50,
@@ -78,7 +76,7 @@ describe('Dynamic Compatibility Controller API', () => {
         speciality: 'general_grooming',
       },
       {
-        name: 'Methodical Intermediate',
+        name: `Methodical Intermediate ${uid}`,
         personality: 'methodical',
         skillLevel: 'intermediate',
         experience: 120,
@@ -87,66 +85,106 @@ describe('Dynamic Compatibility Controller API', () => {
       },
     ];
 
-    for (const data of groomData) {
-      const groom = await prisma.groom.create({
-        data: {
-          userId: testUser.id,
-          name: data.name,
-          speciality: data.speciality,
-          personality: data.personality,
-          epigeneticInfluenceType: data.personality,
-          skillLevel: data.skillLevel,
-          experience: data.experience,
-          level: data.level,
-          sessionRate: 25.0,
-          isActive: true,
-        },
-      });
-      testGrooms.push(groom);
-    }
-
-    // Create test horses with different temperaments
     const horseData = [
-      { name: 'Fearful Horse', temperament: 'nervous', stressLevel: 9, bondScore: 15 },
-      { name: 'Confident Horse', temperament: 'confident', stressLevel: 3, bondScore: 35 },
-      { name: 'Developing Horse', temperament: 'developing', stressLevel: 5, bondScore: 25 },
+      { name: `Fearful Horse ${uid}`, temperament: 'nervous', stressLevel: 9, bondScore: 15 },
+      { name: `Confident Horse ${uid}`, temperament: 'confident', stressLevel: 3, bondScore: 35 },
+      { name: `Developing Horse ${uid}`, temperament: 'developing', stressLevel: 5, bondScore: 25 },
     ];
 
-    for (const data of horseData) {
-      const horse = await prisma.horse.create({
+    const fixture = await prisma.$transaction(async client => {
+      const user = await client.user.create({
         data: {
-          userId: testUser.id,
-          breedId: testBreed.id,
-          name: data.name,
-          sex: 'Filly',
-          dateOfBirth: birthDate2YearsOld,
-          age: 2,
-          temperament: data.temperament,
-          stressLevel: data.stressLevel,
-          bondScore: data.bondScore,
-          healthStatus: 'Good',
-          speed: 50,
-          stamina: 50,
-          agility: 50,
-          balance: 50,
-          precision: 50,
-          intelligence: 50,
-          boldness: 50,
-          flexibility: 50,
-          obedience: 50,
-          focus: 50,
-          epigeneticFlags: [],
+          username: `${RUN_PREFIX}-${uid}`,
+          email: `${RUN_PREFIX}-${uid}@test.com`,
+          password: 'test_hash',
+          firstName: 'Test',
+          lastName: 'User',
+          money: 1000,
+          xp: 0,
+          level: 1,
         },
       });
-      testHorses.push(horse);
+
+      const grooms = [];
+      for (const data of groomData) {
+        grooms.push(
+          await client.groom.create({
+            data: {
+              userId: user.id,
+              name: data.name,
+              speciality: data.speciality,
+              personality: data.personality,
+              epigeneticInfluenceType: data.personality,
+              skillLevel: data.skillLevel,
+              experience: data.experience,
+              level: data.level,
+              sessionRate: 25.0,
+              isActive: true,
+            },
+          }),
+        );
+      }
+
+      const horses = [];
+      for (const data of horseData) {
+        horses.push(
+          await client.horse.create({
+            data: {
+              userId: user.id,
+              breedId: testBreedId,
+              name: data.name,
+              sex: 'Filly',
+              dateOfBirth: birthDate2YearsOld,
+              age: 2,
+              temperament: data.temperament,
+              stressLevel: data.stressLevel,
+              bondScore: data.bondScore,
+              healthStatus: 'Good',
+              speed: 50,
+              stamina: 50,
+              agility: 50,
+              balance: 50,
+              precision: 50,
+              intelligence: 50,
+              boldness: 50,
+              flexibility: 50,
+              obedience: 50,
+              focus: 50,
+              epigeneticFlags: [],
+            },
+          }),
+        );
+      }
+
+      return { user, grooms, horses };
+    });
+
+    testUser = fixture.user;
+    testGrooms = fixture.grooms;
+    testHorses = fixture.horses;
+    testToken = generateTestToken({ id: testUser.id, email: testUser.email });
+  };
+
+  beforeEach(async () => {
+    await createFixture();
+  });
+
+  afterEach(async () => {
+    if (testUser) {
+      await prisma.horse.deleteMany({ where: { userId: testUser.id } });
+      await prisma.groom.deleteMany({ where: { userId: testUser.id } });
+      await prisma.user.deleteMany({ where: { id: testUser.id } });
+      testUser = null;
+      testGrooms = [];
+      testHorses = [];
     }
   });
 
   afterAll(async () => {
-    // Clean up test data
-    await prisma.horse.deleteMany({ where: { userId: testUser.id } });
-    await prisma.groom.deleteMany({ where: { userId: testUser.id } });
-    await prisma.user.deleteMany({ where: { id: testUser.id } });
+    // Breed is reused across all tests in the suite; delete last.
+    if (testBreedId !== null) {
+      await prisma.breed.deleteMany({ where: { id: testBreedId } });
+    }
   });
 
   describe('POST /api/compatibility/calculate', () => {
