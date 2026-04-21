@@ -428,6 +428,19 @@ describe('RegisterPage', () => {
         expect(screen.getByText(/number/i)).toBeInTheDocument();
         expect(screen.getByText(/special character/i)).toBeInTheDocument();
       });
+
+      // Verify the count is exactly 5 (not 4, not 6)
+      const requirementLabels = [
+        /8\+ characters/i,
+        /lowercase/i,
+        /uppercase/i,
+        /number/i,
+        /special character/i,
+      ];
+      expect(requirementLabels).toHaveLength(5);
+      requirementLabels.forEach((pattern) => {
+        expect(screen.getByText(pattern)).toBeInTheDocument();
+      });
     });
 
     it('special character requirement is met for allowed chars (@$!%*?&)', async () => {
@@ -473,6 +486,33 @@ describe('RegisterPage', () => {
         expect(
           screen.getByText(/password must contain at least one special character/i)
         ).toBeInTheDocument();
+      });
+    });
+
+    it('Password1! (allowed special char !) passes special character validation', async () => {
+      const user = userEvent.setup();
+      const TestWrapper = createTestWrapper();
+      const { container } = render(
+        <TestWrapper>
+          <RegisterPage />
+        </TestWrapper>
+      );
+
+      await user.type(screen.getByLabelText(/first name/i), 'John');
+      await user.type(screen.getByLabelText(/last name/i), 'Doe');
+      await user.type(screen.getByLabelText(/username/i), 'johndoe');
+      await user.type(screen.getByLabelText(/email/i), 'john@example.com');
+      await user.type(screen.getByLabelText(/^password$/i), 'Password1!');
+      await user.type(screen.getByLabelText(/confirm password/i), 'Password1!');
+
+      // Submit the form — should NOT show special char error
+      const form = container.querySelector('form');
+      fireEvent.submit(form!);
+
+      await waitFor(() => {
+        expect(
+          screen.queryByText(/password must contain at least one special character/i)
+        ).not.toBeInTheDocument();
       });
     });
 

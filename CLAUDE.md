@@ -1,18 +1,39 @@
 # Equoria - Claude Code Configuration
 
-**Version:** 3.2.0
-**Last Updated:** 2026-03-05
+**Version:** 3.3.0
+**Last Updated:** 2026-04-20
 **Project:** Web browser-based horse breeding simulation game
 
 ---
 
 ## 🎯 Current Sprint
 
-### Active Priority: Epic 20 — Backend Architecture Refactor ✅ COMPLETE
+### Active Priority: Epic 21R — Beta Deployment Readiness Remediation
 
-- **Status:** Epics 1–20 all complete ✅ — production-ready
+- **Status:** `beta-deployment-readiness` is BLOCKED until the full readiness gate passes with no deferrals, bypasses, skipped beta tests, hidden/read-only beta routes, fake data, or mocked primary paths.
 - **Branch:** `master`
-- **Next:** Production launch (Railway deploy) or Epic 21
+- **Next:** Correct all 21R blockers, then rerun `bash scripts/check-beta-readiness.sh` end to end.
+
+### 21R Beta Readiness Doctrine — No Deferrals
+
+Active beta means testers can use every beta-live feature through real UI and real backend behavior. Agents must not downgrade a broken beta feature into a placeholder, hidden route, read-only route, graceful skip, or documentation caveat.
+
+- **No beta-hidden.** If a route is in beta scope, it remains visible and must work. Hiding it is a product removal decision, not an implementation shortcut.
+- **No beta-readonly.** If a tester can reach a feature with write actions, those actions must call real APIs and persist real state or return a real backend eligibility/error reason.
+- **No graceful skips.** Do not use `test.skip`, `it.skip`, `describe.skip`, `test.fixme`, conditional E2E skips, or "skip if missing infra" behavior for beta-relevant coverage.
+- **No bypass evidence.** Do not cite tests that use `x-test-skip-csrf`, `x-test-bypass-auth`, `x-test-bypass-rate-limit`, `x-test-user`, `x-test-bypass-ownership`, `VITE_E2E_TEST`, or route interception as beta readiness evidence.
+- **No fake product values.** Do not display TODO actions, no-op handlers, `console.log` primary actions, hardcoded IDs, fabricated estimates, placeholder dates, local-only account settings, or "Unknown/0" values that masquerade as real data.
+- **No mock primary paths.** Production/beta-facing frontend code must not use `MOCK_`, `mockApi`, `allMockHorses`, `mockSummary`, seeded fake players, or fake metrics outside tests.
+- **No "not readiness evidence" loophole.** If a beta-live path exists in the repo and is broken, skipped, bypassed, mocked, hidden, or read-only, it is a defect to fix or a product-scope removal to explicitly document.
+- **No false green status.** Do not mark 21R stories or `beta-deployment-readiness` done until the actual commands have been run and the evidence is recorded.
+
+Required final signoff command:
+
+```bash
+bash scripts/check-beta-readiness.sh
+```
+
+The command must run with all gates enabled. It must not accept skip flags. Any environment that cannot run the full gate cannot produce beta-readiness signoff.
 
 ### Epic 20 Deliverables (2026-03-05)
 
@@ -96,11 +117,11 @@
 
 ### Project Status
 
-- ✅ **Backend:** 100% complete — 3617 tests passing (226 suites), pre-push hook active
-- ✅ **Epics 1–18:** All complete (auth + horses + training + competition + breeding + grooms + riders + world + community + trainers + deployment + onboarding + inventory + visual polish)
-- ✅ **E2E Tests:** Playwright suite passing (core-game-flows, auth, breeding)
-- ✅ **Deployment:** Railway-ready — multi-stage Docker, railway.toml, migrate deploy pipeline
-- ✅ **Frontend:** 100% complete (React 19 + TypeScript in `/frontend/`)
+- ⚠️ **Beta readiness:** blocked by Epic 21R until all beta-live routes and primary actions are proven end to end.
+- ⚠️ **Backend tests:** many suites exist, but beta-relevant bypass headers must be removed or excluded from readiness evidence.
+- ⚠️ **E2E Tests:** Playwright beta readiness must pass without skips or bypasses before tester signoff.
+- ⚠️ **Deployment:** Railway infrastructure exists, but beta deployment is blocked until 21R signoff.
+- ⚠️ **Frontend:** beta-facing surfaces must use real API data, real actions, and honest empty/error states only.
 
 ### Session Start Checklist
 
@@ -120,6 +141,8 @@ bd update <id> --status=in_progress  # Claim before starting
 - **NEVER close or mark a story `done` without explicit user approval.** The user decides when a story is closed — not Claude.
 - **NEVER skip a required workflow step.** If a step has a skill, run the skill. If a step requires user input, stop and ask.
 - **Quality and methodology adherence are non-negotiable.** Shortcuts that produce the appearance of compliance without the substance are not acceptable.
+- **NEVER convert a beta blocker into deferred work.** For Epic 21R, "remaining risk", "legacy but not readiness evidence", "graceful skip", "temporarily hidden", "read-only for beta", and "follow-up later" are not acceptable closure language.
+- **NEVER update readiness status from intent.** Only update sprint status, signoff files, or story completion after verifying the real code and recording the command evidence.
 
 ---
 
@@ -148,7 +171,8 @@ module.exports = myFunction;
 - **No mocks. Ever.** All backend tests run against the real test database. No mocked Prisma calls. A test that passes while hiding a broken feature is worse than no test.
 - **Integration by default:** Backend tests call real controllers, real services, real DB. Mocking a DB call is testing nothing.
 - **Frontend unit tests:** Existing tests with mocked API responses may remain. Do NOT add new `vi.mock`-of-API-client tests. Prefer Playwright E2E for all new user-facing feature coverage.
-- **E2E tests (Playwright):** Real credentials, real backend, real DB. No bypass headers, no `x-test-user`, no `test.skip` on beta-critical paths. Rate-limit bypass headers are the only exception (prevents 429 in test runs).
+- **E2E tests (Playwright):** Real credentials, real backend, real DB. No bypass headers, no `x-test-user`, no route interception to add bypasses, and no `test.skip` on beta-critical paths.
+- **Beta-relevant backend tests:** Do not use CSRF, auth, ownership, or rate-limit bypass headers as readiness evidence. If a helper still injects those headers, either replace it with a real-token helper or keep that suite out of beta-readiness claims until fixed.
 - **Fail fast:** Tests must fail immediately when the real implementation is broken — not be silenced by mocked return values.
 - **Backend:** 3617+ tests passing (226 suites)
 - **Frontend:** Vitest + React Testing Library (component behavior); Playwright E2E (full-stack coverage)
@@ -261,7 +285,7 @@ equoria/
 ### Epic 9A: Technical Health Sprint ✅ COMPLETE
 
 1. **9A-1** ✅ Stabilize flaky tests + restore pre-push hook
-2. **9A-2** ✅ Playwright E2E for core game flows (11 pass, 4 graceful skips)
+2. **9A-2** Historical Playwright E2E baseline. Any old graceful skips are invalid for 21R beta-readiness evidence.
 3. **9A-3** ✅ Project Health Pass (CLAUDE.md, sprint-status sync)
 4. **Quick Actions Bundle** ✅ AI-7-2, AI-7-3, AI-7-4, AI-8-1
 

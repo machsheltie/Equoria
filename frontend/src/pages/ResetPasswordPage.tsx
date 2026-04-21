@@ -44,6 +44,7 @@ const ResetPasswordPage: React.FC = () => {
       hasLowercase: /[a-z]/.test(p),
       hasUppercase: /[A-Z]/.test(p),
       hasNumber: /[0-9]/.test(p),
+      hasSpecialChar: /[@$!%*?&]/.test(p),
     };
   }, [formData.password]);
 
@@ -84,7 +85,7 @@ const ResetPasswordPage: React.FC = () => {
       ) : (
         <X className="w-3 h-3 text-red-400" />
       )}
-      <span className={met ? 'text-forest-green' : 'text-[rgb(148,163,184)]'}>{label}</span>
+      <span className={met ? 'text-forest-green' : 'text-slate-400'}>{label}</span>
     </div>
   );
 
@@ -190,9 +191,7 @@ const ResetPasswordPage: React.FC = () => {
         <h2 className="fantasy-header text-xl" style={{ color: 'var(--gold-500)' }}>
           Create New Password
         </h2>
-        <p className="text-xs text-[rgb(148,163,184)]">
-          Choose a strong password to secure your account.
-        </p>
+        <p className="text-xs text-slate-400">Choose a strong password to secure your account.</p>
       </div>
 
       {/* API error */}
@@ -207,7 +206,7 @@ const ResetPasswordPage: React.FC = () => {
         <div className="space-y-1">
           <label
             htmlFor="password"
-            className="block text-xs text-[rgb(148,163,184)] uppercase tracking-wider"
+            className="block text-xs text-slate-400 uppercase tracking-wider"
           >
             New Password
           </label>
@@ -265,6 +264,10 @@ const ResetPasswordPage: React.FC = () => {
                 <RequirementCheck met={passwordRequirements.hasLowercase} label="Lowercase" />
                 <RequirementCheck met={passwordRequirements.hasUppercase} label="Uppercase" />
                 <RequirementCheck met={passwordRequirements.hasNumber} label="Number" />
+                <RequirementCheck
+                  met={passwordRequirements.hasSpecialChar}
+                  label="Special character"
+                />
               </div>
             </div>
           )}
@@ -274,7 +277,7 @@ const ResetPasswordPage: React.FC = () => {
         <div className="space-y-1">
           <label
             htmlFor="confirmPassword"
-            className="block text-xs text-[rgb(148,163,184)] uppercase tracking-wider"
+            className="block text-xs text-slate-400 uppercase tracking-wider"
           >
             Confirm New Password
           </label>
@@ -311,7 +314,7 @@ const ResetPasswordPage: React.FC = () => {
       </form>
 
       {/* Sign in link */}
-      <p className="text-center text-xs text-[rgb(148,163,184)] pt-1 border-t border-[rgba(30,55,100,0.5)]">
+      <p className="text-center text-xs text-slate-400 pt-1 border-t border-[rgba(30,55,100,0.5)]">
         Remember your password?{' '}
         <Link
           to="/login"

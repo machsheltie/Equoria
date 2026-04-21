@@ -11,7 +11,7 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Star, Trophy, Heart, Award, Flame, ChevronRight } from 'lucide-react';
+import { Star, Trophy, Heart, Flame, ChevronRight } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUpdateProfile } from '@/hooks/useAuth';
@@ -27,8 +27,6 @@ interface HallOfFameEntry {
   retiredAge: number;
   discipline: string;
   career: {
-    competitions: number;
-    wins: number;
     earnings: number;
   };
   icon: string;
@@ -42,8 +40,6 @@ interface StableProfile {
   stats: {
     totalHorses: number;
     activeRacers: number;
-    competitionsEntered: number;
-    firstPlaceFinishes: number;
     totalEarnings: number;
     breedingPairs: number;
   };
@@ -136,16 +132,8 @@ const StableProfileTab: React.FC<{
           value={stable.stats.activeRacers}
           icon={<Flame className="w-4 h-4 text-orange-400" />}
         />
-        <StatBlock
-          label="Competitions"
-          value={stable.stats.competitionsEntered}
-          icon={<Trophy className="w-4 h-4 text-celestial-gold" />}
-        />
-        <StatBlock
-          label="First Place Wins"
-          value={stable.stats.firstPlaceFinishes}
-          icon={<Award className="w-4 h-4 text-celestial-gold" />}
-        />
+        {/* Competition stats removed — no backend endpoint aggregates per-user competition data yet.
+            Will be added when backend endpoint exists. Do not hardcode zeros. */}
         <StatBlock
           label="Total Earnings"
           value={`${stable.stats.totalEarnings.toLocaleString()} coins`}
@@ -239,17 +227,10 @@ const HallOfFameCard: React.FC<{ entry: HallOfFameEntry; rank: number }> = ({ en
         </div>
         <p className="text-xs text-white/50 mb-3">Retired at age {entry.retiredAge}</p>
 
-        {/* Career Stats */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="text-center p-2 bg-white/5 rounded-lg">
-            <p className="text-lg font-bold text-white/80">{entry.career.competitions}</p>
-            <p className="text-xs text-white/40">Competitions</p>
-          </div>
-          <div className="text-center p-2 bg-white/5 rounded-lg">
-            <p className="text-lg font-bold text-celestial-gold">{entry.career.wins}</p>
-            <p className="text-xs text-white/40">Wins</p>
-          </div>
-          <div className="text-center p-2 bg-white/5 rounded-lg">
+        {/* Career Stats — only show earnings (real data). Competition stats
+            require a backend aggregation endpoint that doesn't exist yet. */}
+        <div className="flex justify-center">
+          <div className="text-center p-2 bg-white/5 rounded-lg px-6">
             <p className="text-lg font-bold text-white/80">
               {entry.career.earnings.toLocaleString()}
             </p>
@@ -276,8 +257,6 @@ const MyStablePage: React.FC = () => {
     retiredAge: horse.ageYears ?? horse.age ?? 21,
     discipline: 'All disciplines',
     career: {
-      competitions: 0,
-      wins: 0,
       earnings: Number(horse.totalEarnings ?? horse.earnings ?? 0),
     },
     icon: '*',
@@ -304,8 +283,6 @@ const MyStablePage: React.FC = () => {
     stats: {
       totalHorses: horses.length,
       activeRacers,
-      competitionsEntered: 0,
-      firstPlaceFinishes: 0,
       totalEarnings,
       breedingPairs,
     },

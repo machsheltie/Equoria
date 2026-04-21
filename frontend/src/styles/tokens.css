@@ -199,6 +199,11 @@
   --text-accent: var(--gold-primary);
   --text-link: var(--gold-primary);
 
+  /* Auth page accent — muted steel-blue for input icons and toggle buttons */
+  --icon-accent: rgb(100, 130, 165);
+  /* Gold link colour — burnished gold for inline text links */
+  --link-gold: rgb(212, 168, 67);
+
   /* Borders */
   --border-default: var(--glass-border);
   --border-active: var(--glass-hover);

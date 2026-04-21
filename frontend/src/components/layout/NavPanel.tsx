@@ -8,52 +8,15 @@
  */
 
 import { Link, useLocation } from 'react-router-dom';
-import {
-  X,
-  Home,
-  Building2,
-  Dumbbell,
-  Trophy,
-  Dna,
-  Globe,
-  ShoppingCart,
-  MessageSquare,
-  Mail,
-  Landmark,
-  Settings,
-  type LucideIcon,
-} from 'lucide-react';
+import { X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect } from 'react';
+import { NAV_SECTIONS, isRouteActive } from './navItems';
 
 interface NavPanelProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
-interface NavItem {
-  name: string;
-  href: string;
-  Icon: LucideIcon;
-}
-
-/**
- * Navigation sections exposed in the full-nav panel.
- * Beta testers need ALL features reachable; no feature-flag gating here.
- */
-const NAV_SECTIONS: NavItem[] = [
-  { name: 'Home', href: '/', Icon: Home },
-  { name: 'My Stable', href: '/stable', Icon: Building2 },
-  { name: 'Training', href: '/training', Icon: Dumbbell },
-  { name: 'Competitions', href: '/competitions', Icon: Trophy },
-  { name: 'Breeding', href: '/breeding', Icon: Dna },
-  { name: 'World', href: '/world', Icon: Globe },
-  { name: 'Marketplace', href: '/marketplace', Icon: ShoppingCart },
-  { name: 'Community', href: '/community', Icon: MessageSquare },
-  { name: 'Messages', href: '/messages', Icon: Mail },
-  { name: 'Bank', href: '/bank', Icon: Landmark },
-  { name: 'Settings', href: '/settings', Icon: Settings },
-];
 
 export function NavPanel({ isOpen, onClose }: NavPanelProps) {
   const location = useLocation();
@@ -79,11 +42,6 @@ export function NavPanel({ isOpen, onClose }: NavPanelProps) {
     document.addEventListener('keydown', handler);
     return () => document.removeEventListener('keydown', handler);
   }, [isOpen, onClose]);
-
-  const isActive = (href: string) => {
-    if (href === '/') return location.pathname === '/';
-    return location.pathname.startsWith(href);
-  };
 
   if (!isOpen) return null;
 
@@ -129,7 +87,7 @@ export function NavPanel({ isOpen, onClose }: NavPanelProps) {
         {/* Nav links */}
         <nav className="flex-1 overflow-y-auto py-3 px-3">
           {NAV_SECTIONS.map((item) => {
-            const active = isActive(item.href);
+            const active = isRouteActive(location.pathname, item.href);
             return (
               <Link
                 key={item.href}

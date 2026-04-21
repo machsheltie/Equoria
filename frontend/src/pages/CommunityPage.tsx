@@ -16,15 +16,36 @@ import PageHero from '@/components/layout/PageHero';
 import { useThreads } from '@/hooks/api/useForum';
 import { useUnreadCount } from '@/hooks/api/useMessages';
 import { useClubs } from '@/hooks/api/useClubs';
+import { useCommunityActivity } from '@/hooks/api/useUserProgress';
+import ActivityFeed from '../components/ActivityFeed';
+import { ActivityType, type Activity } from '../lib/activity-utils';
 
 const CommunityPageContent: React.FC = () => {
   const { total: threadTotal } = useThreads();
   const { data: unreadData } = useUnreadCount();
   const { data: clubsData } = useClubs();
+  const { data: activityData = [], isLoading: isActivityLoading } = useCommunityActivity();
 
   const unreadCount = unreadData?.count ?? 0;
   const disciplineCount = clubsData?.clubs.filter((c) => c.type === 'discipline').length ?? 0;
   const breedCount = clubsData?.clubs.filter((c) => c.type === 'breed').length ?? 0;
+
+  const activities: Activity[] = activityData.map((act) => {
+    let type = ActivityType.ACHIEVEMENT;
+    if (act.type === 'FORUM_POST') type = ActivityType.ACHIEVEMENT;
+    if (act.type === 'CLUB_CREATED') type = ActivityType.ACHIEVEMENT;
+    if (act.type === 'COMPETITION_WIN') type = ActivityType.COMPETITION;
+
+    return {
+      id: String(act.id),
+      type,
+      timestamp: act.timestamp,
+      data: {
+        description: act.description,
+        ...act.metadata,
+      },
+    };
+  });
 
   const communityCards = [
     {
@@ -180,20 +201,22 @@ const CommunityPageContent: React.FC = () => {
         </div>
 
         {/* Recent Activity Feed */}
-        <div>
-          <div className="flex items-center gap-3 mb-4">
+        <div className="glass-panel p-6 rounded-2xl mb-10">
+          <div className="flex items-center gap-3 mb-6">
+            <Globe className="w-5 h-5 text-celestial-gold" />
             <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide">
               Recent Community Activity
             </h2>
           </div>
-          <div className="flex flex-col items-center justify-center min-h-40 rounded-xl bg-white/3 border border-white/8 text-center px-6">
-            <MessageSquare className="w-8 h-8 text-white/20 mb-3" />
-            <h3 className="text-sm font-semibold text-white/70 mb-1">No recent activity yet</h3>
-            <p className="text-xs text-white/40 max-w-md">
-              Community posts, club updates, and messages will appear here once players create
-              activity through the live community tools.
-            </p>
-          </div>
+          <ActivityFeed
+            activities={activities}
+            title=""
+            maxItems={10}
+            showViewAll={false}
+            size="md"
+            isLoading={isActivityLoading}
+            emptyMessage="The community is quiet... for now. Start a discussion or join a club!"
+          />
         </div>
       </div>
     </div>

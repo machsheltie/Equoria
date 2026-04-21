@@ -52,6 +52,14 @@ export function useActivityFeed(userId: string | number) {
   });
 }
 
+export function useCommunityActivity() {
+  return useQuery<ActivityFeedItem[], ApiError>({
+    queryKey: ['community', 'activity'],
+    queryFn: () => userProgressApi.getCommunityActivity(),
+    staleTime: 60 * 1000, // 1 minute for global community activity
+  });
+}
+
 export function useUser(userId: string | number) {
   return useQuery({
     queryKey: ['user', userId],

@@ -1,7 +1,7 @@
 /**
  * NavPanel — full-exposure regression test (post-22-8)
  *
- * Confirms all 11 navigation items render unconditionally. Beta-mode
+ * Confirms all 14 navigation items render unconditionally. Beta-mode
  * filtering has been removed — all routes are `beta-live` and must be
  * reachable by testers.
  */
@@ -35,5 +35,8 @@ describe('NavPanel — full exposure', () => {
     expect(screen.getByRole('link', { name: /settings/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /world/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /community/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /riders/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /leaderboards/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /profile/i })).toBeInTheDocument();
   });
 });
