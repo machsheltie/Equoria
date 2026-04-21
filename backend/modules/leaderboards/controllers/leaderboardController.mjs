@@ -443,7 +443,7 @@ export const getUserRankSummary = async (req, res) => {
       by: ['userId'],
       _sum: { amount: true },
     });
-    const usersAheadByXp = xpGrouped.filter((g) => (g._sum.amount ?? 0) > targetXpTotal).length;
+    const usersAheadByXp = xpGrouped.filter(g => (g._sum.amount ?? 0) > targetXpTotal).length;
     const xpRank = usersAheadByXp + 1;
 
     // ─── Horse-earnings rank ────────────────────────────────────────────────
@@ -461,7 +461,7 @@ export const getUserRankSummary = async (req, res) => {
       where: { userId: { not: null } },
     });
     const usersAheadByEarnings = earningsGrouped.filter(
-      (g) => (g._sum.totalEarnings ?? 0) > targetEarningsTotal,
+      g => (g._sum.totalEarnings ?? 0) > targetEarningsTotal,
     ).length;
     const earningsRank = usersAheadByEarnings + 1;
 
@@ -499,8 +499,7 @@ export const getUserRankSummary = async (req, res) => {
         perUserBest.set(ownerId, s);
       }
     }
-    const usersAheadByPerformance = [...perUserBest.values()].filter((v) => v > targetPerfMax)
-      .length;
+    const usersAheadByPerformance = [...perUserBest.values()].filter(v => v > targetPerfMax).length;
     const performanceRank = usersAheadByPerformance + 1;
 
     // totalEntries denominator for horse-* categories — prefer distinct owner
@@ -553,8 +552,8 @@ export const getUserRankSummary = async (req, res) => {
 
     // Best rankings — rank ≤ 10 → "Top 10", ≤ 100 → "Top 100", else omit.
     const bestRankings = rankings
-      .filter((r) => r.rank <= 100)
-      .map((r) => ({
+      .filter(r => r.rank <= 100)
+      .map(r => ({
         category: r.category,
         categoryLabel: r.categoryLabel,
         rank: r.rank,
@@ -581,136 +580,6 @@ export const getUserRankSummary = async (req, res) => {
 export const getTopPlayersByLevel = getTopUsersByLevel;
 export const getTopPlayersByXP = getTopUsersByXP;
 export const getTopPlayersByHorseEarnings = getTopUsersByHorseEarnings;
-
-/**
- * Get a user's ranking summary across all leaderboard categories
- */
-export const getUserRankSummary = async (req, res) => {
-  const { userId } = req.params;
-
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, username: true, firstName: true, lastName: true, level: true, xp: true },
-    });
-
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found' });
-    }
-
-    const userName = `${user.firstName} ${user.lastName}`.trim() || user.username;
-
-    // Helper to get user rank in a category
-    const getRank = async (category, value, orderByField, isHorseQuery = false) => {
-      let count;
-      if (isHorseQuery) {
-        // Aggregate horse stats per user
-        const results = await prisma.horse.groupBy({
-          by: ['userId'],
-          _sum: { [orderByField]: true },
-          where: { [orderByField]: { gt: 0 } },
-          having: {
-            [orderByField]: {
-              _sum: { gt: value },
-            },
-          },
-        });
-        count = results.length;
-      } else {
-        // Simple user stat
-        count = await prisma.user.count({
-          where: {
-            [orderByField]: { gt: value },
-          },
-        });
-      }
-      return count + 1;
-    };
-
-    // Calculate total horse earnings for this user
-    const horseEarnings = await prisma.horse.aggregate({
-      where: { userId },
-      _sum: { totalEarnings: true },
-    });
-    const totalEarnings = Number(horseEarnings._sum.totalEarnings) || 0;
-
-    // Calculate total horses owned
-    const totalHorses = await prisma.horse.count({
-      where: { userId },
-    });
-
-    // Get total entries in each category for percentages
-    const totalUsers = await prisma.user.count();
-    const userWithHorsesCount = await prisma.horse.groupBy({ by: ['userId'] }).then(r => r.length);
-
-    const rankings = [
-      {
-        category: 'level',
-        categoryLabel: 'User Level',
-        rank: await getRank('level', user.level, 'level'),
-        totalEntries: totalUsers,
-        rankChange: 0, // Placeholder as we don't track history yet
-        primaryStat: user.level,
-        statLabel: 'Level',
-      },
-      {
-        category: 'prize-money',
-        categoryLabel: 'Horse Earnings',
-        rank: await getRank('prize-money', totalEarnings, 'totalEarnings', true),
-        totalEntries: userWithHorsesCount,
-        rankChange: 0,
-        primaryStat: totalEarnings,
-        statLabel: 'Total $',
-      },
-      {
-        category: 'horse-count',
-        categoryLabel: 'Stable Size',
-        rank: await (async () => {
-          const results = await prisma.horse.groupBy({
-            by: ['userId'],
-            _count: { id: true },
-            having: { id: { _count: { gt: totalHorses } } },
-          });
-          return results.length + 1;
-        })(),
-        totalEntries: userWithHorsesCount,
-        rankChange: 0,
-        primaryStat: totalHorses,
-        statLabel: 'Horses',
-      },
-    ];
-
-    // Best Rankings (Top 3 achievements)
-    const bestRankings = rankings
-      .filter(r => r.rank <= 100)
-      .sort((a, b) => a.rank - b.rank)
-      .slice(0, 3)
-      .map(r => ({
-        category: r.category,
-        categoryLabel: r.categoryLabel,
-        rank: r.rank,
-        achievement: r.rank <= 10 ? 'Top 10' : 'Top 100',
-      }));
-
-    res.json({
-      success: true,
-      message: 'User rank summary retrieved successfully',
-      data: {
-        userId: user.id,
-        userName,
-        rankings,
-        bestRankings,
-      },
-    });
-  } catch (error) {
-    logger.error(`[leaderboardController.getUserRankSummary] Error: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve user rank summary',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
-    });
-  }
-};
 
 // Export block
 export default {
