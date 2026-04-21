@@ -24,6 +24,8 @@ const BREED_PLACEHOLDERS: Record<string, string> = {
   saddlebred: '/images/breeds/american_saddlebred.png',
   'american saddlebred': '/images/breeds/american_saddlebred.png',
   'american cream draft': '/images/breeds/american_cream_draft.png',
+  'american bashkir curly': '/images/breeds/american_bashkir_curly.webp',
+  'bashkir curly': '/images/breeds/american_bashkir_curly.webp',
   // These breeds need images added to /public/images/breeds/ to show something other than placeholder
   // 'quarter horse': '/images/breeds/quarter-horse.png',
   // andalusian: '/images/breeds/andalusian.png',
