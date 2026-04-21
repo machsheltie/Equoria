@@ -115,15 +115,16 @@ async function verifyFoalTrainingHistoryTable() {
     return false;
   }
 
-  // Check required columns
+  // Check required columns. Prisma uses camelCase field names directly as
+  // Postgres column names (no @map on fields in FoalTrainingHistory).
   const requiredColumns = [
     'id',
-    'horse_id',
+    'horseId',
     'day',
     'activity',
     'outcome',
-    'bond_change',
-    'stress_change',
+    'bondChange',
+    'stressChange',
     'timestamp',
   ];
   let allColumnsExist = true;
@@ -144,12 +145,13 @@ async function verifyIndexes() {
   console.log('\n📋 Verifying indexes...');
 
   const indexes = await checkIndexes('foal_training_history');
+  // Prisma names indexes by the column (camelCase here, matching the field name).
   const expectedIndexes = [
     'foal_training_history_pkey',
-    'foal_training_history_horse_id_idx',
+    'foal_training_history_horseId_idx',
     'foal_training_history_day_idx',
     'foal_training_history_timestamp_idx',
-    'foal_training_history_horse_id_day_idx',
+    'foal_training_history_horseId_day_idx',
   ];
 
   let allIndexesExist = true;

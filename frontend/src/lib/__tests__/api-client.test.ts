@@ -18,8 +18,27 @@ global.fetch = mockFetch;
 describe('API Client - HttpOnly Cookie Support', () => {
   // Disable MSW for this test file since we're unit testing the API client configuration
   // We're using a global fetch mock instead of MSW handlers
-  beforeAll(() => {
+  beforeAll(async () => {
     server.close();
+
+    // Prime the module-level CSRF token cache. Every mutation (POST/PUT/DELETE/PATCH)
+    // calls getCsrfToken() which fetches /api/auth/csrf-token; without priming, each
+    // mutation test's first mockResolvedValueOnce would be consumed by that pre-fetch,
+    // leaving the real request unmocked (→ undefined response → "Cannot read property
+    // 'status'"). One priming call caches the token for the rest of the suite.
+    mockFetch
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ csrfToken: 'test-csrf' }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ data: {} }),
+      });
+    await apiClient.post('/__prime_csrf__', {}).catch(() => undefined);
+    mockFetch.mockClear();
   });
 
   afterAll(() => {
@@ -416,7 +435,11 @@ describe('API Client - HttpOnly Cookie Support', () => {
   });
 
   describe('Base URL Configuration', () => {
-    it('should use environment variable for API base URL', async () => {
+    it('should use relative URL when VITE_API_URL is not set (monolithic deploy)', async () => {
+      // api-client.ts:17 — `VITE_API_URL ?? ''` resolves to empty string in the
+      // monolithic-deploy default (frontend served from the same origin as the
+      // backend via Express static). Relative URLs are the correct/tested
+      // production path. Set VITE_API_URL only for split-deploy scenarios.
       mockFetch.mockResolvedValueOnce({
         ok: true,
         status: 200,
@@ -427,9 +450,7 @@ describe('API Client - HttpOnly Cookie Support', () => {
 
       const url = mockFetch.mock.calls[0][0];
 
-      // Should construct full URL
-      expect(url).toMatch(/^https?:\/\//);
-      expect(url).toContain('/api/test');
+      expect(url).toBe('/api/test');
     });
   });
 });
