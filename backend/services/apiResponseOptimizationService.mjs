@@ -367,8 +367,12 @@ export class ResponseCacheService {
       return false;
     }
 
-    // Don't cache if explicitly disabled
-    if (res.getHeader('Cache-Control')?.includes('no-cache')) {
+    // If the handler has already set a Cache-Control policy, respect it.
+    // Previously this only checked for 'no-cache' and silently overrode
+    // handler-set 'no-store' or 'private' policies — a ZAP rule 10049
+    // root cause ("Storable but Non-Cacheable Content" on /health, /ready,
+    // and the SPA HTML).
+    if (res.getHeader('Cache-Control')) {
       return false;
     }
 

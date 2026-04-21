@@ -332,6 +332,22 @@ describe('API Response Optimization System', () => {
       mockRes.statusCode = 404;
       expect(ResponseCacheService.shouldCache(mockReq, mockRes)).toBe(false);
     });
+
+    // Regression: shouldCache must respect any handler-set Cache-Control
+    // (including 'no-store' / 'private'), not just 'no-cache'. Silent
+    // override is the root cause ZAP rule 10049 originally flagged.
+    test('does not override a Cache-Control value already set by the handler', () => {
+      const mockReq = { method: 'GET' };
+      const makeRes = cacheControl => ({
+        statusCode: 200,
+        getHeader: name => (name === 'Cache-Control' ? cacheControl : null),
+      });
+
+      expect(ResponseCacheService.shouldCache(mockReq, makeRes('no-store'))).toBe(false);
+      expect(ResponseCacheService.shouldCache(mockReq, makeRes('no-cache'))).toBe(false);
+      expect(ResponseCacheService.shouldCache(mockReq, makeRes('private, max-age=0'))).toBe(false);
+      expect(ResponseCacheService.shouldCache(mockReq, makeRes('public, max-age=31536000, immutable'))).toBe(false);
+    });
   });
 
   describe('Lazy Loading Service', () => {

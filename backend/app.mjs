@@ -418,6 +418,8 @@ const getRedisHealthInfo = async () => {
 publicRouter.get('/health', async (req, res) => {
   const redisInfo = await getRedisHealthInfo();
 
+  // Liveness output reflects real-time state — never cache (ZAP rule 10049).
+  res.setHeader('Cache-Control', 'no-store');
   res.status(200).json({
     success: true,
     status: 'healthy',
@@ -448,6 +450,8 @@ publicRouter.get('/ready', async (req, res) => {
     logger.error(`[ReadinessCheck] Database unreachable: ${error.message}`);
   }
 
+  // Readiness flips on DB state — must reflect real-time health, never cache.
+  res.setHeader('Cache-Control', 'no-store');
   res.status(statusCode).json({
     success: statusCode === 200,
     status: statusCode === 200 ? 'ready' : 'not_ready',
@@ -468,6 +472,8 @@ publicRouter.use('/ping', pingRoute);
 
 // API documentation endpoint
 publicRouter.get('/api-info', (req, res) => {
+  // Endpoint map is mutable across deploys — never cache.
+  res.setHeader('Cache-Control', 'no-store');
   res.json({
     success: true,
     message: 'Equoria API v1.0',
@@ -514,9 +520,24 @@ app.use('/api', authRouter);
 
 // Serve frontend static assets in every environment so direct backend-port
 // image requests work for local development, non-Docker production, and Docker.
-// Must come before the 404 handler so asset requests are served, not rejected
+// Must come before the 404 handler so asset requests are served, not rejected.
+//
+// Cache-Control policy (ZAP rule 10049 "Storable but Non-Cacheable Content"):
+// - /assets/* and /fonts/* — Vite emits content-hashed filenames, so these
+//   are safely cached forever. `immutable` tells browsers not to revalidate.
+// - everything else — short-lived cache with mandatory revalidation so
+//   replacement images (e.g. /images/bg-stable.webp) propagate promptly.
+const setStaticCacheHeaders = (res, filePath) => {
+  const urlPath = filePath.replace(/\\/g, '/');
+  if (/\/assets\/[^/]+$|\/fonts\/[^/]+$/.test(urlPath)) {
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+  } else {
+    res.setHeader('Cache-Control', 'public, max-age=3600, must-revalidate');
+  }
+};
+
 for (const staticAssetDir of staticAssetDirs) {
-  app.use(express.static(staticAssetDir));
+  app.use(express.static(staticAssetDir, { setHeaders: setStaticCacheHeaders }));
 }
 
 // Cache index.html in memory at startup to avoid sendFile streaming issues
@@ -540,6 +561,10 @@ app.use('*', (req, res) => {
     !req.path.startsWith('/health') &&
     !req.path.startsWith('/api-docs')
   ) {
+    // SPA HTML pins the current bundle hash — it must never be served from
+    // a stale cache, otherwise users boot an old bundle whose chunks no
+    // longer exist on the server (ZAP rule 10049).
+    res.setHeader('Cache-Control', 'no-store');
     return res.type('html').send(spaHtml);
   }
 
