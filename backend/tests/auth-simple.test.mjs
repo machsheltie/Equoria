@@ -117,7 +117,7 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
     await prisma.user.deleteMany({
       where: { email: { in: TEST_EMAILS } },
     });
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   it('should register a new user', async () => {

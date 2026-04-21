@@ -53,7 +53,7 @@ describe('Token Rotation Service - Unit Tests', () => {
     await prisma.user.deleteMany({
       where: { email: { contains: 'tokenunit' } },
     });
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   afterEach(async () => {

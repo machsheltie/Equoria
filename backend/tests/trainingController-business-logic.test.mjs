@@ -305,7 +305,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
       },
     });
 
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   describe('BUSINESS RULE: canTrain() Function Validation', () => {

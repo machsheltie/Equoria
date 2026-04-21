@@ -139,7 +139,7 @@ describe('Performance Analytics Service', () => {
         });
       }
     }
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   describe('Personal Performance Metrics', () => {

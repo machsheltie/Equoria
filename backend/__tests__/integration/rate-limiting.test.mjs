@@ -74,7 +74,7 @@ describe('Rate Limiting System', () => {
     if (server) {
       await new Promise(resolve => server.close(resolve));
     }
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   // Reset rate limits before each test to prevent interference

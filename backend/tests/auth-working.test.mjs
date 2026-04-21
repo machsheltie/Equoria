@@ -132,7 +132,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
 
   afterAll(async () => {
     await cleanupTestData();
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   describe('User Registration', () => {

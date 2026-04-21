@@ -69,7 +69,7 @@ describe('Groom Talent Service', () => {
   });
 
   afterAll(async () => {
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   describe('Talent Tree Definitions', () => {

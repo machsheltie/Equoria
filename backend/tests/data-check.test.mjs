@@ -41,7 +41,7 @@ import prisma from '../db/index.mjs';
 
 describe('🔍 INTEGRATION: Database Data Check - Live Data Validation & Debugging', () => {
   afterAll(async () => {
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   it('should check what users exist', async () => {

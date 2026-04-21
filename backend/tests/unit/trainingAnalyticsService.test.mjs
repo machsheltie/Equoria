@@ -132,7 +132,7 @@ describe('Training Analytics Service', () => {
   afterAll(async () => {
     // Clean up test data
     await cleanupTrainingData();
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   describe('Training Session Log', () => {

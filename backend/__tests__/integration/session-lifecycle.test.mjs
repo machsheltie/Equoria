@@ -115,7 +115,7 @@ describe('Session Lifecycle Management', () => {
     if (server) {
       await new Promise(resolve => server.close(resolve));
     }
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   describe('CWE-384: Token Regeneration on Login', () => {

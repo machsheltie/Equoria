@@ -261,7 +261,7 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
       });
     }
 
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   describe('Authentication and Setup', () => {

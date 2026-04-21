@@ -44,7 +44,7 @@ describe('POST /api/auth/register — starter horse integration', () => {
     if (server) {
       await new Promise(resolve => server.close(resolve));
     }
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   it('creates a user and at least one starter horse in the real database', async () => {

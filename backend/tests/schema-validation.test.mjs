@@ -38,7 +38,7 @@ describe('Schema Validation', () => {
     await prisma.breed.deleteMany({
       where: { name: 'Schema Test Breed' },
     });
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   beforeEach(async () => {

@@ -6,7 +6,7 @@ import prisma from '../db/index.mjs';
 
 describe('Simple Database Test', () => {
   afterAll(async () => {
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   it('should connect to database', async () => {

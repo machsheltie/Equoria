@@ -63,7 +63,7 @@ describe('Authentication with HttpOnly Cookies', () => {
     if (server) {
       await new Promise(resolve => server.close(resolve));
     }
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   describe('POST /api/auth/register - Cookie Setting', () => {

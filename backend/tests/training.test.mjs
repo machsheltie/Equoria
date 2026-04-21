@@ -227,7 +227,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       },
     });
 
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   describe('BUSINESS RULE: Age Requirements (3+ years old)', () => {

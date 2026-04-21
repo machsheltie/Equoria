@@ -40,7 +40,7 @@ import prisma from '../db/index.mjs';
 
 describe('🔌 INTEGRATION: Database Connection - Alternative Prisma Client Path Testing', () => {
   afterAll(async () => {
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   it('should connect to the database and fetch users', async () => {

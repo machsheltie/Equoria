@@ -6,7 +6,7 @@ import prisma from '../db/index.mjs';
 
 describe('Schema Field Test', () => {
   afterAll(async () => {
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   it('should create horse with consecutiveDaysFoalCare field', async () => {

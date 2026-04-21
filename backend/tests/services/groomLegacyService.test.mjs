@@ -146,7 +146,7 @@ describe('Groom Legacy Service', () => {
         where: { id: testUser.id },
       });
     }
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   describe('Legacy Eligibility', () => {

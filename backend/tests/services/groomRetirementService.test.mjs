@@ -101,7 +101,7 @@ describe('Groom Retirement Service', () => {
         where: { id: testUser.id },
       });
     }
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   describe('Career Week Tracking', () => {

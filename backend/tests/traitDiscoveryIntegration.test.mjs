@@ -183,7 +183,7 @@ describe('Trait Discovery API Integration Tests', () => {
     } catch {
       // Ignore cleanup errors
     }
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   describe('POST /api/traits/discover/:foalId', () => {

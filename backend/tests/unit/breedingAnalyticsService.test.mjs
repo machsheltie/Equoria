@@ -183,7 +183,7 @@ describe('Breeding Analytics Service', () => {
   afterAll(async () => {
     // Clean up test data
     await cleanupBreedingData();
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   describe('Lineage Tracking', () => {

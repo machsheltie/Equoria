@@ -76,7 +76,7 @@ describe('Horse Seed Integration Tests', () => {
     await prisma.breed.deleteMany({ where: { name: { startsWith: 'TestSeed_' } } });
     await prisma.stable.deleteMany({ where: { name: { startsWith: 'TestSeed_' } } });
     await prisma.user.deleteMany({ where: { username: { startsWith: 'TestSeed_' } } });
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   beforeEach(() => {

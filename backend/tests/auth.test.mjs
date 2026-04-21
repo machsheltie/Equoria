@@ -117,11 +117,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
 
   afterAll(async () => {
     await cleanupTestData();
-    try {
-      await prisma.$disconnect();
-    } catch (disconnectError) {
-      console.error('Error disconnecting Prisma:', disconnectError.message);
-    }
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
   describe('POST /api/auth/register', () => {
     it('should register a new user and player successfully', async () => {

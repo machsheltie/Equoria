@@ -37,7 +37,7 @@ import prisma from '../db/index.mjs';
 
 describe('🔌 INTEGRATION: Database Connection - Core Infrastructure Validation', () => {
   afterAll(async () => {
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   it('should connect to the database', async () => {

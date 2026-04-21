@@ -281,7 +281,7 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
       },
     });
 
-    await prisma.$disconnect();
+    // prisma.$disconnect() removed — global teardown handles disconnection
   });
 
   describe('Competition Scoring Business Logic', () => {
