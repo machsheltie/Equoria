@@ -37,9 +37,7 @@ describe('INTEGRATION: PATCH /api/auth/profile/preferences (21S-5)', () => {
 
   describe('Auth guard', () => {
     it('returns 401 when unauthenticated', async () => {
-      const res = await request(app)
-        .patch('/api/auth/profile/preferences')
-        .send({ emailCompetition: false });
+      const res = await request(app).patch('/api/auth/profile/preferences').send({ emailCompetition: false });
       expect(res.status).toBe(401);
     });
   });
@@ -115,9 +113,7 @@ describe('INTEGRATION: PATCH /api/auth/profile/preferences (21S-5)', () => {
 
   describe('GET /api/auth/profile includes preferences', () => {
     it('returns the persisted preferences in the profile response', async () => {
-      const res = await request(app)
-        .get('/api/auth/profile')
-        .set('Authorization', `Bearer ${token}`);
+      const res = await request(app).get('/api/auth/profile').set('Authorization', `Bearer ${token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.data.user).toHaveProperty('preferences');

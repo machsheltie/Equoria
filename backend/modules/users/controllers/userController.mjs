@@ -596,13 +596,13 @@ export const getUserCompetitionStats = async (req, res, next) => {
     const mostSuccessfulDiscipline =
       Object.keys(disciplineCounts).length > 0
         ? Object.entries(disciplineCounts).sort(
-          (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
-        )[0][0]
+            (a, b) => b[1] - a[1] || a[0].localeCompare(b[0]),
+          )[0][0]
         : '';
 
     const winRate = totalCompetitions > 0 ? (totalWins / totalCompetitions) * 100 : 0;
 
-    const recentCompetitions = results.slice(0, 5).map((r) => ({
+    const recentCompetitions = results.slice(0, 5).map(r => ({
       competitionId: r.showId,
       competitionName: r.show?.name ?? r.showName,
       discipline: r.discipline,

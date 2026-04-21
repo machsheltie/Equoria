@@ -285,16 +285,16 @@ export async function validateAssignment(req, res) {
         errors: validation.errors,
         groom: validation.groom
           ? {
-            id: validation.groom.id,
-            name: validation.groom.name,
-            skillLevel: validation.groom.skillLevel,
-          }
+              id: validation.groom.id,
+              name: validation.groom.name,
+              skillLevel: validation.groom.skillLevel,
+            }
           : null,
         horse: validation.horse
           ? {
-            id: validation.horse.id,
-            name: validation.horse.name,
-          }
+              id: validation.horse.id,
+              name: validation.horse.name,
+            }
           : null,
       },
     });

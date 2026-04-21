@@ -1264,12 +1264,12 @@ export const advanceOnboarding = async (req, res, next) => {
         completed: isComplete,
         horse: persistedHorse
           ? {
-            id: persistedHorse.id,
-            name: persistedHorse.name,
-            breedId: persistedHorse.breedId,
-            breed: persistedHorse.breed?.name ?? null,
-            gender: persistedHorse.sex,
-          }
+              id: persistedHorse.id,
+              name: persistedHorse.name,
+              breedId: persistedHorse.breedId,
+              breed: persistedHorse.breed?.name ?? null,
+              gender: persistedHorse.sex,
+            }
           : null,
       },
     });
@@ -1330,7 +1330,7 @@ export const updateUserPreferences = async (req, res, next) => {
     }
 
     // Whitelist validation — reject unknown keys
-    const unknownKeys = submittedKeys.filter((k) => !ALLOWED_PREFERENCE_KEYS.includes(k));
+    const unknownKeys = submittedKeys.filter(k => !ALLOWED_PREFERENCE_KEYS.includes(k));
     if (unknownKeys.length > 0) {
       throw new AppError(`Unknown preference key(s): ${unknownKeys.join(', ')}`, 400);
     }
@@ -1345,7 +1345,7 @@ export const updateUserPreferences = async (req, res, next) => {
     // Merge into existing settings.preferences inside a transaction with a
     // row lock to prevent lost updates when two toggles PATCH concurrently
     // (CodeRabbit Major, 2026-04-20).
-    const mergedPreferences = await prisma.$transaction(async (tx) => {
+    const mergedPreferences = await prisma.$transaction(async tx => {
       // Lock the row so parallel writes serialize.
       await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${req.user.id} FOR UPDATE`;
 

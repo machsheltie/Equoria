@@ -178,7 +178,7 @@ export async function getHorseCompetitionHistory(req, res, next) {
     const winRate = totalCompetitions > 0 ? (wins / totalCompetitions) * 100 : 0;
     const averagePlacement = placementCount > 0 ? placementSum / placementCount : 0;
 
-    const competitions = results.map((r) => ({
+    const competitions = results.map(r => ({
       competitionId: r.showId,
       competitionName: r.show?.name ?? r.showName,
       discipline: r.discipline,
@@ -954,9 +954,9 @@ export async function getConformationAnalysis(req, res) {
     const overallScore = scores.overallConformation ?? calculateOverallConformation(scores);
     const overallBreedMean = breedConformation
       ? Math.round(
-        CONFORMATION_REGIONS.reduce((sum, r) => sum + breedConformation[r].mean, 0) /
+          CONFORMATION_REGIONS.reduce((sum, r) => sum + breedConformation[r].mean, 0) /
             CONFORMATION_REGIONS.length,
-      )
+        )
       : 50;
 
     let overallPercentile;

@@ -108,21 +108,21 @@ export async function getHorseFlags(req, res) {
       const definition = getFlagDefinition(flagName);
       return definition
         ? {
-          name: definition.name,
-          displayName: definition.displayName,
-          description: definition.description,
-          type: definition.type,
-          sourceCategory: definition.sourceCategory,
-          influences: definition.influences,
-        }
+            name: definition.name,
+            displayName: definition.displayName,
+            description: definition.description,
+            type: definition.type,
+            sourceCategory: definition.sourceCategory,
+            influences: definition.influences,
+          }
         : {
-          name: flagName,
-          displayName: flagName,
-          description: 'Unknown flag',
-          type: 'unknown',
-          sourceCategory: 'unknown',
-          influences: {},
-        };
+            name: flagName,
+            displayName: flagName,
+            description: 'Unknown flag',
+            type: 'unknown',
+            sourceCategory: 'unknown',
+            influences: {},
+          };
     });
 
     // Calculate horse age

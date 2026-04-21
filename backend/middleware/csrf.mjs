@@ -103,10 +103,10 @@ export const getCsrfToken = (req, res) => {
     const responseBody = useMockSafePath
       ? { success: true, csrfToken: token }
       : {
-        success: true,
-        csrfToken: token,
-        code: 'CSRF_TOKEN_CREATED',
-      };
+          success: true,
+          csrfToken: token,
+          code: 'CSRF_TOKEN_CREATED',
+        };
 
     return res.json(responseBody);
   } catch (error) {
@@ -203,16 +203,16 @@ export const applyCsrfProtection = (req, res, next) => {
 
     const invalidPayload = res.json?.mock
       ? {
-        success: false,
-        message: 'Invalid CSRF token',
-        status: 'error',
-      }
+          success: false,
+          message: 'Invalid CSRF token',
+          status: 'error',
+        }
       : {
-        success: false,
-        message: 'Invalid CSRF token. Please refresh the page and try again.',
-        status: 'error',
-        code: 'INVALID_CSRF_TOKEN',
-      };
+          success: false,
+          message: 'Invalid CSRF token. Please refresh the page and try again.',
+          status: 'error',
+          code: 'INVALID_CSRF_TOKEN',
+        };
 
     const invalidResponse = () => {
       if (res.status) {

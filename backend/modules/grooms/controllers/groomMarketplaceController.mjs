@@ -126,9 +126,9 @@ export async function refreshMarketplace(req, res) {
     } else if (refreshCost > 0 && !force) {
       const nextFreeRefresh = record
         ? new Date(
-          record.lastRefresh.getTime() +
+            record.lastRefresh.getTime() +
               MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS * 60 * 60 * 1000,
-        )
+          )
         : new Date();
       return res.status(400).json({
         success: false,
