@@ -162,6 +162,13 @@ export default [
     },
   },
   {
-    ignores: ['node_modules/**', 'coverage/**', 'dist/**', 'build/**', '*.min.js'],
+    ignores: [
+      'node_modules/**',
+      'coverage/**',
+      'coverage-security/**',
+      'dist/**',
+      'build/**',
+      '*.min.js',
+    ],
   },
 ];
