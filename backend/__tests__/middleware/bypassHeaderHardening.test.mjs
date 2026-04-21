@@ -22,10 +22,16 @@ describe('UNIT: bypass header hardening for NODE_ENV=beta and production (21S-2)
   // Per CodeRabbit feedback (2026-04-20): restoring undefined values by
   // assignment turns them into the string "undefined" — delete the key instead.
   const restoreEnv = () => {
-    if (ORIGINAL_NODE_ENV === undefined) delete process.env.NODE_ENV;
-    else process.env.NODE_ENV = ORIGINAL_NODE_ENV;
-    if (ORIGINAL_JEST_WORKER_ID === undefined) delete process.env.JEST_WORKER_ID;
-    else process.env.JEST_WORKER_ID = ORIGINAL_JEST_WORKER_ID;
+    if (ORIGINAL_NODE_ENV === undefined) {
+      delete process.env.NODE_ENV;
+    } else {
+      process.env.NODE_ENV = ORIGINAL_NODE_ENV;
+    }
+    if (ORIGINAL_JEST_WORKER_ID === undefined) {
+      delete process.env.JEST_WORKER_ID;
+    } else {
+      process.env.JEST_WORKER_ID = ORIGINAL_JEST_WORKER_ID;
+    }
   };
   beforeEach(restoreEnv);
   afterAll(restoreEnv);
@@ -48,11 +54,11 @@ describe('UNIT: bypass header hardening for NODE_ENV=beta and production (21S-2)
       let statusCode = 200;
       let body;
       return {
-        status: (code) => {
+        status: code => {
           statusCode = code;
-          return { json: (b) => (body = b) };
+          return { json: b => (body = b) };
         },
-        json: (b) => (body = b),
+        json: b => (body = b),
         get statusCode() {
           return statusCode;
         },
@@ -109,12 +115,12 @@ describe('UNIT: bypass header hardening for NODE_ENV=beta and production (21S-2)
      *  eliminates the setTimeout race previously flagged by CodeRabbit
      *  (2026-04-20). */
     function runOnce(limiter, req) {
-      return new Promise((resolve) => {
+      return new Promise(resolve => {
         let status;
         let nextCalled = false;
         const finish = () => resolve({ status, nextCalled });
         const res = {
-          status: (c) => {
+          status: c => {
             status = c;
             return { json: () => finish(), send: () => finish() };
           },
@@ -146,8 +152,12 @@ describe('UNIT: bypass header hardening for NODE_ENV=beta and production (21S-2)
       let nextCount = 0;
       for (let i = 0; i < 5; i++) {
         const outcome = await runOnce(limiter, req);
-        if (outcome.nextCalled) nextCount += 1;
-        if (outcome.status === 429) sawLimit = true;
+        if (outcome.nextCalled) {
+          nextCount += 1;
+        }
+        if (outcome.status === 429) {
+          sawLimit = true;
+        }
       }
       expect(nextCount).toBe(5);
       expect(sawLimit).toBe(false);

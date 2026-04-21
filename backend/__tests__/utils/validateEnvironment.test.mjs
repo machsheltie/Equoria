@@ -204,7 +204,7 @@ describe('validateEnvironment()', () => {
 
       const errorCalls = loggerErrorSpy.mock.calls.map(call => call[0]);
       const allErrors = errorCalls.join(' ');
-      expect(allErrors).toContain('NODE_ENV must be one of: development, production, test, beta-readiness');
+      expect(allErrors).toContain('NODE_ENV must be one of: development, production, test, beta, beta-readiness');
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
   });
