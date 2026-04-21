@@ -252,24 +252,33 @@ jobs:
         # collect but not gate on. Security issues still upload as SARIF
         # artifacts for triage; hard-block rules are tagged FAIL in the
         # rules file and the action will still exit non-zero for those.
+        # allow_issue_writing=false — we manage a single tracking issue
+        # via the "Update ZAP tracking issue" step below instead of letting
+        # the action open a fresh issue per run.
         continue-on-error: true
         with:
           target: 'http://localhost:3000'
           rules_file_name: '.github/zap-rules.tsv'
           cmd_options: '-a -j -m 5 -T 30 -z "-config formhandler.fields.field.remove=password"'
-          allow_issue_writing: true
+          allow_issue_writing: false
           fail_action: false
 
       - name: ZAP API Scan
         uses: zaproxy/action-api-scan@v0.6.0
-        # Advisory — same rationale as the baseline scan above.
+        # Advisory — same rationale as the baseline scan above. The API
+        # scan was previously missing rules_file_name, so IGNORE/WARN
+        # entries in .github/zap-rules.tsv were not applied and the scan
+        # kept opening new issues for already-triaged alerts (100000,
+        # 90005, 10049). Rules are now respected, and tracking is handled
+        # by the "Update ZAP tracking issue" step below.
         continue-on-error: true
         with:
           target: 'http://localhost:3000'
           format: openapi
           api_file: 'backend/openapi-spec.json'
+          rules_file_name: '.github/zap-rules.tsv'
           cmd_options: '-I -a -j -T 30 -z "-config formhandler.fields.field.remove=password"'
-          allow_issue_writing: true
+          allow_issue_writing: false
           fail_action: false
 
       - name: ZAP Full Scan (Weekly)
@@ -279,7 +288,7 @@ jobs:
           target: 'http://localhost:3000'
           rules_file_name: '.github/zap-rules.tsv'
           cmd_options: '-a -j -m 5 -T 120 -z "-config formhandler.fields.field.remove=password"'
-          allow_issue_writing: true
+          allow_issue_writing: false
 
       - name: Upload ZAP Baseline Report
         if: always()
@@ -319,43 +328,113 @@ jobs:
             fi
           fi
 
-      - name: Create Security Issue for High Findings
-        if: failure() && github.event_name == 'push'
+      - name: Update ZAP tracking issue
+        # Posts a per-run comment to a single tracking issue instead of
+        # letting the ZAP actions open a fresh issue each run. If no
+        # tracking issue exists, creates one. Only runs on push/schedule
+        # to master so PR runs don't spam the tracking thread.
+        if: always() && (github.event_name == 'push' || github.event_name == 'schedule') && github.ref == 'refs/heads/master'
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
             const reportPath = 'report_json.json';
+            if (!fs.existsSync(reportPath)) {
+              core.info('No ZAP report produced; skipping tracking issue update.');
+              return;
+            }
 
-            if (fs.existsSync(reportPath)) {
-              const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
-              const highAlerts = report.site[0].alerts.filter(a => a.riskcode === "3");
+            const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+            const alerts = (report.site && report.site[0] && report.site[0].alerts) || [];
+            const byRisk = (code) => alerts.filter(a => a.riskcode === code);
+            const high = byRisk('3');
+            const medium = byRisk('2');
+            const low = byRisk('1');
+            const informational = byRisk('0');
 
-              if (highAlerts.length > 0) {
-                let body = '## 🚨 High Severity Security Vulnerabilities Detected\n\n';
-                body += `OWASP ZAP scan found **${highAlerts.length} high severity issues**:\n\n`;
+            const trackingTitle = 'ZAP Security Tracking';
+            const trackingLabel = 'zap-tracking';
 
-                highAlerts.forEach((alert, i) => {
-                  body += `### ${i + 1}. ${alert.name}\n`;
-                  body += `- **Risk**: ${alert.riskdesc}\n`;
-                  body += `- **Confidence**: ${alert.confidence}\n`;
-                  body += `- **Description**: ${alert.desc}\n`;
-                  body += `- **Solution**: ${alert.solution}\n`;
-                  body += `- **Reference**: ${alert.reference}\n\n`;
-                });
+            const { data: existing } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: trackingLabel,
+              per_page: 10,
+            });
 
-                body += `\n---\n`;
-                body += `Scan triggered by: ${context.sha.substring(0, 7)}\n`;
-                body += `Branch: ${context.ref}\n`;
+            let issue = existing.find(i => i.title === trackingTitle);
 
-                await github.rest.issues.create({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  title: `🚨 Security: ${highAlerts.length} High Severity Vulnerabilities`,
-                  body: body,
-                  labels: ['security', 'high-priority', 'zap-scan']
-                });
-              }
+            if (!issue) {
+              const created = await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: trackingTitle,
+                labels: ['security', 'zap-scan', trackingLabel],
+                body: [
+                  '## ZAP Security Tracking',
+                  '',
+                  'Single tracking issue for automated OWASP ZAP scan results.',
+                  'Each CI run posts a comment below with the latest findings.',
+                  'Alerts already marked IGNORE/WARN in `.github/zap-rules.tsv`',
+                  'are filtered before they reach this issue.',
+                  '',
+                  'Close this issue only if ZAP reporting itself is being',
+                  'redesigned — otherwise keep it open as the canonical thread.',
+                ].join('\n'),
+              });
+              issue = created.data;
+            }
+
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const shortSha = context.sha.substring(0, 7);
+
+            const formatGroup = (label, list) => {
+              if (list.length === 0) return `- **${label}**: 0`;
+              const names = [...new Set(list.map(a => `${a.name} [${a.pluginid}]`))];
+              return `- **${label}**: ${list.length} (${names.slice(0, 5).join('; ')}${names.length > 5 ? ', …' : ''})`;
+            };
+
+            const commentBody = [
+              `### Run ${shortSha} — ${new Date().toISOString()}`,
+              '',
+              formatGroup('High', high),
+              formatGroup('Medium', medium),
+              formatGroup('Low', low),
+              formatGroup('Informational', informational),
+              '',
+              `[View full report](${runUrl})`,
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              body: commentBody,
+            });
+
+            // If high findings exist, escalate with a separate labelled issue
+            // (kept from prior behavior — one issue per high-severity batch).
+            if (high.length > 0 && github.event_name === 'push') {
+              let body = '## 🚨 High Severity Security Vulnerabilities Detected\n\n';
+              body += `OWASP ZAP scan found **${high.length} high severity issues**:\n\n`;
+              high.forEach((alert, i) => {
+                body += `### ${i + 1}. ${alert.name}\n`;
+                body += `- **Risk**: ${alert.riskdesc}\n`;
+                body += `- **Confidence**: ${alert.confidence}\n`;
+                body += `- **Description**: ${alert.desc}\n`;
+                body += `- **Solution**: ${alert.solution}\n`;
+                body += `- **Reference**: ${alert.reference}\n\n`;
+              });
+              body += `\n---\nScan triggered by: ${shortSha}\nBranch: ${context.ref}\nTracking: #${issue.number}\n`;
+
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: `🚨 Security: ${high.length} High Severity Vulnerabilities (${shortSha})`,
+                body: body,
+                labels: ['security', 'high-priority', 'zap-scan'],
+              });
             }
 
       - name: Stop API server
