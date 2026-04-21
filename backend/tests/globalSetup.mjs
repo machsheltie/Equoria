@@ -19,9 +19,15 @@ export default async function globalSetup() {
   console.log('🧹 Running global setup — cleaning leftover test data...');
 
   try {
+    // Do NOT override — env vars set by CI (or the harness) must take
+    // precedence over the committed .env.test defaults. Overriding here
+    // broke the CI HttpOnly Cookie job: the workflow passes DATABASE_URL=
+    // postgresql://postgres:postgres@localhost for the postgres service
+    // container, but .env.test contains a dev password that doesn't match,
+    // so Prisma auth failed. Local dev still reads .env.test because the
+    // shell typically doesn't pre-set DATABASE_URL.
     dotenv.config({
       path: path.join(__dirname, '..', '.env.test'),
-      override: true,
     });
 
     const { default: prisma } = await import('../../packages/database/prismaClient.mjs');

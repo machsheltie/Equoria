@@ -47,14 +47,17 @@ export function applyFlagInfluencesToTraitWeights(epigeneticFlags, baseTraitWeig
           const newWeight = Math.max(0, Math.min(1, originalWeight + modifier));
           modifiedWeights[traitName] = newWeight;
 
-          logger.debug(`[epigeneticFlagInfluence] Flag '${flagName}' modified trait '${traitName}': ${originalWeight} -> ${newWeight} (${modifier > 0 ? '+' : ''}${modifier})`);
+          logger.debug(
+            `[epigeneticFlagInfluence] Flag '${flagName}' modified trait '${traitName}': ${originalWeight} -> ${newWeight} (${modifier > 0 ? '+' : ''}${modifier})`,
+          );
         }
       });
     });
 
-    logger.info(`[epigeneticFlagInfluence] Applied influences from ${epigeneticFlags.length} flags to trait weights`);
+    logger.info(
+      `[epigeneticFlagInfluence] Applied influences from ${epigeneticFlags.length} flags to trait weights`,
+    );
     return modifiedWeights;
-
   } catch (error) {
     logger.error(`[epigeneticFlagInfluence] Error applying flag influences: ${error.message}`);
     return baseTraitWeights;
@@ -93,11 +96,14 @@ export function calculateBehaviorModifiers(epigeneticFlags) {
       });
     });
 
-    logger.info(`[epigeneticFlagInfluence] Calculated behavior modifiers from ${epigeneticFlags.length} flags`);
+    logger.info(
+      `[epigeneticFlagInfluence] Calculated behavior modifiers from ${epigeneticFlags.length} flags`,
+    );
     return aggregatedModifiers;
-
   } catch (error) {
-    logger.error(`[epigeneticFlagInfluence] Error calculating behavior modifiers: ${error.message}`);
+    logger.error(
+      `[epigeneticFlagInfluence] Error calculating behavior modifiers: ${error.message}`,
+    );
     return {};
   }
 }
@@ -151,16 +157,19 @@ export function applyFlagInfluencesToCompetition(baseScore, epigeneticFlags, _di
 
     const modifiedScore = Math.max(0, baseScore + totalModifier);
 
-    logger.debug(`[epigeneticFlagInfluence] Competition score modified: ${baseScore} -> ${modifiedScore} (${totalModifier > 0 ? '+' : ''}${totalModifier.toFixed(1)})`);
+    logger.debug(
+      `[epigeneticFlagInfluence] Competition score modified: ${baseScore} -> ${modifiedScore} (${totalModifier > 0 ? '+' : ''}${totalModifier.toFixed(1)})`,
+    );
 
     return {
       modifiedScore,
       appliedModifiers,
       totalModifier,
     };
-
   } catch (error) {
-    logger.error(`[epigeneticFlagInfluence] Error applying competition influences: ${error.message}`);
+    logger.error(
+      `[epigeneticFlagInfluence] Error applying competition influences: ${error.message}`,
+    );
     return {
       modifiedScore: baseScore,
       appliedModifiers: {},
@@ -210,14 +219,15 @@ export function applyFlagInfluencesToTraining(baseEfficiency, epigeneticFlags) {
 
     const modifiedEfficiency = Math.max(0, Math.min(1, baseEfficiency + totalModifier));
 
-    logger.debug(`[epigeneticFlagInfluence] Training efficiency modified: ${baseEfficiency} -> ${modifiedEfficiency} (${totalModifier > 0 ? '+' : ''}${totalModifier.toFixed(3)})`);
+    logger.debug(
+      `[epigeneticFlagInfluence] Training efficiency modified: ${baseEfficiency} -> ${modifiedEfficiency} (${totalModifier > 0 ? '+' : ''}${totalModifier.toFixed(3)})`,
+    );
 
     return {
       modifiedEfficiency,
       appliedModifiers,
       totalModifier,
     };
-
   } catch (error) {
     logger.error(`[epigeneticFlagInfluence] Error applying training influences: ${error.message}`);
     return {
@@ -256,7 +266,7 @@ export function applyFlagInfluencesToBonding(baseBondingChange, epigeneticFlags)
     }
 
     if (behaviorModifiers.bondingResistance) {
-      const resistanceModifier = baseBondingChange * (-behaviorModifiers.bondingResistance);
+      const resistanceModifier = baseBondingChange * -behaviorModifiers.bondingResistance;
       totalModifier += resistanceModifier;
       appliedModifiers.bondingResistance = resistanceModifier;
     }
@@ -269,14 +279,15 @@ export function applyFlagInfluencesToBonding(baseBondingChange, epigeneticFlags)
 
     const modifiedBondingChange = baseBondingChange + totalModifier;
 
-    logger.debug(`[epigeneticFlagInfluence] Bonding change modified: ${baseBondingChange} -> ${modifiedBondingChange} (${totalModifier > 0 ? '+' : ''}${totalModifier.toFixed(1)})`);
+    logger.debug(
+      `[epigeneticFlagInfluence] Bonding change modified: ${baseBondingChange} -> ${modifiedBondingChange} (${totalModifier > 0 ? '+' : ''}${totalModifier.toFixed(1)})`,
+    );
 
     return {
       modifiedBondingChange,
       appliedModifiers,
       totalModifier,
     };
-
   } catch (error) {
     logger.error(`[epigeneticFlagInfluence] Error applying bonding influences: ${error.message}`);
     return {
@@ -306,21 +317,23 @@ export function getFlagInfluenceSummary(epigeneticFlags) {
   try {
     const flagDetails = epigeneticFlags.map(flagName => {
       const definition = getFlagDefinition(flagName);
-      return definition ? {
-        name: definition.name,
-        displayName: definition.displayName,
-        type: definition.type,
-        sourceCategory: definition.sourceCategory,
-        traitInfluences: definition.influences.traitWeightModifiers,
-        behaviorModifiers: definition.influences.behaviorModifiers,
-      } : {
-        name: flagName,
-        displayName: flagName,
-        type: 'unknown',
-        sourceCategory: 'unknown',
-        traitInfluences: {},
-        behaviorModifiers: {},
-      };
+      return definition
+        ? {
+            name: definition.name,
+            displayName: definition.displayName,
+            type: definition.type,
+            sourceCategory: definition.sourceCategory,
+            traitInfluences: definition.influences.traitWeightModifiers,
+            behaviorModifiers: definition.influences.behaviorModifiers,
+          }
+        : {
+            name: flagName,
+            displayName: flagName,
+            type: 'unknown',
+            sourceCategory: 'unknown',
+            traitInfluences: {},
+            behaviorModifiers: {},
+          };
     });
 
     const behaviorModifiers = calculateBehaviorModifiers(epigeneticFlags);
@@ -348,7 +361,6 @@ export function getFlagInfluenceSummary(epigeneticFlags) {
       behaviorModifiers,
       summary,
     };
-
   } catch (error) {
     logger.error(`[epigeneticFlagInfluence] Error generating flag summary: ${error.message}`);
     return {

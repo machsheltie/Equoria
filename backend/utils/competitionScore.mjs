@@ -71,7 +71,7 @@ export function calculateCompetitionScore(horse, eventType, showType = 'ridden')
 
     // Check for matching discipline affinity trait
     let traitBonus = 0;
-    const epigeneticModifiers = horse.epigeneticModifiers || horse.epigenetic_modifiers;
+    const epigeneticModifiers = horse.epigeneticModifiers;
 
     if (epigeneticModifiers?.positive && Array.isArray(epigeneticModifiers.positive)) {
       // Convert event type to trait name format

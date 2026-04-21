@@ -135,9 +135,7 @@ function determineTestSuites(changedFiles) {
 async function runTests(testSuites) {
   try {
     // Construct test pattern
-    const testPattern = testSuites.length === 1
-      ? testSuites[0]
-      : `(${testSuites.join('|')})`;
+    const testPattern = testSuites.length === 1 ? testSuites[0] : `(${testSuites.join('|')})`;
 
     // Run Jest with optimized config
     const jestCommand = `node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.optimized.mjs --testPathPattern="${testPattern}" --bail --onlyChanged --passWithNoTests`;
@@ -153,14 +151,22 @@ async function runTests(testSuites) {
     });
 
     // Print output
-    if (stdout) { console.log(stdout); }
-    if (stderr) { console.error(stderr); }
+    if (stdout) {
+      console.log(stdout);
+    }
+    if (stderr) {
+      console.error(stderr);
+    }
 
     return true;
   } catch (error) {
     // Jest exits with non-zero code on test failure
-    if (error.stdout) { console.log(error.stdout); }
-    if (error.stderr) { console.error(error.stderr); }
+    if (error.stdout) {
+      console.log(error.stdout);
+    }
+    if (error.stderr) {
+      console.error(error.stderr);
+    }
     return false;
   }
 }

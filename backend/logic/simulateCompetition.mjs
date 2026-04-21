@@ -52,7 +52,7 @@ function simulateCompetition(horses, show) {
       const eventType = show.discipline.toLowerCase().replace(/\s+/g, '_'); // Convert "Show Jumping" to "show_jumping"
       const affinityTrait = `discipline_affinity_${eventType}`;
 
-      if (horse.epigenetic_modifiers?.positive?.includes(affinityTrait)) {
+      if (horse.epigeneticModifiers?.positive?.includes(affinityTrait)) {
         disciplineAffinityBonus = 5;
         logger.info(
           `[simulateCompetition] Horse ${horse.name}: Discipline affinity bonus applied for ${affinityTrait} (+5 points)`,
@@ -95,7 +95,7 @@ function simulateCompetition(horses, show) {
 
       if (baseStressLevel > 0) {
         // Get trait effects for stress resistance
-        const traits = horse.epigenetic_modifiers || { positive: [], negative: [], hidden: [] };
+        const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
         const allTraits = [...(traits.positive || []), ...(traits.negative || [])];
         const traitEffects = getCombinedTraitEffects(allTraits);
 

@@ -532,7 +532,9 @@ export function buildSelectObject(modelName, preset = 'list', customFields = {})
   const presetFields = modelPresets[preset];
 
   if (!presetFields) {
-    logger.warn(`[fieldSelectionHelper] No preset "${preset}" found for model: ${modelName}, using "list"`);
+    logger.warn(
+      `[fieldSelectionHelper] No preset "${preset}" found for model: ${modelName}, using "list"`,
+    );
     return modelPresets.list || undefined;
   }
 
@@ -667,7 +669,9 @@ export function calculateBandwidthSavings(modelName, recordCount, fromPreset, to
  * Format bytes to human-readable format
  */
 function formatBytes(bytes) {
-  if (bytes === 0) { return '0 Bytes'; }
+  if (bytes === 0) {
+    return '0 Bytes';
+  }
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
   const i = Math.floor(Math.log(bytes) / Math.log(k));

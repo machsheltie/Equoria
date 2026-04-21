@@ -120,9 +120,9 @@ router.get('/foals/development', async (req, res) => {
         id: true,
         name: true,
         age: true,
-        bond_score: true,
-        stress_level: true,
-        epigenetic_modifiers: true,
+        bondScore: true,
+        stressLevel: true,
+        epigeneticModifiers: true,
         breed: {
           select: {
             name: true,

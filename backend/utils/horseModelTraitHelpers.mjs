@@ -164,9 +164,15 @@ export function getTraitCategory(traits, traitName) {
       return null;
     }
 
-    if ((traits.positive || []).includes(traitName)) { return 'positive'; }
-    if ((traits.negative || []).includes(traitName)) { return 'negative'; }
-    if ((traits.hidden || []).includes(traitName)) { return 'hidden'; }
+    if ((traits.positive || []).includes(traitName)) {
+      return 'positive';
+    }
+    if ((traits.negative || []).includes(traitName)) {
+      return 'negative';
+    }
+    if ((traits.hidden || []).includes(traitName)) {
+      return 'hidden';
+    }
 
     return null;
   } catch (error) {
@@ -191,8 +197,10 @@ export function moveTraitBetweenCategories(traits, traitName, fromCategory, toCa
       throw new Error('All parameters are required');
     }
 
-    if (!['positive', 'negative', 'hidden'].includes(fromCategory) ||
-        !['positive', 'negative', 'hidden'].includes(toCategory)) {
+    if (
+      !['positive', 'negative', 'hidden'].includes(fromCategory) ||
+      !['positive', 'negative', 'hidden'].includes(toCategory)
+    ) {
       throw new Error('Invalid category specified');
     }
 
@@ -226,9 +234,10 @@ export function countTraits(traits) {
       return 0;
     }
 
-    const totalTraits = (traits.positive || []).length +
-                       (traits.negative || []).length +
-                       (traits.hidden || []).length;
+    const totalTraits =
+      (traits.positive || []).length +
+      (traits.negative || []).length +
+      (traits.hidden || []).length;
 
     return totalTraits;
   } catch (error) {

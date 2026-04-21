@@ -269,10 +269,10 @@ describe('Trait Discovery API Integration Tests', () => {
     });
   });
 
-  describe('GET /api/traits/progress/:foalId', () => {
-    it.skip('should return discovery progress for foal', async () => {
+  describe('GET /api/trait-discovery/progress/:foalId', () => {
+    it('should return discovery progress for foal', async () => {
       const response = await request(app)
-        .get(`/api/traits/progress/${testFoals[0].id}`)
+        .get(`/api/trait-discovery/progress/${testFoals[0].id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -311,7 +311,7 @@ describe('Trait Discovery API Integration Tests', () => {
 
     it('should return 404 for non-existent foal', async () => {
       const response = await request(app)
-        .get('/api/traits/progress/99999')
+        .get('/api/trait-discovery/progress/99999')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
 
@@ -384,10 +384,10 @@ describe('Trait Discovery API Integration Tests', () => {
     });
   });
 
-  describe('GET /api/traits/conditions', () => {
-    it.skip('should return all discovery conditions', async () => {
+  describe('GET /api/trait-discovery/conditions', () => {
+    it('should return all discovery conditions', async () => {
       const response = await request(app)
-        .get('/api/traits/conditions')
+        .get('/api/trait-discovery/conditions')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -417,10 +417,10 @@ describe('Trait Discovery API Integration Tests', () => {
     });
   });
 
-  describe('POST /api/traits/check-conditions/:foalId', () => {
-    it.skip('should check conditions without triggering discovery', async () => {
+  describe('POST /api/trait-discovery/check-conditions/:foalId', () => {
+    it('should check conditions without triggering discovery', async () => {
       const response = await request(app)
-        .post(`/api/traits/check-conditions/${testFoals[0].id}`)
+        .post(`/api/trait-discovery/check-conditions/${testFoals[0].id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('x-test-skip-csrf', 'true')
         .expect(200);
@@ -457,7 +457,7 @@ describe('Trait Discovery API Integration Tests', () => {
 
     it('should return 404 for non-existent foal', async () => {
       const response = await request(app)
-        .post('/api/traits/check-conditions/99999')
+        .post('/api/trait-discovery/check-conditions/99999')
         .set('Authorization', `Bearer ${authToken}`)
         .set('x-test-skip-csrf', 'true')
         .expect(404);
@@ -468,7 +468,7 @@ describe('Trait Discovery API Integration Tests', () => {
   });
 
   describe('Real-time trait discovery workflow', () => {
-    it.skip('should demonstrate complete trait discovery workflow', async () => {
+    it('should demonstrate complete trait discovery workflow', async () => {
       // Create a fresh foal with guaranteed hidden traits for this test
       const freshFoal = await prisma.horse.create({
         data: {
@@ -517,7 +517,7 @@ describe('Trait Discovery API Integration Tests', () => {
 
       // 1. Check initial progress
       const progressResponse = await request(app)
-        .get(`/api/traits/progress/${foalId}`)
+        .get(`/api/trait-discovery/progress/${foalId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -528,7 +528,7 @@ describe('Trait Discovery API Integration Tests', () => {
 
       // 2. Check conditions without discovery
       const conditionsResponse = await request(app)
-        .post(`/api/traits/check-conditions/${foalId}`)
+        .post(`/api/trait-discovery/check-conditions/${foalId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('x-test-skip-csrf', 'true')
         .expect(200);
@@ -557,7 +557,7 @@ describe('Trait Discovery API Integration Tests', () => {
 
       // 5. Check progress again to see changes
       const finalProgressResponse = await request(app)
-        .get(`/api/traits/progress/${foalId}`)
+        .get(`/api/trait-discovery/progress/${foalId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 

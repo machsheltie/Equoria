@@ -115,6 +115,23 @@ class ApiDocumentationService {
     try {
       const spec = this.loadSpecification();
 
+      // The generator MERGES registered endpoints into the loaded spec — it
+      // never deletes existing paths. Previously, calling
+      // POST /api/docs/generate with an empty endpointRegistry still
+      // re-serialized the spec, and YAML.stringify(spec, 4) reformatting
+      // was perceived as wiping the document. We keep the file stable here
+      // by noting the empty-registry case but continuing so that schema-only
+      // registrations still land.
+      if (this.endpointRegistry.size === 0) {
+        const existingPathCount = Object.keys(spec.paths ?? {}).length;
+        if (existingPathCount > 0) {
+          logger.info(
+            '[ApiDocService] generateDocumentation called with 0 registered endpoints; ' +
+              `preserving ${existingPathCount} existing paths in the loaded spec.`,
+          );
+        }
+      }
+
       // Update paths with registered endpoints
       for (const [_key, endpoint] of this.endpointRegistry) {
         const pathKey = endpoint.path;
@@ -164,7 +181,9 @@ class ApiDocumentationService {
       this.saveSpecification(spec);
       this.updateMetrics();
 
-      logger.info(`[ApiDocService] Documentation generated for ${this.endpointRegistry.size} endpoints`);
+      logger.info(
+        `[ApiDocService] Documentation generated for ${this.endpointRegistry.size} endpoints`,
+      );
       return spec;
     } catch (error) {
       logger.error(`[ApiDocService] Failed to generate documentation: ${error.message}`);
@@ -224,7 +243,9 @@ class ApiDocumentationService {
       if (errors.length === 0) {
         logger.info('[ApiDocService] OpenAPI specification validation passed');
       } else {
-        logger.warn(`[ApiDocService] OpenAPI specification validation found ${errors.length} issues`);
+        logger.warn(
+          `[ApiDocService] OpenAPI specification validation found ${errors.length} issues`,
+        );
       }
 
       return {
@@ -273,7 +294,9 @@ class ApiDocumentationService {
         ).size,
       };
 
-      logger.debug(`[ApiDocService] Metrics updated: ${documentedEndpoints}/${totalEndpoints} endpoints documented`);
+      logger.debug(
+        `[ApiDocService] Metrics updated: ${documentedEndpoints}/${totalEndpoints} endpoints documented`,
+      );
     } catch (error) {
       logger.error(`[ApiDocService] Failed to update metrics: ${error.message}`);
     }
@@ -321,10 +344,18 @@ class ApiDocumentationService {
 
     switch (schema.type) {
       case 'string':
-        if (schema.format === 'email') { return 'user@example.com'; }
-        if (schema.format === 'date-time') { return new Date().toISOString(); }
-        if (schema.format === 'uuid') { return '123e4567-e89b-12d3-a456-426614174000'; }
-        if (schema.enum) { return schema.enum[0]; }
+        if (schema.format === 'email') {
+          return 'user@example.com';
+        }
+        if (schema.format === 'date-time') {
+          return new Date().toISOString();
+        }
+        if (schema.format === 'uuid') {
+          return '123e4567-e89b-12d3-a456-426614174000';
+        }
+        if (schema.enum) {
+          return schema.enum[0];
+        }
         return schema.example || 'string';
 
       case 'integer':
@@ -353,10 +384,13 @@ class ApiDocumentationService {
 
       default:
         if (schema.allOf) {
-          return schema.allOf.reduce((acc, subSchema) => ({
-            ...acc,
-            ...this.generateSchemaExample(subSchema),
-          }), {});
+          return schema.allOf.reduce(
+            (acc, subSchema) => ({
+              ...acc,
+              ...this.generateSchemaExample(subSchema),
+            }),
+            {},
+          );
         }
         return schema.example || null;
     }

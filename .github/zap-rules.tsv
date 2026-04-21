@@ -1,150 +1,150 @@
 # ZAP Scanning Rules Configuration
 # Format: ID	THRESHOLD	[IGNORE]	[COMMENT]
 # ID: ZAP rule identifier
-# THRESHOLD: OFF, DEFAULT, LOW, MEDIUM, HIGH
+# THRESHOLD: IGNORE, INFO, WARN, FAIL, PASS
 # IGNORE: Optional, set to IGNORE to disable alerts
 # COMMENT: Optional explanation
 
 # High Priority Rules (Security)
-10023	HIGH		# SQL Injection
-10024	HIGH		# SQL Injection (SQLite)
-10025	HIGH		# SQL Injection (MySQL)
-10026	HIGH		# SQL Injection (PostgreSQL)
-40018	HIGH		# SQL Injection - Authentication Bypass
-40019	HIGH		# SQL Injection - Hypersonic SQL
-40020	HIGH		# SQL Injection - MsSQL
-40021	HIGH		# SQL Injection - Oracle
-90018	HIGH		# SQL Injection - SQLite
-90019	HIGH		# SQL Injection - Oracle
-90020	HIGH		# SQL Injection - MySQL
-90021	HIGH		# SQL Injection - PostgreSQL
-90022	HIGH		# SQL Injection - Hypersonic SQL
-90023	HIGH		# SQL Injection - MsSQL
-90024	HIGH		# SQL Injection - SQLMap
+10023	FAIL		# SQL Injection
+10024	FAIL		# SQL Injection (SQLite)
+10025	FAIL		# SQL Injection (MySQL)
+10026	FAIL		# SQL Injection (PostgreSQL)
+40018	FAIL		# SQL Injection - Authentication Bypass
+40019	FAIL		# SQL Injection - Hypersonic SQL
+40020	FAIL		# SQL Injection - MsSQL
+40021	FAIL		# SQL Injection - Oracle
+90018	FAIL		# SQL Injection - SQLite
+90019	FAIL		# SQL Injection - Oracle
+90020	FAIL		# SQL Injection - MySQL
+90021	FAIL		# SQL Injection - PostgreSQL
+90022	FAIL		# SQL Injection - Hypersonic SQL
+90023	FAIL		# SQL Injection - MsSQL
+90024	FAIL		# SQL Injection - SQLMap
 
 # Authentication & Session Management
-10040	HIGH		# Secure Pages Include Mixed Content
-10041	HIGH		# HTTP to HTTPS Insecure Transition
-10042	HIGH		# HTTPS to HTTP Insecure Transition
-10043	HIGH		# User Controllable JavaScript Event
-10044	HIGH		# Big Redirect Detected
-10045	HIGH		# Source Code Disclosure
-10047	HIGH		# HTTPS Content Available via HTTP
-10048	HIGH		# Remote Code Execution
-10049	HIGH		# Path Traversal
-10050	HIGH		# Directory Browsing
-10051	HIGH		# Cookie Without Secure Flag
-10052	HIGH		# Cookie Without SameSite Attribute
-10053	HIGH		# Cookie Without HttpOnly Flag
-10054	HIGH		# Cookie Poisoning
-10055	HIGH		# CSP Scanner
-10056	HIGH		# X-Frame-Options Header
-10057	HIGH		# Cross-Domain Misconfiguration
-10058	HIGH		# GET for POST
-10059	HIGH		# Cookie No HttpOnly Flag
-10060	HIGH		# Cookie Without Secure Flag
+10040	FAIL		# Secure Pages Include Mixed Content
+10041	FAIL		# HTTP to HTTPS Insecure Transition
+10042	FAIL		# HTTPS to HTTP Insecure Transition
+10043	FAIL		# User Controllable JavaScript Event
+10044	FAIL		# Big Redirect Detected
+10045	FAIL		# Source Code Disclosure
+10047	FAIL		# HTTPS Content Available via HTTP
+10048	FAIL		# Remote Code Execution
+10049	FAIL		# Path Traversal
+10050	FAIL		# Directory Browsing
+10051	FAIL		# Cookie Without Secure Flag
+10052	FAIL		# Cookie Without SameSite Attribute
+10053	FAIL		# Cookie Without HttpOnly Flag
+10054	FAIL		# Cookie Poisoning
+10055	FAIL		# CSP Scanner
+10056	FAIL		# X-Frame-Options Header
+10057	FAIL		# Cross-Domain Misconfiguration
+10058	FAIL		# GET for POST
+10059	FAIL		# Cookie No HttpOnly Flag
+10060	FAIL		# Cookie Without Secure Flag
 
 # XSS Vulnerabilities
-40012	HIGH		# Cross Site Scripting (Reflected)
-40013	HIGH		# Cross Site Scripting (Persistent)
-40014	HIGH		# Cross Site Scripting (DOM Based)
-40016	HIGH		# Cross Site Scripting (Persistent) - Prime
-40017	HIGH		# Cross Site Scripting (Persistent) - Spider
-90019	HIGH		# Code Injection
+40012	FAIL		# Cross Site Scripting (Reflected)
+40013	FAIL		# Cross Site Scripting (Persistent)
+40014	FAIL		# Cross Site Scripting (DOM Based)
+40016	FAIL		# Cross Site Scripting (Persistent) - Prime
+40017	FAIL		# Cross Site Scripting (Persistent) - Spider
+90019	FAIL		# Code Injection
 
 # CSRF Protection
-10202	HIGH		# Absence of Anti-CSRF Tokens
+10202	FAIL		# Absence of Anti-CSRF Tokens
 
 # Injection Attacks
-7	HIGH		# Remote File Inclusion
-40003	HIGH		# CRLF Injection
-40008	HIGH		# Parameter Tampering
-40009	HIGH		# Server Side Include
-40028	HIGH		# URL Redirector Abuse
-90003	HIGH		# XML External Entity Attack
-90004	HIGH		# XXE - External Entity Attack
-90029	HIGH		# LDAP Injection
+7	FAIL		# Remote File Inclusion
+40003	FAIL		# CRLF Injection
+40008	FAIL		# Parameter Tampering
+40009	FAIL		# Server Side Include
+40028	FAIL		# URL Redirector Abuse
+90003	FAIL		# XML External Entity Attack
+90004	FAIL		# XXE - External Entity Attack
+90029	FAIL		# LDAP Injection
 
 # Authentication Bypass
-10105	HIGH		# Weak Authentication Method
+10105	FAIL		# Weak Authentication Method
 
 # Rate Limiting & DoS
-90030	HIGH		# Application Error Disclosure
+90030	FAIL		# Application Error Disclosure
 
 # Medium Priority Rules (Configuration Issues)
-10010	MEDIUM		# Cookie No HttpOnly Flag (Medium)
-10011	MEDIUM		# Cookie Without Secure Flag (Medium)
-10015	MEDIUM		# Incomplete or No Cache-control
-10017	MEDIUM		# Cross-Domain JavaScript Source File Inclusion
-10019	MEDIUM		# Content-Type Header Missing
-10020	MEDIUM		# X-Frame-Options Header Not Set
-10021	MEDIUM		# X-Content-Type-Options Header Missing
-10035	MEDIUM		# Strict-Transport-Security Header Not Set
-10036	MEDIUM		# HTTP Server Response Header
-10037	MEDIUM		# Server Leaks Information via "X-Powered-By"
-10038	MEDIUM		# Content Security Policy (CSP) Header Not Set
-10039	MEDIUM		# X-Backend-Server Header Information Leak
-10063	MEDIUM		# Feature Policy Header Not Set
-10096	MEDIUM		# Timestamp Disclosure
-10098	MEDIUM		# Cross-Domain Misconfiguration
-10109	MEDIUM		# Modern Web Application
-10110	MEDIUM		# Dangerous JS Functions
+10010	WARN		# Cookie No HttpOnly Flag (Medium)
+10011	WARN		# Cookie Without Secure Flag (Medium)
+10015	WARN		# Incomplete or No Cache-control
+10017	WARN		# Cross-Domain JavaScript Source File Inclusion
+10019	WARN		# Content-Type Header Missing
+10020	WARN		# X-Frame-Options Header Not Set
+10021	WARN		# X-Content-Type-Options Header Missing
+10035	WARN		# Strict-Transport-Security Header Not Set
+10036	WARN		# HTTP Server Response Header
+10037	WARN		# Server Leaks Information via "X-Powered-By"
+10038	WARN		# Content Security Policy (CSP) Header Not Set
+10039	WARN		# X-Backend-Server Header Information Leak
+10063	WARN		# Feature Policy Header Not Set
+10096	WARN		# Timestamp Disclosure
+10098	WARN		# Cross-Domain Misconfiguration
+10109	WARN		# Modern Web Application
+10110	WARN		# Dangerous JS Functions
 
 # Information Disclosure
-10094	MEDIUM		# Base64 Disclosure
-10095	MEDIUM		# Credit Card Number Disclosure
-10097	MEDIUM		# Hash Disclosure
+10094	WARN		# Base64 Disclosure
+10095	WARN		# Credit Card Number Disclosure
+10097	WARN		# Hash Disclosure
 
 # Low Priority Rules (Informational)
-10003	LOW		# Vulnerable JS Library
-10027	LOW		# Information Disclosure - Suspicious Comments
-10032	LOW		# Viewstate
-10061	LOW		# X-AspNet-Version Response Header
-10062	LOW		# PII Disclosure
-10070	LOW		# Cookie Slack Detector
-10071	LOW		# User Agent Fuzzer
-10104	LOW		# User Agent Fuzzer
-10108	LOW		# Reverse Tabnabbing
-2	LOW		# Private IP Disclosure
+10003	INFO		# Vulnerable JS Library
+10027	INFO		# Information Disclosure - Suspicious Comments
+10032	INFO		# Viewstate
+10061	INFO		# X-AspNet-Version Response Header
+10062	INFO		# PII Disclosure
+10070	INFO		# Cookie Slack Detector
+10071	INFO		# User Agent Fuzzer
+10104	INFO		# User Agent Fuzzer
+10108	INFO		# Reverse Tabnabbing
+2	INFO		# Private IP Disclosure
 
 # Ignore False Positives
 10016	IGNORE		# Web Browser XSS Protection Not Enabled (often false positive)
-10202	DEFAULT		# Anti-CSRF tokens (we implement custom CSRF, may cause false positives)
+10202	PASS		# Anti-CSRF tokens (we implement custom CSRF, may cause false positives)
 
 # API-Specific Rules
-90033	HIGH		# Loosely Scoped Cookie
-90034	HIGH		# Cloud Metadata Potentially Exposed
+90033	FAIL		# Loosely Scoped Cookie
+90034	FAIL		# Cloud Metadata Potentially Exposed
 
 # Rate Limiting Detection
-10107	MEDIUM		# Httpoxy - Proxy Header Misuse
+10107	WARN		# Httpoxy - Proxy Header Misuse
 
 # Content Type Rules
-10019	MEDIUM		# Content Type Missing
+10019	WARN		# Content Type Missing
 
 # Passive Scan Rules (Always enabled)
-10015	LOW		# Re-examine Cache-control Directives
-10027	LOW		# Information Disclosure - Suspicious Comments
-10028	LOW		# Open Redirect
-10029	LOW		# Cookie Poisoning
-10030	LOW		# User Controllable Charset
-10031	LOW		# User Controllable HTML Element Attribute (Potential XSS)
+10015	INFO		# Re-examine Cache-control Directives
+10027	INFO		# Information Disclosure - Suspicious Comments
+10028	INFO		# Open Redirect
+10029	INFO		# Cookie Poisoning
+10030	INFO		# User Controllable Charset
+10031	INFO		# User Controllable HTML Element Attribute (Potential XSS)
 
 # Active Scan Rules (Configurable thresholds)
-40018	HIGH		# SQL Injection
-40019	HIGH		# SQL Injection - Hypersonic SQL
-40020	HIGH		# SQL Injection - MsSQL
-40021	HIGH		# SQL Injection - Oracle
-40022	HIGH		# SQL Injection - PostgreSQL
-40023	HIGH		# Possible Username Enumeration
-40024	HIGH		# SQL Injection - SQLite
-40025	HIGH		# Expression Language Injection
-40026	HIGH		# Cross Site Scripting (DOM Based)
-40027	HIGH		# SQL Injection - Boolean Based
-40028	HIGH		# ELMAH Information Leak
+40018	FAIL		# SQL Injection
+40019	FAIL		# SQL Injection - Hypersonic SQL
+40020	FAIL		# SQL Injection - MsSQL
+40021	FAIL		# SQL Injection - Oracle
+40022	FAIL		# SQL Injection - PostgreSQL
+40023	FAIL		# Possible Username Enumeration
+40024	FAIL		# SQL Injection - SQLite
+40025	FAIL		# Expression Language Injection
+40026	FAIL		# Cross Site Scripting (DOM Based)
+40027	FAIL		# SQL Injection - Boolean Based
+40028	FAIL		# ELMAH Information Leak
 
 # Ignore Development/Test Artifacts
 10049	IGNORE		# Path Traversal (often false positive in REST APIs)
 10098	IGNORE		# Cross-Domain Misconfiguration (expected for CORS)
 
 # Authentication Test Rules
-40023	MEDIUM		# Possible Username Enumeration (reduce noise)
+40023	WARN		# Possible Username Enumeration (reduce noise)

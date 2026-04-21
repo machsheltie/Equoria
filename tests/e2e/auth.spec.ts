@@ -26,11 +26,8 @@ test.describe('Authentication Flows', () => {
   });
 
   test('Login Page - Invalid Credentials', async ({ page }) => {
-    // Bypass auth rate limiter so this test does not hit 429
-    await page.route('**/api/auth/**', (route) => {
-      const headers = { ...route.request().headers(), 'x-test-bypass-rate-limit': 'true' };
-      route.continue({ headers });
-    });
+    // Auth rate limiter uses skipSuccessfulRequests:true with max:200 failed attempts.
+    // A single invalid-credentials test will not trigger rate limiting.
 
     await page.goto('/login');
 

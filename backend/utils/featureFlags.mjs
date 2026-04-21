@@ -225,9 +225,7 @@ export function getFlagsByType(type) {
  */
 export function getFlagsByCategory(category) {
   const prefix = `FF_${category}_`;
-  return Object.keys(FLAG_DEFINITIONS).filter((name) =>
-    name.startsWith(prefix),
-  );
+  return Object.keys(FLAG_DEFINITIONS).filter(name => name.startsWith(prefix));
 }
 
 export default {

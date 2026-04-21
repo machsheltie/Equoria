@@ -31,7 +31,9 @@ export async function evaluateUltraRareTriggers(horseId, evaluationContext = {})
       const isTriggered = await evaluateTraitTriggerConditions(horse, traitDef, evaluationContext);
 
       if (isTriggered) {
-        logger.info(`[ultraRareTriggerEngine] Ultra-rare trait triggered: ${traitDef.name} for horse ${horseId}`);
+        logger.info(
+          `[ultraRareTriggerEngine] Ultra-rare trait triggered: ${traitDef.name} for horse ${horseId}`,
+        );
         triggeredTraits.push({
           name: traitDef.name,
           key: traitKey,
@@ -72,7 +74,9 @@ export async function evaluateExoticUnlocks(horseId, evaluationContext = {}) {
       const isUnlocked = await evaluateExoticUnlockConditions(horse, traitDef, evaluationContext);
 
       if (isUnlocked) {
-        logger.info(`[ultraRareTriggerEngine] Exotic trait unlocked: ${traitDef.name} for horse ${horseId}`);
+        logger.info(
+          `[ultraRareTriggerEngine] Exotic trait unlocked: ${traitDef.name} for horse ${horseId}`,
+        );
         unlockedTraits.push({
           name: traitDef.name,
           key: traitKey,
@@ -210,15 +214,17 @@ async function evaluatePhoenixBornConditions(horse, _conditions) {
     const competitionResults = horse.competitionResults || [];
 
     // Count high-stress indicators from interactions and competitions
-    const stressEvents = groomInteractions.filter(interaction =>
-      interaction.stressChange && interaction.stressChange > 15,
-    ).length + competitionResults.filter(result =>
-      result.placement > 5, // Poor performance can indicate stress
-    ).length;
+    const stressEvents =
+      groomInteractions.filter(
+        interaction => interaction.stressChange && interaction.stressChange > 15,
+      ).length +
+      competitionResults.filter(
+        result => result.placement > 5, // Poor performance can indicate stress
+      ).length;
 
     // Count successful recoveries from groom interactions
-    const recoveries = groomInteractions.filter(interaction =>
-      interaction.stressChange && interaction.stressChange < -15, // Stress reduction
+    const recoveries = groomInteractions.filter(
+      interaction => interaction.stressChange && interaction.stressChange < -15, // Stress reduction
     ).length;
 
     // Use current horse stress level as additional indicator
@@ -228,11 +234,15 @@ async function evaluatePhoenixBornConditions(horse, _conditions) {
     // More lenient conditions for testing - at least some stress indicators
     const meetsConditions = (stressEvents >= 1 || hasHighStress) && recoveries >= 0;
 
-    logger.debug(`[ultraRareTriggerEngine] Phoenix-Born evaluation: stress events: ${stressEvents}, recoveries: ${recoveries}, current stress: ${currentStressLevel}, meets conditions: ${meetsConditions}`);
+    logger.debug(
+      `[ultraRareTriggerEngine] Phoenix-Born evaluation: stress events: ${stressEvents}, recoveries: ${recoveries}, current stress: ${currentStressLevel}, meets conditions: ${meetsConditions}`,
+    );
 
     return meetsConditions;
   } catch (error) {
-    logger.error(`[ultraRareTriggerEngine] Error evaluating Phoenix-Born conditions: ${error.message}`);
+    logger.error(
+      `[ultraRareTriggerEngine] Error evaluating Phoenix-Born conditions: ${error.message}`,
+    );
     return false;
   }
 }
@@ -260,21 +270,27 @@ async function evaluateIronWilledConditions(horse, conditions) {
     const currentBondScore = horse.bondScore || 0;
     bondScores.push(currentBondScore);
 
-    const avgBondScore = bondScores.length > 0
-      ? bondScores.reduce((sum, score) => sum + score, 0) / bondScores.length
-      : currentBondScore;
+    const avgBondScore =
+      bondScores.length > 0
+        ? bondScores.reduce((sum, score) => sum + score, 0) / bondScores.length
+        : currentBondScore;
 
     const bondConsistency = avgBondScore / 100; // Convert to percentage
 
-    const meetsConditions = milestoneCount >= expectedMilestones &&
-                           !hasNegativeTraits &&
-                           bondConsistency >= conditions.minBondConsistency;
+    const meetsConditions =
+      milestoneCount >= expectedMilestones &&
+      !hasNegativeTraits &&
+      bondConsistency >= conditions.minBondConsistency;
 
-    logger.debug(`[ultraRareTriggerEngine] Iron-Willed evaluation: milestones: ${milestoneCount}, negative traits: ${hasNegativeTraits}, bond consistency: ${bondConsistency}, meets conditions: ${meetsConditions}`);
+    logger.debug(
+      `[ultraRareTriggerEngine] Iron-Willed evaluation: milestones: ${milestoneCount}, negative traits: ${hasNegativeTraits}, bond consistency: ${bondConsistency}, meets conditions: ${meetsConditions}`,
+    );
 
     return meetsConditions;
   } catch (error) {
-    logger.error(`[ultraRareTriggerEngine] Error evaluating Iron-Willed conditions: ${error.message}`);
+    logger.error(
+      `[ultraRareTriggerEngine] Error evaluating Iron-Willed conditions: ${error.message}`,
+    );
     return false;
   }
 }
@@ -302,19 +318,25 @@ async function evaluateEmpathicMirrorConditions(horse, conditions) {
     }
 
     const minBondScore = bondScores.length > 0 ? Math.min(...bondScores) : currentBondScore;
-    const avgBondScore = bondScores.length > 0
-      ? bondScores.reduce((sum, score) => sum + score, 0) / bondScores.length
-      : currentBondScore;
+    const avgBondScore =
+      bondScores.length > 0
+        ? bondScores.reduce((sum, score) => sum + score, 0) / bondScores.length
+        : currentBondScore;
 
-    const meetsConditions = sameGroomFromBirth &&
-                           minBondScore >= conditions.minBondScore &&
-                           avgBondScore >= conditions.minBondScore;
+    const meetsConditions =
+      sameGroomFromBirth &&
+      minBondScore >= conditions.minBondScore &&
+      avgBondScore >= conditions.minBondScore;
 
-    logger.debug(`[ultraRareTriggerEngine] Empathic Mirror evaluation: same groom: ${sameGroomFromBirth}, min bond: ${minBondScore}, avg bond: ${avgBondScore}, meets conditions: ${meetsConditions}`);
+    logger.debug(
+      `[ultraRareTriggerEngine] Empathic Mirror evaluation: same groom: ${sameGroomFromBirth}, min bond: ${minBondScore}, avg bond: ${avgBondScore}, meets conditions: ${meetsConditions}`,
+    );
 
     return meetsConditions;
   } catch (error) {
-    logger.error(`[ultraRareTriggerEngine] Error evaluating Empathic Mirror conditions: ${error.message}`);
+    logger.error(
+      `[ultraRareTriggerEngine] Error evaluating Empathic Mirror conditions: ${error.message}`,
+    );
     return false;
   }
 }
@@ -329,9 +351,10 @@ async function evaluateBornLeaderConditions(horse, conditions) {
       .filter(log => log.bondScore !== null)
       .map(log => log.bondScore);
 
-    const avgBondScore = bondScores.length > 0
-      ? bondScores.reduce((sum, score) => sum + score, 0) / bondScores.length
-      : 0;
+    const avgBondScore =
+      bondScores.length > 0
+        ? bondScores.reduce((sum, score) => sum + score, 0) / bondScores.length
+        : 0;
 
     const topBondScore = avgBondScore >= 85; // Top tier bond
 
@@ -340,25 +363,31 @@ async function evaluateBornLeaderConditions(horse, conditions) {
     const steadyOrAssertive = temperament === 'steady' || temperament === 'assertive';
 
     // Check for leadership moments in milestone logs
-    const leadershipMoments = horse.milestoneTraitLogs.filter(log =>
-      log.notes?.toLowerCase().includes('leadership') ||
-      log.notes?.toLowerCase().includes('leader') ||
-      log.traitName?.toLowerCase().includes('confident'),
+    const leadershipMoments = horse.milestoneTraitLogs.filter(
+      log =>
+        log.notes?.toLowerCase().includes('leadership') ||
+        log.notes?.toLowerCase().includes('leader') ||
+        log.traitName?.toLowerCase().includes('confident'),
     ).length;
 
     // For now, assume conformation placements are tracked in a future system
     const top3ConformationPlacements = true; // Placeholder - would need conformation system
 
-    const meetsConditions = topBondScore &&
-                           steadyOrAssertive &&
-                           top3ConformationPlacements &&
-                           leadershipMoments >= conditions.leadershipMoments;
+    const meetsConditions =
+      topBondScore &&
+      steadyOrAssertive &&
+      top3ConformationPlacements &&
+      leadershipMoments >= conditions.leadershipMoments;
 
-    logger.debug(`[ultraRareTriggerEngine] Born Leader evaluation: top bond: ${topBondScore}, temperament: ${steadyOrAssertive}, leadership moments: ${leadershipMoments}, meets conditions: ${meetsConditions}`);
+    logger.debug(
+      `[ultraRareTriggerEngine] Born Leader evaluation: top bond: ${topBondScore}, temperament: ${steadyOrAssertive}, leadership moments: ${leadershipMoments}, meets conditions: ${meetsConditions}`,
+    );
 
     return meetsConditions;
   } catch (error) {
-    logger.error(`[ultraRareTriggerEngine] Error evaluating Born Leader conditions: ${error.message}`);
+    logger.error(
+      `[ultraRareTriggerEngine] Error evaluating Born Leader conditions: ${error.message}`,
+    );
     return false;
   }
 }
@@ -386,10 +415,11 @@ async function evaluateStormtouchedConditions(horse, conditions) {
     }
 
     // Check for novelty interaction events
-    const noveltyEvents = (horse.groomTaskLogs || []).filter(log =>
-      log.taskType?.toLowerCase().includes('novelty') ||
-      log.taskType?.toLowerCase().includes('new') ||
-      log.taskType?.toLowerCase().includes('exposure'),
+    const noveltyEvents = (horse.groomTaskLogs || []).filter(
+      log =>
+        log.taskType?.toLowerCase().includes('novelty') ||
+        log.taskType?.toLowerCase().includes('new') ||
+        log.taskType?.toLowerCase().includes('exposure'),
     ).length;
 
     const noveltyInteractionEvent = noveltyEvents > 0;
@@ -405,16 +435,21 @@ async function evaluateStormtouchedConditions(horse, conditions) {
       }
     }
 
-    const meetsConditions = reactiveTemperament &&
-                           missedWeekOfCare &&
-                           noveltyInteractionEvent &&
-                           stressSpikes >= conditions.stressSpikes;
+    const meetsConditions =
+      reactiveTemperament &&
+      missedWeekOfCare &&
+      noveltyInteractionEvent &&
+      stressSpikes >= conditions.stressSpikes;
 
-    logger.debug(`[ultraRareTriggerEngine] Stormtouched evaluation: reactive: ${reactiveTemperament}, missed care: ${missedWeekOfCare}, novelty: ${noveltyInteractionEvent}, stress spikes: ${stressSpikes}, meets conditions: ${meetsConditions}`);
+    logger.debug(
+      `[ultraRareTriggerEngine] Stormtouched evaluation: reactive: ${reactiveTemperament}, missed care: ${missedWeekOfCare}, novelty: ${noveltyInteractionEvent}, stress spikes: ${stressSpikes}, meets conditions: ${meetsConditions}`,
+    );
 
     return meetsConditions;
   } catch (error) {
-    logger.error(`[ultraRareTriggerEngine] Error evaluating Stormtouched conditions: ${error.message}`);
+    logger.error(
+      `[ultraRareTriggerEngine] Error evaluating Stormtouched conditions: ${error.message}`,
+    );
     return false;
   }
 }
@@ -425,37 +460,48 @@ async function evaluateStormtouchedConditions(horse, conditions) {
 async function evaluateShadowFollowerConditions(horse, conditions) {
   try {
     // Check for missed socialization events in milestone logs
-    const socializationMilestones = (horse.milestoneTraitLogs || []).filter(log =>
-      log.milestoneType?.toLowerCase().includes('social') ||
-      log.notes?.toLowerCase().includes('social'),
+    const socializationMilestones = (horse.milestoneTraitLogs || []).filter(
+      log =>
+        log.milestoneType?.toLowerCase().includes('social') ||
+        log.notes?.toLowerCase().includes('social'),
     );
 
     const totalSocializationOpportunities = 4; // Assuming 4 socialization opportunities
-    const missedSocializationEvents = totalSocializationOpportunities - socializationMilestones.length;
+    const missedSocializationEvents =
+      totalSocializationOpportunities - socializationMilestones.length;
 
     // Check for late bond formation (first significant bond after age 2)
     const _ageInDays = (horse.dailyCareLogs || []).length; // Approximate age from care log count
-    const earlyBondLogs = (horse.dailyCareLogs || []).slice(0, Math.min(730, (horse.dailyCareLogs || []).length)); // First 2 years
+    const earlyBondLogs = (horse.dailyCareLogs || []).slice(
+      0,
+      Math.min(730, (horse.dailyCareLogs || []).length),
+    ); // First 2 years
     const lateBondLogs = (horse.dailyCareLogs || []).slice(730); // After 2 years
 
-    const earlyMaxBond = earlyBondLogs.length > 0
-      ? Math.max(...earlyBondLogs.filter(log => log.bondScore !== null).map(log => log.bondScore))
-      : 0;
+    const earlyMaxBond =
+      earlyBondLogs.length > 0
+        ? Math.max(...earlyBondLogs.filter(log => log.bondScore !== null).map(log => log.bondScore))
+        : 0;
 
-    const lateMaxBond = lateBondLogs.length > 0
-      ? Math.max(...lateBondLogs.filter(log => log.bondScore !== null).map(log => log.bondScore))
-      : 0;
+    const lateMaxBond =
+      lateBondLogs.length > 0
+        ? Math.max(...lateBondLogs.filter(log => log.bondScore !== null).map(log => log.bondScore))
+        : 0;
 
     const lateBondFormation = earlyMaxBond < 50 && lateMaxBond >= 70;
 
-    const meetsConditions = missedSocializationEvents >= conditions.missedSocializationEvents &&
-                           lateBondFormation;
+    const meetsConditions =
+      missedSocializationEvents >= conditions.missedSocializationEvents && lateBondFormation;
 
-    logger.debug(`[ultraRareTriggerEngine] Shadow-Follower evaluation: missed socialization: ${missedSocializationEvents}, late bond: ${lateBondFormation}, meets conditions: ${meetsConditions}`);
+    logger.debug(
+      `[ultraRareTriggerEngine] Shadow-Follower evaluation: missed socialization: ${missedSocializationEvents}, late bond: ${lateBondFormation}, meets conditions: ${meetsConditions}`,
+    );
 
     return meetsConditions;
   } catch (error) {
-    logger.error(`[ultraRareTriggerEngine] Error evaluating Shadow-Follower conditions: ${error.message}`);
+    logger.error(
+      `[ultraRareTriggerEngine] Error evaluating Shadow-Follower conditions: ${error.message}`,
+    );
     return false;
   }
 }
@@ -466,7 +512,10 @@ async function evaluateShadowFollowerConditions(horse, conditions) {
 async function evaluateGhostwalkerConditions(horse, _conditions) {
   try {
     // Check bond scores throughout youth (first 3 years)
-    const youthCareLogs = (horse.dailyCareLogs || []).slice(0, Math.min(1095, (horse.dailyCareLogs || []).length)); // First 3 years
+    const youthCareLogs = (horse.dailyCareLogs || []).slice(
+      0,
+      Math.min(1095, (horse.dailyCareLogs || []).length),
+    ); // First 3 years
     const bondScores = youthCareLogs
       .filter(log => log.bondScore !== null)
       .map(log => log.bondScore);
@@ -475,27 +524,33 @@ async function evaluateGhostwalkerConditions(horse, _conditions) {
     const lowBondThroughoutYouth = maxBondInYouth < 30;
 
     // Check for resilient flag in epigenetic flags
-    const resilientFlag = horse.epigeneticFlags?.some(flag =>
-      flag.flagName?.toLowerCase().includes('resilient') ||
-      flag.flagName?.toLowerCase().includes('survivor'),
-    ) || false;
+    const resilientFlag =
+      horse.epigeneticFlags?.some(
+        flag =>
+          flag.flagName?.toLowerCase().includes('resilient') ||
+          flag.flagName?.toLowerCase().includes('survivor'),
+      ) || false;
 
     // Check for emotional detachment indicators
-    const emotionalDetachment = (horse.milestoneTraitLogs || []).filter(log =>
-      log.notes?.toLowerCase().includes('detached') ||
-      log.notes?.toLowerCase().includes('withdrawn') ||
-      log.notes?.toLowerCase().includes('isolated'),
-    ).length > 0;
+    const emotionalDetachment =
+      (horse.milestoneTraitLogs || []).filter(
+        log =>
+          log.notes?.toLowerCase().includes('detached') ||
+          log.notes?.toLowerCase().includes('withdrawn') ||
+          log.notes?.toLowerCase().includes('isolated'),
+      ).length > 0;
 
-    const meetsConditions = lowBondThroughoutYouth &&
-                           resilientFlag &&
-                           emotionalDetachment;
+    const meetsConditions = lowBondThroughoutYouth && resilientFlag && emotionalDetachment;
 
-    logger.debug(`[ultraRareTriggerEngine] Ghostwalker evaluation: low bond: ${lowBondThroughoutYouth}, resilient flag: ${resilientFlag}, detachment: ${emotionalDetachment}, meets conditions: ${meetsConditions}`);
+    logger.debug(
+      `[ultraRareTriggerEngine] Ghostwalker evaluation: low bond: ${lowBondThroughoutYouth}, resilient flag: ${resilientFlag}, detachment: ${emotionalDetachment}, meets conditions: ${meetsConditions}`,
+    );
 
     return meetsConditions;
   } catch (error) {
-    logger.error(`[ultraRareTriggerEngine] Error evaluating Ghostwalker conditions: ${error.message}`);
+    logger.error(
+      `[ultraRareTriggerEngine] Error evaluating Ghostwalker conditions: ${error.message}`,
+    );
     return false;
   }
 }
@@ -511,15 +566,16 @@ async function evaluateSoulbondedConditions(horse, _conditions) {
       .map(log => log.groomId);
 
     const uniqueMilestoneGrooms = [...new Set(milestoneGrooms)];
-    const sameGroomAllMilestones = uniqueMilestoneGrooms.length === 1 && milestoneGrooms.length >= 4;
+    const sameGroomAllMilestones =
+      uniqueMilestoneGrooms.length === 1 && milestoneGrooms.length >= 4;
 
     // Check bond scores during milestone periods
     const milestoneBondScores = (horse.milestoneTraitLogs || [])
       .filter(log => log.bondScore !== null)
       .map(log => log.bondScore);
 
-    const highBondAllMilestones = milestoneBondScores.length >= 4 &&
-                                 milestoneBondScores.every(score => score >= 90);
+    const highBondAllMilestones =
+      milestoneBondScores.length >= 4 && milestoneBondScores.every(score => score >= 90);
 
     // Check for perfect care history (no missed care days)
     const careDates = horse.dailyCareLogs.map(log => new Date(log.date));
@@ -534,15 +590,17 @@ async function evaluateSoulbondedConditions(horse, _conditions) {
       }
     }
 
-    const meetsConditions = sameGroomAllMilestones &&
-                           highBondAllMilestones &&
-                           perfectCareHistory;
+    const meetsConditions = sameGroomAllMilestones && highBondAllMilestones && perfectCareHistory;
 
-    logger.debug(`[ultraRareTriggerEngine] Soulbonded evaluation: same groom: ${sameGroomAllMilestones}, high bond: ${highBondAllMilestones}, perfect care: ${perfectCareHistory}, meets conditions: ${meetsConditions}`);
+    logger.debug(
+      `[ultraRareTriggerEngine] Soulbonded evaluation: same groom: ${sameGroomAllMilestones}, high bond: ${highBondAllMilestones}, perfect care: ${perfectCareHistory}, meets conditions: ${meetsConditions}`,
+    );
 
     return meetsConditions;
   } catch (error) {
-    logger.error(`[ultraRareTriggerEngine] Error evaluating Soulbonded conditions: ${error.message}`);
+    logger.error(
+      `[ultraRareTriggerEngine] Error evaluating Soulbonded conditions: ${error.message}`,
+    );
     return false;
   }
 }
@@ -553,18 +611,27 @@ async function evaluateSoulbondedConditions(horse, _conditions) {
 async function evaluateFeyKissedConditions(horse, _conditions) {
   try {
     // Check if both parents have ultra-rare traits
-    const sireUltraRareTraits = horse.sire?.traitHistoryLogs?.filter(log =>
-      Object.keys(ULTRA_RARE_TRAITS).includes(log.traitName?.toLowerCase().replace(/[^a-z0-9]/g, '-')),
-    ) || [];
+    const sireUltraRareTraits =
+      horse.sire?.traitHistoryLogs?.filter(log =>
+        Object.keys(ULTRA_RARE_TRAITS).includes(
+          log.traitName?.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+        ),
+      ) || [];
 
-    const damUltraRareTraits = horse.dam?.traitHistoryLogs?.filter(log =>
-      Object.keys(ULTRA_RARE_TRAITS).includes(log.traitName?.toLowerCase().replace(/[^a-z0-9]/g, '-')),
-    ) || [];
+    const damUltraRareTraits =
+      horse.dam?.traitHistoryLogs?.filter(log =>
+        Object.keys(ULTRA_RARE_TRAITS).includes(
+          log.traitName?.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+        ),
+      ) || [];
 
     const bothParentsUltraRare = sireUltraRareTraits.length > 0 && damUltraRareTraits.length > 0;
 
     // Check for perfect grooming history in foal stage (first 365 days)
-    const _foalCareLogs = (horse.dailyCareLogs || []).slice(0, Math.min(365, (horse.dailyCareLogs || []).length));
+    const _foalCareLogs = (horse.dailyCareLogs || []).slice(
+      0,
+      Math.min(365, (horse.dailyCareLogs || []).length),
+    );
     const foalGroomingTasks = (horse.groomTaskLogs || []).filter(log => {
       const logDate = new Date(log.timestamp);
       const birthDate = new Date(horse.dateOfBirth);
@@ -573,16 +640,21 @@ async function evaluateFeyKissedConditions(horse, _conditions) {
     });
 
     // Perfect grooming means daily grooming with high quality
-    const perfectGroomingHistory = foalGroomingTasks.length >= 300 && // Almost daily grooming
-                                  foalGroomingTasks.every(task => task.qualityScore >= 8); // High quality
+    const perfectGroomingHistory =
+      foalGroomingTasks.length >= 300 && // Almost daily grooming
+      foalGroomingTasks.every(task => task.qualityScore >= 8); // High quality
 
     const meetsConditions = bothParentsUltraRare && perfectGroomingHistory;
 
-    logger.debug(`[ultraRareTriggerEngine] Fey-Kissed evaluation: both parents ultra-rare: ${bothParentsUltraRare}, perfect grooming: ${perfectGroomingHistory}, meets conditions: ${meetsConditions}`);
+    logger.debug(
+      `[ultraRareTriggerEngine] Fey-Kissed evaluation: both parents ultra-rare: ${bothParentsUltraRare}, perfect grooming: ${perfectGroomingHistory}, meets conditions: ${meetsConditions}`,
+    );
 
     return meetsConditions;
   } catch (error) {
-    logger.error(`[ultraRareTriggerEngine] Error evaluating Fey-Kissed conditions: ${error.message}`);
+    logger.error(
+      `[ultraRareTriggerEngine] Error evaluating Fey-Kissed conditions: ${error.message}`,
+    );
     return false;
   }
 }
@@ -616,22 +688,26 @@ async function evaluateDreamtwinConditions(horse, _conditions) {
     // Check if same groom was used for both
     const horseGrooms = [...new Set(horse.groomTaskLogs.map(log => log.groomId))];
     const twinGrooms = [...new Set((twin.groomTaskLogs || []).map(log => log.groomId))];
-    const sameGroom = horseGrooms.length === 1 && twinGrooms.length === 1 &&
-                     horseGrooms[0] === twinGrooms[0];
+    const sameGroom =
+      horseGrooms.length === 1 && twinGrooms.length === 1 && horseGrooms[0] === twinGrooms[0];
 
     // Check for matching epigenetic flags
     const horseFlags = horse.epigeneticFlags?.map(flag => flag.flagName) || [];
     const twinFlags = twin.epigeneticFlags?.map(flag => flag.flagName) || [];
-    const matchingFlags = horseFlags.length > 0 &&
-                         horseFlags.every(flag => twinFlags.includes(flag));
+    const matchingFlags =
+      horseFlags.length > 0 && horseFlags.every(flag => twinFlags.includes(flag));
 
     const meetsConditions = twinBirth && raisedTogether && sameGroom && matchingFlags;
 
-    logger.debug(`[ultraRareTriggerEngine] Dreamtwin evaluation: twin birth: ${twinBirth}, raised together: ${raisedTogether}, same groom: ${sameGroom}, matching flags: ${matchingFlags}, meets conditions: ${meetsConditions}`);
+    logger.debug(
+      `[ultraRareTriggerEngine] Dreamtwin evaluation: twin birth: ${twinBirth}, raised together: ${raisedTogether}, same groom: ${sameGroom}, matching flags: ${matchingFlags}, meets conditions: ${meetsConditions}`,
+    );
 
     return meetsConditions;
   } catch (error) {
-    logger.error(`[ultraRareTriggerEngine] Error evaluating Dreamtwin conditions: ${error.message}`);
+    logger.error(
+      `[ultraRareTriggerEngine] Error evaluating Dreamtwin conditions: ${error.message}`,
+    );
     return false;
   }
 }

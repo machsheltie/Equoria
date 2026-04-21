@@ -34,16 +34,9 @@ async function main() {
     console.log('📦 Step 2: Installing dependencies...');
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
 
-    const requiredDeps = [
-      '@jest/test-sequencer',
-      'husky',
-      'jest-html-reporter',
-      'jest-junit',
-    ];
+    const requiredDeps = ['@jest/test-sequencer', 'husky', 'jest-html-reporter', 'jest-junit'];
 
-    const missingDeps = requiredDeps.filter(
-      dep => !packageJson.devDependencies?.[dep],
-    );
+    const missingDeps = requiredDeps.filter(dep => !packageJson.devDependencies?.[dep]);
 
     if (missingDeps.length > 0) {
       console.log(`   Installing: ${missingDeps.join(', ')}`);
@@ -64,12 +57,7 @@ async function main() {
 
     // 4. Create directories
     console.log('📁 Step 4: Creating directories...');
-    const directories = [
-      'tests/config',
-      'test-results',
-      '.jest-cache',
-      '.husky',
-    ];
+    const directories = ['tests/config', 'test-results', '.jest-cache', '.husky'];
 
     for (const dir of directories) {
       const dirPath = path.join(process.cwd(), dir);
@@ -139,7 +127,7 @@ async function main() {
       await execAsync('git rev-parse --git-dir');
       console.log('   ✓ Git repository detected\n');
     } catch {
-      console.log('   ⚠️  Not a git repository (hooks won\'t work)\n');
+      console.log("   ⚠️  Not a git repository (hooks won't work)\n");
     }
 
     // 8. Run test verification

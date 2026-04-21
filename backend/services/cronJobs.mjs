@@ -174,7 +174,7 @@ class CronJobService {
       }
 
       // Get current epigenetic modifiers
-      const currentTraits = foal.epigenetic_modifiers || {
+      const currentTraits = foal.epigeneticModifiers || {
         positive: [],
         negative: [],
         hidden: [],
@@ -205,7 +205,7 @@ class CronJobService {
       await prisma.horse.update({
         where: { id: foal.id },
         data: {
-          epigenetic_modifiers: updatedTraits,
+          epigeneticModifiers: updatedTraits,
         },
       });
 

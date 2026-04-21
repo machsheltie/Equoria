@@ -36,7 +36,7 @@ export async function analyzeCarePatterns(horseId, evaluationDate = new Date()) 
         groomInteractions: {
           where: {
             createdAt: {
-              gte: new Date(evaluationDate.getTime() - (7 * 24 * 60 * 60 * 1000)), // Last 7 days
+              gte: new Date(evaluationDate.getTime() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
             },
           },
           orderBy: { createdAt: 'asc' },
@@ -49,7 +49,9 @@ export async function analyzeCarePatterns(horseId, evaluationDate = new Date()) 
     }
 
     // Calculate horse age in days
-    const ageInDays = Math.floor((evaluationDate - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24));
+    const ageInDays = Math.floor(
+      (evaluationDate - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24),
+    );
     const ageInYears = ageInDays / 365.25;
 
     // Only analyze horses under 3 years old
@@ -82,9 +84,10 @@ export async function analyzeCarePatterns(horseId, evaluationDate = new Date()) 
       patterns,
       evaluationDate,
     };
-
   } catch (error) {
-    logger.error(`[carePatternAnalysis] Error analyzing patterns for horse ${horseId}: ${error.message}`);
+    logger.error(
+      `[carePatternAnalysis] Error analyzing patterns for horse ${horseId}: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -100,13 +103,11 @@ function analyzeConsistentCare(interactions, bondScore) {
   const consecutiveDays = calculateConsecutiveDays(dailyInteractions);
 
   // Check for daily grooming pattern
-  const groomingInteractions = interactions.filter(i =>
-    i.interactionType.includes('grooming') || i.interactionType.includes('daily_care'),
+  const groomingInteractions = interactions.filter(
+    i => i.interactionType.includes('grooming') || i.interactionType.includes('daily_care'),
   );
 
-  const qualityInteractions = interactions.filter(i =>
-    ['good', 'excellent'].includes(i.quality),
-  );
+  const qualityInteractions = interactions.filter(i => ['good', 'excellent'].includes(i.quality));
 
   return {
     consecutiveDaysWithCare: consecutiveDays,
@@ -125,19 +126,18 @@ function analyzeConsistentCare(interactions, bondScore) {
  * @returns {Object} Novelty exposure analysis
  */
 function analyzeNoveltyExposure(interactions, bondScore) {
-  const noveltyInteractions = interactions.filter(i =>
-    i.interactionType.includes('desensitization') ||
-    i.interactionType.includes('exploration') ||
-    i.interactionType.includes('showground_exposure'),
+  const noveltyInteractions = interactions.filter(
+    i =>
+      i.interactionType.includes('desensitization') ||
+      i.interactionType.includes('exploration') ||
+      i.interactionType.includes('showground_exposure'),
   );
 
-  const noveltyWithSupport = noveltyInteractions.filter(i =>
-    i.bondingChange >= 0 && ['good', 'excellent'].includes(i.quality),
+  const noveltyWithSupport = noveltyInteractions.filter(
+    i => i.bondingChange >= 0 && ['good', 'excellent'].includes(i.quality),
   );
 
-  const fearEvents = interactions.filter(i =>
-    i.stressChange > 5 || i.bondingChange < -3,
-  );
+  const fearEvents = interactions.filter(i => i.stressChange > 5 || i.bondingChange < -3);
 
   return {
     noveltyEvents: noveltyInteractions.length,
@@ -161,10 +161,11 @@ function analyzeStressManagement(interactions, stressLevel) {
   const stressWithSupport = stressEvents.filter(i => {
     // Find recovery within 24 hours
     const eventTime = new Date(i.createdAt);
-    return interactions.some(recovery =>
-      recovery.stressChange < -2 &&
-      new Date(recovery.createdAt) > eventTime &&
-      new Date(recovery.createdAt) <= new Date(eventTime.getTime() + 24 * 60 * 60 * 1000),
+    return interactions.some(
+      recovery =>
+        recovery.stressChange < -2 &&
+        new Date(recovery.createdAt) > eventTime &&
+        new Date(recovery.createdAt) <= new Date(eventTime.getTime() + 24 * 60 * 60 * 1000),
     );
   });
 
@@ -214,9 +215,7 @@ function analyzeNeglectPatterns(interactions, bondScore) {
   const dailyInteractions = groupInteractionsByDay(interactions);
   const daysWithoutCare = calculateDaysWithoutCare(dailyInteractions);
 
-  const poorQualityInteractions = interactions.filter(i =>
-    ['poor', 'fair'].includes(i.quality),
-  );
+  const poorQualityInteractions = interactions.filter(i => ['poor', 'fair'].includes(i.quality));
 
   const negativeInteractions = interactions.filter(i => i.bondingChange < 0);
 
@@ -236,13 +235,12 @@ function analyzeNeglectPatterns(interactions, bondScore) {
  * @returns {Object} Environmental factor analysis
  */
 function analyzeEnvironmentalFactors(interactions) {
-  const startleEvents = interactions.filter(i =>
-    i.notes && i.notes.toLowerCase().includes('startle') ||
-    i.stressChange > 5,
+  const startleEvents = interactions.filter(
+    i => (i.notes && i.notes.toLowerCase().includes('startle')) || i.stressChange > 5,
   );
 
-  const routineInteractions = interactions.filter(i =>
-    i.interactionType.includes('daily_care') || i.interactionType.includes('feeding'),
+  const routineInteractions = interactions.filter(
+    i => i.interactionType.includes('daily_care') || i.interactionType.includes('feeding'),
   );
 
   return {
@@ -288,7 +286,8 @@ function calculateConsecutiveDays(dailyInteractions) {
       const currentDay = new Date(days[i]);
       const dayDiff = (currentDay - prevDay) / (1000 * 60 * 60 * 24);
 
-      if (dayDiff <= 2) { // Allow 1-day gap (grace period)
+      if (dayDiff <= 2) {
+        // Allow 1-day gap (grace period)
         currentStreak++;
       } else {
         currentStreak = 1;
@@ -325,7 +324,9 @@ function calculateDaysWithoutCare(dailyInteractions) {
  * @returns {number} Average bond change
  */
 function calculateAverageBondChange(interactions) {
-  if (interactions.length === 0) { return 0; }
+  if (interactions.length === 0) {
+    return 0;
+  }
   const totalBondChange = interactions.reduce((sum, i) => sum + (i.bondingChange || 0), 0);
   return totalBondChange / interactions.length;
 }

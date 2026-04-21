@@ -19,7 +19,7 @@
 
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Search, Download, Save, Eye, EyeOff, BarChart3, TrendingUp } from 'lucide-react';
+import { Search, Download, Eye, EyeOff, BarChart3, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getBreedName } from '@/lib/utils';
 
@@ -218,20 +218,67 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
     }
   };
 
-  // Export functions
-  const exportToPDF = () => {
-    // TODO: Implement PDF export
-    console.log('Exporting to PDF...');
-  };
-
+  // CSV export — serializes the selected horse data client-side.
   const exportToCSV = () => {
-    // TODO: Implement CSV export
-    console.log('Exporting to CSV...');
-  };
+    const comparisonData = comparisonQuery.data;
+    if (!comparisonData || !comparisonData.horses?.length) return;
 
-  const saveComparison = () => {
-    // TODO: Implement save comparison
-    console.log('Saving comparison...');
+    const { horses } = comparisonData;
+    const statKeys: string[] = Object.keys(horses[0]?.stats ?? {});
+    const disciplineKeys: string[] = Array.from(
+      horses.reduce<Set<string>>((acc, horse) => {
+        Object.keys(horse.disciplineScores ?? {}).forEach((k) => acc.add(k));
+        return acc;
+      }, new Set<string>())
+    );
+
+    const header = [
+      'Horse ID',
+      'Name',
+      'Breed',
+      'Age',
+      'Bond Score',
+      'Stress Level',
+      'Overall Score',
+      ...statKeys.map((k) => `Stat: ${k}`),
+      ...disciplineKeys.map((k) => `Discipline: ${k}`),
+      'Traits',
+      'Epigenetic Flags',
+    ];
+
+    const csvEscape = (value: unknown) => {
+      const str = value == null ? '' : String(value);
+      if (/[,"\n\r]/.test(str)) {
+        return `"${str.replace(/"/g, '""')}"`;
+      }
+      return str;
+    };
+
+    const rows = horses.map((h) => [
+      h.id,
+      h.name,
+      h.breed,
+      h.age,
+      h.bondScore,
+      h.stressLevel,
+      h.overallScore ?? '',
+      ...statKeys.map((k) => h.stats?.[k] ?? ''),
+      ...disciplineKeys.map((k) => h.disciplineScores?.[k] ?? ''),
+      h.traits.join('; '),
+      h.epigeneticFlags.join('; '),
+    ]);
+
+    const csv = [header, ...rows].map((row) => row.map(csvEscape).join(',')).join('\r\n');
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `horse-comparison-${Date.now()}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -369,25 +416,12 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
       {selectedHorses.length >= 2 && (
         <div className="flex flex-wrap gap-4">
           <button
-            onClick={exportToPDF}
-            className="px-4 py-2 bg-red-700/50 text-red-200 rounded-lg hover:bg-red-700/70 flex items-center space-x-2"
-          >
-            <Download className="w-4 h-4" />
-            <span>Export to PDF</span>
-          </button>
-          <button
             onClick={exportToCSV}
+            data-testid="export-csv"
             className="px-4 py-2 bg-[rgba(16,185,129,0.2)] text-emerald-300 rounded-lg hover:bg-[rgba(16,185,129,0.3)] flex items-center space-x-2"
           >
             <Download className="w-4 h-4" />
             <span>Export to CSV</span>
-          </button>
-          <button
-            onClick={saveComparison}
-            className="px-4 py-2 bg-[rgba(15,35,70,0.5)] text-purple-300 rounded-lg hover:bg-[rgba(15,35,70,0.7)] flex items-center space-x-2 border border-[rgba(37,99,235,0.3)]"
-          >
-            <Save className="w-4 h-4" />
-            <span>Save Comparison</span>
           </button>
         </div>
       )}

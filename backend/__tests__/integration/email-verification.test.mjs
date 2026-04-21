@@ -11,7 +11,11 @@ import { jest } from '@jest/globals';
 import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
-import { createTestUser, extractCookieValue as _extractCookieValue, resetRateLimitStore } from '../config/test-helpers.mjs';
+import {
+  createTestUser,
+  extractCookieValue as _extractCookieValue,
+  resetRateLimitStore,
+} from '../config/test-helpers.mjs';
 import { generateVerificationToken } from '../../utils/emailVerificationService.mjs';
 import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 

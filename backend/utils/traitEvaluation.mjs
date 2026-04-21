@@ -223,8 +223,8 @@ const TRAIT_CONFLICTS = {
 
 /**
  * Evaluate which traits should be revealed for a foal based on current conditions
- * @param {Object} foal - Foal data with bond_score, stress_level, age
- * @param {Object} currentTraits - Current epigenetic_modifiers object
+ * @param {Object} foal - Foal data with bondScore, stressLevel, age
+ * @param {Object} currentTraits - Current epigeneticModifiers object
  * @param {number} currentDay - Current development day (0-6)
  * @returns {Object} - New traits to be revealed
  */
@@ -234,8 +234,8 @@ function evaluateTraitRevelation(foal, currentTraits, currentDay) {
       `[traitEvaluation.evaluateTraitRevelation] Evaluating traits for foal ${foal.id} on day ${currentDay}`,
     );
 
-    const bondScore = foal.bond_score || 50;
-    const stressLevel = foal.stress_level || 0;
+    const bondScore = foal.bondScore || 50;
+    const stressLevel = foal.stressLevel || 0;
     const age = foal.age || 0;
 
     // Convert age in years to development days for young foals

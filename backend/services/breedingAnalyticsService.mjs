@@ -135,13 +135,17 @@ export const breedingAnalyticsService = {
 
       // Count positive traits
       (modifiers.positive || []).forEach(trait => {
-        if (!positiveTraits[trait]) { positiveTraits[trait] = 0; }
+        if (!positiveTraits[trait]) {
+          positiveTraits[trait] = 0;
+        }
         positiveTraits[trait]++;
       });
 
       // Count negative traits
       (modifiers.negative || []).forEach(trait => {
-        if (!negativeTraits[trait]) { negativeTraits[trait] = 0; }
+        if (!negativeTraits[trait]) {
+          negativeTraits[trait] = 0;
+        }
         negativeTraits[trait]++;
       });
     });
@@ -173,8 +177,10 @@ export const breedingAnalyticsService = {
   calculateSuccessMetrics(breedingPairs, foals) {
     const totalBreedings = breedingPairs.length;
     const successfulBreedings = breedingPairs.filter(pair => pair.foalCount > 0).length;
-    const successRate = totalBreedings > 0 ? Math.round((successfulBreedings / totalBreedings) * 100) : 0;
-    const averageFoalsPerBreeding = totalBreedings > 0 ? Math.round((foals.length / totalBreedings) * 10) / 10 : 0;
+    const successRate =
+      totalBreedings > 0 ? Math.round((successfulBreedings / totalBreedings) * 100) : 0;
+    const averageFoalsPerBreeding =
+      totalBreedings > 0 ? Math.round((foals.length / totalBreedings) * 10) / 10 : 0;
 
     return {
       totalBreedings,
@@ -247,8 +253,12 @@ export const breedingAnalyticsService = {
     // Get unique parents
     const parents = new Map();
     foals.forEach(foal => {
-      if (foal.sire) { parents.set(foal.sire.id, foal.sire); }
-      if (foal.dam) { parents.set(foal.dam.id, foal.dam); }
+      if (foal.sire) {
+        parents.set(foal.sire.id, foal.sire);
+      }
+      if (foal.dam) {
+        parents.set(foal.dam.id, foal.dam);
+      }
     });
 
     const parentArray = Array.from(parents.values());
@@ -276,7 +286,9 @@ export const breedingAnalyticsService = {
    * @returns {Object} Average stats
    */
   calculateStatAverages(horses) {
-    if (horses.length === 0) { return {}; }
+    if (horses.length === 0) {
+      return {};
+    }
 
     const statTotals = {
       speed: 0,

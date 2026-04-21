@@ -82,8 +82,8 @@ export async function runDailyCareAutomation(options = {}) {
           select: {
             id: true,
             name: true,
-            bond_score: true,
-            stress_level: true,
+            bondScore: true,
+            stressLevel: true,
             age: true,
           },
         },
@@ -238,18 +238,18 @@ async function performAutomaticCare(assignment, routine) {
     // Update foal's bond score and stress level
     const newBondScore = Math.max(
       0,
-      Math.min(100, (assignment.foal.bond_score || 50) + effects.bondingChange),
+      Math.min(100, (assignment.foal.bondScore || 50) + effects.bondingChange),
     );
     const newStressLevel = Math.max(
       0,
-      Math.min(100, (assignment.foal.stress_level || 0) + effects.stressChange),
+      Math.min(100, (assignment.foal.stressLevel || 0) + effects.stressChange),
     );
 
     await prisma.horse.update({
       where: { id: assignment.foalId },
       data: {
-        bond_score: newBondScore,
-        stress_level: newStressLevel,
+        bondScore: newBondScore,
+        stressLevel: newStressLevel,
       },
     });
 
@@ -266,9 +266,9 @@ async function performAutomaticCare(assignment, routine) {
       interaction,
       effects,
       foalUpdates: {
-        previousBondScore: assignment.foal.bond_score,
+        previousBondScore: assignment.foal.bondScore,
         newBondScore,
-        previousStressLevel: assignment.foal.stress_level,
+        previousStressLevel: assignment.foal.stressLevel,
         newStressLevel,
       },
     };

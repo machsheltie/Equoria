@@ -18,7 +18,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 console.log('🧪 Rate Limiting Test Verification\n');
-console.log('=' .repeat(60));
+console.log('='.repeat(60));
 
 const runTest = (pattern, description) => {
   console.log(`\n📋 ${description}`);

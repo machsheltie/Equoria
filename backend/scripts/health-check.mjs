@@ -15,10 +15,7 @@ import { logger } from '../utils/logger.mjs';
 const HEALTH_CONFIG = {
   timeout: 10000, // 10 seconds
   retries: 3,
-  endpoints: [
-    '/ping',
-    '/health',
-  ],
+  endpoints: ['/ping', '/health'],
 };
 
 /**
@@ -59,12 +56,7 @@ async function checkDatabase() {
 function checkEnvironmentVariables() {
   logger.info('🔍 Checking environment variables...');
 
-  const requiredVars = [
-    'DATABASE_URL',
-    'JWT_SECRET',
-    'JWT_REFRESH_SECRET',
-    'NODE_ENV',
-  ];
+  const requiredVars = ['DATABASE_URL', 'JWT_SECRET', 'JWT_REFRESH_SECRET', 'NODE_ENV'];
 
   const missing = [];
   const present = [];
@@ -231,13 +223,12 @@ async function performHealthCheck(options = {}) {
     logger.info(`Duration: ${results.duration}ms`);
 
     Object.entries(results.checks).forEach(([checkName, check]) => {
-      const statusIcon = check.status === 'healthy' ? '✅' :
-        check.status === 'warning' ? '⚠️' : '❌';
+      const statusIcon =
+        check.status === 'healthy' ? '✅' : check.status === 'warning' ? '⚠️' : '❌';
       logger.info(`${statusIcon} ${checkName}: ${check.status} - ${check.message}`);
     });
 
     return results;
-
   } catch (error) {
     logger.error('❌ Health check failed:', error.message);
     results.status = 'unhealthy';
@@ -277,7 +268,6 @@ async function runHealthCheck() {
       logger.error('❌ Health check FAILED');
       process.exit(1);
     }
-
   } catch (error) {
     logger.error('❌ Health check execution failed:', error.message);
     process.exit(1);

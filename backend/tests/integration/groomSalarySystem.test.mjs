@@ -263,11 +263,24 @@ describe('Groom Salary System', () => {
       });
     });
 
-    it('should trigger salary processing via API', async () => {
+    it('should trigger salary processing via API (admin only)', async () => {
+      // POST /process requires admin role — update DB and generate new token with admin role
+      await prisma.user.update({
+        where: { id: testUser.id },
+        data: { role: 'admin' },
+      });
+      const adminToken = generateTestToken({ id: testUser.id, role: 'admin' });
+
       const response = await request(app)
         .post('/api/groom-salaries/process')
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('Authorization', `Bearer ${adminToken}`)
         .set('x-test-skip-csrf', 'true');
+
+      // Restore role after test
+      await prisma.user.update({
+        where: { id: testUser.id },
+        data: { role: 'user' },
+      });
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);

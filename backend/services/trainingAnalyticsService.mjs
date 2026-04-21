@@ -115,10 +115,16 @@ export const trainingAnalyticsService = {
 
       // Track first and last training dates for this discipline
       const sessionDate = new Date(session.trainedAt);
-      if (!disciplineStats[discipline].lastTrainingDate || sessionDate > disciplineStats[discipline].lastTrainingDate) {
+      if (
+        !disciplineStats[discipline].lastTrainingDate ||
+        sessionDate > disciplineStats[discipline].lastTrainingDate
+      ) {
         disciplineStats[discipline].lastTrainingDate = sessionDate;
       }
-      if (!disciplineStats[discipline].firstTrainingDate || sessionDate < disciplineStats[discipline].firstTrainingDate) {
+      if (
+        !disciplineStats[discipline].firstTrainingDate ||
+        sessionDate < disciplineStats[discipline].firstTrainingDate
+      ) {
         disciplineStats[discipline].firstTrainingDate = sessionDate;
       }
     });

@@ -16,7 +16,11 @@
     responses: {
       200: {
         description: 'Authenticated',
-        content: { 'application/json': { schema: { type: 'object', properties: { token: { type: 'string' } } } } },
+        content: {
+          'application/json': {
+            schema: { type: 'object', properties: { token: { type: 'string' } } },
+          },
+        },
       },
     },
     tags: ['auth'],
@@ -39,7 +43,14 @@
     responses: {
       201: {
         description: 'Created',
-        content: { 'application/json': { schema: { type: 'object', properties: { id: { type: 'string' }, email: { type: 'string' } } } } },
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: { id: { type: 'string' }, email: { type: 'string' } },
+            },
+          },
+        },
       },
     },
     tags: ['auth'],

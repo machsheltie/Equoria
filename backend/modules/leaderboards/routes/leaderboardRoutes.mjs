@@ -9,12 +9,43 @@ import {
   getTopPlayersByHorseEarnings,
   getRecentWinners,
   getLeaderboardStats,
+  getUserRankSummary,
 } from '../controllers/leaderboardController.mjs';
 import { getAllDisciplines } from '../../../utils/competitionLogic.mjs';
 import auth from '../../../middleware/auth.mjs';
 import logger from '../../../utils/logger.mjs';
 
 const router = express.Router();
+
+/**
+ * @swagger
+ * /api/leaderboard/user-summary/{userId}:
+ *   get:
+ *     summary: Get user ranking summary across all categories
+ *     tags: [Leaderboard]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: User ID
+ *     responses:
+ *       200:
+ *         description: User ranking summary
+ */
+router.get('/user-summary/:userId', auth, getUserRankSummary);
+
+/** Aliases for frontend compatibility (matches LeaderboardCategorySelector.tsx) */
+router.get('/level', auth, getTopPlayersByLevel);
+router.get('/prize-money', auth, getTopHorsesByEarnings);
+router.get('/win-rate', auth, (req, res, next) => {
+  req.query.metric = 'wins'; // Default win-rate to wins for now
+  getTopHorsesByPerformance(req, res, next);
+});
+router.get('/owner', auth, getTopPlayersByHorseEarnings);
 
 /**
  * @swagger
@@ -719,8 +750,12 @@ router.get(
 
       for (const result of horse.competitionResults) {
         const p = parseInt(result.placement);
-        if (p === 1) { competitionWins++; }
-        if (p <= 3) { topThreeFinishes++; }
+        if (p === 1) {
+          competitionWins++;
+        }
+        if (p <= 3) {
+          topThreeFinishes++;
+        }
       }
 
       logger.info(

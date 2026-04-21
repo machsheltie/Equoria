@@ -10,23 +10,23 @@ import { isValidConformationClass } from './conformationShowService.mjs';
 // Handler skill bonuses by skill level
 export const HANDLER_SKILL_BONUSES = {
   novice: {
-    baseBonus: 0.05,      // 5% base bonus
-    maxBonus: 0.10,       // 10% max bonus
-    experienceMultiplier: 0.001,  // 0.1% per experience point
+    baseBonus: 0.05, // 5% base bonus
+    maxBonus: 0.1, // 10% max bonus
+    experienceMultiplier: 0.001, // 0.1% per experience point
   },
   intermediate: {
-    baseBonus: 0.08,      // 8% base bonus
-    maxBonus: 0.15,       // 15% max bonus
+    baseBonus: 0.08, // 8% base bonus
+    maxBonus: 0.15, // 15% max bonus
     experienceMultiplier: 0.0015, // 0.15% per experience point
   },
   expert: {
-    baseBonus: 0.12,      // 12% base bonus
-    maxBonus: 0.20,       // 20% max bonus
-    experienceMultiplier: 0.002,  // 0.2% per experience point
+    baseBonus: 0.12, // 12% base bonus
+    maxBonus: 0.2, // 20% max bonus
+    experienceMultiplier: 0.002, // 0.2% per experience point
   },
   master: {
-    baseBonus: 0.15,      // 15% base bonus
-    maxBonus: 0.25,       // 25% max bonus
+    baseBonus: 0.15, // 15% base bonus
+    maxBonus: 0.25, // 25% max bonus
     experienceMultiplier: 0.0025, // 0.25% per experience point
   },
 };
@@ -35,11 +35,11 @@ export const HANDLER_SKILL_BONUSES = {
 export const PERSONALITY_DISCIPLINE_SYNERGY = {
   gentle: {
     beneficial: ['Dressage', 'Western Pleasure', 'Hunter', 'Saddleseat'],
-    bonus: 0.03,  // 3% bonus
+    bonus: 0.03, // 3% bonus
   },
   energetic: {
     beneficial: ['Racing', 'Barrel Racing', 'Gymkhana', 'Steeplechase'],
-    bonus: 0.04,  // 4% bonus
+    bonus: 0.04, // 4% bonus
   },
   patient: {
     beneficial: ['Endurance', 'Combined Driving', 'Obedience Training'],
@@ -51,11 +51,11 @@ export const PERSONALITY_DISCIPLINE_SYNERGY = {
   },
   calm: {
     beneficial: ['Dressage', 'Fine Harness', 'Vaulting'],
-    bonus: 0.03,  // 3% bonus
+    bonus: 0.03, // 3% bonus
   },
   confident: {
     beneficial: ['Racing', 'Steeplechase', 'Cross Country', 'Polo'],
-    bonus: 0.04,  // 4% bonus
+    bonus: 0.04, // 4% bonus
   },
 };
 
@@ -63,27 +63,27 @@ export const PERSONALITY_DISCIPLINE_SYNERGY = {
 export const SPECIALTY_DISCIPLINE_BONUSES = {
   showHandling: {
     disciplines: ['Dressage', 'Show Jumping', 'Hunter', 'Saddleseat', 'Fine Harness'],
-    bonus: 0.06,  // 6% bonus
+    bonus: 0.06, // 6% bonus
   },
   racing: {
     disciplines: ['Racing', 'Steeplechase', 'Harness Racing'],
-    bonus: 0.07,  // 7% bonus
+    bonus: 0.07, // 7% bonus
   },
   western: {
     disciplines: ['Western Pleasure', 'Reining', 'Cutting', 'Barrel Racing', 'Roping'],
-    bonus: 0.06,  // 6% bonus
+    bonus: 0.06, // 6% bonus
   },
   training: {
     disciplines: ['Obedience Training', 'Combined Driving'],
-    bonus: 0.05,  // 5% bonus
+    bonus: 0.05, // 5% bonus
   },
   foalCare: {
     disciplines: [], // No direct competition bonus, but helps with young horses
-    bonus: 0.02,  // 2% general bonus
+    bonus: 0.02, // 2% general bonus
   },
   general: {
     disciplines: [], // No specific bonus
-    bonus: 0.01,  // 1% minimal bonus
+    bonus: 0.01, // 1% minimal bonus
   },
 };
 
@@ -99,7 +99,9 @@ export function calculateHandlerBonus(groom, horse, classNameOrDiscipline, _assi
   try {
     // Check if this is a conformation show class
     if (!isValidConformationClass(classNameOrDiscipline)) {
-      logger.info(`[groomHandlerService] ${classNameOrDiscipline} is not a conformation show class - no handler bonus applied`);
+      logger.info(
+        `[groomHandlerService] ${classNameOrDiscipline} is not a conformation show class - no handler bonus applied`,
+      );
       return {
         handlerBonus: 0,
         bonusBreakdown: {
@@ -125,11 +127,11 @@ export function calculateHandlerBonus(groom, horse, classNameOrDiscipline, _assi
     return {
       handlerBonus: 0.15, // 15% placeholder bonus for conformation shows
       bonusBreakdown: {
-        skillBonus: 0.10,
+        skillBonus: 0.1,
         experienceBonus: 0.03,
         personalityBonus: 0.02,
-        specialtyBonus: 0.00,
-        bondBonus: 0.00,
+        specialtyBonus: 0.0,
+        bondBonus: 0.0,
         totalBonus: 0.15,
       },
       groomName: groom.name,
@@ -138,7 +140,6 @@ export function calculateHandlerBonus(groom, horse, classNameOrDiscipline, _assi
       groomPersonality: groom.personality,
       isConformationShow: true,
     };
-
   } catch (error) {
     logger.error(`[groomHandlerService] Error calculating handler bonus: ${error.message}`);
     return {
@@ -212,7 +213,6 @@ export async function getAssignedHandler(horseId, userId) {
       groom: assignment.groom,
       horse: assignment.foal,
     };
-
   } catch (error) {
     logger.error(`[groomHandlerService] Error getting assigned handler: ${error.message}`);
     return {
@@ -280,7 +280,6 @@ export async function validateHandlerEligibility(horseId, userId, classNameOrDis
       groom,
       assignment,
     };
-
   } catch (error) {
     logger.error(`[groomHandlerService] Error validating handler eligibility: ${error.message}`);
     return {
@@ -335,10 +334,11 @@ export async function recordHandlerPerformance(competitionResult, handlerData) {
       enhancedResult.handlerInfo.experienceGained = experienceGain;
     }
 
-    logger.info(`[groomHandlerService] Recorded handler performance for ${handlerData.groom.name}: +${experienceGain} experience`);
+    logger.info(
+      `[groomHandlerService] Recorded handler performance for ${handlerData.groom.name}: +${experienceGain} experience`,
+    );
 
     return enhancedResult;
-
   } catch (error) {
     logger.error(`[groomHandlerService] Error recording handler performance: ${error.message}`);
     return competitionResult;

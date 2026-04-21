@@ -1,163 +1,310 @@
 /**
- * 🧪 INTEGRATION TEST: Foal Creation Integration - API Endpoint Validation
+ * Integration Test: Foal Creation API — Real Database
  *
- * This test validates the foal creation API endpoint including request validation,
- * database operations, and response handling for breeding system functionality.
+ * Tests the POST /api/horses/foals endpoint with real database operations.
+ * No mocks — validates actual foal creation, parent validation, epigenetic
+ * trait application, and database persistence.
  *
- * 📋 BUSINESS RULES TESTED:
- * - Foal creation API endpoint: POST /api/horses/foals accepts valid breeding data
- * - Request validation: Name, breedId, sireId, damId, sex, health status validation
- * - Database integration: Horse creation, breed validation, parent horse lookup
- * - Breeding system: Sire and dam validation, foal data structure creation
- * - Response handling: Proper HTTP status codes and error handling
- * - Data structure validation: Foal objects have required fields and relationships
- * - Parent validation: Sire and dam must exist and be valid breeding candidates
- * - Breed consistency: Foal inherits breed from parents or specified breed
- *
- * 🎯 FUNCTIONALITY TESTED:
- * 1. POST /api/horses/foals - Foal creation API endpoint
- * 2. Request validation - Required fields and data types
- * 3. Database operations - Horse creation, breed lookup, parent validation
- * 4. Response handling - HTTP status codes and response structure
- * 5. Error scenarios - Invalid data, missing parents, validation failures
- * 6. Data integrity - Proper foal object creation with relationships
- * 7. Breeding logic - Parent-child relationships and inheritance
- * 8. API integration - Complete request-response cycle testing
- *
- * 🔄 BALANCED MOCKING APPROACH:
- * ⚠️  OVER-MOCKED: Complete database layer mocked (Prisma operations)
- * ⚠️  RISK: Tests may not reflect real database behavior and constraints
- * 🔧 MOCK: Database operations - for API endpoint isolation
- *
- * 💡 TEST STRATEGY: API endpoint testing with mocked database to validate
- *    request handling and response generation
- *
- * ⚠️  WARNING: Heavy database mocking may miss real-world integration issues.
- *    Consider adding tests with real database for complete validation.
+ * Business rules tested:
+ * - Foal creation API: POST /api/horses/foals accepts valid breeding data
+ * - Request validation: name, breedId, sireId, damId, sex, healthStatus
+ * - Database integration: horse creation, breed validation, parent lookup
+ * - Breeding system: sire and dam must exist to create a foal
+ * - Response handling: proper HTTP status codes and error messages
+ * - Data structure: foal objects have required fields and relationships
+ * - Epigenetic traits: applied at birth based on mare stress and lineage
  */
 
-import { jest, describe, beforeEach, expect, it } from '@jest/globals';
+import { describe, beforeAll, afterAll, expect, it } from '@jest/globals';
 import request from 'supertest';
+import prisma from '../../packages/database/prismaClient.mjs';
+import { generateTestToken } from './helpers/authHelper.mjs';
+import bcrypt from 'bcryptjs';
 
-// Create mock objects BEFORE jest.unstable_mockModule
-const mockPrisma = {
-  horse: {
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    findMany: jest.fn(),
-  },
-  breed: {
-    findUnique: jest.fn(),
-  },
-  user: {
-    findUnique: jest.fn(),
-  },
-  $disconnect: jest.fn(),
-};
-
-jest.unstable_mockModule('../db/index.mjs', () => ({
-  default: mockPrisma,
-}));
-
-// Now import the app
+// Import the real app — no mocks
 const app = (await import('../app.mjs')).default;
 
-describe('🐴 INTEGRATION: Foal Creation Integration - API Endpoint Validation', () => {
-  const mockBreed = {
-    id: 1,
-    name: 'Test Breed',
-    description: 'Test breed for foal creation',
-  };
+describe('INTEGRATION: Foal Creation API — Real Database', () => {
+  let testUser;
+  let testBreed;
+  let testSire;
+  let testDam;
+  let authToken;
+  const createdFoalIds = [];
+  const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
-  const mockSire = {
-    id: 1,
-    name: 'Test Sire',
-    age: 5,
-    sex: 'stallion',
-    breed: { connect: { id: 1 } },
-    userId: 'test-owner-1',
-    stressLevel: 10,
-    feedQuality: 'premium',
-    epigeneticModifiers: {
-      positive: ['resilient'],
-      negative: [],
-      hidden: [],
-    },
-  };
-
-  const mockDam = {
-    id: 2,
-    name: 'Test Dam',
-    age: 4,
-    sex: 'mare',
-    breed: { connect: { id: 1 } },
-    userId: 'test-owner-1',
-    stressLevel: 15,
-    feedQuality: 'good',
-    epigeneticModifiers: {
-      positive: ['calm'],
-      negative: [],
-      hidden: [],
-    },
-  };
-
-  const mockCreatedFoal = {
-    id: 3,
-    name: 'Integration Test Foal',
-    age: 0,
-    sex: 'filly',
-    breed: { connect: { id: 1 } },
-    sireId: 1,
-    damId: 2,
-    userId: 'test-owner-1',
-    healthStatus: 'Good',
-    epigeneticModifiers: {
-      positive: ['resilient'],
-      negative: [],
-      hidden: ['bold'],
-    },
-  };
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-
-    mockPrisma.breed.findUnique.mockResolvedValue(mockBreed);
-
-    mockPrisma.horse.findUnique.mockImplementation(({ where: { id } }) => {
-      if (id === 1) {
-        return Promise.resolve(mockSire);
-      }
-      if (id === 2) {
-        return Promise.resolve(mockDam);
-      }
-      if (id === 999999 || id === 999998) {
-        return Promise.resolve(null);
-      }
-      return Promise.resolve(null);
+  beforeAll(async () => {
+    // Create a real user in the database
+    const hashedPassword = await bcrypt.hash('TestPassword123!', 10);
+    testUser = await prisma.user.create({
+      data: {
+        username: `foalcreation_user_${ts}`,
+        email: `foalcreation_${ts}@example.com`,
+        password: hashedPassword,
+        firstName: 'FoalCreation',
+        lastName: 'Tester',
+        money: 10000,
+      },
     });
 
-    mockPrisma.horse.findMany.mockResolvedValue([]);
-    mockPrisma.horse.create.mockResolvedValue(mockCreatedFoal);
+    // Generate a JWT token for the real user
+    authToken = generateTestToken({ id: testUser.id, role: 'user' });
+
+    // Create a real breed
+    testBreed = await prisma.breed.create({
+      data: {
+        name: `FoalTestBreed_${ts}`,
+        description: 'Breed for foal creation integration tests',
+      },
+    });
+
+    // Create a real sire (adult stallion)
+    const fiveYearsAgo = new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000);
+    testSire = await prisma.horse.create({
+      data: {
+        name: `FoalTestSire_${ts}`,
+        sex: 'Stallion',
+        dateOfBirth: fiveYearsAgo,
+        age: 5,
+        breedId: testBreed.id,
+        userId: testUser.id,
+        stressLevel: 10,
+        bondScore: 80,
+        healthStatus: 'Good',
+        epigeneticModifiers: { positive: ['resilient'], negative: [], hidden: [] },
+      },
+    });
+
+    // Create a real dam (adult mare)
+    const fourYearsAgo = new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000);
+    testDam = await prisma.horse.create({
+      data: {
+        name: `FoalTestDam_${ts}`,
+        sex: 'Mare',
+        dateOfBirth: fourYearsAgo,
+        age: 4,
+        breedId: testBreed.id,
+        userId: testUser.id,
+        stressLevel: 15,
+        bondScore: 70,
+        healthStatus: 'Good',
+        epigeneticModifiers: { positive: ['calm'], negative: [], hidden: [] },
+      },
+    });
   });
 
-  // ... all `describe` and `it` blocks remain unchanged except the one with console.log removed
+  afterAll(async () => {
+    try {
+      // Clean up created foals and their related records
+      for (const foalId of createdFoalIds) {
+        await prisma.foalTrainingHistory.deleteMany({ where: { horseId: foalId } }).catch(() => {});
+        await prisma.foalDevelopment.deleteMany({ where: { foalId } }).catch(() => {});
+        await prisma.foalActivity.deleteMany({ where: { foalId } }).catch(() => {});
+        await prisma.groomAssignment.deleteMany({ where: { foalId } }).catch(() => {});
+        await prisma.horse.deleteMany({ where: { id: foalId } });
+      }
 
-  it('should accept valid foal creation data structure', async () => {
-    const validFoalData = {
-      name: 'Test Foal',
-      breed: { connect: { id: 1 } },
-      sireId: 1,
-      damId: 2,
+      // Clean up sire, dam, breed, user
+      if (testSire) {
+        await prisma.horse.deleteMany({ where: { id: testSire.id } });
+      }
+      if (testDam) {
+        await prisma.horse.deleteMany({ where: { id: testDam.id } });
+      }
+      if (testBreed) {
+        await prisma.breed.deleteMany({ where: { id: testBreed.id } });
+      }
+      if (testUser) {
+        await prisma.groom.deleteMany({ where: { userId: testUser.id } }).catch(() => {});
+        await prisma.user.deleteMany({ where: { id: testUser.id } });
+      }
+    } catch (error) {
+      console.warn('Cleanup warning (can be ignored):', error.message);
+    }
+  });
+
+  it('should create a foal with valid breeding data and persist it in the database', async () => {
+    const foalData = {
+      name: `IntegrationFoal_${ts}`,
+      breedId: testBreed.id,
+      sireId: testSire.id,
+      damId: testDam.id,
+      sex: 'Filly',
+      healthStatus: 'Good',
+    };
+
+    const response = await request(app)
+      .post('/api/horses/foals')
+      .set('Authorization', `Bearer ${authToken}`)
+      .set('x-test-skip-csrf', 'true')
+      .send(foalData)
+      .expect(201);
+
+    expect(response.body.success).toBe(true);
+    expect(response.body.data).toHaveProperty('foal');
+    expect(response.body.data.foal.name).toBe(foalData.name);
+    expect(response.body.data.foal.sireId).toBe(testSire.id);
+    expect(response.body.data.foal.damId).toBe(testDam.id);
+
+    // Track for cleanup
+    createdFoalIds.push(response.body.data.foal.id);
+
+    // Verify the foal exists in the real database
+    const dbFoal = await prisma.horse.findUnique({
+      where: { id: response.body.data.foal.id },
+    });
+
+    expect(dbFoal).toBeTruthy();
+    expect(dbFoal.name).toBe(foalData.name);
+    expect(dbFoal.age).toBe(0);
+    expect(dbFoal.sireId).toBe(testSire.id);
+    expect(dbFoal.damId).toBe(testDam.id);
+    expect(dbFoal.userId).toBe(testUser.id);
+  });
+
+  it('should apply epigenetic traits at birth', async () => {
+    const foalData = {
+      name: `EpigeneticFoal_${ts}`,
+      breedId: testBreed.id,
+      sireId: testSire.id,
+      damId: testDam.id,
       sex: 'Colt',
       healthStatus: 'Good',
     };
 
-    const response = await request(app).post('/api/horses/foals').send(validFoalData);
+    const response = await request(app)
+      .post('/api/horses/foals')
+      .set('Authorization', `Bearer ${authToken}`)
+      .set('x-test-skip-csrf', 'true')
+      .send(foalData)
+      .expect(201);
 
-    if (response.status === 400) {
-      console.log('Validation errors:', response.body);
-    }
+    createdFoalIds.push(response.body.data.foal.id);
 
-    expect(response.status).not.toBe(400);
+    expect(response.body.data).toHaveProperty('appliedTraits');
+    expect(response.body.data).toHaveProperty('breedingAnalysis');
+
+    // Breeding analysis should contain the real parent info
+    expect(response.body.data.breedingAnalysis.sire.id).toBe(testSire.id);
+    expect(response.body.data.breedingAnalysis.dam.id).toBe(testDam.id);
+    expect(typeof response.body.data.breedingAnalysis.mareStress).toBe('number');
+    expect(typeof response.body.data.breedingAnalysis.feedQuality).toBe('number');
+
+    // The foal should have epigenetic modifiers stored in DB
+    const dbFoal = await prisma.horse.findUnique({
+      where: { id: response.body.data.foal.id },
+    });
+    expect(dbFoal.epigeneticModifiers).toBeTruthy();
+    expect(dbFoal.epigeneticModifiers).toHaveProperty('positive');
+    expect(dbFoal.epigeneticModifiers).toHaveProperty('negative');
+  });
+
+  it('should reject foal creation with missing required fields', async () => {
+    // Missing name
+    await request(app)
+      .post('/api/horses/foals')
+      .set('Authorization', `Bearer ${authToken}`)
+      .set('x-test-skip-csrf', 'true')
+      .send({ breedId: testBreed.id, sireId: testSire.id, damId: testDam.id })
+      .expect(400);
+
+    // Missing breedId
+    await request(app)
+      .post('/api/horses/foals')
+      .set('Authorization', `Bearer ${authToken}`)
+      .set('x-test-skip-csrf', 'true')
+      .send({ name: 'TestFoal', sireId: testSire.id, damId: testDam.id })
+      .expect(400);
+
+    // Missing sireId
+    await request(app)
+      .post('/api/horses/foals')
+      .set('Authorization', `Bearer ${authToken}`)
+      .set('x-test-skip-csrf', 'true')
+      .send({ name: 'TestFoal', breedId: testBreed.id, damId: testDam.id })
+      .expect(400);
+
+    // Missing damId
+    await request(app)
+      .post('/api/horses/foals')
+      .set('Authorization', `Bearer ${authToken}`)
+      .set('x-test-skip-csrf', 'true')
+      .send({ name: 'TestFoal', breedId: testBreed.id, sireId: testSire.id })
+      .expect(400);
+  });
+
+  it('should return 404 when sire does not exist', async () => {
+    const response = await request(app)
+      .post('/api/horses/foals')
+      .set('Authorization', `Bearer ${authToken}`)
+      .set('x-test-skip-csrf', 'true')
+      .send({
+        name: `MissingSireFoal_${ts}`,
+        breedId: testBreed.id,
+        sireId: 999999,
+        damId: testDam.id,
+        sex: 'Colt',
+      })
+      .expect(404);
+
+    expect(response.body.success).toBe(false);
+    expect(response.body.message).toContain('Sire');
+  });
+
+  it('should return 404 when dam does not exist', async () => {
+    const response = await request(app)
+      .post('/api/horses/foals')
+      .set('Authorization', `Bearer ${authToken}`)
+      .set('x-test-skip-csrf', 'true')
+      .send({
+        name: `MissingDamFoal_${ts}`,
+        breedId: testBreed.id,
+        sireId: testSire.id,
+        damId: 999998,
+        sex: 'Filly',
+      })
+      .expect(404);
+
+    expect(response.body.success).toBe(false);
+    expect(response.body.message).toContain('Dam');
+  });
+
+  it('should accept valid foal creation data structure and return 201', async () => {
+    const validFoalData = {
+      name: `ValidStructureFoal_${ts}`,
+      breedId: testBreed.id,
+      sireId: testSire.id,
+      damId: testDam.id,
+      sex: 'Colt',
+      healthStatus: 'Good',
+    };
+
+    const response = await request(app)
+      .post('/api/horses/foals')
+      .set('Authorization', `Bearer ${authToken}`)
+      .set('x-test-skip-csrf', 'true')
+      .send(validFoalData)
+      .expect(201);
+
+    createdFoalIds.push(response.body.data.foal.id);
+
+    expect(response.body.success).toBe(true);
+    expect(response.body.data.foal).toHaveProperty('id');
+    expect(response.body.data.foal).toHaveProperty('name');
+    expect(response.body.data.foal).toHaveProperty('sireId');
+    expect(response.body.data.foal).toHaveProperty('damId');
+  });
+
+  it('should require authentication', async () => {
+    await request(app)
+      .post('/api/horses/foals')
+      .send({
+        name: 'UnauthFoal',
+        breedId: testBreed.id,
+        sireId: testSire.id,
+        damId: testDam.id,
+        sex: 'Filly',
+      })
+      .expect(401);
   });
 });

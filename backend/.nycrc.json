@@ -10,10 +10,7 @@
     "json-summary",
     "cobertura"
   ],
-  "include": [
-    "**/*.mjs",
-    "**/*.js"
-  ],
+  "include": ["**/*.mjs", "**/*.js"],
   "exclude": [
     "coverage/**",
     "node_modules/**",

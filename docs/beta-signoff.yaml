@@ -4,7 +4,7 @@
 # It MUST be signed off by the project lead before beta testers are invited.
 #
 # Process:
-#   1. Run: bash scripts/check-beta-readiness.sh
+#   1. Run: bash scripts/check-beta-readiness.sh   (no flags; all gates required)
 #   2. If all gates pass, update this file with the run details below.
 #   3. Request project lead sign-off (update signed_off_by + signed_off_date).
 #   4. Deploy to beta testers only after signed_off_by is set.
@@ -14,31 +14,40 @@
 #   - frontend_typecheck:  TypeScript noEmit clean
 #   - routes_tests:        All backend route tests passing
 #   - integration_tests:   All real-DB integration tests passing
-#   - e2e_critical_path:   Playwright beta-critical-path.spec.ts 3/3
+#   - e2e_readiness:       Playwright beta-readiness suite (full route coverage) passing
 #   - no_http_cleanup:     No DELETE /test/cleanup routes in HTTP layer
 #   - no_db_mocks:         No jest.mock(prisma) in integration tests
 #   - no_bypass_headers:   No x-test-user/bypass-auth in E2E specs
-#   - no_beta_skips:       No test.skip in beta-critical-path.spec.ts
+#   - no_beta_skips:       No test.skip in beta-relevant tests
 # ============================================================================
 
 last_gate_run:
-  commit: d2af510d
-  date: '2026-04-15 06:13:50'
-  gates_passed: 8
-  gates_skipped: 1
-  skipped: e2e_critical_path (--skip-e2e; requires running backend+frontend servers)
+  commit: dee5dcdd
+  date: '2026-04-20 13:03:33'
+  gates_passed: 10
+  gates_failed: 0
+  duration_seconds: 849
   gate_detail:
     backend_lint: PASS
     frontend_typecheck: PASS
     routes_tests: PASS
     integration_tests: PASS
-    e2e_critical_path: SKIP
+    e2e_readiness: PASS
     no_http_cleanup: PASS
     no_db_mocks: PASS
+    no_mock_data_frontend: PASS
     no_bypass_headers: PASS
     no_beta_skips: PASS
 
 signoff:
   signed_off_by: ~
   signed_off_date: ~
-  notes: 'Awaiting project lead approval before beta deployment.'
+  notes: >
+    2026-04-20 13:03:33 — First clean readiness gate run after the no-deferrals
+    correction plan (dee5dcdd) plus follow-up fixes: backend rate-limit cap
+    includes beta-readiness, Playwright timeout raised to 5 min, verify-email
+    test uses real GET method, EMAIL_CAPTURE_FILE is set on both backend and
+    Playwright processes. All 10 gates PASS with no skips, no bypass headers,
+    no mock data, and no test.skip. Awaiting project lead signoff before
+    updating _bmad-output/implementation-artifacts/sprint-status.yaml
+    beta-deployment-readiness from blocked to ready-for-signoff.

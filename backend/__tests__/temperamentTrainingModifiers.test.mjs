@@ -83,7 +83,7 @@ function makeHorse(temperament = null) {
     userId: 'user-uuid-123',
     breedId: 1,
     temperament,
-    epigenetic_modifiers: { positive: [], negative: [], hidden: [] },
+    epigeneticModifiers: { positive: [], negative: [], hidden: [] },
     disciplineScores: { Racing: 20 },
     trainingCooldown: null,
   };

@@ -6,7 +6,7 @@ import logger from './logger.mjs';
 const REQUIRED_ENV_VARS = [
   { name: 'DATABASE_URL', minLength: 20 },
   { name: 'JWT_SECRET', minLength: 32 },
-  { name: 'NODE_ENV', values: ['development', 'production', 'test'] },
+  { name: 'NODE_ENV', values: ['development', 'production', 'test', 'beta-readiness'] },
   { name: 'PORT', type: 'number' },
 ];
 
@@ -29,9 +29,7 @@ export function validateEnvironment() {
 
     // Check minimum length
     if (minLength && value.length < minLength) {
-      errors.push(
-        `${name} must be at least ${minLength} characters (current: ${value.length})`,
-      );
+      errors.push(`${name} must be at least ${minLength} characters (current: ${value.length})`);
     }
 
     // Check allowed values
@@ -50,16 +48,9 @@ export function validateEnvironment() {
     const secret = process.env.JWT_SECRET;
 
     // Check for placeholder values
-    const placeholders = [
-      'your-super-secret',
-      'change-this',
-      'REPLACE_WITH',
-      'example',
-    ];
-    if (placeholders.some((placeholder) => secret.includes(placeholder))) {
-      errors.push(
-        'JWT_SECRET appears to be a placeholder value. Please generate a real secret.',
-      );
+    const placeholders = ['your-super-secret', 'change-this', 'REPLACE_WITH', 'example'];
+    if (placeholders.some(placeholder => secret.includes(placeholder))) {
+      errors.push('JWT_SECRET appears to be a placeholder value. Please generate a real secret.');
     }
 
     // Check complexity (should have mix of characters)
@@ -100,15 +91,13 @@ export function validateEnvironment() {
     // Warn if ALLOWED_ORIGINS contains non-HTTPS URLs
     if (process.env.ALLOWED_ORIGINS) {
       const origins = process.env.ALLOWED_ORIGINS.split(',');
-      const httpOrigins = origins.filter((origin) => origin.startsWith('http://'));
+      const httpOrigins = origins.filter(origin => origin.startsWith('http://'));
 
       if (httpOrigins.length > 0) {
         logger.warn(
           '[validateEnvironment] SECURITY WARNING: ALLOWED_ORIGINS contains HTTP URLs in production',
         );
-        logger.warn(
-          `  HTTP origins detected: ${httpOrigins.join(', ')}`,
-        );
+        logger.warn(`  HTTP origins detected: ${httpOrigins.join(', ')}`);
         logger.warn('  These should be HTTPS in production to prevent man-in-the-middle attacks');
         // Don't fail, just warn - some reverse proxies handle HTTPS termination
       }
@@ -117,9 +106,7 @@ export function validateEnvironment() {
     // Check if PORT is set to default HTTP (80) or HTTPS (443)
     const port = parseInt(process.env.PORT || '3000', 10);
     if (port === 80) {
-      logger.warn(
-        '[validateEnvironment] SECURITY WARNING: PORT is set to 80 (HTTP) in production',
-      );
+      logger.warn('[validateEnvironment] SECURITY WARNING: PORT is set to 80 (HTTP) in production');
       logger.warn('  Consider using HTTPS (443) or a reverse proxy with HTTPS termination');
     }
   }
@@ -127,7 +114,7 @@ export function validateEnvironment() {
   // Log results
   if (errors.length > 0) {
     logger.error('❌ Environment validation failed:');
-    errors.forEach((err) => logger.error(`  - ${err}`));
+    errors.forEach(err => logger.error(`  - ${err}`));
     logger.error('\nPlease fix the above errors in your .env file and restart.');
     process.exit(1);
   }

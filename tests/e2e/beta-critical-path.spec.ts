@@ -25,15 +25,8 @@ test.describe.configure({ mode: 'serial' });
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
-/** Route the auth rate limiter bypass header on every auth API call.
- *  This does NOT bypass CSRF validation or the auth flow itself — it only
- *  prevents 429s caused by test runs hammering the rate limiter. */
-async function bypassAuthRateLimit(page: Page) {
-  await page.route('**/api/auth/**', (route) => {
-    const headers = { ...route.request().headers(), 'x-test-bypass-rate-limit': 'true' };
-    route.continue({ headers });
-  });
-}
+// Auth rate limiter uses skipSuccessfulRequests:true with max:200 failed attempts.
+// Successful registrations/logins are never counted, so no bypass needed.
 
 /** Fill step 1 (Choose Your Horse) of the onboarding wizard.
  *  Selects the first available breed from the native select, chooses Mare,
@@ -96,7 +89,7 @@ test.describe('Path 1: New-player critical path', () => {
     const password = 'Password123!';
     const horseName = `Comet ${ts}`;
 
-    await bypassAuthRateLimit(page);
+    // No rate-limit bypass — auth limiter skips successful requests
 
     // ── 1. Register ──────────────────────────────────────────────────────
     await page.goto('/register', { waitUntil: 'domcontentloaded' });
@@ -192,7 +185,7 @@ test.describe('Path 2: Returning-player login smoke', () => {
   test('login → / (hub) renders → /stable shows horse list area', async ({ page }) => {
     test.setTimeout(60000);
 
-    await bypassAuthRateLimit(page);
+    // No rate-limit bypass — auth limiter skips successful requests
 
     // Use global-setup credentials (fully onboarded user with a horse)
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -243,7 +236,7 @@ test.describe('Path 3: Horse detail smoke', () => {
   }) => {
     test.setTimeout(60000);
 
-    await bypassAuthRateLimit(page);
+    // No rate-limit bypass — auth limiter skips successful requests
 
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const credsPath = path.resolve(__dirname, 'test-credentials.json');

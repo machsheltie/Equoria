@@ -87,14 +87,14 @@ describe('🏆 UNIT: Competition Trait Match Fairness - Statistical Validation',
       for (let i = 0; i < runsPerBatch; i++) {
         const horses = [
           createTestHorse(1, 'JumpSpecialist', {
-            epigenetic_modifiers: {
+            epigeneticModifiers: {
               positive: ['discipline_affinity_show_jumping'], // Matches event discipline
               negative: [],
               hidden: [],
             },
           }),
           createTestHorse(2, 'RegularHorse', {
-            epigenetic_modifiers: {
+            epigeneticModifiers: {
               positive: [], // No matching trait
               negative: [],
               hidden: [],
@@ -137,14 +137,14 @@ describe('🏆 UNIT: Competition Trait Match Fairness - Statistical Validation',
       for (let i = 0; i < runsPerBatch; i++) {
         const horses = [
           createTestHorse(1, 'RacingSpecialist', {
-            epigenetic_modifiers: {
+            epigeneticModifiers: {
               positive: ['discipline_affinity_racing'], // Matches event discipline
               negative: [],
               hidden: [],
             },
           }),
           createTestHorse(2, 'RegularHorse', {
-            epigenetic_modifiers: {
+            epigeneticModifiers: {
               positive: [], // No matching trait
               negative: [],
               hidden: [],
@@ -185,14 +185,14 @@ describe('🏆 UNIT: Competition Trait Match Fairness - Statistical Validation',
       for (let i = 0; i < runsPerBatch; i++) {
         const horses = [
           createTestHorse(1, 'DressageSpecialist', {
-            epigenetic_modifiers: {
+            epigeneticModifiers: {
               positive: ['discipline_affinity_dressage'], // Matches event discipline
               negative: [],
               hidden: [],
             },
           }),
           createTestHorse(2, 'RegularHorse', {
-            epigenetic_modifiers: {
+            epigeneticModifiers: {
               positive: [], // No matching trait
               negative: [],
               hidden: [],
@@ -233,14 +233,14 @@ describe('🏆 UNIT: Competition Trait Match Fairness - Statistical Validation',
       for (let i = 0; i < runsPerBatch; i++) {
         const horses = [
           createTestHorse(1, 'CrossCountrySpecialist', {
-            epigenetic_modifiers: {
+            epigeneticModifiers: {
               positive: ['discipline_affinity_cross_country'], // Matches event discipline
               negative: [],
               hidden: [],
             },
           }),
           createTestHorse(2, 'RegularHorse', {
-            epigenetic_modifiers: {
+            epigeneticModifiers: {
               positive: [], // No matching trait
               negative: [],
               hidden: [],
@@ -277,14 +277,14 @@ describe('🏆 UNIT: Competition Trait Match Fairness - Statistical Validation',
     for (let i = 0; i < totalRuns; i++) {
       const horses = [
         createTestHorse(1, 'JumpSpecialist', {
-          epigenetic_modifiers: {
+          epigeneticModifiers: {
             positive: ['discipline_affinity_show_jumping'],
             negative: [],
             hidden: [],
           },
         }),
         createTestHorse(2, 'RegularHorse', {
-          epigenetic_modifiers: {
+          epigeneticModifiers: {
             positive: [],
             negative: [],
             hidden: [],

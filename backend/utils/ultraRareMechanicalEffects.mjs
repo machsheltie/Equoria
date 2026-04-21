@@ -24,7 +24,9 @@ export function applyUltraRareStressEffects(horse, baseStress, stressSource = 'g
 
     for (const traitData of allTraits) {
       const traitDef = getUltraRareTraitDefinition(traitData.name);
-      if (!traitDef || !traitDef.mechanicalEffects) { continue; }
+      if (!traitDef || !traitDef.mechanicalEffects) {
+        continue;
+      }
 
       const effects = traitDef.mechanicalEffects;
 
@@ -113,7 +115,9 @@ export function applyUltraRareStressDecayEffects(horse, baseDecay) {
 
     for (const traitData of allTraits) {
       const traitDef = getUltraRareTraitDefinition(traitData.name);
-      if (!traitDef || !traitDef.mechanicalEffects) { continue; }
+      if (!traitDef || !traitDef.mechanicalEffects) {
+        continue;
+      }
 
       const effects = traitDef.mechanicalEffects;
 
@@ -137,7 +141,9 @@ export function applyUltraRareStressDecayEffects(horse, baseDecay) {
       totalBonus: modifiedDecay - baseDecay,
     };
   } catch (error) {
-    logger.error(`[ultraRareMechanicalEffects] Error applying stress decay effects: ${error.message}`);
+    logger.error(
+      `[ultraRareMechanicalEffects] Error applying stress decay effects: ${error.message}`,
+    );
     return {
       originalDecay: baseDecay,
       modifiedDecay: baseDecay,
@@ -163,7 +169,9 @@ export function applyUltraRareTrainingEffects(horse, trainingData) {
 
     for (const traitData of allTraits) {
       const traitDef = getUltraRareTraitDefinition(traitData.name);
-      if (!traitDef || !traitDef.mechanicalEffects) { continue; }
+      if (!traitDef || !traitDef.mechanicalEffects) {
+        continue;
+      }
 
       const effects = traitDef.mechanicalEffects;
 
@@ -180,7 +188,8 @@ export function applyUltraRareTrainingEffects(horse, trainingData) {
       // Apply training consistency bonus (Iron-Willed)
       if (effects.trainingConsistencyBonus) {
         const consistencyBonus = effects.trainingConsistencyBonus;
-        modifiedTrainingData.consistencyBonus = (modifiedTrainingData.consistencyBonus || 0) + consistencyBonus;
+        modifiedTrainingData.consistencyBonus =
+          (modifiedTrainingData.consistencyBonus || 0) + consistencyBonus;
         appliedEffects.push({
           trait: traitDef.name,
           effect: 'training_consistency_bonus',
@@ -191,7 +200,8 @@ export function applyUltraRareTrainingEffects(horse, trainingData) {
       // Apply stat growth bonus (Stormtouched)
       if (effects.statGrowthBonus) {
         const growthBonus = effects.statGrowthBonus;
-        modifiedTrainingData.statGrowthBonus = (modifiedTrainingData.statGrowthBonus || 0) + growthBonus;
+        modifiedTrainingData.statGrowthBonus =
+          (modifiedTrainingData.statGrowthBonus || 0) + growthBonus;
         appliedEffects.push({
           trait: traitDef.name,
           effect: 'stat_growth_bonus',
@@ -254,7 +264,9 @@ export function applyUltraRareCompetitionEffects(horse, baseScore, competitionCo
 
     for (const traitData of allTraits) {
       const traitDef = getUltraRareTraitDefinition(traitData.name);
-      if (!traitDef || !traitDef.mechanicalEffects) { continue; }
+      if (!traitDef || !traitDef.mechanicalEffects) {
+        continue;
+      }
 
       const effects = traitDef.mechanicalEffects;
 
@@ -362,7 +374,9 @@ export function applyUltraRareCompetitionEffects(horse, baseScore, competitionCo
       totalBonus: modifiedScore - baseScore,
     };
   } catch (error) {
-    logger.error(`[ultraRareMechanicalEffects] Error applying competition effects: ${error.message}`);
+    logger.error(
+      `[ultraRareMechanicalEffects] Error applying competition effects: ${error.message}`,
+    );
     return {
       originalScore: baseScore,
       modifiedScore: baseScore,
@@ -389,7 +403,9 @@ export function applyUltraRareBondingEffects(horse, baseBondChange, bondingConte
 
     for (const traitData of allTraits) {
       const traitDef = getUltraRareTraitDefinition(traitData.name);
-      if (!traitDef || !traitDef.mechanicalEffects) { continue; }
+      if (!traitDef || !traitDef.mechanicalEffects) {
+        continue;
+      }
 
       const effects = traitDef.mechanicalEffects;
 
@@ -478,7 +494,9 @@ export function applyUltraRareBurnoutEffects(horse, baseBurnoutDays) {
 
     for (const traitData of allTraits) {
       const traitDef = getUltraRareTraitDefinition(traitData.name);
-      if (!traitDef || !traitDef.mechanicalEffects) { continue; }
+      if (!traitDef || !traitDef.mechanicalEffects) {
+        continue;
+      }
 
       const effects = traitDef.mechanicalEffects;
 
@@ -543,7 +561,9 @@ export function applyUltraRareStatEffects(horse, baseStats) {
 
     for (const traitData of allTraits) {
       const traitDef = getUltraRareTraitDefinition(traitData.name);
-      if (!traitDef || !traitDef.mechanicalEffects) { continue; }
+      if (!traitDef || !traitDef.mechanicalEffects) {
+        continue;
+      }
 
       const effects = traitDef.mechanicalEffects;
 
@@ -559,7 +579,18 @@ export function applyUltraRareStatEffects(horse, baseStats) {
 
       // Apply all stat bonus (Fey-Kissed)
       if (effects.allStatBonus) {
-        const statNames = ['speed', 'stamina', 'agility', 'balance', 'precision', 'intelligence', 'boldness', 'flexibility', 'obedience', 'focus'];
+        const statNames = [
+          'speed',
+          'stamina',
+          'agility',
+          'balance',
+          'precision',
+          'intelligence',
+          'boldness',
+          'flexibility',
+          'obedience',
+          'focus',
+        ];
         for (const statName of statNames) {
           modifiedStats[statName] = (modifiedStats[statName] || 0) + effects.allStatBonus;
         }
@@ -599,31 +630,47 @@ export function hasUltraRareAbility(horse, abilityType) {
 
     for (const traitData of allTraits) {
       const traitDef = getUltraRareTraitDefinition(traitData.name);
-      if (!traitDef || !traitDef.mechanicalEffects) { continue; }
+      if (!traitDef || !traitDef.mechanicalEffects) {
+        continue;
+      }
 
       const effects = traitDef.mechanicalEffects;
 
       switch (abilityType) {
         case 'stress_immunity':
-          if (effects.stressImmunity) { return true; }
+          if (effects.stressImmunity) {
+            return true;
+          }
           break;
         case 'burnout_immunity':
-          if (effects.burnoutImmunity) { return true; }
+          if (effects.burnoutImmunity) {
+            return true;
+          }
           break;
         case 'training_fatigue_immunity':
-          if (effects.trainingFatigueImmunity) { return true; }
+          if (effects.trainingFatigueImmunity) {
+            return true;
+          }
           break;
         case 'weather_immunity':
-          if (effects.weatherImmunity) { return true; }
+          if (effects.weatherImmunity) {
+            return true;
+          }
           break;
         case 'mystical_resilience':
-          if (effects.mysticalResilience) { return true; }
+          if (effects.mysticalResilience) {
+            return true;
+          }
           break;
         case 'exclusive_bonding':
-          if (effects.exclusiveBonding) { return true; }
+          if (effects.exclusiveBonding) {
+            return true;
+          }
           break;
         case 'reassignment_impossible':
-          if (effects.reassignmentImpossible) { return true; }
+          if (effects.reassignmentImpossible) {
+            return true;
+          }
           break;
         default:
           return false;

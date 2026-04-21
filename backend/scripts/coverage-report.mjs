@@ -85,7 +85,9 @@ function analyzeCoverage(coverageData) {
   // Analyze by directory
   const directories = {};
   Object.entries(coverageData).forEach(([filePath, data]) => {
-    if (filePath === 'total') { return; }
+    if (filePath === 'total') {
+      return;
+    }
 
     const dir = path.dirname(filePath);
     if (!directories[dir]) {
@@ -113,10 +115,19 @@ function analyzeCoverage(coverageData) {
   Object.entries(directories).forEach(([dir, data]) => {
     analysis.byDirectory[dir] = {
       files: data.files,
-      lines: data.lines.total > 0 ? (data.lines.covered / data.lines.total * 100).toFixed(2) : 0,
-      statements: data.statements.total > 0 ? (data.statements.covered / data.statements.total * 100).toFixed(2) : 0,
-      functions: data.functions.total > 0 ? (data.functions.covered / data.functions.total * 100).toFixed(2) : 0,
-      branches: data.branches.total > 0 ? (data.branches.covered / data.branches.total * 100).toFixed(2) : 0,
+      lines: data.lines.total > 0 ? ((data.lines.covered / data.lines.total) * 100).toFixed(2) : 0,
+      statements:
+        data.statements.total > 0
+          ? ((data.statements.covered / data.statements.total) * 100).toFixed(2)
+          : 0,
+      functions:
+        data.functions.total > 0
+          ? ((data.functions.covered / data.functions.total) * 100).toFixed(2)
+          : 0,
+      branches:
+        data.branches.total > 0
+          ? ((data.branches.covered / data.branches.total) * 100).toFixed(2)
+          : 0,
     };
   });
 
@@ -186,11 +197,13 @@ function checkCoverageThresholds(overall, byDirectory) {
 function generateCoverageSummary(analysis) {
   const { overall, thresholdResults } = analysis;
 
-  const totalFailures = thresholdResults.global.failures.length +
+  const totalFailures =
+    thresholdResults.global.failures.length +
     Object.values(thresholdResults.directories).reduce((sum, dir) => sum + dir.failures.length, 0);
 
   return {
-    overallPassed: thresholdResults.global.passed &&
+    overallPassed:
+      thresholdResults.global.passed &&
       Object.values(thresholdResults.directories).every(dir => dir.passed),
     totalFailures,
     coverage: overall,
@@ -203,16 +216,33 @@ function generateCoverageSummary(analysis) {
  * Get coverage grade based on overall coverage
  */
 function getCoverageGrade(coverage) {
-  const avgCoverage = (coverage.lines + coverage.statements + coverage.functions + coverage.branches) / 4;
+  const avgCoverage =
+    (coverage.lines + coverage.statements + coverage.functions + coverage.branches) / 4;
 
-  if (avgCoverage >= 95) { return 'A+'; }
-  if (avgCoverage >= 90) { return 'A'; }
-  if (avgCoverage >= 85) { return 'B+'; }
-  if (avgCoverage >= 80) { return 'B'; }
-  if (avgCoverage >= 75) { return 'C+'; }
-  if (avgCoverage >= 70) { return 'C'; }
-  if (avgCoverage >= 65) { return 'D+'; }
-  if (avgCoverage >= 60) { return 'D'; }
+  if (avgCoverage >= 95) {
+    return 'A+';
+  }
+  if (avgCoverage >= 90) {
+    return 'A';
+  }
+  if (avgCoverage >= 85) {
+    return 'B+';
+  }
+  if (avgCoverage >= 80) {
+    return 'B';
+  }
+  if (avgCoverage >= 75) {
+    return 'C+';
+  }
+  if (avgCoverage >= 70) {
+    return 'C';
+  }
+  if (avgCoverage >= 65) {
+    return 'D+';
+  }
+  if (avgCoverage >= 60) {
+    return 'D';
+  }
   return 'F';
 }
 
@@ -225,7 +255,9 @@ function generateRecommendations(analysis) {
 
   // Global recommendations
   if (overall.branches < 80) {
-    recommendations.push('Add more branch coverage tests (if/else, switch cases, ternary operators)');
+    recommendations.push(
+      'Add more branch coverage tests (if/else, switch cases, ternary operators)',
+    );
   }
   if (overall.functions < 80) {
     recommendations.push('Add tests for uncovered functions and methods');
@@ -301,10 +333,19 @@ function formatConsoleReport(analysis) {
  */
 function generateBadgeData(analysis) {
   const { overall, summary } = analysis;
-  const avgCoverage = (overall.lines + overall.statements + overall.functions + overall.branches) / 4;
+  const avgCoverage =
+    (overall.lines + overall.statements + overall.functions + overall.branches) / 4;
 
   let color = 'red';
-  if (avgCoverage >= 90) { color = 'brightgreen'; } else if (avgCoverage >= 80) { color = 'green'; } else if (avgCoverage >= 70) { color = 'yellow'; } else if (avgCoverage >= 60) { color = 'orange'; }
+  if (avgCoverage >= 90) {
+    color = 'brightgreen';
+  } else if (avgCoverage >= 80) {
+    color = 'green';
+  } else if (avgCoverage >= 70) {
+    color = 'yellow';
+  } else if (avgCoverage >= 60) {
+    color = 'orange';
+  }
 
   return {
     schemaVersion: 1,
@@ -328,13 +369,20 @@ async function saveCoverageReports(analysis) {
 
   // Save summary for CI
   const summaryPath = path.join(reportsDir, 'coverage-ci-summary.json');
-  await fs.writeFile(summaryPath, JSON.stringify({
-    timestamp: new Date().toISOString(),
-    passed: analysis.summary.overallPassed,
-    coverage: analysis.overall,
-    grade: analysis.summary.grade,
-    failures: analysis.summary.totalFailures,
-  }, null, 2));
+  await fs.writeFile(
+    summaryPath,
+    JSON.stringify(
+      {
+        timestamp: new Date().toISOString(),
+        passed: analysis.summary.overallPassed,
+        coverage: analysis.overall,
+        grade: analysis.summary.grade,
+        failures: analysis.summary.totalFailures,
+      },
+      null,
+      2,
+    ),
+  );
 
   // Save badge data
   const badgeData = generateBadgeData(analysis);
@@ -377,7 +425,6 @@ async function generateCoverageReport() {
       console.log('❌ Coverage report generation completed - Some thresholds failed');
       process.exit(1);
     }
-
   } catch (error) {
     console.error('❌ Coverage report generation failed:', error.message);
     process.exit(1);
@@ -389,9 +436,4 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   generateCoverageReport();
 }
 
-export {
-  generateCoverageReport,
-  analyzeCoverage,
-  checkCoverageThresholds,
-  generateBadgeData,
-};
+export { generateCoverageReport, analyzeCoverage, checkCoverageThresholds, generateBadgeData };

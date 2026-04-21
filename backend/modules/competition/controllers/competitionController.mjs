@@ -21,7 +21,7 @@ import logger from '../../../utils/logger.mjs';
 
 /**
  * Helper function to detect trait bonuses for a horse in a specific discipline
- * @param {Object} horse - Horse object with epigenetic_modifiers
+ * @param {Object} horse - Horse object with epigeneticModifiers
  * @param {string} discipline - Competition discipline
  * @returns {Object} Trait bonus information
  */
@@ -34,11 +34,11 @@ function detectTraitBonuses(horse, discipline) {
   };
 
   // Check for discipline affinity traits
-  if (horse.epigenetic_modifiers?.positive) {
+  if (horse.epigeneticModifiers?.positive) {
     const disciplineKey = discipline.toLowerCase().replace(/\s+/g, '_');
     const affinityTrait = `discipline_affinity_${disciplineKey}`;
 
-    if (horse.epigenetic_modifiers.positive.includes(affinityTrait)) {
+    if (horse.epigeneticModifiers.positive.includes(affinityTrait)) {
       result.hasTraitBonus = true;
       result.traitBonusAmount = 5;
       result.appliedTraits.push(affinityTrait);
@@ -98,7 +98,7 @@ function runEnhancedCompetition(horses, show) {
           },
 
           // Additional factors
-          stressLevel: horse.stress_level || 0,
+          stressLevel: horse.stressLevel || 0,
           health: horse.health || 'Good',
           tackBonuses: (() => {
             const resolved = resolveTackBonus(horse.tack);

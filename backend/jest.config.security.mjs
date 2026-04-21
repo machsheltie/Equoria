@@ -14,10 +14,7 @@ export default {
   moduleFileExtensions: ['mjs', 'js', 'json'],
 
   // Test patterns
-  testMatch: [
-    '**/__tests__/**/*.test.mjs',
-    '**/__tests__/**/*.spec.mjs',
-  ],
+  testMatch: ['**/__tests__/**/*.test.mjs', '**/__tests__/**/*.spec.mjs'],
 
   // Setup files
   setupFilesAfterEnv: ['<rootDir>/__tests__/setup.mjs'],

@@ -119,44 +119,44 @@ function generateFixReport(results) {
 
 ## ❌ OVER-MOCKED TESTS (Priority Fix)
 ${results.overMocked
-    .map(
-      test => `
+  .map(
+    test => `
 ### ${test.file}
 - Over-mocking Score: ${test.overMockingScore}
 - Good Mocking Score: ${test.goodMockingScore}
 - Ratio: ${test.ratio.toFixed(2)}
 - **Action**: Remove excessive mocks, use real database operations
 `,
-    )
-    .join('')}
+  )
+  .join('')}
 
 ## ✅ BALANCED TESTS (Keep as Reference)
 ${results.balanced
-    .slice(0, 5)
-    .map(
-      test => `
+  .slice(0, 5)
+  .map(
+    test => `
 ### ${test.file}
 - Over-mocking Score: ${test.overMockingScore}
 - Good Mocking Score: ${test.goodMockingScore}
 - Ratio: ${test.ratio.toFixed(2)}
 - **Status**: Good example of minimal mocking
 `,
-    )
-    .join('')}
+  )
+  .join('')}
 
 ## 🔍 NEED REVIEW
 ${results.needsReview
-    .slice(0, 5)
-    .map(
-      test => `
+  .slice(0, 5)
+  .map(
+    test => `
 ### ${test.file}
 - Over-mocking Score: ${test.overMockingScore}
 - Good Mocking Score: ${test.goodMockingScore}
 - Ratio: ${test.ratio.toFixed(2)}
 - **Action**: Review and categorize
 `,
-    )
-    .join('')}
+  )
+  .join('')}
 
 ## 🎯 FIXING STRATEGY
 

@@ -81,7 +81,9 @@ export const performanceAnalyticsService = {
    * @returns {number} Win rate percentage
    */
   calculateOverallWinRate(results) {
-    if (results.length === 0) { return 0; }
+    if (results.length === 0) {
+      return 0;
+    }
 
     const wins = results.filter(result => parseInt(result.placement) === 1).length;
     return Math.round((wins / results.length) * 100);
@@ -134,15 +136,18 @@ export const performanceAnalyticsService = {
    * @returns {number} Consistency score (0-100)
    */
   calculateConsistencyScore(results) {
-    if (results.length === 0) { return 0; }
+    if (results.length === 0) {
+      return 0;
+    }
 
     const placements = results.map(result => parseInt(result.placement));
     const average = placements.reduce((sum, placement) => sum + placement, 0) / placements.length;
 
     // Calculate variance
-    const variance = placements.reduce((sum, placement) => {
-      return sum + Math.pow(placement - average, 2);
-    }, 0) / placements.length;
+    const variance =
+      placements.reduce((sum, placement) => {
+        return sum + Math.pow(placement - average, 2);
+      }, 0) / placements.length;
 
     // Convert to consistency score (lower variance = higher consistency)
     // Normalize to 0-100 scale where 100 is perfect consistency
@@ -190,8 +195,12 @@ export const performanceAnalyticsService = {
     const recentResults = results.slice(0, splitPoint);
     const historicalResults = results.slice(splitPoint);
 
-    const recentAverage = recentResults.reduce((sum, result) => sum + parseInt(result.placement), 0) / recentResults.length;
-    const historicalAverage = historicalResults.reduce((sum, result) => sum + parseInt(result.placement), 0) / historicalResults.length;
+    const recentAverage =
+      recentResults.reduce((sum, result) => sum + parseInt(result.placement), 0) /
+      recentResults.length;
+    const historicalAverage =
+      historicalResults.reduce((sum, result) => sum + parseInt(result.placement), 0) /
+      historicalResults.length;
 
     let improvementTrend = 'stable';
     const difference = historicalAverage - recentAverage; // Lower placement = better performance

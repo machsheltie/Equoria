@@ -19,14 +19,11 @@ test.describe('Onboarding Flow', () => {
   test.use({ storageState: { cookies: [], origins: [] } });
 
   // Extend timeout — registration + onboarding involves multiple API calls
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page: _page }) => {
     test.setTimeout(90000);
 
-    // Bypass auth rate limiter for registration
-    await page.route('**/api/auth/**', (route) => {
-      const headers = { ...route.request().headers(), 'x-test-bypass-rate-limit': 'true' };
-      route.continue({ headers });
-    });
+    // Auth rate limiter uses skipSuccessfulRequests:true with max:200 failed attempts.
+    // Successful registrations are never counted, so no bypass needed.
   });
 
   test('unauthenticated user visiting /onboarding can see the wizard', async ({ page }) => {

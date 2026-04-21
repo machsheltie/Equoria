@@ -19,6 +19,7 @@ import {
   useGroomSalaries,
   useDeleteAssignment,
 } from '../hooks/api/useGrooms';
+import { useHorses } from '../hooks/api/useHorses';
 import type { Groom, GroomAssignment, SalarySummary } from '@/lib/api-client';
 
 interface MyGroomsDashboardProps {
@@ -55,6 +56,8 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
   const [selectedHorseId, setSelectedHorseId] = useState<number | null>(null);
   const [selectedHorseName, setSelectedHorseName] = useState<string>('');
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [isHorsePickerOpen, setIsHorsePickerOpen] = useState(false);
+  const { data: userHorses = [], isLoading: horsesLoading } = useHorses();
   const [skillLevelFilter, setSkillLevelFilter] = useState<string>('all');
   const [specialtyFilter, setSpecialtyFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('name');
@@ -156,12 +159,18 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
     return groomAssignments.length === 0;
   }).length;
 
-  // Handle assign button click
+  // Handle assign button click — open horse picker first so the real horse id is chosen.
   const handleAssignClick = (_groomId: number) => {
-    // In a real app, you'd open a horse selection modal here
-    // For now, we'll just open the assign modal with a placeholder
-    setSelectedHorseId(101); // Placeholder
-    setSelectedHorseName('Select a horse'); // Placeholder
+    setSelectedHorseId(null);
+    setSelectedHorseName('');
+    setIsHorsePickerOpen(true);
+  };
+
+  // Horse picker callback — sets the real horseId, closes picker, opens assign modal.
+  const handleHorsePicked = (horse: { id: number; name: string }) => {
+    setSelectedHorseId(horse.id);
+    setSelectedHorseName(horse.name);
+    setIsHorsePickerOpen(false);
     setIsAssignModalOpen(true);
   };
 
@@ -556,6 +565,77 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
             );
           })}
         </div>
+
+        {/* Horse Picker Modal (shown before the assign modal) */}
+        {isHorsePickerOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="horse-picker-title"
+            data-testid="groom-assign-horse-picker"
+          >
+            <div
+              className="w-full max-w-md rounded-xl p-6 space-y-4 border"
+              style={{
+                background: 'var(--glass-surface-bg)',
+                borderColor: 'var(--border-muted)',
+              }}
+            >
+              <h2
+                id="horse-picker-title"
+                className="text-lg font-semibold"
+                style={{ color: 'var(--text-primary)' }}
+              >
+                Pick a horse to assign
+              </h2>
+              {horsesLoading ? (
+                <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                  Loading horses…
+                </div>
+              ) : userHorses.length === 0 ? (
+                <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                  You don&apos;t own any horses yet. Acquire a horse before assigning a groom.
+                </div>
+              ) : (
+                <ul className="max-h-80 overflow-y-auto space-y-2">
+                  {userHorses.map((horse) => (
+                    <li key={horse.id}>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleHorsePicked({
+                            id: Number(horse.id),
+                            name: String(horse.name ?? `Horse ${horse.id}`),
+                          })
+                        }
+                        data-testid={`groom-assign-horse-option-${horse.id}`}
+                        className="w-full flex items-center justify-between px-4 py-2 rounded-lg text-sm transition-colors hover:bg-white/10 border border-white/10"
+                        style={{ color: 'var(--text-primary)' }}
+                      >
+                        <span>{horse.name}</span>
+                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                          #{horse.id}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  onClick={() => setIsHorsePickerOpen(false)}
+                  className="px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-white/10"
+                  style={{ color: 'var(--text-muted)' }}
+                  data-testid="groom-assign-horse-picker-cancel"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Assign Groom Modal */}
         {isAssignModalOpen && selectedHorseId && (

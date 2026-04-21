@@ -44,11 +44,7 @@ const VALIDATION_CONFIG = {
     'scripts/health-check.mjs',
     'scripts/validate-environment.mjs',
   ],
-  requiredDependencies: [
-    'c8',
-    'nyc',
-    'codecov',
-  ],
+  requiredDependencies: ['c8', 'nyc', 'codecov'],
 };
 
 /**
@@ -121,7 +117,7 @@ async function validateRequiredFiles() {
       await fs.access(filePath);
       results.present.push(file);
       console.log(`✅ File '${file}' found`);
-    } catch (error) {
+    } catch {
       results.missing.push(file);
       results.valid = false;
       console.error(`❌ File '${file}' missing`);
@@ -275,7 +271,6 @@ async function validateGitHubWorkflow() {
     }
 
     return results;
-
   } catch (error) {
     console.error('❌ Failed to read GitHub workflow file');
     return { valid: false, error: error.message };
@@ -294,7 +289,9 @@ async function generateValidationReport(results) {
 
   const report = {
     timestamp: new Date().toISOString(),
-    overallValid: Object.values(results).every(result => result.success !== false && result.valid !== false),
+    overallValid: Object.values(results).every(
+      result => result.success !== false && result.valid !== false,
+    ),
     results,
     summary: {
       scriptsValid: results.scripts.valid,
@@ -311,11 +308,18 @@ async function generateValidationReport(results) {
 
   // Save summary for CI
   const summaryPath = path.join(reportDir, 'pipeline-validation-summary.json');
-  await fs.writeFile(summaryPath, JSON.stringify({
-    timestamp: report.timestamp,
-    valid: report.overallValid,
-    summary: report.summary,
-  }, null, 2));
+  await fs.writeFile(
+    summaryPath,
+    JSON.stringify(
+      {
+        timestamp: report.timestamp,
+        valid: report.overallValid,
+        summary: report.summary,
+      },
+      null,
+      2,
+    ),
+  );
 
   return { reportPath, summaryPath };
 }
@@ -348,13 +352,15 @@ async function validateTestingPipeline() {
     console.log(`Package Scripts: ${results.scripts.valid ? '✅ VALID' : '❌ INVALID'}`);
     console.log(`Required Files: ${results.files.valid ? '✅ VALID' : '❌ INVALID'}`);
     console.log(`Dependencies: ${results.dependencies.valid ? '✅ VALID' : '❌ INVALID'}`);
-    console.log(`Environment Validation: ${results.environment.success ? '✅ WORKING' : '❌ FAILED'}`);
+    console.log(
+      `Environment Validation: ${results.environment.success ? '✅ WORKING' : '❌ FAILED'}`,
+    );
     console.log(`Health Check: ${results.healthCheck.success ? '✅ WORKING' : '❌ FAILED'}`);
     console.log(`Coverage Reporting: ${results.coverage.success ? '✅ WORKING' : '❌ FAILED'}`);
     console.log(`GitHub Workflow: ${results.workflow.valid ? '✅ VALID' : '❌ INVALID'}`);
 
-    const overallValid = Object.values(results).every(result =>
-      result.success !== false && result.valid !== false,
+    const overallValid = Object.values(results).every(
+      result => result.success !== false && result.valid !== false,
     );
 
     console.log(`\n📁 Validation report saved: ${reportFiles.reportPath}`);
@@ -368,7 +374,6 @@ async function validateTestingPipeline() {
       console.log('🔧 Please fix the issues above before using the pipeline');
       process.exit(1);
     }
-
   } catch (error) {
     console.error('❌ Pipeline validation failed:', error.message);
     process.exit(1);

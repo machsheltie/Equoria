@@ -62,7 +62,9 @@ export function parsePaginationParams(req, options = {}) {
   if (isNaN(page) || page < 1) {
     page = defaultPage;
     if (req.query.page) {
-      logger.debug(`[paginationHelper] Invalid page parameter "${req.query.page}", using default: ${defaultPage}`);
+      logger.debug(
+        `[paginationHelper] Invalid page parameter "${req.query.page}", using default: ${defaultPage}`,
+      );
     }
   }
 
@@ -71,13 +73,17 @@ export function parsePaginationParams(req, options = {}) {
   if (isNaN(limit) || limit < minLimit) {
     limit = defaultLimit;
     if (req.query.limit) {
-      logger.debug(`[paginationHelper] Invalid limit parameter "${req.query.limit}", using default: ${defaultLimit}`);
+      logger.debug(
+        `[paginationHelper] Invalid limit parameter "${req.query.limit}", using default: ${defaultLimit}`,
+      );
     }
   }
 
   // Enforce maximum limit to prevent over-fetching
   if (limit > maxLimit) {
-    logger.debug(`[paginationHelper] Limit ${limit} exceeds maximum ${maxLimit}, capping to ${maxLimit}`);
+    logger.debug(
+      `[paginationHelper] Limit ${limit} exceeds maximum ${maxLimit}, capping to ${maxLimit}`,
+    );
     limit = maxLimit;
   }
 
@@ -163,10 +169,8 @@ export function buildPaginatedResponse(res, data, params, additionalMeta = {}) {
  * @throws {Error} If validation fails
  */
 export function validatePaginationParams(page, limit, options = {}) {
-  const {
-    maxLimit = PAGINATION_DEFAULTS.maxLimit,
-    minLimit = PAGINATION_DEFAULTS.minLimit,
-  } = options;
+  const { maxLimit = PAGINATION_DEFAULTS.maxLimit, minLimit = PAGINATION_DEFAULTS.minLimit } =
+    options;
 
   if (!Number.isInteger(page) || page < 1) {
     throw new Error(`Invalid page number: ${page}. Must be a positive integer.`);
@@ -189,7 +193,9 @@ export function validatePaginationParams(page, limit, options = {}) {
  * @returns {number} Total number of pages
  */
 export function calculateTotalPages(total, limit) {
-  if (total === 0) { return 0; }
+  if (total === 0) {
+    return 0;
+  }
   return Math.ceil(total / limit);
 }
 
@@ -273,7 +279,13 @@ export function buildCursorPaginationMetadata(data, limit, cursorField = 'id') {
  * @param {Object} additionalMeta - Additional metadata
  * @returns {Object} Express response
  */
-export function buildCursorPaginatedResponse(res, data, limit, cursorField = 'id', additionalMeta = {}) {
+export function buildCursorPaginatedResponse(
+  res,
+  data,
+  limit,
+  cursorField = 'id',
+  additionalMeta = {},
+) {
   const pagination = buildCursorPaginationMetadata(data, limit, cursorField);
 
   return res.status(200).json({
@@ -323,7 +335,9 @@ export function paginationMiddleware(options = {}) {
     // Only parse pagination for GET requests
     if (req.method === 'GET') {
       req.pagination = parsePaginationParams(req, options);
-      logger.debug(`[paginationMiddleware] Parsed pagination: page=${req.pagination.page}, limit=${req.pagination.limit}`);
+      logger.debug(
+        `[paginationMiddleware] Parsed pagination: page=${req.pagination.page}, limit=${req.pagination.limit}`,
+      );
     }
     next();
   };

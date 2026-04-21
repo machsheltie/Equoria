@@ -1,6 +1,7 @@
 # Equoria-Specific Features and Requirements
 
 ## Project Overview
+
 - **Platform**: Mobile-first horse simulation game for iOS and Android
 - **Architecture**: React Native frontend with Node.js/Express/PostgreSQL backend
 - **Development Status**: Advanced development with 468+ tests, comprehensive backend systems
@@ -11,6 +12,7 @@
 ## Technical Stack Excellence
 
 ### Backend Implementation (Production-Ready)
+
 - **Node.js/Express.js**: RESTful API with layered architecture
 - **PostgreSQL + Prisma**: Type-safe ORM with JSONB for flexible game data
 - **Authentication**: JWT-based with role-based access control (User, Moderator, Admin)
@@ -20,6 +22,7 @@
 - **Reference**: `@docs/backend-overview.md` and `@docs/testing-architecture.md`
 
 ### Frontend Implementation (React Native)
+
 - **React Native + Expo**: Cross-platform mobile development
 - **Tailwind CSS**: Utility-first styling via NativeWind
 - **Components**: TraitDisplay, FoalDevelopmentTab with accessibility support
@@ -28,6 +31,7 @@
 - **Reference**: `@docs/frontend-architecture.md`
 
 ### Database Design (Advanced)
+
 - **Core Tables**: Users (UUID), Horses, Foals, Shows, Competition Results, Training Logs
 - **JSONB Usage**: Genetics, traits, discipline scores, user settings
 - **Relationships**: Complex breeding, training, and competition associations
@@ -38,6 +42,7 @@
 ## Game Mechanics Implementation
 
 ### 1. Training System (Fully Implemented)
+
 - **Global Cooldown**: One discipline per week per horse (prevents stat stacking)
 - **Age Requirements**: 3+ years minimum for training participation
 - **Discipline Progression**: +5 points per session in 23+ available disciplines
@@ -47,6 +52,7 @@
 - **Reference**: Training system documentation in `@docs/controllers-layer.md`
 
 ### 2. Competition System (Fully Implemented)
+
 - **Show Management**: Database-driven shows with level restrictions and scheduling
 - **Eligibility Validation**: Age (3-20), level requirements, duplicate prevention
 - **Realistic Scoring**: Stat-based calculations with randomization elements
@@ -56,6 +62,7 @@
 - **Reference**: Competition system in `@docs/controllers-layer.md`
 
 ### 3. Breeding & Genetics System (Advanced Implementation)
+
 - **Complex Genetics**: Multi-allele inheritance with dominant/recessive patterns
 - **Trait Discovery**: Progressive revelation through foal development activities
 - **Epigenetic Modifiers**: Environmental influences on trait expression
@@ -65,6 +72,7 @@
 - **Reference**: Breeding mechanics in `@docs/utils-layer.md`
 
 ### 4. User Progression System (Implemented)
+
 - **UUID-Based Accounts**: Secure user identification with settings
 - **Progression Tracking**: Money, level, experience points
 - **Horse Collection**: Multiple horses per user with relationship tracking
@@ -75,6 +83,7 @@
 ## Advanced Game Features
 
 ### 1. Trait Discovery System
+
 - **Progressive Revelation**: Hidden traits revealed through gameplay
 - **Activity-Based Discovery**: Foal enrichment activities trigger trait revelation
 - **Trait Categories**: Positive, negative, and hidden trait classifications
@@ -82,6 +91,7 @@
 - **Database Integration**: JSONB storage for flexible trait management
 
 ### 2. Stat and Competition Integration
+
 - **23+ Disciplines**: Racing, Show Jumping, Dressage, Cross Country, etc.
 - **Stat Weighting**: Discipline-specific stat importance calculations
 - **Performance Simulation**: Realistic competition outcome modeling
@@ -89,6 +99,7 @@
 - **Historical Analysis**: Performance tracking across multiple competitions
 
 ### 3. Economic System Foundation
+
 - **User Economy**: Money management, earnings tracking
 - **Competition Rewards**: Prize distribution based on performance
 - **Entry Fees**: Risk/reward mechanics for competition participation
@@ -97,7 +108,9 @@
 ## UI/UX Implementation
 
 ### Current Components
+
 - **TraitDisplay**: Advanced trait visualization with modal details
+
   - Color-coded trait categories (positive/negative/hidden)
   - Interactive modals with gameplay effect descriptions
   - Full accessibility support with screen reader compatibility
@@ -110,6 +123,7 @@
   - Bonding and stress monitoring
 
 ### Planned UI Architecture
+
 - **Navigation**: Bottom tab structure (Stable, Training, Competition, Breeding, Profile)
 - **Screen Design**: Mobile-first responsive design with accessibility focus
 - **Animations**: Smooth transitions and feedback systems
@@ -119,6 +133,7 @@
 ## Development Quality Excellence
 
 ### 1. Testing Strategy (468+ Tests)
+
 - **Unit Tests**: Individual function validation with edge case coverage
 - **Integration Tests**: End-to-end workflow validation
 - **Component Tests**: UI component rendering and interaction testing
@@ -127,6 +142,7 @@
 - **Reference**: Complete testing overview in `@docs/testing-architecture.md`
 
 ### 2. Code Quality Standards
+
 - **ESLint + Prettier**: Consistent code formatting and style enforcement
 - **Comprehensive Documentation**: Function specifications and API documentation
 - **Error Handling**: Graceful error management at all application layers
@@ -134,6 +150,7 @@
 - **Performance Optimization**: Database indexing, query optimization, efficient algorithms
 
 ### 3. Production Readiness
+
 - **Environment Management**: Development, testing, production isolation
 - **CI/CD Pipeline**: Automated testing and deployment workflows
 - **Security Implementation**: JWT authentication, password hashing, input validation
@@ -143,6 +160,7 @@
 ## Current Development Status
 
 ### ✅ Fully Implemented Systems
+
 - **Backend Architecture**: Complete layered architecture with controllers, models, routes
 - **Training System**: Global cooldown, age restrictions, discipline progression
 - **Competition System**: Show management, eligibility validation, result tracking
@@ -152,12 +170,14 @@
 - **Authentication**: JWT-based security with role-based access
 
 ### 🚧 In Development
+
 - **Frontend Screens**: Main application screens (planned architecture complete)
 - **Navigation System**: React Navigation integration
 - **State Management**: Redux Toolkit or Zustand integration
 - **Real-time Features**: Live updates and notifications
 
 ### 📋 Planned Features
+
 - **Social System**: User interactions, leaderboards, achievements
 - **Advanced Breeding**: Enhanced genetics simulation and visualization
 - **Seasonal Events**: Temporary content and challenges
@@ -166,18 +186,21 @@
 ## Unique Selling Points
 
 ### 1. Technical Innovation
+
 - **JSONB Genetics**: Advanced genetics storage enabling complex inheritance
 - **Global Training Cooldown**: Prevents stat stacking while maintaining strategy
 - **Trait Discovery**: Progressive trait revelation creating engagement loops
 - **Realistic Competition**: Stat-based scoring with balanced randomization
 
 ### 2. Game Design Excellence
+
 - **Strategic Depth**: Long-term planning required for breeding and training
 - **Educational Value**: Realistic horse breeding and training simulation
 - **Progressive Complexity**: Accommodates various skill levels and play styles
 - **Community Features**: Competitive elements with social interaction
 
 ### 3. Development Excellence
+
 - **Enterprise Quality**: 468+ tests, comprehensive documentation, security implementation
 - **Scalable Architecture**: Designed for growth and feature expansion
 - **Mobile-First Design**: Optimized for touch interactions and accessibility
@@ -186,18 +209,21 @@
 ## Performance Metrics
 
 ### Database Performance
+
 - **Optimized Indexing**: Strategic indexes for game-specific queries
 - **JSONB Efficiency**: GIN indexes for flexible trait and genetics queries
 - **Connection Pooling**: Optimized database connection management
 - **Query Optimization**: Efficient relationship loading and data retrieval
 
 ### API Performance
+
 - **Response Times**: <200ms for critical game operations
 - **Validation**: Comprehensive input validation with express-validator
 - **Error Handling**: Graceful error responses with proper HTTP status codes
 - **Rate Limiting**: Request throttling for security and performance
 
 ### Mobile Performance
+
 - **Component Optimization**: Efficient React Native rendering patterns
 - **Accessibility**: WCAG compliance with comprehensive screen reader support
 - **Asset Management**: Optimized images and bundle size
@@ -206,12 +232,14 @@
 ## Security Implementation
 
 ### Authentication & Authorization
+
 - **JWT Tokens**: Secure access and refresh token system
 - **Role-Based Access**: User, Moderator, Admin permission levels
 - **Password Security**: bcrypt hashing with configurable salt rounds
 - **Session Management**: Secure token validation and refresh
 
 ### Data Protection
+
 - **Input Validation**: Multi-layer validation preventing malicious input
 - **SQL Injection Prevention**: Parameterized queries via Prisma ORM
 - **Environment Security**: Sensitive configuration in environment variables
@@ -220,17 +248,20 @@
 ## Deployment Architecture
 
 ### Environment Configuration
+
 - **Development**: Local PostgreSQL with comprehensive seeding
 - **Testing**: Isolated test database with automated cleanup
 - **Production**: Optimized configuration with monitoring and backup
 
 ### CI/CD Integration
+
 - **Automated Testing**: All 468+ tests run on every commit
 - **Code Quality**: ESLint and Prettier validation
 - **Deployment Pipeline**: Automated deployment with rollback capability
 - **Monitoring**: Comprehensive logging and error tracking
 
 ## References and Documentation
+
 - **Project Overview**: `@docs/project-summary.md`
 - **Technical Architecture**: `@docs/architecture.markdown`
 - **API Documentation**: `@docs/api_specs.markdown`

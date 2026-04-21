@@ -35,8 +35,10 @@ const RiderCareerPanel: React.FC<RiderCareerPanelProps> = ({ rider, assignmentCo
   );
   const milestones = buildRiderCareerMilestones(rider.level, rider.careerWeeks, rider.totalWins);
 
-  const winRate =
-    rider.totalCompetitions > 0 ? Math.round((rider.totalWins / rider.totalCompetitions) * 100) : 0;
+  const hasCompetitionData = rider.totalCompetitions > 0;
+  const winRate = hasCompetitionData
+    ? Math.round((rider.totalWins / rider.totalCompetitions) * 100)
+    : null;
 
   return (
     <div className="space-y-5" data-testid="rider-career-panel">
@@ -100,7 +102,9 @@ const RiderCareerPanel: React.FC<RiderCareerPanelProps> = ({ rider, assignmentCo
           <p className="text-[10px] text-white/40">Wins</p>
         </div>
         <div className="text-center p-3 rounded-lg bg-white/5 border border-white/10">
-          <p className="text-lg font-bold text-white/90">{winRate}%</p>
+          <p className="text-lg font-bold text-white/90">
+            {winRate === null ? '—' : `${winRate}%`}
+          </p>
           <p className="text-[10px] text-white/40">Win Rate</p>
         </div>
         <div className="text-center p-3 rounded-lg bg-white/5 border border-white/10">

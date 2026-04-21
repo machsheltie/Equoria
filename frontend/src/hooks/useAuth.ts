@@ -37,6 +37,10 @@ export interface User {
   completedOnboarding?: boolean;
   /** Current step in the 10-step onboarding spotlight tour (0 = not started, 1-10 = in progress, 10 = complete). */
   onboardingStep?: number;
+  /** Backend-persisted notification preferences (see SettingsPage). */
+  notifications?: Record<string, boolean | string | number> | null;
+  /** Backend-persisted display/accessibility preferences (see SettingsPage). */
+  display?: Record<string, boolean | string | number> | null;
 }
 
 /**
@@ -210,5 +214,31 @@ export function useForgotPassword() {
 export function useResetPassword() {
   return useMutation<{ message: string }, ApiError, { token: string; newPassword: string }>({
     mutationFn: ({ token, newPassword }) => authApi.resetPassword(token, newPassword),
+  });
+}
+
+/**
+ * Hook to change password for authenticated user.
+ * Invalidates all sessions on success.
+ */
+export function useChangePassword() {
+  return useMutation<{ message: string }, ApiError, { oldPassword: string; newPassword: string }>({
+    mutationFn: ({ oldPassword, newPassword }) => authApi.changePassword(oldPassword, newPassword),
+  });
+}
+
+/**
+ * Hook to delete the authenticated user's account.
+ * Clears all cached data and redirects to login on success.
+ */
+export function useDeleteAccount() {
+  const queryClient = useQueryClient();
+
+  return useMutation<{ message: string }, ApiError, number>({
+    mutationFn: (userId: number) => authApi.deleteAccount(userId),
+    onSuccess: () => {
+      queryClient.clear();
+      window.location.href = '/login';
+    },
   });
 }

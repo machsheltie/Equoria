@@ -15,31 +15,36 @@ const MAX_CONCURRENT_SESSIONS = parseInt(process.env.MAX_CONCURRENT_SESSIONS || 
 /**
  * Legacy in-memory session timeout middleware (used by unit tests)
  */
-export const sessionTimeout = (timeoutMs = SESSION_TIMEOUT_MS) => (req, res, next) => {
-  if (!req.session) {
+export const sessionTimeout =
+  (timeoutMs = SESSION_TIMEOUT_MS) =>
+  (req, res, next) => {
+    if (!req.session) {
+      return next();
+    }
+
+    const createdAt = req.session.createdAt || Date.now();
+    const lastActivity = req.session.lastActivity || createdAt;
+    const age = Date.now() - lastActivity;
+
+    if (age > timeoutMs) {
+      return res.status(440).json({
+        success: false,
+        message: 'Session expired',
+        status: 'error',
+      });
+    }
+
+    req.session.lastActivity = Date.now();
     return next();
-  }
-
-  const createdAt = req.session.createdAt || Date.now();
-  const lastActivity = req.session.lastActivity || createdAt;
-  const age = Date.now() - lastActivity;
-
-  if (age > timeoutMs) {
-    return res.status(440).json({
-      success: false,
-      message: 'Session expired',
-      status: 'error',
-    });
-  }
-
-  req.session.lastActivity = Date.now();
-  return next();
-};
+  };
 
 /**
  * Legacy in-memory session concurrency limiter (used by unit tests)
  */
-export const sessionConcurrencyLimit = (maxSessions = MAX_CONCURRENT_SESSIONS, store = new Map()) => {
+export const sessionConcurrencyLimit = (
+  maxSessions = MAX_CONCURRENT_SESSIONS,
+  store = new Map(),
+) => {
   return (req, res, next) => {
     if (!req.session || !req.session.userId || !maxSessions) {
       return next();
@@ -199,7 +204,7 @@ export const enforceConcurrentSessions = async (req, res, next) => {
         await prisma.refreshToken.deleteMany({
           where: {
             id: {
-              in: oldestSessions.map((s) => s.id),
+              in: oldestSessions.map(s => s.id),
             },
           },
         });
@@ -260,7 +265,7 @@ export const getActiveSessions = async (req, res, next) => {
     res.status(200).json({
       success: true,
       data: {
-        sessions: sessions.map((s) => ({
+        sessions: sessions.map(s => ({
           id: s.id,
           createdAt: s.createdAt,
           lastActivity: s.lastActivityAt || s.createdAt,

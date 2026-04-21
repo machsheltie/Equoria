@@ -189,25 +189,26 @@ Epic 23: Hub & Daily Loop ──────────────────
 
 ## Epic 21R: Beta Deployment Readiness Remediation
 
-**Goal:** Ensure Equoria reaches selected beta testers with only real, supportable gameplay. All authenticated routes are classified by beta scope, mock-backed or placeholder routes are gated or removed, and a production-parity E2E suite validates the beta-live route set.
+**Goal:** Ensure Equoria reaches selected beta testers with only real, supportable gameplay. Every authenticated route shown to a beta tester must work end-to-end against the real backend. There are no beta-readonly, beta-hidden, or graceful-skip categories — every route is either **beta-live** (proven by the readiness gate) or it is a defect that blocks beta readiness.
 
-**Status:** In progress (Stories 21R-1 through 21R-6)
+**Status:** Blocked — correction in progress per `docs/sprint-change-proposal-2026-04-20-21r-no-deferrals-correction-plan.md`.
 
-**Route Classification Source:** [`docs/beta-route-truth-table.md`](./beta-route-truth-table.md) — complete per-route inventory of beta-live / beta-readonly / beta-hidden status, required API endpoints, known blockers, and remediation assignments.
+**Route Classification Source:** [`docs/beta-route-truth-table.md`](./beta-route-truth-table.md) — per-route inventory. The only live scope value is `beta-live`; any route that is not beta-live must not be reachable via the beta navigation.
 
-| Story | Title                                           | Status      |
-| ----- | ----------------------------------------------- | ----------- |
-| 21R-1 | Define Beta Scope and Navigation Truth Table    | done        |
-| 21R-2 | Remove Production Frontend Mocks from Beta Code | in-progress |
-| 21R-3 | Production-Parity E2E for Beta-Live Route Set   | open        |
-| 21R-4 | Harden Runtime Cleanup Routes Before Groom Beta | open        |
-| 21R-5 | Community / Trainers / Riders Real Integration  | open        |
-| 21R-6 | Beta Readiness Gate — Final Sign-Off            | open        |
+| Story | Title                                                     | Status      |
+| ----- | --------------------------------------------------------- | ----------- |
+| 21R-1 | Define Beta Scope (single `beta-live` category)           | done        |
+| 21R-2 | Remove Production Frontend Mocks from Beta Code           | done        |
+| 21R-3 | Remove E2E Skips and Test-Only Bypasses From Beta Flows   | in-progress |
+| 21R-4 | Remove or Harden Runtime Test-Cleanup Routes              | in-progress |
+| 21R-5 | Reclassify and Strengthen Integration Tests (no DB mocks) | in-progress |
+| 21R-6 | Beta Readiness Gate — Full Run, No Signoff Until Clean    | in-progress |
 
 **Planning Artifacts:**
 
-- `docs/sprint-change-proposal-2026-04-11.md` — approved course correction and beta readiness gate
-- `_bmad-output/implementation-artifacts/sprint-status.yaml` — `beta-deployment-readiness: blocked`
+- `docs/sprint-change-proposal-2026-04-11.md` — original course correction and beta readiness gate
+- `docs/sprint-change-proposal-2026-04-20-21r-no-deferrals-correction-plan.md` — active correction plan (supersedes any earlier "remaining risk" wording)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — `beta-deployment-readiness: blocked` until a clean, full readiness gate run lands in `docs/beta-signoff.yaml`
 
 ---
 

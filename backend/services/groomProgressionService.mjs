@@ -32,7 +32,9 @@ const LEVEL_CAP = 10;
  * @returns {number} Current level (1-10)
  */
 export function calculateGroomLevel(experience) {
-  if (experience < 100) { return 1; }
+  if (experience < 100) {
+    return 1;
+  }
 
   let totalXpRequired = 0;
   for (let level = 1; level <= LEVEL_CAP; level++) {
@@ -55,7 +57,9 @@ export function calculateGroomLevel(experience) {
  */
 export async function awardGroomXP(groomId, source, amount) {
   try {
-    logger.info(`[groomProgressionService.awardGroomXP] Awarding ${amount} XP to groom ${groomId} for ${source}`);
+    logger.info(
+      `[groomProgressionService.awardGroomXP] Awarding ${amount} XP to groom ${groomId} for ${source}`,
+    );
 
     // Get current groom data
     const groom = await prisma.groom.findUnique({
@@ -82,7 +86,9 @@ export async function awardGroomXP(groomId, source, amount) {
       },
     });
 
-    logger.info(`[groomProgressionService.awardGroomXP] Groom ${groomId} gained ${amount} XP: ${oldExperience} → ${newExperience} (Level ${oldLevel} → ${newLevel})`);
+    logger.info(
+      `[groomProgressionService.awardGroomXP] Groom ${groomId} gained ${amount} XP: ${oldExperience} → ${newExperience} (Level ${oldLevel} → ${newLevel})`,
+    );
 
     return {
       success: true,
@@ -93,9 +99,11 @@ export async function awardGroomXP(groomId, source, amount) {
       newLevel,
       levelUp,
     };
-
   } catch (error) {
-    logger.error(`[groomProgressionService.awardGroomXP] Error awarding XP to groom ${groomId}:`, error);
+    logger.error(
+      `[groomProgressionService.awardGroomXP] Error awarding XP to groom ${groomId}:`,
+      error,
+    );
     return {
       success: false,
       error: error.message,
@@ -113,7 +121,9 @@ export async function awardGroomXP(groomId, source, amount) {
  */
 export async function updateGroomSynergy(groomId, horseId, action, sessions = 1) {
   try {
-    logger.info(`[groomProgressionService.updateGroomSynergy] Updating synergy for groom ${groomId} and horse ${horseId}: ${action}`);
+    logger.info(
+      `[groomProgressionService.updateGroomSynergy] Updating synergy for groom ${groomId} and horse ${horseId}: ${action}`,
+    );
 
     // Synergy gain amounts based on action
     const synergyGains = {
@@ -152,7 +162,9 @@ export async function updateGroomSynergy(groomId, horseId, action, sessions = 1)
       });
     }
 
-    logger.info(`[groomProgressionService.updateGroomSynergy] Synergy updated: ${synergyRecord.synergyScore} (${synergyGain >= 0 ? '+' : ''}${synergyGain})`);
+    logger.info(
+      `[groomProgressionService.updateGroomSynergy] Synergy updated: ${synergyRecord.synergyScore} (${synergyGain >= 0 ? '+' : ''}${synergyGain})`,
+    );
 
     return {
       success: true,
@@ -160,7 +172,6 @@ export async function updateGroomSynergy(groomId, horseId, action, sessions = 1)
       newSynergyScore: synergyRecord.synergyScore,
       sessionsTogether: synergyRecord.sessionsTogether,
     };
-
   } catch (error) {
     logger.error('[groomProgressionService.updateGroomSynergy] Error updating synergy:', error);
     return {
@@ -180,7 +191,9 @@ export async function updateGroomSynergy(groomId, horseId, action, sessions = 1)
  */
 export async function logGroomAssignment(groomId, horseId, action, performanceData = {}) {
   try {
-    logger.info(`[groomProgressionService.logGroomAssignment] Logging assignment ${action} for groom ${groomId} and horse ${horseId}`);
+    logger.info(
+      `[groomProgressionService.logGroomAssignment] Logging assignment ${action} for groom ${groomId} and horse ${horseId}`,
+    );
 
     if (action === 'assigned') {
       // Create new assignment log
@@ -199,7 +212,6 @@ export async function logGroomAssignment(groomId, horseId, action, performanceDa
         success: true,
         assignmentLog,
       };
-
     } else if (action === 'unassigned') {
       // Find and update existing assignment log
       const assignmentLog = await prisma.groomAssignmentLog.findFirst({
@@ -232,7 +244,6 @@ export async function logGroomAssignment(groomId, horseId, action, performanceDa
     }
 
     throw new Error(`Invalid action: ${action}`);
-
   } catch (error) {
     logger.error('[groomProgressionService.logGroomAssignment] Error logging assignment:', error);
     return {
@@ -307,7 +318,6 @@ export async function getGroomProfile(groomId) {
         currentAssignments: groom.groomAssignments,
       },
     };
-
   } catch (error) {
     logger.error('[groomProgressionService.getGroomProfile] Error getting groom profile:', error);
     return {

@@ -20,7 +20,11 @@ import { generateEnvironmentalReport } from './environmentalTriggerSystem.mjs';
 /**
  * Generate insights from trait history data
  */
-export function generateTraitHistoryInsights(traitHistory, environmentalContext, traitInteractions) {
+export function generateTraitHistoryInsights(
+  traitHistory,
+  environmentalContext,
+  traitInteractions,
+) {
   const insights = [];
 
   if (traitHistory.length === 0) {
@@ -34,7 +38,6 @@ export function generateTraitHistoryInsights(traitHistory, environmentalContext,
     sourceMethods[log.sourceType] = (sourceMethods[log.sourceType] || 0) + 1;
   });
 
-  // eslint-disable-next-line prefer-destructuring
   const primaryMethod = Object.entries(sourceMethods).reduce((a, b) =>
     sourceMethods[a[0]] > sourceMethods[b[0]] ? a : b,
   )[0];
@@ -43,7 +46,9 @@ export function generateTraitHistoryInsights(traitHistory, environmentalContext,
 
   // Analyze environmental influences
   if (environmentalContext.environmentalTriggers.detectedTriggers.length > 0) {
-    insights.push(`${environmentalContext.environmentalTriggers.detectedTriggers.length} environmental triggers detected`);
+    insights.push(
+      `${environmentalContext.environmentalTriggers.detectedTriggers.length} environmental triggers detected`,
+    );
   }
 
   // Analyze trait interactions
@@ -68,7 +73,12 @@ export function generateTraitHistoryInsights(traitHistory, environmentalContext,
 /**
  * Generate epigenetic recommendations
  */
-export function generateEpigeneticRecommendations(horse, environmentalInfluences, traitAnalysis, developmentalProgress) {
+export function generateEpigeneticRecommendations(
+  horse,
+  environmentalInfluences,
+  traitAnalysis,
+  developmentalProgress,
+) {
   const recommendations = [];
 
   // Age-based recommendations
@@ -77,7 +87,9 @@ export function generateEpigeneticRecommendations(horse, environmentalInfluences
   if (ageInDays < 30) {
     recommendations.push('Critical early development period - focus on consistent, gentle care');
   } else if (ageInDays < 90) {
-    recommendations.push('Important socialization period - provide varied but controlled experiences');
+    recommendations.push(
+      'Important socialization period - provide varied but controlled experiences',
+    );
   }
 
   // Stress-based recommendations
@@ -92,20 +104,28 @@ export function generateEpigeneticRecommendations(horse, environmentalInfluences
 
   // Environmental recommendations
   if (environmentalInfluences.environmentalTriggers.triggerStrength > 0.6) {
-    recommendations.push('Strong environmental triggers detected - monitor environmental factors carefully');
+    recommendations.push(
+      'Strong environmental triggers detected - monitor environmental factors carefully',
+    );
   }
 
   // Trait interaction recommendations
   if (traitAnalysis.conflicts.totalConflictStrength > 0.5) {
-    recommendations.push('Trait conflicts detected - consider targeted interventions to resolve conflicts');
+    recommendations.push(
+      'Trait conflicts detected - consider targeted interventions to resolve conflicts',
+    );
   }
 
   // Developmental recommendations
   if (developmentalProgress.pendingMilestones.length > 0) {
-    recommendations.push(`${developmentalProgress.pendingMilestones.length} developmental milestones pending - focus on milestone achievement`);
+    recommendations.push(
+      `${developmentalProgress.pendingMilestones.length} developmental milestones pending - focus on milestone achievement`,
+    );
   }
 
-  return recommendations.length > 0 ? recommendations : ['Continue current care approach - horse is developing well'];
+  return recommendations.length > 0
+    ? recommendations
+    : ['Continue current care approach - horse is developing well'];
 }
 
 /**
@@ -170,7 +190,9 @@ export function identifyCriticalPeriods(timeline, _milestones) {
   Object.entries(periods).forEach(([period, events]) => {
     if (events.length >= 3) {
       const traitDiscoveries = events.filter(e => e.type === 'trait_discovery').length;
-      const significantInteractions = events.filter(e => e.type === 'significant_interaction').length;
+      const significantInteractions = events.filter(
+        e => e.type === 'significant_interaction',
+      ).length;
 
       if (traitDiscoveries > 0 || significantInteractions > 1) {
         criticalPeriods.push({
@@ -248,8 +270,17 @@ export function generateStableOverview(horses) {
   let totalStress = 0;
 
   horses.forEach(horse => {
-    const ageInDays = Math.floor((Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24));
-    const ageCategory = ageInDays < 30 ? 'newborn' : ageInDays < 90 ? 'young' : ageInDays < 365 ? 'juvenile' : 'mature';
+    const ageInDays = Math.floor(
+      (Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24),
+    );
+    const ageCategory =
+      ageInDays < 30
+        ? 'newborn'
+        : ageInDays < 90
+          ? 'young'
+          : ageInDays < 365
+            ? 'juvenile'
+            : 'mature';
 
     overview.ageDistribution[ageCategory] = (overview.ageDistribution[ageCategory] || 0) + 1;
 
@@ -288,8 +319,7 @@ export function analyzeTraitDistribution(horses) {
   });
 
   // Identify common and rare traits
-  const sortedTraits = Object.entries(distribution.traitFrequency)
-    .sort(([, a], [, b]) => b - a);
+  const sortedTraits = Object.entries(distribution.traitFrequency).sort(([, a], [, b]) => b - a);
 
   distribution.commonTraits = sortedTraits.slice(0, 3).map(([trait, count]) => ({ trait, count }));
   distribution.rareTraits = sortedTraits.slice(-3).map(([trait, count]) => ({ trait, count }));
@@ -310,9 +340,19 @@ export function analyzeDevelopmentalStages(horses) {
   };
 
   horses.forEach(horse => {
-    const ageInDays = Math.floor((Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24));
+    const ageInDays = Math.floor(
+      (Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24),
+    );
 
-    if (ageInDays < 14) { stages.critical++; } else if (ageInDays < 60) { stages.developing++; } else if (ageInDays < 365) { stages.stable++; } else { stages.mature++; }
+    if (ageInDays < 14) {
+      stages.critical++;
+    } else if (ageInDays < 60) {
+      stages.developing++;
+    } else if (ageInDays < 365) {
+      stages.stable++;
+    } else {
+      stages.mature++;
+    }
   });
 
   return stages;
@@ -329,7 +369,9 @@ export async function analyzeStableEnvironmentalFactors(horses) {
     recommendations: [],
   };
 
-  if (horses.length === 0) { return factors; }
+  if (horses.length === 0) {
+    return factors;
+  }
 
   // Analyze environmental factors for each horse
   let totalTriggerStrength = 0;
@@ -366,17 +408,23 @@ export function generateStableRecommendations(overview, traitDistribution, devel
 
   // Age-based recommendations
   if (developmentalStages.critical > 0) {
-    recommendations.push(`${developmentalStages.critical} horses in critical development period - prioritize consistent care`);
+    recommendations.push(
+      `${developmentalStages.critical} horses in critical development period - prioritize consistent care`,
+    );
   }
 
   // Stress recommendations
   if (overview.averageStressLevel > 6) {
-    recommendations.push('High average stress levels - implement stable-wide stress reduction measures');
+    recommendations.push(
+      'High average stress levels - implement stable-wide stress reduction measures',
+    );
   }
 
   // Bonding recommendations
   if (overview.averageBondScore < 25) {
-    recommendations.push('Low average bonding scores - increase positive interaction frequency across stable');
+    recommendations.push(
+      'Low average bonding scores - increase positive interaction frequency across stable',
+    );
   }
 
   // Trait diversity recommendations
@@ -384,7 +432,9 @@ export function generateStableRecommendations(overview, traitDistribution, devel
     recommendations.push('Limited trait diversity - consider varied environmental enrichment');
   }
 
-  return recommendations.length > 0 ? recommendations : ['Stable is well-managed - continue current practices'];
+  return recommendations.length > 0
+    ? recommendations
+    : ['Stable is well-managed - continue current practices'];
 }
 
 /**
@@ -409,9 +459,12 @@ export async function generateHorseComparison(horses) {
   };
 
   // Calculate averages
-  comparison.averages.traitCount = comparison.horses.reduce((sum, h) => sum + h.traitCount, 0) / horses.length;
-  comparison.averages.bondScore = comparison.horses.reduce((sum, h) => sum + h.bondScore, 0) / horses.length;
-  comparison.averages.stressLevel = comparison.horses.reduce((sum, h) => sum + h.stressLevel, 0) / horses.length;
+  comparison.averages.traitCount =
+    comparison.horses.reduce((sum, h) => sum + h.traitCount, 0) / horses.length;
+  comparison.averages.bondScore =
+    comparison.horses.reduce((sum, h) => sum + h.bondScore, 0) / horses.length;
+  comparison.averages.stressLevel =
+    comparison.horses.reduce((sum, h) => sum + h.stressLevel, 0) / horses.length;
 
   return comparison;
 }
@@ -436,7 +489,9 @@ export function identifyTraitSimilarities(horses) {
           horse1: { id: horse1.id, name: horse1.name },
           horse2: { id: horse2.id, name: horse2.name },
           commonTraits,
-          similarityScore: commonTraits.length / Math.max(horse1.epigeneticFlags.length, horse2.epigeneticFlags.length),
+          similarityScore:
+            commonTraits.length /
+            Math.max(horse1.epigeneticFlags.length, horse2.epigeneticFlags.length),
         });
       }
     }
@@ -456,19 +511,21 @@ export function identifyTraitDifferences(horses) {
       const horse1 = horses[i];
       const horse2 = horses[j];
 
-      const uniqueToHorse1 = horse1.epigeneticFlags.filter(trait =>
-        !horse2.epigeneticFlags.includes(trait),
+      const uniqueToHorse1 = horse1.epigeneticFlags.filter(
+        trait => !horse2.epigeneticFlags.includes(trait),
       );
 
-      const uniqueToHorse2 = horse2.epigeneticFlags.filter(trait =>
-        !horse1.epigeneticFlags.includes(trait),
+      const uniqueToHorse2 = horse2.epigeneticFlags.filter(
+        trait => !horse1.epigeneticFlags.includes(trait),
       );
 
       if (uniqueToHorse1.length > 0 || uniqueToHorse2.length > 0) {
         differences.push({
           horse1: { id: horse1.id, name: horse1.name, uniqueTraits: uniqueToHorse1 },
           horse2: { id: horse2.id, name: horse2.name, uniqueTraits: uniqueToHorse2 },
-          differenceScore: (uniqueToHorse1.length + uniqueToHorse2.length) / (horse1.epigeneticFlags.length + horse2.epigeneticFlags.length),
+          differenceScore:
+            (uniqueToHorse1.length + uniqueToHorse2.length) /
+            (horse1.epigeneticFlags.length + horse2.epigeneticFlags.length),
         });
       }
     }
@@ -514,7 +571,9 @@ export function generateComparisonInsights(comparison, similarities, differences
 
   if (similarities.length > 0) {
     const [topSimilarity] = similarities;
-    insights.push(`Highest similarity: ${topSimilarity.horse1.name} and ${topSimilarity.horse2.name} (${Math.round(topSimilarity.similarityScore * 100)}% similar)`);
+    insights.push(
+      `Highest similarity: ${topSimilarity.horse1.name} and ${topSimilarity.horse2.name} (${Math.round(topSimilarity.similarityScore * 100)}% similar)`,
+    );
   }
 
   if (differences.length > 0) {
@@ -671,7 +730,10 @@ export async function generateComprehensiveReport(horse) {
       ],
     };
   } catch (error) {
-    logger.warn(`Could not generate comprehensive environmental analysis for horse ${horse.id}:`, error);
+    logger.warn(
+      `Could not generate comprehensive environmental analysis for horse ${horse.id}:`,
+      error,
+    );
     return detailed;
   }
 }
@@ -682,9 +744,15 @@ export async function generateComprehensiveReport(horse) {
 function getAgeCategory(dateOfBirth) {
   const ageInDays = Math.floor((Date.now() - dateOfBirth.getTime()) / (1000 * 60 * 60 * 24));
 
-  if (ageInDays < 30) { return 'newborn'; }
-  if (ageInDays < 90) { return 'young'; }
-  if (ageInDays < 365) { return 'juvenile'; }
+  if (ageInDays < 30) {
+    return 'newborn';
+  }
+  if (ageInDays < 90) {
+    return 'young';
+  }
+  if (ageInDays < 365) {
+    return 'juvenile';
+  }
   return 'mature';
 }
 
@@ -694,9 +762,15 @@ function getAgeCategory(dateOfBirth) {
 function getDevelopmentalStage(dateOfBirth) {
   const ageInDays = Math.floor((Date.now() - dateOfBirth.getTime()) / (1000 * 60 * 60 * 24));
 
-  if (ageInDays < 14) { return 'critical_period'; }
-  if (ageInDays < 60) { return 'active_development'; }
-  if (ageInDays < 365) { return 'stabilization'; }
+  if (ageInDays < 14) {
+    return 'critical_period';
+  }
+  if (ageInDays < 60) {
+    return 'active_development';
+  }
+  if (ageInDays < 365) {
+    return 'stabilization';
+  }
   return 'mature_expression';
 }
 

@@ -103,12 +103,17 @@ function calculateTraitInheritanceProbabilities(stallion, mare) {
     // Apply trait interaction modifiers
     probability = applyTraitInteractionModifiers(trait, stallionTraits, mareTraits, probability);
 
-    if (category && probability > 10) { // Only include meaningful probabilities
+    if (category && probability > 10) {
+      // Only include meaningful probabilities
       traitProbabilities[category].push({
         trait,
         probability: Math.min(95, Math.max(5, probability)), // Cap between 5-95%
-        inheritancePattern: stallionHas && mareHas ? 'dominant' :
-          stallionHas || mareHas ? 'heterozygous' : 'recessive',
+        inheritancePattern:
+          stallionHas && mareHas
+            ? 'dominant'
+            : stallionHas || mareHas
+              ? 'heterozygous'
+              : 'recessive',
       });
     }
   });
@@ -121,7 +126,20 @@ function calculateTraitInheritanceProbabilities(stallion, mare) {
  */
 function calculateStatInheritanceProbabilities(stallion, mare) {
   // Extract stats from horse objects (they're stored as individual fields, not in a stats object)
-  const statNames = ['speed', 'stamina', 'agility', 'balance', 'coordination', 'precision', 'intelligence', 'boldness', 'flexibility', 'obedience', 'focus', 'endurance'];
+  const statNames = [
+    'speed',
+    'stamina',
+    'agility',
+    'balance',
+    'coordination',
+    'precision',
+    'intelligence',
+    'boldness',
+    'flexibility',
+    'obedience',
+    'focus',
+    'endurance',
+  ];
   const statProbabilities = {};
 
   statNames.forEach(stat => {
@@ -137,7 +155,7 @@ function calculateStatInheritanceProbabilities(stallion, mare) {
 
     // Bias slightly toward higher parent
     const higherParentValue = Math.max(stallionValue, mareValue);
-    const expectedValue = (averageValue * 0.7) + (higherParentValue * 0.3);
+    const expectedValue = averageValue * 0.7 + higherParentValue * 0.3;
 
     statProbabilities[stat] = {
       expectedValue: Math.round(expectedValue),
@@ -169,7 +187,10 @@ function calculateDisciplineInheritanceProbabilities(stallion, mare) {
   const mareDisciplines = mare.disciplineScores || {};
   const disciplineProbabilities = {};
 
-  const allDisciplines = new Set([...Object.keys(stallionDisciplines), ...Object.keys(mareDisciplines)]);
+  const allDisciplines = new Set([
+    ...Object.keys(stallionDisciplines),
+    ...Object.keys(mareDisciplines),
+  ]);
 
   allDisciplines.forEach(discipline => {
     const stallionScore = stallionDisciplines[discipline] || 0;
@@ -209,15 +230,11 @@ function calculateOverallGeneticScore(stallion, mare) {
   let score = 50; // Base score
 
   // Positive trait bonus
-  const sharedPositiveTraits = stallionPositive.filter(trait =>
-    marePositive.includes(trait),
-  );
+  const sharedPositiveTraits = stallionPositive.filter(trait => marePositive.includes(trait));
   score += sharedPositiveTraits.length * 5;
 
   // Negative trait penalty
-  const sharedNegativeTraits = stallionNegative.filter(trait =>
-    mareNegative.includes(trait),
-  );
+  const sharedNegativeTraits = stallionNegative.filter(trait => mareNegative.includes(trait));
   score -= sharedNegativeTraits.length * 3;
 
   // Hidden trait bonus
@@ -246,15 +263,14 @@ export function calculateGeneticCompatibilityScore(stallion, mare) {
 
     // Ensure all scores are numbers
     const traitScore = typeof traitCompatibility.score === 'number' ? traitCompatibility.score : 50;
-    const statScore = typeof statCompatibility.balanceScore === 'number' ? statCompatibility.balanceScore : 50;
-    const disciplineScore = typeof disciplineCompatibility === 'number' ? disciplineCompatibility : 50;
+    const statScore =
+      typeof statCompatibility.balanceScore === 'number' ? statCompatibility.balanceScore : 50;
+    const disciplineScore =
+      typeof disciplineCompatibility === 'number' ? disciplineCompatibility : 50;
     const diversityScoreNum = typeof diversityScore === 'number' ? diversityScore : 50;
 
     const overallScore = Math.round(
-      (traitScore * 0.3) +
-      (statScore * 0.25) +
-      (disciplineScore * 0.25) +
-      (diversityScoreNum * 0.2),
+      traitScore * 0.3 + statScore * 0.25 + disciplineScore * 0.25 + diversityScoreNum * 0.2,
     );
 
     return {
@@ -374,9 +390,14 @@ function calculateDisciplineCompatibility(stallion, mare) {
   const stallionDisciplines = stallion.disciplineScores || {};
   const mareDisciplines = mare.disciplineScores || {};
 
-  const allDisciplines = new Set([...Object.keys(stallionDisciplines), ...Object.keys(mareDisciplines)]);
+  const allDisciplines = new Set([
+    ...Object.keys(stallionDisciplines),
+    ...Object.keys(mareDisciplines),
+  ]);
 
-  if (allDisciplines.size === 0) { return 50; }
+  if (allDisciplines.size === 0) {
+    return 50;
+  }
 
   let totalScore = 0;
   let disciplineCount = 0;
@@ -409,17 +430,13 @@ function calculateBasicDiversityScore(stallion, mare) {
     ...stallionTraits.hidden,
   ];
 
-  const mareAllTraits = [
-    ...mareTraits.positive,
-    ...mareTraits.negative,
-    ...mareTraits.hidden,
-  ];
+  const mareAllTraits = [...mareTraits.positive, ...mareTraits.negative, ...mareTraits.hidden];
 
   const uniqueTraits = new Set([...stallionAllTraits, ...mareAllTraits]);
   const sharedTraits = stallionAllTraits.filter(trait => mareAllTraits.includes(trait));
 
-  const diversityRatio = uniqueTraits.size > 0 ?
-    (uniqueTraits.size - sharedTraits.length) / uniqueTraits.size : 0;
+  const diversityRatio =
+    uniqueTraits.size > 0 ? (uniqueTraits.size - sharedTraits.length) / uniqueTraits.size : 0;
 
   return Math.round(diversityRatio * 100);
 }
@@ -428,9 +445,11 @@ function calculateBasicDiversityScore(stallion, mare) {
  * Helper function to check if horse has trait in any category
  */
 function hasTraitInCategory(traits, trait) {
-  return traits.positive.includes(trait) ||
-         traits.negative.includes(trait) ||
-         traits.hidden.includes(trait);
+  return (
+    traits.positive.includes(trait) ||
+    traits.negative.includes(trait) ||
+    traits.hidden.includes(trait)
+  );
 }
 
 /**
@@ -459,7 +478,10 @@ function applyTraitInteractionModifiers(trait, stallionTraits, mareTraits, baseP
   TRAIT_INTERACTIONS.synergistic.forEach(interaction => {
     if (interaction.traits.includes(trait)) {
       const otherTrait = interaction.traits.find(t => t !== trait);
-      if (hasTraitInCategory(stallionTraits, otherTrait) || hasTraitInCategory(mareTraits, otherTrait)) {
+      if (
+        hasTraitInCategory(stallionTraits, otherTrait) ||
+        hasTraitInCategory(mareTraits, otherTrait)
+      ) {
         modifiedProbability += interaction.bonus * 0.5; // Partial bonus for potential synergy
       }
     }
@@ -469,7 +491,10 @@ function applyTraitInteractionModifiers(trait, stallionTraits, mareTraits, baseP
   TRAIT_INTERACTIONS.antagonistic.forEach(interaction => {
     if (interaction.traits.includes(trait)) {
       const otherTrait = interaction.traits.find(t => t !== trait);
-      if (hasTraitInCategory(stallionTraits, otherTrait) && hasTraitInCategory(mareTraits, otherTrait)) {
+      if (
+        hasTraitInCategory(stallionTraits, otherTrait) &&
+        hasTraitInCategory(mareTraits, otherTrait)
+      ) {
         modifiedProbability += interaction.penalty * 0.3; // Reduced penalty for breeding
       }
     }
@@ -501,20 +526,26 @@ function calculateOutcomeStatistics(outcomes) {
     // Count trait frequencies
     Object.entries(outcome.traits).forEach(([_category, traits]) => {
       traits.forEach(trait => {
-        if (!traitFrequency[trait]) { traitFrequency[trait] = 0; }
+        if (!traitFrequency[trait]) {
+          traitFrequency[trait] = 0;
+        }
         traitFrequency[trait]++;
       });
     });
 
     // Sum stats
     Object.entries(outcome.stats).forEach(([stat, value]) => {
-      if (!statTotals[stat]) { statTotals[stat] = 0; }
+      if (!statTotals[stat]) {
+        statTotals[stat] = 0;
+      }
       statTotals[stat] += value;
     });
 
     // Sum performance scores
     Object.entries(outcome.predictedPerformance).forEach(([discipline, score]) => {
-      if (!performanceTotals[discipline]) { performanceTotals[discipline] = 0; }
+      if (!performanceTotals[discipline]) {
+        performanceTotals[discipline] = 0;
+      }
       performanceTotals[discipline] += score;
     });
   });
@@ -559,7 +590,9 @@ function calculateConfidenceIntervals(outcomes) {
   // Calculate performance confidence intervals
   const disciplineNames = Object.keys(outcomes[0].predictedPerformance);
   disciplineNames.forEach(discipline => {
-    const values = outcomes.map(outcome => outcome.predictedPerformance[discipline]).sort((a, b) => a - b);
+    const values = outcomes
+      .map(outcome => outcome.predictedPerformance[discipline])
+      .sort((a, b) => a - b);
     const lowerIndex = Math.floor(values.length * 0.025);
     const upperIndex = Math.floor(values.length * 0.975);
 
@@ -584,16 +617,24 @@ function calculatePerformanceFromTraitsAndStats(traits, stats) {
     // Add stat contributions
     switch (discipline) {
       case 'racing':
-        baseScore += (stats.speed || 50) * 0.4 + (stats.stamina || 50) * 0.3 + (stats.agility || 50) * 0.3;
+        baseScore +=
+          (stats.speed || 50) * 0.4 + (stats.stamina || 50) * 0.3 + (stats.agility || 50) * 0.3;
         break;
       case 'dressage':
-        baseScore += (stats.intelligence || 50) * 0.4 + (stats.precision || 50) * 0.3 + (stats.balance || 50) * 0.3;
+        baseScore +=
+          (stats.intelligence || 50) * 0.4 +
+          (stats.precision || 50) * 0.3 +
+          (stats.balance || 50) * 0.3;
         break;
       case 'showJumping':
-        baseScore += (stats.agility || 50) * 0.4 + (stats.boldness || 50) * 0.3 + (stats.precision || 50) * 0.3;
+        baseScore +=
+          (stats.agility || 50) * 0.4 +
+          (stats.boldness || 50) * 0.3 +
+          (stats.precision || 50) * 0.3;
         break;
       default:
-        baseScore += Object.values(stats).reduce((sum, val) => sum + val, 0) / Object.keys(stats).length;
+        baseScore +=
+          Object.values(stats).reduce((sum, val) => sum + val, 0) / Object.keys(stats).length;
     }
 
     // Add trait bonuses
@@ -630,7 +671,8 @@ function calculateGeneticScoreFromOutcome(traits, stats) {
   score += traits.hidden.length * 4;
 
   // Stat bonus for high stats
-  const avgStat = Object.values(stats).reduce((sum, val) => sum + val, 0) / Object.keys(stats).length;
+  const avgStat =
+    Object.values(stats).reduce((sum, val) => sum + val, 0) / Object.keys(stats).length;
   score += (avgStat - 50) * 0.5;
 
   return Math.min(100, Math.max(0, Math.round(score)));
@@ -651,7 +693,9 @@ function calculateGenerationTraitInfluence(horses, weight) {
     const allTraits = [...positiveTraits, ...negativeTraits, ...hiddenTraits];
 
     allTraits.forEach(trait => {
-      if (!traitCounts[trait]) { traitCounts[trait] = 0; }
+      if (!traitCounts[trait]) {
+        traitCounts[trait] = 0;
+      }
       traitCounts[trait] += weight;
       totalInfluence += weight;
     });
@@ -682,7 +726,9 @@ function analyzeLineagePatterns(lineage) {
         const allHorseTraits = [...traits.positive, ...traits.negative, ...traits.hidden];
 
         allHorseTraits.forEach(trait => {
-          if (!traitFrequency[trait]) { traitFrequency[trait] = 0; }
+          if (!traitFrequency[trait]) {
+            traitFrequency[trait] = 0;
+          }
           traitFrequency[trait]++;
         });
       });
@@ -700,8 +746,9 @@ function analyzeLineagePatterns(lineage) {
 
   // Identify weaknesses (common negative traits)
   const weaknesses = Object.entries(traitFrequency)
-    .filter(([trait, _count]) =>
-      trait.includes('negative') || ['nervous', 'stubborn', 'lazy'].includes(trait),
+    .filter(
+      ([trait, _count]) =>
+        trait.includes('negative') || ['nervous', 'stubborn', 'lazy'].includes(trait),
     )
     .map(([trait, count]) => ({
       trait,
@@ -709,7 +756,7 @@ function analyzeLineagePatterns(lineage) {
       concern: 'recurring_negative_trait',
     }));
 
-  const score = Math.max(0, 75 - (weaknesses.length * 10) + (strengths.length * 5));
+  const score = Math.max(0, 75 - weaknesses.length * 10 + strengths.length * 5);
 
   return { strengths, weaknesses, score };
 }
@@ -718,17 +765,27 @@ function analyzeLineagePatterns(lineage) {
 function calculateInbreedingCoefficient(stallion, mare, lineage) {
   // Handle case where lineage is an object with generations property
   const generations = lineage?.generations || lineage || [];
-  if (!generations || generations.length < 2) { return 0; }
+  if (!generations || generations.length < 2) {
+    return 0;
+  }
 
   // Simple inbreeding detection - check for shared ancestors
   const stallionAncestors = new Set();
   const mareAncestors = new Set();
 
   // Add immediate parents
-  if (stallion.sireId) { stallionAncestors.add(stallion.sireId); }
-  if (stallion.damId) { stallionAncestors.add(stallion.damId); }
-  if (mare.sireId) { mareAncestors.add(mare.sireId); }
-  if (mare.damId) { mareAncestors.add(mare.damId); }
+  if (stallion.sireId) {
+    stallionAncestors.add(stallion.sireId);
+  }
+  if (stallion.damId) {
+    stallionAncestors.add(stallion.damId);
+  }
+  if (mare.sireId) {
+    mareAncestors.add(mare.sireId);
+  }
+  if (mare.damId) {
+    mareAncestors.add(mare.damId);
+  }
 
   // Add lineage ancestors
   generations.forEach(generation => {
@@ -769,8 +826,8 @@ function calculateGeneticDiversityScore(stallion, mare, lineage) {
   const uniqueTraits = new Set([...stallionAllTraits, ...mareAllTraits]);
   const sharedTraits = stallionAllTraits.filter(trait => mareAllTraits.includes(trait));
 
-  const diversityRatio = uniqueTraits.size > 0 ?
-    (uniqueTraits.size - sharedTraits.length) / uniqueTraits.size : 0;
+  const diversityRatio =
+    uniqueTraits.size > 0 ? (uniqueTraits.size - sharedTraits.length) / uniqueTraits.size : 0;
 
   // Add lineage diversity bonus
   let lineageBonus = 0;
@@ -796,7 +853,7 @@ function calculateGeneticDiversityScore(stallion, mare, lineage) {
     lineageBonus = Math.min(20, lineageTraits.size * 2);
   }
 
-  return Math.min(100, Math.round((diversityRatio * 80) + lineageBonus));
+  return Math.min(100, Math.round(diversityRatio * 80 + lineageBonus));
 }
 
 // Calculate genetic health score
@@ -812,14 +869,18 @@ function calculateGeneticHealthScore(diversityScore, inbreedingCoefficient) {
 
   // Inbreeding penalty
   if (inbreedingCoefficient > GENETIC_CONSTANTS.INBREEDING_THRESHOLD) {
-    healthScore -= (inbreedingCoefficient * 100);
+    healthScore -= inbreedingCoefficient * 100;
   }
 
   return Math.min(100, Math.max(0, Math.round(healthScore)));
 }
 
 // Generate diversity recommendations
-function generateDiversityRecommendations(diversityScore, inbreedingCoefficient, geneticHealthScore) {
+function generateDiversityRecommendations(
+  diversityScore,
+  inbreedingCoefficient,
+  geneticHealthScore,
+) {
   const recommendations = [];
 
   if (inbreedingCoefficient > GENETIC_CONSTANTS.INBREEDING_THRESHOLD) {
@@ -853,7 +914,12 @@ function getRiskLevel(inbreedingCoefficient, geneticHealthScore) {
 }
 
 // Calculate interaction inheritance probability
-function calculateInteractionInheritanceProbability(stallionHasTrait1, stallionHasTrait2, mareHasTrait1, mareHasTrait2) {
+function calculateInteractionInheritanceProbability(
+  stallionHasTrait1,
+  stallionHasTrait2,
+  mareHasTrait1,
+  mareHasTrait2,
+) {
   let probability = 0;
 
   // Both traits from same parent
@@ -868,7 +934,12 @@ function calculateInteractionInheritanceProbability(stallionHasTrait1, stallionH
 }
 
 // Calculate conflict resolution probability
-function calculateConflictResolutionProbability(stallionHasTrait1, stallionHasTrait2, mareHasTrait1, mareHasTrait2) {
+function calculateConflictResolutionProbability(
+  stallionHasTrait1,
+  stallionHasTrait2,
+  mareHasTrait1,
+  mareHasTrait2,
+) {
   // Higher probability means one trait will dominate over the other
   if ((stallionHasTrait1 && mareHasTrait2) || (stallionHasTrait2 && mareHasTrait1)) {
     return 70; // Cross-parent conflicts often resolve
@@ -950,7 +1021,13 @@ function generateOptimizationSuggestions(compatibility, traitInteractions) {
 }
 
 // Predict discipline performance
-function predictDisciplinePerformance(stallion, mare, discipline, probabilities, traitInteractions) {
+function predictDisciplinePerformance(
+  stallion,
+  mare,
+  discipline,
+  probabilities,
+  traitInteractions,
+) {
   let baseScore = 50;
   let confidence = 70;
 
@@ -1092,9 +1169,13 @@ function calculatePredictionConfidence(stallion, mare) {
   const stallionTraits = stallion.traits || { positive: [], negative: [], hidden: [] };
   const mareTraits = mare.traits || { positive: [], negative: [], hidden: [] };
 
-  const totalTraits = stallionTraits.positive.length + stallionTraits.negative.length +
-                     stallionTraits.hidden.length + mareTraits.positive.length +
-                     mareTraits.negative.length + mareTraits.hidden.length;
+  const totalTraits =
+    stallionTraits.positive.length +
+    stallionTraits.negative.length +
+    stallionTraits.hidden.length +
+    mareTraits.positive.length +
+    mareTraits.negative.length +
+    mareTraits.hidden.length;
 
   confidence += Math.min(20, totalTraits * 2);
 
@@ -1102,7 +1183,7 @@ function calculatePredictionConfidence(stallion, mare) {
   const stallionStats = Object.keys(stallion.stats || {}).length;
   const mareStats = Object.keys(mare.stats || {}).length;
 
-  confidence += Math.min(10, (stallionStats + mareStats));
+  confidence += Math.min(10, stallionStats + mareStats);
 
   return Math.min(95, confidence);
 }
@@ -1170,12 +1251,15 @@ function simulateSingleBreedingOutcome(stallion, mare, rng = Math.random) {
   const inheritedStats = {};
   Object.entries(probabilities.statProbabilities).forEach(([stat, data]) => {
     const range = data.expectedRange.max - data.expectedRange.min;
-    const randomValue = data.expectedRange.min + (rng() * range);
+    const randomValue = data.expectedRange.min + rng() * range;
     inheritedStats[stat] = Math.round(randomValue);
   });
 
   // Predict performance based on inherited traits and stats
-  const predictedPerformance = calculatePerformanceFromTraitsAndStats(inheritedTraits, inheritedStats);
+  const predictedPerformance = calculatePerformanceFromTraitsAndStats(
+    inheritedTraits,
+    inheritedStats,
+  );
 
   return {
     traits: inheritedTraits,
@@ -1273,7 +1357,11 @@ export function calculateTraitInteractions(stallion, mare) {
     const stallionTraits = stallion.traits || { positive: [], negative: [], hidden: [] };
     const mareTraits = mare.traits || { positive: [], negative: [], hidden: [] };
 
-    const allStallionTraits = [...stallionTraits.positive, ...stallionTraits.negative, ...stallionTraits.hidden];
+    const allStallionTraits = [
+      ...stallionTraits.positive,
+      ...stallionTraits.negative,
+      ...stallionTraits.hidden,
+    ];
     const allMareTraits = [...mareTraits.positive, ...mareTraits.negative, ...mareTraits.hidden];
 
     const synergisticPairs = [];
@@ -1293,7 +1381,10 @@ export function calculateTraitInteractions(stallion, mare) {
           trait2,
           synergyBonus: interaction.bonus,
           inheritanceProbability: calculateInteractionInheritanceProbability(
-            stallionHasTrait1, stallionHasTrait2, mareHasTrait1, mareHasTrait2,
+            stallionHasTrait1,
+            stallionHasTrait2,
+            mareHasTrait1,
+            mareHasTrait2,
           ),
         });
       }
@@ -1313,7 +1404,10 @@ export function calculateTraitInteractions(stallion, mare) {
           trait2,
           conflictPenalty: Math.abs(interaction.penalty),
           resolutionProbability: calculateConflictResolutionProbability(
-            stallionHasTrait1, stallionHasTrait2, mareHasTrait1, mareHasTrait2,
+            stallionHasTrait1,
+            stallionHasTrait2,
+            mareHasTrait1,
+            mareHasTrait2,
           ),
         });
       }
@@ -1325,7 +1419,11 @@ export function calculateTraitInteractions(stallion, mare) {
     const interactionScore = synergyScore - conflictScore;
 
     // Predict trait combinations
-    const predictedCombinations = predictTraitCombinations(stallionTraits, mareTraits, synergisticPairs);
+    const predictedCombinations = predictTraitCombinations(
+      stallionTraits,
+      mareTraits,
+      synergisticPairs,
+    );
 
     return {
       synergisticPairs,
@@ -1360,7 +1458,9 @@ export function generateBreedingRecommendations(stallion, mare) {
     // Identify strengths
     const strengths = [];
     if (compatibility.traitCompatibility.sharedPositiveTraits.length > 0) {
-      strengths.push(`Shared positive traits: ${compatibility.traitCompatibility.sharedPositiveTraits.join(', ')}`);
+      strengths.push(
+        `Shared positive traits: ${compatibility.traitCompatibility.sharedPositiveTraits.join(', ')}`,
+      );
     }
     if (traitInteractions.synergisticPairs.length > 0) {
       strengths.push(`${traitInteractions.synergisticPairs.length} synergistic trait combinations`);
@@ -1372,7 +1472,9 @@ export function generateBreedingRecommendations(stallion, mare) {
     // Identify concerns
     const concerns = [];
     if (compatibility.traitCompatibility.conflicts.length > 0) {
-      concerns.push(`${compatibility.traitCompatibility.conflicts.length} trait conflicts detected`);
+      concerns.push(
+        `${compatibility.traitCompatibility.conflicts.length} trait conflicts detected`,
+      );
     }
     if (traitInteractions.antagonisticPairs.length > 0) {
       concerns.push(`${traitInteractions.antagonisticPairs.length} antagonistic trait pairs`);
@@ -1382,7 +1484,10 @@ export function generateBreedingRecommendations(stallion, mare) {
     }
 
     // Generate optimization suggestions
-    const optimizationSuggestions = generateOptimizationSuggestions(compatibility, traitInteractions);
+    const optimizationSuggestions = generateOptimizationSuggestions(
+      compatibility,
+      traitInteractions,
+    );
 
     // Calculate expected outcomes
     const expectedOutcomes = {
@@ -1415,7 +1520,13 @@ export function predictOffspringPerformance(stallion, mare) {
     const disciplines = ['racing', 'dressage', 'showJumping', 'crossCountry', 'western', 'gaited'];
 
     disciplines.forEach(discipline => {
-      const prediction = predictDisciplinePerformance(stallion, mare, discipline, probabilities, traitInteractions);
+      const prediction = predictDisciplinePerformance(
+        stallion,
+        mare,
+        discipline,
+        probabilities,
+        traitInteractions,
+      );
       disciplinePredictions[discipline] = prediction;
     });
 

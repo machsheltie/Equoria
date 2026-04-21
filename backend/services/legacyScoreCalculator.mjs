@@ -39,7 +39,9 @@ const MAX_TOTAL_SCORE = 100;
  */
 export async function calculateLegacyScore(horseId) {
   try {
-    logger.info(`[legacyScoreCalculator.calculateLegacyScore] Calculating legacy score for horse ${horseId}`);
+    logger.info(
+      `[legacyScoreCalculator.calculateLegacyScore] Calculating legacy score for horse ${horseId}`,
+    );
 
     // Get horse data
     const horse = await prisma.horse.findUnique({
@@ -62,7 +64,11 @@ export async function calculateLegacyScore(horseId) {
     const breedingValueScore = calculateBreedingValueScore(horse);
 
     // Calculate total legacy score
-    const totalScore = baseStatsScore.score + achievementsScore.score + traitScore.totalScore + breedingValueScore.score;
+    const totalScore =
+      baseStatsScore.score +
+      achievementsScore.score +
+      traitScore.totalScore +
+      breedingValueScore.score;
 
     const result = {
       horseId,
@@ -106,11 +112,15 @@ export async function calculateLegacyScore(horseId) {
       calculatedAt: new Date(),
     };
 
-    logger.info(`[legacyScoreCalculator.calculateLegacyScore] Calculated legacy score ${totalScore}/${MAX_TOTAL_SCORE} (${result.grade}) for horse ${horseId}`);
+    logger.info(
+      `[legacyScoreCalculator.calculateLegacyScore] Calculated legacy score ${totalScore}/${MAX_TOTAL_SCORE} (${result.grade}) for horse ${horseId}`,
+    );
 
     return result;
   } catch (error) {
-    logger.error(`[legacyScoreCalculator.calculateLegacyScore] Error calculating legacy score for horse ${horseId}: ${error.message}`);
+    logger.error(
+      `[legacyScoreCalculator.calculateLegacyScore] Error calculating legacy score for horse ${horseId}: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -182,15 +192,27 @@ async function calculateAchievementsScore(horse) {
   score += thirdPlaces * 1; // 1 point per third place
 
   // Bonus for competition participation
-  if (totalCompetitions >= 10) { score += 2; }
-  if (totalCompetitions >= 25) { score += 3; }
-  if (totalCompetitions >= 50) { score += 5; }
+  if (totalCompetitions >= 10) {
+    score += 2;
+  }
+  if (totalCompetitions >= 25) {
+    score += 3;
+  }
+  if (totalCompetitions >= 50) {
+    score += 5;
+  }
 
   // Bonus for win rate
   const winRate = totalCompetitions > 0 ? firstPlaces / totalCompetitions : 0;
-  if (winRate >= 0.5) { score += 3; } // 50%+ win rate
-  if (winRate >= 0.3) { score += 2; } // 30%+ win rate
-  if (winRate >= 0.1) { score += 1; } // 10%+ win rate
+  if (winRate >= 0.5) {
+    score += 3;
+  } // 50%+ win rate
+  if (winRate >= 0.3) {
+    score += 2;
+  } // 30%+ win rate
+  if (winRate >= 0.1) {
+    score += 1;
+  } // 10%+ win rate
 
   return {
     score: Math.min(score, MAX_ACHIEVEMENTS_SCORE),
@@ -201,7 +223,7 @@ async function calculateAchievementsScore(horse) {
       totalCompetitions,
       winRate: Math.round(winRate * 1000) / 10, // Percentage with 1 decimal
       competitionBonus: Math.min(
-        (totalCompetitions >= 50 ? 5 : totalCompetitions >= 25 ? 3 : totalCompetitions >= 10 ? 2 : 0),
+        totalCompetitions >= 50 ? 5 : totalCompetitions >= 25 ? 3 : totalCompetitions >= 10 ? 2 : 0,
         10,
       ),
       winRateBonus: winRate >= 0.5 ? 3 : winRate >= 0.3 ? 2 : winRate >= 0.1 ? 1 : 0,
@@ -224,8 +246,12 @@ function calculateBreedingValueScore(horse) {
   score += Math.min(offspringCount * 2, 10); // 2 points per offspring, max 10
 
   // Bonus for being an active breeder
-  if (offspringCount >= 5) { score += 3; }
-  if (offspringCount >= 10) { score += 5; }
+  if (offspringCount >= 5) {
+    score += 3;
+  }
+  if (offspringCount >= 10) {
+    score += 5;
+  }
 
   // Future: Could add offspring performance analysis
   // For now, just base on breeding activity
@@ -246,11 +272,21 @@ function calculateBreedingValueScore(horse) {
  * @returns {string} Legacy grade (S, A, B, C, D)
  */
 function calculateLegacyGrade(totalScore) {
-  if (totalScore >= 90) { return 'S'; } // Legendary
-  if (totalScore >= 80) { return 'A'; } // Exceptional
-  if (totalScore >= 70) { return 'B'; } // Outstanding
-  if (totalScore >= 60) { return 'C'; } // Good
-  if (totalScore >= 50) { return 'D'; } // Average
+  if (totalScore >= 90) {
+    return 'S';
+  } // Legendary
+  if (totalScore >= 80) {
+    return 'A';
+  } // Exceptional
+  if (totalScore >= 70) {
+    return 'B';
+  } // Outstanding
+  if (totalScore >= 60) {
+    return 'C';
+  } // Good
+  if (totalScore >= 50) {
+    return 'D';
+  } // Average
   return 'F'; // Below Average
 }
 
@@ -261,14 +297,18 @@ function calculateLegacyGrade(totalScore) {
  */
 export async function calculateMultipleLegacyScores(horseIds) {
   try {
-    logger.info(`[legacyScoreCalculator.calculateMultipleLegacyScores] Calculating legacy scores for ${horseIds.length} horses`);
+    logger.info(
+      `[legacyScoreCalculator.calculateMultipleLegacyScores] Calculating legacy scores for ${horseIds.length} horses`,
+    );
 
     const results = await Promise.all(
-      horseIds.map(async (horseId) => {
+      horseIds.map(async horseId => {
         try {
           return await calculateLegacyScore(horseId);
         } catch (error) {
-          logger.error(`[legacyScoreCalculator.calculateMultipleLegacyScores] Error calculating score for horse ${horseId}: ${error.message}`);
+          logger.error(
+            `[legacyScoreCalculator.calculateMultipleLegacyScores] Error calculating score for horse ${horseId}: ${error.message}`,
+          );
           return {
             horseId,
             error: error.message,
@@ -279,11 +319,15 @@ export async function calculateMultipleLegacyScores(horseIds) {
       }),
     );
 
-    logger.info(`[legacyScoreCalculator.calculateMultipleLegacyScores] Calculated ${results.length} legacy scores`);
+    logger.info(
+      `[legacyScoreCalculator.calculateMultipleLegacyScores] Calculated ${results.length} legacy scores`,
+    );
 
     return results;
   } catch (error) {
-    logger.error(`[legacyScoreCalculator.calculateMultipleLegacyScores] Error calculating multiple legacy scores: ${error.message}`);
+    logger.error(
+      `[legacyScoreCalculator.calculateMultipleLegacyScores] Error calculating multiple legacy scores: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -302,8 +346,16 @@ export function getLegacyScoreDefinitions() {
       total: MAX_TOTAL_SCORE,
     },
     grades: {
-      S: { min: 90, name: 'Legendary', description: 'Exceptional legacy with outstanding achievements' },
-      A: { min: 80, name: 'Exceptional', description: 'Superior legacy with excellent performance' },
+      S: {
+        min: 90,
+        name: 'Legendary',
+        description: 'Exceptional legacy with outstanding achievements',
+      },
+      A: {
+        min: 80,
+        name: 'Exceptional',
+        description: 'Superior legacy with excellent performance',
+      },
       B: { min: 70, name: 'Outstanding', description: 'Strong legacy with notable achievements' },
       C: { min: 60, name: 'Good', description: 'Solid legacy with respectable performance' },
       D: { min: 50, name: 'Average', description: 'Moderate legacy with basic achievements' },

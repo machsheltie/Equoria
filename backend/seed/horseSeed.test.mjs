@@ -301,9 +301,7 @@ describe('Horse Seed Integration Tests', () => {
       }
 
       // Verify logging occurred
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.stringContaining('Created horse:'),
-      );
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Created horse:'));
 
       // Clean up created horses
       await prisma.horse.deleteMany({
@@ -375,7 +373,9 @@ describe('Horse Seed Integration Tests', () => {
       // Test complete workflow
       await ensureReferencedRecordsExist();
 
-      const users = await prisma.user.findMany({ where: { email: { in: ['owner1@example.com', 'owner2@example.com'] } } });
+      const users = await prisma.user.findMany({
+        where: { email: { in: ['owner1@example.com', 'owner2@example.com'] } },
+      });
       expect(users.length).toBeGreaterThan(0);
 
       const result = await seedHorses(prisma, users);
@@ -388,9 +388,7 @@ describe('Horse Seed Integration Tests', () => {
       expect(mockLogger.info).toHaveBeenCalledWith('[seed] Ensured User owner1@example.com exists.');
 
       if (result.length > 0) {
-        expect(mockLogger.info).toHaveBeenCalledWith(
-          expect.stringContaining('Created horse:'),
-        );
+        expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Created horse:'));
 
         // Verify horses exist in database
         for (const horse of result) {
@@ -411,7 +409,9 @@ describe('Horse Seed Integration Tests', () => {
       // Test that the complete seeding process maintains referential integrity
       await ensureReferencedRecordsExist();
 
-      const users = await prisma.user.findMany({ where: { email: { in: ['owner1@example.com', 'owner2@example.com'] } } });
+      const users = await prisma.user.findMany({
+        where: { email: { in: ['owner1@example.com', 'owner2@example.com'] } },
+      });
       const stables = await prisma.stable.findMany({ where: { id: { in: [1, 2] } } });
 
       expect(users.length).toBeGreaterThan(0);

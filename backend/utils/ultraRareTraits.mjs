@@ -144,7 +144,7 @@ export const ULTRA_RARE_TRAITS = {
     stacksWith: ['confident', 'assertive'],
   },
 
-  'stormtouched': {
+  stormtouched: {
     name: 'Stormtouched',
     rarity: 'ultra-rare',
     type: 'volatile',
@@ -217,7 +217,7 @@ export const EXOTIC_TRAITS = {
     stacksWith: ['loyal', 'selective'],
   },
 
-  'ghostwalker': {
+  ghostwalker: {
     name: 'Ghostwalker',
     rarity: 'exotic',
     type: 'detachment',
@@ -250,7 +250,7 @@ export const EXOTIC_TRAITS = {
     stacksWith: ['independent', 'resilient'],
   },
 
-  'soulbonded': {
+  soulbonded: {
     name: 'Soulbonded',
     rarity: 'exotic',
     type: 'spiritual',
@@ -287,7 +287,8 @@ export const EXOTIC_TRAITS = {
     name: 'Fey-Kissed',
     rarity: 'exotic',
     type: 'magical',
-    description: 'Touched by otherworldly forces, radiating an ethereal presence and enhanced abilities',
+    description:
+      'Touched by otherworldly forces, radiating an ethereal presence and enhanced abilities',
 
     // Unlock conditions
     unlockConditions: {
@@ -317,11 +318,12 @@ export const EXOTIC_TRAITS = {
     stacksWith: ['all'], // Stacks with all other traits
   },
 
-  'dreamtwin': {
+  dreamtwin: {
     name: 'Dreamtwin',
     rarity: 'exotic',
     type: 'psychic',
-    description: 'Shares a mystical connection with twin sibling, experiencing mirrored development',
+    description:
+      'Shares a mystical connection with twin sibling, experiencing mirrored development',
 
     // Unlock conditions
     unlockConditions: {

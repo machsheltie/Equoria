@@ -43,7 +43,9 @@ function getExportsFromFile(filePath) {
     while ((match = EXPORT_NAMED_PATTERN.exec(content)) !== null) {
       const names = match[1].split(',').map(n => n.trim().split(' as ')[0]);
       names.forEach(n => {
-        if (n) { exports.add(n); }
+        if (n) {
+          exports.add(n);
+        }
       });
     }
 
@@ -123,7 +125,9 @@ function main() {
     try {
       const entries = fs.readdirSync(dir, { withFileTypes: true });
       entries.forEach(entry => {
-        if (excludeDirs.includes(entry.name)) { return; }
+        if (excludeDirs.includes(entry.name)) {
+          return;
+        }
 
         const fullPath = path.join(dir, entry.name);
         if (entry.isDirectory()) {
@@ -165,7 +169,9 @@ function main() {
       }
 
       const exportedNames = exportMap[resolvedPath];
-      if (!exportedNames) { return; }
+      if (!exportedNames) {
+        return;
+      }
 
       // Check each imported name
       names.forEach(name => {

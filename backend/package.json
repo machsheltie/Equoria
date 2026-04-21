@@ -31,7 +31,7 @@
     "test:migration": "node scripts/database-migration-tests.mjs",
     "test:security": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.security.mjs",
     "test:security:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.security.mjs --coverage",
-    "prepare": "husky install",
+    "prepare": "node -e \"try { require('husky').install('../.husky'); } catch(e) { /* root-level husky handles hooks; ignore when only backend is installed */ }\"",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",

@@ -183,6 +183,17 @@ describe('validateEnvironment()', () => {
       expect(processExitSpy).not.toHaveBeenCalled();
     });
 
+    it('should pass when NODE_ENV is "beta-readiness"', () => {
+      process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/equoria_test';
+      process.env.JWT_SECRET = 'a'.repeat(32);
+      process.env.NODE_ENV = 'beta-readiness';
+      process.env.PORT = '3001';
+
+      validateEnvironment();
+
+      expect(processExitSpy).not.toHaveBeenCalled();
+    });
+
     it('should fail when NODE_ENV is invalid', () => {
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/equoria';
       process.env.JWT_SECRET = 'a'.repeat(32);
@@ -193,7 +204,7 @@ describe('validateEnvironment()', () => {
 
       const errorCalls = loggerErrorSpy.mock.calls.map(call => call[0]);
       const allErrors = errorCalls.join(' ');
-      expect(allErrors).toContain('NODE_ENV must be one of: development, production, test');
+      expect(allErrors).toContain('NODE_ENV must be one of: development, production, test, beta-readiness');
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
   });

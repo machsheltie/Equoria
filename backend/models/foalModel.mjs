@@ -217,12 +217,12 @@ async function completeEnrichmentActivity(foalId, day, activity) {
         description: outcome.description,
       },
       levels: {
-        bond_score: newBondScore,
-        stress_level: newStressLevel,
-        bond_change: outcome.bondingChange,
-        stress_change: outcome.stressChange,
+        bondScore: newBondScore,
+        stressLevel: newStressLevel,
+        bondChange: outcome.bondingChange,
+        stressChange: outcome.stressChange,
       },
-      training_record_id: trainingRecord.id,
+      trainingRecordId: trainingRecord.id,
     };
   } catch (error) {
     logger.error(`[foalModel.completeEnrichmentActivity] Error: ${error.message}`);

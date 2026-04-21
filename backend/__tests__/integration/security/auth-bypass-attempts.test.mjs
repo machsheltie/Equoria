@@ -16,7 +16,11 @@
 import { describe, it, expect, beforeEach, afterAll, jest as _jest } from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.mjs';
-import { createMockUser as _createMockUser, createMockToken, createMalformedToken as _createMalformedToken } from '../../factories/index.mjs';
+import {
+  createMockUser as _createMockUser,
+  createMockToken,
+  createMalformedToken as _createMalformedToken,
+} from '../../factories/index.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import jwt from 'jsonwebtoken';
 
@@ -429,7 +433,8 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
 
   describe('Edge Cases and Attack Vectors', () => {
     it('should reject token with null bytes in payload', async () => {
-      const maliciousToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxXHUwMDAwIiwiaWF0IjoxNjE2MjM5MDIyfQ.invalid';
+      const maliciousToken =
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxXHUwMDAwIiwiaWF0IjoxNjE2MjM5MDIyfQ.invalid';
 
       const response = await request(app)
         .get('/api/auth/profile')

@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';

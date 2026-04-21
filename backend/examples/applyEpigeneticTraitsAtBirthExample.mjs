@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 /**
  * Example usage of applyEpigeneticTraitsAtBirth function
  * Demonstrates various breeding scenarios and trait assignments

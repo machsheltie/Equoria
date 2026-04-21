@@ -156,7 +156,6 @@ export async function checkLegacyEligibility(groomId) {
       assignmentCount: groom.groomAssignmentLogs.length,
       availablePerks,
     };
-
   } catch (error) {
     logger.error(`Error checking legacy eligibility for groom ${groomId}:`, error);
     throw error;
@@ -175,7 +174,9 @@ export async function generateLegacyProtege(mentorGroomId, protegeData, userId) 
     // Check eligibility first
     const eligibility = await checkLegacyEligibility(mentorGroomId);
     if (!eligibility.eligible) {
-      throw new Error(`Mentor groom ${mentorGroomId} is not eligible for legacy creation: ${eligibility.reason}`);
+      throw new Error(
+        `Mentor groom ${mentorGroomId} is not eligible for legacy creation: ${eligibility.reason}`,
+      );
     }
 
     // Get mentor groom details
@@ -192,7 +193,7 @@ export async function generateLegacyProtege(mentorGroomId, protegeData, userId) 
     const levelBonus = LEGACY_CONSTANTS.PROTEGE_LEVEL_BONUS;
 
     // Create protégé and legacy log in transaction
-    const result = await prisma.$transaction(async (prismaTx) => {
+    const result = await prisma.$transaction(async prismaTx => {
       // Create the protégé groom
       const protege = await prismaTx.groom.create({
         data: {
@@ -228,11 +229,12 @@ export async function generateLegacyProtege(mentorGroomId, protegeData, userId) 
       return { protege, legacyLog, inheritedPerk: selectedPerk };
     });
 
-    logger.info(`Created legacy protégé ${result.protege.name} (ID: ${result.protege.id}) from mentor ${mentorGroom.name} (ID: ${mentorGroomId})`);
+    logger.info(
+      `Created legacy protégé ${result.protege.name} (ID: ${result.protege.id}) from mentor ${mentorGroom.name} (ID: ${mentorGroomId})`,
+    );
     logger.info(`Inherited perk: ${result.inheritedPerk.name}`);
 
     return result;
-
   } catch (error) {
     logger.error(`Error generating legacy protégé for mentor ${mentorGroomId}:`, error);
     throw error;
@@ -267,9 +269,10 @@ export async function createLegacyLog(retiredGroomId, legacyGroomId, inheritedPe
       },
     });
 
-    logger.info(`Created legacy log: Groom ${legacyGroomId} inherits ${inheritedPerk} from mentor ${retiredGroomId}`);
+    logger.info(
+      `Created legacy log: Groom ${legacyGroomId} inherits ${inheritedPerk} from mentor ${retiredGroomId}`,
+    );
     return legacyLog;
-
   } catch (error) {
     logger.error('Error creating legacy log:', error);
     throw error;
@@ -310,7 +313,6 @@ export async function getUserLegacyHistory(userId) {
       mentorLevel: log.mentorLevel,
       createdAt: log.createdAt,
     }));
-
   } catch (error) {
     logger.error(`Error getting legacy history for user ${userId}:`, error);
     throw error;

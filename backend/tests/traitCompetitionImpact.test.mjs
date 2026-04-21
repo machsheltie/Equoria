@@ -50,7 +50,7 @@ describe('🏆 UNIT: Trait Competition Impact System - Scoring Modifier Calculat
       const horse = {
         id: 1,
         name: 'Plain Horse',
-        epigenetic_modifiers: { positive: [], negative: [], hidden: [] },
+        epigeneticModifiers: { positive: [], negative: [], hidden: [] },
       };
 
       const result = calculateTraitCompetitionImpact(horse, 'Dressage', baseScore);
@@ -66,7 +66,7 @@ describe('🏆 UNIT: Trait Competition Impact System - Scoring Modifier Calculat
       const horse = {
         id: 1,
         name: 'Bold Horse',
-        epigenetic_modifiers: {
+        epigeneticModifiers: {
           positive: ['bold', 'resilient'],
           negative: [],
           hidden: [],
@@ -91,7 +91,7 @@ describe('🏆 UNIT: Trait Competition Impact System - Scoring Modifier Calculat
       const horse = {
         id: 1,
         name: 'Nervous Horse',
-        epigenetic_modifiers: {
+        epigeneticModifiers: {
           positive: [],
           negative: ['nervous', 'fragile'],
           hidden: [],
@@ -116,7 +116,7 @@ describe('🏆 UNIT: Trait Competition Impact System - Scoring Modifier Calculat
       const horse = {
         id: 1,
         name: 'Mixed Horse',
-        epigenetic_modifiers: {
+        epigeneticModifiers: {
           positive: ['intelligent', 'calm'],
           negative: ['stubborn'],
           hidden: [],
@@ -149,7 +149,7 @@ describe('🏆 UNIT: Trait Competition Impact System - Scoring Modifier Calculat
       const horseFewTraits = {
         id: 1,
         name: 'Few Traits Horse',
-        epigenetic_modifiers: {
+        epigeneticModifiers: {
           positive: ['bold'],
           negative: [],
           hidden: [],
@@ -159,7 +159,7 @@ describe('🏆 UNIT: Trait Competition Impact System - Scoring Modifier Calculat
       const horseManyTraits = {
         id: 2,
         name: 'Many Traits Horse',
-        epigenetic_modifiers: {
+        epigeneticModifiers: {
           positive: ['bold', 'resilient', 'intelligent', 'calm', 'athletic'],
           negative: [],
           hidden: [],
@@ -183,7 +183,7 @@ describe('🏆 UNIT: Trait Competition Impact System - Scoring Modifier Calculat
       const horse = {
         id: 1,
         name: 'Legendary Horse',
-        epigenetic_modifiers: {
+        epigeneticModifiers: {
           positive: ['legendaryBloodline'],
           negative: [],
           hidden: [],
@@ -206,7 +206,7 @@ describe('🏆 UNIT: Trait Competition Impact System - Scoring Modifier Calculat
       const horse = {
         id: 1,
         name: 'Athletic Horse',
-        epigenetic_modifiers: {
+        epigeneticModifiers: {
           positive: ['athletic'],
           negative: [],
           hidden: [],
@@ -225,11 +225,11 @@ describe('🏆 UNIT: Trait Competition Impact System - Scoring Modifier Calculat
       expect(resultGeneral.appliedTraits[0].modifier).toBe(0.05); // 5% general
     });
 
-    it('should handle missing epigenetic_modifiers gracefully', () => {
+    it('should handle missing epigeneticModifiers gracefully', () => {
       const horse = {
         id: 1,
         name: 'Horse Without Traits',
-        epigenetic_modifiers: null,
+        epigeneticModifiers: null,
       };
 
       const result = calculateTraitCompetitionImpact(horse, 'Dressage', baseScore);
@@ -243,7 +243,7 @@ describe('🏆 UNIT: Trait Competition Impact System - Scoring Modifier Calculat
       const horse = {
         id: 1,
         name: 'Horse With Unknown Trait',
-        epigenetic_modifiers: {
+        epigeneticModifiers: {
           positive: ['unknown_trait', 'bold'],
           negative: [],
           hidden: [],
@@ -351,7 +351,7 @@ describe('🏆 UNIT: Trait Competition Impact System - Scoring Modifier Calculat
         const horse = {
           id: 1,
           name: 'Test Horse',
-          epigenetic_modifiers: {
+          epigeneticModifiers: {
             positive: expectedModifier > 0 ? [trait] : [],
             negative: expectedModifier < 0 ? [trait] : [],
             hidden: [],
@@ -398,7 +398,7 @@ describe('🏆 UNIT: Trait Competition Impact System - Scoring Modifier Calculat
       const horse = {
         id: 1,
         name: 'Overpowered Horse',
-        epigenetic_modifiers: {
+        epigeneticModifiers: {
           positive: [
             'bold',
             'resilient',

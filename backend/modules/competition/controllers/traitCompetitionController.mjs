@@ -44,7 +44,7 @@ export async function analyzeHorseTraitImpact(req, res) {
       select: {
         id: true,
         name: true,
-        epigenetic_modifiers: true,
+        epigeneticModifiers: true,
         // Include basic stats for base score calculation
         stamina: true,
         balance: true,
@@ -166,7 +166,7 @@ export async function compareTraitImpactAcrossDisciplines(req, res) {
       select: {
         id: true,
         name: true,
-        epigenetic_modifiers: true,
+        epigeneticModifiers: true,
       },
     });
 
@@ -276,7 +276,7 @@ export async function getDisciplineRecommendations(req, res) {
       select: {
         id: true,
         name: true,
-        epigenetic_modifiers: true,
+        epigeneticModifiers: true,
       },
     });
 
@@ -289,7 +289,7 @@ export async function getDisciplineRecommendations(req, res) {
     }
 
     // Get all visible traits
-    const traits = horse.epigenetic_modifiers || { positive: [], negative: [], hidden: [] };
+    const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
     const allVisibleTraits = [...(traits.positive || []), ...(traits.negative || [])];
 
     if (allVisibleTraits.length === 0) {

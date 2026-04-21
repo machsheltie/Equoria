@@ -24,14 +24,9 @@ async function globalSetup(config: FullConfig) {
   const password = 'Password123!';
 
   try {
-    // ── 0. Intercept auth API calls to bypass rate limiting in test setup ─────
-    // The authRateLimiter has a 5-per-15min limit; bypass it via header injection
-    await page.route('**/api/auth/**', (route) => {
-      const headers = { ...route.request().headers(), 'x-test-bypass-rate-limit': 'true' };
-      route.continue({ headers });
-    });
-
     // ── 1. Register test user via UI ─────────────────────────────────────────
+    // Auth rate limiter uses skipSuccessfulRequests:true with max:200 failed attempts.
+    // Successful registrations/logins are never counted, so no bypass needed.
     console.log('Navigating to:', baseURL + '/register');
     // Use 'load' (not 'networkidle') — Vite's HMR WebSocket keeps the page permanently
     // "active" so networkidle never fires, causing a 60-second timeout per navigation.

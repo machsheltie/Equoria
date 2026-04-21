@@ -19,6 +19,9 @@
 import request from 'supertest';
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import { cpSync, mkdtempSync, rmSync, existsSync } from 'fs';
+import { join } from 'path';
+import os from 'os';
 import documentationRoutes from '../../routes/documentationRoutes.mjs';
 import { responseHandler } from '../../utils/apiResponse.mjs';
 // authenticateToken import removed - not used in this file
@@ -30,6 +33,8 @@ describe('Documentation Routes', () => {
   let testUser;
   let authToken;
   let docService;
+  let tempDir;
+  let originalSwaggerPath;
 
   beforeAll(async () => {
     // Create test user
@@ -56,9 +61,28 @@ describe('Documentation Routes', () => {
 
     // Get documentation service
     docService = getApiDocumentationService();
+
+    // Redirect the service to a temp copy of swagger.yaml so test-driven
+    // regeneration (POST /api/docs/generate) does not mutate the curated
+    // backend/docs/swagger.yaml on disk. Resolve the canonical path from
+    // the backend layout rather than trusting the singleton's current
+    // swaggerPath, which may have been redirected by earlier tests.
+    const canonicalSwaggerPath = join(process.cwd(), 'docs', 'swagger.yaml');
+    const fallbackSwaggerPath = existsSync(canonicalSwaggerPath) ? canonicalSwaggerPath : docService.swaggerPath;
+    originalSwaggerPath = docService.swaggerPath;
+    tempDir = mkdtempSync(join(os.tmpdir(), 'equoria-docs-test-'));
+    const testSwaggerPath = join(tempDir, 'swagger.yaml');
+    cpSync(fallbackSwaggerPath, testSwaggerPath);
+    docService.swaggerPath = testSwaggerPath;
   });
 
   afterAll(async () => {
+    // Restore service pointer and clean temp copy.
+    docService.swaggerPath = originalSwaggerPath;
+    if (tempDir && existsSync(tempDir)) {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+
     // Cleanup test data
     await prisma.user.deleteMany({
       where: { id: testUser?.id },

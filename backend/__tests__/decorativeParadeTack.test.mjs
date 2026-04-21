@@ -21,9 +21,7 @@ jest.unstable_mockModule('../utils/logger.mjs', () => ({ default: mockLogger }))
 
 // ── Dynamic imports (after mocks) ────────────────────────────────────────────
 
-const { TACK_INVENTORY, resolveTackBonus } = await import(
-  '../modules/services/controllers/tackShopController.mjs'
-);
+const { TACK_INVENTORY, resolveTackBonus } = await import('../modules/services/controllers/tackShopController.mjs');
 const { simulateCompetition } = await import('../logic/simulateCompetition.mjs');
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -49,7 +47,7 @@ function makeHorse(overrides = {}) {
     rider: null,
     trainingScore: 0,
     trait: null,
-    epigenetic_modifiers: { positive: [], negative: [], hidden: [] },
+    epigeneticModifiers: { positive: [], negative: [], hidden: [] },
     temperament: null,
     ...overrides,
   };
@@ -81,13 +79,7 @@ describe('TACK_INVENTORY — decorative items', () => {
 
   it('required items present: show-ribbon, braided-mane-wrap, parade-blanket, glitter-spray, floral-browband', () => {
     const ids = decorative.map(i => i.id);
-    for (const required of [
-      'show-ribbon',
-      'braided-mane-wrap',
-      'parade-blanket',
-      'glitter-spray',
-      'floral-browband',
-    ]) {
+    for (const required of ['show-ribbon', 'braided-mane-wrap', 'parade-blanket', 'glitter-spray', 'floral-browband']) {
       expect(ids).toContain(required);
     }
   });

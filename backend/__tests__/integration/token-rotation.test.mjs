@@ -554,11 +554,15 @@ describe('Token Rotation and Reuse Detection System', () => {
  * Helper function to extract refresh token from Set-Cookie headers
  */
 function extractRefreshTokenFromCookies(cookies) {
-  if (!cookies) { return null; }
+  if (!cookies) {
+    return null;
+  }
 
   const refreshCookie = cookies.find(cookie => cookie.includes('refreshToken='));
 
-  if (!refreshCookie) { return null; }
+  if (!refreshCookie) {
+    return null;
+  }
 
   const match = refreshCookie.match(/refreshToken=([^;]+)/);
   return match ? match[1] : null;
@@ -568,11 +572,15 @@ function extractRefreshTokenFromCookies(cookies) {
  * Helper function to extract access token from Set-Cookie headers
  */
 function extractAccessTokenFromCookies(cookies) {
-  if (!cookies) { return null; }
+  if (!cookies) {
+    return null;
+  }
 
   const accessCookie = cookies.find(cookie => cookie.includes('accessToken='));
 
-  if (!accessCookie) { return null; }
+  if (!accessCookie) {
+    return null;
+  }
 
   const match = accessCookie.match(/accessToken=([^;]+)/);
   return match ? match[1] : null;
