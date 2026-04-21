@@ -116,6 +116,13 @@ describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () =
       await prisma.xpEvent.deleteMany({
         where: { userId: { in: [activeUser?.id, emptyUser?.id].filter(Boolean) } },
       });
+      // CodeRabbit (2026-04-20): cleanupTestData() only removes users whose
+      // username starts with testuser_. Scope-delete this suite's seeded
+      // rank_active_/rank_empty_ users explicitly to prevent leaks.
+      const seededUserIds = [activeUser?.id, emptyUser?.id].filter(Boolean);
+      if (seededUserIds.length) {
+        await prisma.user.deleteMany({ where: { id: { in: seededUserIds } } });
+      }
     } catch {
       /* ignore cleanup errors */
     }
@@ -160,11 +167,11 @@ describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () =
       expect(Array.isArray(res.body.rankings)).toBe(true);
       expect(res.body.rankings).toHaveLength(4);
 
-      const categories = res.body.rankings.map((r) => r.category).sort();
+      const categories = res.body.rankings.map(r => r.category).sort();
       expect(categories).toEqual(['horse-earnings', 'horse-performance', 'level', 'xp']);
 
       // Shape check on one entry
-      const levelRanking = res.body.rankings.find((r) => r.category === 'level');
+      const levelRanking = res.body.rankings.find(r => r.category === 'level');
       expect(levelRanking).toMatchObject({
         category: 'level',
         categoryLabel: expect.any(String),
@@ -176,8 +183,8 @@ describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () =
       });
 
       // Empty user has no earnings / no performance horses → primaryStat 0
-      expect(res.body.rankings.find((r) => r.category === 'horse-earnings').primaryStat).toBe(0);
-      expect(res.body.rankings.find((r) => r.category === 'horse-performance').primaryStat).toBe(0);
+      expect(res.body.rankings.find(r => r.category === 'horse-earnings').primaryStat).toBe(0);
+      expect(res.body.rankings.find(r => r.category === 'horse-performance').primaryStat).toBe(0);
 
       // Regression (code review P1 BUG-1): a user with zero horses must never
       // render "#N of M<N". totalEntries must always be >= rank.
@@ -196,7 +203,7 @@ describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () =
       expect(res.status).toBe(200);
       expect(res.body.userId).toBe(activeUser.id);
 
-      const byCategory = Object.fromEntries(res.body.rankings.map((r) => [r.category, r]));
+      const byCategory = Object.fromEntries(res.body.rankings.map(r => [r.category, r]));
 
       // Level — active user is level 12
       expect(byCategory.level.primaryStat).toBe(12);

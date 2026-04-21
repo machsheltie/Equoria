@@ -378,6 +378,9 @@ router.get(
       return next();
     },
   ],
+  // CodeRabbit (2026-04-20): add self-access guard so authenticated users
+  // cannot read another user's aggregated competition stats (IDOR).
+  requireSelfAccess('userId'),
   getUserCompetitionStats,
 );
 

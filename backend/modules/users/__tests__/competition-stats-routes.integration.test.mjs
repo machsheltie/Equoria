@@ -131,6 +131,15 @@ describe('INTEGRATION: GET /api/users/:userId/competition-stats (21S-4)', () => 
       const res = await request(app).get(`/api/users/${activeUser.id}/competition-stats`);
       expect(res.status).toBe(401);
     });
+
+    // CodeRabbit (2026-04-20): IDOR coverage — an authenticated user must
+    // not be able to read another user's aggregated competition stats.
+    it("returns 403 when requesting another user's stats", async () => {
+      const res = await request(app)
+        .get(`/api/users/${activeUser.id}/competition-stats`)
+        .set('Authorization', `Bearer ${emptyToken}`);
+      expect(res.status).toBe(403);
+    });
   });
 
   describe('Empty user (no horses, no results)', () => {
