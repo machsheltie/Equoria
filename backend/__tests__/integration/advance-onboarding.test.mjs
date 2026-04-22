@@ -55,7 +55,11 @@ describe('POST /api/auth/advance-onboarding', () => {
       .send({ email: testUserData.email, password: testUserData.password })
       .expect(200);
 
-    cookieHeader = loginResponse.headers['set-cookie'];
+    const loginCookies = loginResponse.headers['set-cookie'] || [];
+    // Merge login session cookies with the CSRF cookie so the mutation's
+    // Cookie header carries both the accessToken AND the double-submit
+    // cookie the validator reads.
+    cookieHeader = [...loginCookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
   });
 
   afterAll(async () => {
@@ -81,6 +85,7 @@ describe('POST /api/auth/advance-onboarding', () => {
     const response = await request(app)
       .post('/api/auth/advance-onboarding')
       .set('Origin', 'http://localhost:3000')
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .set('Cookie', cookieHeader)
       .set('X-Test-Email', testUserData.email)
       .set(rateLimitBypassHeader)
@@ -105,6 +110,7 @@ describe('POST /api/auth/advance-onboarding', () => {
     const response = await request(app)
       .post('/api/auth/advance-onboarding')
       .set('Origin', 'http://localhost:3000')
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .set('Cookie', cookieHeader)
       .set('X-Test-Email', testUserData.email)
       .set(rateLimitBypassHeader)
@@ -124,6 +130,7 @@ describe('POST /api/auth/advance-onboarding', () => {
     const response = await request(app)
       .post('/api/auth/advance-onboarding')
       .set('Origin', 'http://localhost:3000')
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .set('Cookie', cookieHeader)
       .set('X-Test-Email', testUserData.email)
       .set(rateLimitBypassHeader)
@@ -156,6 +163,7 @@ describe('POST /api/auth/advance-onboarding', () => {
     const response = await request(app)
       .post('/api/auth/advance-onboarding')
       .set('Origin', 'http://localhost:3000')
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .set('Cookie', cookieHeader)
       .set('X-Test-Email', testUserData.email)
       .set(rateLimitBypassHeader)
@@ -190,6 +198,7 @@ describe('POST /api/auth/advance-onboarding', () => {
     await request(app)
       .post('/api/auth/advance-onboarding')
       .set('Origin', 'http://localhost:3000')
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .set('X-Test-Require-Auth', 'true')
       .expect(401);
   });
