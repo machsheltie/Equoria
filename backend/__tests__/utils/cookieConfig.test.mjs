@@ -120,7 +120,7 @@ describe('Cookie Configuration Module', () => {
         secure: true,
         sameSite: 'strict',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        path: '/auth/refresh-token', // Scoped to cookie-based refresh endpoint
+        path: '/', // 21R-AUTH-1: must cover both /auth/refresh-token and /api/auth/refresh-token mounts
         domain: undefined,
       });
     });
@@ -134,12 +134,12 @@ describe('Cookie Configuration Module', () => {
       expect(COOKIE_OPTIONS.refreshToken.maxAge).toBe(expectedMaxAge);
     });
 
-    test('should have path scoped to refresh endpoint (least privilege)', async () => {
+    test('should have path set to root so both /auth/refresh-token and /api/auth/refresh-token receive the cookie (21R-AUTH-1)', async () => {
       process.env.NODE_ENV = 'production';
       const config = await import('../../utils/cookieConfig.mjs');
       COOKIE_OPTIONS = config.COOKIE_OPTIONS;
 
-      expect(COOKIE_OPTIONS.refreshToken.path).toBe('/auth/refresh-token');
+      expect(COOKIE_OPTIONS.refreshToken.path).toBe('/');
     });
   });
 

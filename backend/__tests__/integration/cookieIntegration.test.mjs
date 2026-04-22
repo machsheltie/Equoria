@@ -108,7 +108,7 @@ describe('Cookie Integration Tests', () => {
       // Verify security attributes
       expect(refreshTokenCookie).toContain('HttpOnly');
       expect(refreshTokenCookie).toContain('SameSite=Lax');
-      expect(refreshTokenCookie).toContain('Path=/auth/refresh-token'); // Scoped path
+      expect(refreshTokenCookie).toMatch(/;\s*Path=\/(;|$)/); // 21R-AUTH-1: root path so /auth and /api/auth both receive cookie
       expect(refreshTokenCookie).toContain('Max-Age=604800'); // 7 days
 
       // In test environment, secure should not be set
@@ -198,7 +198,7 @@ describe('Cookie Integration Tests', () => {
 
       expect(refreshTokenCookie).toContain('HttpOnly');
       expect(refreshTokenCookie).toContain('SameSite=Lax');
-      expect(refreshTokenCookie).toContain('Path=/auth/refresh-token');
+      expect(refreshTokenCookie).toMatch(/;\s*Path=\/(;|$)/); // 21R-AUTH-1
       expect(refreshTokenCookie).toContain('Max-Age=604800');
     });
   });
@@ -277,7 +277,7 @@ describe('Cookie Integration Tests', () => {
 
       expect(newRefreshTokenCookie).toContain('HttpOnly');
       expect(newRefreshTokenCookie).toContain('SameSite=Lax');
-      expect(newRefreshTokenCookie).toContain('Path=/auth/refresh-token');
+      expect(newRefreshTokenCookie).toMatch(/;\s*Path=\/(;|$)/); // 21R-AUTH-1
       expect(newRefreshTokenCookie).toContain('Max-Age=604800');
     });
   });
@@ -363,7 +363,7 @@ describe('Cookie Integration Tests', () => {
       expect(clearedAccessToken).toContain('Path=/');
 
       const clearedRefreshToken = clearCookies.find(cookie => cookie.startsWith('refreshToken='));
-      expect(clearedRefreshToken).toContain('Path=/auth/refresh-token');
+      expect(clearedRefreshToken).toMatch(/;\s*Path=\/(;|$)/); // 21R-AUTH-1: clear must match set path
     });
   });
 

@@ -68,7 +68,7 @@ export const ACCESS_TOKEN_COOKIE_OPTIONS = {
  *
  * Long-lived token for obtaining new access tokens
  * Expires: 7 days (matches JWT refreshToken expiry)
- * Path: /auth/refresh-token (scoped to cookie-based refresh endpoint only)
+ * Path: / (21R-AUTH-1: must cover both /auth/refresh-token and /api/auth/refresh-token mount points)
  *
  * @type {Object}
  */
@@ -77,7 +77,7 @@ export const REFRESH_TOKEN_COOKIE_OPTIONS = {
   secure: isProduction, // HTTPS only in production (MitM protection)
   sameSite: SAME_SITE_POLICY, // CSRF protection (strictest policy)
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days (604,800,000ms)
-  path: '/auth/refresh-token', // Only cookie-based refresh endpoint needs access (least privilege)
+  path: '/', // Must cover both /auth/refresh-token and /api/auth/refresh-token mount points (21R-AUTH-1)
   domain: COOKIE_DOMAIN, // Subdomain sharing (if configured)
 };
 
@@ -140,7 +140,7 @@ export const CLEAR_COOKIE_OPTIONS = {
     httpOnly: true,
     secure: isProduction,
     sameSite: SAME_SITE_POLICY,
-    path: '/auth/refresh-token',
+    path: '/',
     domain: COOKIE_DOMAIN,
   },
   csrfToken: {
@@ -172,7 +172,7 @@ export function getCookieConfigSummary() {
     },
     refreshToken: {
       maxAge: '7 days',
-      path: '/auth/refresh-token',
+      path: '/',
       httpOnly: true,
       secure: isProduction,
       sameSite: SAME_SITE_POLICY,
