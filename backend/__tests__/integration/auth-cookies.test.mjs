@@ -269,6 +269,59 @@ describe('Authentication with HttpOnly Cookies', () => {
     it('should reject refresh without refreshToken cookie', async () => {
       await request(app).post('/api/auth/refresh-token').set(rateLimitBypassHeader).expect(400);
     });
+
+    // 21R-AUTH-1: refresh cookie must be scoped to '/' so both /auth/refresh-token
+    // and /api/auth/refresh-token mount points receive it.
+    it('should set refreshToken cookie with Path=/ (21R-AUTH-1 hotfix)', async () => {
+      const loginResponse = await request(app)
+        .post('/api/auth/login')
+        .set(rateLimitBypassHeader)
+        .set('X-Test-Bypass-Auth', 'true')
+        .send({
+          email: testUserData.email,
+          password: testUserData.password,
+        })
+        .expect(200);
+
+      const cookies = loginResponse.headers['set-cookie'];
+      const refreshSetCookie = cookies.find(c => c.startsWith('refreshToken='));
+      expect(refreshSetCookie).toBeDefined();
+      expect(refreshSetCookie).toMatch(/;\s*Path=\/(;|$)/);
+      expect(refreshSetCookie).not.toContain('Path=/auth/refresh-token');
+    });
+
+    it('should accept the same refreshToken cookie on BOTH /auth/refresh-token and /api/auth/refresh-token (21R-AUTH-1)', async () => {
+      const loginResponse = await request(app)
+        .post('/api/auth/login')
+        .set(rateLimitBypassHeader)
+        .set('X-Test-Bypass-Auth', 'true')
+        .send({
+          email: testUserData.email,
+          password: testUserData.password,
+        })
+        .expect(200);
+
+      const refreshCookieFromLogin = loginResponse.headers['set-cookie'].find(c => c.startsWith('refreshToken='));
+      expect(refreshCookieFromLogin).toBeDefined();
+
+      // Hit the un-prefixed mount point
+      const apiRefreshResponse = await request(app)
+        .post('/api/auth/refresh-token')
+        .set(rateLimitBypassHeader)
+        .set('Cookie', [refreshCookieFromLogin])
+        .set('X-Test-Bypass-Auth', 'true')
+        .expect(200);
+      expect(apiRefreshResponse.body.status).toBe('success');
+
+      // Hit the /auth (non-/api) mount point with the SAME cookie
+      const authRefreshResponse = await request(app)
+        .post('/auth/refresh-token')
+        .set(rateLimitBypassHeader)
+        .set('Cookie', [refreshCookieFromLogin])
+        .set('X-Test-Bypass-Auth', 'true')
+        .expect(200);
+      expect(authRefreshResponse.body.status).toBe('success');
+    });
   });
 
   describe('POST /api/auth/logout - Cookie Clearing', () => {
