@@ -45,6 +45,8 @@ describe('INTEGRATION: PATCH /api/auth/profile/preferences (21S-5)', () => {
     it('returns 401 when unauthenticated', async () => {
       const res = await request(app)
         .patch('/api/auth/profile/preferences')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000')
         .send({ emailCompetition: false });
       expect(res.status).toBe(401);
@@ -55,6 +57,8 @@ describe('INTEGRATION: PATCH /api/auth/profile/preferences (21S-5)', () => {
     it('persists notification + display preferences and returns the merged object', async () => {
       const res = await request(app)
         .patch('/api/auth/profile/preferences')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token}`)
         .send({
@@ -90,6 +94,8 @@ describe('INTEGRATION: PATCH /api/auth/profile/preferences (21S-5)', () => {
       // A partial update should preserve the prior keys and only change what was sent.
       const res = await request(app)
         .patch('/api/auth/profile/preferences')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token}`)
         .send({ highContrast: true });
@@ -106,6 +112,8 @@ describe('INTEGRATION: PATCH /api/auth/profile/preferences (21S-5)', () => {
     it('rejects an unknown preference key with 400', async () => {
       const res = await request(app)
         .patch('/api/auth/profile/preferences')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token}`)
         .send({ notARealPreference: true });
@@ -116,6 +124,8 @@ describe('INTEGRATION: PATCH /api/auth/profile/preferences (21S-5)', () => {
     it('rejects a non-boolean value for a known key with 400', async () => {
       const res = await request(app)
         .patch('/api/auth/profile/preferences')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token}`)
         .send({ reducedMotion: 'nope' });
