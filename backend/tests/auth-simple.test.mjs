@@ -43,7 +43,6 @@ import { register, login } from '../controllers/authController.mjs';
 import { body } from 'express-validator';
 import prisma from '../db/index.mjs';
 
-import { fetchCsrf } from './helpers/csrfHelper.mjs';
 // Create a simple test app without all the middleware
 const createTestApp = () => {
   const app = express();
@@ -67,11 +66,6 @@ const createTestApp = () => {
 };
 
 describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflow Testing', () => {
-  let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
-
   let app;
 
   beforeAll(() => {

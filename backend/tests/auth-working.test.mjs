@@ -46,7 +46,6 @@ import { authenticateToken } from '../middleware/auth.mjs';
 import prisma from '../db/index.mjs';
 import { generateTestToken } from './helpers/authHelper.mjs';
 
-import { fetchCsrf } from './helpers/csrfHelper.mjs';
 // Create a minimal test app without problematic middleware
 const createTestApp = () => {
   const app = express();
@@ -93,11 +92,6 @@ const createTestApp = () => {
 };
 
 describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Validation', () => {
-  let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
-
   let app;
   // Store created user IDs for targeted cleanup
   const createdUserIds = new Set();

@@ -43,7 +43,6 @@ import { register, login } from '../controllers/authController.mjs';
 import { authenticateToken } from '../middleware/auth.mjs';
 import prisma from '../db/index.mjs';
 
-import { fetchCsrf } from './helpers/csrfHelper.mjs';
 /**
  * Extract cookie value from Set-Cookie header array
  */
@@ -161,11 +160,6 @@ const createTestApp = () => {
 };
 
 describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', () => {
-  let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
-
   let app;
   let authToken;
   let testUser;
