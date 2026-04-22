@@ -192,12 +192,29 @@ describe('Security Middleware', () => {
 
   describe('validateApiKey()', () => {
     let req, res, next;
+    let originalApiKey;
 
     beforeEach(() => {
       req = mockRequest();
       res = mockResponse();
       next = mockNext();
+      // Snapshot the original value so afterEach can restore it. Without
+      // this restore, process.env.API_KEY leaks into every later test file
+      // that runs in the same Jest worker — supertest requests have no
+      // origin header, so validateApiKey demands an X-API-Key they never
+      // send, and every authenticated request gets a 403. csrf-integration
+      // 'should allow OPTIONS requests without CSRF token' was the
+      // observable flake symptom; the cause is global mutable state.
+      originalApiKey = process.env.API_KEY;
       process.env.API_KEY = 'test-api-key-12345';
+    });
+
+    afterEach(() => {
+      if (originalApiKey === undefined) {
+        delete process.env.API_KEY;
+      } else {
+        process.env.API_KEY = originalApiKey;
+      }
     });
 
     describe('Requests WITH origin header', () => {
