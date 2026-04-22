@@ -17,7 +17,6 @@ import express from 'express';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 
-import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 const mockDb = {
   user: {
     findUnique: jest.fn(),
@@ -96,11 +95,6 @@ afterAll(() => {
 });
 
 describe('Foal routes auth enforcement', () => {
-  let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
-
   it('rejects unauthenticated access to foal development', async () => {
     const response = await request(app)
       .get('/api/foals/1/development')
