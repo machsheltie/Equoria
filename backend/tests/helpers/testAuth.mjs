@@ -6,29 +6,29 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 
 /**
- * Add authentication headers to a supertest request object
+ * Add JWT auth header to a supertest request.
+ *
+ * NOTE: Does NOT attach CSRF. For state-changing requests (POST/PUT/PATCH/
+ * DELETE) on authenticated routes you MUST also fetch and attach a real CSRF
+ * token via `tests/helpers/csrfHelper.mjs`. Helper no longer sets any
+ * `x-test-skip-csrf` header — the production middleware ignores it.
  */
 export const withAuth = (supertestRequest, userData = {}) => {
   const token = generateTestToken(userData);
-  return supertestRequest.set('Authorization', `Bearer ${token}`).set('x-test-skip-csrf', 'true');
+  return supertestRequest.set('Authorization', `Bearer ${token}`);
 };
 
 /**
- * Creates a supertest request with auth headers for a test user.
- * @param {string} method - The HTTP method (e.g., 'get', 'post').
- * @param {string} endpoint - The API endpoint (e.g., '/api/users').
- * @param {object} userData - User data for token generation.
- * @returns {object} A supertest request object with Authorization header set.
+ * Creates a supertest request with auth header for a test user. Same CSRF
+ * caveat as `withAuth` — state-changing calls need a real CSRF token
+ * attached on top.
  */
 export const withSeededPlayerAuth = (method, endpoint, userData = {}) => {
   const token = generateTestToken(userData);
-  // Ensure 'method' is a valid property of supertest(app) (e.g., 'get', 'post')
-  // and 'endpoint' is a string.
   if (typeof supertest(app)[method] !== 'function') {
     throw new Error(`Invalid HTTP method: ${method}`);
   }
-  const req = supertest(app)[method](endpoint);
-  return req.set('Authorization', `Bearer ${token}`).set('x-test-skip-csrf', 'true');
+  return supertest(app)[method](endpoint).set('Authorization', `Bearer ${token}`);
 };
 
 // USAGE EXAMPLE (INSIDE TEST):
