@@ -2,12 +2,21 @@ import request from 'supertest';
 import { generateTestToken, authHeader as _authHeader } from '../../tests/helpers/authHelper.mjs';
 
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
-process.env.TEST_BYPASS_RATE_LIMIT = 'false';
+import { snapshotEnv, restoreEnv } from '../../tests/helpers/envSnapshot.mjs';
+
+// TEST_RATE_LIMIT_MAX_REQUESTS must be set before app.mjs imports the
+// rate-limiting middleware (which reads it at factory time). Snapshot
+// first so the mutation does not leak into other suites.
+const __envSnap__ = snapshotEnv();
 process.env.TEST_RATE_LIMIT_MAX_REQUESTS = '100';
 
 const { default: app } = await import('../../app.mjs');
 
 describe('Horse routes rate limiting', () => {
+  afterAll(() => {
+    restoreEnv(__envSnap__);
+  });
+
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);

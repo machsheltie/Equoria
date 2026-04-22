@@ -22,7 +22,9 @@ describe('POST /api/auth/advance-onboarding', () => {
   let server;
   let cookieHeader;
   let testUser;
-  const rateLimitBypassHeader = { 'X-Test-Bypass-Rate-Limit': 'true' };
+  // Rate-limit bypass header removed in Workstream 4; keep empty for chain
+  // compatibility with existing .set(rateLimitBypassHeader) call sites.
+  const rateLimitBypassHeader = {};
   const testUserData = {
     username: `advanceonboard_${Date.now()}`,
     email: `advanceonboard_${Date.now()}@example.com`,
@@ -50,7 +52,6 @@ describe('POST /api/auth/advance-onboarding', () => {
       .post('/api/auth/login')
       .set('Origin', 'http://localhost:3000')
       .set(rateLimitBypassHeader)
-      .set('X-Test-Bypass-Auth', 'true')
       .send({ email: testUserData.email, password: testUserData.password })
       .expect(200);
 
@@ -81,7 +82,6 @@ describe('POST /api/auth/advance-onboarding', () => {
       .post('/api/auth/advance-onboarding')
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', cookieHeader)
-      .set('X-Test-Bypass-Auth', 'true')
       .set('X-Test-Email', testUserData.email)
       .set(rateLimitBypassHeader)
       .expect(200);
@@ -106,7 +106,6 @@ describe('POST /api/auth/advance-onboarding', () => {
       .post('/api/auth/advance-onboarding')
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', cookieHeader)
-      .set('X-Test-Bypass-Auth', 'true')
       .set('X-Test-Email', testUserData.email)
       .set(rateLimitBypassHeader)
       .expect(200);
@@ -126,7 +125,6 @@ describe('POST /api/auth/advance-onboarding', () => {
       .post('/api/auth/advance-onboarding')
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', cookieHeader)
-      .set('X-Test-Bypass-Auth', 'true')
       .set('X-Test-Email', testUserData.email)
       .set(rateLimitBypassHeader)
       .expect(200);
@@ -159,7 +157,6 @@ describe('POST /api/auth/advance-onboarding', () => {
       .post('/api/auth/advance-onboarding')
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', cookieHeader)
-      .set('X-Test-Bypass-Auth', 'true')
       .set('X-Test-Email', testUserData.email)
       .set(rateLimitBypassHeader)
       .send({ horseName: 'Beta Star', breedId: breed.id, gender: 'Stallion' })
@@ -207,7 +204,6 @@ describe('POST /api/auth/advance-onboarding', () => {
       .get('/api/auth/profile')
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', cookieHeader)
-      .set('X-Test-Bypass-Auth', 'true')
       .set('X-Test-Email', testUserData.email)
       .set(rateLimitBypassHeader)
       .expect(200);
@@ -227,7 +223,6 @@ describe('POST /api/auth/advance-onboarding', () => {
       .get('/api/auth/profile')
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', cookieHeader)
-      .set('X-Test-Bypass-Auth', 'true')
       .set('X-Test-Email', testUserData.email)
       .set(rateLimitBypassHeader)
       .expect(200);

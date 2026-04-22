@@ -34,7 +34,6 @@ describe('Token Rotation and Reuse Detection System', () => {
   const rateLimitBypassHeader = { 'X-Test-Bypass-Rate-Limit': 'true', 'X-Test-Bypass-Auth': 'true' };
 
   beforeAll(async () => {
-    process.env.TEST_BYPASS_RATE_LIMIT = 'true';
     // Start server once for all tests
     server = app.listen(0); // Use random port
   });

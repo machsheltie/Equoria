@@ -28,7 +28,9 @@ describe('Authentication with HttpOnly Cookies', () => {
     firstName: 'Cookie',
     lastName: 'Test',
   };
-  const rateLimitBypassHeader = { 'X-Test-Bypass-Rate-Limit': 'true' };
+  // Rate-limit bypass header removed in Workstream 4; keep empty for chain
+  // compatibility with existing .set(rateLimitBypassHeader) call sites.
+  const rateLimitBypassHeader = {};
 
   beforeAll(async () => {
     // Start server once for all tests
@@ -154,7 +156,6 @@ describe('Authentication with HttpOnly Cookies', () => {
         .post('/api/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
-        .set('X-Test-Bypass-Auth', 'true')
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -181,7 +182,6 @@ describe('Authentication with HttpOnly Cookies', () => {
         .post('/api/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
-        .set('X-Test-Bypass-Auth', 'true')
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -206,7 +206,6 @@ describe('Authentication with HttpOnly Cookies', () => {
         .post('/api/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
-        .set('X-Test-Bypass-Auth', 'true')
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -221,7 +220,6 @@ describe('Authentication with HttpOnly Cookies', () => {
         .get('/api/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', cookieHeader)
-        .set('X-Test-Bypass-Auth', 'true')
         .set('X-Test-Email', testUserData.email)
         .expect(200);
 
@@ -256,7 +254,6 @@ describe('Authentication with HttpOnly Cookies', () => {
         .post('/api/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
-        .set('X-Test-Bypass-Auth', 'true')
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -272,7 +269,6 @@ describe('Authentication with HttpOnly Cookies', () => {
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('Cookie', [refreshCookie])
-        .set('X-Test-Bypass-Auth', 'true')
         .expect(200);
 
       expect(response.body.status).toBe('success');
@@ -300,7 +296,6 @@ describe('Authentication with HttpOnly Cookies', () => {
         .post('/api/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
-        .set('X-Test-Bypass-Auth', 'true')
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -319,7 +314,6 @@ describe('Authentication with HttpOnly Cookies', () => {
         .post('/api/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
-        .set('X-Test-Bypass-Auth', 'true')
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -335,7 +329,6 @@ describe('Authentication with HttpOnly Cookies', () => {
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('Cookie', [refreshCookieFromLogin])
-        .set('X-Test-Bypass-Auth', 'true')
         .expect(200);
       expect(apiRefreshResponse.body.status).toBe('success');
 
@@ -345,7 +338,6 @@ describe('Authentication with HttpOnly Cookies', () => {
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('Cookie', [refreshCookieFromLogin])
-        .set('X-Test-Bypass-Auth', 'true')
         .expect(200);
       expect(authRefreshResponse.body.status).toBe('success');
     });
@@ -361,7 +353,6 @@ describe('Authentication with HttpOnly Cookies', () => {
         .post('/api/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
-        .set('X-Test-Bypass-Auth', 'true')
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -378,7 +369,6 @@ describe('Authentication with HttpOnly Cookies', () => {
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('Cookie', authCookies)
-        .set('X-Test-Bypass-Auth', 'true')
         .set('X-Test-Email', testUserData.email)
         .expect(200);
 
@@ -401,7 +391,6 @@ describe('Authentication with HttpOnly Cookies', () => {
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('Cookie', authCookies)
-        .set('X-Test-Bypass-Auth', 'true')
         .set('X-Test-Email', testUserData.email)
         .expect(200);
 
@@ -458,7 +447,6 @@ describe('Authentication with HttpOnly Cookies', () => {
         .post('/api/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
-        .set('X-Test-Bypass-Auth', 'true')
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -482,7 +470,6 @@ describe('Authentication with HttpOnly Cookies', () => {
         .post('/api/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
-        .set('X-Test-Bypass-Auth', 'true')
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -534,7 +521,6 @@ describe('Authentication with HttpOnly Cookies', () => {
         .get('/api/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${accessToken}`)
-        .set('X-Test-Bypass-Auth', 'true')
         .set('X-Test-Email', fallbackEmail)
         .expect(200);
 

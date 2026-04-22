@@ -28,9 +28,8 @@ import request from 'supertest';
 import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
-// Disable all security test bypasses for realistic attack simulation
-process.env.TEST_BYPASS_RATE_LIMIT = 'false';
-process.env.TEST_BYPASS_AUTH = 'false';
+// All test-bypass escape hatches were removed in Workstream 4; this suite
+// exercises the real auth/rate-limit/CSRF stack with no bypass headers set.
 
 const { default: app } = await import('../../app.mjs');
 

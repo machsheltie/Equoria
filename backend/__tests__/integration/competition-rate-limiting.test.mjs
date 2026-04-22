@@ -23,8 +23,6 @@ import request from 'supertest';
 import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
-// Disable rate limit bypass for security testing
-process.env.TEST_BYPASS_RATE_LIMIT = 'false';
 
 const { default: app } = await import('../../app.mjs');
 

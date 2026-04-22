@@ -30,7 +30,14 @@ import {
 import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
-process.env.TEST_BYPASS_RATE_LIMIT = 'false';
+import { snapshotEnv, restoreEnv } from '../../tests/helpers/envSnapshot.mjs';
+
+// NOTE: TEST_RATE_LIMIT_MAX_REQUESTS and TEST_RATE_LIMIT_WINDOW_MS are read
+// when the rate-limiting middleware builds its limiter, which happens on
+// first import of app.mjs. They must therefore be set BEFORE that import —
+// but we snapshot+restore around the whole suite to prevent leaking into
+// sibling test files.
+const __envSnap__ = snapshotEnv();
 process.env.TEST_RATE_LIMIT_MAX_REQUESTS = '5';
 process.env.TEST_RATE_LIMIT_WINDOW_MS = '10000'; // 10 seconds to avoid race conditions
 
@@ -42,6 +49,10 @@ describe('Rate Limiting System', () => {
     __csrf__ = await fetchCsrf(app);
   });
 
+  afterAll(() => {
+    restoreEnv(__envSnap__);
+  });
+
   let testUser;
   let server;
   const limiterBypassed = process.env.NODE_ENV === 'test';
@@ -50,7 +61,6 @@ describe('Rate Limiting System', () => {
   const getUniqueIP = index => `127.0.0.${index + 10}`;
 
   beforeAll(async () => {
-    process.env.TEST_BYPASS_RATE_LIMIT = 'false';
     // Start server once for all tests
     server = app.listen(0);
 

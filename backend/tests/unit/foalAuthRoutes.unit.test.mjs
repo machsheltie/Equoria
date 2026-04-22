@@ -51,7 +51,6 @@ jest.unstable_mockModule('../../utils/logger.mjs', () => ({
 
 let app;
 let authToken;
-const originalBypassRateLimit = process.env.TEST_BYPASS_RATE_LIMIT;
 
 const buildToken = userId =>
   jwt.sign({ id: userId, email: `${userId}@example.com` }, process.env.JWT_SECRET, {
@@ -59,7 +58,6 @@ const buildToken = userId =>
   });
 
 beforeAll(async () => {
-  process.env.TEST_BYPASS_RATE_LIMIT = 'false';
   process.env.TEST_RATE_LIMIT_WINDOW_MS = '10000'; // 10s window
   process.env.TEST_RATE_LIMIT_MAX_REQUESTS = '2';
 
@@ -93,7 +91,6 @@ beforeEach(() => {
 });
 
 afterAll(() => {
-  process.env.TEST_BYPASS_RATE_LIMIT = originalBypassRateLimit;
   delete process.env.TEST_RATE_LIMIT_WINDOW_MS;
   delete process.env.TEST_RATE_LIMIT_MAX_REQUESTS;
 });

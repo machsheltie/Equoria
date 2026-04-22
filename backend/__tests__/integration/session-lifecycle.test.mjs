@@ -51,7 +51,6 @@ describe('Session Lifecycle Management', () => {
   };
 
   beforeAll(async () => {
-    process.env.TEST_BYPASS_RATE_LIMIT = 'true';
     // Start server once for all tests
     server = app.listen(0);
 
