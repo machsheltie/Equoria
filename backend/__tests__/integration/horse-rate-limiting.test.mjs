@@ -1,18 +1,27 @@
 import request from 'supertest';
 import { generateTestToken, authHeader as _authHeader } from '../../tests/helpers/authHelper.mjs';
 
+import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 process.env.TEST_BYPASS_RATE_LIMIT = 'false';
 process.env.TEST_RATE_LIMIT_MAX_REQUESTS = '100';
 
 const { default: app } = await import('../../app.mjs');
 
 describe('Horse routes rate limiting', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   it('should apply query rate limiter to GET /api/horses', async () => {
     // Test bypass mechanism removed for production security (2025-01-16)
     // Tests now use real JWT tokens via backend/tests/helpers/authHelper.mjs
     const token = generateTestToken({ id: 'test-user-uuid-123', role: 'user' });
 
-    const response = await request(app).get('/api/horses').set('Authorization', `Bearer ${token}`);
+    const response = await request(app)
+      .get('/api/horses')
+      .set('Origin', 'http://localhost:3000')
+      .set('Authorization', `Bearer ${token}`);
 
     expect(response.status).toBe(200);
 

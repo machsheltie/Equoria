@@ -27,11 +27,17 @@ import jwt from 'jsonwebtoken';
 import config from '../config/config.mjs';
 import app from '../app.mjs';
 
+import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 // ---------------------------------------------------------------------------
 // sampleWeightedAllele — pure function, no mocks needed
 // ---------------------------------------------------------------------------
 
 describe('sampleWeightedAllele', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   it('returns the only allele when weights has one entry', () => {
     const weights = { 'E/E': 1.0 };
     expect(sampleWeightedAllele(weights, () => 0.5)).toBe('E/E');
@@ -273,7 +279,9 @@ describe('POST /api/v1/horses — colorGenotype integration', () => {
     const response = await request(app)
       .post('/api/v1/horses')
       .set('Authorization', `Bearer ${token}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({
         name: `GenotypeTest_${timestamp}`,
         breedId: arabianBreedId, // Arabian — has full allele_weights profile

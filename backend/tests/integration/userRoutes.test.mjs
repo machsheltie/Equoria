@@ -43,10 +43,16 @@ import { describe, beforeAll, afterAll, expect, it } from '@jest/globals';
 import request from 'supertest';
 import { createTestUser, cleanupTestData } from '../helpers/testAuth.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Import app directly - no mocking for full integration testing
 const app = (await import('../../app.mjs')).default;
 
 describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let authToken;
   let testUserForCrud; // Additional user for CRUD operations
@@ -86,7 +92,9 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const response = await request(app)
         .get(`/api/users/${testUser.id}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -114,7 +122,9 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const response = await request(app)
         .get(`/api/users/${nonExistentUuid}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(403);
 
       expect(response.body.success).toBe(false);
@@ -125,7 +135,9 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const response = await request(app)
         .get('/api/users//progress')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(400); // Validation error for empty ID
 
       expect(response.body).toEqual({
@@ -141,9 +153,12 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
 
     it('should return validation error for invalid user ID format', async () => {
       const response = await request(app)
-        .get('/api/users/a/progress') // Invalid UUID format
+        .get('/api/users/a/progress')
+        .set('Origin', 'http://localhost:3000') // Invalid UUID format
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(400); // Validation error for invalid UUID
 
       expect(response.body).toEqual({
@@ -163,7 +178,9 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const response = await request(app)
         .get(`/api/users/${longId}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(400);
 
       expect(response.body).toEqual({
@@ -185,7 +202,9 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const response = await request(app)
         .get(`/api/users/${nonExistentUuid}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(403);
 
       expect(response.body.success).toBe(false);
@@ -196,7 +215,9 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const response = await request(app)
         .get(`/api/users/${testUser.id}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(200);
 
       // Verify XP calculation fields are present and valid
@@ -213,7 +234,9 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const response = await request(app)
         .get(`/api/users/${testUser.id}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(200);
 
       // Verify required fields are present
@@ -239,7 +262,9 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const response = await request(app)
         .get(`/api/users/${specialId}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(400); // Invalid UUID format
 
       expect(response.body).toEqual({
@@ -257,9 +282,12 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
   describe('GET /api/users/:id', () => {
     it('should return a user by ID', async () => {
       const response = await request(app)
-        .get(`/api/users/${testUserForCrud.id}`) // Use real test user
+        .get(`/api/users/${testUserForCrud.id}`)
+        .set('Origin', 'http://localhost:3000') // Use real test user
         .set('Authorization', `Bearer ${authTokenForCrud}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -280,7 +308,9 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const response = await request(app)
         .get(`/api/users/${nonExistentUuid}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(403);
       expect(response.body.success).toBe(false);
     });
@@ -300,7 +330,9 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
         .post('/api/users')
         .send(userData)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(201);
 
       expect(response.body.success).toBe(true);
@@ -325,9 +357,12 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     it('should return 400 for invalid user data', async () => {
       const response = await request(app)
         .post('/api/users')
+        .set('Origin', 'http://localhost:3000')
         .send({ username: 'Bad' }) // Missing required fields
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(400);
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBeDefined();
@@ -342,7 +377,9 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
         .put(`/api/users/${testUserForCrud.id}`)
         .send(updates)
         .set('Authorization', `Bearer ${authTokenForCrud}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -361,7 +398,9 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
         .put(`/api/users/${nonExistentUuid}`)
         .send({ money: 100 })
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(403);
       expect(response.body.success).toBe(false);
     });
@@ -380,7 +419,9 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const response = await request(app)
         .delete(`/api/users/${deleteUserResult.user.id}`)
         .set('Authorization', `Bearer ${deleteAuthToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -392,7 +433,9 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const response = await request(app)
         .delete(`/api/users/${nonExistentUuid}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(403);
       expect(response.body.success).toBe(false);
     });
@@ -405,7 +448,9 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
         .post(`/api/users/${testUser.id}/add-xp`)
         .send(xpData)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -431,7 +476,9 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
         .post(`/api/users/${nonExistentUuid}/add-xp`)
         .send({ amount: 50 })
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(403);
 
       expect(response.body.success).toBe(false);

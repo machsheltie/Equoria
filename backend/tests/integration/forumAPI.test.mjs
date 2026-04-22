@@ -9,7 +9,13 @@ import { createTestUser, cleanupTestData } from '../helpers/testAuth.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import app from '../../app.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('💬 INTEGRATION: Forum API', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let authToken;
   let createdThreadId;
@@ -36,7 +42,7 @@ describe('💬 INTEGRATION: Forum API', () => {
 
   describe('Authentication', () => {
     it('should require auth for creating threads', async () => {
-      const res = await request(app).post('/api/forum/threads').send({
+      const res = await request(app).post('/api/forum/threads').set('Origin', 'http://localhost:3000').send({
         section: 'general',
         title: 'Test',
         content: 'Hello',
@@ -51,7 +57,9 @@ describe('💬 INTEGRATION: Forum API', () => {
       const res = await request(app)
         .post('/api/forum/threads')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           section: 'general',
           title: 'My test thread',
@@ -71,7 +79,9 @@ describe('💬 INTEGRATION: Forum API', () => {
       const res = await request(app)
         .post('/api/forum/threads')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ section: 'general', content: 'oops' });
       expect(res.status).toBe(400);
     });
@@ -80,7 +90,9 @@ describe('💬 INTEGRATION: Forum API', () => {
       const res = await request(app)
         .post('/api/forum/threads')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ section: 'invalid', title: 'Test', content: 'test' });
       expect(res.status).toBe(400);
     });
@@ -90,6 +102,7 @@ describe('💬 INTEGRATION: Forum API', () => {
     it('should list threads for a section', async () => {
       const res = await request(app)
         .get('/api/forum/threads?section=general')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.status).toBe(200);
@@ -101,6 +114,7 @@ describe('💬 INTEGRATION: Forum API', () => {
     it('should return pinned threads first', async () => {
       const res = await request(app)
         .get('/api/forum/threads?section=general')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
       const threads = res.body.data.threads;
       const pinnedIndexes = threads.map((t, i) => (t.isPinned ? i : -1)).filter(i => i >= 0);
@@ -113,6 +127,7 @@ describe('💬 INTEGRATION: Forum API', () => {
     it('should include replyCount on each thread', async () => {
       const res = await request(app)
         .get('/api/forum/threads?section=general')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
       const thread = res.body.data.threads.find(t => t.id === createdThreadId);
       expect(thread).toBeDefined();
@@ -124,6 +139,7 @@ describe('💬 INTEGRATION: Forum API', () => {
     it('should return thread with posts', async () => {
       const res = await request(app)
         .get(`/api/forum/threads/${createdThreadId}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.status).toBe(200);
@@ -133,7 +149,10 @@ describe('💬 INTEGRATION: Forum API', () => {
     });
 
     it('should return 404 for non-existent thread', async () => {
-      const res = await request(app).get('/api/forum/threads/99999999').set('Authorization', `Bearer ${authToken}`);
+      const res = await request(app)
+        .get('/api/forum/threads/99999999')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
       expect(res.status).toBe(404);
     });
   });
@@ -143,7 +162,9 @@ describe('💬 INTEGRATION: Forum API', () => {
       const res = await request(app)
         .post(`/api/forum/threads/${createdThreadId}/posts`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ content: 'Great thread!' });
 
       expect(res.status).toBe(201);
@@ -154,7 +175,9 @@ describe('💬 INTEGRATION: Forum API', () => {
       const res = await request(app)
         .post(`/api/forum/threads/${createdThreadId}/posts`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ content: '' });
       expect(res.status).toBe(400);
     });
@@ -166,7 +189,9 @@ describe('💬 INTEGRATION: Forum API', () => {
       await request(app)
         .post(`/api/forum/threads/${createdThreadId}/view`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
       const after = await prisma.forumThread.findUnique({ where: { id: createdThreadId } });
       expect(after.viewCount).toBe(before.viewCount + 1);
     });

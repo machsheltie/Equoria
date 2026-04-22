@@ -35,6 +35,7 @@ import jwt from 'jsonwebtoken';
 import config from '../config/config.mjs';
 import app from '../app.mjs';
 
+import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 // ---------------------------------------------------------------------------
 // Deterministic RNG helper
 // ---------------------------------------------------------------------------
@@ -48,6 +49,11 @@ function alwaysReturn(val) {
 // ---------------------------------------------------------------------------
 
 describe('sampleWeightedFromMap', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   it('returns a key from the weight map', () => {
     const map = { none: 0.6, star: 0.2, blaze: 0.2 };
     const result = sampleWeightedFromMap(map, Math.random);
@@ -503,7 +509,9 @@ describe('POST /api/v1/horses — markings integration', () => {
     const response = await request(app)
       .post('/api/v1/horses')
       .set('Authorization', `Bearer ${token}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({
         name: `MarkingTestHorse_${timestamp}`,
         breedId,

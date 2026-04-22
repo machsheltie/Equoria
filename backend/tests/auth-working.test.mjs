@@ -46,6 +46,7 @@ import { authenticateToken } from '../middleware/auth.mjs';
 import prisma from '../db/index.mjs';
 import { generateTestToken } from './helpers/authHelper.mjs';
 
+import { fetchCsrf } from './helpers/csrfHelper.mjs';
 // Create a minimal test app without problematic middleware
 const createTestApp = () => {
   const app = express();
@@ -92,6 +93,11 @@ const createTestApp = () => {
 };
 
 describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Validation', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let app;
   // Store created user IDs for targeted cleanup
   const createdUserIds = new Set();
@@ -148,7 +154,11 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
         name: 'Auth User', // Required by minimal app schema in this file
       };
 
-      const response = await request(app).post('/api/auth/register').send(userData).expect(201);
+      const response = await request(app)
+        .post('/api/auth/register')
+        .set('Origin', 'http://localhost:3000')
+        .send(userData)
+        .expect(201);
       trackUser(response);
 
       expect(response.body.status).toBe('success');
@@ -180,11 +190,19 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
       };
 
       // First registration
-      const response1 = await request(app).post('/api/auth/register').send(userData).expect(201);
+      const response1 = await request(app)
+        .post('/api/auth/register')
+        .set('Origin', 'http://localhost:3000')
+        .send(userData)
+        .expect(201);
       trackUser(response1);
 
       // Second registration with same email
-      const response = await request(app).post('/api/auth/register').send(userData).expect(400);
+      const response = await request(app)
+        .post('/api/auth/register')
+        .set('Origin', 'http://localhost:3000')
+        .send(userData)
+        .expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('User with this email or username already exists');
@@ -209,7 +227,10 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
         name: 'Auth User',
       };
 
-      const response = await request(app).post('/api/auth/register').send(userData);
+      const response = await request(app)
+        .post('/api/auth/register')
+        .set('Origin', 'http://localhost:3000')
+        .send(userData);
       trackUser(response);
     });
 
@@ -219,7 +240,11 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
         password: loginPassword,
       };
 
-      const response = await request(app).post('/api/auth/login').send(loginData).expect(200);
+      const response = await request(app)
+        .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
+        .send(loginData)
+        .expect(200);
 
       expect(response.body.status).toBe('success');
       expect(response.body.message).toBe('Login successful');
@@ -240,6 +265,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
 
       const response = await request(app)
         .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
         .send(loginData)
         .set('x-test-require-auth', 'true')
         .expect(401);
@@ -265,7 +291,10 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
         name: 'Auth User',
       };
 
-      const registerResponse = await request(app).post('/api/auth/register').send(userData);
+      const registerResponse = await request(app)
+        .post('/api/auth/register')
+        .set('Origin', 'http://localhost:3000')
+        .send(userData);
       trackUser(registerResponse);
 
       // Extract refreshToken from httpOnly cookie
@@ -285,6 +314,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
     it('should refresh token successfully', async () => {
       const response = await request(app)
         .post('/api/auth/refresh')
+        .set('Origin', 'http://localhost:3000')
         .set('Cookie', `refreshToken=${refreshTokenValue}`) // Send as cookie header, not body
         .expect(200);
 
@@ -300,6 +330,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
     it('should reject invalid refresh token', async () => {
       const response = await request(app)
         .post('/api/auth/refresh')
+        .set('Origin', 'http://localhost:3000')
         .set('Cookie', 'refreshToken=invalid-token') // Send as cookie header, not body
         .set('x-test-require-auth', 'true')
         .expect(401);
@@ -327,7 +358,10 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
         name: 'Auth User',
       };
 
-      const registerResponse = await request(app).post('/api/auth/register').send(userData);
+      const registerResponse = await request(app)
+        .post('/api/auth/register')
+        .set('Origin', 'http://localhost:3000')
+        .send(userData);
       trackUser(registerResponse);
 
       if (registerResponse.body && registerResponse.body.data) {
@@ -343,6 +377,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
     it('should get user profile with valid token', async () => {
       const response = await request(app)
         .get('/api/auth/me')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authTokenValue}`) // Use renamed variable
         .expect(200);
 
@@ -355,7 +390,11 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
     });
 
     it('should reject profile request without token', async () => {
-      const response = await request(app).get('/api/auth/me').set('x-test-require-auth', 'true').expect(401);
+      const response = await request(app)
+        .get('/api/auth/me')
+        .set('Origin', 'http://localhost:3000')
+        .set('x-test-require-auth', 'true')
+        .expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Access token is required');
@@ -364,6 +403,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
     it('should logout successfully', async () => {
       const response = await request(app)
         .post('/api/auth/logout')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authTokenValue}`) // Use renamed variable
         .expect(200);
 

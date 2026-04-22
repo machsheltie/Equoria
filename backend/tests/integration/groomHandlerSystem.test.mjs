@@ -8,7 +8,13 @@ import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('Groom Handler System Integration Tests', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let authToken;
   let testUser;
   let testGroom;
@@ -99,6 +105,7 @@ describe('Groom Handler System Integration Tests', () => {
     it('should get the assigned handler for a horse', async () => {
       const response = await request(app)
         .get(`/api/groom-handlers/horse/${testHorse.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
@@ -130,6 +137,7 @@ describe('Groom Handler System Integration Tests', () => {
       try {
         const response = await request(app)
           .get(`/api/groom-handlers/horse/${noHandlerHorse.id}`)
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${authToken}`);
 
         expect(response.status).toBe(200);
@@ -168,6 +176,7 @@ describe('Groom Handler System Integration Tests', () => {
       try {
         const response = await request(app)
           .get(`/api/groom-handlers/horse/${otherHorse.id}`)
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${authToken}`);
 
         expect(response.status).toBe(404);
@@ -184,6 +193,7 @@ describe('Groom Handler System Integration Tests', () => {
     it('should check handler eligibility for a conformation class', async () => {
       const response = await request(app)
         .get(`/api/groom-handlers/eligibility/${testHorse.id}/Mares`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
@@ -204,6 +214,7 @@ describe('Groom Handler System Integration Tests', () => {
     it('should validate conformation class', async () => {
       const response = await request(app)
         .get(`/api/groom-handlers/eligibility/${testHorse.id}/InvalidClass`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(400);
@@ -214,7 +225,10 @@ describe('Groom Handler System Integration Tests', () => {
 
   describe('3. Handler Configuration', () => {
     it('should get handler configuration', async () => {
-      const response = await request(app).get('/api/groom-handlers/config').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/groom-handlers/config')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -256,6 +270,7 @@ describe('Groom Handler System Integration Tests', () => {
       try {
         const response = await request(app)
           .get(`/api/groom-handlers/recommendations/${testHorse.id}?className=Mares`)
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${authToken}`);
 
         expect(response.status).toBe(200);

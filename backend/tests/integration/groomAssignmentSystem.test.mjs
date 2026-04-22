@@ -8,7 +8,13 @@ import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('Enhanced Groom Assignment System Integration Tests', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let authToken;
   let testUser;
   let testGroom1;
@@ -126,7 +132,9 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       const response = await request(app)
         .post('/api/groom-assignments')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(assignmentData);
 
       expect(response.status).toBe(201);
@@ -152,7 +160,9 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       const response = await request(app)
         .post('/api/groom-assignments')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(assignmentData);
 
       expect(response.status).toBe(201);
@@ -169,7 +179,9 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       const response = await request(app)
         .post('/api/groom-assignments')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(assignmentData);
 
       expect(response.status).toBe(400);
@@ -186,7 +198,9 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       const response = await request(app)
         .post('/api/groom-assignments')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(invalidData);
 
       expect(response.status).toBe(400);
@@ -224,7 +238,9 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         const response = await request(app)
           .post('/api/groom-assignments')
           .set('Authorization', `Bearer ${authToken}`)
-          .set('x-test-skip-csrf', 'true')
+          .set('Origin', 'http://localhost:3000')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           .send(assignmentData);
 
         expect(response.status).toBe(400);
@@ -243,7 +259,9 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       const response = await request(app)
         .get('/api/groom-assignments')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -261,7 +279,9 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       const response = await request(app)
         .get(`/api/groom-assignments?groomId=${testGroom1.id}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -276,7 +296,9 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       const response = await request(app)
         .get('/api/groom-assignments/dashboard')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -296,7 +318,9 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       const response = await request(app)
         .get(`/api/groom-assignments/groom/${testGroom1.id}/limits`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -335,7 +359,9 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
           const response = await request(app)
             .post('/api/groom-assignments')
             .set('Authorization', `Bearer ${authToken}`)
-            .set('x-test-skip-csrf', 'true')
+            .set('Origin', 'http://localhost:3000')
+            .set('Cookie', __csrf__.cookieHeader)
+            .set('X-CSRF-Token', __csrf__.csrfToken)
             .send({
               groomId: testGroom1.id,
               horseId: horse.id,
@@ -366,7 +392,9 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       const response = await request(app)
         .get('/api/groom-assignments/salary-costs')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -395,7 +423,9 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       const response = await request(app)
         .post('/api/groom-assignments/validate')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           groomId: testGroom2.id,
           horseId: testHorse1.id,
@@ -421,7 +451,9 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       const assignmentsResponse = await request(app)
         .get('/api/groom-assignments')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       const assignment = assignmentsResponse.body.data.assignments.find(a => a.isActive);
       expect(assignment).toBeDefined();
@@ -430,7 +462,9 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       const response = await request(app)
         .delete(`/api/groom-assignments/${assignment.id}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           reason: 'Test removal',
         });
@@ -448,7 +482,9 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       const response = await request(app)
         .delete('/api/groom-assignments/99999')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           reason: 'Test removal',
         });
@@ -464,7 +500,9 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       const response = await request(app)
         .get('/api/groom-assignments/config')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -478,7 +516,9 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       const response = await request(app)
         .get('/api/groom-assignments/statistics')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);

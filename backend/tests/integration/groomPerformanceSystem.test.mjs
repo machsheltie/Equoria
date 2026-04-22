@@ -15,7 +15,13 @@ import {
   PERFORMANCE_CONFIG,
 } from '../../services/groomPerformanceService.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('Groom Performance System', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let testGroom;
   let testHorse;
@@ -172,7 +178,9 @@ describe('Groom Performance System', () => {
       const response = await request(app)
         .post('/api/groom-performance/record')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           groomId: testGroom.id,
           horseId: testHorse.id,
@@ -193,6 +201,7 @@ describe('Groom Performance System', () => {
     it('should get groom performance summary', async () => {
       const response = await request(app)
         .get(`/api/groom-performance/groom/${testGroom.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
@@ -211,6 +220,7 @@ describe('Groom Performance System', () => {
     it('should get top performing grooms', async () => {
       const response = await request(app)
         .get('/api/groom-performance/top?limit=5')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
@@ -230,6 +240,7 @@ describe('Groom Performance System', () => {
     it('should get performance configuration', async () => {
       const response = await request(app)
         .get('/api/groom-performance/config')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
@@ -247,6 +258,7 @@ describe('Groom Performance System', () => {
     it('should get groom analytics', async () => {
       const response = await request(app)
         .get(`/api/groom-performance/analytics/${testGroom.id}?days=30`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
@@ -291,6 +303,7 @@ describe('Groom Performance System', () => {
 
       const response = await request(app)
         .get(`/api/groom-performance/groom/${otherGroom.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(404);
@@ -307,7 +320,9 @@ describe('Groom Performance System', () => {
       const response1 = await request(app)
         .post('/api/groom-performance/record')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           groomId: 'invalid',
           interactionType: 'grooming',
@@ -320,7 +335,9 @@ describe('Groom Performance System', () => {
       const response2 = await request(app)
         .post('/api/groom-performance/record')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           groomId: testGroom.id,
           interactionType: 'grooming',
@@ -334,7 +351,9 @@ describe('Groom Performance System', () => {
       const response3 = await request(app)
         .post('/api/groom-performance/record')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           groomId: testGroom.id,
           interactionType: 'grooming',
@@ -379,7 +398,10 @@ describe('Groom Performance System', () => {
 
   describe('Authentication', () => {
     it('should require authentication for POST /api/groom-performance/record', async () => {
-      const response = await request(app).post('/api/groom-performance/record').set('x-test-require-auth', 'true');
+      const response = await request(app)
+        .post('/api/groom-performance/record')
+        .set('Origin', 'http://localhost:3000')
+        .set('x-test-require-auth', 'true');
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
@@ -388,6 +410,7 @@ describe('Groom Performance System', () => {
     it('should require authentication for GET /api/groom-performance/groom/:groomId', async () => {
       const response = await request(app)
         .get(`/api/groom-performance/groom/${testGroom.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('x-test-require-auth', 'true');
 
       expect(response.status).toBe(401);
@@ -395,14 +418,20 @@ describe('Groom Performance System', () => {
     });
 
     it('should require authentication for GET /api/groom-performance/top', async () => {
-      const response = await request(app).get('/api/groom-performance/top').set('x-test-require-auth', 'true');
+      const response = await request(app)
+        .get('/api/groom-performance/top')
+        .set('Origin', 'http://localhost:3000')
+        .set('x-test-require-auth', 'true');
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
 
     it('should require authentication for GET /api/groom-performance/config', async () => {
-      const response = await request(app).get('/api/groom-performance/config').set('x-test-require-auth', 'true');
+      const response = await request(app)
+        .get('/api/groom-performance/config')
+        .set('Origin', 'http://localhost:3000')
+        .set('x-test-require-auth', 'true');
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
@@ -411,6 +440,7 @@ describe('Groom Performance System', () => {
     it('should require authentication for GET /api/groom-performance/analytics/:groomId', async () => {
       const response = await request(app)
         .get(`/api/groom-performance/analytics/${testGroom.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('x-test-require-auth', 'true');
 
       expect(response.status).toBe(401);

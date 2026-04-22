@@ -14,10 +14,16 @@ import request from 'supertest';
 import { createTestUser } from '../helpers/testAuth.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Import the app (no mocking - full integration testing)
 const app = (await import('../../app.mjs')).default;
 
 describe('Trait Routes Integration Tests', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testHorse;
   let testBreed;
   let authToken;
@@ -103,7 +109,9 @@ describe('Trait Routes Integration Tests', () => {
       const response = await request(app)
         .post(`/api/traits/discover/${testHorse.id}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           checkEnrichment: true,
           forceCheck: false,
@@ -125,7 +133,9 @@ describe('Trait Routes Integration Tests', () => {
       const response = await request(app)
         .post('/api/traits/discover/invalid')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({})
         .expect(400);
 
@@ -138,7 +148,9 @@ describe('Trait Routes Integration Tests', () => {
       const response = await request(app)
         .post('/api/traits/discover/99999')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           checkEnrichment: true,
           forceCheck: false,
@@ -153,7 +165,9 @@ describe('Trait Routes Integration Tests', () => {
       const response = await request(app)
         .post(`/api/traits/discover/${testHorse.id}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           checkEnrichment: false,
           forceCheck: true,
@@ -169,6 +183,7 @@ describe('Trait Routes Integration Tests', () => {
     it('should get horse traits successfully', async () => {
       const response = await request(app)
         .get(`/api/traits/horse/${testHorse.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       // Temporary debugging: log the response to see the actual error
@@ -203,6 +218,7 @@ describe('Trait Routes Integration Tests', () => {
     it('should return validation error for invalid horse ID', async () => {
       const response = await request(app)
         .get('/api/traits/horse/invalid')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
 
@@ -213,6 +229,7 @@ describe('Trait Routes Integration Tests', () => {
     it('should return 404 for non-existent horse', async () => {
       const response = await request(app)
         .get('/api/traits/horse/99999')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
 
@@ -225,6 +242,7 @@ describe('Trait Routes Integration Tests', () => {
     it('should get all trait definitions', async () => {
       const response = await request(app)
         .get('/api/traits/definitions')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -248,6 +266,7 @@ describe('Trait Routes Integration Tests', () => {
     it('should filter traits by type', async () => {
       const response = await request(app)
         .get('/api/traits/definitions?type=positive')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -264,6 +283,7 @@ describe('Trait Routes Integration Tests', () => {
     it('should return validation error for invalid type', async () => {
       const response = await request(app)
         .get('/api/traits/definitions?type=invalid')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
 
@@ -276,6 +296,7 @@ describe('Trait Routes Integration Tests', () => {
     it('should get discovery status successfully', async () => {
       const response = await request(app)
         .get(`/api/traits/discovery-status/${testHorse.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -307,6 +328,7 @@ describe('Trait Routes Integration Tests', () => {
     it('should return validation error for invalid horse ID', async () => {
       const response = await request(app)
         .get('/api/traits/discovery-status/invalid')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
 
@@ -317,6 +339,7 @@ describe('Trait Routes Integration Tests', () => {
     it('should return 404 for non-existent horse', async () => {
       const response = await request(app)
         .get('/api/traits/discovery-status/99999')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
 
@@ -330,7 +353,9 @@ describe('Trait Routes Integration Tests', () => {
       const response = await request(app)
         .post('/api/traits/batch-discover')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           horseIds: [testHorse.id],
           checkEnrichment: true,
@@ -354,7 +379,9 @@ describe('Trait Routes Integration Tests', () => {
       const response = await request(app)
         .post('/api/traits/batch-discover')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           horseIds: [],
         })
@@ -370,7 +397,9 @@ describe('Trait Routes Integration Tests', () => {
       const response = await request(app)
         .post('/api/traits/batch-discover')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           horseIds: tooManyIds,
         })
@@ -384,7 +413,9 @@ describe('Trait Routes Integration Tests', () => {
       const response = await request(app)
         .post('/api/traits/batch-discover')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           horseIds: ['invalid', 'ids'],
         })
@@ -398,7 +429,9 @@ describe('Trait Routes Integration Tests', () => {
       const response = await request(app)
         .post('/api/traits/batch-discover')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           horseIds: [testHorse.id, 99999], // One valid, one invalid
         })

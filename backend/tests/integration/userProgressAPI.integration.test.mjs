@@ -38,6 +38,7 @@ import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
 import { invalidateCache } from '../../utils/cacheHelper.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 /**
  * Extract cookie value from Set-Cookie header array
  */
@@ -54,6 +55,11 @@ const extractCookie = (cookies, name) => {
 };
 
 describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let authToken;
   let testHorse;
@@ -61,7 +67,9 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
     request(app)
       .post('/api/training/train')
       .set('Authorization', `Bearer ${authToken}`)
-      .set('x-test-skip-csrf', 'true');
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken);
 
   beforeAll(async () => {
     // Clean up any existing test data
@@ -135,7 +143,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       // STEP 1: Register user
       const registerResponse = await request(app)
         .post('/api/auth/register')
-        .set('x-test-bypass-rate-limit', 'true')
+        .set('Origin', 'http://localhost:3000')
         .send({
           username: 'progresstest',
           firstName: 'Progress',
@@ -151,7 +159,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       // STEP 2: Login to get auth token
       const loginResponse = await request(app)
         .post('/api/auth/login')
-        .set('x-test-bypass-rate-limit', 'true')
+        .set('Origin', 'http://localhost:3000')
         .send({
           email: 'progress-test@example.com',
           password: 'TestPassword123!',
@@ -173,6 +181,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
     it('should return correct initial progress data via API', async () => {
       const response = await request(app)
         .get(`/api/users/${testUser.id}/progress`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -248,6 +257,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       // STEP 2: Verify progress updated correctly
       const progressResponse = await request(app)
         .get(`/api/users/${testUser.id}/progress`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -297,6 +307,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       // STEP 2: Verify accumulated XP (should be 55 total, still level 1 - appropriate pacing)
       const progressResponse = await request(app)
         .get(`/api/users/${testUser.id}/progress`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -343,6 +354,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       // STEP 3: Verify level-up occurred
       const progressResponse = await request(app)
         .get(`/api/users/${testUser.id}/progress`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -377,6 +389,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       // STEP 2: Verify multi-level progression
       const progressResponse = await request(app)
         .get(`/api/users/${testUser.id}/progress`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -398,6 +411,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
     it('should return comprehensive dashboard data with progress integration', async () => {
       const dashboardResponse = await request(app)
         .get(`/api/users/dashboard/${testUser.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -430,6 +444,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
     it('should handle invalid user ID gracefully', async () => {
       const response = await request(app)
         .get('/api/users/999999/progress')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400); // UUID validation fails before user lookup
 
@@ -440,6 +455,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
     it('should validate user ID format', async () => {
       const response = await request(app)
         .get('/api/users/invalid/progress')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
 
@@ -450,6 +466,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
     it('should require authentication for progress endpoints', async () => {
       const response = await request(app)
         .get(`/api/users/${testUser.id}/progress`)
+        .set('Origin', 'http://localhost:3000')
         .set('x-test-require-auth', 'true')
         .expect(401);
 
@@ -475,6 +492,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       // STEP 3: Verify progress API consistency
       const progressResponse = await request(app)
         .get(`/api/users/${testUser.id}/progress`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 

@@ -17,6 +17,7 @@ import express from 'express';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 const mockDb = {
   user: {
     findUnique: jest.fn(),
@@ -98,8 +99,16 @@ afterAll(() => {
 });
 
 describe('Foal routes auth enforcement', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   it('rejects unauthenticated access to foal development', async () => {
-    const response = await request(app).get('/api/foals/1/development').expect(401);
+    const response = await request(app)
+      .get('/api/foals/1/development')
+      .set('Origin', 'http://localhost:3000')
+      .expect(401);
 
     expect(response.body.success).toBe(false);
     expect(response.body.message).toBe('Access token is required');
@@ -108,6 +117,7 @@ describe('Foal routes auth enforcement', () => {
   it('rejects unauthenticated access to foal enrichment', async () => {
     const response = await request(app)
       .post('/api/foals/1/enrichment')
+      .set('Origin', 'http://localhost:3000')
       .send({ day: 1, activity: 'Feeding Assistance' })
       .expect(401);
 
@@ -116,14 +126,21 @@ describe('Foal routes auth enforcement', () => {
   });
 
   it('rejects unauthenticated access to foal activity', async () => {
-    const response = await request(app).post('/api/foals/1/activity').send({ activityType: 'feeding' }).expect(401);
+    const response = await request(app)
+      .post('/api/foals/1/activity')
+      .set('Origin', 'http://localhost:3000')
+      .send({ activityType: 'feeding' })
+      .expect(401);
 
     expect(response.body.success).toBe(false);
     expect(response.body.message).toBe('Access token is required');
   });
 
   it('rejects unauthenticated access to advance-day', async () => {
-    const response = await request(app).post('/api/foals/1/advance-day').expect(401);
+    const response = await request(app)
+      .post('/api/foals/1/advance-day')
+      .set('Origin', 'http://localhost:3000')
+      .expect(401);
 
     expect(response.body.success).toBe(false);
     expect(response.body.message).toBe('Access token is required');
@@ -139,17 +156,20 @@ describe('Foal routes auth enforcement', () => {
     // First two requests — counted by rate limiter (any status is fine)
     await request(app)
       .post('/api/foals/1/activity')
+      .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${token}`)
       .send({ activityType: 'feeding' });
 
     await request(app)
       .post('/api/foals/1/activity')
+      .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${token}`)
       .send({ activityType: 'feeding' });
 
     // Third request must be rate-limited
     const response = await request(app)
       .post('/api/foals/1/activity')
+      .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${token}`)
       .send({ activityType: 'feeding' })
       .expect(429);
@@ -166,17 +186,20 @@ describe('Foal routes auth enforcement', () => {
     // First two requests — counted by rate limiter
     await request(app)
       .post('/api/foals/1/enrichment')
+      .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${token}`)
       .send({ day: 1, activity: 'Feeding Assistance' });
 
     await request(app)
       .post('/api/foals/1/enrichment')
+      .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${token}`)
       .send({ day: 1, activity: 'Feeding Assistance' });
 
     // Third request must be rate-limited
     const response = await request(app)
       .post('/api/foals/1/enrichment')
+      .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${token}`)
       .send({ day: 1, activity: 'Feeding Assistance' })
       .expect(429);
@@ -190,6 +213,7 @@ describe('Foal routes auth enforcement', () => {
 
     const response = await request(app)
       .get('/api/foals/1/development')
+      .set('Origin', 'http://localhost:3000')
       .set('Authorization', `Bearer ${authToken}`)
       .expect(404);
 

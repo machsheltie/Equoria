@@ -43,6 +43,7 @@ import { register, login } from '../controllers/authController.mjs';
 import { body } from 'express-validator';
 import prisma from '../db/index.mjs';
 
+import { fetchCsrf } from './helpers/csrfHelper.mjs';
 // Create a simple test app without all the middleware
 const createTestApp = () => {
   const app = express();
@@ -66,6 +67,11 @@ const createTestApp = () => {
 };
 
 describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflow Testing', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let app;
 
   beforeAll(() => {
@@ -129,7 +135,11 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
       lastName: 'User', // Added
     };
 
-    const response = await request(app).post('/register').send(userData).expect(201);
+    const response = await request(app)
+      .post('/register')
+      .set('Origin', 'http://localhost:3000')
+      .send(userData)
+      .expect(201);
 
     expect(response.body.status).toBe('success');
     expect(response.body.data.user.email).toBe(userData.email);
@@ -150,7 +160,7 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
       lastName: 'User', // Added
     };
 
-    await request(app).post('/register').send(userData);
+    await request(app).post('/register').set('Origin', 'http://localhost:3000').send(userData);
 
     // Then login
     const loginData = {
@@ -158,7 +168,11 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
       password: 'TestPassword123!',
     };
 
-    const response = await request(app).post('/login').send(loginData).expect(200);
+    const response = await request(app)
+      .post('/login')
+      .set('Origin', 'http://localhost:3000')
+      .send(loginData)
+      .expect(200);
 
     expect(response.body.status).toBe('success');
     expect(response.body.data.user.email).toBe(loginData.email);

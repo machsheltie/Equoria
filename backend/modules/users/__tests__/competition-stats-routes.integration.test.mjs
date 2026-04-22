@@ -17,7 +17,13 @@ import app from '../../../app.mjs';
 import prisma from '../../../db/index.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 describe('INTEGRATION: GET /api/users/:userId/competition-stats (21S-4)', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let activeUser;
   let activeToken;
   let emptyUser;
@@ -128,7 +134,9 @@ describe('INTEGRATION: GET /api/users/:userId/competition-stats (21S-4)', () => 
 
   describe('Auth guard', () => {
     it('returns 401 when unauthenticated', async () => {
-      const res = await request(app).get(`/api/users/${activeUser.id}/competition-stats`);
+      const res = await request(app)
+        .get(`/api/users/${activeUser.id}/competition-stats`)
+        .set('Origin', 'http://localhost:3000');
       expect(res.status).toBe(401);
     });
 
@@ -137,6 +145,7 @@ describe('INTEGRATION: GET /api/users/:userId/competition-stats (21S-4)', () => 
     it("returns 403 when requesting another user's stats", async () => {
       const res = await request(app)
         .get(`/api/users/${activeUser.id}/competition-stats`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${emptyToken}`);
       expect(res.status).toBe(403);
     });
@@ -146,6 +155,7 @@ describe('INTEGRATION: GET /api/users/:userId/competition-stats (21S-4)', () => 
     it('returns 200 with zeroed stats and empty recent list', async () => {
       const res = await request(app)
         .get(`/api/users/${emptyUser.id}/competition-stats`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${emptyToken}`);
 
       expect(res.status).toBe(200);
@@ -166,6 +176,7 @@ describe('INTEGRATION: GET /api/users/:userId/competition-stats (21S-4)', () => 
     it('returns 200 with aggregated totals and most-successful discipline', async () => {
       const res = await request(app)
         .get(`/api/users/${activeUser.id}/competition-stats`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${activeToken}`);
 
       expect(res.status).toBe(200);

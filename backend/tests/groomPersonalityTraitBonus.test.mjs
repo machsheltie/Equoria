@@ -27,7 +27,13 @@ import {
 import { applyPersonalityEffectsToMilestone } from '../utils/personalityModifierEngine.mjs';
 import { evaluateEnhancedMilestone } from '../utils/enhancedMilestoneEvaluationSystem.mjs';
 
+import { fetchCsrf } from './helpers/csrfHelper.mjs';
 describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let testHorse;
   let testGroom;
@@ -262,6 +268,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       it('should return groom profile with personality information', async () => {
         const response = await request(app)
           .get(`/api/grooms/${testGroom.id}/profile`)
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', authToken)
           .expect(200);
 
@@ -275,6 +282,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       it('should return 404 for non-existent groom', async () => {
         const response = await request(app)
           .get('/api/grooms/99999/profile')
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', authToken)
           .expect(404);
 
@@ -285,6 +293,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       it('should return 400 for invalid groom ID', async () => {
         const response = await request(app)
           .get('/api/grooms/invalid/profile')
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', authToken)
           .expect(400);
 
@@ -297,6 +306,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       it('should return personality compatibility for horse', async () => {
         const response = await request(app)
           .get(`/api/horses/${testHorse.id}/personality-impact`)
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', authToken)
           .expect(200);
 
@@ -311,6 +321,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       it('should return 404 for non-existent horse', async () => {
         const response = await request(app)
           .get('/api/horses/99999/personality-impact')
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', authToken)
           .expect(404);
 
@@ -332,6 +343,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
 
         const response = await request(app)
           .get(`/api/horses/${horseWithoutTemperament.id}/personality-impact`)
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', authToken)
           .expect(400);
 
@@ -358,12 +370,13 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         });
 
         // Get CSRF token for POST request
-        const csrfResponse = await request(app).get('/auth/csrf-token');
+        const csrfResponse = await request(app).get('/auth/csrf-token').set('Origin', 'http://localhost:3000');
         const csrfToken = csrfResponse.body.csrfToken;
         const csrfCookie = csrfResponse.headers['set-cookie'].find(cookie => cookie.startsWith('_csrf=')).split(';')[0];
 
         const response = await request(app)
           .post('/api/milestones/evaluate-milestone')
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', authToken)
           .set('Cookie', csrfCookie)
           .set('X-CSRF-Token', csrfToken)

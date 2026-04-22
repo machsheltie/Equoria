@@ -36,6 +36,7 @@ import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
 import config from '../../config/config.js';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Strategic mocking: Only mock external dependencies
 jest.mock('../../utils/logger.mjs', () => ({
   info: jest.fn(),
@@ -45,6 +46,11 @@ jest.mock('../../utils/logger.mjs', () => ({
 }));
 
 describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let testToken;
   let testHorses;
@@ -223,6 +229,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
     it('should return complete dashboard data successfully', async () => {
       const response = await request(app)
         .get(`/api/users/dashboard/${testUser.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
 
@@ -261,6 +268,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
     it('should return 400 for invalid user ID format', async () => {
       const response = await request(app)
         .get('/api/users/dashboard/nonexistent-user')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(400);
 
@@ -271,6 +279,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
     it('should return 401 for missing authentication', async () => {
       const response = await request(app)
         .get(`/api/users/dashboard/${testUser.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('x-test-require-auth', 'true')
         .expect(401);
 
@@ -280,7 +289,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
 
     it('should return validation error for invalid user ID format', async () => {
       const response = await request(app)
-        .get(`/api/users/dashboard/${'x'.repeat(100)}`) // Too long
+        .get(`/api/users/dashboard/${'x'.repeat(100).set('Origin', 'http://localhost:3000')}`) // Too long
         .set('Authorization', `Bearer ${testToken}`)
         .expect(400);
 
@@ -307,6 +316,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
 
       const response = await request(app)
         .get(`/api/users/dashboard/${emptyUser.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${emptyToken}`)
         .expect(200);
 
@@ -355,6 +365,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
 
       const response = await request(app)
         .get(`/api/users/dashboard/${inactiveUser.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${inactiveToken}`)
         .expect(200);
 

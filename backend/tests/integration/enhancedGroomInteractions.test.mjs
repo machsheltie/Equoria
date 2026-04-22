@@ -8,7 +8,13 @@ import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('Enhanced Groom Interactions Integration Tests', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let authToken;
   let testUser;
   let testGroom;
@@ -95,6 +101,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
     it('should get available interactions for groom-horse pair', async () => {
       const response = await request(app)
         .get(`/api/grooms/enhanced/interactions/${testGroom.id}/${testHorse.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
@@ -141,6 +148,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
     it('should return 404 for non-existent groom', async () => {
       const response = await request(app)
         .get(`/api/grooms/enhanced/interactions/99999/${testHorse.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(404);
@@ -151,6 +159,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
     it('should return 404 for non-existent horse', async () => {
       const response = await request(app)
         .get(`/api/grooms/enhanced/interactions/${testGroom.id}/99999`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(404);
@@ -173,7 +182,9 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       const response = await request(app)
         .post('/api/grooms/enhanced/interact')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(interactionData);
 
       expect(response.status).toBe(201);
@@ -233,7 +244,9 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       const response = await request(app)
         .post('/api/grooms/enhanced/interact')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(interactionData);
 
       expect(response.status).toBe(201);
@@ -272,7 +285,9 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       const firstResponse = await request(app)
         .post('/api/grooms/enhanced/interact')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(interactionData);
 
       expect(firstResponse.status).toBe(201);
@@ -281,7 +296,9 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       const secondResponse = await request(app)
         .post('/api/grooms/enhanced/interact')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(interactionData);
 
       expect(secondResponse.status).toBe(400);
@@ -304,7 +321,9 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       const response = await request(app)
         .post('/api/grooms/enhanced/interact')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(invalidData);
 
       expect(response.status).toBe(400);
@@ -324,7 +343,9 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       const response = await request(app)
         .post('/api/grooms/enhanced/interact')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(invalidData);
 
       expect(response.status).toBe(400);
@@ -344,7 +365,9 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       const response = await request(app)
         .post('/api/grooms/enhanced/interact')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(invalidData);
 
       expect(response.status).toBe(400);
@@ -356,6 +379,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
     it('should get detailed relationship information', async () => {
       const response = await request(app)
         .get(`/api/grooms/enhanced/relationship/${testGroom.id}/${testHorse.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
@@ -394,6 +418,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
     it('should get interaction types', async () => {
       const response = await request(app)
         .get('/api/grooms/enhanced/interactions/types')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
@@ -426,7 +451,10 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       ];
 
       for (const endpoint of endpoints) {
-        const response = await request(app).get(endpoint).set('x-test-require-auth', 'true');
+        const response = await request(app)
+          .get(endpoint)
+          .set('Origin', 'http://localhost:3000')
+          .set('x-test-require-auth', 'true');
         expect(response.status).toBe(401);
       }
     });
@@ -453,6 +481,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       try {
         const response = await request(app)
           .get(`/api/grooms/enhanced/interactions/${testGroom.id}/${testHorse.id}`)
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${otherToken}`);
 
         expect(response.status).toBe(404);

@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import app from '../app.mjs';
 import prisma from '../db/index.mjs';
 
+import { fetchCsrf } from './helpers/csrfHelper.mjs';
 // SECURITY FIX (Phase 1, Task 1.1): Removed all x-test-bypass-ownership headers
 // Tests now use proper JWT authentication with real token generation
 
@@ -13,6 +14,11 @@ const buildToken = userId =>
   });
 
 describe('Trait Discovery API Integration Tests', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testBreed;
   let testFoals = [];
   let authToken;
@@ -191,7 +197,9 @@ describe('Trait Discovery API Integration Tests', () => {
       const response = await request(app)
         .post(`/api/traits/discover/${testFoals[0].id}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -217,7 +225,9 @@ describe('Trait Discovery API Integration Tests', () => {
       const response = await request(app)
         .post(`/api/traits/discover/${testFoals[1].id}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -232,7 +242,9 @@ describe('Trait Discovery API Integration Tests', () => {
       const response = await request(app)
         .post(`/api/traits/discover/${testFoals[2].id}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -250,7 +262,9 @@ describe('Trait Discovery API Integration Tests', () => {
       const response = await request(app)
         .post('/api/traits/discover/99999')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(404);
 
       expect(response.body.success).toBe(false);
@@ -261,7 +275,9 @@ describe('Trait Discovery API Integration Tests', () => {
       const response = await request(app)
         .post('/api/traits/discover/invalid')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(400);
 
       expect(response.body.success).toBe(false);
@@ -273,6 +289,7 @@ describe('Trait Discovery API Integration Tests', () => {
     it('should return discovery progress for foal', async () => {
       const response = await request(app)
         .get(`/api/trait-discovery/progress/${testFoals[0].id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -312,6 +329,7 @@ describe('Trait Discovery API Integration Tests', () => {
     it('should return 404 for non-existent foal', async () => {
       const response = await request(app)
         .get('/api/trait-discovery/progress/99999')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
 
@@ -327,7 +345,9 @@ describe('Trait Discovery API Integration Tests', () => {
       const response = await request(app)
         .post('/api/traits/batch-discover')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           horseIds: [testFoals[0].id, testFoals[1].id],
         });
@@ -353,7 +373,9 @@ describe('Trait Discovery API Integration Tests', () => {
       const response = await request(app)
         .post('/api/traits/batch-discover')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           horseIds: [testFoals[0].id, 99999, testFoals[2].id], // Valid foal, non-existent, adult horse
         })
@@ -373,7 +395,9 @@ describe('Trait Discovery API Integration Tests', () => {
       const response = await request(app)
         .post('/api/traits/batch-discover')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           horseIds: [],
         })
@@ -388,6 +412,7 @@ describe('Trait Discovery API Integration Tests', () => {
     it('should return all discovery conditions', async () => {
       const response = await request(app)
         .get('/api/trait-discovery/conditions')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -422,7 +447,9 @@ describe('Trait Discovery API Integration Tests', () => {
       const response = await request(app)
         .post(`/api/trait-discovery/check-conditions/${testFoals[0].id}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -459,7 +486,9 @@ describe('Trait Discovery API Integration Tests', () => {
       const response = await request(app)
         .post('/api/trait-discovery/check-conditions/99999')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(404);
 
       expect(response.body.success).toBe(false);
@@ -518,6 +547,7 @@ describe('Trait Discovery API Integration Tests', () => {
       // 1. Check initial progress
       const progressResponse = await request(app)
         .get(`/api/trait-discovery/progress/${foalId}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -530,7 +560,9 @@ describe('Trait Discovery API Integration Tests', () => {
       const conditionsResponse = await request(app)
         .post(`/api/trait-discovery/check-conditions/${foalId}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(200);
 
       const metConditions = conditionsResponse.body.data.conditions.filter(c => c.met);
@@ -540,7 +572,9 @@ describe('Trait Discovery API Integration Tests', () => {
       const discoveryResponse = await request(app)
         .post(`/api/traits/discover/${foalId}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(200);
 
       // 4. Verify traits were revealed if conditions were met
@@ -558,6 +592,7 @@ describe('Trait Discovery API Integration Tests', () => {
       // 5. Check progress again to see changes
       const finalProgressResponse = await request(app)
         .get(`/api/trait-discovery/progress/${foalId}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 

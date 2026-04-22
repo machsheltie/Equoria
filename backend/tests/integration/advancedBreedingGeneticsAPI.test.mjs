@@ -14,7 +14,13 @@ import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
 import { createTestUser } from '../helpers/testAuth.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('🧬 Advanced Breeding Genetics API Integration', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let authToken;
   let testUser;
   let testStallion, testMare;
@@ -83,8 +89,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
     const stallionResponse = await request(app)
       .post('/api/horses')
       .set('Authorization', `Bearer ${authToken}`)
-      .set('x-test-skip-csrf', 'true')
-      .set('x-test-bypass-rate-limit', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({
         name: 'Genetic Test Stallion',
         breedId: testBreed.id,
@@ -103,8 +110,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
     const mareResponse = await request(app)
       .post('/api/horses')
       .set('Authorization', `Bearer ${authToken}`)
-      .set('x-test-skip-csrf', 'true')
-      .set('x-test-bypass-rate-limit', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({
         name: 'Genetic Test Mare',
         breedId: testBreed.id,
@@ -125,8 +133,12 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       request(app)
         .post('/api/horses')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           name: 'Population Horse 1',
           breedId: testBreed.id,
@@ -136,8 +148,12 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       request(app)
         .post('/api/horses')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           name: 'Population Horse 2',
           breedId: testBreed.id,
@@ -169,7 +185,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       const response = await request(app)
         .post('/api/breeding/genetic-probability')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           stallionId: testStallion.id,
           mareId: testMare.id,
@@ -198,7 +216,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       const response = await request(app)
         .post('/api/breeding/genetic-probability')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           stallionId: 99999,
           mareId: testMare.id,
@@ -212,6 +232,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
     test('POST /api/breeding/genetic-probability should require authentication', async () => {
       const response = await request(app)
         .post('/api/breeding/genetic-probability')
+        .set('Origin', 'http://localhost:3000')
         .set('x-test-require-auth', 'true')
         .send({
           stallionId: testStallion.id,
@@ -227,7 +248,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       const response = await request(app)
         .get(`/api/breeding/lineage-analysis/${testStallion.id}/${testMare.id}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .query({ generations: 3 });
 
       expect(response.status).toBe(200);
@@ -252,7 +275,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       const response = await request(app)
         .get('/api/breeding/lineage-analysis/99999/99998')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(response.status).toBe(404);
       expect(response.body).toHaveProperty('success', false);
@@ -262,7 +287,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       const response = await request(app)
         .post('/api/breeding/breeding-recommendations')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           stallionId: testStallion.id,
           mareId: testMare.id,
@@ -293,7 +320,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       const response = await request(app)
         .post('/api/genetics/population-analysis')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ horseIds });
 
       expect(response.status).toBe(200);
@@ -319,7 +348,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       const response = await request(app)
         .post('/api/genetics/inbreeding-analysis')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           stallionId: testStallion.id,
           mareId: testMare.id,
@@ -346,7 +377,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       const response = await request(app)
         .get(`/api/genetics/diversity-report/${testUser.id}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('success', true);
@@ -373,7 +406,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       const response = await request(app)
         .post('/api/genetics/optimal-breeding')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ horseIds });
 
       expect(response.status).toBe(200);
@@ -419,7 +454,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       const response1 = await request(app)
         .post('/api/breeding/genetic-probability')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({});
 
       expect(response1.status).toBe(400);
@@ -428,7 +465,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       const response2 = await request(app)
         .post('/api/genetics/inbreeding-analysis')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           stallionId: 'invalid',
           mareId: 'invalid',
@@ -440,7 +479,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       const response3 = await request(app)
         .post('/api/genetics/population-analysis')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ horseIds: [] });
 
       expect(response3.status).toBe(400);
@@ -450,8 +491,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       // Create another user
       const otherUserResponse = await request(app)
         .post('/api/auth/register')
-        .set('x-test-skip-csrf', 'true')
-        .set('x-test-bypass-rate-limit', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           username: `otherUser_${usernameSuffix}`,
           email: `other+${testSuffix}@test.com`,
@@ -462,8 +504,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
 
       const otherLoginResponse = await request(app)
         .post('/api/auth/login')
-        .set('x-test-skip-csrf', 'true')
-        .set('x-test-bypass-rate-limit', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           email: `other+${testSuffix}@test.com`,
           password: 'TestPassword123!',
@@ -487,6 +530,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       // Try to access genetic analysis with horses not owned by the user
       const response = await request(app)
         .post('/api/breeding/genetic-probability')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${otherToken}`)
         .send({
           stallionId: testStallion.id,

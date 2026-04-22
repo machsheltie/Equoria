@@ -33,7 +33,13 @@ import app from '../app.mjs';
 import prisma from '../db/index.mjs';
 import { generateTestToken } from './helpers/authHelper.mjs';
 
+import { fetchCsrf } from './helpers/csrfHelper.mjs';
 describe('Foal Task Logging Integration', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   // Reference date anchor for all test date calculations
   const referenceDate = new Date('2025-06-01T12:00:00Z');
 
@@ -179,7 +185,9 @@ describe('Foal Task Logging Integration', () => {
       const response = await request(app)
         .post('/api/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           foalId: testFoal.id,
           groomId: testGroom.id,
@@ -220,7 +228,9 @@ describe('Foal Task Logging Integration', () => {
       const response = await request(app)
         .post('/api/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           foalId: testFoal.id,
           groomId: testGroom.id,
@@ -257,7 +267,9 @@ describe('Foal Task Logging Integration', () => {
       const response = await request(app)
         .post('/api/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           foalId: testFoal.id,
           groomId: testGroom.id,
@@ -317,7 +329,9 @@ describe('Foal Task Logging Integration', () => {
         const response = await request(app)
           .post('/api/grooms/interact')
           .set('Authorization', `Bearer ${authToken}`)
-          .set('x-test-skip-csrf', 'true')
+          .set('Origin', 'http://localhost:3000')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           .send({
             foalId: taskFoal.id,
             groomId: testGroom.id,
@@ -363,7 +377,9 @@ describe('Foal Task Logging Integration', () => {
       const response = await request(app)
         .post('/api/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           foalId: testFoal.id,
           groomId: testGroom.id,
@@ -390,7 +406,9 @@ describe('Foal Task Logging Integration', () => {
       const response1 = await request(app)
         .post('/api/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           foalId: testFoal.id,
           groomId: testGroom.id,
@@ -410,7 +428,9 @@ describe('Foal Task Logging Integration', () => {
       const response2 = await request(app)
         .post('/api/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           foalId: testFoal.id,
           groomId: testGroom.id,
@@ -441,7 +461,9 @@ describe('Foal Task Logging Integration', () => {
       const response = await request(app)
         .post('/api/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           foalId: testFoal.id,
           groomId: testGroom.id,
@@ -472,7 +494,9 @@ describe('Foal Task Logging Integration', () => {
       const response = await request(app)
         .post('/api/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           foalId: testFoal.id,
           groomId: testGroom.id,

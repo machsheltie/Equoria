@@ -19,7 +19,13 @@ import jwt from 'jsonwebtoken';
 import { triggerTokenCleanup } from '../../services/cronJobService.mjs';
 import { createTokenPair } from '../../utils/tokenRotationService.mjs';
 
+import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 describe('Session Lifecycle Management', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let server;
   let _csrfToken;
@@ -35,7 +41,7 @@ describe('Session Lifecycle Management', () => {
 
   // Helper function to get CSRF token
   async function _getCsrfToken() {
-    const response = await request(app).get('/api/auth/csrf-token');
+    const response = await request(app).get('/api/auth/csrf-token').set('Origin', 'http://localhost:3000');
     return response.body.csrfToken;
   }
 
@@ -134,6 +140,7 @@ describe('Session Lifecycle Management', () => {
       // Login
       const response = await request(app)
         .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
         .set(testBypassHeaders)
         .send({
           email: testUserData.email,
@@ -159,6 +166,7 @@ describe('Session Lifecycle Management', () => {
       // Login
       const response = await request(app)
         .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
         .set(testBypassHeaders)
         .send({
           email: testUserData.email,
@@ -201,6 +209,7 @@ describe('Session Lifecycle Management', () => {
       // Login to get auth cookies
       const loginResponse = await request(app)
         .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
         .set(testBypassHeaders)
         .send({
           email: testUserData.email,
@@ -211,7 +220,11 @@ describe('Session Lifecycle Management', () => {
       const cookies = loginResponse.headers['set-cookie'];
 
       // Logout
-      const response = await request(app).post('/api/auth/logout').set('Cookie', cookies).expect(200);
+      const response = await request(app)
+        .post('/api/auth/logout')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', cookies)
+        .expect(200);
 
       expect(response.body.status).toBe('success');
 
@@ -226,6 +239,7 @@ describe('Session Lifecycle Management', () => {
       // Login
       const loginResponse = await request(app)
         .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
         .set(testBypassHeaders)
         .send({
           email: testUserData.email,
@@ -236,7 +250,11 @@ describe('Session Lifecycle Management', () => {
       const cookies = loginResponse.headers['set-cookie'];
 
       // Logout
-      const response = await request(app).post('/api/auth/logout').set('Cookie', cookies).expect(200);
+      const response = await request(app)
+        .post('/api/auth/logout')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', cookies)
+        .expect(200);
 
       // Verify cookies are cleared
       const clearCookies = response.headers['set-cookie'];
@@ -259,6 +277,7 @@ describe('Session Lifecycle Management', () => {
       // Login to get auth cookies
       const loginResponse = await request(app)
         .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
         .set(testBypassHeaders)
         .send({
           email: testUserData.email,
@@ -276,10 +295,14 @@ describe('Session Lifecycle Management', () => {
 
       // Change password
       const newPassword = 'NewPassword456!';
-      const response = await request(app).post('/api/auth/change-password').set('Cookie', cookies).send({
-        oldPassword: testUserData.password,
-        newPassword,
-      });
+      const response = await request(app)
+        .post('/api/auth/change-password')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', cookies)
+        .send({
+          oldPassword: testUserData.password,
+          newPassword,
+        });
 
       expect([200, 500]).toContain(response.status);
       if (response.body?.data?.sessionInvalidated !== undefined) {
@@ -310,6 +333,7 @@ describe('Session Lifecycle Management', () => {
       // Login to get auth cookies
       const loginResponse = await request(app)
         .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
         .set(testBypassHeaders)
         .send({
           email: testUserData.email,
@@ -322,6 +346,7 @@ describe('Session Lifecycle Management', () => {
       // Attempt to change password with wrong old password
       const response = await request(app)
         .post('/api/auth/change-password')
+        .set('Origin', 'http://localhost:3000')
         .set('Cookie', cookies)
         .send({
           oldPassword: 'WrongPassword123!',
@@ -337,6 +362,7 @@ describe('Session Lifecycle Management', () => {
       // Login to get auth cookies
       const loginResponse = await request(app)
         .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
         .set(testBypassHeaders)
         .send({
           email: testUserData.email,
@@ -349,6 +375,7 @@ describe('Session Lifecycle Management', () => {
       // Attempt to change password with weak new password
       const response = await request(app)
         .post('/api/auth/change-password')
+        .set('Origin', 'http://localhost:3000')
         .set('Cookie', cookies)
         .send({
           oldPassword: testUserData.password,
@@ -365,6 +392,7 @@ describe('Session Lifecycle Management', () => {
       // Login first to get valid token structure
       const loginResponse = await request(app)
         .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
         .set(testBypassHeaders)
         .send({
           email: testUserData.email,
@@ -393,6 +421,7 @@ describe('Session Lifecycle Management', () => {
       // Attempt to use old token
       const response = await request(app)
         .get('/api/auth/profile')
+        .set('Origin', 'http://localhost:3000')
         .set('Cookie', [`accessToken=${oldToken}`])
         .expect(401);
 
@@ -404,6 +433,7 @@ describe('Session Lifecycle Management', () => {
       // Login first to get valid token
       const loginResponse = await request(app)
         .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
         .set(testBypassHeaders)
         .send({
           email: testUserData.email,
@@ -431,6 +461,7 @@ describe('Session Lifecycle Management', () => {
       // Attempt to use recent token
       const response = await request(app)
         .get('/api/auth/profile')
+        .set('Origin', 'http://localhost:3000')
         .set('Cookie', [`accessToken=${recentToken}`])
         .expect(200);
 
@@ -442,6 +473,7 @@ describe('Session Lifecycle Management', () => {
       // Login first
       const loginResponse = await request(app)
         .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
         .set(testBypassHeaders)
         .send({
           email: testUserData.email,
@@ -469,6 +501,7 @@ describe('Session Lifecycle Management', () => {
       // This should still be valid (not > 7 days)
       const response = await request(app)
         .get('/api/auth/profile')
+        .set('Origin', 'http://localhost:3000')
         .set('Cookie', [`accessToken=${exactToken}`])
         .expect(200);
 
@@ -580,7 +613,11 @@ describe('Session Lifecycle Management', () => {
         lastName: 'Test',
       };
 
-      const registerResponse = await request(app).post('/api/auth/register').send(newUserData).expect([201, 400, 429]);
+      const registerResponse = await request(app)
+        .post('/api/auth/register')
+        .set('Origin', 'http://localhost:3000')
+        .send(newUserData)
+        .expect([201, 400, 429]);
 
       if (registerResponse.status !== 201) {
         return;
@@ -590,7 +627,11 @@ describe('Session Lifecycle Management', () => {
       let cookies = registerResponse.headers['set-cookie'];
 
       // Step 2: Verify session works
-      const profileResponse1 = await request(app).get('/api/auth/profile').set('Cookie', cookies).expect(200);
+      const profileResponse1 = await request(app)
+        .get('/api/auth/profile')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', cookies)
+        .expect(200);
 
       expect(profileResponse1.body.data.user.email).toBe(newUserData.email);
 
@@ -598,6 +639,7 @@ describe('Session Lifecycle Management', () => {
       const newPassword = 'NewPassword456!';
       const changePasswordResponse = await request(app)
         .post('/api/auth/change-password')
+        .set('Origin', 'http://localhost:3000')
         .set('Cookie', cookies)
         .send({
           oldPassword: newUserData.password,
@@ -608,11 +650,16 @@ describe('Session Lifecycle Management', () => {
       expect(changePasswordResponse.body.data.sessionInvalidated).toBe(true);
 
       // Step 4: Verify old session no longer works
-      await request(app).get('/api/auth/profile').set('Cookie', cookies).expect(401);
+      await request(app)
+        .get('/api/auth/profile')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', cookies)
+        .expect(401);
 
       // Step 5: Login with new password
       const loginResponse = await request(app)
         .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
         .set(testBypassHeaders)
         .send({
           email: newUserData.email,
@@ -623,7 +670,11 @@ describe('Session Lifecycle Management', () => {
       cookies = loginResponse.headers['set-cookie'];
 
       // Step 6: Verify new session works
-      const profileResponse2 = await request(app).get('/api/auth/profile').set('Cookie', cookies).expect(200);
+      const profileResponse2 = await request(app)
+        .get('/api/auth/profile')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', cookies)
+        .expect(200);
 
       expect(profileResponse2.body.data.user.email).toBe(newUserData.email);
 

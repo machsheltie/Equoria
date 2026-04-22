@@ -53,6 +53,7 @@ import {
 import prisma from '../../db/index.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Create test app with health monitoring
 const createTestApp = () => {
   const app = express();
@@ -124,6 +125,11 @@ const createTestApp = () => {
 };
 
 describe('🏥 Health Monitoring Integration Tests', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let app;
   let _testUser;
   let authToken;
@@ -180,7 +186,10 @@ describe('🏥 Health Monitoring Integration Tests', () => {
       lastName: 'Integration',
     };
 
-    const registerResponse = await request(app).post('/api/auth/register').send(userData);
+    const registerResponse = await request(app)
+      .post('/api/auth/register')
+      .set('Origin', 'http://localhost:3000')
+      .send(userData);
 
     expect(registerResponse.status).toBe(201);
     _testUser = registerResponse.body.data.user;
@@ -200,7 +209,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
 
   describe('🔍 Main Health Endpoints', () => {
     test('should provide basic ping health check', async () => {
-      const response = await request(app).get('/ping');
+      const response = await request(app).get('/ping').set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -209,7 +218,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
     });
 
     test('should provide ping with custom name', async () => {
-      const response = await request(app).get('/ping?name=HealthTest');
+      const response = await request(app).get('/ping?name=HealthTest').set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -218,7 +227,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
     });
 
     test('should provide comprehensive health check', async () => {
-      const response = await request(app).get('/health');
+      const response = await request(app).get('/health').set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -233,7 +242,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
     });
 
     test('should provide readiness check', async () => {
-      const response = await request(app).get('/ready');
+      const response = await request(app).get('/ready').set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -245,7 +254,10 @@ describe('🏥 Health Monitoring Integration Tests', () => {
 
   describe('🧠 Memory Management Health', () => {
     test('should provide memory system health assessment', async () => {
-      const response = await request(app).get('/api/memory/health').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/memory/health')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -261,7 +273,10 @@ describe('🏥 Health Monitoring Integration Tests', () => {
     });
 
     test('should validate memory health score ranges', async () => {
-      const response = await request(app).get('/api/memory/health').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/memory/health')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       const healthData = response.body.data;
@@ -275,7 +290,10 @@ describe('🏥 Health Monitoring Integration Tests', () => {
 
   describe('📚 Documentation System Health', () => {
     test('should provide API documentation health status', async () => {
-      const response = await request(app).get('/api/docs/health').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/docs/health')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -286,7 +304,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
     });
 
     test('should provide user documentation health status', async () => {
-      const response = await request(app).get('/api/user-docs/health');
+      const response = await request(app).get('/api/user-docs/health').set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -300,7 +318,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
 
   describe('🧬 Epigenetic Flag System Health', () => {
     test('should provide flag system operational status', async () => {
-      const response = await request(app).get('/api/flags/health');
+      const response = await request(app).get('/api/flags/health').set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -323,7 +341,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
       ];
 
       for (const endpoint of healthEndpoints) {
-        const request_builder = request(app).get(endpoint.path);
+        const request_builder = request(app).get(endpoint.path).set('Origin', 'http://localhost:3000');
 
         if (endpoint.requiresAuth) {
           request_builder.set('Authorization', `Bearer ${authToken}`);
@@ -344,10 +362,13 @@ describe('🏥 Health Monitoring Integration Tests', () => {
 
     test('should provide consistent health response formats', async () => {
       const responses = await Promise.all([
-        request(app).get('/health'),
-        request(app).get('/api/memory/health').set('Authorization', `Bearer ${authToken}`),
-        request(app).get('/api/user-docs/health'),
-        request(app).get('/api/flags/health'),
+        request(app).get('/health').set('Origin', 'http://localhost:3000'),
+        request(app)
+          .get('/api/memory/health')
+          .set('Origin', 'http://localhost:3000')
+          .set('Authorization', `Bearer ${authToken}`),
+        request(app).get('/api/user-docs/health').set('Origin', 'http://localhost:3000'),
+        request(app).get('/api/flags/health').set('Origin', 'http://localhost:3000'),
       ]);
 
       responses.forEach(response => {
@@ -368,7 +389,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
     test('should monitor health endpoint response times', async () => {
       const startTime = Date.now();
 
-      const response = await request(app).get('/health');
+      const response = await request(app).get('/health').set('Origin', 'http://localhost:3000');
 
       const responseTime = Date.now() - startTime;
 
@@ -378,7 +399,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
     });
 
     test('should validate database performance in health checks', async () => {
-      const response = await request(app).get('/health');
+      const response = await request(app).get('/health').set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(200);
       expect(response.body.data.services.database.status).toBe('healthy');
@@ -396,7 +417,10 @@ describe('🏥 Health Monitoring Integration Tests', () => {
       const protectedEndpoints = ['/api/memory/health', '/api/docs/health', '/api/test/health-status'];
 
       for (const endpoint of protectedEndpoints) {
-        const response = await request(app).get(endpoint).set('x-test-require-auth', 'true');
+        const response = await request(app)
+          .get(endpoint)
+          .set('Origin', 'http://localhost:3000')
+          .set('x-test-require-auth', 'true');
 
         expect(response.status).toBe(401);
         expect(response.body.success).toBe(false);
@@ -408,7 +432,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
       const publicEndpoints = ['/ping', '/health', '/ready', '/api/user-docs/health', '/api/flags/health'];
 
       for (const endpoint of publicEndpoints) {
-        const response = await request(app).get(endpoint);
+        const response = await request(app).get(endpoint).set('Origin', 'http://localhost:3000');
 
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
@@ -419,7 +443,10 @@ describe('🏥 Health Monitoring Integration Tests', () => {
   describe('🚨 Error Handling and Reporting', () => {
     test('should handle health check errors gracefully', async () => {
       // Test authenticated health endpoint with valid token
-      const response = await request(app).get('/api/test/health-status').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/test/health-status')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -430,6 +457,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
       // Test with invalid token
       const response = await request(app)
         .get('/api/memory/health')
+        .set('Origin', 'http://localhost:3000')
         .set('x-test-require-auth', 'true')
         .set('Authorization', 'Bearer invalid-token');
 

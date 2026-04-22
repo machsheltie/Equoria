@@ -21,10 +21,16 @@ import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
+import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 // getMemoryManager import removed - not used in this file
 // logger import removed - not used in this file
 
 describe('Cross-System Validation Tests', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let authToken;
   let testBreed;
@@ -131,7 +137,9 @@ describe('Cross-System Validation Tests', () => {
       const foalResponse = await request(app)
         .post('/api/horses/foals')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(foalData)
         .expect(201);
 
@@ -146,7 +154,9 @@ describe('Cross-System Validation Tests', () => {
       const enrichmentResponse = await request(app)
         .post(`/api/foals/${foal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(enrichmentData)
         .expect(200);
 
@@ -156,7 +166,9 @@ describe('Cross-System Validation Tests', () => {
       const traitDiscoveryResponse = await request(app)
         .post(`/api/trait-discovery/discover/${foal.id}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(200);
 
       expect(traitDiscoveryResponse.body.success).toBe(true);
@@ -164,6 +176,7 @@ describe('Cross-System Validation Tests', () => {
       // Verify trait discovery status
       const traitStatusResponse = await request(app)
         .get(`/api/traits/discovery-status/${foal.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -174,7 +187,9 @@ describe('Cross-System Validation Tests', () => {
       const milestoneResponse = await request(app)
         .post('/api/milestones/evaluate-milestone')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           horseId: foal.id,
           milestoneType: 'imprinting',
@@ -197,6 +212,7 @@ describe('Cross-System Validation Tests', () => {
       // Test environmental factors affecting trait expression
       const environmentalResponse = await request(app)
         .get(`/api/horses/${testHorse.id}/environmental-analysis`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -205,6 +221,7 @@ describe('Cross-System Validation Tests', () => {
       // Verify trait interaction matrix
       const interactionResponse = await request(app)
         .get(`/api/horses/${testHorse.id}/trait-matrix`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -218,6 +235,7 @@ describe('Cross-System Validation Tests', () => {
       // Get initial horse stats
       const initialHorseResponse = await request(app)
         .get(`/api/horses/${testHorse.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -232,7 +250,9 @@ describe('Cross-System Validation Tests', () => {
       const trainingResponse = await request(app)
         .post('/api/training/train')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(trainingData)
         .expect(200);
 
@@ -241,6 +261,7 @@ describe('Cross-System Validation Tests', () => {
       // Verify training affects discipline scores
       const updatedHorseResponse = await request(app)
         .get(`/api/horses/${testHorse.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -252,6 +273,7 @@ describe('Cross-System Validation Tests', () => {
       // Test competition eligibility
       const eligibilityResponse = await request(app)
         .get(`/api/competition/eligibility/${testHorse.id}/Racing`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -281,7 +303,9 @@ describe('Cross-System Validation Tests', () => {
       const entryResponse = await request(app)
         .post('/api/competition/enter')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(entryData)
         .expect(201);
 
@@ -291,7 +315,9 @@ describe('Cross-System Validation Tests', () => {
       const executeResponse = await request(app)
         .post('/api/competition/execute')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           entryId: entryResponse.body.data.id,
           showId: testShow.id,
@@ -304,6 +330,7 @@ describe('Cross-System Validation Tests', () => {
       // Verify horse XP was awarded
       const horseXPResponse = await request(app)
         .get(`/api/horses/${testHorse.id}/xp`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -315,6 +342,7 @@ describe('Cross-System Validation Tests', () => {
       // Get competition leaderboard
       const leaderboardResponse = await request(app)
         .get('/api/leaderboards/competition?discipline=Racing&timeframe=all')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -337,6 +365,7 @@ describe('Cross-System Validation Tests', () => {
       // Get initial groom stats
       const initialGroomResponse = await request(app)
         .get(`/api/grooms/user/${testUser.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -354,7 +383,9 @@ describe('Cross-System Validation Tests', () => {
       const interactionResponse = await request(app)
         .post('/api/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(interactionData)
         .expect(200);
 
@@ -363,6 +394,7 @@ describe('Cross-System Validation Tests', () => {
       // Verify groom experience increased
       const updatedGroomResponse = await request(app)
         .get(`/api/grooms/user/${testUser.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -374,6 +406,7 @@ describe('Cross-System Validation Tests', () => {
       if (updatedGroom.level >= 3) {
         const talentResponse = await request(app)
           .get(`/api/grooms/${testGroom.id}/talents`)
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${authToken}`)
           .expect(200);
 
@@ -383,6 +416,7 @@ describe('Cross-System Validation Tests', () => {
       // Test retirement eligibility
       const retirementResponse = await request(app)
         .get(`/api/grooms/${testGroom.id}/retirement/eligibility`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -402,7 +436,9 @@ describe('Cross-System Validation Tests', () => {
       const assignmentResponse = await request(app)
         .post('/api/grooms/assign')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(assignmentData)
         .expect(201);
 
@@ -411,6 +447,7 @@ describe('Cross-System Validation Tests', () => {
       // Verify assignment exists
       const assignmentsResponse = await request(app)
         .get(`/api/grooms/assignments/${testHorse.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -428,6 +465,7 @@ describe('Cross-System Validation Tests', () => {
       // Get initial memory status
       const initialMemoryResponse = await request(app)
         .get('/api/memory/status')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -436,7 +474,12 @@ describe('Cross-System Validation Tests', () => {
       // Perform memory-intensive operations
       const operations = [];
       for (let i = 0; i < 10; i++) {
-        operations.push(request(app).get('/api/horses').set('Authorization', `Bearer ${authToken}`));
+        operations.push(
+          request(app)
+            .get('/api/horses')
+            .set('Origin', 'http://localhost:3000')
+            .set('Authorization', `Bearer ${authToken}`),
+        );
       }
 
       await Promise.all(operations);
@@ -444,6 +487,7 @@ describe('Cross-System Validation Tests', () => {
       // Check memory status after operations
       const finalMemoryResponse = await request(app)
         .get('/api/memory/status')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -458,7 +502,9 @@ describe('Cross-System Validation Tests', () => {
       const gcResponse = await request(app)
         .post('/api/memory/gc')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(400);
 
       expect(gcResponse.body.success).toBe(false);
@@ -469,6 +515,7 @@ describe('Cross-System Validation Tests', () => {
       // Test compressed response
       const compressedResponse = await request(app)
         .get('/api/horses')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Accept-Encoding', 'gzip')
         .expect(200);
@@ -481,6 +528,7 @@ describe('Cross-System Validation Tests', () => {
       // Test pagination
       const paginatedResponse = await request(app)
         .get('/api/horses?page=1&limit=5')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -494,7 +542,10 @@ describe('Cross-System Validation Tests', () => {
   describe('Documentation System Integration', () => {
     test('API documentation integration with live endpoints', async () => {
       // Test that API documentation reflects actual endpoints
-      const swaggerResponse = await request(app).get('/api-docs/swagger.json').expect(200);
+      const swaggerResponse = await request(app)
+        .get('/api-docs/swagger.json')
+        .set('Origin', 'http://localhost:3000')
+        .expect(200);
 
       const apiSpec = swaggerResponse.body;
       expect(apiSpec.paths).toBeDefined();
@@ -508,6 +559,7 @@ describe('Cross-System Validation Tests', () => {
       // Test API documentation health
       const docHealthResponse = await request(app)
         .get('/api/docs/health')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -517,19 +569,28 @@ describe('Cross-System Validation Tests', () => {
 
     test('User documentation integration with search functionality', async () => {
       // Test user documentation search
-      const searchResponse = await request(app).get('/api/user-docs/search?q=competition').expect(200);
+      const searchResponse = await request(app)
+        .get('/api/user-docs/search?q=competition')
+        .set('Origin', 'http://localhost:3000')
+        .expect(200);
 
       expect(searchResponse.body.success).toBe(true);
       expect(searchResponse.body.data.results.length).toBeGreaterThan(0);
 
       // Test specific document retrieval
-      const featureGuideResponse = await request(app).get('/api/user-docs/feature-guide').expect(200);
+      const featureGuideResponse = await request(app)
+        .get('/api/user-docs/feature-guide')
+        .set('Origin', 'http://localhost:3000')
+        .expect(200);
 
       expect(featureGuideResponse.body.success).toBe(true);
       expect(featureGuideResponse.body.data.content).toContain('Equoria');
 
       // Test documentation analytics
-      const analyticsResponse = await request(app).get('/api/user-docs/analytics').expect(200);
+      const analyticsResponse = await request(app)
+        .get('/api/user-docs/analytics')
+        .set('Origin', 'http://localhost:3000')
+        .expect(200);
 
       expect(analyticsResponse.body.success).toBe(true);
       expect(analyticsResponse.body.data.totalViews).toBeGreaterThan(0);
@@ -539,26 +600,30 @@ describe('Cross-System Validation Tests', () => {
   describe('System Health and Monitoring', () => {
     test('Overall system health validation', async () => {
       // Test main health endpoint
-      const healthResponse = await request(app).get('/health').expect(200);
+      const healthResponse = await request(app).get('/health').set('Origin', 'http://localhost:3000').expect(200);
 
       expect(healthResponse.body.success).toBe(true);
       expect(healthResponse.body.message).toBe('Server is healthy');
 
       // Test ping endpoint
-      const pingResponse = await request(app).get('/ping').expect(200);
+      const pingResponse = await request(app).get('/ping').set('Origin', 'http://localhost:3000').expect(200);
 
       expect(pingResponse.body.message).toBe('pong');
 
       // Test memory system health
       const memoryHealthResponse = await request(app)
         .get('/api/memory/health')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
       expect(memoryHealthResponse.body.success).toBe(true);
 
       // Test documentation system health
-      const docHealthResponse = await request(app).get('/api/user-docs/health').expect(200);
+      const docHealthResponse = await request(app)
+        .get('/api/user-docs/health')
+        .set('Origin', 'http://localhost:3000')
+        .expect(200);
 
       expect(docHealthResponse.body.success).toBe(true);
       expect(docHealthResponse.body.data.status).toBe('healthy');

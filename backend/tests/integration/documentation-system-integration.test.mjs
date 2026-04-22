@@ -52,6 +52,7 @@ import { getApiDocumentationService } from '../../services/apiDocumentationServi
 import prisma from '../../db/index.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -130,6 +131,11 @@ const createTestApp = () => {
 };
 
 describe('📚 Documentation System Integration Tests', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let app;
   let testUser;
   let authToken;
@@ -197,7 +203,10 @@ describe('📚 Documentation System Integration Tests', () => {
       lastName: 'Integration',
     };
 
-    const registerResponse = await request(app).post('/api/auth/register').send(userData);
+    const registerResponse = await request(app)
+      .post('/api/auth/register')
+      .set('Origin', 'http://localhost:3000')
+      .send(userData);
 
     expect(registerResponse.status).toBe(201);
     testUser = registerResponse.body.data.user;
@@ -217,7 +226,7 @@ describe('📚 Documentation System Integration Tests', () => {
 
   describe('📋 Swagger/OpenAPI Specification Validation', () => {
     test('should load and validate OpenAPI specification', async () => {
-      const response = await request(app).get('/api-docs/swagger.json');
+      const response = await request(app).get('/api-docs/swagger.json').set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(200);
       expect(response.headers['content-type']).toContain('application/json');
@@ -232,7 +241,7 @@ describe('📚 Documentation System Integration Tests', () => {
     });
 
     test('should serve YAML specification format', async () => {
-      const response = await request(app).get('/api-docs/swagger.yaml');
+      const response = await request(app).get('/api-docs/swagger.yaml').set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(200);
       expect(response.headers['content-type']).toContain('text/yaml');
@@ -242,7 +251,7 @@ describe('📚 Documentation System Integration Tests', () => {
     });
 
     test('should provide interactive Swagger UI', async () => {
-      const response = await request(app).get('/api-docs');
+      const response = await request(app).get('/api-docs').set('Origin', 'http://localhost:3000');
 
       // Handle redirect to Swagger UI
       expect([200, 301, 302]).toContain(response.status);
@@ -269,6 +278,7 @@ describe('📚 Documentation System Integration Tests', () => {
 
       const response = await request(app)
         .post('/api/docs/endpoints')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .send(endpointData);
 
@@ -295,6 +305,7 @@ describe('📚 Documentation System Integration Tests', () => {
 
       const response = await request(app)
         .post('/api/docs/schemas')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .send(schemaData);
 
@@ -309,6 +320,7 @@ describe('📚 Documentation System Integration Tests', () => {
       // Register test endpoint and schema first
       await request(app)
         .post('/api/docs/endpoints')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           method: 'POST',
@@ -320,13 +332,17 @@ describe('📚 Documentation System Integration Tests', () => {
 
       await request(app)
         .post('/api/docs/schemas')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           name: 'CreateTestSchema',
           schema: { type: 'object', properties: { name: { type: 'string' } } },
         });
 
-      const response = await request(app).post('/api/docs/generate').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .post('/api/docs/generate')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -339,7 +355,10 @@ describe('📚 Documentation System Integration Tests', () => {
 
   describe('📊 Documentation Coverage and Health', () => {
     test('should provide documentation metrics and coverage', async () => {
-      const response = await request(app).get('/api/docs/metrics').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/docs/metrics')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -352,7 +371,10 @@ describe('📚 Documentation System Integration Tests', () => {
     });
 
     test('should provide documentation health status', async () => {
-      const response = await request(app).get('/api/docs/health').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/docs/health')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -363,7 +385,10 @@ describe('📚 Documentation System Integration Tests', () => {
     });
 
     test('should analyze documentation coverage by system', async () => {
-      const response = await request(app).get('/api/docs/coverage').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/docs/coverage')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -377,7 +402,7 @@ describe('📚 Documentation System Integration Tests', () => {
 
   describe('🔗 Live API Integration Validation', () => {
     test('should validate API root endpoint documentation', async () => {
-      const response = await request(app).get('/api');
+      const response = await request(app).get('/api').set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -393,7 +418,10 @@ describe('📚 Documentation System Integration Tests', () => {
     });
 
     test('should validate documented endpoint response format', async () => {
-      const response = await request(app).get('/api/test/documented').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/test/documented')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -420,6 +448,7 @@ describe('📚 Documentation System Integration Tests', () => {
 
       const response = await request(app)
         .post('/api/docs/endpoints')
+        .set('Origin', 'http://localhost:3000')
         .set('x-test-require-auth', 'true')
         .send(endpointData);
 
@@ -437,6 +466,7 @@ describe('📚 Documentation System Integration Tests', () => {
 
       const response = await request(app)
         .post('/api/docs/endpoints')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .send(invalidEndpointData);
 

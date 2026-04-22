@@ -21,7 +21,13 @@ import jwt from 'jsonwebtoken';
 import app from '../app.mjs';
 import prisma from '../db/index.mjs';
 
+import { fetchCsrf } from './helpers/csrfHelper.mjs';
 describe('Legacy Score Trait Integration System', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let testHorse;
   let testBreed;
@@ -341,6 +347,7 @@ describe('Legacy Score Trait Integration System', () => {
 
       const response = await request(app)
         .get(`/api/horses/${testHorse.id}/legacy-score`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', authToken);
 
       expect(response.status).toBe(200);
@@ -353,6 +360,7 @@ describe('Legacy Score Trait Integration System', () => {
     it('should require authentication for legacy score endpoint', async () => {
       const response = await request(app)
         .get(`/api/horses/${testHorse.id}/legacy-score`)
+        .set('Origin', 'http://localhost:3000')
         .set('x-test-require-auth', 'true');
 
       expect(response.status).toBe(401);
@@ -360,7 +368,10 @@ describe('Legacy Score Trait Integration System', () => {
     });
 
     it('should return 404 for non-existent horse', async () => {
-      const response = await request(app).get('/api/horses/99999/legacy-score').set('Authorization', authToken);
+      const response = await request(app)
+        .get('/api/horses/99999/legacy-score')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', authToken);
 
       expect(response.status).toBe(404);
       expect(response.body.success).toBe(false);

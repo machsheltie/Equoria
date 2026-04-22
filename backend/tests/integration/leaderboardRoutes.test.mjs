@@ -36,6 +36,7 @@ import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
 import config from '../../config/config.js';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Strategic mocking: Only mock external dependencies
 jest.mock('../../utils/logger.mjs', () => ({
   info: jest.fn(),
@@ -45,6 +46,11 @@ jest.mock('../../utils/logger.mjs', () => ({
 }));
 
 describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testToken;
   let testUser;
   let testUsers;
@@ -339,6 +345,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     it('should return top players by level', async () => {
       const response = await request(app)
         .get('/api/leaderboards/players/level')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .query({ limit: 10, offset: 0 })
         .expect(200);
@@ -362,6 +369,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     it('should handle unauthorized access', async () => {
       const response = await request(app)
         .get('/api/leaderboards/players/level')
+        .set('Origin', 'http://localhost:3000')
         .set('x-test-require-auth', 'true')
         .expect(401);
 
@@ -374,6 +382,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     it('should return top horses by earnings', async () => {
       const response = await request(app)
         .get('/api/leaderboards/horses/earnings')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
 
@@ -400,6 +409,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     it('should return recent competition winners', async () => {
       const response = await request(app)
         .get('/api/leaderboards/recent-winners')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
 
@@ -422,6 +432,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     it('should filter by discipline', async () => {
       const response = await request(app)
         .get('/api/leaderboards/recent-winners')
+        .set('Origin', 'http://localhost:3000')
         .query({ discipline: 'Dressage' })
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
@@ -437,6 +448,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     it('should return comprehensive leaderboard statistics', async () => {
       const response = await request(app)
         .get('/api/leaderboards/stats')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
 

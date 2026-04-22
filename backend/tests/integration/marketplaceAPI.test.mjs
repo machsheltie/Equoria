@@ -16,7 +16,13 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import { createTestUser } from '../helpers/testAuth.mjs';
 import app from '../../app.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('🛒 INTEGRATION: Marketplace API', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let seller, sellerToken;
   let buyer, buyerToken;
   let testHorse;
@@ -94,7 +100,9 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       const res = await request(app)
         .post('/api/v1/marketplace/list')
         .set('Authorization', `Bearer ${sellerToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ horseId: testHorse.id, price: 2500 });
 
       expect(res.status).toBe(200);
@@ -110,7 +118,9 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       const res = await request(app)
         .post('/api/v1/marketplace/list')
         .set('Authorization', `Bearer ${sellerToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ horseId: testHorse.id, price: 3000 });
 
       expect(res.status).toBe(400);
@@ -121,7 +131,9 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       const res = await request(app)
         .post('/api/v1/marketplace/list')
         .set('Authorization', `Bearer ${sellerToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ horseId: testHorse.id, price: 50 });
 
       expect(res.status).toBe(400);
@@ -132,7 +144,9 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       const res = await request(app)
         .post('/api/v1/marketplace/list')
         .set('Authorization', `Bearer ${buyerToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ horseId: testHorse.id, price: 2000 });
 
       expect(res.status).toBe(403);
@@ -148,7 +162,9 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       const res = await request(app)
         .get('/api/v1/marketplace')
         .set('Authorization', `Bearer ${buyerToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -162,7 +178,9 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       const res = await request(app)
         .get('/api/v1/marketplace')
         .set('Authorization', `Bearer ${sellerToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(res.status).toBe(200);
       const listing = res.body.data.listings.find(l => l.id === testHorse.id);
@@ -173,7 +191,9 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       const res = await request(app)
         .get('/api/v1/marketplace?minPrice=1000&maxPrice=3000')
         .set('Authorization', `Bearer ${buyerToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(res.status).toBe(200);
       for (const l of res.body.data.listings) {
@@ -186,7 +206,9 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       const res = await request(app)
         .get('/api/v1/marketplace?page=1&limit=10')
         .set('Authorization', `Bearer ${buyerToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(res.status).toBe(200);
       expect(res.body.data.pagination).toMatchObject({
@@ -197,7 +219,10 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
     });
 
     it('should require authentication', async () => {
-      const res = await request(app).get('/api/v1/marketplace').set('x-test-require-auth', 'true');
+      const res = await request(app)
+        .get('/api/v1/marketplace')
+        .set('Origin', 'http://localhost:3000')
+        .set('x-test-require-auth', 'true');
 
       expect(res.status).toBe(401);
     });
@@ -210,7 +235,9 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       const res = await request(app)
         .get('/api/v1/marketplace/my-listings')
         .set('Authorization', `Bearer ${sellerToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -222,7 +249,9 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       const res = await request(app)
         .get('/api/v1/marketplace/my-listings')
         .set('Authorization', `Bearer ${buyerToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body.data)).toBe(true);
@@ -236,7 +265,9 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       const res = await request(app)
         .post(`/api/v1/marketplace/buy/${testHorse.id}`)
         .set('Authorization', `Bearer ${sellerToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(res.status).toBe(400);
       expect(res.body.message).toMatch(/already own/i);
@@ -253,7 +284,9 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       const res = await request(app)
         .post(`/api/v1/marketplace/buy/${testHorse.id}`)
         .set('Authorization', `Bearer ${brokeUser.token}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(res.status).toBe(400);
       expect(res.body.message).toMatch(/insufficient/i);
@@ -269,7 +302,9 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       const res = await request(app)
         .post(`/api/v1/marketplace/buy/${testHorse.id}`)
         .set('Authorization', `Bearer ${buyerToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -304,7 +339,9 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       const res = await request(app)
         .post(`/api/v1/marketplace/buy/${testHorse.id}`)
         .set('Authorization', `Bearer ${sellerToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(res.status).toBe(400);
       expect(res.body.message).toMatch(/not for sale/i);
@@ -318,7 +355,9 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       const res = await request(app)
         .get('/api/v1/marketplace/history')
         .set('Authorization', `Bearer ${sellerToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -333,7 +372,9 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       const res = await request(app)
         .get('/api/v1/marketplace/history')
         .set('Authorization', `Bearer ${buyerToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(res.status).toBe(200);
       const record = res.body.data.find(r => r.horseName === testHorse.name);
@@ -351,7 +392,9 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       const res = await request(app)
         .get('/api/v1/marketplace/history')
         .set('Authorization', `Bearer ${newUser.token}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(res.status).toBe(200);
       expect(res.body.data).toHaveLength(0);
@@ -388,7 +431,9 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       const res = await request(app)
         .delete(`/api/v1/marketplace/list/${delistHorse.id}`)
         .set('Authorization', `Bearer ${sellerToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(res.status).toBe(200);
       expect(res.body.message).toMatch(/listing removed/i);
@@ -408,7 +453,9 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       const res = await request(app)
         .delete(`/api/v1/marketplace/list/${delistHorse.id}`)
         .set('Authorization', `Bearer ${buyerToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(res.status).toBe(403);
     });

@@ -8,7 +8,13 @@ import { createTestUser, cleanupTestData } from '../helpers/testAuth.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import app from '../../app.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('🏇 INTEGRATION: Club API', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let leader, leaderToken, member, memberToken;
   let createdClubId, createdElectionId;
 
@@ -45,7 +51,9 @@ describe('🏇 INTEGRATION: Club API', () => {
       const res = await request(app)
         .post('/api/clubs')
         .set('Authorization', `Bearer ${leaderToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           name: `Test Club ${Date.now()}`,
           type: 'discipline',
@@ -68,12 +76,16 @@ describe('🏇 INTEGRATION: Club API', () => {
       await request(app)
         .post('/api/clubs')
         .set('Authorization', `Bearer ${leaderToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ name: clubName, type: 'breed', category: 'Thoroughbred', description: 'Test' });
       const res = await request(app)
         .post('/api/clubs')
         .set('Authorization', `Bearer ${leaderToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ name: clubName, type: 'breed', category: 'Thoroughbred', description: 'Test' });
       expect(res.status).toBe(409);
     });
@@ -81,13 +93,19 @@ describe('🏇 INTEGRATION: Club API', () => {
 
   describe('GET /api/clubs', () => {
     it('should list all clubs', async () => {
-      const res = await request(app).get('/api/clubs').set('Authorization', `Bearer ${memberToken}`);
+      const res = await request(app)
+        .get('/api/clubs')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${memberToken}`);
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body.data.clubs)).toBe(true);
     });
 
     it('should filter by type', async () => {
-      const res = await request(app).get('/api/clubs?type=discipline').set('Authorization', `Bearer ${memberToken}`);
+      const res = await request(app)
+        .get('/api/clubs?type=discipline')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${memberToken}`);
       const clubs = res.body.data.clubs;
       expect(clubs.every(c => c.type === 'discipline')).toBe(true);
     });
@@ -98,7 +116,9 @@ describe('🏇 INTEGRATION: Club API', () => {
       const res = await request(app)
         .post(`/api/clubs/${createdClubId}/join`)
         .set('Authorization', `Bearer ${memberToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
       expect(res.status).toBe(201);
       expect(res.body.data.membership.role).toBe('member');
     });
@@ -107,7 +127,9 @@ describe('🏇 INTEGRATION: Club API', () => {
       const res = await request(app)
         .post(`/api/clubs/${createdClubId}/join`)
         .set('Authorization', `Bearer ${memberToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
       expect(res.status).toBe(409);
     });
 
@@ -115,7 +137,9 @@ describe('🏇 INTEGRATION: Club API', () => {
       const res = await request(app)
         .delete(`/api/clubs/${createdClubId}/leave`)
         .set('Authorization', `Bearer ${memberToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
       expect(res.status).toBe(200);
     });
   });
@@ -126,14 +150,18 @@ describe('🏇 INTEGRATION: Club API', () => {
       await request(app)
         .post(`/api/clubs/${createdClubId}/join`)
         .set('Authorization', `Bearer ${memberToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
     });
 
     it('should create an election (president only)', async () => {
       const res = await request(app)
         .post(`/api/clubs/${createdClubId}/elections`)
         .set('Authorization', `Bearer ${leaderToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           position: 'Club Secretary',
           startsAt: new Date(Date.now() - 1000).toISOString(),
@@ -147,7 +175,9 @@ describe('🏇 INTEGRATION: Club API', () => {
       const res = await request(app)
         .post(`/api/clubs/${createdClubId}/elections`)
         .set('Authorization', `Bearer ${memberToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           position: 'Fake Officer',
           startsAt: new Date().toISOString(),
@@ -160,7 +190,9 @@ describe('🏇 INTEGRATION: Club API', () => {
       const res = await request(app)
         .post(`/api/clubs/elections/${createdElectionId}/nominate`)
         .set('Authorization', `Bearer ${memberToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ statement: 'I will work hard!' });
       expect(res.status).toBe(201);
     });
@@ -172,7 +204,9 @@ describe('🏇 INTEGRATION: Club API', () => {
       const res = await request(app)
         .post(`/api/clubs/elections/${createdElectionId}/vote`)
         .set('Authorization', `Bearer ${leaderToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ candidateId: candidateRes.id });
       expect(res.status).toBe(201);
     });
@@ -184,7 +218,9 @@ describe('🏇 INTEGRATION: Club API', () => {
       const res = await request(app)
         .post(`/api/clubs/elections/${createdElectionId}/vote`)
         .set('Authorization', `Bearer ${leaderToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ candidateId: candidateRes.id });
       expect(res.status).toBe(409);
     });
@@ -192,6 +228,7 @@ describe('🏇 INTEGRATION: Club API', () => {
     it('should return election results', async () => {
       const res = await request(app)
         .get(`/api/clubs/elections/${createdElectionId}/results`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${leaderToken}`);
       expect(res.status).toBe(200);
       expect(Array.isArray(res.body.data.candidates)).toBe(true);

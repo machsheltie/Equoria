@@ -21,9 +21,15 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import { createTestUser } from '../helpers/testAuth.mjs';
 import app from '../../app.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 const STORE_PRICE = 1000;
 
 describe('🐴 INTEGRATION: Horse Trader Store API', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let richUser, richToken;
   let brokeUser, brokeToken;
   let testBreed;
@@ -80,7 +86,9 @@ describe('🐴 INTEGRATION: Horse Trader Store API', () => {
     const res = await request(app)
       .post('/api/v1/marketplace/store/buy')
       .set('Authorization', `Bearer ${richToken}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ breedId: testBreed.id, sex: 'mare' });
 
     expect(res.status).toBe(201);
@@ -104,7 +112,9 @@ describe('🐴 INTEGRATION: Horse Trader Store API', () => {
     const res = await request(app)
       .post('/api/v1/marketplace/store/buy')
       .set('Authorization', `Bearer ${richToken}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ breedId: testBreed.id, sex: 'stallion' });
 
     expect(res.status).toBe(201);
@@ -119,7 +129,9 @@ describe('🐴 INTEGRATION: Horse Trader Store API', () => {
     const res = await request(app)
       .post('/api/v1/marketplace/store/buy')
       .set('Authorization', `Bearer ${richToken}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ breedId: testBreed.id, sex: 'mare' });
 
     expect(res.status).toBe(201);
@@ -151,7 +163,9 @@ describe('🐴 INTEGRATION: Horse Trader Store API', () => {
     const res = await request(app)
       .post('/api/v1/marketplace/store/buy')
       .set('Authorization', `Bearer ${richToken}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ breedId: testBreed.id, sex: 'mare' });
 
     expect(res.status).toBe(201);
@@ -165,7 +179,9 @@ describe('🐴 INTEGRATION: Horse Trader Store API', () => {
     const res = await request(app)
       .post('/api/v1/marketplace/store/buy')
       .set('Authorization', `Bearer ${richToken}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ sex: 'mare' });
 
     expect(res.status).toBe(400);
@@ -177,7 +193,9 @@ describe('🐴 INTEGRATION: Horse Trader Store API', () => {
     const res = await request(app)
       .post('/api/v1/marketplace/store/buy')
       .set('Authorization', `Bearer ${richToken}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ breedId: 0, sex: 'mare' });
 
     expect(res.status).toBe(400);
@@ -188,7 +206,9 @@ describe('🐴 INTEGRATION: Horse Trader Store API', () => {
     const res = await request(app)
       .post('/api/v1/marketplace/store/buy')
       .set('Authorization', `Bearer ${richToken}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ breedId: 'abc', sex: 'mare' });
 
     expect(res.status).toBe(400);
@@ -199,7 +219,9 @@ describe('🐴 INTEGRATION: Horse Trader Store API', () => {
     const res = await request(app)
       .post('/api/v1/marketplace/store/buy')
       .set('Authorization', `Bearer ${richToken}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ breedId: testBreed.id, sex: 'gelding' });
 
     expect(res.status).toBe(400);
@@ -211,7 +233,9 @@ describe('🐴 INTEGRATION: Horse Trader Store API', () => {
     const res = await request(app)
       .post('/api/v1/marketplace/store/buy')
       .set('Authorization', `Bearer ${richToken}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ breedId: testBreed.id });
 
     expect(res.status).toBe(400);
@@ -224,7 +248,9 @@ describe('🐴 INTEGRATION: Horse Trader Store API', () => {
     const res = await request(app)
       .post('/api/v1/marketplace/store/buy')
       .set('Authorization', `Bearer ${richToken}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ breedId: 999999, sex: 'mare' });
 
     expect(res.status).toBe(404);
@@ -238,7 +264,9 @@ describe('🐴 INTEGRATION: Horse Trader Store API', () => {
     const res = await request(app)
       .post('/api/v1/marketplace/store/buy')
       .set('Authorization', `Bearer ${brokeToken}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ breedId: testBreed.id, sex: 'mare' });
 
     expect(res.status).toBe(400);
@@ -255,6 +283,7 @@ describe('🐴 INTEGRATION: Horse Trader Store API', () => {
   it('should return 401 when no auth token is provided', async () => {
     const res = await request(app)
       .post('/api/v1/marketplace/store/buy')
+      .set('Origin', 'http://localhost:3000')
       .set('x-test-require-auth', 'true')
       .send({ breedId: testBreed.id, sex: 'mare' });
 

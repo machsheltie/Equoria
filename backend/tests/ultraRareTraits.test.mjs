@@ -21,7 +21,13 @@ import {
   hasUltraRareAbility,
 } from '../utils/ultraRareMechanicalEffects.mjs';
 
+import { fetchCsrf } from './helpers/csrfHelper.mjs';
 describe('Ultra-Rare & Exotic Traits System', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let testToken;
   let testHorse;
@@ -305,6 +311,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
     test('GET /api/ultra-rare-traits/definitions should return all trait definitions', async () => {
       const response = await request(app)
         .get('/api/ultra-rare-traits/definitions')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
 
@@ -318,7 +325,9 @@ describe('Ultra-Rare & Exotic Traits System', () => {
       const response = await request(app)
         .post(`/api/ultra-rare-traits/evaluate/${testHorse.id}`)
         .set('Authorization', `Bearer ${testToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           evaluationContext: {
             triggerSource: 'milestone_completion',
@@ -336,6 +345,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
     test('GET /api/ultra-rare-traits/horse/:horseId should return horse ultra-rare traits', async () => {
       const response = await request(app)
         .get(`/api/ultra-rare-traits/horse/${testHorse.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
 
@@ -350,7 +360,9 @@ describe('Ultra-Rare & Exotic Traits System', () => {
       const response = await request(app)
         .post(`/api/ultra-rare-traits/groom/${testGroom.id}/assign-perks`)
         .set('Authorization', `Bearer ${testToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -362,6 +374,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
     test('should reject unauthorized access to horse traits', async () => {
       await request(app)
         .get(`/api/ultra-rare-traits/horse/${testHorse.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('x-test-require-auth', 'true')
         .expect(401);
     });
@@ -394,6 +407,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
 
       await request(app)
         .get(`/api/ultra-rare-traits/horse/${otherHorse.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(404);
 

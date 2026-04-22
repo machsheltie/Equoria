@@ -17,9 +17,15 @@ import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
 
+import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 const rateLimitBypass = { 'X-Test-Bypass-Rate-Limit': 'true' };
 
 describe('POST /api/auth/register — starter horse integration', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let server;
   let registeredUserId = null;
   const ts = Date.now();
@@ -48,7 +54,12 @@ describe('POST /api/auth/register — starter horse integration', () => {
   });
 
   it('creates a user and at least one starter horse in the real database', async () => {
-    const res = await request(app).post('/api/auth/register').set(rateLimitBypass).send(testUser).expect(201);
+    const res = await request(app)
+      .post('/api/auth/register')
+      .set('Origin', 'http://localhost:3000')
+      .set(rateLimitBypass)
+      .send(testUser)
+      .expect(201);
 
     expect(res.body.status).toBe('success');
 

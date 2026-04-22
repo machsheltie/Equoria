@@ -23,7 +23,13 @@ import app from '../../../app.mjs';
 import prisma from '../../../db/index.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let activeUser;
   let activeToken;
   let emptyUser;
@@ -131,7 +137,9 @@ describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () =
 
   describe('Auth guard', () => {
     it('returns 401 when unauthenticated', async () => {
-      const res = await request(app).get(`/api/leaderboards/user-summary/${activeUser.id}`);
+      const res = await request(app)
+        .get(`/api/leaderboards/user-summary/${activeUser.id}`)
+        .set('Origin', 'http://localhost:3000');
       expect(res.status).toBe(401);
     });
   });
@@ -141,6 +149,7 @@ describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () =
       const ghostId = '00000000-0000-0000-0000-000000000000';
       const res = await request(app)
         .get(`/api/leaderboards/user-summary/${ghostId}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${activeToken}`);
 
       expect(res.status).toBe(200);
@@ -157,6 +166,7 @@ describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () =
     it('returns 200 with 4 category rankings and no bestRankings for a fresh account', async () => {
       const res = await request(app)
         .get(`/api/leaderboards/user-summary/${emptyUser.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${emptyToken}`);
 
       expect(res.status).toBe(200);
@@ -198,6 +208,7 @@ describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () =
     it('returns ranked data and bestRankings for categories where rank ≤ 100', async () => {
       const res = await request(app)
         .get(`/api/leaderboards/user-summary/${activeUser.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${activeToken}`);
 
       expect(res.status).toBe(200);

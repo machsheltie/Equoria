@@ -43,6 +43,7 @@ import { register, login } from '../controllers/authController.mjs';
 import { authenticateToken } from '../middleware/auth.mjs';
 import prisma from '../db/index.mjs';
 
+import { fetchCsrf } from './helpers/csrfHelper.mjs';
 /**
  * Extract cookie value from Set-Cookie header array
  */
@@ -160,6 +161,11 @@ const createTestApp = () => {
 };
 
 describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let app;
   let authToken;
   let testUser;
@@ -179,7 +185,7 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
 
     const registerResponse = await request(app)
       .post('/api/auth/register')
-      .set('x-test-bypass-rate-limit', 'true')
+      .set('Origin', 'http://localhost:3000')
       .send(userData);
 
     expect(registerResponse.status).toBe(201);
@@ -277,6 +283,7 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
     it('should get trainable horses for authenticated user', async () => {
       const response = await request(app)
         .get(`/api/horses/trainable/${testUser.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
@@ -301,6 +308,7 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
       // First get trainable horses
       const trainableResponse = await request(app)
         .get(`/api/horses/trainable/${testUser.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(trainableResponse.status).toBe(200);
@@ -309,10 +317,14 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
       const [trainableHorse] = trainableResponse.body.data;
 
       // Train the horse
-      const response = await request(app).post('/api/training/train').set('Authorization', `Bearer ${authToken}`).send({
-        horseId: trainableHorse.horseId,
-        discipline: 'Racing',
-      });
+      const response = await request(app)
+        .post('/api/training/train')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          horseId: trainableHorse.horseId,
+          discipline: 'Racing',
+        });
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -327,10 +339,14 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
       // Try to train the 2-year-old horse directly
       const youngHorse = testHorses.find(h => h.age === 2);
 
-      const response = await request(app).post('/api/training/train').set('Authorization', `Bearer ${authToken}`).send({
-        horseId: youngHorse.id,
-        discipline: 'Racing',
-      });
+      const response = await request(app)
+        .post('/api/training/train')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          horseId: youngHorse.id,
+          discipline: 'Racing',
+        });
 
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
@@ -342,6 +358,7 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
     it('should reject unauthenticated requests', async () => {
       const response = await request(app)
         .get(`/api/horses/trainable/${testUser.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('x-test-require-auth', 'true');
 
       expect(response.status).toBe(401);

@@ -23,7 +23,13 @@ import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('Personality Evolution Controller API', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   // Reference date anchor for all test date calculations
   const referenceDate = new Date('2025-06-01T12:00:00Z');
 
@@ -142,7 +148,9 @@ describe('Personality Evolution Controller API', () => {
       const response = await request(app)
         .post(`/api/personality-evolution/groom/${testGroom.id}/evolve`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -156,7 +164,9 @@ describe('Personality Evolution Controller API', () => {
       const response = await request(app)
         .post('/api/personality-evolution/groom/invalid/evolve')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(400);
 
       expect(response.body.success).toBe(false);
@@ -166,6 +176,7 @@ describe('Personality Evolution Controller API', () => {
     test('should return 401 without authentication', async () => {
       await request(app)
         .post(`/api/personality-evolution/groom/${testGroom.id}/evolve`)
+        .set('Origin', 'http://localhost:3000')
         .set('x-test-require-auth', 'true')
         .expect(401);
     });
@@ -176,7 +187,9 @@ describe('Personality Evolution Controller API', () => {
       const response = await request(app)
         .post(`/api/personality-evolution/horse/${testHorse.id}/evolve`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -190,7 +203,9 @@ describe('Personality Evolution Controller API', () => {
       const response = await request(app)
         .post('/api/personality-evolution/horse/invalid/evolve')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(400);
 
       expect(response.body.success).toBe(false);
@@ -202,6 +217,7 @@ describe('Personality Evolution Controller API', () => {
     test('should get evolution triggers for groom', async () => {
       const response = await request(app)
         .get(`/api/personality-evolution/groom/${testGroom.id}/triggers`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -215,6 +231,7 @@ describe('Personality Evolution Controller API', () => {
     test('should get evolution triggers for horse', async () => {
       const response = await request(app)
         .get(`/api/personality-evolution/horse/${testHorse.id}/triggers`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -227,6 +244,7 @@ describe('Personality Evolution Controller API', () => {
     test('should return 400 for invalid entity type', async () => {
       const response = await request(app)
         .get(`/api/personality-evolution/invalid/${testGroom.id}/triggers`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
 
@@ -239,6 +257,7 @@ describe('Personality Evolution Controller API', () => {
     test('should analyze personality stability for groom', async () => {
       const response = await request(app)
         .get(`/api/personality-evolution/groom/${testGroom.id}/stability`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -252,6 +271,7 @@ describe('Personality Evolution Controller API', () => {
     test('should analyze personality stability for horse', async () => {
       const response = await request(app)
         .get(`/api/personality-evolution/horse/${testHorse.id}/stability`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -266,6 +286,7 @@ describe('Personality Evolution Controller API', () => {
     test('should predict personality evolution with default timeframe', async () => {
       const response = await request(app)
         .get(`/api/personality-evolution/groom/${testGroom.id}/predict`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -278,6 +299,7 @@ describe('Personality Evolution Controller API', () => {
     test('should predict personality evolution with custom timeframe', async () => {
       const response = await request(app)
         .get(`/api/personality-evolution/horse/${testHorse.id}/predict?timeframeDays=60`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -289,6 +311,7 @@ describe('Personality Evolution Controller API', () => {
     test('should return 400 for invalid timeframe', async () => {
       const response = await request(app)
         .get(`/api/personality-evolution/groom/${testGroom.id}/predict?timeframeDays=500`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
 
@@ -301,6 +324,7 @@ describe('Personality Evolution Controller API', () => {
     test('should get personality evolution history', async () => {
       const response = await request(app)
         .get(`/api/personality-evolution/groom/${testGroom.id}/history`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -326,7 +350,9 @@ describe('Personality Evolution Controller API', () => {
       const response = await request(app)
         .post('/api/personality-evolution/apply-effects')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(evolutionData)
         .expect(200);
 
@@ -344,7 +370,9 @@ describe('Personality Evolution Controller API', () => {
       const response = await request(app)
         .post('/api/personality-evolution/apply-effects')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(invalidData)
         .expect(400);
 
@@ -365,7 +393,9 @@ describe('Personality Evolution Controller API', () => {
       const response = await request(app)
         .post('/api/personality-evolution/batch-evolve')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(batchData)
         .expect(200);
 
@@ -381,7 +411,9 @@ describe('Personality Evolution Controller API', () => {
       const response = await request(app)
         .post('/api/personality-evolution/batch-evolve')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ entities: [] })
         .expect(400);
 
@@ -394,6 +426,7 @@ describe('Personality Evolution Controller API', () => {
     test('should get system configuration successfully', async () => {
       const response = await request(app)
         .get('/api/personality-evolution/config')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 

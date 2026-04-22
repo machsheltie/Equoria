@@ -43,6 +43,7 @@ import { authenticateToken } from '../../middleware/auth.mjs';
 import { handleValidationErrors } from '../../middleware/validationErrorHandler.mjs';
 import prisma from '../../db/index.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 /**
  * Extract cookie value from Set-Cookie header
  */
@@ -122,6 +123,11 @@ const createTestApp = () => {
 };
 
 describe('🔐 Authentication System Integration Tests', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let app;
   let testUser;
   let authToken;
@@ -149,7 +155,10 @@ describe('🔐 Authentication System Integration Tests', () => {
       lastName: 'Integration',
     };
 
-    const registerResponse = await request(app).post('/api/auth/register').send(userData);
+    const registerResponse = await request(app)
+      .post('/api/auth/register')
+      .set('Origin', 'http://localhost:3000')
+      .send(userData);
 
     expect(registerResponse.status).toBe(201);
     expect(registerResponse.body.status).toBe('success');
@@ -186,7 +195,10 @@ describe('🔐 Authentication System Integration Tests', () => {
       ];
 
       for (const endpoint of protectedEndpoints) {
-        const response = await request(app).get(endpoint).set('Authorization', `Bearer ${authToken}`);
+        const response = await request(app)
+          .get(endpoint)
+          .set('Origin', 'http://localhost:3000')
+          .set('Authorization', `Bearer ${authToken}`);
 
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
@@ -208,7 +220,10 @@ describe('🔐 Authentication System Integration Tests', () => {
       ];
 
       for (const endpoint of protectedEndpoints) {
-        const response = await request(app).get(endpoint).set('x-test-require-auth', 'true');
+        const response = await request(app)
+          .get(endpoint)
+          .set('Origin', 'http://localhost:3000')
+          .set('x-test-require-auth', 'true');
 
         expect(response.status).toBe(401);
         expect(response.body.success).toBe(false);
@@ -228,6 +243,7 @@ describe('🔐 Authentication System Integration Tests', () => {
       for (const endpoint of protectedEndpoints) {
         const response = await request(app)
           .get(endpoint)
+          .set('Origin', 'http://localhost:3000')
           .set('x-test-require-auth', 'true')
           .set('Authorization', `Bearer ${invalidToken}`);
 
@@ -246,6 +262,7 @@ describe('🔐 Authentication System Integration Tests', () => {
       // Refresh the token
       const refreshResponse = await request(app)
         .post('/api/auth/refresh')
+        .set('Origin', 'http://localhost:3000')
         .set('Cookie', [`refreshToken=${refreshTokenValue}`])
         .send({ refreshToken: refreshTokenValue }); // Keep for backward compatibility if needed by middleware
 
@@ -267,7 +284,10 @@ describe('🔐 Authentication System Integration Tests', () => {
       const testEndpoints = ['/api/auth/profile', '/api/horses', '/api/dashboard/overview'];
 
       for (const endpoint of testEndpoints) {
-        const response = await request(app).get(endpoint).set('Authorization', `Bearer ${newToken}`);
+        const response = await request(app)
+          .get(endpoint)
+          .set('Origin', 'http://localhost:3000')
+          .set('Authorization', `Bearer ${newToken}`);
 
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
@@ -282,7 +302,10 @@ describe('🔐 Authentication System Integration Tests', () => {
       const endpoints = ['/api/auth/profile', '/api/horses', '/api/competition/my-entries'];
 
       for (const endpoint of endpoints) {
-        const response = await request(app).get(endpoint).set('x-test-require-auth', 'true');
+        const response = await request(app)
+          .get(endpoint)
+          .set('Origin', 'http://localhost:3000')
+          .set('x-test-require-auth', 'true');
 
         expect(response.status).toBe(401);
         expect(response.body).toHaveProperty('success', false);
@@ -297,6 +320,7 @@ describe('🔐 Authentication System Integration Tests', () => {
       for (const header of malformedHeaders) {
         const response = await request(app)
           .get('/api/auth/profile')
+          .set('Origin', 'http://localhost:3000')
           .set('x-test-require-auth', 'true')
           .set('Authorization', header);
 

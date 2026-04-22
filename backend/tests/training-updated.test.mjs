@@ -42,6 +42,7 @@ import prisma from '../db/index.mjs';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
+import { fetchCsrf } from './helpers/csrfHelper.mjs';
 // Custom Jest matcher for toBeOneOf
 expect.extend({
   toBeOneOf(received, expected) {
@@ -61,6 +62,11 @@ expect.extend({
 });
 
 describe('🏋️ INTEGRATION: Training System Updated - User Model Integration', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let authToken;
   let testUserId;
   let testHorseId;
@@ -115,7 +121,8 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
   describe('Age Requirement Tests', () => {
     it('should get trainable horses for authenticated user', async () => {
       const response = await request(app)
-        .get(`/api/horses/trainable/${testUserId}`) // Use consistent testUserId
+        .get(`/api/horses/trainable/${testUserId}`)
+        .set('Origin', 'http://localhost:3000') // Use consistent testUserId
         .set('Authorization', `Bearer ${authToken}`);
 
       // Should either succeed with horses or succeed with empty array
@@ -129,7 +136,8 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
     it('should block training for horse under 3 years old', async () => {
       // First, get trainable horses
       const trainableResponse = await request(app)
-        .get(`/api/horses/trainable/${testUserId}`) // Use consistent testUserId
+        .get(`/api/horses/trainable/${testUserId}`)
+        .set('Origin', 'http://localhost:3000') // Use consistent testUserId
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(trainableResponse.status).toBe(200);
@@ -146,7 +154,9 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
       const response = await request(app)
         .post('/api/training/train')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           horseId: firstHorse.horseId,
           discipline: 'Racing',
@@ -168,7 +178,9 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
       const response = await request(app)
         .post('/api/training/train')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           horseId: secondHorseId,
           discipline: 'Racing',
@@ -190,6 +202,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
 
       const response = await request(app)
         .get(`/api/training/status/${horseIdToTest}/${disciplineToTest}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`); // Ensure auth token is sent
 
       expect(response.status).toBe(200);
@@ -205,7 +218,8 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
       const horseIdToTest = testHorseId;
 
       const response = await request(app)
-        .get(`/api/training/status/${horseIdToTest}`) // Endpoint for all disciplines
+        .get(`/api/training/status/${horseIdToTest}`)
+        .set('Origin', 'http://localhost:3000') // Endpoint for all disciplines
         .set('Authorization', `Bearer ${authToken}`); // Ensure auth token is sent
 
       expect(response.status).toBe(200);
@@ -221,6 +235,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
       // Training routes now require authentication after Security Phase 1
       const response = await request(app)
         .get(`/api/horses/trainable/${testUserId}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
@@ -229,10 +244,14 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
 
     it('should require authentication for training requests', async () => {
       // Training routes now require authentication after Security Phase 1
-      const response = await request(app).post('/api/training/train').set('Authorization', `Bearer ${authToken}`).send({
-        horseId: testHorseId,
-        discipline: 'Racing',
-      });
+      const response = await request(app)
+        .post('/api/training/train')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({
+          horseId: testHorseId,
+          discipline: 'Racing',
+        });
 
       expect(response.status).toBeOneOf([200, 400, 403, 404]);
       expect(response.body.success).toBeDefined();
@@ -244,7 +263,9 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
       const response = await request(app)
         .post('/api/training/train')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           horseId: 99999, // Non-existent horse
           discipline: 'Racing',
@@ -259,7 +280,9 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
       const response = await request(app)
         .post('/api/training/train')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           horseId: testHorseId,
           discipline: 'InvalidDiscipline',

@@ -12,7 +12,13 @@ import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('Groom Retirement Routes', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let testToken;
   let testGroom;
@@ -95,6 +101,7 @@ describe('Groom Retirement Routes', () => {
     test('GET /api/grooms/:id/retirement/eligibility should check eligibility', async () => {
       const response = await request(app)
         .get(`/api/grooms/${testGroom.id}/retirement/eligibility`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
 
@@ -106,6 +113,7 @@ describe('Groom Retirement Routes', () => {
     test('GET /api/grooms/retirement/statistics should return user stats', async () => {
       const response = await request(app)
         .get('/api/grooms/retirement/statistics')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
 
@@ -118,6 +126,7 @@ describe('Groom Retirement Routes', () => {
     test('GET /api/grooms/retirement/approaching should return approaching retirement grooms', async () => {
       const response = await request(app)
         .get('/api/grooms/retirement/approaching')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
 
@@ -130,6 +139,7 @@ describe('Groom Retirement Routes', () => {
     test('GET /api/grooms/:id/legacy/eligibility should check legacy eligibility', async () => {
       const response = await request(app)
         .get(`/api/grooms/${retiredGroom.id}/legacy/eligibility`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
 
@@ -140,6 +150,7 @@ describe('Groom Retirement Routes', () => {
     test('GET /api/grooms/legacy/history should return legacy history', async () => {
       const response = await request(app)
         .get('/api/grooms/legacy/history')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
 
@@ -152,6 +163,7 @@ describe('Groom Retirement Routes', () => {
     test('GET /api/grooms/talents/definitions should return talent definitions', async () => {
       const response = await request(app)
         .get('/api/grooms/talents/definitions')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
 
@@ -164,6 +176,7 @@ describe('Groom Retirement Routes', () => {
     test('GET /api/grooms/:id/talents should return groom talent selections', async () => {
       const response = await request(app)
         .get(`/api/grooms/${testGroom.id}/talents`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
 
@@ -176,7 +189,9 @@ describe('Groom Retirement Routes', () => {
       const response = await request(app)
         .post(`/api/grooms/${testGroom.id}/talents/validate`)
         .set('Authorization', `Bearer ${testToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           tier: 'tier1',
           talentId: 'gentle_hands',
@@ -191,7 +206,9 @@ describe('Groom Retirement Routes', () => {
       const response = await request(app)
         .post(`/api/grooms/${testGroom.id}/talents/select`)
         .set('Authorization', `Bearer ${testToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           tier: 'tier1',
           talentId: 'gentle_hands',
@@ -208,16 +225,29 @@ describe('Groom Retirement Routes', () => {
     test('should require authentication for protected endpoints', async () => {
       await request(app)
         .get(`/api/grooms/${testGroom.id}/retirement/eligibility`)
+        .set('Origin', 'http://localhost:3000')
         .set('x-test-require-auth', 'true')
         .expect(401);
 
-      await request(app).get('/api/grooms/retirement/statistics').set('x-test-require-auth', 'true').expect(401);
+      await request(app)
+        .get('/api/grooms/retirement/statistics')
+        .set('Origin', 'http://localhost:3000')
+        .set('x-test-require-auth', 'true')
+        .expect(401);
 
-      await request(app).get(`/api/grooms/${testGroom.id}/talents`).set('x-test-require-auth', 'true').expect(401);
+      await request(app)
+        .get(`/api/grooms/${testGroom.id}/talents`)
+        .set('Origin', 'http://localhost:3000')
+        .set('x-test-require-auth', 'true')
+        .expect(401);
     });
 
     test('should require authentication for talent definitions', async () => {
-      await request(app).get('/api/grooms/talents/definitions').set('Authorization', `Bearer ${testToken}`).expect(200);
+      await request(app)
+        .get('/api/grooms/talents/definitions')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${testToken}`)
+        .expect(200);
     });
   });
 
@@ -225,6 +255,7 @@ describe('Groom Retirement Routes', () => {
     test('should validate groom ID parameter', async () => {
       await request(app)
         .get('/api/grooms/invalid/retirement/eligibility')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(400);
     });
@@ -233,7 +264,9 @@ describe('Groom Retirement Routes', () => {
       await request(app)
         .post(`/api/grooms/${testGroom.id}/talents/select`)
         .set('Authorization', `Bearer ${testToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           tier: 'invalid_tier',
           talentId: 'gentle_hands',

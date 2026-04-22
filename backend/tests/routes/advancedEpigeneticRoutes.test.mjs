@@ -19,7 +19,13 @@ import jwt from 'jsonwebtoken';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('Advanced Epigenetic API Routes', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let testHorses = [];
   let testGrooms = [];
@@ -144,6 +150,7 @@ describe('Advanced Epigenetic API Routes', () => {
     test('GET /api/horses/:id/environmental-analysis should return environmental trigger analysis', async () => {
       const response = await request(app)
         .get(`/api/horses/${testHorses[0].id}/environmental-analysis`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -159,6 +166,7 @@ describe('Advanced Epigenetic API Routes', () => {
     test('GET /api/horses/:id/environmental-forecast should return environmental forecast', async () => {
       const response = await request(app)
         .get(`/api/horses/${testHorses[0].id}/environmental-forecast`)
+        .set('Origin', 'http://localhost:3000')
         .query({ days: 30 })
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -176,7 +184,9 @@ describe('Advanced Epigenetic API Routes', () => {
       const response = await request(app)
         .post(`/api/horses/${testHorses[0].id}/evaluate-trait-opportunity`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           traitName: 'confident',
           windowName: 'early_socialization',
@@ -195,6 +205,7 @@ describe('Advanced Epigenetic API Routes', () => {
     test('should require authentication for environmental endpoints', async () => {
       await request(app)
         .get(`/api/horses/${testHorses[0].id}/environmental-analysis`)
+        .set('Origin', 'http://localhost:3000')
         .set('x-test-require-auth', 'true')
         .expect(401);
     });
@@ -225,6 +236,7 @@ describe('Advanced Epigenetic API Routes', () => {
 
       await request(app)
         .get(`/api/horses/${otherHorse.id}/environmental-analysis`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
 
@@ -238,6 +250,7 @@ describe('Advanced Epigenetic API Routes', () => {
     test('GET /api/horses/:id/trait-interactions should return trait interaction analysis', async () => {
       const response = await request(app)
         .get(`/api/horses/${testHorses[1].id}/trait-interactions`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -253,6 +266,7 @@ describe('Advanced Epigenetic API Routes', () => {
     test('GET /api/horses/:id/trait-matrix should return complete interaction matrix', async () => {
       const response = await request(app)
         .get(`/api/horses/${testHorses[1].id}/trait-matrix`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -268,6 +282,7 @@ describe('Advanced Epigenetic API Routes', () => {
     test('GET /api/horses/:id/trait-stability should return interaction stability analysis', async () => {
       const response = await request(app)
         .get(`/api/horses/${testHorses[1].id}/trait-stability`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -285,6 +300,7 @@ describe('Advanced Epigenetic API Routes', () => {
     test('GET /api/horses/:id/developmental-windows should return active and upcoming windows', async () => {
       const response = await request(app)
         .get(`/api/horses/${testHorses[0].id}/developmental-windows`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -300,6 +316,7 @@ describe('Advanced Epigenetic API Routes', () => {
     test('GET /api/horses/:id/developmental-forecast should return developmental forecast', async () => {
       const response = await request(app)
         .get(`/api/horses/${testHorses[0].id}/developmental-forecast`)
+        .set('Origin', 'http://localhost:3000')
         .query({ days: 60 })
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -317,6 +334,7 @@ describe('Advanced Epigenetic API Routes', () => {
     test('GET /api/horses/:id/critical-period-analysis should return critical period sensitivity', async () => {
       const response = await request(app)
         .get(`/api/horses/${testHorses[0].id}/critical-period-analysis`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -334,7 +352,9 @@ describe('Advanced Epigenetic API Routes', () => {
       const response = await request(app)
         .post(`/api/horses/${testHorses[0].id}/coordinate-development`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({})
         .expect(200);
 
@@ -352,7 +372,9 @@ describe('Advanced Epigenetic API Routes', () => {
       await request(app)
         .post(`/api/horses/${testHorses[0].id}/evaluate-trait-opportunity`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           traitName: '', // Invalid empty trait name
           windowName: 'early_socialization',
@@ -363,6 +385,7 @@ describe('Advanced Epigenetic API Routes', () => {
     test('should validate forecast days parameter', async () => {
       await request(app)
         .get(`/api/horses/${testHorses[0].id}/developmental-forecast`)
+        .set('Origin', 'http://localhost:3000')
         .query({ days: -5 }) // Invalid negative days
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
@@ -371,6 +394,7 @@ describe('Advanced Epigenetic API Routes', () => {
     test('should handle non-existent horse IDs', async () => {
       await request(app)
         .get('/api/horses/99999/environmental-analysis')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
     });

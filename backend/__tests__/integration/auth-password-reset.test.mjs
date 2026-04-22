@@ -24,7 +24,13 @@ import prisma from '../../db/index.mjs';
 // the duration of each test. All DB work in forgotPassword still executes.
 import emailService from '../../utils/emailService.mjs';
 
+import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 describe('Auth — Password Reset Integration', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   const EMAIL_PREFIX = 'pwreset_int_';
   let capturedRawToken = null;
 
@@ -78,7 +84,10 @@ describe('Auth — Password Reset Integration', () => {
     });
 
     // 3. Call forgotPassword via HTTP — runs full controller + DB transaction
-    const forgotRes = await request(app).post('/auth/forgot-password').send({ email });
+    const forgotRes = await request(app)
+      .post('/auth/forgot-password')
+      .set('Origin', 'http://localhost:3000')
+      .send({ email });
 
     expect(forgotRes.status).toBe(200);
     expect(forgotRes.body.status).toBe('success');
@@ -112,19 +121,28 @@ describe('Auth — Password Reset Integration', () => {
     );
 
     // 4. Call resetPassword with the captured raw token
-    const resetRes = await request(app).post('/auth/reset-password').send({ token: capturedRawToken, newPassword });
+    const resetRes = await request(app)
+      .post('/auth/reset-password')
+      .set('Origin', 'http://localhost:3000')
+      .send({ token: capturedRawToken, newPassword });
 
     expect(resetRes.status).toBe(200);
     expect(resetRes.body.status).toBe('success');
     expect(resetRes.body.message).toMatch(/password reset successfully/i);
 
     // 5. Verify the old password no longer works
-    const loginOldRes = await request(app).post('/auth/login').send({ email, password: originalPassword });
+    const loginOldRes = await request(app)
+      .post('/auth/login')
+      .set('Origin', 'http://localhost:3000')
+      .send({ email, password: originalPassword });
 
     expect(loginOldRes.status).toBe(401);
 
     // 6. Verify the new password works
-    const loginNewRes = await request(app).post('/auth/login').send({ email, password: newPassword });
+    const loginNewRes = await request(app)
+      .post('/auth/login')
+      .set('Origin', 'http://localhost:3000')
+      .send({ email, password: newPassword });
 
     expect(loginNewRes.status).toBe(200);
     expect(loginNewRes.body.data?.user?.email).toBe(email);
@@ -134,6 +152,7 @@ describe('Auth — Password Reset Integration', () => {
   it('forgotPassword returns 200 for unknown email (no user enumeration)', async () => {
     const resetRes = await request(app)
       .post('/auth/forgot-password')
+      .set('Origin', 'http://localhost:3000')
       .send({ email: `nonexistent_${Date.now()}@example.com` });
 
     // Must NOT reveal whether the account exists
@@ -145,6 +164,7 @@ describe('Auth — Password Reset Integration', () => {
   it('resetPassword rejects an invalid/nonexistent token with 400', async () => {
     const resetRes = await request(app)
       .post('/auth/reset-password')
+      .set('Origin', 'http://localhost:3000')
       .send({ token: 'totally-fake-token-that-was-never-issued', newPassword: 'NewPass99!' });
 
     expect(resetRes.status).toBe(400);
@@ -173,16 +193,20 @@ describe('Auth — Password Reset Integration', () => {
       return { success: true, messageId: 'spy-captured', preview: '' };
     });
 
-    await request(app).post('/auth/forgot-password').send({ email });
+    await request(app).post('/auth/forgot-password').set('Origin', 'http://localhost:3000').send({ email });
     expect(capturedRawToken).not.toBeNull();
 
     // Use the token once — should succeed
-    const firstReset = await request(app).post('/auth/reset-password').send({ token: capturedRawToken, newPassword });
+    const firstReset = await request(app)
+      .post('/auth/reset-password')
+      .set('Origin', 'http://localhost:3000')
+      .send({ token: capturedRawToken, newPassword });
     expect(firstReset.status).toBe(200);
 
     // Replay the same token — should be rejected
     const secondReset = await request(app)
       .post('/auth/reset-password')
+      .set('Origin', 'http://localhost:3000')
       .send({ token: capturedRawToken, newPassword: 'AnotherPass3#' });
     expect(secondReset.status).toBe(400);
   });

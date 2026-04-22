@@ -20,7 +20,13 @@ import request from 'supertest';
 import app from '../../../app.mjs';
 import { createTestUser, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 describe('INTEGRATION: Rider Routes (21-3)', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let _user;
   let userToken;
 
@@ -42,14 +48,17 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
 
   describe('GET /api/riders/marketplace', () => {
     it('[P0] happy path — returns 200 with marketplace listing', async () => {
-      const res = await request(app).get('/api/riders/marketplace').set('Authorization', `Bearer ${userToken}`);
+      const res = await request(app)
+        .get('/api/riders/marketplace')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${userToken}`);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
     });
 
     it('[P0] auth guard — returns 401 when no token provided', async () => {
-      const res = await request(app).get('/api/riders/marketplace');
+      const res = await request(app).get('/api/riders/marketplace').set('Origin', 'http://localhost:3000');
 
       expect(res.status).toBe(401);
     });
@@ -61,7 +70,9 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
     it('[P0] auth guard — returns 401 when no token provided', async () => {
       const res = await request(app)
         .post('/api/riders/marketplace/hire')
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ marketplaceId: 'some-id' });
 
       expect(res.status).toBe(401);
@@ -71,7 +82,9 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
       const res = await request(app)
         .post('/api/riders/marketplace/hire')
         .set('Authorization', `Bearer ${userToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           // marketplaceId missing — required
         });
@@ -85,6 +98,7 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
       // First fetch a valid marketplace ID
       const marketplaceRes = await request(app)
         .get('/api/riders/marketplace')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${userToken}`);
 
       expect(marketplaceRes.status).toBe(200);
@@ -99,7 +113,9 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
       const res = await request(app)
         .post('/api/riders/marketplace/hire')
         .set('Authorization', `Bearer ${userToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ marketplaceId });
 
       expect([200, 201]).toContain(res.status);
@@ -111,14 +127,17 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
 
   describe('GET /api/riders/assignments', () => {
     it('[P0] happy path — returns 200 with assignments array', async () => {
-      const res = await request(app).get('/api/riders/assignments').set('Authorization', `Bearer ${userToken}`);
+      const res = await request(app)
+        .get('/api/riders/assignments')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${userToken}`);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
     });
 
     it('[P0] auth guard — returns 401 when no token provided', async () => {
-      const res = await request(app).get('/api/riders/assignments');
+      const res = await request(app).get('/api/riders/assignments').set('Origin', 'http://localhost:3000');
 
       expect(res.status).toBe(401);
     });
@@ -130,7 +149,9 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
     it('[P0] auth guard — returns 401 when no token provided', async () => {
       const res = await request(app)
         .post('/api/riders/assignments')
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ riderId: 1, horseId: 1 });
 
       expect(res.status).toBe(401);
@@ -140,7 +161,9 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
       const res = await request(app)
         .post('/api/riders/assignments')
         .set('Authorization', `Bearer ${userToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           // riderId missing — required
           horseId: 1,
@@ -155,7 +178,9 @@ describe('INTEGRATION: Rider Routes (21-3)', () => {
       const res = await request(app)
         .post('/api/riders/assignments')
         .set('Authorization', `Bearer ${userToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           riderId: 1,
           // horseId missing — required

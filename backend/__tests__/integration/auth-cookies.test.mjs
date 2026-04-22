@@ -12,7 +12,13 @@ import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
 import bcrypt from 'bcryptjs';
 
+import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 describe('Authentication with HttpOnly Cookies', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let _testUser;
   let server;
   const testUserData = {
@@ -75,6 +81,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       };
       const response = await request(app)
         .post('/api/auth/register')
+        .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send(registrationUser)
         .expect(201);
@@ -117,6 +124,7 @@ describe('Authentication with HttpOnly Cookies', () => {
     it('should NOT expose tokens in response body (XSS protection)', async () => {
       const _response = await request(app)
         .post('/api/auth/register')
+        .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
           ...testUserData,
@@ -144,6 +152,7 @@ describe('Authentication with HttpOnly Cookies', () => {
     it('should set httpOnly cookies on successful login', async () => {
       const response = await request(app)
         .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('X-Test-Bypass-Auth', 'true')
         .send({
@@ -170,6 +179,7 @@ describe('Authentication with HttpOnly Cookies', () => {
     it('should include SameSite=Lax for CSRF protection', async () => {
       const response = await request(app)
         .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('X-Test-Bypass-Auth', 'true')
         .send({
@@ -194,6 +204,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       // Login to get cookies
       const loginResponse = await request(app)
         .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('X-Test-Bypass-Auth', 'true')
         .send({
@@ -208,6 +219,7 @@ describe('Authentication with HttpOnly Cookies', () => {
     it('should authenticate with httpOnly cookies', async () => {
       const response = await request(app)
         .get('/api/auth/profile')
+        .set('Origin', 'http://localhost:3000')
         .set('Cookie', cookieHeader)
         .set('X-Test-Bypass-Auth', 'true')
         .set('X-Test-Email', testUserData.email)
@@ -218,12 +230,17 @@ describe('Authentication with HttpOnly Cookies', () => {
     });
 
     it('should reject request without cookies', async () => {
-      await request(app).get('/api/auth/profile').set('X-Test-Require-Auth', 'true').expect(401);
+      await request(app)
+        .get('/api/auth/profile')
+        .set('Origin', 'http://localhost:3000')
+        .set('X-Test-Require-Auth', 'true')
+        .expect(401);
     });
 
     it('should reject request with invalid cookies', async () => {
       await request(app)
         .get('/api/auth/profile')
+        .set('Origin', 'http://localhost:3000')
         .set('Cookie', ['accessToken=invalid_token'])
         .set('X-Test-Require-Auth', 'true')
         .expect(401);
@@ -237,6 +254,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       // Login to get refresh token
       const loginResponse = await request(app)
         .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('X-Test-Bypass-Auth', 'true')
         .send({
@@ -251,6 +269,7 @@ describe('Authentication with HttpOnly Cookies', () => {
     it('should refresh accessToken using httpOnly refreshToken cookie', async () => {
       const response = await request(app)
         .post('/api/auth/refresh-token')
+        .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('Cookie', [refreshCookie])
         .set('X-Test-Bypass-Auth', 'true')
@@ -267,7 +286,11 @@ describe('Authentication with HttpOnly Cookies', () => {
     });
 
     it('should reject refresh without refreshToken cookie', async () => {
-      await request(app).post('/api/auth/refresh-token').set(rateLimitBypassHeader).expect(400);
+      await request(app)
+        .post('/api/auth/refresh-token')
+        .set('Origin', 'http://localhost:3000')
+        .set(rateLimitBypassHeader)
+        .expect(400);
     });
 
     // 21R-AUTH-1: refresh cookie must be scoped to '/' so both /auth/refresh-token
@@ -275,6 +298,7 @@ describe('Authentication with HttpOnly Cookies', () => {
     it('should set refreshToken cookie with Path=/ (21R-AUTH-1 hotfix)', async () => {
       const loginResponse = await request(app)
         .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('X-Test-Bypass-Auth', 'true')
         .send({
@@ -293,6 +317,7 @@ describe('Authentication with HttpOnly Cookies', () => {
     it('should accept the same refreshToken cookie on BOTH /auth/refresh-token and /api/auth/refresh-token (21R-AUTH-1)', async () => {
       const loginResponse = await request(app)
         .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('X-Test-Bypass-Auth', 'true')
         .send({
@@ -307,6 +332,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       // Hit the un-prefixed mount point
       const apiRefreshResponse = await request(app)
         .post('/api/auth/refresh-token')
+        .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('Cookie', [refreshCookieFromLogin])
         .set('X-Test-Bypass-Auth', 'true')
@@ -316,6 +342,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       // Hit the /auth (non-/api) mount point with the SAME cookie
       const authRefreshResponse = await request(app)
         .post('/auth/refresh-token')
+        .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('Cookie', [refreshCookieFromLogin])
         .set('X-Test-Bypass-Auth', 'true')
@@ -332,6 +359,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       // Login to get cookies
       const loginResponse = await request(app)
         .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('X-Test-Bypass-Auth', 'true')
         .send({
@@ -347,6 +375,7 @@ describe('Authentication with HttpOnly Cookies', () => {
     it('should clear httpOnly cookies on logout', async () => {
       const response = await request(app)
         .post('/api/auth/logout')
+        .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('Cookie', authCookies)
         .set('X-Test-Bypass-Auth', 'true')
@@ -369,6 +398,7 @@ describe('Authentication with HttpOnly Cookies', () => {
     it('should invalidate refresh tokens in database on logout', async () => {
       await request(app)
         .post('/api/auth/logout')
+        .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('Cookie', authCookies)
         .set('X-Test-Bypass-Auth', 'true')
@@ -389,6 +419,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       // Test all auth endpoints
       const _registerResponse = await request(app)
         .post('/api/auth/register')
+        .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
           ...testUserData,
@@ -399,6 +430,7 @@ describe('Authentication with HttpOnly Cookies', () => {
 
       const _loginResponse = await request(app)
         .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
           email: 'xss-test@example.com',
@@ -424,6 +456,7 @@ describe('Authentication with HttpOnly Cookies', () => {
     it('should set SameSite=Lax on all auth cookies', async () => {
       const loginResponse = await request(app)
         .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('X-Test-Bypass-Auth', 'true')
         .send({
@@ -447,6 +480,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       // In test environment, secure flag may be false
       const loginResponse = await request(app)
         .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('X-Test-Bypass-Auth', 'true')
         .send({
@@ -498,6 +532,7 @@ describe('Authentication with HttpOnly Cookies', () => {
     it('should still accept Authorization header for backward compatibility', async () => {
       const response = await request(app)
         .get('/api/auth/profile')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${accessToken}`)
         .set('X-Test-Bypass-Auth', 'true')
         .set('X-Test-Email', fallbackEmail)

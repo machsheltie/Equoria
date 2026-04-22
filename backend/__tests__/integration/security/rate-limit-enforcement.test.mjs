@@ -14,7 +14,13 @@ import app from '../../../app.mjs';
 import { createMockToken } from '../../factories/index.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 describe('Rate Limit Enforcement Integration Tests', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let validToken;
 
@@ -53,15 +59,20 @@ describe('Rate Limit Enforcement Integration Tests', () => {
     it('should have the Express app configured and responding', async () => {
       expect(app).toBeDefined();
 
-      const response = await request(app).get('/health');
+      const response = await request(app).get('/health').set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(200);
     });
 
     it('should include rate limit headers on auth endpoints', async () => {
-      const response = await request(app).post('/api/auth/login').set('x-test-skip-csrf', 'true').send({
-        email: 'nonexistent@test.com',
-        password: 'wrongpassword',
-      });
+      const response = await request(app)
+        .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({
+          email: 'nonexistent@test.com',
+          password: 'wrongpassword',
+        });
 
       // Rate limit headers should be present (RFC 6585 compliant)
       const hasRateLimitHeader =
@@ -74,7 +85,10 @@ describe('Rate Limit Enforcement Integration Tests', () => {
     });
 
     it('should include rate limit headers on authenticated endpoints', async () => {
-      const response = await request(app).get('/api/horses').set('Authorization', `Bearer ${validToken}`);
+      const response = await request(app)
+        .get('/api/horses')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${validToken}`);
 
       // Authenticated endpoints should also have rate limiting active
       expect([200, 429]).toContain(response.status);
@@ -85,6 +99,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
     it('should accept requests with valid JWT tokens', async () => {
       const response = await request(app)
         .get(`/api/grooms/user/${testUser.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${validToken}`);
 
       // Should be authenticated (200 or empty result, not 401)
@@ -92,7 +107,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
     });
 
     it('should reject requests without tokens', async () => {
-      const response = await request(app).get('/api/horses');
+      const response = await request(app).get('/api/horses').set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(401);
     });
@@ -106,13 +121,19 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       // Small delay to ensure token expiry takes effect
       await new Promise(resolve => setTimeout(resolve, 50));
 
-      const response = await request(app).get('/api/horses').set('Authorization', `Bearer ${expiredToken}`);
+      const response = await request(app)
+        .get('/api/horses')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${expiredToken}`);
 
       expect(response.status).toBe(401);
     });
 
     it('should reject requests with malformed tokens', async () => {
-      const response = await request(app).get('/api/horses').set('Authorization', 'Bearer invalid.token.here');
+      const response = await request(app)
+        .get('/api/horses')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', 'Bearer invalid.token.here');
 
       expect(response.status).toBe(401);
     });
@@ -122,10 +143,15 @@ describe('Rate Limit Enforcement Integration Tests', () => {
     it('should return proper error structure when rate limited', async () => {
       // This test validates the rate limit response format
       // In test environments, rate limits are increased so we verify the infrastructure
-      const response = await request(app).post('/api/auth/login').set('x-test-skip-csrf', 'true').send({
-        email: 'test@example.com',
-        password: 'wrong',
-      });
+      const response = await request(app)
+        .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({
+          email: 'test@example.com',
+          password: 'wrong',
+        });
 
       // Whether rate limited or not, the response should have proper structure
       if (response.status === 429) {

@@ -22,10 +22,16 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import { generateTestToken } from './helpers/authHelper.mjs';
 import bcrypt from 'bcryptjs';
 
+import { fetchCsrf } from './helpers/csrfHelper.mjs';
 // Import the real app — no mocks
 const app = (await import('../app.mjs')).default;
 
 describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let testFoal;
   let authToken;
@@ -97,7 +103,9 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
       const response = await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           day: 3,
           activity: 'Trailer Exposure',
@@ -142,7 +150,9 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
       const response = await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           day: 3,
           activity: 'Halter Introduction',
@@ -169,7 +179,9 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ activity: 'Trailer Exposure' })
         .expect(400);
 
@@ -177,7 +189,9 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ day: 3 })
         .expect(400);
 
@@ -185,7 +199,9 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ day: 7, activity: 'Trailer Exposure' })
         .expect(400);
 
@@ -193,7 +209,9 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ day: -1, activity: 'Trailer Exposure' })
         .expect(400);
 
@@ -201,7 +219,9 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ day: 3, activity: '' })
         .expect(400);
     });
@@ -210,7 +230,9 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
       const response = await request(app)
         .post('/api/foals/99999/enrichment')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ day: 3, activity: 'Trailer Exposure' })
         .expect(404);
 
@@ -221,7 +243,9 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
       const response = await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           day: 0,
           activity: 'Trailer Exposure', // This is a day 3 activity
@@ -237,7 +261,9 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ day: 3, activity: 'leading_practice' })
         .expect(200);
 
@@ -245,7 +271,9 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ day: 3, activity: 'Leading Practice' })
         .expect(200);
 
@@ -253,7 +281,9 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ day: 3, activity: 'HANDLING EXERCISES' })
         .expect(200);
     });
@@ -265,7 +295,9 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
         const response = await request(app)
           .post(`/api/foals/${testFoal.id}/enrichment`)
           .set('Authorization', `Bearer ${authToken}`)
-          .set('x-test-skip-csrf', 'true')
+          .set('Origin', 'http://localhost:3000')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           .send({ day: 3, activity })
           .expect(200);
 
@@ -279,7 +311,9 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
       const response = await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ day: 1, activity: 'Feeding Assistance' })
         .expect(200);
 
@@ -307,7 +341,9 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
       const response = await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ day: 3, activity: 'Trailer Exposure' })
         .expect(200);
 
@@ -329,6 +365,7 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
     it('should require authentication', async () => {
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
+        .set('Origin', 'http://localhost:3000')
         .send({ day: 3, activity: 'Trailer Exposure' })
         .expect(401);
     });

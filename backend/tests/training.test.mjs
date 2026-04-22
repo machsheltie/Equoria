@@ -42,6 +42,7 @@ import request from 'supertest';
 import dotenv from 'dotenv';
 import { generateTestToken } from './helpers/authHelper.mjs';
 
+import { fetchCsrf } from './helpers/csrfHelper.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 let authToken;
@@ -53,9 +54,19 @@ dotenv.config({ path: join(__dirname, '../.env.test') });
 const app = (await import('../app.mjs')).default;
 const { default: prisma } = await import(join(__dirname, '../db/index.mjs'));
 const trainingRequest = () =>
-  request(app).post('/api/training/train').set('Authorization', `Bearer ${authToken}`).set('x-test-skip-csrf', 'true');
+  request(app)
+    .post('/api/training/train')
+    .set('Authorization', `Bearer ${authToken}`)
+    .set('Origin', 'http://localhost:3000')
+    .set('Cookie', __csrf__.cookieHeader)
+    .set('X-CSRF-Token', __csrf__.csrfToken);
 
 describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validation', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testPlayer;
   let adultHorse; // 3+ years old, eligible for training
   let youngHorse; // Under 3 years old, not eligible
