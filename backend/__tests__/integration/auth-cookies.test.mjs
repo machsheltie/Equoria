@@ -310,34 +310,37 @@ describe('Authentication with HttpOnly Cookies', () => {
     });
 
     it('should accept the same refreshToken cookie on BOTH /auth/refresh-token and /api/auth/refresh-token (21R-AUTH-1)', async () => {
-      const loginResponse = await request(app)
-        .post('/api/auth/login')
-        .set('Origin', 'http://localhost:3000')
-        .set(rateLimitBypassHeader)
-        .send({
-          email: testUserData.email,
-          password: testUserData.password,
-        })
-        .expect(200);
+      // Test that the SAME refresh-token path is reachable at both mount
+      // points. Token rotation invalidates a refresh token on first use, so
+      // we login fresh for each mount point rather than reusing a single
+      // token across two refreshes.
+      const loginFreshCookie = async () => {
+        const loginResponse = await request(app)
+          .post('/api/auth/login')
+          .set('Origin', 'http://localhost:3000')
+          .set(rateLimitBypassHeader)
+          .send({ email: testUserData.email, password: testUserData.password })
+          .expect(200);
+        const refreshCookieFromLogin = loginResponse.headers['set-cookie'].find(c => c.startsWith('refreshToken='));
+        expect(refreshCookieFromLogin).toBeDefined();
+        return refreshCookieFromLogin;
+      };
 
-      const refreshCookieFromLogin = loginResponse.headers['set-cookie'].find(c => c.startsWith('refreshToken='));
-      expect(refreshCookieFromLogin).toBeDefined();
-
-      // Hit the un-prefixed mount point
+      const cookieA = await loginFreshCookie();
       const apiRefreshResponse = await request(app)
         .post('/api/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
-        .set('Cookie', [refreshCookieFromLogin])
+        .set('Cookie', [cookieA])
         .expect(200);
       expect(apiRefreshResponse.body.status).toBe('success');
 
-      // Hit the /auth (non-/api) mount point with the SAME cookie
+      const cookieB = await loginFreshCookie();
       const authRefreshResponse = await request(app)
         .post('/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
-        .set('Cookie', [refreshCookieFromLogin])
+        .set('Cookie', [cookieB])
         .expect(200);
       expect(authRefreshResponse.body.status).toBe('success');
     });
@@ -359,7 +362,9 @@ describe('Authentication with HttpOnly Cookies', () => {
         })
         .expect(200);
 
-      authCookies = loginResponse.headers['set-cookie'];
+      const loginCookies = loginResponse.headers['set-cookie'] || [];
+      // Merge login cookies with the CSRF cookie so mutations have both.
+      authCookies = [...loginCookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
       loggedInUser = loginResponse.body.data.user;
     });
 
@@ -367,6 +372,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       const response = await request(app)
         .post('/api/auth/logout')
         .set('Origin', 'http://localhost:3000')
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .set(rateLimitBypassHeader)
         .set('Cookie', authCookies)
         .set('X-Test-Email', testUserData.email)
@@ -389,6 +395,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       await request(app)
         .post('/api/auth/logout')
         .set('Origin', 'http://localhost:3000')
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .set(rateLimitBypassHeader)
         .set('Cookie', authCookies)
         .set('X-Test-Email', testUserData.email)
