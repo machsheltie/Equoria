@@ -22,6 +22,7 @@ export default [
       '**/dist',
       '**/build',
       '**/coverage',
+      '**/coverage-security',
       '**/.next',
       '**/out',
       '**/*.min.js',
