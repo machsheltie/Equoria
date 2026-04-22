@@ -80,6 +80,7 @@ describe('Cookie Integration Tests', () => {
       expect(response.status).toBe(201);
 
       const cookies = response.headers['set-cookie'];
+      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
       expect(cookies).toBeDefined();
 
       const accessTokenCookie = cookies.find(cookie => cookie.startsWith('accessToken='));
@@ -112,6 +113,7 @@ describe('Cookie Integration Tests', () => {
       expect(response.status).toBe(201);
 
       const cookies = response.headers['set-cookie'];
+      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
       const refreshTokenCookie = cookies.find(cookie => cookie.startsWith('refreshToken='));
       expect(refreshTokenCookie).toBeDefined();
 
@@ -142,6 +144,7 @@ describe('Cookie Integration Tests', () => {
       expect(response.status).toBe(201);
 
       const cookies = response.headers['set-cookie'];
+      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
       expect(cookies).toHaveLength(2); // accessToken and refreshToken
 
       // Clean up
@@ -180,6 +183,7 @@ describe('Cookie Integration Tests', () => {
       expect(response.status).toBe(200);
 
       const cookies = response.headers['set-cookie'];
+      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
       expect(cookies).toBeDefined();
       expect(cookies).toHaveLength(2); // accessToken and refreshToken
     });
@@ -344,10 +348,11 @@ describe('Cookie Integration Tests', () => {
       expect(accessTokenCookie).toBeDefined();
 
       const response = await request(app)
-        .post('/auth/logout')
+        .post('/api/auth/logout')
         .set('Origin', 'http://localhost:3000')
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .set(rateLimitBypassHeader)
-        .set('Cookie', accessTokenCookie);
+        .set('Cookie', [accessTokenCookie, ...__csrf__.cookieHeader]);
 
       expect(response.status).toBe(200);
 
@@ -367,10 +372,11 @@ describe('Cookie Integration Tests', () => {
       expect(accessTokenCookie).toBeDefined();
 
       const response = await request(app)
-        .post('/auth/logout')
+        .post('/api/auth/logout')
         .set('Origin', 'http://localhost:3000')
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .set(rateLimitBypassHeader)
-        .set('Cookie', accessTokenCookie);
+        .set('Cookie', [accessTokenCookie, ...__csrf__.cookieHeader]);
 
       expect(response.status).toBe(200);
 
@@ -388,10 +394,11 @@ describe('Cookie Integration Tests', () => {
       expect(accessTokenCookie).toBeDefined();
 
       const response = await request(app)
-        .post('/auth/logout')
+        .post('/api/auth/logout')
         .set('Origin', 'http://localhost:3000')
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .set(rateLimitBypassHeader)
-        .set('Cookie', accessTokenCookie);
+        .set('Cookie', [accessTokenCookie, ...__csrf__.cookieHeader]);
 
       const clearCookies = response.headers['set-cookie'];
 

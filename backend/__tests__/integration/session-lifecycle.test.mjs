@@ -29,7 +29,7 @@ describe('Session Lifecycle Management', () => {
   let testUser;
   let server;
   let _csrfToken;
-  const testBypassHeaders = { 'X-Test-Bypass-Auth': 'true' };
+  const testBypassHeaders = {};
   let hashedTestPassword;
   const testUserData = {
     username: 'sessiontest',
@@ -175,6 +175,7 @@ describe('Session Lifecycle Management', () => {
 
       // Verify cookies are set
       const cookies = response.headers['set-cookie'];
+      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
       expect(cookies).toBeDefined();
 
       const accessTokenCookie = cookies.find(c => c.startsWith('accessToken='));
@@ -217,12 +218,14 @@ describe('Session Lifecycle Management', () => {
         .expect(200);
 
       const cookies = loginResponse.headers['set-cookie'];
+      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
 
       // Logout
       const response = await request(app)
         .post('/api/auth/logout')
         .set('Origin', 'http://localhost:3000')
-        .set('Cookie', cookies)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Cookie', __allCookies__)
         .expect(200);
 
       expect(response.body.status).toBe('success');
@@ -247,12 +250,14 @@ describe('Session Lifecycle Management', () => {
         .expect(200);
 
       const cookies = loginResponse.headers['set-cookie'];
+      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
 
       // Logout
       const response = await request(app)
         .post('/api/auth/logout')
         .set('Origin', 'http://localhost:3000')
-        .set('Cookie', cookies)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Cookie', __allCookies__)
         .expect(200);
 
       // Verify cookies are cleared
@@ -285,6 +290,7 @@ describe('Session Lifecycle Management', () => {
         .expect(200);
 
       const cookies = loginResponse.headers['set-cookie'];
+      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
 
       // Verify tokens exist
       const tokensBefore = await prisma.refreshToken.count({
@@ -297,7 +303,8 @@ describe('Session Lifecycle Management', () => {
       const response = await request(app)
         .post('/api/auth/change-password')
         .set('Origin', 'http://localhost:3000')
-        .set('Cookie', cookies)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Cookie', __allCookies__)
         .send({
           oldPassword: testUserData.password,
           newPassword,
@@ -341,12 +348,14 @@ describe('Session Lifecycle Management', () => {
         .expect(200);
 
       const cookies = loginResponse.headers['set-cookie'];
+      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
 
       // Attempt to change password with wrong old password
       const response = await request(app)
         .post('/api/auth/change-password')
         .set('Origin', 'http://localhost:3000')
-        .set('Cookie', cookies)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Cookie', __allCookies__)
         .send({
           oldPassword: 'WrongPassword123!',
           newPassword: 'NewPassword456!',
@@ -370,12 +379,14 @@ describe('Session Lifecycle Management', () => {
         .expect(200);
 
       const cookies = loginResponse.headers['set-cookie'];
+      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
 
       // Attempt to change password with weak new password
       const response = await request(app)
         .post('/api/auth/change-password')
         .set('Origin', 'http://localhost:3000')
-        .set('Cookie', cookies)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Cookie', __allCookies__)
         .send({
           oldPassword: testUserData.password,
           newPassword: 'weak',
@@ -401,6 +412,7 @@ describe('Session Lifecycle Management', () => {
 
       // Extract and decode the access token
       const cookies = loginResponse.headers['set-cookie'];
+      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
       const accessTokenCookie = cookies.find(c => c.startsWith('accessToken='));
       const accessToken = accessTokenCookie.split(';')[0].split('=')[1];
       const decoded = jwt.decode(accessToken);
@@ -441,6 +453,7 @@ describe('Session Lifecycle Management', () => {
         .expect(200);
 
       const cookies = loginResponse.headers['set-cookie'];
+      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
       const accessTokenCookie = cookies.find(c => c.startsWith('accessToken='));
       const accessToken = accessTokenCookie.split(';')[0].split('=')[1];
       const decoded = jwt.decode(accessToken);
@@ -481,6 +494,7 @@ describe('Session Lifecycle Management', () => {
         .expect(200);
 
       const cookies = loginResponse.headers['set-cookie'];
+      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
       const accessTokenCookie = cookies.find(c => c.startsWith('accessToken='));
       const accessToken = accessTokenCookie.split(';')[0].split('=')[1];
       const decoded = jwt.decode(accessToken);
@@ -639,7 +653,8 @@ describe('Session Lifecycle Management', () => {
       const changePasswordResponse = await request(app)
         .post('/api/auth/change-password')
         .set('Origin', 'http://localhost:3000')
-        .set('Cookie', cookies)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Cookie', __allCookies__)
         .send({
           oldPassword: newUserData.password,
           newPassword,
