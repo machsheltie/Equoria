@@ -43,7 +43,6 @@ import { authenticateToken } from '../../middleware/auth.mjs';
 import { handleValidationErrors } from '../../middleware/validationErrorHandler.mjs';
 import prisma from '../../db/index.mjs';
 
-import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 /**
  * Extract cookie value from Set-Cookie header
  */
@@ -123,11 +122,6 @@ const createTestApp = () => {
 };
 
 describe('🔐 Authentication System Integration Tests', () => {
-  let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
-
   let app;
   let testUser;
   let authToken;
@@ -220,11 +214,7 @@ describe('🔐 Authentication System Integration Tests', () => {
       ];
 
       for (const endpoint of protectedEndpoints) {
-        const response = await request(app)
-          .get(endpoint)
-          .set('Origin', 'http://localhost:3000')
-          .set('x-test-require-auth', 'true');
-
+        const response = await request(app).get(endpoint).set('Origin', 'http://localhost:3000');
         expect(response.status).toBe(401);
         expect(response.body.success).toBe(false);
         expect(response.body.message).toBe('Access token is required');
@@ -244,7 +234,7 @@ describe('🔐 Authentication System Integration Tests', () => {
         const response = await request(app)
           .get(endpoint)
           .set('Origin', 'http://localhost:3000')
-          .set('x-test-require-auth', 'true')
+
           .set('Authorization', `Bearer ${invalidToken}`);
 
         expect(response.status).toBe(401);
@@ -302,11 +292,7 @@ describe('🔐 Authentication System Integration Tests', () => {
       const endpoints = ['/api/auth/profile', '/api/horses', '/api/competition/my-entries'];
 
       for (const endpoint of endpoints) {
-        const response = await request(app)
-          .get(endpoint)
-          .set('Origin', 'http://localhost:3000')
-          .set('x-test-require-auth', 'true');
-
+        const response = await request(app).get(endpoint).set('Origin', 'http://localhost:3000');
         expect(response.status).toBe(401);
         expect(response.body).toHaveProperty('success', false);
         expect(response.body).toHaveProperty('message');
@@ -321,7 +307,7 @@ describe('🔐 Authentication System Integration Tests', () => {
         const response = await request(app)
           .get('/api/auth/profile')
           .set('Origin', 'http://localhost:3000')
-          .set('x-test-require-auth', 'true')
+
           .set('Authorization', header);
 
         expect(response.status).toBe(401);

@@ -145,7 +145,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
       await request(app)
         .get(`/api/competition/eligibility/${testHorse.id}/Racing`)
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
     });
 
@@ -247,7 +247,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
           horseId: testHorse.id,
           showId: testShow.id,
         })
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
     });
   });
@@ -389,7 +389,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
       await request(app)
         .get('/api/leaderboards/competition')
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
     });
   });

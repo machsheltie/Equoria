@@ -52,7 +52,6 @@ import { getApiDocumentationService } from '../../services/apiDocumentationServi
 import prisma from '../../db/index.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 
-import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -131,11 +130,6 @@ const createTestApp = () => {
 };
 
 describe('📚 Documentation System Integration Tests', () => {
-  let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
-
   let app;
   let testUser;
   let authToken;
@@ -449,7 +443,7 @@ describe('📚 Documentation System Integration Tests', () => {
       const response = await request(app)
         .post('/api/docs/endpoints')
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true')
+
         .send(endpointData);
 
       expect(response.status).toBe(401);

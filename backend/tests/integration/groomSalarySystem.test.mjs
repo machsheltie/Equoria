@@ -310,31 +310,19 @@ describe('Groom Salary System', () => {
 
   describe('Authentication', () => {
     it('should require authentication for GET /api/groom-salaries/cost', async () => {
-      const response = await request(app)
-        .get('/api/groom-salaries/cost')
-        .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true');
-
+      const response = await request(app).get('/api/groom-salaries/cost').set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
 
     it('should require authentication for GET /api/groom-salaries/summary', async () => {
-      const response = await request(app)
-        .get('/api/groom-salaries/summary')
-        .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true');
-
+      const response = await request(app).get('/api/groom-salaries/summary').set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
 
     it('should require authentication for GET /api/groom-salaries/history', async () => {
-      const response = await request(app)
-        .get('/api/groom-salaries/history')
-        .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true');
-
+      const response = await request(app).get('/api/groom-salaries/history').set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
@@ -342,29 +330,19 @@ describe('Groom Salary System', () => {
     it('should require authentication for GET /api/groom-salaries/groom/:groomId/salary', async () => {
       const response = await request(app)
         .get(`/api/groom-salaries/groom/${testGroom.id}/salary`)
-        .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true');
-
+        .set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
 
     it('should require authentication for GET /api/groom-salaries/status', async () => {
-      const response = await request(app)
-        .get('/api/groom-salaries/status')
-        .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true');
-
+      const response = await request(app).get('/api/groom-salaries/status').set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
 
     it('should require authentication for POST /api/groom-salaries/process', async () => {
-      const response = await request(app)
-        .post('/api/groom-salaries/process')
-        .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true');
-
+      const response = await request(app).post('/api/groom-salaries/process').set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });

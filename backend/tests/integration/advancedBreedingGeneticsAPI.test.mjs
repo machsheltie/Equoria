@@ -233,7 +233,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       const response = await request(app)
         .post('/api/breeding/genetic-probability')
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true')
+        .set('Origin', 'http://localhost:3000')
         .send({
           stallionId: testStallion.id,
           mareId: testMare.id,
@@ -444,7 +444,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       ];
 
       for (const endpoint of endpoints) {
-        const response = await request(app)[endpoint.method](endpoint.path).set('x-test-require-auth', 'true');
+        const response = await request(app)[endpoint.method](endpoint.path).set('Origin', 'http://localhost:3000');
         expect(response.status).toBe(401);
       }
     });

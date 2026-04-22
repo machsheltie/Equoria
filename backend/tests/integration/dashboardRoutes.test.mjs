@@ -280,7 +280,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
       const response = await request(app)
         .get(`/api/users/dashboard/${testUser.id}`)
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
 
       expect(response.body.success).toBe(false);
@@ -289,7 +289,8 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
 
     it('should return validation error for invalid user ID format', async () => {
       const response = await request(app)
-        .get(`/api/users/dashboard/${'x'.repeat(100).set('Origin', 'http://localhost:3000')}`) // Too long
+        .get(`/api/users/dashboard/${'x'.repeat(100)}`) // Too long
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(400);
 

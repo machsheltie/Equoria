@@ -375,7 +375,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
       await request(app)
         .get(`/api/ultra-rare-traits/horse/${testHorse.id}`)
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
     });
 

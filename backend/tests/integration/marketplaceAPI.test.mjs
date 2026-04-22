@@ -219,11 +219,7 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
     });
 
     it('should require authentication', async () => {
-      const res = await request(app)
-        .get('/api/v1/marketplace')
-        .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true');
-
+      const res = await request(app).get('/api/v1/marketplace').set('Origin', 'http://localhost:3000');
       expect(res.status).toBe(401);
     });
   });

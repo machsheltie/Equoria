@@ -267,7 +267,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
         .post('/api/auth/login')
         .set('Origin', 'http://localhost:3000')
         .send(loginData)
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
 
       expect(response.body.success).toBe(false);
@@ -332,7 +332,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
         .post('/api/auth/refresh')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', 'refreshToken=invalid-token') // Send as cookie header, not body
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
 
       expect(response.body.success).toBe(false);
@@ -393,7 +393,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
       const response = await request(app)
         .get('/api/auth/me')
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
 
       expect(response.body.success).toBe(false);

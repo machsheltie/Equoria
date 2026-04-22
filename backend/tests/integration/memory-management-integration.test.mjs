@@ -53,7 +53,6 @@ import {
 import prisma from '../../db/index.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 
-import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Create test app with memory management
 const createTestApp = () => {
   const app = express();
@@ -117,11 +116,6 @@ const createTestApp = () => {
 };
 
 describe('🧠 Memory Management Integration Tests', () => {
-  let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
-
   let app;
   let _testUser;
   let authToken;
@@ -401,11 +395,7 @@ describe('🧠 Memory Management Integration Tests', () => {
       const endpoints = ['/api/memory/status', '/api/memory/metrics', '/api/memory/resources', '/api/memory/alerts'];
 
       for (const endpoint of endpoints) {
-        const response = await request(app)
-          .get(endpoint)
-          .set('Origin', 'http://localhost:3000')
-          .set('x-test-require-auth', 'true');
-
+        const response = await request(app).get(endpoint).set('Origin', 'http://localhost:3000');
         expect(response.status).toBe(401);
         expect(response.body.success).toBe(false);
         expect(response.body.message).toBe('Access token is required');

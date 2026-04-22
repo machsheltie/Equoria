@@ -53,7 +53,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
       ];
 
       for (const endpoint of endpoints) {
-        const response = await request(app)[endpoint.method](endpoint.path).set('x-test-require-auth', 'true');
+        const response = await request(app)[endpoint.method](endpoint.path).set('Origin', 'http://localhost:3000');
         expect(response.status).toBe(401);
         expect(response.body.success).toBe(false);
       }

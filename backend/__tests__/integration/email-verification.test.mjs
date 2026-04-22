@@ -312,11 +312,7 @@ describe('Email Verification System - Integration Tests', () => {
     });
 
     it('should_require_authentication', async () => {
-      const response = await request(app)
-        .post('/auth/resend-verification')
-        .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true');
-
+      const response = await request(app).post('/auth/resend-verification').set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
     });
 
@@ -419,11 +415,7 @@ describe('Email Verification System - Integration Tests', () => {
     });
 
     it('should_require_authentication', async () => {
-      const response = await request(app)
-        .get('/auth/verification-status')
-        .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true');
-
+      const response = await request(app).get('/auth/verification-status').set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
     });
 

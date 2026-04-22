@@ -79,7 +79,7 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
       const response = await request(app)
         .post('/api/flags/evaluate')
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true')
+        .set('Origin', 'http://localhost:3000')
         .send({ horseId: 123 });
 
       expect(response.status).toBe(401);
@@ -89,7 +89,7 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
       const response = await request(app)
         .get('/api/flags/horses/123/flags')
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true');
+        .set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(401);
     });
@@ -98,7 +98,7 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
       const response = await request(app)
         .get('/api/flags/definitions')
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true');
+        .set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(401);
     });
@@ -107,7 +107,7 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
       const response = await request(app)
         .post('/api/flags/batch-evaluate')
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true')
+        .set('Origin', 'http://localhost:3000')
         .send({ horseIds: [123] });
 
       expect(response.status).toBe(401);
@@ -117,7 +117,7 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
       const response = await request(app)
         .get('/api/flags/horses/123/care-patterns')
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true');
+        .set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(401);
     });
@@ -136,7 +136,7 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
       ];
 
       for (const endpoint of endpoints) {
-        const response = await request(app)[endpoint.method](endpoint.path);
+        const response = await request(app)[endpoint.method](endpoint.path).set('Origin', 'http://localhost:3000');
 
         // Log status for debugging
         if (![200, 400, 401, 403, 404].includes(response.status)) {

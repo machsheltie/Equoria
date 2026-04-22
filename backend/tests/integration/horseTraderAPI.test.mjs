@@ -284,7 +284,7 @@ describe('🐴 INTEGRATION: Horse Trader Store API', () => {
     const res = await request(app)
       .post('/api/v1/marketplace/store/buy')
       .set('Origin', 'http://localhost:3000')
-      .set('x-test-require-auth', 'true')
+
       .send({ breedId: testBreed.id, sex: 'mare' });
 
     expect(res.status).toBe(401);

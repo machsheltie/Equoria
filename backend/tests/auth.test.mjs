@@ -241,7 +241,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
         password: 'Password123!',
       };
 
-      const response = await authPost('/api/auth/login').send(loginData).set('x-test-require-auth', 'true').expect(401);
+      const response = await authPost('/api/auth/login').send(loginData).expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Invalid credentials');
@@ -253,7 +253,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
         password: 'wrongpassword',
       };
 
-      const response = await authPost('/api/auth/login').send(loginData).set('x-test-require-auth', 'true').expect(401);
+      const response = await authPost('/api/auth/login').send(loginData).expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Invalid credentials');
@@ -301,7 +301,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     it('should reject refresh with invalid token', async () => {
       const response = await authPost('/api/auth/refresh')
         .send({ refreshToken: 'invalid-token' })
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
 
       expect(response.body.success).toBe(false);
@@ -344,7 +344,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     });
 
     it('should reject profile request without token', async () => {
-      const response = await authGet('/api/auth/me').set('x-test-require-auth', 'true').expect(401);
+      const response = await authGet('/api/auth/me').expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Access token is required');
@@ -381,7 +381,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     });
 
     it('should reject logout without token', async () => {
-      const response = await authPost('/api/auth/logout').set('x-test-require-auth', 'true').expect(401);
+      const response = await authPost('/api/auth/logout').expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Access token is required');

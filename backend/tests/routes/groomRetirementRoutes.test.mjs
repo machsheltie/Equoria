@@ -226,19 +226,19 @@ describe('Groom Retirement Routes', () => {
       await request(app)
         .get(`/api/grooms/${testGroom.id}/retirement/eligibility`)
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
 
       await request(app)
         .get('/api/grooms/retirement/statistics')
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
 
       await request(app)
         .get(`/api/grooms/${testGroom.id}/talents`)
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
     });
 

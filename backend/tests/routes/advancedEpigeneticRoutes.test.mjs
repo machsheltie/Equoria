@@ -206,7 +206,7 @@ describe('Advanced Epigenetic API Routes', () => {
       await request(app)
         .get(`/api/horses/${testHorses[0].id}/environmental-analysis`)
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
     });
 

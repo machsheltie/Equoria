@@ -280,7 +280,7 @@ describe('Dynamic Compatibility Controller API', () => {
           horseId: testHorses[0].id,
           context: { taskType: 'trust_building' },
         })
-        .set('x-test-require-auth', 'true')
+
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken);

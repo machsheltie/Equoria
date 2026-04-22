@@ -68,7 +68,7 @@ describe('🏇 INTEGRATION: Rider API', () => {
       ];
 
       for (const ep of endpoints) {
-        const res = await request(app)[ep.method](ep.path).set('x-test-require-auth', 'true');
+        const res = await request(app)[ep.method](ep.path).set('Origin', 'http://localhost:3000');
         expect(res.status).toBe(401);
         expect(res.body.success).toBe(false);
       }

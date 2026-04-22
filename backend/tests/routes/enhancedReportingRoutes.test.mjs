@@ -337,7 +337,7 @@ describe('Enhanced Reporting API Routes', () => {
       await request(app)
         .get(`/api/horses/${testHorses[0].id}/enhanced-trait-history`)
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
     });
 

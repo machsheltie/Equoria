@@ -467,7 +467,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       const response = await request(app)
         .get(`/api/users/${testUser.id}/progress`)
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
 
       expect(response.body.success).toBe(false);

@@ -113,7 +113,7 @@ describe('Documentation Routes', () => {
     });
 
     test('requires authentication', async () => {
-      const response = await request(testApp).get('/api/docs/health').set('x-test-require-auth', 'true').expect(401);
+      const response = await request(testApp).get('/api/docs/health').expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('token');
@@ -438,7 +438,7 @@ describe('Documentation Routes', () => {
     });
 
     test('handles missing authorization header', async () => {
-      const response = await request(testApp).get('/api/docs/health').set('x-test-require-auth', 'true').expect(401);
+      const response = await request(testApp).get('/api/docs/health').expect(401);
 
       expect(response.body.success).toBe(false);
     });

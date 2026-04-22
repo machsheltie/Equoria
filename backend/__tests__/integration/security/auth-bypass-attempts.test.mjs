@@ -77,7 +77,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       const response = await request(app)
         .get('/api/auth/profile')
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
 
       expect(response.body).toEqual({
@@ -91,7 +91,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       const response = await request(app)
         .put('/api/auth/profile')
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true')
+
         .send({ username: 'hacker' })
         .expect(401);
 
@@ -102,7 +102,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       const response = await request(app)
         .delete('/api/users/account')
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
 
       expect(response.body.success).toBe(false);
@@ -112,7 +112,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       const response = await request(app)
         .get('/api/horses')
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
 
       expect(response.body.success).toBe(false);
@@ -122,7 +122,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       const response = await request(app)
         .post('/api/horses')
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true')
+
         .send({ name: 'TestHorse' })
         .expect(401);
 
@@ -338,7 +338,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
         .get('/api/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', '')
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
 
       expectSuccessFlag(response, false);

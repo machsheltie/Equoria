@@ -398,11 +398,7 @@ describe('Groom Performance System', () => {
 
   describe('Authentication', () => {
     it('should require authentication for POST /api/groom-performance/record', async () => {
-      const response = await request(app)
-        .post('/api/groom-performance/record')
-        .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true');
-
+      const response = await request(app).post('/api/groom-performance/record').set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
@@ -410,29 +406,19 @@ describe('Groom Performance System', () => {
     it('should require authentication for GET /api/groom-performance/groom/:groomId', async () => {
       const response = await request(app)
         .get(`/api/groom-performance/groom/${testGroom.id}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true');
-
+        .set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
 
     it('should require authentication for GET /api/groom-performance/top', async () => {
-      const response = await request(app)
-        .get('/api/groom-performance/top')
-        .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true');
-
+      const response = await request(app).get('/api/groom-performance/top').set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
 
     it('should require authentication for GET /api/groom-performance/config', async () => {
-      const response = await request(app)
-        .get('/api/groom-performance/config')
-        .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true');
-
+      const response = await request(app).get('/api/groom-performance/config').set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
@@ -440,9 +426,7 @@ describe('Groom Performance System', () => {
     it('should require authentication for GET /api/groom-performance/analytics/:groomId', async () => {
       const response = await request(app)
         .get(`/api/groom-performance/analytics/${testGroom.id}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true');
-
+        .set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });

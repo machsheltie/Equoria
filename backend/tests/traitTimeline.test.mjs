@@ -418,9 +418,7 @@ describe('Trait Timeline System', () => {
     it('should require authentication for trait card endpoint', async () => {
       const response = await request(app)
         .get(`/api/horses/${testHorse.id}/trait-card`)
-        .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true');
-
+        .set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });

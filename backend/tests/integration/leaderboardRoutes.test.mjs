@@ -370,7 +370,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       const response = await request(app)
         .get('/api/leaderboards/players/level')
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
 
       expect(response.body.success).toBe(false);

@@ -177,7 +177,7 @@ describe('Personality Evolution Controller API', () => {
       await request(app)
         .post(`/api/personality-evolution/groom/${testGroom.id}/evolve`)
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
     });
   });

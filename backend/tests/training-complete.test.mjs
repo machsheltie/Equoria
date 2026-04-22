@@ -358,9 +358,7 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
     it('should reject unauthenticated requests', async () => {
       const response = await request(app)
         .get(`/api/horses/trainable/${testUser.id}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true');
-
+        .set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Access token is required');

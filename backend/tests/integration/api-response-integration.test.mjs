@@ -46,7 +46,6 @@ import { responseOptimization, performanceMonitoring } from '../../middleware/re
 import { handlePing, handleHealthCheck } from '../../controllers/pingController.mjs';
 import prisma from '../../db/index.mjs';
 
-import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Create test app with API response system
 const createTestApp = () => {
   const app = express();
@@ -180,11 +179,6 @@ const createTestApp = () => {
 };
 
 describe('🔄 API Response Integration Tests', () => {
-  let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
-
   let app;
   let testUser;
   let authToken;
@@ -475,11 +469,7 @@ describe('🔄 API Response Integration Tests', () => {
       const protectedEndpoints = ['/api/test/success', '/api/test/error', '/api/test/large-data'];
 
       for (const endpoint of protectedEndpoints) {
-        const response = await request(app)
-          .get(endpoint)
-          .set('Origin', 'http://localhost:3000')
-          .set('x-test-require-auth', 'true');
-
+        const response = await request(app).get(endpoint).set('Origin', 'http://localhost:3000');
         expect(response.status).toBe(401);
         expect(response.body).toHaveProperty('success', false);
         expect(response.body).toHaveProperty('message', 'Access token is required');

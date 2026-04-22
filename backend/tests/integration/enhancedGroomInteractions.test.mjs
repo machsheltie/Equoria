@@ -451,10 +451,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       ];
 
       for (const endpoint of endpoints) {
-        const response = await request(app)
-          .get(endpoint)
-          .set('Origin', 'http://localhost:3000')
-          .set('x-test-require-auth', 'true');
+        const response = await request(app).get(endpoint).set('Origin', 'http://localhost:3000');
         expect(response.status).toBe(401);
       }
     });

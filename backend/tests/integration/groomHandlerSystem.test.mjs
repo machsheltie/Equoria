@@ -309,7 +309,7 @@ describe('Groom Handler System Integration Tests', () => {
       ];
 
       for (const endpoint of endpoints) {
-        const response = await request(app)[endpoint.method](endpoint.path).set('x-test-require-auth', 'true');
+        const response = await request(app)[endpoint.method](endpoint.path).set('Origin', 'http://localhost:3000');
         expect(response.status).toBe(401);
       }
     });

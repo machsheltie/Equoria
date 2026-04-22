@@ -116,7 +116,7 @@ describe('Memory Management Routes', () => {
     });
 
     test('requires authentication', async () => {
-      const response = await request(testApp).get('/api/memory/status').set('x-test-require-auth', 'true').expect(401);
+      const response = await request(testApp).get('/api/memory/status').expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('token');
@@ -394,7 +394,7 @@ describe('Memory Management Routes', () => {
     });
 
     test('handles missing authorization header', async () => {
-      const response = await request(testApp).get('/api/memory/status').set('x-test-require-auth', 'true').expect(401);
+      const response = await request(testApp).get('/api/memory/status').expect(401);
 
       expect(response.body.success).toBe(false);
     });

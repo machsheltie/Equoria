@@ -444,9 +444,7 @@ describe('Breeding Prediction System', () => {
     it('should require authentication for breeding-data endpoint', async () => {
       const response = await request(app)
         .get(`/api/horses/${testStallion.id}/breeding-data`)
-        .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true');
-
+        .set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });

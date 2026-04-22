@@ -53,7 +53,6 @@ import {
 import prisma from '../../db/index.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 
-import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Create test app with health monitoring
 const createTestApp = () => {
   const app = express();
@@ -125,11 +124,6 @@ const createTestApp = () => {
 };
 
 describe('🏥 Health Monitoring Integration Tests', () => {
-  let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
-
   let app;
   let _testUser;
   let authToken;
@@ -417,11 +411,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
       const protectedEndpoints = ['/api/memory/health', '/api/docs/health', '/api/test/health-status'];
 
       for (const endpoint of protectedEndpoints) {
-        const response = await request(app)
-          .get(endpoint)
-          .set('Origin', 'http://localhost:3000')
-          .set('x-test-require-auth', 'true');
-
+        const response = await request(app).get(endpoint).set('Origin', 'http://localhost:3000');
         expect(response.status).toBe(401);
         expect(response.body.success).toBe(false);
         expect(response.body.message).toBe('Access token is required');
@@ -458,7 +448,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
       const response = await request(app)
         .get('/api/memory/health')
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true')
+
         .set('Authorization', 'Bearer invalid-token');
 
       expect(response.status).toBe(401);

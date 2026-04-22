@@ -303,13 +303,13 @@ describe('Epigenetic Trait System Integration Tests', () => {
       await request(app)
         .get(`/api/epigenetic-traits/history/${testHorse.id}`)
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
 
       await request(app)
         .post(`/api/epigenetic-traits/evaluate-milestone/${testHorse.id}`)
         .set('Origin', 'http://localhost:3000')
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
     });
 

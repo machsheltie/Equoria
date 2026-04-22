@@ -24,7 +24,7 @@ describe('Token Validation Unit Tests', () => {
     // Reset request, response, and next mocks before each test
     req = {
       cookies: {},
-      headers: { 'x-test-require-auth': 'true' },
+      headers: {},
       method: 'GET',
       path: '/api/test',
       ip: '127.0.0.1',
