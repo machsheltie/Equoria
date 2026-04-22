@@ -271,10 +271,22 @@ app.set('trust proxy', 1);
 app.use(addSecurityHeaders);
 app.use(helmet(helmetConfig));
 
-// CORS configuration
+// CORS configuration — single authoritative source for cross-origin policy.
+//
+// No-origin policy (intentional):
+// - Browsers omit `Origin` on same-origin GET/HEAD and on cross-origin requests
+//   made from tooling (curl, tests). The SPA deploys same-origin in production
+//   (Dockerfile + railway.toml serve the frontend from the backend), so
+//   no-origin GETs ARE legitimate traffic.
+// - Browsers always send `Origin` on state-changing CORS requests (POST/PUT/
+//   PATCH/DELETE). A state-changing request with no Origin from a browser is
+//   either same-origin (allowed) or forged (CSRF blocks it anyway via the
+//   cookie+header double-submit check).
+// - There is no API-key machine-client fallback. A prior dead middleware
+//   (`validateApiKey`) was never mounted and has been removed — do not
+//   reintroduce it without a real machine-client requirement.
 const corsOptions = {
   origin(origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, etc.)
     if (!origin) {
       return callback(null, true);
     }
@@ -286,17 +298,16 @@ const corsOptions = {
       'http://127.0.0.1:3001',
     ];
 
-    // Add production origins from environment
     if (config.allowedOrigins && config.allowedOrigins.length > 0) {
       allowedOrigins.push(...config.allowedOrigins);
     }
 
     if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      logger.warn(`CORS blocked request from origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+      return callback(null, true);
     }
+
+    logger.warn(`CORS blocked request from origin: ${origin}`);
+    return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
