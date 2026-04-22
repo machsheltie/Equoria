@@ -83,12 +83,14 @@ function buildGenotype(overrides = {}) {
 // splitAlleles
 // ---------------------------------------------------------------------------
 
-describe('splitAlleles', () => {
-  let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
+// Shared CSRF fixture used by integration-style tests at the bottom of this
+// file. Declared at module scope so every `describe` block can reference it.
+let __csrf__;
+beforeAll(async () => {
+  __csrf__ = await fetchCsrf(app);
+});
 
+describe('splitAlleles', () => {
   it('splits heterozygous pair E/e → ["E", "e"]', () => {
     expect(splitAlleles('E/e')).toEqual(['E', 'e']);
   });

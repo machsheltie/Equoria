@@ -48,12 +48,12 @@ function alwaysReturn(val) {
 // sampleWeightedFromMap
 // ---------------------------------------------------------------------------
 
-describe('sampleWeightedFromMap', () => {
-  let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
+let __csrf__;
+beforeAll(async () => {
+  __csrf__ = await fetchCsrf(app);
+});
 
+describe('sampleWeightedFromMap', () => {
   it('returns a key from the weight map', () => {
     const map = { none: 0.6, star: 0.2, blaze: 0.2 };
     const result = sampleWeightedFromMap(map, Math.random);

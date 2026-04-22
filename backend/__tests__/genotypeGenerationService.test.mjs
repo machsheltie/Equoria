@@ -32,12 +32,12 @@ import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 // sampleWeightedAllele — pure function, no mocks needed
 // ---------------------------------------------------------------------------
 
-describe('sampleWeightedAllele', () => {
-  let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
+let __csrf__;
+beforeAll(async () => {
+  __csrf__ = await fetchCsrf(app);
+});
 
+describe('sampleWeightedAllele', () => {
   it('returns the only allele when weights has one entry', () => {
     const weights = { 'E/E': 1.0 };
     expect(sampleWeightedAllele(weights, () => 0.5)).toBe('E/E');

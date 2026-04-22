@@ -53,6 +53,11 @@ dotenv.config({ path: join(__dirname, '../.env.test') });
 // Import without mocking for real integration testing
 const app = (await import('../app.mjs')).default;
 const { default: prisma } = await import(join(__dirname, '../db/index.mjs'));
+
+// Shared CSRF fixture — declared at module scope so `trainingRequest` can
+// reference it. Populated in the outer `beforeAll` inside the main describe.
+let __csrf__;
+
 const trainingRequest = () =>
   request(app)
     .post('/api/training/train')
@@ -62,7 +67,6 @@ const trainingRequest = () =>
     .set('X-CSRF-Token', __csrf__.csrfToken);
 
 describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validation', () => {
-  let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
   });

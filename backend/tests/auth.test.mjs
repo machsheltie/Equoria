@@ -374,7 +374,11 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     });
 
     it('should logout successfully with valid token', async () => {
-      const response = await authPost('/api/auth/logout').set('Authorization', `Bearer ${authToken}`).expect(200);
+      const response = await authPost('/api/auth/logout')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .expect(200);
 
       expect(response.body.status).toBe('success');
       expect(response.body.message).toBe('Logout successful');

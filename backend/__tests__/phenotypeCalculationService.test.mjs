@@ -63,12 +63,12 @@ function buildGenotype(overrides = {}) {
 // Base color determination
 // ---------------------------------------------------------------------------
 
-describe('calculatePhenotype — base color', () => {
-  let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
+let __csrf__;
+beforeAll(async () => {
+  __csrf__ = await fetchCsrf(app);
+});
 
+describe('calculatePhenotype — base color', () => {
   it('returns Chestnut for e/e Extension regardless of Agouti', () => {
     expect(calculatePhenotype(buildGenotype({ E_Extension: 'e/e', A_Agouti: 'A/A' })).colorName).toBe('Chestnut');
     expect(calculatePhenotype(buildGenotype({ E_Extension: 'e/e', A_Agouti: 'a/a' })).colorName).toBe('Chestnut');

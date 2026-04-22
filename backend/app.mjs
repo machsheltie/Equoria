@@ -356,7 +356,12 @@ app.use(cors(corsOptions));
 // this limit keeps production parity where it matters (auth, CSRF, ownership,
 // email delivery) without turning the gate into a rate-limiter test.
 const RATE_LIMIT_MAX_BY_ENV = {
-  test: 1000,
+  // Test suite runs several hundred requests across many files in one
+  // --runInBand session. 1000 was the old cap when bypass headers reset
+  // the counter between suites; with bypasses removed in WS4 the counter
+  // accumulates for the whole run, so we set the cap well above what any
+  // realistic suite run consumes.
+  test: 20000,
   'beta-readiness': 1000,
   beta: 500,
   development: 500,
