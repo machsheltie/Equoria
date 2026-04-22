@@ -70,6 +70,7 @@ import logger from './utils/logger.mjs';
 // Route imports
 import pingRoute from './routes/ping.mjs';
 import authRoutes from './routes/authRoutes.mjs';
+import authenticatedAuthRoutes from './modules/auth/routes/authenticatedAuthRoutes.mjs';
 import horseRoutes from './routes/horseRoutes.mjs';
 import userRoutes from './routes/userRoutes.mjs';
 import trainingRoutes from './routes/trainingRoutes.mjs';
@@ -131,7 +132,7 @@ import craftingRoutes from './routes/craftingRoutes.mjs';
 import { authenticateToken, requireRole } from './middleware/auth.mjs';
 
 // Import CSRF protection middleware
-import { applyCsrfProtection, csrfErrorHandler } from './middleware/csrf.mjs';
+import { csrfProtection, csrfErrorHandler } from './middleware/csrf.mjs';
 
 // Import Redis rate limiting (for health check and shutdown)
 import { createRateLimiter, isRedisConnected, getRedisClient } from './middleware/rateLimiting.mjs';
@@ -148,13 +149,13 @@ const publicRouter = express.Router();
 const authRouter = express.Router();
 authRouter.use(authenticateToken);
 // Apply CSRF protection to all state-changing operations (POST/PUT/DELETE/PATCH)
-authRouter.use(applyCsrfProtection);
+authRouter.use(csrfProtection);
 
 // Admin router - Requires valid JWT token + admin role
 const adminRouter = express.Router();
 adminRouter.use(authenticateToken, requireRole('admin'));
 // Apply CSRF protection to all state-changing operations (POST/PUT/DELETE/PATCH)
-adminRouter.use(applyCsrfProtection);
+adminRouter.use(csrfProtection);
 
 // PUBLIC ROUTES (No authentication)
 // Auth endpoints (login, register, password reset, CSRF token)
@@ -169,6 +170,10 @@ publicRouter.use('/user-docs', userDocumentationRoutes);
 publicRouter.use('/api/user-docs', userDocumentationRoutes);
 
 // AUTHENTICATED ROUTES (Valid JWT required)
+// Authenticated auth mutations (profile, logout, change-password, onboarding, preferences)
+// — live on authRouter so they inherit authenticateToken + csrfProtection.
+authRouter.use('/auth', authenticatedAuthRoutes);
+
 // Core game features
 authRouter.use('/horses', horseRoutes);
 authRouter.use('/users', userRoutes);
@@ -295,14 +300,7 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'X-Requested-With',
-    'X-CSRF-Token',
-    // x-test-skip-csrf only exposed in test environments (JEST_WORKER_ID is set by Jest runner)
-    ...(process.env.JEST_WORKER_ID !== undefined ? ['x-test-skip-csrf'] : []),
-  ],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token'],
 };
 
 app.use(cors(corsOptions));

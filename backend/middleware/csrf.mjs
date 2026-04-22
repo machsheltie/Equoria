@@ -1,118 +1,75 @@
 /**
- * 🛡️ CSRF TOKEN PROTECTION MIDDLEWARE
+ * CSRF TOKEN PROTECTION MIDDLEWARE
  *
- * Implements double-submit cookie pattern for CSRF protection
- * Validates CSRF tokens on all state-changing operations (POST/PUT/DELETE/PATCH)
+ * Single live path. Double-submit cookie pattern via the `csrf-csrf` library.
+ * Token generation and validation share one contract — the library manages
+ * both the cookie it issues and the cookie it reads, in every environment.
  *
- * 🔒 SECURITY PATTERN:
- * - Token generated and stored in cookie
- * - Client reads cookie and sends token in X-CSRF-Token header
- * - Middleware validates header matches cookie
- * - Prevents cross-site request forgery attacks
- *
- * 📋 COMPLIANCE:
- * - OWASP API Security Top 10
- * - Defense-in-depth with SameSite cookies
+ * Contract:
+ * - Cookie name: `__Host-csrf` in production, `_csrf` otherwise.
+ * - Token is issued by `GET /auth/csrf-token` (response body + Set-Cookie).
+ * - Clients send the token in `X-CSRF-Token` on mutations; the browser sends
+ *   the cookie automatically. The library HMACs and compares them.
+ * - No server-side session state. No `req.session` dependency.
+ * - No prototype mutation. No test-bypass awareness in this module.
  *
  * @module middleware/csrf
  */
 
 import { doubleCsrf } from 'csrf-csrf';
-import { randomBytes, timingSafeEqual } from 'crypto';
 import { COOKIE_OPTIONS } from '../utils/cookieConfig.mjs';
 import config from '../config/config.mjs';
 import logger from '../utils/logger.mjs';
 
-// Test-only safety: ensure plain objects have a headers bag to avoid undefined access in unit tests
-// Gated on JEST_WORKER_ID (set by Jest runner) — never fires in production even if NODE_ENV is wrong
-if (process.env.JEST_WORKER_ID !== undefined && !Object.prototype.__csrfHeadersPatched) {
-  Object.defineProperty(Object.prototype, '__csrfHeadersPatched', {
-    value: true,
-    enumerable: false,
-    writable: false,
-  });
-  Object.defineProperty(Object.prototype, 'headers', {
-    configurable: true,
-    enumerable: false,
-    get() {
-      if (!this.__csrfHeaders) {
-        this.__csrfHeaders = {};
-      }
-      return this.__csrfHeaders;
-    },
-    set(value) {
-      this.__csrfHeaders = value;
-    },
-  });
-}
+const CSRF_COOKIE_NAME = config.env === 'production' ? '__Host-csrf' : '_csrf';
 
-/**
- * Initialize CSRF protection with double-submit cookie pattern
- *
- * Cookie name:
- * - Production: __Host-csrf (strict security with __Host- prefix)
- * - Development/Test: _csrf (simple name for local testing)
- */
+// Stable HMAC salt. The pure double-submit security guarantee comes from the
+// same-origin policy preventing cross-origin scripts from reading the cookie,
+// not from session binding. A constant salt keeps generation and validation
+// aligned when a user's IP/UA changes between the token fetch and the mutation.
+const CSRF_SESSION_SALT = 'equoria-csrf-v1';
+
 const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
   getSecret: () => process.env.JWT_SECRET || 'fallback-secret-for-dev',
-  // Use IP address consistently for session identifier since /auth/csrf-token
-  // is on publicRouter (no authentication) but tokens are used on authenticated routes
-  // Security comes from double-submit cookie pattern, not session binding
-  getSessionIdentifier: req => req.ip || 'test-session',
-  cookieName: config.env === 'production' ? '__Host-csrf' : '_csrf',
+  getSessionIdentifier: () => CSRF_SESSION_SALT,
+  cookieName: CSRF_COOKIE_NAME,
   cookieOptions: COOKIE_OPTIONS.csrfToken,
   size: 64,
   ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
   getCsrfTokenFromRequest: req => req.headers['x-csrf-token'],
+  errorConfig: {
+    statusCode: 403,
+    message: 'Invalid CSRF token. Please refresh the page and try again.',
+    code: 'EBADCSRFTOKEN',
+  },
 });
 
-/**
- * CSRF protection middleware using cookie-based tokens
- *
- * @type {Function}
- */
-export const csrfProtection = doubleCsrfProtection;
+export { CSRF_COOKIE_NAME };
 
 /**
- * Endpoint to get CSRF token
- * Frontend calls this on app initialization to obtain token
+ * GET /auth/csrf-token
  *
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
+ * Public endpoint. Issues a token (response body) and the matching cookie
+ * (Set-Cookie). The client caches the token and sends it in X-CSRF-Token on
+ * subsequent mutations; the browser returns the cookie automatically.
  */
 export const getCsrfToken = (req, res) => {
   try {
-    req.session = req.session || {};
-    // Test contexts use jest-mocked res.json; avoid calling doubleCsrf internals there
-    const useMockSafePath = Boolean(res.json?.mock);
-
-    const token = useMockSafePath
-      ? typeof req.csrfToken === 'function'
-        ? req.csrfToken()
-        : randomBytes(32).toString('hex')
-      : generateCsrfToken(req, res) || randomBytes(32).toString('hex');
-
-    // Store on session for explicit validation paths
-    req.session.csrfToken = token;
+    const token = generateCsrfToken(req, res);
 
     logger.info('[CSRF] Token generated', {
       userId: req.user?.id,
       ip: req.ip,
     });
 
-    const responseBody = useMockSafePath
-      ? { success: true, csrfToken: token }
-      : {
-          success: true,
-          csrfToken: token,
-          code: 'CSRF_TOKEN_CREATED',
-        };
-
-    return res.json(responseBody);
+    return res.json({
+      success: true,
+      csrfToken: token,
+      code: 'CSRF_TOKEN_CREATED',
+    });
   } catch (error) {
     logger.error('[CSRF] Token generation failed:', error);
-    const responder = res.status ? res.status(500) : res;
-    responder.json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to generate CSRF token',
     });
@@ -120,22 +77,21 @@ export const getCsrfToken = (req, res) => {
 };
 
 /**
- * Error handler for CSRF validation failures
+ * The single live CSRF enforcement middleware.
  *
- * Provides clear error message and logs security event
- *
- * @param {Error} err - Error object from middleware
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware function
+ * Mounted on every authenticated and admin router. Rejects POST/PUT/PATCH/DELETE
+ * requests that lack a matching cookie+header pair with a 403.
+ */
+export const csrfProtection = doubleCsrfProtection;
+
+/**
+ * Error handler for CSRF validation failures. Converts the library's
+ * HttpError into the API's canonical error envelope.
  */
 export const csrfErrorHandler = (err, req, res, next) => {
-  // Check for CSRF errors (csrf-csrf library throws ForbiddenError)
-  // Also support legacy EBADCSRFTOKEN code for backwards compatibility
   const isCsrfError =
-    err.code === 'EBADCSRFTOKEN' ||
-    err.message?.includes('invalid csrf token') ||
-    err.message?.includes('CSRF');
+    err?.code === 'EBADCSRFTOKEN' ||
+    (typeof err?.message === 'string' && err.message.toLowerCase().includes('csrf'));
 
   if (isCsrfError) {
     logger.warn('[CSRF] Invalid token detected', {
@@ -143,7 +99,7 @@ export const csrfErrorHandler = (err, req, res, next) => {
       ip: req.ip,
       path: req.path,
       method: req.method,
-      userAgent: req.headers['user-agent'],
+      userAgent: req.headers?.['user-agent'],
       error: err.message,
     });
 
@@ -154,96 +110,5 @@ export const csrfErrorHandler = (err, req, res, next) => {
     });
   }
 
-  // Not a CSRF error, pass to next error handler
   next(err);
-};
-
-/**
- * Conditional CSRF protection middleware
- *
- * Only applies CSRF protection to state-changing HTTP methods
- * GET requests don't need CSRF protection
- *
- * Usage in server.mjs:
- * ```javascript
- * app.use(applyCsrfProtection);
- * ```
- *
- * @param {Object} req - Express request object
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware function
- */
-export const applyCsrfProtection = (req, res, next) => {
-  // Ensure containers exist to avoid runtime errors during validation
-  req.cookies = req.cookies || {};
-  req.signedCookies = req.signedCookies || {};
-  req.headers = req.headers || {};
-  req.body = req.body || {};
-  req.session = req.session || {};
-
-  // Test helper escape hatch for integration scenarios where CSRF is orthogonal.
-  // Gated on JEST_WORKER_ID — cannot fire in production/beta even if NODE_ENV is misconfigured.
-  // Story 21S-2: explicit production/beta refusal as defence in depth.
-  const inProductionOrBeta =
-    process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'beta';
-  if (
-    !inProductionOrBeta &&
-    process.env.JEST_WORKER_ID !== undefined &&
-    req.headers['x-test-skip-csrf'] === 'true'
-  ) {
-    return next();
-  }
-
-  // Apply CSRF protection only to state-changing methods
-  if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
-    const providedToken =
-      req.body.csrfToken || req.headers['x-csrf-token'] || req.headers['csrf-token'];
-
-    const sessionToken = req.session?.csrfToken || req.cookies?._csrf || req.cookies?.csrfToken;
-
-    const invalidPayload = res.json?.mock
-      ? {
-          success: false,
-          message: 'Invalid CSRF token',
-          status: 'error',
-        }
-      : {
-          success: false,
-          message: 'Invalid CSRF token. Please refresh the page and try again.',
-          status: 'error',
-          code: 'INVALID_CSRF_TOKEN',
-        };
-
-    const invalidResponse = () => {
-      if (res.status) {
-        res.status(403);
-      }
-      return res.json(invalidPayload);
-    };
-
-    if (
-      !providedToken ||
-      !sessionToken ||
-      typeof providedToken !== 'string' ||
-      typeof sessionToken !== 'string'
-    ) {
-      return invalidResponse();
-    }
-
-    const tokenBuffer = Buffer.from(providedToken);
-    const sessionBuffer = Buffer.from(sessionToken);
-
-    if (tokenBuffer.length !== sessionBuffer.length) {
-      return invalidResponse();
-    }
-
-    if (!timingSafeEqual(tokenBuffer, sessionBuffer)) {
-      return invalidResponse();
-    }
-
-    return next();
-  }
-
-  // GET, HEAD, OPTIONS don't need CSRF protection
-  next();
 };
