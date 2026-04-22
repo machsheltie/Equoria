@@ -164,10 +164,6 @@ const validateHorseUpdatePayload = (req, res, next) => {
     return res.status(400).json({ success: false, message: 'Invalid horse payload' });
   }
 
-  if (req.headers?.['x-test-skip-csrf'] === 'true' && Object.keys(body).length <= 2) {
-    return res.status(400).json({ success: false, message: 'Invalid horse payload' });
-  }
-
   if (body.traits !== undefined) {
     return res.status(400).json({ success: false, message: 'Invalid traits payload' });
   }

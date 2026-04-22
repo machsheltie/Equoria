@@ -86,51 +86,13 @@ export const requireOwnership = (resourceType, options = {}) => {
 
   return async (req, res, next) => {
     try {
-      const headers = req.headers || {};
       const rawId = req.params[idParam];
       const isNumericId = typeof rawId === 'string' && /^[0-9]+$/.test(rawId);
       const resourceId = isNumericId ? parseInt(rawId, 10) : NaN;
 
-      // Test-only override to stabilize integration tests by forcing a specific user context
-      // Gated on JEST_WORKER_ID — cannot fire in production even if NODE_ENV is misconfigured
-      if (process.env.JEST_WORKER_ID !== undefined && headers['x-test-user-id']) {
-        const overrideUserId = headers['x-test-user-id'];
-        req.user = { ...(req.user || {}), id: overrideUserId };
-      }
-
       // Get resource configuration
       const resourceConfig = getResourceConfig(resourceType);
       const { model: modelName, ownerField } = resourceConfig;
-
-      // Test-only bypass to allow ownership checks to proceed without user match (used by integration suites)
-      // Gated on JEST_WORKER_ID — cannot fire in production even if NODE_ENV is misconfigured
-      const bypassOwnership =
-        process.env.JEST_WORKER_ID !== undefined && headers['x-test-bypass-ownership'] === 'true';
-
-      if (bypassOwnership) {
-        if (!isNumericId || isNaN(resourceId) || resourceId < 0) {
-          logger.warn(
-            `[ownership] Invalid ${resourceType} ID (bypass mode): ${req.params[idParam]}`,
-          );
-        } else {
-          const queryOptions = { where: { id: resourceId } };
-          if (include.length > 0) {
-            queryOptions.include = include.reduce((acc, relation) => {
-              acc[relation] = true;
-              return acc;
-            }, {});
-          }
-          const resource = await prisma[modelName].findFirst(queryOptions);
-          if (resource) {
-            req[resourceType] = resource;
-            req.validatedResources = {
-              ...(req.validatedResources || {}),
-              [resourceType]: resource,
-            };
-            return next();
-          }
-        }
-      }
 
       // Ensure user is authenticated
       if (!req.user || !req.user.id) {

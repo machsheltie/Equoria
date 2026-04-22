@@ -270,21 +270,10 @@ export function createRateLimiter(options = {}) {
       ? parseInt(process.env.TEST_RATE_LIMIT_MAX_REQUESTS || `${max}`, 10)
       : max;
 
-  const shouldBypassRequest = req => {
-    // Defence in depth — refuse to honour bypasses in beta or production even
-    // if isTestEnv accidentally evaluates true.
-    if (process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'beta') {
-      return false;
-    }
-    if (!isTestEnv) {
-      return false;
-    }
-    if (process.env.TEST_BYPASS_RATE_LIMIT === 'true') {
-      return true;
-    }
-    const bypassHeader = req?.headers?.['x-test-bypass-rate-limit'];
-    return bypassHeader === 'true' || bypassHeader === '1';
-  };
+  // No test-only bypass logic. Test suites control rate-limit pressure via
+  // the TEST_RATE_LIMIT_* env knobs above (which set windowMs / max directly),
+  // NOT via per-request header escape hatches. This keeps the production code
+  // path free of test-aware branching.
 
   const limiter = rateLimit({
     windowMs: getEffectiveWindowMs(), // Fixed at creation time
@@ -368,14 +357,7 @@ export function createRateLimiter(options = {}) {
     },
   });
 
-  return (req, res, next) => {
-    const bypassed = shouldBypassRequest(req);
-    if (bypassed) {
-      logger.debug(`[RateLimit:${keyPrefix}] Request bypassed`);
-      return next();
-    }
-    return limiter(req, res, next);
-  };
+  return limiter;
 }
 
 /**
