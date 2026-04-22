@@ -271,22 +271,45 @@ app.set('trust proxy', 1);
 app.use(addSecurityHeaders);
 app.use(helmet(helmetConfig));
 
-// CORS configuration — single authoritative source for cross-origin policy.
+// CORS + no-origin policy — single authoritative source.
 //
-// No-origin policy (intentional):
-// - Browsers omit `Origin` on same-origin GET/HEAD and on cross-origin requests
-//   made from tooling (curl, tests). The SPA deploys same-origin in production
-//   (Dockerfile + railway.toml serve the frontend from the backend), so
-//   no-origin GETs ARE legitimate traffic.
-// - Browsers always send `Origin` on state-changing CORS requests (POST/PUT/
-//   PATCH/DELETE). A state-changing request with no Origin from a browser is
-//   either same-origin (allowed) or forged (CSRF blocks it anyway via the
-//   cookie+header double-submit check).
-// - There is no API-key machine-client fallback. A prior dead middleware
-//   (`validateApiKey`) was never mounted and has been removed — do not
-//   reintroduce it without a real machine-client requirement.
+// Two layers in order:
+//   1. enforceNoOriginPolicy — hard-rejects requests without an Origin
+//      header except on operational probes (/health, /ready, /ping). The
+//      `cors` package's `origin: false` only suppresses response headers;
+//      it does NOT terminate the request, so a dedicated gate is needed.
+//   2. cors(corsOptions) — validates the Origin value against the allow
+//      list. Browsers always send Origin on mutations, so legitimate SPA
+//      traffic passes through.
+//
+// There is no machine-client API-key fallback. The prior dead
+// `validateApiKey` middleware has been removed — do not reintroduce it.
+const NO_ORIGIN_EXEMPT_PATHS = ['/health', '/ready', '/ping'];
+
+const isNoOriginExempt = path =>
+  NO_ORIGIN_EXEMPT_PATHS.some(p => path === p || path.startsWith(`${p}/`));
+
+const enforceNoOriginPolicy = (req, res, next) => {
+  if (req.get('Origin')) {
+    return next();
+  }
+  if (isNoOriginExempt(req.path)) {
+    return next();
+  }
+  logger.warn(`Blocked no-origin request: ${req.method} ${req.path}`);
+  return res.status(403).json({
+    success: false,
+    message: 'Origin header required',
+    code: 'NO_ORIGIN_BLOCKED',
+  });
+};
+
+app.use(enforceNoOriginPolicy);
+
 const corsOptions = {
   origin(origin, callback) {
+    // No-origin requests that reach this point are already exempt
+    // (health/ping); reflect them through.
     if (!origin) {
       return callback(null, true);
     }
