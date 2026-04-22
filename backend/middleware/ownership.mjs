@@ -209,25 +209,20 @@ export async function findOwnedResource(resourceType, resourceId, userId, option
     const resourceConfig = getResourceConfig(resourceType);
     const { model: modelName, ownerField } = resourceConfig;
 
-    const bypassOwnership =
-      process.env.NODE_ENV === 'test' && process.env.TEST_BYPASS_OWNERSHIP === 'true';
-
     const queryOptions = {
       where: {
         id: resourceId,
       },
     };
 
-    if (!bypassOwnership) {
-      // Handle nested owner fields
-      if (ownerField.includes('.')) {
-        const [relation, field] = ownerField.split('.');
-        queryOptions.where[relation] = {
-          [field]: userId,
-        };
-      } else {
-        queryOptions.where[ownerField] = userId;
-      }
+    // Handle nested owner fields
+    if (ownerField.includes('.')) {
+      const [relation, field] = ownerField.split('.');
+      queryOptions.where[relation] = {
+        [field]: userId,
+      };
+    } else {
+      queryOptions.where[ownerField] = userId;
     }
 
     if (include.length > 0) {
