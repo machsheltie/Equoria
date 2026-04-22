@@ -294,7 +294,9 @@ describe('Email Verification System - Integration Tests', () => {
   describe('POST /auth/resend-verification', () => {
     it('should_create_new_verification_token', async () => {
       const response = await request(app)
-        .post('/auth/resend-verification')
+        .post('/api/auth/resend-verification')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -312,7 +314,11 @@ describe('Email Verification System - Integration Tests', () => {
     });
 
     it('should_require_authentication', async () => {
-      const response = await request(app).post('/auth/resend-verification').set('Origin', 'http://localhost:3000');
+      const response = await request(app)
+        .post('/api/auth/resend-verification')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
     });
 
@@ -327,7 +333,9 @@ describe('Email Verification System - Integration Tests', () => {
       });
 
       const response = await request(app)
-        .post('/auth/resend-verification')
+        .post('/api/auth/resend-verification')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -338,13 +346,17 @@ describe('Email Verification System - Integration Tests', () => {
     it('should_enforce_rate_limiting', async () => {
       // First resend
       await request(app)
-        .post('/auth/resend-verification')
+        .post('/api/auth/resend-verification')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       // Immediate second resend should fail
       const response = await request(app)
-        .post('/auth/resend-verification')
+        .post('/api/auth/resend-verification')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -364,7 +376,9 @@ describe('Email Verification System - Integration Tests', () => {
       });
 
       await request(app)
-        .post('/auth/resend-verification')
+        .post('/api/auth/resend-verification')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -383,7 +397,7 @@ describe('Email Verification System - Integration Tests', () => {
   describe('GET /auth/verification-status', () => {
     it('should_return_unverified_status_for_new_user', async () => {
       const response = await request(app)
-        .get('/auth/verification-status')
+        .get('/api/auth/verification-status')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -405,7 +419,7 @@ describe('Email Verification System - Integration Tests', () => {
       });
 
       const response = await request(app)
-        .get('/auth/verification-status')
+        .get('/api/auth/verification-status')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -415,13 +429,13 @@ describe('Email Verification System - Integration Tests', () => {
     });
 
     it('should_require_authentication', async () => {
-      const response = await request(app).get('/auth/verification-status').set('Origin', 'http://localhost:3000');
+      const response = await request(app).get('/api/auth/verification-status').set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
     });
 
     it('should_return_user_email_address', async () => {
       const response = await request(app)
-        .get('/auth/verification-status')
+        .get('/api/auth/verification-status')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -478,7 +492,7 @@ describe('Email Verification System - Integration Tests', () => {
     it('should_handle_resend_and_verify_workflow', async () => {
       // Step 1: Check status (unverified)
       const statusResponse1 = await request(app)
-        .get('/auth/verification-status')
+        .get('/api/auth/verification-status')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -486,7 +500,9 @@ describe('Email Verification System - Integration Tests', () => {
 
       // Step 2: Resend verification
       const resendResponse = await request(app)
-        .post('/auth/resend-verification')
+        .post('/api/auth/resend-verification')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -507,7 +523,7 @@ describe('Email Verification System - Integration Tests', () => {
 
       // Step 5: Check status (verified)
       const statusResponse2 = await request(app)
-        .get('/auth/verification-status')
+        .get('/api/auth/verification-status')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 

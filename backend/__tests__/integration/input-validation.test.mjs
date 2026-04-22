@@ -290,6 +290,8 @@ describe('Input Validation Integration Tests', () => {
       it('should reject bio longer than 500 characters', async () => {
         const response = await request(app)
           .put('/api/auth/profile')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${token}`)
           .send({
@@ -304,6 +306,8 @@ describe('Input Validation Integration Tests', () => {
       it('should accept bio at maximum length (500 characters)', async () => {
         const response = await request(app)
           .put('/api/auth/profile')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${token}`)
           .send({
@@ -317,6 +321,8 @@ describe('Input Validation Integration Tests', () => {
       it('should accept empty bio', async () => {
         const response = await request(app)
           .put('/api/auth/profile')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${token}`)
           .send({
@@ -330,6 +336,8 @@ describe('Input Validation Integration Tests', () => {
       it('should sanitize bio with XSS prevention', async () => {
         const response = await request(app)
           .put('/api/auth/profile')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${token}`)
           .send({
@@ -345,6 +353,8 @@ describe('Input Validation Integration Tests', () => {
       it('should reject first name longer than 50 characters', async () => {
         const response = await request(app)
           .put('/api/auth/profile')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${token}`)
           .send({
@@ -359,6 +369,8 @@ describe('Input Validation Integration Tests', () => {
       it('should reject last name longer than 50 characters', async () => {
         const response = await request(app)
           .put('/api/auth/profile')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${token}`)
           .send({
@@ -373,6 +385,8 @@ describe('Input Validation Integration Tests', () => {
       it('should accept valid name updates', async () => {
         const response = await request(app)
           .put('/api/auth/profile')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${token}`)
           .send({
@@ -389,6 +403,8 @@ describe('Input Validation Integration Tests', () => {
       it('should reject username shorter than 3 characters', async () => {
         const response = await request(app)
           .put('/api/auth/profile')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${token}`)
           .send({
@@ -403,6 +419,8 @@ describe('Input Validation Integration Tests', () => {
       it('should reject username longer than 30 characters', async () => {
         const response = await request(app)
           .put('/api/auth/profile')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${token}`)
           .send({
@@ -417,6 +435,8 @@ describe('Input Validation Integration Tests', () => {
       it('should accept valid username update', async () => {
         const response = await request(app)
           .put('/api/auth/profile')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${token}`)
           .send({
@@ -447,6 +467,8 @@ describe('Input Validation Integration Tests', () => {
     it('should sanitize profile bio with event handlers', async () => {
       const response = await request(app)
         .put('/api/auth/profile')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token}`)
         .send({

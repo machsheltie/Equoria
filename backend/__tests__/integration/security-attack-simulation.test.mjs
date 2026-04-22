@@ -432,6 +432,8 @@ describe('Security Attack Simulation Tests', () => {
         for (const payload of xssPayloads) {
           const response = await request(app)
             .put('/api/auth/profile')
+            .set('Cookie', __csrf__.cookieHeader)
+            .set('X-CSRF-Token', __csrf__.csrfToken)
             .set('Origin', 'http://localhost:3000')
             .set('Authorization', `Bearer ${attackerToken}`)
             .send({
@@ -532,6 +534,8 @@ describe('Security Attack Simulation Tests', () => {
 
         const response = await request(app)
           .put('/api/auth/profile')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`)
           .send({
@@ -561,6 +565,8 @@ describe('Security Attack Simulation Tests', () => {
       it('should handle Unicode control characters', async () => {
         const response = await request(app)
           .put('/api/auth/profile')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`)
           .send({
