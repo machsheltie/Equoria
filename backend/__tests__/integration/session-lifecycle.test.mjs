@@ -17,7 +17,7 @@ import prisma from '../../db/index.mjs';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { triggerTokenCleanup } from '../../services/cronJobService.mjs';
-import { createTokenPair } from '../../utils/tokenRotationService.mjs';
+import { createTokenPair, hashRefreshToken } from '../../utils/tokenRotationService.mjs';
 
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 describe('Session Lifecycle Management', () => {
@@ -524,10 +524,13 @@ describe('Session Lifecycle Management', () => {
 
   describe('Token Cleanup Cron Job', () => {
     it('should remove expired refresh tokens', async () => {
-      // Create an expired token directly in DB
-      const expiredToken = await prisma.refreshToken.create({
+      // Create an expired token directly in DB. We store a synthetic hash
+      // here because this row is never consumed via createTokenPair; it
+      // only needs to exist for the cleanup cron to purge (Equoria-uy73).
+      const expiredTokenHash = hashRefreshToken(`expired-test-token-${Date.now()}`);
+      await prisma.refreshToken.create({
         data: {
-          token: `expired-test-token-${Date.now()}`,
+          tokenHash: expiredTokenHash,
           userId: testUser.id,
           familyId: `expired-family-${Date.now()}`,
           expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
@@ -546,22 +549,22 @@ describe('Session Lifecycle Management', () => {
 
       // Verify expired token is removed
       const expiredExists = await prisma.refreshToken.findUnique({
-        where: { token: expiredToken.token },
+        where: { tokenHash: expiredTokenHash },
       });
       expect(expiredExists).toBeNull();
 
       // Verify valid token still exists
-      const validExists = await prisma.refreshToken.findFirst({
-        where: { token: validToken.refreshToken },
+      const validExists = await prisma.refreshToken.findUnique({
+        where: { tokenHash: hashRefreshToken(validToken.refreshToken) },
       });
       expect(validExists).not.toBeNull();
     });
 
     it('should remove old invalidated tokens (30+ days)', async () => {
-      // Create an old invalidated token
+      // Create an old invalidated token (hashed at rest — Equoria-uy73)
       const _oldInvalidatedToken = await prisma.refreshToken.create({
         data: {
-          token: `old-invalidated-${Date.now()}`,
+          tokenHash: hashRefreshToken(`old-invalidated-${Date.now()}`),
           userId: testUser.id,
           familyId: `old-family-${Date.now()}`,
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Expires in 7 days

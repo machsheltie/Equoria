@@ -7,6 +7,7 @@
 
 import logger from '../utils/logger.mjs';
 import prisma from '../db/index.mjs';
+import { hashRefreshToken } from '../utils/tokenRotationService.mjs';
 
 // Session timeout configuration (15 minutes of inactivity)
 const SESSION_TIMEOUT_MS = parseInt(process.env.SESSION_TIMEOUT_MS || '900000', 10); // 15 minutes
@@ -109,10 +110,12 @@ export const trackSessionActivity = async (req, res, next) => {
 
   if (refreshToken) {
     try {
-      // Update last activity timestamp
+      // Update last activity timestamp. Look up by hash — raw JWT is no
+      // longer stored at rest (Equoria-uy73). We still pin to userId so a
+      // stolen hash can't be used to extend another user's session.
       const storedToken = await prisma.refreshToken.findFirst({
         where: {
-          token: refreshToken,
+          tokenHash: hashRefreshToken(refreshToken),
           userId,
         },
       });

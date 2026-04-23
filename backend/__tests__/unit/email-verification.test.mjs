@@ -17,6 +17,7 @@ import {
   resendVerificationEmail,
   cleanupExpiredTokens,
   getTokenInfo,
+  hashVerificationToken,
 } from '../../utils/emailVerificationService.mjs';
 import prisma from '../../db/index.mjs';
 import { createTestUser } from '../config/test-helpers.mjs';
@@ -98,7 +99,7 @@ describe('Email Verification Service - Unit Tests', () => {
       const result = await createVerificationToken(testUser.id, testUser.email);
 
       const tokenRecord = await prisma.emailVerificationToken.findUnique({
-        where: { token: result.token },
+        where: { tokenHash: hashVerificationToken(result.token) },
       });
 
       expect(tokenRecord).toBeDefined();
@@ -129,7 +130,7 @@ describe('Email Verification Service - Unit Tests', () => {
       const result = await createVerificationToken(testUser.id, testUser.email, metadata);
 
       const tokenRecord = await prisma.emailVerificationToken.findUnique({
-        where: { token: result.token },
+        where: { tokenHash: hashVerificationToken(result.token) },
       });
 
       expect(tokenRecord.ipAddress).toBe(metadata.ipAddress);
@@ -141,7 +142,9 @@ describe('Email Verification Service - Unit Tests', () => {
       for (let i = 0; i < 5; i++) {
         await prisma.emailVerificationToken.create({
           data: {
-            token: `old-token-${i}-${Date.now()}-${Math.random()}`,
+            // Hashed at rest — Equoria-uy73. This row is just padding to hit
+            // the MAX_PENDING_TOKENS ceiling; the raw token is not read back.
+            tokenHash: hashVerificationToken(`old-token-${i}-${Date.now()}-${Math.random()}`),
             userId: testUser.id,
             email: testUser.email,
             expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
@@ -170,7 +173,7 @@ describe('Email Verification Service - Unit Tests', () => {
 
       // Mark first token as used to bypass pending token limit
       await prisma.emailVerificationToken.update({
-        where: { token: firstToken.token },
+        where: { tokenHash: hashVerificationToken(firstToken.token) },
         data: { usedAt: new Date() },
       });
 
@@ -220,7 +223,7 @@ describe('Email Verification Service - Unit Tests', () => {
       await verifyEmailToken(tokenData.token);
 
       const tokenRecord = await prisma.emailVerificationToken.findUnique({
-        where: { token: tokenData.token },
+        where: { tokenHash: hashVerificationToken(tokenData.token) },
       });
 
       expect(tokenRecord.usedAt).toBeDefined();
@@ -258,7 +261,7 @@ describe('Email Verification Service - Unit Tests', () => {
 
       // Manually expire the token
       await prisma.emailVerificationToken.update({
-        where: { token: tokenData.token },
+        where: { tokenHash: hashVerificationToken(tokenData.token) },
         data: { expiresAt: new Date(Date.now() - 1000) }, // Expired 1 second ago
       });
 
@@ -276,7 +279,7 @@ describe('Email Verification Service - Unit Tests', () => {
       const _result = await verifyEmailToken(tokenData.token);
 
       const [tokenRecord, userRecord] = await Promise.all([
-        prisma.emailVerificationToken.findUnique({ where: { token: tokenData.token } }),
+        prisma.emailVerificationToken.findUnique({ where: { tokenHash: hashVerificationToken(tokenData.token) } }),
         prisma.user.findUnique({ where: { id: testUser.id } }),
       ]);
 
@@ -354,7 +357,7 @@ describe('Email Verification Service - Unit Tests', () => {
       // Create expired token
       const expiredToken = await createVerificationToken(testUser.id, testUser.email);
       await prisma.emailVerificationToken.update({
-        where: { token: expiredToken.token },
+        where: { tokenHash: hashVerificationToken(expiredToken.token) },
         data: { expiresAt: new Date(Date.now() - 1000) },
       });
 
@@ -362,7 +365,7 @@ describe('Email Verification Service - Unit Tests', () => {
       await resendVerificationEmail(testUser.id);
 
       const expiredTokenRecord = await prisma.emailVerificationToken.findUnique({
-        where: { token: expiredToken.token },
+        where: { tokenHash: hashVerificationToken(expiredToken.token) },
       });
 
       expect(expiredTokenRecord).toBeNull();
@@ -382,7 +385,7 @@ describe('Email Verification Service - Unit Tests', () => {
       // Create token and expire it
       const tokenData = await createVerificationToken(testUser.id, testUser.email);
       await prisma.emailVerificationToken.update({
-        where: { token: tokenData.token },
+        where: { tokenHash: hashVerificationToken(tokenData.token) },
         data: { expiresAt: new Date(Date.now() - 1000) },
       });
 
@@ -391,7 +394,7 @@ describe('Email Verification Service - Unit Tests', () => {
       expect(result.removedCount).toBeGreaterThan(0);
 
       const tokenRecord = await prisma.emailVerificationToken.findUnique({
-        where: { token: tokenData.token },
+        where: { tokenHash: hashVerificationToken(tokenData.token) },
       });
 
       expect(tokenRecord).toBeNull();
@@ -404,7 +407,7 @@ describe('Email Verification Service - Unit Tests', () => {
 
       // Make it old (31 days)
       await prisma.emailVerificationToken.update({
-        where: { token: tokenData.token },
+        where: { tokenHash: hashVerificationToken(tokenData.token) },
         data: { createdAt: new Date(Date.now() - 31 * 24 * 60 * 60 * 1000) },
       });
 
@@ -419,7 +422,7 @@ describe('Email Verification Service - Unit Tests', () => {
       await cleanupExpiredTokens();
 
       const tokenRecord = await prisma.emailVerificationToken.findUnique({
-        where: { token: tokenData.token },
+        where: { tokenHash: hashVerificationToken(tokenData.token) },
       });
 
       expect(tokenRecord).toBeDefined();
@@ -454,7 +457,7 @@ describe('Email Verification Service - Unit Tests', () => {
     it('should_indicate_expired_token', async () => {
       const tokenData = await createVerificationToken(testUser.id, testUser.email);
       await prisma.emailVerificationToken.update({
-        where: { token: tokenData.token },
+        where: { tokenHash: hashVerificationToken(tokenData.token) },
         data: { expiresAt: new Date(Date.now() - 1000) },
       });
 

@@ -16,7 +16,7 @@ import {
   extractCookieValue as _extractCookieValue,
   resetRateLimitStore,
 } from '../config/test-helpers.mjs';
-import { generateVerificationToken } from '../../utils/emailVerificationService.mjs';
+import { generateVerificationToken, hashVerificationToken } from '../../utils/emailVerificationService.mjs';
 import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
@@ -69,6 +69,24 @@ describe('Email Verification System - Integration Tests', () => {
     // Generate JWT token for authentication using test helper
     authToken = generateTestToken({ id: testUser.id, email: testUser.email });
   });
+
+  // Equoria-uy73: raw verification tokens are no longer persisted. Tests that
+  // previously stored a raw token in the DB and read it back via `token.token`
+  // now must keep the raw token in local scope. This helper seeds a row and
+  // returns the raw token the test needs for the verification URL.
+  const seedTestVerificationToken = async (overrides = {}) => {
+    const rawToken = overrides.rawToken ?? generateVerificationToken();
+    await prisma.emailVerificationToken.create({
+      data: {
+        tokenHash: hashVerificationToken(rawToken),
+        userId: overrides.userId ?? testUser.id,
+        email: overrides.email ?? testUser.email,
+        expiresAt: overrides.expiresAt ?? new Date(Date.now() + 24 * 60 * 60 * 1000),
+        ...(overrides.usedAt !== undefined ? { usedAt: overrides.usedAt } : {}),
+      },
+    });
+    return rawToken;
+  };
 
   afterEach(async () => {
     jest.clearAllMocks();
@@ -141,30 +159,25 @@ describe('Email Verification System - Integration Tests', () => {
       expect(response.status).toBe(201);
       expect(response.body.data.emailVerificationSent).toBe(true);
 
-      // In development, email should be logged (check via token existence)
+      // In development, email should be logged (check via token existence).
+      // Raw token is not stored at rest (Equoria-uy73) — assert the hash
+      // column is the expected 64-char SHA-256 hex digest.
       const token = await prisma.emailVerificationToken.findFirst({
         where: { email: newUser.email },
       });
 
       expect(token).toBeDefined();
-      expect(token.token.length).toBe(64);
+      expect(token.tokenHash).toMatch(/^[a-f0-9]{64}$/);
     });
   });
 
   describe('GET /auth/verify-email', () => {
     it('should_verify_email_with_valid_token', async () => {
-      // Create verification token
-      const token = await prisma.emailVerificationToken.create({
-        data: {
-          token: generateVerificationToken(),
-          userId: testUser.id,
-          email: testUser.email,
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        },
-      });
+      // Create verification token (raw stays in local scope — Equoria-uy73)
+      const rawToken = await seedTestVerificationToken();
 
       const response = await request(app)
-        .get(`/auth/verify-email?token=${token.token}`)
+        .get(`/auth/verify-email?token=${rawToken}`)
         .set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(200);
@@ -175,16 +188,9 @@ describe('Email Verification System - Integration Tests', () => {
     });
 
     it('should_update_user_email_verified_status', async () => {
-      const token = await prisma.emailVerificationToken.create({
-        data: {
-          token: generateVerificationToken(),
-          userId: testUser.id,
-          email: testUser.email,
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        },
-      });
+      const rawToken = await seedTestVerificationToken();
 
-      await request(app).get(`/auth/verify-email?token=${token.token}`).set('Origin', 'http://localhost:3000');
+      await request(app).get(`/auth/verify-email?token=${rawToken}`).set('Origin', 'http://localhost:3000');
 
       const user = await prisma.user.findUnique({
         where: { id: testUser.id },
@@ -196,19 +202,12 @@ describe('Email Verification System - Integration Tests', () => {
     });
 
     it('should_mark_token_as_used', async () => {
-      const token = await prisma.emailVerificationToken.create({
-        data: {
-          token: generateVerificationToken(),
-          userId: testUser.id,
-          email: testUser.email,
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        },
-      });
+      const rawToken = await seedTestVerificationToken();
 
-      await request(app).get(`/auth/verify-email?token=${token.token}`).set('Origin', 'http://localhost:3000');
+      await request(app).get(`/auth/verify-email?token=${rawToken}`).set('Origin', 'http://localhost:3000');
 
       const tokenRecord = await prisma.emailVerificationToken.findUnique({
-        where: { token: token.token },
+        where: { tokenHash: hashVerificationToken(rawToken) },
       });
 
       expect(tokenRecord.usedAt).toBeDefined();
@@ -232,17 +231,12 @@ describe('Email Verification System - Integration Tests', () => {
     });
 
     it('should_reject_expired_token', async () => {
-      const token = await prisma.emailVerificationToken.create({
-        data: {
-          token: generateVerificationToken(),
-          userId: testUser.id,
-          email: testUser.email,
-          expiresAt: new Date(Date.now() - 1000), // Expired 1 second ago
-        },
+      const rawToken = await seedTestVerificationToken({
+        expiresAt: new Date(Date.now() - 1000), // Expired 1 second ago
       });
 
       const response = await request(app)
-        .get(`/auth/verify-email?token=${token.token}`)
+        .get(`/auth/verify-email?token=${rawToken}`)
         .set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(400);
@@ -250,21 +244,14 @@ describe('Email Verification System - Integration Tests', () => {
     });
 
     it('should_reject_already_used_token', async () => {
-      const token = await prisma.emailVerificationToken.create({
-        data: {
-          token: generateVerificationToken(),
-          userId: testUser.id,
-          email: testUser.email,
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        },
-      });
+      const rawToken = await seedTestVerificationToken();
 
       // Use token first time
-      await request(app).get(`/auth/verify-email?token=${token.token}`).set('Origin', 'http://localhost:3000');
+      await request(app).get(`/auth/verify-email?token=${rawToken}`).set('Origin', 'http://localhost:3000');
 
       // Try second time
       const response = await request(app)
-        .get(`/auth/verify-email?token=${token.token}`)
+        .get(`/auth/verify-email?token=${rawToken}`)
         .set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(400);
@@ -272,18 +259,11 @@ describe('Email Verification System - Integration Tests', () => {
     });
 
     it('should_be_publicly_accessible_without_authentication', async () => {
-      const token = await prisma.emailVerificationToken.create({
-        data: {
-          token: generateVerificationToken(),
-          userId: testUser.id,
-          email: testUser.email,
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        },
-      });
+      const rawToken = await seedTestVerificationToken();
 
       // No authentication header provided
       const response = await request(app)
-        .get(`/auth/verify-email?token=${token.token}`)
+        .get(`/auth/verify-email?token=${rawToken}`)
         .set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(200);
@@ -365,14 +345,9 @@ describe('Email Verification System - Integration Tests', () => {
     });
 
     it('should_cleanup_expired_tokens', async () => {
-      // Create expired token
-      await prisma.emailVerificationToken.create({
-        data: {
-          token: generateVerificationToken(),
-          userId: testUser.id,
-          email: testUser.email,
-          expiresAt: new Date(Date.now() - 1000),
-        },
+      // Create expired token (hashed at rest — Equoria-uy73)
+      await seedTestVerificationToken({
+        expiresAt: new Date(Date.now() - 1000),
       });
 
       await request(app)
@@ -445,6 +420,47 @@ describe('Email Verification System - Integration Tests', () => {
   });
 
   describe('Complete Email Verification Workflow', () => {
+    // Equoria-uy73: raw verification tokens are no longer readable from the DB
+    // (only the SHA-256 hash is stored). These end-to-end workflow tests used
+    // to recover the raw token with `findFirst().then(r => r.token)` — that
+    // path is intentionally closed. We capture the token from the outbound
+    // email instead, which is the only legitimate channel in production.
+    let capturedVerificationTokens;
+    let emailCapturePath;
+    beforeEach(async () => {
+      const os = await import('os');
+      const path = await import('path');
+      const fs = await import('fs');
+      emailCapturePath = path.join(os.tmpdir(), `email-capture-${Date.now()}-${Math.random()}.jsonl`);
+      process.env.EMAIL_CAPTURE_FILE = emailCapturePath;
+      capturedVerificationTokens = () => {
+        if (!fs.existsSync(emailCapturePath)) return [];
+        const raw = fs.readFileSync(emailCapturePath, 'utf8');
+        return raw
+          .split('\n')
+          .filter(Boolean)
+          .map(line => JSON.parse(line))
+          .filter(entry => entry.kind === 'verification')
+          .map(entry => {
+            // preview is the verification URL with ?token=RAW as the query param.
+            const match = entry.preview && entry.preview.match(/[?&]token=([^&]+)/);
+            return match ? decodeURIComponent(match[1]) : null;
+          })
+          .filter(Boolean);
+      };
+    });
+    afterEach(async () => {
+      const fs = await import('fs');
+      try {
+        if (emailCapturePath && fs.existsSync(emailCapturePath)) {
+          fs.unlinkSync(emailCapturePath);
+        }
+      } catch {
+        /* best-effort cleanup */
+      }
+      delete process.env.EMAIL_CAPTURE_FILE;
+    });
+
     it('should_complete_full_registration_to_verification_flow', async () => {
       const timestamp = Date.now();
       const newUser = {
@@ -464,17 +480,15 @@ describe('Email Verification System - Integration Tests', () => {
       expect(registerResponse.status).toBe(201);
       expect(registerResponse.body.data.user.emailVerified).toBe(false);
 
-      // Step 2: Get verification token from database
-      const tokenRecord = await prisma.emailVerificationToken.findFirst({
-        where: { email: newUser.email },
-        orderBy: { createdAt: 'desc' },
-      });
-
-      expect(tokenRecord).toBeDefined();
+      // Step 2: Recover verification token from the captured email (the only
+      // place raw tokens legitimately appear after Equoria-uy73).
+      const tokens = capturedVerificationTokens();
+      expect(tokens.length).toBeGreaterThan(0);
+      const rawToken = tokens[tokens.length - 1];
 
       // Step 3: Verify email
       const verifyResponse = await request(app)
-        .get(`/auth/verify-email?token=${tokenRecord.token}`)
+        .get(`/auth/verify-email?token=${rawToken}`)
         .set('Origin', 'http://localhost:3000');
 
       expect(verifyResponse.status).toBe(200);
@@ -508,15 +522,14 @@ describe('Email Verification System - Integration Tests', () => {
 
       expect(resendResponse.status).toBe(200);
 
-      // Step 4: Get new token
-      const tokenRecord = await prisma.emailVerificationToken.findFirst({
-        where: { userId: testUser.id },
-        orderBy: { createdAt: 'desc' },
-      });
+      // Step 4: Recover new token from the captured email.
+      const tokens = capturedVerificationTokens();
+      expect(tokens.length).toBeGreaterThan(0);
+      const rawToken = tokens[tokens.length - 1];
 
       // Step 5: Verify email
       const verifyResponse = await request(app)
-        .get(`/auth/verify-email?token=${tokenRecord.token}`)
+        .get(`/auth/verify-email?token=${rawToken}`)
         .set('Origin', 'http://localhost:3000');
 
       expect(verifyResponse.status).toBe(200);
@@ -531,31 +544,24 @@ describe('Email Verification System - Integration Tests', () => {
     });
 
     it('should_prevent_multiple_verification_attempts', async () => {
-      const tokenRecord = await prisma.emailVerificationToken.create({
-        data: {
-          token: generateVerificationToken(),
-          userId: testUser.id,
-          email: testUser.email,
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        },
-      });
+      const rawToken = await seedTestVerificationToken();
 
       // First verification
       const response1 = await request(app)
-        .get(`/auth/verify-email?token=${tokenRecord.token}`)
+        .get(`/auth/verify-email?token=${rawToken}`)
         .set('Origin', 'http://localhost:3000');
       expect(response1.status).toBe(200);
 
       // Second verification attempt
       const response2 = await request(app)
-        .get(`/auth/verify-email?token=${tokenRecord.token}`)
+        .get(`/auth/verify-email?token=${rawToken}`)
         .set('Origin', 'http://localhost:3000');
       expect(response2.status).toBe(400);
       expect(response2.body.message).toContain('already been used');
 
       // Third verification attempt
       const response3 = await request(app)
-        .get(`/auth/verify-email?token=${tokenRecord.token}`)
+        .get(`/auth/verify-email?token=${rawToken}`)
         .set('Origin', 'http://localhost:3000');
       expect(response3.status).toBe(400);
     });
@@ -563,19 +569,12 @@ describe('Email Verification System - Integration Tests', () => {
 
   describe('Security and Edge Cases', () => {
     it('should_handle_concurrent_verification_requests', async () => {
-      const tokenRecord = await prisma.emailVerificationToken.create({
-        data: {
-          token: generateVerificationToken(),
-          userId: testUser.id,
-          email: testUser.email,
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        },
-      });
+      const rawToken = await seedTestVerificationToken();
 
       // Send two concurrent verification requests
       const [response1, response2] = await Promise.all([
-        request(app).get(`/auth/verify-email?token=${tokenRecord.token}`).set('Origin', 'http://localhost:3000'),
-        request(app).get(`/auth/verify-email?token=${tokenRecord.token}`).set('Origin', 'http://localhost:3000'),
+        request(app).get(`/auth/verify-email?token=${rawToken}`).set('Origin', 'http://localhost:3000'),
+        request(app).get(`/auth/verify-email?token=${rawToken}`).set('Origin', 'http://localhost:3000'),
       ]);
 
       // One should succeed, one should fail

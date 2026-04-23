@@ -20,6 +20,7 @@ import {
   invalidateTokenFamily,
   cleanupExpiredTokens,
   createTokenPair,
+  hashRefreshToken,
 } from '../../utils/tokenRotationService.mjs';
 
 describe('Token Rotation Service - Unit Tests', () => {
@@ -124,7 +125,8 @@ describe('Token Rotation Service - Unit Tests', () => {
       });
 
       expect(dbToken).toBeDefined();
-      expect(dbToken.token).toBe(tokenPair.refreshToken);
+      // Raw JWT is no longer stored (Equoria-uy73) — assert the hash matches.
+      expect(dbToken.tokenHash).toBe(hashRefreshToken(tokenPair.refreshToken));
       expect(dbToken.isActive).toBe(true);
       expect(dbToken.isInvalidated).toBe(false);
     });
@@ -194,9 +196,9 @@ describe('Token Rotation Service - Unit Tests', () => {
       const familyId = generateTokenFamily();
       const tokenPair = await createTokenPair(testUser.id, familyId);
 
-      // Mark token as inactive in database
+      // Mark token as inactive in database (lookup by hash — Equoria-uy73)
       await prisma.refreshToken.update({
-        where: { token: tokenPair.refreshToken },
+        where: { tokenHash: hashRefreshToken(tokenPair.refreshToken) },
         data: { isActive: false },
       });
 
@@ -222,9 +224,9 @@ describe('Token Rotation Service - Unit Tests', () => {
       const familyId = generateTokenFamily();
       const tokenPair = await createTokenPair(testUser.id, familyId);
 
-      // Mark token as used/invalidated
+      // Mark token as used/invalidated (lookup by hash — Equoria-uy73)
       await prisma.refreshToken.update({
-        where: { token: tokenPair.refreshToken },
+        where: { tokenHash: hashRefreshToken(tokenPair.refreshToken) },
         data: { isActive: false },
       });
 
@@ -253,9 +255,9 @@ describe('Token Rotation Service - Unit Tests', () => {
       // Create second token in same family (simulate rotation)
       const secondTokenPair = await createTokenPair(testUser.id, familyId);
 
-      // Mark first token as used
+      // Mark first token as used (lookup by hash — Equoria-uy73)
       await prisma.refreshToken.update({
-        where: { token: tokenPair.refreshToken },
+        where: { tokenHash: hashRefreshToken(tokenPair.refreshToken) },
         data: { isActive: false },
       });
 
@@ -264,7 +266,9 @@ describe('Token Rotation Service - Unit Tests', () => {
 
       expect(reuseDetection.isReuse).toBe(true);
       expect(reuseDetection.familyId).toBe(familyId);
-      expect(reuseDetection.affectedTokens).toContain(secondTokenPair.refreshToken);
+      // Raw refresh tokens are no longer persisted or returned in diagnostics.
+      // The service returns tokenHashes in the same family for observability.
+      expect(reuseDetection.affectedTokenHashes).toContain(hashRefreshToken(secondTokenPair.refreshToken));
     });
   });
 
@@ -283,15 +287,15 @@ describe('Token Rotation Service - Unit Tests', () => {
       // New token should be different
       expect(rotationResult.newTokenPair.refreshToken).not.toBe(oldTokenPair.refreshToken);
 
-      // Old token should be invalidated
-      const oldTokenRecord = await prisma.refreshToken.findFirst({
-        where: { token: oldTokenPair.refreshToken },
+      // Old token should be invalidated (lookup by hash — Equoria-uy73)
+      const oldTokenRecord = await prisma.refreshToken.findUnique({
+        where: { tokenHash: hashRefreshToken(oldTokenPair.refreshToken) },
       });
       expect(oldTokenRecord.isActive).toBe(false);
 
       // New token should be active
-      const newTokenRecord = await prisma.refreshToken.findFirst({
-        where: { token: rotationResult.newTokenPair.refreshToken },
+      const newTokenRecord = await prisma.refreshToken.findUnique({
+        where: { tokenHash: hashRefreshToken(rotationResult.newTokenPair.refreshToken) },
       });
       expect(newTokenRecord.isActive).toBe(true);
       expect(newTokenRecord.familyId).toBe(familyId);
@@ -309,9 +313,9 @@ describe('Token Rotation Service - Unit Tests', () => {
       const familyId = generateTokenFamily();
       const tokenPair = await createTokenPair(testUser.id, familyId);
 
-      // Mark token as already used
+      // Mark token as already used (lookup by hash — Equoria-uy73)
       await prisma.refreshToken.update({
-        where: { token: tokenPair.refreshToken },
+        where: { tokenHash: hashRefreshToken(tokenPair.refreshToken) },
         data: { isActive: false },
       });
 
@@ -396,7 +400,7 @@ describe('Token Rotation Service - Unit Tests', () => {
 
       await prisma.refreshToken.create({
         data: {
-          token: expiredToken,
+          tokenHash: hashRefreshToken(expiredToken),
           userId: testUser.id,
           familyId: 'expired-family',
           expiresAt: new Date(Date.now() - 1000), // Already expired
@@ -432,7 +436,7 @@ describe('Token Rotation Service - Unit Tests', () => {
 
       await prisma.refreshToken.create({
         data: {
-          token: 'old-invalidated-token',
+          tokenHash: hashRefreshToken('old-invalidated-token'),
           userId: testUser.id,
           familyId: 'old-family',
           expiresAt: new Date(Date.now() + 86400000), // Valid expiry
@@ -455,7 +459,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       // Expired but not invalidated
       await prisma.refreshToken.create({
         data: {
-          token: 'expired-1',
+          tokenHash: hashRefreshToken('expired-1'),
           userId: testUser.id,
           familyId: 'test-1',
           expiresAt: expiredToken,
@@ -467,7 +471,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       // Old and invalidated
       await prisma.refreshToken.create({
         data: {
-          token: 'old-invalidated-1',
+          tokenHash: hashRefreshToken('old-invalidated-1'),
           userId: testUser.id,
           familyId: 'test-2',
           expiresAt: new Date(Date.now() + 86400000),

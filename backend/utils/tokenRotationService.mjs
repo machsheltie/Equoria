@@ -29,6 +29,22 @@ const TOKEN_CONFIG = {
 };
 
 /**
+ * Hash a refresh token for at-rest storage.
+ *
+ * Equoria-uy73 (2026-04-23): raw JWTs are never persisted. The DB stores only
+ * this SHA-256 hex digest. A DB read leak therefore yields hashes, not
+ * forgeable tokens. The raw refresh token is only ever in memory (issued to
+ * the client, HMAC-verified on inbound) and in the client's httpOnly cookie.
+ *
+ * SHA-256 is acceptable here (not bcrypt) because the token itself has 256
+ * bits of pre-hash entropy and a 7-day lifetime — offline brute force is
+ * infeasible and no credential-stuffing class of attacks applies.
+ */
+export function hashRefreshToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+/**
  * Generate Unique Token Family ID
  * Creates a cryptographically secure family identifier
  */
@@ -119,7 +135,7 @@ export async function createTokenPair(userId, familyId) {
     try {
       await prisma.refreshToken.create({
         data: {
-          token: refreshToken,
+          tokenHash: hashRefreshToken(refreshToken),
           userId,
           familyId,
           expiresAt,
@@ -191,9 +207,9 @@ export async function validateRefreshToken(token) {
       };
     }
 
-    // Check database for token status
-    const tokenRecord = await prisma.refreshToken.findFirst({
-      where: { token },
+    // Check database for token status (look up by hash, not raw JWT — Equoria-uy73)
+    const tokenRecord = await prisma.refreshToken.findUnique({
+      where: { tokenHash: hashRefreshToken(token) },
     });
 
     if (!tokenRecord) {
@@ -254,9 +270,10 @@ export async function detectTokenReuse(token) {
     // First validate token structure (throws error if invalid)
     await validateRefreshToken(token);
 
-    // If token is inactive, it might be reuse
-    const tokenRecord = await prisma.refreshToken.findFirst({
-      where: { token },
+    // If token is inactive, it might be reuse (look up by hash, not raw JWT)
+    const tokenHash = hashRefreshToken(token);
+    const tokenRecord = await prisma.refreshToken.findUnique({
+      where: { tokenHash },
     });
 
     if (!tokenRecord) {
@@ -273,13 +290,17 @@ export async function detectTokenReuse(token) {
       logger.warn('[TokenRotation] Token reuse detected', {
         userId: tokenRecord.userId,
         familyId: tokenRecord.familyId,
-        token: `${token.substring(0, 20)}...`,
+        // Log a hash prefix, never the raw token. Prior code logged 20 chars
+        // of raw JWT — an attacker with log access could have exfiltrated
+        // session material.
+        tokenHashPrefix: tokenHash.substring(0, 12),
       });
 
-      // Find all tokens in the same family for invalidation
+      // Find all tokens in the same family for invalidation diagnostics.
+      // Returns tokenHashes (never raw tokens — Equoria-uy73).
       const familyTokens = await prisma.refreshToken.findMany({
         where: { familyId: tokenRecord.familyId },
-        select: { token: true },
+        select: { tokenHash: true },
       });
 
       return {
@@ -287,7 +308,7 @@ export async function detectTokenReuse(token) {
         familyId: tokenRecord.familyId,
         shouldInvalidateFamily: true,
         reason: 'Token already used',
-        affectedTokens: familyTokens.map(t => t.token),
+        affectedTokenHashes: familyTokens.map(t => t.tokenHash),
       };
     }
 
@@ -350,9 +371,10 @@ export async function rotateRefreshToken(oldToken) {
 
     // Use transaction to ensure atomicity
     const result = await prisma.$transaction(async tx => {
-      // Mark old token as used (inactive but not invalidated)
+      // Mark old token as used (inactive but not invalidated). Look up by
+      // hash — raw JWT is no longer stored (Equoria-uy73).
       await tx.refreshToken.update({
-        where: { token: oldToken },
+        where: { tokenHash: hashRefreshToken(oldToken) },
         data: { isActive: false },
       });
 
@@ -398,10 +420,10 @@ export async function rotateRefreshToken(oldToken) {
       // Calculate expiration date
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
-      // Store refresh token in database using transaction client
+      // Store refresh token in database using transaction client (hashed at rest)
       await tx.refreshToken.create({
         data: {
-          token: refreshToken,
+          tokenHash: hashRefreshToken(refreshToken),
           userId,
           familyId,
           expiresAt,
