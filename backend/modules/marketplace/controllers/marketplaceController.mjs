@@ -7,11 +7,34 @@
  * Also handles the Horse Trader store (buyStoreHorse) — Epic 21 extension.
  */
 
+import { readFileSync } from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, resolve } from 'path';
+
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
-import { BREED_GENETIC_PROFILES } from '../../horses/data/breedGeneticProfiles.mjs';
 import { createHorse } from '../../../models/horseModel.mjs';
 import { recordTransaction } from '../../../services/financialLedgerService.mjs';
+
+// Per-breed starter-stats profiles keyed by breed display NAME. Every
+// breed in the DB must have a matching entry here; a missing breed is
+// treated as a data bug and fails the purchase loudly (see
+// generateStoreStats below).
+const __filename__ = fileURLToPath(import.meta.url);
+const __dirname__ = dirname(__filename__);
+const BREED_STARTER_STATS_PATH = resolve(__dirname__, '../../../data/breedStarterStats.json');
+let BREED_STARTER_STATS_BY_NAME = {};
+try {
+  BREED_STARTER_STATS_BY_NAME = JSON.parse(readFileSync(BREED_STARTER_STATS_PATH, 'utf8'));
+} catch (err) {
+  // Loading this file is required for store purchases. Log loudly at
+  // boot so the failure is obvious in deployment logs rather than
+  // silent until the first buy attempt.
+  logger.error(
+    `[marketplace] FATAL: Failed to load breedStarterStats.json (${BREED_STARTER_STATS_PATH}): ${err.message}. ` +
+      'Every store purchase will 500 until this file is readable.',
+  );
+}
 
 // ── Horse Trader store constants ──────────────────────────────────────────────
 
@@ -41,21 +64,62 @@ function sampleStat({ mean, std_dev }) {
 
 /**
  * Generate stats for a store horse.
- * Canonical breed IDs (1–12) use starter_stats profiles; others get random 20–45.
+ *
+ * Every breed — all 309 of them — is required to have a profile in
+ * `backend/data/breedStarterStats.json` keyed by breed display name.
+ * If a lookup misses, that is a data bug (breed in the DB but not in
+ * the JSON, OR a name-mismatch between DB and JSON) and we throw so
+ * the purchase fails loudly rather than silently shipping a horse
+ * with random stats.
+ *
+ * There is no "canonical vs non-canonical" split. Every breed follows
+ * the same system.
+ *
+ * @param {string} breedName - Breed display name, must match a key in
+ *   breedStarterStats.json exactly.
+ * @throws {Error} if the breed has no profile, or a stat key is missing.
  */
-function generateStoreStats(breedId) {
-  const profile = BREED_GENETIC_PROFILES[breedId];
-  if (profile?.starter_stats) {
-    // F2 guard: fall back to random if a key is missing from the profile (future-proofs against schema changes)
-    return Object.fromEntries(
-      STAT_KEYS.map(k => {
-        const statProfile = profile.starter_stats[k];
-        return [k, statProfile ? sampleStat(statProfile) : 20 + Math.floor(Math.random() * 26)];
-      }),
+function generateStoreStats(breedName) {
+  if (!breedName) {
+    throw Object.assign(new Error('Breed name is required to generate store horse stats'), {
+      statusCode: 500,
+    });
+  }
+
+  const profile = BREED_STARTER_STATS_BY_NAME[breedName];
+  if (!profile) {
+    throw Object.assign(
+      new Error(
+        `No starter-stats profile found for breed "${breedName}". ` +
+          'Every breed must have an entry in backend/data/breedStarterStats.json — ' +
+          'check that the DB breed name matches the JSON key exactly.',
+      ),
+      { statusCode: 500 },
     );
   }
-  // Non-canonical breed fallback: random 20–45 (intentionally weaker than seeded horses)
-  return Object.fromEntries(STAT_KEYS.map(k => [k, 20 + Math.floor(Math.random() * 26)]));
+
+  const missingKeys = STAT_KEYS.filter(k => {
+    const s = profile[k];
+    return !s || typeof s.mean !== 'number';
+  });
+  if (missingKeys.length > 0) {
+    throw Object.assign(
+      new Error(
+        `breedStarterStats.json profile for "${breedName}" is incomplete ` +
+          `(missing: ${missingKeys.join(', ')}). All 12 stats must be present.`,
+      ),
+      { statusCode: 500 },
+    );
+  }
+
+  return Object.fromEntries(
+    STAT_KEYS.map(k => {
+      const s = profile[k];
+      // JSON uses `std`; sampleStat uses `std_dev`. Accept either.
+      const std_dev = typeof s.std_dev === 'number' ? s.std_dev : s.std;
+      return [k, sampleStat({ mean: s.mean, std_dev: std_dev ?? 3 })];
+    }),
+  );
 }
 
 /**
@@ -484,9 +548,11 @@ export async function buyStoreHorse(req, res) {
     // Coins are now deducted — any error after this line triggers a refund attempt (F1)
     coinDeducted = true;
 
-    // Generate horse name and stats
+    // Generate horse name and stats. Stats route through the
+    // breed-name-keyed profile in breedStarterStats.json — every breed
+    // follows the same system, no hardcoded exceptions.
     const horseName = `${breed.name} #${String(Math.floor(100000 + Math.random() * 900000))}`;
-    const stats = generateStoreStats(parsedBreedId);
+    const stats = generateStoreStats(breed.name);
     const dateOfBirth = new Date();
     dateOfBirth.setFullYear(dateOfBirth.getFullYear() - 3);
 
