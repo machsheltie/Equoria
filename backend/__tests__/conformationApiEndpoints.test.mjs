@@ -8,16 +8,18 @@
 // seed breed/user/horses in beforeAll, clean up in afterAll.
 //
 // Isolation strategy:
-//   • Most analysis tests run against a UNIQUE per-run breed. No other
-//     suite targets that breed, so findMany results are deterministic
-//     without needing to touch horses owned by parallel Jest workers.
-//   • The single test that asserts breedMean comes from
-//     breedProfiles.json uses the real Thoroughbred breed (upserted in
-//     beforeAll) because the loader is keyed by breed display name, and
-//     'Thoroughbred' is the one breed this suite can rely on having a
-//     profile entry. That test only checks breedMean values, which are
-//     derived from the JSON file and are unaffected by whatever
-//     Thoroughbred horses other suites may have created.
+//   • Analysis tests run against a UNIQUE per-run breed (testBreed). No
+//     other suite targets that breed, so parallel Jest workers cannot
+//     contaminate findMany results.
+//   • Within-suite isolation: getConformationAnalysis tests each assert on
+//     exact horse counts and percentile values. A beforeEach inside that
+//     describe deletes all testBreed horses before each test so accumulated
+//     state from earlier tests does not corrupt later assertions.
+//   • The single test that asserts breedMean comes from breedProfiles.json
+//     uses the real Thoroughbred breed (upserted in beforeAll) because the
+//     loader is keyed by display name. That test only checks breedMean
+//     values derived from the JSON file — unaffected by Thoroughbred horses
+//     other suites may have created.
 
 import { jest } from '@jest/globals';
 import { Prisma } from '@prisma/client';
@@ -103,7 +105,7 @@ describe('Conformation API Endpoints', () => {
         breedId,
         sex: 'Mare',
         dateOfBirth: fourYearsAgo,
-        age: 28,
+        age: 4,
         healthStatus: 'Good',
         // Prisma 6 requires Prisma.DbNull to store a DB NULL in a
         // nullable Json column; a plain `null` would be rejected.
@@ -224,11 +226,19 @@ describe('Conformation API Endpoints', () => {
 
   // === Task 3.3: GET /conformation/analysis returns percentile per region ===
   // These tests hit the real DB via prisma.horse.findMany and
-  // prisma.breed.findUnique. Because the per-run test breed is unique to
-  // this suite, no beforeEach wipe is required — the only horses visible
-  // to findMany are the ones the current test seeds.
+  // prisma.breed.findUnique. The per-run test breed is unique to this suite
+  // (no cross-suite contamination), but tests within the suite accumulate
+  // horses sequentially. A beforeEach wipe ensures each test starts clean.
 
   describe('getConformationAnalysis', () => {
+    // Each test seeds horses into testBreed and checks exact counts / percentiles.
+    // Without cleanup between tests, later tests see horses accumulated by earlier
+    // ones, breaking count-dependent assertions (e.g. totalHorsesInBreed: 5,
+    // percentile: 80). Delete all testBreed horses before each test.
+    beforeEach(async () => {
+      await prisma.horse.deleteMany({ where: { breedId: testBreed.id } }).catch(() => {});
+    });
+
     test('returns percentile analysis per region for a horse with scores', async () => {
       // Seed 5 same-breed horses with varying scores
       await seedHorse({

@@ -46,9 +46,9 @@ try {
 }
 
 /**
- * Fetch a breed's rating_profiles + temperament_weights by display name.
+ * Fetch a breed's rating_profiles + temperament_weights by display name or legacy numeric id.
  *
- * @param {string} breedName - Breed display name (must match JSON key).
+ * @param {string|number} breedIdentifier - Breed display name (must match JSON key) or legacy canonical-12 numeric id.
  * @returns {{
  *   category: string,
  *   rating_profiles: {
