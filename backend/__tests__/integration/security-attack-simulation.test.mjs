@@ -27,13 +27,18 @@
 import request from 'supertest';
 import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 
-// Disable all security test bypasses for realistic attack simulation
-process.env.TEST_BYPASS_RATE_LIMIT = 'false';
-process.env.TEST_BYPASS_AUTH = 'false';
+import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
+// All test-bypass escape hatches were removed in Workstream 4; this suite
+// exercises the real auth/rate-limit/CSRF stack with no bypass headers set.
 
 const { default: app } = await import('../../app.mjs');
 
 describe('Security Attack Simulation Tests', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   // Setup attack simulation environment
   const attackerUserId = 'attacker-uuid-999';
   const victimUserId = 'victim-uuid-001';
@@ -54,6 +59,7 @@ describe('Security Attack Simulation Tests', () => {
       it("should block access to another user's profile", async () => {
         const response = await request(app)
           .get(`/api/user/${victimUserId}`)
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`);
 
         // Should get 403 Forbidden for ownership violation
@@ -64,6 +70,7 @@ describe('Security Attack Simulation Tests', () => {
       it("should block access to another user's progress data", async () => {
         const response = await request(app)
           .get(`/api/user/${victimUserId}/progress`)
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`);
 
         expect([403, 404]).toContain(response.status);
@@ -73,6 +80,7 @@ describe('Security Attack Simulation Tests', () => {
       it("should block access to another user's activity feed", async () => {
         const response = await request(app)
           .get(`/api/user/${victimUserId}/activity`)
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`);
 
         expect([403, 404]).toContain(response.status);
@@ -82,6 +90,7 @@ describe('Security Attack Simulation Tests', () => {
       it("should block modification of another user's profile", async () => {
         const response = await request(app)
           .put(`/api/user/${victimUserId}`)
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`)
           .send({
             username: 'hacked',
@@ -95,6 +104,7 @@ describe('Security Attack Simulation Tests', () => {
       it("should block deletion of another user's account", async () => {
         const response = await request(app)
           .delete(`/api/user/${victimUserId}`)
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`);
 
         expect([403, 404]).toContain(response.status);
@@ -105,17 +115,24 @@ describe('Security Attack Simulation Tests', () => {
     describe('Horse Resource IDOR Attacks', () => {
       it("should block access to another user's horse details", async () => {
         // Attempt to access horse ID 1 (likely belongs to victim)
-        const response = await request(app).get('/api/horses/1').set('Authorization', `Bearer ${attackerToken}`);
+        const response = await request(app)
+          .get('/api/horses/1')
+          .set('Origin', 'http://localhost:3000')
+          .set('Authorization', `Bearer ${attackerToken}`);
 
         expect([403, 404]).toContain(response.status);
       });
 
       it("should block modification of another user's horse", async () => {
-        const response = await request(app).put('/api/horses/1').set('Authorization', `Bearer ${attackerToken}`).send({
-          name: 'Stolen Horse',
-          forSale: true,
-          salePrice: 1,
-        });
+        const response = await request(app)
+          .put('/api/horses/1')
+          .set('Origin', 'http://localhost:3000')
+          .set('Authorization', `Bearer ${attackerToken}`)
+          .send({
+            name: 'Stolen Horse',
+            forSale: true,
+            salePrice: 1,
+          });
 
         expect([403, 404]).toContain(response.status);
       });
@@ -123,6 +140,7 @@ describe('Security Attack Simulation Tests', () => {
       it("should block training another user's horse", async () => {
         const response = await request(app)
           .post('/api/training/train')
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`)
           .send({
             horseId: 1, // Victim's horse
@@ -137,6 +155,7 @@ describe('Security Attack Simulation Tests', () => {
       it("should block entering another user's horse in competition", async () => {
         const response = await request(app)
           .post('/api/competition/enter')
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`)
           .send({
             horseId: 1, // Victim's horse
@@ -149,6 +168,7 @@ describe('Security Attack Simulation Tests', () => {
       it("should block accessing another user's competition results", async () => {
         const response = await request(app)
           .get('/api/competition/horse/1/results')
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`);
 
         expect([401, 403, 404]).toContain(response.status);
@@ -159,6 +179,7 @@ describe('Security Attack Simulation Tests', () => {
       it("should block accessing another user's groom list", async () => {
         const response = await request(app)
           .get(`/api/grooms/user/${victimUserId}`)
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`);
 
         expect([403, 404]).toContain(response.status);
@@ -167,6 +188,7 @@ describe('Security Attack Simulation Tests', () => {
       it("should block assigning another user's groom", async () => {
         const response = await request(app)
           .post('/api/grooms/assign')
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`)
           .send({
             groomId: 1, // Victim's groom
@@ -182,6 +204,7 @@ describe('Security Attack Simulation Tests', () => {
       it("should block breeding with another user's horse without permission", async () => {
         const response = await request(app)
           .post('/api/breeding/breed')
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`)
           .send({
             damId: 999, // Attacker's mare
@@ -194,7 +217,10 @@ describe('Security Attack Simulation Tests', () => {
 
     describe('Privilege Escalation Attempts', () => {
       it('should block accessing admin endpoints with user token', async () => {
-        const response = await request(app).get('/api/admin/users').set('Authorization', `Bearer ${attackerToken}`);
+        const response = await request(app)
+          .get('/api/admin/users')
+          .set('Origin', 'http://localhost:3000')
+          .set('Authorization', `Bearer ${attackerToken}`);
 
         expect([403, 404]).toContain(response.status);
       });
@@ -202,6 +228,7 @@ describe('Security Attack Simulation Tests', () => {
       it('should block admin operations with user token', async () => {
         const response = await request(app)
           .post('/api/admin/users/ban')
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`)
           .send({
             userId: victimUserId,
@@ -230,6 +257,7 @@ describe('Security Attack Simulation Tests', () => {
           requests.push(
             request(app)
               .post('/api/auth/register')
+              .set('Origin', 'http://localhost:3000')
               .send({
                 email: `attacker${Date.now()}_${i}@evil.com`,
                 username: `attacker${Date.now()}_${i}`,
@@ -270,6 +298,7 @@ describe('Security Attack Simulation Tests', () => {
           requests.push(
             request(app)
               .post('/api/auth/login')
+              .set('Origin', 'http://localhost:3000')
               .send({
                 email: 'victim@example.com',
                 password: `WrongPassword${i}`,
@@ -300,6 +329,7 @@ describe('Security Attack Simulation Tests', () => {
           requests.push(
             request(app)
               .put(`/api/user/${attackerUserId}`)
+              .set('Origin', 'http://localhost:3000')
               .set('Authorization', `Bearer ${attackerToken}`)
               .send({
                 username: `newname${Date.now()}_${i}`,
@@ -327,6 +357,7 @@ describe('Security Attack Simulation Tests', () => {
       it('should include proper rate limit headers in all responses', async () => {
         const response = await request(app)
           .get(`/api/user/${attackerUserId}/progress`)
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`);
 
         // All responses should have rate limit headers
@@ -360,7 +391,7 @@ describe('Security Attack Simulation Tests', () => {
         ];
 
         for (const payload of sqlPayloads) {
-          const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
+          const response = await request(app).post('/api/auth/register').set('Origin', 'http://localhost:3000').send({
             email: payload,
             username: 'testuser',
             password: 'ValidPass123!',
@@ -375,7 +406,7 @@ describe('Security Attack Simulation Tests', () => {
       });
 
       it('should block SQL injection in username field', async () => {
-        const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
+        const response = await request(app).post('/api/auth/register').set('Origin', 'http://localhost:3000').send({
           email: 'test@example.com',
           username: "admin' OR '1'='1",
           password: 'ValidPass123!',
@@ -401,6 +432,9 @@ describe('Security Attack Simulation Tests', () => {
         for (const payload of xssPayloads) {
           const response = await request(app)
             .put('/api/auth/profile')
+            .set('Cookie', __csrf__.cookieHeader)
+            .set('X-CSRF-Token', __csrf__.csrfToken)
+            .set('Origin', 'http://localhost:3000')
             .set('Authorization', `Bearer ${attackerToken}`)
             .send({
               bio: payload,
@@ -422,7 +456,7 @@ describe('Security Attack Simulation Tests', () => {
       it('should sanitize XSS payloads in name fields', async () => {
         const response = await request(app)
           .post('/api/auth/register')
-          .set('x-test-bypass-rate-limit', 'true')
+          .set('Origin', 'http://localhost:3000')
           .send({
             email: `test${Date.now()}@example.com`,
             username: `testuser${Date.now()}`,
@@ -451,7 +485,7 @@ describe('Security Attack Simulation Tests', () => {
       it('should reject extremely long email addresses', async () => {
         const longEmail = `${'a'.repeat(1000)}@example.com`;
 
-        const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
+        const response = await request(app).post('/api/auth/register').set('Origin', 'http://localhost:3000').send({
           email: longEmail,
           username: 'testuser123',
           password: 'ValidPass123!',
@@ -466,7 +500,7 @@ describe('Security Attack Simulation Tests', () => {
       it('should reject extremely long usernames', async () => {
         const longUsername = 'a'.repeat(1000);
 
-        const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
+        const response = await request(app).post('/api/auth/register').set('Origin', 'http://localhost:3000').send({
           email: 'test@example.com',
           username: longUsername,
           password: 'ValidPass123!',
@@ -482,7 +516,7 @@ describe('Security Attack Simulation Tests', () => {
       it('should reject extremely long passwords', async () => {
         const longPassword = `A1!${'a'.repeat(500)}`;
 
-        const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
+        const response = await request(app).post('/api/auth/register').set('Origin', 'http://localhost:3000').send({
           email: 'test@example.com',
           username: 'testuser123',
           password: longPassword,
@@ -500,6 +534,9 @@ describe('Security Attack Simulation Tests', () => {
 
         const response = await request(app)
           .put('/api/auth/profile')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`)
           .send({
             bio: longBio,
@@ -513,7 +550,7 @@ describe('Security Attack Simulation Tests', () => {
 
     describe('Special Character Injection', () => {
       it('should handle null bytes in input', async () => {
-        const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
+        const response = await request(app).post('/api/auth/register').set('Origin', 'http://localhost:3000').send({
           email: 'test\x00@example.com',
           username: 'testuser\x00',
           password: 'ValidPass123!',
@@ -528,6 +565,9 @@ describe('Security Attack Simulation Tests', () => {
       it('should handle Unicode control characters', async () => {
         const response = await request(app)
           .put('/api/auth/profile')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${attackerToken}`)
           .send({
             bio: 'Hello\u0000World\u200B\uFEFF',
@@ -549,20 +589,20 @@ describe('Security Attack Simulation Tests', () => {
 
     describe('Missing Authentication Token', () => {
       it('should block access to protected user endpoints without token', async () => {
-        const response = await request(app).get(`/api/user/${attackerUserId}`);
+        const response = await request(app).get(`/api/user/${attackerUserId}`).set('Origin', 'http://localhost:3000');
 
         expect(response.status).toBe(401);
         expect(response.body.success).toBe(false);
       });
 
       it('should block access to protected horse endpoints without token', async () => {
-        const response = await request(app).get('/api/horses/1');
+        const response = await request(app).get('/api/horses/1').set('Origin', 'http://localhost:3000');
 
         expect(response.status).toBe(401);
       });
 
       it('should block access to protected competition endpoints without token', async () => {
-        const response = await request(app).post('/api/competition/enter').send({
+        const response = await request(app).post('/api/competition/enter').set('Origin', 'http://localhost:3000').send({
           horseId: 1,
           showId: 1,
         });
@@ -575,6 +615,7 @@ describe('Security Attack Simulation Tests', () => {
       it('should reject malformed JWT tokens', async () => {
         const response = await request(app)
           .get(`/api/user/${attackerUserId}`)
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', 'Bearer invalid.jwt.token');
 
         expect(response.status).toBe(401);
@@ -582,13 +623,19 @@ describe('Security Attack Simulation Tests', () => {
       });
 
       it('should reject empty Bearer token', async () => {
-        const response = await request(app).get(`/api/user/${attackerUserId}`).set('Authorization', 'Bearer ');
+        const response = await request(app)
+          .get(`/api/user/${attackerUserId}`)
+          .set('Origin', 'http://localhost:3000')
+          .set('Authorization', 'Bearer ');
 
         expect(response.status).toBe(401);
       });
 
       it('should reject token without Bearer prefix', async () => {
-        const response = await request(app).get(`/api/user/${attackerUserId}`).set('Authorization', attackerToken);
+        const response = await request(app)
+          .get(`/api/user/${attackerUserId}`)
+          .set('Origin', 'http://localhost:3000')
+          .set('Authorization', attackerToken);
 
         expect(response.status).toBe(401);
       });
@@ -601,6 +648,7 @@ describe('Security Attack Simulation Tests', () => {
 
         const response = await request(app)
           .get(`/api/user/${attackerUserId}`)
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${manipulatedToken}`);
 
         expect(response.status).toBe(401);
@@ -615,6 +663,7 @@ describe('Security Attack Simulation Tests', () => {
 
           const response = await request(app)
             .get(`/api/user/${attackerUserId}`)
+            .set('Origin', 'http://localhost:3000')
             .set('Authorization', `Bearer ${tamperedToken}`);
 
           expect(response.status).toBe(401);
@@ -634,6 +683,7 @@ describe('Security Attack Simulation Tests', () => {
         for (const token of predictableTokens) {
           const response = await request(app)
             .get(`/api/user/${attackerUserId}`)
+            .set('Origin', 'http://localhost:3000')
             .set('Authorization', `Bearer ${token}`);
 
           expect(response.status).toBe(401);
@@ -653,6 +703,7 @@ describe('Security Attack Simulation Tests', () => {
     it('should not leak database errors in responses', async () => {
       const response = await request(app)
         .get('/api/user/invalid-uuid-format')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${attackerToken}`);
 
       // Should get generic error, not database-specific error
@@ -663,7 +714,7 @@ describe('Security Attack Simulation Tests', () => {
     });
 
     it('should not leak stack traces in production', async () => {
-      const response = await request(app).post('/api/auth/register').send({
+      const response = await request(app).post('/api/auth/register').set('Origin', 'http://localhost:3000').send({
         // Intentionally malformed data to trigger error
         email: null,
         username: null,
@@ -675,12 +726,12 @@ describe('Security Attack Simulation Tests', () => {
     });
 
     it('should not reveal whether username exists during login', async () => {
-      const response1 = await request(app).post('/api/auth/login').send({
+      const response1 = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
         email: 'nonexistent@example.com',
         password: 'WrongPassword123!',
       });
 
-      const response2 = await request(app).post('/api/auth/login').send({
+      const response2 = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
         email: 'victim@example.com',
         password: 'WrongPassword123!',
       });

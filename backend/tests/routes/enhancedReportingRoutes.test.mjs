@@ -19,7 +19,13 @@ import jwt from 'jsonwebtoken';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('Enhanced Reporting API Routes', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let testHorses = [];
   let testGrooms = [];
@@ -176,6 +182,7 @@ describe('Enhanced Reporting API Routes', () => {
     test('GET /api/horses/:id/enhanced-trait-history should return comprehensive trait history', async () => {
       const response = await request(app)
         .get(`/api/horses/${testHorses[1].id}/enhanced-trait-history`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -194,6 +201,7 @@ describe('Enhanced Reporting API Routes', () => {
     test('GET /api/horses/:id/epigenetic-insights should return advanced epigenetic analysis', async () => {
       const response = await request(app)
         .get(`/api/horses/${testHorses[2].id}/epigenetic-insights`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -211,6 +219,7 @@ describe('Enhanced Reporting API Routes', () => {
     test('GET /api/horses/:id/trait-timeline should return detailed trait development timeline', async () => {
       const response = await request(app)
         .get(`/api/horses/${testHorses[1].id}/trait-timeline`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -230,6 +239,7 @@ describe('Enhanced Reporting API Routes', () => {
     test('GET /api/users/:id/stable-epigenetic-report should return stable-wide epigenetic analysis', async () => {
       const response = await request(app)
         .get(`/api/users/${testUser.id}/stable-epigenetic-report`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -248,7 +258,9 @@ describe('Enhanced Reporting API Routes', () => {
       const response = await request(app)
         .post('/api/horses/compare-epigenetics')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           horseIds: [testHorses[0].id, testHorses[1].id, testHorses[2].id],
         })
@@ -267,6 +279,7 @@ describe('Enhanced Reporting API Routes', () => {
     test('GET /api/horses/trait-trends should return trait development trends', async () => {
       const response = await request(app)
         .get('/api/horses/trait-trends')
+        .set('Origin', 'http://localhost:3000')
         .query({ userId: testUser.id, timeframe: 30 })
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -285,6 +298,7 @@ describe('Enhanced Reporting API Routes', () => {
     test('GET /api/horses/:id/enhanced-trait-history with filters should return filtered results', async () => {
       const response = await request(app)
         .get(`/api/horses/${testHorses[1].id}/enhanced-trait-history`)
+        .set('Origin', 'http://localhost:3000')
         .query({
           traitType: 'positive',
           discoveryMethod: 'milestone_evaluation',
@@ -304,6 +318,7 @@ describe('Enhanced Reporting API Routes', () => {
     test('GET /api/horses/:id/epigenetic-report-export should return exportable report data', async () => {
       const response = await request(app)
         .get(`/api/horses/${testHorses[2].id}/epigenetic-report-export`)
+        .set('Origin', 'http://localhost:3000')
         .query({ format: 'detailed' })
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -321,7 +336,8 @@ describe('Enhanced Reporting API Routes', () => {
     test('should require authentication for enhanced reporting endpoints', async () => {
       await request(app)
         .get(`/api/horses/${testHorses[0].id}/enhanced-trait-history`)
-        .set('x-test-require-auth', 'true')
+        .set('Origin', 'http://localhost:3000')
+
         .expect(401);
     });
 
@@ -351,6 +367,7 @@ describe('Enhanced Reporting API Routes', () => {
 
       await request(app)
         .get(`/api/horses/${otherHorse.id}/enhanced-trait-history`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
 
@@ -363,7 +380,9 @@ describe('Enhanced Reporting API Routes', () => {
       await request(app)
         .post('/api/horses/compare-epigenetics')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           horseIds: [], // Empty array should be invalid
         })
@@ -373,6 +392,7 @@ describe('Enhanced Reporting API Routes', () => {
     test('should handle non-existent horse IDs in reporting', async () => {
       await request(app)
         .get('/api/horses/99999/enhanced-trait-history')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
     });

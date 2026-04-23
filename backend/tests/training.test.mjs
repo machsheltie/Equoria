@@ -42,6 +42,7 @@ import request from 'supertest';
 import dotenv from 'dotenv';
 import { generateTestToken } from './helpers/authHelper.mjs';
 
+import { fetchCsrf } from './helpers/csrfHelper.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 let authToken;
@@ -52,10 +53,24 @@ dotenv.config({ path: join(__dirname, '../.env.test') });
 // Import without mocking for real integration testing
 const app = (await import('../app.mjs')).default;
 const { default: prisma } = await import(join(__dirname, '../db/index.mjs'));
+
+// Shared CSRF fixture — declared at module scope so `trainingRequest` can
+// reference it. Populated in the outer `beforeAll` inside the main describe.
+let __csrf__;
+
 const trainingRequest = () =>
-  request(app).post('/api/training/train').set('Authorization', `Bearer ${authToken}`).set('x-test-skip-csrf', 'true');
+  request(app)
+    .post('/api/training/train')
+    .set('Authorization', `Bearer ${authToken}`)
+    .set('Origin', 'http://localhost:3000')
+    .set('Cookie', __csrf__.cookieHeader)
+    .set('X-CSRF-Token', __csrf__.csrfToken);
 
 describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validation', () => {
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testPlayer;
   let adultHorse; // 3+ years old, eligible for training
   let youngHorse; // Under 3 years old, not eligible

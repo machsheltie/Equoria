@@ -24,10 +24,16 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import { generateTestToken } from './helpers/authHelper.mjs';
 import bcrypt from 'bcryptjs';
 
+import { fetchCsrf } from './helpers/csrfHelper.mjs';
 // Import the real app — no mocks
 const app = (await import('../app.mjs')).default;
 
 describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let adminUser;
   let adminToken;
   let testFoal;
@@ -87,6 +93,7 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
     it('should get cron job status', async () => {
       const response = await request(app)
         .get('/api/admin/cron/status')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
@@ -100,7 +107,9 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
       const response = await request(app)
         .post('/api/admin/traits/evaluate')
         .set('Authorization', `Bearer ${adminToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -115,6 +124,7 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
       // When the route is fixed to use camelCase, update this test to expect 200.
       const response = await request(app)
         .get('/api/admin/foals/development')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${adminToken}`);
 
       if (response.status === 200) {
@@ -143,6 +153,7 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
     it('should get trait definitions', async () => {
       const response = await request(app)
         .get('/api/admin/traits/definitions')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${adminToken}`)
         .expect(200);
 
@@ -167,7 +178,9 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
       const startResponse = await request(app)
         .post('/api/admin/cron/start')
         .set('Authorization', `Bearer ${adminToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(200);
 
       expect(startResponse.body.success).toBe(true);
@@ -176,7 +189,9 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
       const stopResponse = await request(app)
         .post('/api/admin/cron/stop')
         .set('Authorization', `Bearer ${adminToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(200);
 
       expect(stopResponse.body.success).toBe(true);
@@ -184,12 +199,16 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
     });
 
     it('requires admin authentication — rejects missing token', async () => {
-      await request(app).get('/api/admin/cron/status').expect(401);
+      await request(app).get('/api/admin/cron/status').set('Origin', 'http://localhost:3000').expect(401);
     });
 
     it('requires admin role — rejects non-admin user', async () => {
       const regularToken = generateTestToken({ id: adminUser.id, role: 'user' });
-      await request(app).get('/api/admin/cron/status').set('Authorization', `Bearer ${regularToken}`).expect(403);
+      await request(app)
+        .get('/api/admin/cron/status')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${regularToken}`)
+        .expect(403);
     });
   });
 });

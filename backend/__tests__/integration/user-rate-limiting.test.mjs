@@ -21,18 +21,25 @@
 import request from 'supertest';
 import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 
-// Disable rate limit bypass for security testing
-process.env.TEST_BYPASS_RATE_LIMIT = 'false';
+import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 
 const { default: app } = await import('../../app.mjs');
 
 describe('User Routes Rate Limiting Integration Tests', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   const userId = 'test-user-uuid-123';
   const token = generateTestToken({ id: userId, role: 'user' });
 
   describe('Query Rate Limiting (GET endpoints)', () => {
     it('should apply queryRateLimiter to GET /api/user/:id/progress', async () => {
-      const response = await request(app).get(`/api/user/${userId}/progress`).set('Authorization', `Bearer ${token}`);
+      const response = await request(app)
+        .get(`/api/user/${userId}/progress`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${token}`);
 
       // May be 200 (success) or 404 (user not found), both are valid
       expect([200, 404]).toContain(response.status);
@@ -46,21 +53,30 @@ describe('User Routes Rate Limiting Integration Tests', () => {
     });
 
     it('should apply queryRateLimiter to GET /api/user/:id/activity', async () => {
-      const response = await request(app).get(`/api/user/${userId}/activity`).set('Authorization', `Bearer ${token}`);
+      const response = await request(app)
+        .get(`/api/user/${userId}/activity`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${token}`);
 
       expect([200, 404]).toContain(response.status);
       expect(Number(response.headers['ratelimit-limit'])).toBeGreaterThan(0);
     });
 
     it('should apply queryRateLimiter to GET /api/user/dashboard/:userId', async () => {
-      const response = await request(app).get(`/api/user/dashboard/${userId}`).set('Authorization', `Bearer ${token}`);
+      const response = await request(app)
+        .get(`/api/user/dashboard/${userId}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${token}`);
 
       expect([200, 404]).toContain(response.status);
       expect(Number(response.headers['ratelimit-limit'])).toBeGreaterThan(0);
     });
 
     it('should apply queryRateLimiter to GET /api/user/:id', async () => {
-      const response = await request(app).get(`/api/user/${userId}`).set('Authorization', `Bearer ${token}`);
+      const response = await request(app)
+        .get(`/api/user/${userId}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${token}`);
 
       expect([200, 404]).toContain(response.status);
       expect(Number(response.headers['ratelimit-limit'])).toBeGreaterThan(0);
@@ -71,6 +87,7 @@ describe('User Routes Rate Limiting Integration Tests', () => {
     it('should apply mutationRateLimiter to PUT /api/user/:id', async () => {
       const response = await request(app)
         .put(`/api/user/${userId}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token}`)
         .send({ username: 'newusername' });
 
@@ -85,6 +102,7 @@ describe('User Routes Rate Limiting Integration Tests', () => {
     it('should apply mutationRateLimiter to POST /api/user/:id/add-xp', async () => {
       const response = await request(app)
         .post(`/api/user/${userId}/add-xp`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token}`)
         .send({ amount: 10 });
 
@@ -93,7 +111,10 @@ describe('User Routes Rate Limiting Integration Tests', () => {
     });
 
     it('should apply mutationRateLimiter to DELETE /api/user/:id', async () => {
-      const response = await request(app).delete(`/api/user/${userId}`).set('Authorization', `Bearer ${token}`);
+      const response = await request(app)
+        .delete(`/api/user/${userId}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${token}`);
 
       // May be 200, 403 (forbidden), or 404 (not found)
       expect([200, 403, 404]).toContain(response.status);
@@ -106,11 +127,13 @@ describe('User Routes Rate Limiting Integration Tests', () => {
       // Query operations allow 100 requests per 15 minutes (or global 1000)
       const queryResponse = await request(app)
         .get(`/api/user/${userId}/progress`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token}`);
 
       // Mutation operations allow 30 requests per minute (or global 1000)
       const mutationResponse = await request(app)
         .put(`/api/user/${userId}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token}`)
         .send({ username: 'testuser' });
 
@@ -125,6 +148,7 @@ describe('User Routes Rate Limiting Integration Tests', () => {
       const otherUserId = 'other-user-uuid-456';
       const response = await request(app)
         .get(`/api/user/${otherUserId}/progress`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token}`);
 
       // Should get 403 Forbidden for ownership violation
@@ -133,7 +157,7 @@ describe('User Routes Rate Limiting Integration Tests', () => {
     });
 
     it('should require authentication for all user endpoints', async () => {
-      const response = await request(app).get(`/api/user/${userId}/progress`);
+      const response = await request(app).get(`/api/user/${userId}/progress`).set('Origin', 'http://localhost:3000');
 
       // Should get 401 Unauthorized without token
       expect(response.status).toBe(401);
@@ -142,7 +166,10 @@ describe('User Routes Rate Limiting Integration Tests', () => {
 
   describe('Rate Limit Headers', () => {
     it('should include all standard rate limit headers', async () => {
-      const response = await request(app).get(`/api/user/${userId}/progress`).set('Authorization', `Bearer ${token}`);
+      const response = await request(app)
+        .get(`/api/user/${userId}/progress`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${token}`);
 
       // Verify all rate limit headers are present
       expect(response.headers['ratelimit-limit']).toBeDefined();
@@ -156,9 +183,15 @@ describe('User Routes Rate Limiting Integration Tests', () => {
     });
 
     it('should decrement remaining count with each request', async () => {
-      const response1 = await request(app).get(`/api/user/${userId}/activity`).set('Authorization', `Bearer ${token}`);
+      const response1 = await request(app)
+        .get(`/api/user/${userId}/activity`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${token}`);
 
-      const response2 = await request(app).get(`/api/user/${userId}/activity`).set('Authorization', `Bearer ${token}`);
+      const response2 = await request(app)
+        .get(`/api/user/${userId}/activity`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${token}`);
 
       const remaining1 = Number(response1.headers['ratelimit-remaining']);
       const remaining2 = Number(response2.headers['ratelimit-remaining']);

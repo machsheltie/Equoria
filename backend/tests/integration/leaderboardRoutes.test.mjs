@@ -36,6 +36,7 @@ import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
 import config from '../../config/config.js';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Strategic mocking: Only mock external dependencies
 jest.mock('../../utils/logger.mjs', () => ({
   info: jest.fn(),
@@ -45,6 +46,11 @@ jest.mock('../../utils/logger.mjs', () => ({
 }));
 
 describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testToken;
   let testUser;
   let testUsers;
@@ -52,21 +58,47 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
   let testBreed;
 
   beforeEach(async () => {
-    // Clean up existing test data - more specific cleanup for isolated testing
-    // First clean up competition results that might reference our test data
+    // Clean up competition results that might reference our test data, plus
+    // leaked rows from sibling suites. The `recent-winners` endpoint returns
+    // the 10 most-recent 1st-place results globally, so any stale row from
+    // another suite bleeds into this test's first assertion.
+    //
+    // Two-phase delete: we first resolve the horse IDs by name via a direct
+    // scalar query, then delete competitionResult rows by (horseId in ids)
+    // OR (showName matches a known prefix). Prisma 6's deleteMany supports
+    // nested relation filters, but combining many of them inside a single
+    // OR across two relation tables (horse + show) has produced non-matches
+    // in practice during the full-suite pre-push run. The explicit ID path
+    // is bulletproof.
+    const pollutionHorses = await prisma.horse.findMany({
+      where: {
+        OR: [
+          { name: { startsWith: 'TestLeaderboard' } },
+          { name: { contains: 'API Test' } },
+          { name: 'Competition Integration Champion' },
+          { name: 'TestHorse Nova' },
+          { name: { startsWith: 'StatsActiveHorse' } },
+          { name: { startsWith: 'TestHorse_' } },
+          { name: { startsWith: 'CompetitionAPIHorse' } },
+        ],
+      },
+      select: { id: true },
+    });
+    const pollutionHorseIds = pollutionHorses.map(h => h.id);
+
     await prisma.competitionResult.deleteMany({
       where: {
         OR: [
-          { horse: { name: { startsWith: 'TestLeaderboard' } } },
-          { horse: { name: { contains: 'API Test' } } },
-          { horse: { name: 'Competition Integration Champion' } },
-          { horse: { name: 'TestHorse Nova' } },
+          ...(pollutionHorseIds.length ? [{ horseId: { in: pollutionHorseIds } }] : []),
           { showName: { contains: 'API Test' } },
           { showName: { contains: 'Grand Prix Classic' } },
           { showName: { contains: 'Regional Championship' } },
           { showName: { contains: 'Evening Classic' } },
           { showName: { contains: 'Integration Test Championship' } },
           { showName: { contains: 'Summer Invitational' } },
+          { showName: { startsWith: 'StatsShow_' } },
+          { showName: { startsWith: 'CompetitionAPIShow_' } },
+          { showName: { startsWith: 'TestShow_' } },
         ],
       },
     });
@@ -339,6 +371,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     it('should return top players by level', async () => {
       const response = await request(app)
         .get('/api/leaderboards/players/level')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .query({ limit: 10, offset: 0 })
         .expect(200);
@@ -362,7 +395,8 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     it('should handle unauthorized access', async () => {
       const response = await request(app)
         .get('/api/leaderboards/players/level')
-        .set('x-test-require-auth', 'true')
+        .set('Origin', 'http://localhost:3000')
+
         .expect(401);
 
       expect(response.body.success).toBe(false);
@@ -374,6 +408,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     it('should return top horses by earnings', async () => {
       const response = await request(app)
         .get('/api/leaderboards/horses/earnings')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
 
@@ -400,6 +435,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     it('should return recent competition winners', async () => {
       const response = await request(app)
         .get('/api/leaderboards/recent-winners')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
 
@@ -422,6 +458,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     it('should filter by discipline', async () => {
       const response = await request(app)
         .get('/api/leaderboards/recent-winners')
+        .set('Origin', 'http://localhost:3000')
         .query({ discipline: 'Dressage' })
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
@@ -437,6 +474,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     it('should return comprehensive leaderboard statistics', async () => {
       const response = await request(app)
         .get('/api/leaderboards/stats')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
 

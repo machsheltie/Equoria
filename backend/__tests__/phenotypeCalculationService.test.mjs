@@ -25,6 +25,7 @@ import jwt from 'jsonwebtoken';
 import config from '../config/config.mjs';
 import app from '../app.mjs';
 
+import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 // ---------------------------------------------------------------------------
 // Helpers: minimal genotype builders
 // ---------------------------------------------------------------------------
@@ -61,6 +62,11 @@ function buildGenotype(overrides = {}) {
 // ---------------------------------------------------------------------------
 // Base color determination
 // ---------------------------------------------------------------------------
+
+let __csrf__;
+beforeAll(async () => {
+  __csrf__ = await fetchCsrf(app);
+});
 
 describe('calculatePhenotype — base color', () => {
   it('returns Chestnut for e/e Extension regardless of Agouti', () => {
@@ -578,7 +584,9 @@ describe('POST /api/v1/horses — phenotype integration', () => {
     const response = await request(app)
       .post('/api/v1/horses')
       .set('Authorization', `Bearer ${token}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({
         name: `PhenotypeTest_${timestamp}`,
         breedId: arabianBreedId,

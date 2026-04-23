@@ -23,7 +23,13 @@ import jwt from 'jsonwebtoken';
 import app from '../app.mjs';
 import prisma from '../db/index.mjs';
 
+import { fetchCsrf } from './helpers/csrfHelper.mjs';
 describe('Trait Timeline System', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let testHorse;
   let testBreed;
@@ -397,7 +403,10 @@ describe('Trait Timeline System', () => {
         },
       });
 
-      const response = await request(app).get(`/api/horses/${testHorse.id}/trait-card`).set('Authorization', authToken);
+      const response = await request(app)
+        .get(`/api/horses/${testHorse.id}/trait-card`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', authToken);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -409,8 +418,7 @@ describe('Trait Timeline System', () => {
     it('should require authentication for trait card endpoint', async () => {
       const response = await request(app)
         .get(`/api/horses/${testHorse.id}/trait-card`)
-        .set('x-test-require-auth', 'true');
-
+        .set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
@@ -418,6 +426,7 @@ describe('Trait Timeline System', () => {
     it('should return 404 for non-existent horse', async () => {
       const response = await request(app)
         .get('/api/horses/99999/trait-card')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', authToken)
         .expect(404);
 
@@ -425,7 +434,10 @@ describe('Trait Timeline System', () => {
     });
 
     it('should handle horses with empty trait timeline', async () => {
-      const response = await request(app).get(`/api/horses/${testHorse.id}/trait-card`).set('Authorization', authToken);
+      const response = await request(app)
+        .get(`/api/horses/${testHorse.id}/trait-card`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', authToken);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);

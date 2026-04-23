@@ -20,7 +20,13 @@ import { createTestUser, createTestHorse, cleanupTestData } from '../helpers/tes
 import prisma from '../../../packages/database/prismaClient.mjs';
 import app from '../../app.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('🏇 INTEGRATION: Rider API', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let authToken;
   let testHorse;
@@ -62,7 +68,7 @@ describe('🏇 INTEGRATION: Rider API', () => {
       ];
 
       for (const ep of endpoints) {
-        const res = await request(app)[ep.method](ep.path).set('x-test-require-auth', 'true');
+        const res = await request(app)[ep.method](ep.path).set('Origin', 'http://localhost:3000');
         expect(res.status).toBe(401);
         expect(res.body.success).toBe(false);
       }
@@ -73,7 +79,10 @@ describe('🏇 INTEGRATION: Rider API', () => {
 
   describe('GET /api/riders/marketplace', () => {
     it('should return marketplace with riders array', async () => {
-      const res = await request(app).get('/api/riders/marketplace').set('Authorization', `Bearer ${authToken}`);
+      const res = await request(app)
+        .get('/api/riders/marketplace')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -89,8 +98,14 @@ describe('🏇 INTEGRATION: Rider API', () => {
     });
 
     it('should return same marketplace on subsequent calls', async () => {
-      const res1 = await request(app).get('/api/riders/marketplace').set('Authorization', `Bearer ${authToken}`);
-      const res2 = await request(app).get('/api/riders/marketplace').set('Authorization', `Bearer ${authToken}`);
+      const res1 = await request(app)
+        .get('/api/riders/marketplace')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
+      const res2 = await request(app)
+        .get('/api/riders/marketplace')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(res1.status).toBe(200);
       expect(res2.status).toBe(200);
@@ -101,12 +116,17 @@ describe('🏇 INTEGRATION: Rider API', () => {
   describe('POST /api/riders/marketplace/refresh', () => {
     it('should reject premium refresh without force=true', async () => {
       // Ensure marketplace exists first
-      await request(app).get('/api/riders/marketplace').set('Authorization', `Bearer ${authToken}`);
+      await request(app)
+        .get('/api/riders/marketplace')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       const res = await request(app)
         .post('/api/riders/marketplace/refresh')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({});
 
       // Should either succeed (free) or require cost
@@ -119,12 +139,17 @@ describe('🏇 INTEGRATION: Rider API', () => {
 
     it('should allow force refresh and deduct funds', async () => {
       // Ensure a recent marketplace exists so forced refresh costs
-      await request(app).get('/api/riders/marketplace').set('Authorization', `Bearer ${authToken}`);
+      await request(app)
+        .get('/api/riders/marketplace')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       const res = await request(app)
         .post('/api/riders/marketplace/refresh')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ force: true });
 
       expect([200, 400]).toContain(res.status);
@@ -143,7 +168,10 @@ describe('🏇 INTEGRATION: Rider API', () => {
       // Ensure a fresh marketplace with enough funds
       await prisma.user.update({ where: { id: testUser.id }, data: { money: 20000 } });
 
-      const res = await request(app).get('/api/riders/marketplace').set('Authorization', `Bearer ${authToken}`);
+      const res = await request(app)
+        .get('/api/riders/marketplace')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
       [marketplaceRider] = res.body.data.riders;
     });
 
@@ -151,7 +179,9 @@ describe('🏇 INTEGRATION: Rider API', () => {
       const res = await request(app)
         .post('/api/riders/marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({});
 
       expect(res.status).toBe(400);
@@ -162,7 +192,9 @@ describe('🏇 INTEGRATION: Rider API', () => {
       const res = await request(app)
         .post('/api/riders/marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ marketplaceId: 'non-existent-id' });
 
       expect(res.status).toBe(404);
@@ -175,7 +207,9 @@ describe('🏇 INTEGRATION: Rider API', () => {
       const res = await request(app)
         .post('/api/riders/marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ marketplaceId: marketplaceRider.marketplaceId });
 
       expect(res.status).toBe(201);
@@ -195,13 +229,18 @@ describe('🏇 INTEGRATION: Rider API', () => {
       await prisma.user.update({ where: { id: testUser.id }, data: { money: 1 } });
 
       // Get a fresh marketplace
-      const mktRes = await request(app).get('/api/riders/marketplace').set('Authorization', `Bearer ${authToken}`);
+      const mktRes = await request(app)
+        .get('/api/riders/marketplace')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
       const cheapestRider = mktRes.body.data.riders[0];
 
       const res = await request(app)
         .post('/api/riders/marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ marketplaceId: cheapestRider.marketplaceId });
 
       expect(res.status).toBe(400);
@@ -217,7 +256,10 @@ describe('🏇 INTEGRATION: Rider API', () => {
 
   describe('GET /api/riders/user/:userId', () => {
     it('should return hired riders for the authenticated user', async () => {
-      const res = await request(app).get(`/api/riders/user/${testUser.id}`).set('Authorization', `Bearer ${authToken}`);
+      const res = await request(app)
+        .get(`/api/riders/user/${testUser.id}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -234,6 +276,7 @@ describe('🏇 INTEGRATION: Rider API', () => {
     it('should return 404 when userId does not match authenticated user', async () => {
       const res = await request(app)
         .get('/api/riders/user/different-user-id')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.status).toBe(404);
@@ -252,13 +295,18 @@ describe('🏇 INTEGRATION: Rider API', () => {
       await prisma.user.update({ where: { id: testUser.id }, data: { money: 20000 } });
 
       // Get marketplace and hire a rider
-      const mktRes = await request(app).get('/api/riders/marketplace').set('Authorization', `Bearer ${authToken}`);
+      const mktRes = await request(app)
+        .get('/api/riders/marketplace')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       const [riderToHire] = mktRes.body.data.riders;
       const hireRes = await request(app)
         .post('/api/riders/marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ marketplaceId: riderToHire.marketplaceId });
 
       if (hireRes.status === 201) {
@@ -274,7 +322,9 @@ describe('🏇 INTEGRATION: Rider API', () => {
       const res = await request(app)
         .post('/api/riders/assignments')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ riderId: hiredRiderId, horseId: testHorse.id });
 
       expect(res.status).toBe(201);
@@ -294,7 +344,9 @@ describe('🏇 INTEGRATION: Rider API', () => {
       const res = await request(app)
         .post('/api/riders/assignments')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ riderId: hiredRiderId, horseId: testHorse.id });
 
       expect(res.status).toBe(400);
@@ -303,7 +355,10 @@ describe('🏇 INTEGRATION: Rider API', () => {
     });
 
     it('should list active assignments', async () => {
-      const res = await request(app).get('/api/riders/assignments').set('Authorization', `Bearer ${authToken}`);
+      const res = await request(app)
+        .get('/api/riders/assignments')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -318,7 +373,9 @@ describe('🏇 INTEGRATION: Rider API', () => {
       const res = await request(app)
         .delete(`/api/riders/assignments/${assignmentId}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -332,7 +389,9 @@ describe('🏇 INTEGRATION: Rider API', () => {
       const res = await request(app)
         .delete(`/api/riders/${hiredRiderId}/dismiss`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -346,7 +405,9 @@ describe('🏇 INTEGRATION: Rider API', () => {
       const res = await request(app)
         .post('/api/riders/assignments')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ riderId: 'abc', horseId: testHorse.id });
 
       expect(res.status).toBe(400);
@@ -357,7 +418,9 @@ describe('🏇 INTEGRATION: Rider API', () => {
       const res = await request(app)
         .post('/api/riders/assignments')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ riderId: 1, horseId: 'abc' });
 
       expect(res.status).toBe(400);

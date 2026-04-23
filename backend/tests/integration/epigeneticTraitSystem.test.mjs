@@ -15,9 +15,15 @@ import app from '../../app.mjs';
 import { PrismaClient } from '../../../packages/database/node_modules/@prisma/client/index.js';
 import jwt from 'jsonwebtoken';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 const prisma = new PrismaClient();
 
 describe('Epigenetic Trait System Integration Tests', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let testHorse;
   let testGroom;
@@ -143,6 +149,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
     test('GET /api/epigenetic-traits/definitions should return flag and personality definitions', async () => {
       const response = await request(app)
         .get('/api/epigenetic-traits/definitions')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -162,7 +169,9 @@ describe('Epigenetic Trait System Integration Tests', () => {
       const response = await request(app)
         .post(`/api/epigenetic-traits/evaluate-milestone/${testHorse.id}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           milestoneData: {
             ageCategory: 'foal',
@@ -196,7 +205,9 @@ describe('Epigenetic Trait System Integration Tests', () => {
       const response = await request(app)
         .post('/api/epigenetic-traits/log-trait')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(traitData)
         .expect(201);
 
@@ -212,7 +223,9 @@ describe('Epigenetic Trait System Integration Tests', () => {
       const response = await request(app)
         .get(`/api/epigenetic-traits/history/${testHorse.id}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .query({
           limit: 10,
           isEpigenetic: true,
@@ -236,7 +249,9 @@ describe('Epigenetic Trait System Integration Tests', () => {
       const response = await request(app)
         .get(`/api/epigenetic-traits/summary/${testHorse.id}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -263,7 +278,9 @@ describe('Epigenetic Trait System Integration Tests', () => {
       const response = await request(app)
         .get(`/api/epigenetic-traits/breeding-insights/${testHorse.id}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -285,12 +302,14 @@ describe('Epigenetic Trait System Integration Tests', () => {
     test('Should handle authentication errors properly', async () => {
       await request(app)
         .get(`/api/epigenetic-traits/history/${testHorse.id}`)
-        .set('x-test-require-auth', 'true')
+        .set('Origin', 'http://localhost:3000')
+
         .expect(401);
 
       await request(app)
         .post(`/api/epigenetic-traits/evaluate-milestone/${testHorse.id}`)
-        .set('x-test-require-auth', 'true')
+        .set('Origin', 'http://localhost:3000')
+
         .expect(401);
     });
 
@@ -316,6 +335,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
       // Try to access our horse with other user's token
       await request(app)
         .get(`/api/epigenetic-traits/history/${testHorse.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${otherToken}`)
         .expect(404);
 
@@ -328,14 +348,18 @@ describe('Epigenetic Trait System Integration Tests', () => {
       await request(app)
         .get('/api/epigenetic-traits/history/invalid')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(400);
 
       // Invalid trait logging data
       await request(app)
         .post('/api/epigenetic-traits/log-trait')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           horseId: 'invalid',
           traitName: '',
@@ -368,7 +392,9 @@ describe('Epigenetic Trait System Integration Tests', () => {
       const response = await request(app)
         .post(`/api/epigenetic-traits/evaluate-milestone/${testHorse.id}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           milestoneData: { ageCategory: 'foal' },
           includeHistory: true,
@@ -390,7 +416,9 @@ describe('Epigenetic Trait System Integration Tests', () => {
       const response = await request(app)
         .post(`/api/epigenetic-traits/evaluate-milestone/${testHorse.id}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           milestoneData: { ageCategory: 'foal' },
           includeHistory: true,

@@ -4,35 +4,80 @@ import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import { fetchCsrf } from './csrfHelper.mjs';
+
+const DEFAULT_ORIGIN = 'http://localhost:3000';
 
 /**
- * Add authentication headers to a supertest request object
+ * Add JWT auth header + Origin to a supertest request. Synchronous.
+ *
+ * For state-changing requests (POST/PUT/PATCH/DELETE) on authenticated
+ * routes use `withAuthCsrf` instead — it also attaches a real CSRF token.
+ * This helper no longer sets any `x-test-skip-csrf` header.
  */
 export const withAuth = (supertestRequest, userData = {}) => {
   const token = generateTestToken(userData);
-  return supertestRequest.set('Authorization', `Bearer ${token}`).set('x-test-skip-csrf', 'true');
+  return supertestRequest.set('Authorization', `Bearer ${token}`).set('Origin', DEFAULT_ORIGIN);
 };
 
 /**
- * Creates a supertest request with auth headers for a test user.
- * @param {string} method - The HTTP method (e.g., 'get', 'post').
- * @param {string} endpoint - The API endpoint (e.g., '/api/users').
- * @param {object} userData - User data for token generation.
- * @returns {object} A supertest request object with Authorization header set.
+ * Creates an authenticated supertest request. Synchronous.
+ *
+ * For state-changing calls use `withSeededPlayerAuthCsrf` instead.
  */
 export const withSeededPlayerAuth = (method, endpoint, userData = {}) => {
   const token = generateTestToken(userData);
-  // Ensure 'method' is a valid property of supertest(app) (e.g., 'get', 'post')
-  // and 'endpoint' is a string.
-  if (typeof supertest(app)[method] !== 'function') {
+  const agent = supertest(app);
+  if (typeof agent[method] !== 'function') {
     throw new Error(`Invalid HTTP method: ${method}`);
   }
-  const req = supertest(app)[method](endpoint);
-  return req.set('Authorization', `Bearer ${token}`).set('x-test-skip-csrf', 'true');
+  return agent[method](endpoint)
+    .set('Authorization', `Bearer ${token}`)
+    .set('Origin', DEFAULT_ORIGIN);
 };
 
-// USAGE EXAMPLE (INSIDE TEST):
-// const response = await withSeededPlayerAuth('get', '/api/horses/trainable/somePlayerId');
+/**
+ * Async equivalent of `withAuth` that ALSO performs the real CSRF flow.
+ * Fetches a token from GET /auth/csrf-token, attaches the cookie +
+ * X-CSRF-Token header, and returns the supertest chain ready to `.send()`.
+ *
+ * Usage:
+ *   const res = await (await withAuthCsrf(request(app).post('/api/foo')))
+ *     .send({ ... });
+ */
+export async function withAuthCsrf(supertestRequest, userData = {}) {
+  const token = generateTestToken(userData);
+  const csrf = await fetchCsrf(app, { origin: DEFAULT_ORIGIN });
+  return supertestRequest
+    .set('Authorization', `Bearer ${token}`)
+    .set('Origin', DEFAULT_ORIGIN)
+    .set('Cookie', csrf.cookieHeader)
+    .set('X-CSRF-Token', csrf.csrfToken);
+}
+
+/**
+ * Async equivalent of `withSeededPlayerAuth` that ALSO performs the real
+ * CSRF flow. Drop-in replacement for mutation tests:
+ *
+ *   // OLD:
+ *   const res = await withSeededPlayerAuth('post', '/api/foo', u).send({...});
+ *   // NEW:
+ *   const res = await (await withSeededPlayerAuthCsrf('post', '/api/foo', u))
+ *     .send({...});
+ */
+export async function withSeededPlayerAuthCsrf(method, endpoint, userData = {}) {
+  const token = generateTestToken(userData);
+  const agent = supertest(app);
+  if (typeof agent[method] !== 'function') {
+    throw new Error(`Invalid HTTP method: ${method}`);
+  }
+  const csrf = await fetchCsrf(app, { origin: DEFAULT_ORIGIN });
+  return agent[method](endpoint)
+    .set('Authorization', `Bearer ${token}`)
+    .set('Origin', DEFAULT_ORIGIN)
+    .set('Cookie', csrf.cookieHeader)
+    .set('X-CSRF-Token', csrf.csrfToken);
+}
 
 /**
  * Create a test user with authentication token

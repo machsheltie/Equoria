@@ -14,7 +14,13 @@ import request from 'supertest';
 import app from '../../../app.mjs';
 import { createTestUser, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 describe('INTEGRATION: memory-management admin guard (21S-8)', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let regularToken;
   let adminToken;
 
@@ -40,7 +46,7 @@ describe('INTEGRATION: memory-management admin guard (21S-8)', () => {
 
   describe('POST /api/memory/cleanup', () => {
     it('returns 401 when unauthenticated', async () => {
-      const res = await request(app).post('/api/memory/cleanup').send({});
+      const res = await request(app).post('/api/memory/cleanup').set('Origin', 'http://localhost:3000').send({});
       expect(res.status).toBe(401);
     });
 
@@ -48,7 +54,9 @@ describe('INTEGRATION: memory-management admin guard (21S-8)', () => {
       const res = await request(app)
         .post('/api/memory/cleanup')
         .set('Authorization', `Bearer ${regularToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ resourceTypes: ['all'] });
       expect(res.status).toBe(403);
     });
@@ -57,7 +65,9 @@ describe('INTEGRATION: memory-management admin guard (21S-8)', () => {
       const res = await request(app)
         .post('/api/memory/cleanup')
         .set('Authorization', `Bearer ${adminToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ resourceTypes: ['all'] });
       expect(res.status).toBe(200);
     });
@@ -65,7 +75,7 @@ describe('INTEGRATION: memory-management admin guard (21S-8)', () => {
 
   describe('POST /api/memory/gc', () => {
     it('returns 401 when unauthenticated', async () => {
-      const res = await request(app).post('/api/memory/gc').send({});
+      const res = await request(app).post('/api/memory/gc').set('Origin', 'http://localhost:3000').send({});
       expect(res.status).toBe(401);
     });
 
@@ -73,7 +83,9 @@ describe('INTEGRATION: memory-management admin guard (21S-8)', () => {
       const res = await request(app)
         .post('/api/memory/gc')
         .set('Authorization', `Bearer ${regularToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ force: false });
       expect(res.status).toBe(403);
     });
@@ -86,7 +98,9 @@ describe('INTEGRATION: memory-management admin guard (21S-8)', () => {
       const res = await request(app)
         .post('/api/memory/gc')
         .set('Authorization', `Bearer ${adminToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ force: false });
       expect([200, 400]).toContain(res.status);
     });

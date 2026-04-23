@@ -23,6 +23,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import dotenv from 'dotenv';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -53,6 +54,11 @@ const extractCookie = (cookies, name) => {
 };
 
 describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let mare;
   let stallion;
@@ -112,7 +118,9 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
 
       const response = await request(app)
         .post('/api/auth/register')
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(userData)
         .expect(201);
 

@@ -21,10 +21,16 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let authToken;
   let testHorse;
@@ -93,7 +99,9 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
           const timestamp = Date.now();
           const response = await request(app)
             .post('/api/auth/register')
-            .set('x-test-skip-csrf', 'true')
+            .set('Origin', 'http://localhost:3000')
+            .set('Cookie', __csrf__.cookieHeader)
+            .set('X-CSRF-Token', __csrf__.csrfToken)
             .send({
               username: `testdefault${timestamp}`,
               email: `test-${timestamp}@test.com`,
@@ -124,7 +132,9 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
           const timestamp = Date.now();
           const response = await request(app)
             .post('/api/auth/register')
-            .set('x-test-skip-csrf', 'true')
+            .set('Origin', 'http://localhost:3000')
+            .set('Cookie', __csrf__.cookieHeader)
+            .set('X-CSRF-Token', __csrf__.csrfToken)
             .send({
               username: `testweak${timestamp}`,
               email: `test-${timestamp}@test.com`,
@@ -142,7 +152,7 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
 
     describe('HTTP Security Headers', () => {
       it('should include security headers in responses', async () => {
-        const response = await request(app).get('/health');
+        const response = await request(app).get('/health').set('Origin', 'http://localhost:3000');
 
         // Helmet security headers
         expect(response.headers['x-content-type-options']).toBe('nosniff');
@@ -152,7 +162,7 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
       });
 
       it('should not expose server version information', async () => {
-        const response = await request(app).get('/health');
+        const response = await request(app).get('/health').set('Origin', 'http://localhost:3000');
 
         // Should not expose server software version
         // Helmet removes x-powered-by header by default
@@ -171,6 +181,7 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
       it('should not leak sensitive information in error messages', async () => {
         const response = await request(app)
           .get('/api/users/00000000-0000-0000-0000-000000000000/progress')
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${authToken}`);
 
         // Should return generic error, not database details
@@ -184,7 +195,9 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
         const response = await request(app)
           .post('/api/horses/99999/train')
           .set('Authorization', `Bearer ${authToken}`)
-          .set('x-test-skip-csrf', 'true')
+          .set('Origin', 'http://localhost:3000')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           .send({ discipline: 'invalid' });
 
         expect(response.body.stack).toBeUndefined();
@@ -219,10 +232,15 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
         // This test verifies rate limiting middleware is properly configured by checking:
         // 1. Rate limit headers are present in responses
         // 2. The rate limiting mechanism is functioning
-        const response = await request(app).post('/api/auth/login').set('x-test-skip-csrf', 'true').send({
-          email: 'nonexistent@test.com',
-          password: 'wrong',
-        });
+        const response = await request(app)
+          .post('/api/auth/login')
+          .set('Origin', 'http://localhost:3000')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
+          .send({
+            email: 'nonexistent@test.com',
+            password: 'wrong',
+          });
 
         // Verify rate limit headers are present (RFC 6585 compliant)
         // These headers indicate rate limiting is active
@@ -262,7 +280,9 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
         const response = await request(app)
           .put(`/api/horses/${testHorse.id}`)
           .set('Authorization', `Bearer ${authToken}`)
-          .set('x-test-skip-csrf', 'true')
+          .set('Origin', 'http://localhost:3000')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           .send({
             // Attempting to directly set protected stats
             precision: 100,
@@ -284,7 +304,9 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
         await request(app)
           .post('/api/training/train')
           .set('Authorization', `Bearer ${authToken}`)
-          .set('x-test-skip-csrf', 'true')
+          .set('Origin', 'http://localhost:3000')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           .send({
             horseId: testHorse.id,
             discipline: 'Dressage',
@@ -319,7 +341,10 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
           }),
         ).toString('base64')}.`;
 
-        const response = await request(app).get('/api/users/me').set('Authorization', `Bearer ${unsignedToken}`);
+        const response = await request(app)
+          .get('/api/users/me')
+          .set('Origin', 'http://localhost:3000')
+          .set('Authorization', `Bearer ${unsignedToken}`);
 
         expect(response.status).toBe(401);
       });
@@ -336,7 +361,10 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
 
         const tamperedToken = `${header}.${tamperedPayload}.${signature}`;
 
-        const response = await request(app).get('/api/admin/users').set('Authorization', `Bearer ${tamperedToken}`);
+        const response = await request(app)
+          .get('/api/admin/users')
+          .set('Origin', 'http://localhost:3000')
+          .set('Authorization', `Bearer ${tamperedToken}`);
 
         expect(response.status).toBe(401);
       });
@@ -346,7 +374,9 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
       it('should reject malformed JSON payloads', async () => {
         const response = await request(app)
           .post('/api/auth/login')
-          .set('x-test-skip-csrf', 'true')
+          .set('Origin', 'http://localhost:3000')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           .set('Content-Type', 'application/json')
           .send('{"email":"test@test.com","password":"test","__proto__":{"isAdmin":true}}');
 
@@ -359,10 +389,15 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
   describe('📊 A09:2021 - Security Logging and Monitoring Failures', () => {
     describe('Authentication Event Logging', () => {
       it('should log successful authentication attempts', async () => {
-        const response = await request(app).post('/api/auth/login').set('x-test-skip-csrf', 'true').send({
-          email: testUser.email,
-          password: 'TestPassword123!',
-        });
+        const response = await request(app)
+          .post('/api/auth/login')
+          .set('Origin', 'http://localhost:3000')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
+          .send({
+            email: testUser.email,
+            password: 'TestPassword123!',
+          });
 
         // Accept 200 (success) or 429 (rate limited from prior test requests)
         // Both indicate the auth system is operational and logging events
@@ -371,10 +406,15 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
       });
 
       it('should log failed authentication attempts', async () => {
-        const response = await request(app).post('/api/auth/login').set('x-test-skip-csrf', 'true').send({
-          email: testUser.email,
-          password: 'WrongPassword',
-        });
+        const response = await request(app)
+          .post('/api/auth/login')
+          .set('Origin', 'http://localhost:3000')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
+          .send({
+            email: testUser.email,
+            password: 'WrongPassword',
+          });
 
         // Accept 401 (auth failure) or 429 (rate limited from prior test requests)
         // Both indicate the auth system is operational and logging events
@@ -414,6 +454,7 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
         // Attempt to access other user's horse
         const response = await request(app)
           .get(`/api/horses/${otherHorse.id}`)
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${authToken}`);
 
         // OWASP Security Best Practice: Return 403 (Forbidden) OR 404 (Not Found)
@@ -432,10 +473,15 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
         // This test verifies the rate limiting logging is configured by checking:
         // 1. Rate limit headers are present (indicating active monitoring)
         // 2. The rate limiting infrastructure is in place for logging
-        const response = await request(app).post('/api/auth/login').set('x-test-skip-csrf', 'true').send({
-          email: 'test@test.com',
-          password: 'test',
-        });
+        const response = await request(app)
+          .post('/api/auth/login')
+          .set('Origin', 'http://localhost:3000')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
+          .send({
+            email: 'test@test.com',
+            password: 'test',
+          });
 
         // Verify rate limit headers exist (RFC 6585 compliant)
         // This confirms rate limiting is active and would log violations
@@ -453,10 +499,15 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
 
     describe('Audit Log Completeness', () => {
       it('should include required audit fields', async () => {
-        await request(app).post('/api/auth/login').set('x-test-skip-csrf', 'true').send({
-          email: testUser.email,
-          password: 'TestPassword123!',
-        });
+        await request(app)
+          .post('/api/auth/login')
+          .set('Origin', 'http://localhost:3000')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
+          .send({
+            email: testUser.email,
+            password: 'TestPassword123!',
+          });
 
         // Audit logs should include:
         // - Timestamp
@@ -541,7 +592,9 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
         // Attempt to bypass authentication, authorization, and input validation simultaneously
         const response = await request(app)
           .post('/api/training/train')
-          .set('x-test-skip-csrf', 'true')
+          .set('Origin', 'http://localhost:3000')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           // No auth token
           .send({
             horseId: 99999, // Non-existent horse
@@ -560,7 +613,7 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
         const endpoints = ['/health', '/api/auth/login', '/api/horses'];
 
         for (const endpoint of endpoints) {
-          const response = await request(app).get(endpoint);
+          const response = await request(app).get(endpoint).set('Origin', 'http://localhost:3000');
 
           // All endpoints should have security headers
           expect(response.headers['x-content-type-options']).toBe('nosniff');

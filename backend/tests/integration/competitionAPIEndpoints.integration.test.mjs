@@ -13,7 +13,13 @@ import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { createTestUser, createTestHorse, createTestShow, cleanupTestData } from '../helpers/testAuth.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('🚀 INTEGRATION: Competition API Endpoints', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let testHorse;
   let testShow;
@@ -75,6 +81,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
     test('should return all available disciplines', async () => {
       const response = await request(app)
         .get('/api/competition/disciplines')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -93,6 +100,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
     test('should check horse eligibility for Racing discipline', async () => {
       const response = await request(app)
         .get(`/api/competition/eligibility/${testHorse.id}/Racing`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -111,6 +119,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
     test('should check horse eligibility for Gaited discipline', async () => {
       const response = await request(app)
         .get(`/api/competition/eligibility/${testHorse.id}/Gaited`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -123,6 +132,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
     test('should reject invalid discipline', async () => {
       const response = await request(app)
         .get(`/api/competition/eligibility/${testHorse.id}/InvalidDiscipline`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
 
@@ -134,7 +144,8 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
     test('should reject unauthorized access', async () => {
       await request(app)
         .get(`/api/competition/eligibility/${testHorse.id}/Racing`)
-        .set('x-test-require-auth', 'true')
+        .set('Origin', 'http://localhost:3000')
+
         .expect(401);
     });
 
@@ -151,6 +162,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
 
       const response = await request(app)
         .get(`/api/competition/eligibility/${otherHorse.id}/Racing`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
 
@@ -164,7 +176,9 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
       const response = await request(app)
         .post('/api/competition/enter')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           horseId: testHorse.id,
           showId: testShow.id,
@@ -194,7 +208,9 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
       const response = await request(app)
         .post('/api/competition/enter')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           horseId: testHorse.id,
           showId: testShow.id,
@@ -209,7 +225,9 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
       const response = await request(app)
         .post('/api/competition/enter')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           horseId: 'invalid',
           showId: testShow.id,
@@ -224,11 +242,12 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
     test('should reject unauthorized access', async () => {
       await request(app)
         .post('/api/competition/enter')
+        .set('Origin', 'http://localhost:3000')
         .send({
           horseId: testHorse.id,
           showId: testShow.id,
         })
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
     });
   });
@@ -238,7 +257,9 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
       const response = await request(app)
         .post('/api/competition/execute')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           showId: testShow.id,
         })
@@ -282,7 +303,9 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
       const response = await request(app)
         .post('/api/competition/execute')
         .set('Authorization', `Bearer ${otherUserResult.token}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           showId: testShow.id,
         })
@@ -296,7 +319,9 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
       const response = await request(app)
         .post('/api/competition/execute')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           showId: 99999,
         })
@@ -311,6 +336,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
     test('should get competition leaderboard by wins', async () => {
       const response = await request(app)
         .get('/api/leaderboards/competition?metric=wins&limit=10')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -339,6 +365,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
     test('should get competition leaderboard by earnings', async () => {
       const response = await request(app)
         .get('/api/leaderboards/competition?metric=earnings&discipline=Racing')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -350,6 +377,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
     test('should reject invalid metric', async () => {
       const response = await request(app)
         .get('/api/leaderboards/competition?metric=invalid')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
 
@@ -358,7 +386,11 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
     });
 
     test('should reject unauthorized access', async () => {
-      await request(app).get('/api/leaderboards/competition').set('x-test-require-auth', 'true').expect(401);
+      await request(app)
+        .get('/api/leaderboards/competition')
+        .set('Origin', 'http://localhost:3000')
+
+        .expect(401);
     });
   });
 });

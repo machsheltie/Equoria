@@ -20,7 +20,13 @@ import { createTestUser, createTestHorse, cleanupTestData } from '../helpers/tes
 import prisma from '../../../packages/database/prismaClient.mjs';
 import app from '../../app.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('🎓 INTEGRATION: Trainer API', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let authToken;
   let testHorse;
@@ -62,7 +68,7 @@ describe('🎓 INTEGRATION: Trainer API', () => {
       ];
 
       for (const ep of endpoints) {
-        const res = await request(app)[ep.method](ep.path).set('x-test-require-auth', 'true');
+        const res = await request(app)[ep.method](ep.path).set('Origin', 'http://localhost:3000');
         expect(res.status).toBe(401);
         expect(res.body.success).toBe(false);
       }
@@ -73,7 +79,10 @@ describe('🎓 INTEGRATION: Trainer API', () => {
 
   describe('GET /api/trainers/marketplace', () => {
     it('should return marketplace with trainers array', async () => {
-      const res = await request(app).get('/api/trainers/marketplace').set('Authorization', `Bearer ${authToken}`);
+      const res = await request(app)
+        .get('/api/trainers/marketplace')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -90,8 +99,14 @@ describe('🎓 INTEGRATION: Trainer API', () => {
     });
 
     it('should return same marketplace on subsequent calls', async () => {
-      const res1 = await request(app).get('/api/trainers/marketplace').set('Authorization', `Bearer ${authToken}`);
-      const res2 = await request(app).get('/api/trainers/marketplace').set('Authorization', `Bearer ${authToken}`);
+      const res1 = await request(app)
+        .get('/api/trainers/marketplace')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
+      const res2 = await request(app)
+        .get('/api/trainers/marketplace')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(res1.status).toBe(200);
       expect(res2.status).toBe(200);
@@ -99,7 +114,10 @@ describe('🎓 INTEGRATION: Trainer API', () => {
     });
 
     it('should include refresh metadata', async () => {
-      const res = await request(app).get('/api/trainers/marketplace').set('Authorization', `Bearer ${authToken}`);
+      const res = await request(app)
+        .get('/api/trainers/marketplace')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.body.data).toHaveProperty('lastRefresh');
       expect(res.body.data).toHaveProperty('nextFreeRefresh');
@@ -111,12 +129,17 @@ describe('🎓 INTEGRATION: Trainer API', () => {
 
   describe('POST /api/trainers/marketplace/refresh', () => {
     it('should reject premium refresh without force=true when cost applies', async () => {
-      await request(app).get('/api/trainers/marketplace').set('Authorization', `Bearer ${authToken}`);
+      await request(app)
+        .get('/api/trainers/marketplace')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       const res = await request(app)
         .post('/api/trainers/marketplace/refresh')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({});
 
       expect([200, 400]).toContain(res.status);
@@ -126,12 +149,17 @@ describe('🎓 INTEGRATION: Trainer API', () => {
     });
 
     it('should allow force refresh', async () => {
-      await request(app).get('/api/trainers/marketplace').set('Authorization', `Bearer ${authToken}`);
+      await request(app)
+        .get('/api/trainers/marketplace')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       const res = await request(app)
         .post('/api/trainers/marketplace/refresh')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ force: true });
 
       expect([200, 400]).toContain(res.status);
@@ -148,7 +176,10 @@ describe('🎓 INTEGRATION: Trainer API', () => {
     beforeAll(async () => {
       await prisma.user.update({ where: { id: testUser.id }, data: { money: 20000 } });
 
-      const res = await request(app).get('/api/trainers/marketplace').set('Authorization', `Bearer ${authToken}`);
+      const res = await request(app)
+        .get('/api/trainers/marketplace')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
       [marketplaceTrainer] = res.body.data.trainers;
     });
 
@@ -156,7 +187,9 @@ describe('🎓 INTEGRATION: Trainer API', () => {
       const res = await request(app)
         .post('/api/trainers/marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({});
 
       expect(res.status).toBe(400);
@@ -167,7 +200,9 @@ describe('🎓 INTEGRATION: Trainer API', () => {
       const res = await request(app)
         .post('/api/trainers/marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ marketplaceId: 'non-existent-id' });
 
       expect(res.status).toBe(404);
@@ -180,7 +215,9 @@ describe('🎓 INTEGRATION: Trainer API', () => {
       const res = await request(app)
         .post('/api/trainers/marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ marketplaceId: marketplaceTrainer.marketplaceId });
 
       expect(res.status).toBe(201);
@@ -198,13 +235,18 @@ describe('🎓 INTEGRATION: Trainer API', () => {
     it('should reject hiring with insufficient funds', async () => {
       await prisma.user.update({ where: { id: testUser.id }, data: { money: 1 } });
 
-      const mktRes = await request(app).get('/api/trainers/marketplace').set('Authorization', `Bearer ${authToken}`);
+      const mktRes = await request(app)
+        .get('/api/trainers/marketplace')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
       const [trainerToHire] = mktRes.body.data.trainers;
 
       const res = await request(app)
         .post('/api/trainers/marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ marketplaceId: trainerToHire.marketplaceId });
 
       expect(res.status).toBe(400);
@@ -221,6 +263,7 @@ describe('🎓 INTEGRATION: Trainer API', () => {
     it('should return hired trainers for the authenticated user', async () => {
       const res = await request(app)
         .get(`/api/trainers/user/${testUser.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.status).toBe(200);
@@ -238,6 +281,7 @@ describe('🎓 INTEGRATION: Trainer API', () => {
     it('should return 404 when userId does not match authenticated user', async () => {
       const res = await request(app)
         .get('/api/trainers/user/different-user-id')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.status).toBe(404);
@@ -254,13 +298,18 @@ describe('🎓 INTEGRATION: Trainer API', () => {
     beforeAll(async () => {
       await prisma.user.update({ where: { id: testUser.id }, data: { money: 20000 } });
 
-      const mktRes = await request(app).get('/api/trainers/marketplace').set('Authorization', `Bearer ${authToken}`);
+      const mktRes = await request(app)
+        .get('/api/trainers/marketplace')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       const [trainerToHire] = mktRes.body.data.trainers;
       const hireRes = await request(app)
         .post('/api/trainers/marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ marketplaceId: trainerToHire.marketplaceId });
 
       if (hireRes.status === 201) {
@@ -276,7 +325,9 @@ describe('🎓 INTEGRATION: Trainer API', () => {
       const res = await request(app)
         .post('/api/trainers/assignments')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ trainerId: hiredTrainerId, horseId: testHorse.id });
 
       expect(res.status).toBe(201);
@@ -296,7 +347,9 @@ describe('🎓 INTEGRATION: Trainer API', () => {
       const res = await request(app)
         .post('/api/trainers/assignments')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ trainerId: hiredTrainerId, horseId: testHorse.id });
 
       expect(res.status).toBe(400);
@@ -305,7 +358,10 @@ describe('🎓 INTEGRATION: Trainer API', () => {
     });
 
     it('should list active assignments', async () => {
-      const res = await request(app).get('/api/trainers/assignments').set('Authorization', `Bearer ${authToken}`);
+      const res = await request(app)
+        .get('/api/trainers/assignments')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -320,7 +376,9 @@ describe('🎓 INTEGRATION: Trainer API', () => {
       const res = await request(app)
         .delete(`/api/trainers/assignments/${assignmentId}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -334,7 +392,9 @@ describe('🎓 INTEGRATION: Trainer API', () => {
       const res = await request(app)
         .delete(`/api/trainers/${hiredTrainerId}/dismiss`)
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true');
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -348,7 +408,9 @@ describe('🎓 INTEGRATION: Trainer API', () => {
       const res = await request(app)
         .post('/api/trainers/assignments')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ trainerId: 'abc', horseId: testHorse.id });
 
       expect(res.status).toBe(400);
@@ -359,7 +421,9 @@ describe('🎓 INTEGRATION: Trainer API', () => {
       const res = await request(app)
         .post('/api/trainers/assignments')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ trainerId: 1, horseId: 'abc' });
 
       expect(res.status).toBe(400);

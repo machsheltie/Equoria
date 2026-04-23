@@ -21,6 +21,19 @@ if (process.env.NODE_ENV === 'test') {
 // typically does not pre-set these.
 dotenv.config({ path: join(__dirname, '..', '.env.test') });
 
+// Rate limit cap for test runs. The bypass header was removed in WS4; we
+// now control test traffic via the TEST_RATE_LIMIT_* env knobs that
+// createRateLimiter reads when `useEnvOverride: true` (the default). A
+// high default keeps feature suites green without forcing each file to
+// set its own cap. Files that need a specific cap (e.g.
+// rate-limiting.test.mjs) override this before importing app.mjs.
+if (!process.env.TEST_RATE_LIMIT_MAX_REQUESTS) {
+  process.env.TEST_RATE_LIMIT_MAX_REQUESTS = '1000';
+}
+if (!process.env.TEST_RATE_LIMIT_WINDOW_MS) {
+  process.env.TEST_RATE_LIMIT_WINDOW_MS = `${15 * 60 * 1000}`;
+}
+
 // Normalize mime API across versions for test-only dependencies.
 try {
   const mimeModule = await import('mime');

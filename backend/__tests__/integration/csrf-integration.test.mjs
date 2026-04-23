@@ -1,17 +1,24 @@
 /**
- * 🧪 CSRF PROTECTION INTEGRATION TESTS
+ * CSRF protection — real-flow integration tests.
  *
- * End-to-end integration tests for CSRF token protection
- * Tests complete request flow including token generation, validation, and error handling
+ * These tests exercise the live CSRF enforcement path end-to-end against
+ * the real Express app. They must NOT set `x-test-skip-csrf`, must NOT set
+ * `x-test-bypass-*`, and must NOT import or stub any middleware. Every
+ * assertion that a mutation succeeds or fails is a statement about the
+ * production contract:
  *
- * Test Coverage:
- * - Token acquisition from /auth/csrf-token
- * - Valid CSRF token → Success (200)
- * - Missing CSRF token → 403 Forbidden
- * - Invalid CSRF token → 403 Forbidden
- * - GET requests without CSRF token → Success (no CSRF required)
- * - Cross-origin request protection
- * - Token refresh scenarios
+ *   1. GET /auth/csrf-token issues a token (body) and a matching cookie.
+ *   2. A PUT/POST/PATCH/DELETE on an authenticated route succeeds only
+ *      when both the cookie and the `X-CSRF-Token` header are presented
+ *      AND the HMAC validates.
+ *   3. Missing cookie, missing header, or mismatched token → 403
+ *      with code INVALID_CSRF_TOKEN.
+ *
+ * The authenticated mutation we drive is `PUT /api/auth/profile`, which
+ * moved to `authRouter` in Workstream 2. If that route ever drifts back
+ * onto `publicRouter`, `authenticated auth mutation > succeeds with real
+ * CSRF` would start passing WITHOUT a CSRF token — a separate test
+ * (authenticated-auth-routes-csrf) is the canary for that regression.
  *
  * @module __tests__/integration/csrf-integration.test
  */
@@ -20,315 +27,195 @@ import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { jest as _jest } from '@jest/globals';
+import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 
 _jest.setTimeout(120000);
 
-describe('CSRF Protection Integration Tests', () => {
-  const rateLimitBypassHeader = { 'X-Test-Bypass-Rate-Limit': 'true' };
+const ORIGIN = 'http://localhost:3000';
+const TEST_EMAIL_PREFIX = 'csrftest';
+
+const extractAccessCookie = setCookieHeader => {
+  const cookies = Array.isArray(setCookieHeader) ? setCookieHeader : setCookieHeader ? [setCookieHeader] : [];
+  const match = cookies.find(c => c.startsWith('accessToken='));
+  return match ? match.split(';')[0] : null;
+};
+
+describe('CSRF protection — real browser flow', () => {
   let testUser;
-  let accessToken;
-  let _csrfToken;
+  let accessCookie;
 
   beforeAll(async () => {
-    // Clean up test database
     await prisma.user.deleteMany({
-      where: {
-        email: {
-          startsWith: 'csrftest',
-        },
-      },
+      where: { email: { startsWith: TEST_EMAIL_PREFIX } },
     });
   });
 
   beforeEach(async () => {
-    // Create test user
-    const response = await request(app)
-      .post('/auth/register')
-      .set(rateLimitBypassHeader)
-      .send({
-        username: `csrftest${Date.now()}`,
-        email: `csrftest${Date.now()}@test.com`,
-        password: 'TestPass123!',
-        firstName: 'CSRF',
-        lastName: 'Test',
-      });
+    const unique = `${Date.now()}${Math.floor(Math.random() * 10000)}`;
+    const email = `${TEST_EMAIL_PREFIX}${unique}@test.com`;
+    const username = `${TEST_EMAIL_PREFIX}${unique}`;
 
-    expect(response.status).toBe(201);
-
-    // Extract accessToken from cookie
-    const cookies = response.headers['set-cookie'] || [];
-    const accessTokenCookie = cookies.find?.(cookie => cookie.startsWith('accessToken='));
-    expect(accessTokenCookie).toBeDefined();
-    accessToken = accessTokenCookie?.split(';')[0];
-
-    testUser = await prisma.user.findUnique({
-      where: { email: response.body.data.user.email },
+    const res = await request(app).post('/auth/register').set('Origin', ORIGIN).send({
+      email,
+      username,
+      password: 'TestPass123!',
+      firstName: 'CSRF',
+      lastName: 'Test',
     });
+
+    expect(res.status).toBe(201);
+    accessCookie = extractAccessCookie(res.headers['set-cookie']);
+    expect(accessCookie).toBeTruthy();
+
+    testUser = await prisma.user.findUnique({ where: { email } });
+    expect(testUser).toBeTruthy();
   });
 
   afterEach(async () => {
-    // Clean up test user
     if (testUser) {
-      await prisma.refreshToken.deleteMany({
-        where: { userId: testUser.id },
-      });
-      await prisma.user.delete({
-        where: { id: testUser.id },
-      });
+      await prisma.refreshToken.deleteMany({ where: { userId: testUser.id } });
+      await prisma.user.delete({ where: { id: testUser.id } }).catch(() => {});
       testUser = null;
     }
   });
 
   afterAll(async () => {
-    // Final cleanup
     await prisma.user.deleteMany({
-      where: {
-        email: {
-          startsWith: 'csrftest',
-        },
-      },
+      where: { email: { startsWith: TEST_EMAIL_PREFIX } },
     });
   });
 
-  describe('CSRF Token Acquisition', () => {
-    test('should get CSRF token from /auth/csrf-token endpoint', async () => {
-      const response = await request(app).get('/auth/csrf-token').set(rateLimitBypassHeader);
+  describe('token acquisition', () => {
+    it('GET /auth/csrf-token returns a token and Set-Cookie', async () => {
+      const res = await request(app).get('/auth/csrf-token').set('Origin', ORIGIN);
 
-      expect(response.status).toBe(200);
-      expect(response.body).toHaveProperty('success', true);
-      expect(response.body).toHaveProperty('csrfToken');
-      expect(typeof response.body.csrfToken).toBe('string');
-      expect(response.body.csrfToken.length).toBeGreaterThan(0);
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(typeof res.body.csrfToken).toBe('string');
+      expect(res.body.csrfToken.length).toBeGreaterThan(16);
 
-      _csrfToken = response.body.csrfToken;
+      const setCookies = res.headers['set-cookie'] || [];
+      // Validator reads the cookie named `_csrf` in non-production and
+      // `__Host-csrf` in production. The generator MUST set whichever
+      // matches — Set-Cookie should include exactly one of those names.
+      const csrfCookieLine = setCookies.find(c => c.startsWith('__Host-csrf=') || c.startsWith('_csrf='));
+      expect(csrfCookieLine).toBeTruthy();
     });
 
-    test('should set CSRF token in cookie', async () => {
-      const response = await request(app).get('/auth/csrf-token').set(rateLimitBypassHeader);
-
-      const cookies = response.headers['set-cookie'] || [];
-      expect(cookies.length).toBeGreaterThan(0);
-
-      const csrfCookie = cookies.find(cookie => cookie.startsWith('_csrf='));
-      expect(csrfCookie).toBeDefined();
-    });
-
-    test('should generate unique tokens for different requests', async () => {
-      const response1 = await request(app).get('/auth/csrf-token').set(rateLimitBypassHeader);
-      const response2 = await request(app).get('/auth/csrf-token').set(rateLimitBypassHeader);
-
-      expect(response1.body.csrfToken).not.toBe(response2.body.csrfToken);
+    it('consecutive token fetches produce distinct tokens', async () => {
+      const a = await request(app).get('/auth/csrf-token').set('Origin', ORIGIN);
+      const b = await request(app).get('/auth/csrf-token').set('Origin', ORIGIN);
+      expect(a.body.csrfToken).not.toBe(b.body.csrfToken);
     });
   });
 
-  describe('CSRF Protection for State-Changing Operations', () => {
-    beforeEach(async () => {
-      // Get CSRF token before each test
-      const tokenResponse = await request(app).get('/auth/csrf-token').set(rateLimitBypassHeader);
-      _csrfToken = tokenResponse.body.csrfToken;
+  describe('authenticated mutation — real flow', () => {
+    it('succeeds with matching cookie + X-CSRF-Token header', async () => {
+      const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: accessCookie });
 
-      const cookies = tokenResponse.headers['set-cookie'] || [];
-      const _csrfCookie = cookies.find(cookie => cookie.startsWith('_csrf='));
+      // authController.updateProfile accepts username/email/notifications/
+      // display (firstName is validated at the route level but not wired
+      // into the update — pre-existing quirk out of scope for this fix).
+      // We exercise `notifications` because it writes real state and proves
+      // the mutation reached the handler.
+      const res = await request(app)
+        .put('/api/auth/profile')
+        .set('Origin', ORIGIN)
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken)
+        .send({ notifications: { email: true } });
 
-      // Store both access token and CSRF cookie for authenticated requests
-      // Note: In real scenarios, the CSRF cookie would be sent automatically by browser
+      expect(res.status).toBe(200);
+      expect(res.body.code).not.toBe('INVALID_CSRF_TOKEN');
+
+      const refreshed = await prisma.user.findUnique({ where: { id: testUser.id } });
+      expect(refreshed.settings?.notifications?.email).toBe(true);
     });
 
-    test('should reject POST request without CSRF token', async () => {
-      // Try to update user profile without CSRF token
-      const response = await request(app).put(`/api/users/${testUser.id}`).set('Cookie', accessToken).send({
-        firstName: 'Updated',
-        lastName: 'Name',
-      });
+    it('fails with 403 INVALID_CSRF_TOKEN when the header is missing', async () => {
+      const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: accessCookie });
 
-      expect(response.status).toBe(403);
-      expect(response.body).toHaveProperty('success', false);
-      expect(response.body).toHaveProperty('code', 'INVALID_CSRF_TOKEN');
-      expect(response.body.message).toContain('Invalid CSRF token');
+      const res = await request(app)
+        .put('/api/auth/profile')
+        .set('Origin', ORIGIN)
+        .set('Cookie', csrf.cookieHeader)
+        // NOTE: no X-CSRF-Token header
+        .send({ firstName: 'ShouldNotApply' });
+
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('INVALID_CSRF_TOKEN');
     });
 
-    test('should reject PUT request without CSRF token', async () => {
-      const response = await request(app)
-        .put(`/api/users/${testUser.id}`)
-        .set('Cookie', accessToken)
-        .send({ firstName: 'Updated' });
+    it('fails with 403 INVALID_CSRF_TOKEN when the csrf cookie is missing', async () => {
+      const csrf = await fetchCsrf(app, { origin: ORIGIN });
 
-      expect(response.status).toBe(403);
-      expect(response.body.code).toBe('INVALID_CSRF_TOKEN');
+      const res = await request(app)
+        .put('/api/auth/profile')
+        .set('Origin', ORIGIN)
+        // Only accessToken cookie, NOT the csrf cookie:
+        .set('Cookie', [accessCookie])
+        .set('X-CSRF-Token', csrf.csrfToken)
+        .send({ firstName: 'ShouldNotApply' });
+
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('INVALID_CSRF_TOKEN');
     });
 
-    test('should reject DELETE request without CSRF token', async () => {
-      // Try to delete something without CSRF token
-      const response = await request(app).delete(`/api/users/${testUser.id}`).set('Cookie', accessToken);
+    it('fails with 403 INVALID_CSRF_TOKEN when header and cookie do not match', async () => {
+      const csrfA = await fetchCsrf(app, { origin: ORIGIN, extraCookies: accessCookie });
+      const csrfB = await fetchCsrf(app, { origin: ORIGIN });
 
-      expect(response.status).toBe(403);
-      expect(response.body.code).toBe('INVALID_CSRF_TOKEN');
-    });
+      // Cookie from fetch A, token from fetch B — HMAC mismatch.
+      const res = await request(app)
+        .put('/api/auth/profile')
+        .set('Origin', ORIGIN)
+        .set('Cookie', csrfA.cookieHeader)
+        .set('X-CSRF-Token', csrfB.csrfToken)
+        .send({ firstName: 'ShouldNotApply' });
 
-    test('should reject PATCH request without CSRF token', async () => {
-      const response = await request(app)
-        .patch(`/api/users/${testUser.id}`)
-        .set('Cookie', accessToken)
-        .send({ firstName: 'Patched' });
-
-      expect(response.status).toBe(403);
-      expect(response.body.code).toBe('INVALID_CSRF_TOKEN');
-    });
-  });
-
-  describe('Safe HTTP Methods (No CSRF Required)', () => {
-    test('should allow GET requests without CSRF token', async () => {
-      const response = await request(app).get(`/api/users/${testUser.id}`).set('Cookie', accessToken);
-
-      // Should succeed (200 or other non-403 status)
-      expect(response.status).not.toBe(403);
-    });
-
-    test('should allow HEAD requests without CSRF token', async () => {
-      const response = await request(app).head('/health').set('Cookie', accessToken);
-
-      expect(response.status).not.toBe(403);
-    });
-
-    test('should allow OPTIONS requests without CSRF token', async () => {
-      const response = await request(app).options('/api/users').set('Cookie', accessToken);
-
-      expect(response.status).not.toBe(403);
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('INVALID_CSRF_TOKEN');
     });
   });
 
-  describe('CSRF Error Messages', () => {
-    test('should provide clear error message for missing token', async () => {
-      const response = await request(app).post('/api/users/me').set('Cookie', accessToken).send({ firstName: 'Test' });
+  describe('safe methods bypass CSRF', () => {
+    it('GET /api/auth/profile returns 200 without a CSRF token', async () => {
+      const res = await request(app).get('/api/auth/profile').set('Origin', ORIGIN).set('Cookie', accessCookie);
 
-      expect(response.body.message).toContain('Invalid CSRF token');
-      expect(response.body.message).toContain('refresh the page');
-    });
-
-    test('should include error code in response', async () => {
-      const response = await request(app)
-        .put(`/api/users/${testUser.id}`)
-        .set('Cookie', accessToken)
-        .send({ firstName: 'Test' });
-
-      expect(response.body).toHaveProperty('code', 'INVALID_CSRF_TOKEN');
-    });
-
-    test('should return 403 status for CSRF failures', async () => {
-      const response = await request(app).delete(`/api/users/${testUser.id}`).set('Cookie', accessToken);
-
-      expect(response.status).toBe(403);
+      expect(res.status).toBe(200);
     });
   });
 
-  describe('CSRF Token Lifecycle', () => {
-    test('should accept newly generated token', async () => {
-      // Get fresh token (with authentication to ensure consistent session identifier)
-      const tokenResponse = await request(app)
-        .get('/auth/csrf-token')
-        .set(rateLimitBypassHeader)
-        .set('Cookie', accessToken);
-      const freshToken = tokenResponse.body.csrfToken;
-      const cookies = tokenResponse.headers['set-cookie'] || [];
-      // Extract just the cookie name=value part (not the entire Set-Cookie header)
-      const csrfCookie = cookies.find(cookie => cookie.startsWith('_csrf='))?.split(';')[0];
-      expect(csrfCookie).toBeDefined();
+  describe('no-origin policy', () => {
+    it('rejects mutations with no Origin header on application routes', async () => {
+      const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: accessCookie });
 
-      // Use token immediately
-      const response = await request(app)
-        .put(`/api/users/${testUser.id}`)
-        .set('Cookie', [accessToken, csrfCookie])
-        .set('X-CSRF-Token', freshToken)
-        .send({ firstName: 'Updated' });
+      const res = await request(app)
+        .put('/api/auth/profile')
+        // NOTE: no Origin header
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken)
+        .send({ firstName: 'NoOrigin' });
 
-      // Should not be blocked by CSRF (might fail for other reasons like permissions)
-      expect(response.status).not.toBe(403);
-      expect(response.body.code).not.toBe('INVALID_CSRF_TOKEN');
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe('NO_ORIGIN_BLOCKED');
     });
 
-    test('should generate new token on each request to /auth/csrf-token', async () => {
-      const tokens = [];
-
-      for (let i = 0; i < 3; i++) {
-        const response = await request(app).get('/auth/csrf-token');
-        tokens.push(response.body.csrfToken);
-      }
-
-      // All tokens should be unique
-      const uniqueTokens = new Set(tokens);
-      expect(uniqueTokens.size).toBe(tokens.length);
+    it('allows /health without an Origin header (operational exemption)', async () => {
+      const res = await request(app).get('/health');
+      expect(res.status).toBe(200);
     });
   });
 
-  describe('CORS and CSRF Integration', () => {
-    test('should require X-CSRF-Token header for cross-origin requests', async () => {
-      const response = await request(app)
-        .post('/api/users/me')
-        .set('Cookie', accessToken)
-        .set('Origin', 'http://localhost:3001')
-        .send({ firstName: 'Test' });
-
-      // Should be blocked by CSRF protection
-      expect(response.status).toBe(403);
-    });
-
-    test('should allow CORS preflight without CSRF token', async () => {
-      const response = await request(app)
-        .options('/api/users')
-        .set('Origin', 'http://localhost:3001')
-        .set('Access-Control-Request-Method', 'POST');
-
-      // OPTIONS requests should not require CSRF token
-      expect(response.status).not.toBe(403);
-    });
-  });
-
-  describe('Public Endpoints (No CSRF)', () => {
-    test('should not require CSRF token for login', async () => {
-      const response = await request(app).post('/auth/login').set(rateLimitBypassHeader).send({
+  describe('public endpoints — no CSRF required', () => {
+    it('POST /auth/login does not require CSRF', async () => {
+      const res = await request(app).post('/auth/login').set('Origin', ORIGIN).send({
         email: testUser.email,
         password: 'TestPass123!',
       });
 
-      // Login should work without CSRF token (it's a public endpoint)
-      expect(response.status).not.toBe(403);
-      expect(response.body.code).not.toBe('INVALID_CSRF_TOKEN');
-    });
-
-    test('should not require CSRF token for registration', async () => {
-      const response = await request(app)
-        .post('/auth/register')
-        .set(rateLimitBypassHeader)
-        .send({
-          username: `newuser${Date.now()}`,
-          email: `newuser${Date.now()}@test.com`,
-          password: 'TestPass123!',
-          firstName: 'New',
-          lastName: 'User',
-        });
-
-      expect(response.status).not.toBe(403);
-      expect(response.body.code).not.toBe('INVALID_CSRF_TOKEN');
-
-      // Clean up
-      if (response.status === 201) {
-        const newUser = await prisma.user.findUnique({
-          where: { email: response.body.data.user.email },
-        });
-        if (newUser) {
-          await prisma.refreshToken.deleteMany({ where: { userId: newUser.id } });
-          await prisma.user.delete({ where: { id: newUser.id } });
-        }
-      }
-    });
-
-    test('should not require CSRF token for password reset request', async () => {
-      const response = await request(app).post('/auth/forgot-password').set(rateLimitBypassHeader).send({
-        email: testUser.email,
-      });
-
-      expect(response.status).not.toBe(403);
-      expect(response.body.code).not.toBe('INVALID_CSRF_TOKEN');
+      expect(res.status).not.toBe(403);
+      expect(res.body.code).not.toBe('INVALID_CSRF_TOKEN');
     });
   });
 });

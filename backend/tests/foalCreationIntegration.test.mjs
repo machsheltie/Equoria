@@ -21,10 +21,16 @@ import prisma from '../../packages/database/prismaClient.mjs';
 import { generateTestToken } from './helpers/authHelper.mjs';
 import bcrypt from 'bcryptjs';
 
+import { fetchCsrf } from './helpers/csrfHelper.mjs';
 // Import the real app — no mocks
 const app = (await import('../app.mjs')).default;
 
 describe('INTEGRATION: Foal Creation API — Real Database', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let testBreed;
   let testSire;
@@ -136,7 +142,9 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     const response = await request(app)
       .post('/api/horses/foals')
       .set('Authorization', `Bearer ${authToken}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send(foalData)
       .expect(201);
 
@@ -175,7 +183,9 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     const response = await request(app)
       .post('/api/horses/foals')
       .set('Authorization', `Bearer ${authToken}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send(foalData)
       .expect(201);
 
@@ -204,7 +214,9 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     await request(app)
       .post('/api/horses/foals')
       .set('Authorization', `Bearer ${authToken}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ breedId: testBreed.id, sireId: testSire.id, damId: testDam.id })
       .expect(400);
 
@@ -212,7 +224,9 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     await request(app)
       .post('/api/horses/foals')
       .set('Authorization', `Bearer ${authToken}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ name: 'TestFoal', sireId: testSire.id, damId: testDam.id })
       .expect(400);
 
@@ -220,7 +234,9 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     await request(app)
       .post('/api/horses/foals')
       .set('Authorization', `Bearer ${authToken}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ name: 'TestFoal', breedId: testBreed.id, damId: testDam.id })
       .expect(400);
 
@@ -228,7 +244,9 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     await request(app)
       .post('/api/horses/foals')
       .set('Authorization', `Bearer ${authToken}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({ name: 'TestFoal', breedId: testBreed.id, sireId: testSire.id })
       .expect(400);
   });
@@ -237,7 +255,9 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     const response = await request(app)
       .post('/api/horses/foals')
       .set('Authorization', `Bearer ${authToken}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({
         name: `MissingSireFoal_${ts}`,
         breedId: testBreed.id,
@@ -255,7 +275,9 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     const response = await request(app)
       .post('/api/horses/foals')
       .set('Authorization', `Bearer ${authToken}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({
         name: `MissingDamFoal_${ts}`,
         breedId: testBreed.id,
@@ -282,7 +304,9 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     const response = await request(app)
       .post('/api/horses/foals')
       .set('Authorization', `Bearer ${authToken}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send(validFoalData)
       .expect(201);
 
@@ -298,6 +322,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
   it('should require authentication', async () => {
     await request(app)
       .post('/api/horses/foals')
+      .set('Origin', 'http://localhost:3000')
       .send({
         name: 'UnauthFoal',
         breedId: testBreed.id,

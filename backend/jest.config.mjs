@@ -84,8 +84,11 @@ export default {
   // Force exit after tests complete
   forceExit: true,
 
-  // Detect open handles
-  detectOpenHandles: true,
+  // Detect open handles (opt-in; jest docs: "significant performance penalty,
+  // should only be used for debugging" — it serialises execution and tracks
+  // every handle across all test files, which OOMs the full suite under
+  // --runInBand. Enable via `DETECT_OPEN_HANDLES=true npm test` when needed.)
+  detectOpenHandles: process.env.DETECT_OPEN_HANDLES === 'true',
 
   // Force close after tests
   openHandlesTimeout: 1000,

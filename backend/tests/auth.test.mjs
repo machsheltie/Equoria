@@ -42,6 +42,7 @@ import { createTestUser } from './helpers/authHelper.mjs';
 import prisma from '../db/index.mjs';
 import { resetAllAuthRateLimits } from '../middleware/authRateLimiter.mjs';
 
+import { fetchCsrf } from './helpers/csrfHelper.mjs';
 /**
  * Extract cookie value from Set-Cookie header
  * @param {Array} cookies - Array of cookie strings from response headers
@@ -62,10 +63,15 @@ const extractCookie = (cookies, name) => {
 };
 // SECURITY FIX (Phase 1, Task 1.1): Removed x-test-bypass-rate-limit headers
 // Rate limits use in-memory store (REDIS_DISABLED=true) and are reset in beforeEach
-const authPost = path => request(app).post(path);
-const authGet = path => request(app).get(path);
+const authPost = path => request(app).post(path).set('Origin', 'http://localhost:3000');
+const authGet = path => request(app).get(path).set('Origin', 'http://localhost:3000');
 
 describe('🔐 INTEGRATION: Authentication System - User Registration & Session Management', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   // Store created user IDs for targeted cleanup
   const createdUserIds = new Set();
 
@@ -202,7 +208,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
       loginEmail = userData.email;
       loginPassword = userData.password;
 
-      const response = await authPost('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send(userData);
+      const response = await authPost('/api/auth/register').send(userData);
       trackUser(response);
     });
 
@@ -212,10 +218,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
         password: loginPassword,
       };
 
-      const response = await authPost('/api/auth/login')
-        .set('x-test-bypass-rate-limit', 'true')
-        .send(loginData)
-        .expect(200);
+      const response = await authPost('/api/auth/login').send(loginData).expect(200);
 
       expect(response.body.status).toBe('success');
       expect(response.body.message).toBe('Login successful');
@@ -238,11 +241,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
         password: 'Password123!',
       };
 
-      const response = await authPost('/api/auth/login')
-        .set('x-test-bypass-rate-limit', 'true')
-        .send(loginData)
-        .set('x-test-require-auth', 'true')
-        .expect(401);
+      const response = await authPost('/api/auth/login').send(loginData).expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Invalid credentials');
@@ -254,11 +253,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
         password: 'wrongpassword',
       };
 
-      const response = await authPost('/api/auth/login')
-        .set('x-test-bypass-rate-limit', 'true')
-        .send(loginData)
-        .set('x-test-require-auth', 'true')
-        .expect(401);
+      const response = await authPost('/api/auth/login').send(loginData).expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Invalid credentials');
@@ -270,10 +265,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
         password: 'Password123!',
       };
 
-      const response = await authPost('/api/auth/login')
-        .set('x-test-bypass-rate-limit', 'true')
-        .send(loginData)
-        .expect(400);
+      const response = await authPost('/api/auth/login').send(loginData).expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Valid email is required');
@@ -286,10 +278,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
       // Create user and get refresh token
       const userData = createTestUser();
 
-      const registerResponse = await authPost('/api/auth/register')
-        .set('x-test-bypass-rate-limit', 'true')
-        .send(userData)
-        .expect(201);
+      const registerResponse = await authPost('/api/auth/register').send(userData).expect(201);
       trackUser(registerResponse);
 
       // Extract refresh token from cookies
@@ -298,10 +287,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     });
 
     it('should refresh token successfully with valid refresh token', async () => {
-      const response = await authPost('/api/auth/refresh')
-        .set('x-test-bypass-rate-limit', 'true')
-        .send({ refreshToken: refreshTokenValue })
-        .expect(200);
+      const response = await authPost('/api/auth/refresh').send({ refreshToken: refreshTokenValue }).expect(200);
       expect(response.body.status).toBe('success');
       expect(response.body.message).toBe('Token refreshed successfully');
 
@@ -314,9 +300,8 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
 
     it('should reject refresh with invalid token', async () => {
       const response = await authPost('/api/auth/refresh')
-        .set('x-test-bypass-rate-limit', 'true')
         .send({ refreshToken: 'invalid-token' })
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
 
       expect(response.body.success).toBe(false);
@@ -324,7 +309,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     });
 
     it('should reject refresh without token', async () => {
-      const response = await authPost('/api/auth/refresh').set('x-test-bypass-rate-limit', 'true').send({}).expect(400);
+      const response = await authPost('/api/auth/refresh').send({}).expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Refresh token is required');
@@ -338,10 +323,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
       // Create user and get auth token
       const userData = createTestUser();
 
-      const registerResponse = await authPost('/api/auth/register')
-        .set('x-test-bypass-rate-limit', 'true')
-        .send(userData)
-        .expect(201);
+      const registerResponse = await authPost('/api/auth/register').send(userData).expect(201);
       trackUser(registerResponse);
 
       // Extract access token from cookies
@@ -362,7 +344,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     });
 
     it('should reject profile request without token', async () => {
-      const response = await authGet('/api/auth/me').set('x-test-require-auth', 'true').expect(401);
+      const response = await authGet('/api/auth/me').expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Access token is required');
@@ -383,10 +365,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
       // Create user and get auth token
       const userData = createTestUser();
 
-      const registerResponse = await authPost('/api/auth/register')
-        .set('x-test-bypass-rate-limit', 'true')
-        .send(userData)
-        .expect(201);
+      const registerResponse = await authPost('/api/auth/register').send(userData).expect(201);
       trackUser(registerResponse);
 
       // Extract access token from cookies
@@ -395,14 +374,18 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     });
 
     it('should logout successfully with valid token', async () => {
-      const response = await authPost('/api/auth/logout').set('Authorization', `Bearer ${authToken}`).expect(200);
+      const response = await authPost('/api/auth/logout')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .expect(200);
 
       expect(response.body.status).toBe('success');
       expect(response.body.message).toBe('Logout successful');
     });
 
     it('should reject logout without token', async () => {
-      const response = await authPost('/api/auth/logout').set('x-test-require-auth', 'true').expect(401);
+      const response = await authPost('/api/auth/logout').expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Access token is required');

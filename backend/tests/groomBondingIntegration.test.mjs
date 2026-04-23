@@ -26,7 +26,13 @@ import { generateTestToken } from './helpers/authHelper.mjs';
 // TODO: Will use GROOM_CONFIG in future integration tests
 // import { GROOM_CONFIG } from '../config/groomConfig.mjs';
 
+import { fetchCsrf } from './helpers/csrfHelper.mjs';
 describe('Groom Bonding System Integration', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser, testGroom, testHorse, testAssignment;
   let authToken;
   const createdInteractionIds = new Set();
@@ -160,7 +166,9 @@ describe('Groom Bonding System Integration', () => {
       const response = await request(app)
         .post('/api/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           foalId: testHorse.id,
           groomId: testGroom.id,
@@ -180,7 +188,9 @@ describe('Groom Bonding System Integration', () => {
       const response = await request(app)
         .post('/api/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           foalId: testHorse.id,
           groomId: testGroom.id,
@@ -200,7 +210,9 @@ describe('Groom Bonding System Integration', () => {
       const response = await request(app)
         .post('/api/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           foalId: testHorse.id,
           groomId: testGroom.id,
@@ -241,7 +253,9 @@ describe('Groom Bonding System Integration', () => {
       const response = await request(app)
         .post('/api/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           foalId: youngHorse.id,
           groomId: testGroom.id,
@@ -280,7 +294,9 @@ describe('Groom Bonding System Integration', () => {
       await request(app)
         .post('/api/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           foalId: testHorse.id,
           groomId: testGroom.id,
@@ -315,7 +331,9 @@ describe('Groom Bonding System Integration', () => {
       await request(app)
         .post('/api/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           foalId: testHorse.id,
           groomId: testGroom.id,
@@ -341,7 +359,9 @@ describe('Groom Bonding System Integration', () => {
       const firstResponse = await request(app)
         .post('/api/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           foalId: testHorse.id,
           groomId: testGroom.id,
@@ -356,7 +376,9 @@ describe('Groom Bonding System Integration', () => {
       const secondResponse = await request(app)
         .post('/api/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           foalId: testHorse.id,
           groomId: testGroom.id,

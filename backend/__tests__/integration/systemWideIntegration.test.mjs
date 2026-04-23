@@ -22,9 +22,15 @@ import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
+import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 // logger import removed - not used in this file
 
 describe('System-Wide Integration Tests', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let authToken;
   let testHorse;
@@ -116,7 +122,9 @@ describe('System-Wide Integration Tests', () => {
 
       const registerResponse = await request(app)
         .post('/api/auth/register')
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(registrationData)
         .expect(201);
 
@@ -133,13 +141,19 @@ describe('System-Wide Integration Tests', () => {
       const registeredAuthToken = accessTokenCookie.split(';')[0].split('=')[1];
 
       // Step 2: Test Documentation System Integration
-      const userDocsResponse = await request(app).get('/api/user-docs').expect(200);
+      const userDocsResponse = await request(app)
+        .get('/api/user-docs')
+        .set('Origin', 'http://localhost:3000')
+        .expect(200);
 
       expect(userDocsResponse.body.success).toBe(true);
       expect(userDocsResponse.body.data.documents).toBeDefined();
 
       // Step 3: Test API Documentation
-      const apiDocsResponse = await request(app).get('/api-docs/swagger.json').expect(200);
+      const apiDocsResponse = await request(app)
+        .get('/api-docs/swagger.json')
+        .set('Origin', 'http://localhost:3000')
+        .expect(200);
 
       expect(apiDocsResponse.body.openapi).toBeDefined();
       expect(apiDocsResponse.body.paths).toBeDefined();
@@ -147,6 +161,7 @@ describe('System-Wide Integration Tests', () => {
       // Step 4: Test Memory Management System
       const memoryStatusResponse = await request(app)
         .get('/api/memory/status')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${registeredAuthToken}`)
         .expect(200);
 
@@ -158,6 +173,7 @@ describe('System-Wide Integration Tests', () => {
       // Step 5: Test User Progress System
       const progressResponse = await request(app)
         .get(`/api/users/${registeredUser.id}/progress`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${registeredAuthToken}`)
         .expect(200);
 
@@ -167,7 +183,10 @@ describe('System-Wide Integration Tests', () => {
       expect(progressResponse.body.data.progressPercentage).toBeDefined();
 
       // Step 6: Test Documentation Search
-      const searchResponse = await request(app).get('/api/user-docs/search?q=horse').expect(200);
+      const searchResponse = await request(app)
+        .get('/api/user-docs/search?q=horse')
+        .set('Origin', 'http://localhost:3000')
+        .expect(200);
 
       expect(searchResponse.body.success).toBe(true);
       expect(searchResponse.body.data.results).toBeDefined();
@@ -177,19 +196,25 @@ describe('System-Wide Integration Tests', () => {
   describe('System Integration Validation', () => {
     test('Documentation system integration', async () => {
       // Test API documentation health
-      const apiDocHealthResponse = await request(app).get('/health').expect(200);
+      const apiDocHealthResponse = await request(app).get('/health').set('Origin', 'http://localhost:3000').expect(200);
 
       expect(apiDocHealthResponse.body.success).toBe(true);
       expect(apiDocHealthResponse.body.message).toBe('Server is healthy');
 
       // Test user documentation health
-      const userDocHealthResponse = await request(app).get('/api/user-docs/health').expect(200);
+      const userDocHealthResponse = await request(app)
+        .get('/api/user-docs/health')
+        .set('Origin', 'http://localhost:3000')
+        .expect(200);
 
       expect(userDocHealthResponse.body.success).toBe(true);
       expect(userDocHealthResponse.body.data.status).toBe('healthy');
 
       // Test documentation analytics
-      const analyticsResponse = await request(app).get('/api/user-docs/analytics').expect(200);
+      const analyticsResponse = await request(app)
+        .get('/api/user-docs/analytics')
+        .set('Origin', 'http://localhost:3000')
+        .expect(200);
 
       expect(analyticsResponse.body.success).toBe(true);
       expect(analyticsResponse.body.data.totalDocuments).toBeGreaterThan(0);
@@ -227,7 +252,9 @@ describe('System-Wide Integration Tests', () => {
       const interactionResponse = await request(app)
         .post('/api/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(interactionData)
         .expect(200);
 
@@ -236,6 +263,7 @@ describe('System-Wide Integration Tests', () => {
       // Check groom progression
       const groomResponse = await request(app)
         .get(`/api/grooms/user/${testUser.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -249,6 +277,7 @@ describe('System-Wide Integration Tests', () => {
       if (updatedGroom.level >= 3) {
         const talentsResponse = await request(app)
           .get('/api/grooms/talents/definitions')
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${authToken}`)
           .expect(200);
 
@@ -262,25 +291,37 @@ describe('System-Wide Integration Tests', () => {
 
     test('Documentation system integration with API endpoints', async () => {
       // Test API documentation access
-      const apiDocsResponse = await request(app).get('/api-docs/swagger.json').expect(200);
+      const apiDocsResponse = await request(app)
+        .get('/api-docs/swagger.json')
+        .set('Origin', 'http://localhost:3000')
+        .expect(200);
 
       expect(apiDocsResponse.body.openapi).toBeDefined();
       expect(apiDocsResponse.body.paths).toBeDefined();
 
       // Test user documentation access
-      const userDocsResponse = await request(app).get('/api/user-docs').expect(200);
+      const userDocsResponse = await request(app)
+        .get('/api/user-docs')
+        .set('Origin', 'http://localhost:3000')
+        .expect(200);
 
       expect(userDocsResponse.body.success).toBe(true);
       expect(userDocsResponse.body.data.documents).toBeDefined();
 
       // Test documentation search
-      const searchResponse = await request(app).get('/api/user-docs/search?q=horse').expect(200);
+      const searchResponse = await request(app)
+        .get('/api/user-docs/search?q=horse')
+        .set('Origin', 'http://localhost:3000')
+        .expect(200);
 
       expect(searchResponse.body.success).toBe(true);
       expect(searchResponse.body.data.results).toBeDefined();
 
       // Test documentation analytics
-      const analyticsResponse = await request(app).get('/api/user-docs/analytics').expect(200);
+      const analyticsResponse = await request(app)
+        .get('/api/user-docs/analytics')
+        .set('Origin', 'http://localhost:3000')
+        .expect(200);
 
       expect(analyticsResponse.body.success).toBe(true);
       expect(analyticsResponse.body.data.totalDocuments).toBeGreaterThan(0);
@@ -294,7 +335,12 @@ describe('System-Wide Integration Tests', () => {
       // Simulate concurrent requests
       const promises = [];
       for (let i = 0; i < 10; i++) {
-        promises.push(request(app).get('/api/horses').set('Authorization', `Bearer ${authToken}`));
+        promises.push(
+          request(app)
+            .get('/api/horses')
+            .set('Origin', 'http://localhost:3000')
+            .set('Authorization', `Bearer ${authToken}`),
+        );
       }
 
       const responses = await Promise.all(promises);
@@ -321,7 +367,9 @@ describe('System-Wide Integration Tests', () => {
       // Perform memory-intensive operations
       const operations = [];
       for (let i = 0; i < 20; i++) {
-        operations.push(request(app).get('/api/user-docs/search?q=horse&includeContent=true'));
+        operations.push(
+          request(app).get('/api/user-docs/search?q=horse&includeContent=true').set('Origin', 'http://localhost:3000'),
+        );
       }
 
       await Promise.all(operations);
@@ -361,7 +409,9 @@ describe('System-Wide Integration Tests', () => {
       const horseResponse = await request(app)
         .post('/api/horses')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(horseData)
         .expect(201);
 
@@ -405,6 +455,7 @@ describe('System-Wide Integration Tests', () => {
 
       const initialProgress = await request(app)
         .get(`/api/users/${testUser.id}/progress`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -423,7 +474,9 @@ describe('System-Wide Integration Tests', () => {
       const trainingResponse = await request(app)
         .post('/api/training/train')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(trainingData)
         .expect(200);
 
@@ -435,6 +488,7 @@ describe('System-Wide Integration Tests', () => {
       // Verify progress update
       const finalProgress = await request(app)
         .get(`/api/users/${testUser.id}/progress`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 

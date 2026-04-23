@@ -17,7 +17,13 @@ import app from '../../../app.mjs';
 import prisma from '../../../db/index.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 describe('INTEGRATION: GET /api/horses/:horseId/competition-history (21S-4)', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let owner;
   let ownerToken;
   let horseWithResults;
@@ -110,7 +116,9 @@ describe('INTEGRATION: GET /api/horses/:horseId/competition-history (21S-4)', ()
 
   describe('Auth guard', () => {
     it('returns 401 when unauthenticated', async () => {
-      const res = await request(app).get(`/api/horses/${horseWithResults.id}/competition-history`);
+      const res = await request(app)
+        .get(`/api/horses/${horseWithResults.id}/competition-history`)
+        .set('Origin', 'http://localhost:3000');
       expect(res.status).toBe(401);
     });
   });
@@ -119,6 +127,7 @@ describe('INTEGRATION: GET /api/horses/:horseId/competition-history (21S-4)', ()
     it('returns 200 with zeroed statistics and empty competitions array', async () => {
       const res = await request(app)
         .get(`/api/horses/${horseWithoutResults.id}/competition-history`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${ownerToken}`);
 
       expect(res.status).toBe(200);
@@ -142,6 +151,7 @@ describe('INTEGRATION: GET /api/horses/:horseId/competition-history (21S-4)', ()
     it('returns 200 with aggregated statistics and competitions list', async () => {
       const res = await request(app)
         .get(`/api/horses/${horseWithResults.id}/competition-history`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${ownerToken}`);
 
       expect(res.status).toBe(200);

@@ -17,7 +17,13 @@ import app from '../../../app.mjs';
 import prisma from '../../../db/index.mjs';
 import { createTestUser, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 describe('INTEGRATION: PATCH /api/auth/profile/preferences (21S-5)', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let user;
   let token;
 
@@ -37,7 +43,12 @@ describe('INTEGRATION: PATCH /api/auth/profile/preferences (21S-5)', () => {
 
   describe('Auth guard', () => {
     it('returns 401 when unauthenticated', async () => {
-      const res = await request(app).patch('/api/auth/profile/preferences').send({ emailCompetition: false });
+      const res = await request(app)
+        .patch('/api/auth/profile/preferences')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Origin', 'http://localhost:3000')
+        .send({ emailCompetition: false });
       expect(res.status).toBe(401);
     });
   });
@@ -46,6 +57,9 @@ describe('INTEGRATION: PATCH /api/auth/profile/preferences (21S-5)', () => {
     it('persists notification + display preferences and returns the merged object', async () => {
       const res = await request(app)
         .patch('/api/auth/profile/preferences')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token}`)
         .send({
           emailCompetition: false,
@@ -80,6 +94,9 @@ describe('INTEGRATION: PATCH /api/auth/profile/preferences (21S-5)', () => {
       // A partial update should preserve the prior keys and only change what was sent.
       const res = await request(app)
         .patch('/api/auth/profile/preferences')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token}`)
         .send({ highContrast: true });
 
@@ -95,6 +112,9 @@ describe('INTEGRATION: PATCH /api/auth/profile/preferences (21S-5)', () => {
     it('rejects an unknown preference key with 400', async () => {
       const res = await request(app)
         .patch('/api/auth/profile/preferences')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token}`)
         .send({ notARealPreference: true });
 
@@ -104,6 +124,9 @@ describe('INTEGRATION: PATCH /api/auth/profile/preferences (21S-5)', () => {
     it('rejects a non-boolean value for a known key with 400', async () => {
       const res = await request(app)
         .patch('/api/auth/profile/preferences')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token}`)
         .send({ reducedMotion: 'nope' });
 
@@ -113,7 +136,10 @@ describe('INTEGRATION: PATCH /api/auth/profile/preferences (21S-5)', () => {
 
   describe('GET /api/auth/profile includes preferences', () => {
     it('returns the persisted preferences in the profile response', async () => {
-      const res = await request(app).get('/api/auth/profile').set('Authorization', `Bearer ${token}`);
+      const res = await request(app)
+        .get('/api/auth/profile')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${token}`);
 
       expect(res.status).toBe(200);
       expect(res.body.data.user).toHaveProperty('preferences');

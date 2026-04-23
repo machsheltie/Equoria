@@ -35,6 +35,7 @@ import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Strategic mocking: Only mock external dependencies
 jest.mock('../../utils/logger.mjs', () => ({
   info: jest.fn(),
@@ -44,6 +45,11 @@ jest.mock('../../utils/logger.mjs', () => ({
 }));
 
 describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testHorse;
   let testUser;
   let authToken;
@@ -178,6 +184,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
 
       const response = await request(app)
         .get(`/api/horses/${testHorse.id}/overview`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -225,6 +232,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
     it('should return 404 for non-existent horse', async () => {
       const response = await request(app)
         .get('/api/horses/99999/overview')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
 
@@ -235,6 +243,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
     it('should return validation error for invalid horse ID', async () => {
       const response = await request(app)
         .get('/api/horses/invalid/overview')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
 
@@ -245,6 +254,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
     it('should handle horse with no training history gracefully', async () => {
       const response = await request(app)
         .get(`/api/horses/${testHorse.id}/overview`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -271,6 +281,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
 
       const response = await request(app)
         .get(`/api/horses/${testHorse.id}/overview`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -308,6 +319,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
 
       const response = await request(app)
         .get(`/api/horses/${minimalHorse.id}/overview`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 

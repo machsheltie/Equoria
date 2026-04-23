@@ -224,7 +224,10 @@ describe('🔄 API Response Integration Tests', () => {
       lastName: 'Response',
     };
 
-    const registerResponse = await request(app).post('/api/auth/register').send(userData);
+    const registerResponse = await request(app)
+      .post('/api/auth/register')
+      .set('Origin', 'http://localhost:3000')
+      .send(userData);
 
     expect(registerResponse.status).toBe(201);
     testUser = registerResponse.body.data.user;
@@ -246,7 +249,10 @@ describe('🔄 API Response Integration Tests', () => {
 
   describe('📋 Response Format Standardization', () => {
     test('should provide consistent success response format', async () => {
-      const response = await request(app).get('/api/test/success').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/test/success')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('success', true);
@@ -257,7 +263,10 @@ describe('🔄 API Response Integration Tests', () => {
     });
 
     test('should provide consistent error response format', async () => {
-      const response = await request(app).get('/api/test/error').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/test/error')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('success', false);
@@ -268,7 +277,10 @@ describe('🔄 API Response Integration Tests', () => {
     });
 
     test('should provide consistent not found response format', async () => {
-      const response = await request(app).get('/api/test/not-found').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/test/not-found')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(404);
       expect(response.body).toHaveProperty('success', false);
@@ -277,7 +289,10 @@ describe('🔄 API Response Integration Tests', () => {
     });
 
     test('should provide consistent validation error response format', async () => {
-      const response = await request(app).get('/api/test/validation-error').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/test/validation-error')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('success', false);
@@ -292,6 +307,7 @@ describe('🔄 API Response Integration Tests', () => {
     test('should provide consistent paginated response format', async () => {
       const response = await request(app)
         .get('/api/test/paginated?page=1&limit=5')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
@@ -313,6 +329,7 @@ describe('🔄 API Response Integration Tests', () => {
     test('should handle pagination edge cases correctly', async () => {
       const response = await request(app)
         .get('/api/test/paginated?page=20&limit=5')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
@@ -325,7 +342,10 @@ describe('🔄 API Response Integration Tests', () => {
 
   describe('⚡ Performance Monitoring Integration', () => {
     test('should include performance headers in responses', async () => {
-      const response = await request(app).get('/api/test/success').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/test/success')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.headers['x-processing-time']).toBeDefined();
@@ -334,7 +354,10 @@ describe('🔄 API Response Integration Tests', () => {
     });
 
     test('should monitor large response performance', async () => {
-      const response = await request(app).get('/api/test/large-data').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/test/large-data')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data).toHaveLength(1000);
@@ -350,6 +373,7 @@ describe('🔄 API Response Integration Tests', () => {
     test('should support field selection optimization', async () => {
       const response = await request(app)
         .get('/api/test/field-selection?fields=id,name')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
@@ -362,6 +386,7 @@ describe('🔄 API Response Integration Tests', () => {
     test('should support field exclusion optimization', async () => {
       const response = await request(app)
         .get('/api/test/field-selection?exclude=sensitiveData,metadata')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
@@ -374,7 +399,10 @@ describe('🔄 API Response Integration Tests', () => {
 
     test('should generate and validate ETags correctly', async () => {
       // First request should return ETag
-      const response1 = await request(app).get('/api/test/etag').set('Authorization', `Bearer ${authToken}`);
+      const response1 = await request(app)
+        .get('/api/test/etag')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response1.status).toBe(200);
       expect(response1.body.success).toBe(true);
@@ -385,6 +413,7 @@ describe('🔄 API Response Integration Tests', () => {
         // Second request with ETag - may return 200 or 304 depending on implementation
         const response2 = await request(app)
           .get('/api/test/etag')
+          .set('Origin', 'http://localhost:3000')
           .set('Authorization', `Bearer ${authToken}`)
           .set('If-None-Match', response1.headers.etag);
 
@@ -403,7 +432,7 @@ describe('🔄 API Response Integration Tests', () => {
 
   describe('🔗 Cross-System Response Consistency', () => {
     test('should maintain consistent response format across auth endpoints', async () => {
-      const loginResponse = await request(app).post('/api/auth/login').send({
+      const loginResponse = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
         email: 'apiresponseintegration@test.com',
         password: 'TestPassword123!',
       });
@@ -424,7 +453,7 @@ describe('🔄 API Response Integration Tests', () => {
       const endpoints = ['/ping', '/health'];
 
       for (const endpoint of endpoints) {
-        const response = await request(app).get(endpoint);
+        const response = await request(app).get(endpoint).set('Origin', 'http://localhost:3000');
 
         expect(response.status).toBe(200);
         expect(response.body).toHaveProperty('success', true);
@@ -440,8 +469,7 @@ describe('🔄 API Response Integration Tests', () => {
       const protectedEndpoints = ['/api/test/success', '/api/test/error', '/api/test/large-data'];
 
       for (const endpoint of protectedEndpoints) {
-        const response = await request(app).get(endpoint).set('x-test-require-auth', 'true');
-
+        const response = await request(app).get(endpoint).set('Origin', 'http://localhost:3000');
         expect(response.status).toBe(401);
         expect(response.body).toHaveProperty('success', false);
         expect(response.body).toHaveProperty('message', 'Access token is required');
@@ -453,6 +481,7 @@ describe('🔄 API Response Integration Tests', () => {
     test('should handle invalid JSON gracefully', async () => {
       const response = await request(app)
         .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
         .set('Content-Type', 'application/json')
         .send('invalid json');
 
@@ -467,7 +496,7 @@ describe('🔄 API Response Integration Tests', () => {
     });
 
     test('should handle validation errors consistently', async () => {
-      const response = await request(app).post('/api/auth/register').send({
+      const response = await request(app).post('/api/auth/register').set('Origin', 'http://localhost:3000').send({
         email: 'invalid-email',
         username: 'ab', // Too short
         password: '123', // Too short
@@ -484,13 +513,19 @@ describe('🔄 API Response Integration Tests', () => {
 
   describe('📈 Response Shape Validation', () => {
     test('should return successful response for simple requests', async () => {
-      const response = await request(app).get('/api/test/success').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/test/success')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
     });
 
     test('should return full data payload for large responses', async () => {
-      const response = await request(app).get('/api/test/large-data').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/test/large-data')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data).toHaveLength(1000);

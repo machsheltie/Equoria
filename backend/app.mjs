@@ -70,6 +70,7 @@ import logger from './utils/logger.mjs';
 // Route imports
 import pingRoute from './routes/ping.mjs';
 import authRoutes from './routes/authRoutes.mjs';
+import authenticatedAuthRoutes from './modules/auth/routes/authenticatedAuthRoutes.mjs';
 import horseRoutes from './routes/horseRoutes.mjs';
 import userRoutes from './routes/userRoutes.mjs';
 import trainingRoutes from './routes/trainingRoutes.mjs';
@@ -131,7 +132,7 @@ import craftingRoutes from './routes/craftingRoutes.mjs';
 import { authenticateToken, requireRole } from './middleware/auth.mjs';
 
 // Import CSRF protection middleware
-import { applyCsrfProtection, csrfErrorHandler } from './middleware/csrf.mjs';
+import { csrfProtection, csrfErrorHandler } from './middleware/csrf.mjs';
 
 // Import Redis rate limiting (for health check and shutdown)
 import { createRateLimiter, isRedisConnected, getRedisClient } from './middleware/rateLimiting.mjs';
@@ -148,13 +149,13 @@ const publicRouter = express.Router();
 const authRouter = express.Router();
 authRouter.use(authenticateToken);
 // Apply CSRF protection to all state-changing operations (POST/PUT/DELETE/PATCH)
-authRouter.use(applyCsrfProtection);
+authRouter.use(csrfProtection);
 
 // Admin router - Requires valid JWT token + admin role
 const adminRouter = express.Router();
 adminRouter.use(authenticateToken, requireRole('admin'));
 // Apply CSRF protection to all state-changing operations (POST/PUT/DELETE/PATCH)
-adminRouter.use(applyCsrfProtection);
+adminRouter.use(csrfProtection);
 
 // PUBLIC ROUTES (No authentication)
 // Auth endpoints (login, register, password reset, CSRF token)
@@ -169,6 +170,10 @@ publicRouter.use('/user-docs', userDocumentationRoutes);
 publicRouter.use('/api/user-docs', userDocumentationRoutes);
 
 // AUTHENTICATED ROUTES (Valid JWT required)
+// Authenticated auth mutations (profile, logout, change-password, onboarding, preferences)
+// — live on authRouter so they inherit authenticateToken + csrfProtection.
+authRouter.use('/auth', authenticatedAuthRoutes);
+
 // Core game features
 authRouter.use('/horses', horseRoutes);
 authRouter.use('/users', userRoutes);
@@ -266,10 +271,45 @@ app.set('trust proxy', 1);
 app.use(addSecurityHeaders);
 app.use(helmet(helmetConfig));
 
-// CORS configuration
+// CORS + no-origin policy — single authoritative source.
+//
+// Two layers in order:
+//   1. enforceNoOriginPolicy — hard-rejects requests without an Origin
+//      header except on operational probes (/health, /ready, /ping). The
+//      `cors` package's `origin: false` only suppresses response headers;
+//      it does NOT terminate the request, so a dedicated gate is needed.
+//   2. cors(corsOptions) — validates the Origin value against the allow
+//      list. Browsers always send Origin on mutations, so legitimate SPA
+//      traffic passes through.
+//
+// There is no machine-client API-key fallback. The prior dead
+// `validateApiKey` middleware has been removed — do not reintroduce it.
+const NO_ORIGIN_EXEMPT_PATHS = ['/health', '/ready', '/ping'];
+
+const isNoOriginExempt = path =>
+  NO_ORIGIN_EXEMPT_PATHS.some(p => path === p || path.startsWith(`${p}/`));
+
+const enforceNoOriginPolicy = (req, res, next) => {
+  if (req.get('Origin')) {
+    return next();
+  }
+  if (isNoOriginExempt(req.path)) {
+    return next();
+  }
+  logger.warn(`Blocked no-origin request: ${req.method} ${req.path}`);
+  return res.status(403).json({
+    success: false,
+    message: 'Origin header required',
+    code: 'NO_ORIGIN_BLOCKED',
+  });
+};
+
+app.use(enforceNoOriginPolicy);
+
 const corsOptions = {
   origin(origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, etc.)
+    // No-origin requests that reach this point are already exempt
+    // (health/ping); reflect them through.
     if (!origin) {
       return callback(null, true);
     }
@@ -281,28 +321,20 @@ const corsOptions = {
       'http://127.0.0.1:3001',
     ];
 
-    // Add production origins from environment
     if (config.allowedOrigins && config.allowedOrigins.length > 0) {
       allowedOrigins.push(...config.allowedOrigins);
     }
 
     if (allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
-    } else {
-      logger.warn(`CORS blocked request from origin: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+      return callback(null, true);
     }
+
+    logger.warn(`CORS blocked request from origin: ${origin}`);
+    return callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: [
-    'Content-Type',
-    'Authorization',
-    'X-Requested-With',
-    'X-CSRF-Token',
-    // x-test-skip-csrf only exposed in test environments (JEST_WORKER_ID is set by Jest runner)
-    ...(process.env.JEST_WORKER_ID !== undefined ? ['x-test-skip-csrf'] : []),
-  ],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token'],
 };
 
 app.use(cors(corsOptions));
@@ -324,7 +356,12 @@ app.use(cors(corsOptions));
 // this limit keeps production parity where it matters (auth, CSRF, ownership,
 // email delivery) without turning the gate into a rate-limiter test.
 const RATE_LIMIT_MAX_BY_ENV = {
-  test: 1000,
+  // Test suite runs several hundred requests across many files in one
+  // --runInBand session. 1000 was the old cap when bypass headers reset
+  // the counter between suites; with bypasses removed in WS4 the counter
+  // accumulates for the whole run, so we set the cap well above what any
+  // realistic suite run consumes.
+  test: 20000,
   'beta-readiness': 1000,
   beta: 500,
   development: 500,

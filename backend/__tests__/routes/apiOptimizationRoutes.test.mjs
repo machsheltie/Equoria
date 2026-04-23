@@ -82,7 +82,7 @@ describe('API Optimization Routes', () => {
     test('requires authentication', async () => {
       const response = await request(testApp)
         .get('/api/optimization/metrics')
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
 
       expect(response.body.success).toBe(false);
@@ -320,7 +320,7 @@ describe('API Optimization Routes', () => {
     test('handles missing authorization header', async () => {
       const response = await request(testApp)
         .get('/api/optimization/metrics')
-        .set('x-test-require-auth', 'true')
+
         .expect(401);
 
       expect(response.body.success).toBe(false);

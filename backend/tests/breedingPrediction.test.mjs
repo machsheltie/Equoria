@@ -23,7 +23,13 @@ import jwt from 'jsonwebtoken';
 import app from '../app.mjs';
 import prisma from '../db/index.mjs';
 
+import { fetchCsrf } from './helpers/csrfHelper.mjs';
 describe('Breeding Prediction System', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let testStallion;
   let testMare;
@@ -423,6 +429,7 @@ describe('Breeding Prediction System', () => {
 
       const response = await request(app)
         .get(`/api/horses/${testStallion.id}/breeding-data`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', authToken);
 
       expect(response.status).toBe(200);
@@ -437,8 +444,7 @@ describe('Breeding Prediction System', () => {
     it('should require authentication for breeding-data endpoint', async () => {
       const response = await request(app)
         .get(`/api/horses/${testStallion.id}/breeding-data`)
-        .set('x-test-require-auth', 'true');
-
+        .set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
@@ -446,6 +452,7 @@ describe('Breeding Prediction System', () => {
     it('should handle horses with minimal breeding data', async () => {
       const response = await request(app)
         .get(`/api/horses/${testStallion.id}/breeding-data`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', authToken);
 
       expect(response.status).toBe(200);

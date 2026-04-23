@@ -14,7 +14,13 @@ import app from '../../app.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 import prisma from '../../db/index.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('Epigenetic Flag Routes Integration Tests', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let authToken;
   let testUser;
 
@@ -55,7 +61,10 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
 
   describe('Health Check', () => {
     test('should return system health status', async () => {
-      const response = await request(app).get('/api/flags/health').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/flags/health')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -69,20 +78,27 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
     test('should require authentication for flag evaluation', async () => {
       const response = await request(app)
         .post('/api/flags/evaluate')
-        .set('x-test-require-auth', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Origin', 'http://localhost:3000')
         .send({ horseId: 123 });
 
       expect(response.status).toBe(401);
     });
 
     test('should require authentication for horse flags', async () => {
-      const response = await request(app).get('/api/flags/horses/123/flags').set('x-test-require-auth', 'true');
+      const response = await request(app)
+        .get('/api/flags/horses/123/flags')
+        .set('Origin', 'http://localhost:3000')
+        .set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(401);
     });
 
     test('should require authentication for flag definitions', async () => {
-      const response = await request(app).get('/api/flags/definitions').set('x-test-require-auth', 'true');
+      const response = await request(app)
+        .get('/api/flags/definitions')
+        .set('Origin', 'http://localhost:3000')
+        .set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(401);
     });
@@ -90,14 +106,18 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
     test('should require authentication for batch evaluation', async () => {
       const response = await request(app)
         .post('/api/flags/batch-evaluate')
-        .set('x-test-require-auth', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Origin', 'http://localhost:3000')
         .send({ horseIds: [123] });
 
       expect(response.status).toBe(401);
     });
 
     test('should require authentication for care patterns', async () => {
-      const response = await request(app).get('/api/flags/horses/123/care-patterns').set('x-test-require-auth', 'true');
+      const response = await request(app)
+        .get('/api/flags/horses/123/care-patterns')
+        .set('Origin', 'http://localhost:3000')
+        .set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(401);
     });
@@ -116,7 +136,7 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
       ];
 
       for (const endpoint of endpoints) {
-        const response = await request(app)[endpoint.method](endpoint.path);
+        const response = await request(app)[endpoint.method](endpoint.path).set('Origin', 'http://localhost:3000');
 
         // Log status for debugging
         if (![200, 400, 401, 403, 404].includes(response.status)) {
@@ -137,12 +157,18 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
   describe('System Integration', () => {
     test('should have epigenetic flag routes mounted in main app', async () => {
       // Verify the routes are actually mounted by checking they don't return 404
-      const response = await request(app).get('/api/flags/health').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/flags/health')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
       expect(response.status).toBe(200);
     });
 
     test('should handle CORS and security headers', async () => {
-      const response = await request(app).get('/api/flags/health').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/flags/health')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
       expect(response.status).toBe(200);
       // Basic test that the request goes through the middleware stack
     });

@@ -32,6 +32,7 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import dotenv from 'dotenv';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -58,6 +59,11 @@ const extractCookie = (cookies, name) => {
 };
 
 describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let authToken;
   let youngHorse;
@@ -119,7 +125,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
 
       const response = await request(app)
         .post('/api/auth/register')
-        .set('x-test-bypass-rate-limit', 'true')
+        .set('Origin', 'http://localhost:3000')
         .send(userData)
         .expect(201);
 
@@ -208,7 +214,9 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
       const response = await request(app)
         .post('/api/training/train')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           horseId: youngHorse.id,
           discipline: 'Racing',
@@ -243,7 +251,9 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
       const response = await request(app)
         .post('/api/training/train')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           horseId: matureHorse.id,
           discipline: 'Racing',
@@ -291,7 +301,9 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
       const response = await request(app)
         .post('/api/training/train')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           horseId: matureHorse.id,
           discipline: 'Dressage', // Different discipline, but still in cooldown
@@ -334,7 +346,9 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
       const cooldownResponse = await request(app)
         .post('/api/training/train')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           horseId: matureHorse.id,
           discipline: 'Dressage',
@@ -358,7 +372,9 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
       const successResponse = await request(app)
         .post('/api/training/train')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           horseId: matureHorse.id,
           discipline: 'Dressage',

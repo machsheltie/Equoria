@@ -173,7 +173,10 @@ describe('🧠 Memory Management Integration Tests', () => {
       lastName: 'Integration',
     };
 
-    const registerResponse = await request(app).post('/api/auth/register').send(userData);
+    const registerResponse = await request(app)
+      .post('/api/auth/register')
+      .set('Origin', 'http://localhost:3000')
+      .send(userData);
 
     expect(registerResponse.status).toBe(201);
     _testUser = registerResponse.body.data.user;
@@ -203,7 +206,10 @@ describe('🧠 Memory Management Integration Tests', () => {
 
   describe('🔍 Memory Monitoring Integration', () => {
     test('should monitor memory usage and provide reports', async () => {
-      const response = await request(app).get('/api/memory/status').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/memory/status')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -217,7 +223,10 @@ describe('🧠 Memory Management Integration Tests', () => {
     });
 
     test('should provide detailed memory metrics', async () => {
-      const response = await request(app).get('/api/memory/metrics').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/memory/metrics')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -229,13 +238,19 @@ describe('🧠 Memory Management Integration Tests', () => {
 
     test('should track memory usage during load operations', async () => {
       // Get initial memory status
-      const initialResponse = await request(app).get('/api/memory/status').set('Authorization', `Bearer ${authToken}`);
+      const initialResponse = await request(app)
+        .get('/api/memory/status')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(initialResponse.status).toBe(200);
       const initialMemory = initialResponse.body.data.memory.current.heapUsed;
 
       // Create memory load
-      const loadResponse = await request(app).post('/api/test/memory-load').set('Authorization', `Bearer ${authToken}`);
+      const loadResponse = await request(app)
+        .post('/api/test/memory-load')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(loadResponse.status).toBe(200);
       expect(loadResponse.body.success).toBe(true);
@@ -244,7 +259,10 @@ describe('🧠 Memory Management Integration Tests', () => {
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       // Get memory status after load
-      const afterResponse = await request(app).get('/api/memory/status').set('Authorization', `Bearer ${authToken}`);
+      const afterResponse = await request(app)
+        .get('/api/memory/status')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(afterResponse.status).toBe(200);
       const afterMemory = afterResponse.body.data.memory.current.heapUsed;
@@ -263,6 +281,7 @@ describe('🧠 Memory Management Integration Tests', () => {
       // Get initial resource analytics
       const initialResponse = await request(app)
         .get('/api/memory/resources')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(initialResponse.status).toBe(200);
@@ -272,6 +291,7 @@ describe('🧠 Memory Management Integration Tests', () => {
       // Test resource cleanup endpoint
       const cleanupResponse = await request(app)
         .post('/api/memory/cleanup')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .send({ resourceTypes: ['all'] });
 
@@ -282,7 +302,10 @@ describe('🧠 Memory Management Integration Tests', () => {
       expect(cleanupResponse.body.data.timestamp).toBeDefined();
 
       // Verify resource analytics still work after cleanup
-      const afterResponse = await request(app).get('/api/memory/resources').set('Authorization', `Bearer ${authToken}`);
+      const afterResponse = await request(app)
+        .get('/api/memory/resources')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(afterResponse.status).toBe(200);
       expect(afterResponse.body.success).toBe(true);
@@ -290,7 +313,10 @@ describe('🧠 Memory Management Integration Tests', () => {
     });
 
     test('should provide resource analytics and counts', async () => {
-      const response = await request(app).get('/api/memory/resources').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/memory/resources')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -306,6 +332,7 @@ describe('🧠 Memory Management Integration Tests', () => {
     test('should trigger garbage collection when available', async () => {
       const response = await request(app)
         .post('/api/memory/gc')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .send({ force: false });
 
@@ -325,6 +352,7 @@ describe('🧠 Memory Management Integration Tests', () => {
       // This test ensures the API handles missing GC gracefully
       const response = await request(app)
         .post('/api/memory/gc')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .send({ force: true });
 
@@ -336,7 +364,10 @@ describe('🧠 Memory Management Integration Tests', () => {
 
   describe('🚨 Memory Alert System Integration', () => {
     test('should provide memory alerts and warnings', async () => {
-      const response = await request(app).get('/api/memory/alerts').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/memory/alerts')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -349,6 +380,7 @@ describe('🧠 Memory Management Integration Tests', () => {
     test('should filter alerts by severity', async () => {
       const response = await request(app)
         .get('/api/memory/alerts?severity=warning&limit=10')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
@@ -363,8 +395,7 @@ describe('🧠 Memory Management Integration Tests', () => {
       const endpoints = ['/api/memory/status', '/api/memory/metrics', '/api/memory/resources', '/api/memory/alerts'];
 
       for (const endpoint of endpoints) {
-        const response = await request(app).get(endpoint).set('x-test-require-auth', 'true');
-
+        const response = await request(app).get(endpoint).set('Origin', 'http://localhost:3000');
         expect(response.status).toBe(401);
         expect(response.body.success).toBe(false);
         expect(response.body.message).toBe('Access token is required');
@@ -374,6 +405,7 @@ describe('🧠 Memory Management Integration Tests', () => {
     test('should validate input for memory operations', async () => {
       const invalidGcRequest = await request(app)
         .post('/api/memory/gc')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .send({ force: 'invalid' });
 

@@ -19,7 +19,13 @@ import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('Dynamic Compatibility Controller API', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   // Reference date anchor for all test date calculations
   const referenceDate = new Date('2025-06-01T12:00:00Z');
 
@@ -207,7 +213,9 @@ describe('Dynamic Compatibility Controller API', () => {
       const response = await request(app)
         .post('/api/compatibility/calculate')
         .set('Authorization', `Bearer ${testToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(requestBody);
 
       expect(response.status).toBe(200);
@@ -237,7 +245,9 @@ describe('Dynamic Compatibility Controller API', () => {
       const response = await request(app)
         .post('/api/compatibility/calculate')
         .set('Authorization', `Bearer ${testToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(requestBody);
 
       expect(response.status).toBe(200);
@@ -250,7 +260,9 @@ describe('Dynamic Compatibility Controller API', () => {
       const response = await request(app)
         .post('/api/compatibility/calculate')
         .set('Authorization', `Bearer ${testToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           groomId: testGrooms[0].id,
           // Missing horseId and context
@@ -268,8 +280,10 @@ describe('Dynamic Compatibility Controller API', () => {
           horseId: testHorses[0].id,
           context: { taskType: 'trust_building' },
         })
-        .set('x-test-require-auth', 'true')
-        .set('x-test-skip-csrf', 'true');
+
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
 
       expect(response.status).toBe(401);
     });
@@ -282,6 +296,7 @@ describe('Dynamic Compatibility Controller API', () => {
 
       const response = await request(app)
         .get(`/api/compatibility/factors/${calmGroom.id}/${fearfulHorse.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`);
 
       expect(response.status).toBe(200);
@@ -300,6 +315,7 @@ describe('Dynamic Compatibility Controller API', () => {
     test('should return 400 for invalid groom ID', async () => {
       const response = await request(app)
         .get(`/api/compatibility/factors/invalid/${testHorses[0].id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`);
 
       expect(response.status).toBe(400);
@@ -325,7 +341,9 @@ describe('Dynamic Compatibility Controller API', () => {
       const response = await request(app)
         .post('/api/compatibility/predict')
         .set('Authorization', `Bearer ${testToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(requestBody);
 
       expect(response.status).toBe(200);
@@ -354,7 +372,9 @@ describe('Dynamic Compatibility Controller API', () => {
       const response = await request(app)
         .post('/api/compatibility/predict')
         .set('Authorization', `Bearer ${testToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(requestBody);
 
       expect(response.status).toBe(200);
@@ -382,7 +402,9 @@ describe('Dynamic Compatibility Controller API', () => {
       const response = await request(app)
         .post('/api/compatibility/recommendations')
         .set('Authorization', `Bearer ${testToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send(requestBody);
 
       expect(response.status).toBe(200);
@@ -413,6 +435,7 @@ describe('Dynamic Compatibility Controller API', () => {
 
       const response = await request(app)
         .get(`/api/compatibility/trends/${groom.id}/${horse.id}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${testToken}`);
 
       expect(response.status).toBe(200);
@@ -425,7 +448,10 @@ describe('Dynamic Compatibility Controller API', () => {
 
   describe('GET /api/compatibility/config', () => {
     test('should return compatibility system configuration', async () => {
-      const response = await request(app).get('/api/compatibility/config').set('Authorization', `Bearer ${testToken}`);
+      const response = await request(app)
+        .get('/api/compatibility/config')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${testToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);

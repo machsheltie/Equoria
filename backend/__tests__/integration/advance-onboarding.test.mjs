@@ -12,11 +12,19 @@ import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
 import bcrypt from 'bcryptjs';
 
+import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 describe('POST /api/auth/advance-onboarding', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let server;
   let cookieHeader;
   let testUser;
-  const rateLimitBypassHeader = { 'X-Test-Bypass-Rate-Limit': 'true' };
+  // Rate-limit bypass header removed in Workstream 4; keep empty for chain
+  // compatibility with existing .set(rateLimitBypassHeader) call sites.
+  const rateLimitBypassHeader = {};
   const testUserData = {
     username: `advanceonboard_${Date.now()}`,
     email: `advanceonboard_${Date.now()}@example.com`,
@@ -42,12 +50,16 @@ describe('POST /api/auth/advance-onboarding', () => {
 
     const loginResponse = await request(app)
       .post('/api/auth/login')
+      .set('Origin', 'http://localhost:3000')
       .set(rateLimitBypassHeader)
-      .set('X-Test-Bypass-Auth', 'true')
       .send({ email: testUserData.email, password: testUserData.password })
       .expect(200);
 
-    cookieHeader = loginResponse.headers['set-cookie'];
+    const loginCookies = loginResponse.headers['set-cookie'] || [];
+    // Merge login session cookies with the CSRF cookie so the mutation's
+    // Cookie header carries both the accessToken AND the double-submit
+    // cookie the validator reads.
+    cookieHeader = [...loginCookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
   });
 
   afterAll(async () => {
@@ -72,8 +84,9 @@ describe('POST /api/auth/advance-onboarding', () => {
   it('should advance onboarding step from 0 to 1', async () => {
     const response = await request(app)
       .post('/api/auth/advance-onboarding')
+      .set('Origin', 'http://localhost:3000')
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .set('Cookie', cookieHeader)
-      .set('X-Test-Bypass-Auth', 'true')
       .set('X-Test-Email', testUserData.email)
       .set(rateLimitBypassHeader)
       .expect(200);
@@ -96,8 +109,9 @@ describe('POST /api/auth/advance-onboarding', () => {
 
     const response = await request(app)
       .post('/api/auth/advance-onboarding')
+      .set('Origin', 'http://localhost:3000')
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .set('Cookie', cookieHeader)
-      .set('X-Test-Bypass-Auth', 'true')
       .set('X-Test-Email', testUserData.email)
       .set(rateLimitBypassHeader)
       .expect(200);
@@ -115,8 +129,9 @@ describe('POST /api/auth/advance-onboarding', () => {
 
     const response = await request(app)
       .post('/api/auth/advance-onboarding')
+      .set('Origin', 'http://localhost:3000')
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .set('Cookie', cookieHeader)
-      .set('X-Test-Bypass-Auth', 'true')
       .set('X-Test-Email', testUserData.email)
       .set(rateLimitBypassHeader)
       .expect(200);
@@ -147,8 +162,9 @@ describe('POST /api/auth/advance-onboarding', () => {
 
     const response = await request(app)
       .post('/api/auth/advance-onboarding')
+      .set('Origin', 'http://localhost:3000')
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .set('Cookie', cookieHeader)
-      .set('X-Test-Bypass-Auth', 'true')
       .set('X-Test-Email', testUserData.email)
       .set(rateLimitBypassHeader)
       .send({ horseName: 'Beta Star', breedId: breed.id, gender: 'Stallion' })
@@ -179,7 +195,12 @@ describe('POST /api/auth/advance-onboarding', () => {
   });
 
   it('should return 401 when not authenticated', async () => {
-    await request(app).post('/api/auth/advance-onboarding').set('X-Test-Require-Auth', 'true').expect(401);
+    await request(app)
+      .post('/api/auth/advance-onboarding')
+      .set('Origin', 'http://localhost:3000')
+      .set('X-CSRF-Token', __csrf__.csrfToken)
+      .set('X-Test-Require-Auth', 'true')
+      .expect(401);
   });
 
   it('should expose onboardingStep in profile response', async () => {
@@ -190,8 +211,8 @@ describe('POST /api/auth/advance-onboarding', () => {
 
     const response = await request(app)
       .get('/api/auth/profile')
+      .set('Origin', 'http://localhost:3000')
       .set('Cookie', cookieHeader)
-      .set('X-Test-Bypass-Auth', 'true')
       .set('X-Test-Email', testUserData.email)
       .set(rateLimitBypassHeader)
       .expect(200);
@@ -209,8 +230,8 @@ describe('POST /api/auth/advance-onboarding', () => {
 
     const response = await request(app)
       .get('/api/auth/profile')
+      .set('Origin', 'http://localhost:3000')
       .set('Cookie', cookieHeader)
-      .set('X-Test-Bypass-Auth', 'true')
       .set('X-Test-Email', testUserData.email)
       .set(rateLimitBypassHeader)
       .expect(200);

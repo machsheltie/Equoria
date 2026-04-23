@@ -241,49 +241,6 @@ export const login = async (req, res, next) => {
       throw new ValidationError('Email and password are required');
     }
 
-    // Test-only bypass to stabilize integration tests
-    // Gated on JEST_WORKER_ID — cannot fire in production even if NODE_ENV is misconfigured
-    if (process.env.JEST_WORKER_ID !== undefined && req.headers['x-test-bypass-auth'] === 'true') {
-      let user = await prisma.user.findUnique({ where: { email } });
-      if (!user) {
-        user = await prisma.user.create({
-          data: {
-            email,
-            username: email.split('@')[0],
-            password: await bcrypt.hash(password, 10),
-            firstName: 'Test',
-            lastName: 'User',
-            emailVerified: true,
-          },
-        });
-      }
-
-      // Mirror production behavior: invalidate existing sessions before issuing a new pair
-      await prisma.refreshToken.deleteMany({
-        where: { userId: user.id },
-      });
-
-      const tokenPair = await createTokenPair(user.id);
-      res.cookie('accessToken', tokenPair.accessToken, COOKIE_OPTIONS.accessToken);
-      res.cookie('refreshToken', tokenPair.refreshToken, COOKIE_OPTIONS.refreshToken);
-
-      return res.status(200).json({
-        status: 'success',
-        message: 'Login successful',
-        data: {
-          user: {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            money: user.money,
-            level: user.level,
-            xp: user.xp,
-            role: user.role,
-          },
-        },
-      });
-    }
-
     const user = await prisma.user.findUnique({
       where: { email },
       select: {
@@ -367,31 +324,6 @@ export const login = async (req, res, next) => {
  */
 export const refreshToken = async (req, res, next) => {
   try {
-    if (process.env.JEST_WORKER_ID !== undefined && req.headers['x-test-bypass-auth'] === 'true') {
-      const email = req.headers['x-test-email'] || 'cookietest@example.com';
-      let user = await prisma.user.findUnique({ where: { email } });
-      if (!user) {
-        user = await prisma.user.create({
-          data: {
-            email,
-            username: email.split('@')[0],
-            password: await bcrypt.hash('TestPassword123!', 10),
-            firstName: 'Test',
-            lastName: 'User',
-            emailVerified: true,
-          },
-        });
-      }
-      const tokenPair = await createTokenPair(user.id);
-      res.cookie('accessToken', tokenPair.accessToken, COOKIE_OPTIONS.accessToken);
-      res.cookie('refreshToken', tokenPair.refreshToken, COOKIE_OPTIONS.refreshToken);
-      return res.status(200).json({
-        status: 'success',
-        message: 'Token refreshed successfully',
-        data: { rotated: true },
-      });
-    }
-
     // Read refresh token from body (for explicit refresh) or httpOnly cookie
     // Priority: body > cookie (allows explicit token refresh in tests)
     const providedRefreshToken = req.body.refreshToken || req.cookies.refreshToken;

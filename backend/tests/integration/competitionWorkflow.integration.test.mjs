@@ -25,6 +25,7 @@ import dotenv from 'dotenv';
 import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 /**
  * Extract cookie value from Set-Cookie header array
  */
@@ -47,6 +48,11 @@ const __dirname = dirname(__filename);
 dotenv.config({ path: join(__dirname, '../../.env.test') });
 
 describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let testUser;
   let authToken;
   let competitionHorse;
@@ -119,7 +125,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
 
       const response = await request(app)
         .post('/api/auth/register')
-        .set('x-test-bypass-rate-limit', 'true')
+        .set('Origin', 'http://localhost:3000')
         .send(userData)
         .expect(201);
 
@@ -204,6 +210,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
       // Test the eligibility API endpoint
       const response = await request(app)
         .get(`/api/competition/eligibility/${competitionHorse.id}/${testShow.discipline}`)
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -240,7 +247,9 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
       const response = await request(app)
         .post('/api/competition/enter')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           horseId: competitionHorse.id,
           showId: testShow.id,
@@ -376,6 +385,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
       // Test the new leaderboard API endpoint
       const response = await request(app)
         .get('/api/leaderboards/competition?metric=wins&limit=10')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 

@@ -22,7 +22,13 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createTestUser, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 describe('INTEGRATION: Community Routes (21-3)', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let user;
   let userToken;
   let createdClubId;
@@ -58,7 +64,9 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
       const res = await request(app)
         .post('/api/clubs')
         .set('Authorization', `Bearer ${userToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           name: `Integration Club ${Date.now()}`,
           type: 'discipline',
@@ -76,7 +84,9 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
     it('[P0] auth guard — returns 401 when no token provided', async () => {
       const res = await request(app)
         .post('/api/clubs')
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           name: `No Auth Club ${Date.now()}`,
           type: 'discipline',
@@ -91,7 +101,9 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
       const res = await request(app)
         .post('/api/clubs')
         .set('Authorization', `Bearer ${userToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           // name is missing — required field
           type: 'discipline',
@@ -108,7 +120,10 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
 
   describe('GET /api/clubs', () => {
     it('[P0] happy path — returns 200 with clubs array', async () => {
-      const res = await request(app).get('/api/clubs').set('Authorization', `Bearer ${userToken}`);
+      const res = await request(app)
+        .get('/api/clubs')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${userToken}`);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -116,7 +131,7 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
     });
 
     it('[P0] auth guard — returns 401 when no token provided', async () => {
-      const res = await request(app).get('/api/clubs');
+      const res = await request(app).get('/api/clubs').set('Origin', 'http://localhost:3000');
 
       expect(res.status).toBe(401);
     });
@@ -126,7 +141,10 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
 
   describe('GET /api/forum/threads', () => {
     it('[P1] happy path — returns 200 with threads array', async () => {
-      const res = await request(app).get('/api/forum/threads').set('Authorization', `Bearer ${userToken}`);
+      const res = await request(app)
+        .get('/api/forum/threads')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${userToken}`);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -134,7 +152,7 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
     });
 
     it('[P1] auth guard — returns 401 when no token provided', async () => {
-      const res = await request(app).get('/api/forum/threads');
+      const res = await request(app).get('/api/forum/threads').set('Origin', 'http://localhost:3000');
 
       expect(res.status).toBe(401);
     });
@@ -146,7 +164,9 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
     it('[P1] auth guard — returns 401 when no token provided', async () => {
       const res = await request(app)
         .post('/api/forum/threads')
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ title: 'Test Thread', content: 'Hello', section: 'general' });
 
       expect(res.status).toBe(401);
@@ -156,7 +176,9 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
       const res = await request(app)
         .post('/api/forum/threads')
         .set('Authorization', `Bearer ${userToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           // title missing — required
           section: 'general',
@@ -171,11 +193,16 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
 
   describe('POST /api/messages', () => {
     it('[P1] auth guard — returns 401 when no token provided', async () => {
-      const res = await request(app).post('/api/messages').set('x-test-skip-csrf', 'true').send({
-        recipientId: 'some-user-id',
-        subject: 'Hello',
-        content: 'Test message',
-      });
+      const res = await request(app)
+        .post('/api/messages')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({
+          recipientId: 'some-user-id',
+          subject: 'Hello',
+          content: 'Test message',
+        });
 
       expect(res.status).toBe(401);
     });
@@ -184,7 +211,9 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
       const res = await request(app)
         .post('/api/messages')
         .set('Authorization', `Bearer ${userToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           // recipientId missing — required
           subject: 'Hello',
@@ -200,7 +229,9 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
       const res = await request(app)
         .post('/api/messages')
         .set('Authorization', `Bearer ${userToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
           recipientId: user.id,
           // subject missing — required

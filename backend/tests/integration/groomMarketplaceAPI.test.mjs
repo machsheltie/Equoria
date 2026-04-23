@@ -16,7 +16,13 @@ import { createTestUser, cleanupTestData } from '../helpers/testAuth.mjs';
 import { forceExpireMarketplace } from '../../controllers/groomMarketplaceController.mjs';
 import app from '../../app.mjs';
 
+import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('🏪 INTEGRATION: Groom Marketplace API', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
   let _testUser;
   let authToken;
 
@@ -47,7 +53,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
       ];
 
       for (const endpoint of endpoints) {
-        const response = await request(app)[endpoint.method](endpoint.path).set('x-test-require-auth', 'true');
+        const response = await request(app)[endpoint.method](endpoint.path).set('Origin', 'http://localhost:3000');
         expect(response.status).toBe(401);
         expect(response.body.success).toBe(false);
       }
@@ -56,7 +62,10 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
 
   describe('GET /api/groom-marketplace', () => {
     it('should get marketplace with available grooms', async () => {
-      const response = await request(app).get('/api/groom-marketplace').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/groom-marketplace')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -94,9 +103,15 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
 
     it('should return same marketplace on subsequent calls', async () => {
       // Get marketplace twice
-      const response1 = await request(app).get('/api/groom-marketplace').set('Authorization', `Bearer ${authToken}`);
+      const response1 = await request(app)
+        .get('/api/groom-marketplace')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
-      const response2 = await request(app).get('/api/groom-marketplace').set('Authorization', `Bearer ${authToken}`);
+      const response2 = await request(app)
+        .get('/api/groom-marketplace')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect(response1.status).toBe(200);
       expect(response2.status).toBe(200);
@@ -112,6 +127,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
       // First get current marketplace
       const initialResponse = await request(app)
         .get('/api/groom-marketplace')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       const initialGrooms = initialResponse.body.data.grooms;
@@ -123,7 +139,9 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
       const refreshResponse = await request(app)
         .post('/api/groom-marketplace/refresh')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({});
 
       expect(refreshResponse.status).toBe(200);
@@ -143,13 +161,18 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
 
     it('should require payment for premium refresh when not enough time passed', async () => {
       // Refresh marketplace first
-      await request(app).post('/api/groom-marketplace/refresh').set('Authorization', `Bearer ${authToken}`);
+      await request(app)
+        .post('/api/groom-marketplace/refresh')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       // Try to refresh again immediately (should require payment)
       const response = await request(app)
         .post('/api/groom-marketplace/refresh')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({});
 
       expect(response.status).toBe(400);
@@ -164,13 +187,17 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
       await request(app)
         .post('/api/groom-marketplace/refresh')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({});
 
       const refreshResponse = await request(app)
         .post('/api/groom-marketplace/refresh')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ force: true });
 
       expect(refreshResponse.status).toBe(200);
@@ -184,7 +211,10 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
 
     beforeEach(async () => {
       // Get fresh marketplace
-      const response = await request(app).get('/api/groom-marketplace').set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app)
+        .get('/api/groom-marketplace')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       [marketplaceGroom] = response.body.data.grooms;
     });
@@ -193,7 +223,9 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
       const response = await request(app)
         .post('/api/groom-marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ marketplaceId: marketplaceGroom.marketplaceId });
 
       expect(response.status).toBe(201);
@@ -221,6 +253,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
       // Get initial marketplace
       const initialResponse = await request(app)
         .get('/api/groom-marketplace')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       const _initialGroomCount = initialResponse.body.data.grooms.length;
@@ -230,12 +263,15 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
       await request(app)
         .post('/api/groom-marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ marketplaceId: groomToHire.marketplaceId });
 
       // Check marketplace again
       const updatedResponse = await request(app)
         .get('/api/groom-marketplace')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       const updatedGrooms = updatedResponse.body.data.grooms;
@@ -259,6 +295,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
       // Get marketplace for poor user
       const marketplaceResponse = await request(app)
         .get('/api/groom-marketplace')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${poorUserData.token}`);
 
       const expensiveGroom = marketplaceResponse.body.data.grooms.find(g => g.sessionRate * 7 > 10); // Find groom that costs more than user has
@@ -267,7 +304,9 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
         const response = await request(app)
           .post('/api/groom-marketplace/hire')
           .set('Authorization', `Bearer ${poorUserData.token}`)
-          .set('x-test-skip-csrf', 'true')
+          .set('Origin', 'http://localhost:3000')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
           .send({ marketplaceId: expensiveGroom.marketplaceId });
 
         expect(response.status).toBe(400);
@@ -280,7 +319,9 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
       const response = await request(app)
         .post('/api/groom-marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ marketplaceId: 'non-existent-id' });
 
       expect(response.status).toBe(404);
@@ -292,7 +333,9 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
       const response = await request(app)
         .post('/api/groom-marketplace/hire')
         .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({});
 
       expect(response.status).toBe(400);
@@ -304,10 +347,14 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
   describe('GET /api/groom-marketplace/stats', () => {
     it('should return marketplace statistics', async () => {
       // Ensure marketplace exists
-      await request(app).get('/api/groom-marketplace').set('Authorization', `Bearer ${authToken}`);
+      await request(app)
+        .get('/api/groom-marketplace')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
 
       const response = await request(app)
         .get('/api/groom-marketplace/stats')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
@@ -342,6 +389,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
 
       const response = await request(app)
         .get('/api/groom-marketplace/stats')
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${newUserData.token}`);
 
       expect(response.status).toBe(200);

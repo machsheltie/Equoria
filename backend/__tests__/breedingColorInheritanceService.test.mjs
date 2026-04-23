@@ -34,6 +34,7 @@ import jwt from 'jsonwebtoken';
 import config from '../config/config.mjs';
 import app from '../app.mjs';
 
+import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -81,6 +82,13 @@ function buildGenotype(overrides = {}) {
 // ---------------------------------------------------------------------------
 // splitAlleles
 // ---------------------------------------------------------------------------
+
+// Shared CSRF fixture used by integration-style tests at the bottom of this
+// file. Declared at module scope so every `describe` block can reference it.
+let __csrf__;
+beforeAll(async () => {
+  __csrf__ = await fetchCsrf(app);
+});
 
 describe('splitAlleles', () => {
   it('splits heterozygous pair E/e → ["E", "e"]', () => {
@@ -573,7 +581,9 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
     const response = await request(app)
       .post('/api/v1/horses')
       .set('Authorization', `Bearer ${token}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({
         name: `FoalTest_${timestamp}`,
         breedId,
@@ -609,7 +619,9 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
     const response = await request(app)
       .post('/api/v1/horses')
       .set('Authorization', `Bearer ${token}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({
         name: `RandomHorse_${timestamp}`,
         breedId,
@@ -639,7 +651,9 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
     const response = await request(app)
       .post('/api/v1/horses')
       .set('Authorization', `Bearer ${token}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({
         name: `SexValidationTest_${timestamp}`,
         breedId,
@@ -663,7 +677,9 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
     const response = await request(app)
       .post('/api/v1/horses')
       .set('Authorization', `Bearer ${token}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({
         name: `SexValidationTest2_${timestamp}`,
         breedId,
@@ -686,7 +702,9 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
     const response = await request(app)
       .post('/api/v1/horses')
       .set('Authorization', `Bearer ${token}`)
-      .set('x-test-skip-csrf', 'true')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
       .send({
         name: `NonExistentSire_${timestamp}`,
         breedId,
