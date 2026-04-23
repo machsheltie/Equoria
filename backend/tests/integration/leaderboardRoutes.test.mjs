@@ -67,12 +67,23 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
           { horse: { name: { contains: 'API Test' } } },
           { horse: { name: 'Competition Integration Champion' } },
           { horse: { name: 'TestHorse Nova' } },
+          // Prefix cleanup for sibling suites that seed competition results
+          // under their own naming conventions. The `recent-winners`
+          // endpoint takes the 10 most-recent 1st-place results globally,
+          // so any leftover row from another suite bleeds into the first
+          // assertion of this test.
+          { horse: { name: { startsWith: 'StatsActiveHorse' } } },
+          { horse: { name: { startsWith: 'TestHorse_' } } },
+          { horse: { name: { startsWith: 'CompetitionAPIHorse' } } },
           { showName: { contains: 'API Test' } },
           { showName: { contains: 'Grand Prix Classic' } },
           { showName: { contains: 'Regional Championship' } },
           { showName: { contains: 'Evening Classic' } },
           { showName: { contains: 'Integration Test Championship' } },
           { showName: { contains: 'Summer Invitational' } },
+          { showName: { startsWith: 'StatsShow_' } },
+          { showName: { startsWith: 'CompetitionAPIShow_' } },
+          { showName: { startsWith: 'TestShow_' } },
         ],
       },
     });
