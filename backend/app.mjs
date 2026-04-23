@@ -238,6 +238,11 @@ import errorHandler from './middleware/errorHandler.mjs';
 import { requestLogger, errorRequestLogger } from './middleware/requestLogger.mjs';
 import { setupSwaggerDocs, addDocumentationHeaders } from './middleware/swaggerSetup.mjs';
 import {
+  secureJsonBodyParser,
+  prototypePollutionGuard,
+  jsonBodyErrorHandler,
+} from './middleware/requestBodyGuard.mjs';
+import {
   responseOptimization,
   paginationMiddleware,
   performanceMonitoring,
@@ -440,7 +445,13 @@ const apiLimiter = createRateLimiter({
 app.use('/api/', apiLimiter);
 
 // Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
+// Equoria-ocn9: secureJsonBodyParser rejects duplicate JSON keys at parse
+// time (express.json silently keeps the last value), and the guard that
+// follows rejects prototype-pollution payloads (__proto__/constructor/
+// prototype) at any depth. Both respond with HTTP 400.
+app.use(secureJsonBodyParser({ limit: '10mb' }));
+app.use(jsonBodyErrorHandler());
+app.use(prototypePollutionGuard());
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Cookie parsing middleware for httpOnly cookies

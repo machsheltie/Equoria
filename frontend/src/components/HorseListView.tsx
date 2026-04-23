@@ -236,12 +236,18 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
     navigate(`/horses/${horseId}`);
   };
 
+  // Equoria-ocn9: route to the existing /training and /competitions pages
+  // with a ?horse=ID query param. Previously these handlers pushed
+  // /training/${id} and /competition/enter/${id}, neither of which is
+  // registered in nav-items.tsx — they would 404 by inspection. The
+  // destination pages read the query param on mount and pre-select the
+  // horse, so the deep-link UX is preserved.
   const handleTrain = (horseId: number) => {
-    navigate(`/training/${horseId}`);
+    navigate(`/training?horse=${horseId}`);
   };
 
   const handleCompete = (horseId: number) => {
-    navigate(`/competition/enter/${horseId}`);
+    navigate(`/competitions?horse=${horseId}`);
   };
 
   // Loading state (only show if not using prop horses)

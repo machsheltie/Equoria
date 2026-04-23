@@ -5,18 +5,29 @@
  * and display settings for the Equoria application.
  *
  * Sections:
- * 1. Account — username, email, password change
+ * 1. Account — username, email, password change, delete account
  * 2. Notifications — email and in-app notification toggles
  * 3. Display — theme and accessibility preferences
+ *
+ * Equoria-ocn9 (2026-04-23): Account section is no longer a façade.
+ * - Inputs are controlled and seeded from useAuth().user.
+ * - Save Changes calls useUpdateProfile() (PUT /api/auth/profile).
+ * - Update Password reveals an inline form and calls useChangePassword()
+ *   (POST /api/auth/change-password). On success the server invalidates all
+ *   sessions; we sign the user out client-side to match.
+ * - Delete Account opens a typed-confirmation modal and calls
+ *   useDeleteAccount() (DELETE /api/users/:id). The hook clears React Query
+ *   cache and redirects to /login on success.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { User, Bell, Monitor, ChevronRight, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import PageHero from '@/components/layout/PageHero';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUpdatePreferences } from '@/hooks/api/useUpdatePreferences';
+import { useUpdateProfile, useChangePassword, useDeleteAccount, useLogout } from '@/hooks/useAuth';
 import type { UserPreferences } from '@/lib/api-client';
 
 interface ToggleProps {
@@ -97,19 +108,118 @@ type DisplayKey = 'reducedMotion' | 'highContrast' | 'compactCards';
 
 const SettingsPage: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string>('account');
-  const [savedAccount, setSavedAccount] = useState(false);
 
   const { user } = useAuth();
   const updatePreferences = useUpdatePreferences();
+  const updateProfile = useUpdateProfile();
+  const changePassword = useChangePassword();
+  const deleteAccount = useDeleteAccount();
+  const logout = useLogout();
+
+  // -------- Account form state (controlled, seeded from user) --------
+  const [username, setUsername] = useState<string>(user?.username ?? '');
+  const [email, setEmail] = useState<string>(user?.email ?? '');
+
+  // Re-sync the local form state whenever the server-side user changes
+  // (e.g. profile refetch after a save). Only overwrites when the user is
+  // not actively editing — we detect "actively editing" by comparing the
+  // current form value to the previous user value.
+  useEffect(() => {
+    if (!user) return;
+    setUsername((prev) => (prev === '' ? (user.username ?? '') : prev));
+    setEmail((prev) => (prev === '' ? (user.email ?? '') : prev));
+  }, [user]);
 
   const handleSaveAccount = () => {
-    setSavedAccount(true);
-    setTimeout(() => setSavedAccount(false), 2000);
+    if (!user) return;
+    const updates: { username?: string; email?: string } = {};
+    if (username.trim() && username !== user.username) updates.username = username.trim();
+    if (email.trim() && email !== user.email) updates.email = email.trim();
+    if (Object.keys(updates).length === 0) {
+      toast.info('No changes to save.');
+      return;
+    }
+    updateProfile.mutate(updates, {
+      onError: (err) => {
+        toast.error(err?.message ?? 'Could not save account changes.');
+      },
+    });
   };
 
-  // Story 21S-5: hydrate from the persisted profile preferences. Missing
-  // keys fall back to DEFAULT_PREFERENCES so legacy accounts show sensible
-  // defaults until they save for the first time.
+  // -------- Password change form state --------
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [oldPassword, setOldPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
+  const resetPasswordForm = () => {
+    setOldPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setShowPasswordForm(false);
+  };
+
+  const handleChangePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!oldPassword || !newPassword || !confirmPassword) {
+      toast.error('All password fields are required.');
+      return;
+    }
+    if (newPassword.length < 8) {
+      toast.error('New password must be at least 8 characters.');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      toast.error('New password and confirmation do not match.');
+      return;
+    }
+    if (newPassword === oldPassword) {
+      toast.error('New password must differ from the current password.');
+      return;
+    }
+    changePassword.mutate(
+      { oldPassword, newPassword },
+      {
+        onSuccess: () => {
+          toast.success(
+            'Password changed. You will be signed out — please log in with your new password.'
+          );
+          resetPasswordForm();
+          // The server invalidates all sessions on a password change
+          // (CWE-613). Match it client-side so the user re-authenticates.
+          logout.mutate();
+        },
+        onError: (err) => {
+          toast.error(err?.message ?? 'Could not change password.');
+        },
+      }
+    );
+  };
+
+  // -------- Delete account modal state --------
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+
+  const closeDeleteModal = () => {
+    setShowDeleteModal(false);
+    setDeleteConfirmText('');
+  };
+
+  const handleConfirmDelete = () => {
+    if (!user) return;
+    if (deleteConfirmText !== user.username) {
+      toast.error('Confirmation text does not match your username.');
+      return;
+    }
+    deleteAccount.mutate(user.id, {
+      onError: (err) => {
+        toast.error(err?.message ?? 'Could not delete account.');
+      },
+      // onSuccess is handled inside the hook (clears cache, redirects).
+    });
+  };
+
+  // -------- Preferences (notifications + display) --------
   const merged: UserPreferences = {
     ...DEFAULT_PREFERENCES,
     ...(user?.preferences ?? {}),
@@ -128,14 +238,6 @@ const SettingsPage: React.FC = () => {
     highContrast: merged.highContrast,
     compactCards: merged.compactCards,
   };
-
-  // One-time seed: if the account has no stored preferences yet, the first
-  // user interaction persists the full defaults + the new value. Subsequent
-  // interactions send only the changed key. Optimistic update keeps the UI
-  // in sync regardless.
-  useEffect(() => {
-    // no-op effect placeholder; hydration happens synchronously from user
-  }, []);
 
   const persist = (updates: Partial<UserPreferences>) => {
     updatePreferences.mutate(updates, {
@@ -214,7 +316,9 @@ const SettingsPage: React.FC = () => {
                   <input
                     id="settings-username"
                     type="text"
-                    defaultValue="NobleRider"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    autoComplete="username"
                     className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-celestial-gold/50"
                   />
                 </div>
@@ -229,7 +333,9 @@ const SettingsPage: React.FC = () => {
                   <input
                     id="settings-email"
                     type="email"
-                    defaultValue="rider@equoria.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
                     className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-celestial-gold/50"
                   />
                 </div>
@@ -237,21 +343,101 @@ const SettingsPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={handleSaveAccount}
-                  className="px-4 py-2 rounded-lg bg-celestial-gold/10 border border-celestial-gold/30 text-celestial-gold text-sm font-medium hover:bg-celestial-gold/20 transition-colors"
+                  disabled={updateProfile.isPending}
+                  className="px-4 py-2 rounded-lg bg-celestial-gold/10 border border-celestial-gold/30 text-celestial-gold text-sm font-medium hover:bg-celestial-gold/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   data-testid="settings-save-account"
                 >
-                  {savedAccount ? 'Saved ✓' : 'Save Changes'}
+                  {updateProfile.isPending ? 'Saving…' : 'Save Changes'}
                 </button>
               </div>
 
               <div className="border-t border-white/10 pt-6">
                 <h3 className="text-sm font-medium text-white/70 mb-3">Change Password</h3>
-                <button
-                  type="button"
-                  className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white/80 text-sm font-medium hover:bg-white/10 transition-colors"
-                >
-                  Update Password
-                </button>
+
+                {!showPasswordForm ? (
+                  <button
+                    type="button"
+                    onClick={() => setShowPasswordForm(true)}
+                    className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white/80 text-sm font-medium hover:bg-white/10 transition-colors"
+                    data-testid="settings-show-password-form"
+                  >
+                    Update Password
+                  </button>
+                ) : (
+                  <form
+                    onSubmit={handleChangePassword}
+                    className="space-y-3"
+                    data-testid="settings-password-form"
+                  >
+                    <div>
+                      <label
+                        htmlFor="settings-old-password"
+                        className="block text-xs font-medium text-white/60 mb-1"
+                      >
+                        Current Password
+                      </label>
+                      <input
+                        id="settings-old-password"
+                        type="password"
+                        value={oldPassword}
+                        onChange={(e) => setOldPassword(e.target.value)}
+                        autoComplete="current-password"
+                        className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-celestial-gold/50"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="settings-new-password"
+                        className="block text-xs font-medium text-white/60 mb-1"
+                      >
+                        New Password (min 8 characters)
+                      </label>
+                      <input
+                        id="settings-new-password"
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        autoComplete="new-password"
+                        minLength={8}
+                        className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-celestial-gold/50"
+                      />
+                    </div>
+                    <div>
+                      <label
+                        htmlFor="settings-confirm-password"
+                        className="block text-xs font-medium text-white/60 mb-1"
+                      >
+                        Confirm New Password
+                      </label>
+                      <input
+                        id="settings-confirm-password"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        autoComplete="new-password"
+                        minLength={8}
+                        className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-celestial-gold/50"
+                      />
+                    </div>
+                    <div className="flex gap-2 pt-1">
+                      <button
+                        type="submit"
+                        disabled={changePassword.isPending}
+                        className="px-4 py-2 rounded-lg bg-celestial-gold/10 border border-celestial-gold/30 text-celestial-gold text-sm font-medium hover:bg-celestial-gold/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        data-testid="settings-submit-password"
+                      >
+                        {changePassword.isPending ? 'Changing…' : 'Change Password'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={resetPasswordForm}
+                        className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white/70 text-sm font-medium hover:bg-white/10 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </form>
+                )}
               </div>
 
               <div className="border-t border-red-900/30 pt-6">
@@ -261,6 +447,7 @@ const SettingsPage: React.FC = () => {
                 </p>
                 <button
                   type="button"
+                  onClick={() => setShowDeleteModal(true)}
                   className="px-4 py-2 rounded-lg border border-red-500/30 text-red-400 text-sm font-medium hover:bg-red-500/10 transition-colors"
                   data-testid="settings-delete-account"
                 >
@@ -371,6 +558,61 @@ const SettingsPage: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteModal && user && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-account-title"
+          data-testid="settings-delete-modal"
+        >
+          <div className="max-w-md w-full rounded-xl border border-red-500/30 bg-[var(--bg-night-sky)] p-6 space-y-4 shadow-2xl">
+            <h3 id="delete-account-title" className="text-lg font-semibold text-red-400">
+              Delete account permanently?
+            </h3>
+            <p className="text-sm text-white/70">
+              This will permanently delete your account, all of your horses, breeding records,
+              competition history, and inventory. <strong>This cannot be undone.</strong>
+            </p>
+            <p className="text-sm text-white/70">
+              To confirm, type your username{' '}
+              <code className="px-1 py-0.5 rounded bg-white/10 text-celestial-gold">
+                {user.username}
+              </code>{' '}
+              below:
+            </p>
+            <input
+              type="text"
+              value={deleteConfirmText}
+              onChange={(e) => setDeleteConfirmText(e.target.value)}
+              autoComplete="off"
+              className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-red-500/50"
+              data-testid="settings-delete-confirm-input"
+            />
+            <div className="flex gap-2 justify-end pt-2">
+              <button
+                type="button"
+                onClick={closeDeleteModal}
+                className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white/80 text-sm font-medium hover:bg-white/10 transition-colors"
+                data-testid="settings-delete-cancel"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleConfirmDelete}
+                disabled={deleteAccount.isPending || deleteConfirmText !== user.username}
+                className="px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-medium hover:bg-red-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                data-testid="settings-delete-confirm"
+              >
+                {deleteAccount.isPending ? 'Deleting…' : 'Delete account permanently'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -18,8 +18,8 @@
  * Story 4-2: Training Eligibility Display - Task 3
  */
 
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTrainableHorses } from '@/hooks/api/useTraining';
 import { useProfile } from '@/hooks/useAuth';
 import type { TrainableHorse } from '@/lib/api-client';
@@ -163,8 +163,29 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
   // Navigation for training page
   const navigate = useNavigate();
 
+  // Equoria-ocn9: deep-link via /training?horse=ID — pre-select the horse
+  // when the URL carries the param so the quick-action UX from
+  // HorseListView lands on the right session.
+  const [searchParams] = useSearchParams();
+  const horseQueryParam = searchParams.get('horse');
+  const autoSelectedRef = useRef(false);
+
   // Fetch horses
   const { data: horses, isLoading, isError, error, refetch } = useTrainableHorses(userId ?? '');
+
+  // Pre-select the horse from ?horse= once horses load. Only runs once per
+  // mount so user manual selections aren't overridden on re-renders.
+  useEffect(() => {
+    if (autoSelectedRef.current) return;
+    if (!horseQueryParam || !horses || horses.length === 0) return;
+    const targetId = Number(horseQueryParam);
+    if (!Number.isFinite(targetId)) return;
+    const target = horses.find((h) => h.id === targetId);
+    if (target) {
+      setSelectedHorse(target);
+      autoSelectedRef.current = true;
+    }
+  }, [horseQueryParam, horses]);
 
   // Convert horses to Horse format for EligibilityFilter
   const horsesForFilter = useMemo((): Horse[] => {
