@@ -490,7 +490,7 @@ export async function buyStoreHorse(req, res) {
     const dateOfBirth = new Date();
     dateOfBirth.setFullYear(dateOfBirth.getFullYear() - 3);
 
-    const newHorse = await createHorse({
+    const createdHorse = await createHorse({
       name: horseName,
       breedId: parsedBreedId,
       sex,
@@ -499,6 +499,19 @@ export async function buyStoreHorse(req, res) {
       userId: buyerId,
       healthStatus: 'Excellent',
       ...stats,
+    });
+
+    // Store-bought horses arrive unvetted — the player must book a vet
+    // check before the "Vetted" care chip turns green.
+    //
+    // The horse schema defaults `lastVettedDate` to `now()` and
+    // createHorse() filters out falsy inputs (`...(lastVettedDate && ...)`),
+    // so passing `lastVettedDate: null` to createHorse is silently a
+    // no-op. Explicit follow-up update is the clean fix that doesn't
+    // touch the shared createHorse contract.
+    const newHorse = await prisma.horse.update({
+      where: { id: createdHorse.id },
+      data: { lastVettedDate: null },
     });
 
     logger.info(
