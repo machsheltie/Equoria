@@ -69,21 +69,16 @@ describe('generateConformationScores', () => {
     expect(Number.isInteger(scores.overallConformation)).toBe(true);
   });
 
-  test('unknown breed returns default scores of 50', () => {
-    const scores = generateConformationScores(999);
-    for (const region of CONFORMATION_REGIONS) {
-      expect(scores[region]).toBe(50);
-    }
-    expect(scores.overallConformation).toBe(50);
+  // New contract (post-309-breeds refactor): missing/invalid breed identifiers
+  // must throw rather than silently returning stub defaults. The old silent-50
+  // fallback was the root cause of store horses arriving with generic random
+  // stats; see PR that introduced breedProfiles.json.
+  test('unknown numeric breedId throws', () => {
+    expect(() => generateConformationScores(999)).toThrow(/No canonical-12 breed for numeric breedId 999/);
   });
 
-  // Edge cases: falsy breedId values should gracefully return defaults
-  test.each([0, null, undefined, NaN])('breedId=%p returns default scores of 50', breedId => {
-    const scores = generateConformationScores(breedId);
-    for (const region of CONFORMATION_REGIONS) {
-      expect(scores[region]).toBe(50);
-    }
-    expect(scores.overallConformation).toBe(50);
+  test.each([0, null, undefined, NaN])('invalid breed identifier %p throws', breedId => {
+    expect(() => generateConformationScores(breedId)).toThrow();
   });
 });
 

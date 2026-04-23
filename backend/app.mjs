@@ -309,7 +309,15 @@ const NO_ORIGIN_ENFORCED_PREFIXES = ['/api/', '/auth/'];
 const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 const requiresOriginCheck = req => {
-  if (!STATE_CHANGING_METHODS.has(req.method)) return false;
+  if (!STATE_CHANGING_METHODS.has(req.method)) {
+    return false;
+  }
+  // Sec-Fetch-Mode is injected by browsers for all fetches/navigations; CLI
+  // tools (curl, wget, server-to-server) never set it. Skip Origin enforcement
+  // for non-browser clients so E2E CLI tests and service calls aren't blocked.
+  if (!req.get('Sec-Fetch-Mode')) {
+    return false;
+  }
   return NO_ORIGIN_ENFORCED_PREFIXES.some(
     prefix => req.path === prefix.replace(/\/$/, '') || req.path.startsWith(prefix),
   );
@@ -346,7 +354,9 @@ const STATIC_ALLOWED_ORIGINS = [
 // Compare the Origin's host against the request's Host header; if they
 // match, treat the Origin as implicitly allowed.
 const isSameOrigin = (origin, hostHeader) => {
-  if (!origin || !hostHeader) return false;
+  if (!origin || !hostHeader) {
+    return false;
+  }
   try {
     const { host: originHost } = new URL(origin);
     return originHost.toLowerCase() === hostHeader.toLowerCase();

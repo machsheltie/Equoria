@@ -650,6 +650,7 @@ describe('Session Lifecycle Management', () => {
 
       // Step 3: Change password (invalidates all sessions)
       const newPassword = 'NewPassword456!';
+      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
       const changePasswordResponse = await request(app)
         .post('/api/auth/change-password')
         .set('Origin', 'http://localhost:3000')

@@ -3,7 +3,8 @@
 // Temperament is permanent — assigned once at creation and never modified.
 // Also provides training and competition modifier lookups used by trainingController and competitionScore.
 
-import { BREED_GENETIC_PROFILES, TEMPERAMENT_TYPES } from '../data/breedGeneticProfiles.mjs';
+import { TEMPERAMENT_TYPES } from '../data/breedGeneticProfiles.mjs';
+import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 import logger from '../../../utils/logger.mjs';
 
 /**
@@ -198,28 +199,21 @@ export function weightedRandomSelect(weights) {
 
 /**
  * Generate a temperament for a horse based on its breed's temperament weights.
- * Uses weighted random selection from BREED_GENETIC_PROFILES[breedId].temperament_weights.
- * Falls back to uniform random selection from TEMPERAMENT_TYPES for unknown breed IDs,
- * matching the graceful-degradation pattern of conformationService and gaitService.
+ * Uses weighted random selection from the breed's temperament_weights in breedProfiles.json
+ * (via getBreedProfile). Throws if the breed is unknown or its profile lacks temperament_weights.
+ * If the weighted-selection result is not one of the 11 canonical temperament types (e.g. a
+ * misspelled key in the JSON), falls back to a uniformly-random valid type.
  *
- * @param {number} breedId - The breed ID (1-12)
+ * @param {string|number} breedName - Breed display name (preferred) or legacy canonical-12 numeric id
  * @returns {string} One of the 11 temperament types
+ * @throws {Error} if the breed is missing from breedProfiles.json or lacks temperament_weights
  */
-export function generateTemperament(breedId) {
-  const profile = BREED_GENETIC_PROFILES[breedId];
-  if (!profile) {
-    logger.warn(
-      `[temperamentService] No genetic profile found for breed ID ${breedId}, using uniform random temperament`,
-    );
-    return TEMPERAMENT_TYPES[Math.floor(Math.random() * TEMPERAMENT_TYPES.length)];
-  }
+export function generateTemperament(breedName) {
+  const profile = getBreedProfile(breedName);
 
   const weights = profile.temperament_weights;
   if (!weights || typeof weights !== 'object' || Object.keys(weights).length === 0) {
-    logger.warn(
-      `[temperamentService] Breed ID ${breedId} profile missing temperament_weights, using uniform random temperament`,
-    );
-    return TEMPERAMENT_TYPES[Math.floor(Math.random() * TEMPERAMENT_TYPES.length)];
+    throw new Error(`breedProfiles.json entry for "${breedName}" is missing temperament_weights.`);
   }
 
   const temperament = weightedRandomSelect(weights);
@@ -229,12 +223,14 @@ export function generateTemperament(breedId) {
   if (!TEMPERAMENT_TYPES.includes(temperament)) {
     const fallback = TEMPERAMENT_TYPES[Math.floor(Math.random() * TEMPERAMENT_TYPES.length)];
     logger.warn(
-      `[temperamentService] Generated unknown temperament "${temperament}" for breed ${breedId} — falling back to "${fallback}"`,
+      `[temperamentService] Generated unknown temperament "${temperament}" for breed "${breedName}" — falling back to "${fallback}"`,
     );
     return fallback;
   }
 
-  logger.debug(`[temperamentService] Assigned temperament "${temperament}" to breed ${breedId}`);
+  logger.debug(
+    `[temperamentService] Assigned temperament "${temperament}" to breed "${breedName}"`,
+  );
 
   return temperament;
 }

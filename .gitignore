@@ -167,3 +167,4 @@ backend/_ul
 backend/_ul/
 backend/data/*
 !backend/data/breedStarterStats.json
+!backend/data/breedProfiles.json

@@ -9,11 +9,8 @@ import {
   CONFORMATION_REGIONS,
   calculateOverallConformation,
 } from '../services/conformationService.mjs';
-import {
-  BREED_GENETIC_PROFILES,
-  CANONICAL_BREEDS,
-  TEMPERAMENT_TYPES,
-} from '../data/breedGeneticProfiles.mjs';
+import { TEMPERAMENT_TYPES } from '../data/breedGeneticProfiles.mjs';
+import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 import {
   generateGaitScores,
   generateInheritedGaitScores,
@@ -315,18 +312,41 @@ export async function createFoal(req, res) {
       `[horseController.createFoal] Applied epigenetic traits: ${JSON.stringify(epigeneticTraits)}`,
     );
 
+    // Resolve breed name — conformation/gait/temperament generators all
+    // key by display name against breedProfiles.json.
+    const normalizedBreedId = Number.parseInt(breedId, 10);
+    if (!Number.isInteger(normalizedBreedId) || normalizedBreedId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'breedId must be a positive integer',
+        data: null,
+      });
+    }
+    const breedRecord = await prisma.breed.findUnique({
+      where: { id: normalizedBreedId },
+      select: { name: true },
+    });
+    if (!breedRecord?.name) {
+      return res.status(400).json({
+        success: false,
+        message: `No breed found for id ${normalizedBreedId}`,
+        data: null,
+      });
+    }
+    const breedName = breedRecord.name;
+
     // Generate conformation scores — use inheritance if both parents have valid region scores, else breed-only.
-    // breedId comes from req.body (the foal's assigned breed). Crossbreeding is restricted to specific
-    // breed combinations (e.g., Thoroughbred x Arabian = Anglo Arabian) — validation happens upstream.
-    // The foal's breed determines breed mean regression, not the parents' breeds.
+    // breedName comes from the foal's assigned breed (crossbreeding is restricted to specific combinations
+    // e.g. Thoroughbred x Arabian = Anglo Arabian — validation happens upstream). The foal's breed
+    // determines breed mean regression, not the parents' breeds.
     const sireConformation = sire.conformationScores;
     const damConformation = dam.conformationScores;
     const conformationScores =
       hasValidConformationScores(sireConformation) && hasValidConformationScores(damConformation)
-        ? generateInheritedConformationScores(breedId, sireConformation, damConformation)
-        : generateConformationScores(breedId);
+        ? generateInheritedConformationScores(breedName, sireConformation, damConformation)
+        : generateConformationScores(breedName);
     logger.info(
-      `[horseController.createFoal] Generated conformation scores for breed ${breedId} (${hasValidConformationScores(sireConformation) && hasValidConformationScores(damConformation) ? 'inherited' : 'breed-only'}): overall=${conformationScores.overallConformation}`,
+      `[horseController.createFoal] Generated conformation scores for breed "${breedName}" (${hasValidConformationScores(sireConformation) && hasValidConformationScores(damConformation) ? 'inherited' : 'breed-only'}): overall=${conformationScores.overallConformation}`,
     );
 
     // Generate gait scores — use inheritance if both parents have valid gait scores, else breed-only
@@ -334,23 +354,23 @@ export async function createFoal(req, res) {
     const damGaitScores = dam.gaitScores;
     const gaitScores =
       hasValidGaitScores(sireGaitScores) && hasValidGaitScores(damGaitScores)
-        ? generateInheritedGaitScores(breedId, sireGaitScores, damGaitScores, conformationScores)
-        : generateGaitScores(breedId, conformationScores);
+        ? generateInheritedGaitScores(breedName, sireGaitScores, damGaitScores, conformationScores)
+        : generateGaitScores(breedName, conformationScores);
     logger.info(
-      `[horseController.createFoal] Generated gait scores for breed ${breedId} (${hasValidGaitScores(sireGaitScores) && hasValidGaitScores(damGaitScores) ? 'inherited' : 'breed-only'})`,
+      `[horseController.createFoal] Generated gait scores for breed "${breedName}" (${hasValidGaitScores(sireGaitScores) && hasValidGaitScores(damGaitScores) ? 'inherited' : 'breed-only'})`,
     );
 
     // Generate temperament — always a fresh breed-weighted random roll (not inherited from parents)
-    const temperament = generateTemperament(breedId);
+    const temperament = generateTemperament(breedName);
     logger.info(
-      `[horseController.createFoal] Assigned temperament "${temperament}" for breed ${breedId}`,
+      `[horseController.createFoal] Assigned temperament "${temperament}" for breed "${breedName}"`,
     );
 
     // Prepare horse data for creation
     const horseData = {
       name,
       age: 0, // Newborn foal
-      breedId,
+      breedId: normalizedBreedId,
       sireId,
       damId,
       sex,
@@ -918,19 +938,49 @@ export async function getConformationAnalysis(req, res) {
       h => h.conformationScores !== null && h.conformationScores !== undefined,
     );
 
-    // Get breed profile for designed means
-    const profile = BREED_GENETIC_PROFILES[horse.breedId];
-    const breedConformation = profile ? profile.rating_profiles.conformation : null;
+    // Resolve breed name from the DB (covers all 309 breeds, not just
+    // the 12 legacy CANONICAL_BREEDS entries).
+    const breedRecord = await prisma.breed.findUnique({
+      where: { id: horse.breedId },
+      select: { name: true },
+    });
+    const breedName = breedRecord?.name ?? 'Unknown';
 
-    // Get breed name from CANONICAL_BREEDS
-    const breed = CANONICAL_BREEDS.find(b => b.id === horse.breedId);
-    const breedName = breed ? breed.name : 'Unknown';
+    // Get breed profile for designed means. Pulls from breedProfiles.json
+    // by name so every breed has a profile.
+    let breedConformation = null;
+    if (breedRecord?.name) {
+      try {
+        const profile = getBreedProfile(breedRecord.name);
+        const rawConformation = profile?.rating_profiles?.conformation ?? null;
+        // Require all 8 regions to have finite means before trusting the profile.
+        // A missing or non-finite mean would throw (or produce NaN) when accessed
+        // later in the per-region loop and the overall mean calculation.
+        if (
+          rawConformation &&
+          CONFORMATION_REGIONS.every(r => Number.isFinite(rawConformation[r]?.mean))
+        ) {
+          breedConformation = rawConformation;
+        } else if (rawConformation) {
+          logger.warn(
+            `[horseController.getConformationAnalysis] incomplete conformation profile for "${breedRecord.name}" — one or more regions missing finite mean`,
+          );
+        }
+      } catch (err) {
+        logger.warn(
+          `[horseController.getConformationAnalysis] breedProfiles lookup failed for "${breedRecord.name}": ${err.message}`,
+        );
+        // breedConformation remains null; response will include breedMeanAvailable: false
+        // so the client can distinguish "breed mean is genuinely 50" from "no profile found".
+      }
+    }
+    const breedMeanAvailable = breedConformation !== null;
 
     // Calculate analysis per region
     const analysis = {};
     for (const region of CONFORMATION_REGIONS) {
       const score = scores[region] ?? 0;
-      const breedMean = breedConformation ? breedConformation[region].mean : 50;
+      const breedMean = breedConformation ? breedConformation[region].mean : null;
 
       // Percentile: count horses scoring lower / total
       let percentile;
@@ -957,7 +1007,7 @@ export async function getConformationAnalysis(req, res) {
           CONFORMATION_REGIONS.reduce((sum, r) => sum + breedConformation[r].mean, 0) /
             CONFORMATION_REGIONS.length,
         )
-      : 50;
+      : null;
 
     let overallPercentile;
     if (validHorses.length <= 1) {
@@ -984,6 +1034,7 @@ export async function getConformationAnalysis(req, res) {
         horseName: horse.name,
         breedId: horse.breedId,
         breedName,
+        breedMeanAvailable,
         totalHorsesInBreed: validHorses.length,
         analysis,
         overallConformation: {

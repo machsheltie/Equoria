@@ -48,7 +48,6 @@ const STRUCTURAL = [
   { name: 'x-test-bypass-ownership', re: /\.set\(['"]x-test-bypass-ownership['"]/ },
 ];
 
-const IMPORT_RE = /^import .+ from ['"].+['"];?\s*$/m;
 const FIRST_DESCRIBE_BODY_RE = /(describe\s*\([^,]*,\s*(?:async\s*)?\(\s*\)\s*=>\s*\{)\n/;
 
 const REPLACEMENT_CHAIN =
@@ -73,7 +72,9 @@ async function walk(dir, out) {
   const entries = await readdir(dir, { withFileTypes: true });
   for (const e of entries) {
     if (e.isDirectory()) {
-      if (SKIP_DIRS.has(e.name)) continue;
+      if (SKIP_DIRS.has(e.name)) {
+        continue;
+      }
       await walk(join(dir, e.name), out);
     } else if (e.isFile() && (e.name.endsWith('.mjs') || e.name.endsWith('.js'))) {
       out.push(join(dir, e.name));
@@ -109,13 +110,15 @@ function csrfHelperImportPath(fileRelativeToBackend) {
   const fromDir = dirname(fileRelativeToBackend);
   const toFile = 'tests/helpers/csrfHelper.mjs';
   let rel = relative(fromDir, toFile).replace(/\\/g, '/');
-  if (!rel.startsWith('.')) rel = './' + rel;
+  if (!rel.startsWith('.')) {
+    rel = `./${rel}`;
+  }
   return rel;
 }
 
 function addImport(source, relPath) {
   if (
-    source.includes("from '" + relPath + "'") ||
+    source.includes(`from '${relPath}'`) ||
     source.match(/from ['"][^'"]*csrfHelper\.mjs['"]/)
   ) {
     return { source, added: false };
@@ -127,10 +130,8 @@ function addImport(source, relPath) {
   }
   const last = importEndings[importEndings.length - 1];
   const insertAt = last.index + last[0].length;
-  const updated =
-    source.slice(0, insertAt) +
-    `\nimport { fetchCsrf } from '${relPath}';` +
-    source.slice(insertAt);
+  const importLine = `\nimport { fetchCsrf } from '${relPath}';`;
+  const updated = `${source.slice(0, insertAt)}${importLine}${source.slice(insertAt)}`;
   return { source: updated, added: true };
 }
 
@@ -142,13 +143,8 @@ function addFixture(source) {
   if (!m) {
     return { source, added: false };
   }
-  const insertion =
-    `${m[1]}\n` +
-    `  let __csrf__;\n` +
-    `  beforeAll(async () => {\n` +
-    `    __csrf__ = await fetchCsrf(app);\n` +
-    `  });\n`;
-  return { source: source.replace(FIRST_DESCRIBE_BODY_RE, insertion + '\n'), added: true };
+  const insertion = `${m[1]}\n  let __csrf__;\n  beforeAll(async () => {\n    __csrf__ = await fetchCsrf(app);\n  });\n`;
+  return { source: source.replace(FIRST_DESCRIBE_BODY_RE, `${insertion}\n`), added: true };
 }
 
 function rewriteBypasses(source) {
@@ -258,9 +254,9 @@ for (const relFile of files) {
 
 console.log(`\nRewritten: ${report.rewritten.length}`);
 for (const r of report.rewritten) {
+  const flags = r.structuralFlags.length ? `  [structural: ${r.structuralFlags.join(', ')}]` : '';
   console.log(
-    `  ${r.file}  skip:${r.skipReplacements} rate:${r.rateRemovals} origin:${r.originAdditions}` +
-      (r.structuralFlags.length ? `  [structural: ${r.structuralFlags.join(', ')}]` : ''),
+    `  ${r.file}  skip:${r.skipReplacements} rate:${r.rateRemovals} origin:${r.originAdditions}${flags}`,
   );
 }
 console.log(`\nSkipped (no rewrite): ${report.skipped.length}`);

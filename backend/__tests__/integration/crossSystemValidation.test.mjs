@@ -60,11 +60,16 @@ describe('Cross-System Validation Tests', () => {
     // requireRole middleware accepts without a DB round trip).
     authToken = generateTestToken({ id: testUser.id, email: testUser.email, role: 'admin' });
 
-    // Create test breed with unique name
-    testBreed = await prisma.breed.create({
-      data: {
-        name: `Cross System Test Breed ${suffix}`,
-        description: 'Test breed for cross-system validation',
+    // Use a real breed name that exists in breedProfiles.json — the
+    // post-309-breeds refactor requires every DB breed to have a matching
+    // JSON profile. Upsert keeps the suite self-contained without
+    // clobbering the shared Thoroughbred entry.
+    testBreed = await prisma.breed.upsert({
+      where: { name: 'Thoroughbred' },
+      update: {},
+      create: {
+        name: 'Thoroughbred',
+        description: 'Thoroughbred (shared across integration suites)',
       },
     });
 
@@ -116,9 +121,7 @@ describe('Cross-System Validation Tests', () => {
       await prisma.groom.deleteMany({ where: { userId: testUser.id } });
       await prisma.user.delete({ where: { id: testUser.id } });
     }
-    if (testBreed) {
-      await prisma.breed.delete({ where: { id: testBreed.id } });
-    }
+    // Do NOT delete the shared "Thoroughbred" breed — it's used by other suites.
   }, 20000);
 
   describe('Epigenetic Trait System Integration', () => {

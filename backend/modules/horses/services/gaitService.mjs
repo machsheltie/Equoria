@@ -4,7 +4,7 @@
 // Scores are influenced by conformation regions via a mapping formula.
 
 import { normalRandom, clampScore } from './conformationService.mjs';
-import { BREED_GENETIC_PROFILES } from '../data/breedGeneticProfiles.mjs';
+import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 import logger from '../../../utils/logger.mjs';
 
 // The 4 standard gaits every horse has
@@ -91,35 +91,29 @@ export function validateGaitScores(scores) {
 
 /**
  * Generate gait scores for a horse based on breed genetics and conformation influence.
- * @param {number} breedId - The breed ID to look up genetic profiles
+ * @param {string|number} breedName - Breed display name (preferred) or legacy canonical-12 numeric id
  * @param {Object} conformationScores - Horse's conformation scores for bonus calculation
  * @returns {Object} Object with walk/trot/canter/gallop (integers 0-100) and gaiting (array or null)
+ * @throws {Error} if the breed is missing from breedProfiles.json or any gait entry is absent
  */
-export function generateGaitScores(breedId, conformationScores) {
-  const profile = BREED_GENETIC_PROFILES[breedId];
-  if (!profile) {
-    logger.warn(`[gaitService] No genetic profile found for breed ID ${breedId}, using defaults`);
-    return { ...DEFAULT_UNKNOWN_BREED_GAIT_SCORES };
-  }
-
-  // GAIT-1: use optional chaining consistent with conformationService
+export function generateGaitScores(breedName, conformationScores) {
+  const profile = getBreedProfile(breedName);
   const gaits = profile.rating_profiles?.gaits;
   if (!gaits) {
-    logger.warn(`[gaitService] Breed ID ${breedId} profile missing gaits data, using defaults`);
-    return { ...DEFAULT_UNKNOWN_BREED_GAIT_SCORES };
+    throw new Error(
+      `breedProfiles.json entry for "${breedName}" is missing rating_profiles.gaits.`,
+    );
   }
   const scores = {};
 
   // Generate 4 standard gait scores
   for (const gait of STANDARD_GAITS) {
     const gaitProfile = gaits[gait];
-    // CONF-1 (gait side): guard against null/missing gait entry in manually-maintained breed data
     if (!gaitProfile || !Number.isFinite(gaitProfile.mean)) {
-      logger.warn(
-        `[gaitService] Missing profile for gait "${gait}" on breed ${breedId}, using neutral defaults`,
+      throw new Error(
+        `breedProfiles.json entry for "${breedName}" missing gait "${gait}" ` +
+          'in rating_profiles.gaits. All 4 standard gaits (walk/trot/canter/gallop) are required.',
       );
-      scores[gait] = clampScore(normalRandom(50, 8));
-      continue;
     }
     const bonus = calculateConformationBonus(conformationScores, gait);
     const rawScore = normalRandom(gaitProfile.mean, gaitProfile.std_dev) + bonus;
@@ -148,14 +142,14 @@ export function generateGaitScores(breedId, conformationScores) {
  * and conformation influence.
  * Formula per gait: baseValue = (parentAvg * 0.6 + breedMean * 0.4) + conformationBonus
  * Falls back to breed-only generation if either parent's gait scores are null/missing.
- * @param {number} breedId - The breed ID for genetic profile lookup
+ * @param {string|number} breedName - Breed display name (preferred) or legacy canonical-12 numeric id
  * @param {Object|null} sireGaitScores - Sire's gait scores
  * @param {Object|null} damGaitScores - Dam's gait scores
  * @param {Object} conformationScores - Foal's conformation scores for bonus calculation
  * @returns {Object} Object with walk/trot/canter/gallop (integers 0-100) and gaiting (array or null)
  */
 export function generateInheritedGaitScores(
-  breedId,
+  breedName,
   sireGaitScores,
   damGaitScores,
   conformationScores,
@@ -163,37 +157,28 @@ export function generateInheritedGaitScores(
   // Fall back to breed-only generation if either parent's scores are missing
   if (!sireGaitScores || !damGaitScores) {
     logger.info(
-      `[gaitService] Missing parent gait scores, falling back to breed-only generation for breed ${breedId}`,
+      `[gaitService] Missing parent gait scores, falling back to breed-only generation for breed "${breedName}"`,
     );
-    return generateGaitScores(breedId, conformationScores);
+    return generateGaitScores(breedName, conformationScores);
   }
 
-  const profile = BREED_GENETIC_PROFILES[breedId];
-  if (!profile) {
-    logger.warn(`[gaitService] No genetic profile found for breed ID ${breedId}, using defaults`);
-    return { ...DEFAULT_UNKNOWN_BREED_GAIT_SCORES };
-  }
-
-  // GAIT-1 (inherited path): use optional chaining consistent with generateGaitScores
+  const profile = getBreedProfile(breedName);
   const gaits = profile.rating_profiles?.gaits;
   if (!gaits) {
-    logger.warn(
-      `[gaitService] Breed ID ${breedId} profile missing gaits data (inherited), using defaults`,
+    throw new Error(
+      `breedProfiles.json entry for "${breedName}" is missing rating_profiles.gaits (inherited path).`,
     );
-    return { ...DEFAULT_UNKNOWN_BREED_GAIT_SCORES };
   }
   const scores = {};
 
   // Generate 4 standard gait scores with inheritance
   for (const gait of STANDARD_GAITS) {
     const gaitProfile = gaits[gait];
-    // CONF-1 (gait inherited): guard against null/missing gait entry
     if (!gaitProfile || !Number.isFinite(gaitProfile.mean)) {
-      logger.warn(
-        `[gaitService] Missing profile for gait "${gait}" on breed ${breedId} (inherited), using neutral defaults`,
+      throw new Error(
+        `breedProfiles.json entry for "${breedName}" missing gait "${gait}" ` +
+          'in rating_profiles.gaits (inherited path).',
       );
-      scores[gait] = clampScore(normalRandom(50, 8));
-      continue;
     }
     // Guard against NaN/non-finite parent scores from corrupted DB data
     const sireVal = Number.isFinite(sireGaitScores[gait]) ? sireGaitScores[gait] : undefined;

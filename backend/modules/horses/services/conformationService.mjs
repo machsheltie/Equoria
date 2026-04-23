@@ -1,8 +1,11 @@
 // Conformation score generation service.
-// Generates 8 conformation region scores for a horse using breed genetic profiles.
+// Generates 8 conformation region scores for a horse using breed rating profiles.
 // Scores are permanent physical structure attributes generated at birth.
+//
+// Per-breed profiles come from backend/data/breedProfiles.json via
+// breedProfileLoader. Every breed in the DB must have an entry.
 
-import { BREED_GENETIC_PROFILES } from '../data/breedGeneticProfiles.mjs';
+import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 import logger from '../../../utils/logger.mjs';
 
 // The 8 conformation regions in canonical order
@@ -16,19 +19,6 @@ const CONFORMATION_REGIONS = [
   'hooves',
   'topline',
 ];
-
-// Default scores returned when no breed genetic profile is found (score 50 per region)
-const DEFAULT_UNKNOWN_BREED_SCORES = Object.freeze({
-  head: 50,
-  neck: 50,
-  shoulders: 50,
-  back: 50,
-  hindquarters: 50,
-  legs: 50,
-  hooves: 50,
-  topline: 50,
-  overallConformation: 50,
-});
 
 /**
  * Box-Muller transform — generates a normally distributed random value.
@@ -79,37 +69,35 @@ export function calculateOverallConformation(scores) {
 /**
  * Generate conformation scores for a horse based on its breed's genetic profile.
  * Each region score is drawn from a normal distribution using the breed's mean and std_dev.
- * @param {number} breedId - The breed ID to look up genetic profiles
+ * @param {string|number} breedName - Breed display name (preferred) or legacy canonical-12 numeric id
  * @returns {Object} Object with 8 region scores (integers 0-100) and overallConformation
+ * @throws {Error} if the breed is missing from breedProfiles.json or any region is absent
  */
-export function generateConformationScores(breedId) {
-  const profile = BREED_GENETIC_PROFILES[breedId];
-  if (!profile) {
-    logger.warn(
-      `[conformationService] No genetic profile found for breed ID ${breedId}, using defaults`,
-    );
-    return { ...DEFAULT_UNKNOWN_BREED_SCORES };
-  }
-
+export function generateConformationScores(breedName) {
+  const profile = getBreedProfile(breedName);
   const conformation = profile.rating_profiles?.conformation;
   if (!conformation) {
-    logger.warn(
-      `[conformationService] Breed ID ${breedId} profile missing conformation data, using defaults`,
+    throw new Error(
+      `breedProfiles.json entry for "${breedName}" is missing rating_profiles.conformation. ` +
+        'Regenerate via backend/scripts/generateBreedProfiles.mjs or fix the hand-tuned entry.',
     );
-    return { ...DEFAULT_UNKNOWN_BREED_SCORES };
   }
 
   const scores = {};
 
   for (const region of CONFORMATION_REGIONS) {
     const regionProfile = conformation[region];
-    // CONF-1: guard against null/missing region entry in manually-maintained breed data
-    if (!regionProfile || !Number.isFinite(regionProfile.mean)) {
-      logger.warn(
-        `[conformationService] Missing profile for region "${region}" on breed ${breedId}, using neutral defaults`,
+    // Every region must be present with valid mean and std_dev. An incomplete profile is a data bug.
+    if (
+      !regionProfile ||
+      !Number.isFinite(regionProfile.mean) ||
+      !Number.isFinite(regionProfile.std_dev) ||
+      regionProfile.std_dev < 0
+    ) {
+      throw new Error(
+        `breedProfiles.json entry for "${breedName}" has invalid region "${region}" ` +
+          'in rating_profiles.conformation. All 8 regions require finite mean and non-negative std_dev.',
       );
-      scores[region] = clampScore(normalRandom(50, 8));
-      continue;
     }
     const rawScore = normalRandom(regionProfile.mean, regionProfile.std_dev);
     scores[region] = clampScore(rawScore);
@@ -125,47 +113,42 @@ export function generateConformationScores(breedId) {
  * Formula per region: baseValue = (sireScore * 0.5 + damScore * 0.5) * 0.6 + breedMean * 0.4
  * Final score: clampScore(normalRandom(baseValue, breedStdDev))
  * Falls back to breed-only generation if either parent's scores are null/missing.
- * @param {number} breedId - The breed ID for genetic profile lookup
+ * @param {string|number} breedName - Breed display name (preferred) or legacy canonical-12 numeric id
  * @param {Object|null} sireScores - Sire's conformation scores (8 regions)
  * @param {Object|null} damScores - Dam's conformation scores (8 regions)
  * @returns {Object} Object with 8 region scores (integers 0-100) and overallConformation
  */
-export function generateInheritedConformationScores(breedId, sireScores, damScores) {
+export function generateInheritedConformationScores(breedName, sireScores, damScores) {
   // Fall back to breed-only generation if either parent's scores are null/missing
   if (!sireScores || !damScores) {
     logger.info(
-      `[conformationService] Missing parent conformation scores, falling back to breed-only generation for breed ${breedId}`,
+      `[conformationService] Missing parent conformation scores, falling back to breed-only generation for breed "${breedName}"`,
     );
-    return generateConformationScores(breedId);
+    return generateConformationScores(breedName);
   }
 
-  const profile = BREED_GENETIC_PROFILES[breedId];
-  if (!profile) {
-    logger.warn(
-      `[conformationService] No genetic profile found for breed ID ${breedId}, falling back to breed-only generation`,
-    );
-    return generateConformationScores(breedId);
-  }
-
+  const profile = getBreedProfile(breedName);
   const conformation = profile.rating_profiles?.conformation;
   if (!conformation) {
-    logger.warn(
-      `[conformationService] Breed ID ${breedId} profile missing conformation data, falling back to breed-only generation`,
+    throw new Error(
+      `breedProfiles.json entry for "${breedName}" is missing rating_profiles.conformation.`,
     );
-    return generateConformationScores(breedId);
   }
 
   const scores = {};
 
   for (const region of CONFORMATION_REGIONS) {
     const regionProfile = conformation[region];
-    // CONF-1: guard against null/missing region entry in manually-maintained breed data
-    if (!regionProfile || !Number.isFinite(regionProfile.mean)) {
-      logger.warn(
-        `[conformationService] Missing profile for region "${region}" on breed ${breedId} (inherited), using neutral defaults`,
+    if (
+      !regionProfile ||
+      !Number.isFinite(regionProfile.mean) ||
+      !Number.isFinite(regionProfile.std_dev) ||
+      regionProfile.std_dev < 0
+    ) {
+      throw new Error(
+        `breedProfiles.json entry for "${breedName}" has invalid region "${region}" ` +
+          'in rating_profiles.conformation (inherited path). Finite mean and non-negative std_dev are required.',
       );
-      scores[region] = clampScore(normalRandom(50, 8));
-      continue;
     }
     // Guard against NaN/non-finite parent scores from corrupted DB data
     const sireVal = Number.isFinite(sireScores[region]) ? sireScores[region] : undefined;
@@ -207,9 +190,14 @@ export function hasValidConformationScores(scores) {
 export function validateConformationScores(scores) {
   if (!scores || typeof scores !== 'object') {
     logger.warn(
-      '[conformationService] validateConformationScores received invalid input, using defaults',
+      '[conformationService] validateConformationScores received invalid input, using neutral 50 defaults',
     );
-    return { ...DEFAULT_UNKNOWN_BREED_SCORES };
+    const defaults = {};
+    for (const region of CONFORMATION_REGIONS) {
+      defaults[region] = 50;
+    }
+    defaults.overallConformation = 50;
+    return defaults;
   }
 
   const validated = {};
