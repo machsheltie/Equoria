@@ -54,11 +54,13 @@ describe('🐴 INTEGRATION: Horse Trader Store API', () => {
     brokeUser = broke.user;
     brokeToken = broke.token;
 
-    // Reuse an existing breed or create a minimal one
+    // generateStoreStats requires the breed NAME to match a key in
+    // backend/data/breedStarterStats.json. Use or seed "Thoroughbred"
+    // which is always present in the JSON.
     testBreed =
-      (await prisma.breed.findFirst()) ??
+      (await prisma.breed.findFirst({ where: { name: 'Thoroughbred' } })) ??
       (await prisma.breed.create({
-        data: { name: `StoreTestBreed_${ts}`, description: 'Horse trader test breed' },
+        data: { name: 'Thoroughbred', description: 'Horse trader test breed' },
       }));
   });
 
