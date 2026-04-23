@@ -15448,5 +15448,155 @@
       "mean": 17,
       "std": 3
     }
+  },
+  "Pony Of The Americas": {
+    "agility": {
+      "mean": 16,
+      "std": 3
+    },
+    "balance": {
+      "mean": 16,
+      "std": 3
+    },
+    "boldness": {
+      "mean": 14,
+      "std": 3
+    },
+    "endurance": {
+      "mean": 15,
+      "std": 3
+    },
+    "flexibility": {
+      "mean": 16,
+      "std": 3
+    },
+    "focus": {
+      "mean": 15,
+      "std": 3
+    },
+    "intelligence": {
+      "mean": 16,
+      "std": 3
+    },
+    "obedience": {
+      "mean": 18,
+      "std": 3
+    },
+    "precision": {
+      "mean": 15,
+      "std": 3
+    },
+    "speed": {
+      "mean": 15,
+      "std": 3
+    },
+    "stamina": {
+      "mean": 15,
+      "std": 3
+    },
+    "strength": {
+      "mean": 14,
+      "std": 3
+    }
+  },
+  "Tennessee Walking Horse": {
+    "agility": {
+      "mean": 15,
+      "std": 3
+    },
+    "balance": {
+      "mean": 17,
+      "std": 3
+    },
+    "boldness": {
+      "mean": 14,
+      "std": 3
+    },
+    "endurance": {
+      "mean": 17,
+      "std": 3
+    },
+    "flexibility": {
+      "mean": 16,
+      "std": 3
+    },
+    "focus": {
+      "mean": 16,
+      "std": 3
+    },
+    "intelligence": {
+      "mean": 15,
+      "std": 3
+    },
+    "obedience": {
+      "mean": 18,
+      "std": 3
+    },
+    "precision": {
+      "mean": 15,
+      "std": 3
+    },
+    "speed": {
+      "mean": 14,
+      "std": 3
+    },
+    "stamina": {
+      "mean": 17,
+      "std": 3
+    },
+    "strength": {
+      "mean": 15,
+      "std": 3
+    }
+  },
+  "Paint Horse": {
+    "agility": {
+      "mean": 18,
+      "std": 3
+    },
+    "balance": {
+      "mean": 16,
+      "std": 3
+    },
+    "boldness": {
+      "mean": 17,
+      "std": 3
+    },
+    "endurance": {
+      "mean": 15,
+      "std": 3
+    },
+    "flexibility": {
+      "mean": 16,
+      "std": 3
+    },
+    "focus": {
+      "mean": 16,
+      "std": 3
+    },
+    "intelligence": {
+      "mean": 16,
+      "std": 3
+    },
+    "obedience": {
+      "mean": 16,
+      "std": 3
+    },
+    "precision": {
+      "mean": 15,
+      "std": 3
+    },
+    "speed": {
+      "mean": 20,
+      "std": 3
+    },
+    "stamina": {
+      "mean": 16,
+      "std": 3
+    },
+    "strength": {
+      "mean": 18,
+      "std": 3
+    }
   }
 }

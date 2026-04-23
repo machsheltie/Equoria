@@ -56,11 +56,16 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     // Generate a JWT token for the real user
     authToken = generateTestToken({ id: testUser.id, role: 'user' });
 
-    // Create a real breed
-    testBreed = await prisma.breed.create({
-      data: {
-        name: `FoalTestBreed_${ts}`,
-        description: 'Breed for foal creation integration tests',
+    // Use a real breed name that exists in breedProfiles.json. The
+    // post-309-breeds refactor requires every breed in the DB to have
+    // a matching JSON profile — random synthetic breed names no longer
+    // work, so we upsert the canonical "Thoroughbred" for this suite.
+    testBreed = await prisma.breed.upsert({
+      where: { name: 'Thoroughbred' },
+      update: {},
+      create: {
+        name: 'Thoroughbred',
+        description: 'Thoroughbred (shared across integration suites)',
       },
     });
 
@@ -117,9 +122,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
       if (testDam) {
         await prisma.horse.deleteMany({ where: { id: testDam.id } });
       }
-      if (testBreed) {
-        await prisma.breed.deleteMany({ where: { id: testBreed.id } });
-      }
+      // Do NOT delete the shared "Thoroughbred" breed — it's used by other suites.
       if (testUser) {
         await prisma.groom.deleteMany({ where: { userId: testUser.id } }).catch(() => {});
         await prisma.user.deleteMany({ where: { id: testUser.id } });

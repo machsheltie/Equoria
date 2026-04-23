@@ -10,6 +10,9 @@ const mockPrisma = {
     findMany: jest.fn(),
     findUnique: jest.fn(),
   },
+  breed: {
+    findUnique: jest.fn().mockResolvedValue({ name: 'Thoroughbred' }),
+  },
 };
 jest.unstable_mockModule('../db/index.mjs', () => ({ default: mockPrisma }));
 

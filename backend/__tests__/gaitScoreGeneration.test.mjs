@@ -227,14 +227,13 @@ describe('Gait Score Generation Service', () => {
     });
   });
 
-  describe('generateGaitScores — unknown breed fallback', () => {
-    test('returns default scores (50 each) for unknown breed', () => {
-      const scores = generateGaitScores(9999, goodConformation);
-      expect(scores.walk).toBe(50);
-      expect(scores.trot).toBe(50);
-      expect(scores.canter).toBe(50);
-      expect(scores.gallop).toBe(50);
-      expect(scores.gaiting).toBeNull();
+  describe('generateGaitScores — unknown breed', () => {
+    // Post-309-breeds refactor: missing/unknown breed identifiers must
+    // throw rather than silently returning stub defaults.
+    test('throws for unknown numeric breedId', () => {
+      expect(() => generateGaitScores(9999, goodConformation)).toThrow(
+        /No canonical-12 breed for numeric breedId 9999/,
+      );
     });
   });
 
@@ -283,10 +282,10 @@ describe('Gait Score Generation Service', () => {
       expect(scores.gallop).toBeLessThanOrEqual(100);
     });
 
-    test('returns defaults for unknown breed', () => {
-      const scores = generateInheritedGaitScores(9999, sireGaits, damGaits, goodConformation);
-      expect(scores.walk).toBe(50);
-      expect(scores.gaiting).toBeNull();
+    test('throws for unknown breed (post-309-breeds refactor)', () => {
+      expect(() => generateInheritedGaitScores(9999, sireGaits, damGaits, goodConformation)).toThrow(
+        /No canonical-12 breed for numeric breedId 9999/,
+      );
     });
   });
 

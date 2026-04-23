@@ -448,6 +448,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         reason: null,
         horseAge: 4, // testHorseEligible is 4 years old
         lastTrainingDate: null,
+        nextEligibleDate: null,
         cooldown: null,
       });
     });
@@ -518,6 +519,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         reason: 'Horse is under age',
         horseAge: 2,
         lastTrainingDate: null,
+        nextEligibleDate: null,
         cooldown: null,
       });
     });

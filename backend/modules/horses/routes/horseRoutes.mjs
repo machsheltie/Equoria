@@ -600,12 +600,30 @@ router.post(
   validateHorseCreation,
   async (req, res) => {
     try {
-      // Generate conformation scores from breed genetics (always generate — falls back to 50s for unknown breed)
-      const conformationScores = generateConformationScores(req.body.breedId);
-      // Generate gait scores from breed genetics + conformation influence
-      const gaitScores = generateGaitScores(req.body.breedId, conformationScores);
-      // Generate temperament from breed-weighted random selection
-      const temperament = generateTemperament(req.body.breedId);
+      // Resolve breed name from ID — every generator downstream keys by
+      // display name against breedProfiles.json. A missing breed is a
+      // data bug that must fail the request rather than silently ship
+      // a horse with random stats.
+      const breedRecord = req.body.breedId
+        ? await prisma.breed.findUnique({
+            where: { id: req.body.breedId },
+            select: { name: true },
+          })
+        : null;
+      if (!breedRecord?.name) {
+        return res.status(400).json({
+          success: false,
+          message: `No breed found for id ${req.body.breedId}`,
+        });
+      }
+      const breedName = breedRecord.name;
+
+      // Generate conformation scores from breed genetics.
+      const conformationScores = generateConformationScores(breedName);
+      // Generate gait scores from breed genetics + conformation influence.
+      const gaitScores = generateGaitScores(breedName, conformationScores);
+      // Generate temperament from breed-weighted random selection.
+      const temperament = generateTemperament(breedName);
 
       // Fetch breed genetic profile for coat color genotype generation
       // Use raw SQL to bypass stale Prisma client DMMF that may not include breedGeneticProfile

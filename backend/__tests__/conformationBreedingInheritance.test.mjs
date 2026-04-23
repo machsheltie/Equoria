@@ -130,14 +130,14 @@ describe('generateInheritedConformationScores', () => {
     expect(Number.isInteger(scores.overallConformation)).toBe(true);
   });
 
-  // === Task 3.11: Unknown breed with valid parents ===
+  // === Task 3.11: Unknown breed contract ===
+  // Post-309-breeds refactor: unknown breed IDs must throw (no silent fallback
+  // to 50, which was the root cause of the store horse stats bug).
 
-  test('unknown breed with valid parents falls back to default scores (50)', () => {
-    const scores = generateInheritedConformationScores(999, sireScores, damScores);
-    for (const region of CONFORMATION_REGIONS) {
-      expect(scores[region]).toBe(50);
-    }
-    expect(scores.overallConformation).toBe(50);
+  test('unknown breed throws instead of returning silent defaults', () => {
+    expect(() => generateInheritedConformationScores(999, sireScores, damScores)).toThrow(
+      /No canonical-12 breed for numeric breedId 999/,
+    );
   });
 
   // Edge case: NaN parent region scores should fall back to breed mean, not propagate NaN

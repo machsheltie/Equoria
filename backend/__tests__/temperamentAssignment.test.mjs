@@ -83,29 +83,10 @@ describe('Temperament Assignment Service', () => {
       expect(results.size).toBeGreaterThan(1);
     });
 
-    test('returns a valid temperament for breedId 0 (graceful fallback)', () => {
-      const result = generateTemperament(0);
-      expect(TEMPERAMENT_TYPES).toContain(result);
-    });
-
-    test('returns a valid temperament for negative breedId (graceful fallback)', () => {
-      const result = generateTemperament(-1);
-      expect(TEMPERAMENT_TYPES).toContain(result);
-    });
-
-    test('returns a valid temperament for non-existent breedId (graceful fallback)', () => {
-      const result = generateTemperament(999);
-      expect(TEMPERAMENT_TYPES).toContain(result);
-    });
-
-    test('returns a valid temperament for null breedId (graceful fallback)', () => {
-      const result = generateTemperament(null);
-      expect(TEMPERAMENT_TYPES).toContain(result);
-    });
-
-    test('returns a valid temperament for undefined breedId (graceful fallback)', () => {
-      const result = generateTemperament(undefined);
-      expect(TEMPERAMENT_TYPES).toContain(result);
+    // Post-309-breeds refactor: invalid/missing breed identifiers must
+    // throw rather than silently returning a random temperament.
+    test.each([0, -1, 999, null, undefined])('throws for invalid breed identifier %p', breedId => {
+      expect(() => generateTemperament(breedId)).toThrow();
     });
   });
 
