@@ -6,6 +6,18 @@
 // db/index.mjs. Follows the pattern in
 // backend/__tests__/integration/crossSystemValidation.test.mjs:
 // seed breed/user/horses in beforeAll, clean up in afterAll.
+//
+// Isolation strategy:
+//   • Most analysis tests run against a UNIQUE per-run breed. No other
+//     suite targets that breed, so findMany results are deterministic
+//     without needing to touch horses owned by parallel Jest workers.
+//   • The single test that asserts breedMean comes from
+//     breedProfiles.json uses the real Thoroughbred breed (upserted in
+//     beforeAll) because the loader is keyed by breed display name, and
+//     'Thoroughbred' is the one breed this suite can rely on having a
+//     profile entry. That test only checks breedMean values, which are
+//     derived from the JSON file and are unaffected by whatever
+//     Thoroughbred horses other suites may have created.
 
 import { jest } from '@jest/globals';
 import { Prisma } from '@prisma/client';
@@ -20,14 +32,15 @@ const { CONFORMATION_REGIONS } = await import(
 
 describe('Conformation API Endpoints', () => {
   let thoroughbredBreed;
+  let testBreed;
   let testUser;
   const suiteSuffix = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
   const createdHorseIds = [];
 
   beforeAll(async () => {
-    // Seed the Thoroughbred breed row. Upsert is used because other
-    // integration suites also depend on this canonical breed existing in
-    // the shared test DB (see backend/tests/foalCreationIntegration.test.mjs).
+    // Upsert the real Thoroughbred breed. Used only by the single
+    // breed-profile test below — other suites also seed this row, so we
+    // upsert rather than create.
     thoroughbredBreed = await prisma.breed.upsert({
       where: { name: 'Thoroughbred' },
       update: {},
@@ -37,8 +50,18 @@ describe('Conformation API Endpoints', () => {
       },
     });
 
-    // Create an isolated user to own horses created by this suite, so
-    // afterAll cleanup can safely `deleteMany({ userId })`.
+    // Create a UNIQUE per-run breed. Every analysis test that asserts on
+    // same-breed horse counts/percentiles uses this breed so parallel
+    // suites cannot contaminate findMany results.
+    testBreed = await prisma.breed.create({
+      data: {
+        name: `ConfTestBreed_${suiteSuffix}`,
+        description: 'Per-run breed used by conformationApiEndpoints.test.mjs',
+      },
+    });
+
+    // Dedicated test user so afterAll can sweep horses by userId as a
+    // safety net even if createdHorseIds tracking misses something.
     testUser = await prisma.user.create({
       data: {
         username: `confApiUser_${suiteSuffix}`,
@@ -51,10 +74,10 @@ describe('Conformation API Endpoints', () => {
   });
 
   afterAll(async () => {
-    // Remove any horses created during this run (tracked IDs cover all
-    // seedings below), then the dedicated test user. The Thoroughbred
-    // breed row is NOT deleted — it is shared with other integration
-    // suites.
+    // Clean up only what this suite created. Track-by-ID first, then
+    // sweep anything left owned by the test user. The Thoroughbred breed
+    // row is shared with other suites — do NOT delete it. The unique
+    // testBreed IS owned by this suite, so it's safe to delete.
     if (createdHorseIds.length > 0) {
       await prisma.horse
         .deleteMany({ where: { id: { in: createdHorseIds } } })
@@ -64,17 +87,20 @@ describe('Conformation API Endpoints', () => {
       await prisma.horse.deleteMany({ where: { userId: testUser.id } }).catch(() => {});
       await prisma.user.deleteMany({ where: { id: testUser.id } }).catch(() => {});
     }
+    if (testBreed) {
+      await prisma.breed.deleteMany({ where: { id: testBreed.id } }).catch(() => {});
+    }
   }, 20000);
 
   // Create a horse row in the test DB with specified conformationScores
-  // and track its id for cleanup.
-  async function seedHorse(conformationScores) {
+  // and track its id for cleanup. Defaults to the unique per-run breed.
+  async function seedHorse(conformationScores, breedId = testBreed.id) {
     const fourYearsAgo = new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000);
     const horse = await prisma.horse.create({
       data: {
         name: `ConfTestHorse_${suiteSuffix}_${createdHorseIds.length}`,
         userId: testUser.id,
-        breedId: thoroughbredBreed.id,
+        breedId,
         sex: 'Mare',
         dateOfBirth: fourYearsAgo,
         age: 28,
@@ -90,12 +116,13 @@ describe('Conformation API Endpoints', () => {
 
   // Build a mock req/res pair. req.horse is attached directly (the
   // controllers read it from middleware, so no DB fetch for the subject
-  // horse is required).
+  // horse is required). Caller can override breedId to point at the
+  // Thoroughbred breed for the one test that needs it.
   function createMockReqRes(horseOverrides = {}) {
     const horse = {
       id: 123,
       name: 'Midnight Star',
-      breedId: thoroughbredBreed.id,
+      breedId: testBreed.id,
       conformationScores: {
         head: 82,
         neck: 75,
@@ -138,7 +165,7 @@ describe('Conformation API Endpoints', () => {
       expect(response.message).toBe('Conformation scores retrieved successfully');
       expect(response.data.horseId).toBe(123);
       expect(response.data.horseName).toBe('Midnight Star');
-      expect(response.data.breedId).toBe(thoroughbredBreed.id);
+      expect(response.data.breedId).toBe(testBreed.id);
 
       const scores = response.data.conformationScores;
       for (const region of CONFORMATION_REGIONS) {
@@ -197,19 +224,11 @@ describe('Conformation API Endpoints', () => {
 
   // === Task 3.3: GET /conformation/analysis returns percentile per region ===
   // These tests hit the real DB via prisma.horse.findMany and
-  // prisma.breed.findUnique. Each test controls the same-breed horse
-  // population by wiping Thoroughbred horses before seeding its own.
+  // prisma.breed.findUnique. Because the per-run test breed is unique to
+  // this suite, no beforeEach wipe is required — the only horses visible
+  // to findMany are the ones the current test seeds.
 
   describe('getConformationAnalysis', () => {
-    beforeEach(async () => {
-      // Start each test from a clean Thoroughbred population. This suite
-      // owns Thoroughbred-horse state during its run so findMany results
-      // are deterministic. The Thoroughbred breed row itself is left
-      // alone.
-      await prisma.horse.deleteMany({ where: { breedId: thoroughbredBreed.id } });
-      createdHorseIds.length = 0;
-    });
-
     test('returns percentile analysis per region for a horse with scores', async () => {
       // Seed 5 same-breed horses with varying scores
       await seedHorse({
@@ -243,8 +262,8 @@ describe('Conformation API Endpoints', () => {
       expect(response.message).toBe('Conformation analysis retrieved successfully');
       expect(response.data.horseId).toBe(123);
       expect(response.data.horseName).toBe('Midnight Star');
-      expect(response.data.breedId).toBe(thoroughbredBreed.id);
-      expect(response.data.breedName).toBe('Thoroughbred');
+      expect(response.data.breedId).toBe(testBreed.id);
+      expect(response.data.breedName).toBe(testBreed.name);
       expect(response.data.totalHorsesInBreed).toBe(5);
 
       // Check analysis has all 8 regions
@@ -324,7 +343,7 @@ describe('Conformation API Endpoints', () => {
     });
 
     test('handles single horse in breed — defaults to 50th percentile', async () => {
-      // Only 1 Thoroughbred horse (the subject horse's record)
+      // Only 1 horse in the unique breed (the subject horse's peer)
       await seedHorse({
         head: 82, neck: 75, shoulders: 70, back: 68, hindquarters: 78,
         legs: 72, hooves: 71, topline: 74, overallConformation: 74,
@@ -369,16 +388,26 @@ describe('Conformation API Endpoints', () => {
     });
 
     test('uses breed mean from breedProfiles.json, not database average', async () => {
-      await seedHorse({
-        head: 82, neck: 75, shoulders: 70, back: 68, hindquarters: 78,
-        legs: 72, hooves: 71, topline: 74, overallConformation: 74,
-      });
+      // This test deliberately uses the real Thoroughbred breed because
+      // breedProfileLoader is keyed by display name. The assertion only
+      // checks breedMean values (derived from the JSON file), so any
+      // extra Thoroughbred horses created by parallel suites do not
+      // affect the result.
+      await seedHorse(
+        {
+          head: 82, neck: 75, shoulders: 70, back: 68, hindquarters: 78,
+          legs: 72, hooves: 71, topline: 74, overallConformation: 74,
+        },
+        thoroughbredBreed.id,
+      );
 
-      const { req, res } = createMockReqRes();
+      const { req, res } = createMockReqRes({ breedId: thoroughbredBreed.id });
 
       await getConformationAnalysis(req, res);
 
       const response = res.json.mock.calls[0][0];
+      expect(response.data.breedName).toBe('Thoroughbred');
+
       // breedMean should come from breedProfiles.json (single source of truth),
       // not from the database average of same-breed horses.
       const { getBreedProfile } = await import('../modules/horses/data/breedProfileLoader.mjs');
