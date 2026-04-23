@@ -60,7 +60,6 @@ const DRAFT_TOKENS = [
   'Dutch Heavy',
   'Finnhorse',
   'Gypsy',
-  'Haflinger',
   'Irish Draught',
   'Jutland',
   'Latvian',
@@ -159,8 +158,8 @@ const RACING_TOKENS = [
 
 // Per-token gait registry for gaited breeds. Token matching uses the same
 // lowercased .includes() logic as classify(). First match wins (same priority
-// order as GAITED_TOKENS). Legacy-12 overrides still win at the buildProfile
-// level — this map only affects category-template-generated entries.
+// order as GAITED_TOKENS). This is the single source of truth for
+// gaited_gait_registry — buildProfile has no override layer after this step.
 const GAITED_REGISTRIES_BY_TOKEN = {
   'Tennessee Walking': ['Flat Walk', 'Running Walk'],
   'Tennessee Walker': ['Flat Walk', 'Running Walk'],
@@ -168,49 +167,61 @@ const GAITED_REGISTRIES_BY_TOKEN = {
   'National Show Horse': ['Slow Gait', 'Rack'],
   'Paso Fino': ['Paso Corto', 'Paso Largo', 'Paso Fino'],
   'Peruvian Paso': ['Paso Llano', 'Sobreandando'],
-  'Icelandic': ['Tolt', 'Flying Pace'],
+  Icelandic: ['Tolt', 'Flying Pace'],
   // Aegidienberger is a cross of Peruvian Paso × Icelandic — Tolt is correct.
-  'Aegidienberger': ['Tolt'],
+  Aegidienberger: ['Tolt'],
   'Rocky Mountain': ['Single-Foot'],
   'Kentucky Mountain': ['Single-Foot'],
   'Missouri Fox Trotter': ['Fox Trot'],
-  'Mangalarga': ['Marcha Picada', 'Marcha Batida'],
-  'Campolina': ['Marcha Picada', 'Marcha Batida'],
-  'Pampa': ['Marcha Picada', 'Marcha Batida'],
+  Mangalarga: ['Marcha Picada', 'Marcha Batida'],
+  Campolina: ['Marcha Picada', 'Marcha Batida'],
+  Pampa: ['Marcha Picada', 'Marcha Batida'],
   'Spotted Saddle': ['Rack', 'Single-Foot'],
   // 'Racking' token matches "Racking Horse" — rack gait.
-  'Racking': ['Rack'],
+  Racking: ['Rack'],
   // Walkaloosa is historically associated with the Indian Shuffle.
-  'Walkaloosa': ['Indian Shuffle'],
+  Walkaloosa: ['Indian Shuffle'],
   'Mountain Pleasure': ['Single-Foot'],
   'Florida Cracker': ['Rack'],
   'McCurdy Plantation': ['Rack', 'Single-Foot'],
   // Marwari and Kathiawari use the revaal (Indian amble).
-  'Marwari': ['Revaal'],
-  'Kathiawari': ['Revaal'],
-  'Singlefoot': ['Single-Foot'],
+  Marwari: ['Revaal'],
+  Kathiawari: ['Revaal'],
+  Singlefoot: ['Single-Foot'],
   // Standardbred pacers race at the pace; trotters at the trot.
-  'Standardbred': ['Trot', 'Pace'],
+  Standardbred: ['Trot', 'Pace'],
   // Generic fallback tokens — any breed that only matches these gets 'Amble'.
-  'Tolt': ['Tolt'],
-  'Gaited': ['Amble'],
+  Tolt: ['Tolt'],
+  Gaited: ['Amble'],
 };
 
 function gaitedRegistryFor(name) {
   const lower = name.toLowerCase();
   for (const [token, registry] of Object.entries(GAITED_REGISTRIES_BY_TOKEN)) {
-    if (lower.includes(token.toLowerCase())) { return registry; }
+    if (lower.includes(token.toLowerCase())) {
+      return registry;
+    }
   }
   return ['Amble']; // generic neutral fallback — better than hard-coding Tolt
 }
 
 function classify(name) {
   const matchAny = tokens => tokens.some(t => name.toLowerCase().includes(t.toLowerCase()));
-  if (matchAny(PONY_TOKENS)) { return 'pony'; }
-  if (matchAny(DRAFT_TOKENS)) { return 'draft'; }
-  if (matchAny(GAITED_TOKENS)) { return 'gaited'; }
-  if (matchAny(SPORT_TOKENS)) { return 'sport'; }
-  if (matchAny(RACING_TOKENS)) { return 'racing'; }
+  if (matchAny(PONY_TOKENS)) {
+    return 'pony';
+  }
+  if (matchAny(DRAFT_TOKENS)) {
+    return 'draft';
+  }
+  if (matchAny(GAITED_TOKENS)) {
+    return 'gaited';
+  }
+  if (matchAny(SPORT_TOKENS)) {
+    return 'sport';
+  }
+  if (matchAny(RACING_TOKENS)) {
+    return 'racing';
+  }
   return 'general';
 }
 

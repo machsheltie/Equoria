@@ -63,7 +63,9 @@ try {
  */
 export function getBreedProfile(breedIdentifier) {
   if (LOAD_ERROR) {
-    throw new Error(`breedProfiles.json failed to load — ${LOAD_ERROR.message}`, { cause: LOAD_ERROR });
+    throw new Error(`breedProfiles.json failed to load — ${LOAD_ERROR.message}`, {
+      cause: LOAD_ERROR,
+    });
   }
   // Resolve legacy numeric breedId to display name via the canonical-12 map.
   // New callers should pass the name string directly.

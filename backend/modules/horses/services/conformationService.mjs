@@ -87,11 +87,16 @@ export function generateConformationScores(breedName) {
 
   for (const region of CONFORMATION_REGIONS) {
     const regionProfile = conformation[region];
-    // Every region must be present. An incomplete profile is a data bug.
-    if (!regionProfile || !Number.isFinite(regionProfile.mean)) {
+    // Every region must be present with valid mean and std_dev. An incomplete profile is a data bug.
+    if (
+      !regionProfile ||
+      !Number.isFinite(regionProfile.mean) ||
+      !Number.isFinite(regionProfile.std_dev) ||
+      regionProfile.std_dev < 0
+    ) {
       throw new Error(
-        `breedProfiles.json entry for "${breedName}" is missing region "${region}" ` +
-          'in rating_profiles.conformation. All 8 regions are required.',
+        `breedProfiles.json entry for "${breedName}" has invalid region "${region}" ` +
+          'in rating_profiles.conformation. All 8 regions require finite mean and non-negative std_dev.',
       );
     }
     const rawScore = normalRandom(regionProfile.mean, regionProfile.std_dev);
@@ -134,10 +139,15 @@ export function generateInheritedConformationScores(breedName, sireScores, damSc
 
   for (const region of CONFORMATION_REGIONS) {
     const regionProfile = conformation[region];
-    if (!regionProfile || !Number.isFinite(regionProfile.mean)) {
+    if (
+      !regionProfile ||
+      !Number.isFinite(regionProfile.mean) ||
+      !Number.isFinite(regionProfile.std_dev) ||
+      regionProfile.std_dev < 0
+    ) {
       throw new Error(
-        `breedProfiles.json entry for "${breedName}" missing region "${region}" ` +
-          'in rating_profiles.conformation (inherited path).',
+        `breedProfiles.json entry for "${breedName}" has invalid region "${region}" ` +
+          'in rating_profiles.conformation (inherited path). Finite mean and non-negative std_dev are required.',
       );
     }
     // Guard against NaN/non-finite parent scores from corrupted DB data
