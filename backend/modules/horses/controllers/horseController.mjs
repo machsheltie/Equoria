@@ -949,14 +949,17 @@ export async function getConformationAnalysis(req, res) {
         logger.warn(
           `[horseController.getConformationAnalysis] breedProfiles lookup failed for "${breedRecord.name}": ${err.message}`,
         );
+        // breedConformation remains null; response will include breedMeanAvailable: false
+        // so the client can distinguish "breed mean is genuinely 50" from "no profile found".
       }
     }
+    const breedMeanAvailable = breedConformation !== null;
 
     // Calculate analysis per region
     const analysis = {};
     for (const region of CONFORMATION_REGIONS) {
       const score = scores[region] ?? 0;
-      const breedMean = breedConformation ? breedConformation[region].mean : 50;
+      const breedMean = breedConformation ? breedConformation[region].mean : null;
 
       // Percentile: count horses scoring lower / total
       let percentile;
@@ -983,7 +986,7 @@ export async function getConformationAnalysis(req, res) {
           CONFORMATION_REGIONS.reduce((sum, r) => sum + breedConformation[r].mean, 0) /
             CONFORMATION_REGIONS.length,
         )
-      : 50;
+      : null;
 
     let overallPercentile;
     if (validHorses.length <= 1) {
@@ -1010,6 +1013,7 @@ export async function getConformationAnalysis(req, res) {
         horseName: horse.name,
         breedId: horse.breedId,
         breedName,
+        breedMeanAvailable,
         totalHorsesInBreed: validHorses.length,
         analysis,
         overallConformation: {

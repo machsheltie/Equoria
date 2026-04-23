@@ -91,9 +91,10 @@ export function validateGaitScores(scores) {
 
 /**
  * Generate gait scores for a horse based on breed genetics and conformation influence.
- * @param {number} breedId - The breed ID to look up genetic profiles
+ * @param {string|number} breedName - Breed display name (preferred) or legacy canonical-12 numeric id
  * @param {Object} conformationScores - Horse's conformation scores for bonus calculation
  * @returns {Object} Object with walk/trot/canter/gallop (integers 0-100) and gaiting (array or null)
+ * @throws {Error} if the breed is missing from breedProfiles.json or any gait entry is absent
  */
 export function generateGaitScores(breedName, conformationScores) {
   const profile = getBreedProfile(breedName);
@@ -141,7 +142,7 @@ export function generateGaitScores(breedName, conformationScores) {
  * and conformation influence.
  * Formula per gait: baseValue = (parentAvg * 0.6 + breedMean * 0.4) + conformationBonus
  * Falls back to breed-only generation if either parent's gait scores are null/missing.
- * @param {number} breedId - The breed ID for genetic profile lookup
+ * @param {string|number} breedName - Breed display name (preferred) or legacy canonical-12 numeric id
  * @param {Object|null} sireGaitScores - Sire's gait scores
  * @param {Object|null} damGaitScores - Dam's gait scores
  * @param {Object} conformationScores - Foal's conformation scores for bonus calculation

@@ -156,13 +156,59 @@ const SPORT_TOKENS = [
 ];
 const RACING_TOKENS = ['Thoroughbred', 'Quarter Horse', 'Akhal-Teke', 'Barb'];
 
+// Per-token gait registry for gaited breeds. Token matching uses the same
+// lowercased .includes() logic as classify(). First match wins (same priority
+// order as GAITED_TOKENS). Legacy-12 overrides still win at the buildProfile
+// level — this map only affects category-template-generated entries.
+const GAITED_REGISTRIES_BY_TOKEN = {
+  'Tennessee Walking': ['Flat Walk', 'Running Walk'],
+  'Tennessee Walker': ['Flat Walk', 'Running Walk'],
+  'American Saddlebred': ['Slow Gait', 'Rack'],
+  'National Show Horse': ['Slow Gait', 'Rack'],
+  'Paso Fino': ['Paso Corto', 'Paso Largo', 'Paso Fino'],
+  'Peruvian Paso': ['Paso Llano', 'Sobreandando'],
+  'Icelandic': ['Tolt', 'Flying Pace'],
+  // Aegidienberger is a cross of Peruvian Paso × Icelandic — Tolt is correct.
+  'Aegidienberger': ['Tolt'],
+  'Rocky Mountain': ['Single-Foot'],
+  'Kentucky Mountain': ['Single-Foot'],
+  'Missouri Fox Trotter': ['Fox Trot'],
+  'Mangalarga': ['Marcha Picada', 'Marcha Batida'],
+  'Campolina': ['Marcha Picada', 'Marcha Batida'],
+  'Pampa': ['Marcha Picada', 'Marcha Batida'],
+  'Spotted Saddle': ['Rack', 'Single-Foot'],
+  // 'Racking' token matches "Racking Horse" — rack gait.
+  'Racking': ['Rack'],
+  'Walkaloosa': ['Rack'],
+  'Mountain Pleasure': ['Single-Foot'],
+  'Florida Cracker': ['Rack'],
+  'McCurdy Plantation': ['Rack', 'Single-Foot'],
+  // Marwari and Kathiawari use the revaal (Indian amble).
+  'Marwari': ['Revaal'],
+  'Kathiawari': ['Revaal'],
+  'Singlefoot': ['Single-Foot'],
+  // Standardbred pacers race at the pace; trotters at the trot.
+  'Standardbred': ['Trot', 'Pace'],
+  // Generic fallback tokens — any breed that only matches these gets 'Amble'.
+  'Tolt': ['Tolt'],
+  'Gaited': ['Amble'],
+};
+
+function gaitedRegistryFor(name) {
+  const lower = name.toLowerCase();
+  for (const [token, registry] of Object.entries(GAITED_REGISTRIES_BY_TOKEN)) {
+    if (lower.includes(token.toLowerCase())) { return registry; }
+  }
+  return ['Amble']; // generic neutral fallback — better than hard-coding Tolt
+}
+
 function classify(name) {
   const matchAny = tokens => tokens.some(t => name.toLowerCase().includes(t.toLowerCase()));
-  if (matchAny(PONY_TOKENS)) return 'pony';
-  if (matchAny(DRAFT_TOKENS)) return 'draft';
-  if (matchAny(GAITED_TOKENS)) return 'gaited';
-  if (matchAny(SPORT_TOKENS)) return 'sport';
-  if (matchAny(RACING_TOKENS)) return 'racing';
+  if (matchAny(PONY_TOKENS)) { return 'pony'; }
+  if (matchAny(DRAFT_TOKENS)) { return 'draft'; }
+  if (matchAny(GAITED_TOKENS)) { return 'gaited'; }
+  if (matchAny(SPORT_TOKENS)) { return 'sport'; }
+  if (matchAny(RACING_TOKENS)) { return 'racing'; }
   return 'general';
 }
 
@@ -386,7 +432,7 @@ function buildProfile(name) {
       conformation: buildConformation(category),
       gaits: buildGaits(category),
       is_gaited_breed: isGaited,
-      gaited_gait_registry: isGaited ? ['Tolt'] : null,
+      gaited_gait_registry: isGaited ? gaitedRegistryFor(name) : null,
     },
     temperament_weights: { ...TEMPERAMENT_TEMPLATES[category] },
   };
@@ -406,7 +452,7 @@ for (const name of breedNames) {
   counts[profile.category] += 1;
 }
 
-writeFileSync(OUT_PATH, JSON.stringify(profiles, null, 2) + '\n', 'utf8');
+writeFileSync(OUT_PATH, `${JSON.stringify(profiles, null, 2)}\n`, 'utf8');
 
 console.log(`Wrote ${breedNames.length} breed profiles → ${OUT_PATH}`);
 console.log('Category breakdown:');

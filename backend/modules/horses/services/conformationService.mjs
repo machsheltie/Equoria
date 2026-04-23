@@ -69,8 +69,9 @@ export function calculateOverallConformation(scores) {
 /**
  * Generate conformation scores for a horse based on its breed's genetic profile.
  * Each region score is drawn from a normal distribution using the breed's mean and std_dev.
- * @param {number} breedId - The breed ID to look up genetic profiles
+ * @param {string|number} breedName - Breed display name (preferred) or legacy canonical-12 numeric id
  * @returns {Object} Object with 8 region scores (integers 0-100) and overallConformation
+ * @throws {Error} if the breed is missing from breedProfiles.json or any region is absent
  */
 export function generateConformationScores(breedName) {
   const profile = getBreedProfile(breedName);
@@ -107,7 +108,7 @@ export function generateConformationScores(breedName) {
  * Formula per region: baseValue = (sireScore * 0.5 + damScore * 0.5) * 0.6 + breedMean * 0.4
  * Final score: clampScore(normalRandom(baseValue, breedStdDev))
  * Falls back to breed-only generation if either parent's scores are null/missing.
- * @param {number} breedId - The breed ID for genetic profile lookup
+ * @param {string|number} breedName - Breed display name (preferred) or legacy canonical-12 numeric id
  * @param {Object|null} sireScores - Sire's conformation scores (8 regions)
  * @param {Object|null} damScores - Dam's conformation scores (8 regions)
  * @returns {Object} Object with 8 region scores (integers 0-100) and overallConformation

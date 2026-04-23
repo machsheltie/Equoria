@@ -35,12 +35,13 @@ const __dirname = dirname(__filename);
 const PROFILES_PATH = resolve(__dirname, '../../../data/breedProfiles.json');
 
 let PROFILES_BY_NAME = {};
+let LOAD_ERROR = null;
 try {
   PROFILES_BY_NAME = JSON.parse(readFileSync(PROFILES_PATH, 'utf8'));
 } catch (err) {
+  LOAD_ERROR = err;
   logger.error(
-    `[breedProfileLoader] FATAL: Failed to load breedProfiles.json (${PROFILES_PATH}): ${err.message}. ` +
-      'Every conformation/gait/temperament generation will throw until this file is readable.',
+    `[breedProfileLoader] FATAL: Failed to load breedProfiles.json (${PROFILES_PATH}): ${err.message}. Every conformation/gait/temperament generation will throw until this file is readable.`,
   );
 }
 
@@ -61,6 +62,9 @@ try {
  * @throws {Error} if the breed is missing from breedProfiles.json.
  */
 export function getBreedProfile(breedIdentifier) {
+  if (LOAD_ERROR) {
+    throw new Error(`breedProfiles.json failed to load — ${LOAD_ERROR.message}`, { cause: LOAD_ERROR });
+  }
   // Resolve legacy numeric breedId to display name via the canonical-12 map.
   // New callers should pass the name string directly.
   let breedName = breedIdentifier;
@@ -76,10 +80,7 @@ export function getBreedProfile(breedIdentifier) {
   }
   if (!breedName || typeof breedName !== 'string') {
     throw new Error(
-      'getBreedProfile requires a non-empty breed display name string or a numeric ' +
-        'breedId in the canonical-12 range (got: ' +
-        JSON.stringify(breedIdentifier) +
-        ').',
+      `getBreedProfile requires a non-empty breed display name string or a numeric breedId in the canonical-12 range (got: ${JSON.stringify(breedIdentifier)}).`,
     );
   }
   const profile = PROFILES_BY_NAME[breedName];
