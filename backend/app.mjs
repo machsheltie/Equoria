@@ -273,40 +273,56 @@ app.use(helmet(helmetConfig));
 
 // CORS + no-origin policy — single authoritative source.
 //
-// Scope: enforce no-origin denial ONLY on API paths (`/api/*` and the
-// `/auth/*` public auth routes). Browsers do NOT send `Origin` on direct
-// page navigation or static-asset loads (SPA HTML at `/`, /assets/*,
-// /fonts/*, /images/*), so a global no-origin gate would lock users out
-// of the app entirely. The security boundary that matters is API
-// mutations — those always carry `Origin` from modern browsers, and
-// anything missing `Origin` on `/api/*` is either curl-style tooling
-// or a forged request.
+// Scope: the no-origin gate fires ONLY on STATE-CHANGING methods
+// (POST/PUT/PATCH/DELETE) targeting API paths (`/api/*` or `/auth/*`).
+//
+// Why method-scoped:
+// - Modern browsers send `Origin` on all cross-origin requests AND on
+//   all same-origin state-changing requests. So any mutation missing
+//   `Origin` is curl-style tooling or a forged request — safe to block.
+// - Browsers do NOT send `Origin` on same-origin GET/HEAD (per Fetch
+//   spec). In production the SPA is served same-origin, so the app's
+//   own `GET /api/auth/csrf-token`, `GET /api/auth/profile`,
+//   `GET /api/auth/verification-status`, etc. arrive without `Origin`.
+//   A read-only GET is not a CSRF attack surface (no state change), so
+//   it is safe to let these through the no-origin gate. CORS still
+//   validates the Origin value when present for cross-origin GETs.
+// - SPA HTML, /assets/*, /fonts/*, /images/* are GETs below /api — not
+//   gated by this policy either way.
 //
 // Two layers in order:
-//   1. enforceNoOriginPolicy (below) — hard-rejects no-origin requests
-//      ONLY on API paths. The `cors` package's `origin: false` only
+//   1. enforceNoOriginPolicy (below) — hard-rejects no-origin mutations
+//      on API paths. The `cors` package's `origin: false` only
 //      suppresses response headers; it does NOT terminate the request,
 //      so a dedicated gate is needed.
 //   2. cors(corsOptions) — validates the Origin value against the allow
 //      list when present.
 //
+// Defense in depth: CSRF (cookie + header double-submit) still fires
+// on authenticated mutations regardless of this gate, so a state change
+// without a matching CSRF token is rejected even if a malicious caller
+// spoofs an Origin.
+//
 // There is no machine-client API-key fallback. The prior dead
 // `validateApiKey` middleware has been removed — do not reintroduce it.
 const NO_ORIGIN_ENFORCED_PREFIXES = ['/api/', '/auth/'];
+const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
-const requiresOriginCheck = path =>
-  NO_ORIGIN_ENFORCED_PREFIXES.some(
-    prefix => path === prefix.replace(/\/$/, '') || path.startsWith(prefix),
+const requiresOriginCheck = req => {
+  if (!STATE_CHANGING_METHODS.has(req.method)) return false;
+  return NO_ORIGIN_ENFORCED_PREFIXES.some(
+    prefix => req.path === prefix.replace(/\/$/, '') || req.path.startsWith(prefix),
   );
+};
 
 const enforceNoOriginPolicy = (req, res, next) => {
   if (req.get('Origin')) {
     return next();
   }
-  if (!requiresOriginCheck(req.path)) {
+  if (!requiresOriginCheck(req)) {
     return next();
   }
-  logger.warn(`Blocked no-origin API request: ${req.method} ${req.path}`);
+  logger.warn(`Blocked no-origin API mutation: ${req.method} ${req.path}`);
   return res.status(403).json({
     success: false,
     message: 'Origin header required',
