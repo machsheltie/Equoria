@@ -273,30 +273,40 @@ app.use(helmet(helmetConfig));
 
 // CORS + no-origin policy — single authoritative source.
 //
+// Scope: enforce no-origin denial ONLY on API paths (`/api/*` and the
+// `/auth/*` public auth routes). Browsers do NOT send `Origin` on direct
+// page navigation or static-asset loads (SPA HTML at `/`, /assets/*,
+// /fonts/*, /images/*), so a global no-origin gate would lock users out
+// of the app entirely. The security boundary that matters is API
+// mutations — those always carry `Origin` from modern browsers, and
+// anything missing `Origin` on `/api/*` is either curl-style tooling
+// or a forged request.
+//
 // Two layers in order:
-//   1. enforceNoOriginPolicy — hard-rejects requests without an Origin
-//      header except on operational probes (/health, /ready, /ping). The
-//      `cors` package's `origin: false` only suppresses response headers;
-//      it does NOT terminate the request, so a dedicated gate is needed.
+//   1. enforceNoOriginPolicy (below) — hard-rejects no-origin requests
+//      ONLY on API paths. The `cors` package's `origin: false` only
+//      suppresses response headers; it does NOT terminate the request,
+//      so a dedicated gate is needed.
 //   2. cors(corsOptions) — validates the Origin value against the allow
-//      list. Browsers always send Origin on mutations, so legitimate SPA
-//      traffic passes through.
+//      list when present.
 //
 // There is no machine-client API-key fallback. The prior dead
 // `validateApiKey` middleware has been removed — do not reintroduce it.
-const NO_ORIGIN_EXEMPT_PATHS = ['/health', '/ready', '/ping'];
+const NO_ORIGIN_ENFORCED_PREFIXES = ['/api/', '/auth/'];
 
-const isNoOriginExempt = path =>
-  NO_ORIGIN_EXEMPT_PATHS.some(p => path === p || path.startsWith(`${p}/`));
+const requiresOriginCheck = path =>
+  NO_ORIGIN_ENFORCED_PREFIXES.some(
+    prefix => path === prefix.replace(/\/$/, '') || path.startsWith(prefix),
+  );
 
 const enforceNoOriginPolicy = (req, res, next) => {
   if (req.get('Origin')) {
     return next();
   }
-  if (isNoOriginExempt(req.path)) {
+  if (!requiresOriginCheck(req.path)) {
     return next();
   }
-  logger.warn(`Blocked no-origin request: ${req.method} ${req.path}`);
+  logger.warn(`Blocked no-origin API request: ${req.method} ${req.path}`);
   return res.status(403).json({
     success: false,
     message: 'Origin header required',
