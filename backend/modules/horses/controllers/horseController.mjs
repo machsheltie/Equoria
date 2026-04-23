@@ -314,14 +314,22 @@ export async function createFoal(req, res) {
 
     // Resolve breed name — conformation/gait/temperament generators all
     // key by display name against breedProfiles.json.
+    const normalizedBreedId = Number.parseInt(breedId, 10);
+    if (!Number.isInteger(normalizedBreedId) || normalizedBreedId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'breedId must be a positive integer',
+        data: null,
+      });
+    }
     const breedRecord = await prisma.breed.findUnique({
-      where: { id: breedId },
+      where: { id: normalizedBreedId },
       select: { name: true },
     });
     if (!breedRecord?.name) {
       return res.status(400).json({
         success: false,
-        message: `No breed found for id ${breedId}`,
+        message: `No breed found for id ${normalizedBreedId}`,
         data: null,
       });
     }
@@ -362,7 +370,7 @@ export async function createFoal(req, res) {
     const horseData = {
       name,
       age: 0, // Newborn foal
-      breedId,
+      breedId: normalizedBreedId,
       sireId,
       damId,
       sex,
@@ -944,7 +952,20 @@ export async function getConformationAnalysis(req, res) {
     if (breedRecord?.name) {
       try {
         const profile = getBreedProfile(breedRecord.name);
-        breedConformation = profile?.rating_profiles?.conformation ?? null;
+        const rawConformation = profile?.rating_profiles?.conformation ?? null;
+        // Require all 8 regions to have finite means before trusting the profile.
+        // A missing or non-finite mean would throw (or produce NaN) when accessed
+        // later in the per-region loop and the overall mean calculation.
+        if (
+          rawConformation &&
+          CONFORMATION_REGIONS.every(r => Number.isFinite(rawConformation[r]?.mean))
+        ) {
+          breedConformation = rawConformation;
+        } else if (rawConformation) {
+          logger.warn(
+            `[horseController.getConformationAnalysis] incomplete conformation profile for "${breedRecord.name}" — one or more regions missing finite mean`,
+          );
+        }
       } catch (err) {
         logger.warn(
           `[horseController.getConformationAnalysis] breedProfiles lookup failed for "${breedRecord.name}": ${err.message}`,
