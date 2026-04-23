@@ -238,6 +238,11 @@ import errorHandler from './middleware/errorHandler.mjs';
 import { requestLogger, errorRequestLogger } from './middleware/requestLogger.mjs';
 import { setupSwaggerDocs, addDocumentationHeaders } from './middleware/swaggerSetup.mjs';
 import {
+  secureJsonBodyParser,
+  prototypePollutionGuard,
+  jsonBodyErrorHandler,
+} from './middleware/requestBodyGuard.mjs';
+import {
   responseOptimization,
   paginationMiddleware,
   performanceMonitoring,
@@ -309,7 +314,9 @@ const NO_ORIGIN_ENFORCED_PREFIXES = ['/api/', '/auth/'];
 const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 const requiresOriginCheck = req => {
-  if (!STATE_CHANGING_METHODS.has(req.method)) return false;
+  if (!STATE_CHANGING_METHODS.has(req.method)) {
+    return false;
+  }
   return NO_ORIGIN_ENFORCED_PREFIXES.some(
     prefix => req.path === prefix.replace(/\/$/, '') || req.path.startsWith(prefix),
   );
@@ -346,7 +353,9 @@ const STATIC_ALLOWED_ORIGINS = [
 // Compare the Origin's host against the request's Host header; if they
 // match, treat the Origin as implicitly allowed.
 const isSameOrigin = (origin, hostHeader) => {
-  if (!origin || !hostHeader) return false;
+  if (!origin || !hostHeader) {
+    return false;
+  }
   try {
     const { host: originHost } = new URL(origin);
     return originHost.toLowerCase() === hostHeader.toLowerCase();
@@ -430,7 +439,13 @@ const apiLimiter = createRateLimiter({
 app.use('/api/', apiLimiter);
 
 // Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
+// Equoria-ocn9: secureJsonBodyParser rejects duplicate JSON keys at parse
+// time (express.json silently keeps the last value), and the guard that
+// follows rejects prototype-pollution payloads (__proto__/constructor/
+// prototype) at any depth. Both respond with HTTP 400.
+app.use(secureJsonBodyParser({ limit: '10mb' }));
+app.use(jsonBodyErrorHandler());
+app.use(prototypePollutionGuard());
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Cookie parsing middleware for httpOnly cookies

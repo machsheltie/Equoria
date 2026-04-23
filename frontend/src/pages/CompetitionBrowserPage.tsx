@@ -5,7 +5,8 @@
  * and racing red accents set the tone.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Trophy } from 'lucide-react';
 import { useCompetitions } from '@/hooks/api/useCompetitions';
@@ -36,6 +37,24 @@ const CompetitionBrowserPage = (): JSX.Element => {
   const [selectedCompetition, setSelectedCompetition] = useState<ModalCompetition | null>(null);
   const [selectedHorseId, setSelectedHorseId] = useState<number | ''>('');
   const [entryError, setEntryError] = useState<string | undefined>();
+
+  // Equoria-ocn9: deep-link from /horses → /competitions?horse=ID. When the
+  // user owns the horse referenced in the URL, pre-select it so the entry
+  // modal opens with the correct horse already chosen. Runs once per mount
+  // to avoid clobbering manual selections.
+  const [searchParams] = useSearchParams();
+  const horseQueryParam = searchParams.get('horse');
+  const autoSelectedRef = useRef(false);
+  useEffect(() => {
+    if (autoSelectedRef.current) return;
+    if (!horseQueryParam || !horses || horses.length === 0) return;
+    const targetId = Number(horseQueryParam);
+    if (!Number.isFinite(targetId)) return;
+    if (horses.some((h) => h.id === targetId)) {
+      setSelectedHorseId(targetId);
+      autoSelectedRef.current = true;
+    }
+  }, [horseQueryParam, horses]);
 
   const enterCompetition = useMutation<
     { entryId: number; horseId: number; showId: number; entryFee: number },
@@ -79,7 +98,13 @@ const CompetitionBrowserPage = (): JSX.Element => {
         maxParticipants: found.maxEntries,
         currentParticipants: found.currentEntries,
       });
-      setSelectedHorseId(horses[0]?.id ?? '');
+      // Equoria-ocn9: preserve a pre-selected horse (from ?horse= deep link
+      // or a previous modal session) when it's still in the user's roster.
+      // Otherwise fall back to the first owned horse.
+      setSelectedHorseId((current) => {
+        if (current !== '' && horses.some((h) => h.id === current)) return current;
+        return horses[0]?.id ?? '';
+      });
       setEntryError(undefined);
     },
     [data, horses]
