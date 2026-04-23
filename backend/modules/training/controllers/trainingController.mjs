@@ -489,11 +489,22 @@ async function getTrainingStatus(horseId, discipline) {
       }
     }
 
+    // Frontend reads `nextEligibleDate` per-discipline to compute the
+    // global cooldown banner (components/horse/TrainingTab.tsx →
+    // getGlobalCooldown). Derive it from the global 7-day cooldown so
+    // the field is always present when the horse is still on cooldown.
+    let nextEligibleDate = null;
+    if (cooldownInfo?.active && cooldownInfo.lastTrainingDate) {
+      const lastTrainMs = new Date(cooldownInfo.lastTrainingDate).getTime();
+      nextEligibleDate = new Date(lastTrainMs + 7 * 24 * 60 * 60 * 1000).toISOString();
+    }
+
     const status = {
       eligible: eligibilityCheck.eligible,
       reason: eligibilityCheck.reason,
       horseAge: age,
       lastTrainingDate: lastTrainingDateInDiscipline, // Still show discipline-specific for UI
+      nextEligibleDate, // ISO string when cooldown is active, null otherwise
       cooldown: cooldownInfo,
     };
 
