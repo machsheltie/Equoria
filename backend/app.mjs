@@ -332,38 +332,66 @@ const enforceNoOriginPolicy = (req, res, next) => {
 
 app.use(enforceNoOriginPolicy);
 
-const corsOptions = {
-  origin(origin, callback) {
-    // No-origin requests that reach this point are already exempt
-    // (health/ping); reflect them through.
-    if (!origin) {
-      return callback(null, true);
-    }
+const STATIC_ALLOWED_ORIGINS = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+];
 
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://127.0.0.1:3000',
-      'http://127.0.0.1:3001',
-    ];
-
-    if (config.allowedOrigins && config.allowedOrigins.length > 0) {
-      allowedOrigins.push(...config.allowedOrigins);
-    }
-
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      return callback(null, true);
-    }
-
-    logger.warn(`CORS blocked request from origin: ${origin}`);
-    return callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token'],
+// Auto-accept same-origin requests: the browser sends `Origin` on
+// mutations (and some GETs) even when the request targets the exact
+// same host that served the page. Rejecting those would break the
+// production SPA whenever ALLOWED_ORIGINS isn't explicitly configured.
+// Compare the Origin's host against the request's Host header; if they
+// match, treat the Origin as implicitly allowed.
+const isSameOrigin = (origin, hostHeader) => {
+  if (!origin || !hostHeader) return false;
+  try {
+    const { host: originHost } = new URL(origin);
+    return originHost.toLowerCase() === hostHeader.toLowerCase();
+  } catch {
+    return false;
+  }
 };
 
-app.use(cors(corsOptions));
+const corsOptionsDelegate = (req, callback) => {
+  const origin = req.header('Origin');
+  const baseOptions = {
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token'],
+  };
+
+  // No-origin requests that reach this point are already exempt from
+  // the state-changing-mutation gate above (safe methods, SPA HTML,
+  // /health/ready/ping). Reflect them through.
+  if (!origin) {
+    return callback(null, { ...baseOptions, origin: true });
+  }
+
+  // Same-origin: the request's Host header matches the Origin's host.
+  // Always allow — the browser sent Origin here even though same-origin
+  // requests technically don't need CORS, and we shouldn't reject our
+  // own deployment.
+  if (isSameOrigin(origin, req.headers.host)) {
+    return callback(null, { ...baseOptions, origin: true });
+  }
+
+  const allowedOrigins = [...STATIC_ALLOWED_ORIGINS];
+  if (config.allowedOrigins && config.allowedOrigins.length > 0) {
+    allowedOrigins.push(...config.allowedOrigins);
+  }
+
+  if (allowedOrigins.indexOf(origin) !== -1) {
+    return callback(null, { ...baseOptions, origin: true });
+  }
+
+  logger.warn(`CORS blocked request from origin: ${origin} (host: ${req.headers.host})`);
+  return callback(new Error('Not allowed by CORS'));
+};
+
+app.use(cors(corsOptionsDelegate));
 
 // Rate limiting - using factory for consistency and test support
 // ⚠️ DEV WORKFLOW NOTE: Limits are intentionally high for local development.
