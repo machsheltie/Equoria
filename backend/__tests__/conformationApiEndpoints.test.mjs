@@ -4,8 +4,7 @@
 //
 // Real database — no mocked Prisma calls per project policy.
 
-import { describe, beforeAll, afterAll, beforeEach, expect, test } from '@jest/globals';
-import { jest } from '@jest/globals';
+import { describe, beforeAll, afterAll, beforeEach, expect, test, jest } from '@jest/globals';
 import prisma from '../../packages/database/prismaClient.mjs';
 import bcrypt from 'bcryptjs';
 
