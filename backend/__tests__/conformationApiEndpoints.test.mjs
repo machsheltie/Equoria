@@ -438,7 +438,7 @@ describe('getConformationAnalysis', () => {
     expect(response.data.totalHorsesInBreed).toBe(3);
   });
 
-  test('uses breed mean from BREED_GENETIC_PROFILES, not database average', async () => {
+  test('uses breed mean from breedProfiles.json, not database average', async () => {
     const { req, res } = createMockReqRes();
 
     mockPrisma.horse.findMany.mockResolvedValue([
@@ -460,10 +460,10 @@ describe('getConformationAnalysis', () => {
     await getConformationAnalysis(req, res);
 
     const response = res.json.mock.calls[0][0];
-    // Breed 1 = Thoroughbred — breedMean should come from BREED_GENETIC_PROFILES[1]
-    // Not from the database average of same-breed horses
-    const { BREED_GENETIC_PROFILES } = await import('../modules/horses/data/breedGeneticProfiles.mjs');
-    const tbProfile = BREED_GENETIC_PROFILES[1].rating_profiles.conformation;
+    // breedMean should come from breedProfiles.json (single source of truth),
+    // not from the database average of same-breed horses.
+    const { getBreedProfile } = await import('../modules/horses/data/breedProfileLoader.mjs');
+    const tbProfile = getBreedProfile('Thoroughbred').rating_profiles.conformation;
 
     for (const region of CONFORMATION_REGIONS) {
       expect(response.data.analysis[region].breedMean).toBe(tbProfile[region].mean);

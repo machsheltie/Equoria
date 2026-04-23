@@ -278,7 +278,9 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": ["Tolt"]
+      "gaited_gait_registry": [
+        "Tolt"
+      ]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -879,31 +881,31 @@
     }
   },
   "American Paint Horse": {
-    "category": "general",
+    "category": "racing",
     "rating_profiles": {
       "conformation": {
         "head": {
-          "mean": 70,
+          "mean": 76,
           "std_dev": 8
         },
         "neck": {
-          "mean": 70,
+          "mean": 74,
           "std_dev": 8
         },
         "shoulders": {
-          "mean": 70,
+          "mean": 74,
           "std_dev": 8
         },
         "back": {
-          "mean": 70,
+          "mean": 68,
           "std_dev": 8
         },
         "hindquarters": {
-          "mean": 70,
+          "mean": 76,
           "std_dev": 8
         },
         "legs": {
-          "mean": 70,
+          "mean": 74,
           "std_dev": 8
         },
         "hooves": {
@@ -911,13 +913,13 @@
           "std_dev": 8
         },
         "topline": {
-          "mean": 70,
+          "mean": 72,
           "std_dev": 8
         }
       },
       "gaits": {
         "walk": {
-          "mean": 70,
+          "mean": 62,
           "std_dev": 9
         },
         "trot": {
@@ -925,11 +927,11 @@
           "std_dev": 9
         },
         "canter": {
-          "mean": 74,
+          "mean": 78,
           "std_dev": 9
         },
         "gallop": {
-          "mean": 75,
+          "mean": 90,
           "std_dev": 9
         },
         "gaiting": null
@@ -938,17 +940,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 28,
+      "Nervous": 14,
+      "Calm": 4,
+      "Bold": 16,
+      "Steady": 6,
+      "Independent": 6,
+      "Reactive": 14,
+      "Stubborn": 4,
+      "Playful": 5,
+      "Lazy": 2,
+      "Aggressive": 1
     }
   },
   "American Quarter Horse": {
@@ -956,54 +958,54 @@
     "rating_profiles": {
       "conformation": {
         "head": {
-          "mean": 82,
-          "std_dev": 6
+          "mean": 76,
+          "std_dev": 8
         },
         "neck": {
-          "mean": 75,
-          "std_dev": 7
+          "mean": 74,
+          "std_dev": 8
         },
         "shoulders": {
-          "mean": 85,
-          "std_dev": 6
+          "mean": 74,
+          "std_dev": 8
         },
         "back": {
-          "mean": 82,
-          "std_dev": 6
+          "mean": 68,
+          "std_dev": 8
         },
         "hindquarters": {
-          "mean": 92,
-          "std_dev": 4
+          "mean": 76,
+          "std_dev": 8
         },
         "legs": {
-          "mean": 84,
-          "std_dev": 6
+          "mean": 74,
+          "std_dev": 8
         },
         "hooves": {
-          "mean": 88,
-          "std_dev": 5
+          "mean": 70,
+          "std_dev": 8
         },
         "topline": {
-          "mean": 78,
-          "std_dev": 7
+          "mean": 72,
+          "std_dev": 8
         }
       },
       "gaits": {
         "walk": {
-          "mean": 72,
+          "mean": 62,
           "std_dev": 9
         },
         "trot": {
-          "mean": 65,
-          "std_dev": 10
+          "mean": 72,
+          "std_dev": 9
         },
         "canter": {
-          "mean": 75,
-          "std_dev": 8
+          "mean": 78,
+          "std_dev": 9
         },
         "gallop": {
-          "mean": 95,
-          "std_dev": 4
+          "mean": 90,
+          "std_dev": 9
         },
         "gaiting": null
       },
@@ -1011,16 +1013,16 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 2,
-      "Calm": 35,
-      "Bold": 10,
-      "Steady": 30,
-      "Independent": 5,
-      "Reactive": 2,
-      "Stubborn": 2,
-      "Playful": 2,
-      "Lazy": 1,
+      "Spirited": 28,
+      "Nervous": 14,
+      "Calm": 4,
+      "Bold": 16,
+      "Steady": 6,
+      "Independent": 6,
+      "Reactive": 14,
+      "Stubborn": 4,
+      "Playful": 5,
+      "Lazy": 2,
       "Aggressive": 1
     }
   },
@@ -1029,75 +1031,78 @@
     "rating_profiles": {
       "conformation": {
         "head": {
-          "mean": 88,
-          "std_dev": 5
+          "mean": 74,
+          "std_dev": 8
         },
         "neck": {
-          "mean": 92,
-          "std_dev": 4
+          "mean": 74,
+          "std_dev": 8
         },
         "shoulders": {
-          "mean": 85,
-          "std_dev": 6
+          "mean": 74,
+          "std_dev": 8
         },
         "back": {
-          "mean": 85,
-          "std_dev": 6
+          "mean": 76,
+          "std_dev": 8
         },
         "hindquarters": {
-          "mean": 82,
-          "std_dev": 7
+          "mean": 76,
+          "std_dev": 8
         },
         "legs": {
-          "mean": 80,
-          "std_dev": 7
+          "mean": 76,
+          "std_dev": 8
         },
         "hooves": {
-          "mean": 82,
-          "std_dev": 7
+          "mean": 76,
+          "std_dev": 8
         },
         "topline": {
-          "mean": 84,
-          "std_dev": 6
+          "mean": 76,
+          "std_dev": 8
         }
       },
       "gaits": {
         "walk": {
-          "mean": 82,
-          "std_dev": 7
+          "mean": 78,
+          "std_dev": 9
         },
         "trot": {
-          "mean": 88,
-          "std_dev": 5
+          "mean": 72,
+          "std_dev": 9
         },
         "canter": {
-          "mean": 90,
-          "std_dev": 5
+          "mean": 70,
+          "std_dev": 9
         },
         "gallop": {
           "mean": 70,
           "std_dev": 9
         },
         "gaiting": {
-          "mean": 92,
-          "std_dev": 4
+          "mean": 82,
+          "std_dev": 9
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": ["Slow Gait", "Rack"]
+      "gaited_gait_registry": [
+        "Slow Gait",
+        "Rack"
+      ]
     },
     "temperament_weights": {
-      "Spirited": 35,
-      "Nervous": 10,
-      "Calm": 10,
-      "Bold": 15,
-      "Steady": 10,
-      "Independent": 5,
-      "Reactive": 10,
-      "Stubborn": 2,
-      "Playful": 2,
-      "Lazy": 0,
-      "Aggressive": 1
+      "Spirited": 10,
+      "Nervous": 4,
+      "Calm": 22,
+      "Bold": 10,
+      "Steady": 22,
+      "Independent": 6,
+      "Reactive": 4,
+      "Stubborn": 8,
+      "Playful": 8,
+      "Lazy": 4,
+      "Aggressive": 2
     }
   },
   "American Warmblood": {
@@ -1174,57 +1179,57 @@
     }
   },
   "Andalusian": {
-    "category": "general",
+    "category": "sport",
     "rating_profiles": {
       "conformation": {
         "head": {
-          "mean": 85,
-          "std_dev": 6
+          "mean": 78,
+          "std_dev": 8
         },
         "neck": {
-          "mean": 92,
-          "std_dev": 4
+          "mean": 78,
+          "std_dev": 8
         },
         "shoulders": {
-          "mean": 82,
-          "std_dev": 7
+          "mean": 80,
+          "std_dev": 8
         },
         "back": {
-          "mean": 88,
-          "std_dev": 5
+          "mean": 78,
+          "std_dev": 8
         },
         "hindquarters": {
-          "mean": 85,
-          "std_dev": 6
+          "mean": 80,
+          "std_dev": 8
         },
         "legs": {
-          "mean": 82,
-          "std_dev": 7
+          "mean": 78,
+          "std_dev": 8
         },
         "hooves": {
-          "mean": 80,
-          "std_dev": 7
+          "mean": 76,
+          "std_dev": 8
         },
         "topline": {
-          "mean": 86,
-          "std_dev": 6
+          "mean": 80,
+          "std_dev": 8
         }
       },
       "gaits": {
         "walk": {
-          "mean": 80,
-          "std_dev": 7
+          "mean": 76,
+          "std_dev": 9
         },
         "trot": {
-          "mean": 85,
-          "std_dev": 6
+          "mean": 82,
+          "std_dev": 9
         },
         "canter": {
-          "mean": 92,
-          "std_dev": 5
+          "mean": 82,
+          "std_dev": 9
         },
         "gallop": {
-          "mean": 70,
+          "mean": 78,
           "std_dev": 9
         },
         "gaiting": null
@@ -1233,17 +1238,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 30,
-      "Nervous": 5,
-      "Calm": 15,
-      "Bold": 15,
-      "Steady": 20,
-      "Independent": 5,
-      "Reactive": 5,
-      "Stubborn": 2,
-      "Playful": 2,
-      "Lazy": 0,
-      "Aggressive": 1
+      "Spirited": 14,
+      "Nervous": 6,
+      "Calm": 14,
+      "Bold": 18,
+      "Steady": 16,
+      "Independent": 6,
+      "Reactive": 6,
+      "Stubborn": 6,
+      "Playful": 10,
+      "Lazy": 2,
+      "Aggressive": 2
     }
   },
   "Andravida": {
@@ -1320,31 +1325,31 @@
     }
   },
   "Anglo-Arabian": {
-    "category": "general",
+    "category": "racing",
     "rating_profiles": {
       "conformation": {
         "head": {
-          "mean": 70,
+          "mean": 76,
           "std_dev": 8
         },
         "neck": {
-          "mean": 70,
+          "mean": 74,
           "std_dev": 8
         },
         "shoulders": {
-          "mean": 70,
+          "mean": 74,
           "std_dev": 8
         },
         "back": {
-          "mean": 70,
+          "mean": 68,
           "std_dev": 8
         },
         "hindquarters": {
-          "mean": 70,
+          "mean": 76,
           "std_dev": 8
         },
         "legs": {
-          "mean": 70,
+          "mean": 74,
           "std_dev": 8
         },
         "hooves": {
@@ -1352,13 +1357,13 @@
           "std_dev": 8
         },
         "topline": {
-          "mean": 70,
+          "mean": 72,
           "std_dev": 8
         }
       },
       "gaits": {
         "walk": {
-          "mean": 70,
+          "mean": 62,
           "std_dev": 9
         },
         "trot": {
@@ -1366,11 +1371,11 @@
           "std_dev": 9
         },
         "canter": {
-          "mean": 74,
+          "mean": 78,
           "std_dev": 9
         },
         "gallop": {
-          "mean": 75,
+          "mean": 90,
           "std_dev": 9
         },
         "gaiting": null
@@ -1379,17 +1384,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 28,
+      "Nervous": 14,
+      "Calm": 4,
+      "Bold": 16,
+      "Steady": 6,
+      "Independent": 6,
+      "Reactive": 14,
+      "Stubborn": 4,
+      "Playful": 5,
+      "Lazy": 2,
+      "Aggressive": 1
     }
   },
   "Anglo-Kabarda": {
@@ -1470,54 +1475,54 @@
     "rating_profiles": {
       "conformation": {
         "head": {
-          "mean": 82,
-          "std_dev": 6
+          "mean": 70,
+          "std_dev": 8
         },
         "neck": {
-          "mean": 75,
-          "std_dev": 7
+          "mean": 70,
+          "std_dev": 8
         },
         "shoulders": {
-          "mean": 80,
-          "std_dev": 7
+          "mean": 70,
+          "std_dev": 8
         },
         "back": {
-          "mean": 85,
-          "std_dev": 5
+          "mean": 70,
+          "std_dev": 8
         },
         "hindquarters": {
-          "mean": 88,
-          "std_dev": 5
+          "mean": 70,
+          "std_dev": 8
         },
         "legs": {
-          "mean": 85,
-          "std_dev": 6
+          "mean": 70,
+          "std_dev": 8
         },
         "hooves": {
-          "mean": 82,
-          "std_dev": 7
+          "mean": 70,
+          "std_dev": 8
         },
         "topline": {
-          "mean": 84,
-          "std_dev": 6
+          "mean": 70,
+          "std_dev": 8
         }
       },
       "gaits": {
         "walk": {
-          "mean": 75,
-          "std_dev": 8
-        },
-        "trot": {
           "mean": 70,
           "std_dev": 9
         },
+        "trot": {
+          "mean": 72,
+          "std_dev": 9
+        },
         "canter": {
-          "mean": 75,
-          "std_dev": 8
+          "mean": 74,
+          "std_dev": 9
         },
         "gallop": {
-          "mean": 85,
-          "std_dev": 7
+          "mean": 75,
+          "std_dev": 9
         },
         "gaiting": null
       },
@@ -1526,71 +1531,71 @@
     },
     "temperament_weights": {
       "Spirited": 10,
-      "Nervous": 5,
-      "Calm": 25,
-      "Bold": 15,
-      "Steady": 20,
-      "Independent": 10,
-      "Reactive": 5,
-      "Stubborn": 4,
-      "Playful": 5,
-      "Lazy": 0,
-      "Aggressive": 1
+      "Nervous": 8,
+      "Calm": 18,
+      "Bold": 10,
+      "Steady": 18,
+      "Independent": 8,
+      "Reactive": 8,
+      "Stubborn": 6,
+      "Playful": 8,
+      "Lazy": 4,
+      "Aggressive": 2
     }
   },
   "Arabian": {
-    "category": "general",
+    "category": "racing",
     "rating_profiles": {
       "conformation": {
         "head": {
-          "mean": 95,
-          "std_dev": 4
+          "mean": 76,
+          "std_dev": 8
         },
         "neck": {
-          "mean": 90,
-          "std_dev": 5
+          "mean": 74,
+          "std_dev": 8
         },
         "shoulders": {
-          "mean": 85,
-          "std_dev": 6
+          "mean": 74,
+          "std_dev": 8
         },
         "back": {
-          "mean": 88,
-          "std_dev": 5
+          "mean": 68,
+          "std_dev": 8
         },
         "hindquarters": {
-          "mean": 84,
-          "std_dev": 6
+          "mean": 76,
+          "std_dev": 8
         },
         "legs": {
-          "mean": 88,
-          "std_dev": 5
+          "mean": 74,
+          "std_dev": 8
         },
         "hooves": {
-          "mean": 90,
-          "std_dev": 5
+          "mean": 70,
+          "std_dev": 8
         },
         "topline": {
-          "mean": 82,
-          "std_dev": 6
+          "mean": 72,
+          "std_dev": 8
         }
       },
       "gaits": {
         "walk": {
-          "mean": 85,
-          "std_dev": 6
+          "mean": 62,
+          "std_dev": 9
         },
         "trot": {
-          "mean": 88,
-          "std_dev": 5
+          "mean": 72,
+          "std_dev": 9
         },
         "canter": {
-          "mean": 85,
-          "std_dev": 6
+          "mean": 78,
+          "std_dev": 9
         },
         "gallop": {
-          "mean": 92,
-          "std_dev": 4
+          "mean": 90,
+          "std_dev": 9
         },
         "gaiting": null
       },
@@ -1598,16 +1603,16 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 40,
-      "Nervous": 10,
-      "Calm": 5,
-      "Bold": 20,
-      "Steady": 5,
-      "Independent": 10,
-      "Reactive": 5,
-      "Stubborn": 2,
-      "Playful": 2,
-      "Lazy": 0,
+      "Spirited": 28,
+      "Nervous": 14,
+      "Calm": 4,
+      "Bold": 16,
+      "Steady": 6,
+      "Independent": 6,
+      "Reactive": 14,
+      "Stubborn": 4,
+      "Playful": 5,
+      "Lazy": 2,
       "Aggressive": 1
     }
   },
@@ -7803,7 +7808,9 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": ["Tolt"]
+      "gaited_gait_registry": [
+        "Rack"
+      ]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -8112,57 +8119,57 @@
     }
   },
   "Friesian": {
-    "category": "general",
+    "category": "sport",
     "rating_profiles": {
       "conformation": {
         "head": {
-          "mean": 70,
+          "mean": 78,
           "std_dev": 8
         },
         "neck": {
-          "mean": 70,
+          "mean": 78,
           "std_dev": 8
         },
         "shoulders": {
-          "mean": 70,
+          "mean": 80,
           "std_dev": 8
         },
         "back": {
-          "mean": 70,
+          "mean": 78,
           "std_dev": 8
         },
         "hindquarters": {
-          "mean": 70,
+          "mean": 80,
           "std_dev": 8
         },
         "legs": {
-          "mean": 70,
+          "mean": 78,
           "std_dev": 8
         },
         "hooves": {
-          "mean": 70,
+          "mean": 76,
           "std_dev": 8
         },
         "topline": {
-          "mean": 70,
+          "mean": 80,
           "std_dev": 8
         }
       },
       "gaits": {
         "walk": {
-          "mean": 70,
+          "mean": 76,
           "std_dev": 9
         },
         "trot": {
-          "mean": 72,
+          "mean": 82,
           "std_dev": 9
         },
         "canter": {
-          "mean": 74,
+          "mean": 82,
           "std_dev": 9
         },
         "gallop": {
-          "mean": 75,
+          "mean": 78,
           "std_dev": 9
         },
         "gaiting": null
@@ -8171,16 +8178,16 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
+      "Spirited": 14,
+      "Nervous": 6,
+      "Calm": 14,
+      "Bold": 18,
+      "Steady": 16,
+      "Independent": 6,
+      "Reactive": 6,
       "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Playful": 10,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -9631,7 +9638,10 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": ["Tolt"]
+      "gaited_gait_registry": [
+        "Tolt",
+        "Flying Pace"
+      ]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -10875,7 +10885,9 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": ["Tolt"]
+      "gaited_gait_registry": [
+        "Revaal"
+      ]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -11024,7 +11036,9 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": ["Tolt"]
+      "gaited_gait_registry": [
+        "Single-Foot"
+      ]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -11917,57 +11931,57 @@
     }
   },
   "Lipizzan": {
-    "category": "general",
+    "category": "sport",
     "rating_profiles": {
       "conformation": {
         "head": {
-          "mean": 70,
+          "mean": 78,
           "std_dev": 8
         },
         "neck": {
-          "mean": 70,
+          "mean": 78,
           "std_dev": 8
         },
         "shoulders": {
-          "mean": 70,
+          "mean": 80,
           "std_dev": 8
         },
         "back": {
-          "mean": 70,
+          "mean": 78,
           "std_dev": 8
         },
         "hindquarters": {
-          "mean": 70,
+          "mean": 80,
           "std_dev": 8
         },
         "legs": {
-          "mean": 70,
+          "mean": 78,
           "std_dev": 8
         },
         "hooves": {
-          "mean": 70,
+          "mean": 76,
           "std_dev": 8
         },
         "topline": {
-          "mean": 70,
+          "mean": 80,
           "std_dev": 8
         }
       },
       "gaits": {
         "walk": {
-          "mean": 70,
+          "mean": 76,
           "std_dev": 9
         },
         "trot": {
-          "mean": 72,
+          "mean": 82,
           "std_dev": 9
         },
         "canter": {
-          "mean": 74,
+          "mean": 82,
           "std_dev": 9
         },
         "gallop": {
-          "mean": 75,
+          "mean": 78,
           "std_dev": 9
         },
         "gaiting": null
@@ -11976,16 +11990,16 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
+      "Spirited": 14,
+      "Nervous": 6,
+      "Calm": 14,
+      "Bold": 18,
+      "Steady": 16,
+      "Independent": 6,
+      "Reactive": 6,
       "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
+      "Playful": 10,
+      "Lazy": 2,
       "Aggressive": 2
     }
   },
@@ -12282,58 +12296,58 @@
     }
   },
   "Lusitano": {
-    "category": "general",
+    "category": "sport",
     "rating_profiles": {
       "conformation": {
         "head": {
-          "mean": 84,
-          "std_dev": 6
+          "mean": 78,
+          "std_dev": 8
         },
         "neck": {
-          "mean": 90,
-          "std_dev": 5
+          "mean": 78,
+          "std_dev": 8
         },
         "shoulders": {
-          "mean": 82,
-          "std_dev": 7
+          "mean": 80,
+          "std_dev": 8
         },
         "back": {
-          "mean": 84,
-          "std_dev": 6
+          "mean": 78,
+          "std_dev": 8
         },
         "hindquarters": {
-          "mean": 88,
-          "std_dev": 6
+          "mean": 80,
+          "std_dev": 8
         },
         "legs": {
-          "mean": 82,
-          "std_dev": 7
+          "mean": 78,
+          "std_dev": 8
         },
         "hooves": {
-          "mean": 80,
-          "std_dev": 7
+          "mean": 76,
+          "std_dev": 8
         },
         "topline": {
-          "mean": 83,
-          "std_dev": 6
+          "mean": 80,
+          "std_dev": 8
         }
       },
       "gaits": {
         "walk": {
-          "mean": 78,
-          "std_dev": 7
+          "mean": 76,
+          "std_dev": 9
         },
         "trot": {
-          "mean": 85,
-          "std_dev": 6
+          "mean": 82,
+          "std_dev": 9
         },
         "canter": {
-          "mean": 92,
-          "std_dev": 5
+          "mean": 82,
+          "std_dev": 9
         },
         "gallop": {
-          "mean": 72,
-          "std_dev": 8
+          "mean": 78,
+          "std_dev": 9
         },
         "gaiting": null
       },
@@ -12341,17 +12355,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 25,
-      "Nervous": 5,
-      "Calm": 10,
-      "Bold": 20,
-      "Steady": 15,
-      "Independent": 5,
-      "Reactive": 10,
-      "Stubborn": 5,
-      "Playful": 4,
-      "Lazy": 0,
-      "Aggressive": 1
+      "Spirited": 14,
+      "Nervous": 6,
+      "Calm": 14,
+      "Bold": 18,
+      "Steady": 16,
+      "Independent": 6,
+      "Reactive": 6,
+      "Stubborn": 6,
+      "Playful": 10,
+      "Lazy": 2,
+      "Aggressive": 2
     }
   },
   "Luxembourg Warmblood": {
@@ -12779,7 +12793,10 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": ["Tolt"]
+      "gaited_gait_registry": [
+        "Marcha Picada",
+        "Marcha Batida"
+      ]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -12855,7 +12872,10 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": ["Tolt"]
+      "gaited_gait_registry": [
+        "Marcha Picada",
+        "Marcha Batida"
+      ]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -13077,7 +13097,9 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": ["Tolt"]
+      "gaited_gait_registry": [
+        "Revaal"
+      ]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -13810,7 +13832,9 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": ["Tolt"]
+      "gaited_gait_registry": [
+        "Single-Foot"
+      ]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -14196,49 +14220,49 @@
     "rating_profiles": {
       "conformation": {
         "head": {
-          "mean": 82,
+          "mean": 74,
           "std_dev": 8
         },
         "neck": {
-          "mean": 80,
+          "mean": 74,
           "std_dev": 8
         },
         "shoulders": {
-          "mean": 71,
+          "mean": 74,
           "std_dev": 8
         },
         "back": {
-          "mean": 69,
+          "mean": 76,
           "std_dev": 8
         },
         "hindquarters": {
-          "mean": 73,
+          "mean": 76,
           "std_dev": 8
         },
         "legs": {
-          "mean": 71,
+          "mean": 76,
           "std_dev": 8
         },
         "hooves": {
-          "mean": 72,
+          "mean": 76,
           "std_dev": 8
         },
         "topline": {
-          "mean": 74,
+          "mean": 76,
           "std_dev": 8
         }
       },
       "gaits": {
         "walk": {
-          "mean": 70,
+          "mean": 78,
           "std_dev": 9
         },
         "trot": {
-          "mean": 76,
+          "mean": 72,
           "std_dev": 9
         },
         "canter": {
-          "mean": 72,
+          "mean": 70,
           "std_dev": 9
         },
         "gallop": {
@@ -14251,20 +14275,23 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": ["Slow Gait", "Rack"]
+      "gaited_gait_registry": [
+        "Slow Gait",
+        "Rack"
+      ]
     },
     "temperament_weights": {
-      "Spirited": 25,
-      "Nervous": 5,
-      "Calm": 10,
-      "Bold": 20,
-      "Steady": 8,
-      "Independent": 5,
-      "Reactive": 5,
-      "Stubborn": 5,
-      "Playful": 15,
-      "Lazy": 1,
-      "Aggressive": 1
+      "Spirited": 10,
+      "Nervous": 4,
+      "Calm": 22,
+      "Bold": 10,
+      "Steady": 22,
+      "Independent": 6,
+      "Reactive": 4,
+      "Stubborn": 8,
+      "Playful": 8,
+      "Lazy": 4,
+      "Aggressive": 2
     }
   },
   "New Altai": {
@@ -15509,58 +15536,58 @@
     }
   },
   "Paint Horse": {
-    "category": "general",
+    "category": "racing",
     "rating_profiles": {
       "conformation": {
         "head": {
-          "mean": 80,
-          "std_dev": 7
+          "mean": 76,
+          "std_dev": 8
         },
         "neck": {
-          "mean": 78,
-          "std_dev": 7
+          "mean": 74,
+          "std_dev": 8
         },
         "shoulders": {
-          "mean": 85,
-          "std_dev": 6
+          "mean": 74,
+          "std_dev": 8
         },
         "back": {
-          "mean": 82,
-          "std_dev": 6
+          "mean": 68,
+          "std_dev": 8
         },
         "hindquarters": {
-          "mean": 90,
-          "std_dev": 5
+          "mean": 76,
+          "std_dev": 8
         },
         "legs": {
-          "mean": 82,
-          "std_dev": 6
+          "mean": 74,
+          "std_dev": 8
         },
         "hooves": {
-          "mean": 80,
-          "std_dev": 7
+          "mean": 70,
+          "std_dev": 8
         },
         "topline": {
-          "mean": 80,
-          "std_dev": 7
+          "mean": 72,
+          "std_dev": 8
         }
       },
       "gaits": {
         "walk": {
-          "mean": 75,
-          "std_dev": 8
+          "mean": 62,
+          "std_dev": 9
         },
         "trot": {
-          "mean": 70,
+          "mean": 72,
           "std_dev": 9
         },
         "canter": {
-          "mean": 75,
-          "std_dev": 8
+          "mean": 78,
+          "std_dev": 9
         },
         "gallop": {
-          "mean": 82,
-          "std_dev": 7
+          "mean": 90,
+          "std_dev": 9
         },
         "gaiting": null
       },
@@ -15568,16 +15595,16 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 15,
-      "Nervous": 5,
-      "Calm": 25,
-      "Bold": 15,
-      "Steady": 20,
-      "Independent": 5,
-      "Reactive": 5,
-      "Stubborn": 3,
+      "Spirited": 28,
+      "Nervous": 14,
+      "Calm": 4,
+      "Bold": 16,
+      "Steady": 6,
+      "Independent": 6,
+      "Reactive": 14,
+      "Stubborn": 4,
       "Playful": 5,
-      "Lazy": 1,
+      "Lazy": 2,
       "Aggressive": 1
     }
   },
@@ -15641,7 +15668,10 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": ["Tolt"]
+      "gaited_gait_registry": [
+        "Marcha Picada",
+        "Marcha Batida"
+      ]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -15717,7 +15747,11 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": ["Tolt"]
+      "gaited_gait_registry": [
+        "Paso Corto",
+        "Paso Largo",
+        "Paso Fino"
+      ]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -16012,7 +16046,10 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": ["Tolt"]
+      "gaited_gait_registry": [
+        "Paso Llano",
+        "Sobreandando"
+      ]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -16325,53 +16362,53 @@
     "rating_profiles": {
       "conformation": {
         "head": {
-          "mean": 75,
+          "mean": 68,
           "std_dev": 8
         },
         "neck": {
-          "mean": 70,
+          "mean": 66,
           "std_dev": 8
         },
         "shoulders": {
-          "mean": 68,
+          "mean": 66,
           "std_dev": 8
         },
         "back": {
-          "mean": 65,
+          "mean": 68,
           "std_dev": 8
         },
         "hindquarters": {
-          "mean": 70,
+          "mean": 68,
           "std_dev": 8
         },
         "legs": {
-          "mean": 68,
+          "mean": 70,
           "std_dev": 8
         },
         "hooves": {
-          "mean": 68,
+          "mean": 74,
           "std_dev": 8
         },
         "topline": {
-          "mean": 67,
+          "mean": 70,
           "std_dev": 8
         }
       },
       "gaits": {
         "walk": {
-          "mean": 65,
+          "mean": 72,
           "std_dev": 9
         },
         "trot": {
-          "mean": 70,
+          "mean": 72,
           "std_dev": 9
         },
         "canter": {
-          "mean": 68,
+          "mean": 70,
           "std_dev": 9
         },
         "gallop": {
-          "mean": 72,
+          "mean": 68,
           "std_dev": 9
         },
         "gaiting": null
@@ -16380,17 +16417,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 5,
-      "Nervous": 2,
-      "Calm": 30,
-      "Bold": 10,
-      "Steady": 25,
-      "Independent": 5,
-      "Reactive": 2,
-      "Stubborn": 5,
-      "Playful": 10,
-      "Lazy": 5,
-      "Aggressive": 1
+      "Spirited": 14,
+      "Nervous": 6,
+      "Calm": 14,
+      "Bold": 12,
+      "Steady": 10,
+      "Independent": 12,
+      "Reactive": 6,
+      "Stubborn": 16,
+      "Playful": 8,
+      "Lazy": 2,
+      "Aggressive": 0
     }
   },
   "Posavac": {
@@ -16964,7 +17001,9 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": ["Tolt"]
+      "gaited_gait_registry": [
+        "Rack"
+      ]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -17332,7 +17371,9 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": ["Tolt"]
+      "gaited_gait_registry": [
+        "Single-Foot"
+      ]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -18444,31 +18485,31 @@
     }
   },
   "Shagya Arabian": {
-    "category": "general",
+    "category": "racing",
     "rating_profiles": {
       "conformation": {
         "head": {
-          "mean": 70,
+          "mean": 76,
           "std_dev": 8
         },
         "neck": {
-          "mean": 70,
+          "mean": 74,
           "std_dev": 8
         },
         "shoulders": {
-          "mean": 70,
+          "mean": 74,
           "std_dev": 8
         },
         "back": {
-          "mean": 70,
+          "mean": 68,
           "std_dev": 8
         },
         "hindquarters": {
-          "mean": 70,
+          "mean": 76,
           "std_dev": 8
         },
         "legs": {
-          "mean": 70,
+          "mean": 74,
           "std_dev": 8
         },
         "hooves": {
@@ -18476,13 +18517,13 @@
           "std_dev": 8
         },
         "topline": {
-          "mean": 70,
+          "mean": 72,
           "std_dev": 8
         }
       },
       "gaits": {
         "walk": {
-          "mean": 70,
+          "mean": 62,
           "std_dev": 9
         },
         "trot": {
@@ -18490,11 +18531,11 @@
           "std_dev": 9
         },
         "canter": {
-          "mean": 74,
+          "mean": 78,
           "std_dev": 9
         },
         "gallop": {
-          "mean": 75,
+          "mean": 90,
           "std_dev": 9
         },
         "gaiting": null
@@ -18503,17 +18544,17 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 10,
-      "Nervous": 8,
-      "Calm": 18,
-      "Bold": 10,
-      "Steady": 18,
-      "Independent": 8,
-      "Reactive": 8,
-      "Stubborn": 6,
-      "Playful": 8,
-      "Lazy": 4,
-      "Aggressive": 2
+      "Spirited": 28,
+      "Nervous": 14,
+      "Calm": 4,
+      "Bold": 16,
+      "Steady": 6,
+      "Independent": 6,
+      "Reactive": 14,
+      "Stubborn": 4,
+      "Playful": 5,
+      "Lazy": 2,
+      "Aggressive": 1
     }
   },
   "Shan Horse": {
@@ -19671,7 +19712,10 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": ["Tolt"]
+      "gaited_gait_registry": [
+        "Rack",
+        "Single-Foot"
+      ]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -19747,7 +19791,10 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": ["Tolt"]
+      "gaited_gait_registry": [
+        "Trot",
+        "Pace"
+      ]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -20261,7 +20308,10 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": ["Tolt"]
+      "gaited_gait_registry": [
+        "Flat Walk",
+        "Running Walk"
+      ]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -20282,7 +20332,7 @@
     "rating_profiles": {
       "conformation": {
         "head": {
-          "mean": 75,
+          "mean": 74,
           "std_dev": 8
         },
         "neck": {
@@ -20290,37 +20340,37 @@
           "std_dev": 8
         },
         "shoulders": {
-          "mean": 72,
+          "mean": 74,
           "std_dev": 8
         },
         "back": {
-          "mean": 70,
+          "mean": 76,
           "std_dev": 8
         },
         "hindquarters": {
-          "mean": 78,
+          "mean": 76,
           "std_dev": 8
         },
         "legs": {
-          "mean": 72,
+          "mean": 76,
           "std_dev": 8
         },
         "hooves": {
-          "mean": 70,
+          "mean": 76,
           "std_dev": 8
         },
         "topline": {
-          "mean": 72,
+          "mean": 76,
           "std_dev": 8
         }
       },
       "gaits": {
         "walk": {
-          "mean": 72,
+          "mean": 78,
           "std_dev": 9
         },
         "trot": {
-          "mean": 65,
+          "mean": 72,
           "std_dev": 9
         },
         "canter": {
@@ -20328,29 +20378,32 @@
           "std_dev": 9
         },
         "gallop": {
-          "mean": 65,
+          "mean": 70,
           "std_dev": 9
         },
         "gaiting": {
-          "mean": 85,
+          "mean": 82,
           "std_dev": 9
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": ["Flat Walk", "Running Walk"]
+      "gaited_gait_registry": [
+        "Flat Walk",
+        "Running Walk"
+      ]
     },
     "temperament_weights": {
-      "Spirited": 5,
-      "Nervous": 1,
-      "Calm": 41,
-      "Bold": 5,
-      "Steady": 30,
-      "Independent": 3,
-      "Reactive": 1,
-      "Stubborn": 3,
-      "Playful": 5,
-      "Lazy": 5,
-      "Aggressive": 1
+      "Spirited": 10,
+      "Nervous": 4,
+      "Calm": 22,
+      "Bold": 10,
+      "Steady": 22,
+      "Independent": 6,
+      "Reactive": 4,
+      "Stubborn": 8,
+      "Playful": 8,
+      "Lazy": 4,
+      "Aggressive": 2
     }
   },
   "Tersk horse": {
@@ -20431,19 +20484,19 @@
     "rating_profiles": {
       "conformation": {
         "head": {
-          "mean": 78,
+          "mean": 76,
           "std_dev": 8
         },
         "neck": {
-          "mean": 75,
+          "mean": 74,
           "std_dev": 8
         },
         "shoulders": {
-          "mean": 72,
+          "mean": 74,
           "std_dev": 8
         },
         "back": {
-          "mean": 70,
+          "mean": 68,
           "std_dev": 8
         },
         "hindquarters": {
@@ -20459,21 +20512,21 @@
           "std_dev": 8
         },
         "topline": {
-          "mean": 73,
+          "mean": 72,
           "std_dev": 8
         }
       },
       "gaits": {
         "walk": {
-          "mean": 65,
+          "mean": 62,
           "std_dev": 9
         },
         "trot": {
-          "mean": 75,
+          "mean": 72,
           "std_dev": 9
         },
         "canter": {
-          "mean": 80,
+          "mean": 78,
           "std_dev": 9
         },
         "gallop": {
@@ -20486,16 +20539,16 @@
       "gaited_gait_registry": null
     },
     "temperament_weights": {
-      "Spirited": 30,
-      "Nervous": 15,
-      "Calm": 3,
-      "Bold": 15,
-      "Steady": 5,
-      "Independent": 5,
-      "Reactive": 15,
-      "Stubborn": 3,
+      "Spirited": 28,
+      "Nervous": 14,
+      "Calm": 4,
+      "Bold": 16,
+      "Steady": 6,
+      "Independent": 6,
+      "Reactive": 14,
+      "Stubborn": 4,
       "Playful": 5,
-      "Lazy": 3,
+      "Lazy": 2,
       "Aggressive": 1
     }
   },
@@ -21749,41 +21802,41 @@
           "std_dev": 8
         },
         "neck": {
-          "mean": 72,
+          "mean": 74,
           "std_dev": 8
         },
         "shoulders": {
-          "mean": 70,
+          "mean": 74,
           "std_dev": 8
         },
         "back": {
-          "mean": 68,
+          "mean": 76,
           "std_dev": 8
         },
         "hindquarters": {
-          "mean": 75,
+          "mean": 76,
           "std_dev": 8
         },
         "legs": {
-          "mean": 70,
+          "mean": 76,
           "std_dev": 8
         },
         "hooves": {
-          "mean": 70,
+          "mean": 76,
           "std_dev": 8
         },
         "topline": {
-          "mean": 70,
+          "mean": 76,
           "std_dev": 8
         }
       },
       "gaits": {
         "walk": {
-          "mean": 70,
+          "mean": 78,
           "std_dev": 9
         },
         "trot": {
-          "mean": 68,
+          "mean": 72,
           "std_dev": 9
         },
         "canter": {
@@ -21791,29 +21844,31 @@
           "std_dev": 9
         },
         "gallop": {
-          "mean": 72,
+          "mean": 70,
           "std_dev": 9
         },
         "gaiting": {
-          "mean": 85,
+          "mean": 82,
           "std_dev": 9
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": ["Indian Shuffle"]
+      "gaited_gait_registry": [
+        "Indian Shuffle"
+      ]
     },
     "temperament_weights": {
-      "Spirited": 5,
-      "Nervous": 1,
-      "Calm": 36,
+      "Spirited": 10,
+      "Nervous": 4,
+      "Calm": 22,
       "Bold": 10,
-      "Steady": 30,
-      "Independent": 3,
-      "Reactive": 1,
-      "Stubborn": 3,
-      "Playful": 5,
-      "Lazy": 5,
-      "Aggressive": 1
+      "Steady": 22,
+      "Independent": 6,
+      "Reactive": 4,
+      "Stubborn": 8,
+      "Playful": 8,
+      "Lazy": 4,
+      "Aggressive": 2
     }
   },
   "Warlander": {

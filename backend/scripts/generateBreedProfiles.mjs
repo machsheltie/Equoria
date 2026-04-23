@@ -27,25 +27,13 @@
 import { readFileSync, writeFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
-import {
-  BREED_GENETIC_PROFILES,
-  CANONICAL_BREEDS,
-} from '../modules/horses/data/breedGeneticProfiles.mjs';
 
-// Per-breed overrides inherited from the legacy 12 hand-tuned profiles.
-// For these specific breeds, we preserve their curated conformation,
-// gait, temperament weights, and gaited-gait registries EXACTLY. The
-// category-template generator fills in only the other 300 breeds.
-const LEGACY_OVERRIDES = {};
-for (const b of CANONICAL_BREEDS) {
-  const p = BREED_GENETIC_PROFILES[b.id];
-  if (p) {
-    LEGACY_OVERRIDES[b.name] = {
-      rating_profiles: p.rating_profiles,
-      temperament_weights: p.temperament_weights,
-    };
-  }
-}
+// Unified generator — every breed (including the former canonical-12) flows
+// through the same category-template pipeline. The old legacy-override path
+// treated Thoroughbred / Arabian / etc. as special cases with hand-tuned
+// profiles; that created two classes of breed and meant breeders saw
+// different distributions for canonical breeds vs. the other 297. We now
+// treat all 309 uniformly.
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -153,8 +141,21 @@ const SPORT_TOKENS = [
   'Canadian Sport',
   'Hungarian Sport',
   'Zangersheide',
+  'Andalusian',
+  'Lusitano',
+  'Lipizzan',
+  'Friesian',
+  'Pura Raza',
 ];
-const RACING_TOKENS = ['Thoroughbred', 'Quarter Horse', 'Akhal-Teke', 'Barb'];
+const RACING_TOKENS = [
+  'Thoroughbred',
+  'Quarter Horse',
+  'Akhal-Teke',
+  'Barb',
+  'Arabian',
+  'Paint Horse',
+  'Anglo-Arabian',
+];
 
 // Per-token gait registry for gaited breeds. Token matching uses the same
 // lowercased .includes() logic as classify(). First match wins (same priority
@@ -179,7 +180,8 @@ const GAITED_REGISTRIES_BY_TOKEN = {
   'Spotted Saddle': ['Rack', 'Single-Foot'],
   // 'Racking' token matches "Racking Horse" — rack gait.
   'Racking': ['Rack'],
-  'Walkaloosa': ['Rack'],
+  // Walkaloosa is historically associated with the Indian Shuffle.
+  'Walkaloosa': ['Indian Shuffle'],
   'Mountain Pleasure': ['Single-Foot'],
   'Florida Cracker': ['Rack'],
   'McCurdy Plantation': ['Rack', 'Single-Foot'],
@@ -411,20 +413,6 @@ function buildGaits(category) {
 
 function buildProfile(name) {
   const category = classify(name);
-
-  // Legacy-12 overrides: preserve hand-tuned conformation/gait/temperament
-  // exactly so the canonical Thoroughbred/Arabian/etc. profiles match
-  // their historical statistical distributions (used by existing chi²
-  // tests and by breeders who have been balancing against them).
-  const override = LEGACY_OVERRIDES[name];
-  if (override) {
-    return {
-      category,
-      rating_profiles: override.rating_profiles,
-      temperament_weights: override.temperament_weights,
-    };
-  }
-
   const isGaited = category === 'gaited';
   return {
     category,
