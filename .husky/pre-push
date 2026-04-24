@@ -1,7 +1,45 @@
 #!/usr/bin/env sh
 
-# Run backend tests before push
-# --runInBand prevents DB contention from parallel integration tests
-# --retryTimes=1 handles flaky order-dependent tests that pass in isolation
+# Run backend tests before push.
+#
+# Why these flags (Equoria-ocn9, 2026-04-24):
+#
+#   --max-old-space-size=12288 (passed DIRECTLY to node)
+#     Per-process cap on V8 old-space for the parent Jest process and each
+#     worker. Three earlier approaches failed:
+#       1. The original `npm test -- --runInBand --retryTimes=1` (no heap
+#          override) OOM'd at ~4 GB after running 270+ test files in a
+#          single Node process — V8's default heap exhausted.
+#       2. NODE_OPTIONS='--max-old-space-size=8192' npm test -- ...
+#          OOM'd at ~4 GB. NODE_OPTIONS appears to be silently dropped or
+#          ignored when this script runs from inside `git push`'s hook
+#          context (it works fine in an interactive shell). To eliminate
+#          that ambiguity we now pass the flag directly on the node argv.
+#       3. NODE_OPTIONS='--max-old-space-size=12288' (also dropped — same
+#          observed 4 GB cap during the actual hook invocation).
+#     12 GB gives generous headroom on both processes; workers are
+#     recycled by --workerIdleMemoryLimit (below) long before they
+#     approach it.
+#
+#   --maxWorkers=1
+#     Equivalent to --runInBand for our purposes (only one Jest worker
+#     active at any moment), preserving the original "no DB contention
+#     from parallel integration tests" guarantee. Unlike --runInBand,
+#     this runs tests in a CHILD worker — which is what makes
+#     --workerIdleMemoryLimit (below) effective.
+#
+#   --workerIdleMemoryLimit=2048MB
+#     Jest recycles the worker after each test file when its RSS exceeds
+#     2 GB. Prevents the heap accumulation across 275 files that crashed
+#     the original --runInBand approach.
+#
+#   --retryTimes=1
+#     Handles flaky order-dependent tests that pass in isolation.
 cd backend
-npm test -- --runInBand --retryTimes=1
+node \
+  --max-old-space-size=12288 \
+  --experimental-vm-modules \
+  node_modules/jest/bin/jest.js \
+  --maxWorkers=1 \
+  --workerIdleMemoryLimit=2048MB \
+  --retryTimes=1
