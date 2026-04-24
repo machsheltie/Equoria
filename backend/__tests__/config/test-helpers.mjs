@@ -366,9 +366,14 @@ export const createTestRefreshTokenRecord = async (tokenData = {}) => {
   };
 
   const { rawToken: _raw, tokenHash: _hash, token: _t, ...rest } = tokenData;
-  return await prisma.refreshToken.create({
+  const record = await prisma.refreshToken.create({
     data: { ...defaultData, ...rest, tokenHash },
   });
+  // Expose the raw value for backward compat with callers that still read
+  // `.token` as "the refresh JWT to send back". The DB column is gone.
+  record.rawToken = rawToken;
+  record.token = rawToken;
+  return record;
 };
 
 /**

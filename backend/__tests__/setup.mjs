@@ -132,9 +132,16 @@ export async function createTestRefreshToken(userId, overrides = {}) {
 
   // Strip helper-only fields that shouldn't be passed to Prisma.
   const { rawToken: _raw, tokenHash: _hash, ...rest } = overrides;
-  return prisma.refreshToken.create({
+  const record = await prisma.refreshToken.create({
     data: { ...defaultToken, ...rest, tokenHash },
   });
+  // Expose the raw token alongside the DB row. The column itself is gone
+  // (Equoria-uy73) but callers still need the raw value to send as the
+  // refreshToken cookie/header in tests. `.token` stays as the raw value
+  // for backward compat with ~15 call sites that do `record.token`.
+  record.rawToken = rawToken;
+  record.token = rawToken;
+  return record;
 }
 
 /**
