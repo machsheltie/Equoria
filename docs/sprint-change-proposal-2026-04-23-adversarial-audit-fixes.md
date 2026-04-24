@@ -268,3 +268,34 @@ test proves the production rate limit works without any escape hatch.
 
 **Sign-off:** Per CLAUDE.md, do NOT mark `Equoria-ocn9` closed without
 explicit user approval. Report results with evidence.
+
+---
+
+## Section 6 — Review Findings (bmad-code-review, 2026-04-24)
+
+Three-layer adversarial review (Blind Hunter + Edge Case Hunter + Acceptance Auditor) of commits `7988b999` and `27214cc6` produced 40 raw findings → triaged to 2 decision-needed, 13 patches, 25 dismissed.
+
+### Decision-Needed (resolve before patch phase)
+
+- [ ] [Review][Decision] Pre-push hook blocks all pushes when test DB is unreachable — Hook runs full backend suite on every push; with Postgres down, even doc-only pushes are blocked. Add a connectivity probe with a clear failure message? Skip the integration suite when DB is down? Allow user override via env var? Or accept the current "DB must be up to push" stance? [.husky/pre-push:38-45]
+- [ ] [Review][Decision] `rate-limit-no-bypass.test.mjs` exercises a synthetic `/probe` route, not the production `/api/auth/login` mounted limiter — Spec Section 4 said "hammer `/api/auth/login` with invalid credentials … assert `Retry-After` header." Implementation uses a fresh Express app with a fresh `createRateLimiter` on `/probe`. Functionally proves the limiter trips and bypass headers don't help, but does not prove the production-mounted limiter on the real auth route works end-to-end. Acceptable as-is, or add a real-route assertion? [backend/__tests__/integration/security/rate-limit-no-bypass.test.mjs:59-83]
+
+### Patch (fix before closing Equoria-ocn9)
+
+- [ ] [Review][Patch] Unicode-escape bypass in `detectDuplicateJsonKeys` — Keys are stored as raw escaped substrings, so `{"name":"a","\u006eame":"b"}` is seen as two distinct keys but JSON.parse collapses both to `name`. Fix: JSON-parse each captured key string before adding to the dedupe Set. [backend/middleware/requestBodyGuard.mjs:114]
+- [ ] [Review][Patch] `prototypePollutionGuard` is mounted before `express.urlencoded` — urlencoded payloads with `__proto__[isAdmin]=true` reach controllers without inspection. Fix: also mount the guard after the urlencoded parser. [backend/app.mjs:411-414]
+- [ ] [Review][Patch] `findPollutionKey` is unbounded recursive — A 10 MB deeply-nested JSON body that JSON.parse accepts crashes the worker with `RangeError: Maximum call stack size exceeded` → 500 instead of 400; DoS vector against the very middleware that's supposed to defend. Fix: convert to iterative walk with explicit depth cap (e.g., 200). [backend/middleware/requestBodyGuard.mjs:195]
+- [ ] [Review][Patch] Replacement env-override test only asserts `expect(limiter).toBeDefined()` — Loses the regression coverage of the deleted bypass-header test. Fix: send max+1 requests with `TEST_RATE_LIMIT_MAX_REQUESTS=999999` set against a `useEnvOverride: false` limiter; assert 429 fires at the hardcoded max, not the inflated env value. [backend/__tests__/integration/rate-limit-circuit-breaker.test.mjs:218-237]
+- [ ] [Review][Patch] Pre-push hook docstring claims `--max-old-space-size` applies to workers — It only applies to the parent node process; child workers don't inherit CLI argv. Fix the comment to match reality. [.husky/pre-push:14-30]
+- [ ] [Review][Patch] Deep-link `?horse=` persists in URL after manual selection — User lands on `/training?horse=5`, manually selects horse 7, navigates away, hits back → component remounts and re-selects horse 5. Fix: call `setSearchParams({})` after auto-select. [frontend/src/components/training/TrainingDashboard.tsx:177-192, frontend/src/pages/CompetitionBrowserPage.tsx:48-65]
+- [ ] [Review][Patch] SettingsPage resync effect is broken — Logic only re-syncs when local field is empty. Two failure modes: (a) user clears the field intending to type a new value, profile refetches, server value snaps back, wiping their edit; (b) server normalizes the saved value but local form keeps un-normalized text → next Save sees a diff and re-submits forever. Fix: remove the effect entirely (let React Query be the source of truth) OR track an explicit `dirty` flag. [frontend/src/pages/SettingsPage.tsx:127-131]
+- [ ] [Review][Patch] No success toast on Save Changes — Real mutation wired but only `onError` handled. Users see no confirmation. Fix: add `onSuccess` toast. [frontend/src/pages/SettingsPage.tsx:142-147]
+- [ ] [Review][Patch] Logout failure after change-password leaves user in a zombie state — Server invalidated all sessions; if `logout.mutate()` fails, client still thinks user is logged in. Fix: `window.location.href = '/login'` in `onSettled` regardless of outcome. [frontend/src/pages/SettingsPage.tsx:183-191]
+- [ ] [Review][Patch] Delete-account modal cannot be dismissed by Escape or backdrop click — Required by `role="dialog" aria-modal="true"` ARIA convention. Fix: add Escape keydown handler + backdrop `onClick`. [frontend/src/pages/SettingsPage.tsx:402-420]
+- [ ] [Review][Patch] Delete-account modal has no `autoFocus` and no focus trap — Tabbing escapes the modal. Fix: at minimum add `autoFocus` to the confirm input. [frontend/src/pages/SettingsPage.tsx:402-420]
+- [ ] [Review][Patch] Delete confirm comparison is whitespace-sensitive — Browser autofill trailing space blocks delete. Fix: `.trim()` the input before comparison. [frontend/src/pages/SettingsPage.tsx:210]
+- [ ] [Review][Patch] Pre-push hook hardcodes `node_modules/jest/bin/jest.js` — Cryptic "Cannot find module" on first push from a fresh clone/worktree. Fix: presence check with helpful message, or use `npx jest`. [.husky/pre-push:42]
+
+### Dismissed (25 findings)
+
+B1 (duplicate-key test missing Content-Type — verified false: line 168 has `.set('Content-Type', 'application/json')`); B4 (`\u` escape only skips 2 chars — hex digits not tokenizer-relevant); B10 (defensive `__proto__` descriptor check is dead code — harmless); E2 (unicode-escape bypass also affects `__proto__` — caught by post-parse guard); E3 (top-level JSON literals not guarded — no attack surface); E7 (jsonBodyErrorHandler hardcodes 400 — correct for this error); E9 (RateLimit-\* header lowercase coupling — acceptable test brittleness); E11 (hex/octal in `?horse=` — ownership check ensures safety); E12 (multiple `?horse=` params — acceptable URL semantics); E14 (horse not found → silent no-op — acceptable for query-param miss); E15 (horse list refetch race — pre-existing pattern); E16 (`?horse=' '` whitespace — no real failure); E21 (trim-only username silently skipped — acceptable); E25 (Enter in password form — validation catches it); E26 (useChangePassword no profile invalidation — logout fires anyway); E30 (`cd backend` relative path — Husky invokes from repo root); E31 (Windows path slashes — Husky uses Git Bash); A2 (scroll-into-view nice-to-have — not in AC); A3 partial (cannot verify `npm test` from diff — verified: push5 ran 4825/4825); E4/E6, E13/E20 (duplicates merged into patches above).

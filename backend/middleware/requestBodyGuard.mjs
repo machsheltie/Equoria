@@ -27,6 +27,41 @@ import logger from '../utils/logger.mjs';
 const POLLUTION_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 
 /**
+ * Maximum object/array nesting depth `findPollutionKey` will traverse before
+ * it bails out and rejects the body with HTTP 400. JSON.parse in V8 can
+ * accept ~100k levels of nesting; without a depth cap, the recursive walk
+ * would exhaust the call stack and crash the worker — converting the
+ * defense into a DoS vector. 200 is well above any realistic legitimate
+ * payload (Equoria's deepest documented body is single-digit nesting).
+ */
+const MAX_BODY_DEPTH = 200;
+
+/**
+ * Decodes a JSON-string substring into the actual property name it
+ * represents. The duplicate-key tokenizer captures the RAW characters
+ * between the quote marks, but JSON allows the same logical key to be
+ * written multiple ways (`name`, `\u006eame`, etc.). Without normalising
+ * before deduplication, an attacker can write `{"name":"a","\u006eame":"b"}`
+ * — two different raw substrings, one logical key — and slip the second
+ * value past validators that only inspect the first.
+ *
+ * Wrapping the substring in quotes and running JSON.parse gives V8 the
+ * standard JSON string-decoding logic for free, including surrogate pairs
+ * and all valid escape sequences.
+ *
+ * Returns the decoded key on success, or the raw substring as a fallback
+ * if decoding fails — JSON.parse will throw on the actual body parse a
+ * moment later, so we never end up trusting a malformed key.
+ */
+function decodeJsonKey(rawKey) {
+  try {
+    return JSON.parse(`"${rawKey}"`);
+  } catch {
+    return rawKey;
+  }
+}
+
+/**
  * Detects duplicate top-level-or-nested object keys in a raw JSON string.
  *
  * Walks the input character-by-character maintaining a stack of "object
@@ -111,11 +146,16 @@ export function detectDuplicateJsonKeys(raw) {
         }
         i++;
       }
-      const key = raw.slice(start, i);
+      const rawKey = raw.slice(start, i);
       i++; // consume closing quote
 
       const top = scopes[scopes.length - 1];
       if (top && top.type === 'object' && top.expectingKey === true) {
+        // Equoria-ocn9 review fix: decode JSON escapes BEFORE adding to the
+        // dedupe set. Without this, `{"name":"a","\u006eame":"b"}` is seen
+        // as two distinct keys but JSON.parse later collapses both to
+        // property `name` (last-wins), defeating the duplicate-key defense.
+        const key = decodeJsonKey(rawKey);
         if (top.keys.has(key)) {
           const err = new Error(`Duplicate key "${key}" in JSON body`);
           err.statusCode = 400;
@@ -171,39 +211,50 @@ export function secureJsonBodyParser(opts = {}) {
 }
 
 /**
- * Recursively walks `value` looking for own properties named __proto__,
+ * Iteratively walks `value` looking for own properties named __proto__,
  * constructor, or prototype. Returns the offending key path on first hit,
  * or null when the structure is clean.
  *
- * @param {*} value
- * @param {string[]} [path]
+ * Equoria-ocn9 review fix: previously recursive. A 10 MB deeply-nested body
+ * that V8 accepts at parse time (JSON.parse supports ~100k depth) would
+ * blow the call stack here with `RangeError: Maximum call stack size
+ * exceeded`, turning the middleware into a DoS vector. Now iterative with
+ * an explicit MAX_BODY_DEPTH cap; throws `BODY_DEPTH_EXCEEDED` when the
+ * cap is hit so the guard can respond with a clean 400.
+ *
+ * @param {*} root
+ * @throws {Error} with `.code === 'BODY_DEPTH_EXCEEDED'` when nesting
+ *   exceeds MAX_BODY_DEPTH.
  */
-export function findPollutionKey(value, path = []) {
-  if (!value || typeof value !== 'object') {
+export function findPollutionKey(root) {
+  if (!root || typeof root !== 'object') {
     return null;
   }
 
-  // Object.getOwnPropertyNames catches __proto__ even though Object.keys()
-  // hides it on plain objects after a property assignment.
-  const ownKeys = Object.getOwnPropertyNames(value);
-  for (const key of ownKeys) {
-    if (POLLUTION_KEYS.has(key)) {
-      return [...path, key].join('.');
+  // DFS with an explicit stack. Each frame: { value, path, depth }.
+  const stack = [{ value: root, path: [], depth: 0 }];
+  while (stack.length > 0) {
+    const { value, path, depth } = stack.pop();
+    if (depth > MAX_BODY_DEPTH) {
+      const err = new Error(`Request body nesting exceeds ${MAX_BODY_DEPTH} levels`);
+      err.code = 'BODY_DEPTH_EXCEEDED';
+      throw err;
     }
-    const next = value[key];
-    if (next && typeof next === 'object') {
-      const hit = findPollutionKey(next, [...path, key]);
-      if (hit) {
-        return hit;
+
+    // Object.getOwnPropertyNames catches __proto__ even though Object.keys()
+    // hides it on plain objects after a property assignment. JSON.parse
+    // attaches `__proto__` as an own data property (not a prototype change)
+    // so this enumeration sees it.
+    const ownKeys = Object.getOwnPropertyNames(value);
+    for (const key of ownKeys) {
+      if (POLLUTION_KEYS.has(key)) {
+        return [...path, key].join('.');
+      }
+      const next = value[key];
+      if (next && typeof next === 'object') {
+        stack.push({ value: next, path: [...path, key], depth: depth + 1 });
       }
     }
-  }
-
-  // Defensive: also check __proto__ via descriptor in case the body parser
-  // attached it as an own descriptor under a different enumeration path.
-  const protoDescriptor = Object.getOwnPropertyDescriptor(value, '__proto__');
-  if (protoDescriptor && Object.prototype.hasOwnProperty.call(protoDescriptor, 'value')) {
-    return [...path, '__proto__'].join('.');
   }
 
   return null;
@@ -216,7 +267,21 @@ export function findPollutionKey(value, path = []) {
 export function prototypePollutionGuard() {
   return (req, res, next) => {
     if (req.body && typeof req.body === 'object') {
-      const offendingPath = findPollutionKey(req.body);
+      let offendingPath;
+      try {
+        offendingPath = findPollutionKey(req.body);
+      } catch (err) {
+        if (err && err.code === 'BODY_DEPTH_EXCEEDED') {
+          logger.warn(
+            `[requestBodyGuard] Rejected over-deep request body on ${req.method} ${req.path}: ${err.message}`,
+          );
+          return res.status(400).json({
+            success: false,
+            message: 'Request body nesting too deep',
+          });
+        }
+        return next(err);
+      }
       if (offendingPath) {
         logger.warn(
           `[requestBodyGuard] Rejected prototype-pollution attempt on ${req.method} ${req.path}: key=${offendingPath}`,
