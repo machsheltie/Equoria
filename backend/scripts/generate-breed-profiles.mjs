@@ -21,7 +21,7 @@
  * in this first pass; safe to rerun until manual tuning begins).
  *
  * Run:
- *   node backend/scripts/generateBreedProfiles.mjs
+ *   node backend/scripts/generate-breed-profiles.mjs
  */
 
 import { readFileSync, writeFileSync } from 'fs';
@@ -50,7 +50,7 @@ const DRAFT_TOKENS = [
   'Shire',
   'Clydesdale',
   'Suffolk',
-  'Belgian',
+  'Belgian Draft',
   'Ardennes',
   'Boulonnais',
   'Breton',
@@ -195,10 +195,17 @@ const GAITED_REGISTRIES_BY_TOKEN = {
   Gaited: ['Amble'],
 };
 
+// Strip diacritics and lowercase for accent-insensitive token matching.
+// Prevents "Selle Français" from failing to match the "Selle Francais" token.
+// \p{Mn} = Unicode "Mark, Nonspacing" — covers all combining diacritical marks.
+function normalizeStr(s) {
+  return s.normalize('NFD').replace(/\p{Mn}/gu, '').toLowerCase();
+}
+
 function gaitedRegistryFor(name) {
-  const lower = name.toLowerCase();
+  const normalizedName = normalizeStr(name);
   for (const [token, registry] of Object.entries(GAITED_REGISTRIES_BY_TOKEN)) {
-    if (lower.includes(token.toLowerCase())) {
+    if (normalizedName.includes(normalizeStr(token))) {
       return registry;
     }
   }
@@ -206,21 +213,24 @@ function gaitedRegistryFor(name) {
 }
 
 function classify(name) {
-  const matchAny = tokens => tokens.some(t => name.toLowerCase().includes(t.toLowerCase()));
+  const normalizedName = normalizeStr(name);
+  const matchAny = tokens => tokens.some(t => normalizedName.includes(normalizeStr(t)));
   if (matchAny(PONY_TOKENS)) {
     return 'pony';
+  }
+  // Check sport/racing before draft so "Belgian Warmblood", "Belgian Sport Horse" etc.
+  // are not misclassified by the broad "Belgian" token that previously lived in DRAFT_TOKENS.
+  if (matchAny(SPORT_TOKENS)) {
+    return 'sport';
+  }
+  if (matchAny(RACING_TOKENS)) {
+    return 'racing';
   }
   if (matchAny(DRAFT_TOKENS)) {
     return 'draft';
   }
   if (matchAny(GAITED_TOKENS)) {
     return 'gaited';
-  }
-  if (matchAny(SPORT_TOKENS)) {
-    return 'sport';
-  }
-  if (matchAny(RACING_TOKENS)) {
-    return 'racing';
   }
   return 'general';
 }

@@ -327,6 +327,21 @@ export async function createFoal(req, res) {
     }
     const breedName = breedRecord.name;
 
+    // Surface "breed exists in DB but has no profile" as a 422 rather than
+    // letting the generator throws fall through to the generic 500 handler.
+    try {
+      getBreedProfile(breedName);
+    } catch (err) {
+      logger.warn(
+        `[horseController.createFoal] No breedProfiles.json entry for "${breedName}" (id=${breedId}): ${err.message}`,
+      );
+      return res.status(422).json({
+        success: false,
+        message: `No breed profile available for breed "${breedName}"`,
+        data: null,
+      });
+    }
+
     // Generate conformation scores — use inheritance if both parents have valid region scores, else breed-only.
     // breedName comes from the foal's assigned breed (crossbreeding is restricted to specific combinations
     // e.g. Thoroughbred x Arabian = Anglo Arabian — validation happens upstream). The foal's breed
@@ -959,7 +974,7 @@ export async function getConformationAnalysis(req, res) {
     const analysis = {};
     for (const region of CONFORMATION_REGIONS) {
       const score = scores[region] ?? 0;
-      const breedMean = breedConformation ? breedConformation[region].mean : null;
+      const breedMean = breedConformation ? (breedConformation?.[region]?.mean ?? null) : null;
 
       // Percentile: count horses scoring lower / total
       let percentile;
@@ -981,12 +996,12 @@ export async function getConformationAnalysis(req, res) {
 
     // Overall conformation analysis
     const overallScore = scores.overallConformation ?? calculateOverallConformation(scores);
-    const overallBreedMean = breedConformation
-      ? Math.round(
-          CONFORMATION_REGIONS.reduce((sum, r) => sum + breedConformation[r].mean, 0) /
-            CONFORMATION_REGIONS.length,
-        )
-      : null;
+    const overallBreedMean = (() => {
+      if (!breedConformation) return null;
+      const means = CONFORMATION_REGIONS.map(r => breedConformation?.[r]?.mean ?? null);
+      if (means.some(m => m === null)) return null;
+      return Math.round(means.reduce((sum, m) => sum + m, 0) / CONFORMATION_REGIONS.length);
+    })();
 
     let overallPercentile;
     if (validHorses.length <= 1) {

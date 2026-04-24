@@ -97,7 +97,8 @@ describe('Conformation API Endpoints', () => {
   // Create a horse row in the test DB with specified conformationScores
   // and track its id for cleanup. Defaults to the unique per-run breed.
   async function seedHorse(conformationScores, breedId = testBreed.id) {
-    const fourYearsAgo = new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000);
+    const fourYearsAgo = new Date();
+    fourYearsAgo.setFullYear(fourYearsAgo.getFullYear() - 4);
     const horse = await prisma.horse.create({
       data: {
         name: `ConfTestHorse_${suiteSuffix}_${createdHorseIds.length}`,
@@ -237,29 +238,66 @@ describe('Conformation API Endpoints', () => {
     // percentile: 80). Delete all testBreed horses before each test.
     beforeEach(async () => {
       await prisma.horse.deleteMany({ where: { breedId: testBreed.id } }).catch(() => {});
+      // Keep in-memory tracker in sync with DB state so afterAll cleanup is accurate.
+      createdHorseIds.length = 0;
     });
 
     test('returns percentile analysis per region for a horse with scores', async () => {
       // Seed 5 same-breed horses with varying scores
       await seedHorse({
-        head: 60, neck: 60, shoulders: 60, back: 60, hindquarters: 60,
-        legs: 60, hooves: 60, topline: 60, overallConformation: 60,
+        head: 60,
+        neck: 60,
+        shoulders: 60,
+        back: 60,
+        hindquarters: 60,
+        legs: 60,
+        hooves: 60,
+        topline: 60,
+        overallConformation: 60,
       });
       await seedHorse({
-        head: 70, neck: 70, shoulders: 70, back: 70, hindquarters: 70,
-        legs: 70, hooves: 70, topline: 70, overallConformation: 70,
+        head: 70,
+        neck: 70,
+        shoulders: 70,
+        back: 70,
+        hindquarters: 70,
+        legs: 70,
+        hooves: 70,
+        topline: 70,
+        overallConformation: 70,
       });
       await seedHorse({
-        head: 82, neck: 75, shoulders: 70, back: 68, hindquarters: 78,
-        legs: 72, hooves: 71, topline: 74, overallConformation: 74,
+        head: 82,
+        neck: 75,
+        shoulders: 70,
+        back: 68,
+        hindquarters: 78,
+        legs: 72,
+        hooves: 71,
+        topline: 74,
+        overallConformation: 74,
       }); // Same scores as subject horse
       await seedHorse({
-        head: 90, neck: 85, shoulders: 80, back: 80, hindquarters: 85,
-        legs: 80, hooves: 80, topline: 80, overallConformation: 83,
+        head: 90,
+        neck: 85,
+        shoulders: 80,
+        back: 80,
+        hindquarters: 85,
+        legs: 80,
+        hooves: 80,
+        topline: 80,
+        overallConformation: 83,
       });
       await seedHorse({
-        head: 95, neck: 90, shoulders: 90, back: 90, hindquarters: 90,
-        legs: 90, hooves: 90, topline: 90, overallConformation: 91,
+        head: 95,
+        neck: 90,
+        shoulders: 90,
+        back: 90,
+        hindquarters: 90,
+        legs: 90,
+        hooves: 90,
+        topline: 90,
+        overallConformation: 91,
       });
 
       const { req, res } = createMockReqRes();
@@ -300,30 +338,72 @@ describe('Conformation API Endpoints', () => {
     test('horse with max scores has high percentiles', async () => {
       // 5 horses with ascending scores; our subject horse is the top
       await seedHorse({
-        head: 50, neck: 50, shoulders: 50, back: 50, hindquarters: 50,
-        legs: 50, hooves: 50, topline: 50, overallConformation: 50,
+        head: 50,
+        neck: 50,
+        shoulders: 50,
+        back: 50,
+        hindquarters: 50,
+        legs: 50,
+        hooves: 50,
+        topline: 50,
+        overallConformation: 50,
       });
       await seedHorse({
-        head: 60, neck: 60, shoulders: 60, back: 60, hindquarters: 60,
-        legs: 60, hooves: 60, topline: 60, overallConformation: 60,
+        head: 60,
+        neck: 60,
+        shoulders: 60,
+        back: 60,
+        hindquarters: 60,
+        legs: 60,
+        hooves: 60,
+        topline: 60,
+        overallConformation: 60,
       });
       await seedHorse({
-        head: 70, neck: 70, shoulders: 70, back: 70, hindquarters: 70,
-        legs: 70, hooves: 70, topline: 70, overallConformation: 70,
+        head: 70,
+        neck: 70,
+        shoulders: 70,
+        back: 70,
+        hindquarters: 70,
+        legs: 70,
+        hooves: 70,
+        topline: 70,
+        overallConformation: 70,
       });
       await seedHorse({
-        head: 80, neck: 80, shoulders: 80, back: 80, hindquarters: 80,
-        legs: 80, hooves: 80, topline: 80, overallConformation: 80,
+        head: 80,
+        neck: 80,
+        shoulders: 80,
+        back: 80,
+        hindquarters: 80,
+        legs: 80,
+        hooves: 80,
+        topline: 80,
+        overallConformation: 80,
       });
       await seedHorse({
-        head: 99, neck: 99, shoulders: 99, back: 99, hindquarters: 99,
-        legs: 99, hooves: 99, topline: 99, overallConformation: 99,
+        head: 99,
+        neck: 99,
+        shoulders: 99,
+        back: 99,
+        hindquarters: 99,
+        legs: 99,
+        hooves: 99,
+        topline: 99,
+        overallConformation: 99,
       }); // Top horse — same scores as subject
 
       const { req, res } = createMockReqRes({
         conformationScores: {
-          head: 99, neck: 99, shoulders: 99, back: 99, hindquarters: 99,
-          legs: 99, hooves: 99, topline: 99, overallConformation: 99,
+          head: 99,
+          neck: 99,
+          shoulders: 99,
+          back: 99,
+          hindquarters: 99,
+          legs: 99,
+          hooves: 99,
+          topline: 99,
+          overallConformation: 99,
         },
       });
 
@@ -355,8 +435,15 @@ describe('Conformation API Endpoints', () => {
     test('handles single horse in breed — defaults to 50th percentile', async () => {
       // Only 1 horse in the unique breed (the subject horse's peer)
       await seedHorse({
-        head: 82, neck: 75, shoulders: 70, back: 68, hindquarters: 78,
-        legs: 72, hooves: 71, topline: 74, overallConformation: 74,
+        head: 82,
+        neck: 75,
+        shoulders: 70,
+        back: 68,
+        hindquarters: 78,
+        legs: 72,
+        hooves: 71,
+        topline: 74,
+        overallConformation: 74,
       });
 
       const { req, res } = createMockReqRes();
@@ -376,16 +463,37 @@ describe('Conformation API Endpoints', () => {
       // 4 horses: 1 with null scores (excluded), 3 with valid scores
       await seedHorse(null);
       await seedHorse({
-        head: 60, neck: 60, shoulders: 60, back: 60, hindquarters: 60,
-        legs: 60, hooves: 60, topline: 60, overallConformation: 60,
+        head: 60,
+        neck: 60,
+        shoulders: 60,
+        back: 60,
+        hindquarters: 60,
+        legs: 60,
+        hooves: 60,
+        topline: 60,
+        overallConformation: 60,
       });
       await seedHorse({
-        head: 82, neck: 75, shoulders: 70, back: 68, hindquarters: 78,
-        legs: 72, hooves: 71, topline: 74, overallConformation: 74,
+        head: 82,
+        neck: 75,
+        shoulders: 70,
+        back: 68,
+        hindquarters: 78,
+        legs: 72,
+        hooves: 71,
+        topline: 74,
+        overallConformation: 74,
       });
       await seedHorse({
-        head: 90, neck: 90, shoulders: 90, back: 90, hindquarters: 90,
-        legs: 90, hooves: 90, topline: 90, overallConformation: 90,
+        head: 90,
+        neck: 90,
+        shoulders: 90,
+        back: 90,
+        hindquarters: 90,
+        legs: 90,
+        hooves: 90,
+        topline: 90,
+        overallConformation: 90,
       });
 
       const { req, res } = createMockReqRes();
@@ -405,8 +513,15 @@ describe('Conformation API Endpoints', () => {
       // affect the result.
       await seedHorse(
         {
-          head: 82, neck: 75, shoulders: 70, back: 68, hindquarters: 78,
-          legs: 72, hooves: 71, topline: 74, overallConformation: 74,
+          head: 82,
+          neck: 75,
+          shoulders: 70,
+          back: 68,
+          hindquarters: 78,
+          legs: 72,
+          hooves: 71,
+          topline: 74,
+          overallConformation: 74,
         },
         thoroughbredBreed.id,
       );

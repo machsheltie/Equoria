@@ -90,7 +90,7 @@ export function getBreedProfile(breedIdentifier) {
     throw new Error(
       `No breedProfiles.json entry for breed "${breedName}". ` +
         'Every breed must have a profile — check that the DB breed name matches the JSON key ' +
-        'exactly, and/or rerun backend/scripts/generateBreedProfiles.mjs if breedStarterStats.json ' +
+        'exactly, and/or rerun backend/scripts/generate-breed-profiles.mjs if breedStarterStats.json ' +
         'was extended.',
     );
   }
