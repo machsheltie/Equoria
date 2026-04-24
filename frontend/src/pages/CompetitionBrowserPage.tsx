@@ -42,7 +42,12 @@ const CompetitionBrowserPage = (): JSX.Element => {
   // user owns the horse referenced in the URL, pre-select it so the entry
   // modal opens with the correct horse already chosen. Runs once per mount
   // to avoid clobbering manual selections.
-  const [searchParams] = useSearchParams();
+  //
+  // Equoria-ocn9 review fix: strip the consumed ?horse= from the URL via
+  // setSearchParams({}). Without this, a user who manually changed the
+  // selection and then navigated away/back would see the original
+  // deep-linked horse re-selected on remount.
+  const [searchParams, setSearchParams] = useSearchParams();
   const horseQueryParam = searchParams.get('horse');
   const autoSelectedRef = useRef(false);
   useEffect(() => {
@@ -53,8 +58,9 @@ const CompetitionBrowserPage = (): JSX.Element => {
     if (horses.some((h) => h.id === targetId)) {
       setSelectedHorseId(targetId);
       autoSelectedRef.current = true;
+      setSearchParams({}, { replace: true });
     }
-  }, [horseQueryParam, horses]);
+  }, [horseQueryParam, horses, setSearchParams]);
 
   const enterCompetition = useMutation<
     { entryId: number; horseId: number; showId: number; entryFee: number },

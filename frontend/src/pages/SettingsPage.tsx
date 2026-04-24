@@ -20,7 +20,7 @@
  *   cache and redirects to /login on success.
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { User, Bell, Monitor, ChevronRight, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import PageHero from '@/components/layout/PageHero';
@@ -120,14 +120,30 @@ const SettingsPage: React.FC = () => {
   const [username, setUsername] = useState<string>(user?.username ?? '');
   const [email, setEmail] = useState<string>(user?.email ?? '');
 
-  // Re-sync the local form state whenever the server-side user changes
-  // (e.g. profile refetch after a save). Only overwrites when the user is
-  // not actively editing — we detect "actively editing" by comparing the
-  // current form value to the previous user value.
+  // Equoria-ocn9 review fix: re-sync the local form state from the server
+  // ONLY when the local state still matches the value we last seeded.
+  // Tracking the last-seeded value (not just "non-empty") fixes two bugs
+  // the original `prev === ''` check produced:
+  //   1. Clearing a field intentionally would be undone on the next user
+  //      object refetch (focus refetch is common with React Query).
+  //   2. After a save, server-side normalization (trim/lowercase) was
+  //      never reflected back into the form, so subsequent saves
+  //      re-submitted the user's un-normalized text indefinitely.
+  // With this pattern: the form is always in sync with the server until
+  // the user starts typing; once they type, the form holds their input
+  // until they save (or until the user switches identity entirely).
+  const lastSeededRef = useRef<{ username: string; email: string }>({
+    username: user?.username ?? '',
+    email: user?.email ?? '',
+  });
   useEffect(() => {
     if (!user) return;
-    setUsername((prev) => (prev === '' ? (user.username ?? '') : prev));
-    setEmail((prev) => (prev === '' ? (user.email ?? '') : prev));
+    setUsername((prev) => (prev === lastSeededRef.current.username ? (user.username ?? '') : prev));
+    setEmail((prev) => (prev === lastSeededRef.current.email ? (user.email ?? '') : prev));
+    lastSeededRef.current = {
+      username: user.username ?? '',
+      email: user.email ?? '',
+    };
   }, [user]);
 
   const handleSaveAccount = () => {
@@ -140,6 +156,12 @@ const SettingsPage: React.FC = () => {
       return;
     }
     updateProfile.mutate(updates, {
+      // Equoria-ocn9 review fix: surface a success toast. The original
+      // implementation only handled onError, leaving users with no
+      // confirmation that the save worked.
+      onSuccess: () => {
+        toast.success('Account changes saved.');
+      },
       onError: (err) => {
         toast.error(err?.message ?? 'Could not save account changes.');
       },
@@ -185,9 +207,18 @@ const SettingsPage: React.FC = () => {
             'Password changed. You will be signed out — please log in with your new password.'
           );
           resetPasswordForm();
-          // The server invalidates all sessions on a password change
-          // (CWE-613). Match it client-side so the user re-authenticates.
-          logout.mutate();
+          // Equoria-ocn9 review fix: the server invalidates all sessions on
+          // a password change (CWE-613). The client must follow. Previously
+          // we called `logout.mutate()` and left it at that — but if logout
+          // failed (e.g. CSRF token already invalidated, network blip), the
+          // user would be left in a zombie state: client thinks logged-in,
+          // server returns 401 to every request, no recovery path.
+          // Hard-redirect to /login regardless of mutate outcome.
+          logout.mutate(undefined, {
+            onSettled: () => {
+              window.location.href = '/login';
+            },
+          });
         },
         onError: (err) => {
           toast.error(err?.message ?? 'Could not change password.');
@@ -207,7 +238,10 @@ const SettingsPage: React.FC = () => {
 
   const handleConfirmDelete = () => {
     if (!user) return;
-    if (deleteConfirmText !== user.username) {
+    // Equoria-ocn9 review fix: trim the confirmation input. Browser autofill
+    // may add a trailing space; a literal !== comparison would block delete
+    // for users who typed the right username with whitespace.
+    if (deleteConfirmText.trim() !== user.username) {
       toast.error('Confirmation text does not match your username.');
       return;
     }
@@ -218,6 +252,23 @@ const SettingsPage: React.FC = () => {
       // onSuccess is handled inside the hook (clears cache, redirects).
     });
   };
+
+  // Equoria-ocn9 review fix: ARIA dialogs must dismiss on Escape. Without
+  // this handler, keyboard-only users have no way out of the modal except
+  // tabbing to Cancel — a WCAG 2.1.2 violation.
+  useEffect(() => {
+    if (!showDeleteModal) return;
+    const onKey = (e: KeyboardEvent) => {
+      // Inline the close logic to keep this effect's deps minimal —
+      // closeDeleteModal is a fresh function reference each render.
+      if (e.key === 'Escape') {
+        setShowDeleteModal(false);
+        setDeleteConfirmText('');
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [showDeleteModal]);
 
   // -------- Preferences (notifications + display) --------
   const merged: UserPreferences = {
@@ -567,8 +618,15 @@ const SettingsPage: React.FC = () => {
           aria-modal="true"
           aria-labelledby="delete-account-title"
           data-testid="settings-delete-modal"
+          // Equoria-ocn9 review fix: clicking the backdrop dismisses the
+          // modal (standard ARIA dialog convention). Inner panel stops
+          // propagation so clicks on the form don't close.
+          onClick={closeDeleteModal}
         >
-          <div className="max-w-md w-full rounded-xl border border-red-500/30 bg-[var(--bg-night-sky)] p-6 space-y-4 shadow-2xl">
+          <div
+            className="max-w-md w-full rounded-xl border border-red-500/30 bg-[var(--bg-night-sky)] p-6 space-y-4 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
             <h3 id="delete-account-title" className="text-lg font-semibold text-red-400">
               Delete account permanently?
             </h3>
@@ -588,6 +646,11 @@ const SettingsPage: React.FC = () => {
               value={deleteConfirmText}
               onChange={(e) => setDeleteConfirmText(e.target.value)}
               autoComplete="off"
+              // Equoria-ocn9 review fix: focus the confirm input on open so
+              // keyboard users can start typing immediately. Without
+              // autoFocus the focus stayed on the page-behind "Delete
+              // Account" button.
+              autoFocus
               className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-red-500/50"
               data-testid="settings-delete-confirm-input"
             />
@@ -603,7 +666,7 @@ const SettingsPage: React.FC = () => {
               <button
                 type="button"
                 onClick={handleConfirmDelete}
-                disabled={deleteAccount.isPending || deleteConfirmText !== user.username}
+                disabled={deleteAccount.isPending || deleteConfirmText.trim() !== user.username}
                 className="px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-medium hover:bg-red-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 data-testid="settings-delete-confirm"
               >

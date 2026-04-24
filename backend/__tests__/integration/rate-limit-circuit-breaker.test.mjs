@@ -8,6 +8,8 @@
  */
 
 import { jest } from '@jest/globals';
+import express from 'express';
+import request from 'supertest';
 import { createRateLimiter, getRateLimitingHealth, isRedisConnected } from '../../middleware/rateLimiting.mjs';
 
 // Mock Express request/response
@@ -216,20 +218,41 @@ describe('Rate Limiting Circuit Breaker Integration Tests', () => {
   // creating a limiter; a no-op assertion here added nothing.
 
   describe('Environment Configuration', () => {
-    it('respects useEnvOverride=false (production default — env knobs cannot loosen the limit)', () => {
-      // Even when test env vars are set, useEnvOverride:false must keep the
-      // hard-coded limit. Guards against an attacker who can flip an env var
-      // (or a careless deployment) from silently disabling rate limits.
+    it('respects useEnvOverride=false even when TEST_RATE_LIMIT_MAX_REQUESTS is huge (Equoria-ocn9 review)', async () => {
+      // Equoria-ocn9 review fix: the previous test only asserted
+      // `expect(limiter).toBeDefined()` which passes for any return value.
+      // That gave the same false confidence the deleted bypass-header test
+      // gave. This rewrite actually exercises the limiter:
+      //
+      //   1. Set TEST_RATE_LIMIT_MAX_REQUESTS to an inflated value.
+      //   2. Create a limiter with useEnvOverride:false and a low hard-coded max.
+      //   3. Hammer it with max+1 requests against a real (test-only) Express app.
+      //   4. Assert the (max+1)-th request returns 429 — proving the env var
+      //      did NOT loosen the limit.
+      //
+      // If a regression made useEnvOverride:false accidentally honor env vars,
+      // the env-set 999999 cap would mean no request ever returns 429 and
+      // this test would fail loudly.
+      const HARD_MAX = 3;
       const previousMax = process.env.TEST_RATE_LIMIT_MAX_REQUESTS;
       process.env.TEST_RATE_LIMIT_MAX_REQUESTS = '999999';
       try {
+        const app = express();
         const limiter = createRateLimiter({
           windowMs: 60000,
-          max: 5,
-          keyPrefix: 'no-override',
-          useEnvOverride: false,
+          max: HARD_MAX,
+          keyPrefix: 'no-override-real-assertion',
+          useEnvOverride: false, // env knob MUST be ignored
         });
-        expect(limiter).toBeDefined();
+        app.get('/probe', limiter, (_req, res) => res.status(200).json({ ok: true }));
+
+        for (let i = 0; i < HARD_MAX; i++) {
+          const res = await request(app).get('/probe');
+          expect(res.status).toBe(200);
+        }
+
+        const blocked = await request(app).get('/probe');
+        expect(blocked.status).toBe(429);
       } finally {
         if (previousMax === undefined) {
           delete process.env.TEST_RATE_LIMIT_MAX_REQUESTS;

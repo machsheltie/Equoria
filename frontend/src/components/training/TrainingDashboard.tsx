@@ -166,7 +166,7 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
   // Equoria-ocn9: deep-link via /training?horse=ID — pre-select the horse
   // when the URL carries the param so the quick-action UX from
   // HorseListView lands on the right session.
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const horseQueryParam = searchParams.get('horse');
   const autoSelectedRef = useRef(false);
 
@@ -175,6 +175,12 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
 
   // Pre-select the horse from ?horse= once horses load. Only runs once per
   // mount so user manual selections aren't overridden on re-renders.
+  //
+  // Equoria-ocn9 review fix: after consuming the deep-link, strip ?horse=
+  // from the URL via setSearchParams({}). Without this, a user who manually
+  // selected a different horse and then navigated away/back would see the
+  // original deep-linked horse re-selected on remount (URL still carried
+  // the stale ?horse=ID), clobbering their manual choice.
   useEffect(() => {
     if (autoSelectedRef.current) return;
     if (!horseQueryParam || !horses || horses.length === 0) return;
@@ -184,8 +190,10 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
     if (target) {
       setSelectedHorse(target);
       autoSelectedRef.current = true;
+      // Strip the now-consumed param so back-navigation doesn't replay it.
+      setSearchParams({}, { replace: true });
     }
-  }, [horseQueryParam, horses]);
+  }, [horseQueryParam, horses, setSearchParams]);
 
   // Convert horses to Horse format for EligibilityFilter
   const horsesForFilter = useMemo((): Horse[] => {

@@ -1,32 +1,44 @@
 #!/usr/bin/env sh
-
+#
 # Run backend tests before push.
 #
-# Why these flags (Equoria-ocn9, 2026-04-24):
+# Equoria-ocn9 (initial fix 2026-04-24, refined post-review same day).
+#
+# This hook (a) catches obvious regressions before they hit origin and
+# (b) is the canonical proof that the code on the branch is in a working
+# state. The flags below were arrived at iteratively — DO NOT simplify
+# without re-reading the comments.
+#
+# ---------------- node + Jest flags ----------------
 #
 #   --max-old-space-size=12288 (passed DIRECTLY to node)
-#     Per-process cap on V8 old-space for the parent Jest process and each
-#     worker. Three earlier approaches failed:
-#       1. The original `npm test -- --runInBand --retryTimes=1` (no heap
-#          override) OOM'd at ~4 GB after running 270+ test files in a
-#          single Node process — V8's default heap exhausted.
+#     Per-process cap on V8 old-space for the PARENT Jest process. Three
+#     earlier approaches failed:
+#       1. `npm test -- --runInBand --retryTimes=1` (no heap override) OOM'd
+#          at ~4 GB after running 270+ test files in a single Node process.
 #       2. NODE_OPTIONS='--max-old-space-size=8192' npm test -- ...
-#          OOM'd at ~4 GB. NODE_OPTIONS appears to be silently dropped or
-#          ignored when this script runs from inside `git push`'s hook
-#          context (it works fine in an interactive shell). To eliminate
-#          that ambiguity we now pass the flag directly on the node argv.
-#       3. NODE_OPTIONS='--max-old-space-size=12288' (also dropped — same
-#          observed 4 GB cap during the actual hook invocation).
-#     12 GB gives generous headroom on both processes; workers are
-#     recycled by --workerIdleMemoryLimit (below) long before they
-#     approach it.
+#          OOM'd at ~4 GB. NODE_OPTIONS is silently dropped when this
+#          script runs from `git push`'s hook context (works fine in an
+#          interactive shell). The fix is to pass the flag directly on
+#          node's argv where the hook environment cannot strip it.
+#       3. NODE_OPTIONS='--max-old-space-size=12288' (also dropped).
+#     12 GB gives the parent generous headroom for marshalling reporter
+#     state across 275 suites (peak observed parent RSS: ~3.8 GB).
+#
+#     IMPORTANT (clarification from code review): Jest worker processes do
+#     NOT inherit this flag. Workers are forked children and CLI argv is
+#     not propagated. In practice the worker never approaches V8's default
+#     ~4 GB cap because --workerIdleMemoryLimit recycles it well before
+#     then; if a single test file ever needs more than 4 GB this will fail
+#     and the cap on the worker side would need to be raised separately
+#     (e.g. via NODE_OPTIONS in package.json scripts).
 #
 #   --maxWorkers=1
 #     Equivalent to --runInBand for our purposes (only one Jest worker
 #     active at any moment), preserving the original "no DB contention
-#     from parallel integration tests" guarantee. Unlike --runInBand,
-#     this runs tests in a CHILD worker — which is what makes
-#     --workerIdleMemoryLimit (below) effective.
+#     from parallel integration tests" guarantee. Unlike --runInBand, this
+#     runs tests in a CHILD worker — which is what makes
+#     --workerIdleMemoryLimit effective.
 #
 #   --workerIdleMemoryLimit=2048MB
 #     Jest recycles the worker after each test file when its RSS exceeds
@@ -35,7 +47,82 @@
 #
 #   --retryTimes=1
 #     Handles flaky order-dependent tests that pass in isolation.
-cd backend
+#
+# ---------------- preflight checks ----------------
+#
+# The hook fails fast with a HELPFUL message in the two scenarios most
+# likely to confuse a developer:
+#
+#   1. Test DB unreachable. Without a probe, the suite would run and
+#      hundreds of integration tests would fail with cryptic Prisma errors
+#      like "ECONNREFUSED 127.0.0.1:5432". The probe surfaces the actual
+#      problem (Postgres) and explicit instructions.
+#
+#   2. backend/node_modules/jest missing (fresh clone, fresh worktree, or
+#      after a deps upgrade). Without a check, the user sees
+#      "Cannot find module '.../jest/bin/jest.js'" with no hint that they
+#      need to `npm install`.
+
+# Use the repo root regardless of where the hook was invoked from. Prevents
+# the `cd backend` line below from breaking when a Git GUI invokes hooks
+# from `.husky/` instead of repo root.
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null)"
+if [ -z "$REPO_ROOT" ]; then
+  echo "[pre-push] FATAL: not inside a git working tree" >&2
+  exit 1
+fi
+cd "$REPO_ROOT/backend" || {
+  echo "[pre-push] FATAL: 'backend' directory not found at $REPO_ROOT/backend" >&2
+  exit 1
+}
+
+# Preflight: jest binary present?
+if [ ! -f "node_modules/jest/bin/jest.js" ]; then
+  echo "[pre-push] FATAL: backend/node_modules/jest/bin/jest.js not found." >&2
+  echo "[pre-push]   This usually means dependencies haven't been installed in this checkout." >&2
+  echo "[pre-push]   Run:  cd backend && npm install" >&2
+  exit 1
+fi
+
+# Preflight: test DB reachable?
+# Equoria-ocn9 review: with no probe, doc-only pushes were blocked by a
+# wall of cryptic integration-test failures whenever Postgres was down.
+# We probe the DATABASE_URL specified in backend/.env.test using the same
+# pg client the suite would use. If unreachable, fail fast with a clear
+# message naming the actual failure.
+DB_PROBE_OUTPUT="$(node --experimental-vm-modules - <<'NODE_EOF' 2>&1
+import dotenv from 'dotenv';
+import { Client } from 'pg';
+dotenv.config({ path: '.env.test' });
+const url = process.env.DATABASE_URL;
+if (!url) {
+  console.error('DATABASE_URL not set in backend/.env.test');
+  process.exit(2);
+}
+const client = new Client({ connectionString: url, connectionTimeoutMillis: 5000 });
+try {
+  await client.connect();
+  await client.query('SELECT 1');
+  await client.end();
+  console.log('ok');
+} catch (err) {
+  console.error(err && err.code ? `${err.code}: ${err.message}` : String(err));
+  process.exit(3);
+}
+NODE_EOF
+)"
+DB_PROBE_STATUS=$?
+if [ $DB_PROBE_STATUS -ne 0 ]; then
+  echo "[pre-push] FATAL: cannot reach the test database." >&2
+  echo "[pre-push]   $DB_PROBE_OUTPUT" >&2
+  echo "[pre-push] " >&2
+  echo "[pre-push]   The pre-push hook runs the full backend integration suite," >&2
+  echo "[pre-push]   which requires Postgres on the URL in backend/.env.test." >&2
+  echo "[pre-push]   Start Postgres (or check the connection string) and try again." >&2
+  exit 1
+fi
+
+# ---------------- run the suite ----------------
 node \
   --max-old-space-size=12288 \
   --experimental-vm-modules \
