@@ -110,18 +110,30 @@ export async function createTestUser(overrides = {}) {
 }
 
 /**
- * Create test refresh token
+ * Create test refresh token.
+ *
+ * Equoria-uy73 (2026-04-24): raw JWTs are no longer stored at rest — the
+ * DB holds only a SHA-256 hex digest. This helper hashes the synthetic
+ * raw value before insert so tests keep a stable, unique row per call.
  */
 export async function createTestRefreshToken(userId, overrides = {}) {
+  const { hashRefreshToken } = await import('../utils/tokenRotationService.mjs');
+  const rawToken =
+    overrides.rawToken ?? `test-token-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+
+  // Caller-supplied `tokenHash` wins. Otherwise hash the raw value.
+  const tokenHash = overrides.tokenHash ?? hashRefreshToken(rawToken);
+
   const defaultToken = {
-    token: `test-token-${Date.now()}-${Math.random().toString(36).substring(7)}`,
     userId,
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
     lastActivityAt: new Date(),
   };
 
+  // Strip helper-only fields that shouldn't be passed to Prisma.
+  const { rawToken: _raw, tokenHash: _hash, ...rest } = overrides;
   return prisma.refreshToken.create({
-    data: { ...defaultToken, ...overrides },
+    data: { ...defaultToken, ...rest, tokenHash },
   });
 }
 

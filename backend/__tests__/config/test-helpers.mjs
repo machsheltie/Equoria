@@ -346,11 +346,18 @@ export const cleanupAllRefreshTokens = async () => {
 
 /**
  * Create Test Refresh Token in Database
- * Directly creates token record for testing
+ * Directly creates token record for testing.
+ *
+ * Equoria-uy73 (2026-04-24): raw JWTs are no longer stored at rest. This
+ * helper hashes the synthetic raw value before insert. Callers that need
+ * a specific hash can pass `tokenHash` directly.
  */
-export const createTestRefreshTokenRecord = async tokenData => {
+export const createTestRefreshTokenRecord = async (tokenData = {}) => {
+  const { hashRefreshToken } = await import('../../utils/tokenRotationService.mjs');
+  const rawToken = tokenData.rawToken ?? `test-token-${Date.now()}`;
+  const tokenHash = tokenData.tokenHash ?? hashRefreshToken(rawToken);
+
   const defaultData = {
-    token: `test-token-${Date.now()}`,
     userId: 'test-user-id',
     familyId: `test-family-${Date.now()}`,
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
@@ -358,8 +365,9 @@ export const createTestRefreshTokenRecord = async tokenData => {
     isInvalidated: false,
   };
 
+  const { rawToken: _raw, tokenHash: _hash, token: _t, ...rest } = tokenData;
   return await prisma.refreshToken.create({
-    data: { ...defaultData, ...tokenData },
+    data: { ...defaultData, ...rest, tokenHash },
   });
 };
 
