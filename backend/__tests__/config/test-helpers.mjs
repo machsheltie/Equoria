@@ -353,8 +353,20 @@ export const cleanupAllRefreshTokens = async () => {
  * a specific hash can pass `tokenHash` directly.
  */
 export const createTestRefreshTokenRecord = async (tokenData = {}) => {
+  // Equoria-uy73 (review patch P4): fail fast on the legacy `token` key
+  // rather than silently dropping it. See createTestRefreshToken in
+  // __tests__/setup.mjs for the same guard.
+  if (Object.prototype.hasOwnProperty.call(tokenData, 'token')) {
+    throw new Error(
+      "createTestRefreshTokenRecord: 'token' override is no longer supported (Equoria-uy73). " +
+        "Use 'rawToken' for the JWT to hash, or 'tokenHash' for an explicit precomputed hash.",
+    );
+  }
   const { hashRefreshToken } = await import('../../utils/tokenRotationService.mjs');
-  const rawToken = tokenData.rawToken ?? `test-token-${Date.now()}`;
+  // Random suffix prevents same-millisecond collisions when tests fire
+  // multiple inserts via Promise.all (review patch P2).
+  const rawToken =
+    tokenData.rawToken ?? `test-token-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
   const tokenHash = tokenData.tokenHash ?? hashRefreshToken(rawToken);
 
   const defaultData = {

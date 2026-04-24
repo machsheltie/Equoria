@@ -19,7 +19,16 @@ BEGIN;
 -- ============================================================================
 
 -- Purge all existing rows (no hash-from-JWT recovery is possible).
-DELETE FROM "refresh_tokens";
+-- Capture and surface the row count so post-deploy forensics can confirm
+-- exactly how many sessions were force-logged-out (review patch P3).
+DO $$
+DECLARE
+  purged_count BIGINT;
+BEGIN
+  WITH deleted AS (DELETE FROM "refresh_tokens" RETURNING 1)
+  SELECT count(*) INTO purged_count FROM deleted;
+  RAISE NOTICE '[Equoria-uy73] Purged % refresh token rows (force re-login)', purged_count;
+END $$;
 
 -- Drop the old unique constraint and any index on the raw-token column.
 -- The constraint name matches the @unique on RefreshToken.token.
@@ -39,8 +48,15 @@ CREATE UNIQUE INDEX "refresh_tokens_tokenHash_key" ON "refresh_tokens" ("tokenHa
 
 -- Purge outstanding rows. Users who had unused verification emails must
 -- re-request; users who were already verified are unaffected (the flag lives
--- on "User", not here).
-DELETE FROM "email_verification_tokens";
+-- on "User", not here). Row count surfaced for post-deploy audit (review P3).
+DO $$
+DECLARE
+  purged_count BIGINT;
+BEGIN
+  WITH deleted AS (DELETE FROM "email_verification_tokens" RETURNING 1)
+  SELECT count(*) INTO purged_count FROM deleted;
+  RAISE NOTICE '[Equoria-uy73] Purged % email verification token rows (re-verify required)', purged_count;
+END $$;
 
 ALTER TABLE "email_verification_tokens" DROP CONSTRAINT IF EXISTS "email_verification_tokens_token_key";
 DROP INDEX IF EXISTS "email_verification_tokens_token_idx";

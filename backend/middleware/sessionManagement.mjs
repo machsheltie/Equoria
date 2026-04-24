@@ -253,6 +253,10 @@ export const getActiveSessions = async (req, res, next) => {
       });
     }
 
+    // Equoria-uy73 (2026-04-24): include tokenHash so we can mark the
+    // current session correctly. The hash is not a forgeable secret —
+    // it leaves the response only as part of an internal `isCurrent`
+    // comparison and is never echoed to the client body.
     const sessions = await prisma.refreshToken.findMany({
       where: { userId: req.user.id },
       select: {
@@ -260,10 +264,14 @@ export const getActiveSessions = async (req, res, next) => {
         createdAt: true,
         lastActivityAt: true,
         expiresAt: true,
-        // Don't expose the actual token
+        tokenHash: true,
       },
       orderBy: { lastActivityAt: 'desc' },
     });
+
+    const incomingHash = req.cookies?.refreshToken
+      ? hashRefreshToken(req.cookies.refreshToken)
+      : null;
 
     res.status(200).json({
       success: true,
@@ -273,7 +281,7 @@ export const getActiveSessions = async (req, res, next) => {
           createdAt: s.createdAt,
           lastActivity: s.lastActivityAt || s.createdAt,
           expiresAt: s.expiresAt,
-          isCurrent: req.cookies?.refreshToken === s.token, // Can't check directly, approximate
+          isCurrent: incomingHash !== null && incomingHash === s.tokenHash,
         })),
         maxConcurrent: MAX_CONCURRENT_SESSIONS,
         sessionTimeout: SESSION_TIMEOUT_MS,

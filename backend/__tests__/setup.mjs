@@ -117,6 +117,17 @@ export async function createTestUser(overrides = {}) {
  * raw value before insert so tests keep a stable, unique row per call.
  */
 export async function createTestRefreshToken(userId, overrides = {}) {
+  // Equoria-uy73 (review patch P4): the `token` column is gone. A rebased
+  // feature branch that still passes `token: '…'` would previously have
+  // hit a Prisma validation error; the helper now silently maps to
+  // tokenHash, which would let the row insert with the wrong material.
+  // Fail fast instead so the rebase-induced bug is impossible to miss.
+  if (Object.prototype.hasOwnProperty.call(overrides, 'token')) {
+    throw new Error(
+      "createTestRefreshToken: 'token' override is no longer supported (Equoria-uy73). " +
+        "Use 'rawToken' for the JWT to hash, or 'tokenHash' for an explicit precomputed hash.",
+    );
+  }
   const { hashRefreshToken } = await import('../utils/tokenRotationService.mjs');
   const rawToken =
     overrides.rawToken ?? `test-token-${Date.now()}-${Math.random().toString(36).substring(7)}`;
@@ -130,8 +141,9 @@ export async function createTestRefreshToken(userId, overrides = {}) {
     lastActivityAt: new Date(),
   };
 
-  // Strip helper-only fields that shouldn't be passed to Prisma.
-  const { rawToken: _raw, tokenHash: _hash, ...rest } = overrides;
+  // Strip helper-only fields AND the legacy `token` field from overrides
+  // so we never leak the removed column name into Prisma.create.
+  const { rawToken: _raw, tokenHash: _hash, token: _tok, ...rest } = overrides;
   const record = await prisma.refreshToken.create({
     data: { ...defaultToken, ...rest, tokenHash },
   });
