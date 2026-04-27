@@ -410,9 +410,11 @@ async function seedPerformanceData() {
       },
     });
 
+    // Show's user relation is `hostUser` (FK: hostUserId), not `host`.
+    // Equoria-3iyk Phase 1c (continuation of competitionResult fix).
     await prisma.show.deleteMany({
       where: {
-        host: {
+        hostUser: {
           email: {
             startsWith: 'perftest',
           },
