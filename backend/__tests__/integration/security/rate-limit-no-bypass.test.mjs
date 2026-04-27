@@ -63,18 +63,53 @@ const BYPASS_HEADERS = [
 
 /**
  * Generate a synthetic public-IP for a test so it gets its own rate-limit
- * bucket. Using 198.51.100.0/24 (TEST-NET-2, RFC 5737) so we don't risk
- * colliding with anything routable.
+ * bucket. Spread across THREE RFC 5737 test ranges (TEST-NET-1, TEST-NET-2,
+ * TEST-NET-3) for a 24-bit name space — 16,777,216 possible IPs vs the old
+ * 8-bit /24 (256 IPs).
+ *
+ * Why this matters: the original 8-bit hash had ~10% collision risk for the
+ * 8th test added (birthday paradox over 256 buckets). Today's 7 names happen
+ * to land on distinct buckets (verified at code-review time), but the next
+ * test added had non-trivial collision risk. With 24 bits, a collision needs
+ * roughly sqrt(2^24) ≈ 4096 distinct test names to become likely.
+ *
+ * Equoria-ocn9 re-review fix.
  */
+const TEST_NET_RANGES = ['192.0.2', '198.51.100', '203.0.113'];
+const SEEN_TEST_IPS = new Map(); // testName -> ip, for collision detection
+
 function uniqueTestIp(testName) {
-  // Hash the test name into a stable last-octet so the same test always
-  // uses the same IP across re-runs (helpful for debugging) but different
-  // tests get different IPs.
-  let hash = 0;
-  for (let i = 0; i < testName.length; i++) {
-    hash = (hash * 31 + testName.charCodeAt(i)) & 0xff;
+  if (SEEN_TEST_IPS.has(testName)) {
+    return SEEN_TEST_IPS.get(testName);
   }
-  return `198.51.100.${hash || 1}`;
+
+  // 24-bit FNV-1a hash for good distribution over short strings.
+  let hash = 2166136261; // FNV offset basis
+  for (let i = 0; i < testName.length; i++) {
+    hash ^= testName.charCodeAt(i);
+    hash = Math.imul(hash, 16777619); // FNV prime
+  }
+  hash = hash >>> 0; // coerce to unsigned 32-bit
+
+  const range = TEST_NET_RANGES[hash % TEST_NET_RANGES.length];
+  const octet3 = (hash >>> 8) & 0xff;
+  // Avoid octet4 = 0 (network address) and 255 (broadcast).
+  const octet4 = ((hash >>> 16) & 0xfd) + 1;
+  const ip = `${range}.${octet3}.${octet4}`;
+
+  // Collision check across the lifetime of this Jest worker. If two test
+  // names produce the same IP, fail loudly NOW rather than letting tests
+  // share a rate-limit bucket and produce mysterious flakes.
+  for (const [otherName, otherIp] of SEEN_TEST_IPS.entries()) {
+    if (otherIp === ip) {
+      throw new Error(
+        `[uniqueTestIp] hash collision: "${testName}" and "${otherName}" both map to ${ip}. ` +
+          'Rename one of these tests or extend the hash range.',
+      );
+    }
+  }
+  SEEN_TEST_IPS.set(testName, ip);
+  return ip;
 }
 
 describe('/api/auth/login authRateLimiter — real-path no-bypass coverage (Equoria-ocn9)', () => {

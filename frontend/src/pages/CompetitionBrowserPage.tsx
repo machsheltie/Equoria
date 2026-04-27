@@ -58,7 +58,16 @@ const CompetitionBrowserPage = (): JSX.Element => {
     if (horses.some((h) => h.id === targetId)) {
       setSelectedHorseId(targetId);
       autoSelectedRef.current = true;
-      setSearchParams({}, { replace: true });
+      // Equoria-ocn9 re-review fix: only delete `horse`, preserve any other
+      // params the URL was carrying (analytics utm_*, filters, etc.).
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete('horse');
+          return next;
+        },
+        { replace: true }
+      );
     }
   }, [horseQueryParam, horses, setSearchParams]);
 

@@ -296,6 +296,38 @@ Three-layer adversarial review (Blind Hunter + Edge Case Hunter + Acceptance Aud
 - [ ] [Review][Patch] Delete confirm comparison is whitespace-sensitive — Browser autofill trailing space blocks delete. Fix: `.trim()` the input before comparison. [frontend/src/pages/SettingsPage.tsx:210]
 - [ ] [Review][Patch] Pre-push hook hardcodes `node_modules/jest/bin/jest.js` — Cryptic "Cannot find module" on first push from a fresh clone/worktree. Fix: presence check with helpful message, or use `npx jest`. [.husky/pre-push:42]
 
-### Dismissed (25 findings)
+### Section 7 — Re-review of `e22c02d0` (bmad-code-review, 2026-04-27)
+
+Three-layer adversarial review of the patch commit produced ~30 raw findings → 0 decision-needed, 4 patches, ~26 dismissed. Acceptance Auditor confirms all 2 Decision-Needed items and all 13 Patch items from Section 6 were faithfully addressed (1 minor scope-creep noted — REPO_ROOT git-rev-parse — deemed harmless defensive hardening).
+
+#### Patch (fix before final closure of Equoria-ocn9)
+
+- [ ] [Re-Review][Patch] `setSearchParams({}, { replace: true })` wipes ALL query params, not just `?horse=` — A user deep-linked from a marketing email URL like `/training?horse=5&utm_source=email&campaign=launch` loses the `utm_*` analytics params on auto-select. Fix: use the functional form to preserve other params: `setSearchParams((prev) => { const next = new URLSearchParams(prev); next.delete('horse'); return next; }, { replace: true })`. [frontend/src/components/training/TrainingDashboard.tsx:194, frontend/src/pages/CompetitionBrowserPage.tsx:61]
+
+- [ ] [Re-Review][Patch] Delete-account modal backdrop closes on mousedown-inside / mouseup-outside drag — User clicks-and-holds on the warning text inside the panel to select it, drags mouse onto the backdrop, releases. The `click` event fires on the backdrop (LCA of mousedown+mouseup), triggering `closeDeleteModal`. User loses both their text selection AND the modal. Fix: track mousedown target via state, only close if both mousedown AND mouseup happened on the backdrop. [frontend/src/pages/SettingsPage.tsx:614-628]
+
+- [ ] [Re-Review][Patch] Pre-push hook DB probe `client.query('SELECT 1')` has no timeout — `connectionTimeoutMillis: 5000` covers `client.connect()` only. If Postgres accepts TCP but is in a hung state (deadlocked admin lock, stuck autovacuum, network proxy that black-holes traffic post-handshake), the probe hangs indefinitely with no shell-level timeout, blocking the push with no actionable error. Fix: add `statement_timeout=5000` to the connection options, OR wrap the query in `Promise.race` with a 5-second reject. [.husky/pre-push:117-137]
+
+- [ ] [Re-Review][Patch] `uniqueTestIp` 8-bit hash space is fragile — Verified: today's 7 test names happen to hash to 7 distinct buckets (25, 82, 241, 108, 43, 172, 74), so no collision. But with only 256 possible values, the next test added has ~10% chance of colliding with an existing name (birthday paradox). A collision means two tests share an IP bucket; the second test starts with a counter already decremented from the first, and assertions like `expect(after).toBeLessThan(before)` could pass for the wrong reason or fail if the bucket is already at 0. Fix: switch to a wider hash (e.g., murmur3 32-bit) and spread across all three octets of `198.51.100.x`/`192.0.2.x`/`203.0.113.x` (RFC 5737 test ranges). Alternative: assert at file load that all `uniqueTestIp` outputs in the suite are distinct. [backend/__tests__/integration/security/rate-limit-no-bypass.test.mjs:69-78]
+
+#### Dismissed (re-review)
+
+- **B1, B2, B11 (DB probe ESM stdin / pg installation / failedLogin status)**: Verified working — push7 ran the real probe with real `pg` against real Postgres and the suite passed 4824/4824. The "ESM stdin won't work" hypothesis is wrong: backend has `"type": "module"` in package.json, which makes Node treat stdin as ESM in that CWD.
+- **B10 (env var ignored on already-mounted limiter)**: Verified false. `createRateLimiter` reads `TEST_RATE_LIMIT_MAX_REQUESTS` per-request via `getEffectiveMax()` closure, not at construction time. The flood test successfully tripped 429 in our verification.
+- **B12 (x-test-user value is `'true'`)**: Production middleware has no `x-test-user` handler at all (per the original audit). Any value, including `'true'`, is silently ignored. Test correctly proves the bypass is a no-op.
+- **B7 / E2a (iterative DFS path-array memory)**: Bounded by 10MB body limit + bcrypt's downstream rate-limiting. Worst-case heap overhead ~60MB per request — acceptable.
+- **E1b/c/d (--experimental-vm-modules cargo culted, ESM-via-stdin fragile, worker heap inheritance)**: Documentation-correctness items already addressed by the corrected docstring in P5; flag is harmless, ESM stdin works in current setup, worker cap acknowledged.
+- **E2c (depth cap off-by-one)**: 200 vs 201 is cosmetic.
+- **E3a (--retryTimes flake risk)**: With 50-attempt cap and 15-min window, a Jest retry would see counter at 50/50 and trip 429 on first attempt — test handles this correctly.
+- **E3b/c/d (Math.random email validation, CSRF staleness, response-status timing)**: All theoretical; no observed flake.
+- **E4a (lastSeededRef identity change)**: Logout always navigates to `/login`, unmounting SettingsPage. In-place identity swap doesn't occur in current app flow.
+- **E4c (Escape on window vs document)**: Acceptable convention.
+- **E4d (logout race with cache invalidation)**: Hard reload via `window.location.href` clears in-memory state; persistent cache isn't used here.
+- **E5b (setSearchParams dep stability)**: `autoSelectedRef` guard prevents any re-entrancy loop.
+- **B3-B6, B13-B17, Acceptance Auditor "REPO_ROOT scope creep"**: Various low-impact items — defensive code, version coupling, comment-vs-reality drift — none are real defects.
+
+---
+
+### Dismissed (25 findings — original review, retained for history)
 
 B1 (duplicate-key test missing Content-Type — verified false: line 168 has `.set('Content-Type', 'application/json')`); B4 (`\u` escape only skips 2 chars — hex digits not tokenizer-relevant); B10 (defensive `__proto__` descriptor check is dead code — harmless); E2 (unicode-escape bypass also affects `__proto__` — caught by post-parse guard); E3 (top-level JSON literals not guarded — no attack surface); E7 (jsonBodyErrorHandler hardcodes 400 — correct for this error); E9 (RateLimit-\* header lowercase coupling — acceptable test brittleness); E11 (hex/octal in `?horse=` — ownership check ensures safety); E12 (multiple `?horse=` params — acceptable URL semantics); E14 (horse not found → silent no-op — acceptable for query-param miss); E15 (horse list refetch race — pre-existing pattern); E16 (`?horse=' '` whitespace — no real failure); E21 (trim-only username silently skipped — acceptable); E25 (Enter in password form — validation catches it); E26 (useChangePassword no profile invalidation — logout fires anyway); E30 (`cd backend` relative path — Husky invokes from repo root); E31 (Windows path slashes — Husky uses Git Bash); A2 (scroll-into-view nice-to-have — not in AC); A3 partial (cannot verify `npm test` from diff — verified: push5 ran 4825/4825); E4/E6, E13/E20 (duplicates merged into patches above).
