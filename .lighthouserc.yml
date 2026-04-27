@@ -3,6 +3,22 @@ ci:
     # Run against the static Vite build (no server needed)
     staticDistDir: ./frontend/dist
     numberOfRuns: 1
+    # Target /login explicitly — a public route that renders synchronously
+    # without an auth round-trip or backend fetch.
+    #
+    # Why: the default `/` route is wrapped in <ProtectedRoute>, which
+    # depends on useSessionGuard → AuthContext → React Query call to
+    # /api/auth/profile. In Lighthouse's static-server context there is
+    # no backend, so the profile fetch retries through React Query's
+    # default backoff (1s → 2s → 4s) before giving up. During retries
+    # ProtectedRoute renders the "Verifying session…" placeholder which
+    # SHOULD paint, but the upstream Suspense for the lazy-loaded route
+    # bundles + the redirect cycle (/ → /login → render) appears to keep
+    # Chrome's first-paint pipeline from settling within the 30s LH
+    # window, producing NO_FCP. /login is a static page below all that.
+    # Equoria-3iyk Phase 2b / Equoria-whx.
+    url:
+      - 'http://localhost/login'
 
   assert:
     preset: lighthouse:no-pwa
