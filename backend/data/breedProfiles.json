@@ -278,9 +278,7 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": [
-        "Tolt"
-      ]
+      "gaited_gait_registry": ["Tolt"]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -1086,10 +1084,7 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": [
-        "Slow Gait",
-        "Rack"
-      ]
+      "gaited_gait_registry": ["Slow Gait", "Rack"]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -7808,9 +7803,7 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": [
-        "Rack"
-      ]
+      "gaited_gait_registry": ["Rack"]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -9638,10 +9631,7 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": [
-        "Tolt",
-        "Flying Pace"
-      ]
+      "gaited_gait_registry": ["Tolt", "Flying Pace"]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -10885,9 +10875,7 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": [
-        "Revaal"
-      ]
+      "gaited_gait_registry": ["Revaal"]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -11036,9 +11024,7 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": [
-        "Single-Foot"
-      ]
+      "gaited_gait_registry": ["Single-Foot"]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -12793,10 +12779,7 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": [
-        "Marcha Picada",
-        "Marcha Batida"
-      ]
+      "gaited_gait_registry": ["Marcha Picada", "Marcha Batida"]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -12872,10 +12855,7 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": [
-        "Marcha Picada",
-        "Marcha Batida"
-      ]
+      "gaited_gait_registry": ["Marcha Picada", "Marcha Batida"]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -13097,9 +13077,7 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": [
-        "Revaal"
-      ]
+      "gaited_gait_registry": ["Revaal"]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -13832,9 +13810,7 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": [
-        "Single-Foot"
-      ]
+      "gaited_gait_registry": ["Single-Foot"]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -14275,10 +14251,7 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": [
-        "Slow Gait",
-        "Rack"
-      ]
+      "gaited_gait_registry": ["Slow Gait", "Rack"]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -15668,10 +15641,7 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": [
-        "Marcha Picada",
-        "Marcha Batida"
-      ]
+      "gaited_gait_registry": ["Marcha Picada", "Marcha Batida"]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -15747,11 +15717,7 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": [
-        "Paso Corto",
-        "Paso Largo",
-        "Paso Fino"
-      ]
+      "gaited_gait_registry": ["Paso Corto", "Paso Largo", "Paso Fino"]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -16046,10 +16012,7 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": [
-        "Paso Llano",
-        "Sobreandando"
-      ]
+      "gaited_gait_registry": ["Paso Llano", "Sobreandando"]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -17001,9 +16964,7 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": [
-        "Rack"
-      ]
+      "gaited_gait_registry": ["Rack"]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -17371,9 +17332,7 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": [
-        "Single-Foot"
-      ]
+      "gaited_gait_registry": ["Single-Foot"]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -19712,10 +19671,7 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": [
-        "Rack",
-        "Single-Foot"
-      ]
+      "gaited_gait_registry": ["Rack", "Single-Foot"]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -19791,10 +19747,7 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": [
-        "Trot",
-        "Pace"
-      ]
+      "gaited_gait_registry": ["Trot", "Pace"]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -20308,10 +20261,7 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": [
-        "Flat Walk",
-        "Running Walk"
-      ]
+      "gaited_gait_registry": ["Flat Walk", "Running Walk"]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -20387,10 +20337,7 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": [
-        "Flat Walk",
-        "Running Walk"
-      ]
+      "gaited_gait_registry": ["Flat Walk", "Running Walk"]
     },
     "temperament_weights": {
       "Spirited": 10,
@@ -21853,9 +21800,7 @@
         }
       },
       "is_gaited_breed": true,
-      "gaited_gait_registry": [
-        "Indian Shuffle"
-      ]
+      "gaited_gait_registry": ["Indian Shuffle"]
     },
     "temperament_weights": {
       "Spirited": 10,

@@ -117,10 +117,7 @@ function csrfHelperImportPath(fileRelativeToBackend) {
 }
 
 function addImport(source, relPath) {
-  if (
-    source.includes(`from '${relPath}'`) ||
-    source.match(/from ['"][^'"]*csrfHelper\.mjs['"]/)
-  ) {
+  if (source.includes(`from '${relPath}'`) || source.match(/from ['"][^'"]*csrfHelper\.mjs['"]/)) {
     return { source, added: false };
   }
   // Match each line that ENDS an import statement (handles multi-line imports).
