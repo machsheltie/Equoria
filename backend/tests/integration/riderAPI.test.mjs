@@ -162,17 +162,13 @@ describe('🏇 INTEGRATION: Rider API', () => {
   });
 
   describe('POST /api/riders/marketplace/hire', () => {
-    let marketplaceRider;
-
     beforeAll(async () => {
-      // Ensure a fresh marketplace with enough funds
+      // Ensure the user has enough money for the hire tests in this block.
+      // Each test that needs a marketplaceId fetches a fresh one so we no
+      // longer cache a `marketplaceRider` here — caching across tests was
+      // the root of an intermittent CI 404 (other tests' cleanup wipes
+      // rider_marketplace and the cached id goes stale).
       await prisma.user.update({ where: { id: testUser.id }, data: { money: 20000 } });
-
-      const res = await request(app)
-        .get('/api/riders/marketplace')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`);
-      [marketplaceRider] = res.body.data.riders;
     });
 
     it('should require marketplaceId', async () => {
