@@ -13,6 +13,7 @@
 import bcrypt from 'bcryptjs';
 import { expect } from '@jest/globals';
 import prisma from '../../../packages/database/prismaClient.mjs';
+import { hashRefreshToken } from '../../utils/tokenRotationService.mjs';
 import { generateToken, generateRefreshToken } from '../../middleware/auth.mjs';
 
 /**
@@ -349,18 +350,41 @@ export const cleanupAllRefreshTokens = async () => {
  * Directly creates token record for testing
  */
 export const createTestRefreshTokenRecord = async tokenData => {
+  const rawToken = tokenData?.token || `test-token-${Date.now()}`;
   const defaultData = {
-    token: `test-token-${Date.now()}`,
+    tokenHash: hashRefreshToken(rawToken),
     userId: 'test-user-id',
     familyId: `test-family-${Date.now()}`,
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
     isActive: true,
     isInvalidated: false,
+    lastActivityAt: new Date(),
+    updatedAt: new Date(),
   };
 
-  return await prisma.refreshToken.create({
-    data: { ...defaultData, ...tokenData },
-  });
+  const { token: _rawToken, ...restTokenData } = tokenData || {};
+  const persistedToken = { ...defaultData, ...restTokenData };
+  const rows = await prisma.$queryRawUnsafe(
+    `INSERT INTO refresh_tokens
+      ("tokenHash", "userId", "familyId", "expiresAt", "isActive", "isInvalidated", "lastActivityAt", "updatedAt")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     RETURNING id, "tokenHash", "userId", "familyId", "expiresAt", "isActive", "isInvalidated", "lastActivityAt", "createdAt", "updatedAt"`,
+    persistedToken.tokenHash,
+    persistedToken.userId,
+    persistedToken.familyId,
+    persistedToken.expiresAt,
+    persistedToken.isActive,
+    persistedToken.isInvalidated,
+    persistedToken.lastActivityAt,
+    persistedToken.updatedAt,
+  );
+  const createdRecord = rows[0];
+
+  return {
+    ...createdRecord,
+    token: rawToken,
+    tokenHash: createdRecord.tokenHash,
+  };
 };
 
 /**
@@ -368,9 +392,12 @@ export const createTestRefreshTokenRecord = async tokenData => {
  * Checks the state of all tokens in a family
  */
 export const verifyTokenFamilyState = async familyId => {
-  const tokens = await prisma.refreshToken.findMany({
-    where: { familyId },
-  });
+  const tokens = await prisma.$queryRawUnsafe(
+    `SELECT id, "tokenHash", "isActive", "isInvalidated", "createdAt"
+     FROM refresh_tokens
+     WHERE "familyId" = $1`,
+    familyId,
+  );
 
   return {
     familyId,
@@ -378,7 +405,7 @@ export const verifyTokenFamilyState = async familyId => {
     activeTokens: tokens.filter(t => t.isActive).length,
     invalidatedTokens: tokens.filter(t => t.isInvalidated).length,
     tokens: tokens.map(t => ({
-      token: `${t.token.substring(0, 20)}...`, // Truncate for safety
+      tokenHash: `${t.tokenHash.substring(0, 20)}...`,
       isActive: t.isActive,
       isInvalidated: t.isInvalidated,
       createdAt: t.createdAt,

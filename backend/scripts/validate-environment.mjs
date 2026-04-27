@@ -13,6 +13,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { getSecretValidationError, isDeployableEnvironment } from '../utils/runtimeSecretPolicy.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -185,6 +186,15 @@ function validateJwtSecrets() {
       console.error(
         `❌ ${varName}: Weak (${length} characters, needs ${ENV_CONFIG.jwtSecretMinLength}+)`,
       );
+    }
+
+    const secretPolicyError = getSecretValidationError(varName, secret, process.env.NODE_ENV);
+    if (secretPolicyError) {
+      results.errors.push(secretPolicyError);
+      results.valid = false;
+      console.error(`❌ ${varName}: ${secretPolicyError}`);
+    } else if (isDeployableEnvironment(process.env.NODE_ENV)) {
+      console.log(`✅ ${varName}: Accepted for deployable environment ${process.env.NODE_ENV}`);
     }
   }
 

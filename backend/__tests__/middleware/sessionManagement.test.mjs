@@ -73,9 +73,10 @@ describe('Session Management Middleware', () => {
 
         await trackSessionActivity(req, res, next);
 
-        const updatedToken = await prisma.refreshToken.findUnique({
-          where: { id: token.id },
-        });
+        const [updatedToken] = await prisma.$queryRawUnsafe(
+          `SELECT "lastActivityAt" FROM refresh_tokens WHERE id = $1 LIMIT 1`,
+          token.id,
+        );
 
         expect(updatedToken.lastActivityAt.getTime()).toBeGreaterThan(beforeUpdate.getTime());
         expect(next).toHaveBeenCalled();
@@ -84,10 +85,11 @@ describe('Session Management Middleware', () => {
 
       it('should allow session within timeout window (14 minutes)', async () => {
         // Update to 14 minutes ago (still within 15 min window)
-        await prisma.refreshToken.update({
-          where: { id: token.id },
-          data: { lastActivityAt: new Date(Date.now() - 14 * 60 * 1000) },
-        });
+        await prisma.$executeRawUnsafe(
+          `UPDATE refresh_tokens SET "lastActivityAt" = $1, "updatedAt" = NOW() WHERE id = $2`,
+          new Date(Date.now() - 14 * 60 * 1000),
+          token.id,
+        );
 
         await trackSessionActivity(req, res, next);
 
@@ -97,10 +99,11 @@ describe('Session Management Middleware', () => {
 
       it('should expire session after 15 minutes of inactivity', async () => {
         // Set lastActivityAt to 16 minutes ago (beyond 15 min timeout)
-        await prisma.refreshToken.update({
-          where: { id: token.id },
-          data: { lastActivityAt: new Date(Date.now() - 16 * 60 * 1000) },
-        });
+        await prisma.$executeRawUnsafe(
+          `UPDATE refresh_tokens SET "lastActivityAt" = $1, "updatedAt" = NOW() WHERE id = $2`,
+          new Date(Date.now() - 16 * 60 * 1000),
+          token.id,
+        );
 
         await trackSessionActivity(req, res, next);
 
@@ -113,17 +116,19 @@ describe('Session Management Middleware', () => {
         expect(next).not.toHaveBeenCalled();
 
         // Verify session was deleted
-        const deletedToken = await prisma.refreshToken.findUnique({
-          where: { id: token.id },
-        });
+        const [deletedToken] = await prisma.$queryRawUnsafe(
+          `SELECT id FROM refresh_tokens WHERE id = $1 LIMIT 1`,
+          token.id,
+        );
         expect(deletedToken).toBeNull();
       });
 
       it('should clear cookies when session expires', async () => {
-        await prisma.refreshToken.update({
-          where: { id: token.id },
-          data: { lastActivityAt: new Date(Date.now() - 20 * 60 * 1000) },
-        });
+        await prisma.$executeRawUnsafe(
+          `UPDATE refresh_tokens SET "lastActivityAt" = $1, "updatedAt" = NOW() WHERE id = $2`,
+          new Date(Date.now() - 20 * 60 * 1000),
+          token.id,
+        );
 
         await trackSessionActivity(req, res, next);
 
@@ -132,10 +137,10 @@ describe('Session Management Middleware', () => {
       });
 
       it('should use createdAt if lastActivityAt is null', async () => {
-        await prisma.refreshToken.update({
-          where: { id: token.id },
-          data: { lastActivityAt: null },
-        });
+        await prisma.$executeRawUnsafe(
+          `UPDATE refresh_tokens SET "lastActivityAt" = NULL, "updatedAt" = NOW() WHERE id = $1`,
+          token.id,
+        );
 
         await trackSessionActivity(req, res, next);
 
@@ -188,10 +193,11 @@ describe('Session Management Middleware', () => {
         process.env.SESSION_TIMEOUT_MS = '300000';
 
         // Set lastActivityAt to 6 minutes ago
-        await prisma.refreshToken.update({
-          where: { id: token.id },
-          data: { lastActivityAt: new Date(Date.now() - 6 * 60 * 1000) },
-        });
+        await prisma.$executeRawUnsafe(
+          `UPDATE refresh_tokens SET "lastActivityAt" = $1, "updatedAt" = NOW() WHERE id = $2`,
+          new Date(Date.now() - 6 * 60 * 1000),
+          token.id,
+        );
 
         // Note: The middleware reads SESSION_TIMEOUT_MS at module load
         // For this test to work properly, we'd need to reload the module
@@ -285,9 +291,10 @@ describe('Session Management Middleware', () => {
       expect(sessionCount).toBe(5);
 
       // Oldest session should be deleted
-      const deletedSession = await prisma.refreshToken.findUnique({
-        where: { id: oldestSession.id },
-      });
+      const [deletedSession] = await prisma.$queryRawUnsafe(
+        `SELECT id FROM refresh_tokens WHERE id = $1 LIMIT 1`,
+        oldestSession.id,
+      );
       expect(deletedSession).toBeNull();
     });
 
@@ -330,18 +337,20 @@ describe('Session Management Middleware', () => {
 
       // Verify most recent 5 sessions still exist
       for (const session of mostRecentSessions) {
-        const existingSession = await prisma.refreshToken.findUnique({
-          where: { id: session.id },
-        });
+        const [existingSession] = await prisma.$queryRawUnsafe(
+          `SELECT id FROM refresh_tokens WHERE id = $1 LIMIT 1`,
+          session.id,
+        );
         expect(existingSession).not.toBeNull();
       }
 
       // Verify oldest 2 sessions were deleted
       const oldestSessions = sessions.slice(0, 2);
       for (const session of oldestSessions) {
-        const deletedSession = await prisma.refreshToken.findUnique({
-          where: { id: session.id },
-        });
+        const [deletedSession] = await prisma.$queryRawUnsafe(
+          `SELECT id FROM refresh_tokens WHERE id = $1 LIMIT 1`,
+          session.id,
+        );
         expect(deletedSession).toBeNull();
       }
     });
@@ -568,9 +577,10 @@ describe('Session Management Middleware', () => {
       });
 
       // Verify session deleted
-      const deletedToken = await prisma.refreshToken.findUnique({
-        where: { id: token.id },
-      });
+      const [deletedToken] = await prisma.$queryRawUnsafe(
+        `SELECT id FROM refresh_tokens WHERE id = $1 LIMIT 1`,
+        token.id,
+      );
       expect(deletedToken).toBeNull();
     });
 
@@ -602,9 +612,10 @@ describe('Session Management Middleware', () => {
       expect(res.status).toHaveBeenCalledWith(404);
 
       // Verify user2's session still exists
-      const user2Session = await prisma.refreshToken.findUnique({
-        where: { id: user2Token.id },
-      });
+      const [user2Session] = await prisma.$queryRawUnsafe(
+        `SELECT id FROM refresh_tokens WHERE id = $1 LIMIT 1`,
+        user2Token.id,
+      );
       expect(user2Session).not.toBeNull();
     });
 

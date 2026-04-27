@@ -42,6 +42,7 @@ describe('validateEnvironment()', () => {
     it('should pass with all required variables present', () => {
       process.env.DATABASE_URL = 'postgresql://user:strongpassword123@localhost:5432/equoria';
       process.env.JWT_SECRET = 'a'.repeat(32); // 32 character secret
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
@@ -53,6 +54,7 @@ describe('validateEnvironment()', () => {
     it('should fail when DATABASE_URL is missing', () => {
       delete process.env.DATABASE_URL;
       process.env.JWT_SECRET = 'a'.repeat(32);
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
@@ -68,6 +70,7 @@ describe('validateEnvironment()', () => {
     it('should fail when JWT_SECRET is missing', () => {
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/equoria';
       delete process.env.JWT_SECRET;
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
@@ -82,6 +85,7 @@ describe('validateEnvironment()', () => {
     it('should fail when NODE_ENV is missing', () => {
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/equoria';
       process.env.JWT_SECRET = 'a'.repeat(32);
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       delete process.env.NODE_ENV;
       process.env.PORT = '3000';
 
@@ -96,6 +100,7 @@ describe('validateEnvironment()', () => {
     it('should fail when PORT is missing', () => {
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/equoria';
       process.env.JWT_SECRET = 'a'.repeat(32);
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'development';
       delete process.env.PORT;
 
@@ -112,6 +117,7 @@ describe('validateEnvironment()', () => {
     it('should fail when DATABASE_URL is too short (<20 chars)', () => {
       process.env.DATABASE_URL = 'postgresql://a:b@c'; // 19 chars
       process.env.JWT_SECRET = 'a'.repeat(32);
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
@@ -126,6 +132,7 @@ describe('validateEnvironment()', () => {
     it('should fail when JWT_SECRET is too short (<32 chars)', () => {
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/equoria';
       process.env.JWT_SECRET = 'a'.repeat(31); // 31 chars
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
@@ -140,6 +147,7 @@ describe('validateEnvironment()', () => {
     it('should pass when JWT_SECRET is exactly 32 characters', () => {
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/equoria';
       process.env.JWT_SECRET = 'a'.repeat(32);
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
@@ -153,6 +161,7 @@ describe('validateEnvironment()', () => {
     it('should pass when NODE_ENV is "development"', () => {
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/equoria';
       process.env.JWT_SECRET = 'a'.repeat(32);
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
@@ -164,6 +173,7 @@ describe('validateEnvironment()', () => {
     it('should pass when NODE_ENV is "production"', () => {
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/equoria';
       process.env.JWT_SECRET = 'a'.repeat(32);
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'production';
       process.env.PORT = '3000';
 
@@ -175,6 +185,7 @@ describe('validateEnvironment()', () => {
     it('should pass when NODE_ENV is "test"', () => {
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/equoria_test';
       process.env.JWT_SECRET = 'a'.repeat(32);
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'test';
       process.env.PORT = '3000';
 
@@ -186,6 +197,7 @@ describe('validateEnvironment()', () => {
     it('should pass when NODE_ENV is "beta-readiness"', () => {
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/equoria_test';
       process.env.JWT_SECRET = 'a'.repeat(32);
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'beta-readiness';
       process.env.PORT = '3001';
 
@@ -197,6 +209,7 @@ describe('validateEnvironment()', () => {
     it('should fail when NODE_ENV is invalid', () => {
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/equoria';
       process.env.JWT_SECRET = 'a'.repeat(32);
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'staging'; // Not in allowed list
       process.env.PORT = '3000';
 
@@ -213,6 +226,7 @@ describe('validateEnvironment()', () => {
     it('should pass when PORT is a valid number', () => {
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/equoria';
       process.env.JWT_SECRET = 'a'.repeat(32);
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
@@ -224,6 +238,7 @@ describe('validateEnvironment()', () => {
     it('should fail when PORT is not a number', () => {
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/equoria';
       process.env.JWT_SECRET = 'a'.repeat(32);
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'development';
       process.env.PORT = 'not-a-number';
 
@@ -240,6 +255,7 @@ describe('validateEnvironment()', () => {
     it('should reject placeholder "your-super-secret"', () => {
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/equoria';
       process.env.JWT_SECRET = 'your-super-secret-key-that-is-32-characters-long';
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
@@ -254,6 +270,7 @@ describe('validateEnvironment()', () => {
     it('should reject placeholder "change-this"', () => {
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/equoria';
       process.env.JWT_SECRET = 'change-this-secret-to-something-secure-32-chars';
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
@@ -268,6 +285,7 @@ describe('validateEnvironment()', () => {
     it('should reject placeholder "REPLACE_WITH"', () => {
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/equoria';
       process.env.JWT_SECRET = 'REPLACE_WITH_YOUR_SECRET_KEY_32_CHARACTERS';
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
@@ -282,6 +300,7 @@ describe('validateEnvironment()', () => {
     it('should reject placeholder "example"', () => {
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/equoria';
       process.env.JWT_SECRET = 'example-jwt-secret-key-32-characters-long';
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
@@ -297,6 +316,7 @@ describe('validateEnvironment()', () => {
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/equoria';
       // 32+ characters but all special characters (no letters or numbers)
       process.env.JWT_SECRET = '!@#$%^&*()_+-=[]{}|;:,.<>?/~!@#$%^&*()_+-=[]{}|;:,.<>?/~';
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
@@ -313,6 +333,7 @@ describe('validateEnvironment()', () => {
     it('should pass with postgresql:// prefix', () => {
       process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/equoria';
       process.env.JWT_SECRET = 'a'.repeat(32);
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
@@ -324,6 +345,7 @@ describe('validateEnvironment()', () => {
     it('should pass with postgres:// prefix', () => {
       process.env.DATABASE_URL = 'postgres://user:pass@localhost:5432/equoria';
       process.env.JWT_SECRET = 'a'.repeat(32);
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
@@ -335,6 +357,7 @@ describe('validateEnvironment()', () => {
     it('should fail without postgresql prefix', () => {
       process.env.DATABASE_URL = 'mysql://user:pass@localhost:5432/equoria';
       process.env.JWT_SECRET = 'a'.repeat(32);
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
@@ -349,6 +372,7 @@ describe('validateEnvironment()', () => {
     it('should reject weak password "password"', () => {
       process.env.DATABASE_URL = 'postgresql://user:password@localhost:5432/equoria';
       process.env.JWT_SECRET = 'a'.repeat(32);
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
@@ -363,6 +387,7 @@ describe('validateEnvironment()', () => {
     it('should reject weak password "admin"', () => {
       process.env.DATABASE_URL = 'postgresql://user:admin@localhost:5432/equoria';
       process.env.JWT_SECRET = 'a'.repeat(32);
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
@@ -377,6 +402,7 @@ describe('validateEnvironment()', () => {
     it('should reject weak password "123456"', () => {
       process.env.DATABASE_URL = 'postgresql://user:123456@localhost:5432/equoria';
       process.env.JWT_SECRET = 'a'.repeat(32);
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
@@ -391,6 +417,7 @@ describe('validateEnvironment()', () => {
     it('should reject weak password "postgres"', () => {
       process.env.DATABASE_URL = 'postgresql://user:postgres@localhost:5432/equoria';
       process.env.JWT_SECRET = 'a'.repeat(32);
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
@@ -407,6 +434,7 @@ describe('validateEnvironment()', () => {
     beforeEach(() => {
       process.env.DATABASE_URL = 'postgresql://user:strongpass123@localhost:5432/equoria';
       process.env.JWT_SECRET = 'a'.repeat(32);
+      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'production';
       process.env.PORT = '3000';
     });
@@ -458,6 +486,7 @@ describe('validateEnvironment()', () => {
     it('should report all validation errors at once', () => {
       process.env.DATABASE_URL = 'short'; // Too short
       process.env.JWT_SECRET = 'tooshort'; // Too short
+      process.env.JWT_REFRESH_SECRET = 'alsotooshort';
       process.env.NODE_ENV = 'invalid'; // Invalid value
       process.env.PORT = 'notanumber'; // Invalid type
 
@@ -470,10 +499,52 @@ describe('validateEnvironment()', () => {
       expect(allErrors).toContain('Environment validation failed');
       expect(allErrors).toContain('DATABASE_URL must be at least 20 characters');
       expect(allErrors).toContain('JWT_SECRET must be at least 32 characters');
+      expect(allErrors).toContain('JWT_REFRESH_SECRET must be at least 32 characters');
       expect(allErrors).toContain('NODE_ENV must be one of');
       expect(allErrors).toContain('PORT must be a number');
 
       expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+  });
+
+  describe('Deployable secret policy', () => {
+    beforeEach(() => {
+      process.env.DATABASE_URL = 'postgresql://user:strongpass123@localhost:5432/equoria';
+      process.env.PORT = '3001';
+    });
+
+    it('should fail in beta when JWT_SECRET uses the committed test-only value', () => {
+      process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing-only-32chars';
+      process.env.JWT_REFRESH_SECRET = 'StrongRefreshSecret1234567890ABCD';
+      process.env.NODE_ENV = 'beta';
+
+      validateEnvironment();
+
+      const allErrors = loggerErrorSpy.mock.calls.map(call => call[0]).join(' ');
+      expect(allErrors).toContain('JWT_SECRET uses a committed test-only secret');
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+
+    it('should fail in beta-readiness when JWT_REFRESH_SECRET uses the committed test-only value', () => {
+      process.env.JWT_SECRET = 'StrongSecret1234567890ABCDEFGHIJK';
+      process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret-for-testing-only-32chars';
+      process.env.NODE_ENV = 'beta-readiness';
+
+      validateEnvironment();
+
+      const allErrors = loggerErrorSpy.mock.calls.map(call => call[0]).join(' ');
+      expect(allErrors).toContain('JWT_REFRESH_SECRET uses a committed test-only secret');
+      expect(processExitSpy).toHaveBeenCalledWith(1);
+    });
+
+    it('should allow test-only secrets in NODE_ENV=test', () => {
+      process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing-only-32chars';
+      process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret-for-testing-only-32chars';
+      process.env.NODE_ENV = 'test';
+
+      validateEnvironment();
+
+      expect(processExitSpy).not.toHaveBeenCalled();
     });
   });
 });

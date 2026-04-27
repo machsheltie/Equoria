@@ -22,6 +22,7 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import { createTestUser, resetRateLimitStore } from '../config/test-helpers.mjs';
 
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
+import { hashRefreshToken } from '../../utils/tokenRotationService.mjs';
 describe('Token Rotation and Reuse Detection System', () => {
   let __csrf__;
   beforeAll(async () => {
@@ -171,6 +172,12 @@ describe('Token Rotation and Reuse Detection System', () => {
       // Check database for token family creation
       const tokenRecord = await prisma.refreshToken.findFirst({
         where: { userId: testUser.id },
+        select: {
+          id: true,
+          familyId: true,
+          isActive: true,
+          isInvalidated: true,
+        },
       });
 
       expect(tokenRecord).toBeTruthy();
@@ -187,12 +194,14 @@ describe('Token Rotation and Reuse Detection System', () => {
         .set('Cookie', `refreshToken=${initialRefreshToken}`);
 
       // Check that old token is invalidated and new one created
-      const oldToken = await prisma.refreshToken.findFirst({
-        where: {
-          userId: testUser.id,
-          token: initialRefreshToken,
-        },
-      });
+      const [oldToken] = await prisma.$queryRawUnsafe(
+        `SELECT "isActive"
+         FROM refresh_tokens
+         WHERE "userId" = $1 AND "tokenHash" = $2
+         LIMIT 1`,
+        testUser.id,
+        hashRefreshToken(initialRefreshToken),
+      );
       if (oldToken) {
         expect(oldToken.isActive).toBe(false);
       }
@@ -203,6 +212,7 @@ describe('Token Rotation and Reuse Detection System', () => {
           userId: testUser.id,
           isActive: true,
         },
+        select: { familyId: true, isActive: true },
       });
       expect(newToken).toBeDefined();
       if (newToken && tokenRecord) {
@@ -278,6 +288,7 @@ describe('Token Rotation and Reuse Detection System', () => {
       // Verify that ALL tokens in the family are invalidated
       const allTokens = await prisma.refreshToken.findMany({
         where: { userId: testUser.id },
+        select: { isActive: true, isInvalidated: true },
       });
 
       allTokens.forEach(token => {
@@ -484,16 +495,19 @@ describe('Token Rotation and Reuse Detection System', () => {
       );
 
       // Store token in database
-      await prisma.refreshToken.create({
-        data: {
-          token: shortLivedToken,
-          userId: testUser.id,
-          familyId: `test-family-${Date.now()}`,
-          expiresAt: new Date(Date.now() + 1), // 1ms from now
-          isActive: true,
-          isInvalidated: false,
-        },
-      });
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO refresh_tokens
+          ("tokenHash", "userId", "familyId", "expiresAt", "isActive", "isInvalidated", "lastActivityAt", "updatedAt")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        hashRefreshToken(shortLivedToken),
+        testUser.id,
+        `test-family-${Date.now()}`,
+        new Date(Date.now() + 1),
+        true,
+        false,
+        new Date(),
+        new Date(),
+      );
 
       // Wait for expiration
       await new Promise(resolve => setTimeout(resolve, 10));
@@ -558,6 +572,7 @@ describe('Token Rotation and Reuse Detection System', () => {
           userId: testUser.id,
           isInvalidated: true,
         },
+        select: { id: true },
       });
 
       expect(remainingTokens.length).toBeGreaterThanOrEqual(0);
@@ -572,20 +587,43 @@ describe('Token Rotation and Reuse Detection System', () => {
       // Attempt to create two active tokens with same family ID
       // This should be prevented by database constraints
       const tokenData = {
-        token: 'test-token-1',
+        tokenHash: hashRefreshToken('test-token-1'),
         userId: testUser.id,
         familyId,
         expiresAt: new Date(Date.now() + 86400000), // 24 hours
         isActive: true,
         isInvalidated: false,
+        lastActivityAt: new Date(),
       };
 
-      await prisma.refreshToken.create({ data: tokenData });
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO refresh_tokens
+          ("tokenHash", "userId", "familyId", "expiresAt", "isActive", "isInvalidated", "lastActivityAt", "updatedAt")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        tokenData.tokenHash,
+        tokenData.userId,
+        tokenData.familyId,
+        tokenData.expiresAt,
+        tokenData.isActive,
+        tokenData.isInvalidated,
+        tokenData.lastActivityAt,
+        new Date(),
+      );
 
       // Second token with same family should fail if constraint exists
-      await prisma.refreshToken.create({
-        data: { ...tokenData, token: 'test-token-2' },
-      });
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO refresh_tokens
+          ("tokenHash", "userId", "familyId", "expiresAt", "isActive", "isInvalidated", "lastActivityAt", "updatedAt")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        hashRefreshToken('test-token-2'),
+        tokenData.userId,
+        tokenData.familyId,
+        tokenData.expiresAt,
+        tokenData.isActive,
+        tokenData.isInvalidated,
+        tokenData.lastActivityAt,
+        new Date(),
+      );
     });
 
     it('should_validate_token_structure_and_signatures', async () => {

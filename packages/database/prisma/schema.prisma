@@ -547,7 +547,7 @@ model XpEvent {
 model RefreshToken {
   /// Unique identifier for each refresh token
   id             Int       @id @default(autoincrement())
-  /// The refresh token value
+  /// SHA-256 hash of the refresh token value
   token          String    @unique
   /// User who owns this token
   userId         String

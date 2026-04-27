@@ -7,6 +7,7 @@ import path from 'path';
 import fs from 'fs';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
+import { getSecretValidationError, isDeployableEnvironment } from '../utils/runtimeSecretPolicy.mjs';
 
 // Get __dirname equivalent in ES modules
 const __filename = fileURLToPath(import.meta.url);
@@ -49,6 +50,15 @@ for (const key of requiredVars) {
     problematicVars.push(`${key} (is missing)`);
   } else if ((key === 'JWT_SECRET' || key === 'JWT_REFRESH_SECRET') && value.trim() === '') {
     problematicVars.push(`${key} (is empty or only whitespace)`);
+  }
+}
+
+if (isDeployableEnvironment(NODE_ENV)) {
+  for (const secretName of ['JWT_SECRET', 'JWT_REFRESH_SECRET']) {
+    const secretError = getSecretValidationError(secretName, process.env[secretName], NODE_ENV);
+    if (secretError) {
+      problematicVars.push(`${secretName} (${secretError})`);
+    }
   }
 }
 

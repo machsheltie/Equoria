@@ -17,7 +17,7 @@ import prisma from '../../db/index.mjs';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { triggerTokenCleanup } from '../../services/cronJobService.mjs';
-import { createTokenPair } from '../../utils/tokenRotationService.mjs';
+import { createTokenPair, hashRefreshToken } from '../../utils/tokenRotationService.mjs';
 
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 describe('Session Lifecycle Management', () => {
@@ -187,6 +187,7 @@ describe('Session Lifecycle Management', () => {
       // Verify token in database
       const tokens = await prisma.refreshToken.findMany({
         where: { userId: testUser.id },
+        select: { id: true },
       });
       expect(tokens.length).toBe(1);
       expect(tokens[0].isActive).toBe(true);
@@ -525,16 +526,21 @@ describe('Session Lifecycle Management', () => {
   describe('Token Cleanup Cron Job', () => {
     it('should remove expired refresh tokens', async () => {
       // Create an expired token directly in DB
-      const expiredToken = await prisma.refreshToken.create({
-        data: {
-          token: `expired-test-token-${Date.now()}`,
-          userId: testUser.id,
-          familyId: `expired-family-${Date.now()}`,
-          expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
-          isActive: true,
-          isInvalidated: false,
-        },
-      });
+      const expiredTokenHash = hashRefreshToken(`expired-test-token-${Date.now()}`);
+      const [expiredToken] = await prisma.$queryRawUnsafe(
+        `INSERT INTO refresh_tokens
+          ("tokenHash", "userId", "familyId", "expiresAt", "isActive", "isInvalidated", "lastActivityAt", "updatedAt")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+         RETURNING id, "tokenHash"`,
+        expiredTokenHash,
+        testUser.id,
+        `expired-family-${Date.now()}`,
+        new Date(Date.now() - 24 * 60 * 60 * 1000),
+        true,
+        false,
+        new Date(),
+        new Date(),
+      );
 
       // Create a valid token
       const validToken = await createTokenPair(testUser.id);
@@ -546,30 +552,33 @@ describe('Session Lifecycle Management', () => {
 
       // Verify expired token is removed
       const expiredExists = await prisma.refreshToken.findUnique({
-        where: { token: expiredToken.token },
+        where: { id: expiredToken.id },
       });
       expect(expiredExists).toBeNull();
 
       // Verify valid token still exists
-      const validExists = await prisma.refreshToken.findFirst({
-        where: { token: validToken.refreshToken },
-      });
+      const [validExists] = await prisma.$queryRawUnsafe(
+        `SELECT id FROM refresh_tokens WHERE "tokenHash" = $1 LIMIT 1`,
+        hashRefreshToken(validToken.refreshToken),
+      );
       expect(validExists).not.toBeNull();
     });
 
     it('should remove old invalidated tokens (30+ days)', async () => {
       // Create an old invalidated token
-      const _oldInvalidatedToken = await prisma.refreshToken.create({
-        data: {
-          token: `old-invalidated-${Date.now()}`,
-          userId: testUser.id,
-          familyId: `old-family-${Date.now()}`,
-          expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Expires in 7 days
-          isActive: false,
-          isInvalidated: true,
-          createdAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000), // Created 35 days ago
-        },
-      });
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO refresh_tokens
+          ("tokenHash", "userId", "familyId", "expiresAt", "isActive", "isInvalidated", "lastActivityAt", "createdAt", "updatedAt")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8)`,
+        hashRefreshToken(`old-invalidated-${Date.now()}`),
+        testUser.id,
+        `old-family-${Date.now()}`,
+        new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        false,
+        true,
+        new Date(Date.now() - 35 * 24 * 60 * 60 * 1000),
+        new Date(Date.now() - 35 * 24 * 60 * 60 * 1000),
+      );
 
       // Run cleanup
       const result = await triggerTokenCleanup();

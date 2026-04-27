@@ -1,4 +1,5 @@
 import logger from './logger.mjs';
+import { getSecretValidationError } from './runtimeSecretPolicy.mjs';
 
 /**
  * Required environment variables with validation rules
@@ -6,6 +7,7 @@ import logger from './logger.mjs';
 const REQUIRED_ENV_VARS = [
   { name: 'DATABASE_URL', minLength: 20 },
   { name: 'JWT_SECRET', minLength: 32 },
+  { name: 'JWT_REFRESH_SECRET', minLength: 32 },
   // Story 21S-3: 'beta' added — production-parity Playwright profile.
   // Master 21R: 'beta-readiness' — full readiness-gate runner profile.
   { name: 'NODE_ENV', values: ['development', 'production', 'test', 'beta', 'beta-readiness'] },
@@ -45,14 +47,16 @@ export function validateEnvironment() {
     }
   }
 
-  // Additional validation: JWT_SECRET strength
-  if (process.env.JWT_SECRET) {
-    const secret = process.env.JWT_SECRET;
+  // Additional validation: JWT secret strength and deployable secret policy
+  for (const secretName of ['JWT_SECRET', 'JWT_REFRESH_SECRET']) {
+    const secret = process.env[secretName];
+    const secretError = getSecretValidationError(secretName, secret, process.env.NODE_ENV);
+    if (secretError) {
+      errors.push(secretError);
+    }
 
-    // Check for placeholder values
-    const placeholders = ['your-super-secret', 'change-this', 'REPLACE_WITH', 'example'];
-    if (placeholders.some(placeholder => secret.includes(placeholder))) {
-      errors.push('JWT_SECRET appears to be a placeholder value. Please generate a real secret.');
+    if (!secret) {
+      continue;
     }
 
     // Check complexity (should have mix of characters)
@@ -63,7 +67,7 @@ export function validateEnvironment() {
     if (secret.length >= 32 && !(hasUpperCase || hasLowerCase || hasNumber)) {
       // At least some character variety expected
       logger.warn(
-        '[validateEnvironment] JWT_SECRET should contain a mix of characters for better entropy',
+        `[validateEnvironment] ${secretName} should contain a mix of characters for better entropy`,
       );
     }
   }

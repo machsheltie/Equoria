@@ -20,6 +20,7 @@ import {
   invalidateTokenFamily,
   cleanupExpiredTokens,
   createTokenPair,
+  hashRefreshToken,
 } from '../../utils/tokenRotationService.mjs';
 
 describe('Token Rotation Service - Unit Tests', () => {
@@ -116,15 +117,18 @@ describe('Token Rotation Service - Unit Tests', () => {
       const familyId = generateTokenFamily();
       const tokenPair = await createTokenPair(testUser.id, familyId);
 
-      const dbToken = await prisma.refreshToken.findFirst({
-        where: {
-          userId: testUser.id,
-          familyId,
-        },
-      });
+      const [dbToken] = await prisma.$queryRawUnsafe(
+        `SELECT id, "tokenHash", "isActive", "isInvalidated"
+         FROM refresh_tokens
+         WHERE "userId" = $1 AND "familyId" = $2
+         LIMIT 1`,
+        testUser.id,
+        familyId,
+      );
 
       expect(dbToken).toBeDefined();
-      expect(dbToken.token).toBe(tokenPair.refreshToken);
+      expect(dbToken.tokenHash).toBe(hashRefreshToken(tokenPair.refreshToken));
+      expect(dbToken.tokenHash).not.toBe(tokenPair.refreshToken);
       expect(dbToken.isActive).toBe(true);
       expect(dbToken.isInvalidated).toBe(false);
     });
@@ -195,10 +199,10 @@ describe('Token Rotation Service - Unit Tests', () => {
       const tokenPair = await createTokenPair(testUser.id, familyId);
 
       // Mark token as inactive in database
-      await prisma.refreshToken.update({
-        where: { token: tokenPair.refreshToken },
-        data: { isActive: false },
-      });
+      await prisma.$executeRawUnsafe(
+        `UPDATE refresh_tokens SET "isActive" = false WHERE "tokenHash" = $1`,
+        hashRefreshToken(tokenPair.refreshToken),
+      );
 
       const validation = await validateRefreshToken(tokenPair.refreshToken);
 
@@ -223,10 +227,10 @@ describe('Token Rotation Service - Unit Tests', () => {
       const tokenPair = await createTokenPair(testUser.id, familyId);
 
       // Mark token as used/invalidated
-      await prisma.refreshToken.update({
-        where: { token: tokenPair.refreshToken },
-        data: { isActive: false },
-      });
+      await prisma.$executeRawUnsafe(
+        `UPDATE refresh_tokens SET "isActive" = false WHERE "tokenHash" = $1`,
+        hashRefreshToken(tokenPair.refreshToken),
+      );
 
       const reuseDetection = await detectTokenReuse(tokenPair.refreshToken);
 
@@ -254,17 +258,19 @@ describe('Token Rotation Service - Unit Tests', () => {
       const secondTokenPair = await createTokenPair(testUser.id, familyId);
 
       // Mark first token as used
-      await prisma.refreshToken.update({
-        where: { token: tokenPair.refreshToken },
-        data: { isActive: false },
-      });
+      await prisma.$executeRawUnsafe(
+        `UPDATE refresh_tokens SET "isActive" = false WHERE "tokenHash" = $1`,
+        hashRefreshToken(tokenPair.refreshToken),
+      );
 
       // Attempt to reuse first token
       const reuseDetection = await detectTokenReuse(tokenPair.refreshToken);
 
       expect(reuseDetection.isReuse).toBe(true);
       expect(reuseDetection.familyId).toBe(familyId);
-      expect(reuseDetection.affectedTokens).toContain(secondTokenPair.refreshToken);
+      expect(reuseDetection.affectedTokenHashes).toContain(
+        hashRefreshToken(secondTokenPair.refreshToken),
+      );
     });
   });
 
@@ -284,15 +290,17 @@ describe('Token Rotation Service - Unit Tests', () => {
       expect(rotationResult.newTokenPair.refreshToken).not.toBe(oldTokenPair.refreshToken);
 
       // Old token should be invalidated
-      const oldTokenRecord = await prisma.refreshToken.findFirst({
-        where: { token: oldTokenPair.refreshToken },
-      });
+      const [oldTokenRecord] = await prisma.$queryRawUnsafe(
+        `SELECT "isActive" FROM refresh_tokens WHERE "tokenHash" = $1 LIMIT 1`,
+        hashRefreshToken(oldTokenPair.refreshToken),
+      );
       expect(oldTokenRecord.isActive).toBe(false);
 
       // New token should be active
-      const newTokenRecord = await prisma.refreshToken.findFirst({
-        where: { token: rotationResult.newTokenPair.refreshToken },
-      });
+      const [newTokenRecord] = await prisma.$queryRawUnsafe(
+        `SELECT "isActive", "familyId" FROM refresh_tokens WHERE "tokenHash" = $1 LIMIT 1`,
+        hashRefreshToken(rotationResult.newTokenPair.refreshToken),
+      );
       expect(newTokenRecord.isActive).toBe(true);
       expect(newTokenRecord.familyId).toBe(familyId);
     });
@@ -310,10 +318,10 @@ describe('Token Rotation Service - Unit Tests', () => {
       const tokenPair = await createTokenPair(testUser.id, familyId);
 
       // Mark token as already used
-      await prisma.refreshToken.update({
-        where: { token: tokenPair.refreshToken },
-        data: { isActive: false },
-      });
+      await prisma.$executeRawUnsafe(
+        `UPDATE refresh_tokens SET "isActive" = false WHERE "tokenHash" = $1`,
+        hashRefreshToken(tokenPair.refreshToken),
+      );
 
       const rotationResult = await rotateRefreshToken(tokenPair.refreshToken);
 
@@ -354,6 +362,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       // Verify all tokens are invalidated
       const allTokens = await prisma.refreshToken.findMany({
         where: { familyId },
+        select: { isActive: true, isInvalidated: true },
       });
 
       allTokens.forEach(token => {
@@ -394,16 +403,19 @@ describe('Token Rotation Service - Unit Tests', () => {
         { expiresIn: '1ms' },
       );
 
-      await prisma.refreshToken.create({
-        data: {
-          token: expiredToken,
-          userId: testUser.id,
-          familyId: 'expired-family',
-          expiresAt: new Date(Date.now() - 1000), // Already expired
-          isActive: false,
-          isInvalidated: false,
-        },
-      });
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO refresh_tokens
+          ("tokenHash", "userId", "familyId", "expiresAt", "isActive", "isInvalidated", "lastActivityAt", "updatedAt")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        hashRefreshToken(expiredToken),
+        testUser.id,
+        'expired-family',
+        new Date(Date.now() - 1000),
+        false,
+        false,
+        new Date(),
+        new Date(),
+      );
 
       // Create valid token
       const validFamily = generateTokenFamily();
@@ -416,12 +428,14 @@ describe('Token Rotation Service - Unit Tests', () => {
       // Verify expired token is removed
       const expiredTokenRecord = await prisma.refreshToken.findFirst({
         where: { familyId: 'expired-family' },
+        select: { id: true },
       });
       expect(expiredTokenRecord).toBeNull();
 
       // Verify valid token remains
       const validTokenRecord = await prisma.refreshToken.findFirst({
         where: { familyId: validFamily },
+        select: { id: true },
       });
       expect(validTokenRecord).toBeDefined();
     });
@@ -430,17 +444,19 @@ describe('Token Rotation Service - Unit Tests', () => {
       // Create old invalidated tokens
       const oldDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000); // 30 days ago
 
-      await prisma.refreshToken.create({
-        data: {
-          token: 'old-invalidated-token',
-          userId: testUser.id,
-          familyId: 'old-family',
-          expiresAt: new Date(Date.now() + 86400000), // Valid expiry
-          isActive: false,
-          isInvalidated: true,
-          createdAt: oldDate,
-        },
-      });
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO refresh_tokens
+          ("tokenHash", "userId", "familyId", "expiresAt", "isActive", "isInvalidated", "lastActivityAt", "createdAt", "updatedAt")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8)`,
+        hashRefreshToken('old-invalidated-token'),
+        testUser.id,
+        'old-family',
+        new Date(Date.now() + 86400000),
+        false,
+        true,
+        oldDate,
+        oldDate,
+      );
 
       const cleanupResult = await cleanupExpiredTokens({ olderThanDays: 7 });
 
@@ -453,29 +469,34 @@ describe('Token Rotation Service - Unit Tests', () => {
       const oldToken = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
       // Expired but not invalidated
-      await prisma.refreshToken.create({
-        data: {
-          token: 'expired-1',
-          userId: testUser.id,
-          familyId: 'test-1',
-          expiresAt: expiredToken,
-          isActive: false,
-          isInvalidated: false,
-        },
-      });
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO refresh_tokens
+          ("tokenHash", "userId", "familyId", "expiresAt", "isActive", "isInvalidated", "lastActivityAt", "updatedAt")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+        hashRefreshToken('expired-1'),
+        testUser.id,
+        'test-1',
+        expiredToken,
+        false,
+        false,
+        new Date(),
+        new Date(),
+      );
 
       // Old and invalidated
-      await prisma.refreshToken.create({
-        data: {
-          token: 'old-invalidated-1',
-          userId: testUser.id,
-          familyId: 'test-2',
-          expiresAt: new Date(Date.now() + 86400000),
-          isActive: false,
-          isInvalidated: true,
-          createdAt: oldToken,
-        },
-      });
+      await prisma.$executeRawUnsafe(
+        `INSERT INTO refresh_tokens
+          ("tokenHash", "userId", "familyId", "expiresAt", "isActive", "isInvalidated", "lastActivityAt", "createdAt", "updatedAt")
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $8)`,
+        hashRefreshToken('old-invalidated-1'),
+        testUser.id,
+        'test-2',
+        new Date(Date.now() + 86400000),
+        false,
+        true,
+        oldToken,
+        oldToken,
+      );
 
       const cleanupResult = await cleanupExpiredTokens({ olderThanDays: 7 });
 

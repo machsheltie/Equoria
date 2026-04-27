@@ -7,6 +7,7 @@
 
 import logger from '../utils/logger.mjs';
 import prisma from '../db/index.mjs';
+import { hashRefreshToken } from '../utils/tokenRotationService.mjs';
 
 // Session timeout configuration (15 minutes of inactivity)
 const SESSION_TIMEOUT_MS = parseInt(process.env.SESSION_TIMEOUT_MS || '900000', 10); // 15 minutes
@@ -109,13 +110,17 @@ export const trackSessionActivity = async (req, res, next) => {
 
   if (refreshToken) {
     try {
-      // Update last activity timestamp
-      const storedToken = await prisma.refreshToken.findFirst({
-        where: {
-          token: refreshToken,
-          userId,
-        },
-      });
+      const refreshTokenHash = hashRefreshToken(refreshToken);
+
+      const storedTokenRows = await prisma.$queryRawUnsafe(
+        `SELECT id, "userId", "createdAt", "lastActivityAt"
+         FROM refresh_tokens
+         WHERE "tokenHash" = $1 AND "userId" = $2
+         LIMIT 1`,
+        refreshTokenHash,
+        userId,
+      );
+      const storedToken = storedTokenRows[0];
 
       if (storedToken) {
         const lastActivity = storedToken.lastActivityAt
@@ -133,9 +138,7 @@ export const trackSessionActivity = async (req, res, next) => {
           });
 
           // Delete expired session
-          await prisma.refreshToken.delete({
-            where: { id: storedToken.id },
-          });
+          await prisma.$executeRawUnsafe(`DELETE FROM refresh_tokens WHERE id = $1`, storedToken.id);
 
           // Clear cookies
           res.clearCookie('accessToken');
@@ -196,6 +199,7 @@ export const enforceConcurrentSessions = async (req, res, next) => {
       // Delete oldest sessions (keep only MAX_CONCURRENT_SESSIONS most recent)
       const oldestSessions = await prisma.refreshToken.findMany({
         where: { userId },
+        select: { id: true },
         orderBy: { createdAt: 'asc' },
         take: activeSessions - MAX_CONCURRENT_SESSIONS,
       });
@@ -262,6 +266,19 @@ export const getActiveSessions = async (req, res, next) => {
       orderBy: { lastActivityAt: 'desc' },
     });
 
+    let currentSessionId = null;
+    if (req.cookies?.refreshToken) {
+      const currentTokenRows = await prisma.$queryRawUnsafe(
+        `SELECT id
+         FROM refresh_tokens
+         WHERE "tokenHash" = $1 AND "userId" = $2
+         LIMIT 1`,
+        hashRefreshToken(req.cookies.refreshToken),
+        req.user.id,
+      );
+      currentSessionId = currentTokenRows[0]?.id ?? null;
+    }
+
     res.status(200).json({
       success: true,
       data: {
@@ -270,7 +287,7 @@ export const getActiveSessions = async (req, res, next) => {
           createdAt: s.createdAt,
           lastActivity: s.lastActivityAt || s.createdAt,
           expiresAt: s.expiresAt,
-          isCurrent: req.cookies?.refreshToken === s.token, // Can't check directly, approximate
+          isCurrent: currentSessionId === s.id,
         })),
         maxConcurrent: MAX_CONCURRENT_SESSIONS,
         sessionTimeout: SESSION_TIMEOUT_MS,

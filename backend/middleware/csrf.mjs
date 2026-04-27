@@ -20,6 +20,7 @@ import { doubleCsrf } from 'csrf-csrf';
 import { COOKIE_OPTIONS } from '../utils/cookieConfig.mjs';
 import config from '../config/config.mjs';
 import logger from '../utils/logger.mjs';
+import { isDeployableEnvironment } from '../utils/runtimeSecretPolicy.mjs';
 
 const CSRF_COOKIE_NAME = config.env === 'production' ? '__Host-csrf' : '_csrf';
 
@@ -29,8 +30,24 @@ const CSRF_COOKIE_NAME = config.env === 'production' ? '__Host-csrf' : '_csrf';
 // aligned when a user's IP/UA changes between the token fetch and the mutation.
 const CSRF_SESSION_SALT = 'equoria-csrf-v1';
 
+function getCsrfSecret() {
+  if (process.env.JWT_SECRET) {
+    return process.env.JWT_SECRET;
+  }
+
+  const env = config.env || process.env.NODE_ENV || 'development';
+  const message = `[CSRF] JWT_SECRET is required to initialize CSRF protection in ${env}.`;
+
+  if (isDeployableEnvironment(env)) {
+    throw new Error(message);
+  }
+
+  logger.warn(message);
+  return undefined;
+}
+
 const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
-  getSecret: () => process.env.JWT_SECRET || 'fallback-secret-for-dev',
+  getSecret: getCsrfSecret,
   getSessionIdentifier: () => CSRF_SESSION_SALT,
   cookieName: CSRF_COOKIE_NAME,
   cookieOptions: COOKIE_OPTIONS.csrfToken,

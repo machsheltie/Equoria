@@ -28,6 +28,7 @@ describe('validateEnvironment', () => {
   it('throws when required envs are missing or invalid', () => {
     delete process.env.DATABASE_URL;
     delete process.env.JWT_SECRET;
+    delete process.env.JWT_REFRESH_SECRET;
     process.env.NODE_ENV = 'invalid';
     process.env.PORT = 'abc';
 
@@ -38,6 +39,7 @@ describe('validateEnvironment', () => {
   it('warns about weak JWT secrets and HTTP origins in production', () => {
     process.env.DATABASE_URL = 'postgresql://user:password@localhost/db';
     process.env.JWT_SECRET = 'your-super-secret';
+    process.env.JWT_REFRESH_SECRET = 'your-super-secret-refresh-value';
     process.env.NODE_ENV = 'production';
     process.env.PORT = '80';
     process.env.ALLOWED_ORIGINS = 'http://example.com';
@@ -49,6 +51,7 @@ describe('validateEnvironment', () => {
   it('passes for valid configuration', () => {
     process.env.DATABASE_URL = 'postgresql://user:StrongP@ss@localhost:5432/dbname';
     process.env.JWT_SECRET = 'StrongSecretWithNumbers1234567890ABCDE';
+    process.env.JWT_REFRESH_SECRET = 'RefreshSecretWithNumbers1234567890AB';
     process.env.NODE_ENV = 'test';
     process.env.PORT = '3000';
 

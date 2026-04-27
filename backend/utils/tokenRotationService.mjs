@@ -28,6 +28,60 @@ const TOKEN_CONFIG = {
   CLEANUP_THRESHOLD_DAYS: 30, // Cleanup tokens older than 30 days
 };
 
+export function hashRefreshToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+async function createStoredRefreshToken(client, tokenData) {
+  const timestamp = tokenData.updatedAt ?? new Date();
+  const rows = await client.$queryRawUnsafe(
+    `INSERT INTO refresh_tokens
+      ("tokenHash", "userId", "familyId", "expiresAt", "isActive", "isInvalidated", "lastActivityAt", "updatedAt")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     RETURNING id, "tokenHash", "userId", "familyId", "expiresAt", "isActive", "isInvalidated", "lastActivityAt", "createdAt", "updatedAt"`,
+    tokenData.tokenHash,
+    tokenData.userId,
+    tokenData.familyId,
+    tokenData.expiresAt,
+    tokenData.isActive,
+    tokenData.isInvalidated,
+    tokenData.lastActivityAt ?? new Date(),
+    timestamp,
+  );
+
+  return rows[0] ?? null;
+}
+
+async function findStoredRefreshTokenByHash(client, tokenHash) {
+  const rows = await client.$queryRawUnsafe(
+    `SELECT id, "tokenHash", "userId", "familyId", "expiresAt", "isActive", "isInvalidated", "lastActivityAt", "createdAt", "updatedAt"
+     FROM refresh_tokens
+     WHERE "tokenHash" = $1
+     LIMIT 1`,
+    tokenHash,
+  );
+
+  return rows[0] ?? null;
+}
+
+async function findStoredRefreshTokensByFamily(client, familyId) {
+  return client.$queryRawUnsafe(
+    `SELECT id, "tokenHash", "userId", "familyId", "expiresAt", "isActive", "isInvalidated", "lastActivityAt", "createdAt", "updatedAt"
+     FROM refresh_tokens
+     WHERE "familyId" = $1`,
+    familyId,
+  );
+}
+
+async function deactivateStoredRefreshTokenByHash(client, tokenHash) {
+  await client.$executeRawUnsafe(
+    `UPDATE refresh_tokens
+     SET "isActive" = false, "updatedAt" = NOW()
+     WHERE "tokenHash" = $1`,
+    tokenHash,
+  );
+}
+
 /**
  * Generate Unique Token Family ID
  * Creates a cryptographically secure family identifier
@@ -87,6 +141,7 @@ export async function createTokenPair(userId, familyId) {
       algorithm: 'HS256',
       expiresIn: TOKEN_CONFIG.REFRESH_TOKEN_EXPIRY,
     });
+    const refreshTokenHash = hashRefreshToken(refreshToken);
 
     // Calculate expiration date
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
@@ -117,15 +172,13 @@ export async function createTokenPair(userId, familyId) {
     await ensureUserExists();
 
     try {
-      await prisma.refreshToken.create({
-        data: {
-          token: refreshToken,
-          userId,
-          familyId,
-          expiresAt,
-          isActive: true,
-          isInvalidated: false,
-        },
+      await createStoredRefreshToken(prisma, {
+        tokenHash: refreshTokenHash,
+        userId,
+        familyId,
+        expiresAt,
+        isActive: true,
+        isInvalidated: false,
       });
     } catch (err) {
       if (process.env.NODE_ENV === 'test') {
@@ -192,9 +245,7 @@ export async function validateRefreshToken(token) {
     }
 
     // Check database for token status
-    const tokenRecord = await prisma.refreshToken.findFirst({
-      where: { token },
-    });
+    const tokenRecord = await findStoredRefreshTokenByHash(prisma, hashRefreshToken(token));
 
     if (!tokenRecord) {
       return {
@@ -255,9 +306,7 @@ export async function detectTokenReuse(token) {
     await validateRefreshToken(token);
 
     // If token is inactive, it might be reuse
-    const tokenRecord = await prisma.refreshToken.findFirst({
-      where: { token },
-    });
+    const tokenRecord = await findStoredRefreshTokenByHash(prisma, hashRefreshToken(token));
 
     if (!tokenRecord) {
       return {
@@ -273,21 +322,19 @@ export async function detectTokenReuse(token) {
       logger.warn('[TokenRotation] Token reuse detected', {
         userId: tokenRecord.userId,
         familyId: tokenRecord.familyId,
-        token: `${token.substring(0, 20)}...`,
+        tokenHash: `${tokenRecord.tokenHash.substring(0, 20)}...`,
       });
 
       // Find all tokens in the same family for invalidation
-      const familyTokens = await prisma.refreshToken.findMany({
-        where: { familyId: tokenRecord.familyId },
-        select: { token: true },
-      });
+      const familyTokens = await findStoredRefreshTokensByFamily(prisma, tokenRecord.familyId);
 
       return {
         isReuse: true,
         familyId: tokenRecord.familyId,
         shouldInvalidateFamily: true,
         reason: 'Token already used',
-        affectedTokens: familyTokens.map(t => t.token),
+        affectedTokenHashes: familyTokens.map(t => t.tokenHash),
+        affectedTokenIds: familyTokens.map(t => t.id),
       };
     }
 
@@ -351,10 +398,7 @@ export async function rotateRefreshToken(oldToken) {
     // Use transaction to ensure atomicity
     const result = await prisma.$transaction(async tx => {
       // Mark old token as used (inactive but not invalidated)
-      await tx.refreshToken.update({
-        where: { token: oldToken },
-        data: { isActive: false },
-      });
+      await deactivateStoredRefreshTokenByHash(tx, hashRefreshToken(oldToken));
 
       // Create new token pair with same family ID inline (must use tx, not global prisma)
       const userId = validation.decoded.userId;
@@ -394,20 +438,19 @@ export async function rotateRefreshToken(oldToken) {
         algorithm: 'HS256',
         expiresIn: TOKEN_CONFIG.REFRESH_TOKEN_EXPIRY,
       });
+      const refreshTokenHash = hashRefreshToken(refreshToken);
 
       // Calculate expiration date
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
       // Store refresh token in database using transaction client
-      await tx.refreshToken.create({
-        data: {
-          token: refreshToken,
-          userId,
-          familyId,
-          expiresAt,
-          isActive: true,
-          isInvalidated: false,
-        },
+      await createStoredRefreshToken(tx, {
+        tokenHash: refreshTokenHash,
+        userId,
+        familyId,
+        expiresAt,
+        isActive: true,
+        isInvalidated: false,
       });
 
       return {
@@ -457,7 +500,14 @@ export async function invalidateTokenFamily(familyId) {
     // Get user info for logging
     const tokenRecord = await prisma.refreshToken.findFirst({
       where: { familyId },
-      include: { user: { select: { id: true, email: true } } },
+      select: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+          },
+        },
+      },
     });
 
     logger.warn('[TokenRotation] Token family invalidated', {

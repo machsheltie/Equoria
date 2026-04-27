@@ -7,6 +7,7 @@
 
 import { beforeAll, afterAll, beforeEach, afterEach, jest } from '@jest/globals';
 import prisma from '../db/index.mjs';
+import { hashRefreshToken } from '../utils/tokenRotationService.mjs';
 
 // Set test environment
 process.env.NODE_ENV = 'test';
@@ -113,16 +114,40 @@ export async function createTestUser(overrides = {}) {
  * Create test refresh token
  */
 export async function createTestRefreshToken(userId, overrides = {}) {
+  const rawToken = overrides.token || `test-token-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+  const { token: _rawToken, ...restOverrides } = overrides;
   const defaultToken = {
-    token: `test-token-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+    tokenHash: hashRefreshToken(rawToken),
     userId,
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
     lastActivityAt: new Date(),
+    familyId: null,
+    isActive: true,
+    isInvalidated: false,
   };
 
-  return prisma.refreshToken.create({
-    data: { ...defaultToken, ...overrides },
-  });
+  const persistedToken = { ...defaultToken, ...restOverrides };
+  const rows = await prisma.$queryRawUnsafe(
+    `INSERT INTO refresh_tokens
+      ("tokenHash", "userId", "familyId", "expiresAt", "lastActivityAt", "isActive", "isInvalidated", "updatedAt")
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     RETURNING id, "tokenHash", "userId", "familyId", "expiresAt", "lastActivityAt", "isActive", "isInvalidated", "createdAt", "updatedAt"`,
+    persistedToken.tokenHash,
+    persistedToken.userId,
+    persistedToken.familyId,
+    persistedToken.expiresAt,
+    persistedToken.lastActivityAt,
+    persistedToken.isActive,
+    persistedToken.isInvalidated,
+    persistedToken.updatedAt || new Date(),
+  );
+  const createdToken = rows[0];
+
+  return {
+    ...createdToken,
+    token: rawToken,
+    tokenHash: createdToken.tokenHash,
+  };
 }
 
 /**
