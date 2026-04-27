@@ -230,6 +230,10 @@ const SettingsPage: React.FC = () => {
   // -------- Delete account modal state --------
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
+  // Equoria-ocn9 re-review fix: track whether the mousedown that started a
+  // potential backdrop click actually landed on the backdrop. Used by the
+  // mouseup handler to skip drag-out cases (mousedown inside, mouseup outside).
+  const backdropMouseDownRef = useRef(false);
 
   const closeDeleteModal = () => {
     setShowDeleteModal(false);
@@ -618,15 +622,26 @@ const SettingsPage: React.FC = () => {
           aria-modal="true"
           aria-labelledby="delete-account-title"
           data-testid="settings-delete-modal"
-          // Equoria-ocn9 review fix: clicking the backdrop dismisses the
-          // modal (standard ARIA dialog convention). Inner panel stops
-          // propagation so clicks on the form don't close.
-          onClick={closeDeleteModal}
+          // Equoria-ocn9 re-review fix: backdrop dismiss only fires when
+          // BOTH mousedown and mouseup land on the backdrop itself. The
+          // previous `onClick` alone would close the modal when a user
+          // clicked-and-held on the warning text inside the panel and then
+          // dragged the cursor onto the backdrop to release (the resulting
+          // `click` event fires on the backdrop, the LCA of mousedown +
+          // mouseup). That pattern is common during text selection while
+          // reading the irreversible-action warning, and losing the modal
+          // mid-read was confusing.
+          onMouseDown={(e) => {
+            backdropMouseDownRef.current = e.target === e.currentTarget;
+          }}
+          onMouseUp={(e) => {
+            if (backdropMouseDownRef.current && e.target === e.currentTarget) {
+              closeDeleteModal();
+            }
+            backdropMouseDownRef.current = false;
+          }}
         >
-          <div
-            className="max-w-md w-full rounded-xl border border-red-500/30 bg-[var(--bg-night-sky)] p-6 space-y-4 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="max-w-md w-full rounded-xl border border-red-500/30 bg-[var(--bg-night-sky)] p-6 space-y-4 shadow-2xl">
             <h3 id="delete-account-title" className="text-lg font-semibold text-red-400">
               Delete account permanently?
             </h3>

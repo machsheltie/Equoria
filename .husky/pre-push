@@ -99,14 +99,27 @@ if (!url) {
   console.error('DATABASE_URL not set in backend/.env.test');
   process.exit(2);
 }
-const client = new Client({ connectionString: url, connectionTimeoutMillis: 5000 });
-try {
+// Equoria-ocn9 re-review fix: connectionTimeoutMillis only covers the
+// initial connect handshake. A Postgres in a hung state (deadlocked admin
+// lock, stuck autovacuum, network proxy that black-holes traffic
+// post-handshake) will accept the connection but never respond to queries
+// — without a query-level timeout the probe would block the push forever.
+// Promise.race enforces an overall budget for connect+query+end.
+const QUERY_BUDGET_MS = 5000;
+const client = new Client({ connectionString: url, connectionTimeoutMillis: QUERY_BUDGET_MS });
+const probe = (async () => {
   await client.connect();
   await client.query('SELECT 1');
   await client.end();
+})();
+const timeout = new Promise((_resolve, reject) =>
+  setTimeout(() => reject(new Error(`probe exceeded ${QUERY_BUDGET_MS}ms (Postgres reachable but unresponsive?)`)), QUERY_BUDGET_MS),
+);
+try {
+  await Promise.race([probe, timeout]);
   console.log('ok');
 } catch (err) {
-  console.error(err && err.code ? `${err.code}: ${err.message}` : String(err));
+  console.error(err && err.code ? `${err.code}: ${err.message}` : (err?.message || String(err)));
   process.exit(3);
 }
 NODE_EOF
