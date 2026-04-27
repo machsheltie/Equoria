@@ -187,18 +187,48 @@ describe('CSRF protection — real browser flow', () => {
   });
 
   describe('no-origin policy', () => {
-    it('rejects mutations with no Origin header on application routes', async () => {
+    it('rejects browser mutations with no Origin header on application routes', async () => {
+      // The no-origin gate (app.mjs::enforceNoOriginPolicy) only fires on
+      // requests that look like they originated in a browser — `Sec-Fetch-Mode`
+      // is set by every modern browser on every fetch/navigation but never
+      // by curl, supertest's bare requests, or other CLI/server-to-server
+      // tooling. Per the security model documented above the middleware,
+      // a no-Origin curl request is not a CSRF threat (curl doesn't carry
+      // the victim's cookies cross-origin), so only browser-shaped requests
+      // need to be blocked here. Set Sec-Fetch-Mode so this test exercises
+      // the gate as a real browser would.
       const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: accessCookie });
 
       const res = await request(app)
         .put('/api/auth/profile')
-        // NOTE: no Origin header
+        // NOTE: no Origin header — but Sec-Fetch-Mode marks this as a
+        // browser request, so the no-origin gate must reject it.
+        .set('Sec-Fetch-Mode', 'cors')
         .set('Cookie', csrf.cookieHeader)
         .set('X-CSRF-Token', csrf.csrfToken)
         .send({ firstName: 'NoOrigin' });
 
       expect(res.status).toBe(403);
       expect(res.body.code).toBe('NO_ORIGIN_BLOCKED');
+    });
+
+    it('allows non-browser (CLI / server-to-server) no-Origin mutations through the gate', async () => {
+      // Mirror image of the previous test: WITHOUT Sec-Fetch-Mode, the
+      // no-origin gate must NOT fire — CLI tools and service-to-service
+      // callers without Origin are not CSRF threats. The request still
+      // has to pass CSRF and validation; it should NOT 403 with
+      // NO_ORIGIN_BLOCKED.
+      const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: accessCookie });
+
+      const res = await request(app)
+        .put('/api/auth/profile')
+        // No Origin, no Sec-Fetch-Mode.
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken)
+        .send({ firstName: 'NoOrigin' });
+
+      expect(res.body.code).not.toBe('NO_ORIGIN_BLOCKED');
+      expect(res.status).not.toBe(403);
     });
 
     it('allows /health without an Origin header (operational exemption)', async () => {

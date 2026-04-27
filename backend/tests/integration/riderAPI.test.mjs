@@ -162,17 +162,13 @@ describe('🏇 INTEGRATION: Rider API', () => {
   });
 
   describe('POST /api/riders/marketplace/hire', () => {
-    let marketplaceRider;
-
     beforeAll(async () => {
-      // Ensure a fresh marketplace with enough funds
+      // Ensure the user has enough money for the hire tests in this block.
+      // Each test that needs a marketplaceId fetches a fresh one so we no
+      // longer cache a `marketplaceRider` here — caching across tests was
+      // the root of an intermittent CI 404 (other tests' cleanup wipes
+      // rider_marketplace and the cached id goes stale).
       await prisma.user.update({ where: { id: testUser.id }, data: { money: 20000 } });
-
-      const res = await request(app)
-        .get('/api/riders/marketplace')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`);
-      [marketplaceRider] = res.body.data.riders;
     });
 
     it('should require marketplaceId', async () => {
@@ -202,6 +198,19 @@ describe('🏇 INTEGRATION: Rider API', () => {
     });
 
     it('should hire a rider and deduct correct cost', async () => {
+      // Refresh the marketplace immediately before hiring. The cached
+      // marketplaceRider from beforeAll can be invalidated by other tests
+      // in the same shard (cleanup hooks wipe rider_marketplace), causing
+      // a non-deterministic 404 in full-suite CI runs even though the
+      // test passes in isolation. A self-contained fetch here makes the
+      // test order-independent.
+      await prisma.user.update({ where: { id: testUser.id }, data: { money: 20000 } });
+      const freshMkt = await request(app)
+        .get('/api/riders/marketplace')
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${authToken}`);
+      const [freshRider] = freshMkt.body.data.riders;
+
       const userBefore = await prisma.user.findUnique({ where: { id: testUser.id } });
 
       const res = await request(app)
@@ -210,7 +219,7 @@ describe('🏇 INTEGRATION: Rider API', () => {
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({ marketplaceId: marketplaceRider.marketplaceId });
+        .send({ marketplaceId: freshRider.marketplaceId });
 
       expect(res.status).toBe(201);
       expect(res.body.success).toBe(true);
@@ -219,7 +228,7 @@ describe('🏇 INTEGRATION: Rider API', () => {
       expect(res.body.data).toHaveProperty('remainingMoney');
 
       // Cost = weeklyRate × 1 (one week upfront)
-      const expectedCost = marketplaceRider.weeklyRate;
+      const expectedCost = freshRider.weeklyRate;
       expect(res.body.data.cost).toBe(expectedCost);
       expect(res.body.data.remainingMoney).toBe(userBefore.money - expectedCost);
     });
