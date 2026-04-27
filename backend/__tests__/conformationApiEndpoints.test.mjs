@@ -18,12 +18,8 @@ const mockLogger = {
 jest.unstable_mockModule('../utils/logger.mjs', () => ({ default: mockLogger }));
 
 // Import after logger mock
-const { getConformation, getConformationAnalysis } = await import(
-  '../modules/horses/controllers/horseController.mjs'
-);
-const { CONFORMATION_REGIONS } = await import(
-  '../modules/horses/services/conformationService.mjs'
-);
+const { getConformation, getConformationAnalysis } = await import('../modules/horses/controllers/horseController.mjs');
+const { CONFORMATION_REGIONS } = await import('../modules/horses/services/conformationService.mjs');
 const { getBreedProfile } = await import('../modules/horses/data/breedProfileLoader.mjs');
 
 // ── Test data setup ────────────────────────────────────────────────────────
@@ -34,10 +30,7 @@ const createdHorseIds = [];
 
 /** Uniform scores across all 8 regions + overall */
 function makeScores(value) {
-  return Object.fromEntries([
-    ...CONFORMATION_REGIONS.map(r => [r, value]),
-    ['overallConformation', value],
-  ]);
+  return Object.fromEntries([...CONFORMATION_REGIONS.map(r => [r, value]), ['overallConformation', value]]);
 }
 
 const BASE_SCORES = {
@@ -320,8 +313,7 @@ describe('getConformationAnalysis', () => {
     }
 
     const expectedOverallMean = Math.round(
-      CONFORMATION_REGIONS.reduce((sum, r) => sum + tbProfile[r].mean, 0) /
-        CONFORMATION_REGIONS.length,
+      CONFORMATION_REGIONS.reduce((sum, r) => sum + tbProfile[r].mean, 0) / CONFORMATION_REGIONS.length,
     );
     expect(response.data.overallConformation.breedMean).toBe(expectedOverallMean);
   });

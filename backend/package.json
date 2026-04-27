@@ -9,7 +9,7 @@
     "dev": "nodemon server.mjs",
     "build": "echo 'Backend build completed - ES modules ready for production'",
     "migrate:production": "cd ../packages/database && npx prisma migrate deploy",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test": "node --experimental-vm-modules --max-old-space-size=8192 node_modules/jest/bin/jest.js",
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watchAll",
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --coverageReporters=text --coverageReporters=lcov --coverageReporters=html --coverageReporters=json --coverageReporters=cobertura",
     "test:coverage:ci": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --coverageReporters=text-summary --coverageReporters=lcov --coverageReporters=json --ci --watchAll=false",

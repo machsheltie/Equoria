@@ -39,6 +39,18 @@ export function generateVerificationToken() {
 }
 
 /**
+ * Hash a verification token for at-rest storage.
+ *
+ * Equoria-uy73 (2026-04-23): raw verification tokens are emailed to the user
+ * and never persisted. The DB stores only this SHA-256 hex digest, matching
+ * the password-reset hashing pattern. A DB read leak yields hashes, not
+ * forgeable verification links.
+ */
+export function hashVerificationToken(token) {
+  return crypto.createHash('sha256').update(token).digest('hex');
+}
+
+/**
  * Create Email Verification Token
  * Generates and stores a new verification token for a user
  *
@@ -84,16 +96,17 @@ export async function createVerificationToken(userId, email, metadata = {}) {
       }
     }
 
-    // Generate token
+    // Generate raw token — emailed to the user, never stored.
     const token = generateVerificationToken();
 
     // Calculate expiration
     const expiresAt = new Date(Date.now() + EMAIL_CONFIG.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
 
-    // Create token record
+    // Store only the hash (Equoria-uy73). The raw token leaves this process
+    // in the return value and the outbound email; it is never persisted.
     const tokenRecord = await prisma.emailVerificationToken.create({
       data: {
-        token,
+        tokenHash: hashVerificationToken(token),
         userId,
         email,
         expiresAt,
@@ -130,9 +143,10 @@ export async function createVerificationToken(userId, email, metadata = {}) {
  */
 export async function verifyEmailToken(token, metadata = {}) {
   try {
-    // Find token record
+    // Look up by hash (Equoria-uy73). The raw token is never persisted.
+    const tokenHash = hashVerificationToken(token);
     const tokenRecord = await prisma.emailVerificationToken.findUnique({
-      where: { token },
+      where: { tokenHash },
       include: { user: true },
     });
 
@@ -159,11 +173,12 @@ export async function verifyEmailToken(token, metadata = {}) {
 
     // Use transaction to ensure atomicity with race condition protection
     const result = await prisma.$transaction(async prisma => {
-      // Atomic update: only update if token hasn't been used yet
-      // This prevents race conditions where two requests try to use the same token
+      // Atomic update: only update if token hasn't been used yet. Key by
+      // hash (raw token is never stored — Equoria-uy73). This preserves the
+      // existing race-condition guard against simultaneous consumption.
       const updateResult = await prisma.emailVerificationToken.updateMany({
         where: {
-          token,
+          tokenHash,
           usedAt: null, // Only update if not already used
         },
         data: { usedAt: new Date() },
@@ -384,8 +399,9 @@ export async function cleanupExpiredTokens(options = {}) {
  */
 export async function getTokenInfo(token) {
   try {
+    // Look up by hash (Equoria-uy73).
     const tokenRecord = await prisma.emailVerificationToken.findUnique({
-      where: { token },
+      where: { tokenHash: hashVerificationToken(token) },
       select: {
         id: true,
         email: true,

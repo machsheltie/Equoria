@@ -20,6 +20,7 @@ import jwt from 'jsonwebtoken';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { createTestUser, resetRateLimitStore } from '../config/test-helpers.mjs';
+import { hashRefreshToken } from '../../utils/tokenRotationService.mjs';
 
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 describe('Token Rotation and Reuse Detection System', () => {
@@ -186,11 +187,12 @@ describe('Token Rotation and Reuse Detection System', () => {
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', `refreshToken=${initialRefreshToken}`);
 
-      // Check that old token is invalidated and new one created
+      // Check that old token is invalidated and new one created. Look up
+      // by hash — raw JWT is no longer stored at rest (Equoria-uy73).
       const oldToken = await prisma.refreshToken.findFirst({
         where: {
           userId: testUser.id,
-          token: initialRefreshToken,
+          tokenHash: hashRefreshToken(initialRefreshToken),
         },
       });
       if (oldToken) {
@@ -483,10 +485,10 @@ describe('Token Rotation and Reuse Detection System', () => {
         { expiresIn: '1ms' }, // Immediately expires
       );
 
-      // Store token in database
+      // Store token in database (hashed at rest — Equoria-uy73)
       await prisma.refreshToken.create({
         data: {
-          token: shortLivedToken,
+          tokenHash: hashRefreshToken(shortLivedToken),
           userId: testUser.id,
           familyId: `test-family-${Date.now()}`,
           expiresAt: new Date(Date.now() + 1), // 1ms from now
@@ -572,7 +574,7 @@ describe('Token Rotation and Reuse Detection System', () => {
       // Attempt to create two active tokens with same family ID
       // This should be prevented by database constraints
       const tokenData = {
-        token: 'test-token-1',
+        tokenHash: hashRefreshToken('test-token-1'),
         userId: testUser.id,
         familyId,
         expiresAt: new Date(Date.now() + 86400000), // 24 hours
@@ -584,7 +586,7 @@ describe('Token Rotation and Reuse Detection System', () => {
 
       // Second token with same family should fail if constraint exists
       await prisma.refreshToken.create({
-        data: { ...tokenData, token: 'test-token-2' },
+        data: { ...tokenData, tokenHash: hashRefreshToken('test-token-2') },
       });
     });
 

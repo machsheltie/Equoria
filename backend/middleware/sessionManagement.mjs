@@ -7,6 +7,7 @@
 
 import logger from '../utils/logger.mjs';
 import prisma from '../db/index.mjs';
+import { hashRefreshToken } from '../utils/tokenRotationService.mjs';
 
 // Session timeout configuration (15 minutes of inactivity)
 const SESSION_TIMEOUT_MS = parseInt(process.env.SESSION_TIMEOUT_MS || '900000', 10); // 15 minutes
@@ -109,10 +110,12 @@ export const trackSessionActivity = async (req, res, next) => {
 
   if (refreshToken) {
     try {
-      // Update last activity timestamp
+      // Update last activity timestamp. Look up by hash — raw JWT is no
+      // longer stored at rest (Equoria-uy73). We still pin to userId so a
+      // stolen hash can't be used to extend another user's session.
       const storedToken = await prisma.refreshToken.findFirst({
         where: {
-          token: refreshToken,
+          tokenHash: hashRefreshToken(refreshToken),
           userId,
         },
       });
@@ -250,6 +253,10 @@ export const getActiveSessions = async (req, res, next) => {
       });
     }
 
+    // Equoria-uy73 (2026-04-24): include tokenHash so we can mark the
+    // current session correctly. The hash is not a forgeable secret —
+    // it leaves the response only as part of an internal `isCurrent`
+    // comparison and is never echoed to the client body.
     const sessions = await prisma.refreshToken.findMany({
       where: { userId: req.user.id },
       select: {
@@ -257,10 +264,14 @@ export const getActiveSessions = async (req, res, next) => {
         createdAt: true,
         lastActivityAt: true,
         expiresAt: true,
-        // Don't expose the actual token
+        tokenHash: true,
       },
       orderBy: { lastActivityAt: 'desc' },
     });
+
+    const incomingHash = req.cookies?.refreshToken
+      ? hashRefreshToken(req.cookies.refreshToken)
+      : null;
 
     res.status(200).json({
       success: true,
@@ -270,7 +281,7 @@ export const getActiveSessions = async (req, res, next) => {
           createdAt: s.createdAt,
           lastActivity: s.lastActivityAt || s.createdAt,
           expiresAt: s.expiresAt,
-          isCurrent: req.cookies?.refreshToken === s.token, // Can't check directly, approximate
+          isCurrent: incomingHash !== null && incomingHash === s.tokenHash,
         })),
         maxConcurrent: MAX_CONCURRENT_SESSIONS,
         sessionTimeout: SESSION_TIMEOUT_MS,

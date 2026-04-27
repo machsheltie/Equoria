@@ -412,6 +412,19 @@ describe('Authentication with HttpOnly Cookies', () => {
 
   describe('Security: XSS Protection Verification', () => {
     it('should never include JWT tokens in any response body', async () => {
+      // Pre-clean any lingering xss-test rows from prior runs. A previous
+      // crash or aborted run leaves the User/refreshToken rows, which makes
+      // the fresh register below 400 on duplicate email/username.
+      const staleUsers = await prisma.user.findMany({
+        where: { OR: [{ email: 'xss-test@example.com' }, { username: 'xsstest' }] },
+        select: { id: true },
+      });
+      if (staleUsers.length > 0) {
+        const ids = staleUsers.map(u => u.id);
+        await prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } });
+        await prisma.user.deleteMany({ where: { id: { in: ids } } });
+      }
+
       // Test all auth endpoints
       const _registerResponse = await request(app)
         .post('/api/auth/register')
