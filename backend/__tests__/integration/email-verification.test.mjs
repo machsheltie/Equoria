@@ -434,7 +434,9 @@ describe('Email Verification System - Integration Tests', () => {
       emailCapturePath = path.join(os.tmpdir(), `email-capture-${Date.now()}-${Math.random()}.jsonl`);
       process.env.EMAIL_CAPTURE_FILE = emailCapturePath;
       capturedVerificationTokens = () => {
-        if (!fs.existsSync(emailCapturePath)) return [];
+        if (!fs.existsSync(emailCapturePath)) {
+          return [];
+        }
         const raw = fs.readFileSync(emailCapturePath, 'utf8');
         return raw
           .split('\n')

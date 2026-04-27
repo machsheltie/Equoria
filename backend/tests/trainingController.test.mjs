@@ -450,7 +450,6 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         lastTrainingDate: null,
         nextEligibleDate: null,
         cooldown: null,
-        nextEligibleDate: null, // Added by 94cf57e1 for frontend cooldown banner.
       });
     });
 
@@ -522,7 +521,6 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         lastTrainingDate: null,
         nextEligibleDate: null,
         cooldown: null,
-        nextEligibleDate: null, // Added by 94cf57e1 for frontend cooldown banner.
       });
     });
 
