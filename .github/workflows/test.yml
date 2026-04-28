@@ -433,6 +433,15 @@ jobs:
           npx prisma generate --schema=prisma/schema.prisma
           npx prisma migrate deploy --schema=prisma/schema.prisma
 
+      - name: Seed minimum test data (breeds)
+        # tests/e2e/global-setup.ts opens /onboarding and selects index 1 of
+        # the breed-select dropdown. A freshly migrated DB has zero breeds,
+        # so the select renders only the placeholder and the locator times
+        # out. seedDatabase.mjs idempotently inserts the 5 canonical breeds
+        # the UI needs to render a real choice. Equoria-3iyk Phase 1b.
+        working-directory: ./backend
+        run: npm run seed
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
@@ -708,6 +717,15 @@ jobs:
         run: |
           npx prisma generate --schema=prisma/schema.prisma
           npx prisma migrate deploy --schema=prisma/schema.prisma
+
+      - name: Seed minimum test data (breeds)
+        # tests/e2e/global-setup.ts opens /onboarding and selects index 1 of
+        # the breed-select dropdown. A freshly migrated DB has zero breeds,
+        # so the select renders only the placeholder and the locator times
+        # out. seedDatabase.mjs idempotently inserts the 5 canonical breeds
+        # the UI needs to render a real choice. Equoria-3iyk Phase 1b.
+        working-directory: ./backend
+        run: npm run seed
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium

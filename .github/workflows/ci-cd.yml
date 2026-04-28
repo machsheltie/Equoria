@@ -259,10 +259,16 @@ jobs:
           retention-days: 30
 
   # Job 5: Performance Testing
+  # NOTE: continue-on-error mirrors the equivalent job in test.yml ("Performance
+  # Tests (non-blocking)"). The seed at backend/seed/seedPerformanceData.mjs
+  # has accumulated schema drift over time (CompetitionResult.user, Show.host,
+  # Show.date, etc.) and needs modernization before this job can be a
+  # blocking gate. Tracked as a follow-up beads issue. Equoria-3iyk Phase 1c.
   performance-tests:
     name: 'Performance & Load Testing'
     runs-on: ubuntu-latest
     needs: [integration-tests]
+    continue-on-error: true # Informational only — see note above
 
     services:
       postgres:

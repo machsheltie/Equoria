@@ -362,11 +362,17 @@ async function seedPerformanceData() {
 
     // Clean existing performance test data
     logger.info('🧹 Cleaning existing performance test data...');
+    // CompetitionResult has no direct `user` relation — only `horse` and
+    // `show`. Reach the user via horse.user, matching the trainingLog clean
+    // immediately below. (Equoria-3iyk Phase 1c — schema drift from a
+    // previous refactor that removed CompetitionResult.userId.)
     await prisma.competitionResult.deleteMany({
       where: {
-        user: {
-          email: {
-            startsWith: 'perftest',
+        horse: {
+          user: {
+            email: {
+              startsWith: 'perftest',
+            },
           },
         },
       },
@@ -404,9 +410,11 @@ async function seedPerformanceData() {
       },
     });
 
+    // Show's user relation is `hostUser` (FK: hostUserId), not `host`.
+    // Equoria-3iyk Phase 1c (continuation of competitionResult fix).
     await prisma.show.deleteMany({
       where: {
-        host: {
+        hostUser: {
           email: {
             startsWith: 'perftest',
           },
