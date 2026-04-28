@@ -317,8 +317,8 @@ describe('Epigenetic Trait System Integration Tests', () => {
       // Create another user
       const otherUser = await prisma.user.create({
         data: {
-          username: `otherUser_${Date.now()}`,
-          email: `other_${Date.now()}@test.com`,
+          username: `otherUser_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          email: `other_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
           password: 'hashedPassword',
           firstName: 'Other',
           lastName: 'User',
@@ -441,8 +441,8 @@ describe('Trait History Service', () => {
     // Create minimal test data for service tests
     testUser = await prisma.user.create({
       data: {
-        username: `serviceTestUser_${Date.now()}`,
-        email: `service_${Date.now()}@test.com`,
+        username: `serviceTestUser_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        email: `service_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
         password: 'hashedPassword',
         firstName: 'Service',
         lastName: 'Test',

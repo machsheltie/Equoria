@@ -13,7 +13,7 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import bcrypt from 'bcryptjs';
 import { trainHorse } from '../../controllers/trainingController.mjs';
 
-const UNIQUE = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+const UNIQUE = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).slice(2, 8)}`;
 
 let testUser;
 let testHorse;

@@ -40,7 +40,7 @@ describe('Trait Timeline System', () => {
     // Create test breed
     testBreed = await prisma.breed.create({
       data: {
-        name: `TestBreed_${Date.now()}`,
+        name: `TestBreed_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         description: 'Test breed for trait timeline tests',
       },
     });
@@ -48,10 +48,10 @@ describe('Trait Timeline System', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        username: `testuser_${Date.now()}`,
+        username: `testuser_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         firstName: 'Test',
         lastName: 'User',
-        email: `test_${Date.now()}@example.com`,
+        email: `test_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
         password: 'hashedpassword',
         money: 10000,
         xp: 100,
@@ -62,7 +62,7 @@ describe('Trait Timeline System', () => {
     // Create test groom
     testGroom = await prisma.groom.create({
       data: {
-        name: `TestGroom_${Date.now()}`,
+        name: `TestGroom_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         speciality: 'foal_care',
         experience: 10,
         skillLevel: 'expert',
@@ -76,7 +76,7 @@ describe('Trait Timeline System', () => {
     // Create test horse (3 years old)
     testHorse = await prisma.horse.create({
       data: {
-        name: `TestHorse_${Date.now()}`,
+        name: `TestHorse_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         sex: 'stallion',
         dateOfBirth: new Date(Date.now() - 3 * 365 * 24 * 60 * 60 * 1000), // 3 years old
         temperament: 'spirited',

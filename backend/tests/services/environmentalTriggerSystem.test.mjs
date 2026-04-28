@@ -43,8 +43,8 @@ describe('Environmental Trigger System', () => {
       // Create test user
       testUser = await tx.user.create({
         data: {
-          username: `env_trigger_${Date.now()}`,
-          email: `env_trigger_${Date.now()}@test.com`,
+          username: `env_trigger_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          email: `env_trigger_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
           password: 'test_hash',
           firstName: 'Test',
           lastName: 'User',
@@ -58,7 +58,7 @@ describe('Environmental Trigger System', () => {
       testGrooms = await Promise.all([
         tx.groom.create({
           data: {
-            name: `Calm Groom ${Date.now()}`,
+            name: `Calm Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             personality: 'calm',
             epigeneticInfluenceType: 'calm',
             skillLevel: 'expert',
@@ -71,7 +71,7 @@ describe('Environmental Trigger System', () => {
         }),
         tx.groom.create({
           data: {
-            name: `Energetic Groom ${Date.now()}`,
+            name: `Energetic Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             personality: 'energetic',
             epigeneticInfluenceType: 'energetic',
             skillLevel: 'expert',
@@ -88,7 +88,7 @@ describe('Environmental Trigger System', () => {
         // Young foal - high environmental sensitivity
         tx.horse.create({
           data: {
-            name: `Test Foal Young ${Date.now()}`,
+            name: `Test Foal Young ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             sex: 'filly',
             dateOfBirth: oneWeekAgo,
             userId: testUser.id,
@@ -100,7 +100,7 @@ describe('Environmental Trigger System', () => {
         // Older foal - moderate sensitivity
         tx.horse.create({
           data: {
-            name: `Test Foal Older ${Date.now()}`,
+            name: `Test Foal Older ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             sex: 'colt',
             dateOfBirth: oneMonthAgo,
             userId: testUser.id,
@@ -112,7 +112,7 @@ describe('Environmental Trigger System', () => {
         // Stressed foal - high trigger sensitivity
         tx.horse.create({
           data: {
-            name: `Test Foal Stressed ${Date.now()}`,
+            name: `Test Foal Stressed ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             sex: 'filly',
             dateOfBirth: twoWeeksAgo,
             userId: testUser.id,

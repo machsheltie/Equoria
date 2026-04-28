@@ -44,7 +44,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
     // Create test breed first
     testBreed = await prisma.breed.create({
       data: {
-        name: `TestBreed_${Date.now()}`,
+        name: `TestBreed_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         description: 'Test breed for personality tests',
       },
     });
@@ -52,10 +52,10 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
     // Create test user with real database operations
     testUser = await prisma.user.create({
       data: {
-        username: `testuser_${Date.now()}`,
+        username: `testuser_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         firstName: 'Test',
         lastName: 'User',
-        email: `test_${Date.now()}@example.com`,
+        email: `test_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
         password: 'hashedpassword',
         money: 10000,
         xp: 100,
@@ -66,7 +66,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
     // Create test horse with temperament
     testHorse = await prisma.horse.create({
       data: {
-        name: `TestHorse_${Date.now()}`,
+        name: `TestHorse_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         userId: testUser.id,
         dateOfBirth: new Date(Date.now() - 0 * 24 * 60 * 60 * 1000), // 0 days old (newborn for imprinting)
         temperament: FOAL_TEMPERAMENT_TYPES.SPIRITED,
@@ -81,7 +81,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
     // Create test groom with personality
     testGroom = await prisma.groom.create({
       data: {
-        name: `TestGroom_${Date.now()}`,
+        name: `TestGroom_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         speciality: 'foalCare',
         experience: 5,
         skillLevel: 'intermediate',

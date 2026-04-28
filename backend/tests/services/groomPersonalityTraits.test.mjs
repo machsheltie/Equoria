@@ -36,8 +36,8 @@ describe('Groom Personality Trait System', () => {
       // Create test user
       testUser = await tx.user.create({
         data: {
-          username: `groomtraits_${Date.now()}`,
-          email: `groomtraits_${Date.now()}@test.com`,
+          username: `groomtraits_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          email: `groomtraits_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
           password: 'test_hash',
           firstName: 'Test',
           lastName: 'User',
@@ -52,7 +52,7 @@ describe('Groom Personality Trait System', () => {
         // Calm personality groom
         tx.groom.create({
           data: {
-            name: `Calm Expert Groom ${Date.now()}`,
+            name: `Calm Expert Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             personality: 'calm',
             epigeneticInfluenceType: 'calm',
             skillLevel: 'expert',
@@ -66,7 +66,7 @@ describe('Groom Personality Trait System', () => {
         // Energetic personality groom
         tx.groom.create({
           data: {
-            name: `Energetic Novice Groom ${Date.now()}`,
+            name: `Energetic Novice Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             personality: 'energetic',
             epigeneticInfluenceType: 'energetic',
             skillLevel: 'novice',
@@ -80,7 +80,7 @@ describe('Groom Personality Trait System', () => {
         // Methodical personality groom
         tx.groom.create({
           data: {
-            name: `Methodical Experienced Groom ${Date.now()}`,
+            name: `Methodical Experienced Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             personality: 'methodical',
             epigeneticInfluenceType: 'methodical',
             skillLevel: 'experienced',
@@ -97,7 +97,7 @@ describe('Groom Personality Trait System', () => {
         // Nervous/fearful horse
         tx.horse.create({
           data: {
-            name: `Test Horse Nervous ${Date.now()}`,
+            name: `Test Horse Nervous ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             sex: 'filly',
             dateOfBirth: oneMonthAgo,
             userId: testUser.id,
@@ -109,7 +109,7 @@ describe('Groom Personality Trait System', () => {
         // Confident/brave horse
         tx.horse.create({
           data: {
-            name: `Test Horse Confident ${Date.now()}`,
+            name: `Test Horse Confident ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             sex: 'colt',
             dateOfBirth: oneMonthAgo,
             userId: testUser.id,
@@ -121,7 +121,7 @@ describe('Groom Personality Trait System', () => {
         // Neutral horse
         tx.horse.create({
           data: {
-            name: `Test Horse Neutral ${Date.now()}`,
+            name: `Test Horse Neutral ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             sex: 'gelding',
             dateOfBirth: oneMonthAgo,
             userId: testUser.id,

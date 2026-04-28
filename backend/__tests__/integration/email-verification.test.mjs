@@ -431,7 +431,10 @@ describe('Email Verification System - Integration Tests', () => {
       const os = await import('os');
       const path = await import('path');
       const fs = await import('fs');
-      emailCapturePath = path.join(os.tmpdir(), `email-capture-${Date.now()}-${Math.random()}.jsonl`);
+      emailCapturePath = path.join(
+        os.tmpdir(),
+        `email-capture-${Date.now()}_${Math.random().toString(36).slice(2, 6)}-${Math.random()}.jsonl`,
+      );
       process.env.EMAIL_CAPTURE_FILE = emailCapturePath;
       capturedVerificationTokens = () => {
         if (!fs.existsSync(emailCapturePath)) {

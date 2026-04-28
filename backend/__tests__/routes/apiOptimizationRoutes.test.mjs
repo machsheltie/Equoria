@@ -28,7 +28,7 @@ describe('API Optimization Routes', () => {
   let testApp;
   let testUser;
   let authToken;
-  const testRunId = `apiopt_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+  const testRunId = `apiopt_${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.floor(Math.random() * 100000)}`;
 
   beforeAll(async () => {
     // Create test user

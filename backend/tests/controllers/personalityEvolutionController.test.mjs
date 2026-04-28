@@ -50,8 +50,8 @@ describe('Personality Evolution Controller API', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        username: `personality_evolution_api_${Date.now()}`,
-        email: `personality_evolution_api_${Date.now()}@test.com`,
+        username: `personality_evolution_api_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        email: `personality_evolution_api_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
         password: 'test_hash',
         firstName: 'Test',
         lastName: 'User',

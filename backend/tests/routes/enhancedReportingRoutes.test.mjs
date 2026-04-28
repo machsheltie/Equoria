@@ -35,8 +35,8 @@ describe('Enhanced Reporting API Routes', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        username: `enh_report_${Date.now()}`,
-        email: `enh_report_${Date.now()}@test.com`,
+        username: `enh_report_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        email: `enh_report_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
         password: 'test_hash',
         firstName: 'Test',
         lastName: 'User',
@@ -53,7 +53,7 @@ describe('Enhanced Reporting API Routes', () => {
     testGrooms = await Promise.all([
       prisma.groom.create({
         data: {
-          name: `Test Groom Report ${Date.now()}`,
+          name: `Test Groom Report ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           personality: 'calm',
           epigeneticInfluenceType: 'calm',
           skillLevel: 'expert',
@@ -76,7 +76,7 @@ describe('Enhanced Reporting API Routes', () => {
       // Young foal with developing traits
       prisma.horse.create({
         data: {
-          name: `Test Foal Report ${Date.now()}`,
+          name: `Test Foal Report ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           sex: 'filly',
           dateOfBirth: oneWeekAgo,
           userId: testUser.id,
@@ -88,7 +88,7 @@ describe('Enhanced Reporting API Routes', () => {
       // Older foal with established traits
       prisma.horse.create({
         data: {
-          name: `Test Horse Report ${Date.now()}`,
+          name: `Test Horse Report ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           sex: 'colt',
           dateOfBirth: oneMonthAgo,
           userId: testUser.id,
@@ -100,7 +100,7 @@ describe('Enhanced Reporting API Routes', () => {
       // Mature foal with complex traits
       prisma.horse.create({
         data: {
-          name: `Test Mature Report ${Date.now()}`,
+          name: `Test Mature Report ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           sex: 'gelding',
           dateOfBirth: twoMonthsAgo,
           userId: testUser.id,
@@ -345,8 +345,8 @@ describe('Enhanced Reporting API Routes', () => {
       // Create another user's horse
       const otherUser = await prisma.user.create({
         data: {
-          username: `other_report_${Date.now()}`,
-          email: `other_report_${Date.now()}@test.com`,
+          username: `other_report_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          email: `other_report_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
           password: 'test_hash',
           firstName: 'Other',
           lastName: 'User',
@@ -356,7 +356,7 @@ describe('Enhanced Reporting API Routes', () => {
 
       const otherHorse = await prisma.horse.create({
         data: {
-          name: `Other Horse Report ${Date.now()}`,
+          name: `Other Horse Report ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           sex: 'gelding',
           dateOfBirth: new Date(),
           userId: otherUser.id,

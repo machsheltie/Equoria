@@ -145,8 +145,8 @@ describe('📬 INTEGRATION: Messages API', () => {
 
     it('should block access to messages not yours', async () => {
       const other = await createTestUser({
-        username: `other_${Date.now()}`,
-        email: `other_${Date.now()}@test.com`,
+        username: `other_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        email: `other_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
       });
       const res = await request(app)
         .get(`/api/messages/${sentMessageId}`)

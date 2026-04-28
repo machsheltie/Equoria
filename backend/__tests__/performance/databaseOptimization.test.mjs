@@ -28,7 +28,7 @@ describe('Database Query Optimization', () => {
   let testUserId;
   const testHorseIds = [];
   let testBreed;
-  const testRunId = `perf_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+  const testRunId = `perf_${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.floor(Math.random() * 100000)}`;
 
   beforeAll(async () => {
     // Create test data for performance testing

@@ -49,7 +49,7 @@ describe('authenticated auth routes — CSRF enforcement canary', () => {
   });
 
   beforeEach(async () => {
-    const unique = `${Date.now()}${Math.floor(Math.random() * 10000)}`;
+    const unique = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}${Math.floor(Math.random() * 10000)}`;
     const email = `${PREFIX}${unique}@test.com`;
     const username = `${PREFIX}${unique}`;
 

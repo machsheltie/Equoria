@@ -202,7 +202,7 @@ describe('Caching Circuit Breaker Integration Tests', () => {
     });
 
     it('should invalidate cache by pattern', async () => {
-      const prefix = `test:pattern:${Date.now()}`;
+      const prefix = `test:pattern:${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
       const key1 = generateCacheKey(prefix, 'item1');
       const key2 = generateCacheKey(prefix, 'item2');
       const key3 = generateCacheKey('different', 'item');

@@ -272,8 +272,8 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
     it('should reject purchase with insufficient funds', async () => {
       // Create a broke buyer
       const brokeUser = await createTestUser({
-        username: `broke_${Date.now()}`,
-        email: `broke_${Date.now()}@test.com`,
+        username: `broke_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        email: `broke_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
         money: 100,
       });
 
@@ -381,8 +381,8 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
 
     it('should return empty history for new user', async () => {
       const newUser = await createTestUser({
-        username: `hist_${Date.now()}`,
-        email: `hist_${Date.now()}@test.com`,
+        username: `hist_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        email: `hist_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
       });
 
       const res = await request(app)
@@ -409,7 +409,7 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       const breed = await prisma.breed.findFirst();
       delistHorse = await prisma.horse.create({
         data: {
-          name: `DelistHorse_${Date.now()}`,
+          name: `DelistHorse_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           sex: 'stallion',
           age: 4,
           dateOfBirth: new Date('2020-01-01'),

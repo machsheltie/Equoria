@@ -23,7 +23,7 @@ const { CONFORMATION_REGIONS } = await import('../modules/horses/services/confor
 const { getBreedProfile } = await import('../modules/horses/data/breedProfileLoader.mjs');
 
 // ── Test data setup ────────────────────────────────────────────────────────
-const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).slice(2, 7)}`;
 let testUser;
 let testBreed;
 const createdHorseIds = [];
@@ -49,7 +49,7 @@ const BASE_SCORES = {
 async function seedHorse(scores) {
   const horse = await prisma.horse.create({
     data: {
-      name: `ConfApiTest_${Date.now()}_${Math.random().toString(36).slice(2, 5)}`,
+      name: `ConfApiTest_${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).slice(2, 5)}`,
       sex: 'Mare',
       dateOfBirth: new Date('2020-01-01'),
       age: 4,

@@ -64,9 +64,9 @@ describe('Horse Aging System', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        id: `aging-user-${Date.now()}-${Math.random()}`,
-        username: `aginguser-${Date.now()}`,
-        email: `aging-${Date.now()}@example.com`,
+        id: `aging-user-${Date.now()}_${Math.random().toString(36).slice(2, 6)}-${Math.random()}`,
+        username: `aginguser-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        email: `aging-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
         password: 'TestPassword123!',
         firstName: 'Aging',
         lastName: 'Tester',
@@ -78,7 +78,7 @@ describe('Horse Aging System', () => {
     // Create test breed
     testBreed = await prisma.breed.create({
       data: {
-        name: `Test Breed ${Date.now()}`,
+        name: `Test Breed ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         description: 'Test breed for aging',
       },
     });

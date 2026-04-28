@@ -286,7 +286,7 @@ describe('Cross-System Validation Tests', () => {
       // Create show directly in database (no API endpoint exists)
       const testShow = await prisma.show.create({
         data: {
-          name: `Cross System Test Show ${Date.now()}`,
+          name: `Cross System Test Show ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           runDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           discipline: 'Racing',
           levelMin: 1,

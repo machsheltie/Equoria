@@ -31,8 +31,8 @@ describe('Enhanced Care Pattern Analyzer', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        username: `carepattern_${Date.now()}`,
-        email: `carepattern_${Date.now()}@test.com`,
+        username: `carepattern_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        email: `carepattern_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
         password: 'test_hash',
         firstName: 'Test',
         lastName: 'User',
@@ -46,7 +46,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
     testGrooms = await Promise.all([
       prisma.groom.create({
         data: {
-          name: `Expert Calm Groom ${Date.now()}`,
+          name: `Expert Calm Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           personality: 'calm',
           epigeneticInfluenceType: 'calm',
           skillLevel: 'expert',
@@ -57,7 +57,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
       }),
       prisma.groom.create({
         data: {
-          name: `Novice Energetic Groom ${Date.now()}`,
+          name: `Novice Energetic Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           personality: 'energetic',
           epigeneticInfluenceType: 'energetic',
           skillLevel: 'novice',
@@ -68,7 +68,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
       }),
       prisma.groom.create({
         data: {
-          name: `Experienced Methodical Groom ${Date.now()}`,
+          name: `Experienced Methodical Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           personality: 'methodical',
           epigeneticInfluenceType: 'methodical',
           skillLevel: 'experienced',
@@ -88,7 +88,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
       // Horse with consistent high-quality care
       prisma.horse.create({
         data: {
-          name: `Test Horse Consistent ${Date.now()}`,
+          name: `Test Horse Consistent ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           sex: 'filly',
           dateOfBirth: oneMonthAgo,
           userId: testUser.id,
@@ -100,7 +100,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
       // Horse with declining care quality
       prisma.horse.create({
         data: {
-          name: `Test Horse Declining ${Date.now()}`,
+          name: `Test Horse Declining ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           sex: 'colt',
           dateOfBirth: twoWeeksAgo,
           userId: testUser.id,
@@ -112,7 +112,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
       // Horse with improving care quality
       prisma.horse.create({
         data: {
-          name: `Test Horse Improving ${Date.now()}`,
+          name: `Test Horse Improving ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           sex: 'gelding',
           dateOfBirth: oneMonthAgo,
           userId: testUser.id,

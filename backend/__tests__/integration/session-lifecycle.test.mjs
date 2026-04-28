@@ -527,12 +527,14 @@ describe('Session Lifecycle Management', () => {
       // Create an expired token directly in DB. We store a synthetic hash
       // here because this row is never consumed via createTokenPair; it
       // only needs to exist for the cleanup cron to purge (Equoria-uy73).
-      const expiredTokenHash = hashRefreshToken(`expired-test-token-${Date.now()}`);
+      const expiredTokenHash = hashRefreshToken(
+        `expired-test-token-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      );
       await prisma.refreshToken.create({
         data: {
           tokenHash: expiredTokenHash,
           userId: testUser.id,
-          familyId: `expired-family-${Date.now()}`,
+          familyId: `expired-family-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
           isActive: true,
           isInvalidated: false,
@@ -564,9 +566,9 @@ describe('Session Lifecycle Management', () => {
       // Create an old invalidated token (hashed at rest — Equoria-uy73)
       const _oldInvalidatedToken = await prisma.refreshToken.create({
         data: {
-          tokenHash: hashRefreshToken(`old-invalidated-${Date.now()}`),
+          tokenHash: hashRefreshToken(`old-invalidated-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`),
           userId: testUser.id,
-          familyId: `old-family-${Date.now()}`,
+          familyId: `old-family-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Expires in 7 days
           isActive: false,
           isInvalidated: true,
@@ -622,8 +624,8 @@ describe('Session Lifecycle Management', () => {
     it('should handle complete user journey: register -> login -> use session -> change password -> re-login', async () => {
       // Step 1: Register new user
       const newUserData = {
-        username: `lifecycle-${Date.now()}`,
-        email: `lifecycle-${Date.now()}@example.com`,
+        username: `lifecycle-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        email: `lifecycle-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
         password: 'TestPassword123!',
         firstName: 'Lifecycle',
         lastName: 'Test',

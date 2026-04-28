@@ -61,7 +61,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
   });
 
   beforeEach(async () => {
-    const uid = `${RUN_PREFIX}-${Date.now()}-${++_seq}`;
+    const uid = `${RUN_PREFIX}-${Date.now()}_${Math.random().toString(36).slice(2, 6)}-${++_seq}`;
     // Pre-clean: remove only users from THIS worker's prior iterations.
     // The previous filter (username startsWith 'testuser-') also matched
     // users other suites owned, which could leave an inconsistent FK

@@ -37,8 +37,8 @@ describe('Dynamic Compatibility Scoring', () => {
       // Create test user
       testUser = await tx.user.create({
         data: {
-          username: `compatibility_${Date.now()}`,
-          email: `compatibility_${Date.now()}@test.com`,
+          username: `compatibility_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          email: `compatibility_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
           password: 'test_hash',
           firstName: 'Test',
           lastName: 'User',
@@ -53,7 +53,7 @@ describe('Dynamic Compatibility Scoring', () => {
         // Expert calm groom
         tx.groom.create({
           data: {
-            name: `Expert Calm Groom ${Date.now()}`,
+            name: `Expert Calm Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             personality: 'calm',
             epigeneticInfluenceType: 'calm',
             skillLevel: 'expert',
@@ -67,7 +67,7 @@ describe('Dynamic Compatibility Scoring', () => {
         // Novice energetic groom
         tx.groom.create({
           data: {
-            name: `Novice Energetic Groom ${Date.now()}`,
+            name: `Novice Energetic Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             personality: 'energetic',
             epigeneticInfluenceType: 'energetic',
             skillLevel: 'novice',
@@ -81,7 +81,7 @@ describe('Dynamic Compatibility Scoring', () => {
         // Experienced methodical groom
         tx.groom.create({
           data: {
-            name: `Experienced Methodical Groom ${Date.now()}`,
+            name: `Experienced Methodical Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             personality: 'methodical',
             epigeneticInfluenceType: 'methodical',
             skillLevel: 'experienced',
@@ -98,7 +98,7 @@ describe('Dynamic Compatibility Scoring', () => {
         // High-stress fearful horse
         tx.horse.create({
           data: {
-            name: `Test Horse Fearful ${Date.now()}`,
+            name: `Test Horse Fearful ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             sex: 'filly',
             dateOfBirth: oneMonthAgo,
             userId: testUser.id,
@@ -110,7 +110,7 @@ describe('Dynamic Compatibility Scoring', () => {
         // Confident social horse
         tx.horse.create({
           data: {
-            name: `Test Horse Confident ${Date.now()}`,
+            name: `Test Horse Confident ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             sex: 'colt',
             dateOfBirth: oneMonthAgo,
             userId: testUser.id,
@@ -122,7 +122,7 @@ describe('Dynamic Compatibility Scoring', () => {
         // Moderate temperament horse
         tx.horse.create({
           data: {
-            name: `Test Horse Moderate ${Date.now()}`,
+            name: `Test Horse Moderate ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             sex: 'gelding',
             dateOfBirth: oneMonthAgo,
             userId: testUser.id,
