@@ -19,11 +19,15 @@ describe('Authentication with HttpOnly Cookies', () => {
     __csrf__ = await fetchCsrf(app);
   });
 
+  // Per-suite prefix prevents cross-suite collisions when shards run in
+  // parallel. All emails/usernames in this suite must share this prefix
+  // so the startsWith cleanup below catches everything (Phase 3b).
+  const SUITE_PREFIX = 'acookie';
   let _testUser;
   let server;
   const testUserData = {
-    username: 'cookietest',
-    email: 'cookietest@example.com',
+    username: `${SUITE_PREFIX}_main`,
+    email: `${SUITE_PREFIX}-main@example.com`,
     password: 'TestPassword123!',
     firstName: 'Cookie',
     lastName: 'Test',
@@ -36,13 +40,16 @@ describe('Authentication with HttpOnly Cookies', () => {
     // Start server once for all tests
     server = app.listen(0);
 
-    // Clean up any existing test user
-    await prisma.refreshToken.deleteMany({
-      where: { user: { email: testUserData.email } },
+    // Clean up any lingering rows from prior crashed runs (suite-prefix scoped).
+    const stale = await prisma.user.findMany({
+      where: { OR: [{ email: { startsWith: SUITE_PREFIX } }, { username: { startsWith: SUITE_PREFIX } }] },
+      select: { id: true },
     });
-    await prisma.user.deleteMany({
-      where: { email: testUserData.email },
-    });
+    if (stale.length > 0) {
+      const ids = stale.map(u => u.id);
+      await prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } });
+      await prisma.user.deleteMany({ where: { id: { in: ids } } });
+    }
 
     // Create test user for tests that need it
     const bcrypt = (await import('bcryptjs')).default;
@@ -59,13 +66,16 @@ describe('Authentication with HttpOnly Cookies', () => {
   });
 
   afterAll(async () => {
-    // Clean up test data
-    await prisma.refreshToken.deleteMany({
-      where: { user: { email: testUserData.email } },
+    // Clean up everything created under this suite's prefix.
+    const remaining = await prisma.user.findMany({
+      where: { OR: [{ email: { startsWith: SUITE_PREFIX } }, { username: { startsWith: SUITE_PREFIX } }] },
+      select: { id: true },
     });
-    await prisma.user.deleteMany({
-      where: { email: testUserData.email },
-    });
+    if (remaining.length > 0) {
+      const ids = remaining.map(u => u.id);
+      await prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } });
+      await prisma.user.deleteMany({ where: { id: { in: ids } } });
+    }
 
     // Close server
     if (server) {
@@ -78,8 +88,8 @@ describe('Authentication with HttpOnly Cookies', () => {
     it('should set httpOnly cookies on successful registration', async () => {
       const registrationUser = {
         ...testUserData,
-        email: `cookietest+${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
-        username: `cookietest${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        email: `${SUITE_PREFIX}-reg-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+        username: `${SUITE_PREFIX}_r${Date.now().toString(36).slice(-6)}${Math.random().toString(36).slice(2, 6)}`,
       };
       const response = await request(app)
         .post('/api/auth/register')
@@ -124,14 +134,16 @@ describe('Authentication with HttpOnly Cookies', () => {
     });
 
     it('should NOT expose tokens in response body (XSS protection)', async () => {
+      const noxssEmail = `${SUITE_PREFIX}-noxss@example.com`;
+      const noxssUsername = `${SUITE_PREFIX}_noxss`;
       const _response = await request(app)
         .post('/api/auth/register')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
           ...testUserData,
-          email: 'cookietest2@example.com',
-          username: 'cookietest2',
+          email: noxssEmail,
+          username: noxssUsername,
         })
         .expect(201);
 
@@ -145,7 +157,7 @@ describe('Authentication with HttpOnly Cookies', () => {
 
       // Clean up
       await prisma.user.deleteMany({
-        where: { email: 'cookietest2@example.com' },
+        where: { email: noxssEmail },
       });
     });
   });
@@ -412,11 +424,11 @@ describe('Authentication with HttpOnly Cookies', () => {
 
   describe('Security: XSS Protection Verification', () => {
     it('should never include JWT tokens in any response body', async () => {
-      // Pre-clean any lingering xss-test rows from prior runs. A previous
-      // crash or aborted run leaves the User/refreshToken rows, which makes
-      // the fresh register below 400 on duplicate email/username.
+      const xssEmail = `${SUITE_PREFIX}-xss@example.com`;
+      const xssUsername = `${SUITE_PREFIX}_xss`;
+      // Pre-clean any lingering rows from prior crashed runs.
       const staleUsers = await prisma.user.findMany({
-        where: { OR: [{ email: 'xss-test@example.com' }, { username: 'xsstest' }] },
+        where: { OR: [{ email: xssEmail }, { username: xssUsername }] },
         select: { id: true },
       });
       if (staleUsers.length > 0) {
@@ -432,8 +444,8 @@ describe('Authentication with HttpOnly Cookies', () => {
         .set(rateLimitBypassHeader)
         .send({
           ...testUserData,
-          email: 'xss-test@example.com',
-          username: 'xsstest',
+          email: xssEmail,
+          username: xssUsername,
         })
         .expect(201);
 
@@ -442,7 +454,7 @@ describe('Authentication with HttpOnly Cookies', () => {
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
-          email: 'xss-test@example.com',
+          email: xssEmail,
           password: testUserData.password,
         })
         .expect(200);
@@ -457,7 +469,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       // });
 
       // Clean up
-      await prisma.user.deleteMany({ where: { email: 'xss-test@example.com' } });
+      await prisma.user.deleteMany({ where: { email: xssEmail } });
     });
   });
 

@@ -25,18 +25,27 @@ describe('Cookie Integration Tests', () => {
     __csrf__ = await fetchCsrf(app);
   });
 
+  // Per-suite prefix prevents cross-suite collisions when shards run in
+  // parallel. Cleanup uses startsWith(SUITE_PREFIX) for resilience against
+  // crashed prior runs (Phase 3b).
+  const SUITE_PREFIX = 'cintg';
   let testUser;
   const rateLimitBypassHeader = { 'X-Test-Bypass-Rate-Limit': 'true', 'X-Test-Bypass-Auth': 'true' };
 
-  beforeAll(async () => {
-    // Clean up test database
-    await prisma.user.deleteMany({
-      where: {
-        email: {
-          startsWith: 'cookietest',
-        },
-      },
+  const cleanSuite = async () => {
+    const stale = await prisma.user.findMany({
+      where: { OR: [{ email: { startsWith: SUITE_PREFIX } }, { username: { startsWith: SUITE_PREFIX } }] },
+      select: { id: true },
     });
+    if (stale.length > 0) {
+      const ids = stale.map(u => u.id);
+      await prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } });
+      await prisma.user.deleteMany({ where: { id: { in: ids } } });
+    }
+  };
+
+  beforeAll(async () => {
+    await cleanSuite();
   });
 
   afterEach(async () => {
@@ -53,14 +62,7 @@ describe('Cookie Integration Tests', () => {
   });
 
   afterAll(async () => {
-    // Final cleanup
-    await prisma.user.deleteMany({
-      where: {
-        email: {
-          startsWith: 'cookietest',
-        },
-      },
-    });
+    await cleanSuite();
   });
 
   describe('Registration Endpoint Cookies', () => {
@@ -70,8 +72,8 @@ describe('Cookie Integration Tests', () => {
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
-          username: 'cookietestuser1',
-          email: 'cookietest1@test.com',
+          username: `${SUITE_PREFIX}_r1user`,
+          email: `${SUITE_PREFIX}-r1@test.com`,
           password: 'TestPass123!',
           firstName: 'Cookie',
           lastName: 'Test',
@@ -97,18 +99,21 @@ describe('Cookie Integration Tests', () => {
 
       // Clean up
       testUser = await prisma.user.findUnique({
-        where: { email: 'cookietest1@test.com' },
+        where: { email: `${SUITE_PREFIX}-r1@test.com` },
       });
     });
 
     test('should set refreshToken cookie with correct attributes', async () => {
-      const response = await request(app).post('/auth/register').set('Origin', 'http://localhost:3000').send({
-        username: 'cookietestuser2',
-        email: 'cookietest2@test.com',
-        password: 'TestPass123!',
-        firstName: 'Cookie',
-        lastName: 'Test',
-      });
+      const response = await request(app)
+        .post('/auth/register')
+        .set('Origin', 'http://localhost:3000')
+        .send({
+          username: `${SUITE_PREFIX}_r2user`,
+          email: `${SUITE_PREFIX}-r2@test.com`,
+          password: 'TestPass123!',
+          firstName: 'Cookie',
+          lastName: 'Test',
+        });
 
       expect(response.status).toBe(201);
 
@@ -128,18 +133,21 @@ describe('Cookie Integration Tests', () => {
 
       // Clean up
       testUser = await prisma.user.findUnique({
-        where: { email: 'cookietest2@test.com' },
+        where: { email: `${SUITE_PREFIX}-r2@test.com` },
       });
     });
 
     test('should set both cookies in a single response', async () => {
-      const response = await request(app).post('/auth/register').set('Origin', 'http://localhost:3000').send({
-        username: 'cookietestuser3',
-        email: 'cookietest3@test.com',
-        password: 'TestPass123!',
-        firstName: 'Cookie',
-        lastName: 'Test',
-      });
+      const response = await request(app)
+        .post('/auth/register')
+        .set('Origin', 'http://localhost:3000')
+        .send({
+          username: `${SUITE_PREFIX}_r3user`,
+          email: `${SUITE_PREFIX}-r3@test.com`,
+          password: 'TestPass123!',
+          firstName: 'Cookie',
+          lastName: 'Test',
+        });
 
       expect(response.status).toBe(201);
 
@@ -149,7 +157,7 @@ describe('Cookie Integration Tests', () => {
 
       // Clean up
       testUser = await prisma.user.findUnique({
-        where: { email: 'cookietest3@test.com' },
+        where: { email: `${SUITE_PREFIX}-r3@test.com` },
       });
     });
   });
@@ -157,16 +165,20 @@ describe('Cookie Integration Tests', () => {
   describe('Login Endpoint Cookies', () => {
     beforeEach(async () => {
       // Create test user
-      await request(app).post('/auth/register').set('Origin', 'http://localhost:3000').set(rateLimitBypassHeader).send({
-        username: 'logincookietest',
-        email: 'logincookietest@test.com',
-        password: 'TestPass123!',
-        firstName: 'Login',
-        lastName: 'Test',
-      });
+      await request(app)
+        .post('/auth/register')
+        .set('Origin', 'http://localhost:3000')
+        .set(rateLimitBypassHeader)
+        .send({
+          username: `${SUITE_PREFIX}_luser`,
+          email: `${SUITE_PREFIX}-l@test.com`,
+          password: 'TestPass123!',
+          firstName: 'Login',
+          lastName: 'Test',
+        });
 
       testUser = await prisma.user.findUnique({
-        where: { email: 'logincookietest@test.com' },
+        where: { email: `${SUITE_PREFIX}-l@test.com` },
       });
     });
 
@@ -176,7 +188,7 @@ describe('Cookie Integration Tests', () => {
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
-          email: 'logincookietest@test.com',
+          email: `${SUITE_PREFIX}-l@test.com`,
           password: 'TestPass123!',
         });
 
@@ -194,7 +206,7 @@ describe('Cookie Integration Tests', () => {
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
-          email: 'logincookietest@test.com',
+          email: `${SUITE_PREFIX}-l@test.com`,
           password: 'TestPass123!',
         });
 
@@ -214,7 +226,7 @@ describe('Cookie Integration Tests', () => {
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
-          email: 'logincookietest@test.com',
+          email: `${SUITE_PREFIX}-l@test.com`,
           password: 'TestPass123!',
         });
 
@@ -234,16 +246,20 @@ describe('Cookie Integration Tests', () => {
 
     beforeEach(async () => {
       // Create and login test user
-      await request(app).post('/auth/register').set('Origin', 'http://localhost:3000').set(rateLimitBypassHeader).send({
-        username: 'refreshcookietest',
-        email: 'refreshcookietest@test.com',
-        password: 'TestPass123!',
-        firstName: 'Refresh',
-        lastName: 'Test',
-      });
+      await request(app)
+        .post('/auth/register')
+        .set('Origin', 'http://localhost:3000')
+        .set(rateLimitBypassHeader)
+        .send({
+          username: `${SUITE_PREFIX}_rfuser`,
+          email: `${SUITE_PREFIX}-rf@test.com`,
+          password: 'TestPass123!',
+          firstName: 'Refresh',
+          lastName: 'Test',
+        });
 
       testUser = await prisma.user.findUnique({
-        where: { email: 'refreshcookietest@test.com' },
+        where: { email: `${SUITE_PREFIX}-rf@test.com` },
       });
 
       loginResponse = await request(app)
@@ -251,7 +267,7 @@ describe('Cookie Integration Tests', () => {
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
-          email: 'refreshcookietest@test.com',
+          email: `${SUITE_PREFIX}-rf@test.com`,
           password: 'TestPass123!',
         });
     });
@@ -320,16 +336,20 @@ describe('Cookie Integration Tests', () => {
 
     beforeEach(async () => {
       // Create and login test user
-      await request(app).post('/auth/register').set('Origin', 'http://localhost:3000').set(rateLimitBypassHeader).send({
-        username: 'logoutcookietest',
-        email: 'logoutcookietest@test.com',
-        password: 'TestPass123!',
-        firstName: 'Logout',
-        lastName: 'Test',
-      });
+      await request(app)
+        .post('/auth/register')
+        .set('Origin', 'http://localhost:3000')
+        .set(rateLimitBypassHeader)
+        .send({
+          username: `${SUITE_PREFIX}_louser`,
+          email: `${SUITE_PREFIX}-lo@test.com`,
+          password: 'TestPass123!',
+          firstName: 'Logout',
+          lastName: 'Test',
+        });
 
       testUser = await prisma.user.findUnique({
-        where: { email: 'logoutcookietest@test.com' },
+        where: { email: `${SUITE_PREFIX}-lo@test.com` },
       });
 
       loginResponse = await request(app)
@@ -337,7 +357,7 @@ describe('Cookie Integration Tests', () => {
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
-          email: 'logoutcookietest@test.com',
+          email: `${SUITE_PREFIX}-lo@test.com`,
           password: 'TestPass123!',
         });
     });
