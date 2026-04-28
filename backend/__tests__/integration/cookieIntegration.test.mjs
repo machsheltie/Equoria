@@ -30,7 +30,11 @@ describe('Cookie Integration Tests', () => {
   // crashed prior runs (Phase 3b).
   const SUITE_PREFIX = 'cintg';
   let testUser;
-  const rateLimitBypassHeader = { 'X-Test-Bypass-Rate-Limit': 'true', 'X-Test-Bypass-Auth': 'true' };
+  // Test-bypass headers were purged from production middleware in commits
+  // 5a158681 / 3590916e. Empty object preserves `.set(rateLimitBypassHeader)`
+  // call-site signatures with no behavior. Rate pressure in test env is
+  // governed by TEST_RATE_LIMIT_* env knobs (see middleware/rateLimiting.mjs).
+  const rateLimitBypassHeader = {};
 
   const cleanSuite = async () => {
     const stale = await prisma.user.findMany({

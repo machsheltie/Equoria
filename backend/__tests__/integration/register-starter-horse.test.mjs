@@ -18,7 +18,11 @@ import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
 
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
-const rateLimitBypass = { 'X-Test-Bypass-Rate-Limit': 'true' };
+// Test-bypass headers were purged from production middleware in commits
+// 5a158681 / 3590916e. Empty object preserves `.set(rateLimitBypass)`
+// call-site signatures with no behavior. Rate pressure in test env is
+// governed by TEST_RATE_LIMIT_* env knobs (see middleware/rateLimiting.mjs).
+const rateLimitBypass = {};
 
 describe('POST /api/auth/register — starter horse integration', () => {
   let __csrf__;
