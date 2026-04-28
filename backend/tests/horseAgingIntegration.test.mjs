@@ -96,12 +96,12 @@ describe('Horse Aging Integration', () => {
     await cleanupTestData();
 
     // Create test user
-    const userId = `aging-int-user-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+    const userId = `aging-int-user-${Date.now()}_${Math.random().toString(36).slice(2, 6)}-${Math.random().toString(36).substr(2, 5)}`;
     testUser = await prisma.user.create({
       data: {
         id: userId,
-        username: `agingintuser_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-        email: `agingint_${Date.now()}_${Math.random().toString(36).substr(2, 5)}@example.com`,
+        username: `agingintuser_${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).substr(2, 5)}`,
+        email: `agingint_${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).substr(2, 5)}@example.com`,
         password: 'TestPassword123!',
         firstName: 'Aging',
         lastName: 'Integration',
@@ -113,7 +113,7 @@ describe('Horse Aging Integration', () => {
     // Create test breed
     testBreed = await prisma.breed.create({
       data: {
-        name: `Int Test Breed ${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        name: `Int Test Breed ${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).substr(2, 5)}`,
         description: 'Test breed for aging integration',
       },
     });

@@ -206,7 +206,9 @@ describe('Cron Job Service', () => {
     });
 
     it('should remove expired tokens for all users', async () => {
-      const user2 = await createTestUser({ email: `user2_${Date.now()}@example.com` });
+      const user2 = await createTestUser({
+        email: `user2_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+      });
 
       // Create expired tokens for both users
       await createTestRefreshToken(user.id, {

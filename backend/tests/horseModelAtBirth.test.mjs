@@ -26,7 +26,7 @@ jest.unstable_mockModule('../utils/logger.mjs', () => ({
 
 const { createHorse } = await import('../models/horseModel.mjs');
 
-const UNIQUE = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+const UNIQUE = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).slice(2, 8)}`;
 
 let breed;
 let sire;

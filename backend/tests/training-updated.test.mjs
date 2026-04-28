@@ -75,7 +75,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
   beforeAll(async () => {
     // Use 'trainupd_' prefix — not matched by cleanupTestData's 'testuser_' pattern,
     // so parallel suites calling cleanupTestData won't wipe this suite's data.
-    const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).slice(2, 8)}`;
     const hashedPw = await bcrypt.hash('TestPassword123!', 10);
     const user = await prisma.user.create({
       data: {
@@ -134,23 +134,27 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
     });
 
     it('should block training for horse under 3 years old', async () => {
-      // First, get trainable horses
+      // First, verify trainable list returns properly. Don't TRAIN whatever
+      // happens to be first in the list — that's order-dependent and was
+      // polluting `secondHorseId`'s Racing cooldown for the next test in
+      // this block, producing intermittent CI failures even though the
+      // test passed in isolation.
       const trainableResponse = await request(app)
         .get(`/api/horses/trainable/${testUserId}`)
-        .set('Origin', 'http://localhost:3000') // Use consistent testUserId
+        .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(trainableResponse.status).toBe(200);
 
       // If there are no trainable horses, we can't test this properly
       if (trainableResponse.body.data.length === 0) {
-        // console.log('No trainable horses found, skipping age requirement test');
         return;
       }
 
-      // Try to train a horse that should be eligible
-      const [firstHorse] = trainableResponse.body.data;
-
+      // Drive a deterministic "blocked" path: a clearly-non-existent horseId.
+      // The endpoint must respond consistently (404 / 400 / 200 with falsy
+      // success) without touching either testHorseId or secondHorseId, so
+      // the cooldown the next test relies on stays clean.
       const response = await request(app)
         .post('/api/training/train')
         .set('Authorization', `Bearer ${authToken}`)
@@ -158,19 +162,13 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
-          horseId: firstHorse.horseId,
+          horseId: 999999999, // non-existent
           discipline: 'Racing',
         });
 
-      // This should either succeed (if horse is eligible) or fail with a specific reason
-      expect(response.status).toBeOneOf([200, 400]);
-      expect(response.body.success).toBeDefined();
-
-      // if (response.body.success) {
-      //   console.log('Training succeeded:', response.body.message);
-      // } else {
-      //   console.log('Training blocked:', response.body.message);
-      // }
+      // Must NOT be 200/success — non-existent horse can't be trained.
+      expect([400, 404]).toContain(response.status);
+      expect(response.body.success).toBe(false);
     });
 
     it('should allow training for horse 3+ years old', async () => {

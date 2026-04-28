@@ -32,7 +32,7 @@ describe('Trait Interaction Matrix', () => {
   let testHorses = [];
 
   const createTraitTestData = async () => {
-    const testSuffix = `${Date.now()}_${Math.random().toString(16).slice(2, 8)}`;
+    const testSuffix = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(16).slice(2, 8)}`;
     testUser = await prisma.user.create({
       data: {
         username: `trait_matrix_${testSuffix}`,

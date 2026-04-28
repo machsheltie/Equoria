@@ -55,7 +55,7 @@ describe('🏇 INTEGRATION: Club API', () => {
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
-          name: `Test Club ${Date.now()}`,
+          name: `Test Club ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           type: 'discipline',
           category: 'Dressage',
           description: 'For dressage lovers',
@@ -72,7 +72,7 @@ describe('🏇 INTEGRATION: Club API', () => {
     });
 
     it('should reject duplicate club name', async () => {
-      const clubName = `Dup Club ${Date.now()}`;
+      const clubName = `Dup Club ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
       await request(app)
         .post('/api/clubs')
         .set('Authorization', `Bearer ${leaderToken}`)

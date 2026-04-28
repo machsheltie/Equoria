@@ -28,8 +28,8 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
   beforeAll(async () => {
     // Create test user
     const userResult = await createTestUser({
-      username: `competitionapi_${Date.now()}`,
-      email: `competitionapi_${Date.now()}@example.com`,
+      username: `competitionapi_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      email: `competitionapi_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
       money: 10000,
       xp: 500,
       level: 5,
@@ -152,8 +152,8 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
     test('should reject access to horse not owned by user', async () => {
       // Create another user and horse
       const otherUserResult = await createTestUser({
-        username: `otheruser_${Date.now()}`,
-        email: `other_${Date.now()}@example.com`,
+        username: `otheruser_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        email: `other_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
       });
       const otherHorse = await createTestHorse({
         userId: otherUserResult.user.id,
@@ -296,8 +296,8 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
     test('should reject execution by non-host user', async () => {
       // Create another user
       const otherUserResult = await createTestUser({
-        username: `nonhost_${Date.now()}`,
-        email: `nonhost_${Date.now()}@example.com`,
+        username: `nonhost_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        email: `nonhost_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
       });
 
       const response = await request(app)

@@ -63,7 +63,7 @@ describe('Dynamic Compatibility Controller API', () => {
       testBreedId = breed.id;
     }
 
-    const uid = `${RUN_PREFIX}-${Date.now()}`;
+    const uid = `${RUN_PREFIX}-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     const groomData = [
       {
         name: `Calm Expert ${uid}`,

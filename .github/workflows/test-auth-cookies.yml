@@ -283,14 +283,29 @@ jobs:
             exit 1
           fi
 
-          # Logout
+          # Logout — POST /auth/logout requires CSRF. Fetch a token first
+          # (sets _csrf cookie + returns body token), then send X-CSRF-Token.
+          # Equoria-uy73: this E2E test was added before CSRF tightening on
+          # auth routes, which is why logout was failing on master since
+          # 2026-04-23. Wired through the double-submit pattern now.
+          CSRF_RESPONSE=$(curl -s http://localhost:3000/auth/csrf-token \
+            -b cookies.txt -c cookies.txt)
+          CSRF_TOKEN=$(echo "$CSRF_RESPONSE" | grep -o '"csrfToken":"[^"]*"' | cut -d'"' -f4)
+          if [ -z "$CSRF_TOKEN" ]; then
+            echo "❌ Could not obtain CSRF token. Response:"
+            echo "$CSRF_RESPONSE"
+            exit 1
+          fi
+
           LOGOUT_RESPONSE=$(curl -i -X POST http://localhost:3000/api/auth/logout \
+            -H "X-CSRF-Token: $CSRF_TOKEN" \
             -b cookies.txt)
 
           if echo "$LOGOUT_RESPONSE" | grep -q "Logout successful"; then
             echo "✅ Logout successful"
           else
-            echo "❌ Logout failed"
+            echo "❌ Logout failed. Response:"
+            echo "$LOGOUT_RESPONSE"
             exit 1
           fi
 

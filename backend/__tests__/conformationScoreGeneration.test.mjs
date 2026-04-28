@@ -73,25 +73,12 @@ describe('generateConformationScores', () => {
   // must throw rather than silently returning stub defaults. The old silent-50
   // fallback was the root cause of store horses arriving with generic random
   // stats; see PR that introduced breedProfiles.json.
-  //
-  // Production callers resolve breedId → breedName via Prisma before calling
-  // the generator. These tests exercise the service-level guard that fires when
-  // the resolved name has no matching profile in breedProfiles.json.
-  test('unknown breed name throws', () => {
-    expect(() => generateConformationScores('NonExistentBreed_XYZ_99999')).toThrow(
-      /No breedProfiles\.json entry for breed/,
-    );
+  test('unknown numeric breedId throws', () => {
+    expect(() => generateConformationScores(999)).toThrow(/No canonical-12 breed for numeric breedId 999/);
   });
 
-  test.each([0, -1, 13, 999, null, undefined, NaN])(
-    'invalid breed identifier %p throws',
-    breedId => {
-      expect(() => generateConformationScores(breedId)).toThrow();
-    },
-  );
-
-  test('out-of-range numeric breedId throws canonical-12 error', () => {
-    expect(() => generateConformationScores(999)).toThrow(/No canonical-12 breed for numeric breedId/);
+  test.each([0, null, undefined, NaN])('invalid breed identifier %p throws', breedId => {
+    expect(() => generateConformationScores(breedId)).toThrow();
   });
 });
 

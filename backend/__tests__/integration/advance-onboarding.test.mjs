@@ -26,8 +26,8 @@ describe('POST /api/auth/advance-onboarding', () => {
   // compatibility with existing .set(rateLimitBypassHeader) call sites.
   const rateLimitBypassHeader = {};
   const testUserData = {
-    username: `advanceonboard_${Date.now()}`,
-    email: `advanceonboard_${Date.now()}@example.com`,
+    username: `advanceonboard_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    email: `advanceonboard_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
     password: 'TestPassword123!',
     firstName: 'Advance',
     lastName: 'Onboard',

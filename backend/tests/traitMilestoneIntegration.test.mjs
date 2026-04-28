@@ -86,7 +86,7 @@ describe('Trait Milestone Integration', () => {
     await cleanupTestData();
 
     // Create test user with unique identifiers
-    const suffix = `${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+    const suffix = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).substr(2, 5)}`;
     testUser = await prisma.user.create({
       data: {
         id: `user-milestone-${suffix}`,

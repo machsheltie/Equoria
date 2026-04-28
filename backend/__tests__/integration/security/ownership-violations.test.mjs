@@ -43,8 +43,8 @@ describe('Ownership Violation Attempts Integration Tests', () => {
 
     userA = await prisma.user.create({
       data: {
-        email: `userA-${Date.now()}@example.com`,
-        username: `userA-${Date.now()}`,
+        email: `userA-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+        username: `userA-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         password: 'hashedPassword123',
         firstName: 'User',
         lastName: 'A',
@@ -54,8 +54,8 @@ describe('Ownership Violation Attempts Integration Tests', () => {
 
     userB = await prisma.user.create({
       data: {
-        email: `userB-${Date.now()}@example.com`,
-        username: `userB-${Date.now()}`,
+        email: `userB-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+        username: `userB-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         password: 'hashedPassword123',
         firstName: 'User',
         lastName: 'B',
@@ -72,7 +72,7 @@ describe('Ownership Violation Attempts Integration Tests', () => {
 
     horseA = await prisma.horse.create({
       data: {
-        name: `HorseA-${Date.now()}`,
+        name: `HorseA-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         userId: userA.id, // Matches schema field (line 144)
         sex: 'mare',
         dateOfBirth: new Date(),
@@ -81,7 +81,7 @@ describe('Ownership Violation Attempts Integration Tests', () => {
 
     horseB = await prisma.horse.create({
       data: {
-        name: `HorseB-${Date.now()}`,
+        name: `HorseB-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         userId: userB.id, // Matches schema field (line 144)
         sex: 'stallion',
         dateOfBirth: new Date(),
@@ -90,7 +90,7 @@ describe('Ownership Violation Attempts Integration Tests', () => {
 
     groomA = await prisma.groom.create({
       data: {
-        name: `GroomA-${Date.now()}`,
+        name: `GroomA-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         userId: userA.id,
         speciality: 'TRAINING',
         personality: 'diligent',
@@ -99,7 +99,7 @@ describe('Ownership Violation Attempts Integration Tests', () => {
 
     groomB = await prisma.groom.create({
       data: {
-        name: `GroomB-${Date.now()}`,
+        name: `GroomB-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         userId: userB.id,
         speciality: 'CARE',
         personality: 'calm',

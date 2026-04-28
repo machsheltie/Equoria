@@ -35,10 +35,17 @@ describe('Groom Bonus Traits System', () => {
   let authToken;
 
   beforeEach(async () => {
+    // Unique-per-row suffix prevents same-millisecond collisions when
+    // a prior run aborted leaving stale `TestBreed_<ts>` rows AND
+    // protects against parallel-shard races re-using the same Date.now().
+    // Date.now() alone has hit the breed.name unique constraint in CI.
+    const uid = () =>
+      `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).substring(2, 10)}`;
+
     // Create test breed first
     testBreed = await prisma.breed.create({
       data: {
-        name: `TestBreed_${Date.now()}`,
+        name: `TestBreed_${uid()}`,
         description: 'Test breed for bonus traits tests',
       },
     });
@@ -46,10 +53,10 @@ describe('Groom Bonus Traits System', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        username: `testuser_${Date.now()}`,
+        username: `testuser_${uid()}`,
         firstName: 'Test',
         lastName: 'User',
-        email: `test_${Date.now()}@example.com`,
+        email: `test_${uid()}@example.com`,
         password: 'hashedpassword',
         money: 10000,
         xp: 100,
@@ -60,7 +67,7 @@ describe('Groom Bonus Traits System', () => {
     // Create test groom with bonus traits
     testGroom = await prisma.groom.create({
       data: {
-        name: `TestGroom_${Date.now()}`,
+        name: `TestGroom_${uid()}`,
         speciality: 'foal_care',
         experience: 10,
         skillLevel: 'expert',
@@ -79,7 +86,7 @@ describe('Groom Bonus Traits System', () => {
     // Create test horse (foal)
     testHorse = await prisma.horse.create({
       data: {
-        name: `TestHorse_${Date.now()}`,
+        name: `TestHorse_${uid()}`,
         sex: 'colt',
         dateOfBirth: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days old
         temperament: 'spirited',

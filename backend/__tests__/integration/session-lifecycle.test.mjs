@@ -17,7 +17,7 @@ import prisma from '../../db/index.mjs';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { triggerTokenCleanup } from '../../services/cronJobService.mjs';
-import { createTokenPair } from '../../utils/tokenRotationService.mjs';
+import { createTokenPair, hashRefreshToken } from '../../utils/tokenRotationService.mjs';
 
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 describe('Session Lifecycle Management', () => {
@@ -524,12 +524,17 @@ describe('Session Lifecycle Management', () => {
 
   describe('Token Cleanup Cron Job', () => {
     it('should remove expired refresh tokens', async () => {
-      // Create an expired token directly in DB
-      const expiredToken = await prisma.refreshToken.create({
+      // Create an expired token directly in DB. We store a synthetic hash
+      // here because this row is never consumed via createTokenPair; it
+      // only needs to exist for the cleanup cron to purge (Equoria-uy73).
+      const expiredTokenHash = hashRefreshToken(
+        `expired-test-token-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      );
+      await prisma.refreshToken.create({
         data: {
-          token: `expired-test-token-${Date.now()}`,
+          tokenHash: expiredTokenHash,
           userId: testUser.id,
-          familyId: `expired-family-${Date.now()}`,
+          familyId: `expired-family-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
           isActive: true,
           isInvalidated: false,
@@ -546,24 +551,24 @@ describe('Session Lifecycle Management', () => {
 
       // Verify expired token is removed
       const expiredExists = await prisma.refreshToken.findUnique({
-        where: { token: expiredToken.token },
+        where: { tokenHash: expiredTokenHash },
       });
       expect(expiredExists).toBeNull();
 
       // Verify valid token still exists
-      const validExists = await prisma.refreshToken.findFirst({
-        where: { token: validToken.refreshToken },
+      const validExists = await prisma.refreshToken.findUnique({
+        where: { tokenHash: hashRefreshToken(validToken.refreshToken) },
       });
       expect(validExists).not.toBeNull();
     });
 
     it('should remove old invalidated tokens (30+ days)', async () => {
-      // Create an old invalidated token
+      // Create an old invalidated token (hashed at rest — Equoria-uy73)
       const _oldInvalidatedToken = await prisma.refreshToken.create({
         data: {
-          token: `old-invalidated-${Date.now()}`,
+          tokenHash: hashRefreshToken(`old-invalidated-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`),
           userId: testUser.id,
-          familyId: `old-family-${Date.now()}`,
+          familyId: `old-family-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Expires in 7 days
           isActive: false,
           isInvalidated: true,
@@ -619,8 +624,8 @@ describe('Session Lifecycle Management', () => {
     it('should handle complete user journey: register -> login -> use session -> change password -> re-login', async () => {
       // Step 1: Register new user
       const newUserData = {
-        username: `lifecycle-${Date.now()}`,
-        email: `lifecycle-${Date.now()}@example.com`,
+        username: `lifecycle-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        email: `lifecycle-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
         password: 'TestPassword123!',
         firstName: 'Lifecycle',
         lastName: 'Test',
@@ -650,6 +655,7 @@ describe('Session Lifecycle Management', () => {
 
       // Step 3: Change password (invalidates all sessions)
       const newPassword = 'NewPassword456!';
+      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
       const changePasswordResponse = await request(app)
         .post('/api/auth/change-password')
         .set('Origin', 'http://localhost:3000')

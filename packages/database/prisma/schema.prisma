@@ -547,8 +547,11 @@ model XpEvent {
 model RefreshToken {
   /// Unique identifier for each refresh token
   id             Int       @id @default(autoincrement())
-  /// The refresh token value
-  token          String    @unique
+  /// SHA-256 hash (hex) of the refresh token. Raw token is never persisted —
+  /// Equoria-uy73 (2026-04-23) converted this column from raw JWT to hash so a
+  /// DB read leak does not grant active sessions. Existing rows were purged on
+  /// migration; users re-login after deploy.
+  tokenHash      String    @unique @db.VarChar(64)
   /// User who owns this token
   userId         String
   /// Token family ID for rotation tracking
@@ -567,7 +570,6 @@ model RefreshToken {
   user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
-  @@index([token])
   @@index([expiresAt])
   @@index([lastActivityAt])
   @@index([familyId])
@@ -579,8 +581,12 @@ model RefreshToken {
 model EmailVerificationToken {
   /// Unique identifier for each email verification token
   id         Int       @id @default(autoincrement())
-  /// The verification token value (256-bit cryptographic randomness)
-  token      String    @unique @db.VarChar(64)
+  /// SHA-256 hash (hex) of the 256-bit cryptographic verification token. Raw
+  /// token is emailed to the user and never persisted — Equoria-uy73
+  /// (2026-04-23) mirrored the password-reset hashing pattern so a DB read
+  /// leak cannot be used to verify arbitrary accounts. Outstanding rows were
+  /// purged on migration; users must re-request verification.
+  tokenHash  String    @unique @db.VarChar(64)
   /// User who owns this token
   userId     String
   /// Email address being verified
@@ -598,7 +604,6 @@ model EmailVerificationToken {
   /// Relation to user
   user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@index([token])
   @@index([userId])
   @@index([expiresAt])
   @@index([email])

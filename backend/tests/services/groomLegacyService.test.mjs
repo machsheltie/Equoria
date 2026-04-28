@@ -23,7 +23,7 @@ describe('Groom Legacy Service', () => {
   let testUser;
   let testHorse;
   let retiredGroom;
-  const testRunId = `legacy_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+  const testRunId = `legacy_${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.floor(Math.random() * 100000)}`;
   const testUserData = {
     username: `testuser_legacy_${testRunId}`,
     email: `test_legacy_${testRunId}@example.com`,
@@ -73,7 +73,7 @@ describe('Groom Legacy Service', () => {
     // Create a retired high-level groom for each test
     retiredGroom = await prisma.groom.create({
       data: {
-        name: `Retired Master Groom ${Date.now()}`,
+        name: `Retired Master Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         personality: 'calm',
         skillLevel: 'expert',
         speciality: 'foal_care',
@@ -165,7 +165,7 @@ describe('Groom Legacy Service', () => {
       // Create active groom
       const activeGroom = await prisma.groom.create({
         data: {
-          name: `Active Groom ${Date.now()}`,
+          name: `Active Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           personality: 'energetic',
           skillLevel: 'expert',
           speciality: 'general_grooming',
@@ -188,7 +188,7 @@ describe('Groom Legacy Service', () => {
       // Create low-level retired groom
       const lowLevelGroom = await prisma.groom.create({
         data: {
-          name: `Low Level Groom ${Date.now()}`,
+          name: `Low Level Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           personality: 'methodical',
           skillLevel: 'intermediate',
           speciality: 'specialized_disciplines',
@@ -212,7 +212,7 @@ describe('Groom Legacy Service', () => {
       // Create a protégé first
       const protege = await prisma.groom.create({
         data: {
-          name: `Existing Protégé ${Date.now()}`,
+          name: `Existing Protégé ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           personality: 'calm',
           skillLevel: 'novice',
           speciality: 'foal_care',
@@ -280,7 +280,7 @@ describe('Groom Legacy Service', () => {
       // Create ineligible groom
       const ineligibleGroom = await prisma.groom.create({
         data: {
-          name: `Ineligible Groom ${Date.now()}`,
+          name: `Ineligible Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           personality: 'calm',
           skillLevel: 'novice',
           speciality: 'foal_care',

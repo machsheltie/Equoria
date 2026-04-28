@@ -46,9 +46,9 @@ try {
 }
 
 /**
- * Fetch a breed's rating_profiles + temperament_weights by display name or legacy numeric id.
+ * Fetch a breed's rating_profiles + temperament_weights by display name.
  *
- * @param {string|number} breedIdentifier - Breed display name (must match JSON key) or legacy canonical-12 numeric id.
+ * @param {string} breedName - Breed display name (must match JSON key).
  * @returns {{
  *   category: string,
  *   rating_profiles: {
@@ -90,7 +90,7 @@ export function getBreedProfile(breedIdentifier) {
     throw new Error(
       `No breedProfiles.json entry for breed "${breedName}". ` +
         'Every breed must have a profile — check that the DB breed name matches the JSON key ' +
-        'exactly, and/or rerun backend/scripts/generate-breed-profiles.mjs if breedStarterStats.json ' +
+        'exactly, and/or rerun backend/scripts/generateBreedProfiles.mjs if breedStarterStats.json ' +
         'was extended.',
     );
   }

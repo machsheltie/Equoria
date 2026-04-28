@@ -154,7 +154,7 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
     }
 
     // Create test show with unique name or find existing one
-    const showName = `Business Logic Test Show ${Date.now()}`;
+    const showName = `Business Logic Test Show ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     testShow = await prisma.show.create({
       data: {
         name: showName,

@@ -36,8 +36,8 @@ describe('Developmental Window System', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        username: `dev_window_${Date.now()}`,
-        email: `dev_window_${Date.now()}@test.com`,
+        username: `dev_window_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        email: `dev_window_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
         password: 'test_hash',
         firstName: 'Test',
         lastName: 'User',
@@ -51,7 +51,7 @@ describe('Developmental Window System', () => {
     testGrooms = await Promise.all([
       prisma.groom.create({
         data: {
-          name: `Developmental Groom ${Date.now()}`,
+          name: `Developmental Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           personality: 'calm',
           epigeneticInfluenceType: 'calm',
           skillLevel: 'expert',
@@ -76,7 +76,7 @@ describe('Developmental Window System', () => {
       // Newborn foal - imprinting window
       prisma.horse.create({
         data: {
-          name: `Test Foal Newborn ${Date.now()}`,
+          name: `Test Foal Newborn ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           sex: 'filly',
           dateOfBirth: oneDayAgo,
           userId: testUser.id,
@@ -88,7 +88,7 @@ describe('Developmental Window System', () => {
       // Week-old foal - early socialization window
       prisma.horse.create({
         data: {
-          name: `Test Foal Week ${Date.now()}`,
+          name: `Test Foal Week ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           sex: 'colt',
           dateOfBirth: oneWeekAgo,
           userId: testUser.id,
@@ -100,7 +100,7 @@ describe('Developmental Window System', () => {
       // Two-week-old foal - fear period window
       prisma.horse.create({
         data: {
-          name: `Test Foal TwoWeek ${Date.now()}`,
+          name: `Test Foal TwoWeek ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           sex: 'filly',
           dateOfBirth: twoWeeksAgo,
           userId: testUser.id,
@@ -112,7 +112,7 @@ describe('Developmental Window System', () => {
       // Month-old foal - curiosity development window
       prisma.horse.create({
         data: {
-          name: `Test Foal Month ${Date.now()}`,
+          name: `Test Foal Month ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           sex: 'gelding',
           dateOfBirth: oneMonthAgo,
           userId: testUser.id,
@@ -124,7 +124,7 @@ describe('Developmental Window System', () => {
       // Three-month-old foal - independence development
       prisma.horse.create({
         data: {
-          name: `Test Foal ThreeMonth ${Date.now()}`,
+          name: `Test Foal ThreeMonth ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           sex: 'colt',
           dateOfBirth: threeMonthsAgo,
           userId: testUser.id,

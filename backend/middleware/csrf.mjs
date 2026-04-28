@@ -29,8 +29,24 @@ const CSRF_COOKIE_NAME = config.env === 'production' ? '__Host-csrf' : '_csrf';
 // aligned when a user's IP/UA changes between the token fetch and the mutation.
 const CSRF_SESSION_SALT = 'equoria-csrf-v1';
 
+// Equoria-uy73 (2026-04-23): no fallback secret. If JWT_SECRET is missing at
+// runtime, config.mjs has already thrown before this module loads. Keeping a
+// literal fallback here would silently re-enable predictable CSRF HMACs in any
+// misconfigured environment that bypassed config.mjs (e.g., a partial import
+// graph). Throwing instead surfaces the misconfiguration immediately.
+const requireJwtSecret = () => {
+  const secret = process.env.JWT_SECRET;
+  if (!secret || !secret.trim()) {
+    throw new Error(
+      '[CSRF] JWT_SECRET is not set. CSRF protection cannot be initialized. ' +
+        'Set JWT_SECRET via environment manager (do NOT commit placeholder secrets).',
+    );
+  }
+  return secret;
+};
+
 const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
-  getSecret: () => process.env.JWT_SECRET || 'fallback-secret-for-dev',
+  getSecret: () => requireJwtSecret(),
   getSessionIdentifier: () => CSRF_SESSION_SALT,
   cookieName: CSRF_COOKIE_NAME,
   cookieOptions: COOKIE_OPTIONS.csrfToken,

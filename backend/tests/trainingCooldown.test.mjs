@@ -75,7 +75,7 @@ describe('⏰ UNIT: Training Cooldown System - Horse Training Restrictions', () 
     // Mock test horse
     testHorse = {
       id: 1,
-      name: `Test Training Horse ${Date.now()}`,
+      name: `Test Training Horse ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
       age: 5,
       breedId: testBreed.id,
       sex: 'Mare',

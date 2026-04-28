@@ -35,8 +35,8 @@ describe('Advanced Epigenetic API Routes', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        username: `adv_epi_api_${Date.now()}`,
-        email: `adv_epi_api_${Date.now()}@test.com`,
+        username: `adv_epi_api_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        email: `adv_epi_api_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
         password: 'test_hash',
         firstName: 'Test',
         lastName: 'User',
@@ -53,7 +53,7 @@ describe('Advanced Epigenetic API Routes', () => {
     testGrooms = await Promise.all([
       prisma.groom.create({
         data: {
-          name: `Test Groom Calm ${Date.now()}`,
+          name: `Test Groom Calm ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           personality: 'calm',
           epigeneticInfluenceType: 'calm',
           skillLevel: 'expert',
@@ -75,7 +75,7 @@ describe('Advanced Epigenetic API Routes', () => {
       // Young foal for developmental windows
       prisma.horse.create({
         data: {
-          name: `Test Foal API ${Date.now()}`,
+          name: `Test Foal API ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           sex: 'filly',
           dateOfBirth: oneWeekAgo,
           userId: testUser.id,
@@ -87,7 +87,7 @@ describe('Advanced Epigenetic API Routes', () => {
       // Older foal with traits for interactions
       prisma.horse.create({
         data: {
-          name: `Test Horse API ${Date.now()}`,
+          name: `Test Horse API ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           sex: 'colt',
           dateOfBirth: oneMonthAgo,
           userId: testUser.id,
@@ -214,8 +214,8 @@ describe('Advanced Epigenetic API Routes', () => {
       // Create another user's horse
       const otherUser = await prisma.user.create({
         data: {
-          username: `other_user_${Date.now()}`,
-          email: `other_user_${Date.now()}@test.com`,
+          username: `other_user_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          email: `other_user_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
           password: 'test_hash',
           firstName: 'Other',
           lastName: 'User',
@@ -225,7 +225,7 @@ describe('Advanced Epigenetic API Routes', () => {
 
       const otherHorse = await prisma.horse.create({
         data: {
-          name: `Other Horse ${Date.now()}`,
+          name: `Other Horse ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           sex: 'gelding',
           dateOfBirth: new Date(),
           userId: otherUser.id,

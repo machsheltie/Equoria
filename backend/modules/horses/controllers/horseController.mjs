@@ -314,33 +314,26 @@ export async function createFoal(req, res) {
 
     // Resolve breed name — conformation/gait/temperament generators all
     // key by display name against breedProfiles.json.
+    const normalizedBreedId = Number.parseInt(breedId, 10);
+    if (!Number.isInteger(normalizedBreedId) || normalizedBreedId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'breedId must be a positive integer',
+        data: null,
+      });
+    }
     const breedRecord = await prisma.breed.findUnique({
-      where: { id: breedId },
+      where: { id: normalizedBreedId },
       select: { name: true },
     });
     if (!breedRecord?.name) {
       return res.status(400).json({
         success: false,
-        message: `No breed found for id ${breedId}`,
+        message: `No breed found for id ${normalizedBreedId}`,
         data: null,
       });
     }
     const breedName = breedRecord.name;
-
-    // Surface "breed exists in DB but has no profile" as a 422 rather than
-    // letting the generator throws fall through to the generic 500 handler.
-    try {
-      getBreedProfile(breedName);
-    } catch (err) {
-      logger.warn(
-        `[horseController.createFoal] No breedProfiles.json entry for "${breedName}" (id=${breedId}): ${err.message}`,
-      );
-      return res.status(422).json({
-        success: false,
-        message: `No breed profile available for breed "${breedName}"`,
-        data: null,
-      });
-    }
 
     // Generate conformation scores — use inheritance if both parents have valid region scores, else breed-only.
     // breedName comes from the foal's assigned breed (crossbreeding is restricted to specific combinations
@@ -377,7 +370,7 @@ export async function createFoal(req, res) {
     const horseData = {
       name,
       age: 0, // Newborn foal
-      breedId,
+      breedId: normalizedBreedId,
       sireId,
       damId,
       sex,
@@ -959,7 +952,20 @@ export async function getConformationAnalysis(req, res) {
     if (breedRecord?.name) {
       try {
         const profile = getBreedProfile(breedRecord.name);
-        breedConformation = profile?.rating_profiles?.conformation ?? null;
+        const rawConformation = profile?.rating_profiles?.conformation ?? null;
+        // Require all 8 regions to have finite means before trusting the profile.
+        // A missing or non-finite mean would throw (or produce NaN) when accessed
+        // later in the per-region loop and the overall mean calculation.
+        if (
+          rawConformation &&
+          CONFORMATION_REGIONS.every(r => Number.isFinite(rawConformation[r]?.mean))
+        ) {
+          breedConformation = rawConformation;
+        } else if (rawConformation) {
+          logger.warn(
+            `[horseController.getConformationAnalysis] incomplete conformation profile for "${breedRecord.name}" — one or more regions missing finite mean`,
+          );
+        }
       } catch (err) {
         logger.warn(
           `[horseController.getConformationAnalysis] breedProfiles lookup failed for "${breedRecord.name}": ${err.message}`,
@@ -968,18 +974,13 @@ export async function getConformationAnalysis(req, res) {
         // so the client can distinguish "breed mean is genuinely 50" from "no profile found".
       }
     }
-    // true only when a profile was found AND every region has a numeric mean —
-    // prevents clients from treating "profile exists but partially populated"
-    // as "all region means are valid".
-    const breedMeanAvailable =
-      breedConformation !== null &&
-      CONFORMATION_REGIONS.every(r => typeof breedConformation?.[r]?.mean === 'number');
+    const breedMeanAvailable = breedConformation !== null;
 
     // Calculate analysis per region
     const analysis = {};
     for (const region of CONFORMATION_REGIONS) {
       const score = scores[region] ?? 0;
-      const breedMean = breedConformation ? (breedConformation?.[region]?.mean ?? null) : null;
+      const breedMean = breedConformation ? breedConformation[region].mean : null;
 
       // Percentile: count horses scoring lower / total
       let percentile;
@@ -1001,12 +1002,12 @@ export async function getConformationAnalysis(req, res) {
 
     // Overall conformation analysis
     const overallScore = scores.overallConformation ?? calculateOverallConformation(scores);
-    const overallBreedMean = (() => {
-      if (!breedConformation) return null;
-      const means = CONFORMATION_REGIONS.map(r => breedConformation?.[r]?.mean ?? null);
-      if (means.some(m => m === null)) return null;
-      return Math.round(means.reduce((sum, m) => sum + m, 0) / CONFORMATION_REGIONS.length);
-    })();
+    const overallBreedMean = breedConformation
+      ? Math.round(
+          CONFORMATION_REGIONS.reduce((sum, r) => sum + breedConformation[r].mean, 0) /
+            CONFORMATION_REGIONS.length,
+        )
+      : null;
 
     let overallPercentile;
     if (validHorses.length <= 1) {

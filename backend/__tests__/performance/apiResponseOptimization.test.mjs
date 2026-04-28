@@ -39,7 +39,7 @@ describe('API Response Optimization System', () => {
   let testUserId;
   const testHorseIds = [];
   let testApp;
-  const testRunId = `apiopt_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+  const testRunId = `apiopt_${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.floor(Math.random() * 100000)}`;
   const testBreedName = `Optimization Test Breed ${testRunId}`;
 
   beforeAll(async () => {
