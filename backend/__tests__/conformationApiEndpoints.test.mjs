@@ -148,17 +148,11 @@ describe('getConformation', () => {
 
     await getConformation(req, res);
 
-    // Dedicated test user so afterAll can sweep horses by userId as a
-    // safety net even if createdHorseIds tracking misses something.
-    testUser = await prisma.user.create({
-      data: {
-        username: `confApiUser_${suiteSuffix}`,
-        email: `confApi_${suiteSuffix}@test.com`,
-        password: 'testPassword123',
-        firstName: 'Conf',
-        lastName: 'ApiTest',
-      },
-    });
+    expect(res.status).toHaveBeenCalledWith(200);
+    const response = res.json.mock.calls[0][0];
+    expect(response.success).toBe(true);
+    expect(response.message).toBe('No conformation scores available for this horse');
+    expect(response.data).toBeNull();
   });
 
   test('calculates overallConformation when not stored', async () => {
@@ -172,53 +166,18 @@ describe('getConformation', () => {
         legs: 72,
         hooves: 71,
         topline: 74,
-        overallConformation: 74,
       },
-      ...horseOverrides,
-    };
-
-    const req = {
-      horse,
-      params: { id: String(horse.id) },
-    };
-
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
-    };
-
-    return { req, res, horse };
-  }
-
-  // === Task 3.1: GET /conformation returns all 8 regions + overallConformation ===
-  // getConformation is purely a projection over req.horse; no DB queries.
-
-  describe('getConformation', () => {
-    test('returns all 8 regions and overallConformation for a horse with scores', async () => {
-      const { req, res } = createMockReqRes();
-
-      await getConformation(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(200);
-      const response = res.json.mock.calls[0][0];
-      expect(response.success).toBe(true);
-      expect(response.message).toBe('Conformation scores retrieved successfully');
-      expect(response.data.horseId).toBe(123);
-      expect(response.data.horseName).toBe('Midnight Star');
-      expect(response.data.breedId).toBe(testBreed.id);
-
-      const scores = response.data.conformationScores;
-      for (const region of CONFORMATION_REGIONS) {
-        expect(scores).toHaveProperty(region);
-        expect(typeof scores[region]).toBe('number');
-      }
-      expect(scores.overallConformation).toBe(74);
     });
 
-    // === Task 3.2: GET /conformation returns 200 with null data for legacy horse ===
+    await getConformation(req, res);
 
-    test('returns 200 with null data for legacy horse without scores', async () => {
-      const { req, res } = createMockReqRes({ conformationScores: null });
+    expect(res.status).toHaveBeenCalledWith(200);
+    const response = res.json.mock.calls[0][0];
+    expect(response.success).toBe(true);
+    expect(response.data.conformationScores).toHaveProperty('overallConformation');
+    expect(typeof response.data.conformationScores.overallConformation).toBe('number');
+  });
+});
 
 // ── GET /conformation/analysis ─────────────────────────────────────────────
 
@@ -337,7 +296,7 @@ describe('getConformationAnalysis', () => {
   test('returns 200 when no breedId on horse', async () => {
     const { req, res } = makeMockReqRes({ breedId: null });
 
-      const { req, res } = createMockReqRes({ breedId: thoroughbredBreed.id });
+    await getConformationAnalysis(req, res);
 
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json.mock.calls[0][0].data).toBeNull();

@@ -636,6 +636,9 @@ router.post(
       try {
         getBreedProfile(breedName);
       } catch (err) {
+        if (!err.message?.startsWith('No breedProfiles.json entry for breed')) {
+          throw err;
+        }
         logger.warn(
           `[horseRoutes POST /] No breedProfiles.json entry for "${breedName}" (id=${parsedBreedId}): ${err.message}`,
         );
@@ -740,7 +743,7 @@ router.post(
 
       const horseData = {
         name: req.body.name,
-        breedId: req.body.breedId,
+        breedId: parsedBreedId,
         age: req.body.age,
         sex: req.body.sex,
         gender: req.body.gender,
