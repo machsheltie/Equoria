@@ -89,5 +89,9 @@
     "**/*.{json,md,css,scss,html,yml,yaml}": [
       "prettier --write"
     ]
+  },
+  "overrides": {
+    "uuid": "^14.0.0",
+    "postcss": "^8.5.10"
   }
 }
