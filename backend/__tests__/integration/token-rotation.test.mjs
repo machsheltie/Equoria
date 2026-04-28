@@ -32,7 +32,11 @@ describe('Token Rotation and Reuse Detection System', () => {
   let testUser;
   let testPassword;
   let server;
-  const rateLimitBypassHeader = { 'X-Test-Bypass-Rate-Limit': 'true', 'X-Test-Bypass-Auth': 'true' };
+  // Test-bypass headers were purged from production middleware in commits
+  // 5a158681 / 3590916e. Empty object preserves `.set(rateLimitBypassHeader)`
+  // call-site signatures with no behavior. Rate pressure in test env is
+  // governed by TEST_RATE_LIMIT_* env knobs (see middleware/rateLimiting.mjs).
+  const rateLimitBypassHeader = {};
 
   beforeAll(async () => {
     // Start server once for all tests

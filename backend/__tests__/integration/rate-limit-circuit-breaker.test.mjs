@@ -197,29 +197,15 @@ describe('Rate Limiting Circuit Breaker Integration Tests', () => {
   });
 
   describe('Test Environment Bypasses', () => {
-    it('should bypass rate limiting with test header', async () => {
-      const limiter = createRateLimiter({
-        windowMs: 1000,
-        max: 1, // Very restrictive
-        keyPrefix: 'bypass-test',
-      });
-
-      // Make many requests with bypass header (each with new request object)
-      for (let i = 0; i < 5; i++) {
-        const req = createMockRequest({
-          headers: {
-            'x-test-bypass-rate-limit': 'true',
-          },
-        });
-        const res = createMockResponse();
-        const next = jest.fn();
-
-        limiter(req, res, next);
-        await new Promise(resolve => setTimeout(resolve, 10));
-
-        expect(next).toHaveBeenCalled();
-      }
-    });
+    // The previous "should bypass rate limiting with test header" test was
+    // removed in Phase 3c: header-based bypass logic was purged from
+    // production middleware (commits 5a158681 / 3590916e), and the
+    // mock-based assertion `expect(next).toHaveBeenCalled()` was passing
+    // for the wrong reason — synthetic mocks never fully invoke the
+    // express-rate-limit counter, so next() fires regardless of the
+    // header. The real contract is now: rate pressure in test env is
+    // controlled by TEST_RATE_LIMIT_WINDOW_MS / TEST_RATE_LIMIT_MAX_REQUESTS
+    // env vars when useEnvOverride is set on the limiter (see test below).
 
     it('should respect test environment overrides', async () => {
       // Test uses environment variable overrides
