@@ -71,12 +71,25 @@ export { CSRF_COOKIE_NAME };
  * has already been set on the auth response and the token is returned in
  * the response body for the client to cache.
  *
+ * The csrf-csrf library reads `req.cookies` to look for an existing
+ * cookie. Production always has `cookie-parser` mounted (see app.mjs),
+ * so `req.cookies` is always defined. A handful of legacy unit-style
+ * tests build minimal Express apps that bypass cookie-parser; for those,
+ * `issueCsrfToken` is a documented no-op (returns `undefined`) rather
+ * than 500ing the underlying auth call. The seeding is best-effort —
+ * the client can always fall back to GET /auth/csrf-token.
+ *
  * @param {import('express').Request} req
  * @param {import('express').Response} res
- * @returns {string} the freshly generated CSRF token (HMAC-validated against
- *   the matching `__Host-csrf` / `_csrf` cookie now on the response)
+ * @returns {string|undefined} the freshly generated CSRF token, or
+ *   `undefined` if cookie-parser is not loaded on this app.
  */
-export const issueCsrfToken = (req, res) => generateCsrfToken(req, res);
+export const issueCsrfToken = (req, res) => {
+  if (!req || typeof req.cookies !== 'object' || req.cookies === null) {
+    return undefined;
+  }
+  return generateCsrfToken(req, res);
+};
 
 /**
  * GET /auth/csrf-token
