@@ -85,7 +85,10 @@ export const REFRESH_TOKEN_COOKIE_OPTIONS = {
  * CSRF Token Cookie Options
  *
  * Double-submit cookie pattern for CSRF protection
- * Expires: Same as access token (tied to session)
+ * Expires: 24 hours (21R-AUTH-2: decoupled from access-token lifetime so a
+ *   user keeps a valid CSRF cookie across silent access-token refreshes; the
+ *   csrf-csrf library's HMAC binds the token to JWT_SECRET, not to session
+ *   identity, so a longer cookie lifetime does not weaken CSRF protection)
  * Path: / (all API endpoints need to validate)
  *
  * Note: httpOnly is false because client needs to read it for X-CSRF-Token header
@@ -96,7 +99,7 @@ export const CSRF_TOKEN_COOKIE_OPTIONS = {
   httpOnly: false, // Client must read this to send X-CSRF-Token header
   secure: isProduction, // HTTPS only in production (MitM protection)
   sameSite: SAME_SITE_POLICY, // CSRF protection (strictest policy)
-  maxAge: 15 * 60 * 1000, // 15 minutes (matches access token)
+  maxAge: 24 * 60 * 60 * 1000, // 24 hours (21R-AUTH-2: decoupled from access token's 15-min lifetime)
   path: '/', // Available to all routes
   domain: COOKIE_DOMAIN, // Subdomain sharing (if configured)
 };
@@ -178,7 +181,7 @@ export function getCookieConfigSummary() {
       sameSite: SAME_SITE_POLICY,
     },
     csrfToken: {
-      maxAge: '15 minutes',
+      maxAge: '24 hours',
       path: '/',
       httpOnly: false,
       secure: isProduction,

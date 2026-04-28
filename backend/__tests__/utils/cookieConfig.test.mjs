@@ -161,18 +161,21 @@ describe('Cookie Configuration Module', () => {
         httpOnly: false,
         secure: true,
         sameSite: 'strict',
-        maxAge: 15 * 60 * 1000, // 15 minutes (matches access token)
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours (21R-AUTH-2: decoupled from access token)
         path: '/',
         domain: undefined,
       });
     });
 
-    test('should have maxAge matching access token (session-tied)', async () => {
+    test('should have maxAge decoupled from access token (21R-AUTH-2)', async () => {
       process.env.NODE_ENV = 'production';
       const config = await import('../../utils/cookieConfig.mjs');
       COOKIE_OPTIONS = config.COOKIE_OPTIONS;
 
-      expect(COOKIE_OPTIONS.csrfToken.maxAge).toBe(COOKIE_OPTIONS.accessToken.maxAge);
+      // CSRF cookie must outlive the 15-minute access token so that silent
+      // access-token refreshes do not require re-fetching a CSRF token.
+      expect(COOKIE_OPTIONS.csrfToken.maxAge).toBe(24 * 60 * 60 * 1000);
+      expect(COOKIE_OPTIONS.csrfToken.maxAge).toBeGreaterThan(COOKIE_OPTIONS.accessToken.maxAge);
     });
   });
 

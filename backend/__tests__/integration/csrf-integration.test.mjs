@@ -249,3 +249,31 @@ describe('CSRF protection — real browser flow', () => {
     });
   });
 });
+
+// 21R-AUTH-2: CSRF cookie lifetime is decoupled from the 15-minute access
+// token so silent access-token refreshes do not orphan the CSRF token.
+// This block intentionally lives OUTSIDE the parent describe so that the
+// shared beforeEach (which registers a user) does not gate this assertion —
+// the contract under test is the public /auth/csrf-token endpoint only.
+describe('CSRF cookie lifetime — decoupled from access token (21R-AUTH-2)', () => {
+  it('issues CSRF cookie with 24h Max-Age, longer than the 15-min access token', async () => {
+    // Express converts cookie maxAge (ms) into the Set-Cookie Max-Age
+    // directive in seconds.
+    const ACCESS_TOKEN_MAX_AGE_SECS = 15 * 60; // 900s
+    const CSRF_COOKIE_MAX_AGE_SECS = 24 * 60 * 60; // 86400s
+
+    const res = await request(app).get('/auth/csrf-token').set('Origin', ORIGIN);
+    expect(res.status).toBe(200);
+
+    const setCookies = res.headers['set-cookie'] || [];
+    const csrfCookieLine = setCookies.find(c => c.startsWith('__Host-csrf=') || c.startsWith('_csrf='));
+    expect(csrfCookieLine).toBeTruthy();
+
+    const maxAgeMatch = csrfCookieLine.match(/Max-Age=(\d+)/i);
+    expect(maxAgeMatch).toBeTruthy();
+    const csrfMaxAge = Number(maxAgeMatch[1]);
+
+    expect(csrfMaxAge).toBe(CSRF_COOKIE_MAX_AGE_SECS);
+    expect(csrfMaxAge).toBeGreaterThan(ACCESS_TOKEN_MAX_AGE_SECS);
+  });
+});
