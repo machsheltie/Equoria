@@ -968,7 +968,12 @@ export async function getConformationAnalysis(req, res) {
         // so the client can distinguish "breed mean is genuinely 50" from "no profile found".
       }
     }
-    const breedMeanAvailable = breedConformation !== null;
+    // true only when a profile was found AND every region has a numeric mean —
+    // prevents clients from treating "profile exists but partially populated"
+    // as "all region means are valid".
+    const breedMeanAvailable =
+      breedConformation !== null &&
+      CONFORMATION_REGIONS.every(r => typeof breedConformation?.[r]?.mean === 'number');
 
     // Calculate analysis per region
     const analysis = {};

@@ -199,7 +199,10 @@ const GAITED_REGISTRIES_BY_TOKEN = {
 // Prevents "Selle Français" from failing to match the "Selle Francais" token.
 // \p{Mn} = Unicode "Mark, Nonspacing" — covers all combining diacritical marks.
 function normalizeStr(s) {
-  return s.normalize('NFD').replace(/\p{Mn}/gu, '').toLowerCase();
+  return s
+    .normalize('NFD')
+    .replace(/\p{Mn}/gu, '')
+    .toLowerCase();
 }
 
 function gaitedRegistryFor(name) {

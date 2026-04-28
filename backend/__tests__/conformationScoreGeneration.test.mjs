@@ -83,8 +83,15 @@ describe('generateConformationScores', () => {
     );
   });
 
-  test.each([0, null, undefined, NaN])('invalid breed identifier %p throws', breedId => {
-    expect(() => generateConformationScores(breedId)).toThrow();
+  test.each([0, -1, 13, 999, null, undefined, NaN])(
+    'invalid breed identifier %p throws',
+    breedId => {
+      expect(() => generateConformationScores(breedId)).toThrow();
+    },
+  );
+
+  test('out-of-range numeric breedId throws canonical-12 error', () => {
+    expect(() => generateConformationScores(999)).toThrow(/No canonical-12 breed for numeric breedId/);
   });
 });
 

@@ -28,6 +28,7 @@ import { generateTemperament } from '../services/temperamentService.mjs';
 import { generateGenotype } from '../services/genotypeGenerationService.mjs';
 import { calculatePhenotype } from '../services/phenotypeCalculationService.mjs';
 import { inheritColorGenotype } from '../services/breedingColorInheritanceService.mjs';
+import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 import { generateMarkings, inheritMarkings } from '../services/markingGenerationService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -620,6 +621,21 @@ router.post(
       }
       const breedName = breedRow.name;
       const breedGeneticProfile = breedRow.breedGeneticProfile ?? null;
+
+      // Mirror horseController.createFoal: surface "breed exists in DB but has
+      // no breedProfiles.json entry" as 422 rather than letting the generators
+      // throw and fall through to the generic 500 handler.
+      try {
+        getBreedProfile(breedName);
+      } catch (err) {
+        logger.warn(
+          `[horseRoutes POST /] No breedProfiles.json entry for "${breedName}" (id=${req.body.breedId}): ${err.message}`,
+        );
+        return res.status(422).json({
+          success: false,
+          message: `No breed profile available for breed "${breedName}"`,
+        });
+      }
 
       // Generate conformation scores from breed genetics.
       const conformationScores = generateConformationScores(breedName);
