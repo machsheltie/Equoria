@@ -185,7 +185,14 @@ describe('Session Lifecycle Management', () => {
 
       // Verify cookies are set
       const cookies = response.headers['set-cookie'];
-      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
+      // 21R-AUTH-3: register/login/refresh now seed a CSRF cookie alongside
+      // auth cookies. These tests pre-fetched their own __csrf__ pair, so
+      // strip any seeded CSRF cookie out of the login response to avoid a
+      // duplicate-cookie collision (the cookie parser keeps the first match).
+      const __allCookies__ = [
+        ...cookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
+        ...(__csrf__.cookieHeader || []),
+      ];
       expect(cookies).toBeDefined();
 
       const accessTokenCookie = cookies.find(c => c.startsWith('accessToken='));
@@ -228,7 +235,14 @@ describe('Session Lifecycle Management', () => {
         .expect(200);
 
       const cookies = loginResponse.headers['set-cookie'];
-      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
+      // 21R-AUTH-3: register/login/refresh now seed a CSRF cookie alongside
+      // auth cookies. These tests pre-fetched their own __csrf__ pair, so
+      // strip any seeded CSRF cookie out of the login response to avoid a
+      // duplicate-cookie collision (the cookie parser keeps the first match).
+      const __allCookies__ = [
+        ...cookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
+        ...(__csrf__.cookieHeader || []),
+      ];
 
       // Logout
       const response = await request(app)
@@ -260,7 +274,14 @@ describe('Session Lifecycle Management', () => {
         .expect(200);
 
       const cookies = loginResponse.headers['set-cookie'];
-      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
+      // 21R-AUTH-3: register/login/refresh now seed a CSRF cookie alongside
+      // auth cookies. These tests pre-fetched their own __csrf__ pair, so
+      // strip any seeded CSRF cookie out of the login response to avoid a
+      // duplicate-cookie collision (the cookie parser keeps the first match).
+      const __allCookies__ = [
+        ...cookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
+        ...(__csrf__.cookieHeader || []),
+      ];
 
       // Logout
       const response = await request(app)
@@ -300,7 +321,14 @@ describe('Session Lifecycle Management', () => {
         .expect(200);
 
       const cookies = loginResponse.headers['set-cookie'];
-      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
+      // 21R-AUTH-3: register/login/refresh now seed a CSRF cookie alongside
+      // auth cookies. These tests pre-fetched their own __csrf__ pair, so
+      // strip any seeded CSRF cookie out of the login response to avoid a
+      // duplicate-cookie collision (the cookie parser keeps the first match).
+      const __allCookies__ = [
+        ...cookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
+        ...(__csrf__.cookieHeader || []),
+      ];
 
       // Verify tokens exist
       const tokensBefore = await prisma.refreshToken.count({
@@ -358,7 +386,14 @@ describe('Session Lifecycle Management', () => {
         .expect(200);
 
       const cookies = loginResponse.headers['set-cookie'];
-      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
+      // 21R-AUTH-3: register/login/refresh now seed a CSRF cookie alongside
+      // auth cookies. These tests pre-fetched their own __csrf__ pair, so
+      // strip any seeded CSRF cookie out of the login response to avoid a
+      // duplicate-cookie collision (the cookie parser keeps the first match).
+      const __allCookies__ = [
+        ...cookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
+        ...(__csrf__.cookieHeader || []),
+      ];
 
       // Attempt to change password with wrong old password
       const response = await request(app)
@@ -389,7 +424,14 @@ describe('Session Lifecycle Management', () => {
         .expect(200);
 
       const cookies = loginResponse.headers['set-cookie'];
-      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
+      // 21R-AUTH-3: register/login/refresh now seed a CSRF cookie alongside
+      // auth cookies. These tests pre-fetched their own __csrf__ pair, so
+      // strip any seeded CSRF cookie out of the login response to avoid a
+      // duplicate-cookie collision (the cookie parser keeps the first match).
+      const __allCookies__ = [
+        ...cookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
+        ...(__csrf__.cookieHeader || []),
+      ];
 
       // Attempt to change password with weak new password
       const response = await request(app)
@@ -422,7 +464,14 @@ describe('Session Lifecycle Management', () => {
 
       // Extract and decode the access token
       const cookies = loginResponse.headers['set-cookie'];
-      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
+      // 21R-AUTH-3: register/login/refresh now seed a CSRF cookie alongside
+      // auth cookies. These tests pre-fetched their own __csrf__ pair, so
+      // strip any seeded CSRF cookie out of the login response to avoid a
+      // duplicate-cookie collision (the cookie parser keeps the first match).
+      const __allCookies__ = [
+        ...cookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
+        ...(__csrf__.cookieHeader || []),
+      ];
       const accessTokenCookie = cookies.find(c => c.startsWith('accessToken='));
       const accessToken = accessTokenCookie.split(';')[0].split('=')[1];
       const decoded = jwt.decode(accessToken);
@@ -463,7 +512,14 @@ describe('Session Lifecycle Management', () => {
         .expect(200);
 
       const cookies = loginResponse.headers['set-cookie'];
-      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
+      // 21R-AUTH-3: register/login/refresh now seed a CSRF cookie alongside
+      // auth cookies. These tests pre-fetched their own __csrf__ pair, so
+      // strip any seeded CSRF cookie out of the login response to avoid a
+      // duplicate-cookie collision (the cookie parser keeps the first match).
+      const __allCookies__ = [
+        ...cookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
+        ...(__csrf__.cookieHeader || []),
+      ];
       const accessTokenCookie = cookies.find(c => c.startsWith('accessToken='));
       const accessToken = accessTokenCookie.split(';')[0].split('=')[1];
       const decoded = jwt.decode(accessToken);
@@ -504,7 +560,14 @@ describe('Session Lifecycle Management', () => {
         .expect(200);
 
       const cookies = loginResponse.headers['set-cookie'];
-      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
+      // 21R-AUTH-3: register/login/refresh now seed a CSRF cookie alongside
+      // auth cookies. These tests pre-fetched their own __csrf__ pair, so
+      // strip any seeded CSRF cookie out of the login response to avoid a
+      // duplicate-cookie collision (the cookie parser keeps the first match).
+      const __allCookies__ = [
+        ...cookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
+        ...(__csrf__.cookieHeader || []),
+      ];
       const accessTokenCookie = cookies.find(c => c.startsWith('accessToken='));
       const accessToken = accessTokenCookie.split(';')[0].split('=')[1];
       const decoded = jwt.decode(accessToken);
@@ -665,7 +728,14 @@ describe('Session Lifecycle Management', () => {
 
       // Step 3: Change password (invalidates all sessions)
       const newPassword = 'NewPassword456!';
-      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
+      // 21R-AUTH-3: register/login/refresh now seed a CSRF cookie alongside
+      // auth cookies. These tests pre-fetched their own __csrf__ pair, so
+      // strip any seeded CSRF cookie out of the login response to avoid a
+      // duplicate-cookie collision (the cookie parser keeps the first match).
+      const __allCookies__ = [
+        ...cookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
+        ...(__csrf__.cookieHeader || []),
+      ];
       const changePasswordResponse = await request(app)
         .post('/api/auth/change-password')
         .set('Origin', 'http://localhost:3000')

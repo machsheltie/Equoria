@@ -59,7 +59,14 @@ describe('POST /api/auth/advance-onboarding', () => {
     // Merge login session cookies with the CSRF cookie so the mutation's
     // Cookie header carries both the accessToken AND the double-submit
     // cookie the validator reads.
-    cookieHeader = [...loginCookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
+    // 21R-AUTH-3: login now ALSO seeds a CSRF cookie. Strip it so the
+    // pre-fetched __csrf__ pair (above) stays authoritative — duplicate
+    // _csrf cookies make the cookie parser pick the first one, which would
+    // not match the X-CSRF-Token header below.
+    cookieHeader = [
+      ...loginCookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
+      ...(__csrf__.cookieHeader || []),
+    ];
   });
 
   afterAll(async () => {

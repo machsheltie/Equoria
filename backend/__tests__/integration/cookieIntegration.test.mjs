@@ -86,7 +86,12 @@ describe('Cookie Integration Tests', () => {
       expect(response.status).toBe(201);
 
       const cookies = response.headers['set-cookie'];
-      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
+      // 21R-AUTH-3 compatibility: strip the seeded CSRF cookie so the
+      // pre-fetched __csrf__ pair stays authoritative for these tests.
+      const __allCookies__ = [
+        ...cookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
+        ...(__csrf__.cookieHeader || []),
+      ];
       expect(cookies).toBeDefined();
 
       const accessTokenCookie = cookies.find(cookie => cookie.startsWith('accessToken='));
@@ -122,7 +127,12 @@ describe('Cookie Integration Tests', () => {
       expect(response.status).toBe(201);
 
       const cookies = response.headers['set-cookie'];
-      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
+      // 21R-AUTH-3 compatibility: strip the seeded CSRF cookie so the
+      // pre-fetched __csrf__ pair stays authoritative for these tests.
+      const __allCookies__ = [
+        ...cookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
+        ...(__csrf__.cookieHeader || []),
+      ];
       const refreshTokenCookie = cookies.find(cookie => cookie.startsWith('refreshToken='));
       expect(refreshTokenCookie).toBeDefined();
 
@@ -156,8 +166,19 @@ describe('Cookie Integration Tests', () => {
       expect(response.status).toBe(201);
 
       const cookies = response.headers['set-cookie'];
-      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
-      expect(cookies).toHaveLength(2); // accessToken and refreshToken
+      // 21R-AUTH-3 compatibility: strip the seeded CSRF cookie so the
+      // pre-fetched __csrf__ pair stays authoritative for these tests.
+      const __allCookies__ = [
+        ...cookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
+        ...(__csrf__.cookieHeader || []),
+      ];
+      // 21R-AUTH-3: register now also seeds the CSRF cookie alongside
+      // accessToken + refreshToken so the first mutation can skip the
+      // separate /csrf-token round-trip.
+      expect(cookies).toHaveLength(3);
+      expect(cookies.some(c => c.startsWith('accessToken='))).toBe(true);
+      expect(cookies.some(c => c.startsWith('refreshToken='))).toBe(true);
+      expect(cookies.some(c => c.startsWith('__Host-csrf=') || c.startsWith('_csrf='))).toBe(true);
 
       // Clean up
       testUser = await prisma.user.findUnique({
@@ -199,9 +220,18 @@ describe('Cookie Integration Tests', () => {
       expect(response.status).toBe(200);
 
       const cookies = response.headers['set-cookie'];
-      const __allCookies__ = [...cookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
+      // 21R-AUTH-3 compatibility: strip the seeded CSRF cookie so the
+      // pre-fetched __csrf__ pair stays authoritative for these tests.
+      const __allCookies__ = [
+        ...cookies.map(c => c.split(';')[0]).filter(c => !c.startsWith('_csrf=') && !c.startsWith('__Host-csrf=')),
+        ...(__csrf__.cookieHeader || []),
+      ];
       expect(cookies).toBeDefined();
-      expect(cookies).toHaveLength(2); // accessToken and refreshToken
+      // 21R-AUTH-3: login now seeds the CSRF cookie alongside auth cookies.
+      expect(cookies).toHaveLength(3);
+      expect(cookies.some(c => c.startsWith('accessToken='))).toBe(true);
+      expect(cookies.some(c => c.startsWith('refreshToken='))).toBe(true);
+      expect(cookies.some(c => c.startsWith('__Host-csrf=') || c.startsWith('_csrf='))).toBe(true);
     });
 
     test('should set accessToken cookie with correct attributes on login', async () => {
@@ -291,7 +321,11 @@ describe('Cookie Integration Tests', () => {
 
       const newCookies = response.headers['set-cookie'];
       expect(newCookies).toBeDefined();
-      expect(newCookies).toHaveLength(2); // new accessToken and refreshToken
+      // 21R-AUTH-3: refresh-token rotation also rotates the CSRF cookie.
+      expect(newCookies).toHaveLength(3);
+      expect(newCookies.some(c => c.startsWith('accessToken='))).toBe(true);
+      expect(newCookies.some(c => c.startsWith('refreshToken='))).toBe(true);
+      expect(newCookies.some(c => c.startsWith('__Host-csrf=') || c.startsWith('_csrf='))).toBe(true);
     });
 
     test('should set new accessToken cookie with correct attributes', async () => {

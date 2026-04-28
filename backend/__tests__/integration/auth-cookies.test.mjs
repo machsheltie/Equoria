@@ -133,6 +133,34 @@ describe('Authentication with HttpOnly Cookies', () => {
       });
     });
 
+    it('seeds CSRF cookie + returns csrfToken in body so first mutation skips /csrf-token (21R-AUTH-3)', async () => {
+      // Username max 30 chars — keep prefix short.
+      const unique = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      const seedUser = {
+        ...testUserData,
+        email: `csrfseed+${unique}@example.com`,
+        username: `csrfseed${unique}`,
+      };
+      const response = await request(app)
+        .post('/api/auth/register')
+        .set('Origin', 'http://localhost:3000')
+        .set(rateLimitBypassHeader)
+        .send(seedUser)
+        .expect(201);
+
+      // Token in body — caller can populate its CSRF cache without an
+      // extra round-trip to GET /auth/csrf-token.
+      expect(typeof response.body.data.csrfToken).toBe('string');
+      expect(response.body.data.csrfToken.length).toBeGreaterThan(16);
+
+      // Matching cookie on the same response.
+      const cookies = response.headers['set-cookie'] || [];
+      const csrfCookie = cookies.find(c => c.startsWith('__Host-csrf=') || c.startsWith('_csrf='));
+      expect(csrfCookie).toBeDefined();
+
+      await prisma.user.deleteMany({ where: { email: seedUser.email } });
+    });
+
     it('should NOT expose tokens in response body (XSS protection)', async () => {
       const noxssEmail = `${SUITE_PREFIX}-noxss@example.com`;
       const noxssUsername = `${SUITE_PREFIX}_noxss`;
@@ -187,6 +215,25 @@ describe('Authentication with HttpOnly Cookies', () => {
       expect(cookies).toBeDefined();
       expect(cookies.some(c => c.startsWith('accessToken='))).toBe(true);
       expect(cookies.some(c => c.startsWith('refreshToken='))).toBe(true);
+    });
+
+    it('seeds CSRF cookie + returns csrfToken in body on login (21R-AUTH-3)', async () => {
+      const response = await request(app)
+        .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
+        .set(rateLimitBypassHeader)
+        .send({
+          email: testUserData.email,
+          password: testUserData.password,
+        })
+        .expect(200);
+
+      expect(typeof response.body.data.csrfToken).toBe('string');
+      expect(response.body.data.csrfToken.length).toBeGreaterThan(16);
+
+      const cookies = response.headers['set-cookie'] || [];
+      const csrfCookie = cookies.find(c => c.startsWith('__Host-csrf=') || c.startsWith('_csrf='));
+      expect(csrfCookie).toBeDefined();
     });
 
     it('should include SameSite=Lax for CSRF protection', async () => {
@@ -293,6 +340,34 @@ describe('Authentication with HttpOnly Cookies', () => {
       expect(newAccessToken).toContain('HttpOnly');
     });
 
+    it('seeds CSRF cookie + returns csrfToken in body on refresh (21R-AUTH-3)', async () => {
+      // Fresh login so we don't reuse a rotated refresh token.
+      const loginResponse = await request(app)
+        .post('/api/auth/login')
+        .set('Origin', 'http://localhost:3000')
+        .set(rateLimitBypassHeader)
+        .send({
+          email: testUserData.email,
+          password: testUserData.password,
+        })
+        .expect(200);
+      const freshRefresh = loginResponse.headers['set-cookie'].find(c => c.startsWith('refreshToken='));
+
+      const response = await request(app)
+        .post('/api/auth/refresh-token')
+        .set('Origin', 'http://localhost:3000')
+        .set(rateLimitBypassHeader)
+        .set('Cookie', [freshRefresh])
+        .expect(200);
+
+      expect(typeof response.body.data.csrfToken).toBe('string');
+      expect(response.body.data.csrfToken.length).toBeGreaterThan(16);
+
+      const cookies = response.headers['set-cookie'] || [];
+      const csrfCookie = cookies.find(c => c.startsWith('__Host-csrf=') || c.startsWith('_csrf='));
+      expect(csrfCookie).toBeDefined();
+    });
+
     it('should reject refresh without refreshToken cookie', async () => {
       await request(app)
         .post('/api/auth/refresh-token')
@@ -361,6 +436,7 @@ describe('Authentication with HttpOnly Cookies', () => {
   describe('POST /api/auth/logout - Cookie Clearing', () => {
     let authCookies;
     let loggedInUser;
+    let loginCsrfToken;
 
     beforeEach(async () => {
       // Login to get cookies
@@ -374,17 +450,19 @@ describe('Authentication with HttpOnly Cookies', () => {
         })
         .expect(200);
 
+      // 21R-AUTH-3: login already seeds the CSRF cookie + returns the
+      // matching token in the body — no separate /csrf-token fetch needed.
       const loginCookies = loginResponse.headers['set-cookie'] || [];
-      // Merge login cookies with the CSRF cookie so mutations have both.
-      authCookies = [...loginCookies.map(c => c.split(';')[0]), ...(__csrf__.cookieHeader || [])];
+      authCookies = loginCookies.map(c => c.split(';')[0]);
       loggedInUser = loginResponse.body.data.user;
+      loginCsrfToken = loginResponse.body.data.csrfToken;
     });
 
     it('should clear httpOnly cookies on logout', async () => {
       const response = await request(app)
         .post('/api/auth/logout')
         .set('Origin', 'http://localhost:3000')
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('X-CSRF-Token', loginCsrfToken)
         .set(rateLimitBypassHeader)
         .set('Cookie', authCookies)
         .set('X-Test-Email', testUserData.email)
@@ -407,7 +485,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       await request(app)
         .post('/api/auth/logout')
         .set('Origin', 'http://localhost:3000')
-        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('X-CSRF-Token', loginCsrfToken)
         .set(rateLimitBypassHeader)
         .set('Cookie', authCookies)
         .set('X-Test-Email', testUserData.email)

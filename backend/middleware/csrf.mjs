@@ -63,6 +63,22 @@ const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
 export { CSRF_COOKIE_NAME };
 
 /**
+ * Issue a CSRF token + matching cookie on the current response.
+ *
+ * 21R-AUTH-3: Auth handlers (register, login, refresh-token) call this
+ * piggyback so the very first authenticated mutation after session-start
+ * can skip the separate `GET /auth/csrf-token` round-trip — the cookie
+ * has already been set on the auth response and the token is returned in
+ * the response body for the client to cache.
+ *
+ * @param {import('express').Request} req
+ * @param {import('express').Response} res
+ * @returns {string} the freshly generated CSRF token (HMAC-validated against
+ *   the matching `__Host-csrf` / `_csrf` cookie now on the response)
+ */
+export const issueCsrfToken = (req, res) => generateCsrfToken(req, res);
+
+/**
  * GET /auth/csrf-token
  *
  * Public endpoint. Issues a token (response body) and the matching cookie

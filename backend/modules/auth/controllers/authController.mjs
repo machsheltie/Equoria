@@ -16,6 +16,7 @@ import {
 } from '../../../utils/emailVerificationService.mjs';
 import emailService from '../../../utils/emailService.mjs';
 import { COOKIE_OPTIONS, CLEAR_COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
+import { issueCsrfToken } from '../../../middleware/csrf.mjs';
 
 // Starter kit seeded for every new user at registration (Story 15-2)
 const STARTER_KIT_INVENTORY = [
@@ -204,6 +205,10 @@ export const register = async (req, res, next) => {
     res.cookie('accessToken', tokenPair.accessToken, COOKIE_OPTIONS.accessToken);
     res.cookie('refreshToken', tokenPair.refreshToken, COOKIE_OPTIONS.refreshToken);
 
+    // 21R-AUTH-3: seed CSRF cookie + return token in body so the very
+    // first mutation after register skips the /csrf-token round-trip.
+    const csrfToken = issueCsrfToken(req, res);
+
     res.status(201).json({
       status: 'success',
       message: 'User registered successfully. Please check your email to verify your account.',
@@ -221,6 +226,7 @@ export const register = async (req, res, next) => {
           isNewUser: true,
         },
         // Tokens now in httpOnly cookies, not in response body
+        csrfToken,
         emailVerificationSent: true,
       },
     });
@@ -280,6 +286,10 @@ export const login = async (req, res, next) => {
     res.cookie('accessToken', tokenPair.accessToken, COOKIE_OPTIONS.accessToken);
     res.cookie('refreshToken', tokenPair.refreshToken, COOKIE_OPTIONS.refreshToken);
 
+    // 21R-AUTH-3: seed CSRF cookie + return token in body so the very
+    // first mutation after login skips the /csrf-token round-trip.
+    const csrfToken = issueCsrfToken(req, res);
+
     // Reset rate limit on successful login (brute force protection)
     const ip = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     resetAuthRateLimit(ip);
@@ -307,6 +317,7 @@ export const login = async (req, res, next) => {
           onboardingStep: loginOnboardingStep,
         },
         // Tokens now in httpOnly cookies, not in response body
+        csrfToken,
       },
     });
   } catch (error) {
@@ -355,6 +366,11 @@ export const refreshToken = async (req, res, next) => {
     res.cookie('accessToken', newTokenPair.accessToken, COOKIE_OPTIONS.accessToken);
     res.cookie('refreshToken', newTokenPair.refreshToken, COOKIE_OPTIONS.refreshToken);
 
+    // 21R-AUTH-3: rotate the CSRF cookie alongside the access/refresh
+    // rotation and return the new token in the body so the next mutation
+    // after a silent refresh does not have to re-fetch /csrf-token.
+    const csrfToken = issueCsrfToken(req, res);
+
     logger.info('[authController.refreshToken] Token rotation successful');
 
     res.status(200).json({
@@ -363,6 +379,7 @@ export const refreshToken = async (req, res, next) => {
       data: {
         // Tokens now in httpOnly cookies
         rotated: true,
+        csrfToken,
       },
     });
   } catch (error) {
