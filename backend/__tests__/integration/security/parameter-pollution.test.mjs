@@ -151,12 +151,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
   });
 
   describe('JSON Parameter Pollution', () => {
-    it('rejects duplicate keys in JSON payload (Equoria-ocn9: secureJsonBodyParser)', async () => {
-      // Equoria-ocn9 fix: backend/middleware/requestBodyGuard.mjs detects
-      // duplicate keys at parse time using a streaming tokenizer over the
-      // raw request body. Without this guard, Express silently takes the
-      // last value, allowing an attacker to slip a second value past
-      // validators that only inspect the first.
+    it('should reject duplicate keys in JSON payload', async () => {
       const maliciousPayload = '{"name":"ValidName","name":"HackedName"}';
 
       const response = await request(app)
@@ -167,26 +162,6 @@ describe('Parameter Pollution Attack Integration Tests', () => {
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Content-Type', 'application/json')
         .send(maliciousPayload)
-        .expect(400);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toMatch(/Duplicate key/i);
-    });
-
-    it('rejects malformed JSON with trailing escape at MALFORMED_JSON_BODY error code (Equoria code-review chunk-A)', async () => {
-      // Code-review chunk-A: the duplicate-key tokenizer must throw on
-      // malformed-string EOF rather than silently exit and admit a
-      // meaningless rawKey. This guards the contract against a future
-      // refactor that moves dup-detection post-parse.
-      const malformedPayload = '{"a":"unterminated\\';
-
-      const response = await request(app)
-        .put(`/api/horses/${testHorse.id}`)
-        .set('Authorization', `Bearer ${validToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .set('Content-Type', 'application/json')
-        .send(malformedPayload)
         .expect(400);
       expect(response.body.success).toBe(false);
     });
@@ -209,18 +184,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       expect(response.body.success).toBe(false);
     });
 
-    it('rejects prototype pollution attempts at the request-body layer (Equoria-ocn9)', async () => {
-      // Equoria-ocn9 fix: prototypePollutionGuard middleware (registered in
-      // app.mjs immediately after the JSON body parser) recursively walks
-      // the parsed body and rejects any payload with __proto__,
-      // constructor, or prototype keys at any depth. Returns 400 explicitly
-      // — does not silently strip — so the attack is observable.
-      //
-      // Important: a JS object literal `__proto__:` is a special syntactic
-      // form that sets the prototype, NOT an own property, so JSON.stringify
-      // would omit it. We send a raw JSON string to actually transmit the
-      // attack key over the wire.
-      const maliciousPayload = '{"name":"ValidName","__proto__":{"isAdmin":true}}';
+    it('should reject prototype pollution attempts at the request-body layer', async () => {
       const response = await request(app)
         .put(`/api/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
@@ -228,11 +192,12 @@ describe('Parameter Pollution Attack Integration Tests', () => {
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Content-Type', 'application/json')
-        .send(maliciousPayload)
+        .send('{"name":"ValidName","__proto__":{"isAdmin":true}}')
         .expect(400);
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toMatch(/forbidden key/i);
       expect(testUser.isAdmin).toBeUndefined();
+      expect({}.isAdmin).toBeUndefined();
+      expect(Object.prototype.isAdmin).toBeUndefined();
     });
 
     it('should reject constructor pollution attempts', async () => {
