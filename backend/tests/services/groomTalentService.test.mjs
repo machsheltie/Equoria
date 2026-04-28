@@ -26,7 +26,7 @@ describe('Groom Talent Service', () => {
   let testGroom;
 
   beforeEach(async () => {
-    const testSuffix = `${Date.now()}_${Math.random().toString(16).slice(2, 8)}`;
+    const testSuffix = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(16).slice(2, 8)}`;
 
     testUser = await prisma.user.create({
       data: {
@@ -121,7 +121,7 @@ describe('Groom Talent Service', () => {
       // Create low-level groom
       const lowLevelGroom = await prisma.groom.create({
         data: {
-          name: `Low Level Groom ${Date.now()}`,
+          name: `Low Level Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           personality: 'calm',
           skillLevel: 'novice',
           speciality: 'foal_care',
@@ -214,7 +214,7 @@ describe('Groom Talent Service', () => {
       // Create low-level groom
       const lowLevelGroom = await prisma.groom.create({
         data: {
-          name: `Low Level Groom ${Date.now()}`,
+          name: `Low Level Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           personality: 'calm',
           skillLevel: 'novice',
           speciality: 'foal_care',

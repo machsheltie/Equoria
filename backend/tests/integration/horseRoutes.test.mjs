@@ -26,7 +26,7 @@ describe('Horse Routes Integration Tests', () => {
   let foalHorse;
 
   beforeEach(async () => {
-    const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).slice(2, 7)}`;
     testUser = await prisma.user.create({
       data: {
         username: `testuser_hr_${ts}`,
@@ -118,7 +118,7 @@ describe('Horse Routes Integration Tests', () => {
     });
 
     test('should return 403 when accessing another users trainable horses', async () => {
-      const otherTs = `${Date.now()}_other`;
+      const otherTs = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_other`;
       const otherUser = await prisma.user.create({
         data: {
           username: `other_hr_${otherTs}`,

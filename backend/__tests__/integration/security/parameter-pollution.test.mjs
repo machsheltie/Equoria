@@ -39,8 +39,8 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     // Create test user in database
     testUser = await prisma.user.create({
       data: {
-        email: `test-${Date.now()}@example.com`,
-        username: `testuser-${Date.now()}`,
+        email: `test-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+        username: `testuser-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         password: 'hashedPassword123',
         firstName: 'Test',
         lastName: 'User',
@@ -55,7 +55,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     // Create test horse owned by user
     testHorse = await prisma.horse.create({
       data: {
-        name: `TestHorse-${Date.now()}`,
+        name: `TestHorse-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         sex: 'mare',
         dateOfBirth: new Date('2015-01-01'),
         userId: testUser.id, // Matches schema field (line 144)

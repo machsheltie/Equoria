@@ -259,8 +259,8 @@ describe('Security Attack Simulation Tests', () => {
               .post('/api/auth/register')
               .set('Origin', 'http://localhost:3000')
               .send({
-                email: `attacker${Date.now()}_${i}@evil.com`,
-                username: `attacker${Date.now()}_${i}`,
+                email: `attacker${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${i}@evil.com`,
+                username: `attacker${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${i}`,
                 password: 'EvilPass123!',
                 firstName: 'Evil',
                 lastName: 'Attacker',
@@ -332,7 +332,7 @@ describe('Security Attack Simulation Tests', () => {
               .set('Origin', 'http://localhost:3000')
               .set('Authorization', `Bearer ${attackerToken}`)
               .send({
-                username: `newname${Date.now()}_${i}`,
+                username: `newname${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${i}`,
               }),
           );
         }
@@ -458,8 +458,8 @@ describe('Security Attack Simulation Tests', () => {
           .post('/api/auth/register')
           .set('Origin', 'http://localhost:3000')
           .send({
-            email: `test${Date.now()}@example.com`,
-            username: `testuser${Date.now()}`,
+            email: `test${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+            username: `testuser${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             password: 'ValidPass123!',
             firstName: '<script>alert(1)</script>',
             lastName: '<img src=x onerror=alert(1)>',

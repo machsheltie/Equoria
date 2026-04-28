@@ -65,7 +65,7 @@ describe('Foal Task Log and Streak Data', () => {
     }
 
     // Create test user
-    const uniqueSuffix = `${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+    const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.floor(Math.random() * 100000)}`;
     testUser = await prisma.user.create({
       data: {
         id: `test-user-task-log-streak-${uniqueSuffix}`,

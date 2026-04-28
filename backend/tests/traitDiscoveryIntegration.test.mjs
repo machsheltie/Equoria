@@ -42,7 +42,7 @@ describe('Trait Discovery API Integration Tests', () => {
     });
 
     // Create test breed with unique name
-    const uniqueName = `Test Breed for Trait Discovery ${Date.now()}`;
+    const uniqueName = `Test Breed for Trait Discovery ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
     testBreed = await prisma.breed.create({
       data: {
         name: uniqueName,

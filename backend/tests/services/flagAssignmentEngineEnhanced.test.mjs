@@ -37,8 +37,8 @@ describe('Enhanced Flag Assignment Engine', () => {
       // Create test user
       testUser = await tx.user.create({
         data: {
-          username: `flagengine_${Date.now()}`,
-          email: `flagengine_${Date.now()}@test.com`,
+          username: `flagengine_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          email: `flagengine_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
           password: 'test_hash',
           firstName: 'Test',
           lastName: 'User',
@@ -52,7 +52,7 @@ describe('Enhanced Flag Assignment Engine', () => {
       testGrooms = await Promise.all([
         tx.groom.create({
           data: {
-            name: `Test Groom Calm ${Date.now()}`,
+            name: `Test Groom Calm ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             personality: 'calm',
             epigeneticInfluenceType: 'calm',
             skillLevel: 'experienced',
@@ -63,7 +63,7 @@ describe('Enhanced Flag Assignment Engine', () => {
         }),
         tx.groom.create({
           data: {
-            name: `Test Groom Energetic ${Date.now()}`,
+            name: `Test Groom Energetic ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             personality: 'energetic',
             epigeneticInfluenceType: 'energetic',
             skillLevel: 'experienced',
@@ -74,7 +74,7 @@ describe('Enhanced Flag Assignment Engine', () => {
         }),
         tx.groom.create({
           data: {
-            name: `Test Groom Methodical ${Date.now()}`,
+            name: `Test Groom Methodical ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             personality: 'methodical',
             epigeneticInfluenceType: 'methodical',
             skillLevel: 'expert',
@@ -89,7 +89,7 @@ describe('Enhanced Flag Assignment Engine', () => {
         // Very young foal (1 week) - high sensitivity to triggers
         tx.horse.create({
           data: {
-            name: `Test Foal Week ${Date.now()}`,
+            name: `Test Foal Week ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             sex: 'filly',
             dateOfBirth: oneWeekAgo,
             userId: testUser.id,
@@ -101,7 +101,7 @@ describe('Enhanced Flag Assignment Engine', () => {
         // Young foal (1 month) - moderate sensitivity
         tx.horse.create({
           data: {
-            name: `Test Foal Month ${Date.now()}`,
+            name: `Test Foal Month ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             sex: 'colt',
             dateOfBirth: oneMonthAgo,
             userId: testUser.id,
@@ -113,7 +113,7 @@ describe('Enhanced Flag Assignment Engine', () => {
         // Older foal (6 months) - lower sensitivity
         tx.horse.create({
           data: {
-            name: `Test Foal 6mo ${Date.now()}`,
+            name: `Test Foal 6mo ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             sex: 'gelding',
             dateOfBirth: sixMonthsAgo,
             userId: testUser.id,

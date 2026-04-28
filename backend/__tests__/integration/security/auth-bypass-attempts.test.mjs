@@ -45,8 +45,8 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
     // Create test user in database
     testUser = await prisma.user.create({
       data: {
-        email: `test-${Date.now()}-${Math.random().toString(36).substring(7)}@example.com`,
-        username: `testuser-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+        email: `test-${Date.now()}_${Math.random().toString(36).slice(2, 6)}-${Math.random().toString(36).substring(7)}@example.com`,
+        username: `testuser-${Date.now()}_${Math.random().toString(36).slice(2, 6)}-${Math.random().toString(36).substring(7)}`,
         password: 'hashedPassword123', // Mock hashed password
         firstName: 'Test',
         lastName: 'User',
@@ -414,8 +414,8 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       // Create second user
       const userB = await prisma.user.create({
         data: {
-          email: `testB-${Date.now()}@example.com`,
-          username: `testuserB-${Date.now()}`,
+          email: `testB-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+          username: `testuserB-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           password: 'hashedPassword123',
           firstName: 'Test',
           lastName: 'UserB',

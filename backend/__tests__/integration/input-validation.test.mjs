@@ -54,8 +54,8 @@ describe('Input Validation Integration Tests', () => {
           .post('/api/auth/register')
           .set('Origin', 'http://localhost:3000')
           .send({
-            email: `valid${Date.now()}@example.com`,
-            username: `testuser${Date.now()}`,
+            email: `valid${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+            username: `testuser${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             password: 'ValidPass123!',
             firstName: 'Test',
             lastName: 'User',
@@ -157,8 +157,8 @@ describe('Input Validation Integration Tests', () => {
           .post('/api/auth/register')
           .set('Origin', 'http://localhost:3000')
           .send({
-            email: `test${Date.now()}@example.com`,
-            username: `testuser${Date.now()}`,
+            email: `test${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+            username: `testuser${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             password: 'ValidPass123!',
             firstName: 'Test',
             lastName: 'User',
@@ -176,8 +176,8 @@ describe('Input Validation Integration Tests', () => {
             .post('/api/auth/register')
             .set('Origin', 'http://localhost:3000')
             .send({
-              email: `test${Date.now()}@example.com`,
-              username: `testuser${Date.now()}`,
+              email: `test${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+              username: `testuser${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
               password: `ValidPass123${char}`,
               firstName: 'Test',
               lastName: 'User',
@@ -240,8 +240,8 @@ describe('Input Validation Integration Tests', () => {
           .post('/api/auth/register')
           .set('Origin', 'http://localhost:3000')
           .send({
-            email: `test${Date.now()}@example.com`,
-            username: `test_user_${Date.now()}`,
+            email: `test${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+            username: `test_user_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
             password: 'ValidPass123!',
             firstName: 'Test',
             lastName: 'User',

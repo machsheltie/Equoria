@@ -75,7 +75,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
   beforeAll(async () => {
     // Use 'trainupd_' prefix — not matched by cleanupTestData's 'testuser_' pattern,
     // so parallel suites calling cleanupTestData won't wipe this suite's data.
-    const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).slice(2, 8)}`;
     const hashedPw = await bcrypt.hash('TestPassword123!', 10);
     const user = await prisma.user.create({
       data: {

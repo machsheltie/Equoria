@@ -35,7 +35,7 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
   let testUser;
   let testFoal;
   let authToken;
-  const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).slice(2, 7)}`;
 
   beforeAll(async () => {
     // Create a real user in the database

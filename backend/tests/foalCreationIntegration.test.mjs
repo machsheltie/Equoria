@@ -37,7 +37,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
   let testDam;
   let authToken;
   const createdFoalIds = [];
-  const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).slice(2, 7)}`;
 
   beforeAll(async () => {
     // Create a real user in the database

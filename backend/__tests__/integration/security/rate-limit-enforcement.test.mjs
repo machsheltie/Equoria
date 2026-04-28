@@ -31,8 +31,8 @@ describe('Rate Limit Enforcement Integration Tests', () => {
     // Create a real test user in the database
     testUser = await prisma.user.create({
       data: {
-        email: `ratelimit-sec-${Date.now()}@example.com`,
-        username: `ratelimit-sec-${Date.now()}`,
+        email: `ratelimit-sec-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+        username: `ratelimit-sec-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         password: 'hashedPassword123',
         firstName: 'RateLimit',
         lastName: 'Test',

@@ -479,7 +479,7 @@ describe('Token Rotation and Reuse Detection System', () => {
         {
           userId: testUser.id,
           type: 'refresh',
-          familyId: `test-family-${Date.now()}`,
+          familyId: `test-family-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         },
         process.env.JWT_REFRESH_SECRET,
         { expiresIn: '1ms' }, // Immediately expires
@@ -490,7 +490,7 @@ describe('Token Rotation and Reuse Detection System', () => {
         data: {
           tokenHash: hashRefreshToken(shortLivedToken),
           userId: testUser.id,
-          familyId: `test-family-${Date.now()}`,
+          familyId: `test-family-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           expiresAt: new Date(Date.now() + 1), // 1ms from now
           isActive: true,
           isInvalidated: false,
@@ -569,7 +569,7 @@ describe('Token Rotation and Reuse Detection System', () => {
   describe('Database Constraints and Security', () => {
     it('should_enforce_unique_constraints_on_token_families', async () => {
       // This test verifies database schema constraints
-      const familyId = `test-family-${Date.now()}`;
+      const familyId = `test-family-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 
       // Attempt to create two active tokens with same family ID
       // This should be prevented by database constraints

@@ -191,7 +191,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
 
       // Second registration with same email
       const response = await authPost('/api/auth/register')
-        .send({ ...userData, username: `other_${Date.now()}` }) // Use a different username
+        .send({ ...userData, username: `other_${Date.now()}_${Math.random().toString(36).slice(2, 6)}` }) // Use a different username
         .expect(400);
 
       expect(response.body.success).toBe(false);
@@ -237,7 +237,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
 
     it('should reject login with invalid email', async () => {
       const loginData = {
-        email: `nonexistent_${Date.now()}@example.com`,
+        email: `nonexistent_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
         password: 'Password123!',
       };
 

@@ -47,7 +47,7 @@ describe('Trait Routes Integration Tests', () => {
       // Create real test breed in database
       testBreed = await prisma.breed.create({
         data: {
-          name: `Test Breed for Traits ${Date.now()}`,
+          name: `Test Breed for Traits ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           description: 'Test breed for trait discovery testing',
         },
       });
@@ -57,7 +57,7 @@ describe('Trait Routes Integration Tests', () => {
       const twoYearsAgo = new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000);
       testHorse = await prisma.horse.create({
         data: {
-          name: `Test Discovery Horse ${Date.now()}`,
+          name: `Test Discovery Horse ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           sex: 'mare',
           dateOfBirth: twoYearsAgo,
           breed: { connect: { id: testBreed.id } },

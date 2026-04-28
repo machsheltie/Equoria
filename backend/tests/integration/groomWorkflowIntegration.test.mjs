@@ -126,7 +126,7 @@ describe('Groom Workflow Integration Tests', () => {
     });
 
     // Create unique suffix
-    const suffix = `${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
+    const suffix = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).substr(2, 5)}`;
 
     // Create test breed
     testBreed = await prisma.breed.create({
@@ -470,9 +470,9 @@ describe('Groom Workflow Integration Tests', () => {
       // Create different user
       const otherUser = await prisma.user.create({
         data: {
-          id: `other-user-groom-${Date.now()}`,
-          username: `otheruser_${Date.now()}`,
-          email: `other_${Date.now()}@example.com`,
+          id: `other-user-groom-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          username: `otheruser_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          email: `other_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
           password: 'password',
           firstName: 'Other',
           lastName: 'User',

@@ -28,8 +28,8 @@ describe('Weekly Flag Evaluation Service', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        username: `flagtest_${Date.now()}`,
-        email: `flagtest_${Date.now()}@test.com`,
+        username: `flagtest_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        email: `flagtest_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
         password: 'test_hash',
         firstName: 'Test',
         lastName: 'User',
@@ -43,7 +43,7 @@ describe('Weekly Flag Evaluation Service', () => {
     testGrooms = await Promise.all([
       prisma.groom.create({
         data: {
-          name: `Test Groom Calm ${Date.now()}`,
+          name: `Test Groom Calm ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           personality: 'calm',
           epigeneticInfluenceType: 'calm',
           skillLevel: 'experienced',
@@ -54,7 +54,7 @@ describe('Weekly Flag Evaluation Service', () => {
       }),
       prisma.groom.create({
         data: {
-          name: `Test Groom Energetic ${Date.now()}`,
+          name: `Test Groom Energetic ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           personality: 'energetic',
           epigeneticInfluenceType: 'energetic',
           skillLevel: 'experienced',
@@ -76,7 +76,7 @@ describe('Weekly Flag Evaluation Service', () => {
       // Young foal (1 week old) - eligible for flag evaluation
       prisma.horse.create({
         data: {
-          name: `Test Foal Week ${Date.now()}`,
+          name: `Test Foal Week ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           sex: 'filly',
           dateOfBirth: oneWeekAgo,
           userId: testUser.id,
@@ -88,7 +88,7 @@ describe('Weekly Flag Evaluation Service', () => {
       // Young horse (1 month old) - eligible for flag evaluation
       prisma.horse.create({
         data: {
-          name: `Test Foal Month ${Date.now()}`,
+          name: `Test Foal Month ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           sex: 'colt',
           dateOfBirth: oneMonthAgo,
           userId: testUser.id,
@@ -100,7 +100,7 @@ describe('Weekly Flag Evaluation Service', () => {
       // 2-year-old horse - still eligible for flag evaluation
       prisma.horse.create({
         data: {
-          name: `Test Horse 2yo ${Date.now()}`,
+          name: `Test Horse 2yo ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           sex: 'gelding',
           dateOfBirth: twoYearsAgo,
           userId: testUser.id,
@@ -112,7 +112,7 @@ describe('Weekly Flag Evaluation Service', () => {
       // 4-year-old horse - NOT eligible for flag evaluation
       prisma.horse.create({
         data: {
-          name: `Test Horse 4yo ${Date.now()}`,
+          name: `Test Horse 4yo ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           sex: 'mare',
           dateOfBirth: fourYearsAgo,
           userId: testUser.id,
@@ -198,7 +198,7 @@ describe('Weekly Flag Evaluation Service', () => {
       // Create a horse with 5 flags already
       const horseWithMaxFlags = await prisma.horse.create({
         data: {
-          name: `Test Horse Max Flags ${Date.now()}`,
+          name: `Test Horse Max Flags ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
           sex: 'filly',
           dateOfBirth: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 1 month old
           userId: testUser.id,

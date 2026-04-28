@@ -41,7 +41,7 @@ describe('Breeding Prediction System', () => {
     // Create test breed
     testBreed = await prisma.breed.create({
       data: {
-        name: `TestBreed_${Date.now()}`,
+        name: `TestBreed_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         description: 'Test breed for breeding prediction tests',
       },
     });
@@ -49,10 +49,10 @@ describe('Breeding Prediction System', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        username: `testuser_${Date.now()}`,
+        username: `testuser_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         firstName: 'Test',
         lastName: 'User',
-        email: `test_${Date.now()}@example.com`,
+        email: `test_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
         password: 'hashedpassword',
         money: 10000,
         xp: 100,
@@ -63,7 +63,7 @@ describe('Breeding Prediction System', () => {
     // Create test groom
     testGroom = await prisma.groom.create({
       data: {
-        name: `TestGroom_${Date.now()}`,
+        name: `TestGroom_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         speciality: 'foal_care',
         experience: 10,
         skillLevel: 'expert',
@@ -77,7 +77,7 @@ describe('Breeding Prediction System', () => {
     // Create test stallion (5 years old)
     testStallion = await prisma.horse.create({
       data: {
-        name: `TestStallion_${Date.now()}`,
+        name: `TestStallion_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         sex: 'stallion',
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000), // 5 years old
         temperament: 'spirited',
@@ -90,7 +90,7 @@ describe('Breeding Prediction System', () => {
     // Create test mare (4 years old)
     testMare = await prisma.horse.create({
       data: {
-        name: `TestMare_${Date.now()}`,
+        name: `TestMare_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         sex: 'mare',
         dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000), // 4 years old
         temperament: 'calm',

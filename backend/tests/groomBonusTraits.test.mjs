@@ -39,7 +39,8 @@ describe('Groom Bonus Traits System', () => {
     // a prior run aborted leaving stale `TestBreed_<ts>` rows AND
     // protects against parallel-shard races re-using the same Date.now().
     // Date.now() alone has hit the breed.name unique constraint in CI.
-    const uid = () => `${Date.now()}_${Math.random().toString(36).substring(2, 10)}`;
+    const uid = () =>
+      `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).substring(2, 10)}`;
 
     // Create test breed first
     testBreed = await prisma.breed.create({

@@ -37,7 +37,7 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
   let adminUser;
   let adminToken;
   let testFoal;
-  const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).slice(2, 7)}`;
 
   beforeAll(async () => {
     // Create a real admin user in the database

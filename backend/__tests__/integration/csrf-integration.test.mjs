@@ -51,7 +51,7 @@ describe('CSRF protection — real browser flow', () => {
   });
 
   beforeEach(async () => {
-    const unique = `${Date.now()}${Math.floor(Math.random() * 10000)}`;
+    const unique = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}${Math.floor(Math.random() * 10000)}`;
     const email = `${TEST_EMAIL_PREFIX}${unique}@test.com`;
     const username = `${TEST_EMAIL_PREFIX}${unique}`;
 

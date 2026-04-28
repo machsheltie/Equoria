@@ -78,8 +78,8 @@ describe('Authentication with HttpOnly Cookies', () => {
     it('should set httpOnly cookies on successful registration', async () => {
       const registrationUser = {
         ...testUserData,
-        email: `cookietest+${Date.now()}@example.com`,
-        username: `cookietest${Date.now()}`,
+        email: `cookietest+${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+        username: `cookietest${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
       };
       const response = await request(app)
         .post('/api/auth/register')

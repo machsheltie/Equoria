@@ -27,7 +27,7 @@ describe('Groom Retirement Routes', () => {
   beforeEach(async () => {
     // Create a fresh user for each test — avoids FK violations from test interference
     // when the full suite runs and Prisma connections are recycled between test files.
-    const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).slice(2, 7)}`;
     testUser = await prisma.user.create({
       data: {
         username: `testuser_routes_${ts}`,
