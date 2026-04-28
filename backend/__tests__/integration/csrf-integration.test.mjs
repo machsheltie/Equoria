@@ -206,7 +206,11 @@ describe('CSRF protection — real browser flow', () => {
         .set('Sec-Fetch-Mode', 'cors')
         .set('Cookie', csrf.cookieHeader)
         .set('X-CSRF-Token', csrf.csrfToken)
-        .send({ firstName: 'NoOrigin' });
+        // updateProfile only accepts username/email/notifications/display;
+        // sending `firstName` short-circuits to 400 before the no-origin
+        // middleware can fire. Use a real updatable field so the no-origin
+        // policy is what's actually under test.
+        .send({ notifications: { email: true } });
 
       expect(res.status).toBe(403);
       expect(res.body.code).toBe('NO_ORIGIN_BLOCKED');
