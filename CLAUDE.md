@@ -135,6 +135,15 @@ bd update <id> --status=in_progress  # Claim before starting
 
 ## 🚨 Non-Negotiable Process Rules
 
+### Fix Discipline — Two Rules That Apply To Every Defect-Fix
+
+These are the contract for ANY defect fix, hardening issue, or PR addressing reviewer feedback. Both load as session context.
+
+- **`.claude/rules/EDGE_CASE_FIX_DISCIPLINE.md`** — prevents bypasses (no skips, no continue-on-error, no widened regex, no exclusion-as-cheat, no silent catches in security boundaries). Read it before claiming any 21R-\* issue.
+- **`.claude/rules/OPTIMAL_FIX_DISCIPLINE.md`** — prevents shallow fixes (AC met but problem not actually solved). Requires: AC audit, sentinel-positive test, adjacent-locations check, no forward-reference docs, alternative considered, what-was-NOT-done report. **"Done" is the §8 checklist, not the literal AC.**
+
+If you find yourself thinking "AC met, ship it" — stop and re-read `OPTIMAL_FIX_DISCIPLINE.md` §1, §2, §6. Cheap-default ≠ correct-default.
+
 ### BMad Methodology — Follow By The Book
 
 - **NEVER fabricate audit outputs.** TEA gates (ATDD/TA/RV) and code review findings MUST be produced by running the actual skills (`bmad-tea`, `bmad-code-review`). Writing sections directly into story artifacts without running the skills is strictly forbidden.
