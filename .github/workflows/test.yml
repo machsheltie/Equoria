@@ -758,12 +758,51 @@ jobs:
             exit 1
           fi
 
+      - name: Sentinel self-test — prove the bypass-header scan still gates
+        # OPTIMAL_FIX_DISCIPLINE.md §2 requires a positive test for any check.
+        # This step plants a known violation in a path the scan covers, runs
+        # the EXACT production grep below, asserts the grep matches, then
+        # cleans up. If the production scan ever silently degrades (e.g.,
+        # someone narrows the regex or widens --exclude-dir), this step
+        # fails before the real scan runs and the workflow blocks. Without
+        # this sentinel, the gate could pass on every PR while catching
+        # nothing, and we'd never know.
+        run: |
+          set -uo pipefail
+          SENTINEL_FILE="tests/e2e/__doctrine_sentinel_DO_NOT_COMMIT__.txt"
+          echo 'x-test-skip-csrf' > "$SENTINEL_FILE"
+          if ! grep -rn "x-test-bypass-rate-limit\|x-test-skip-csrf\|bypass-auth\|x-test-user\|x-bypass\|VITE_E2E_TEST" \
+              tests/e2e/ frontend/src/lib/api-client.ts \
+              --exclude-dir=readiness \
+              2>/dev/null | grep -v "^Binary" | grep -q "$SENTINEL_FILE"; then
+            rm -f "$SENTINEL_FILE"
+            echo "SENTINEL FAIL: planted violation in $SENTINEL_FILE was NOT detected by the bypass-header scan."
+            echo "The scan is broken — it would silently pass even when a real violation exists."
+            echo "Investigate the regex, the path argument, or the --exclude-dir flag."
+            exit 1
+          fi
+          rm -f "$SENTINEL_FILE"
+          if grep -rn "x-test-bypass-rate-limit\|x-test-skip-csrf\|bypass-auth\|x-test-user\|x-bypass\|VITE_E2E_TEST" \
+              tests/e2e/ frontend/src/lib/api-client.ts \
+              --exclude-dir=readiness \
+              2>/dev/null | grep -v "^Binary" | grep -q "$SENTINEL_FILE"; then
+            echo "SENTINEL FAIL: residual matches for sentinel file after cleanup."
+            exit 1
+          fi
+          echo "Sentinel OK: scan correctly catches planted violations and cleans up."
+
       - name: Scan E2E specs and api-client for bypass headers
-        # --exclude-dir=readiness is required: tests/e2e/readiness/ contains
-        # doctrine-allow guard literals (production-parity.guard.spec.ts and
-        # support/prodParity.ts) that EXIST to prove bypass headers do NOT
-        # appear elsewhere. Scanning them here would cause the readiness
-        # gate to fail on its own guard. See 21R-CI-1.
+        # --exclude-dir=readiness is required because tests/e2e/readiness/
+        # contains the production-parity GUARD files
+        # (production-parity.guard.spec.ts and support/prodParity.ts).
+        # Those files MUST mention the literal bypass-header strings — they
+        # exist to PROVE those headers don't appear elsewhere in the
+        # readiness suite. Scanning them here would make the gate fail on
+        # its own guard. The Sentinel step ABOVE proves the scan still
+        # catches real violations outside the exclusion. See Equoria-iswu
+        # (21R-CI-1) for the defect history; Equoria-sgu8 (21R-CI-3) is a
+        # spike to eliminate the exclusion entirely by moving the guard
+        # files out of tests/e2e/readiness/.
         run: |
           if grep -rn "x-test-bypass-rate-limit\|x-test-skip-csrf\|bypass-auth\|x-test-user\|x-bypass\|VITE_E2E_TEST" \
               tests/e2e/ frontend/src/lib/api-client.ts \
