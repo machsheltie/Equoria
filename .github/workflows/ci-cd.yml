@@ -407,11 +407,31 @@ jobs:
             ./frontend/build/
           retention-days: 7
 
-  # Job 8: Security Scanning
-  security-scan:
-    name: 'Security Scanning'
+  # Job 8: Security Gate (blocking)
+  #
+  # Align with test.yml:
+  # - Environment validation is blocking
+  # - Backend security suite is blocking
+  # - Dependency audit is blocking at high severity
+  security-gate:
+    name: 'Security Gate'
     runs-on: ubuntu-latest
-    needs: [code-quality]
+    needs: [code-quality, database-setup]
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: equoria_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
 
     steps:
       - name: 'Checkout Repository'
@@ -425,6 +445,7 @@ jobs:
           cache-dependency-path: |
             backend/package-lock.json
             frontend/package-lock.json
+            packages/database/package-lock.json
 
       - name: 'Install Backend Dependencies'
         working-directory: ./backend
@@ -434,6 +455,24 @@ jobs:
         working-directory: ./frontend
         run: npm ci
 
+      - name: 'Install Database Dependencies'
+        working-directory: ./packages/database
+        run: npm ci
+
+      - name: 'Generate Prisma Client + Run Migrations'
+        working-directory: ./packages/database
+        run: |
+          npx prisma generate --schema=prisma/schema.prisma
+          npx prisma migrate deploy --schema=prisma/schema.prisma
+
+      - name: 'Validate Environment Policy'
+        working-directory: ./backend
+        run: npm run validate-env
+
+      - name: 'Run Backend Security Suite'
+        working-directory: ./backend
+        run: npm run test:security
+
       - name: 'Run Security Audit (Backend)'
         working-directory: ./backend
         run: npm audit --audit-level=moderate
@@ -442,20 +481,30 @@ jobs:
         working-directory: ./frontend
         run: npm audit --audit-level=moderate
 
-  # Job 9: Static Beta-Parity Checks (NOT a beta-readiness signoff)
+  # Job 9: Beta Readiness Gate (master only)
   #
-  # This job runs the static-only portion of the beta-parity gates (mock scan,
-  # bypass-header scan, skip scan, HTTP cleanup-route scan). It is NOT a
-  # beta-readiness signoff. Beta signoff requires the full
-  # scripts/check-beta-readiness.sh run (including Playwright E2E against a
-  # live backend + frontend + PostgreSQL). That run must be performed on an
-  # environment that can host all three services; this CI job intentionally
-  # does not attempt it and therefore cannot be cited as readiness evidence.
-  static-beta-parity-checks:
-    name: 'Static Beta-Parity Checks (not signoff)'
+  # CI-runnable production-parity readiness lane:
+  # - static scans (cleanup routes, DB mocks, frontend mocks, bypass headers)
+  # - full Playwright readiness suite against live backend + frontend + Postgres
+  beta-readiness-gate:
+    name: 'Beta Readiness Gate'
     runs-on: ubuntu-latest
-    needs: [build-validation, security-scan, performance-tests]
-    if: github.ref == 'refs/heads/master'
+    needs: [build-validation, security-gate, performance-tests]
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: equoria_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
 
     steps:
       - name: 'Checkout Repository'
@@ -464,11 +513,37 @@ jobs:
       - name: 'Setup Node.js'
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+            frontend/package-lock.json
+            packages/database/package-lock.json
+
+      - name: 'Cache Playwright Browsers'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
 
       - name: 'Install Dependencies'
-        run: npm ci
+        run: |
+          npm ci
+          cd backend && npm ci
+          cd ../frontend && npm ci
+          cd ../packages/database && npm ci
+
+      - name: 'Setup Database'
+        working-directory: ./packages/database
+        run: |
+          npx prisma generate --schema=prisma/schema.prisma
+          npx prisma migrate deploy --schema=prisma/schema.prisma
+
+      - name: 'Install Playwright Browsers'
+        run: npx playwright install --with-deps chromium
 
       - name: 'Scan for test/cleanup routes in HTTP layer'
         run: |
@@ -501,6 +576,11 @@ jobs:
           fi
 
       - name: 'Scan E2E specs and api-client for bypass headers'
+        # --exclude-dir=readiness is required: tests/e2e/readiness/ contains
+        # doctrine-allow guard literals (production-parity.guard.spec.ts and
+        # support/prodParity.ts) that EXIST to prove bypass headers do NOT
+        # appear elsewhere. Scanning them here would cause the readiness
+        # gate to fail on its own guard. See 21R-CI-1.
         run: |
           if grep -rn "x-test-bypass-rate-limit\|x-test-skip-csrf\|bypass-auth\|x-test-user\|x-bypass\|VITE_E2E_TEST" \
               tests/e2e/ frontend/src/lib/api-client.ts \
@@ -510,23 +590,33 @@ jobs:
             exit 1
           fi
 
-      - name: 'Create Static-Parity Summary (NOT readiness signoff)'
+      - name: 'Run Beta Readiness Playwright Suite'
+        run: npm run test:e2e:beta-readiness
+
+      - name: 'Upload Beta Readiness Artifacts'
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: beta-readiness-artifacts
+          path: |
+            playwright-report/beta-readiness/
+            test-results/beta-readiness/
+          retention-days: 14
+
+      - name: 'Create Beta Readiness Summary'
         if: always()
         run: |
-          echo "## Static Beta-Parity Checks" >> $GITHUB_STEP_SUMMARY
+          echo "## Beta Readiness Gate" >> $GITHUB_STEP_SUMMARY
           echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Scope**: static scans only (mocks, bypass headers, cleanup routes)" >> $GITHUB_STEP_SUMMARY
-          echo "- **Not included**: lint, typecheck, backend tests, E2E readiness suite" >> $GITHUB_STEP_SUMMARY
-          echo "- **This job does NOT produce beta-readiness signoff.**" >> $GITHUB_STEP_SUMMARY
-          echo "  Run \`bash scripts/check-beta-readiness.sh\` locally with a live" >> $GITHUB_STEP_SUMMARY
-          echo "  backend + frontend + PostgreSQL to perform full signoff." >> $GITHUB_STEP_SUMMARY
+          echo "- **Scope**: static parity scans + full Playwright readiness suite" >> $GITHUB_STEP_SUMMARY
+          echo "- **Evidence**: artifacts under \`beta-readiness-artifacts\`" >> $GITHUB_STEP_SUMMARY
 
   # Job 10: Docker Image Build Validation (master only)
   build-docker:
     name: 'Docker Build Validation'
     runs-on: ubuntu-latest
-    needs: [build-validation]
+    needs: [build-validation, security-gate, beta-readiness-gate]
     if: github.ref == 'refs/heads/master'
 
     steps:

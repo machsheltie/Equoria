@@ -133,6 +133,11 @@ import { authenticateToken, requireRole } from './middleware/auth.mjs';
 
 // Import CSRF protection middleware
 import { csrfProtection, csrfErrorHandler } from './middleware/csrf.mjs';
+import {
+  verifyJsonBody,
+  rejectPollutedRequestBody,
+  requestBodySecurityErrorHandler,
+} from './middleware/requestBodySecurity.mjs';
 
 // Import Redis rate limiting (for health check and shutdown)
 import { createRateLimiter, isRedisConnected, getRedisClient } from './middleware/rateLimiting.mjs';
@@ -440,8 +445,9 @@ const apiLimiter = createRateLimiter({
 app.use('/api/', apiLimiter);
 
 // Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
+app.use(express.json({ limit: '10mb', verify: verifyJsonBody }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(rejectPollutedRequestBody);
 
 // Cookie parsing middleware for httpOnly cookies
 app.use(cookieParser());
@@ -691,6 +697,7 @@ attachSentryErrorHandler(app);
 
 // CSRF error handler (must be before global error handler)
 app.use(csrfErrorHandler);
+app.use(requestBodySecurityErrorHandler);
 
 // Global error handler
 app.use(errorHandler);

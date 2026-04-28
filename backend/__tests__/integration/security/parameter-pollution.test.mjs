@@ -151,12 +151,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
   });
 
   describe('JSON Parameter Pollution', () => {
-    it.skip('TODO: reject duplicate keys in JSON payload (app currently accepts last-value wins)', async () => {
-      // Express's built-in body parser silently takes the last value when a
-      // JSON body contains duplicate keys, and the horse update endpoint
-      // does not reject this. This test documents a missing defense —
-      // skipped until a dedicated duplicate-key detector is added to the
-      // request pipeline. Not in scope for the CSRF correction.
+    it('should reject duplicate keys in JSON payload', async () => {
       const maliciousPayload = '{"name":"ValidName","name":"HackedName"}';
 
       const response = await request(app)
@@ -189,24 +184,20 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       expect(response.body.success).toBe(false);
     });
 
-    it.skip('TODO: reject prototype pollution attempts at the request-body layer', async () => {
-      // A dedicated prototype-pollution detector at the body-parser layer
-      // would reject any body with `__proto__` / `constructor.prototype`
-      // keys before reaching the handler. Not implemented yet — skipped.
-      // Not in scope for the CSRF correction.
+    it('should reject prototype pollution attempts at the request-body layer', async () => {
       const response = await request(app)
         .put(`/api/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          name: 'ValidName',
-          __proto__: { isAdmin: true },
-        })
+        .set('Content-Type', 'application/json')
+        .send('{"name":"ValidName","__proto__":{"isAdmin":true}}')
         .expect(400);
       expect(response.body.success).toBe(false);
       expect(testUser.isAdmin).toBeUndefined();
+      expect({}.isAdmin).toBeUndefined();
+      expect(Object.prototype.isAdmin).toBeUndefined();
     });
 
     it('should reject constructor pollution attempts', async () => {

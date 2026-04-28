@@ -38,7 +38,15 @@ import { spawnSync } from 'child_process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
-_jest.setTimeout(30000);
+// Generous timeouts: this test spawns a fresh Node child that cold-imports
+// the entire app.mjs (300+ modules, ~5–6s in an empty shell). When the
+// pre-push hook runs the full backend suite in-band on Windows with
+// --maxWorkers=1, the parent Jest process is memory-pressured by the time
+// this file runs, child-process spawn slows down significantly, and the
+// previous 25s/30s budgets blew past. 90s/120s gives headroom on a loaded
+// Windows runner without masking a real hang (anything taking >90s really
+// is broken, not slow).
+_jest.setTimeout(120000);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -67,7 +75,14 @@ describe('CSRF cookie-name contract', () => {
         LOG_LEVEL: 'error',
       },
       encoding: 'utf-8',
-      timeout: 25000,
+      // 90s: covers cold app.mjs import (~6s in a fresh shell) plus the
+      // worst-case slowdown observed when the parent Jest process is
+      // memory-pressured during the in-band pre-push run. SIGKILL ensures
+      // the timeout actually kills the child on Windows (SIGTERM is a
+      // no-op against native Windows processes; spawnSync would otherwise
+      // hang forever waiting for the child to exit).
+      timeout: 90000,
+      killSignal: 'SIGKILL',
     });
 
     if (result.status !== 0) {

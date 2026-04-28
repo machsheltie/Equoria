@@ -532,13 +532,33 @@ jobs:
           retention-days: 30
 
   # ──────────────────────────────────────────────────────────────────────────────
-  # JOB 8 — Security Audit (npm audit)
+  # JOB 8 — Security Gate (blocking)
+  #
+  # P0 hardening policy:
+  # - Dependency audit is blocking at high severity
+  # - Backend security suite is blocking
+  # - Environment validation is blocking
   # ──────────────────────────────────────────────────────────────────────────────
-  security-audit:
-    name: 'Dependency Security Audit'
+  security-gate:
+    name: 'Security Gate'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: [lint]
+    timeout-minutes: 20
+    needs: [lint, db-preflight]
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: equoria_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
 
     steps:
       - uses: actions/checkout@v4
@@ -551,6 +571,7 @@ jobs:
           cache-dependency-path: |
             backend/package-lock.json
             frontend/package-lock.json
+            packages/database/package-lock.json
 
       - name: Install backend dependencies
         working-directory: ./backend
@@ -560,15 +581,31 @@ jobs:
         working-directory: ./frontend
         run: npm ci
 
+      - name: Install database dependencies
+        working-directory: ./packages/database
+        run: npm ci
+
+      - name: Generate Prisma client + run migrations
+        working-directory: ./packages/database
+        run: |
+          npx prisma generate --schema=prisma/schema.prisma
+          npx prisma migrate deploy --schema=prisma/schema.prisma
+
+      - name: Validate environment policy
+        working-directory: ./backend
+        run: npm run validate-env
+
+      - name: Run backend security suite
+        working-directory: ./backend
+        run: npm run test:security
+
       - name: npm audit — backend
         working-directory: ./backend
-        run: npm audit --audit-level=high
-        continue-on-error: true # Report but don't block — upgrade separately
+        run: npm audit --audit-level=moderate
 
       - name: npm audit — frontend
         working-directory: ./frontend
-        run: npm audit --audit-level=high
-        continue-on-error: true
+        run: npm audit --audit-level=moderate
 
   # ──────────────────────────────────────────────────────────────────────────────
   # JOB 9 — Docker Build Validation (master only)
@@ -624,14 +661,140 @@ jobs:
               echo 'Frontend shell and required image assets embedded'"
 
   # ──────────────────────────────────────────────────────────────────────────────
+  # JOB 9.5 — Beta Readiness Gate (master only)
+  #
+  # CI-runnable production-parity readiness lane:
+  # - static scans (cleanup routes, DB mocks, frontend mocks, bypass headers)
+  # - full Playwright readiness suite against live backend + frontend + Postgres
+  # This replaces the old "local-only signoff" assumption with reproducible CI
+  # evidence for beta readiness.
+  # ──────────────────────────────────────────────────────────────────────────────
+  beta-readiness-gate:
+    name: 'Beta Readiness Gate'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    needs: [coverage-gate, security-gate, frontend-tests]
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: equoria_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+            frontend/package-lock.json
+            packages/database/package-lock.json
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install all dependencies
+        run: |
+          npm ci
+          cd backend && npm ci
+          cd ../frontend && npm ci
+          cd ../packages/database && npm ci
+
+      - name: Setup database
+        working-directory: ./packages/database
+        run: |
+          npx prisma generate --schema=prisma/schema.prisma
+          npx prisma migrate deploy --schema=prisma/schema.prisma
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Scan for test/cleanup routes in HTTP layer
+        run: |
+          if grep -rn "test/cleanup\|testCleanup\|test-cleanup" \
+              backend/modules/*/routes/ \
+              backend/routes/ \
+              2>/dev/null | grep -v "^Binary" | grep -q .; then
+            echo "FAIL: HTTP test-cleanup routes found"
+            exit 1
+          fi
+
+      - name: Scan integration tests for DB mocks
+        run: |
+          if grep -rn \
+              "jest\.unstable_mockModule.*prisma\|jest\.unstable_mockModule.*db/\|jest\.mock.*prisma\|jest\.mock.*db/" \
+              backend/tests/integration/ \
+              2>/dev/null | grep -v "^Binary" | grep -q .; then
+            echo "FAIL: DB mocks found in integration tests"
+            exit 1
+          fi
+
+      - name: Scan frontend production code for mock data
+        run: |
+          if grep -rn "mockApi\|MOCK_\|allMockHorses\|mockSummary" \
+              frontend/src/ \
+              --include="*.tsx" --include="*.ts" \
+              2>/dev/null | grep -v "__tests__\|\.test\.\|\.spec\." | grep -v "^Binary" | grep -q .; then
+            echo "FAIL: Mock data in frontend production code"
+            exit 1
+          fi
+
+      - name: Scan E2E specs and api-client for bypass headers
+        # --exclude-dir=readiness is required: tests/e2e/readiness/ contains
+        # doctrine-allow guard literals (production-parity.guard.spec.ts and
+        # support/prodParity.ts) that EXIST to prove bypass headers do NOT
+        # appear elsewhere. Scanning them here would cause the readiness
+        # gate to fail on its own guard. See 21R-CI-1.
+        run: |
+          if grep -rn "x-test-bypass-rate-limit\|x-test-skip-csrf\|bypass-auth\|x-test-user\|x-bypass\|VITE_E2E_TEST" \
+              tests/e2e/ frontend/src/lib/api-client.ts \
+              --exclude-dir=readiness \
+              2>/dev/null | grep -v "^Binary" | grep -q .; then
+            echo "FAIL: Bypass headers in E2E/api-client"
+            exit 1
+          fi
+
+      - name: Run beta-readiness Playwright suite
+        run: npm run test:e2e:beta-readiness
+
+      - name: Upload beta-readiness artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: beta-readiness-artifacts
+          path: |
+            playwright-report/beta-readiness/
+            test-results/beta-readiness/
+          retention-days: 14
+
+  # ──────────────────────────────────────────────────────────────────────────────
   # JOB 10 — Deployment Gate (master only)
-  # Blocks on: coverage-gate, e2e-tests, docker-build
-  # Does NOT block on: performance-tests, security-audit (both advisory)
+  # Blocks on: coverage-gate, security-gate, beta-readiness-gate, e2e-tests, docker-build
+  # Does NOT block on: performance-tests
   # ──────────────────────────────────────────────────────────────────────────────
   deployment-gate:
     name: 'Deployment Gate'
     runs-on: ubuntu-latest
-    needs: [coverage-gate, e2e-tests, docker-build]
+    needs: [coverage-gate, security-gate, beta-readiness-gate, e2e-tests, docker-build]
     if: github.ref == 'refs/heads/master'
 
     steps:
@@ -641,10 +804,13 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Gate | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Doctrine Gate | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
           echo "| Lint | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
           echo "| DB Migration | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
           echo "| Backend Tests (3 shards) | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
           echo "| Coverage ≥ 70% | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Gate | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          echo "| Beta Readiness Gate | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
           echo "| Frontend Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
           echo "| E2E Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
           echo "| Docker Build | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
@@ -652,7 +818,7 @@ jobs:
           echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "_Advisory (non-blocking): Performance tests, Security audit_" >> $GITHUB_STEP_SUMMARY
+          echo "_Advisory (non-blocking): Performance tests_" >> $GITHUB_STEP_SUMMARY
           echo "🚀 Ready for Railway deployment"
 
   # ──────────────────────────────────────────────────────────────────────────────
