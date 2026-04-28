@@ -601,39 +601,31 @@ router.post(
   validateHorseCreation,
   async (req, res) => {
     try {
-      // Resolve breed name from ID — every generator downstream keys by
-      // display name against breedProfiles.json. A missing breed is a
-      // data bug that must fail the request rather than silently ship
-      // a horse with random stats.
-      const breedRecord = req.body.breedId
-        ? await prisma.breed.findUnique({
-            where: { id: req.body.breedId },
-            select: { name: true },
-          })
-        : null;
-      if (!breedRecord?.name) {
+      // Parse and normalize breedId — validateHorseCreation runs isInt() but does not
+      // coerce to a number type; Prisma and $queryRaw expect a numeric Int.
+      const parsedBreedId = Number.parseInt(req.body.breedId, 10);
+      if (!Number.isFinite(parsedBreedId) || parsedBreedId <= 0) {
         return res.status(400).json({
           success: false,
-          message: `No breed found for id ${req.body.breedId}`,
+          message: `Invalid breedId: ${req.body.breedId}`,
         });
       }
-      const breedName = breedRecord.name;
 
-      // Generate conformation scores from breed genetics.
-      const conformationScores = generateConformationScores(breedName);
-      // Generate gait scores from breed genetics + conformation influence.
-      const gaitScores = generateGaitScores(breedName, conformationScores);
-      // Generate temperament from breed-weighted random selection.
-      const temperament = generateTemperament(breedName);
-
-      // Fetch breed genetic profile for coat color genotype generation
-      // Use raw SQL to bypass stale Prisma client DMMF that may not include breedGeneticProfile
-      let breedGeneticProfile = null;
-      if (req.body.breedId) {
-        const breedRows = await prisma.$queryRaw`
-          SELECT "breedGeneticProfile" FROM breeds WHERE id = ${req.body.breedId}
-        `;
-        breedGeneticProfile = breedRows[0]?.breedGeneticProfile ?? null;
+      // Resolve breed name + genetic profile in a single raw SQL query.
+      // Raw SQL is required because the Prisma DMMF may not include breedGeneticProfile.
+      // A missing breed is a data bug that must fail the request rather than
+      // silently ship a horse with random stats.
+      const breedRows = await prisma.$queryRaw`
+        SELECT name, "breedGeneticProfile"
+        FROM breeds
+        WHERE id = ${parsedBreedId}
+      `;
+      const breedRow = breedRows[0];
+      if (!breedRow?.name) {
+        return res.status(400).json({
+          success: false,
+          message: `No breed found for id ${parsedBreedId}`,
+        });
       }
       const breedName = breedRow.name;
       const breedGeneticProfile = breedRow.breedGeneticProfile ?? null;
@@ -645,7 +637,7 @@ router.post(
         getBreedProfile(breedName);
       } catch (err) {
         logger.warn(
-          `[horseRoutes POST /] No breedProfiles.json entry for "${breedName}" (id=${req.body.breedId}): ${err.message}`,
+          `[horseRoutes POST /] No breedProfiles.json entry for "${breedName}" (id=${parsedBreedId}): ${err.message}`,
         );
         return res.status(422).json({
           success: false,
