@@ -47,6 +47,28 @@ export default [
       'no-debugger': 'error',
       'no-alert': 'error',
 
+      // 21R-SEC-3-FOLLOW-1 (Equoria-ixqg): the `__TESTING_ONLY_JsonScanner`
+      // export from requestBodySecurity.mjs exists so the integration tests
+      // can monkey-patch the scanner to inject controlled non-AppError
+      // throws. Production code MUST NOT import it — its presence in a
+      // production import path is a code smell that suggests someone is
+      // bypassing the public API (`verifyJsonBody` / `rejectPollutedRequestBody`
+      // / `requestBodySecurityErrorHandler`). The test-files override block
+      // below disables this rule for paths under __tests__/ and tests/.
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: ['**/requestBodySecurity*', '**/middleware/requestBodySecurity.mjs'],
+              importNames: ['__TESTING_ONLY_JsonScanner'],
+              message:
+                '__TESTING_ONLY_JsonScanner is a test-only export. Production code must use verifyJsonBody / rejectPollutedRequestBody / requestBodySecurityErrorHandler. See backend/middleware/requestBodySecurity.mjs for context.',
+            },
+          ],
+        },
+      ],
+
       // Best Practices
       eqeqeq: ['error', 'always'],
       curly: ['error', 'all'],
@@ -159,6 +181,10 @@ export default [
       // Relax some rules for test files
       'no-unused-expressions': 'off',
       'prefer-arrow-callback': 'off',
+      // Test files may legitimately import the test-only exports from
+      // requestBodySecurity.mjs to set up monkey-patches and contract
+      // sentinels. The production-block rule blocks them everywhere else.
+      'no-restricted-imports': 'off',
     },
   },
   {

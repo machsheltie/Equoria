@@ -22,6 +22,7 @@ import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
+import { randomBytes } from 'node:crypto';
 // getMemoryManager import removed - not used in this file
 // logger import removed - not used in this file
 
@@ -286,7 +287,7 @@ describe('Cross-System Validation Tests', () => {
       // Create show directly in database (no API endpoint exists)
       const testShow = await prisma.show.create({
         data: {
-          name: `Cross System Test Show ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: `Cross System Test Show ${randomBytes(8).toString('hex')}`,
           runDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           discipline: 'Racing',
           levelMin: 1,

@@ -21,6 +21,7 @@ import request from 'supertest';
 import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
+import { randomBytes } from 'node:crypto';
 
 const { default: app } = await import('../../app.mjs');
 
@@ -54,8 +55,8 @@ describe('Input Validation Integration Tests', () => {
           .post('/api/auth/register')
           .set('Origin', 'http://localhost:3000')
           .send({
-            email: `valid${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
-            username: `testuser${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            email: `valid${randomBytes(8).toString('hex')}@example.com`,
+            username: `testuser${randomBytes(8).toString('hex')}`,
             password: 'ValidPass123!',
             firstName: 'Test',
             lastName: 'User',
@@ -157,8 +158,8 @@ describe('Input Validation Integration Tests', () => {
           .post('/api/auth/register')
           .set('Origin', 'http://localhost:3000')
           .send({
-            email: `test${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
-            username: `testuser${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            email: `test${randomBytes(8).toString('hex')}@example.com`,
+            username: `testuser${randomBytes(8).toString('hex')}`,
             password: 'ValidPass123!',
             firstName: 'Test',
             lastName: 'User',
@@ -176,8 +177,8 @@ describe('Input Validation Integration Tests', () => {
             .post('/api/auth/register')
             .set('Origin', 'http://localhost:3000')
             .send({
-              email: `test${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
-              username: `testuser${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              email: `test${randomBytes(8).toString('hex')}@example.com`,
+              username: `testuser${randomBytes(8).toString('hex')}`,
               password: `ValidPass123${char}`,
               firstName: 'Test',
               lastName: 'User',
@@ -240,8 +241,8 @@ describe('Input Validation Integration Tests', () => {
           .post('/api/auth/register')
           .set('Origin', 'http://localhost:3000')
           .send({
-            email: `test${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
-            username: `test_user_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            email: `test${randomBytes(8).toString('hex')}@example.com`,
+            username: `test_user_${randomBytes(8).toString('hex')}`,
             password: 'ValidPass123!',
             firstName: 'Test',
             lastName: 'User',

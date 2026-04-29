@@ -20,6 +20,7 @@ import { triggerTokenCleanup } from '../../services/cronJobService.mjs';
 import { createTokenPair, hashRefreshToken } from '../../utils/tokenRotationService.mjs';
 
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
+import { randomBytes } from 'node:crypto';
 describe('Session Lifecycle Management', () => {
   let __csrf__;
   beforeAll(async () => {
@@ -600,14 +601,12 @@ describe('Session Lifecycle Management', () => {
       // Create an expired token directly in DB. We store a synthetic hash
       // here because this row is never consumed via createTokenPair; it
       // only needs to exist for the cleanup cron to purge (Equoria-uy73).
-      const expiredTokenHash = hashRefreshToken(
-        `expired-test-token-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      );
+      const expiredTokenHash = hashRefreshToken(`expired-test-token-${randomBytes(8).toString('hex')}`);
       await prisma.refreshToken.create({
         data: {
           tokenHash: expiredTokenHash,
           userId: testUser.id,
-          familyId: `expired-family-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          familyId: `expired-family-${randomBytes(8).toString('hex')}`,
           expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
           isActive: true,
           isInvalidated: false,
@@ -639,9 +638,9 @@ describe('Session Lifecycle Management', () => {
       // Create an old invalidated token (hashed at rest — Equoria-uy73)
       const _oldInvalidatedToken = await prisma.refreshToken.create({
         data: {
-          tokenHash: hashRefreshToken(`old-invalidated-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`),
+          tokenHash: hashRefreshToken(`old-invalidated-${randomBytes(8).toString('hex')}`),
           userId: testUser.id,
-          familyId: `old-family-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          familyId: `old-family-${randomBytes(8).toString('hex')}`,
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Expires in 7 days
           isActive: false,
           isInvalidated: true,
@@ -698,7 +697,7 @@ describe('Session Lifecycle Management', () => {
       // Step 1: Register new user (suite-prefixed so afterAll cleanup catches orphans)
       const newUserData = {
         username: `${SUITE_PREFIX}_lc${Date.now().toString(36).slice(-6)}${Math.random().toString(36).slice(2, 6)}`,
-        email: `${SUITE_PREFIX}-lc-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+        email: `${SUITE_PREFIX}-lc-${randomBytes(8).toString('hex')}@example.com`,
         password: 'TestPassword123!',
         firstName: 'Lifecycle',
         lastName: 'Test',

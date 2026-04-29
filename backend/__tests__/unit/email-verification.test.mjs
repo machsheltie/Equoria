@@ -19,6 +19,7 @@ import {
   getTokenInfo,
   hashVerificationToken,
 } from '../../utils/emailVerificationService.mjs';
+import { randomBytes } from 'node:crypto';
 import prisma from '../../db/index.mjs';
 import { createTestUser } from '../config/test-helpers.mjs';
 
@@ -33,7 +34,7 @@ describe('Email Verification Service - Unit Tests', () => {
     await prisma.emailVerificationToken.deleteMany({});
 
     // Create fresh test user with unique ID
-    const uniqueId = crypto.randomUUID();
+    const uniqueId = crypto.randomBytes(8).toString('hex');
     const userData = await createTestUser({
       username: `emailtest_${uniqueId}`,
       email: `emailtest_${uniqueId}@example.com`,
@@ -145,7 +146,7 @@ describe('Email Verification Service - Unit Tests', () => {
             // Hashed at rest — Equoria-uy73. This row is just padding to hit
             // the MAX_PENDING_TOKENS ceiling; the raw token is not read back.
             tokenHash: hashVerificationToken(
-              `old-token-${i}-${Date.now()}_${Math.random().toString(36).slice(2, 6)}-${Math.random()}`,
+              `old-token-${i}-${randomBytes(8).toString('hex')}-${Math.random()}`,
             ),
             userId: testUser.id,
             email: testUser.email,

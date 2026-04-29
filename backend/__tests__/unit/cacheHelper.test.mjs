@@ -11,6 +11,7 @@ import {
   cacheStats,
   resetCacheStatistics,
 } from '../../utils/cacheHelper.mjs';
+import { randomBytes } from 'node:crypto';
 
 describe('Cache Helper', () => {
   beforeEach(() => {
@@ -33,7 +34,7 @@ describe('Cache Helper', () => {
 
   describe('getCachedQuery() - In-Memory Fallback', () => {
     it('should execute and cache the query result', async () => {
-      const cacheKey = `test:key:${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      const cacheKey = `test:key:${randomBytes(8).toString('hex')}`;
       const queryData = { id: 1, name: 'Test' };
       const queryFn = jest.fn(async () => queryData);
 
@@ -51,7 +52,7 @@ describe('Cache Helper', () => {
     });
 
     it('should respect TTL', async () => {
-      const cacheKey = `test:ttl:${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      const cacheKey = `test:ttl:${randomBytes(8).toString('hex')}`;
       const queryFn = jest.fn(async () => ({ data: 'old' }));
 
       // Cache with 0s TTL (expires immediately)
@@ -64,7 +65,7 @@ describe('Cache Helper', () => {
     });
 
     it('should handle undefined/null results', async () => {
-      const cacheKey = `test:null:${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      const cacheKey = `test:null:${randomBytes(8).toString('hex')}`;
       const queryFn = jest.fn(async () => null);
 
       const result = await getCachedQuery(cacheKey, queryFn);
@@ -75,7 +76,7 @@ describe('Cache Helper', () => {
 
   describe('invalidateCache()', () => {
     it('should remove items from cache', async () => {
-      const cacheKey = `test:invalidate:${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      const cacheKey = `test:invalidate:${randomBytes(8).toString('hex')}`;
       const queryFn = jest.fn(async () => 'fresh');
 
       // Cache it

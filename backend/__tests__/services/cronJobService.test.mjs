@@ -8,6 +8,7 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { createTestUser, createTestRefreshToken } from '../setup.mjs';
 import prisma from '../../db/index.mjs';
+import { randomBytes } from 'node:crypto';
 
 // Mock node-cron BEFORE importing anything that uses it (ESM pattern)
 const mockSchedule = jest.fn((pattern, callback, options) => {
@@ -207,7 +208,7 @@ describe('Cron Job Service', () => {
 
     it('should remove expired tokens for all users', async () => {
       const user2 = await createTestUser({
-        email: `user2_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+        email: `user2_${randomBytes(8).toString('hex')}@example.com`,
       });
 
       // Create expired tokens for both users

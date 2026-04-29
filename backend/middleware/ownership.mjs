@@ -162,7 +162,9 @@ export const requireOwnership = (resourceType, options = {}) => {
 
       next();
     } catch (error) {
-      if (error instanceof AppError) {
+      // Symbol-marker check survives module-cache duplication
+      // (jest.unstable_mockModule etc.); see errors/AppError.mjs comment.
+      if (AppError.isAppError(error)) {
         return res.status(error.statusCode).json({
           success: false,
           message: error.message,

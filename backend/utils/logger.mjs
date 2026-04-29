@@ -36,7 +36,28 @@ const logger = winston.createLogger({
     // captures user-supplied metadata. Verified empirically by the
     // logger-metadata-emission tests.
     winston.format.printf(({ timestamp, level, message, ...meta }) => {
-      const metaStr = Object.keys(meta).length > 0 ? ` ${JSON.stringify(meta)}` : '';
+      // 21R-OBS-1 hardening (review patch #1): wrap JSON.stringify in
+      // try/catch so a circular reference, BigInt, or any other
+      // non-serialisable value passed in metadata does NOT crash the
+      // format pipeline. Pre-fix, an uncaught throw here would propagate
+      // out of Winston's format chain and surface on the logger's
+      // `error` event — and if no listener is attached, Node would
+      // re-throw to the process. In a security middleware hot path
+      // (e.g., requestBodySecurity.mjs:catch-block forensic log on a
+      // future Error.cause cycle), that is fail-OPEN: the request is
+      // dropped while the offending body has already been parsed.
+      // Fallback string is bounded so a pathologically large meta
+      // object does not flood the log pipe.
+      let metaStr = '';
+      if (Object.keys(meta).length > 0) {
+        try {
+          metaStr = ` ${JSON.stringify(meta)}`;
+        } catch (err) {
+          metaStr = ` [unserializable meta: ${err?.constructor?.name ?? 'Error'}: ${
+            String(err?.message ?? '').slice(0, 200)
+          }]`;
+        }
+      }
       return `[${timestamp}] ${level}: ${message}${metaStr}`;
     }),
   ),

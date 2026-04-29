@@ -27,6 +27,7 @@ import {
   expectRateLimitExceeded,
   resetRateLimitStore,
 } from '../config/test-helpers.mjs';
+import { randomBytes } from 'node:crypto';
 import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
@@ -300,8 +301,8 @@ describe('Rate Limiting System', () => {
         .set('X-Forwarded-For', ip)
         .send({
           ...baseData,
-          email: `reg_unique_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
-          username: `reguser_unique_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          email: `reg_unique_${randomBytes(8).toString('hex')}@example.com`,
+          username: `reguser_unique_${randomBytes(8).toString('hex')}`,
         });
 
       expectRateLimitExceeded(response);

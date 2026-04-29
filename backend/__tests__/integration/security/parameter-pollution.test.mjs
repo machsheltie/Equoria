@@ -22,6 +22,7 @@ import {
   createMockToken,
   createMockHorse as _createMockHorse,
 } from '../../factories/index.mjs';
+import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 
@@ -39,8 +40,8 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     // Create test user in database
     testUser = await prisma.user.create({
       data: {
-        email: `test-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
-        username: `testuser-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        email: `test-${randomBytes(8).toString('hex')}@example.com`,
+        username: `testuser-${randomBytes(8).toString('hex')}`,
         password: 'hashedPassword123',
         firstName: 'Test',
         lastName: 'User',
@@ -55,7 +56,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     // Create test horse owned by user
     testHorse = await prisma.horse.create({
       data: {
-        name: `TestHorse-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        name: `TestHorse-${randomBytes(8).toString('hex')}`,
         sex: 'mare',
         dateOfBirth: new Date('2015-01-01'),
         userId: testUser.id, // Matches schema field (line 144)

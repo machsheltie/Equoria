@@ -106,9 +106,50 @@ Before reporting a defect-fix as complete, all of these must be true:
 - [ ] All comments / docs / commit messages accurate at the current commit (no forward references).
 - [ ] At least one architectural alternative considered and noted (preferred or filed as spike).
 - [ ] What-was-NOT-done section in the verification log.
+- [ ] **§9 self-critique pass executed** (see below) — gaps surfaced, fixed or filed.
+- [ ] **§10 evidence is post-change** — full test suite re-run AFTER the iteration's edits, with raw output captured. "No expected regressions" is not evidence; the actual run is.
 - [ ] User has confirmed closure (per `COMPLETION_VERIFICATION_POLICY.md`).
 
 Any unchecked item = work pending. Do not call it done.
+
+### 9. Self-critique pass — required BEFORE writing the "done" summary.
+
+The pattern this rule prevents: agent does the work, declares done, user runs `/ultra-think` and finds 5+ real gaps, agent fixes them, declares done again, user runs `/ultra-think` again, finds more gaps, repeat. Each round is real work. Each round wastes the user's time and erodes trust.
+
+The fix: **the agent runs the adversarial critique on its own work BEFORE writing the bd-notes "complete" summary, not in response to user pressure.**
+
+Before writing any "this is done" or "AC met; hardening complete" or "all items addressed" message, the agent MUST:
+
+1. **Re-read the work** — every file changed, every test added, every line of bd notes drafted.
+2. **Apply the §1 audit lens** — does the literal AC actually solve the problem?
+3. **Apply the §2 sentinel lens** — does each test actually catch the failure mode it claims to catch? Are any tests vacuously-true / silently-skipped / using conditional assertions that no-op? Are boundaries covered, not just middles?
+4. **Apply the §3 adjacent-locations lens** — what other files / functions / patterns have the same defect? Are they filed as follow-ups?
+5. **Apply the §4 documentation lens** — do all comments / commit messages / bd notes describe what's ACTUALLY in the commit (no forward references, no overclaim)?
+6. **Apply the §5 alternative lens** — was at least one alternative considered? Is the chosen approach the cleanest, or just the cheapest?
+7. **Apply the §6 honesty lens** — what was NOT done? Is the bd notes' top-line framing honest about the scope of "fixed"?
+8. **Audit until convinced the work is sound. Report what you find regardless of count.** If you find zero genuine gaps, explicitly state in the bd notes that you ran §9 and found none — DO NOT pad the report with trivia to hit a number. A pretend-finding is worse than no finding because it dilutes signal and trains future readers (including future-you) that §9 output is mostly noise. If you find ten, list ten. If three, list three. The goal is honesty, not throughput.
+
+For each genuine gap found:
+- If small + in-scope: fix it now, before declaring done.
+- If larger or out-of-scope: file as follow-up bd issue, link to the parent.
+- Document both categories in the bd notes' "what was NOT done" section.
+
+Then — and only then — write the "done" summary.
+
+**Single requirement**: §9 runs before every "done" message. There is no soft/hard gate distinction (the previous wording was incoherent — a "soft gate" the agent enforces on itself is not a gate). This rule is on the honor system; the user holds the agent accountable, and failing §9 means the user has to ask for the critique pass — which is the exact failure mode this rule exists to prevent. If the agent is uncertain whether §9 has been run for the current iteration, run it again before declaring done. Cost of a redundant §9 pass: small. Cost of skipping it: the loop the user has been ending all session.
+
+Padding §9 with trivia to "look thorough" is itself a §9 violation. The next §9 pass should catch the padding.
+
+### 10. Post-change evidence, not pre-change inferences.
+
+When claiming "no regressions" or "tests still pass" or "the suite is green":
+
+- ❌ "Last suite run was N suites passing; this iteration only adds tests, so no expected regressions."
+- ✅ Re-run the full suite AFTER the iteration's edits. Capture raw output. Cite it.
+
+The pre-change baseline is irrelevant evidence for the post-change state. Adding tests CAN cause regressions (test-ordering flakes, shared mutable state, mock leakage, runtime contention). The only way to know is to actually run.
+
+If the suite takes a long time, run it in the background and continue with other work. Don't ship a "no expected regressions" hedge to save 5 minutes of compute. The user said it's the wrong trade-off.
 
 ---
 
@@ -123,5 +164,8 @@ If you find yourself thinking:
 - "The user probably doesn't want me to spend more time" — re-read §7.
 - "It's a small thing, the comment is close enough" — re-read §4.
 - "First approach worked, ship it" — re-read §5.
+- "I'll just write the done summary now and the user will tell me if anything's wrong" — re-read §9. Do the self-critique pass first. Every time. Without exception.
+- "I need to find 3 things in §9 even if there aren't 3 real ones" — re-read §9. The quota was removed; padding is itself a violation.
+- "Re-running the full suite to prove no regressions takes too long" — re-read §10. The user has explicitly said time is not the constraint. Correctness is.
 
 Then act on what you re-read.

@@ -37,10 +37,14 @@ const mockLogger = {
   debug: jest.fn(),
 };
 
-jest.unstable_mockModule('../../../../packages/database/prismaClient.mjs', () => ({
+// 21R-SEC-3-A: ESM mock paths resolve relative to backend/__tests__/setup.mjs.
+// From that location: ../../packages/database/prismaClient.mjs and
+// ../utils/logger.mjs. Test-file-relative dynamic imports below still use
+// the test-file-relative paths.
+jest.unstable_mockModule('../../packages/database/prismaClient.mjs', () => ({
   default: mockPrisma,
 }));
-jest.unstable_mockModule('../../../utils/logger.mjs', () => ({
+jest.unstable_mockModule('../utils/logger.mjs', () => ({
   default: mockLogger,
 }));
 

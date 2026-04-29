@@ -38,7 +38,12 @@ const mockState = globalThis.ownershipTestMockState;
 
 // Mock Prisma client module - factory implementations read from globalThis
 // This allows tests to mutate mockState and have mocks return current values
-const prismaPath = '../../../../packages/database/prismaClient.mjs';
+// 21R-SEC-3-A: ESM mock paths resolve relative to __tests__/setup.mjs.
+// Dynamic import paths resolve relative to this test file. They differ:
+//   - mockPath:   from __tests__/setup.mjs's dir → ../../packages/...
+//   - importPath: from this file's dir          → ../../../../packages/...
+const prismaMockPath = '../../packages/database/prismaClient.mjs';
+const prismaImportPath = '../../../../packages/database/prismaClient.mjs';
 
 // Get references to the mocks for test assertions (must be done after mock is created)
 let mockHorseFindFirst, mockHorseFindUnique, mockHorseFindMany;
@@ -52,7 +57,7 @@ let requireOwnership, findOwnedResource, validateBatchOwnership;
 let prisma;
 
 beforeAll(async () => {
-  await jest.unstable_mockModule(prismaPath, () => ({
+  await jest.unstable_mockModule(prismaMockPath, () => ({
     default: {
       horse: {
         findFirst: jest.fn(async () => globalThis.ownershipTestMockState.horseFindFirst),
@@ -87,7 +92,7 @@ beforeAll(async () => {
   ({ requireOwnership, findOwnedResource, validateBatchOwnership } = moduleExports);
 
   // Import the mocked Prisma client to get mock references
-  const prismaModule = await import(prismaPath);
+  const prismaModule = await import(prismaImportPath);
   prisma = prismaModule.default;
 
   // Extract mock function references for test assertions

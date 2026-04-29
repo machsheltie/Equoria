@@ -36,7 +36,7 @@ jest.unstable_mockModule('express-validator', () => ({
 
 const mockFindOwnedResource = jest.fn();
 
-jest.unstable_mockModule('../../../middleware/ownership.mjs', () => ({
+jest.unstable_mockModule('../middleware/ownership.mjs', () => ({
   findOwnedResource: mockFindOwnedResource,
   requireOwnership: jest.fn(),
   validateBatchOwnership: jest.fn(),
@@ -49,9 +49,9 @@ const mockPrisma = {
   groomAssignment: { findFirst: jest.fn() },
 };
 
-jest.unstable_mockModule('../../../db/index.mjs', () => ({ default: mockPrisma }));
+jest.unstable_mockModule('../db/index.mjs', () => ({ default: mockPrisma }));
 
-jest.unstable_mockModule('../../../utils/logger.mjs', () => ({
+jest.unstable_mockModule('../utils/logger.mjs', () => ({
   default: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
 

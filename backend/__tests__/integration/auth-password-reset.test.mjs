@@ -25,6 +25,7 @@ import prisma from '../../db/index.mjs';
 import emailService from '../../utils/emailService.mjs';
 
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
+import { randomBytes } from 'node:crypto';
 describe('Auth — Password Reset Integration', () => {
   let __csrf__;
   beforeAll(async () => {
@@ -153,7 +154,7 @@ describe('Auth — Password Reset Integration', () => {
     const resetRes = await request(app)
       .post('/auth/forgot-password')
       .set('Origin', 'http://localhost:3000')
-      .send({ email: `nonexistent_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com` });
+      .send({ email: `nonexistent_${randomBytes(8).toString('hex')}@example.com` });
 
     // Must NOT reveal whether the account exists
     expect(resetRes.status).toBe(200);

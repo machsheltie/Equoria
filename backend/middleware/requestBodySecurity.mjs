@@ -5,13 +5,23 @@ const FORBIDDEN_KEY = '__proto__';
 const FORBIDDEN_CONSTRUCTOR_KEY = 'constructor';
 const FORBIDDEN_PROTOTYPE_KEY = 'prototype';
 
-// Sanitize a value for inclusion in a structured log payload. Truncates
-// strings to a hard length cap and strips ASCII control characters
-// (0x00-0x1F + 0x7F) so an attacker cannot inject CRLF, ANSI escapes, or
-// other shell-control bytes via an error message that ends up in the
-// log. Returns `undefined` for non-strings so the JSON-serialised log
-// line stays clean. Used by the unexpected-scanner-error path of
-// verifyJsonBody (21R-SEC-3-FOLLOW-1, Equoria-ixqg).
+// Sanitize a value for inclusion in a structured log payload.
+//
+// Strips: ASCII C0 control chars (0x00-0x1F + 0x7F), C1 control chars
+// (0x80-0x9F — includes CSI 0x9B used by single-byte ANSI sequences),
+// Unicode bidi formatting (LRM/RLM/LRE/RLE/PDF/LRO/RLO + LRI/RLI/FSI/PDI),
+// and the BOM (U+FEFF). Bidi controls let an attacker visually re-order a
+// log line in any consumer that renders text directionally (Kibana,
+// modern terminals); the canonical example is `'\u202EkcatTA'` rendering
+// as "ATtack" in the viewer. Replaces each control with `?` (no length
+// change so the truncation cap math stays simple).
+//
+// Does NOT decode percent-encoded or backslash-u-escaped sequences — a
+// downstream log shipper that re-decodes message fields can still
+// reintroduce control bytes. That is a downstream-pipeline concern, not
+// something this sanitiser can solve at the producer side. (Review
+// patch #29: comment scope tightened so the protection claim matches
+// what the code actually does.)
 //
 // Truncation operates on UTF-16 code units (matching JS string semantics),
 // but back-tracks one position when the cap would split a surrogate pair.
@@ -19,12 +29,24 @@ const FORBIDDEN_PROTOTYPE_KEY = 'prototype';
 // rejects in some pipelines (`Unexpected token \uD800`). Length after
 // truncation is therefore either `maxLength + 1` (cap + ellipsis) or
 // `maxLength` (cap - 1 + ellipsis, when boundary fell inside a pair).
+//
+// Edge case: maxLength = 1. The high-surrogate back-up logic would slice
+// to `[0, 0)` (empty string) + `…` → length 1. Safe but degenerate;
+// callers should pass maxLength ≥ 2. Guard added below to make this
+// explicit instead of relying on the slice math (review patch #23).
+//
+// eslint-disable-next-line no-control-regex
+const LOG_INJECTION_STRIP = /[\x00-\x1F\x7F\x80-\x9F\u200E\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g;
 function sanitizeForLog(value, maxLength) {
   if (typeof value !== 'string') {
     return undefined;
   }
-  // eslint-disable-next-line no-control-regex -- intentional: stripping ASCII control chars from log payload
-  const stripped = value.replace(/[\x00-\x1F\x7F]/g, '?');
+  if (typeof maxLength !== 'number' || maxLength < 2) {
+    // Defensive: caller bug. Return a safe stub rather than producing
+    // a truncated-into-orphaned-surrogate string.
+    return '…';
+  }
+  const stripped = value.replace(LOG_INJECTION_STRIP, '?');
   if (stripped.length <= maxLength) {
     return stripped;
   }
@@ -43,12 +65,12 @@ function sanitizeForLog(value, maxLength) {
 // 21R-SEC-3-FOLLOW-1 (Equoria-ixqg): if both ends of the contract reference
 // the same constant, a future rename can't silently break the handler match.
 //
-// Exported so the contract can be pinned by unit tests AND so future
-// throws elsewhere in this module (depth cap, dup key, prototype pollution)
-// can adopt the constant in a follow-up refactor. The legacy throws still
-// use the literal 'Invalid request body:' string for now — they were
-// correct before this work and a wholesale switch is out of scope per
-// EDGE_CASE_FIX_DISCIPLINE §7 (no bundling).
+// Exported so the contract can be pinned by unit tests AND used by every
+// in-module throw. Review patch #10: ALL throws in this module
+// (depth cap, dup key, __proto__, constructor.prototype, scanner failure)
+// now derive their prefix from this constant. A future rename of the
+// constant therefore breaks every call site at lint/grep time, not at
+// runtime when an operator notices 500s instead of 400s.
 export const ERROR_MESSAGE_PREFIX = 'Invalid request body:';
 
 // Single source of truth for the message prefix used when the unexpected-
@@ -72,6 +94,28 @@ export const UNEXPECTED_SCANNER_LOG_PREFIX =
 // restart. This is intentional: in-process mutation of a security cap
 // would not be auditable. Use the env var only for ops emergencies and
 // only with a doctrine review; do not relax it casually.
+//
+// DEPTH-COUNTING CONTRACT (21R-SEC-3-REVIEW-2, Equoria-ncbs):
+// Both the parser-layer scanner (JsonScanner.scanValue) AND the
+// post-parse pollutant detector (assertNoPollutingKeys) count depth
+// the same way for any given input. Specifically:
+//   - The top-level value enters at depth=0.
+//   - Each container (object or array) increments depth by 1 before
+//     recursing into its children.
+//   - A primitive leaf is reached at depth=N when nested under N
+//     containers; the depth check fires there.
+//   - The check is `depth > MAX_DEPTH`, so depth=MAX_DEPTH passes and
+//     depth=MAX_DEPTH+1 fails — both functions reject the same payloads.
+// For empty-leaf inputs (e.g. `[[[]]]`) the recursion exits one level
+// short of the leaf in both functions (scanner's scanArray sees `]`
+// without recursing into scanValue; assertNoPollutingKeys's forEach
+// over an empty array has nothing to recurse into), so both functions
+// reach max depth N-1 for an N-bracketed empty-leaf input — still
+// symmetric.
+// This contract is enforced by the boundary suite at
+// __tests__/integration/security/request-body-depth-cap-boundary.test.mjs
+// (12 boundary tests + 6 cross-function symmetry tests). Any change
+// that desyncs the counters will break exactly one of those tests.
 //
 // Exported so test code can pin the boundary by reference rather than
 // hardcoding the value (21R-SEC-3-REVIEW-1 iteration-3, Blind Hunter F7).
@@ -168,7 +212,7 @@ class JsonScanner {
 
   scanValue(depth) {
     if (depth > MAX_DEPTH) {
-      throw new AppError('Invalid request body: nesting too deep', 400);
+      throw new AppError(`${ERROR_MESSAGE_PREFIX} nesting too deep`, 400);
     }
 
     this.skipWhitespace();
@@ -224,7 +268,7 @@ class JsonScanner {
       const key = this.scanString();
 
       if (keys.has(key)) {
-        throw new AppError(`Invalid request body: duplicate JSON key "${key}"`, 400);
+        throw new AppError(`${ERROR_MESSAGE_PREFIX} duplicate JSON key "${key}"`, 400);
       }
       keys.add(key);
 
@@ -347,7 +391,7 @@ class JsonScanner {
 
 function assertNoPollutingKeys(value, path = 'body', depth = 0) {
   if (depth > MAX_DEPTH) {
-    throw new AppError('Invalid request body: nesting too deep', 400);
+    throw new AppError(`${ERROR_MESSAGE_PREFIX} nesting too deep`, 400);
   }
 
   if (!value || typeof value !== 'object') {
@@ -363,7 +407,7 @@ function assertNoPollutingKeys(value, path = 'body', depth = 0) {
 
   for (const [key, child] of Object.entries(value)) {
     if (key === FORBIDDEN_KEY) {
-      throw new AppError(`Invalid request body: forbidden key "${key}"`, 400);
+      throw new AppError(`${ERROR_MESSAGE_PREFIX} forbidden key "${key}"`, 400);
     }
 
     if (
@@ -372,7 +416,7 @@ function assertNoPollutingKeys(value, path = 'body', depth = 0) {
       typeof child === 'object' &&
       Object.prototype.hasOwnProperty.call(child, FORBIDDEN_PROTOTYPE_KEY)
     ) {
-      throw new AppError('Invalid request body: forbidden key path "constructor.prototype"', 400);
+      throw new AppError(`${ERROR_MESSAGE_PREFIX} forbidden key path "constructor.prototype"`, 400);
     }
 
     assertNoPollutingKeys(child, `${path}.${key}`, depth + 1);
@@ -389,7 +433,16 @@ export function verifyJsonBody(req, _res, buffer) {
     const raw = buffer.toString('utf8');
     new JsonScanner(raw).scan();
   } catch (error) {
-    if (error instanceof AppError) {
+    // Patch #5 (review hardening): use AppError.isAppError(error) instead
+    // of `error instanceof AppError`. The `instanceof` check is fragile
+    // across module-cache duplication: if a test mocks the errors module
+    // via `jest.unstable_mockModule`, an AppError thrown by the scanner
+    // is a non-instance of the AppError reference imported here, and the
+    // catch wraps it as a "scanner failure" — corrupting the legitimate
+    // depth-cap / dup-key / __proto__ rejection messages in test
+    // isolation. The Symbol-marker check survives module duplication
+    // because Symbol.for(...) is shared via the global symbol registry.
+    if (AppError.isAppError(error)) {
       throw error;
     }
     // 21R-SEC-3-FOLLOW-1 (Equoria-ixqg): fail closed on every other
@@ -458,7 +511,15 @@ export function rejectPollutedRequestBody(req, _res, next) {
 // In production this evaluates to `undefined`. ESM bindings are static —
 // the name still appears in the module's export map — but the value is
 // not the class. Test code must import in `NODE_ENV=test`.
-export const __TESTING_ONLY_JsonScanner = process.env.NODE_ENV === 'test' ? JsonScanner : undefined;
+// Review patch #12: case-insensitive NODE_ENV check. Some local debug
+// configurations set NODE_ENV='Test' or omit it entirely; the strict
+// equality silently resolved the binding to `undefined` in those cases
+// and produced opaque "Cannot read properties of undefined (reading
+// 'prototype')" failures across every test that monkey-patches the
+// scanner. Normalising to lowercase makes the gate forgiving on input
+// while still rejecting any non-test value (production, staging, ci).
+export const __TESTING_ONLY_JsonScanner =
+  String(process.env.NODE_ENV ?? '').toLowerCase() === 'test' ? JsonScanner : undefined;
 
 export function requestBodySecurityErrorHandler(err, req, res, next) {
   if (typeof err?.message !== 'string' || !err.message.startsWith(ERROR_MESSAGE_PREFIX)) {

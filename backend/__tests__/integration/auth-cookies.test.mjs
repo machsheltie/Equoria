@@ -13,6 +13,7 @@ import prisma from '../../db/index.mjs';
 import bcrypt from 'bcryptjs';
 
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
+import { randomBytes } from 'node:crypto';
 describe('Authentication with HttpOnly Cookies', () => {
   let __csrf__;
   beforeAll(async () => {
@@ -88,7 +89,7 @@ describe('Authentication with HttpOnly Cookies', () => {
     it('should set httpOnly cookies on successful registration', async () => {
       const registrationUser = {
         ...testUserData,
-        email: `${SUITE_PREFIX}-reg-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+        email: `${SUITE_PREFIX}-reg-${randomBytes(8).toString('hex')}@example.com`,
         username: `${SUITE_PREFIX}_r${Date.now().toString(36).slice(-6)}${Math.random().toString(36).slice(2, 6)}`,
       };
       const response = await request(app)
@@ -135,7 +136,7 @@ describe('Authentication with HttpOnly Cookies', () => {
 
     it('seeds CSRF cookie + returns csrfToken in body so first mutation skips /csrf-token (21R-AUTH-3)', async () => {
       // Username max 30 chars — keep prefix short.
-      const unique = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      const unique = `${randomBytes(8).toString('hex')}`;
       const seedUser = {
         ...testUserData,
         email: `csrfseed+${unique}@example.com`,

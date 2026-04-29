@@ -16,6 +16,7 @@ import {
   extractCookieValue as _extractCookieValue,
   resetRateLimitStore,
 } from '../config/test-helpers.mjs';
+import { randomBytes } from 'node:crypto';
 import { generateVerificationToken, hashVerificationToken } from '../../utils/emailVerificationService.mjs';
 import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 
@@ -433,7 +434,7 @@ describe('Email Verification System - Integration Tests', () => {
       const fs = await import('fs');
       emailCapturePath = path.join(
         os.tmpdir(),
-        `email-capture-${Date.now()}_${Math.random().toString(36).slice(2, 6)}-${Math.random()}.jsonl`,
+        `email-capture-${randomBytes(8).toString('hex')}-${Math.random()}.jsonl`,
       );
       process.env.EMAIL_CAPTURE_FILE = emailCapturePath;
       capturedVerificationTokens = () => {

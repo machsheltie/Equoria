@@ -15,6 +15,7 @@ import { createMockToken } from '../../factories/index.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { randomBytes } from 'node:crypto';
 describe('Rate Limit Enforcement Integration Tests', () => {
   let __csrf__;
   beforeAll(async () => {
@@ -31,8 +32,8 @@ describe('Rate Limit Enforcement Integration Tests', () => {
     // Create a real test user in the database
     testUser = await prisma.user.create({
       data: {
-        email: `ratelimit-sec-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
-        username: `ratelimit-sec-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        email: `ratelimit-sec-${randomBytes(8).toString('hex')}@example.com`,
+        username: `ratelimit-sec-${randomBytes(8).toString('hex')}`,
         password: 'hashedPassword123',
         firstName: 'RateLimit',
         lastName: 'Test',
