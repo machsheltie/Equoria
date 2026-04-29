@@ -33,20 +33,30 @@
 #     and the cap on the worker side would need to be raised separately
 #     (e.g. via NODE_OPTIONS in package.json scripts).
 #
-#   --maxWorkers=1
-#     Equivalent to --runInBand for our purposes (only one Jest worker
-#     active at any moment), preserving the original "no DB contention
-#     from parallel integration tests" guarantee. Unlike --runInBand, this
-#     runs tests in a CHILD worker — which is what makes
-#     --workerIdleMemoryLimit effective.
-#
-#   --workerIdleMemoryLimit=2048MB
-#     Jest recycles the worker after each test file when its RSS exceeds
-#     2 GB. Prevents the heap accumulation across 275 files that crashed
-#     the original --runInBand approach.
+#   --runInBand
+#     Runs all tests sequentially in the SAME process (no forked worker).
+#     Restored 2026-04-29 after the previous --maxWorkers=1 +
+#     --workerIdleMemoryLimit=2048MB combination produced a non-deterministic
+#     FK / test-isolation flake that cost 4 push attempts across PR #105 and
+#     PR #106. Different test pairs failed each run (groomBonusTraits +
+#     traitTimeline; userProgressAPI + enhancedReportingRoutes; …) — a
+#     classic order-dependent / memory-pressure-dependent symptom of
+#     worker-recycle interactions with the Prisma connection pool. The
+#     original concern that drove the worker-recycle approach (V8 default
+#     ~4 GB cap reached after 270+ test files) is now addressed by the
+#     --max-old-space-size=12288 flag passed directly to node above:
+#     12 GB single-process heap is verified sufficient (peak observed RSS
+#     under --runInBand: ~3.8 GB across the full 4830-test suite).
+#     Single-process execution also eliminates the worker-fork overhead
+#     and is empirically a few percent FASTER than the recycled-worker
+#     mode it replaces.
 #
 #   --retryTimes=1
-#     Handles flaky order-dependent tests that pass in isolation.
+#     Handles flaky order-dependent tests that pass in isolation. With
+#     --runInBand, retries happen in the same process — order-dependent
+#     state (rate-limit buckets, in-memory caches) is preserved, so a
+#     retry that "shouldn't" pass usually doesn't. That's the desired
+#     behavior: deterministic.
 #
 # ---------------- preflight checks ----------------
 #
@@ -140,6 +150,5 @@ node \
   --max-old-space-size=12288 \
   --experimental-vm-modules \
   node_modules/jest/bin/jest.js \
-  --maxWorkers=1 \
-  --workerIdleMemoryLimit=2048MB \
+  --runInBand \
   --retryTimes=1
