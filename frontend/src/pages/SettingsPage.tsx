@@ -288,11 +288,15 @@ const SettingsPage: React.FC = () => {
         // rotated out from under the modal would otherwise loop forever
         // — every retry returns 403 with no UI escape hatch except a
         // hard reload. Right-to-delete (GDPR) must remain reachable.
-        const status =
-          (err as { status?: number; response?: { status?: number } })?.status ??
-          (err as { response?: { status?: number } })?.response?.status;
+        //
+        // ApiError shape (frontend/src/lib/api-client.ts): { statusCode:number,
+        // status:string, message:string, retryAfter?:number }. We read
+        // `statusCode` (HTTP code) — `status` is the JSON-API status string
+        // (e.g. "error"), not the HTTP status.
+        const statusCode = (err as unknown as { statusCode?: number })?.statusCode;
         const message = err?.message ?? '';
-        const isCsrfClass = status === 403 || /csrf/i.test(message) || /forbidden/i.test(message);
+        const isCsrfClass =
+          statusCode === 403 || /csrf/i.test(message) || /forbidden/i.test(message);
         if (isCsrfClass) {
           toast.error(
             'Your session expired before this action could complete. Please reload the page and try again.'
