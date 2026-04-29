@@ -281,7 +281,7 @@ equoria/
 │   ├── routes/          # API endpoints
 │   ├── models/          # Data models
 │   └── __tests__/       # 468+ tests
-├── frontend/            # React 19 browser game (~60% complete)
+├── frontend/            # React 19 browser game (Epic 18+ shipped — see Epic Deliverables)
 │   └── src/
 ├── packages/database/   # Prisma ORM + PostgreSQL
 └── .claude/            # Documentation (call via skills)
@@ -289,31 +289,11 @@ equoria/
 
 ---
 
-## 🔧 Current Focus Areas
+## 🔧 Recent Epic Highlights
 
-### Epic 9A: Technical Health Sprint ✅ COMPLETE
+Active priority is **Epic 21R — Beta Deployment Readiness Remediation** (see top of file).
 
-1. **9A-1** ✅ Stabilize flaky tests + restore pre-push hook
-2. **9A-2** Historical Playwright E2E baseline. Any old graceful skips are invalid for 21R beta-readiness evidence.
-3. **9A-3** ✅ Project Health Pass (CLAUDE.md, sprint-status sync)
-4. **Quick Actions Bundle** ✅ AI-7-2, AI-7-3, AI-7-4, AI-8-1
-
-### Epic 9B: Navigation & World Hub ✅ COMPLETE
-
-1. **9B-1** ✅ World Hub Page (`/world`) — 8 location cards
-2. **9B-2** ✅ Navigation Restructure — fixed routes, added World/Leaderboards/Settings
-3. **9B-3** ✅ Horse Care Status Strip — `careStatus` prop on HorseCard
-4. **9B-4** ✅ Settings Page (`/settings`) — Account / Notifications / Display
-
-### Epic 9C: Rider System ✅ COMPLETE
-
-1. **9C-1** ✅ Rider Type System — 4 personalities, 3 skill levels, personality badge/display
-2. **9C-2** ✅ Rider Dashboard — slot counter, rider cards, AssignRiderModal
-3. **9C-3** ✅ Career & Discovery — XP/level progress, 3 discovery categories (6 slots)
-4. **9C-4** ✅ Rider Marketplace — RiderList with filter/sort, hire flow, RidersPage
-5. **9C-5** ⏭️ Wire to Live API — deferred (no backend rider endpoints yet)
-
-### Next Epic: TBD (Epic 10)
+For shipped Epic deliverables (9A → 18), see the **Epic Deliverables** sections above and `git log`. Epics 9A/9B/9C/11/12/13/14/16/17/18 are all closed.
 
 ---
 

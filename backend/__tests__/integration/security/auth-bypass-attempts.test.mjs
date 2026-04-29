@@ -21,6 +21,7 @@ import {
   createMockToken,
   createMalformedToken as _createMalformedToken,
 } from '../../factories/index.mjs';
+import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import jwt from 'jsonwebtoken';
 
@@ -45,8 +46,8 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
     // Create test user in database
     testUser = await prisma.user.create({
       data: {
-        email: `test-${Date.now()}_${Math.random().toString(36).slice(2, 6)}-${Math.random().toString(36).substring(7)}@example.com`,
-        username: `testuser-${Date.now()}_${Math.random().toString(36).slice(2, 6)}-${Math.random().toString(36).substring(7)}`,
+        email: `test-${randomBytes(8).toString('hex')}-${Math.random().toString(36).substring(7)}@example.com`,
+        username: `testuser-${randomBytes(8).toString('hex')}-${Math.random().toString(36).substring(7)}`,
         password: 'hashedPassword123', // Mock hashed password
         firstName: 'Test',
         lastName: 'User',
@@ -414,8 +415,8 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       // Create second user
       const userB = await prisma.user.create({
         data: {
-          email: `testB-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
-          username: `testuserB-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          email: `testB-${randomBytes(8).toString('hex')}@example.com`,
+          username: `testuserB-${randomBytes(8).toString('hex')}`,
           password: 'hashedPassword123',
           firstName: 'Test',
           lastName: 'UserB',

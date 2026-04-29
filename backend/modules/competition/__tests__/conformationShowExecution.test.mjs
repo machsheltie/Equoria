@@ -52,7 +52,7 @@ jest.unstable_mockModule('express-validator', () => ({
 // findOwnedResource — jest.fn() so we can control per-test return values
 const mockFindOwnedResource = jest.fn();
 
-jest.unstable_mockModule('../../../middleware/ownership.mjs', () => ({
+jest.unstable_mockModule('../middleware/ownership.mjs', () => ({
   findOwnedResource: mockFindOwnedResource,
   requireOwnership: jest.fn(),
   validateBatchOwnership: jest.fn(),
@@ -68,13 +68,13 @@ const mockPrisma = {
   $transaction: jest.fn(),
 };
 
-jest.unstable_mockModule('../../../db/index.mjs', () => ({ default: mockPrisma }));
+jest.unstable_mockModule('../db/index.mjs', () => ({ default: mockPrisma }));
 
 // conformationShowService — mock executeConformationShow only; pure helpers are tested directly
 let _mockExecuteResult = null; // set per test
 let _mockExecuteError = null; // set per test to simulate thrown errors
 
-jest.unstable_mockModule('../../../services/conformationShowService.mjs', () => ({
+jest.unstable_mockModule('../services/conformationShowService.mjs', () => ({
   executeConformationShow: async _showId => {
     if (_mockExecuteError) {
       throw _mockExecuteError;
@@ -121,12 +121,13 @@ jest.unstable_mockModule('../../../services/conformationShowService.mjs', () => 
   SHOW_HANDLING_SKILL_SCORES: {},
 }));
 
-jest.unstable_mockModule('../../../utils/logger.mjs', () => ({
+jest.unstable_mockModule('../utils/logger.mjs', () => ({
   default: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
 }));
 
 // Rate limiters — plain passthrough middleware (not jest.fn) to survive resetAllMocks
-jest.unstable_mockModule('../../../middleware/rateLimiting.mjs', () => ({
+// 21R-SEC-3-A: path is relative to backend/__tests__/setup.mjs.
+jest.unstable_mockModule('../middleware/rateLimiting.mjs', () => ({
   queryRateLimiter: (_req, _res, next) => next(),
   mutationRateLimiter: (_req, _res, next) => next(),
 }));

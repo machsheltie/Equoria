@@ -5,6 +5,7 @@ import { createMockToken } from '../../factories/index.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { randomBytes } from 'node:crypto';
 /**
  * Integration tests to verify ownership enforcement for core resources.
  * Focuses on realistic, supported endpoints (horses, grooms) and ensures
@@ -43,8 +44,8 @@ describe('Ownership Violation Attempts Integration Tests', () => {
 
     userA = await prisma.user.create({
       data: {
-        email: `userA-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
-        username: `userA-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        email: `userA-${randomBytes(8).toString('hex')}@example.com`,
+        username: `userA-${randomBytes(8).toString('hex')}`,
         password: 'hashedPassword123',
         firstName: 'User',
         lastName: 'A',
@@ -54,8 +55,8 @@ describe('Ownership Violation Attempts Integration Tests', () => {
 
     userB = await prisma.user.create({
       data: {
-        email: `userB-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
-        username: `userB-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        email: `userB-${randomBytes(8).toString('hex')}@example.com`,
+        username: `userB-${randomBytes(8).toString('hex')}`,
         password: 'hashedPassword123',
         firstName: 'User',
         lastName: 'B',
@@ -72,7 +73,7 @@ describe('Ownership Violation Attempts Integration Tests', () => {
 
     horseA = await prisma.horse.create({
       data: {
-        name: `HorseA-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        name: `HorseA-${randomBytes(8).toString('hex')}`,
         userId: userA.id, // Matches schema field (line 144)
         sex: 'mare',
         dateOfBirth: new Date(),
@@ -81,7 +82,7 @@ describe('Ownership Violation Attempts Integration Tests', () => {
 
     horseB = await prisma.horse.create({
       data: {
-        name: `HorseB-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        name: `HorseB-${randomBytes(8).toString('hex')}`,
         userId: userB.id, // Matches schema field (line 144)
         sex: 'stallion',
         dateOfBirth: new Date(),
@@ -90,7 +91,7 @@ describe('Ownership Violation Attempts Integration Tests', () => {
 
     groomA = await prisma.groom.create({
       data: {
-        name: `GroomA-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        name: `GroomA-${randomBytes(8).toString('hex')}`,
         userId: userA.id,
         speciality: 'TRAINING',
         personality: 'diligent',
@@ -99,7 +100,7 @@ describe('Ownership Violation Attempts Integration Tests', () => {
 
     groomB = await prisma.groom.create({
       data: {
-        name: `GroomB-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        name: `GroomB-${randomBytes(8).toString('hex')}`,
         userId: userB.id,
         speciality: 'CARE',
         personality: 'calm',

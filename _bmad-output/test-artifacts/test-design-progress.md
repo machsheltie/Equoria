@@ -1,24 +1,40 @@
 ---
-stepsCompleted: ['step-01-detect-mode', 'update-existing-audit']
-lastStep: 'update-existing-audit'
-lastSaved: '2026-04-10'
-mode: 'update'
+stepsCompleted: ['step-01-detect-mode', 'step-02-load-context', 'step-03-risk-and-testability', 'step-04-coverage-plan', 'step-05-generate-output']
+lastStep: 'step-05-generate-output'
+lastSaved: '2026-04-24'
+workflowType: 'testarch-test-design'
+inputDocuments:
+  - '_bmad/tea/config.yaml'
+  - '_bmad-output/project-context.md'
+  - 'backend/config/config.mjs'
+  - 'backend/middleware/csrf.mjs'
+  - 'backend/utils/tokenRotationService.mjs'
+  - 'backend/utils/emailVerificationService.mjs'
+  - 'backend/__tests__/integration/security/parameter-pollution.test.mjs'
+  - '.github/workflows/test.yml'
+  - '.github/workflows/ci-cd.yml'
+  - '.github/workflows/security-scan.yml'
 ---
 
-## Update Run — 2026-04-10
+# TEA Progress - Equoria Security Hardening Test Design
 
-**Mode:** Update existing TD document (not fresh create)
+## Mode
 
-**Document:** `_bmad-output/test-artifacts/test-design/TD-equoria-test-architecture-2026-04-07.md`
+- System-level mode
+- Reason: broad codebase hardening scope with architecture, security, and release-governance impact
 
-**Changes applied:**
-- R-01: Downgraded from BLOCK (score 9) to MITIGATE (score 6) — 4/18 modules now have co-located tests
-- R-02: Marked RESOLVED (fc96d972)
-- R-04: Marked RESOLVED (co-located tests added for community/riders/trainers)
-- R-12: New finding added — groomBonusTraits FK race, marked RESOLVED (0ee95282)
-- Epic 21 stories 21-1, 21-2, 21-3 marked complete
-- Gate decision updated: BLOCK → CONCERNS
-- Coverage gap matrix updated (community/trainers/riders: Critical → Medium)
-- Flakiness register updated
+## Outputs
 
-**Equoria-cg0:** Ready to close
+- `_bmad-output/test-artifacts/test-design/equoria-security-hardening-test-design-architecture.md`
+- `_bmad-output/test-artifacts/test-design/equoria-security-hardening-test-design-qa.md`
+- `_bmad-output/test-artifacts/test-design/equoria-handoff.md`
+
+## Key Gate Result
+
+- Current release posture: `FAIL`
+- Blockers: `R-001`, `R-002`, `R-003`, `R-004`
+
+## Open Assumptions
+
+- Forced re-login is acceptable for security migration
+- Team wants blocking security governance before launch

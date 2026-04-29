@@ -21,6 +21,7 @@ import {
   resetCacheStatistics,
   generateCacheKey,
 } from '../../utils/cacheHelper.mjs';
+import { randomBytes } from 'node:crypto';
 
 describe('Caching Circuit Breaker Integration Tests', () => {
   beforeEach(() => {
@@ -202,7 +203,7 @@ describe('Caching Circuit Breaker Integration Tests', () => {
     });
 
     it('should invalidate cache by pattern', async () => {
-      const prefix = `test:pattern:${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      const prefix = `test:pattern:${randomBytes(8).toString('hex')}`;
       const key1 = generateCacheKey(prefix, 'item1');
       const key2 = generateCacheKey(prefix, 'item2');
       const key3 = generateCacheKey('different', 'item');

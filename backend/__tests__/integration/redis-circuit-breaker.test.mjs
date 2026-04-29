@@ -25,11 +25,17 @@
  * Use plain new Error() only when testing that filtered errors are propagated but not counted.
  */
 
-import { jest, describe, beforeEach, afterEach, it, expect } from '@jest/globals';
-import { createRedisCircuitBreaker, DEFAULT_CIRCUIT_OPTIONS } from '../../utils/redisCircuitBreaker.mjs';
+import { jest, describe, beforeAll, beforeEach, afterEach, it, expect } from '@jest/globals';
 
-// Mock logger to avoid console pollution during tests
-jest.mock('../../utils/logger.mjs', () => ({
+// 21R-SEC-3-A: ESM mocking pattern. jest.unstable_mockModule resolves
+// paths relative to __tests__/setup.mjs (the setupFilesAfterEnv file),
+// hence ../utils/logger.mjs (1-level-up from __tests__/) rather than the
+// ../../utils/... that would be relative to this test file. The dynamic
+// import below uses the test-file-relative path, which DOES resolve.
+let createRedisCircuitBreaker;
+let DEFAULT_CIRCUIT_OPTIONS;
+
+jest.unstable_mockModule('../utils/logger.mjs', () => ({
   default: {
     info: jest.fn(),
     warn: jest.fn(),
@@ -37,6 +43,10 @@ jest.mock('../../utils/logger.mjs', () => ({
     debug: jest.fn(),
   },
 }));
+
+beforeAll(async () => {
+  ({ createRedisCircuitBreaker, DEFAULT_CIRCUIT_OPTIONS } = await import('../../utils/redisCircuitBreaker.mjs'));
+});
 
 // ── Module-scope helpers ───────────────────────────────────────────────────────
 

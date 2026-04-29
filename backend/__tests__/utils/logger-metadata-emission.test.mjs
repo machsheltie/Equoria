@@ -52,8 +52,28 @@ describe('logger transport output preserves metadata (21R-OBS-1)', () => {
     logger.add(captureTransport);
   });
 
+  // Patch #32 (review hardening): the singleton `logger` survives across
+  // test files in the same Jest worker. If a test crashes between
+  // beforeEach (transport added) and afterEach (transport removed), the
+  // transport persists into the next test — every subsequent test sees
+  // the previous test's `capturedLines` populated and (worse) any other
+  // test file that uses the singleton logger gets garbage-piped into a
+  // dangling stream. The afterEach below uses a try/finally idiom so
+  // even if the test mutates `captureTransport` to undefined or throws
+  // during teardown, the transport reference is captured-by-closure and
+  // the cleanup attempt always runs. We also guard against double-remove
+  // by checking the transport is currently in the logger's transports.
   afterEach(() => {
-    logger.remove(captureTransport);
+    try {
+      if (captureTransport && logger.transports.includes(captureTransport)) {
+        logger.remove(captureTransport);
+      }
+    } catch {
+      // Swallow defensively — afterEach is the LAST line of defense; we
+      // do not want a teardown error to mask the actual test result.
+      // Worst case the transport leaks into the next test which will
+      // fail with extra captured lines — visible, not silent.
+    }
   });
 
   it('appends metadata fields as JSON when logger.warn is called with a metadata object', () => {
@@ -141,5 +161,42 @@ describe('logger transport output preserves metadata (21R-OBS-1)', () => {
     // JSON.stringify drops `undefined` properties; null is preserved.
     expect(line).toContain('"explicitNull":null');
     expect(line).not.toContain('"omitted"');
+  });
+
+  // Patch #22 (review hardening): explicit coverage for the
+  // `logger.warn(message, undefined)` call shape — some call sites pass
+  // an explicit undefined as the second argument. Pre-patch, this
+  // behaviour was unverified. Winston coerces undefined-second-arg into
+  // an empty meta object (no enumerable keys), so the printf appends
+  // nothing — back-compat preserved.
+  it('handles undefined as the second argument (logger.warn(msg, undefined))', () => {
+    logger.warn('[Test] undefined-meta', undefined);
+    expect(capturedLines).toHaveLength(1);
+    const line = capturedLines[0];
+    expect(line).toContain('[Test] undefined-meta');
+    expect(line).not.toMatch(/\{[^}]*\}/);
+  });
+
+  // Patch #1 hardening (logger.mjs): JSON.stringify can throw on
+  // circular references and BigInt values. The printf wraps the
+  // serialisation in try/catch and falls back to a marker string so
+  // the format pipeline does NOT crash. These tests pin the fallback
+  // shape so a future "cleanup" that drops the try/catch breaks them.
+  it('does not throw when metadata contains a circular reference', () => {
+    const circular = {};
+    circular.self = circular;
+    expect(() => logger.warn('[Test] circular', { circ: circular })).not.toThrow();
+    expect(capturedLines).toHaveLength(1);
+    const line = capturedLines[0];
+    expect(line).toContain('[Test] circular');
+    expect(line).toContain('[unserializable meta:');
+  });
+
+  it('does not throw when metadata contains a BigInt value', () => {
+    expect(() => logger.warn('[Test] bigint', { id: 1n })).not.toThrow();
+    expect(capturedLines).toHaveLength(1);
+    const line = capturedLines[0];
+    expect(line).toContain('[Test] bigint');
+    expect(line).toContain('[unserializable meta:');
   });
 });

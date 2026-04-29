@@ -28,6 +28,7 @@ import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { jest as _jest } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 
 _jest.setTimeout(120000);
 
@@ -49,7 +50,7 @@ describe('authenticated auth routes — CSRF enforcement canary', () => {
   });
 
   beforeEach(async () => {
-    const unique = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}${Math.floor(Math.random() * 10000)}`;
+    const unique = `${randomBytes(8).toString('hex')}${Math.floor(Math.random() * 10000)}`;
     const email = `${PREFIX}${unique}@test.com`;
     const username = `${PREFIX}${unique}`;
 

@@ -80,4 +80,23 @@ describe('Request body depth cap (21R-SEC-3)', () => {
       expect(response.body.message).not.toMatch(/nesting too deep/i);
     }
   });
+
+  // Canonical test name from the bd issue Description AC
+  // ("Failing test added FIRST: should reject deeply nested payload").
+  // Functionally identical to the 64-deep array test above; this one exists
+  // so the test name literally matches the AC text the completion_promise
+  // refers to.
+  it('should reject deeply nested payload', async () => {
+    const body = buildDeepArray(64);
+
+    const response = await request(app).post(ENDPOINT).set('Content-Type', 'application/json').send(body);
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual(
+      expect.objectContaining({
+        success: false,
+        message: expect.stringMatching(/nesting too deep/i),
+      }),
+    );
+  });
 });

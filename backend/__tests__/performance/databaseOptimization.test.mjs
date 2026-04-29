@@ -21,6 +21,7 @@ import {
   createOptimizedIndexes,
   benchmarkDatabaseOperations,
 } from '../../services/databaseOptimizationService.mjs';
+import { randomBytes } from 'node:crypto';
 
 // Performance tests for database query optimization
 // Tests measure real database performance with actual queries
@@ -28,7 +29,7 @@ describe('Database Query Optimization', () => {
   let testUserId;
   const testHorseIds = [];
   let testBreed;
-  const testRunId = `perf_${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.floor(Math.random() * 100000)}`;
+  const testRunId = `perf_${randomBytes(8).toString('hex')}_${Math.floor(Math.random() * 100000)}`;
 
   beforeAll(async () => {
     // Create test data for performance testing

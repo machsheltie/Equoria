@@ -28,6 +28,7 @@ import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { jest as _jest } from '@jest/globals';
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
+import { randomBytes } from 'node:crypto';
 
 _jest.setTimeout(120000);
 
@@ -51,7 +52,7 @@ describe('CSRF protection — real browser flow', () => {
   });
 
   beforeEach(async () => {
-    const unique = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}${Math.floor(Math.random() * 10000)}`;
+    const unique = `${randomBytes(8).toString('hex')}${Math.floor(Math.random() * 10000)}`;
     const email = `${TEST_EMAIL_PREFIX}${unique}@test.com`;
     const username = `${TEST_EMAIL_PREFIX}${unique}`;
 

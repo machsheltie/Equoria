@@ -23,12 +23,13 @@ import apiOptimizationRoutes from '../../routes/apiOptimizationRoutes.mjs';
 import { responseHandler } from '../../utils/apiResponse.mjs';
 import { authenticateToken } from '../../middleware/auth.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
+import { randomBytes } from 'node:crypto';
 
 describe('API Optimization Routes', () => {
   let testApp;
   let testUser;
   let authToken;
-  const testRunId = `apiopt_${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.floor(Math.random() * 100000)}`;
+  const testRunId = `apiopt_${randomBytes(8).toString('hex')}_${Math.floor(Math.random() * 100000)}`;
 
   beforeAll(async () => {
     // Create test user

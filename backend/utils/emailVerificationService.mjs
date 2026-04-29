@@ -222,8 +222,10 @@ export async function verifyEmailToken(token, metadata = {}) {
   } catch (error) {
     logger.error('[EmailVerification] Error verifying email token:', error);
 
-    // If it's an AppError (like TOKEN_ALREADY_USED), return its message
-    if (error instanceof AppError) {
+    // If it's an AppError (like TOKEN_ALREADY_USED), return its message.
+    // Symbol-marker check survives module-cache duplication; see
+    // errors/AppError.mjs.
+    if (AppError.isAppError(error)) {
       return {
         success: false,
         error: error.message,

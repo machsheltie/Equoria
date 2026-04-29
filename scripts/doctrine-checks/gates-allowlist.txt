@@ -1,0 +1,10 @@
+# Jobs ending in -gate that are exempt from the "must run on PRs" rule.
+# Each entry must have a one-line comment explaining why.
+#
+# Format: bare job key, one per line. Comments start with #.
+
+# deployment-gate: only meaningful when a merge to master triggers the
+# deploy. It does not validate code; it gates the act of deploying. The
+# upstream gates (security-gate, beta-readiness-gate, coverage-gate) are
+# what validate PRs.
+deployment-gate
