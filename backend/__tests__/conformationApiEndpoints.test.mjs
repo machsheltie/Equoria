@@ -240,7 +240,7 @@ describe('getConformationAnalysis', () => {
 
     const { req, res } = makeMockReqRes({ conformationScores: makeScores(99) });
 
-      await getConformationAnalysis(req, res);
+    await getConformationAnalysis(req, res);
 
     const data = res.json.mock.calls[0][0].data;
     for (const region of CONFORMATION_REGIONS) {
@@ -285,7 +285,7 @@ describe('getConformationAnalysis', () => {
 
     const { req, res } = makeMockReqRes({ conformationScores: BASE_SCORES });
 
-      await getConformationAnalysis(req, res);
+    await getConformationAnalysis(req, res);
 
     const response = res.json.mock.calls[0][0];
     // Valid horses only (null excluded) — at least the 2 we just seeded
