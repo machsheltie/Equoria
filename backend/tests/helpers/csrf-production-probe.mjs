@@ -32,11 +32,18 @@ const SENTINEL = '__CSRF_PROBE_JSON__';
 try {
   const res = await request(app).get('/auth/csrf-token').set('Origin', 'http://localhost:3000');
   const setCookies = res.headers['set-cookie'] || [];
+  // process.exit() does NOT wait for stdout to flush when stdout is piped
+  // (which it is under spawnSync). For small payloads this usually works,
+  // but the surrounding teardown noise (MemoryManager, Sentry flush) plus
+  // the sentinel-wrapped JSON can be lost on slow systems. Use the
+  // callback form so write completes before exit.
   process.stdout.write(
     `${SENTINEL}${JSON.stringify({ status: res.status, setCookies })}${SENTINEL}\n`,
+    () => process.exit(0),
   );
-  process.exit(0);
 } catch (err) {
-  process.stderr.write(`csrf-production-probe failed: ${err && err.stack ? err.stack : err}\n`);
-  process.exit(1);
+  process.stderr.write(
+    `csrf-production-probe failed: ${err && err.stack ? err.stack : err}\n`,
+    () => process.exit(1),
+  );
 }

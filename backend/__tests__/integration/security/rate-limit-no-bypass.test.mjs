@@ -93,8 +93,11 @@ function uniqueTestIp(testName) {
 
   const range = TEST_NET_RANGES[hash % TEST_NET_RANGES.length];
   const octet3 = (hash >>> 8) & 0xff;
-  // Avoid octet4 = 0 (network address) and 255 (broadcast).
-  const octet4 = ((hash >>> 16) & 0xfd) + 1;
+  // Avoid octet4 = 0 (network address) and 255 (broadcast). Map the masked
+  // bits into [1..254] inclusive — `& 0xfd` zeros bit 1 and only reaches
+  // ~half the range; `& 0xfd` (was the bug) → `% 254 + 1` covers the full
+  // usable space evenly.
+  const octet4 = (((hash >>> 16) & 0xff) % 254) + 1;
   const ip = `${range}.${octet3}.${octet4}`;
 
   // Collision check across the lifetime of this Jest worker. If two test
@@ -113,6 +116,18 @@ function uniqueTestIp(testName) {
 }
 
 describe('/api/auth/login authRateLimiter — real-path no-bypass coverage (Equoria-ocn9)', () => {
+  // Code-review chunk-A note: rate-limit assertions are deterministic given
+  // fresh per-test IPs and counter buckets. The project-wide `--retryTimes=1`
+  // re-runs failing tests in the SAME Jest worker, where the in-memory
+  // rate-limit store and SEEN_TEST_IPS Map persist across attempts — so a
+  // retry would use the same IP as the first attempt, hit a hot bucket,
+  // and return 429 immediately. The `uniqueTestIp` cache is preserved
+  // for cross-test collision detection (worth keeping), but the retry
+  // failure mode would be best addressed by the project switching this
+  // suite to `--retryTimes=0` at the runner level (jest.retryTimes is
+  // ESM-restricted and not callable here). For now, suite is deterministic
+  // and we accept the rare retry-amplified flake.
+
   let __csrf__;
 
   beforeAll(async () => {

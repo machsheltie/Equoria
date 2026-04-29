@@ -371,7 +371,9 @@ export const createTestRefreshTokenRecord = async (tokenData = {}) => {
 
   const defaultData = {
     userId: 'test-user-id',
-    familyId: `test-family-${Date.now()}`,
+    // Random suffix prevents same-millisecond collisions on Promise.all
+    // helper invocations. The matching fix to rawToken is on line 369.
+    familyId: `test-family-${Date.now()}-${Math.random().toString(36).substring(2, 8)}`,
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
     isActive: true,
     isInvalidated: false,
@@ -381,10 +383,13 @@ export const createTestRefreshTokenRecord = async (tokenData = {}) => {
   const record = await prisma.refreshToken.create({
     data: { ...defaultData, ...rest, tokenHash },
   });
-  // Expose the raw value for backward compat with callers that still read
-  // `.token` as "the refresh JWT to send back". The DB column is gone.
+  // Expose the raw value via `.rawToken` ONLY. Do NOT also expose as
+  // `.token` — that would re-create a column-named field whose presence
+  // tempts callers to ship the row through code-under-test that thinks
+  // it's reading the DB. The DB column was removed in Equoria-uy73; the
+  // helper field name must not shadow it. Update any caller that still
+  // reads `record.token` to read `record.rawToken` instead.
   record.rawToken = rawToken;
-  record.token = rawToken;
   return record;
 };
 

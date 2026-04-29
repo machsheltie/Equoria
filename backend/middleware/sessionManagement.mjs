@@ -273,16 +273,20 @@ export const getActiveSessions = async (req, res, next) => {
       ? hashRefreshToken(req.cookies.refreshToken)
       : null;
 
+    // Destructure tokenHash out of each row BEFORE the response mapper sees
+    // it. Defense in depth — a future maintainer who adds `...s` or
+    // `tokenHash: s.tokenHash` to the response shape cannot leak the hash.
+    const sessionViews = sessions.map(({ tokenHash, ...rest }) => ({
+      id: rest.id,
+      createdAt: rest.createdAt,
+      lastActivity: rest.lastActivityAt || rest.createdAt,
+      expiresAt: rest.expiresAt,
+      isCurrent: incomingHash !== null && incomingHash === tokenHash,
+    }));
     res.status(200).json({
       success: true,
       data: {
-        sessions: sessions.map(s => ({
-          id: s.id,
-          createdAt: s.createdAt,
-          lastActivity: s.lastActivityAt || s.createdAt,
-          expiresAt: s.expiresAt,
-          isCurrent: incomingHash !== null && incomingHash === s.tokenHash,
-        })),
+        sessions: sessionViews,
         maxConcurrent: MAX_CONCURRENT_SESSIONS,
         sessionTimeout: SESSION_TIMEOUT_MS,
       },
