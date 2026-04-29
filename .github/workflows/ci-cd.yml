@@ -312,7 +312,13 @@ jobs:
 
       - name: 'Seed Performance Test Database'
         working-directory: ./backend
-        run: npm run seed:performance
+        # seed:breeds must run before seed:performance — the perf seeder
+        # picks a random breed via prisma.breed.findMany() and crashes with
+        # "Cannot read properties of undefined (reading 'id')" if the Breed
+        # table is empty (seedPerformanceData.mjs:87).
+        run: |
+          npm run seed:breeds
+          npm run seed:performance
 
       - name: 'Run Performance Tests'
         working-directory: ./backend
