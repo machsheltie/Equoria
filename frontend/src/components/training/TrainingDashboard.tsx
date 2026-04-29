@@ -18,8 +18,8 @@
  * Story 4-2: Training Eligibility Display - Task 3
  */
 
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTrainableHorses } from '@/hooks/api/useTraining';
 import { useProfile } from '@/hooks/useAuth';
 import type { TrainableHorse } from '@/lib/api-client';
@@ -163,8 +163,47 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
   // Navigation for training page
   const navigate = useNavigate();
 
+  // Equoria-ocn9: deep-link via /training?horse=ID — pre-select the horse
+  // when the URL carries the param so the quick-action UX from
+  // HorseListView lands on the right session.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const horseQueryParam = searchParams.get('horse');
+  const autoSelectedRef = useRef(false);
+
   // Fetch horses
   const { data: horses, isLoading, isError, error, refetch } = useTrainableHorses(userId ?? '');
+
+  // Pre-select the horse from ?horse= once horses load. Only runs once per
+  // mount so user manual selections aren't overridden on re-renders.
+  //
+  // Equoria-ocn9 review fix: after consuming the deep-link, strip ?horse=
+  // from the URL via setSearchParams({}). Without this, a user who manually
+  // selected a different horse and then navigated away/back would see the
+  // original deep-linked horse re-selected on remount (URL still carried
+  // the stale ?horse=ID), clobbering their manual choice.
+  useEffect(() => {
+    if (autoSelectedRef.current) return;
+    if (!horseQueryParam || !horses || horses.length === 0) return;
+    const targetId = Number(horseQueryParam);
+    if (!Number.isFinite(targetId)) return;
+    const target = horses.find((h) => h.id === targetId);
+    if (target) {
+      setSelectedHorse(target);
+      autoSelectedRef.current = true;
+      // Strip the now-consumed param so back-navigation doesn't replay it.
+      // Equoria-ocn9 re-review fix: only delete `horse`, preserve any other
+      // params the URL was carrying (analytics utm_*, filters, etc.). The
+      // previous `setSearchParams({})` wiped the entire querystring.
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          next.delete('horse');
+          return next;
+        },
+        { replace: true }
+      );
+    }
+  }, [horseQueryParam, horses, setSearchParams]);
 
   // Convert horses to Horse format for EligibilityFilter
   const horsesForFilter = useMemo((): Horse[] => {

@@ -238,6 +238,11 @@ import errorHandler from './middleware/errorHandler.mjs';
 import { requestLogger, errorRequestLogger } from './middleware/requestLogger.mjs';
 import { setupSwaggerDocs, addDocumentationHeaders } from './middleware/swaggerSetup.mjs';
 import {
+  secureJsonBodyParser,
+  prototypePollutionGuard,
+  jsonBodyErrorHandler,
+} from './middleware/requestBodyGuard.mjs';
+import {
   responseOptimization,
   paginationMiddleware,
   performanceMonitoring,
@@ -440,8 +445,21 @@ const apiLimiter = createRateLimiter({
 app.use('/api/', apiLimiter);
 
 // Body parsing middleware
-app.use(express.json({ limit: '10mb' }));
+// Equoria-ocn9: secureJsonBodyParser rejects duplicate JSON keys at parse
+// time (express.json silently keeps the last value); prototypePollutionGuard
+// rejects __proto__/constructor/prototype keys at any depth. Both respond
+// with HTTP 400.
+//
+// The pollution guard is mounted TWICE — once after the JSON parser and
+// once after the urlencoded parser — so it inspects whichever body shape
+// the request carried. Without the second mount, a payload like
+// `Content-Type: application/x-www-form-urlencoded` body
+// `__proto__[isAdmin]=true` would slip past the JSON-only inspection.
+app.use(secureJsonBodyParser({ limit: '10mb' }));
+app.use(jsonBodyErrorHandler());
+app.use(prototypePollutionGuard());
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(prototypePollutionGuard());
 
 // Cookie parsing middleware for httpOnly cookies
 app.use(cookieParser());

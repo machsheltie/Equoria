@@ -8,6 +8,8 @@
  */
 
 import { jest } from '@jest/globals';
+import express from 'express';
+import request from 'supertest';
 import { createRateLimiter, getRateLimitingHealth, isRedisConnected } from '../../middleware/rateLimiting.mjs';
 
 // Mock Express request/response
@@ -196,29 +198,68 @@ describe('Rate Limiting Circuit Breaker Integration Tests', () => {
     });
   });
 
-  describe('Test Environment Bypasses', () => {
-    // The previous "should bypass rate limiting with test header" test was
-    // removed in Phase 3c: header-based bypass logic was purged from
-    // production middleware (commits 5a158681 / 3590916e), and the
-    // mock-based assertion `expect(next).toHaveBeenCalled()` was passing
-    // for the wrong reason — synthetic mocks never fully invoke the
-    // express-rate-limit counter, so next() fires regardless of the
-    // header. The real contract is now: rate pressure in test env is
-    // controlled by TEST_RATE_LIMIT_WINDOW_MS / TEST_RATE_LIMIT_MAX_REQUESTS
-    // env vars when useEnvOverride is set on the limiter (see test below).
+  // Equoria-ocn9: removed `Test Environment Bypasses` describe block.
+  // The first test ("should bypass rate limiting with test header") asserted
+  // behavior that the production middleware does not implement —
+  // rateLimiting.mjs:273 explicitly comments "No test-only bypass logic."
+  // The test passed only because each loop iteration created a fresh mock
+  // request that did not share a rate-limit key, giving false confidence
+  // that a bypass header was honored. Per the 21R doctrine ("No bypass
+  // evidence"), such tests cannot count as readiness coverage.
+  //
+  // Real no-bypass coverage of the rate-limiter lives in
+  // backend/__tests__/integration/security/rate-limit-no-bypass.test.mjs
+  // (Equoria-ocn9), which exercises the live Express app + middleware
+  // chain without any escape headers and asserts the 429/Retry-After
+  // contract.
+  //
+  // Env-override behavior (TEST_RATE_LIMIT_WINDOW_MS / MAX_REQUESTS) is
+  // already covered indirectly by tests that set those env vars before
+  // creating a limiter; a no-op assertion here added nothing.
 
-    it('should respect test environment overrides', async () => {
-      // Test uses environment variable overrides
-      const limiter = createRateLimiter({
-        windowMs: 60000,
-        max: 100,
-        keyPrefix: 'env-override',
-        useEnvOverride: true, // Allow test environment overrides
-      });
+  describe('Environment Configuration', () => {
+    it('respects useEnvOverride=false even when TEST_RATE_LIMIT_MAX_REQUESTS is huge (Equoria-ocn9 review)', async () => {
+      // Equoria-ocn9 review fix: the previous test only asserted
+      // `expect(limiter).toBeDefined()` which passes for any return value.
+      // That gave the same false confidence the deleted bypass-header test
+      // gave. This rewrite actually exercises the limiter:
+      //
+      //   1. Set TEST_RATE_LIMIT_MAX_REQUESTS to an inflated value.
+      //   2. Create a limiter with useEnvOverride:false and a low hard-coded max.
+      //   3. Hammer it with max+1 requests against a real (test-only) Express app.
+      //   4. Assert the (max+1)-th request returns 429 — proving the env var
+      //      did NOT loosen the limit.
+      //
+      // If a regression made useEnvOverride:false accidentally honor env vars,
+      // the env-set 999999 cap would mean no request ever returns 429 and
+      // this test would fail loudly.
+      const HARD_MAX = 3;
+      const previousMax = process.env.TEST_RATE_LIMIT_MAX_REQUESTS;
+      process.env.TEST_RATE_LIMIT_MAX_REQUESTS = '999999';
+      try {
+        const app = express();
+        const limiter = createRateLimiter({
+          windowMs: 60000,
+          max: HARD_MAX,
+          keyPrefix: 'no-override-real-assertion',
+          useEnvOverride: false, // env knob MUST be ignored
+        });
+        app.get('/probe', limiter, (_req, res) => res.status(200).json({ ok: true }));
 
-      expect(limiter).toBeDefined();
-      // Environment variables TEST_RATE_LIMIT_WINDOW_MS and TEST_RATE_LIMIT_MAX_REQUESTS
-      // would be used if set
+        for (let i = 0; i < HARD_MAX; i++) {
+          const res = await request(app).get('/probe');
+          expect(res.status).toBe(200);
+        }
+
+        const blocked = await request(app).get('/probe');
+        expect(blocked.status).toBe(429);
+      } finally {
+        if (previousMax === undefined) {
+          delete process.env.TEST_RATE_LIMIT_MAX_REQUESTS;
+        } else {
+          process.env.TEST_RATE_LIMIT_MAX_REQUESTS = previousMax;
+        }
+      }
     });
   });
 
