@@ -455,6 +455,21 @@ app.use('/api/', apiLimiter);
 // the request carried. Without the second mount, a payload like
 // `Content-Type: application/x-www-form-urlencoded` body
 // `__proto__[isAdmin]=true` would slip past the JSON-only inspection.
+//
+// ⚠ MULTIPART CAVEAT (Equoria-ocn9 review): the global guards above run
+// BEFORE any per-route multipart parser (multer or busboy). The codebase
+// currently does not mount a multipart parser anywhere — `horseRoutes.mjs`
+// explicitly rejects `multipart/form-data` content types. If you ever add
+// a multipart parser to a route, you MUST mount `prototypePollutionGuard()`
+// AFTER that parser on the same route, e.g.:
+//
+//   router.post('/upload', multer().single('file'), prototypePollutionGuard(), handler);
+//
+// Otherwise a multipart field named `__proto__[isAdmin]` reaches the
+// handler unfiltered. This is intentionally documented here rather than
+// enforced via a runtime check because (a) there is no multipart parser
+// to enforce against today, and (b) future maintainers must read this
+// note before mounting one.
 app.use(secureJsonBodyParser({ limit: '10mb' }));
 app.use(jsonBodyErrorHandler());
 app.use(prototypePollutionGuard());

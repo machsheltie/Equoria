@@ -65,7 +65,7 @@ describe('Session Management Middleware', () => {
         });
 
         req.user = { id: user.id };
-        req.cookies = { refreshToken: token.token };
+        req.cookies = { refreshToken: token.rawToken };
       });
 
       it('should update lastActivityAt for valid session', async () => {
@@ -176,7 +176,7 @@ describe('Session Management Middleware', () => {
         user = await createTestUser();
         token = await createTestRefreshToken(user.id);
         req.user = { id: user.id };
-        req.cookies = { refreshToken: token.token };
+        req.cookies = { refreshToken: token.rawToken };
       });
 
       afterEach(() => {

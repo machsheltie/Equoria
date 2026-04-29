@@ -23,6 +23,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { User, Bell, Monitor, ChevronRight, Settings } from 'lucide-react';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 import PageHero from '@/components/layout/PageHero';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
@@ -115,6 +116,7 @@ const SettingsPage: React.FC = () => {
   const changePassword = useChangePassword();
   const deleteAccount = useDeleteAccount();
   const logout = useLogout();
+  const queryClient = useQueryClient();
 
   // -------- Account form state (controlled, seeded from user) --------
   const [username, setUsername] = useState<string>(user?.username ?? '');
@@ -207,6 +209,27 @@ const SettingsPage: React.FC = () => {
             'Password changed. You will be signed out — please log in with your new password.'
           );
           resetPasswordForm();
+          // Code-review chunk-A fix: cross-tab cache invalidation. The server
+          // invalidates all sessions on password change, but other tabs in
+          // this browser still hold cached identity / horse / balance data
+          // in React Query until their next request 401s — a brief window
+          // where stale PII is readable. Synchronously clear the cache and
+          // dispatch a storage event so siblings detect the password change
+          // immediately via window.addEventListener('storage', …).
+          queryClient.clear();
+          try {
+            // setItem-then-removeItem fires a storage event in OTHER tabs
+            // (the originating tab gets nothing). The flag value is
+            // deliberately a timestamp so identical replays still trigger
+            // the storage handler.
+            const flagKey = 'equoria:forceLogoutAt';
+            localStorage.setItem(flagKey, String(Date.now()));
+            localStorage.removeItem(flagKey);
+          } catch {
+            // localStorage may be unavailable (quota / private mode); cache
+            // clear above is the primary defense, the storage event is a
+            // secondary nicety.
+          }
           // Equoria-ocn9 review fix: the server invalidates all sessions on
           // a password change (CWE-613). The client must follow. Previously
           // we called `logout.mutate()` and left it at that — but if logout
@@ -250,10 +273,43 @@ const SettingsPage: React.FC = () => {
       return;
     }
     deleteAccount.mutate(user.id, {
-      onError: (err) => {
-        toast.error(err?.message ?? 'Could not delete account.');
+      onSuccess: () => {
+        // Code-review chunk-A fix: explicitly close the modal on success
+        // BEFORE the hook's redirect kicks in. Without this, the modal
+        // stays mounted during the unmount race and the Confirm button
+        // can re-fire the mutation if the user double-clicks. The hook
+        // also clears cache and redirects, but those are unmount-side;
+        // closing the modal is a render-side concern.
+        closeDeleteModal();
       },
-      // onSuccess is handled inside the hook (clears cache, redirects).
+      onError: (err) => {
+        // Code-review chunk-A fix: detect CSRF/expiry-class failures and
+        // surface a recovery path. A long-idle session whose CSRF token
+        // rotated out from under the modal would otherwise loop forever
+        // — every retry returns 403 with no UI escape hatch except a
+        // hard reload. Right-to-delete (GDPR) must remain reachable.
+        //
+        // ApiError shape (frontend/src/lib/api-client.ts): { statusCode:number,
+        // status:string, message:string, retryAfter?:number }. We read
+        // `statusCode` (HTTP code) — `status` is the JSON-API status string
+        // (e.g. "error"), not the HTTP status.
+        const statusCode = (err as unknown as { statusCode?: number })?.statusCode;
+        const message = err?.message ?? '';
+        const isCsrfClass =
+          statusCode === 403 || /csrf/i.test(message) || /forbidden/i.test(message);
+        if (isCsrfClass) {
+          toast.error(
+            'Your session expired before this action could complete. Please reload the page and try again.'
+          );
+          // Close the modal so the user can recover; the typed
+          // confirmation is lost intentionally — they will type it again
+          // after a fresh session, which is consistent with the
+          // typed-confirmation security gesture.
+          closeDeleteModal();
+          return;
+        }
+        toast.error(message || 'Could not delete account.');
+      },
     });
   };
 

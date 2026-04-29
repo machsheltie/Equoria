@@ -147,12 +147,14 @@ export async function createTestRefreshToken(userId, overrides = {}) {
   const record = await prisma.refreshToken.create({
     data: { ...defaultToken, ...rest, tokenHash },
   });
-  // Expose the raw token alongside the DB row. The column itself is gone
-  // (Equoria-uy73) but callers still need the raw value to send as the
-  // refreshToken cookie/header in tests. `.token` stays as the raw value
-  // for backward compat with ~15 call sites that do `record.token`.
+  // Expose the raw token via `.rawToken` ONLY. We deliberately do NOT also
+  // alias `.token = rawToken`: a `.token` field shadowing the removed DB
+  // column tempts a future caller to ship the row through code-under-test
+  // that thinks it's reading the DB. Caller audit (search for `.token` on
+  // refresh-token records) found no remaining reads of `record.token` —
+  // the only `.token` reference in tests is `expect(session.token).toBeUndefined()`
+  // on the API response, which this rename does not affect.
   record.rawToken = rawToken;
-  record.token = rawToken;
   return record;
 }
 

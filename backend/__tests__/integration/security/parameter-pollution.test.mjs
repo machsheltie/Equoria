@@ -172,6 +172,25 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       expect(response.body.message).toMatch(/Duplicate key/i);
     });
 
+    it('rejects malformed JSON with trailing escape at MALFORMED_JSON_BODY error code (Equoria code-review chunk-A)', async () => {
+      // Code-review chunk-A: the duplicate-key tokenizer must throw on
+      // malformed-string EOF rather than silently exit and admit a
+      // meaningless rawKey. This guards the contract against a future
+      // refactor that moves dup-detection post-parse.
+      const malformedPayload = '{"a":"unterminated\\';
+
+      const response = await request(app)
+        .put(`/api/horses/${testHorse.id}`)
+        .set('Authorization', `Bearer ${validToken}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .set('Content-Type', 'application/json')
+        .send(malformedPayload)
+        .expect(400);
+      expect(response.body.success).toBe(false);
+    });
+
     it('should reject nested parameter pollution', async () => {
       const response = await request(app)
         .put(`/api/horses/${testHorse.id}`)

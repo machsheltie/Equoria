@@ -55,6 +55,86 @@ export function generateTokenFamily() {
 }
 
 /**
+ * Build a fresh signed JWT pair with unique JTIs. Pure — no DB I/O.
+ * Returned pair is guaranteed to differ across calls (16-byte random JTI).
+ */
+function _buildSignedTokenPair(userId, familyId) {
+  const timestamp = Date.now();
+  const nanoTime = process.hrtime.bigint();
+  const randomBytes = crypto.randomBytes(16).toString('hex');
+  const accessJti = `access-${timestamp}-${nanoTime}-${randomBytes}`;
+  const refreshJti = `refresh-${timestamp}-${nanoTime}-${randomBytes}`;
+  const accessPayload = {
+    userId,
+    type: 'access',
+    jti: accessJti,
+    iat: Math.floor(Date.now() / 1000),
+  };
+  const refreshPayload = {
+    userId,
+    type: 'refresh',
+    familyId,
+    jti: refreshJti,
+    iat: Math.floor(Date.now() / 1000),
+  };
+  const accessToken = jwt.sign(accessPayload, process.env.JWT_SECRET, {
+    algorithm: 'HS256',
+    expiresIn: TOKEN_CONFIG.ACCESS_TOKEN_EXPIRY,
+  });
+  const refreshToken = jwt.sign(refreshPayload, process.env.JWT_REFRESH_SECRET, {
+    algorithm: 'HS256',
+    expiresIn: TOKEN_CONFIG.REFRESH_TOKEN_EXPIRY,
+  });
+  return { accessToken, refreshToken };
+}
+
+/**
+ * Persist a refresh-token row, regenerating the JWT pair on a tokenHash
+ * unique-constraint collision (Prisma P2002). Astronomically rare in normal
+ * operation; possible after a partial migration leaves stale rows.
+ *
+ * Uses `prismaClient` parameter so callers can pass either the global prisma
+ * or a transaction client (`tx`).
+ */
+async function _persistRefreshTokenWithRetry({
+  prismaClient,
+  userId,
+  familyId,
+  expiresAt,
+  initialPair,
+}) {
+  const MAX_ATTEMPTS = 3;
+  let pair = initialPair;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      await prismaClient.refreshToken.create({
+        data: {
+          tokenHash: hashRefreshToken(pair.refreshToken),
+          userId,
+          familyId,
+          expiresAt,
+          isActive: true,
+          isInvalidated: false,
+        },
+      });
+      return pair;
+    } catch (err) {
+      if (err?.code === 'P2002' && attempt < MAX_ATTEMPTS) {
+        logger.warn('[TokenRotation] tokenHash collision (P2002), regenerating JWT pair', {
+          attempt,
+          userId,
+        });
+        pair = _buildSignedTokenPair(userId, familyId);
+        continue;
+      }
+      throw err;
+    }
+  }
+  // Unreachable: loop either returns on success or throws above.
+  throw new Error('refresh-token persistence exhausted retry budget');
+}
+
+/**
  * Create Token Pair (Access + Refresh)
  * Generates a new access/refresh token pair with family tracking
  *
@@ -68,43 +148,7 @@ export async function createTokenPair(userId, familyId) {
       familyId = generateTokenFamily();
     }
 
-    // Generate unique JWT IDs (JTI) for guaranteed token uniqueness
-    // Format: timestamp-nanotime-randomBytes (128 bits entropy)
-    const timestamp = Date.now();
-    const nanoTime = process.hrtime.bigint();
-    const randomBytes = crypto.randomBytes(16).toString('hex');
-    const accessJti = `access-${timestamp}-${nanoTime}-${randomBytes}`;
-    const refreshJti = `refresh-${timestamp}-${nanoTime}-${randomBytes}`;
-
-    // Create access token payload
-    const accessPayload = {
-      userId,
-      type: 'access',
-      jti: accessJti, // Unique identifier for this token
-      iat: Math.floor(Date.now() / 1000),
-    };
-
-    // Create refresh token payload
-    const refreshPayload = {
-      userId,
-      type: 'refresh',
-      familyId,
-      jti: refreshJti, // Unique identifier for this token
-      iat: Math.floor(Date.now() / 1000),
-    };
-
-    // Sign tokens with explicit HS256 algorithm (SECURITY: must match auth.mjs verification)
-    const accessToken = jwt.sign(accessPayload, process.env.JWT_SECRET, {
-      algorithm: 'HS256',
-      expiresIn: TOKEN_CONFIG.ACCESS_TOKEN_EXPIRY,
-    });
-
-    const refreshToken = jwt.sign(refreshPayload, process.env.JWT_REFRESH_SECRET, {
-      algorithm: 'HS256',
-      expiresIn: TOKEN_CONFIG.REFRESH_TOKEN_EXPIRY,
-    });
-
-    // Calculate expiration date
+    let { accessToken, refreshToken } = _buildSignedTokenPair(userId, familyId);
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
     // Store refresh token in database (best-effort in tests)
@@ -133,16 +177,15 @@ export async function createTokenPair(userId, familyId) {
     await ensureUserExists();
 
     try {
-      await prisma.refreshToken.create({
-        data: {
-          tokenHash: hashRefreshToken(refreshToken),
-          userId,
-          familyId,
-          expiresAt,
-          isActive: true,
-          isInvalidated: false,
-        },
+      const finalPair = await _persistRefreshTokenWithRetry({
+        prismaClient: prisma,
+        userId,
+        familyId,
+        expiresAt,
+        initialPair: { accessToken, refreshToken },
       });
+      accessToken = finalPair.accessToken;
+      refreshToken = finalPair.refreshToken;
     } catch (err) {
       if (process.env.NODE_ENV === 'test') {
         logger.warn('[TokenRotation] Skipping refresh token persistence in test env', {
@@ -213,9 +256,17 @@ export async function validateRefreshToken(token) {
     });
 
     if (!tokenRecord) {
+      // Distinguish "this user has zero tokens at all" (system-level purge —
+      // typically a destructive migration that wiped refresh tokens) from
+      // "this specific token is gone while others remain" (genuine reuse
+      // signal). The former is a session upgrade and must NOT poison the
+      // reuse-detection audit log. See `docs/migration-deploy-checklist.md`.
+      const userTokenCount = await prisma.refreshToken.count({
+        where: { userId: decoded.userId },
+      });
       return {
         isValid: false,
-        error: 'Token not found in database',
+        error: userTokenCount === 0 ? 'SESSION_UPGRADE_REQUIRED' : 'Token not found in database',
         decoded: null,
       };
     }
@@ -267,8 +318,19 @@ export async function validateRefreshToken(token) {
  */
 export async function detectTokenReuse(token) {
   try {
-    // First validate token structure (throws error if invalid)
-    await validateRefreshToken(token);
+    // First validate token structure. If validateRefreshToken signals a
+    // system-level session upgrade (zero tokens for this user — caused by
+    // a destructive migration), propagate that as a non-reuse signal so the
+    // audit log isn't poisoned with false reuse alerts.
+    const validation = await validateRefreshToken(token);
+    if (validation.error === 'SESSION_UPGRADE_REQUIRED') {
+      return {
+        isReuse: false,
+        familyId: null,
+        shouldInvalidateFamily: false,
+        reason: 'SESSION_UPGRADE_REQUIRED',
+      };
+    }
 
     // If token is inactive, it might be reuse (look up by hash, not raw JWT)
     const tokenHash = hashRefreshToken(token);
@@ -369,72 +431,42 @@ export async function rotateRefreshToken(oldToken) {
       };
     }
 
-    // Use transaction to ensure atomicity
+    // Use transaction to ensure atomicity. Two concurrent /api/auth/refresh
+    // calls with the same old token must not both succeed: validateRefreshToken
+    // sees isActive:true for both before either tx starts, so we cannot rely
+    // on the pre-transaction validation. Instead, atomically flip
+    // isActive:true→false; if `count` is 0, another request already rotated
+    // this token and we must abort to preserve the rotation/reuse contract.
     const result = await prisma.$transaction(async tx => {
-      // Mark old token as used (inactive but not invalidated). Look up by
-      // hash — raw JWT is no longer stored (Equoria-uy73).
-      await tx.refreshToken.update({
-        where: { tokenHash: hashRefreshToken(oldToken) },
+      const upd = await tx.refreshToken.updateMany({
+        where: { tokenHash: hashRefreshToken(oldToken), isActive: true },
         data: { isActive: false },
       });
+      if (upd.count === 0) {
+        const concurrentError = new Error('Token already rotated by a concurrent request');
+        concurrentError.code = 'CONCURRENT_ROTATION';
+        throw concurrentError;
+      }
 
-      // Create new token pair with same family ID inline (must use tx, not global prisma)
+      // Create new token pair with same family ID. Persist via the shared
+      // retry helper so a tokenHash collision (P2002) — possible after a
+      // partial migration leaves stale rows — regenerates the JWT pair
+      // automatically rather than surfacing a 500 to the user.
       const userId = validation.decoded.userId;
       const familyId = validation.decoded.familyId;
-
-      // Generate unique JWT IDs
-      const timestamp = Date.now();
-      const nanoTime = process.hrtime.bigint();
-      const randomBytes = crypto.randomBytes(16).toString('hex');
-      const accessJti = `access-${timestamp}-${nanoTime}-${randomBytes}`;
-      const refreshJti = `refresh-${timestamp}-${nanoTime}-${randomBytes}`;
-
-      // Create access token payload
-      const accessPayload = {
-        userId,
-        type: 'access',
-        jti: accessJti,
-        iat: Math.floor(Date.now() / 1000),
-      };
-
-      // Create refresh token payload
-      const refreshPayload = {
-        userId,
-        type: 'refresh',
-        familyId,
-        jti: refreshJti,
-        iat: Math.floor(Date.now() / 1000),
-      };
-
-      // Sign tokens with explicit HS256 algorithm (SECURITY: must match auth.mjs verification)
-      const accessToken = jwt.sign(accessPayload, process.env.JWT_SECRET, {
-        algorithm: 'HS256',
-        expiresIn: TOKEN_CONFIG.ACCESS_TOKEN_EXPIRY,
-      });
-
-      const refreshToken = jwt.sign(refreshPayload, process.env.JWT_REFRESH_SECRET, {
-        algorithm: 'HS256',
-        expiresIn: TOKEN_CONFIG.REFRESH_TOKEN_EXPIRY,
-      });
-
-      // Calculate expiration date
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-
-      // Store refresh token in database using transaction client (hashed at rest)
-      await tx.refreshToken.create({
-        data: {
-          tokenHash: hashRefreshToken(refreshToken),
-          userId,
-          familyId,
-          expiresAt,
-          isActive: true,
-          isInvalidated: false,
-        },
+      const initialPair = _buildSignedTokenPair(userId, familyId);
+      const finalPair = await _persistRefreshTokenWithRetry({
+        prismaClient: tx,
+        userId,
+        familyId,
+        expiresAt,
+        initialPair,
       });
 
       return {
-        accessToken,
-        refreshToken,
+        accessToken: finalPair.accessToken,
+        refreshToken: finalPair.refreshToken,
         familyId,
       };
     });
@@ -451,6 +483,22 @@ export async function rotateRefreshToken(oldToken) {
       familyInvalidated: false,
     };
   } catch (error) {
+    // Concurrent-rotation race: a parallel request beat us to flipping
+    // isActive. The other request already issued a fresh pair to the legit
+    // caller; the loser of the race returns a clean 401-equivalent without
+    // poisoning the audit log or invalidating the family.
+    if (error?.code === 'CONCURRENT_ROTATION') {
+      logger.info('[TokenRotation] Concurrent rotation detected — losing request returns failure', {
+        message: error.message,
+      });
+      return {
+        success: false,
+        error: 'Concurrent token rotation — please retry',
+        newTokenPair: null,
+        familyInvalidated: false,
+      };
+    }
+
     logger.error('[TokenRotation] Error rotating refresh token:', error);
 
     return {

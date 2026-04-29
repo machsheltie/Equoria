@@ -101,6 +101,24 @@ describe('CSRF cookie-name contract', () => {
     const hostCsrfCookie = setCookies.find(c => c.startsWith('__Host-csrf='));
     expect(hostCsrfCookie).toBeTruthy();
 
+    // The cookie-name prefix is necessary but not sufficient. Browsers only
+    // accept `__Host-` cookies that ALSO carry `Secure`, `Path=/`, and no
+    // `Domain` attribute (RFC 6265bis). A regression that drops any of these
+    // would still produce the right NAME but a non-functional cookie.
+    // Assert the full attribute contract so a future change can't pass the
+    // prefix check while quietly breaking the security property.
+    expect(hostCsrfCookie).toMatch(/;\s*Secure(\s*;|\s*$)/);
+    expect(hostCsrfCookie).toMatch(/;\s*Path=\/(\s*;|\s*$)/);
+    expect(hostCsrfCookie).not.toMatch(/;\s*Domain=/i);
+    // `__Host-csrf` is a CSRF double-submit cookie — it MUST be readable
+    // server-side so the validator can compare it against the X-CSRF-Token
+    // header. HttpOnly would break the contract; assert it is NOT set.
+    expect(hostCsrfCookie).not.toMatch(/;\s*HttpOnly(\s*;|\s*$)/i);
+    // SameSite=Strict is the strongest default for double-submit; Lax is
+    // also acceptable. Reject None (which permits cross-site sends and
+    // defeats CSRF protection).
+    expect(hostCsrfCookie).toMatch(/;\s*SameSite=(Strict|Lax)(\s*;|\s*$)/);
+
     // `_csrf` (the non-production name) MUST NOT appear under production.
     const devCsrfCookie = setCookies.find(c => c.startsWith('_csrf='));
     expect(devCsrfCookie).toBeFalsy();

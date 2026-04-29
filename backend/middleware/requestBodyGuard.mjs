@@ -136,15 +136,35 @@ export function detectDuplicateJsonKeys(raw) {
       // turns out to be a key.
       const start = i + 1;
       i++;
+      let foundClose = false;
       while (i < len) {
         if (raw[i] === '\\') {
+          // Skip the backslash and the next char. If the body ends mid-
+          // escape (i + 1 >= len), the JSON is malformed: stop walking and
+          // throw so a future refactor that moves this scan post-parse
+          // can't silently admit a duplicate-key bypass.
+          if (i + 1 >= len) {
+            const err = new Error('Malformed JSON: trailing escape in string literal');
+            err.statusCode = 400;
+            err.code = 'MALFORMED_JSON_BODY';
+            throw err;
+          }
           i += 2; // skip escape sequence (\" \\ \/ \b \f \n \r \t \uXXXX)
           continue;
         }
         if (raw[i] === '"') {
+          foundClose = true;
           break;
         }
         i++;
+      }
+      // String literal never terminated. As above, refuse to scan further
+      // rather than silently produce a meaningless rawKey.
+      if (!foundClose) {
+        const err = new Error('Malformed JSON: unterminated string literal');
+        err.statusCode = 400;
+        err.code = 'MALFORMED_JSON_BODY';
+        throw err;
       }
       const rawKey = raw.slice(start, i);
       i++; // consume closing quote
