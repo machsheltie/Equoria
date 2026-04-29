@@ -140,6 +140,11 @@
 # finding. Nothing to remediate.
 10109	IGNORE		# Modern Web Application (SPA detection, not a defect)
 
+# Rule 40040 fires when CORS response headers are present. It is purely
+# informational — detecting that CORS is configured, not that it is wrong.
+# Our CORS policy is intentionally set for local dev and the Railway origin.
+40040	IGNORE		# CORS Header (informational presence detection, not a misconfiguration)
+
 # Sec-Fetch-Dest / Mode / Site / User are REQUEST headers that real browsers
 # send; ZAP does not send them. Every passive scan therefore flags them as
 # "missing" on the outbound response. There is nothing a server can do to
