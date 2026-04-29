@@ -36,7 +36,7 @@ The redesign separates concerns:
 
 - Auto-feed automation, scheduled-feeding cron, or "set and forget" toggles.
 - Feed expiration or spoilage.
-- Per-discipline feed bonuses (the stat-boost roll is uniform across all 10 stats).
+- Per-discipline feed bonuses (the stat-boost roll is uniform across all 12 stats).
 - Migration of existing live data (the player base is one tester with two test horses; wipe is acceptable).
 
 ## 3. Decisions Log
@@ -52,7 +52,7 @@ The redesign separates concerns:
 | 7   | Feed history during pregnancy (option C2) | Counter on the pregnancy record: `feedingsByTier: {basic: n, performance: n, ...}`. Incremented on each feeding while the mare is in-foal. At foaling, weighted average produces positive trait chance; missed days produce negative.                                                                                                               |
 | 8   | Mixed-feeding fairness                    | Linear weighted average. `positive_chance = Σ(count × bonus_pct) / max(7, total_feedings)`. `negative_chance = unfed_days × 5%`. Both rolls independent.                                                                                                                                                                                            |
 | 9   | Daily rollover boundary                   | UTC midnight (server-authoritative, deterministic).                                                                                                                                                                                                                                                                                                 |
-| 10  | Stat cap                                  | None. Stats are unbounded. The boost picks uniformly from all 10 stats with no filtering.                                                                                                                                                                                                                                                           |
+| 10  | Stat cap                                  | None. Stats are unbounded. The boost picks uniformly from all 12 stats with no filtering.                                                                                                                                                                                                                                                           |
 | 11  | Beta-readiness scheduling                 | Land in parallel with the 21R lockdown (option B). The readiness gate re-runs against the new feed surface before signoff.                                                                                                                                                                                                                          |
 
 ## 4. Architecture
@@ -122,25 +122,74 @@ Feed lives alongside tack. New row shape:
 
 ### 5.2 `Horse` model (Prisma — schema change)
 
-| Field              | Action   | Type        | Notes                                                                                   |
-| ------------------ | -------- | ----------- | --------------------------------------------------------------------------------------- |
-| `equippedFeedType` | **ADD**  | `String?`   | `'basic' \| 'performance' \| 'performancePlus' \| 'highPerformance' \| 'elite' \| null` |
-| `lastFedDate`      | KEEP     | `DateTime?` | Drives health bands and once-per-day check                                              |
-| `currentFeed`      | **DROP** | —           | Redundant with `equippedFeedType`                                                       |
-| `energyLevel`      | **DROP** | —           | Health is derived from `lastFedDate`; no separate stat                                  |
+| Field                     | Action   | Type                  | Notes                                                                                                                        |
+| ------------------------- | -------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `equippedFeedType`        | **ADD**  | `String?`             | `'basic' \| 'performance' \| 'performancePlus' \| 'highPerformance' \| 'elite' \| null`                                      |
+| `lastFedDate`             | KEEP     | `DateTime?`           | Drives feed-health bands and once-per-day check                                                                              |
+| `lastVettedDate`          | KEEP     | `DateTime?`           | Drives vet-health bands (recon Finding 2 → α: weekly decay)                                                                  |
+| `healthStatus`            | KEEP     | `String?`             | **Vet-override**. When non-null, overrides the lastVettedDate-derived band. Used by existing vet-finding outcomes (illness). |
+| `inFoalSinceDate`         | **ADD**  | `DateTime?`           | Set on conception (Phase B). NULL = mare is not in-foal.                                                                     |
+| `pregnancySireId`         | **ADD**  | `Int?`                | Sire of the active pregnancy. Cleared at foaling. Recon Finding 3 → P1+ extension.                                           |
+| `pregnancyFeedingsByTier` | **ADD**  | `Json @default("{}")` | Feed-tier counter accumulator. `{basic: n, performance: n, ...}`. Reset to `{}` at foaling.                                  |
+| `currentFeed`             | **DROP** | —                     | Redundant with `equippedFeedType`                                                                                            |
+| `energyLevel`             | **DROP** | —                     | Feed-health is derived from `lastFedDate`; no separate stat                                                                  |
+| `coordination`            | **DROP** | —                     | Recon Finding 1 → B: removed from schema entirely. Cleanup task scans for any remaining reads/writes.                        |
 
-### 5.3 `Pregnancy` record (schema change)
+### 5.3 In-foal state (columns on `Horse`, recon Finding 3 → P1+)
 
-(Exact table name — `Pregnancy`, embedded on `Breeding`, or other — confirmed at implementation time. The contract is: a record exists for the in-foal window from breeding event to foal birth.)
+Per recon Finding 3: the codebase has no `Pregnancy` model. The in-foal window is a transient property of the dam, so it lives as three columns on `Horse`:
 
-| Field            | Action  | Type                  | Notes                                         |
-| ---------------- | ------- | --------------------- | --------------------------------------------- |
-| `feedingsByTier` | **ADD** | `Json @default("{}")` | `{basic: n, performance: n, ...}` accumulator |
+- `inFoalSinceDate`: set when breeding occurs (Phase B), cleared when foal is born.
+- `pregnancySireId`: foreign key to the sire of the active pregnancy. Cleared at foaling. Lets the foaling job correctly attribute the resulting foal's `sireId`.
+- `pregnancyFeedingsByTier`: incremented on each feeding while `inFoalSinceDate IS NOT NULL`. Reset to `{}` at foaling.
 
-### 5.4 Health (computed, never stored)
+The current `createFoal` endpoint (`backend/modules/horses/controllers/horseController.mjs:234`) creates foals **instantly** with no delay. **Phase B** of the implementation plan refactors that to:
+
+1. Breeding endpoint sets `dam.inFoalSinceDate = now`, `dam.pregnancySireId = sireId`. No foal record created yet.
+2. A scheduled foaling job (cron or on-read poll) fires at `inFoalSinceDate + 7 days`.
+3. The job reads `pregnancyFeedingsByTier`, runs the formula (§8.2), rolls positive/negative epigenetic traits, creates the foal record (using existing `createFoal` logic minus the synchronous-create scaffold), and resets the dam's pregnancy columns to `null`/`{}`.
+
+The resulting foal record itself becomes the historical audit (it has `damId`, `sireId`, and `createdAt` — gestation can be reconstructed by correlating `createdAt − 7 days` with the dam's `lastBredDate`). No separate audit table needed.
+
+### 5.3.1 Combined health model (recon Finding 2 → α: symmetric two-derived + min)
+
+Both vet-health and feed-health are **derived**, never stored. The displayed health is the **worse of the two** — worst factor wins.
+
+- **`getVetHealth(horse)`** — computed from `lastVettedDate` with weekly decay; overridable by `healthStatus` for vet-finding outcomes:
+
+  - If `healthStatus` is non-null → return `healthStatus` (vet-finding override).
+  - Else if `horse.age >= 21` → `'retired'`.
+  - Else if `lastVettedDate IS NULL` → `'critical'`.
+  - Else compute days-since-last-vet (UTC) → bands:
+    - `≤ 7 days` → `'excellent'`
+    - `8–14` → `'good'`
+    - `15–21` → `'fair'`
+    - `22–28` → `'poor'`
+    - `29+` → `'critical'`
+
+- **`getFeedHealth(horse)`** — computed from `lastFedDate` with daily decay (see §5.4 below).
+
+- **`getDisplayedHealth(horse) = worseOf(vetHealth, feedHealth)`** where `worseOf` returns the band closer to `'critical'` on the order `excellent < good < fair < poor < critical`. (`'retired'` is special: if either side returns `'retired'`, the displayed health is `'retired'` — overrides both.)
+
+The breeding and competition-entry gates check **`displayedHealth === 'critical'`**.
+
+Horse JSON exposes all three bands so the UI can show what's going on:
+
+```jsonc
+{
+  "id": 42,
+  "name": "Star",
+  "feedHealth": "good",      // derived from lastFedDate
+  "vetHealth": "fair",       // derived from lastVettedDate (or healthStatus override)
+  "displayedHealth": "fair", // min of the two — what gates check, what badge shows
+  ...
+}
+```
+
+### 5.4 Feed-health (computed, never stored)
 
 ```js
-function getHorseHealth(horse, now = new Date()) {
+function getFeedHealth(horse, now = new Date()) {
   if (horse.age >= 21) return 'retired';
   if (!horse.lastFedDate) return 'critical';
   const days = Math.floor((startOfUtcDay(now) - startOfUtcDay(horse.lastFedDate)) / 86400000);
@@ -152,7 +201,7 @@ function getHorseHealth(horse, now = new Date()) {
 }
 ```
 
-Lives in `backend/utils/horseHealth.mjs`. Used by horse-read serializers (so every horse JSON includes `health`), plus the breeding gate and competition-entry gate.
+Lives in `backend/utils/horseHealth.mjs` (alongside `getVetHealth` and `getDisplayedHealth`). Used by horse-read serializers, plus the breeding and competition-entry gates.
 
 ### 5.5 Feed catalog (replaces existing `FEED_CATALOG`)
 
@@ -214,7 +263,7 @@ Body: `{ feedTier, packs }`
       If quantity hits 0, prune the row AND clear horse.equippedFeedType.
    b. Set horse.lastFedDate = now.
    c. Roll stat boost (server-side RNG, statRollPct from catalog).
-      On success: pick 1 of 10 stats uniform-random, increment by 1.
+      On success: pick 1 of 12 stats uniform-random, increment by 1.
    d. If horse is in-foal: increment pregnancy.feedingsByTier[tier] by 1.
 7. Return:
    {
@@ -239,9 +288,9 @@ Returns `{ tack: [...], feed: [...] }` filtered for THIS horse:
 
 ### 6.4 Cross-cutting modifications
 
-- **Horse read endpoints** (list + detail + full): inject `health` field on every response via `getHorseHealth()`.
-- **Breeding controller**: pre-flight check at `POST /api/breeding/breed`. Reject if `getHorseHealth(sire) === 'critical'` OR `getHorseHealth(dam) === 'critical'` with 400 and which-horse error.
-- **Competition entry controller**: pre-flight check at `POST /api/competition/enter`. Reject if `getHorseHealth(horse) === 'critical'` with 400.
+- **Horse read endpoints** (list + detail + full): inject `feedHealth`, `vetHealth`, and `displayedHealth` fields on every response (computed via `backend/utils/horseHealth.mjs`).
+- **Breeding controller**: pre-flight check at `POST /api/breeding/breed`. Reject if `getDisplayedHealth(sire) === 'critical'` OR `getDisplayedHealth(dam) === 'critical'` with 400 and which-horse error.
+- **Competition entry controller**: pre-flight check at `POST /api/competition/enter`. Reject if `getDisplayedHealth(horse) === 'critical'` with 400.
 - **No re-check** at scheduled-action time (cron-driven competition runs and foal births). The gate is one-way at entry time. In-flight pregnancies and entries proceed to completion regardless of subsequent health changes.
 
 ### 6.5 Recovery & gate semantics
@@ -357,13 +406,20 @@ Makes the weighted-average decision visible to the player.
 
 ```js
 const ROLL_PCT = { basic: 0, performance: 10, performancePlus: 15, highPerformance: 20, elite: 25 };
+
+// 12 stat fields on Horse, post-coordination removal (recon Finding 1 → B).
+// Names match schema.prisma:131-144 minus `coordination`.
 const STATS = [
-  'speed',
-  'stamina',
-  'agility',
-  'balance',
+  // Base stats (6)
   'precision',
+  'strength',
+  'speed',
+  'agility',
+  'endurance',
   'intelligence',
+  // Additional competition stats (6, post-coordination drop)
+  'stamina',
+  'balance',
   'boldness',
   'flexibility',
   'obedience',
@@ -478,18 +534,26 @@ Every new horse starts at `excellent` health.
 `packages/database/prisma/migrations/<timestamp>_feed_system_redesign/migration.sql`:
 
 ```sql
-ALTER TABLE "Horse" ADD COLUMN "equippedFeedType" TEXT;
-ALTER TABLE "Horse" DROP COLUMN "currentFeed";
-ALTER TABLE "Horse" DROP COLUMN "energyLevel";
+-- Phase A migration: feed loop + health + coordination cleanup
+ALTER TABLE "horses" ADD COLUMN "equippedFeedType" TEXT;
+ALTER TABLE "horses" DROP COLUMN "currentFeed";
+ALTER TABLE "horses" DROP COLUMN "energyLevel";
+ALTER TABLE "horses" DROP COLUMN "coordination";  -- Recon Finding 1 → B
 
-ALTER TABLE "Pregnancy" ADD COLUMN "feedingsByTier" JSONB NOT NULL DEFAULT '{}';
--- (Confirm exact pregnancy table name during implementation. If embedded
---  on Breeding or another model, adjust accordingly.)
+-- Phase B migration: in-foal state (recon Finding 3 → P1+ extension)
+ALTER TABLE "horses" ADD COLUMN "inFoalSinceDate" TIMESTAMP(3);
+ALTER TABLE "horses" ADD COLUMN "pregnancySireId" INTEGER;
+ALTER TABLE "horses" ADD COLUMN "pregnancyFeedingsByTier" JSONB NOT NULL DEFAULT '{}';
 
-UPDATE "Horse" SET "lastFedDate" = NOW() WHERE "lastFedDate" IS NULL;
--- Optional one-line backfill so existing test horses don't read as critical
--- on first deploy. Skip if you want them to start at critical for testing.
+-- Note: lastVettedDate already exists on horses (used by recon Finding 2 → α).
+-- Note: healthStatus already exists; treated as a vet-override (non-null
+--       beats lastVettedDate decay) per §5.3.1.
+
+-- Optional backfill so existing test horses start at "excellent" feed-health.
+UPDATE "horses" SET "lastFedDate" = NOW() WHERE "lastFedDate" IS NULL;
 ```
+
+Phase A and Phase B can be a single migration (deployed together) or two sequential migrations (Phase A first, Phase B when the breeding-flow refactor lands). The implementation plan handles both as separate Prisma migration files.
 
 `schema.prisma` updates accordingly.
 
@@ -541,7 +605,7 @@ Per project rules: **no `vi.mock` of API client, no `it.skip`, no bypass headers
 
 - `feedHealth.test.mjs` — health bands, retirement age, null `lastFedDate`, UTC boundary precision.
 - `pregnancyBonus.test.mjs` — every worked example from §8.2 plus the 8-day gestation edge.
-- `statBoostRoll.test.mjs` — RNG injected as parameter for determinism. Verifies tier=basic never rolls, tier=elite rolls at 25%, picks uniformly across all 10 stats.
+- `statBoostRoll.test.mjs` — RNG injected as parameter for determinism. Verifies tier=basic never rolls, tier=elite rolls at 25%, picks uniformly across all 12 stats.
 - `alreadyFedToday.test.mjs` — UTC boundary exact behavior.
 
 ### 10.2 Backend integration tests (`backend/__tests__/integration/feed/`)
@@ -569,11 +633,18 @@ All Playwright runs use real credentials, hit the real backend, no `x-test-*` he
 
 These are not design decisions — they are details to confirm during implementation, not now:
 
-1. **Exact pregnancy table name**: confirm whether to add `feedingsByTier` to a `Pregnancy` model, an in-foal record on `Breeding`, or another existing table. The contract is unchanged; only the `ALTER TABLE` line differs.
-2. **Exact `Equip Tack` button line in `HorseDetailPage.tsx`**: the redesign agrees the button exists and is currently routed to the tack shop. Locate during implementation and rename + reroute.
-3. **Stat-name list in `Horse` schema**: confirm the actual Prisma field names match the `STATS` array in §8.1. Names must match exactly for the increment to work.
-4. **Health-color tokens**: the design names color semantics (red for critical, etc.); the tokens.css palette has the actual variables. Pick the matching tokens during implementation, don't hard-code.
-5. **`CinematicMoment` reuse**: confirmed for foal-birth and cup-win-tier moments only. Plain toast for stat-boost rolls.
+1. **Exact `Equip Tack` button line in `HorseDetailPage.tsx`**: the redesign agrees the button exists and is currently routed to the tack shop. Locate during implementation and rename + reroute.
+2. **Health-color tokens**: the design names color semantics (red for critical, etc.); the tokens.css palette has the actual variables. Pick the matching tokens during implementation, don't hard-code.
+3. **`CinematicMoment` reuse**: confirmed for foal-birth and cup-win-tier moments only. Plain toast for stat-boost rolls.
+4. **`coordination` column cleanup grep audit (recon Finding 1 → B)**: before dropping the column, grep all of `backend/` and `frontend/` for `coordination` reads/writes. Any code that increments/reads it must be updated. Tests that exercise it must be deleted or updated.
+5. **Foaling job mechanism (Phase B)**: scheduled cron vs. on-read poll. Either works for a 7-day window; pick whichever pattern matches existing scheduled-job conventions in the codebase.
+
+Recon decisions captured (no longer open):
+
+- ✅ Finding 1 → B (drop `coordination` column entirely; 12 stats in boost pool).
+- ✅ Finding 2 → α (symmetric two-derived + min: `vetHealth` + `feedHealth` → `displayedHealth`).
+- ✅ Finding 3 → P1+ (in-foal state on `Horse` columns: `inFoalSinceDate`, `pregnancySireId`, `pregnancyFeedingsByTier`).
+- ✅ Finding 4 (recon during plan write) → split implementation into Phase A (feed loop, ships independently) + Phase B (pregnancy delay refactor of `createFoal` + counter integration + foaling job).
 
 ## 12. Out of Scope
 
