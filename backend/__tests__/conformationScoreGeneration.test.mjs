@@ -77,7 +77,7 @@ describe('generateConformationScores', () => {
     expect(() => generateConformationScores(999)).toThrow(/No canonical-12 breed for numeric breedId 999/);
   });
 
-  test.each([0, null, undefined, NaN])('invalid breed identifier %p throws', breedId => {
+  test.each([0, -1, 13, null, undefined, NaN])('invalid breed identifier %p throws', breedId => {
     expect(() => generateConformationScores(breedId)).toThrow();
   });
 });

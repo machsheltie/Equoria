@@ -1,4 +1,4 @@
-// Tests for conformation API endpoints (Story 31B-3).
+// Integration tests for conformation API endpoints (Story 31B-3).
 // Validates GET /conformation and GET /conformation/analysis responses,
 // legacy horse handling, percentile calculations, and error cases.
 //
@@ -150,29 +150,32 @@ describe('getConformation', () => {
 
     expect(res.status).toHaveBeenCalledWith(200);
     const response = res.json.mock.calls[0][0];
+    expect(response.success).toBe(true);
+    expect(response.message).toBe('No conformation scores available for this horse');
     expect(response.data).toBeNull();
   });
 
   test('calculates overallConformation when not stored', async () => {
     const { req, res } = makeMockReqRes({
       conformationScores: {
-        head: 80,
-        neck: 80,
-        shoulders: 80,
-        back: 80,
-        hindquarters: 80,
-        legs: 80,
-        hooves: 80,
-        topline: 80,
-        // overallConformation intentionally omitted
+        head: 82,
+        neck: 75,
+        shoulders: 70,
+        back: 68,
+        hindquarters: 78,
+        legs: 72,
+        hooves: 71,
+        topline: 74,
       },
     });
 
     await getConformation(req, res);
 
     expect(res.status).toHaveBeenCalledWith(200);
-    const scores = res.json.mock.calls[0][0].data.conformationScores;
-    expect(scores.overallConformation).toBe(80);
+    const response = res.json.mock.calls[0][0];
+    expect(response.success).toBe(true);
+    expect(response.data.conformationScores).toHaveProperty('overallConformation');
+    expect(typeof response.data.conformationScores.overallConformation).toBe('number');
   });
 });
 

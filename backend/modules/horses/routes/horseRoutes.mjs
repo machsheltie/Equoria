@@ -28,6 +28,7 @@ import { generateTemperament } from '../services/temperamentService.mjs';
 import { generateGenotype } from '../services/genotypeGenerationService.mjs';
 import { calculatePhenotype } from '../services/phenotypeCalculationService.mjs';
 import { inheritColorGenotype } from '../services/breedingColorInheritanceService.mjs';
+import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 import { generateMarkings, inheritMarkings } from '../services/markingGenerationService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -600,23 +601,52 @@ router.post(
   validateHorseCreation,
   async (req, res) => {
     try {
-      // Resolve breed name from ID — every generator downstream keys by
-      // display name against breedProfiles.json. A missing breed is a
-      // data bug that must fail the request rather than silently ship
-      // a horse with random stats.
-      const breedRecord = req.body.breedId
-        ? await prisma.breed.findUnique({
-            where: { id: req.body.breedId },
-            select: { name: true },
-          })
-        : null;
-      if (!breedRecord?.name) {
+      // Parse and normalize breedId — validateHorseCreation runs isInt() but does not
+      // coerce to a number type; Prisma and $queryRaw expect a numeric Int.
+      const parsedBreedId = Number.parseInt(req.body.breedId, 10);
+      if (!Number.isFinite(parsedBreedId) || parsedBreedId <= 0) {
         return res.status(400).json({
           success: false,
-          message: `No breed found for id ${req.body.breedId}`,
+          message: `Invalid breedId: ${req.body.breedId}`,
         });
       }
-      const breedName = breedRecord.name;
+
+      // Resolve breed name + genetic profile in a single raw SQL query.
+      // Raw SQL is required because the Prisma DMMF may not include breedGeneticProfile.
+      // A missing breed is a data bug that must fail the request rather than
+      // silently ship a horse with random stats.
+      const breedRows = await prisma.$queryRaw`
+        SELECT name, "breedGeneticProfile"
+        FROM breeds
+        WHERE id = ${parsedBreedId}
+      `;
+      const breedRow = breedRows[0];
+      if (!breedRow?.name) {
+        return res.status(400).json({
+          success: false,
+          message: `No breed found for id ${parsedBreedId}`,
+        });
+      }
+      const breedName = breedRow.name;
+      const breedGeneticProfile = breedRow.breedGeneticProfile ?? null;
+
+      // Mirror horseController.createFoal: surface "breed exists in DB but has
+      // no breedProfiles.json entry" as 422 rather than letting the generators
+      // throw and fall through to the generic 500 handler.
+      try {
+        getBreedProfile(breedName);
+      } catch (err) {
+        if (!err.message?.startsWith('No breedProfiles.json entry for breed')) {
+          throw err;
+        }
+        logger.warn(
+          `[horseRoutes POST /] No breedProfiles.json entry for "${breedName}" (id=${parsedBreedId}): ${err.message}`,
+        );
+        return res.status(422).json({
+          success: false,
+          message: `No breed profile available for breed "${breedName}"`,
+        });
+      }
 
       // Generate conformation scores from breed genetics.
       const conformationScores = generateConformationScores(breedName);
@@ -624,16 +654,6 @@ router.post(
       const gaitScores = generateGaitScores(breedName, conformationScores);
       // Generate temperament from breed-weighted random selection.
       const temperament = generateTemperament(breedName);
-
-      // Fetch breed genetic profile for coat color genotype generation
-      // Use raw SQL to bypass stale Prisma client DMMF that may not include breedGeneticProfile
-      let breedGeneticProfile = null;
-      if (req.body.breedId) {
-        const breedRows = await prisma.$queryRaw`
-          SELECT "breedGeneticProfile" FROM breeds WHERE id = ${req.body.breedId}
-        `;
-        breedGeneticProfile = breedRows[0]?.breedGeneticProfile ?? null;
-      }
       // Generate coat color genotype (31E-1a / 31E-2)
       // If sireId + damId provided and both have colorGenotype → use Mendelian inheritance (31E-2)
       // Otherwise → random breed-weighted generation (31E-1a)
@@ -723,7 +743,7 @@ router.post(
 
       const horseData = {
         name: req.body.name,
-        breedId: req.body.breedId,
+        breedId: parsedBreedId,
         age: req.body.age,
         sex: req.body.sex,
         gender: req.body.gender,
