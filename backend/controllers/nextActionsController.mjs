@@ -58,24 +58,36 @@ export async function getNextActions(req, res) {
       });
     }
 
-    // Check for foals in active development
+    // Check for foals in active development.
+    //
+    // 21R-PROD-BUG-1 (Equoria-j8s2): the FoalDevelopment model has a
+    // `foal` relation (named `FoalDevelopmentFoal` via foalId FK); it
+    // does NOT have a `horse` relation. The previous query traversed
+    // a non-existent `horse` relation and threw at runtime; the
+    // `.catch(() => [])` silently swallowed the error so the
+    // groom-foal action was never produced for any user.
+    //
+    // Output `horseId` is sourced from `foalId` because that is the
+    // canonical FK to horses.id. The legacy `horseId` Int? field is
+    // an unused redundant column that may be null even when foalId
+    // is set; do not depend on it.
     const activeFoals = await prisma.foalDevelopment
       .findMany({
         where: {
-          horse: { userId },
+          foal: { userId },
           isActive: true,
         },
-        select: { horseId: true, horse: { select: { name: true } } },
+        select: { foalId: true, foal: { select: { name: true } } },
       })
       .catch(() => []); // Graceful if model not yet updated
 
     if (activeFoals.length > 0) {
-      const foal = activeFoals[0];
+      const foalDev = activeFoals[0];
       actions.push({
         type: 'groom-foal',
         priority: actions.length + 1,
-        horseId: foal.horseId,
-        horseName: foal.horse?.name,
+        horseId: foalDev.foalId,
+        horseName: foalDev.foal?.name,
         metadata: { totalFoals: activeFoals.length },
       });
     }

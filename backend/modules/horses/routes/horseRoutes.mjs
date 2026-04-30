@@ -25,6 +25,7 @@ import {
   equipFeedHandler,
   unequipFeedHandler,
   feedHorseHandler,
+  getEquippableHandler,
 } from '../controllers/horseFeedController.mjs';
 import { createHorse } from '../../../models/horseModel.mjs';
 import { generateConformationScores } from '../services/conformationService.mjs';
@@ -1162,6 +1163,23 @@ router.post(
   authenticateToken,
   requireOwnership('horse'),
   feedHorseHandler,
+);
+
+/**
+ * GET /horses/:id/equippable
+ * Returns the tack + feed items the user can equip on this horse
+ * (feed-system redesign 2026-04-29, Equoria-o0af).
+ *
+ * Security: ownership enforced via requireOwnership('horse') middleware
+ * (CWE-639 disclosure resistance).
+ */
+router.get(
+  '/:id/equippable',
+  queryRateLimiter,
+  validateHorseId,
+  authenticateToken,
+  requireOwnership('horse'),
+  getEquippableHandler,
 );
 
 /**
