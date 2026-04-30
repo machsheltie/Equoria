@@ -1111,17 +1111,16 @@ router.post(
  * Set Horse.equippedFeedType from the authenticated user's pooled inventory
  * (feed-system redesign 2026-04-29, Equoria-wr30).
  *
- * Security: ownership and inventory ownership are enforced inside the
- * controller; route layer applies authentication + mutation rate limiting.
- * The controller returns 403 for non-owners (vs. requireOwnership which
- * collapses non-ownership to 404) so that callers can distinguish missing
- * horses from access-denied.
+ * Security: ownership enforced via requireOwnership('horse') middleware
+ * (CWE-639 disclosure resistance — returns 404 for both missing and
+ * not-owned). Inventory ownership enforced inside the controller.
  */
 router.post(
   '/:id/equip-feed',
   mutationRateLimiter,
   validateHorseId,
   authenticateToken,
+  requireOwnership('horse'),
   equipFeedHandler,
 );
 
@@ -1129,13 +1128,16 @@ router.post(
  * POST /horses/:id/unequip-feed
  * Clear Horse.equippedFeedType for an owned horse.
  *
- * Security: see equip-feed above — ownership enforced in controller.
+ * Security: ownership enforced via requireOwnership('horse') middleware
+ * (CWE-639 disclosure resistance — returns 404 for both missing and
+ * not-owned).
  */
 router.post(
   '/:id/unequip-feed',
   mutationRateLimiter,
   validateHorseId,
   authenticateToken,
+  requireOwnership('horse'),
   unequipFeedHandler,
 );
 

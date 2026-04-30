@@ -9,9 +9,11 @@
  *   POST /api/horses/:id/equip-feed   → set Horse.equippedFeedType
  *   POST /api/horses/:id/unequip-feed → clear Horse.equippedFeedType
  *
- * Ownership is enforced inside this controller (not via requireOwnership
- * middleware) so we can return 403 for non-owners while still surfacing 404
- * for genuinely missing horses.
+ * Ownership is enforced by the requireOwnership('horse') middleware on the
+ * route, which sets req.horse and returns 404 (CWE-639 disclosure
+ * resistance) for both "not found" and "not owned by caller". The handlers
+ * therefore only need to handle the inventory check (equip) and the actual
+ * persistence.
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -29,48 +31,38 @@ function getInventory(settings) {
 }
 
 /**
- * Look up the horse and verify ownership in a single query path.
- * Returns either { horse } on success or { error: { status, message } }.
- */
-async function ownerCheck(rawHorseId, userId) {
-  const horseId = Number(rawHorseId);
-  if (!Number.isInteger(horseId) || horseId < 1) {
-    return { error: { status: 400, message: 'Invalid horse id' } };
-  }
-  const horse = await prisma.horse.findUnique({ where: { id: horseId } });
-  if (!horse) {
-    return { error: { status: 404, message: 'Horse not found' } };
-  }
-  if (horse.userId !== userId) {
-    return { error: { status: 403, message: 'Not the owner of this horse' } };
-  }
-  return { horse };
-}
-
-/**
  * POST /api/horses/:id/equip-feed
  * Body: { feedType }
  *
  * Sets Horse.equippedFeedType when:
  *  - feedType is one of the 5 catalog tiers
- *  - the authenticated user owns the horse (else 403)
  *  - the user has at least 1 unit of feed-{feedType} in their pooled inventory
+ *
+ * Ownership of the horse is already enforced by requireOwnership middleware
+ * (req.horse is the owned horse). 404 for missing/not-owned (no disclosure).
  */
 export async function equipFeedHandler(req, res) {
   try {
     const userId = req.user.id;
-    const { feedType } = req.body || {};
+    const body = req.body || {};
+    const { feedType } = body;
 
+    if (typeof feedType !== 'string' || feedType.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'feedType is required',
+        data: null,
+      });
+    }
     if (!VALID_TIERS.has(feedType)) {
-      return res.status(400).json({ success: false, message: 'Invalid feed tier', data: null });
+      return res.status(400).json({
+        success: false,
+        message: `Unknown feed tier: ${feedType}`,
+        data: null,
+      });
     }
 
-    const check = await ownerCheck(req.params.id, userId);
-    if (check.error) {
-      return res
-        .status(check.error.status)
-        .json({ success: false, message: check.error.message, data: null });
-    }
+    const horse = req.horse;
 
     const ownerUser = await prisma.user.findUnique({
       where: { id: userId },
@@ -90,18 +82,18 @@ export async function equipFeedHandler(req, res) {
     }
 
     await prisma.horse.update({
-      where: { id: check.horse.id },
+      where: { id: horse.id },
       data: { equippedFeedType: feedType },
     });
 
     logger.info(
-      `[horseFeedController.equipFeed] User ${userId} equipped ${feedType} on horse ${check.horse.id}`,
+      `[horseFeedController.equipFeed] User ${userId} equipped ${feedType} on horse ${horse.id}`,
     );
 
     return res.status(200).json({
       success: true,
       message: `Equipped ${feedType}`,
-      data: { horseId: check.horse.id, equippedFeedType: feedType },
+      data: { horseId: horse.id, equippedFeedType: feedType },
     });
   } catch (error) {
     logger.error(`[horseFeedController.equipFeed] ${error.message}`);
@@ -113,30 +105,26 @@ export async function equipFeedHandler(req, res) {
  * POST /api/horses/:id/unequip-feed
  *
  * Clears Horse.equippedFeedType for an owned horse. No body required.
+ * Ownership enforced by requireOwnership middleware.
  */
 export async function unequipFeedHandler(req, res) {
   try {
     const userId = req.user.id;
-    const check = await ownerCheck(req.params.id, userId);
-    if (check.error) {
-      return res
-        .status(check.error.status)
-        .json({ success: false, message: check.error.message, data: null });
-    }
+    const horse = req.horse;
 
     await prisma.horse.update({
-      where: { id: check.horse.id },
+      where: { id: horse.id },
       data: { equippedFeedType: null },
     });
 
     logger.info(
-      `[horseFeedController.unequipFeed] User ${userId} unequipped feed on horse ${check.horse.id}`,
+      `[horseFeedController.unequipFeed] User ${userId} unequipped feed on horse ${horse.id}`,
     );
 
     return res.status(200).json({
       success: true,
       message: 'Unequipped feed',
-      data: { horseId: check.horse.id, equippedFeedType: null },
+      data: { horseId: horse.id, equippedFeedType: null },
     });
   } catch (error) {
     logger.error(`[horseFeedController.unequipFeed] ${error.message}`);
