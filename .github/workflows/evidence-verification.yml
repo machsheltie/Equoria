@@ -1,0 +1,134 @@
+name: Evidence Verification
+
+# Equoria-ptf7 (B4): re-runs the verification command from every
+# `_bmad-output/test-artifacts/evidence/*.md` file on every PR and on
+# pushes to master. Fails the gate if any verified command's output is
+# missing one of its declared expected-output markers, or if any
+# evidence file is malformed.
+#
+# Why: stories marked `done` in sprint-status without re-runnable
+# verification are how the 21R audit found 4-of-6 falsely-closed
+# stories. Each evidence file is a contract that the verified behaviour
+# stays verified — if a future change silently breaks the property the
+# command asserted, the marker is missing from the new output and this
+# workflow blocks merge.
+#
+# Sentinel self-test: before the production run, three fixtures
+# (verified-OK, marker-fail, malformed) are written and the verifier
+# is run against each. The expected exit codes (0, 1, 2) are asserted.
+# A parser regression that lets bad evidence files pass would fail this
+# step before the production run trusts the parser's verdicts.
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+concurrency:
+  group: evidence-verification-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify-evidence:
+    name: 'Verify evidence files re-run cleanly'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 'Checkout repository'
+        uses: actions/checkout@v4
+
+      - name: 'Setup Node.js'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: 'Sentinel self-test: verifier correctness'
+        # Plants three fixtures with known-correct verification outcomes
+        # and asserts the verifier produces the right exit code for
+        # each. Catches regression where the verifier becomes too
+        # permissive (lets bad evidence pass) or too strict (rejects
+        # well-formed evidence).
+        run: |
+          set -uo pipefail
+          mkdir -p .evidence-fixtures-good .evidence-fixtures-fail .evidence-fixtures-malformed
+
+          # Fixture 1: a verified evidence file. Verifier must exit 0.
+          cat > .evidence-fixtures-good/Equoria-sentinel-good.md <<'EOF'
+          # Evidence: sentinel-good
+          ## Story
+          sentinel: command output contains the marker
+          ## Acceptance criteria
+          - echoed string appears in output
+          ## Verification command
+          ```bash
+          echo "SENTINEL-MARKER-PRESENT"
+          ```
+          ## Expected output markers
+          - SENTINEL-MARKER-PRESENT
+          ## Last verified
+          2026-04-30
+          EOF
+
+          # Fixture 2: marker missing. Verifier must exit 1.
+          cat > .evidence-fixtures-fail/Equoria-sentinel-fail.md <<'EOF'
+          # Evidence: sentinel-fail
+          ## Story
+          sentinel: command runs but output does not contain the marker
+          ## Acceptance criteria
+          - marker missing intentionally
+          ## Verification command
+          ```bash
+          echo "actual output"
+          ```
+          ## Expected output markers
+          - DELIBERATELY-ABSENT-MARKER
+          ## Last verified
+          2026-04-30
+          EOF
+
+          # Fixture 3: malformed (missing required sections). Verifier must exit 2.
+          cat > .evidence-fixtures-malformed/Equoria-sentinel-malformed.md <<'EOF'
+          # Evidence: sentinel-malformed
+          ## Story
+          missing required sections
+          EOF
+
+          set +e
+          node scripts/verify-evidence-files.mjs .evidence-fixtures-good > /dev/null 2>&1
+          good_exit=$?
+          node scripts/verify-evidence-files.mjs .evidence-fixtures-fail > /dev/null 2>&1
+          fail_exit=$?
+          node scripts/verify-evidence-files.mjs .evidence-fixtures-malformed > /dev/null 2>&1
+          malformed_exit=$?
+          set -e
+
+          rm -rf .evidence-fixtures-good .evidence-fixtures-fail .evidence-fixtures-malformed
+
+          fail=0
+          if [ "$good_exit" != "0" ]; then
+            echo "SENTINEL FAIL: good fixture should exit 0; got $good_exit."
+            fail=1
+          fi
+          if [ "$fail_exit" != "1" ]; then
+            echo "SENTINEL FAIL: marker-mismatch fixture should exit 1; got $fail_exit."
+            fail=1
+          fi
+          if [ "$malformed_exit" != "2" ]; then
+            echo "SENTINEL FAIL: malformed fixture should exit 2; got $malformed_exit."
+            fail=1
+          fi
+          if [ "$fail" = "1" ]; then
+            echo "Verifier correctness regression — fix scripts/verify-evidence-files.mjs before trusting the production run."
+            exit 1
+          fi
+          echo "Sentinel OK: verifier exits 0 / 1 / 2 on good / fail / malformed fixtures."
+
+      - name: 'Verify all evidence files'
+        # Production run. Walks _bmad-output/test-artifacts/evidence/,
+        # executes each file's verification command, asserts every
+        # marker substring appears in the captured output. Fails the
+        # job (and the PR) if any file is malformed, times out, or
+        # produces output that no longer contains its expected markers.
+        run: node scripts/verify-evidence-files.mjs
