@@ -89,12 +89,12 @@ export function rollStatBoost(feedTier, rng = Math.random) {
  * @throws {Error & { status: number }} 400/404 on pre-condition failures
  */
 export async function feedHorse({ userId, horseId, rng = Math.random }) {
-  // Sentinel for the "out of feed" case: we MUST clear equippedFeedType
-  // (spec §6.2 step 6a) BUT we must also reject the request with 400.
-  // If we simply throw inside prisma.$transaction, the transaction rolls
-  // back including the clear — failing the DB read-back assertion. So we
-  // signal the auto-clear case via the resolved value, then perform the
-  // clear and the throw OUTSIDE the transaction.
+  // Out-of-feed strategy: do the auto-clear (spec §6.2 step 6a) INSIDE the
+  // transaction so it commits atomically with the rest of the read state,
+  // then return a discriminator and have the OUTER scope throw the 400.
+  // Throwing inside the txn would roll back the clear; throwing outside,
+  // after the txn has committed, preserves the clear. This is atomic with
+  // the surrounding reads — no race window between commit and clear.
   const result = await prisma.$transaction(async tx => {
     const horse = await tx.horse.findUnique({ where: { id: Number(horseId) } });
     if (!horse) {
@@ -143,10 +143,13 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
     const idx = inventory.findIndex(i => i.id === `feed-${tier.id}`);
 
     if (idx < 0 || !Number.isFinite(inventory[idx].quantity) || inventory[idx].quantity < 1) {
-      // Signal the out-of-feed case to the outer scope. We deliberately
-      // do NOT mutate inside the transaction here — the transaction is
-      // about to commit cleanly with no inventory or horse changes. The
-      // outer scope will then perform the auto-clear and throw the 400.
+      // Auto-clear equippedFeedType atomically with the rest of the txn
+      // so the clear isn't visible only after a second round-trip. Then
+      // signal the out-of-feed case so the outer scope can throw the 400.
+      await tx.horse.update({
+        where: { id: horse.id },
+        data: { equippedFeedType: null },
+      });
       return { kind: 'outOfFeed', tier };
     }
 
@@ -190,13 +193,10 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
     };
   });
 
-  // Out-of-feed: auto-clear equippedFeedType OUTSIDE the transaction (so
-  // it persists), then throw the 400 to the controller.
+  // Out-of-feed: auto-clear already happened inside the txn. Throw the 400
+  // here so the txn's clear stays committed (a throw inside the txn would
+  // have rolled it back).
   if (result.kind === 'outOfFeed') {
-    await prisma.horse.update({
-      where: { id: Number(horseId) },
-      data: { equippedFeedType: null },
-    });
     const e = new Error(`Out of ${result.tier.name}. Purchase more from the feed shop.`);
     e.status = 400;
     throw e;
