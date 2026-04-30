@@ -60,3 +60,67 @@ export function getFeedHealth(horse, now = new Date()) {
   if (days <= 8) return 'poor';
   return 'critical';
 }
+
+const BAND_ORDER = ['excellent', 'good', 'fair', 'poor', 'critical'];
+
+/**
+ * Return the worse (closer to 'critical') of two bands.
+ *
+ * 'retired' is special — if either is 'retired', the result is 'retired'
+ * (retirement is a terminal state, not a degradation).
+ *
+ * @param {string} a
+ * @param {string} b
+ * @returns {string}
+ */
+export function worseOf(a, b) {
+  if (a === 'retired' || b === 'retired') return 'retired';
+  const ai = BAND_ORDER.indexOf(a);
+  const bi = BAND_ORDER.indexOf(b);
+  return BAND_ORDER[Math.max(ai, bi)];
+}
+
+/**
+ * Vet-health band derived from lastVettedDate (weekly decay), with
+ * healthStatus as a vet-finding override.
+ *
+ *   - age >= 21 → 'retired'
+ *   - healthStatus non-null → that value (vet-finding override takes priority)
+ *   - lastVettedDate null → 'critical'
+ *   - otherwise weekly decay from lastVettedDate (UTC calendar days):
+ *       ≤7  → excellent
+ *       8-14 → good
+ *       15-21 → fair
+ *       22-28 → poor
+ *       29+  → critical
+ *
+ * @param {{ age?: number, lastVettedDate?: Date|string|null, healthStatus?: string|null }} horse
+ * @param {Date} [now=new Date()]
+ * @returns {'excellent'|'good'|'fair'|'poor'|'critical'|'retired'}
+ */
+export function getVetHealth(horse, now = new Date()) {
+  if (horse.age != null && horse.age >= 21) return 'retired';
+  if (horse.healthStatus != null) return horse.healthStatus;
+  if (!horse.lastVettedDate) return 'critical';
+
+  const days = Math.floor(
+    (startOfUtcDay(now).getTime() - startOfUtcDay(horse.lastVettedDate).getTime()) / MS_PER_DAY,
+  );
+  if (days <= 7) return 'excellent';
+  if (days <= 14) return 'good';
+  if (days <= 21) return 'fair';
+  if (days <= 28) return 'poor';
+  return 'critical';
+}
+
+/**
+ * Final displayed health — worse of feed-derived and vet-derived.
+ * This is what gates check (breeding, competition entry) and what the UI shows.
+ *
+ * @param {object} horse
+ * @param {Date} [now=new Date()]
+ * @returns {string}
+ */
+export function getDisplayedHealth(horse, now = new Date()) {
+  return worseOf(getFeedHealth(horse, now), getVetHealth(horse, now));
+}
