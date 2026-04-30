@@ -1,0 +1,203 @@
+name: Blind Hunter Gate
+
+# Equoria-0ejw (B7): adversarial review for PRs that touch high-risk
+# paths (CI workflows, request-pipeline middleware, doctrine scripts).
+# Calls Claude with the Blind Hunter prompt against the PR diff,
+# parses the output for P0/P1 findings, and applies the
+# `blind-hunter-passed` label only when zero blocking findings are
+# reported. The label is removed on every push so the gate cannot be
+# bypassed by applying the label and then sneaking in another commit.
+#
+# Activation as a merge-blocker requires a branch-protection rule on
+# master that requires the `blind-hunter-passed` label for the
+# protected paths. Same caveat as B5 / B3 — the workflow runs and
+# reports status today, but does not block merge until the GitHub
+# Settings toggle is enabled.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths:
+      - '.github/workflows/**'
+      - 'backend/middleware/**'
+      - 'scripts/doctrine-checks/**'
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+  id-token: write
+
+concurrency:
+  group: blind-hunter-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  # ────────────────────────────────────────────────────────────────────
+  # Job A: remove the label on every push (synchronize event). Re-applied
+  # only after a clean Blind Hunter run in Job B.
+  # ────────────────────────────────────────────────────────────────────
+  remove-label-on-push:
+    if: github.event.action == 'synchronize'
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Remove blind-hunter-passed label'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # `|| true` because the label may not exist yet (first push)
+          # and gh exits non-zero in that case.
+          gh pr edit "${{ github.event.pull_request.number }}" \
+            --remove-label "blind-hunter-passed" \
+            --repo "${{ github.repository }}" \
+            2>&1 || true
+          echo "Removed blind-hunter-passed label (if present)."
+
+  # ────────────────────────────────────────────────────────────────────
+  # Job B: sentinel-positive self-test of the parser. Runs before the
+  # Claude call, so a parser regression fails fast instead of silently
+  # mis-applying the label later.
+  # ────────────────────────────────────────────────────────────────────
+  parser-sentinel:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+      - name: 'Sentinel: parser correctness'
+        run: |
+          set -uo pipefail
+          mkdir -p .bh-fixtures
+
+          cat > .bh-fixtures/pass.md <<'EOF'
+          No findings.
+          BLIND_HUNTER_VERDICT: pass
+          EOF
+
+          cat > .bh-fixtures/fail.md <<'EOF'
+          - **bug** P0 — evidence
+          BLIND_HUNTER_VERDICT: fail (1 P0/P1 findings)
+          EOF
+
+          cat > .bh-fixtures/no-verdict.md <<'EOF'
+          - **bug** P0 — evidence
+          EOF
+
+          set +e
+          node scripts/parse-blind-hunter-comment.mjs .bh-fixtures/pass.md > /dev/null 2>&1
+          pass_exit=$?
+          node scripts/parse-blind-hunter-comment.mjs .bh-fixtures/fail.md > /dev/null 2>&1
+          fail_exit=$?
+          node scripts/parse-blind-hunter-comment.mjs .bh-fixtures/no-verdict.md > /dev/null 2>&1
+          no_verdict_exit=$?
+          set -e
+
+          rm -rf .bh-fixtures
+
+          fail=0
+          [ "$pass_exit"       = "0" ] || { echo "SENTINEL FAIL: pass fixture should exit 0; got $pass_exit"; fail=1; }
+          [ "$fail_exit"       = "1" ] || { echo "SENTINEL FAIL: fail fixture should exit 1; got $fail_exit"; fail=1; }
+          [ "$no_verdict_exit" = "2" ] || { echo "SENTINEL FAIL: no-verdict fixture should exit 2; got $no_verdict_exit"; fail=1; }
+          if [ "$fail" = "1" ]; then exit 1; fi
+          echo "Sentinel OK: parser exits 0 / 1 / 2 on pass / fail / no-verdict fixtures."
+
+  # ────────────────────────────────────────────────────────────────────
+  # Job C: run the Blind Hunter prompt against the PR diff via Claude,
+  # parse the resulting comment, apply the label only on pass.
+  # ────────────────────────────────────────────────────────────────────
+  blind-hunter-review:
+    needs: parser-sentinel
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: 'Compute PR diff'
+        id: diff
+        run: |
+          # Fetch base ref so we can diff against it. The fetch-depth: 0
+          # above is required so origin/<base> exists locally.
+          git fetch origin "${{ github.event.pull_request.base.ref }}" --depth=200 2>&1 || true
+          git diff "origin/${{ github.event.pull_request.base.ref }}...HEAD" > /tmp/pr.diff
+          # Guard against an empty diff (no relevant changes after path filter).
+          if [ ! -s /tmp/pr.diff ]; then
+            echo "diff_empty=true" >> "$GITHUB_OUTPUT"
+            echo "Empty diff — no high-risk paths changed; skipping Blind Hunter call."
+          else
+            echo "diff_empty=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: 'Run Blind Hunter via Claude'
+        id: blind-hunter
+        if: steps.diff.outputs.diff_empty == 'false'
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          # The prompt instructs Claude to post the review as a PR
+          # comment ending with the BLIND_HUNTER_VERDICT line. The
+          # parser job below reads that comment back to decide on the
+          # label.
+          prompt: |
+            You are about to perform a Blind Hunter review on PR
+            ${{ github.event.pull_request.number }} of
+            ${{ github.repository }}. Read the prompt at
+            `.github/blind-hunter-prompt.md` for the role, output format,
+            and severity rubric. Apply it strictly to the diff below.
+            Post the resulting markdown list as a single PR comment.
+            End the comment with the literal verdict line (`BLIND_HUNTER_VERDICT:
+            pass` or `BLIND_HUNTER_VERDICT: fail (N P0/P1 findings)`) so
+            the downstream label gate can parse it.
+
+            Diff to review (between origin/${{ github.event.pull_request.base.ref }}
+            and HEAD):
+
+            ```diff
+            $(cat /tmp/pr.diff)
+            ```
+
+      - name: 'Parse Blind Hunter comment and apply label'
+        if: steps.diff.outputs.diff_empty == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR_NUM: ${{ github.event.pull_request.number }}
+          REPO: ${{ github.repository }}
+        run: |
+          set -uo pipefail
+          # Fetch the most recent comment by the Claude-bot user. The
+          # claude-code-action posts as `claude-code-bot[bot]` (or a
+          # similar GitHub App identity); we filter by the most recent
+          # bot-authored comment containing the BLIND_HUNTER_VERDICT
+          # marker so we never mistake a human reply for the verdict.
+          BOT_COMMENT="$(gh pr view "$PR_NUM" --repo "$REPO" --json comments \
+            --jq '.comments[] | select(.body | test("BLIND_HUNTER_VERDICT")) | .body' \
+            | tail -1)"
+          if [ -z "$BOT_COMMENT" ]; then
+            echo "No Blind Hunter comment found on PR; cannot apply label."
+            exit 1
+          fi
+
+          set +e
+          echo "$BOT_COMMENT" | node scripts/parse-blind-hunter-comment.mjs --stdin > /tmp/parser.out 2>&1
+          parse_rc=$?
+          set -e
+
+          parser_summary="$(cat /tmp/parser.out)"
+          echo "Parser verdict: $parser_summary (exit $parse_rc)"
+
+          if [ "$parse_rc" = "0" ]; then
+            gh pr edit "$PR_NUM" --add-label "blind-hunter-passed" --repo "$REPO"
+            echo "Applied blind-hunter-passed label."
+            exit 0
+          fi
+
+          # Either fail or error: ensure label is NOT present.
+          gh pr edit "$PR_NUM" --remove-label "blind-hunter-passed" --repo "$REPO" 2>&1 || true
+          echo "Did not apply label. Verdict: $parser_summary"
+          exit 1
