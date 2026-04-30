@@ -78,6 +78,9 @@ export async function equipFeedHandler(req, res) {
     });
     const inventory = getInventory(ownerUser?.settings);
     const owned = inventory.find(i => i.id === `feed-${feedType}`);
+    // Equip is a preference flag, not a reservation: inventory is decremented at feed-time (A8),
+    // not here. A user with 1 unit of a tier can equip that tier on N horses; the consumption
+    // happens when each horse is fed. This is intentional per the feed-system spec.
     if (!owned || !Number.isFinite(owned.quantity) || owned.quantity < 1) {
       return res.status(400).json({
         success: false,
