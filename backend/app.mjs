@@ -135,6 +135,7 @@ import { authenticateToken, requireRole } from './middleware/auth.mjs';
 import { csrfProtection, csrfErrorHandler } from './middleware/csrf.mjs';
 import {
   verifyJsonBody,
+  verifyUrlEncodedBody,
   rejectPollutedRequestBody,
   requestBodySecurityErrorHandler,
 } from './middleware/requestBodySecurity.mjs';
@@ -446,7 +447,7 @@ app.use('/api/', apiLimiter);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb', verify: verifyJsonBody }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb', verify: verifyUrlEncodedBody }));
 app.use(rejectPollutedRequestBody);
 
 // Cookie parsing middleware for httpOnly cookies
