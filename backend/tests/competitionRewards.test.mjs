@@ -89,7 +89,7 @@ describe('🏆 UNIT: Competition Rewards System - Prize & Stat Gain Calculations
 
     it('should return correct stats for Dressage discipline', () => {
       const stats = getRelevantStats('Dressage');
-      expect(stats).toEqual(['precision', 'intelligence', 'obedience']);
+      expect(stats).toEqual(['precision', 'focus', 'obedience']);
     });
 
     it('should return default stats for unknown discipline', () => {
