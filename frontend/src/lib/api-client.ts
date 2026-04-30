@@ -216,6 +216,13 @@ interface HorseSummary {
   flexibility?: number;
   obedience?: number;
   focus?: number;
+  // Feed-system redesign 2026-04-29 (A11): equipped feed tier (per-horse)
+  // and the three derived health bands injected by the backend serializer
+  // (backend/utils/horseHealth.mjs withHealth()).
+  equippedFeedType?: string | null;
+  feedHealth?: 'excellent' | 'good' | 'fair' | 'poor' | 'critical' | 'retired';
+  vetHealth?: 'excellent' | 'good' | 'fair' | 'poor' | 'critical' | 'retired' | string;
+  displayedHealth?: 'excellent' | 'good' | 'fair' | 'poor' | 'critical' | 'retired';
 }
 
 interface HorseTrainingHistoryEntry {
