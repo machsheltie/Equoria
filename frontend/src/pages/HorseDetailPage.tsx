@@ -50,6 +50,8 @@ import {
   Eye,
 } from 'lucide-react';
 import { useHorse, useUpdateHorse } from '../hooks/api/useHorses';
+import { useFeedHorse } from '../hooks/api/useFeedHorse';
+import HealthBadge from '../components/horse/HealthBadge';
 import TraitCard from '../components/TraitCard';
 import {
   useHorseEpigeneticInsights,
@@ -120,6 +122,14 @@ interface Horse {
   tack?: Record<string, unknown>;
   // Resolved coat color — finalDisplayColor string, or colorName from phenotype JSONB
   finalDisplayColor?: string;
+  // Feed-system redesign 2026-04-29 (A11/A16): per-horse equipped feed tier
+  // and the three derived health bands injected by the backend serializer
+  // (backend/utils/horseHealth.mjs withHealth()).
+  lastFedDate?: string | null;
+  equippedFeedType?: string | null;
+  feedHealth?: 'excellent' | 'good' | 'fair' | 'poor' | 'critical' | 'retired';
+  vetHealth?: 'excellent' | 'good' | 'fair' | 'poor' | 'critical' | 'retired' | string;
+  displayedHealth?: 'excellent' | 'good' | 'fair' | 'poor' | 'critical' | 'retired';
 }
 
 type TabType =
@@ -188,6 +198,8 @@ const HorseDetailPage: React.FC = () => {
   const listHorseMutation = useListHorse();
   const delistHorseMutation = useDelistHorse();
   const updateHorseMutation = useUpdateHorse();
+  // Feed-system redesign 2026-04-29 (A16): per-horse feed action.
+  const feedHorseMutation = useFeedHorse(Number(id));
 
   // Auth — needed to fetch user's riders
   const { user } = useAuth();
@@ -432,9 +444,17 @@ const HorseDetailPage: React.FC = () => {
                         </button>
                       </form>
                     ) : (
-                      <h1 className="fantasy-title text-3xl text-[rgb(220,235,255)] mb-2">
-                        {horse.name}
-                      </h1>
+                      <div className="flex items-center gap-3 mb-2 flex-wrap">
+                        <h1 className="fantasy-title text-3xl text-[rgb(220,235,255)]">
+                          {horse.name}
+                        </h1>
+                        {horse.displayedHealth && (
+                          <HealthBadge
+                            band={horse.displayedHealth}
+                            showCriticalWarning={horse.displayedHealth === 'critical'}
+                          />
+                        )}
+                      </div>
                     )}
                     <div className="flex flex-wrap gap-3 text-sm fantasy-body text-[rgb(180,195,215)]">
                       <span>Breed: {getBreedName(horse.breed)}</span>
@@ -666,21 +686,60 @@ const HorseDetailPage: React.FC = () => {
             <span className="text-xs fantasy-caption text-[rgb(160,175,200)] whitespace-nowrap mr-1 flex-shrink-0">
               Quick Actions:
             </span>
-            <button
-              type="button"
-              onClick={() => navigate(`/feed-shop?horseId=${horse.id}`)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)] active:brightness-95"
-              style={{
-                background:
-                  'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
-                color: 'var(--bg-deep-space)',
-              }}
-              title="Go to Feed Shop"
-              data-testid="action-feed"
-            >
-              <span aria-hidden="true">🌾</span>
-              Feed
-            </button>
+            {(() => {
+              // Feed-system redesign 2026-04-29 (A16): Feed button now calls
+              // POST /api/v1/horses/:id/feed via useFeedHorse mutation.
+              // Disabled when no feed equipped, already-fed-today, or retired.
+              const isAlreadyFedToday = horse.lastFedDate
+                ? new Date(horse.lastFedDate).toISOString().slice(0, 10) ===
+                  new Date().toISOString().slice(0, 10)
+                : false;
+              const feedDisabledReason = !horse.equippedFeedType
+                ? 'No feed selected. Click Equip first.'
+                : isAlreadyFedToday
+                  ? 'Fed today. Available again at UTC midnight.'
+                  : horse.feedHealth === 'retired'
+                    ? 'Retired.'
+                    : null;
+              const handleFeed = () => {
+                feedHorseMutation.mutate(undefined, {
+                  onSuccess: (result) => {
+                    if (result.skipped === 'retired') {
+                      toast.info(`${horse.name} is retired and doesn't need to be fed.`);
+                      return;
+                    }
+                    const feedName = result.feed?.name ?? 'feed';
+                    const remaining = result.remainingUnits ?? 0;
+                    toast.success(
+                      `Fed ${result.horse.name} with ${feedName}. ${remaining} units left.`
+                    );
+                    if (result.statBoost) {
+                      toast.success(`+1 ${result.statBoost.stat}!`, { duration: 4000 });
+                    }
+                  },
+                  onError: (err) =>
+                    toast.error((err as { message?: string })?.message ?? 'Feeding failed.'),
+                });
+              };
+              return (
+                <button
+                  type="button"
+                  onClick={handleFeed}
+                  disabled={feedDisabledReason !== null || feedHorseMutation.isPending}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)] active:brightness-95 disabled:opacity-40 disabled:cursor-not-allowed"
+                  style={{
+                    background:
+                      'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
+                    color: 'var(--bg-deep-space)',
+                  }}
+                  title={feedDisabledReason ?? 'Feed this horse'}
+                  data-testid="action-feed"
+                >
+                  <span aria-hidden="true">🌾</span>
+                  {feedHorseMutation.isPending ? 'Feeding…' : 'Feed'}
+                </button>
+              );
+            })()}
             <button
               type="button"
               onClick={() => navigate(`/training?horseId=${horse.id}`)}
@@ -741,18 +800,18 @@ const HorseDetailPage: React.FC = () => {
             </button>
             <button
               type="button"
-              onClick={() => navigate(`/tack-shop?horseId=${horse.id}`)}
+              onClick={() => navigate(`/horses/${horse.id}/equip`)}
               className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)] active:brightness-95"
               style={{
                 background:
                   'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
                 color: 'var(--bg-deep-space)',
               }}
-              title="Equip tack for this horse"
-              data-testid="action-equip-tack"
+              title="Manage tack and feed for this horse"
+              data-testid="action-equip"
             >
-              <span aria-hidden="true">🎠</span>
-              Equip Tack
+              <span aria-hidden="true">🎒</span>
+              Equip
             </button>
             <button
               type="button"
