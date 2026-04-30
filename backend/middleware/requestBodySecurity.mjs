@@ -322,33 +322,60 @@ class JsonScanner {
     }
   }
 
+  // 21R-SEC-1 (Equoria-w45l): scanString MUST return the decoded string
+  // (post-JSON-escape-collapse) so scanObject's duplicate-key Set compares
+  // semantically equal keys. Pre-fix this preserved backslash sequences
+  // verbatim (`\u006eame` returned as a 9-char literal containing a real
+  // backslash), making `{"name":"x","\u006eame":"y"}` look like two distinct
+  // keys to the scanner while JSON.parse silently collapsed them — a clean
+  // duplicate-key bypass.
+  //
+  // We delegate decoding to JSON.parse on the raw quoted substring rather
+  // than re-implementing the escape table. Two upsides:
+  //   1. Spec-compliant by construction (handles `\uXXXX`, `\"`, `\\`,
+  //      `\/`, `\b`, `\f`, `\n`, `\r`, `\t`, surrogate pairs).
+  //   2. Stays in sync if a future Node.js JSON spec relaxation changes
+  //      what counts as a valid escape — we don't have a parallel table
+  //      to update.
+  //
+  // Cursor advancement still uses the original advance-past-`\\`-plus-next
+  // logic (which is correct because every JSON escape starts with `\\` +
+  // exactly one terminator char `"\\/bfnrtu`; the 4 hex digits of `\\uXXXX`
+  // never include `"`, so we don't need to consume them eagerly to find
+  // the closing quote). Decoding is one JSON.parse on the captured slice.
   scanString() {
+    const startIdx = this.index; // points at opening `"`
     this.index += 1;
-    let value = '';
 
     while (this.index < this.source.length) {
       const char = this.source[this.index];
 
       if (char === '\\') {
-        value += char;
-        this.index += 1;
-        if (this.index < this.source.length) {
-          value += this.source[this.index];
-        }
-        this.index += 1;
+        this.index += 2; // skip backslash + escape terminator
         continue;
       }
 
       if (char === '"') {
-        this.index += 1;
-        return value;
+        this.index += 1; // consume closing `"`
+        const raw = this.source.slice(startIdx, this.index);
+        try {
+          return JSON.parse(raw);
+        } catch {
+          // Malformed escape (e.g. `\\uXYZW` with non-hex digits). Return
+          // the body without quotes; downstream JSON.parse on the full
+          // payload will reject the whole request, so this fallback is
+          // never the final disposition for an attack — it just keeps
+          // the scanner from throwing here.
+          return raw.slice(1, -1);
+        }
       }
 
-      value += char;
       this.index += 1;
     }
 
-    return value;
+    // Unterminated string — best-effort: return what we captured. The
+    // outer pipeline's JSON.parse will reject the malformed payload.
+    return this.source.slice(startIdx + 1);
   }
 
   scanNumber() {

@@ -167,6 +167,113 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       expect(response.body.success).toBe(false);
     });
 
+    /**
+     * 21R-SEC-1 (Equoria-w45l): JsonScanner.scanString preserves backslash
+     * sequences verbatim instead of decoding `\uXXXX`, `\"`, `\\`, etc. The
+     * duplicate-key check at JsonScanner.scanObject compares the raw string
+     * (e.g., `\u006eame` as a 9-char literal) against the bare key (`name`).
+     * Two semantically identical keys hash to different Set entries, so the
+     * check is bypassed. JSON.parse then collapses to last-wins, completing
+     * the smuggle.
+     *
+     * Defect class: any escape obfuscation that survives scanString and
+     * collapses on JSON.parse bypasses duplicate detection. Tests cover:
+     *   - leading-escape obfuscation (`\u006eame` vs `name`)
+     *   - mid-string escape obfuscation (`n\u0061me` vs `name`)
+     *   - hex case insensitivity (`\u006E` vs `\u006e` — both decode to `n`)
+     *   - non-letter targets (`\u0061` vs `a`)
+     *
+     * Negative-control: literal-backslash key (`\\u006eame`, two characters
+     * `\` + `u`) must NOT be treated as duplicate of `name`. Pre-fix this
+     * passes accidentally because both compare-strings are distinct; post-
+     * fix it must remain non-duplicate because the literal backslash decodes
+     * to itself, not consumed as an escape introducer.
+     */
+    describe('duplicate-key obfuscation via JSON escape sequences (21R-SEC-1)', () => {
+      it('should reject duplicate keys disguised by leading \\u006e (Unicode \\uXXXX)', async () => {
+        const payload = '{"name":"x","\\u006eame":"y"}';
+        const response = await request(app)
+          .put(`/api/horses/${testHorse.id}`)
+          .set('Authorization', `Bearer ${validToken}`)
+          .set('Origin', 'http://localhost:3000')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
+          .set('Content-Type', 'application/json')
+          .send(payload)
+          .expect(400);
+        expect(response.body.success).toBe(false);
+        expect(String(response.body.message || '')).toMatch(/duplicate/i);
+      });
+
+      it('should reject duplicate keys when the second one decodes to the first (\\u0061 vs a)', async () => {
+        const payload = '{"a":"x","\\u0061":"y"}';
+        const response = await request(app)
+          .put(`/api/horses/${testHorse.id}`)
+          .set('Authorization', `Bearer ${validToken}`)
+          .set('Origin', 'http://localhost:3000')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
+          .set('Content-Type', 'application/json')
+          .send(payload)
+          .expect(400);
+        expect(response.body.success).toBe(false);
+        expect(String(response.body.message || '')).toMatch(/duplicate/i);
+      });
+
+      it('should reject duplicate keys with mid-string escape obfuscation (n\\u0061me vs name)', async () => {
+        const payload = '{"n\\u0061me":"x","name":"y"}';
+        const response = await request(app)
+          .put(`/api/horses/${testHorse.id}`)
+          .set('Authorization', `Bearer ${validToken}`)
+          .set('Origin', 'http://localhost:3000')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
+          .set('Content-Type', 'application/json')
+          .send(payload)
+          .expect(400);
+        expect(response.body.success).toBe(false);
+        expect(String(response.body.message || '')).toMatch(/duplicate/i);
+      });
+
+      it('should reject duplicate keys with mixed hex case (\\u006E vs \\u006e)', async () => {
+        const payload = '{"\\u006Eame":"x","\\u006eame":"y"}';
+        const response = await request(app)
+          .put(`/api/horses/${testHorse.id}`)
+          .set('Authorization', `Bearer ${validToken}`)
+          .set('Origin', 'http://localhost:3000')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
+          .set('Content-Type', 'application/json')
+          .send(payload)
+          .expect(400);
+        expect(response.body.success).toBe(false);
+        expect(String(response.body.message || '')).toMatch(/duplicate/i);
+      });
+
+      it('should NOT treat literal-backslash key as duplicate of decoded key (negative control)', async () => {
+        // First key: literal `\\u006eame` (raw bytes \\, u, 0, 0, 6, e, a, m, e — 10 bytes).
+        // After JSON.parse: `\u006eame` (9 chars: backslash, u, 0, 0, 6, e, a, m, e).
+        // Second key: `name` (4 chars).
+        // These are different keys post-decode and must NOT trigger the duplicate-key check.
+        // The endpoint may still 400 for unknown-field reasons (the horse update controller has
+        // its own field whitelist) — the assertion is that if it 400s, it's NOT for duplicate-key.
+        const payload = '{"\\\\u006eame":"x","name":"y"}';
+        const response = await request(app)
+          .put(`/api/horses/${testHorse.id}`)
+          .set('Authorization', `Bearer ${validToken}`)
+          .set('Origin', 'http://localhost:3000')
+          .set('Cookie', __csrf__.cookieHeader)
+          .set('X-CSRF-Token', __csrf__.csrfToken)
+          .set('Content-Type', 'application/json')
+          .send(payload);
+        // We don't pin the status (the controller may accept or reject for other reasons).
+        // The contract: NO duplicate-key 400 from the security middleware.
+        if (response.status === 400 && response.body && typeof response.body.message === 'string') {
+          expect(response.body.message).not.toMatch(/duplicate/i);
+        }
+      });
+    });
+
     it('should reject nested parameter pollution', async () => {
       const response = await request(app)
         .put(`/api/horses/${testHorse.id}`)
