@@ -1067,7 +1067,7 @@ function predictDisciplinePerformance(
 function getDisciplineRelevantStats(discipline) {
   const statMap = {
     racing: ['speed', 'stamina', 'agility'],
-    dressage: ['intelligence', 'precision', 'balance'],
+    dressage: ['precision', 'focus', 'obedience'],
     showJumping: ['agility', 'boldness', 'precision'],
     crossCountry: ['stamina', 'boldness', 'agility'],
     western: ['agility', 'intelligence', 'calm'],

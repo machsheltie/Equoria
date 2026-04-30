@@ -22,7 +22,7 @@ function getRelevantStats(discipline) {
   const statMap = {
     Racing: ['speed', 'stamina', 'focus'],
     'Show Jumping': ['balance', 'agility', 'boldness'],
-    Dressage: ['precision', 'intelligence', 'obedience'],
+    Dressage: ['precision', 'focus', 'obedience'],
     'Cross Country': ['stamina', 'boldness', 'balance'],
     Hunter: ['balance', 'precision', 'obedience'],
     'Barrel Racing': ['speed', 'agility', 'focus'],
