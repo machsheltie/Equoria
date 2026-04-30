@@ -314,12 +314,15 @@ jobs:
 
       - name: 'Seed Performance Test Database'
         working-directory: ./backend
-        # seed:breeds must run before seed:performance — the perf seeder
-        # picks a random breed via prisma.breed.findMany() and crashes with
-        # "Cannot read properties of undefined (reading 'id')" if the Breed
-        # table is empty (seedPerformanceData.mjs:87).
+        # The perf seed picks a random breed via prisma.breed.findMany();
+        # it just needs ANY breed to exist. `npm run seed` inserts 5
+        # canonical breeds in ~5s, vs `npm run seed:breeds` which loads
+        # 310 SQL files via $executeRawUnsafe and takes 15+ min on CI —
+        # the latter blew the test.yml twin job's 20-min timeout. Random
+        # selection over 5 breeds is functionally identical to selection
+        # over 310 for performance testing.
         run: |
-          npm run seed:breeds
+          npm run seed
           npm run seed:performance
 
       - name: 'Run Performance Tests'
