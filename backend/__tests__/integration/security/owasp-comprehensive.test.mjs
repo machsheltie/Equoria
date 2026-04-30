@@ -82,12 +82,16 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
   });
 
   afterAll(async () => {
-    // Cleanup
+    // Idempotent cleanup. Some tests in this suite (A09 logging, A10 SSRF)
+    // may exercise horse-delete endpoints or trigger User cascades that
+    // remove testHorse mid-run. Use deleteMany with the unique ID so a
+    // missing row is a no-op rather than a P2025 RecordNotFound that
+    // crashes the suite teardown. Same for testUser.
     if (testHorse) {
-      await prisma.horse.delete({ where: { id: testHorse.id } });
+      await prisma.horse.deleteMany({ where: { id: testHorse.id } });
     }
     if (testUser) {
-      await prisma.user.delete({ where: { id: testUser.id } });
+      await prisma.user.deleteMany({ where: { id: testUser.id } });
     }
   });
 
