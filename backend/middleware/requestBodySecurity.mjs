@@ -520,6 +520,101 @@ export function rejectPollutedRequestBody(req, _res, next) {
   }
 }
 
+// 21R-SEC-5 (Equoria-lf3z): urlencoded duplicate-key detector.
+//
+// Sibling to verifyJsonBody. express.urlencoded historically had no verify
+// hook — `name=Valid&name=Hacked` with Content-Type
+// application/x-www-form-urlencoded reaches the controller as either
+// `{ name: ['Valid', 'Hacked'] }` (qs-extended) or `'Hacked'`
+// (last-value-wins) depending on parser config. Either form reopens the
+// pollution attack vector closed for JSON in 21R-SEC-3 / 21R-SEC-1.
+//
+// The scanner walks the raw body bytes BEFORE qs/querystring parses
+// them. Splits on `&`, extracts each key (substring before `=`),
+// percent-decodes (with `+` → space per RFC 1866 / WHATWG URL
+// application/x-www-form-urlencoded rules), and tracks seen keys.
+// Duplicate after decoding → AppError(400) with the canonical message
+// prefix that the requestBodySecurityErrorHandler matches.
+//
+// Why not URLSearchParams: URLSearchParams silently merges duplicate
+// keys (you can iterate them, but it does not signal duplication as
+// an error). Using it here would re-introduce the same swallow-and-
+// continue defect the JSON scanner closed.
+//
+// Why not qs.parse: qs returns the parsed object (array on duplicate)
+// without exposing whether duplicates were collapsed. Same swallow
+// problem.
+//
+// Bracketed-array form: `name[]=a&name[]=b` IS flagged as a duplicate
+// (literal key `name[]` appears twice). This is deliberate. Codebase
+// audit (Equoria-lf3z, 2026-04-30) found zero legitimate callers using
+// either plain or bracketed-array urlencoded duplicates — every form
+// submission expects scalar values. A future controller that needs
+// array-of-string urlencoded input should use JSON instead, or
+// explicitly opt out via a per-route override (not yet built; file a
+// follow-up if a real caller emerges).
+function detectDuplicateUrlEncodedKeys(raw) {
+  const seen = new Set();
+  const pairs = raw.split('&');
+  for (const pair of pairs) {
+    if (pair.length === 0) {
+      continue;
+    }
+    const eq = pair.indexOf('=');
+    const rawKey = eq === -1 ? pair : pair.slice(0, eq);
+    if (rawKey.length === 0) {
+      continue;
+    }
+    let key;
+    try {
+      // RFC 1866 / WHATWG: `+` is the encoding for space in
+      // application/x-www-form-urlencoded; decodeURIComponent does NOT
+      // decode `+`, so do it manually before the percent-decode pass.
+      key = decodeURIComponent(rawKey.replace(/\+/g, ' '));
+    } catch {
+      // Malformed percent-encoding. Compare raw bytes — this still
+      // catches identical literal duplicates and lets express.urlencoded
+      // surface its own malformed-body error for the broken pair.
+      key = rawKey;
+    }
+    if (seen.has(key)) {
+      throw new AppError(`${ERROR_MESSAGE_PREFIX} duplicate urlencoded key "${key}"`, 400);
+    }
+    seen.add(key);
+  }
+}
+
+export function verifyUrlEncodedBody(req, _res, buffer) {
+  const contentType = req.headers['content-type'] || '';
+  // Match `application/x-www-form-urlencoded` with optional parameters
+  // (e.g., `; charset=utf-8`). Use startsWith on the lowercased prefix
+  // so a charset parameter does not bypass the gate.
+  if (
+    !contentType.toLowerCase().startsWith('application/x-www-form-urlencoded') ||
+    buffer.length === 0
+  ) {
+    return;
+  }
+
+  try {
+    const raw = buffer.toString('utf8');
+    detectDuplicateUrlEncodedKeys(raw);
+  } catch (error) {
+    // Same fail-closed semantics as verifyJsonBody (21R-SEC-3-FOLLOW-1):
+    // re-throw AppError verbatim, log + 400 on every other class.
+    if (AppError.isAppError(error)) {
+      throw error;
+    }
+    logger.warn(UNEXPECTED_SCANNER_LOG_PREFIX, {
+      unexpected: true,
+      errorClass: error?.constructor?.name,
+      message: sanitizeForLog(error?.message, 256),
+      stack: sanitizeForLog(error?.stack, 2048),
+    });
+    throw new AppError(`${ERROR_MESSAGE_PREFIX} scanner failure`, 400);
+  }
+}
+
 // Test-only export. The scanner is part of this module's internal contract;
 // the production surface is `verifyJsonBody`. Exporting here lets the
 // integration tests for 21R-SEC-3-FOLLOW-1 (Equoria-ixqg) inject a controlled
