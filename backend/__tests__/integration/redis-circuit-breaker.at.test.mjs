@@ -44,13 +44,9 @@
 
 import { jest, describe, beforeAll, beforeEach, afterEach, it, expect } from '@jest/globals';
 
-// ── Mock logger (21R-SEC-3-A: ESM mock pattern) ─────────────────────────────
-// jest.unstable_mockModule resolves paths relative to __tests__/setup.mjs,
-// so the mock target uses ../utils/... (relative to __tests__/) while the
-// dynamic import below uses ../../utils/... (relative to this test file).
 let createRedisCircuitBreaker;
 
-jest.unstable_mockModule('../utils/logger.mjs', () => ({
+jest.unstable_mockModule('../../utils/logger.mjs', () => ({
   default: {
     info: jest.fn(),
     warn: jest.fn(),

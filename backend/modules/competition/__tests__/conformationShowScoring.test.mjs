@@ -13,7 +13,7 @@ import { jest } from '@jest/globals';
 // Mock Prisma (external DB) and logger — balanced mocking per project standards
 // ---------------------------------------------------------------------------
 
-jest.unstable_mockModule('../db/index.mjs', () => ({
+jest.unstable_mockModule('../../../db/index.mjs', () => ({
   default: {
     groomAssignment: {
       findFirst: jest.fn(),
@@ -21,7 +21,7 @@ jest.unstable_mockModule('../db/index.mjs', () => ({
   },
 }));
 
-jest.unstable_mockModule('../utils/logger.mjs', () => ({
+jest.unstable_mockModule('../../../utils/logger.mjs', () => ({
   default: {
     info: jest.fn(),
     warn: jest.fn(),

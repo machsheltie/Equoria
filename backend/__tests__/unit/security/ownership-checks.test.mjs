@@ -38,11 +38,13 @@ const mockState = globalThis.ownershipTestMockState;
 
 // Mock Prisma client module - factory implementations read from globalThis
 // This allows tests to mutate mockState and have mocks return current values
-// 21R-SEC-3-A: ESM mock paths resolve relative to __tests__/setup.mjs.
-// Dynamic import paths resolve relative to this test file. They differ:
-//   - mockPath:   from __tests__/setup.mjs's dir → ../../packages/...
-//   - importPath: from this file's dir          → ../../../../packages/...
-const prismaMockPath = '../../packages/database/prismaClient.mjs';
+// jest.unstable_mockModule resolves the specifier relative to this test
+// file (verified empirically: a wrong relative depth produces
+// `Cannot find module '...' from '__tests__/unit/security/ownership-checks.test.mjs'`).
+// Both the mock specifier and the dynamic import below must resolve to
+// the same absolute file as the production module's import for the mock
+// to intercept; here they happen to be identical.
+const prismaMockPath = '../../../../packages/database/prismaClient.mjs';
 const prismaImportPath = '../../../../packages/database/prismaClient.mjs';
 
 // Get references to the mocks for test assertions (must be done after mock is created)

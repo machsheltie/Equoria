@@ -33,10 +33,10 @@ const mockLogger = {
   debug: jest.fn(),
 };
 
-jest.unstable_mockModule('../../packages/database/prismaClient.mjs', () => ({
+jest.unstable_mockModule('../../../../packages/database/prismaClient.mjs', () => ({
   default: mockPrisma,
 }));
-jest.unstable_mockModule('../utils/logger.mjs', () => ({
+jest.unstable_mockModule('../../../utils/logger.mjs', () => ({
   default: mockLogger,
 }));
 
