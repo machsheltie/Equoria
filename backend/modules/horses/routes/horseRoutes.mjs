@@ -38,6 +38,7 @@ import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 import { generateMarkings, inheritMarkings } from '../services/markingGenerationService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
+import { withHealth } from '../../../utils/horseHealth.mjs';
 
 // Validation error handler
 const handleValidationErrors = (req, res, next) => {
@@ -318,7 +319,7 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
     res.json({
       success: true,
       message: `Found ${horses.length} horses`,
-      data: horses,
+      data: horses.map(h => withHealth(h)),
     });
   } catch (error) {
     logger.error(`[horseRoutes] Error getting horses: ${error.message}`);

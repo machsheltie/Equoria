@@ -62,6 +62,22 @@ export function getFeedHealth(horse, now = new Date()) {
 }
 
 const BAND_ORDER = ['excellent', 'good', 'fair', 'poor', 'critical'];
+const KNOWN_BANDS = new Set([...BAND_ORDER, 'retired']);
+
+/**
+ * Normalize a healthStatus override string. If it matches a known band
+ * (case-insensitive — the schema defaults to "Excellent" with a capital E,
+ * but our band ordering is lowercase), return the lowercase form. If it's
+ * a free-form vet finding (e.g. "Lameness"), return it unchanged so the
+ * vet's note isn't lost.
+ *
+ * @param {string} healthStatus
+ * @returns {string}
+ */
+function normalizeHealthOverride(healthStatus) {
+  const lower = String(healthStatus).toLowerCase();
+  return KNOWN_BANDS.has(lower) ? lower : healthStatus;
+}
 
 /**
  * Return the worse (closer to 'critical') of two bands.
@@ -100,7 +116,7 @@ export function worseOf(a, b) {
  */
 export function getVetHealth(horse, now = new Date()) {
   if (horse.age != null && horse.age >= 21) return 'retired';
-  if (horse.healthStatus != null) return horse.healthStatus;
+  if (horse.healthStatus != null) return normalizeHealthOverride(horse.healthStatus);
   if (!horse.lastVettedDate) return 'critical';
 
   const days = Math.floor(
@@ -123,4 +139,29 @@ export function getVetHealth(horse, now = new Date()) {
  */
 export function getDisplayedHealth(horse, now = new Date()) {
   return worseOf(getFeedHealth(horse, now), getVetHealth(horse, now));
+}
+
+/**
+ * Decorate a horse plain-object with the three derived health bands. Used
+ * by horse-read serializers (list, overview, etc.) so the frontend doesn't
+ * have to recompute. Pure: does not mutate the input.
+ *
+ * Requires the input to carry `age`, `lastFedDate`, `lastVettedDate`, and
+ * `healthStatus` — Prisma `select` clauses that omit any of these will
+ * yield bands derived from `undefined` (treated as null per helper rules).
+ * Spec §5.4.
+ *
+ * @template T
+ * @param {T & { age?: number, lastFedDate?: Date|string|null, lastVettedDate?: Date|string|null, healthStatus?: string|null }} horse
+ * @param {Date} [now=new Date()]
+ * @returns {T & { feedHealth: string, vetHealth: string, displayedHealth: string }}
+ */
+export function withHealth(horse, now = new Date()) {
+  if (!horse || typeof horse !== 'object') return horse;
+  return {
+    ...horse,
+    feedHealth: getFeedHealth(horse, now),
+    vetHealth: getVetHealth(horse, now),
+    displayedHealth: getDisplayedHealth(horse, now),
+  };
 }

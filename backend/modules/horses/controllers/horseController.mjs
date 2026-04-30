@@ -24,6 +24,7 @@ import {
 } from '../services/temperamentService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
+import { getFeedHealth, getVetHealth, getDisplayedHealth } from '../../../utils/horseHealth.mjs';
 
 /**
  * Get competition history for a specific horse
@@ -604,6 +605,12 @@ export async function getHorseOverview(req, res) {
         totalEarnings: true,
         tack: true,
         rider: true,
+        // Health-band inputs (A11): required by withHealth() / getFeedHealth() /
+        // getVetHealth() to derive feedHealth, vetHealth, displayedHealth on
+        // the response. See backend/utils/horseHealth.mjs.
+        lastFedDate: true,
+        lastVettedDate: true,
+        healthStatus: true,
       },
     });
 
@@ -680,6 +687,10 @@ export async function getHorseOverview(req, res) {
       lastShowResult,
       rider: horse.rider || 'none',
       tack: horse.tack || {},
+      // Derived health bands (A11). See backend/utils/horseHealth.mjs.
+      feedHealth: getFeedHealth(horse),
+      vetHealth: getVetHealth(horse),
+      displayedHealth: getDisplayedHealth(horse),
     };
 
     logger.info(
