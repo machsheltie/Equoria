@@ -105,7 +105,9 @@ export function sampleStat({ mean, std_dev }) {
 export function clampStatsToTotalCap(stats, cap) {
   const entries = Object.entries(stats);
   let total = entries.reduce((s, [, v]) => s + v, 0);
-  if (total <= cap) return { ...stats };
+  if (total <= cap) {
+    return { ...stats };
+  }
 
   const factor = cap / total;
   const result = Object.fromEntries(
@@ -117,7 +119,9 @@ export function clampStatsToTotalCap(stats, cap) {
     // Trim 1 from the largest stat that's still above 1.
     const sorted = Object.entries(result).sort(([, a], [, b]) => b - a);
     const target = sorted.find(([, v]) => v > 1);
-    if (!target) break; // safety; mathematically unreachable when cap ≥ 12
+    if (!target) {
+      break; // safety; mathematically unreachable when cap ≥ 12
+    }
     result[target[0]] -= 1;
     total -= 1;
   }

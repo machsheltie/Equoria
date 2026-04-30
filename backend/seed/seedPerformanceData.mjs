@@ -7,13 +7,13 @@
  * - Realistic data volumes for memory testing
  */
 
-import { pathToFileURL } from 'url';
+import { readFileSync } from 'fs';
+import { dirname, resolve } from 'path';
+import { fileURLToPath, pathToFileURL } from 'url';
+
 import prisma from '../db/index.mjs';
 import bcrypt from 'bcryptjs';
 import logger from '../utils/logger.mjs';
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
 
 // Shared horse starter-stats service — the SAME generator the production
 // store-purchase path uses. Per-breed mean+std_dev with Box-Muller; clamped
