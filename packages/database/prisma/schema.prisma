@@ -137,7 +137,6 @@ model Horse {
   /// Additional competition stats
   stamina                 Int?                  @default(0)
   balance                 Int?                  @default(0)
-  coordination            Int?                  @default(0)
   boldness                Int?                  @default(0)
   flexibility             Int?                  @default(0)
   obedience               Int?                  @default(0)
@@ -185,10 +184,9 @@ model Horse {
   lastFarrierDate         DateTime?
   hoofCondition           String?               @default("good")
   lastShod                DateTime?
-  /// Feed Shop fields
-  currentFeed             String?               @default("basic")
+  /// Feed Shop fields (redesign 2026-04-29)
+  equippedFeedType        String?
   lastFedDate             DateTime?
-  energyLevel             Int?                  @default(100)
   /// Conformation show title progression (Epic 31F-3)
   titlePoints             Int                   @default(0)
   currentTitle            String?
