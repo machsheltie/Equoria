@@ -675,6 +675,13 @@ jobs:
     timeout-minutes: 35
     needs: [coverage-gate, security-gate, frontend-tests]
 
+    # Equoria-rrpw (21R-CI-4): override the workflow-level `NODE_ENV: test`
+    # for the readiness lane. Mirrors the same fix in ci-cd.yml; see that
+    # workflow for full rationale. Job-level `env` overrides workflow-
+    # level per GitHub Actions precedence.
+    env:
+      NODE_ENV: 'beta-readiness'
+
     services:
       postgres:
         image: postgres:15
@@ -692,6 +699,18 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Assert NODE_ENV is beta-readiness (Equoria-rrpw / 21R-CI-4)
+        # Sentinel for the job-level env override above. Mirrors ci-cd.yml.
+        # Catches regressions that would silently restore the workflow-
+        # level `NODE_ENV: test` value, putting readiness evidence under
+        # the wrong profile.
+        run: |
+          echo "NODE_ENV=$NODE_ENV"
+          if [ "$NODE_ENV" != "beta-readiness" ]; then
+            echo "FAIL: expected NODE_ENV=beta-readiness in this job; got '$NODE_ENV'."
+            exit 1
+          fi
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

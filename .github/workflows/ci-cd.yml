@@ -491,6 +491,18 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build-validation, security-gate, performance-tests]
 
+    # Equoria-rrpw (21R-CI-4): override the workflow-level `NODE_ENV: test`
+    # for this job. Without this block, every step that reads NODE_ENV
+    # before the Playwright `webServer.env` spawn (validate-env, prisma
+    # migrate deploy, the static doctrine scans below) ran under `test`
+    # rather than the beta-readiness profile, so the readiness evidence
+    # was for the wrong environment. Job-level `env` overrides workflow-
+    # level `env` per GitHub Actions precedence; the assertion step
+    # immediately below pins this and fails the job if a future regression
+    # removes or weakens this block.
+    env:
+      NODE_ENV: 'beta-readiness'
+
     services:
       postgres:
         image: postgres:15
@@ -509,6 +521,22 @@ jobs:
     steps:
       - name: 'Checkout Repository'
         uses: actions/checkout@v4
+
+      - name: 'Assert NODE_ENV is beta-readiness (Equoria-rrpw / 21R-CI-4)'
+        # Sentinel for the env override above. Per OPTIMAL_FIX_DISCIPLINE.md
+        # §2: every check needs a positive test. This step echoes NODE_ENV
+        # and fails the job if it is anything other than `beta-readiness`.
+        # Catches regressions where a future edit drops the job-level
+        # `env: NODE_ENV: beta-readiness` block (which would silently
+        # restore the workflow-level `test` value, putting readiness
+        # evidence under the wrong profile again).
+        run: |
+          echo "NODE_ENV=$NODE_ENV"
+          if [ "$NODE_ENV" != "beta-readiness" ]; then
+            echo "FAIL: expected NODE_ENV=beta-readiness in this job; got '$NODE_ENV'."
+            echo "The job-level env block above must override the workflow-level NODE_ENV."
+            exit 1
+          fi
 
       - name: 'Setup Node.js'
         uses: actions/setup-node@v4
