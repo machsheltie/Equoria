@@ -48,7 +48,6 @@ const createTestHorse = (overrides = {}) => ({
   focus: 50,
   precision: 65,
   agility: 55,
-  coordination: 50,
   boldness: 45,
   balance: 50,
   stressLevel: 20,

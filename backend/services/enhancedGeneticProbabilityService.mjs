@@ -131,7 +131,6 @@ function calculateStatInheritanceProbabilities(stallion, mare) {
     'stamina',
     'agility',
     'balance',
-    'coordination',
     'precision',
     'intelligence',
     'boldness',

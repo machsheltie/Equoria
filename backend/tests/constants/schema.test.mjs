@@ -244,7 +244,6 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
         'strength',
         'precision',
         'balance',
-        'coordination',
         'intelligence',
         'focus',
         'obedience',

@@ -50,7 +50,6 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
     agility: 60,
     precision: 55,
     balance: 55,
-    coordination: 50,
     boldness: 50,
     temperament: null, // explicit null — no temperament modifier applied in these baseline tests
     epigeneticModifiers: {
@@ -81,7 +80,7 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
     });
 
     it('should calculate correct base score for Dressage discipline', () => {
-      const horse = createTestHorse({ precision: 80, focus: 70, coordination: 60 });
+      const horse = createTestHorse({ precision: 80, focus: 70, obedience: 60 });
       const score = calculateCompetitionScore(horse, 'Dressage');
 
       // Base score should be 80 + 70 + 60 = 210, plus/minus luck and trait bonus
@@ -293,11 +292,9 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
       // Use jest.spyOn for more deterministic testing
       const mockRandom = jest.spyOn(Math, 'random');
 
-      const traitHorse = createTestHorse({ precision: 70, focus: 60, coordination: 50 }, [
-        'discipline_affinity_dressage',
-      ]);
+      const traitHorse = createTestHorse({ precision: 70, focus: 60, obedience: 50 }, ['discipline_affinity_dressage']);
 
-      const regularHorse = createTestHorse({ precision: 70, focus: 60, coordination: 50 });
+      const regularHorse = createTestHorse({ precision: 70, focus: 60, obedience: 50 });
 
       let traitWins = 0;
       const totalRuns = 20;
@@ -560,7 +557,7 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
         {
           name: 'Dressage',
           trait: 'discipline_affinity_dressage',
-          stats: { precision: 70, focus: 60, coordination: 50 },
+          stats: { precision: 70, focus: 60, obedience: 50 },
         },
         {
           name: 'Cross Country',

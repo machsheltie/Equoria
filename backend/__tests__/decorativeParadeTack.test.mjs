@@ -38,7 +38,6 @@ function makeHorse(overrides = {}) {
     precision: 50,
     focus: 50,
     boldness: 50,
-    coordination: 50,
     flexibility: 50,
     obedience: 50,
     health: 'Good',

@@ -178,7 +178,6 @@ export const HORSE_STATS = {
   STRENGTH: 'strength',
   PRECISION: 'precision',
   BALANCE: 'balance',
-  COORDINATION: 'coordination',
   INTELLIGENCE: 'intelligence',
   FOCUS: 'focus',
   OBEDIENCE: 'obedience',
