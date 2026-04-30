@@ -599,13 +599,35 @@ jobs:
         working-directory: ./backend
         run: npm run test:security
 
-      - name: npm audit — backend
-        working-directory: ./backend
-        run: npm audit --audit-level=moderate
+      - name: Audit-allowlist sentinel — prove expiry check fires (Equoria-e7l2)
+        # Mirror of the ci-cd.yml sentinel. Plants an expired allowlist
+        # entry, asserts the audit script exits 3. Catches expiry-check
+        # regression before the real audit runs.
+        run: |
+          set -uo pipefail
+          SENTINEL_ALLOWLIST=$(mktemp --suffix=.json)
+          cat > "$SENTINEL_ALLOWLIST" <<'EOF'
+          {"allowlist":[{"id":"GHSA-doctrine-sentinel","justification":"sentinel: intentionally past expiry to prove the gate fires","expires":"2020-01-01"}]}
+          EOF
+          set +e
+          node scripts/audit-with-allowlist.mjs ./backend high "$SENTINEL_ALLOWLIST" > /dev/null 2>&1
+          actual_exit=$?
+          set -e
+          rm -f "$SENTINEL_ALLOWLIST"
+          if [ "$actual_exit" != "3" ]; then
+            echo "SENTINEL FAIL: expected exit 3 from expired allowlist; got $actual_exit."
+            exit 1
+          fi
+          echo "Sentinel OK: expiry check fires."
 
-      - name: npm audit — frontend
-        working-directory: ./frontend
-        run: npm audit --audit-level=moderate
+      - name: npm audit — backend (blocking with allowlist)
+        # Equoria-e7l2 (21R-CI-3): replaced raw `npm audit --audit-level=
+        # moderate` with expiry-tracked-allowlist wrapper. See
+        # scripts/audit-with-allowlist.mjs for gate logic.
+        run: node scripts/audit-with-allowlist.mjs ./backend high
+
+      - name: npm audit — frontend (blocking with allowlist)
+        run: node scripts/audit-with-allowlist.mjs ./frontend high
 
   # ──────────────────────────────────────────────────────────────────────────────
   # JOB 9 — Docker Build Validation (master only)

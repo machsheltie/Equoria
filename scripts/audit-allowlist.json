@@ -1,0 +1,5 @@
+{
+  "$comment": "Equoria-e7l2 (21R-CI-3): blocking npm audit allowlist with expiry tracking. Each entry must include id (GHSA-XXXX-XXXX-XXXX), justification (why we accept this risk), and expires (ISO date when the allowlist entry must be re-evaluated). CI fails if any entry is past expiry. Empty array = no allowlist; all high/critical vulns block.",
+  "$schema-doc": "scripts/audit-with-allowlist.mjs reads this file. Severity threshold for blocking is 'high' by default; override via the second CLI arg. Each allowlisted GHSA is checked against the live `npm audit --json` output; any high/critical advisory NOT in the allowlist (or whose allowlist entry has expired) blocks CI.",
+  "allowlist": []
+}

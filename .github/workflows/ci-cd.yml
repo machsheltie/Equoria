@@ -473,13 +473,45 @@ jobs:
         working-directory: ./backend
         run: npm run test:security
 
-      - name: 'Run Security Audit (Backend)'
-        working-directory: ./backend
-        run: npm audit --audit-level=moderate
+      - name: 'Audit-allowlist sentinel: prove expiry check fires (Equoria-e7l2)'
+        # Sentinel-positive for the audit gate. Plants an allowlist entry
+        # with a past expiry, runs the audit script against it, and
+        # asserts the script exits 3 (the "past expiry" code). Catches
+        # silent regression of the expiry-tracking feature: if a future
+        # edit removes the expiry check, this step fails before the real
+        # audit runs.
+        run: |
+          set -uo pipefail
+          SENTINEL_ALLOWLIST=$(mktemp --suffix=.json)
+          cat > "$SENTINEL_ALLOWLIST" <<'EOF'
+          {"allowlist":[{"id":"GHSA-doctrine-sentinel","justification":"sentinel: this entry is intentionally past expiry to prove the gate fires","expires":"2020-01-01"}]}
+          EOF
+          set +e
+          node scripts/audit-with-allowlist.mjs ./backend high "$SENTINEL_ALLOWLIST" > /dev/null 2>&1
+          actual_exit=$?
+          set -e
+          rm -f "$SENTINEL_ALLOWLIST"
+          if [ "$actual_exit" != "3" ]; then
+            echo "SENTINEL FAIL: expired allowlist entry should have produced exit 3; got $actual_exit."
+            echo "The expiry check in scripts/audit-with-allowlist.mjs has regressed."
+            exit 1
+          fi
+          echo "Sentinel OK: expiry check fires correctly on past-expiry entries."
 
-      - name: 'Run Security Audit (Frontend)'
-        working-directory: ./frontend
-        run: npm audit --audit-level=moderate
+      - name: 'Run Security Audit (Backend) — blocking with allowlist'
+        # Equoria-e7l2 (21R-CI-3): replaced raw `npm audit --audit-level=
+        # moderate` with the expiry-tracked-allowlist wrapper. Audits at
+        # high+ severity; allowlisted GHSAs (with future expiry dates)
+        # pass; everything else blocks. See scripts/audit-allowlist.json
+        # for the current allowlist and scripts/audit-with-allowlist.mjs
+        # for the gate logic.
+        run: node scripts/audit-with-allowlist.mjs ./backend high
+
+      - name: 'Run Security Audit (Frontend) — blocking with allowlist'
+        # Same gate as backend. Empty allowlist by default; both
+        # workspaces share scripts/audit-allowlist.json so a single
+        # source of truth for accepted-risk advisories.
+        run: node scripts/audit-with-allowlist.mjs ./frontend high
 
   # Job 9: Beta Readiness Gate (master only)
   #
