@@ -1,0 +1,52 @@
+# Equoria CODEOWNERS
+#
+# Equoria-8vys (B5): lock the doctrine and gate-control surface behind
+# human code-owner review. Files in this list require an approved review
+# from a code owner before merge — but ONLY when combined with a branch
+# protection rule that has "Require review from Code Owners" enabled on
+# the protected branch (master). Without that branch-protection setting
+# this file is advisory; with it, the lock is binding.
+#
+# Why this exists: under deadline pressure (or under an autonomous agent's
+# completion drive) it is cheaper to weaken the rule than to fix the
+# violation. Editing CLAUDE.md to add an exception, narrowing a doctrine-
+# check regex, removing a CI gate's `needs:` reference, or adding
+# `continue-on-error: true` to a security step are all single-line edits
+# that look innocuous in isolation but dissolve enforcement. A CODEOWNERS
+# gate makes every such edit surface in a PR review where a human can ask
+# "is this a real exception, or are we cutting a corner to make a build
+# go green?" The same agent that proposes the weakening is not the
+# approver of it.
+#
+# Self-lock: this file is in its own coverage list (last entry below). An
+# attempt to remove the lock by editing CODEOWNERS itself will require
+# the same code-owner approval, closing the obvious bypass loophole.
+#
+# Syntax notes:
+#   - Each line: `<pattern> <owner1> [<owner2> ...]`
+#   - Patterns follow .gitignore rules; later matches override earlier.
+#   - `/path/` matches a directory and everything under it.
+#   - `*` and `**` glob; `*.yml` matches one segment, `**/*.yml` recursive.
+# Reference: https://docs.github.com/en/repositories/managing-your-repositories-settings-and-customization/customizing-your-repository/about-code-owners
+
+# ── Project-level instructions consumed by every agent session ──────────
+/CLAUDE.md @machsheltie
+
+# ── Discipline rules auto-loaded by CLAUDE.md ───────────────────────────
+# Includes EDGE_CASE_FIX_DISCIPLINE.md, OPTIMAL_FIX_DISCIPLINE.md,
+# COMPLETION_VERIFICATION_POLICY.md, ES_MODULES_REQUIREMENTS.md, etc.
+/.claude/rules/ @machsheltie
+
+# ── Machine-checked doctrine scripts wired into CI gates ────────────────
+/scripts/doctrine-checks/ @machsheltie
+
+# ── CI workflow definitions ─────────────────────────────────────────────
+# All gate logic — security-gate, coverage-gate, beta-readiness-gate,
+# deployment-gate — lives inside ci-cd.yml and test.yml as named jobs.
+# The original B5 spec called out `*-gate*.yml` but no workflow file in
+# this repo uses that naming convention; locking the whole directory is
+# both broader and more accurate to intent.
+/.github/workflows/ @machsheltie
+
+# ── Self-lock so this file cannot be silently edited ────────────────────
+/.github/CODEOWNERS @machsheltie
