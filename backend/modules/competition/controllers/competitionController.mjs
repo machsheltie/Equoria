@@ -92,7 +92,6 @@ function runEnhancedCompetition(horses, show) {
             focus: horse.focus || 0,
             precision: horse.precision || 0,
             agility: horse.agility || 0,
-            coordination: horse.coordination || 0,
             boldness: horse.boldness || 0,
             balance: horse.balance || 0,
           },

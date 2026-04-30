@@ -43,7 +43,7 @@ export function calculateCompetitionScore(horse, eventType, showType = 'ridden')
         break;
 
       case 'Dressage':
-        baseScore = (horse.precision || 0) + (horse.focus || 0) + (horse.coordination || 0);
+        baseScore = (horse.precision || 0) + (horse.focus || 0) + (horse.obedience || 0);
         break;
 
       case 'Cross Country':
@@ -187,7 +187,7 @@ export function getDisciplineStatWeights(eventType) {
     Dressage: {
       precision: 1.0,
       focus: 1.0,
-      coordination: 1.0,
+      obedience: 1.0,
     },
     'Cross Country': {
       stamina: 1.0,
