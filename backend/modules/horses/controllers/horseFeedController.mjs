@@ -134,6 +134,59 @@ export async function unequipFeedHandler(req, res) {
 }
 
 /**
+ * GET /api/horses/:id/equippable
+ *
+ * Returns the items the user can equip on this horse:
+ *   - tack (saddle, bridle, etc.): items NOT currently equipped to a
+ *     DIFFERENT horse. Items unowned OR already on this horse are kept.
+ *   - feed (all 5 tiers in the user's inventory with quantity > 0):
+ *     each entry includes `isCurrentlyEquippedToThisHorse` so the UI can
+ *     mark the active tier without needing to fetch the horse separately.
+ *
+ * Ownership enforced by requireOwnership('horse') middleware (404 for
+ * missing/not-owned, CWE-639). req.horse is the owned horse.
+ */
+export async function getEquippableHandler(req, res) {
+  try {
+    const userId = req.user.id;
+    const horse = req.horse;
+
+    const ownerUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { settings: true },
+    });
+    const inventory = getInventory(ownerUser?.settings);
+
+    const tack = inventory
+      .filter(i => i.category !== 'feed')
+      .filter(i => i.equippedToHorseId == null || i.equippedToHorseId === horse.id);
+
+    const feed = inventory
+      .filter(i => i.category === 'feed')
+      .filter(i => Number.isFinite(i.quantity) && i.quantity > 0)
+      .map(i => ({
+        feedType: i.itemId,
+        name: i.name,
+        quantity: i.quantity,
+        isCurrentlyEquippedToThisHorse: horse.equippedFeedType === i.itemId,
+      }));
+
+    return res.status(200).json({
+      success: true,
+      message: 'Equippable items',
+      data: { tack, feed },
+    });
+  } catch (error) {
+    logger.error(`[horseFeedController.getEquippable] ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to load equippable items',
+      data: null,
+    });
+  }
+}
+
+/**
  * POST /api/horses/:id/feed
  *
  * Daily feed action: transactional inventory decrement, lastFedDate set,
