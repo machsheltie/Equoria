@@ -351,7 +351,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         expect(response.body.message).toContain('temperament not set');
 
         // Cleanup
-        await prisma.horse.delete({ where: { id: horseWithoutTemperament.id } });
+        await prisma.horse.deleteMany({ where: { id: horseWithoutTemperament.id } });
       });
     });
 

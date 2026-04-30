@@ -181,7 +181,7 @@ describe('Groom Legacy Service', () => {
       expect(eligibility.reason).toBe('not_retired');
 
       // Cleanup
-      await prisma.groom.delete({ where: { id: activeGroom.id } });
+      await prisma.groom.deleteMany({ where: { id: activeGroom.id } });
     });
 
     test('should reject low-level retired groom', async () => {
@@ -205,7 +205,7 @@ describe('Groom Legacy Service', () => {
       expect(eligibility.reason).toBe('insufficient_level');
 
       // Cleanup
-      await prisma.groom.delete({ where: { id: lowLevelGroom.id } });
+      await prisma.groom.deleteMany({ where: { id: lowLevelGroom.id } });
     });
 
     test('should reject groom with existing legacy', async () => {
@@ -240,7 +240,7 @@ describe('Groom Legacy Service', () => {
       await prisma.groomLegacyLog.deleteMany({
         where: { retiredGroomId: retiredGroom.id },
       });
-      await prisma.groom.delete({ where: { id: protege.id } });
+      await prisma.groom.deleteMany({ where: { id: protege.id } });
     });
   });
 
@@ -273,7 +273,7 @@ describe('Groom Legacy Service', () => {
 
       // Cleanup
       await prisma.groomLegacyLog.delete({ where: { id: result.legacyLog.id } });
-      await prisma.groom.delete({ where: { id: result.protege.id } });
+      await prisma.groom.deleteMany({ where: { id: result.protege.id } });
     });
 
     test('should reject generation for ineligible mentor', async () => {
@@ -302,7 +302,7 @@ describe('Groom Legacy Service', () => {
       );
 
       // Cleanup
-      await prisma.groom.delete({ where: { id: ineligibleGroom.id } });
+      await prisma.groom.deleteMany({ where: { id: ineligibleGroom.id } });
     });
   });
 
@@ -362,7 +362,7 @@ describe('Groom Legacy Service', () => {
 
       // Cleanup
       await prisma.groomLegacyLog.delete({ where: { id: result.legacyLog.id } });
-      await prisma.groom.delete({ where: { id: result.protege.id } });
+      await prisma.groom.deleteMany({ where: { id: result.protege.id } });
     });
   });
 });

@@ -245,7 +245,7 @@ describe('Training Analytics Service', () => {
       expect(analytics.trainingFrequency.totalSessions).toBe(0);
 
       // Clean up
-      await prisma.horse.delete({ where: { id: newHorse.id } });
+      await prisma.horse.deleteMany({ where: { id: newHorse.id } });
     });
   });
 });

@@ -139,7 +139,7 @@ describe('Groom Talent Service', () => {
       expect(validation.requiredLevel).toBe(3);
 
       // Cleanup
-      await prisma.groom.delete({ where: { id: lowLevelGroom.id } });
+      await prisma.groom.deleteMany({ where: { id: lowLevelGroom.id } });
     });
 
     test('should reject invalid talent for personality', async () => {
@@ -227,7 +227,7 @@ describe('Groom Talent Service', () => {
       await expect(selectTalent(lowLevelGroom.id, 'tier1', 'gentle_hands')).rejects.toThrow('insufficient_level');
 
       // Cleanup
-      await prisma.groom.delete({ where: { id: lowLevelGroom.id } });
+      await prisma.groom.deleteMany({ where: { id: lowLevelGroom.id } });
     });
   });
 

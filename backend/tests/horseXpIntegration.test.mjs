@@ -58,7 +58,7 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
         await prisma.horseXpEvent.deleteMany({
           where: { horseId: testHorseId },
         });
-        await prisma.horse.delete({ where: { id: testHorseId } });
+        await prisma.horse.deleteMany({ where: { id: testHorseId } });
       }
     } catch (error) {
       console.warn('Cleanup error:', error.message);

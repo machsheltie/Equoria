@@ -340,7 +340,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
         .expect(404);
 
       // Cleanup
-      await prisma.user.delete({ where: { id: otherUser.id } });
+      await prisma.user.deleteMany({ where: { id: otherUser.id } });
     });
 
     test('Should validate input parameters properly', async () => {
@@ -476,9 +476,9 @@ describe('Trait History Service', () => {
 
   afterAll(async () => {
     await prisma.traitHistoryLog.deleteMany({ where: { horseId: testHorse.id } });
-    await prisma.groom.delete({ where: { id: testGroom.id } });
-    await prisma.horse.delete({ where: { id: testHorse.id } });
-    await prisma.user.delete({ where: { id: testUser.id } });
+    await prisma.groom.deleteMany({ where: { id: testGroom.id } });
+    await prisma.horse.deleteMany({ where: { id: testHorse.id } });
+    await prisma.user.deleteMany({ where: { id: testUser.id } });
   });
 
   test('Should log and retrieve trait assignments correctly', async () => {

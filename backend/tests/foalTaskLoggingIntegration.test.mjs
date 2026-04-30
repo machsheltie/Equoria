@@ -360,8 +360,8 @@ describe('Foal Task Logging Integration', () => {
         });
 
         // Clean up this foal's data
-        await prisma.groomAssignment.delete({ where: { id: taskAssignment.id } });
-        await prisma.horse.delete({ where: { id: taskFoal.id } });
+        await prisma.groomAssignment.deleteMany({ where: { id: taskAssignment.id } });
+        await prisma.horse.deleteMany({ where: { id: taskFoal.id } });
       }
 
       // Verify all task types were tested successfully

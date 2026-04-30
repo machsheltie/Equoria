@@ -30,7 +30,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       await prisma.groomInteraction.deleteMany({ where: { groom: { userId: stale.id } } });
       await prisma.groom.deleteMany({ where: { userId: stale.id } });
       await prisma.horse.deleteMany({ where: { userId: stale.id } });
-      await prisma.user.delete({ where: { id: stale.id } });
+      await prisma.user.deleteMany({ where: { id: stale.id } });
     }
 
     // Create test user
@@ -257,7 +257,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       expect(effects.stressChange).toBeLessThan(0); // Should reduce stress
 
       // Clean up
-      await prisma.horse.delete({ where: { id: secondHorse.id } });
+      await prisma.horse.deleteMany({ where: { id: secondHorse.id } });
     });
 
     it('should prevent multiple interactions per day', async () => {
@@ -308,7 +308,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       expect(secondResponse.body.data.dailyLimitReached).toBe(true);
 
       // Clean up
-      await prisma.horse.delete({ where: { id: thirdHorse.id } });
+      await prisma.horse.deleteMany({ where: { id: thirdHorse.id } });
     });
 
     it('should validate required fields', async () => {
@@ -460,7 +460,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       // Pre-cleanup: remove stale record from a previous run
       const staleOther = await prisma.user.findUnique({ where: { email: 'other-enhanced-test@example.com' } });
       if (staleOther) {
-        await prisma.user.delete({ where: { id: staleOther.id } });
+        await prisma.user.deleteMany({ where: { id: staleOther.id } });
       }
       // Create another user
       const otherUser = await prisma.user.create({
@@ -485,7 +485,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
         expect(response.body.success).toBe(false);
       } finally {
         // Clean up
-        await prisma.user.delete({ where: { id: otherUser.id } });
+        await prisma.user.deleteMany({ where: { id: otherUser.id } });
       }
     });
   });

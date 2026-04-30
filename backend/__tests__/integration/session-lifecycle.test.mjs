@@ -696,7 +696,7 @@ describe('Session Lifecycle Management', () => {
     it('should handle complete user journey: register -> login -> use session -> change password -> re-login', async () => {
       // Step 1: Register new user (suite-prefixed so afterAll cleanup catches orphans)
       const newUserData = {
-        username: `${SUITE_PREFIX}_lc${Date.now().toString(36).slice(-6)}${Math.random().toString(36).slice(2, 6)}`,
+        username: `${SUITE_PREFIX}_lc${randomBytes(8).toString('hex')}`,
         email: `${SUITE_PREFIX}-lc-${randomBytes(8).toString('hex')}@example.com`,
         password: 'TestPassword123!',
         firstName: 'Lifecycle',
@@ -785,7 +785,7 @@ describe('Session Lifecycle Management', () => {
 
       // Cleanup
       await prisma.refreshToken.deleteMany({ where: { userId: newUserId } });
-      await prisma.user.delete({ where: { id: newUserId } });
+      await prisma.user.deleteMany({ where: { id: newUserId } });
     });
   });
 });

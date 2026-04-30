@@ -97,13 +97,13 @@ describe('System-Wide Integration Tests', () => {
   afterAll(async () => {
     // Cleanup test data
     if (testGroom) {
-      await prisma.groom.delete({ where: { id: testGroom.id } });
+      await prisma.groom.deleteMany({ where: { id: testGroom.id } });
     }
     if (testHorse) {
-      await prisma.horse.delete({ where: { id: testHorse.id } });
+      await prisma.horse.deleteMany({ where: { id: testHorse.id } });
     }
     if (testUser) {
-      await prisma.user.delete({ where: { id: testUser.id } });
+      await prisma.user.deleteMany({ where: { id: testUser.id } });
     }
     // Note: testBreed is a canonical seed breed — do not delete it
   });
@@ -286,7 +286,7 @@ describe('System-Wide Integration Tests', () => {
       }
 
       // Cleanup test groom
-      await prisma.groom.delete({ where: { id: testGroomForThisUser.id } });
+      await prisma.groom.deleteMany({ where: { id: testGroomForThisUser.id } });
     });
 
     test('Documentation system integration with API endpoints', async () => {
@@ -503,7 +503,7 @@ describe('System-Wide Integration Tests', () => {
       expect(finalLevel).toBe(expectedLevel);
 
       // Cleanup test horse
-      await prisma.horse.delete({ where: { id: testHorseForThisUser.id } });
+      await prisma.horse.deleteMany({ where: { id: testHorseForThisUser.id } });
     });
   });
 });

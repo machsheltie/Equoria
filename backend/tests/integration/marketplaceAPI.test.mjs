@@ -288,7 +288,7 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       expect(res.body.message).toMatch(/insufficient/i);
 
       // Cleanup broke buyer
-      await prisma.user.delete({ where: { id: brokeUser.user.id } });
+      await prisma.user.deleteMany({ where: { id: brokeUser.user.id } });
     });
 
     it('should atomically transfer horse, deduct buyer, credit seller', async () => {
@@ -395,7 +395,7 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       expect(res.status).toBe(200);
       expect(res.body.data).toHaveLength(0);
 
-      await prisma.user.delete({ where: { id: newUser.user.id } });
+      await prisma.user.deleteMany({ where: { id: newUser.user.id } });
     });
   });
 

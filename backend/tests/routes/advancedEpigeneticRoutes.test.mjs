@@ -143,7 +143,7 @@ describe('Advanced Epigenetic API Routes', () => {
     await prisma.horse.deleteMany({
       where: { id: { in: testHorses.map(h => h.id) } },
     });
-    await prisma.user.delete({ where: { id: testUser.id } });
+    await prisma.user.deleteMany({ where: { id: testUser.id } });
   });
 
   describe('Environmental Trigger Endpoints', () => {
@@ -241,8 +241,8 @@ describe('Advanced Epigenetic API Routes', () => {
         .expect(404);
 
       // Cleanup
-      await prisma.horse.delete({ where: { id: otherHorse.id } });
-      await prisma.user.delete({ where: { id: otherUser.id } });
+      await prisma.horse.deleteMany({ where: { id: otherHorse.id } });
+      await prisma.user.deleteMany({ where: { id: otherUser.id } });
     });
   });
 

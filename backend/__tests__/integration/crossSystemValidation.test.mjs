@@ -120,7 +120,7 @@ describe('Cross-System Validation Tests', () => {
     if (testUser) {
       await prisma.horse.deleteMany({ where: { userId: testUser.id } });
       await prisma.groom.deleteMany({ where: { userId: testUser.id } });
-      await prisma.user.delete({ where: { id: testUser.id } });
+      await prisma.user.deleteMany({ where: { id: testUser.id } });
     }
     // Do NOT delete the shared "Thoroughbred" breed — it's used by other suites.
   }, 20000);

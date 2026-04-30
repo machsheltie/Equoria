@@ -469,8 +469,8 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
         // Ownership violation should be logged (verified via audit log middleware)
 
         // Cleanup
-        await prisma.horse.delete({ where: { id: otherHorse.id } });
-        await prisma.user.delete({ where: { id: otherUser.id } });
+        await prisma.horse.deleteMany({ where: { id: otherHorse.id } });
+        await prisma.user.deleteMany({ where: { id: otherUser.id } });
       });
 
       it('should log rate limit violations', async () => {

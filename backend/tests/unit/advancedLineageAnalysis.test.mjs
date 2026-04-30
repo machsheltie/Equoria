@@ -178,8 +178,8 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       expect(tree.maxDepth).toBe(3);
 
       // Cleanup
-      await prisma.horse.delete({ where: { id: stallion.id } });
-      await prisma.horse.delete({ where: { id: mare.id } });
+      await prisma.horse.deleteMany({ where: { id: stallion.id } });
+      await prisma.horse.deleteMany({ where: { id: mare.id } });
     });
 
     test('should include parent-child relationships in tree nodes', async () => {
@@ -236,9 +236,9 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       }
 
       // Cleanup
-      await prisma.horse.delete({ where: { id: stallion.id } });
-      await prisma.horse.delete({ where: { id: mare.id } });
-      await prisma.horse.delete({ where: { id: sire.id } });
+      await prisma.horse.deleteMany({ where: { id: stallion.id } });
+      await prisma.horse.deleteMany({ where: { id: mare.id } });
+      await prisma.horse.deleteMany({ where: { id: sire.id } });
     });
 
     test('should handle missing lineage data gracefully', async () => {
@@ -405,8 +405,8 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       expect(vizData.layout).toHaveProperty('dimensions');
 
       // Cleanup
-      await prisma.horse.delete({ where: { id: stallion.id } });
-      await prisma.horse.delete({ where: { id: mare.id } });
+      await prisma.horse.deleteMany({ where: { id: stallion.id } });
+      await prisma.horse.deleteMany({ where: { id: mare.id } });
     });
   });
 
@@ -463,8 +463,8 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       }
 
       // Cleanup
-      await prisma.horse.delete({ where: { id: stallion.id } });
-      await prisma.horse.delete({ where: { id: mare.id } });
+      await prisma.horse.deleteMany({ where: { id: stallion.id } });
+      await prisma.horse.deleteMany({ where: { id: mare.id } });
     });
 
     test('should identify breeding risks and mitigation strategies', async () => {
@@ -508,8 +508,8 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       }
 
       // Cleanup
-      await prisma.horse.delete({ where: { id: stallion.id } });
-      await prisma.horse.delete({ where: { id: mare.id } });
+      await prisma.horse.deleteMany({ where: { id: stallion.id } });
+      await prisma.horse.deleteMany({ where: { id: mare.id } });
     });
   });
 });

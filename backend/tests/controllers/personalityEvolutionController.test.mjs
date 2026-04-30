@@ -139,8 +139,8 @@ describe('Personality Evolution Controller API', () => {
     await prisma.groomInteraction.deleteMany({ where: { groomId: testGroom.id } });
     await prisma.horse.deleteMany({ where: { userId: testUser.id } });
     await prisma.groom.deleteMany({ where: { userId: testUser.id } });
-    await prisma.breed.delete({ where: { id: testBreed.id } });
-    await prisma.user.delete({ where: { id: testUser.id } });
+    await prisma.breed.deleteMany({ where: { id: testBreed.id } });
+    await prisma.user.deleteMany({ where: { id: testUser.id } });
   });
 
   describe('POST /api/personality-evolution/groom/:groomId/evolve', () => {

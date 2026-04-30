@@ -138,7 +138,7 @@ describe('Weekly Flag Evaluation Service', () => {
     await prisma.horse.deleteMany({
       where: { id: { in: testHorses.map(h => h.id) } },
     });
-    await prisma.user.delete({ where: { id: testUser.id } });
+    await prisma.user.deleteMany({ where: { id: testUser.id } });
   });
 
   describe('getEligibleHorsesForFlagEvaluation', () => {
@@ -214,7 +214,7 @@ describe('Weekly Flag Evaluation Service', () => {
       expect(result.reason).toContain('maximum');
 
       // Cleanup
-      await prisma.horse.delete({ where: { id: horseWithMaxFlags.id } });
+      await prisma.horse.deleteMany({ where: { id: horseWithMaxFlags.id } });
     });
   });
 

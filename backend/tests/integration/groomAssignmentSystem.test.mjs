@@ -29,12 +29,12 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       await prisma.groomAssignment.deleteMany({ where: { userId: staleUser.id } });
       await prisma.groom.deleteMany({ where: { userId: staleUser.id } });
       await prisma.horse.deleteMany({ where: { userId: staleUser.id } });
-      await prisma.user.delete({ where: { id: staleUser.id } });
+      await prisma.user.deleteMany({ where: { id: staleUser.id } });
     }
     const staleOtherUser = await prisma.user.findUnique({ where: { username: 'other-assignment-user' } });
     if (staleOtherUser) {
       await prisma.horse.deleteMany({ where: { userId: staleOtherUser.id } });
-      await prisma.user.delete({ where: { id: staleOtherUser.id } });
+      await prisma.user.deleteMany({ where: { id: staleOtherUser.id } });
     }
 
     // Create test user
@@ -248,8 +248,8 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         expect(response.body.message).toContain('do not own this horse');
       } finally {
         // Clean up
-        await prisma.horse.delete({ where: { id: otherHorse.id } });
-        await prisma.user.delete({ where: { id: otherUser.id } });
+        await prisma.horse.deleteMany({ where: { id: otherHorse.id } });
+        await prisma.user.deleteMany({ where: { id: otherUser.id } });
       }
     });
   });
@@ -381,7 +381,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       } finally {
         // Clean up
         for (const horse of horses) {
-          await prisma.horse.delete({ where: { id: horse.id } });
+          await prisma.horse.deleteMany({ where: { id: horse.id } });
         }
       }
     });
