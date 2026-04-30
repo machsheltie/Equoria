@@ -58,7 +58,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await prisma.horse.deleteMany({ where: { id: { in: testHorseIds } } });
-  await prisma.user.delete({ where: { id: testUser.id } });
+  await prisma.user.deleteMany({ where: { id: testUser.id } });
 });
 
 describe('User Model — Real Database', () => {

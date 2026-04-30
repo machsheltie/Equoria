@@ -68,8 +68,8 @@ afterAll(async () => {
   if (createdHorseIds.length > 0) {
     await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } });
   }
-  await prisma.horse.delete({ where: { id: sire.id } });
-  await prisma.horse.delete({ where: { id: dam.id } });
+  await prisma.horse.deleteMany({ where: { id: sire.id } });
+  await prisma.horse.deleteMany({ where: { id: dam.id } });
 });
 
 describe('Horse Model At-Birth Traits — Real Database', () => {

@@ -27,7 +27,7 @@ describe('Groom Handler System Integration Tests', () => {
       await prisma.groomAssignment.deleteMany({ where: { userId: existingUser.id } });
       await prisma.groom.deleteMany({ where: { userId: existingUser.id } });
       await prisma.horse.deleteMany({ where: { userId: existingUser.id } });
-      await prisma.user.delete({ where: { id: existingUser.id } });
+      await prisma.user.deleteMany({ where: { id: existingUser.id } });
     }
 
     // Create test user
@@ -148,7 +148,7 @@ describe('Groom Handler System Integration Tests', () => {
         expect(response.body.data.horse.id).toBe(noHandlerHorse.id);
       } finally {
         // Clean up
-        await prisma.horse.delete({ where: { id: noHandlerHorse.id } });
+        await prisma.horse.deleteMany({ where: { id: noHandlerHorse.id } });
       }
     });
 
@@ -183,8 +183,8 @@ describe('Groom Handler System Integration Tests', () => {
         expect(response.body.success).toBe(false);
       } finally {
         // Clean up
-        await prisma.horse.delete({ where: { id: otherHorse.id } });
-        await prisma.user.delete({ where: { id: otherUser.id } });
+        await prisma.horse.deleteMany({ where: { id: otherHorse.id } });
+        await prisma.user.deleteMany({ where: { id: otherUser.id } });
       }
     });
   });
@@ -293,7 +293,7 @@ describe('Groom Handler System Integration Tests', () => {
       } finally {
         // Clean up
         for (const groom of additionalGrooms) {
-          await prisma.groom.delete({ where: { id: groom.id } });
+          await prisma.groom.deleteMany({ where: { id: groom.id } });
         }
       }
     });

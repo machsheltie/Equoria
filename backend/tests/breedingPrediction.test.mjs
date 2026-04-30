@@ -117,35 +117,35 @@ describe('Breeding Prediction System', () => {
     // in parallel test execution where records may have already been cleaned up
     if (testStallion) {
       try {
-        await prisma.horse.delete({ where: { id: testStallion.id } });
+        await prisma.horse.deleteMany({ where: { id: testStallion.id } });
       } catch {
         // Record may not exist if parallel tests already cleaned it up
       }
     }
     if (testMare) {
       try {
-        await prisma.horse.delete({ where: { id: testMare.id } });
+        await prisma.horse.deleteMany({ where: { id: testMare.id } });
       } catch {
         // Record may not exist if parallel tests already cleaned it up
       }
     }
     if (testGroom) {
       try {
-        await prisma.groom.delete({ where: { id: testGroom.id } });
+        await prisma.groom.deleteMany({ where: { id: testGroom.id } });
       } catch {
         // Record may not exist if parallel tests already cleaned it up
       }
     }
     if (testUser) {
       try {
-        await prisma.user.delete({ where: { id: testUser.id } });
+        await prisma.user.deleteMany({ where: { id: testUser.id } });
       } catch {
         // Record may not exist if parallel tests already cleaned it up
       }
     }
     if (testBreed) {
       try {
-        await prisma.breed.delete({ where: { id: testBreed.id } });
+        await prisma.breed.deleteMany({ where: { id: testBreed.id } });
       } catch {
         // Record may not exist if parallel tests already cleaned it up
       }

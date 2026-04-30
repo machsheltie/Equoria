@@ -171,21 +171,21 @@ describe('Trait Discovery API Integration Tests', () => {
         await prisma.foalDevelopment.deleteMany({
           where: { foalId: foal.id },
         });
-        await prisma.horse.delete({ where: { id: foal.id } });
+        await prisma.horse.deleteMany({ where: { id: foal.id } });
       } catch {
         // Ignore cleanup errors
       }
     }
     if (testBreed?.id) {
       try {
-        await prisma.breed.delete({ where: { id: testBreed.id } });
+        await prisma.breed.deleteMany({ where: { id: testBreed.id } });
       } catch {
         // Ignore cleanup errors
       }
     }
     // Clean up test user
     try {
-      await prisma.user.delete({ where: { id: testUserId } });
+      await prisma.user.deleteMany({ where: { id: testUserId } });
     } catch {
       // Ignore cleanup errors
     }

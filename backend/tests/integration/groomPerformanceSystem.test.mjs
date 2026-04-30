@@ -311,8 +311,8 @@ describe('Groom Performance System', () => {
       expect(response.body.message).toContain('Groom not found');
 
       // Clean up
-      await prisma.groom.delete({ where: { id: otherGroom.id } });
-      await prisma.user.delete({ where: { id: otherUser.id } });
+      await prisma.groom.deleteMany({ where: { id: otherGroom.id } });
+      await prisma.user.deleteMany({ where: { id: otherUser.id } });
     });
 
     it('should validate input parameters', async () => {

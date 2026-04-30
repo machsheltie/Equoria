@@ -700,7 +700,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
 
         // Cleanup
         if (horse?.id) {
-          await prisma.horse.delete({ where: { id: horse.id } });
+          await prisma.horse.deleteMany({ where: { id: horse.id } });
         }
       }
     });
