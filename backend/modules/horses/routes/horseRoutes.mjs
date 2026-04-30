@@ -21,6 +21,7 @@ import {
   queryRateLimiter,
 } from '../../../middleware/rateLimiting.mjs';
 import * as horseXpController from '../controllers/horseXpController.mjs';
+import { equipFeedHandler, unequipFeedHandler } from '../controllers/horseFeedController.mjs';
 import { createHorse } from '../../../models/horseModel.mjs';
 import { generateConformationScores } from '../services/conformationService.mjs';
 import { generateGaitScores } from '../services/gaitService.mjs';
@@ -1103,6 +1104,39 @@ router.post(
       });
     }
   },
+);
+
+/**
+ * POST /horses/:id/equip-feed
+ * Set Horse.equippedFeedType from the authenticated user's pooled inventory
+ * (feed-system redesign 2026-04-29, Equoria-wr30).
+ *
+ * Security: ownership and inventory ownership are enforced inside the
+ * controller; route layer applies authentication + mutation rate limiting.
+ * The controller returns 403 for non-owners (vs. requireOwnership which
+ * collapses non-ownership to 404) so that callers can distinguish missing
+ * horses from access-denied.
+ */
+router.post(
+  '/:id/equip-feed',
+  mutationRateLimiter,
+  validateHorseId,
+  authenticateToken,
+  equipFeedHandler,
+);
+
+/**
+ * POST /horses/:id/unequip-feed
+ * Clear Horse.equippedFeedType for an owned horse.
+ *
+ * Security: see equip-feed above — ownership enforced in controller.
+ */
+router.post(
+  '/:id/unequip-feed',
+  mutationRateLimiter,
+  validateHorseId,
+  authenticateToken,
+  unequipFeedHandler,
 );
 
 /**
