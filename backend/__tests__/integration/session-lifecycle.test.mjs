@@ -62,7 +62,7 @@ describe('Session Lifecycle Management', () => {
 
     // Clean up any lingering rows from prior crashed runs (suite-prefix scoped).
     const stale = await prisma.user.findMany({
-      where: { OR: [{ email: { startsWith: SUITE_PREFIX } }, { username: { startsWith: SUITE_PREFIX } }] },
+      where: { OR: [{ email: { startsWith: `${SUITE_PREFIX}-` } }, { username: { startsWith: `${SUITE_PREFIX}_` } }] },
       select: { id: true },
     });
     if (stale.length > 0) {
@@ -117,7 +117,7 @@ describe('Session Lifecycle Management', () => {
   afterAll(async () => {
     // Clean up everything created under this suite's prefix.
     const remaining = await prisma.user.findMany({
-      where: { OR: [{ email: { startsWith: SUITE_PREFIX } }, { username: { startsWith: SUITE_PREFIX } }] },
+      where: { OR: [{ email: { startsWith: `${SUITE_PREFIX}-` } }, { username: { startsWith: `${SUITE_PREFIX}_` } }] },
       select: { id: true },
     });
     if (remaining.length > 0) {
@@ -725,6 +725,20 @@ describe('Session Lifecycle Management', () => {
         .expect(200);
 
       expect(profileResponse1.body.data.user.email).toBe(newUserData.email);
+
+      // Step 2.5 (chunk-B fix): create sibling sessions before the password
+      // change so the post-change `count===0` assertion below actually
+      // verifies multi-session invalidation. Registration creates exactly
+      // one refresh token; without this step a buggy `delete({ tokenHash })`
+      // (instead of `deleteMany({ userId })`) would still satisfy count===0,
+      // making the test pass vacuously. Two extra tokens means the
+      // assertion fires only when ALL sessions are gone.
+      await createTokenPair(newUserId);
+      await createTokenPair(newUserId);
+      const tokensBeforeChange = await prisma.refreshToken.count({
+        where: { userId: newUserId },
+      });
+      expect(tokensBeforeChange).toBe(3);
 
       // Step 3: Change password (invalidates all sessions)
       const newPassword = 'NewPassword456!';

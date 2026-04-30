@@ -42,7 +42,7 @@ describe('Authentication with HttpOnly Cookies', () => {
 
     // Clean up any lingering rows from prior crashed runs (suite-prefix scoped).
     const stale = await prisma.user.findMany({
-      where: { OR: [{ email: { startsWith: SUITE_PREFIX } }, { username: { startsWith: SUITE_PREFIX } }] },
+      where: { OR: [{ email: { startsWith: `${SUITE_PREFIX}-` } }, { username: { startsWith: `${SUITE_PREFIX}_` } }] },
       select: { id: true },
     });
     if (stale.length > 0) {
@@ -68,7 +68,7 @@ describe('Authentication with HttpOnly Cookies', () => {
   afterAll(async () => {
     // Clean up everything created under this suite's prefix.
     const remaining = await prisma.user.findMany({
-      where: { OR: [{ email: { startsWith: SUITE_PREFIX } }, { username: { startsWith: SUITE_PREFIX } }] },
+      where: { OR: [{ email: { startsWith: `${SUITE_PREFIX}-` } }, { username: { startsWith: `${SUITE_PREFIX}_` } }] },
       select: { id: true },
     });
     if (remaining.length > 0) {

@@ -259,16 +259,18 @@ jobs:
           retention-days: 30
 
   # Job 5: Performance Testing
-  # NOTE: continue-on-error mirrors the equivalent job in test.yml ("Performance
-  # Tests (non-blocking)"). The seed at backend/seed/seedPerformanceData.mjs
-  # has accumulated schema drift over time (CompetitionResult.user, Show.host,
-  # Show.date, etc.) and needs modernization before this job can be a
-  # blocking gate. Tracked as a follow-up beads issue. Equoria-3iyk Phase 1c.
+  # The seedPerformanceData.mjs schema drift was modernized in chunk-B
+  # code-review fixes (2026-04-30): Show.runDate (was `date`), Show.hostUserId
+  # (was `hostId`), CompetitionResult.placement now String (was Int) and
+  # CompetitionResult.userId removed (reach via horse.user), Groom.speciality
+  # (sic — schema typo) and skillLevel String, Horse.healthStatus / bondScore /
+  # stressLevel and top-level stat columns. With the seed working, the job
+  # is no longer continue-on-error; a real perf regression now blocks merge,
+  # which is the right contract for `Performance & Load Testing`.
   performance-tests:
     name: 'Performance & Load Testing'
     runs-on: ubuntu-latest
     needs: [integration-tests]
-    continue-on-error: true # Informational only — see note above
 
     services:
       postgres:
@@ -312,12 +314,15 @@ jobs:
 
       - name: 'Seed Performance Test Database'
         working-directory: ./backend
-        # seed:breeds must run before seed:performance — the perf seeder
-        # picks a random breed via prisma.breed.findMany() and crashes with
-        # "Cannot read properties of undefined (reading 'id')" if the Breed
-        # table is empty (seedPerformanceData.mjs:87).
+        # The perf seed picks a random breed via prisma.breed.findMany();
+        # it just needs ANY breed to exist. `npm run seed` inserts 5
+        # canonical breeds in ~5s, vs `npm run seed:breeds` which loads
+        # 310 SQL files via $executeRawUnsafe and takes 15+ min on CI —
+        # the latter blew the test.yml twin job's 20-min timeout. Random
+        # selection over 5 breeds is functionally identical to selection
+        # over 310 for performance testing.
         run: |
-          npm run seed:breeds
+          npm run seed
           npm run seed:performance
 
       - name: 'Run Performance Tests'
