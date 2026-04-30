@@ -3,8 +3,8 @@
  * All feed shop endpoints under /api/feed-shop.
  *
  * Path summary:
- *   GET  /catalog   → list available feeds
- *   POST /purchase  → purchase feed for a horse
+ *   GET  /catalog   → list 5-tier catalog
+ *   POST /purchase  → bulk-pack purchase ({feedTier, packs}); inventory pooled per user
  */
 
 import express from 'express';
@@ -30,8 +30,8 @@ router.get('/catalog', getFeedCatalog);
 router.post(
   '/purchase',
   [
-    body('horseId').isInt({ min: 1 }).withMessage('horseId must be a positive integer'),
-    body('feedId').notEmpty().withMessage('feedId is required'),
+    body('feedTier').isString().notEmpty().withMessage('feedTier is required'),
+    body('packs').isInt({ min: 1 }).withMessage('packs must be an integer ≥ 1'),
     handleValidationErrors,
   ],
   purchaseFeed,
