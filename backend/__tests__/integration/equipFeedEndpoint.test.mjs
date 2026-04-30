@@ -206,7 +206,12 @@ describe('Equip / Unequip feed endpoints', () => {
     expect(fresh.equippedFeedType).toBeNull();
   });
 
-  it('rejects equip on a horse owned by a different user (403)', async () => {
+  it('rejects cross-user equip with 404 (CWE-639 disclosure resistance)', async () => {
+    // A horse owned by `user` must not be equippable by `other`. The middleware
+    // (requireOwnership('horse')) returns 404 — not 403 — so an authenticated
+    // attacker cannot enumerate which horse IDs exist by probing them with a
+    // foreign token. The byte-identical-response sentinel below proves the
+    // 404 envelope is the same whether the horse is missing or simply not-owned.
     const other = await prisma.user.create({
       data: {
         email: `other-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
@@ -231,21 +236,37 @@ describe('Equip / Unequip feed endpoints', () => {
 
     try {
       const otherToken = generateTestToken({ id: other.id, email: other.email, role: 'user' });
-      const csrf = await fetchCsrf(app);
 
-      const res = await request(app)
+      const csrfNotOwned = await fetchCsrf(app);
+      const resNotOwned = await request(app)
         .post(`/api/horses/${horseId}/equip-feed`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${otherToken}`)
-        .set('Cookie', csrf.cookieHeader)
-        .set('X-CSRF-Token', csrf.csrfToken)
+        .set('Cookie', csrfNotOwned.cookieHeader)
+        .set('X-CSRF-Token', csrfNotOwned.csrfToken)
         .send({ feedType: 'elite' });
 
-      expect(res.status).toBe(403);
-      expect(res.body.success).toBe(false);
+      expect(resNotOwned.status).toBe(404);
+      expect(resNotOwned.body.success).toBe(false);
 
+      // The owned horse must NOT have been mutated.
       const fresh = await prisma.horse.findUnique({ where: { id: horseId } });
       expect(fresh.equippedFeedType).toBeNull();
+
+      // CWE-639 sentinel: response for a horse the caller doesn't own must be
+      // byte-identical to the response for a horse that doesn't exist at all.
+      // If these diverge, the attacker can enumerate horse IDs.
+      const csrfMissing = await fetchCsrf(app);
+      const resMissing = await request(app)
+        .post(`/api/horses/999999999/equip-feed`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${otherToken}`)
+        .set('Cookie', csrfMissing.cookieHeader)
+        .set('X-CSRF-Token', csrfMissing.csrfToken)
+        .send({ feedType: 'elite' });
+
+      expect(resMissing.status).toBe(404);
+      expect(resMissing.body).toEqual(resNotOwned.body);
     } finally {
       await prisma.user.delete({ where: { id: other.id } }).catch(() => {});
     }
