@@ -463,18 +463,21 @@ jobs:
           retention-days: 14
 
   # ──────────────────────────────────────────────────────────────────────────────
-  # JOB 7 — Performance Tests (CI-05: non-blocking, informational)
+  # JOB 7 — Performance Tests
   #
-  # Moved OUT of the deployment critical path. Results are published as artifacts
-  # for trend analysis but do NOT gate deployment. Add SLA thresholds in
-  # jest.config.performance.mjs to promote this to a blocking gate.
+  # Was non-blocking ("Performance Tests (non-blocking)") while
+  # seedPerformanceData.mjs accumulated schema drift that crashed the seed
+  # step. Chunk-B code-review fix (2026-04-30) modernized the seed against
+  # the current schema (Show.runDate, CompetitionResult.placement String,
+  # Horse top-level stats, etc.) — the seed now runs cleanly and a real perf
+  # regression should block merge, which is the correct contract for a job
+  # named "Performance Tests."
   # ──────────────────────────────────────────────────────────────────────────────
   performance-tests:
-    name: 'Performance Tests (non-blocking)'
+    name: 'Performance Tests'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     needs: [lint]
-    continue-on-error: true # Informational only — does not block deployment
 
     services:
       postgres:
@@ -516,12 +519,17 @@ jobs:
 
       - name: Seed performance data
         working-directory: ./backend
-        run: NODE_ENV=test node seed/seedPerformanceData.mjs || echo "⚠️ Performance seed skipped"
+        # seed:breeds must run before seed:performance — the perf seeder
+        # picks a random breed via prisma.breed.findMany() and crashes with
+        # "Cannot read properties of undefined (reading 'id')" if the Breed
+        # table is empty (matches ci-cd.yml's job 5 contract).
+        run: |
+          npm run seed:breeds
+          npm run seed:performance
 
       - name: Run performance tests
         working-directory: ./backend
         run: npm run test:performance
-        continue-on-error: true
 
       - name: Upload performance results
         uses: actions/upload-artifact@v4

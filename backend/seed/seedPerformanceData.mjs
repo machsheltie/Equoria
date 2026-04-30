@@ -7,6 +7,7 @@
  * - Realistic data volumes for memory testing
  */
 
+import { pathToFileURL } from 'url';
 import prisma from '../db/index.mjs';
 import bcrypt from 'bcryptjs';
 import logger from '../utils/logger.mjs';
@@ -80,28 +81,33 @@ async function seedPerformanceHorses() {
       const breed = breeds[Math.floor(Math.random() * breeds.length)];
       const age = Math.floor(Math.random() * 20) + 1;
 
+      // Schema fields (chunk-B fix 2026-04-30): the older seed wrote
+      // `health`/`bonding`/`stress`/`stats: {…}`/`traits: {…}` — none of
+      // which match the current Horse schema. Stats are TOP-LEVEL Int
+      // columns; epigenetic data lives on `epigeneticModifiers`;
+      // health/bond/stress are `healthStatus` (String), `bondScore` (Int),
+      // `stressLevel` (Int). The pre-fix shape silently produced
+      // PrismaClientValidationError at runtime, blocking the perf-test job.
       horses.push({
         name: `PerfHorse${user.id}_${i}`,
         sex: Math.random() > 0.5 ? 'stallion' : 'mare',
         dateOfBirth: new Date(Date.now() - age * 7 * 24 * 60 * 60 * 1000), // Age in weeks
         breedId: breed.id,
         userId: user.id,
-        health: Math.floor(Math.random() * 20) + 80,
-        bonding: Math.floor(Math.random() * 50) + 50,
-        stress: Math.floor(Math.random() * 30),
+        healthStatus: 'Excellent',
+        bondScore: Math.floor(Math.random() * 50) + 50,
+        stressLevel: Math.floor(Math.random() * 30),
         horseXp: Math.floor(Math.random() * 1000),
-        stats: {
-          speed: Math.floor(Math.random() * 50) + 50,
-          stamina: Math.floor(Math.random() * 50) + 50,
-          agility: Math.floor(Math.random() * 50) + 50,
-          balance: Math.floor(Math.random() * 50) + 50,
-          precision: Math.floor(Math.random() * 50) + 50,
-          intelligence: Math.floor(Math.random() * 50) + 50,
-          boldness: Math.floor(Math.random() * 50) + 50,
-          flexibility: Math.floor(Math.random() * 50) + 50,
-          obedience: Math.floor(Math.random() * 50) + 50,
-          focus: Math.floor(Math.random() * 50) + 50,
-        },
+        speed: Math.floor(Math.random() * 50) + 50,
+        stamina: Math.floor(Math.random() * 50) + 50,
+        agility: Math.floor(Math.random() * 50) + 50,
+        balance: Math.floor(Math.random() * 50) + 50,
+        precision: Math.floor(Math.random() * 50) + 50,
+        intelligence: Math.floor(Math.random() * 50) + 50,
+        boldness: Math.floor(Math.random() * 50) + 50,
+        flexibility: Math.floor(Math.random() * 50) + 50,
+        obedience: Math.floor(Math.random() * 50) + 50,
+        focus: Math.floor(Math.random() * 50) + 50,
         disciplineScores: {
           racing: Math.floor(Math.random() * 100),
           dressage: Math.floor(Math.random() * 100),
@@ -110,11 +116,7 @@ async function seedPerformanceHorses() {
           western: Math.floor(Math.random() * 100),
           gaited: Math.floor(Math.random() * 100),
         },
-        traits: {
-          positive: [],
-          negative: [],
-          hidden: [],
-        },
+        epigeneticModifiers: { positive: [], negative: [], hidden: [] },
         taskLog: {},
         lastGroomed: new Date(),
       });
@@ -168,15 +170,22 @@ async function seedPerformanceShows() {
       const showDate = new Date(Date.now() + Math.random() * 30 * 24 * 60 * 60 * 1000);
 
       shows.push({
+        // Show.name is @unique; user.id is a UUID so this is collision-free.
         name: `Performance Show ${user.id}_${i}`,
         discipline,
-        date: showDate,
-        location: `Test Location ${i}`,
+        // Schema fields (chunk-B fix 2026-04-30, was schema-drift from
+        // pre-21R refactor): runDate (was `date`), hostUserId (was `hostId`),
+        // levelMin/Max + entryFee required, status enum is open|closed|
+        // executing|completed (was free-form 'upcoming'), location and
+        // currentEntries do not exist on Show.
+        levelMin: 1,
+        levelMax: 20,
+        entryFee: Math.floor(Math.random() * 200) + 50,
         prize: Math.floor(Math.random() * 5000) + 1000,
+        runDate: showDate,
         maxEntries: Math.floor(Math.random() * 50) + 20,
-        currentEntries: 0,
-        status: 'upcoming',
-        hostId: user.id,
+        status: 'open',
+        hostUserId: user.id,
       });
     }
   }
@@ -211,7 +220,9 @@ async function seedPerformanceCompetitionResults() {
 
   const shows = await prisma.show.findMany({
     where: {
-      host: {
+      // Show.user-relation is `hostUser` (FK: hostUserId), not `host`.
+      // Matches the corresponding fix in the cleanup block above.
+      hostUser: {
         email: {
           startsWith: 'perftest',
         },
@@ -234,12 +245,16 @@ async function seedPerformanceCompetitionResults() {
       results.push({
         horseId: horse.id,
         showId: show.id,
-        userId: horse.userId,
-        placement,
+        // Schema fields (chunk-B fix 2026-04-30): CompetitionResult has no
+        // direct userId — reach the user via horse.user. placement is a
+        // String? (denormalized rank label like '1st', not an integer).
+        // Required: showName + runDate (was 'competitionDate' field name).
+        placement: String(placement),
         score,
         prizeWon,
         discipline: show.discipline,
-        competitionDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000),
+        runDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000),
+        showName: show.name,
       });
     }
   }
@@ -281,11 +296,15 @@ async function seedPerformanceGrooms() {
       const personality = personalities[Math.floor(Math.random() * personalities.length)];
       const specialty = specialties[Math.floor(Math.random() * specialties.length)];
 
+      // Schema fields (chunk-B fix 2026-04-30): the column is `speciality`
+      // (sic — typo preserved in schema), and `skillLevel` is a String enum
+      // (novice|beginner|...) not a number.
+      const skillLevels = ['novice', 'beginner', 'intermediate', 'expert', 'master'];
       grooms.push({
         name: `PerfGroom${user.id}_${i}`,
         personality,
-        specialty,
-        skillLevel: Math.floor(Math.random() * 5) + 1,
+        speciality: specialty,
+        skillLevel: skillLevels[Math.floor(Math.random() * skillLevels.length)],
         experience: Math.floor(Math.random() * 1000),
         userId: user.id,
         isActive: true,
@@ -329,11 +348,12 @@ async function seedPerformanceTrainingSessions() {
       const sessionDate = new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000);
 
       sessions.push({
+        // Schema fields (chunk-B fix 2026-04-30): TrainingLog has only
+        // discipline + trainedAt + horseId. Older seed wrote skillImprovement
+        // and notes which never existed on this model.
         horseId: horse.id,
         discipline,
         trainedAt: sessionDate,
-        skillImprovement: Math.floor(Math.random() * 10) + 1,
-        notes: `Performance training session ${i} for ${discipline}`,
       });
     }
   }
@@ -448,8 +468,12 @@ async function seedPerformanceData() {
   }
 }
 
-// Run seeding if this script is executed directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Run seeding if this script is executed directly. Use pathToFileURL to
+// correctly compare on Windows (where `process.argv[1]` uses backslashes
+// but `import.meta.url` uses URL-encoded forward slashes — the simple
+// `file://${argv[1]}` template never matches on Windows, silently making
+// the script a no-op when invoked via `node seed/seedPerformanceData.mjs`).
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   seedPerformanceData()
     .then(() => {
       console.log('✅ Performance data seeding completed');

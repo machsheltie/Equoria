@@ -38,7 +38,7 @@ describe('Cookie Integration Tests', () => {
 
   const cleanSuite = async () => {
     const stale = await prisma.user.findMany({
-      where: { OR: [{ email: { startsWith: SUITE_PREFIX } }, { username: { startsWith: SUITE_PREFIX } }] },
+      where: { OR: [{ email: { startsWith: `${SUITE_PREFIX}-` } }, { username: { startsWith: `${SUITE_PREFIX}_` } }] },
       select: { id: true },
     });
     if (stale.length > 0) {
