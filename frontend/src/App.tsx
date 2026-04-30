@@ -22,6 +22,7 @@ const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
 const HorseDetailPage = lazy(() => import('./pages/HorseDetailPage'));
+const HorseEquipPage = lazy(() => import('./pages/horses/HorseEquipPage'));
 
 // Initialise Sentry once at module load (no-op if VITE_SENTRY_DSN not set)
 initSentry();
@@ -69,6 +70,7 @@ const App = () => (
                   }
                 >
                   <Route path="/horses/:id" element={<HorseDetailPage />} />
+                  <Route path="/horses/:id/equip" element={<HorseEquipPage />} />
                   {navItems.map(({ to, Page }) => (
                     <Route key={to} path={to} element={<Page />} />
                   ))}
