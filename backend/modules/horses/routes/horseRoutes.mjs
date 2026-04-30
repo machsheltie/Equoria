@@ -21,7 +21,11 @@ import {
   queryRateLimiter,
 } from '../../../middleware/rateLimiting.mjs';
 import * as horseXpController from '../controllers/horseXpController.mjs';
-import { equipFeedHandler, unequipFeedHandler } from '../controllers/horseFeedController.mjs';
+import {
+  equipFeedHandler,
+  unequipFeedHandler,
+  feedHorseHandler,
+} from '../controllers/horseFeedController.mjs';
 import { createHorse } from '../../../models/horseModel.mjs';
 import { generateConformationScores } from '../services/conformationService.mjs';
 import { generateGaitScores } from '../services/gaitService.mjs';
@@ -1139,6 +1143,25 @@ router.post(
   authenticateToken,
   requireOwnership('horse'),
   unequipFeedHandler,
+);
+
+/**
+ * POST /horses/:id/feed
+ * Daily feed action — transactional inventory decrement, lastFedDate set,
+ * stat-boost RNG roll (feed-system redesign 2026-04-29, Equoria-l5kf).
+ *
+ * Security: ownership enforced via requireOwnership('horse') middleware
+ * (CWE-639 disclosure resistance — returns 404 for both missing and
+ * not-owned). Service performs a defense-in-depth owner check inside its
+ * transaction (also returns 404 on mismatch).
+ */
+router.post(
+  '/:id/feed',
+  mutationRateLimiter,
+  validateHorseId,
+  authenticateToken,
+  requireOwnership('horse'),
+  feedHorseHandler,
 );
 
 /**

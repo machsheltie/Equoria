@@ -19,6 +19,7 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { FEED_CATALOG } from '../../services/controllers/feedShopController.mjs';
+import { feedHorse } from '../services/horseFeedService.mjs';
 
 const VALID_TIERS = new Set(FEED_CATALOG.map(t => t.id));
 
@@ -129,5 +130,46 @@ export async function unequipFeedHandler(req, res) {
   } catch (error) {
     logger.error(`[horseFeedController.unequipFeed] ${error.message}`);
     return res.status(500).json({ success: false, message: 'Failed to unequip feed', data: null });
+  }
+}
+
+/**
+ * POST /api/horses/:id/feed
+ *
+ * Daily feed action: transactional inventory decrement, lastFedDate set,
+ * stat-boost RNG roll. The service `feedHorse()` is the source of truth
+ * for pre-conditions; this handler is a thin HTTP shim that maps the
+ * service's status-tagged errors to HTTP responses.
+ *
+ * Ownership is enforced by requireOwnership('horse') middleware on the
+ * route. The service performs a defense-in-depth owner check inside its
+ * transaction and returns 404 (not 403) on mismatch (CWE-639).
+ */
+export async function feedHorseHandler(req, res) {
+  try {
+    const result = await feedHorse({
+      userId: req.user.id,
+      horseId: req.params.id,
+    });
+
+    if (result.skipped === 'retired') {
+      return res.status(200).json({
+        success: true,
+        message: `${result.horse.name} is retired and doesn't need to be fed.`,
+        data: { skipped: 'retired', horse: result.horse },
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: `Fed ${result.horse.name} with ${result.feed.name}.`,
+      data: result,
+    });
+  } catch (error) {
+    if (error.status) {
+      return res.status(error.status).json({ success: false, message: error.message, data: null });
+    }
+    logger.error(`[horseFeedController.feedHorse] ${error.message}`);
+    return res.status(500).json({ success: false, message: 'Failed to feed horse', data: null });
   }
 }
