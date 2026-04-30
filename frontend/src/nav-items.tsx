@@ -1,7 +1,6 @@
 import { lazy } from 'react';
 import {
   Home,
-  Dumbbell,
   HeartHandshake,
   Warehouse,
   User,
@@ -11,6 +10,7 @@ import {
   BarChart3,
   PersonStanding,
   ShoppingCart,
+  Package,
 } from 'lucide-react';
 
 // Lazy page imports — each page becomes a separate JS chunk loaded on demand
@@ -72,10 +72,10 @@ export const navItems = [
     Page: StableViewNav,
   },
   {
-    title: 'Training',
-    to: '/training',
-    icon: <Dumbbell className="h-4 w-4" />,
-    Page: TrainingPage,
+    title: 'Inventory',
+    to: '/inventory',
+    icon: <Package className="h-4 w-4" />,
+    Page: InventoryPage,
   },
   {
     title: 'Breeding',
@@ -169,11 +169,14 @@ export const navItems = [
     icon: null,
     Page: BankPage,
   },
+  // Training kept as a route-only registration after feed-system redesign
+  // moved Training off the main nav (A13). The page still works for direct
+  // navigation but is no longer a sidebar entry.
   {
-    title: 'Inventory',
-    to: '/inventory',
+    title: 'Training',
+    to: '/training',
     icon: null,
-    Page: InventoryPage,
+    Page: TrainingPage,
   },
   {
     title: 'My Stable',

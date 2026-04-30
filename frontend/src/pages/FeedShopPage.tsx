@@ -210,7 +210,7 @@ const HorsesNutritionTab: React.FC<HorsesNutritionTabProps> = ({
                           {feed.name}
                         </span>
                         <span className="text-[var(--gold-primary)] font-semibold">
-                          {feed.cost.toLocaleString()} coins
+                          {feed.packPrice.toLocaleString()} coins / pack
                         </span>
                       </button>
                     );
@@ -312,12 +312,12 @@ const ShopTab: React.FC<ShopTabProps> = ({
                   <h3 className="font-bold text-[var(--cream)]">{item.name}</h3>
                   <span className="text-xs text-[var(--text-muted)] flex items-center gap-1 mt-0.5">
                     <Clock className="w-3 h-3" />
-                    {item.billing}
+                    100-unit pack
                   </span>
                 </div>
               </div>
               <p className="text-lg font-bold text-[var(--gold-primary)]">
-                {item.cost.toLocaleString()} coins
+                {item.packPrice.toLocaleString()} coins
               </p>
             </div>
             <p className="text-sm text-[var(--text-secondary)] mb-4">{item.description}</p>
@@ -397,12 +397,22 @@ const FeedShopPage: React.FC = () => {
 
   const handlePurchase = (horseId: number, feedId: string) => {
     setPurchaseState({ horseId, feedId });
+    // A13 transitional: bulk-purchase API takes { feedTier, packs } at the
+    // user level (no horse). Pass packs:1 by default; A14 rewrites this page
+    // around the new pooled-inventory model.
     purchaseMutation.mutate(
-      { horseId, feedId },
       {
-        onSuccess: (result) => {
-          const horseName = result.horse?.name ?? 'your horse';
-          toast.success(`Feed purchased for ${horseName}!`);
+        feedTier: feedId as
+          | 'basic'
+          | 'performance'
+          | 'performancePlus'
+          | 'highPerformance'
+          | 'elite',
+        packs: 1,
+      },
+      {
+        onSuccess: () => {
+          toast.success('Feed pack purchased — added to your inventory.');
         },
         onError: (err) => {
           toast.error(
