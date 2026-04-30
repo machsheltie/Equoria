@@ -224,6 +224,12 @@ export function secureJsonBodyParser(opts = {}) {
           );
           throw err;
         }
+        if (err && err.code === 'MALFORMED_JSON_BODY') {
+          logger.warn(
+            `[requestBodyGuard] Rejected malformed JSON body on ${req.method} ${req.path}: ${err.message}`,
+          );
+          throw err;
+        }
         throw err;
       }
     },
@@ -333,7 +339,22 @@ export function jsonBodyErrorHandler() {
     if (err.code === 'DUPLICATE_JSON_KEY') {
       return res.status(400).json({
         success: false,
+        code: 'DUPLICATE_JSON_KEY',
         message: err.message || 'Duplicate key in JSON body',
+      });
+    }
+
+    // Tokenizer-thrown malformed-string-literal errors. Distinct from the
+    // SyntaxError fallback below: this code fires from `detectDuplicateJsonKeys`
+    // BEFORE express.json() reaches the offending bytes. Surfacing the explicit
+    // code lets sentinel tests prove the dup-key tokenizer guard fires (rather
+    // than the generic body-parser fallback) so a future refactor that removes
+    // the tokenizer's malformed-string branch fails the test.
+    if (err.code === 'MALFORMED_JSON_BODY') {
+      return res.status(400).json({
+        success: false,
+        code: 'MALFORMED_JSON_BODY',
+        message: err.message || 'Malformed JSON in request body',
       });
     }
 
@@ -342,6 +363,7 @@ export function jsonBodyErrorHandler() {
     if (err.type === 'entity.parse.failed' || err instanceof SyntaxError) {
       return res.status(400).json({
         success: false,
+        code: 'JSON_PARSE_ERROR',
         message: 'Malformed JSON in request body',
       });
     }

@@ -261,6 +261,14 @@ export async function validateRefreshToken(token) {
       // "this specific token is gone while others remain" (genuine reuse
       // signal). The former is a session upgrade and must NOT poison the
       // reuse-detection audit log. See `docs/migration-deploy-checklist.md`.
+      //
+      // Cost note: this branch fires only when (a) the JWT signature
+      // verifies AND (b) the tokenHash row is missing. That combination is
+      // already an exceptional path (forged token from a leaked secret,
+      // post-migration session, or post-logout-all). The extra count() is
+      // therefore O(rare-event), not a per-request 2x amplification on the
+      // hot path. Caching is rejected: a stale cache would mis-classify a
+      // new login during the rare-event window as a system purge.
       const userTokenCount = await prisma.refreshToken.count({
         where: { userId: decoded.userId },
       });

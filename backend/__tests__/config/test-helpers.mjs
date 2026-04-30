@@ -408,7 +408,9 @@ export const verifyTokenFamilyState = async familyId => {
     activeTokens: tokens.filter(t => t.isActive).length,
     invalidatedTokens: tokens.filter(t => t.isInvalidated).length,
     tokens: tokens.map(t => ({
-      token: `${t.token.substring(0, 20)}...`, // Truncate for safety
+      // Equoria-uy73 dropped `RefreshToken.token`; only tokenHash is persisted.
+      // Prefix is for debug output only — not a forgeable secret on its own.
+      tokenHashPrefix: `${t.tokenHash.substring(0, 20)}...`,
       isActive: t.isActive,
       isInvalidated: t.isInvalidated,
       createdAt: t.createdAt,

@@ -169,6 +169,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
         .send(maliciousPayload)
         .expect(400);
       expect(response.body.success).toBe(false);
+      expect(response.body.code).toBe('DUPLICATE_JSON_KEY');
       expect(response.body.message).toMatch(/Duplicate key/i);
     });
 
@@ -177,6 +178,12 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       // malformed-string EOF rather than silently exit and admit a
       // meaningless rawKey. This guards the contract against a future
       // refactor that moves dup-detection post-parse.
+      //
+      // Sentinel-positive contract (per OPTIMAL_FIX_DISCIPLINE §2): assert the
+      // SPECIFIC code path. Without `code === 'MALFORMED_JSON_BODY'`, the test
+      // would also pass if the tokenizer's malformed-string branch were
+      // removed and the body fell through to the generic `JSON_PARSE_ERROR`
+      // SyntaxError fallback (same status, same `success: false`).
       const malformedPayload = '{"a":"unterminated\\';
 
       const response = await request(app)
@@ -189,6 +196,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
         .send(malformedPayload)
         .expect(400);
       expect(response.body.success).toBe(false);
+      expect(response.body.code).toBe('MALFORMED_JSON_BODY');
     });
 
     it('should reject nested parameter pollution', async () => {
