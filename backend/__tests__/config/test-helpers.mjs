@@ -12,19 +12,28 @@
 
 import bcrypt from 'bcryptjs';
 import { expect } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateToken, generateRefreshToken } from '../../middleware/auth.mjs';
 
 /**
  * User Test Data Factory
- * Creates complete user objects with all required fields
+ * Creates complete user objects with all required fields.
+ *
+ * Equoria-3gti iteration-3 (2026-04-29): switched from
+ * `${Date.now()}_${Math.random().toString(36).substring(2, 8)}` to
+ * `randomBytes(8).toString('hex')`. Same collision-elimination
+ * rationale as the createTestUser in setup.mjs — see that file's
+ * doc comment for the full Phase-3a / 21R-SEC-3-REVIEW-2-ADJ-1
+ * background. Email-verification.test.mjs imports the createTestUser
+ * from THIS helper file, not setup.mjs, so the iteration-2 sweep
+ * missed this site and the flake persisted.
  */
 export const createUserData = (overrides = {}) => {
-  const timestamp = Date.now();
-  const randomSuffix = Math.random().toString(36).substring(2, 8);
+  const uid = randomBytes(8).toString('hex');
   return {
-    username: `testuser_${timestamp}_${randomSuffix}`,
-    email: `test_${timestamp}_${randomSuffix}@example.com`,
+    username: `testuser_${uid}`,
+    email: `test_${uid}@example.com`,
     password: 'TestPassword123!',
     firstName: 'Test',
     lastName: 'User',
@@ -316,7 +325,8 @@ export const extractAccessTokenFromCookies = cookies => {
  * Creates a full token family for testing rotation scenarios
  */
 export const createTestTokenFamily = async user => {
-  const familyId = `test-family-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  // Equoria-3gti iteration-3: collision-free identifier (was Date.now()+Math.random()).
+  const familyId = `test-family-${randomBytes(8).toString('hex')}`;
 
   // This will be implemented in tokenRotationService.mjs
   try {
@@ -364,14 +374,15 @@ export const createTestRefreshTokenRecord = async (tokenData = {}) => {
   }
   const { hashRefreshToken } = await import('../../utils/tokenRotationService.mjs');
   // Random suffix prevents same-millisecond collisions when tests fire
-  // multiple inserts via Promise.all (review patch P2).
-  const rawToken =
-    tokenData.rawToken ?? `test-token-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
+  // multiple inserts via Promise.all (review patch P2 + Equoria-3gti
+  // iteration-3 — switched from Date.now()+Math.random() to randomBytes
+  // for the same collision-elimination reasons as createTestUser).
+  const rawToken = tokenData.rawToken ?? `test-token-${randomBytes(8).toString('hex')}`;
   const tokenHash = tokenData.tokenHash ?? hashRefreshToken(rawToken);
 
   const defaultData = {
     userId: 'test-user-id',
-    familyId: `test-family-${Date.now()}`,
+    familyId: `test-family-${randomBytes(8).toString('hex')}`,
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
     isActive: true,
     isInvalidated: false,
@@ -447,7 +458,7 @@ export const assertFamilyInvalidation = async familyId => {
  */
 export const mockTokenRotationService = () => {
   return {
-    generateTokenFamily: jest.fn(() => `mock-family-${Date.now()}`),
+    generateTokenFamily: jest.fn(() => `mock-family-${randomBytes(8).toString('hex')}`),
     createTokenPair: jest.fn(async () => ({
       accessToken: 'mock-access-token',
       refreshToken: 'mock-refresh-token',
