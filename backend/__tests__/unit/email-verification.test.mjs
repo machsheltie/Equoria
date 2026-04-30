@@ -145,9 +145,7 @@ describe('Email Verification Service - Unit Tests', () => {
           data: {
             // Hashed at rest — Equoria-uy73. This row is just padding to hit
             // the MAX_PENDING_TOKENS ceiling; the raw token is not read back.
-            tokenHash: hashVerificationToken(
-              `old-token-${i}-${randomBytes(8).toString('hex')}-${Math.random()}`,
-            ),
+            tokenHash: hashVerificationToken(`old-token-${i}-${randomBytes(8).toString('hex')}-${Math.random()}`),
             userId: testUser.id,
             email: testUser.email,
             expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
