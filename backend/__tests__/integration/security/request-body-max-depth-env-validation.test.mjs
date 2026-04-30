@@ -56,12 +56,13 @@ import { afterEach, beforeAll, describe, expect, it, jest } from '@jest/globals'
 // Module path used for dynamic import — resolves relative to THIS file.
 const MIDDLEWARE_PATH = '../../../middleware/requestBodySecurity.mjs';
 
-// Mock paths for jest.unstable_mockModule resolve relative to the
-// jest setupFilesAfterEach file (__tests__/setup.mjs), NOT this test
-// file. This asymmetry is a known Jest ESM quirk tracked separately
-// by 21R-SEC-3-REVIEW-6 (Equoria-mron). Until that's resolved with a
-// canonical moduleNameMapper, we maintain two paths to the same target.
-const LOGGER_MOCK_PATH = '../utils/logger.mjs';
+// jest.unstable_mockModule resolves the specifier relative to THIS
+// test file (verified empirically; the older comment claiming setup.mjs
+// resolution was wrong and broke 14 suites at 9d6d12b0 → 2987d997).
+// Both paths must resolve to the same absolute file as
+// requestBodySecurity.mjs's `'./logger.mjs'` (which lives next to it
+// under utils/) for the mock to intercept production reads.
+const LOGGER_MOCK_PATH = '../../../utils/logger.mjs';
 const LOGGER_IMPORT_PATH = '../../../utils/logger.mjs';
 
 function buildDeepArrayBuffer(depth) {
