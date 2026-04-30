@@ -22,7 +22,28 @@ export default {
   transform: {},
 
   // Module resolution
+  //
+  // Canonical aliases (mirror jest.config.security.mjs). The `@logger` and
+  // `@prisma-client` alias targets are referenced from
+  // jest.unstable_mockModule() in tests that previously hit relative-depth
+  // hazards (see ownership-checks.test.mjs and
+  // request-body-max-depth-env-validation.test.mjs notes). The aliases
+  // resolve to single <rootDir>-anchored absolute paths from any resolver
+  // context, making the mock contract robust to parallel-mode worker
+  // scheduling and directory depth changes. Keeping the two configs in
+  // sync prevents tests from silently failing when run by the default
+  // jest config (npm test) vs the security-only config (npm run
+  // test:security).
   moduleNameMapper: {
+    '^@db$': '<rootDir>/db/index.mjs',
+    '^@db/(.*)$': '<rootDir>/db/$1',
+    '^@prisma-client$': '<rootDir>/../packages/database/prismaClient.mjs',
+    '^@logger$': '<rootDir>/utils/logger.mjs',
+    '^@middleware/(.*)$': '<rootDir>/middleware/$1',
+    '^@utils/(.*)$': '<rootDir>/utils/$1',
+    '^@models/(.*)$': '<rootDir>/models/$1',
+    '^@services/(.*)$': '<rootDir>/services/$1',
+    '^@errors/(.*)$': '<rootDir>/errors/$1',
     '^(\\.{1,2}/.*)\\.js$': '$1',
   },
 
