@@ -7,120 +7,18 @@
  * Also handles the Horse Trader store (buyStoreHorse) — Epic 21 extension.
  */
 
-import { readFileSync } from 'fs';
-import { fileURLToPath } from 'url';
-import { dirname, resolve } from 'path';
-
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import { createHorse } from '../../../models/horseModel.mjs';
 import { recordTransaction } from '../../../services/financialLedgerService.mjs';
-
-// Per-breed starter-stats profiles keyed by breed display NAME. Every
-// breed in the DB must have a matching entry here; a missing breed is
-// treated as a data bug and fails the purchase loudly (see
-// generateStoreStats below).
-const __filename__ = fileURLToPath(import.meta.url);
-const __dirname__ = dirname(__filename__);
-const BREED_STARTER_STATS_PATH = resolve(__dirname__, '../../../data/breedStarterStats.json');
-let BREED_STARTER_STATS_BY_NAME = {};
-try {
-  BREED_STARTER_STATS_BY_NAME = JSON.parse(readFileSync(BREED_STARTER_STATS_PATH, 'utf8'));
-} catch (err) {
-  // Loading this file is required for store purchases. Log loudly at
-  // boot so the failure is obvious in deployment logs rather than
-  // silent until the first buy attempt.
-  logger.error(
-    `[marketplace] FATAL: Failed to load breedStarterStats.json (${BREED_STARTER_STATS_PATH}): ${err.message}. ` +
-      'Every store purchase will 500 until this file is readable.',
-  );
-}
+// Shared horse starter-stats service. The same module is used by the perf
+// seed so test data has the same distribution as real store-purchased
+// horses. Random-stat seed paths are forbidden — see service module header.
+import { generateStoreStats } from '../../../services/horseStarterStats.mjs';
 
 // ── Horse Trader store constants ──────────────────────────────────────────────
 
 const STORE_PRICE = 1000;
-const STAT_KEYS = [
-  'speed',
-  'stamina',
-  'agility',
-  'balance',
-  'precision',
-  'intelligence',
-  'boldness',
-  'flexibility',
-  'obedience',
-  'focus',
-  'strength',
-  'endurance',
-];
-
-/** Sample a single stat using a proper Box-Muller transform for a true normal distribution. */
-function sampleStat({ mean, std_dev }) {
-  const u1 = Math.random() || Number.EPSILON; // guard against log(0)
-  const u2 = Math.random();
-  const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
-  return Math.max(1, Math.min(100, Math.round(mean + std_dev * z)));
-}
-
-/**
- * Generate stats for a store horse.
- *
- * Every breed — all 309 of them — is required to have a profile in
- * `backend/data/breedStarterStats.json` keyed by breed display name.
- * If a lookup misses, that is a data bug (breed in the DB but not in
- * the JSON, OR a name-mismatch between DB and JSON) and we throw so
- * the purchase fails loudly rather than silently shipping a horse
- * with random stats.
- *
- * There is no "canonical vs non-canonical" split. Every breed follows
- * the same system.
- *
- * @param {string} breedName - Breed display name, must match a key in
- *   breedStarterStats.json exactly.
- * @throws {Error} if the breed has no profile, or a stat key is missing.
- */
-function generateStoreStats(breedName) {
-  if (!breedName) {
-    throw Object.assign(new Error('Breed name is required to generate store horse stats'), {
-      statusCode: 500,
-    });
-  }
-
-  const profile = BREED_STARTER_STATS_BY_NAME[breedName];
-  if (!profile) {
-    throw Object.assign(
-      new Error(
-        `No starter-stats profile found for breed "${breedName}". ` +
-          'Every breed must have an entry in backend/data/breedStarterStats.json — ' +
-          'check that the DB breed name matches the JSON key exactly.',
-      ),
-      { statusCode: 500 },
-    );
-  }
-
-  const missingKeys = STAT_KEYS.filter(k => {
-    const s = profile[k];
-    return !s || typeof s.mean !== 'number';
-  });
-  if (missingKeys.length > 0) {
-    throw Object.assign(
-      new Error(
-        `breedStarterStats.json profile for "${breedName}" is incomplete ` +
-          `(missing: ${missingKeys.join(', ')}). All 12 stats must be present.`,
-      ),
-      { statusCode: 500 },
-    );
-  }
-
-  return Object.fromEntries(
-    STAT_KEYS.map(k => {
-      const s = profile[k];
-      // JSON uses `std`; sampleStat uses `std_dev`. Accept either.
-      const std_dev = typeof s.std_dev === 'number' ? s.std_dev : s.std;
-      return [k, sampleStat({ mean: s.mean, std_dev: std_dev ?? 3 })];
-    }),
-  );
-}
 
 /**
  * GET /api/v1/marketplace
