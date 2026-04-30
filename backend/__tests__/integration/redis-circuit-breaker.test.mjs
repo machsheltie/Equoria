@@ -27,15 +27,10 @@
 
 import { jest, describe, beforeAll, beforeEach, afterEach, it, expect } from '@jest/globals';
 
-// 21R-SEC-3-A: ESM mocking pattern. jest.unstable_mockModule resolves
-// paths relative to __tests__/setup.mjs (the setupFilesAfterEnv file),
-// hence ../utils/logger.mjs (1-level-up from __tests__/) rather than the
-// ../../utils/... that would be relative to this test file. The dynamic
-// import below uses the test-file-relative path, which DOES resolve.
 let createRedisCircuitBreaker;
 let DEFAULT_CIRCUIT_OPTIONS;
 
-jest.unstable_mockModule('../utils/logger.mjs', () => ({
+jest.unstable_mockModule('../../utils/logger.mjs', () => ({
   default: {
     info: jest.fn(),
     warn: jest.fn(),

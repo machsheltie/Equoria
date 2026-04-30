@@ -6,14 +6,8 @@ let exitSpy;
 let validateEnvironment;
 
 // ESM mocking pattern: jest.unstable_mockModule must run BEFORE the dynamic
-// import of the SUT. With "type":"module" in package.json and transform:{}
-// in jest config, mock paths are resolved relative to __tests__/setup.mjs
-// (the setupFilesAfterEnv file) rather than this test file's directory.
-// Hence the mock path uses ../utils/... (relative to __tests__/) not the
-// ../../../utils/... that would be relative to this file's deeper location.
-// The dynamic import below uses the test-file-relative path, which DOES
-// resolve normally. 21R-SEC-3-A.
-jest.unstable_mockModule('../utils/logger.mjs', () => ({
+// import of the SUT. The mock path is resolved relative to this test file.
+jest.unstable_mockModule('../../../utils/logger.mjs', () => ({
   default: {
     warn: (...args) => logs.push(['warn', ...args]),
     error: (...args) => logs.push(['error', ...args]),

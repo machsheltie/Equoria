@@ -9,11 +9,7 @@
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { mockRequest, mockResponse, mockNext } from '../setup.mjs';
 
-// 21R-SEC-3-A: jest.unstable_mockModule resolves paths relative to
-// __tests__/setup.mjs, so the prisma mock target uses ../../packages/...
-// (relative to __tests__/) rather than ../../../packages/... that would
-// be relative to this test file's deeper location.
-const prismaPath = '../../packages/database/prismaClient.mjs';
+const prismaPath = '../../../packages/database/prismaClient.mjs';
 const prisma = {
   horse: {
     findFirst: jest.fn(),
