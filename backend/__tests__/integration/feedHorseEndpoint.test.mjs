@@ -213,9 +213,6 @@ describe('POST /api/horses/:id/feed', () => {
   });
 });
 
-describe('Stat-boost roll determinism (POST /api/horses/:id/feed)', () => {
-  // The service accepts an optional rng for testability. The controller
-  // uses Math.random; to test boost outcomes deterministically we exercise
-  // the service directly in service-level tests (Task A9), not via HTTP.
-  it.todo('moved to feedHorseService.test.mjs');
-});
+// Stat-boost roll determinism is tested at the service level (with injected
+// rng) in __tests__/integration/feedHorseService.test.mjs (Task A9). The
+// HTTP route uses Math.random and would be flaky to test through here.
