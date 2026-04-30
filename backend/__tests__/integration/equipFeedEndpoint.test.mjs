@@ -129,6 +129,83 @@ describe('Equip / Unequip feed endpoints', () => {
     expect(fresh.equippedFeedType).toBeNull();
   });
 
+  it('rejects equip when inventory quantity is zero', async () => {
+    // Replace this user's inventory: entry exists for elite, but quantity is 0.
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        settings: {
+          inventory: [
+            {
+              id: 'feed-elite',
+              itemId: 'elite',
+              category: 'feed',
+              name: 'Elite Feed',
+              quantity: 0,
+            },
+          ],
+        },
+      },
+    });
+
+    const csrf = await fetchCsrf(app);
+
+    const res = await request(app)
+      .post(`/api/horses/${horseId}/equip-feed`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ feedType: 'elite' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toBeDefined();
+    expect(res.body.message).toMatch(/don't own|do not own|out of|no .* feed/i);
+
+    const fresh = await prisma.horse.findUnique({ where: { id: horseId } });
+    expect(fresh.equippedFeedType).toBeNull();
+  });
+
+  it('rejects equip when inventory quantity is non-numeric (string masquerading as number)', async () => {
+    // Replace inventory: entry exists for elite, but quantity is a string ('50').
+    // Without Number.isFinite(), '50' >= 1 would coerce to true and bypass the guard.
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        settings: {
+          inventory: [
+            {
+              id: 'feed-elite',
+              itemId: 'elite',
+              category: 'feed',
+              name: 'Elite Feed',
+              quantity: '50',
+            },
+          ],
+        },
+      },
+    });
+
+    const csrf = await fetchCsrf(app);
+
+    const res = await request(app)
+      .post(`/api/horses/${horseId}/equip-feed`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ feedType: 'elite' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toBeDefined();
+    expect(res.body.message).toMatch(/don't own|do not own|out of|no .* feed/i);
+
+    const fresh = await prisma.horse.findUnique({ where: { id: horseId } });
+    expect(fresh.equippedFeedType).toBeNull();
+  });
+
   it('rejects equip on a horse owned by a different user (403)', async () => {
     const other = await prisma.user.create({
       data: {
