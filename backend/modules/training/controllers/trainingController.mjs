@@ -255,7 +255,7 @@ async function trainHorse(horseId, discipline) {
         Saddleseat: ['flexibility', 'obedience', 'precision'],
         Endurance: ['endurance', 'stamina', 'speed'],
         Eventing: ['endurance', 'precision', 'agility'],
-        Dressage: ['precision', 'obedience', 'focus'],
+        Dressage: ['precision', 'focus', 'obedience'],
         'Show Jumping': ['agility', 'precision', 'intelligence'],
         Vaulting: ['strength', 'flexibility', 'endurance'],
         Polo: ['speed', 'agility', 'intelligence'],

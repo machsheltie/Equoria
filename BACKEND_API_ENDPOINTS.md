@@ -37,13 +37,16 @@
 **Base Path:** `/`
 
 ### GET /ping
+
 **Description:** Simple ping/pong health check
 **Authentication:** None
 **Request:** None
 **Query Parameters:**
+
 - `name` (optional) - string matching pattern `^[a-zA-Z0-9\s]+`
 
 **Response:**
+
 ```json
 {
   "status": "pong",
@@ -52,10 +55,12 @@
 ```
 
 ### GET /health
+
 **Description:** Comprehensive health check with database status
 **Authentication:** None
 **Request:** None
 **Response:**
+
 ```json
 {
   "status": "healthy",
@@ -77,9 +82,11 @@
 **Base Path:** `/api/auth`
 
 ### POST /api/auth/register
+
 **Description:** Register new user
 **Authentication:** None
 **Request Body:**
+
 ```json
 {
   "username": "string (3-50 chars)",
@@ -87,7 +94,9 @@
   "password": "string (min 8 chars)"
 }
 ```
+
 **Response:** `201 Created`
+
 ```json
 {
   "success": true,
@@ -104,16 +113,20 @@
 ```
 
 ### POST /api/auth/login
+
 **Description:** User login
 **Authentication:** None
 **Request Body:**
+
 ```json
 {
   "email": "string",
   "password": "string"
 }
 ```
+
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -126,15 +139,19 @@
 ```
 
 ### POST /api/auth/refresh
+
 **Description:** Refresh access token
 **Authentication:** None (requires refresh token)
 **Request Body:**
+
 ```json
 {
   "refreshToken": "string"
 }
 ```
+
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -145,15 +162,19 @@
 ```
 
 ### POST /api/auth/logout
+
 **Description:** User logout
 **Authentication:** Required (JWT)
 **Request Body:**
+
 ```json
 {
   "refreshToken": "string"
 }
 ```
+
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -162,9 +183,11 @@
 ```
 
 ### GET /api/auth/profile
+
 **Description:** Get user profile
 **Authentication:** Required (JWT)
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -181,15 +204,18 @@
 ```
 
 ### PUT /api/auth/profile
+
 **Description:** Update user profile
 **Authentication:** Required (JWT)
 **Request Body:**
+
 ```json
 {
   "username": "string (optional)",
   "email": "string (optional)"
 }
 ```
+
 **Response:** `200 OK`
 
 ---
@@ -199,12 +225,15 @@
 **Base Path:** `/api/users`
 
 ### GET /api/users/:id/progress
+
 **Description:** Get comprehensive user progress data
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `id` - User ID (must be authenticated user)
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -222,12 +251,15 @@
 ```
 
 ### GET /api/dashboard/:userId
+
 **Description:** Get user dashboard with horses, shows, and activity
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `userId` - User ID (must be authenticated user)
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -247,18 +279,22 @@
 **Base Path:** `/api/xp`
 
 ### GET /api/xp/user/:userId/events
+
 **Description:** Get XP events for a specific user with pagination and filtering
 **Authentication:** Required (JWT, self-access validation - CWE-639 prevention)
 **URL Parameters:**
+
 - `userId` - User ID (must match authenticated user)
 
 **Query Parameters:**
+
 - `limit` (optional, default: 50, max: 100) - Number of events to return
 - `offset` (optional, default: 0) - Number of events to skip
 - `startDate` (optional) - ISO date string for filtering events after date
 - `endDate` (optional) - ISO date string for filtering events before date
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -282,12 +318,15 @@
 ```
 
 ### GET /api/xp/user/:userId/summary
+
 **Description:** Get XP summary for a specific user
 **Authentication:** Required (JWT, self-access validation)
 **URL Parameters:**
+
 - `userId` - User ID (must match authenticated user)
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -304,13 +343,16 @@
 ```
 
 ### GET /api/xp/recent
+
 **Description:** Get recent XP events across all users (admin dashboard)
 **Authentication:** Required (JWT, may require admin role)
 **Query Parameters:**
+
 - `limit` (optional, default: 50) - Number of events to return
 - `offset` (optional, default: 0) - Number of events to skip
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -326,9 +368,11 @@
 ```
 
 ### GET /api/xp/stats
+
 **Description:** Get overall XP statistics (for admin dashboard)
 **Authentication:** Required (JWT, may require admin role)
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -359,9 +403,11 @@
 **Base Path:** `/api/horses`
 
 ### GET /api/horses
+
 **Description:** List horses with filters
 **Authentication:** Required (JWT)
 **Query Parameters:**
+
 - `breedId` (optional) - Filter by breed ID
 - `minAge` (optional) - Minimum age
 - `maxAge` (optional) - Maximum age
@@ -370,6 +416,7 @@
 - `offset` (optional, default: 0) - Pagination offset
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -385,12 +432,15 @@
 ```
 
 ### GET /api/horses/:id
+
 **Description:** Get horse details
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `id` - Horse ID (integer)
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -407,9 +457,11 @@
 ```
 
 ### POST /api/horses
+
 **Description:** Create new horse
 **Authentication:** Required (JWT)
 **Request Body:**
+
 ```json
 {
   "name": "string (required)",
@@ -419,38 +471,48 @@
   "stats": {}
 }
 ```
+
 **Response:** `201 Created`
 
 ### PUT /api/horses/:id
+
 **Description:** Update horse
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `id` - Horse ID
 
 **Request Body:** (all fields optional)
+
 ```json
 {
   "name": "string",
   "stats": {}
 }
 ```
+
 **Response:** `200 OK`
 
 ### DELETE /api/horses/:id
+
 **Description:** Remove horse
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `id` - Horse ID
 
 **Response:** `204 No Content`
 
 ### GET /api/horses/:id/overview
+
 **Description:** Comprehensive horse overview
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `id` - Horse ID
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -464,12 +526,15 @@
 ```
 
 ### GET /api/horses/:id/history
+
 **Description:** Competition history
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `id` - Horse ID
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -487,12 +552,15 @@
 **Base Path:** `/api/horses/:horseId/xp`
 
 ### GET /api/horses/:horseId/xp
+
 **Description:** Get horse XP status and progression information
 **Authentication:** Required (JWT, horse owner only)
 **URL Parameters:**
+
 - `horseId` - Horse ID (integer)
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -507,18 +575,23 @@
 ```
 
 ### POST /api/horses/:horseId/allocate-stat
+
 **Description:** Allocate a stat point to a specific horse stat
 **Authentication:** Required (JWT, horse owner only)
 **URL Parameters:**
+
 - `horseId` - Horse ID
 
 **Request Body:**
+
 ```json
 {
   "statName": "speed | stamina | agility | balance | precision | intelligence | boldness | flexibility | obedience | focus"
 }
 ```
+
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -531,16 +604,20 @@
 ```
 
 ### GET /api/horses/:horseId/xp-history
+
 **Description:** Get horse XP event history with pagination
 **Authentication:** Required (JWT, horse owner only)
 **URL Parameters:**
+
 - `horseId` - Horse ID
 
 **Query Parameters:**
+
 - `limit` (optional, default: 50, max: 100) - Number of events to return
 - `offset` (optional, default: 0) - Number of events to skip
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -564,19 +641,24 @@
 ```
 
 ### POST /api/horses/:horseId/award-xp
+
 **Description:** Award XP to a horse (for system/admin use)
 **Authentication:** Required (JWT, horse owner only or admin)
 **URL Parameters:**
+
 - `horseId` - Horse ID
 
 **Request Body:**
+
 ```json
 {
   "amount": "integer (positive, required)",
   "reason": "string (required)"
 }
 ```
+
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -595,9 +677,11 @@
 **Base Path:** `/api/horses/foals`
 
 ### POST /api/horses/foals
+
 **Description:** Create new foal
 **Authentication:** Required (JWT)
 **Request Body:**
+
 ```json
 {
   "sireId": "integer (required)",
@@ -605,7 +689,9 @@
   "name": "string (required)"
 }
 ```
+
 **Response:** `201 Created`
+
 ```json
 {
   "success": true,
@@ -622,19 +708,24 @@
 ```
 
 ### POST /api/foals/:foalId/enrichment
+
 **Description:** Foal enrichment activities
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `foalId` - Foal ID (integer)
 
 **Request Body:**
+
 ```json
 {
   "day": "0-6 (integer, required)",
   "activity": "string (required)"
 }
 ```
+
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -670,16 +761,20 @@
 **Base Path:** `/api/training`
 
 ### POST /api/training/check-eligibility
+
 **Description:** Validate training eligibility
 **Authentication:** Required (JWT, owner only)
 **Request Body:**
+
 ```json
 {
   "horseId": "integer (required)",
   "discipline": "string (required)"
 }
 ```
+
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -687,29 +782,32 @@
   "reasons": []
 }
 ```
+
 **Error Response:** `400 Bad Request`
+
 ```json
 {
   "success": false,
   "eligible": false,
-  "reasons": [
-    "Horse must be at least 3 years old",
-    "Horse is injured"
-  ]
+  "reasons": ["Horse must be at least 3 years old", "Horse is injured"]
 }
 ```
 
 ### POST /api/training/train
+
 **Description:** Execute training session
 **Authentication:** Required (JWT, owner only)
 **Request Body:**
+
 ```json
 {
   "horseId": "integer (required)",
   "discipline": "string (required)"
 }
 ```
+
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -719,19 +817,22 @@
     "newDisciplineScore": 55,
     "xpGained": 5,
     "statChanges": {
-      "agility": 1
+      "precision": 1
     }
   }
 }
 ```
 
 ### GET /api/training/status/:horseId
+
 **Description:** Get training status
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `horseId` - Horse ID
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -745,12 +846,15 @@
 ```
 
 ### GET /api/training/horse/:horseId/all-status
+
 **Description:** Multi-discipline overview
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `horseId` - Horse ID
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -779,9 +883,11 @@
 **Base Path:** `/api/competition`
 
 ### POST /api/competition/enter
+
 **Description:** Enter horse in competition with enhanced validation
 **Authentication:** Required (JWT, owner only)
 **Request Body:**
+
 ```json
 {
   "horseId": "integer (required)",
@@ -789,7 +895,9 @@
   "discipline": "string (required)"
 }
 ```
+
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -804,15 +912,19 @@
 ```
 
 ### POST /api/competition/execute
+
 **Description:** Execute competition with enhanced simulation
 **Authentication:** Required (JWT, admin/system only)
 **Request Body:**
+
 ```json
 {
   "showId": "integer (required)"
 }
 ```
+
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -832,13 +944,16 @@
 ```
 
 ### GET /api/competition/eligibility/:horseId/:discipline
+
 **Description:** Check horse eligibility for specific discipline
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `horseId` - Horse ID
 - `discipline` - Discipline name
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -848,9 +963,11 @@
 ```
 
 ### GET /api/competition/disciplines
+
 **Description:** Get all available disciplines
 **Authentication:** None
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -858,7 +975,7 @@
     "disciplines": [
       {
         "name": "Dressage",
-        "stats": ["agility", "balance", "precision"],
+        "stats": ["precision", "focus", "obedience"],
         "minLevel": 1,
         "description": "Classical dressage competition"
       }
@@ -868,12 +985,15 @@
 ```
 
 ### GET /api/competition/show/:showId/results
+
 **Description:** Get show results
 **Authentication:** None (public)
 **URL Parameters:**
+
 - `showId` - Show ID
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -886,12 +1006,15 @@
 ```
 
 ### GET /api/competition/horse/:horseId/results
+
 **Description:** Get horse competition history
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `horseId` - Horse ID
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -909,9 +1032,11 @@
 **Base Path:** `/api/grooms`
 
 ### POST /api/grooms/hire
+
 **Description:** Hire new groom with skill/personality selection
 **Authentication:** Required (JWT)
 **Request Body:**
+
 ```json
 {
   "name": "string (required)",
@@ -923,7 +1048,9 @@
   "bio": "string (optional)"
 }
 ```
+
 **Response:** `201 Created`
+
 ```json
 {
   "success": true,
@@ -942,9 +1069,11 @@
 ```
 
 ### POST /api/grooms/assign
+
 **Description:** Assign groom to foal with priority and notes
 **Authentication:** Required (JWT, horse owner only)
 **Request Body:**
+
 ```json
 {
   "foalId": "integer (required)",
@@ -953,7 +1082,9 @@
   "notes": "string (optional)"
 }
 ```
+
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -971,9 +1102,11 @@
 ```
 
 ### POST /api/grooms/interact
+
 **Description:** Record groom interaction with comprehensive validation
 **Authentication:** Required (JWT, horse owner only)
 **Request Body:**
+
 ```json
 {
   "foalId": "integer (required)",
@@ -983,7 +1116,9 @@
   "notes": "string (optional)"
 }
 ```
+
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1003,9 +1138,11 @@
 ```
 
 ### GET /api/grooms/definitions
+
 **Description:** Get groom system definitions and configurations
 **Authentication:** None
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1022,12 +1159,15 @@
 ```
 
 ### GET /api/grooms/user/:userid
+
 **Description:** Get all grooms for a specific user
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `userid` - User ID
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1038,12 +1178,15 @@
 ```
 
 ### GET /api/grooms/assignments/:foalId
+
 **Description:** Get all assignments for a foal
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `foalId` - Foal ID
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1054,6 +1197,7 @@
 ```
 
 ### DELETE /api/grooms/test/cleanup
+
 **Description:** Test data cleanup for development/testing
 **Authentication:** Required (JWT, development/test environment only)
 **Response:** `204 No Content`
@@ -1065,9 +1209,11 @@
 **Base Path:** `/api/groom-salaries`
 
 ### GET /api/groom-salaries/summary
+
 **Description:** Get comprehensive salary summary for user
 **Authentication:** Required (JWT)
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1082,9 +1228,11 @@
 ```
 
 ### GET /api/groom-salaries/cost
+
 **Description:** Get current weekly salary cost for the authenticated user
 **Authentication:** Required (JWT)
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1096,12 +1244,15 @@
 ```
 
 ### GET /api/groom-salaries/history
+
 **Description:** Get salary payment history for the authenticated user
 **Authentication:** Required (JWT)
 **Query Parameters:**
+
 - `limit` (optional, 1-100, default: unspecified) - Number of history entries to return
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1118,12 +1269,15 @@
 ```
 
 ### GET /api/groom-salaries/groom/:groomId/salary
+
 **Description:** Get weekly salary for a specific groom
 **Authentication:** Required (JWT, groom owner only)
 **URL Parameters:**
+
 - `groomId` - Groom ID (integer, min: 1)
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1136,9 +1290,11 @@
 ```
 
 ### GET /api/groom-salaries/status
+
 **Description:** Get cron job status information
 **Authentication:** Required (JWT, may require admin)
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1152,9 +1308,11 @@
 ```
 
 ### POST /api/groom-salaries/process
+
 **Description:** Manually trigger salary processing (for testing/admin use)
 **Authentication:** Required (JWT, admin only recommended)
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1173,12 +1331,15 @@
 **Base Path:** `/api/traits`
 
 ### POST /api/traits/discover/:horseId
+
 **Description:** Trigger trait discovery for a horse
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `horseId` - Horse ID
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1190,12 +1351,15 @@
 ```
 
 ### GET /api/traits/horse/:horseId
+
 **Description:** Get all traits for a horse
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `horseId` - Horse ID
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1207,9 +1371,11 @@
 ```
 
 ### GET /api/traits/definitions
+
 **Description:** Get all trait definitions
 **Authentication:** None
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1226,12 +1392,15 @@
 ```
 
 ### GET /api/traits/discovery-status/:horseId
+
 **Description:** Get discovery status for a horse
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `horseId` - Horse ID
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1245,15 +1414,19 @@
 ```
 
 ### POST /api/traits/batch-discover
+
 **Description:** Trigger discovery for multiple horses
 **Authentication:** Required (JWT, atomic batch ownership validation - CWE-639 prevention)
 **Request Body:**
+
 ```json
 {
   "horseIds": ["array of integers (1-10 horses)"]
 }
 ```
+
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1269,15 +1442,19 @@
 ```
 
 ### GET /api/traits/competition-impact/:horseId
+
 **Description:** Analyze trait impact for specific discipline
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `horseId` - Horse ID
 
 **Query Parameters:**
+
 - `discipline` (optional) - Discipline name
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1291,12 +1468,15 @@
 ```
 
 ### GET /api/traits/competition-comparison/:horseId
+
 **Description:** Compare trait impact across all disciplines
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `horseId` - Horse ID
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1312,9 +1492,11 @@
 ```
 
 ### GET /api/traits/competition-effects
+
 **Description:** Get all trait competition effects and definitions
 **Authentication:** None
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1331,15 +1513,19 @@
 **Base Path:** `/api/traits` / `/api/trait-discovery`
 
 ### POST /api/traits/discover/batch
+
 **Description:** Trigger trait discovery for multiple horses (1-10 horses)
 **Authentication:** Required (JWT, atomic batch ownership validation)
 **Request Body:**
+
 ```json
 {
   "horseIds": ["array of integers (1-10)"]
 }
 ```
+
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1355,12 +1541,15 @@
 ```
 
 ### GET /api/traits/progress/:horseId
+
 **Description:** Get trait discovery progress for a horse
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `horseId` - Horse ID
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1375,9 +1564,11 @@
 ```
 
 ### GET /api/traits/conditions
+
 **Description:** Get all trait discovery conditions
 **Authentication:** None
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1395,12 +1586,15 @@
 ```
 
 ### POST /api/traits/check-conditions/:horseId
+
 **Description:** Check which conditions a horse currently meets (without triggering discovery)
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `horseId` - Horse ID
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1423,12 +1617,15 @@
 ```
 
 ### POST /api/trait-discovery/discover/:horseId
+
 **Description:** Trigger trait discovery for a horse
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `horseId` - Horse ID
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1441,12 +1638,15 @@
 ```
 
 ### GET /api/trait-discovery/discovery-status/:horseId
+
 **Description:** Get trait discovery status for a horse
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `horseId` - Horse ID
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1459,14 +1659,17 @@
 ```
 
 ### POST /api/trait-discovery/batch-discover
+
 **Description:** Batch trait discovery for multiple horses
 **Authentication:** Required (JWT, atomic batch ownership validation)
 **Request Body:**
+
 ```json
 {
   "horseIds": ["array of integers"]
 }
 ```
+
 **Response:** `200 OK`
 
 ---
@@ -1476,9 +1679,11 @@
 **Base Path:** `/api/ultra-rare-traits`
 
 ### GET /api/ultra-rare-traits/definitions
+
 **Description:** Get ultra-rare trait definitions
 **Authentication:** None
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1490,12 +1695,15 @@
 ```
 
 ### POST /api/ultra-rare-traits/evaluate/:horseId
+
 **Description:** Evaluate ultra-rare and exotic trait triggers for a horse
 **Authentication:** Required (JWT, horse owner only)
 **URL Parameters:**
+
 - `horseId` - Horse ID
 
 **Request Body:** (optional evaluation context)
+
 ```json
 {
   "context": {
@@ -1504,7 +1712,9 @@
   }
 }
 ```
+
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1516,12 +1726,15 @@
 ```
 
 ### GET /api/ultra-rare-traits/horse/:horseId
+
 **Description:** Get ultra-rare traits for a horse
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `horseId` - Horse ID
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1534,18 +1747,23 @@
 ```
 
 ### POST /api/ultra-rare-traits/groom/:groomId/assign-perks
+
 **Description:** Assign ultra-rare trait perks to a groom
 **Authentication:** Required (JWT, groom owner only)
 **URL Parameters:**
+
 - `groomId` - Groom ID
 
 **Request Body:**
+
 ```json
 {
   "perkId": "string (required)"
 }
 ```
+
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1561,12 +1779,15 @@
 ```
 
 ### GET /api/ultra-rare-traits/groom/:groomId/perks
+
 **Description:** Get ultra-rare trait perks for a groom
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `groomId` - Groom ID
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1578,9 +1799,11 @@
 ```
 
 ### POST /api/ultra-rare-traits/effects/calculate
+
 **Description:** Calculate ultra-rare trait effects for various scenarios
 **Authentication:** Required (JWT)
 **Request Body:**
+
 ```json
 {
   "effectType": "stress | competition | bonding | training (required)",
@@ -1589,7 +1812,9 @@
   "context": {}
 }
 ```
+
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1612,12 +1837,15 @@
 **Base Path:** `/api/personality-evolution`
 
 ### POST /api/personality-evolution/groom/:groomId/evolve
+
 **Description:** Evolve groom personality based on interaction patterns
 **Authentication:** Required (JWT, groom owner only)
 **URL Parameters:**
+
 - `groomId` - Groom ID (integer, min: 1)
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1633,12 +1861,15 @@
 ```
 
 ### POST /api/personality-evolution/horse/:horseId/evolve
+
 **Description:** Evolve horse temperament based on care history
 **Authentication:** Required (JWT, horse owner only)
 **URL Parameters:**
+
 - `horseId` - Horse ID (integer, min: 1)
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1654,13 +1885,16 @@
 ```
 
 ### GET /api/personality-evolution/:entityType/:entityId/triggers
+
 **Description:** Get evolution triggers for an entity (groom or horse)
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `entityType` - "groom" or "horse"
 - `entityId` - Entity ID (integer, min: 1)
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1673,13 +1907,16 @@
 ```
 
 ### GET /api/personality-evolution/:entityType/:entityId/stability
+
 **Description:** Get personality stability analysis
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `entityType` - "groom" or "horse"
 - `entityId` - Entity ID (integer, min: 1)
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1693,16 +1930,20 @@
 ```
 
 ### GET /api/personality-evolution/:entityType/:entityId/predict
+
 **Description:** Predict future personality evolution
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `entityType` - "groom" or "horse"
 - `entityId` - Entity ID (integer, min: 1)
 
 **Query Parameters:**
+
 - `timeframeDays` (optional, 1-365) - Days to predict ahead
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1715,13 +1956,16 @@
 ```
 
 ### GET /api/personality-evolution/:entityType/:entityId/history
+
 **Description:** Get personality evolution history
 **Authentication:** Required (JWT, owner only)
 **URL Parameters:**
+
 - `entityType` - "groom" or "horse"
 - `entityId` - Entity ID (integer, min: 1)
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1734,9 +1978,11 @@
 ```
 
 ### POST /api/personality-evolution/apply-effects
+
 **Description:** Apply personality evolution effects
 **Authentication:** Required (JWT, admin/system only recommended)
 **Request Body:**
+
 ```json
 {
   "entityType": "groom | horse (required)",
@@ -1744,12 +1990,15 @@
   "effects": []
 }
 ```
+
 **Response:** `200 OK`
 
 ### POST /api/personality-evolution/batch-evolve
+
 **Description:** Batch evolve multiple entities
 **Authentication:** Required (JWT, admin/system only recommended)
 **Request Body:**
+
 ```json
 {
   "entities": [
@@ -1760,7 +2009,9 @@
   ]
 }
 ```
+
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1775,9 +2026,11 @@
 ```
 
 ### GET /api/personality-evolution/config
+
 **Description:** Get personality evolution system configuration
 **Authentication:** None
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1811,9 +2064,11 @@
 **Base Path:** `/api/leaderboard`
 
 ### GET /api/leaderboard/competition
+
 **Description:** Competition leaderboards with advanced filtering
 **Authentication:** None (public)
 **Query Parameters:**
+
 - `type` (optional) - "wins" | "earnings" | "placements" | "average"
 - `discipline` (optional) - Filter by discipline name
 - `timeframe` (optional) - "all" | "month" | "week"
@@ -1821,6 +2076,7 @@
 - `offset` (optional, default: 0) - Pagination offset
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1842,9 +2098,11 @@
 **Base Path:** `/api/admin`
 
 ### GET /api/admin/system/status
+
 **Description:** Get comprehensive system status
 **Authentication:** Required (JWT, admin role)
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1859,24 +2117,30 @@
 ```
 
 ### POST /api/admin/users/:userId/grant-xp
+
 **Description:** Grant XP to a user (admin override)
 **Authentication:** Required (JWT, admin role)
 **URL Parameters:**
+
 - `userId` - User ID
 
 **Request Body:**
+
 ```json
 {
   "amount": "integer (positive, required)",
   "reason": "string (required)"
 }
 ```
+
 **Response:** `200 OK`
 
 ### GET /api/admin/logs
+
 **Description:** Retrieve system logs
 **Authentication:** Required (JWT, admin role)
 **Query Parameters:**
+
 - `level` (optional) - "info" | "warn" | "error"
 - `startDate` (optional) - ISO date string
 - `endDate` (optional) - ISO date string
@@ -1889,79 +2153,94 @@
 ## Advanced Features
 
 ### Advanced Breeding Genetics
+
 **Base Path:** `/api/advanced-breeding-genetics`
 
-*[Endpoints to be documented based on actual implementation]*
+_[Endpoints to be documented based on actual implementation]_
 
 ### Advanced Epigenetic
+
 **Base Path:** `/api/advanced-epigenetic`
 
-*[Endpoints to be documented based on actual implementation]*
+_[Endpoints to be documented based on actual implementation]_
 
 ### API Optimization
+
 **Base Path:** `/api/api-optimization`
 
-*[Endpoints to be documented based on actual implementation]*
+_[Endpoints to be documented based on actual implementation]_
 
 ### Documentation Routes
+
 **Base Path:** `/api/documentation`
 
-*[Endpoints to be documented based on actual implementation]*
+_[Endpoints to be documented based on actual implementation]_
 
 ### Dynamic Compatibility
+
 **Base Path:** `/api/dynamic-compatibility`
 
-*[Endpoints to be documented based on actual implementation]*
+_[Endpoints to be documented based on actual implementation]_
 
 ### Enhanced Groom Routes
+
 **Base Path:** `/api/enhanced-groom`
 
-*[Endpoints to be documented based on actual implementation]*
+_[Endpoints to be documented based on actual implementation]_
 
 ### Enhanced Milestone Routes
+
 **Base Path:** `/api/enhanced-milestone`
 
-*[Endpoints to be documented based on actual implementation]*
+_[Endpoints to be documented based on actual implementation]_
 
 ### Enhanced Reporting Routes
+
 **Base Path:** `/api/enhanced-reporting`
 
-*[Endpoints to be documented based on actual implementation]*
+_[Endpoints to be documented based on actual implementation]_
 
 ### Environmental Routes
+
 **Base Path:** `/api/environmental`
 
-*[Endpoints to be documented based on actual implementation]*
+_[Endpoints to be documented based on actual implementation]_
 
 ### Epigenetic Flag Routes
+
 **Base Path:** `/api/epigenetic-flag`
 
-*[Endpoints to be documented based on actual implementation]*
+_[Endpoints to be documented based on actual implementation]_
 
 ### Epigenetic Trait Routes
+
 **Base Path:** `/api/epigenetic-trait`
 
-*[Endpoints to be documented based on actual implementation]*
+_[Endpoints to be documented based on actual implementation]_
 
 ### Groom Assignment Routes
+
 **Base Path:** `/api/groom-assignment`
 
-*[Endpoints to be documented based on actual implementation]*
+_[Endpoints to be documented based on actual implementation]_
 
 ### Groom Handler Routes
+
 **Base Path:** `/api/groom-handler`
 
-*[Endpoints to be documented based on actual implementation]*
+_[Endpoints to be documented based on actual implementation]_
 
 ### Groom Marketplace Routes
+
 **Base Path:** `/api/groom-marketplace`
 
-*[Endpoints to be documented based on actual implementation]*
+_[Endpoints to be documented based on actual implementation]_
 
 ### Groom Performance Routes
+
 **Base Path:** `/api/groom-performance`
 
-*[Endpoints to be documented based on actual implementation]*
+_[Endpoints to be documented based on actual implementation]_
 
 ---
 
@@ -1970,9 +2249,11 @@
 **Base Path:** `/api/memory`
 
 ### GET /api/memory/status
+
 **Description:** Get current memory and resource status
 **Authentication:** Required (JWT, admin recommended)
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -1997,13 +2278,16 @@
 ```
 
 ### GET /api/memory/metrics
+
 **Description:** Get detailed memory metrics and analytics
 **Authentication:** Required (JWT, admin recommended)
 **Query Parameters:**
+
 - `timeframe` (optional) - "1h" | "6h" | "24h" | "7d"
 - `includeGC` (optional, boolean) - Include garbage collection metrics
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -2021,15 +2305,18 @@
 ```
 
 ### GET /api/memory/resources
+
 **Description:** Get resource utilization information
 **Authentication:** Required (JWT, admin recommended)
 **Response:** `200 OK`
 
 ### POST /api/memory/gc
+
 **Description:** Trigger garbage collection manually
 **Authentication:** Required (JWT, admin only)
 **Note:** Requires server started with `--expose-gc` flag
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -2046,28 +2333,30 @@
 ```
 
 ### POST /api/memory/cleanup
+
 **Description:** Trigger resource cleanup
 **Authentication:** Required (JWT, admin only)
 **Response:** `200 OK`
 
 ### GET /api/memory/alerts
+
 **Description:** Get active memory alerts
 **Authentication:** Required (JWT, admin recommended)
 **Response:** `200 OK`
 
 ### GET /api/memory/health
+
 **Description:** Get overall system health assessment
 **Authentication:** Required (JWT, admin recommended)
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
   "data": {
     "score": 85,
     "status": "good",
-    "recommendations": [
-      "Consider increasing heap size for better performance"
-    ],
+    "recommendations": ["Consider increasing heap size for better performance"],
     "memoryUsage": {},
     "resourceStatus": {}
   }
@@ -2081,9 +2370,11 @@
 **Base Path:** `/api/user-docs`
 
 ### GET /api/user-docs
+
 **Description:** Get list of all available documentation
 **Authentication:** None
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -2102,15 +2393,18 @@
 ```
 
 ### GET /api/user-docs/search
+
 **Description:** Search documentation content
 **Authentication:** None
 **Query Parameters:**
+
 - `q` (required) - Search query string
 - `limit` (optional, 1-50, default: unspecified) - Number of results
 - `includeContent` (optional, boolean) - Include full content in results
 - `highlight` (optional, boolean) - Highlight search matches
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -2130,35 +2424,43 @@
 ```
 
 ### GET /api/user-docs/analytics
+
 **Description:** Get documentation analytics
 **Authentication:** Required (JWT, admin recommended)
 **Response:** `200 OK`
 
 ### GET /api/user-docs/toc
+
 **Description:** Get table of contents for all documentation
 **Authentication:** None
 **Response:** `200 OK`
 
 ### POST /api/user-docs/refresh
+
 **Description:** Refresh documentation cache
 **Authentication:** Required (JWT, admin only)
 **Response:** `200 OK`
 
 ### GET /api/user-docs/health
+
 **Description:** Get documentation system health
 **Authentication:** None
 **Response:** `200 OK`
 
 ### GET /api/user-docs/:docName
+
 **Description:** Get specific documentation by name with format support
 **Authentication:** None
 **URL Parameters:**
+
 - `docName` - Document name (string)
 
 **Query Parameters:**
+
 - `format` (optional) - "json" | "markdown" | "md" | "text" | "txt"
 
 **Response:** `200 OK`
+
 ```json
 {
   "success": true,
@@ -2173,20 +2475,25 @@
 ```
 
 ### GET /api/user-docs/:docName/sections
+
 **Description:** Get sections of a specific document
 **Authentication:** None
 **URL Parameters:**
+
 - `docName` - Document name
 
 **Response:** `200 OK`
 
 ### GET /api/user-docs/:docName/search
+
 **Description:** Search within a specific document
 **Authentication:** None
 **URL Parameters:**
+
 - `docName` - Document name
 
 **Query Parameters:**
+
 - `q` (required) - Search query
 
 **Response:** `200 OK`
@@ -2218,18 +2525,21 @@ The following route files have been identified but their endpoints need detailed
 ## Authentication & Authorization
 
 **Authentication Methods:**
+
 - **JWT Tokens** - Bearer token in `Authorization` header
   - Format: `Authorization: Bearer <access_token>`
   - Access tokens expire after defined period
   - Refresh tokens used for obtaining new access tokens
 
 **Authorization Levels:**
+
 - **None** - Public endpoints
 - **User** - Requires valid JWT token
 - **Owner** - Requires JWT token + resource ownership validation
 - **Admin** - Requires JWT token + admin role
 
 **Security Features:**
+
 - **Ownership Validation** - Atomic batch ownership checks prevent CWE-639 vulnerabilities
 - **Self-Access Validation** - Users can only access their own XP data (CWE-639 prevention)
 - **Rate Limiting** - Request throttling applied to all endpoints
@@ -2242,6 +2552,7 @@ The following route files have been identified but their endpoints need detailed
 ## Common Error Responses
 
 ### 400 Bad Request
+
 ```json
 {
   "success": false,
@@ -2256,6 +2567,7 @@ The following route files have been identified but their endpoints need detailed
 ```
 
 ### 401 Unauthorized
+
 ```json
 {
   "success": false,
@@ -2264,6 +2576,7 @@ The following route files have been identified but their endpoints need detailed
 ```
 
 ### 403 Forbidden
+
 ```json
 {
   "success": false,
@@ -2272,6 +2585,7 @@ The following route files have been identified but their endpoints need detailed
 ```
 
 ### 404 Not Found
+
 ```json
 {
   "success": false,
@@ -2280,6 +2594,7 @@ The following route files have been identified but their endpoints need detailed
 ```
 
 ### 422 Unprocessable Entity
+
 ```json
 {
   "success": false,
@@ -2289,6 +2604,7 @@ The following route files have been identified but their endpoints need detailed
 ```
 
 ### 500 Internal Server Error
+
 ```json
 {
   "success": false,
@@ -2302,11 +2618,13 @@ The following route files have been identified but their endpoints need detailed
 ## Frontend Integration Notes
 
 ### Base URL Configuration
+
 - **Development:** `http://localhost:3001`
 - **Staging:** TBD
 - **Production:** TBD
 
 ### Frontend Expectations Verification
+
 ✅ **All endpoints use consistent base URL:** `http://localhost:3001`
 ✅ **Authentication endpoints:** `/api/auth/*` as expected
 ✅ **Horse management endpoints:** `/api/horses/*` as expected
@@ -2315,10 +2633,13 @@ The following route files have been identified but their endpoints need detailed
 ✅ **Groom endpoints:** `/api/grooms/*` as expected
 
 ### Missing Endpoints Analysis
+
 Based on this review, the following endpoints that might be needed by the frontend are **NOT YET IMPLEMENTED**:
+
 - None identified - backend has comprehensive coverage
 
 ### Recommended Frontend API Client Configuration
+
 ```javascript
 // API Client Base Configuration
 const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
@@ -2326,7 +2647,7 @@ const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3001';
 // Authentication Headers
 const getAuthHeaders = () => ({
   'Content-Type': 'application/json',
-  'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+  Authorization: `Bearer ${localStorage.getItem('accessToken')}`,
 });
 
 // Token Refresh Mechanism
@@ -2335,7 +2656,7 @@ const refreshAccessToken = async () => {
   const response = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ refreshToken })
+    body: JSON.stringify({ refreshToken }),
   });
   const data = await response.json();
   localStorage.setItem('accessToken', data.data.accessToken);
@@ -2348,6 +2669,7 @@ const refreshAccessToken = async () => {
 ## Changelog
 
 **2025-12-15:**
+
 - Initial comprehensive backend API endpoint documentation created
 - Documented 225+ endpoints across 35 route files
 - Verified base URL consistency (localhost:3001)

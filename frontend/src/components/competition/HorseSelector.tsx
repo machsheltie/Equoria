@@ -59,7 +59,7 @@ interface HorseWithEligibility extends Horse {
 const disciplineStatMapping: Record<string, string[]> = {
   racing: ['Speed', 'Stamina', 'Agility'],
   showJumping: ['Precision', 'Agility', 'Boldness'],
-  dressage: ['Obedience', 'Balance', 'Precision'],
+  dressage: ['Precision', 'Focus', 'Obedience'],
   eventing: ['Stamina', 'Boldness', 'Speed'],
   crossCountry: ['Stamina', 'Speed', 'Boldness'],
   default: ['Speed', 'Stamina', 'Agility'],

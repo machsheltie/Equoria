@@ -748,9 +748,44 @@ jobs:
             exit 1
           fi
 
-      - name: Scan frontend production code for mock data
+      - name: Sentinel self-test — prove the frontend mock-data scan still gates
+        # Equoria-veql (21R-CI-2): mirrors the sentinel pattern from
+        # ci-cd.yml. Plants a `MOCK_DATA` fixture, runs the EXACT
+        # production grep below, asserts the planted violation is caught,
+        # then cleans up. Catches silent degradation of the mock-data
+        # gate (regex narrowing, include/exclude widening) before the
+        # production scan runs. See ci-cd.yml for full rationale.
         run: |
-          if grep -rn "mockApi\|MOCK_\|allMockHorses\|mockSummary" \
+          set -uo pipefail
+          SENTINEL_FILE="frontend/src/__doctrine_mock_sentinel_DO_NOT_COMMIT__.tsx"
+          echo 'export const MOCK_DATA = [{ id: 1 }];' > "$SENTINEL_FILE"
+          if ! grep -rEn "mockApi|\b(const|let|var|export\s+(const|let|var))\s+MOCK_[A-Z][A-Z_]*\b|allMockHorses|mockSummary" \
+              frontend/src/ \
+              --include="*.tsx" --include="*.ts" \
+              2>/dev/null | grep -v "__tests__\|\.test\.\|\.spec\." | grep -v "^Binary" | grep -q "$SENTINEL_FILE"; then
+            rm -f "$SENTINEL_FILE"
+            echo "SENTINEL FAIL: planted MOCK_DATA fixture in $SENTINEL_FILE was NOT detected by the mock-data scan."
+            echo "The scan is broken — it would silently pass while real mock fixtures sit in production code."
+            exit 1
+          fi
+          rm -f "$SENTINEL_FILE"
+          if grep -rEn "mockApi|\b(const|let|var|export\s+(const|let|var))\s+MOCK_[A-Z][A-Z_]*\b|allMockHorses|mockSummary" \
+              frontend/src/ \
+              --include="*.tsx" --include="*.ts" \
+              2>/dev/null | grep -v "__tests__\|\.test\.\|\.spec\." | grep -v "^Binary" | grep -q "$SENTINEL_FILE"; then
+            echo "SENTINEL FAIL: residual matches for sentinel file after cleanup."
+            exit 1
+          fi
+          echo "Sentinel OK: mock-data scan correctly catches planted fixtures and cleans up."
+
+      - name: Scan frontend production code for mock data
+        # Equoria-veql (21R-CI-2): tightened from bare `MOCK_` substring
+        # (which over-matched env-flag identifiers like `VITE_MOCK_FLAG`)
+        # to a declaration-context pattern requiring `const|let|var|export
+        # const MOCK_FOO`. ERE (`-E`) for portable `(...|...)` and `\b`.
+        # See the sentinel step above and ci-cd.yml for the rationale.
+        run: |
+          if grep -rEn "mockApi|\b(const|let|var|export\s+(const|let|var))\s+MOCK_[A-Z][A-Z_]*\b|allMockHorses|mockSummary" \
               frontend/src/ \
               --include="*.tsx" --include="*.ts" \
               2>/dev/null | grep -v "__tests__\|\.test\.\|\.spec\." | grep -v "^Binary" | grep -q .; then

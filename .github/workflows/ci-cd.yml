@@ -565,9 +565,55 @@ jobs:
             exit 1
           fi
 
-      - name: 'Scan frontend production code for mock data'
+      - name: 'Sentinel self-test: prove the frontend mock-data scan still gates'
+        # Equoria-veql (21R-CI-2): the previous regex used a bare `MOCK_`
+        # substring which over-matched any uppercase identifier containing
+        # MOCK_ — `VITE_MOCK_FLAG`, `IS_MOCK_ENABLED`, etc. — risking
+        # false-positive readiness failures on legitimate env-flag code.
+        # The tightened regex below requires a `const|let|var|export const`
+        # declaration of an all-caps `MOCK_FOO` identifier, which is the
+        # actual fixture-declaration pattern. Per OPTIMAL_FIX_DISCIPLINE.md
+        # §2 we add a sentinel that plants a known violation, runs the
+        # EXACT production grep, and asserts a match before the production
+        # scan runs. If a future regex change silently drops the
+        # mock-fixture detection, this step fails first.
         run: |
-          if grep -rn "mockApi\|MOCK_\|allMockHorses\|mockSummary" \
+          set -uo pipefail
+          SENTINEL_FILE="frontend/src/__doctrine_mock_sentinel_DO_NOT_COMMIT__.tsx"
+          echo 'export const MOCK_DATA = [{ id: 1 }];' > "$SENTINEL_FILE"
+          if ! grep -rEn "mockApi|\b(const|let|var|export\s+(const|let|var))\s+MOCK_[A-Z][A-Z_]*\b|allMockHorses|mockSummary" \
+              frontend/src/ \
+              --include="*.tsx" --include="*.ts" \
+              2>/dev/null | grep -v "__tests__\|\.test\.\|\.spec\." | grep -v "^Binary" | grep -q "$SENTINEL_FILE"; then
+            rm -f "$SENTINEL_FILE"
+            echo "SENTINEL FAIL: planted MOCK_DATA fixture in $SENTINEL_FILE was NOT detected by the mock-data scan."
+            echo "The scan is broken — it would silently pass while real mock fixtures sit in production code."
+            echo "Investigate the regex or the include/exclude flags."
+            exit 1
+          fi
+          rm -f "$SENTINEL_FILE"
+          # Re-run after cleanup: must be clean now.
+          if grep -rEn "mockApi|\b(const|let|var|export\s+(const|let|var))\s+MOCK_[A-Z][A-Z_]*\b|allMockHorses|mockSummary" \
+              frontend/src/ \
+              --include="*.tsx" --include="*.ts" \
+              2>/dev/null | grep -v "__tests__\|\.test\.\|\.spec\." | grep -v "^Binary" | grep -q "$SENTINEL_FILE"; then
+            echo "SENTINEL FAIL: residual matches for sentinel file after cleanup."
+            exit 1
+          fi
+          echo "Sentinel OK: mock-data scan correctly catches planted fixtures and cleans up."
+
+      - name: 'Scan frontend production code for mock data'
+        # Equoria-veql (21R-CI-2): tightened from the over-broad bare `MOCK_`
+        # substring to a declaration-context pattern that catches actual
+        # mock-fixture constants (`const MOCK_FOO = ...`, `export const
+        # MOCK_FOO = ...`) but ignores env-flag identifiers like
+        # `VITE_MOCK_FLAG` or `IS_MOCK_ENABLED` whose `M` is preceded by a
+        # word character (no `\b` boundary). See the sentinel step above
+        # for the test fixture proving the regex still catches real
+        # violations. Pattern uses ERE (`-E`) so the `(...|...)` grouping
+        # and `\b` behave portably across grep variants.
+        run: |
+          if grep -rEn "mockApi|\b(const|let|var|export\s+(const|let|var))\s+MOCK_[A-Z][A-Z_]*\b|allMockHorses|mockSummary" \
               frontend/src/ \
               --include="*.tsx" --include="*.ts" \
               2>/dev/null | grep -v "__tests__\|\.test\.\|\.spec\." | grep -v "^Binary" | grep -q .; then

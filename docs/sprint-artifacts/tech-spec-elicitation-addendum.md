@@ -102,11 +102,7 @@ export async function apiRequest<T>(
         toast.error('Too many requests. Please wait before trying again.');
       }
 
-      throw new ApiError(
-        data.message || 'Request failed',
-        response.status,
-        data.errors
-      );
+      throw new ApiError(data.message || 'Request failed', response.status, data.errors);
     }
 
     return data;
@@ -132,57 +128,67 @@ export async function apiRequest<T>(
 import { z } from 'zod';
 
 export const loginSchema = z.object({
-  email: z.string()
+  email: z
+    .string()
     .email('Please enter a valid email address')
     .max(255, 'Email must be less than 255 characters'),
-  password: z.string()
-    .min(1, 'Password is required'),
+  password: z.string().min(1, 'Password is required'),
 });
 
-export const registerSchema = z.object({
-  username: z.string()
-    .min(3, 'Username must be at least 3 characters')
-    .max(30, 'Username must be less than 30 characters')
-    .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
-  email: z.string()
-    .email('Please enter a valid email address')
-    .max(255, 'Email must be less than 255 characters'),
-  password: z.string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
-  confirmPassword: z.string(),
-  firstName: z.string()
-    .min(1, 'First name is required')
-    .max(50, 'First name must be less than 50 characters'),
-  lastName: z.string()
-    .min(1, 'Last name is required')
-    .max(50, 'Last name must be less than 50 characters'),
-  acceptTerms: z.boolean()
-    .refine(val => val === true, 'You must accept the terms and conditions'),
-}).refine(data => data.password === data.confirmPassword, {
-  message: 'Passwords do not match',
-  path: ['confirmPassword'],
-});
+export const registerSchema = z
+  .object({
+    username: z
+      .string()
+      .min(3, 'Username must be at least 3 characters')
+      .max(30, 'Username must be less than 30 characters')
+      .regex(/^[a-zA-Z0-9_]+$/, 'Username can only contain letters, numbers, and underscores'),
+    email: z
+      .string()
+      .email('Please enter a valid email address')
+      .max(255, 'Email must be less than 255 characters'),
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+      .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+      .regex(/[0-9]/, 'Password must contain at least one number'),
+    confirmPassword: z.string(),
+    firstName: z
+      .string()
+      .min(1, 'First name is required')
+      .max(50, 'First name must be less than 50 characters'),
+    lastName: z
+      .string()
+      .min(1, 'Last name is required')
+      .max(50, 'Last name must be less than 50 characters'),
+    acceptTerms: z
+      .boolean()
+      .refine((val) => val === true, 'You must accept the terms and conditions'),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
 
 export const forgotPasswordSchema = z.object({
-  email: z.string()
-    .email('Please enter a valid email address'),
+  email: z.string().email('Please enter a valid email address'),
 });
 
-export const resetPasswordSchema = z.object({
-  token: z.string().min(1, 'Reset token is required'),
-  password: z.string()
-    .min(8, 'Password must be at least 8 characters')
-    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
-    .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
-    .regex(/[0-9]/, 'Password must contain at least one number'),
-  confirmPassword: z.string(),
-}).refine(data => data.password === data.confirmPassword, {
-  message: 'Passwords do not match',
-  path: ['confirmPassword'],
-});
+export const resetPasswordSchema = z
+  .object({
+    token: z.string().min(1, 'Reset token is required'),
+    password: z
+      .string()
+      .min(8, 'Password must be at least 8 characters')
+      .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
+      .regex(/[a-z]/, 'Password must contain at least one lowercase letter')
+      .regex(/[0-9]/, 'Password must contain at least one number'),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match',
+    path: ['confirmPassword'],
+  });
 
 export type LoginFormData = z.infer<typeof loginSchema>;
 export type RegisterFormData = z.infer<typeof registerSchema>;
@@ -293,37 +299,53 @@ export const DISCIPLINE_VALUES = Object.values(DISCIPLINES);
 
 // Discipline icons for UI
 export const DISCIPLINE_ICONS: Record<string, string> = {
-  'Racing': '🏇',
+  Racing: '🏇',
   'Show Jumping': '🦘',
-  'Dressage': '💃',
+  Dressage: '💃',
   'Cross Country': '🌲',
   'Western Pleasure': '🤠',
-  'Reining': '🔄',
-  'Cutting': '✂️',
+  Reining: '🔄',
+  Cutting: '✂️',
   'Barrel Racing': '🛢️',
-  'Roping': '🪢',
+  Roping: '🪢',
   'Team Penning': '👥',
-  'Rodeo': '🐂',
-  'Hunter': '🎯',
-  'Saddleseat': '🎩',
-  'Endurance': '⏱️',
-  'Eventing': '🏆',
-  'Vaulting': '🤸',
-  'Polo': '🏑',
+  Rodeo: '🐂',
+  Hunter: '🎯',
+  Saddleseat: '🎩',
+  Endurance: '⏱️',
+  Eventing: '🏆',
+  Vaulting: '🤸',
+  Polo: '🏑',
   'Combined Driving': '🐴',
   'Fine Harness': '🎀',
-  'Gaited': '👣',
-  'Gymkhana': '🎪',
-  'Steeplechase': '🏃',
+  Gaited: '👣',
+  Gymkhana: '🎪',
+  Steeplechase: '🏃',
   'Harness Racing': '🛞',
 };
 
 // Discipline categories for filtering
 export const DISCIPLINE_CATEGORIES = {
   ENGLISH: ['Show Jumping', 'Dressage', 'Cross Country', 'Hunter', 'Eventing', 'Saddleseat'],
-  WESTERN: ['Western Pleasure', 'Reining', 'Cutting', 'Barrel Racing', 'Roping', 'Team Penning', 'Rodeo'],
+  WESTERN: [
+    'Western Pleasure',
+    'Reining',
+    'Cutting',
+    'Barrel Racing',
+    'Roping',
+    'Team Penning',
+    'Rodeo',
+  ],
   RACING: ['Racing', 'Steeplechase', 'Harness Racing'],
-  SPECIALTY: ['Endurance', 'Vaulting', 'Polo', 'Combined Driving', 'Fine Harness', 'Gaited', 'Gymkhana'],
+  SPECIALTY: [
+    'Endurance',
+    'Vaulting',
+    'Polo',
+    'Combined Driving',
+    'Fine Harness',
+    'Gaited',
+    'Gymkhana',
+  ],
 };
 ```
 
@@ -364,16 +386,16 @@ export const STAT_DISPLAY_NAMES: Record<string, string> = {
 
 // Primary stats per discipline (for training recommendations)
 export const DISCIPLINE_PRIMARY_STATS: Record<string, string[]> = {
-  'Racing': ['speed', 'endurance', 'agility'],
+  Racing: ['speed', 'endurance', 'agility'],
   'Show Jumping': ['agility', 'precision', 'boldness'],
-  'Dressage': ['precision', 'obedience', 'balance'],
+  Dressage: ['precision', 'focus', 'obedience'],
   'Cross Country': ['endurance', 'boldness', 'agility'],
   'Western Pleasure': ['obedience', 'balance', 'flexibility'],
-  'Reining': ['agility', 'coordination', 'obedience'],
-  'Cutting': ['agility', 'intelligence', 'focus'],
+  Reining: ['agility', 'coordination', 'obedience'],
+  Cutting: ['agility', 'intelligence', 'focus'],
   'Barrel Racing': ['speed', 'agility', 'coordination'],
-  'Endurance': ['endurance', 'strength', 'focus'],
-  'Eventing': ['agility', 'endurance', 'boldness'],
+  Endurance: ['endurance', 'strength', 'focus'],
+  Eventing: ['agility', 'endurance', 'boldness'],
   // ... etc
 };
 ```
@@ -384,9 +406,9 @@ export const DISCIPLINE_PRIMARY_STATS: Record<string, string[]> = {
 // frontend/src/constants/trainingRules.ts
 
 export const TRAINING_RULES = {
-  MIN_AGE: 3,           // Horses must be 3+ years old
-  MAX_AGE: 20,          // Horses can train until age 20
-  COOLDOWN_DAYS: 7,     // 7-day global cooldown between sessions
+  MIN_AGE: 3, // Horses must be 3+ years old
+  MAX_AGE: 20, // Horses can train until age 20
+  COOLDOWN_DAYS: 7, // 7-day global cooldown between sessions
   MAX_DAILY_SESSIONS: 1, // One session per horse per day
 };
 
@@ -396,9 +418,11 @@ export function canTrainClient(horse: {
   lastTrainingDate?: Date;
   hasGaitedTrait?: boolean;
 }): { eligible: boolean; reason?: string } {
-
   if (horse.age < TRAINING_RULES.MIN_AGE) {
-    return { eligible: false, reason: `Horse must be at least ${TRAINING_RULES.MIN_AGE} years old` };
+    return {
+      eligible: false,
+      reason: `Horse must be at least ${TRAINING_RULES.MIN_AGE} years old`,
+    };
   }
 
   if (horse.age > TRAINING_RULES.MAX_AGE) {
@@ -413,7 +437,7 @@ export function canTrainClient(horse: {
       const remaining = TRAINING_RULES.COOLDOWN_DAYS - daysSince;
       return {
         eligible: false,
-        reason: `Cooldown active: ${remaining} day${remaining > 1 ? 's' : ''} remaining`
+        reason: `Cooldown active: ${remaining} day${remaining > 1 ? 's' : ''} remaining`,
       };
     }
   }
@@ -442,21 +466,37 @@ export const TRAIT_CATEGORIES = {
 };
 
 export const RARE_TRAITS = [
-  'sensitive', 'noble', 'legacy_talent', 'exceptional', 'prodigy',
-  'natural_leader', 'empathic', 'intuitive', 'charismatic', 'legendary',
+  'sensitive',
+  'noble',
+  'legacy_talent',
+  'exceptional',
+  'prodigy',
+  'natural_leader',
+  'empathic',
+  'intuitive',
+  'charismatic',
+  'legendary',
 ];
 
 export const NEGATIVE_TRAITS = [
-  'stubborn', 'anxious', 'aggressive', 'fearful', 'lazy', 'unpredictable',
-  'difficult', 'nervous', 'spooky', 'resistant',
+  'stubborn',
+  'anxious',
+  'aggressive',
+  'fearful',
+  'lazy',
+  'unpredictable',
+  'difficult',
+  'nervous',
+  'spooky',
+  'resistant',
 ];
 
 // Inheritance probability response
 export interface TraitProbability {
   traitName: string;
-  probability: number;        // 0-75%
-  hasStacking: boolean;       // Both parents have trait
-  stackingBonus: number;      // +15% if stacking
+  probability: number; // 0-75%
+  hasStacking: boolean; // Both parents have trait
+  stackingBonus: number; // +15% if stacking
   isRare: boolean;
   isNegative: boolean;
   isEpigenetic: boolean;
@@ -498,7 +538,7 @@ export const TEMPERAMENT_COMPATIBILITY: Record<string, number> = {
 export interface TemperamentInfluence {
   stallionTemperament: string;
   mareTemperament: string;
-  compatibilityScore: number;  // 60-95
+  compatibilityScore: number; // 60-95
   predictedOffspringTemperament: string[];
   traitInfluenceModifiers: {
     boldness: number;
@@ -540,19 +580,14 @@ export interface BreedingData {
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/api';
-import type {
-  InheritancePrediction,
-  TemperamentInfluence,
-  BreedingData
-} from '@/types/breeding';
+import type { InheritancePrediction, TemperamentInfluence, BreedingData } from '@/types/breeding';
 
 // Get breeding data for a single horse
 export function useBreedingData(horseId: number | undefined) {
   return useQuery({
     queryKey: ['breedingData', horseId],
-    queryFn: () => apiRequest<{ breedingData: BreedingData }>(
-      `/api/horses/${horseId}/breeding-data`
-    ),
+    queryFn: () =>
+      apiRequest<{ breedingData: BreedingData }>(`/api/horses/${horseId}/breeding-data`),
     enabled: !!horseId,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -562,9 +597,10 @@ export function useBreedingData(horseId: number | undefined) {
 export function useBreedingPrediction(stallionId?: number, mareId?: number) {
   return useQuery({
     queryKey: ['breedingPrediction', stallionId, mareId],
-    queryFn: () => apiRequest<{ prediction: InheritancePrediction }>(
-      `/api/breeding/predict?stallionId=${stallionId}&mareId=${mareId}`
-    ),
+    queryFn: () =>
+      apiRequest<{ prediction: InheritancePrediction }>(
+        `/api/breeding/predict?stallionId=${stallionId}&mareId=${mareId}`
+      ),
     enabled: !!stallionId && !!mareId,
     staleTime: 10 * 60 * 1000, // 10 minutes
   });
@@ -574,9 +610,10 @@ export function useBreedingPrediction(stallionId?: number, mareId?: number) {
 export function useTemperamentCompatibility(stallionId?: number, mareId?: number) {
   return useQuery({
     queryKey: ['temperamentCompatibility', stallionId, mareId],
-    queryFn: () => apiRequest<{ compatibility: TemperamentInfluence }>(
-      `/api/breeding/compatibility/${stallionId}/${mareId}`
-    ),
+    queryFn: () =>
+      apiRequest<{ compatibility: TemperamentInfluence }>(
+        `/api/breeding/compatibility/${stallionId}/${mareId}`
+      ),
     enabled: !!stallionId && !!mareId,
   });
 }
@@ -613,35 +650,47 @@ export const BREEDING_LIMITS = {
 };
 
 export const INHERITANCE_RATES = {
-  BASE: 25,           // Base 25% inheritance chance
-  MAX_SINGLE: 50,     // Maximum with one parent having trait
-  MAX_STACKING: 75,   // Maximum with both parents having trait
+  BASE: 25, // Base 25% inheritance chance
+  MAX_SINGLE: 50, // Maximum with one parent having trait
+  MAX_STACKING: 75, // Maximum with both parents having trait
   STACKING_BONUS: 15, // Bonus for trait stacking
-  RARE_BONUS: 10,     // Bonus for rare traits
+  RARE_BONUS: 10, // Bonus for rare traits
   EPIGENETIC_BONUS: 5, // Bonus for epigenetic traits
   NEGATIVE_PENALTY: 5, // Penalty for negative traits
 };
 
 // Check breeding eligibility
-export function canBreed(horse: {
-  age: number;
-  sex: string;
-}): { eligible: boolean; reason?: string } {
+export function canBreed(horse: { age: number; sex: string }): {
+  eligible: boolean;
+  reason?: string;
+} {
   if (horse.sex === 'Stallion') {
     if (horse.age < BREEDING_LIMITS.MIN_STALLION_AGE) {
-      return { eligible: false, reason: `Stallion must be at least ${BREEDING_LIMITS.MIN_STALLION_AGE} years old` };
+      return {
+        eligible: false,
+        reason: `Stallion must be at least ${BREEDING_LIMITS.MIN_STALLION_AGE} years old`,
+      };
     }
     if (horse.age > BREEDING_LIMITS.MAX_STALLION_AGE) {
-      return { eligible: false, reason: `Stallion cannot breed after age ${BREEDING_LIMITS.MAX_STALLION_AGE}` };
+      return {
+        eligible: false,
+        reason: `Stallion cannot breed after age ${BREEDING_LIMITS.MAX_STALLION_AGE}`,
+      };
     }
   }
 
   if (horse.sex === 'Mare') {
     if (horse.age < BREEDING_LIMITS.MIN_MARE_AGE) {
-      return { eligible: false, reason: `Mare must be at least ${BREEDING_LIMITS.MIN_MARE_AGE} years old` };
+      return {
+        eligible: false,
+        reason: `Mare must be at least ${BREEDING_LIMITS.MIN_MARE_AGE} years old`,
+      };
     }
     if (horse.age > BREEDING_LIMITS.MAX_MARE_AGE) {
-      return { eligible: false, reason: `Mare cannot breed after age ${BREEDING_LIMITS.MAX_MARE_AGE}` };
+      return {
+        eligible: false,
+        reason: `Mare cannot breed after age ${BREEDING_LIMITS.MAX_MARE_AGE}`,
+      };
     }
   }
 
@@ -880,16 +929,16 @@ frontend/src/
 
 ## Summary of Enhancements
 
-| Area | Original | Enhanced |
-|------|----------|----------|
-| API Types | Basic | Full TypeScript interfaces from actual responses |
-| Validation | Manual | Zod schemas with exact backend rules |
-| Disciplines | "23 disciplines" | All 23 names, icons, categories |
-| Stats | "Horse stats" | All 12 stats with display names |
-| Breeding | "Prediction" | Full trait inheritance algorithm constants |
-| Testing | "Add tests" | Complete MSW-based test examples |
+| Area        | Original         | Enhanced                                         |
+| ----------- | ---------------- | ------------------------------------------------ |
+| API Types   | Basic            | Full TypeScript interfaces from actual responses |
+| Validation  | Manual           | Zod schemas with exact backend rules             |
+| Disciplines | "23 disciplines" | All 23 names, icons, categories                  |
+| Stats       | "Horse stats"    | All 12 stats with display names                  |
+| Breeding    | "Prediction"     | Full trait inheritance algorithm constants       |
+| Testing     | "Add tests"      | Complete MSW-based test examples                 |
 
 ---
 
-*Generated by Advanced Elicitation Mode*
-*Ready for implementation in fresh context*
+_Generated by Advanced Elicitation Mode_
+_Ready for implementation in fresh context_
