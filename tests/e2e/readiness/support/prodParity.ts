@@ -3,9 +3,9 @@ import fs from 'fs';
 import path from 'path';
 
 const BANNED_HEADERS = [
-  'x-test-skip-csrf',
-  'x-test-bypass-auth',
-  'x-test-bypass-rate-limit',
+  'x-test-skip-csrf', // doctrine-allow: bypass-header-literal
+  'x-test-bypass-auth', // doctrine-allow: bypass-header-literal
+  'x-test-bypass-rate-limit', // doctrine-allow: bypass-header-literal
 ] as const;
 
 export type RegisteredPlayer = {

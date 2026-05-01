@@ -22,16 +22,16 @@ test('readiness lane has no bypass, skip, or hard-wait contamination', async ({ 
     'utf-8'
   );
 
-  expect(readinessConfig).not.toContain('VITE_E2E_TEST');
+  expect(readinessConfig).not.toContain('VITE_E2E_TEST'); // doctrine-allow: bypass-header-literal
   expect(readinessConfig).toContain('retries: 0');
   expect(readinessConfig).toContain('workers: 1');
 
   const bannedTokens = [
     ['test', '.skip'].join(''),
     ['test', '.fixme'].join(''),
-    'x-test-skip-csrf',
-    'x-test-bypass-auth',
-    'x-test-bypass-rate-limit',
+    'x-test-skip-csrf', // doctrine-allow: bypass-header-literal
+    'x-test-bypass-auth', // doctrine-allow: bypass-header-literal
+    'x-test-bypass-rate-limit', // doctrine-allow: bypass-header-literal
     'waitForTimeout',
   ];
 
