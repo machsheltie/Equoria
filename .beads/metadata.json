@@ -1,5 +1,8 @@
 {
-  "database": "beads.db",
-  "jsonl_export": "issues.jsonl",
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "Equoria",
+  "project_id": "8384968e-49e1-4b6d-aa63-a54d4b0e659d",
   "last_bd_version": "0.28.0"
 }

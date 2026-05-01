@@ -1565,7 +1565,7 @@ export const horseFeedApi = {
 export interface InventoryItem {
   id: string;
   itemId: string;
-  category: 'saddle' | 'bridle';
+  category: 'saddle' | 'bridle' | 'feed';
   name: string;
   bonus?: string;
   quantity: number;
