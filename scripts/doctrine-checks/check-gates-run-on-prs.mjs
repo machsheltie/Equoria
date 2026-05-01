@@ -46,7 +46,9 @@ for (const file of readdirSync(WORKFLOWS_DIR)) {
     if (!currentJob.endsWith('-gate')) continue;
     if (allowlist.has(currentJob)) continue;
     if (masterOnly.test(line)) {
-      violations.push(`${path}:${i + 1}  job '${currentJob}' (defined at line ${currentJobLine}) is master-only`);
+      violations.push(
+        `${path}:${i + 1}  job '${currentJob}' (defined at line ${currentJobLine}) is master-only`
+      );
     }
   }
 }

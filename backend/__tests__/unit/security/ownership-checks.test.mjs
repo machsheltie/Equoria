@@ -1,352 +1,436 @@
 /**
- * 🔒 UNIT TESTS: Ownership Validation
+ * 🔒 INTEGRATION TESTS: Ownership Validation (real-DB)
  *
- * Tests for single-query ownership validation middleware including:
- * - Owned resources (should allow access)
- * - Not owned resources (should return 404)
- * - Non-existent resources (should return 404)
- * - Invalid resource IDs
- * - Batch ownership validation
+ * Tests for single-query ownership validation middleware. Exercises:
+ *   - Owned resources allowed → req[resourceType] attached + next() called
+ *   - Not-owned resources → 404 with ownership-disclosure-resistant message
+ *   - Custom idParam routing
+ *   - Resource-type → Prisma-model mapping (training-session → trainingLog,
+ *     competition-entry → competitionResult, including the nested
+ *     `horse.userId` ownerField path)
+ *   - findOwnedResource / validateBatchOwnership helpers
+ *
+ * NO MOCKS. This file was rewritten on 2026-04-30 (Equoria-p6fx, the no-
+ * mocks doctrine epic) from a jest.unstable_mockModule-based unit test
+ * to a real-DB integration test against the equoria_test database. Per
+ * CLAUDE.md "No mocks. Ever. All backend tests run against the real
+ * test database. No mocked Prisma calls." A test that passes while the
+ * production code is broken is worse than no test.
+ *
+ * Each test creates its own users + resources with collision-free
+ * randomBytes(8).hex identifiers, validates the middleware behavior,
+ * and cleans up its own rows in afterEach. No shared mutable state
+ * across tests; suite-prefix scoped cleanup catches orphans from
+ * crashed prior runs.
  *
  * @module __tests__/unit/security/ownership-checks
  */
 
-import { describe, it, expect, beforeEach, beforeAll, jest } from '@jest/globals';
-import { createMockUser, createMockHorse, createMockGroom } from '../../factories/index.mjs';
+import { describe, it, expect, beforeEach, afterEach, afterAll, beforeAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
+import prisma from '../../../db/index.mjs';
+import { requireOwnership, findOwnedResource, validateBatchOwnership } from '../../../middleware/ownership.mjs';
 
-// Create mock state object on globalThis for access from factory
-globalThis.ownershipTestMockState = {
-  horseFindFirst: null,
-  horseFindUnique: null,
-  horseFindMany: null,
-  groomFindFirst: null,
-  groomFindUnique: null,
-  groomFindMany: null,
-  groomAssignmentFindFirst: null,
-  groomAssignmentFindUnique: null,
-  groomAssignmentFindMany: null,
-  competitionResultFindFirst: null,
-  competitionResultFindUnique: null,
-  competitionResultFindMany: null,
-  trainingLogFindFirst: null,
-  trainingLogFindUnique: null,
-  trainingLogFindMany: null,
-};
+const SUITE_PREFIX = 'ochk';
 
-// Alias for easier access in tests
-const mockState = globalThis.ownershipTestMockState;
+// Fresh per-test response/next harness — scoped inside `describe` so each
+// `it` gets a clean trio without cross-test mutation.
+function makeReqRes(user) {
+  let nextCalledWith;
+  let nextCallCount = 0;
+  let statusValue;
+  let jsonValue;
 
-// Mock Prisma client module - factory implementations read from globalThis
-// This allows tests to mutate mockState and have mocks return current values
-// jest.unstable_mockModule resolves the specifier relative to this test
-// file (verified empirically: a wrong relative depth produces
-// `Cannot find module '...' from '__tests__/unit/security/ownership-checks.test.mjs'`).
-// Both the mock specifier and the dynamic import below must resolve to
-// the same absolute file as the production module's import for the mock
-// to intercept; here they happen to be identical.
-const prismaMockPath = '../../../../packages/database/prismaClient.mjs';
-const prismaImportPath = '../../../../packages/database/prismaClient.mjs';
-
-// Get references to the mocks for test assertions (must be done after mock is created)
-let mockHorseFindFirst, mockHorseFindUnique, mockHorseFindMany;
-let mockGroomFindFirst, mockGroomFindUnique, mockGroomFindMany;
-let mockGroomAssignmentFindFirst, mockGroomAssignmentFindUnique, mockGroomAssignmentFindMany;
-let mockCompetitionResultFindFirst, mockCompetitionResultFindUnique, mockCompetitionResultFindMany;
-let mockTrainingLogFindFirst, mockTrainingLogFindUnique, mockTrainingLogFindMany;
-
-let moduleExports;
-let requireOwnership, findOwnedResource, validateBatchOwnership;
-let prisma;
-
-beforeAll(async () => {
-  await jest.unstable_mockModule(prismaMockPath, () => ({
-    default: {
-      horse: {
-        findFirst: jest.fn(async () => globalThis.ownershipTestMockState.horseFindFirst),
-        findUnique: jest.fn(async () => globalThis.ownershipTestMockState.horseFindUnique),
-        findMany: jest.fn(async () => globalThis.ownershipTestMockState.horseFindMany),
+  return {
+    req: {
+      user,
+      params: {},
+      validatedResources: undefined,
+    },
+    res: {
+      status(code) {
+        statusValue = code;
+        return this;
       },
-      groom: {
-        findFirst: jest.fn(async () => globalThis.ownershipTestMockState.groomFindFirst),
-        findUnique: jest.fn(async () => globalThis.ownershipTestMockState.groomFindUnique),
-        findMany: jest.fn(async () => globalThis.ownershipTestMockState.groomFindMany),
+      json(body) {
+        jsonValue = body;
+        return this;
       },
-      groomAssignment: {
-        findFirst: jest.fn(async () => globalThis.ownershipTestMockState.groomAssignmentFindFirst),
-        findUnique: jest.fn(async () => globalThis.ownershipTestMockState.groomAssignmentFindUnique),
-        findMany: jest.fn(async () => globalThis.ownershipTestMockState.groomAssignmentFindMany),
+      get statusValue() {
+        return statusValue;
       },
-      competitionResult: {
-        findFirst: jest.fn(async () => globalThis.ownershipTestMockState.competitionResultFindFirst),
-        findUnique: jest.fn(async () => globalThis.ownershipTestMockState.competitionResultFindUnique),
-        findMany: jest.fn(async () => globalThis.ownershipTestMockState.competitionResultFindMany),
-      },
-      trainingLog: {
-        findFirst: jest.fn(async () => globalThis.ownershipTestMockState.trainingLogFindFirst),
-        findUnique: jest.fn(async () => globalThis.ownershipTestMockState.trainingLogFindUnique),
-        findMany: jest.fn(async () => globalThis.ownershipTestMockState.trainingLogFindMany),
+      get jsonValue() {
+        return jsonValue;
       },
     },
-  }));
+    next(arg) {
+      nextCallCount += 1;
+      nextCalledWith = arg;
+    },
+    nextWasCalled() {
+      return nextCallCount > 0;
+    },
+    nextWasCalledWithoutError() {
+      return nextCallCount > 0 && nextCalledWith === undefined;
+    },
+  };
+}
 
-  // Import the middleware module
-  moduleExports = await import('../../../middleware/ownership.mjs');
-  ({ requireOwnership, findOwnedResource, validateBatchOwnership } = moduleExports);
+// Test-fixture helpers. Each creates a real DB row and returns it.
+// IDs use randomBytes for collision-free uniqueness across parallel
+// workers (per Equoria-3gti — Date.now()+Math.random() collisions
+// were the prior flake source).
 
-  // Import the mocked Prisma client to get mock references
-  const prismaModule = await import(prismaImportPath);
-  prisma = prismaModule.default;
-
-  // Extract mock function references for test assertions
-  mockHorseFindFirst = prisma.horse.findFirst;
-  mockHorseFindUnique = prisma.horse.findUnique;
-  mockHorseFindMany = prisma.horse.findMany;
-  mockGroomFindFirst = prisma.groom.findFirst;
-  mockGroomFindUnique = prisma.groom.findUnique;
-  mockGroomFindMany = prisma.groom.findMany;
-  mockGroomAssignmentFindFirst = prisma.groomAssignment.findFirst;
-  mockGroomAssignmentFindUnique = prisma.groomAssignment.findUnique;
-  mockGroomAssignmentFindMany = prisma.groomAssignment.findMany;
-  mockCompetitionResultFindFirst = prisma.competitionResult.findFirst;
-  mockCompetitionResultFindUnique = prisma.competitionResult.findUnique;
-  mockCompetitionResultFindMany = prisma.competitionResult.findMany;
-  mockTrainingLogFindFirst = prisma.trainingLog.findFirst;
-  mockTrainingLogFindUnique = prisma.trainingLog.findUnique;
-  mockTrainingLogFindMany = prisma.trainingLog.findMany;
-
-  // Set up mock implementations to read from mockState dynamically
-  // This allows tests to mutate mockState and have mocks return the current value
-  mockHorseFindFirst.mockImplementation(async () => mockState.horseFindFirst);
-  mockHorseFindUnique.mockImplementation(async () => mockState.horseFindUnique);
-  mockHorseFindMany.mockImplementation(async () => mockState.horseFindMany);
-  mockGroomFindFirst.mockImplementation(async () => mockState.groomFindFirst);
-  mockGroomFindUnique.mockImplementation(async () => mockState.groomFindUnique);
-  mockGroomFindMany.mockImplementation(async () => mockState.groomFindMany);
-  mockGroomAssignmentFindFirst.mockImplementation(async () => mockState.groomAssignmentFindFirst);
-  mockGroomAssignmentFindUnique.mockImplementation(async () => mockState.groomAssignmentFindUnique);
-  mockGroomAssignmentFindMany.mockImplementation(async () => mockState.groomAssignmentFindMany);
-  mockCompetitionResultFindFirst.mockImplementation(async () => mockState.competitionResultFindFirst);
-  mockCompetitionResultFindUnique.mockImplementation(async () => mockState.competitionResultFindUnique);
-  mockCompetitionResultFindMany.mockImplementation(async () => mockState.competitionResultFindMany);
-  mockTrainingLogFindFirst.mockImplementation(async () => mockState.trainingLogFindFirst);
-  mockTrainingLogFindUnique.mockImplementation(async () => mockState.trainingLogFindUnique);
-  mockTrainingLogFindMany.mockImplementation(async () => mockState.trainingLogFindMany);
-});
-
-describe('Ownership Validation Unit Tests', () => {
-  let req, res, next;
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-
-    // Reset all mock state to prevent test pollution
-    mockState.horseFindFirst = null;
-    mockState.horseFindUnique = null;
-    mockState.horseFindMany = null;
-    mockState.groomFindFirst = null;
-    mockState.groomFindUnique = null;
-    mockState.groomFindMany = null;
-    mockState.groomAssignmentFindFirst = null;
-    mockState.groomAssignmentFindUnique = null;
-    mockState.groomAssignmentFindMany = null;
-    mockState.competitionResultFindFirst = null;
-    mockState.competitionResultFindUnique = null;
-    mockState.competitionResultFindMany = null;
-    mockState.trainingLogFindFirst = null;
-    mockState.trainingLogFindUnique = null;
-    mockState.trainingLogFindMany = null;
-
-    req = {
-      user: createMockUser({ id: 'user-1' }),
-      params: {},
-    };
-
-    res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
-    };
-
-    next = jest.fn();
+async function createUser() {
+  const uid = randomBytes(8).toString('hex');
+  return prisma.user.create({
+    data: {
+      id: `${SUITE_PREFIX}-${uid}`,
+      username: `${SUITE_PREFIX}_${uid}`,
+      email: `${SUITE_PREFIX}-${uid}@example.com`,
+      firstName: 'Ownership',
+      lastName: 'Test',
+      password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
+      emailVerified: true,
+    },
   });
+}
+
+async function createHorse(userId, overrides = {}) {
+  return prisma.horse.create({
+    data: {
+      name: overrides.name ?? `${SUITE_PREFIX}-horse-${randomBytes(4).toString('hex')}`,
+      sex: overrides.sex ?? 'Mare',
+      dateOfBirth: overrides.dateOfBirth ?? new Date('2020-01-01'),
+      user: { connect: { id: userId } },
+    },
+  });
+}
+
+async function createGroom(userId, overrides = {}) {
+  return prisma.groom.create({
+    data: {
+      name: overrides.name ?? `${SUITE_PREFIX}-groom-${randomBytes(4).toString('hex')}`,
+      speciality: overrides.speciality ?? 'foal_care',
+      personality: overrides.personality ?? 'gentle',
+      user: { connect: { id: userId } },
+    },
+  });
+}
+
+async function createTrainingLog(horseId) {
+  return prisma.trainingLog.create({
+    data: {
+      discipline: 'Dressage',
+      horse: { connect: { id: horseId } },
+    },
+  });
+}
+
+async function createCompetitionResult(horseId, showId) {
+  return prisma.competitionResult.create({
+    data: {
+      score: 75.5,
+      placement: '3rd',
+      discipline: 'Dressage',
+      runDate: new Date(),
+      showName: `${SUITE_PREFIX}-show-${randomBytes(4).toString('hex')}`,
+      horse: { connect: { id: horseId } },
+      show: { connect: { id: showId } },
+    },
+  });
+}
+
+async function createShow() {
+  return prisma.show.create({
+    data: {
+      name: `${SUITE_PREFIX}-show-${randomBytes(4).toString('hex')}`,
+      discipline: 'Dressage',
+      levelMin: 1,
+      levelMax: 10,
+      entryFee: 50,
+      prize: 200,
+      runDate: new Date(),
+    },
+  });
+}
+
+// Suite-scoped cleanup: deletes everything this suite created that's
+// reachable via the SUITE_PREFIX. Cascade handles child rows where
+// the schema declares onDelete: Cascade; explicit deletes elsewhere.
+async function cleanupSuite() {
+  // Find users by suite prefix; cascade through training/competition
+  // via horse FKs.
+  const users = await prisma.user.findMany({
+    where: { id: { startsWith: SUITE_PREFIX } },
+    select: { id: true },
+  });
+  if (users.length === 0) {
+    return;
+  }
+  const userIds = users.map(u => u.id);
+  // Find horses owned by these users for cascade-cleanup of dependents.
+  const horses = await prisma.horse.findMany({
+    where: { userId: { in: userIds } },
+    select: { id: true },
+  });
+  const horseIds = horses.map(h => h.id);
+  if (horseIds.length > 0) {
+    await prisma.trainingLog.deleteMany({ where: { horseId: { in: horseIds } } });
+    await prisma.competitionResult.deleteMany({ where: { horseId: { in: horseIds } } });
+  }
+  await prisma.show.deleteMany({ where: { name: { startsWith: SUITE_PREFIX } } });
+  await prisma.horse.deleteMany({ where: { userId: { in: userIds } } });
+  await prisma.groom.deleteMany({ where: { userId: { in: userIds } } });
+  await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+}
+
+describe('Ownership Validation Integration Tests (real DB)', () => {
+  beforeAll(cleanupSuite);
+  afterAll(cleanupSuite);
+  // Per-test cleanup is also done so a mid-suite failure doesn't leak
+  // into the next test's row counts. afterEach handles the routine
+  // happy-path; afterAll/beforeAll handle crash-recovery.
+  afterEach(cleanupSuite);
 
   describe('Owned Resource Scenarios', () => {
     it('should allow access to owned horse', async () => {
-      const horse = createMockHorse({ id: 1, userId: 'user-1' });
-      mockState.horseFindFirst = horse;
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const harness = makeReqRes({ id: user.id });
+      harness.req.params.id = String(horse.id);
 
-      req.params.id = '1';
-      const middleware = requireOwnership('horse');
+      await requireOwnership('horse')(harness.req, harness.res, harness.next);
 
-      await middleware(req, res, next);
-
-      expect(next).toHaveBeenCalledWith();
-      expect(req.horse).toEqual(horse);
-      expect(mockHorseFindFirst).toHaveBeenCalledWith({
-        where: { id: 1, userId: 'user-1' }, // Matches schema field
-      });
+      expect(harness.nextWasCalledWithoutError()).toBe(true);
+      expect(harness.req.horse).toMatchObject({ id: horse.id, userId: user.id });
+      expect(harness.res.statusValue).toBeUndefined(); // never sent an error response
     });
 
     it('should allow access to owned groom', async () => {
-      const groom = createMockGroom({ id: 5, userId: 'user-1' });
-      mockState.groomFindFirst = groom;
+      const user = await createUser();
+      const groom = await createGroom(user.id);
+      const harness = makeReqRes({ id: user.id });
+      harness.req.params.id = String(groom.id);
 
-      req.params.id = '5';
-      const middleware = requireOwnership('groom');
+      await requireOwnership('groom')(harness.req, harness.res, harness.next);
 
-      await middleware(req, res, next);
-
-      expect(next).toHaveBeenCalledWith();
-      expect(req.groom).toEqual(groom);
-      expect(mockGroomFindFirst).toHaveBeenCalledWith({
-        where: { id: 5, userId: 'user-1' },
-      });
+      expect(harness.nextWasCalledWithoutError()).toBe(true);
+      expect(harness.req.groom).toMatchObject({ id: groom.id, userId: user.id });
     });
 
-    it('should attach resource to request object and validatedResources', async () => {
-      const horse = createMockHorse({ id: 10, userId: 'user-1', name: 'TestHorse' });
-      mockState.horseFindFirst = horse;
+    it('should attach resource to req[type] AND req.validatedResources', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id, { name: 'AttachTest' });
+      const harness = makeReqRes({ id: user.id });
+      harness.req.params.id = String(horse.id);
 
-      req.params.id = '10';
-      const middleware = requireOwnership('horse');
+      await requireOwnership('horse')(harness.req, harness.res, harness.next);
 
-      await middleware(req, res, next);
-
-      expect(req.horse).toBeDefined();
-      expect(req.validatedResources.horse).toEqual(horse);
-      expect(req.horse.name).toBe('TestHorse');
+      expect(harness.req.horse).toBeDefined();
+      expect(harness.req.horse.name).toBe('AttachTest');
+      expect(harness.req.validatedResources).toBeDefined();
+      expect(harness.req.validatedResources.horse).toMatchObject({ id: horse.id });
     });
 
-    it('should work with custom idParam', async () => {
-      const horse = createMockHorse({ id: 20, userId: 'user-1' });
-      mockState.horseFindFirst = horse;
+    it('should accept a custom idParam', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const harness = makeReqRes({ id: user.id });
+      harness.req.params.horseId = String(horse.id);
 
-      req.params.horseId = '20';
-      const middleware = requireOwnership('horse', { idParam: 'horseId' });
+      await requireOwnership('horse', { idParam: 'horseId' })(harness.req, harness.res, harness.next);
 
-      await middleware(req, res, next);
-
-      expect(next).toHaveBeenCalledWith();
-      expect(req.horse.id).toBe(20);
+      expect(harness.nextWasCalledWithoutError()).toBe(true);
+      expect(harness.req.horse.id).toBe(horse.id);
     });
   });
 
-  describe('Not Owned Resource Scenarios', () => {
-    it('should return 404 for horse owned by different user', async () => {
-      mockState.horseFindFirst = null;
+  describe('Not-Owned Resource Scenarios', () => {
+    it('should return 404 for horse owned by a different user', async () => {
+      const owner = await createUser();
+      const otherUser = await createUser();
+      const horse = await createHorse(owner.id);
+      const harness = makeReqRes({ id: otherUser.id });
+      harness.req.params.id = String(horse.id);
 
-      req.params.id = '1';
-      const middleware = requireOwnership('horse');
+      await requireOwnership('horse')(harness.req, harness.res, harness.next);
 
-      await middleware(req, res, next);
-
-      expect(next).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({
+      expect(harness.nextWasCalled()).toBe(false);
+      expect(harness.res.statusValue).toBe(404);
+      expect(harness.res.jsonValue).toMatchObject({
         success: false,
         message: 'Horse not found',
-        status: expect.anything(),
       });
     });
 
-    it('should return 404 for groom owned by different user', async () => {
-      mockState.groomFindFirst = null;
+    it('should return 404 for groom owned by a different user', async () => {
+      const owner = await createUser();
+      const otherUser = await createUser();
+      const groom = await createGroom(owner.id);
+      const harness = makeReqRes({ id: otherUser.id });
+      harness.req.params.id = String(groom.id);
 
-      req.params.id = '5';
-      const middleware = requireOwnership('groom');
+      await requireOwnership('groom')(harness.req, harness.res, harness.next);
 
-      await middleware(req, res, next);
-
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({
+      expect(harness.res.statusValue).toBe(404);
+      expect(harness.res.jsonValue).toMatchObject({
         success: false,
         message: 'Groom not found',
-        status: expect.anything(),
+      });
+    });
+
+    it('should return 404 for non-existent horse ID (no ownership disclosure)', async () => {
+      const user = await createUser();
+      const harness = makeReqRes({ id: user.id });
+      harness.req.params.id = '999999999';
+
+      await requireOwnership('horse')(harness.req, harness.res, harness.next);
+
+      expect(harness.res.statusValue).toBe(404);
+      expect(harness.res.jsonValue).toMatchObject({
+        success: false,
+        message: 'Horse not found',
       });
     });
   });
 
-  describe('Resource Type Validation', () => {
-    it('should handle training-session resource type (maps to trainingLog)', async () => {
-      const session = { id: 1, horse: { userId: 'user-1' }, type: 'SPEED' };
-      mockState.trainingLogFindFirst = session;
+  describe('Resource Type Mapping (nested ownerField paths)', () => {
+    it('should resolve training-session via trainingLog with horse.userId path', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const log = await createTrainingLog(horse.id);
+      const harness = makeReqRes({ id: user.id });
+      harness.req.params.id = String(log.id);
 
-      req.params.id = '1';
-      const middleware = requireOwnership('training-session');
+      await requireOwnership('training-session')(harness.req, harness.res, harness.next);
 
-      await middleware(req, res, next);
-
-      expect(mockTrainingLogFindFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: {
-            id: 1,
-            horse: { userId: 'user-1' }, // Matches schema field
-          },
-        }),
-      );
+      expect(harness.nextWasCalledWithoutError()).toBe(true);
+      expect(harness.req['training-session']).toMatchObject({ id: log.id });
     });
 
-    it('should handle competition-entry resource type (maps to competitionResult)', async () => {
-      const entry = { id: 1, horse: { userId: 'user-1' }, status: 'ENTERED' };
-      mockState.competitionResultFindFirst = entry;
+    it('should reject training-session for non-owner via horse.userId path', async () => {
+      const owner = await createUser();
+      const otherUser = await createUser();
+      const horse = await createHorse(owner.id);
+      const log = await createTrainingLog(horse.id);
+      const harness = makeReqRes({ id: otherUser.id });
+      harness.req.params.id = String(log.id);
 
-      req.params.id = '1';
-      const middleware = requireOwnership('competition-entry');
+      await requireOwnership('training-session')(harness.req, harness.res, harness.next);
 
-      await middleware(req, res, next);
+      expect(harness.res.statusValue).toBe(404);
+    });
 
-      expect(mockCompetitionResultFindFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: {
-            id: 1,
-            horse: { userId: 'user-1' }, // Matches schema field
-          },
-        }),
-      );
+    it('should resolve competition-entry via competitionResult with horse.userId path', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const show = await createShow();
+      const result = await createCompetitionResult(horse.id, show.id);
+      const harness = makeReqRes({ id: user.id });
+      harness.req.params.id = String(result.id);
+
+      await requireOwnership('competition-entry')(harness.req, harness.res, harness.next);
+
+      expect(harness.nextWasCalledWithoutError()).toBe(true);
+      expect(harness.req['competition-entry']).toMatchObject({ id: result.id });
+    });
+  });
+
+  describe('Authentication & Input-Validation Errors', () => {
+    it('should reject when req.user is missing (401)', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const harness = makeReqRes(undefined);
+      harness.req.params.id = String(horse.id);
+
+      await requireOwnership('horse')(harness.req, harness.res, harness.next);
+
+      expect(harness.res.statusValue).toBe(401);
+      expect(harness.res.jsonValue).toMatchObject({
+        success: false,
+        message: 'Authentication required',
+      });
+    });
+
+    it('should reject non-numeric resource IDs (400)', async () => {
+      const user = await createUser();
+      const harness = makeReqRes({ id: user.id });
+      harness.req.params.id = 'not-a-number';
+
+      await requireOwnership('horse')(harness.req, harness.res, harness.next);
+
+      expect(harness.res.statusValue).toBe(400);
+      expect(harness.res.jsonValue).toMatchObject({
+        success: false,
+        message: 'Invalid horse ID',
+      });
     });
   });
 
   describe('findOwnedResource Helper Function', () => {
-    it('should find owned horse using userId', async () => {
-      const horse = createMockHorse({ id: 1, userId: 'user-1' });
-      mockState.horseFindFirst = horse;
+    it('should find owned horse', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
 
-      const result = await findOwnedResource('horse', 1, 'user-1');
+      const result = await findOwnedResource('horse', horse.id, user.id);
 
-      expect(result).toEqual(horse);
-      expect(mockHorseFindFirst).toHaveBeenCalledWith({
-        where: { id: 1, userId: 'user-1' }, // Matches schema field
-      });
+      expect(result).toMatchObject({ id: horse.id, userId: user.id });
     });
 
-    it('should find owned groom using userId', async () => {
-      const groom = createMockGroom({ id: 5, userId: 'user-1' });
-      mockState.groomFindFirst = groom;
+    it('should return null for not-owned horse', async () => {
+      const owner = await createUser();
+      const otherUser = await createUser();
+      const horse = await createHorse(owner.id);
 
-      const result = await findOwnedResource('groom', 5, 'user-1');
+      const result = await findOwnedResource('horse', horse.id, otherUser.id);
 
-      expect(result).toEqual(groom);
-      expect(mockGroomFindFirst).toHaveBeenCalledWith({
-        where: { id: 5, userId: 'user-1' },
-      });
+      expect(result).toBeNull();
+    });
+
+    it('should find owned groom', async () => {
+      const user = await createUser();
+      const groom = await createGroom(user.id);
+
+      const result = await findOwnedResource('groom', groom.id, user.id);
+
+      expect(result).toMatchObject({ id: groom.id, userId: user.id });
     });
   });
 
   describe('validateBatchOwnership Helper Function', () => {
-    it('should validate ownership of multiple horses using userId', async () => {
-      const horses = [createMockHorse({ id: 1, userId: 'user-1' }), createMockHorse({ id: 2, userId: 'user-1' })];
-      mockState.horseFindMany = horses;
+    it('should return all owned horses from a batch', async () => {
+      const user = await createUser();
+      const h1 = await createHorse(user.id);
+      const h2 = await createHorse(user.id);
 
-      const result = await validateBatchOwnership('horse', [1, 2], 'user-1');
+      const result = await validateBatchOwnership('horse', [h1.id, h2.id], user.id);
 
-      expect(result).toEqual(horses);
-      expect(mockHorseFindMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: {
-            id: { in: [1, 2] },
-            userId: 'user-1', // Matches schema field
-          },
-        }),
-      );
+      expect(result).toHaveLength(2);
+      const ids = result.map(r => r.id).sort((a, b) => a - b);
+      expect(ids).toEqual([h1.id, h2.id].sort((a, b) => a - b));
+    });
+
+    it('should exclude horses owned by other users from the batch', async () => {
+      const owner = await createUser();
+      const otherUser = await createUser();
+      const ownedHorse = await createHorse(owner.id);
+      const otherHorse = await createHorse(otherUser.id);
+
+      const result = await validateBatchOwnership('horse', [ownedHorse.id, otherHorse.id], owner.id);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe(ownedHorse.id);
+    });
+
+    it('should return empty array when caller owns none of the requested IDs', async () => {
+      const owner = await createUser();
+      const otherUser = await createUser();
+      const horse = await createHorse(owner.id);
+
+      const result = await validateBatchOwnership('horse', [horse.id], otherUser.id);
+
+      expect(result).toEqual([]);
     });
   });
 });

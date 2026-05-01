@@ -2,30 +2,20 @@
 // Validates per-locus Mendelian probabilities, lethal filtering, breed restrictions,
 // phenotype aggregation, full pipeline, legacy handling, and statistical accuracy.
 
-import { jest } from '@jest/globals';
+// NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): the
+// previous logger mock was for noise suppression only — no logger
+// assertions in this file. The service functions are pure (no DB).
 
-// Mock logger to suppress output
-const mockLogger = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-};
-jest.unstable_mockModule('../utils/logger.mjs', () => ({ default: mockLogger }));
-
-// Import service functions (no prisma mock needed — pure functions)
-const {
+import {
   generateLocusProbabilities,
   generateAllGenotypeProbabilities,
   filterLethalGenotypes,
   applyBreedRestrictions,
   aggregateByPhenotype,
   predictBreedingColors,
-} = await import('../modules/horses/services/breedingColorPredictionService.mjs');
-
-const { calculatePhenotype } = await import('../modules/horses/services/phenotypeCalculationService.mjs');
-
-const { GENERIC_DEFAULTS } = await import('../modules/horses/services/genotypeGenerationService.mjs');
+} from '../modules/horses/services/breedingColorPredictionService.mjs';
+import { calculatePhenotype } from '../modules/horses/services/phenotypeCalculationService.mjs';
+import { GENERIC_DEFAULTS } from '../modules/horses/services/genotypeGenerationService.mjs';
 
 // ---------------------------------------------------------------------------
 // T4.1: generateLocusProbabilities

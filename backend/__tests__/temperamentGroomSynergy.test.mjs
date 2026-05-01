@@ -7,27 +7,20 @@
  * - Data integrity — TEMPERAMENT_GROOM_SYNERGY keys match TEMPERAMENT_TYPES
  */
 
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, jest } from '@jest/globals';
 
-// Mock logger BEFORE any dynamic imports (jest.unstable_mockModule rule)
-const mockLogger = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  debug: jest.fn(),
-  error: jest.fn(),
-};
+// NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): the
+// previous logger mock was used to assert on logger.warn / logger.info
+// calls. Per doctrine, observing logger calls cross-module is dropped
+// in favor of behavioural assertions on the function return values.
 
-jest.unstable_mockModule('../utils/logger.mjs', () => ({
-  default: mockLogger,
-}));
-
-// Dynamic imports (must come after mock declarations)
-const { getTemperamentGroomSynergy, TEMPERAMENT_GROOM_SYNERGY } = await import(
-  '../modules/horses/services/temperamentService.mjs'
-);
-const { calculateBondingEffects } = await import('../utils/groomBondingSystem.mjs');
-const { GROOM_CONFIG } = await import('../config/groomConfig.mjs');
-const { TEMPERAMENT_TYPES } = await import('../modules/horses/data/breedGeneticProfiles.mjs');
+import {
+  getTemperamentGroomSynergy,
+  TEMPERAMENT_GROOM_SYNERGY,
+} from '../modules/horses/services/temperamentService.mjs';
+import { calculateBondingEffects } from '../utils/groomBondingSystem.mjs';
+import { GROOM_CONFIG } from '../config/groomConfig.mjs';
+import { TEMPERAMENT_TYPES } from '../modules/horses/data/breedGeneticProfiles.mjs';
 
 describe('Story 31D.4: Groom Temperament Synergy', () => {
   beforeEach(() => {
@@ -159,11 +152,10 @@ describe('Story 31D.4: Groom Temperament Synergy', () => {
       expect(getTemperamentGroomSynergy('Nervous', undefined)).toBe(0);
     });
 
-    // Task 4.6 — unknown temperament → 0 + logs warn
-    it('unknown temperament string → 0 and logs warn', () => {
+    // Task 4.6 — unknown temperament → 0 (logger.warn assertion dropped per no-mocks doctrine)
+    it('unknown temperament string → 0', () => {
       const result = getTemperamentGroomSynergy('UnknownBreed', 'patient');
       expect(result).toBe(0);
-      expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining('Unknown temperament "UnknownBreed"'));
     });
 
     // Task 4.7 — unknown personality → 0 (no error)
@@ -239,17 +231,12 @@ describe('Story 31D.4: Groom Temperament Synergy', () => {
       expect(result.newBondScore).toBe(20);
     });
 
-    // Bonus: verify logger.info is called when synergy is non-zero
-    it('logs synergy info when modifier is non-zero', () => {
-      calculateBondingEffects(20, 'brushing', 'patient', 'Nervous');
-      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('synergy'));
-    });
-
-    // No logging when synergy is zero
-    it('does not log synergy info when modifier is zero (2-arg form)', () => {
-      calculateBondingEffects(20, 'brushing');
-      expect(mockLogger.info).not.toHaveBeenCalled();
-    });
+    // REMOVED (no-mocks doctrine): "logs synergy info when modifier
+    // is non-zero" and "does not log synergy info when modifier is
+    // zero" — both asserted on logger.info call shape, dropped per
+    // doctrine. The behavioural surface (synergy modifier applied
+    // correctly) is exercised by the 17 explicit pairing tests above
+    // and the integration tests below.
 
     // Review: cap behaviour with positive synergy — bond score near max
     it('bond score near cap (99) with +25% synergy: bondChange capped, capped flag true', () => {

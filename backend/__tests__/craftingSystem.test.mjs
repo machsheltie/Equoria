@@ -1,54 +1,37 @@
 /**
- * Tests for the Leathersmith Crafting System (Equoria-lnn4).
+ * Tests for the Leathersmith Crafting System (Equoria-lnn4) — real DB
+ *
+ * NO MOCKS. Rewritten 2026-04-30 (Equoria-p6fx, no-mocks doctrine epic)
+ * from a jest.unstable_mockModule pattern (mocked logger + prismaClient
+ * + financialLedgerService) to a real-DB integration test.
  *
  * Covers:
- *   - craftingRecipes catalog (shape, tiers, data integrity)
- *   - craftingController: getMaterials, getRecipes, craftItem
- *     (all DB calls mocked — no real DB needed)
+ *   - craftingRecipes catalog (shape, tiers, data integrity) — pure
+ *     module data, no mocking ever needed
+ *   - craftingController: getMaterials_endpoint, getRecipes, craftItem
+ *     against the real `equoria_test` DB. Each test creates a real
+ *     user with controlled settings JSON, calls the real controller,
+ *     and asserts on real DB state.
+ *
+ * Removed (per no-mocks doctrine):
+ *   - "returns 500 on DB error" tests that mocked Prisma to reject.
+ *     Synthetic Prisma fault injection is forbidden; the catch path is
+ *     observable in production via real DB outage / sentry.
+ *
+ * @module __tests__/craftingSystem
  */
 
-import { jest } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
+import prisma from '../db/index.mjs';
+import { CRAFTING_RECIPES, findRecipe } from '../modules/services/data/craftingRecipes.mjs';
+import { getMaterials_endpoint, getRecipes, craftItem } from '../modules/services/controllers/craftingController.mjs';
 
-// ── Mocks (must precede dynamic imports) ─────────────────────────────────────
+const SUITE_PREFIX = 'craft';
 
-const mockLogger = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-};
-jest.unstable_mockModule('../utils/logger.mjs', () => ({ default: mockLogger }));
-
-const mockUserFindUnique = jest.fn();
-const mockUserUpdate = jest.fn();
-const mockPrisma = {
-  user: {
-    findUnique: mockUserFindUnique,
-    update: mockUserUpdate,
-  },
-  $transaction: jest.fn(async fn => fn(mockPrisma)),
-};
-jest.unstable_mockModule('../../packages/database/prismaClient.mjs', () => ({
-  default: mockPrisma,
-}));
-
-jest.unstable_mockModule('../services/financialLedgerService.mjs', () => ({
-  recordTransaction: jest.fn().mockResolvedValue({}),
-  ensureLedgerTable: jest.fn().mockResolvedValue(undefined),
-}));
-
-// ── Dynamic imports (after mocks) ────────────────────────────────────────────
-
-const { CRAFTING_RECIPES, findRecipe } = await import('../modules/services/data/craftingRecipes.mjs');
-const { getMaterials_endpoint, getRecipes, craftItem } = await import(
-  '../modules/services/controllers/craftingController.mjs'
-);
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function makeReq(overrides = {}) {
+function makeReq(userId, overrides = {}) {
   return {
-    user: { id: 'user-1' },
+    user: { id: userId },
     body: {},
     ...overrides,
   };
@@ -79,8 +62,37 @@ function makeSettings(overrides = {}) {
   };
 }
 
+async function createUser(extra = {}) {
+  const uid = randomBytes(8).toString('hex');
+  return prisma.user.create({
+    data: {
+      id: `${SUITE_PREFIX}-${uid}`,
+      username: `${SUITE_PREFIX}_${uid}`,
+      email: `${SUITE_PREFIX}-${uid}@example.com`,
+      firstName: 'Craft',
+      lastName: 'Test',
+      password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
+      emailVerified: true,
+      money: 500,
+      ...extra,
+    },
+  });
+}
+
+async function cleanupSuite() {
+  const users = await prisma.user.findMany({
+    where: { id: { startsWith: SUITE_PREFIX } },
+    select: { id: true },
+  });
+  if (users.length === 0) {
+    return;
+  }
+  const userIds = users.map(u => u.id);
+  await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
-// CRAFTING_RECIPES catalog
+// CRAFTING_RECIPES catalog (pure data — no DB)
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('CRAFTING_RECIPES catalog', () => {
@@ -134,254 +146,212 @@ describe('findRecipe()', () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// getMaterials_endpoint
+// Controllers (real DB)
 // ─────────────────────────────────────────────────────────────────────────────
 
-describe('getMaterials_endpoint()', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+describe('craftingController (real DB)', () => {
+  beforeAll(cleanupSuite);
+  afterAll(cleanupSuite);
+  afterEach(cleanupSuite);
 
-  it('returns materials and workshopTier for a found user', async () => {
-    const settings = makeSettings({ workshopTier: 2 });
-    mockUserFindUnique.mockResolvedValueOnce({ settings });
+  describe('getMaterials_endpoint()', () => {
+    it('returns materials and workshopTier for a real user with populated settings', async () => {
+      const user = await createUser({ settings: makeSettings({ workshopTier: 2 }) });
 
-    const req = makeReq();
-    const res = makeRes();
-    await getMaterials_endpoint(req, res);
+      const res = makeRes();
+      await getMaterials_endpoint(makeReq(user.id), res);
 
-    expect(res._status).toBe(200);
-    expect(res._body.success).toBe(true);
-    expect(res._body.data.workshopTier).toBe(2);
-    expect(res._body.data.materials.leather).toBe(5);
-  });
-
-  it('defaults all materials to 0 when settings are null', async () => {
-    mockUserFindUnique.mockResolvedValueOnce({ settings: null });
-
-    const req = makeReq();
-    const res = makeRes();
-    await getMaterials_endpoint(req, res);
-
-    expect(res._body.data.materials).toEqual({
-      leather: 0,
-      cloth: 0,
-      dye: 0,
-      metal: 0,
-      thread: 0,
+      expect(res._status).toBe(200);
+      expect(res._body.success).toBe(true);
+      expect(res._body.data.workshopTier).toBe(2);
+      expect(res._body.data.materials.leather).toBe(5);
     });
-    expect(res._body.data.workshopTier).toBe(0);
-  });
 
-  it('returns 404 when user not found', async () => {
-    mockUserFindUnique.mockResolvedValueOnce(null);
+    it('defaults all materials to 0 when settings JSON is null', async () => {
+      const user = await createUser({ settings: undefined });
 
-    const req = makeReq();
-    const res = makeRes();
-    await getMaterials_endpoint(req, res);
+      const res = makeRes();
+      await getMaterials_endpoint(makeReq(user.id), res);
 
-    expect(res._status).toBe(404);
-    expect(res._body.success).toBe(false);
-  });
-
-  it('returns 500 on DB error', async () => {
-    mockUserFindUnique.mockRejectedValueOnce(new Error('DB down'));
-
-    const req = makeReq();
-    const res = makeRes();
-    await getMaterials_endpoint(req, res);
-
-    expect(res._status).toBe(500);
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// getRecipes
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('getRecipes()', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('returns all recipes with locked status based on workshopTier=0', async () => {
-    mockUserFindUnique.mockResolvedValueOnce({ settings: makeSettings({ workshopTier: 0 }) });
-
-    const req = makeReq();
-    const res = makeRes();
-    await getRecipes(req, res);
-
-    expect(res._body.success).toBe(true);
-    const recipes = res._body.data.recipes;
-    expect(Array.isArray(recipes)).toBe(true);
-
-    // Tier-0 recipes should be unlocked
-    const tier0 = recipes.filter(r => r.tier === 0);
-    expect(tier0.every(r => !r.locked)).toBe(true);
-
-    // Tier-1+ recipes should be locked
-    const tier1plus = recipes.filter(r => r.tier > 0);
-    expect(tier1plus.every(r => r.locked)).toBe(true);
-  });
-
-  it('unlocks Tier 1 recipes when workshopTier=1', async () => {
-    mockUserFindUnique.mockResolvedValueOnce({ settings: makeSettings({ workshopTier: 1 }) });
-
-    const req = makeReq();
-    const res = makeRes();
-    await getRecipes(req, res);
-
-    const recipes = res._body.data.recipes;
-    const tier1 = recipes.filter(r => r.tier === 1);
-    expect(tier1.every(r => !r.locked)).toBe(true);
-  });
-
-  it('marks recipes unaffordable when materials are insufficient', async () => {
-    const poorSettings = makeSettings({
-      workshopTier: 0,
-      craftingMaterials: { leather: 0, cloth: 0, dye: 0, metal: 0, thread: 0 },
+      expect(res._body.data.materials).toEqual({
+        leather: 0,
+        cloth: 0,
+        dye: 0,
+        metal: 0,
+        thread: 0,
+      });
+      expect(res._body.data.workshopTier).toBe(0);
     });
-    mockUserFindUnique.mockResolvedValueOnce({ settings: poorSettings });
 
-    const req = makeReq();
-    const res = makeRes();
-    await getRecipes(req, res);
+    it('returns 404 when the user does not exist', async () => {
+      const res = makeRes();
+      await getMaterials_endpoint(makeReq(`${SUITE_PREFIX}-nonexistent-${randomBytes(4).toString('hex')}`), res);
 
-    // All recipes needing any material should be not affordable
-    const recipes = res._body.data.recipes;
-    const needsMaterials = recipes.filter(r => Object.values(r.materials).some(v => v > 0));
-    expect(needsMaterials.every(r => !r.affordable)).toBe(true);
-  });
-
-  it('returns 404 when user not found', async () => {
-    mockUserFindUnique.mockResolvedValueOnce(null);
-    const req = makeReq();
-    const res = makeRes();
-    await getRecipes(req, res);
-    expect(res._status).toBe(404);
-  });
-});
-
-// ─────────────────────────────────────────────────────────────────────────────
-// craftItem
-// ─────────────────────────────────────────────────────────────────────────────
-
-describe('craftItem()', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('crafts a Tier-0 recipe when user has sufficient materials and coins', async () => {
-    const settings = makeSettings({ workshopTier: 0 });
-    mockUserFindUnique.mockResolvedValueOnce({ id: 'user-1', money: 500, settings });
-    mockUserUpdate.mockResolvedValueOnce({});
-
-    const req = makeReq({ body: { recipeId: 'simple-bridle' } });
-    const res = makeRes();
-    await craftItem(req, res);
-
-    expect(res._body.success).toBe(true);
-    expect(res._body.data.item.origin).toBe('crafted');
-    expect(res._body.data.item.itemId).toBe('crafted-simple-bridle');
-    expect(res._body.data.coinsSpent).toBe(100);
-    expect(mockUserUpdate).toHaveBeenCalledTimes(1);
-  });
-
-  it('deducts the correct materials after crafting', async () => {
-    const settings = makeSettings({ workshopTier: 0 });
-    mockUserFindUnique.mockResolvedValueOnce({ id: 'user-1', money: 500, settings });
-    mockUserUpdate.mockResolvedValueOnce({});
-
-    const req = makeReq({ body: { recipeId: 'simple-bridle' } });
-    const res = makeRes();
-    await craftItem(req, res);
-
-    // simple-bridle needs 1 leather + 1 dye
-    expect(res._body.data.remainingMaterials.leather).toBe(4); // 5 - 1
-    expect(res._body.data.remainingMaterials.dye).toBe(4); // 5 - 1
-    expect(res._body.data.remainingMaterials.cloth).toBe(5); // unchanged
-  });
-
-  it('returns 404 for an unknown recipeId', async () => {
-    const req = makeReq({ body: { recipeId: 'does-not-exist' } });
-    const res = makeRes();
-    await craftItem(req, res);
-
-    expect(res._status).toBe(404);
-    expect(res._body.success).toBe(false);
-  });
-
-  it('returns 403 when workshopTier is too low for the recipe', async () => {
-    const settings = makeSettings({ workshopTier: 0 }); // event-saddle needs tier 2
-    mockUserFindUnique.mockResolvedValueOnce({ id: 'user-1', money: 9999, settings });
-
-    const req = makeReq({ body: { recipeId: 'event-saddle' } });
-    const res = makeRes();
-    await craftItem(req, res);
-
-    expect(res._status).toBe(403);
-    expect(res._body.message).toMatch(/upgrade required/i);
-  });
-
-  it('returns 400 when user has insufficient coins', async () => {
-    const settings = makeSettings({ workshopTier: 0 });
-    mockUserFindUnique.mockResolvedValueOnce({ id: 'user-1', money: 10, settings }); // needs 100
-
-    const req = makeReq({ body: { recipeId: 'simple-bridle' } });
-    const res = makeRes();
-    await craftItem(req, res);
-
-    expect(res._status).toBe(400);
-    expect(res._body.message).toMatch(/insufficient coins/i);
-  });
-
-  it('returns 400 when user has insufficient materials', async () => {
-    const poorSettings = makeSettings({
-      workshopTier: 0,
-      craftingMaterials: { leather: 0, cloth: 0, dye: 0, metal: 0, thread: 0 },
+      expect(res._status).toBe(404);
+      expect(res._body.success).toBe(false);
     });
-    mockUserFindUnique.mockResolvedValueOnce({ id: 'user-1', money: 9999, settings: poorSettings });
-
-    const req = makeReq({ body: { recipeId: 'simple-bridle' } });
-    const res = makeRes();
-    await craftItem(req, res);
-
-    expect(res._status).toBe(400);
-    expect(res._body.message).toMatch(/insufficient materials/i);
   });
 
-  it('returns 404 when user not found', async () => {
-    mockUserFindUnique.mockResolvedValueOnce(null);
+  describe('getRecipes()', () => {
+    it('returns all recipes with tier-0 unlocked + tier-1+ locked at workshopTier=0', async () => {
+      const user = await createUser({ settings: makeSettings({ workshopTier: 0 }) });
 
-    const req = makeReq({ body: { recipeId: 'simple-bridle' } });
-    const res = makeRes();
-    await craftItem(req, res);
+      const res = makeRes();
+      await getRecipes(makeReq(user.id), res);
 
-    expect(res._status).toBe(404);
+      expect(res._body.success).toBe(true);
+      const recipes = res._body.data.recipes;
+      expect(Array.isArray(recipes)).toBe(true);
+      expect(recipes.filter(r => r.tier === 0).every(r => !r.locked)).toBe(true);
+      expect(recipes.filter(r => r.tier > 0).every(r => r.locked)).toBe(true);
+    });
+
+    it('unlocks Tier-1 recipes at workshopTier=1', async () => {
+      const user = await createUser({ settings: makeSettings({ workshopTier: 1 }) });
+
+      const res = makeRes();
+      await getRecipes(makeReq(user.id), res);
+
+      const recipes = res._body.data.recipes;
+      expect(recipes.filter(r => r.tier === 1).every(r => !r.locked)).toBe(true);
+    });
+
+    it('marks recipes unaffordable when materials are insufficient', async () => {
+      const user = await createUser({
+        settings: makeSettings({
+          workshopTier: 0,
+          craftingMaterials: { leather: 0, cloth: 0, dye: 0, metal: 0, thread: 0 },
+        }),
+      });
+
+      const res = makeRes();
+      await getRecipes(makeReq(user.id), res);
+
+      const recipes = res._body.data.recipes;
+      const needsMaterials = recipes.filter(r => Object.values(r.materials).some(v => v > 0));
+      expect(needsMaterials.every(r => !r.affordable)).toBe(true);
+    });
+
+    it('returns 404 when the user does not exist', async () => {
+      const res = makeRes();
+      await getRecipes(makeReq(`${SUITE_PREFIX}-nonexistent-${randomBytes(4).toString('hex')}`), res);
+      expect(res._status).toBe(404);
+    });
   });
 
-  it('returns 500 on DB error during craftItem', async () => {
-    mockUserFindUnique.mockRejectedValueOnce(new Error('connection lost'));
+  describe('craftItem()', () => {
+    it('crafts a Tier-0 recipe when user has sufficient materials and coins (real DB write)', async () => {
+      const user = await createUser({
+        money: 500,
+        settings: makeSettings({ workshopTier: 0 }),
+      });
 
-    const req = makeReq({ body: { recipeId: 'simple-bridle' } });
-    const res = makeRes();
-    await craftItem(req, res);
+      const res = makeRes();
+      await craftItem(makeReq(user.id, { body: { recipeId: 'simple-bridle' } }), res);
 
-    expect(res._status).toBe(500);
-  });
+      expect(res._body.success).toBe(true);
+      expect(res._body.data.item.origin).toBe('crafted');
+      expect(res._body.data.item.itemId).toBe('crafted-simple-bridle');
+      expect(res._body.data.coinsSpent).toBe(100);
 
-  it('crafted item has origin: crafted and craftedAt timestamp', async () => {
-    const settings = makeSettings({ workshopTier: 0 });
-    mockUserFindUnique.mockResolvedValueOnce({ id: 'user-1', money: 500, settings });
-    mockUserUpdate.mockResolvedValueOnce({});
+      // Verify the DB was actually mutated.
+      const after = await prisma.user.findUnique({ where: { id: user.id }, select: { money: true, settings: true } });
+      expect(after.money).toBe(400); // 500 - 100
+      expect(after.settings.craftingMaterials.leather).toBe(4); // 5 - 1
+    });
 
-    const req = makeReq({ body: { recipeId: 'basic-halter' } });
-    const res = makeRes();
-    await craftItem(req, res);
+    it('deducts the correct materials after crafting', async () => {
+      const user = await createUser({
+        money: 500,
+        settings: makeSettings({ workshopTier: 0 }),
+      });
 
-    const item = res._body.data.item;
-    expect(item.origin).toBe('crafted');
-    expect(typeof item.craftedAt).toBe('string');
-    expect(item.equippedToHorseId).toBeNull();
+      const res = makeRes();
+      await craftItem(makeReq(user.id, { body: { recipeId: 'simple-bridle' } }), res);
+
+      // simple-bridle needs 1 leather + 1 dye
+      expect(res._body.data.remainingMaterials.leather).toBe(4);
+      expect(res._body.data.remainingMaterials.dye).toBe(4);
+      expect(res._body.data.remainingMaterials.cloth).toBe(5);
+    });
+
+    it('returns 404 for an unknown recipeId', async () => {
+      const user = await createUser({ settings: makeSettings() });
+
+      const res = makeRes();
+      await craftItem(makeReq(user.id, { body: { recipeId: 'does-not-exist' } }), res);
+
+      expect(res._status).toBe(404);
+      expect(res._body.success).toBe(false);
+    });
+
+    it('returns 403 when workshopTier is too low for the recipe', async () => {
+      const user = await createUser({
+        money: 9999,
+        settings: makeSettings({ workshopTier: 0 }), // event-saddle needs tier 2
+      });
+
+      const res = makeRes();
+      await craftItem(makeReq(user.id, { body: { recipeId: 'event-saddle' } }), res);
+
+      expect(res._status).toBe(403);
+      expect(res._body.message).toMatch(/upgrade required/i);
+    });
+
+    it('returns 400 when user has insufficient coins', async () => {
+      const user = await createUser({
+        money: 10,
+        settings: makeSettings({ workshopTier: 0 }),
+      });
+
+      const res = makeRes();
+      await craftItem(makeReq(user.id, { body: { recipeId: 'simple-bridle' } }), res);
+
+      expect(res._status).toBe(400);
+      expect(res._body.message).toMatch(/insufficient coins/i);
+    });
+
+    it('returns 400 when user has insufficient materials', async () => {
+      const user = await createUser({
+        money: 9999,
+        settings: makeSettings({
+          workshopTier: 0,
+          craftingMaterials: { leather: 0, cloth: 0, dye: 0, metal: 0, thread: 0 },
+        }),
+      });
+
+      const res = makeRes();
+      await craftItem(makeReq(user.id, { body: { recipeId: 'simple-bridle' } }), res);
+
+      expect(res._status).toBe(400);
+      expect(res._body.message).toMatch(/insufficient materials/i);
+    });
+
+    it('returns 404 when the user does not exist', async () => {
+      const res = makeRes();
+      await craftItem(
+        makeReq(`${SUITE_PREFIX}-nonexistent-${randomBytes(4).toString('hex')}`, {
+          body: { recipeId: 'simple-bridle' },
+        }),
+        res,
+      );
+
+      expect(res._status).toBe(404);
+    });
+
+    it('crafted item has origin=crafted and craftedAt timestamp', async () => {
+      const user = await createUser({
+        money: 500,
+        settings: makeSettings({ workshopTier: 0 }),
+      });
+
+      const res = makeRes();
+      await craftItem(makeReq(user.id, { body: { recipeId: 'basic-halter' } }), res);
+
+      const item = res._body.data.item;
+      expect(item.origin).toBe('crafted');
+      expect(typeof item.craftedAt).toBe('string');
+      expect(item.equippedToHorseId).toBeNull();
+    });
   });
 });

@@ -80,7 +80,11 @@ function ensureImport(content) {
   for (let i = 0; i < lines.length; i++) {
     if (/^import\s/.test(lines[i])) {
       lastImportIdx = i;
-    } else if (lastImportIdx !== -1 && lines[i].trim() !== '' && !lines[i].trim().startsWith('//')) {
+    } else if (
+      lastImportIdx !== -1 &&
+      lines[i].trim() !== '' &&
+      !lines[i].trim().startsWith('//')
+    ) {
       // First non-import, non-blank, non-comment line after imports — stop scanning.
       break;
     }

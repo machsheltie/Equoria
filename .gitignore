@@ -168,3 +168,15 @@ backend/_ul/
 backend/data/*
 !backend/data/breedStarterStats.json
 !backend/data/breedProfiles.json
+
+# Beads / Dolt files (added by bd init)
+.dolt/
+.beads-credential-key
+
+# Stale submodule paths (no .gitmodules — external dev tooling, not part of repo)
+SequentialThinking/mcp-server-mas-sequential-thinking
+backend/augment-vip-main/augment-vip
+backend/mcp-server-mas-sequential-thinking
+
+# Local test output
+test-results.txt

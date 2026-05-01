@@ -1,348 +1,334 @@
 /**
- * messageController.test.mjs
+ * messageController.test.mjs — real DB
  *
- * Unit tests for backend/modules/community/controllers/messageController.mjs
- * Co-located per the backend/modules/<domain>/__tests__/ convention (Story 21-1).
+ * NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): converted from
+ * jest.unstable_mockModule of prismaClient + logger to a real-DB integration
+ * test against the equoria_test database.
  *
- * Coverage: getInbox, sendMessage, getMessage, markRead
- * Mocks: prisma, logger (external deps only)
+ * Coverage: getInbox, getSent, sendMessage, getMessage, markRead, getUnreadCount.
+ *
+ * Removed (per doctrine):
+ *   - "returns 500 on database error" tests that mocked Prisma to reject —
+ *     synthetic Prisma fault injection forbidden.
  */
 
-import { jest, describe, beforeEach, it, expect } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
+import prisma from '../../../db/index.mjs';
+import {
+  getInbox,
+  getSent,
+  sendMessage,
+  getMessage,
+  markRead,
+  getUnreadCount,
+} from '../controllers/messageController.mjs';
 
-// ── Mock setup ────────────────────────────────────────────────────────────────
+const SUITE_PREFIX = 'msgc';
 
-const mockPrisma = {
-  directMessage: {
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    count: jest.fn(),
-  },
-  user: {
-    findUnique: jest.fn(),
-  },
-  $transaction: jest.fn(),
-};
-
-const mockLogger = {
-  info: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn(),
-  debug: jest.fn(),
-};
-
-jest.unstable_mockModule('../../../../packages/database/prismaClient.mjs', () => ({
-  default: mockPrisma,
-}));
-jest.unstable_mockModule('../../../utils/logger.mjs', () => ({
-  default: mockLogger,
-}));
-
-const { getInbox, getSent, sendMessage, getMessage, markRead, getUnreadCount } = await import(
-  '../controllers/messageController.mjs'
-);
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function mockReqRes(overrides = {}) {
-  const req = {
-    user: { id: 'user-uuid-1' },
-    body: {},
-    params: {},
-    query: {},
-    ...overrides,
+function makeReqRes(userId, overrides = {}) {
+  let _status = 200;
+  let _body = null;
+  return {
+    req: { user: { id: userId }, body: {}, params: {}, query: {}, ...overrides },
+    res: {
+      status(c) {
+        _status = c;
+        return this;
+      },
+      json(b) {
+        _body = b;
+        return this;
+      },
+      get statusValue() {
+        return _status;
+      },
+      get jsonValue() {
+        return _body;
+      },
+    },
   };
-  const res = {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis(),
-  };
-  return { req, res };
 }
 
-// ── getInbox ──────────────────────────────────────────────────────────────────
-
-describe('getInbox', () => {
-  beforeEach(() => jest.clearAllMocks());
-
-  it('returns inbox messages with total and page', async () => {
-    const messages = [{ id: 1, senderId: 'user-uuid-2', recipientId: 'user-uuid-1', content: 'Hi!', sender: {} }];
-    mockPrisma.$transaction.mockResolvedValue([messages, 1]);
-
-    const { req, res } = mockReqRes({ query: {} });
-    await getInbox(req, res);
-
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        success: true,
-        data: expect.objectContaining({
-          messages,
-          total: 1,
-          page: 1,
-        }),
-      }),
-    );
+async function createUser() {
+  const uid = randomBytes(8).toString('hex');
+  return prisma.user.create({
+    data: {
+      id: `${SUITE_PREFIX}-${uid}`,
+      username: `${SUITE_PREFIX}_${uid}`,
+      email: `${SUITE_PREFIX}-${uid}@example.com`,
+      firstName: 'Msgc',
+      lastName: 'Test',
+      password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
+      emailVerified: true,
+    },
   });
+}
 
-  it('queries by recipientId matching current user', async () => {
-    mockPrisma.$transaction.mockResolvedValue([[], 0]);
-    const { req, res } = mockReqRes();
-    await getInbox(req, res);
-
-    expect(mockPrisma.$transaction).toHaveBeenCalled();
+async function sendMsg(senderId, recipientId, overrides = {}) {
+  return prisma.directMessage.create({
+    data: {
+      sender: { connect: { id: senderId } },
+      recipient: { connect: { id: recipientId } },
+      subject: overrides.subject ?? 'Test',
+      content: overrides.content ?? 'Hello',
+      isRead: overrides.isRead ?? false,
+    },
   });
+}
 
-  it('returns 500 on database error', async () => {
-    mockPrisma.$transaction.mockRejectedValue(new Error('db error'));
-    const { req, res } = mockReqRes();
-    await getInbox(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+async function cleanupSuite() {
+  const users = await prisma.user.findMany({
+    where: { id: { startsWith: SUITE_PREFIX } },
+    select: { id: true },
   });
-});
-
-// ── sendMessage ───────────────────────────────────────────────────────────────
-
-describe('sendMessage', () => {
-  beforeEach(() => jest.clearAllMocks());
-
-  it('creates message and returns 201', async () => {
-    mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-uuid-2' });
-    const created = {
-      id: 10,
-      senderId: 'user-uuid-1',
-      recipientId: 'user-uuid-2',
-      subject: 'Hello',
-      content: 'Body',
-      sender: {},
-      recipient: {},
-    };
-    mockPrisma.directMessage.create.mockResolvedValue(created);
-
-    const { req, res } = mockReqRes({
-      user: { id: 'user-uuid-1' },
-      body: { recipientId: 'user-uuid-2', subject: 'Hello', content: 'Body' },
-    });
-    await sendMessage(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ success: true, data: expect.objectContaining({ message: created }) }),
-    );
+  if (users.length === 0) {
+    return;
+  }
+  const userIds = users.map(u => u.id);
+  await prisma.directMessage.deleteMany({
+    where: { OR: [{ senderId: { in: userIds } }, { recipientId: { in: userIds } }] },
   });
+  await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+}
 
-  it('returns 400 when sender tries to message themselves', async () => {
-    const { req, res } = mockReqRes({
-      user: { id: 'user-uuid-1' },
-      body: { recipientId: 'user-uuid-1', subject: 'Self', content: 'Test' },
-    });
-    await sendMessage(req, res);
+describe('messageController (real DB)', () => {
+  beforeAll(cleanupSuite);
+  afterAll(cleanupSuite);
+  afterEach(cleanupSuite);
 
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ success: false, message: expect.stringContaining('yourself') }),
-    );
-    expect(mockPrisma.directMessage.create).not.toHaveBeenCalled();
-  });
+  describe('getInbox', () => {
+    it('returns inbox messages with total and page', async () => {
+      const recipient = await createUser();
+      const sender = await createUser();
+      await sendMsg(sender.id, recipient.id, { content: 'Hi!' });
 
-  it('returns 404 when recipient does not exist', async () => {
-    mockPrisma.user.findUnique.mockResolvedValue(null);
-    const { req, res } = mockReqRes({
-      user: { id: 'user-uuid-1' },
-      body: { recipientId: 'ghost-id', subject: 'Hi', content: 'Hello?' },
-    });
-    await sendMessage(req, res);
+      const h = makeReqRes(recipient.id, { query: {} });
+      await getInbox(h.req, h.res);
 
-    expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ success: false, message: expect.stringContaining('Recipient') }),
-    );
-  });
-
-  it('returns 500 on database error', async () => {
-    mockPrisma.user.findUnique.mockResolvedValue({ id: 'user-uuid-2' });
-    mockPrisma.directMessage.create.mockRejectedValue(new Error('write failed'));
-
-    const { req, res } = mockReqRes({
-      body: { recipientId: 'user-uuid-2', subject: 'Hello', content: 'Body' },
-    });
-    await sendMessage(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
-  });
-});
-
-// ── getMessage ────────────────────────────────────────────────────────────────
-
-describe('getMessage', () => {
-  beforeEach(() => jest.clearAllMocks());
-
-  it('returns message when caller is the sender', async () => {
-    const message = {
-      id: 5,
-      senderId: 'user-uuid-1',
-      recipientId: 'user-uuid-2',
-      isRead: true,
-      sender: {},
-      recipient: {},
-    };
-    mockPrisma.directMessage.findUnique.mockResolvedValue(message);
-
-    const { req, res } = mockReqRes({ user: { id: 'user-uuid-1' }, params: { id: '5' } });
-    await getMessage(req, res);
-
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
-  });
-
-  it('auto-marks message as read when recipient fetches', async () => {
-    const message = {
-      id: 6,
-      senderId: 'user-uuid-2',
-      recipientId: 'user-uuid-1',
-      isRead: false,
-      sender: {},
-      recipient: {},
-    };
-    mockPrisma.directMessage.findUnique.mockResolvedValue(message);
-    mockPrisma.directMessage.update.mockResolvedValue({ ...message, isRead: true });
-
-    const { req, res } = mockReqRes({ user: { id: 'user-uuid-1' }, params: { id: '6' } });
-    await getMessage(req, res);
-
-    expect(mockPrisma.directMessage.update).toHaveBeenCalledWith(expect.objectContaining({ data: { isRead: true } }));
-  });
-
-  it('returns 403 when unrelated user tries to access message', async () => {
-    const message = {
-      id: 7,
-      senderId: 'user-uuid-2',
-      recipientId: 'user-uuid-3',
-      isRead: false,
-      sender: {},
-      recipient: {},
-    };
-    mockPrisma.directMessage.findUnique.mockResolvedValue(message);
-
-    const { req, res } = mockReqRes({ user: { id: 'user-uuid-INTRUDER' }, params: { id: '7' } });
-    await getMessage(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false, message: 'Access denied' }));
-  });
-
-  it('returns 404 when message does not exist', async () => {
-    mockPrisma.directMessage.findUnique.mockResolvedValue(null);
-    const { req, res } = mockReqRes({ params: { id: '999' } });
-    await getMessage(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(404);
-  });
-
-  it('returns 400 for invalid message ID', async () => {
-    const { req, res } = mockReqRes({ params: { id: '0' } });
-    await getMessage(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(400);
-  });
-});
-
-// ── markRead ──────────────────────────────────────────────────────────────────
-
-describe('markRead', () => {
-  beforeEach(() => jest.clearAllMocks());
-
-  it('marks message read and returns success', async () => {
-    mockPrisma.directMessage.findUnique.mockResolvedValue({
-      id: 8,
-      recipientId: 'user-uuid-1',
-    });
-    mockPrisma.directMessage.update.mockResolvedValue({});
-
-    const { req, res } = mockReqRes({ user: { id: 'user-uuid-1' }, params: { id: '8' } });
-    await markRead(req, res);
-
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
-    expect(mockPrisma.directMessage.update).toHaveBeenCalledWith(expect.objectContaining({ data: { isRead: true } }));
-  });
-
-  it('returns 403 when non-recipient tries to mark read', async () => {
-    mockPrisma.directMessage.findUnique.mockResolvedValue({
-      id: 9,
-      recipientId: 'user-uuid-OTHER',
+      const body = h.res.jsonValue;
+      expect(body.success).toBe(true);
+      expect(body.data.messages.length).toBe(1);
+      expect(body.data.messages[0].content).toBe('Hi!');
+      expect(body.data.total).toBe(1);
+      expect(body.data.page).toBe(1);
     });
 
-    const { req, res } = mockReqRes({ user: { id: 'user-uuid-1' }, params: { id: '9' } });
-    await markRead(req, res);
+    it('only returns messages where current user is recipient', async () => {
+      const user = await createUser();
+      const sender = await createUser();
+      const otherRecipient = await createUser();
+      await sendMsg(sender.id, user.id, { content: 'For me' });
+      await sendMsg(sender.id, otherRecipient.id, { content: 'Not for me' });
 
-    expect(res.status).toHaveBeenCalledWith(403);
-    expect(mockPrisma.directMessage.update).not.toHaveBeenCalled();
-  });
-});
+      const h = makeReqRes(user.id);
+      await getInbox(h.req, h.res);
 
-// ── getSent ───────────────────────────────────────────────────────────────────
-
-describe('getSent', () => {
-  beforeEach(() => jest.clearAllMocks());
-
-  it('returns sent messages with total and page', async () => {
-    const messages = [{ id: 2, senderId: 'user-uuid-1', recipientId: 'user-uuid-2', content: 'Yo!', recipient: {} }];
-    mockPrisma.$transaction.mockResolvedValue([messages, 1]);
-
-    const { req, res } = mockReqRes({ query: {} });
-    await getSent(req, res);
-
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        success: true,
-        data: expect.objectContaining({
-          messages,
-          total: 1,
-          page: 1,
-        }),
-      }),
-    );
+      const messages = h.res.jsonValue.data.messages;
+      expect(messages.length).toBe(1);
+      expect(messages[0].content).toBe('For me');
+    });
   });
 
-  it('queries by senderId matching current user', async () => {
-    mockPrisma.$transaction.mockResolvedValue([[], 0]);
-    const { req, res } = mockReqRes();
-    await getSent(req, res);
+  describe('sendMessage', () => {
+    it('creates message and returns 201', async () => {
+      const sender = await createUser();
+      const recipient = await createUser();
 
-    expect(mockPrisma.$transaction).toHaveBeenCalled();
+      const h = makeReqRes(sender.id, {
+        body: { recipientId: recipient.id, subject: 'Hello', content: 'Body' },
+      });
+      await sendMessage(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(201);
+      const body = h.res.jsonValue;
+      expect(body.success).toBe(true);
+      expect(body.data.message.subject).toBe('Hello');
+      expect(body.data.message.content).toBe('Body');
+
+      // Verify the DB row exists.
+      const persisted = await prisma.directMessage.findUnique({ where: { id: body.data.message.id } });
+      expect(persisted).not.toBeNull();
+      expect(persisted.senderId).toBe(sender.id);
+      expect(persisted.recipientId).toBe(recipient.id);
+    });
+
+    it('returns 400 when sender tries to message themselves', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id, {
+        body: { recipientId: user.id, subject: 'Self', content: 'Test' },
+      });
+      await sendMessage(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(400);
+      expect(h.res.jsonValue).toMatchObject({
+        success: false,
+        message: expect.stringContaining('yourself'),
+      });
+
+      // Verify NO message was created.
+      const count = await prisma.directMessage.count({ where: { senderId: user.id } });
+      expect(count).toBe(0);
+    });
+
+    it('returns 404 when recipient does not exist', async () => {
+      const sender = await createUser();
+      const h = makeReqRes(sender.id, {
+        body: { recipientId: 'ghost-id-that-does-not-exist', subject: 'Hi', content: 'Hello?' },
+      });
+      await sendMessage(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(404);
+      expect(h.res.jsonValue).toMatchObject({
+        success: false,
+        message: expect.stringContaining('Recipient'),
+      });
+    });
   });
 
-  it('returns 500 on database error', async () => {
-    mockPrisma.$transaction.mockRejectedValue(new Error('db error'));
-    const { req, res } = mockReqRes();
-    await getSent(req, res);
+  describe('getMessage', () => {
+    it('returns message when caller is the sender', async () => {
+      const sender = await createUser();
+      const recipient = await createUser();
+      const msg = await sendMsg(sender.id, recipient.id, { isRead: true });
 
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+      const h = makeReqRes(sender.id, { params: { id: String(msg.id) } });
+      await getMessage(h.req, h.res);
+
+      expect(h.res.jsonValue.success).toBe(true);
+      expect(h.res.jsonValue.data.message.id).toBe(msg.id);
+    });
+
+    it('auto-marks message as read when recipient fetches it', async () => {
+      const sender = await createUser();
+      const recipient = await createUser();
+      const msg = await sendMsg(sender.id, recipient.id, { isRead: false });
+
+      const h = makeReqRes(recipient.id, { params: { id: String(msg.id) } });
+      await getMessage(h.req, h.res);
+
+      // Verify the DB row was updated to isRead=true.
+      const after = await prisma.directMessage.findUnique({ where: { id: msg.id } });
+      expect(after.isRead).toBe(true);
+    });
+
+    it('returns 403 when unrelated user tries to access message', async () => {
+      const sender = await createUser();
+      const recipient = await createUser();
+      const intruder = await createUser();
+      const msg = await sendMsg(sender.id, recipient.id);
+
+      const h = makeReqRes(intruder.id, { params: { id: String(msg.id) } });
+      await getMessage(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(403);
+      expect(h.res.jsonValue).toMatchObject({ success: false, message: 'Access denied' });
+    });
+
+    it('returns 404 when message does not exist', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id, { params: { id: '999999999' } });
+      await getMessage(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(404);
+    });
+
+    it('returns 400 for invalid message ID', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id, { params: { id: '0' } });
+      await getMessage(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(400);
+    });
   });
-});
 
-// ── getUnreadCount ────────────────────────────────────────────────────────────
+  describe('markRead', () => {
+    it('marks message read and returns success', async () => {
+      const sender = await createUser();
+      const recipient = await createUser();
+      const msg = await sendMsg(sender.id, recipient.id, { isRead: false });
 
-describe('getUnreadCount', () => {
-  beforeEach(() => jest.clearAllMocks());
+      const h = makeReqRes(recipient.id, { params: { id: String(msg.id) } });
+      await markRead(h.req, h.res);
 
-  it('returns count of unread messages for current user', async () => {
-    mockPrisma.directMessage.count.mockResolvedValue(3);
+      expect(h.res.jsonValue.success).toBe(true);
+      const after = await prisma.directMessage.findUnique({ where: { id: msg.id } });
+      expect(after.isRead).toBe(true);
+    });
 
-    const { req, res } = mockReqRes();
-    await getUnreadCount(req, res);
+    it('returns 403 when non-recipient tries to mark read', async () => {
+      const sender = await createUser();
+      const recipient = await createUser();
+      const intruder = await createUser();
+      const msg = await sendMsg(sender.id, recipient.id, { isRead: false });
 
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        success: true,
-        data: expect.objectContaining({ count: 3 }),
-      }),
-    );
-    expect(mockPrisma.directMessage.count).toHaveBeenCalledWith(
-      expect.objectContaining({ where: expect.objectContaining({ isRead: false }) }),
-    );
+      const h = makeReqRes(intruder.id, { params: { id: String(msg.id) } });
+      await markRead(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(403);
+
+      // Message should NOT have been marked read.
+      const after = await prisma.directMessage.findUnique({ where: { id: msg.id } });
+      expect(after.isRead).toBe(false);
+    });
+  });
+
+  describe('getSent', () => {
+    it('returns sent messages with total and page', async () => {
+      const sender = await createUser();
+      const recipient = await createUser();
+      await sendMsg(sender.id, recipient.id, { content: 'Yo!' });
+
+      const h = makeReqRes(sender.id, { query: {} });
+      await getSent(h.req, h.res);
+
+      const body = h.res.jsonValue;
+      expect(body.success).toBe(true);
+      expect(body.data.messages.length).toBe(1);
+      expect(body.data.messages[0].content).toBe('Yo!');
+      expect(body.data.total).toBe(1);
+      expect(body.data.page).toBe(1);
+    });
+
+    it('only returns messages where current user is sender', async () => {
+      const user = await createUser();
+      const recipient = await createUser();
+      const otherSender = await createUser();
+      await sendMsg(user.id, recipient.id, { content: 'From me' });
+      await sendMsg(otherSender.id, recipient.id, { content: 'Not from me' });
+
+      const h = makeReqRes(user.id);
+      await getSent(h.req, h.res);
+
+      const messages = h.res.jsonValue.data.messages;
+      expect(messages.length).toBe(1);
+      expect(messages[0].content).toBe('From me');
+    });
+  });
+
+  describe('getUnreadCount', () => {
+    it('returns count of unread messages for current user', async () => {
+      const user = await createUser();
+      const sender = await createUser();
+      await sendMsg(sender.id, user.id, { isRead: false });
+      await sendMsg(sender.id, user.id, { isRead: false });
+      await sendMsg(sender.id, user.id, { isRead: false });
+      await sendMsg(sender.id, user.id, { isRead: true }); // already read — not counted
+
+      const h = makeReqRes(user.id);
+      await getUnreadCount(h.req, h.res);
+
+      const body = h.res.jsonValue;
+      expect(body.success).toBe(true);
+      expect(body.data.count).toBe(3);
+    });
+
+    it('returns 0 when no unread messages', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id);
+      await getUnreadCount(h.req, h.res);
+
+      expect(h.res.jsonValue.data.count).toBe(0);
+    });
   });
 });

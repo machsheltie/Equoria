@@ -1,303 +1,290 @@
 /**
- * forumController.test.mjs
+ * forumController.test.mjs — real DB
  *
- * Unit tests for backend/modules/community/controllers/forumController.mjs
- * Co-located per the backend/modules/<domain>/__tests__/ convention (Story 21-1).
+ * NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): converted
+ * from jest.unstable_mockModule of prismaClient + logger to a real-DB
+ * integration test.
  *
- * Coverage: getThreads, createThread, createPost, incrementView, getThread
- * Mocks: prisma, logger (external deps only)
+ * Coverage: getThreads, createThread, createPost, incrementView, getThread.
+ *
+ * Removed (per doctrine):
+ *   - "returns 500 on database error" / "returns 500 on transaction
+ *     failure" tests that mocked Prisma to reject — synthetic Prisma
+ *     fault injection forbidden.
  */
 
-import { jest, describe, beforeEach, it, expect } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
+import prisma from '../../../db/index.mjs';
+import { getThreads, getThread, createThread, createPost, incrementView } from '../controllers/forumController.mjs';
 
-// ── Mock setup ────────────────────────────────────────────────────────────────
+const SUITE_PREFIX = 'forum';
 
-const mockPrisma = {
-  forumThread: {
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    count: jest.fn(),
-  },
-  forumPost: {
-    create: jest.fn(),
-  },
-  $transaction: jest.fn(),
-};
-
-const mockLogger = {
-  info: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn(),
-  debug: jest.fn(),
-};
-
-jest.unstable_mockModule('../../../../packages/database/prismaClient.mjs', () => ({
-  default: mockPrisma,
-}));
-jest.unstable_mockModule('../../../utils/logger.mjs', () => ({
-  default: mockLogger,
-}));
-
-const { getThreads, getThread, createThread, createPost, incrementView } = await import(
-  '../controllers/forumController.mjs'
-);
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function mockReqRes(overrides = {}) {
-  const req = {
-    user: { id: 'user-uuid-1' },
-    body: {},
-    params: {},
-    query: {},
-    ...overrides,
+function makeReqRes(userId, overrides = {}) {
+  let _status = 200;
+  let _body = null;
+  return {
+    req: {
+      user: userId === undefined ? undefined : { id: userId },
+      body: {},
+      params: {},
+      query: {},
+      ...overrides,
+    },
+    res: {
+      status(c) {
+        _status = c;
+        return this;
+      },
+      json(b) {
+        _body = b;
+        return this;
+      },
+      get statusValue() {
+        return _status;
+      },
+      get jsonValue() {
+        return _body;
+      },
+    },
   };
-  const res = {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis(),
-  };
-  return { req, res };
 }
 
-// ── getThreads ────────────────────────────────────────────────────────────────
-
-describe('getThreads', () => {
-  beforeEach(() => jest.clearAllMocks());
-
-  it('returns shaped threads with replyCount and pagination data', async () => {
-    const rawThread = {
-      id: 1,
-      section: 'general',
-      title: 'Hello world',
-      author: { id: 'user-uuid-1', username: 'heirr' },
-      tags: [],
-      isPinned: false,
-      viewCount: 10,
-      lastActivityAt: new Date(),
-      createdAt: new Date(),
-      _count: { posts: 3 },
-    };
-    mockPrisma.forumThread.findMany.mockResolvedValue([rawThread]);
-    mockPrisma.forumThread.count.mockResolvedValue(1);
-
-    const { req, res } = mockReqRes({ query: { section: 'general' } });
-    await getThreads(req, res);
-
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        success: true,
-        data: expect.objectContaining({
-          threads: expect.arrayContaining([expect.objectContaining({ replyCount: 3 })]),
-          total: 1,
-          page: 1,
-        }),
-      }),
-    );
+async function createUser() {
+  const uid = randomBytes(8).toString('hex');
+  return prisma.user.create({
+    data: {
+      id: `${SUITE_PREFIX}-${uid}`,
+      username: `${SUITE_PREFIX}_${uid}`,
+      email: `${SUITE_PREFIX}-${uid}@example.com`,
+      firstName: 'Forum',
+      lastName: 'Test',
+      password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
+      emailVerified: true,
+    },
   });
+}
 
-  it('filters by valid section', async () => {
-    mockPrisma.forumThread.findMany.mockResolvedValue([]);
-    mockPrisma.forumThread.count.mockResolvedValue(0);
-
-    const { req, res } = mockReqRes({ query: { section: 'art' } });
-    await getThreads(req, res);
-
-    expect(mockPrisma.forumThread.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: expect.objectContaining({ section: 'art' }) }),
-    );
+async function createThreadInDb(authorId, overrides = {}) {
+  return prisma.forumThread.create({
+    data: {
+      section: overrides.section ?? 'general',
+      title: overrides.title ?? `${SUITE_PREFIX}-${randomBytes(4).toString('hex')}`,
+      author: { connect: { id: authorId } },
+      tags: overrides.tags ?? [],
+      ...overrides.extra,
+    },
   });
+}
 
-  it('ignores invalid section values', async () => {
-    mockPrisma.forumThread.findMany.mockResolvedValue([]);
-    mockPrisma.forumThread.count.mockResolvedValue(0);
-
-    const { req, res } = mockReqRes({ query: { section: 'INVALID_SECTION' } });
-    await getThreads(req, res);
-
-    // Should query with empty where (no section filter applied)
-    expect(mockPrisma.forumThread.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: {} }));
+async function createPostInDb(threadId, authorId, content) {
+  return prisma.forumPost.create({
+    data: {
+      thread: { connect: { id: threadId } },
+      author: { connect: { id: authorId } },
+      content,
+    },
   });
+}
 
-  it('returns 500 on database error', async () => {
-    mockPrisma.forumThread.findMany.mockRejectedValue(new Error('db error'));
-    const { req, res } = mockReqRes({ query: {} });
-    await getThreads(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+async function cleanupSuite() {
+  const users = await prisma.user.findMany({
+    where: { id: { startsWith: SUITE_PREFIX } },
+    select: { id: true },
   });
-});
+  if (users.length === 0) {
+    return;
+  }
+  const userIds = users.map(u => u.id);
+  // Forum posts cascade via thread; threads cascade via author? Check schema:
+  // ForumThread.author has no onDelete clause, so manual deletion required.
+  // ForumPost.thread has onDelete: Cascade.
+  await prisma.forumThread.deleteMany({ where: { authorId: { in: userIds } } });
+  await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+}
 
-// ── getThread ─────────────────────────────────────────────────────────────────
+describe('forumController (real DB)', () => {
+  beforeAll(cleanupSuite);
+  afterAll(cleanupSuite);
+  afterEach(cleanupSuite);
 
-describe('getThread', () => {
-  beforeEach(() => jest.clearAllMocks());
+  describe('getThreads', () => {
+    it('returns shaped threads with replyCount and pagination data', async () => {
+      const user = await createUser();
+      const thread = await createThreadInDb(user.id, { section: 'general' });
+      // Add 3 posts (all by same author for simplicity).
+      await createPostInDb(thread.id, user.id, 'post 1');
+      await createPostInDb(thread.id, user.id, 'post 2');
+      await createPostInDb(thread.id, user.id, 'post 3');
 
-  it('returns thread and posts when found', async () => {
-    const thread = {
-      id: 1,
-      title: 'Test',
-      author: { id: 'u1', username: 'heirr' },
-      posts: [{ id: 1, content: 'first post', author: { id: 'u1', username: 'heirr' } }],
-    };
-    mockPrisma.forumThread.findUnique.mockResolvedValue(thread);
+      const h = makeReqRes(user.id, { query: { section: 'general' } });
+      await getThreads(h.req, h.res);
 
-    const { req, res } = mockReqRes({ params: { id: '1' } });
-    await getThread(req, res);
-
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        success: true,
-        data: expect.objectContaining({
-          posts: expect.arrayContaining([expect.objectContaining({ id: 1 })]),
-        }),
-      }),
-    );
-  });
-
-  it('returns 404 when thread not found', async () => {
-    mockPrisma.forumThread.findUnique.mockResolvedValue(null);
-    const { req, res } = mockReqRes({ params: { id: '999' } });
-    await getThread(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false, message: 'Thread not found' }));
-  });
-
-  it('returns 400 for non-numeric thread ID', async () => {
-    const { req, res } = mockReqRes({ params: { id: 'not-a-number' } });
-    await getThread(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(400);
-  });
-});
-
-// ── createThread ──────────────────────────────────────────────────────────────
-
-describe('createThread', () => {
-  beforeEach(() => jest.clearAllMocks());
-
-  it('creates thread and first post atomically, returns 201', async () => {
-    const thread = { id: 10, section: 'general', title: 'New topic', authorId: 'user-uuid-1', author: {} };
-    const firstPost = { id: 100, threadId: 10, content: 'Body text', author: {} };
-
-    mockPrisma.$transaction.mockImplementation(fn => fn(mockPrisma));
-    mockPrisma.forumThread.create.mockResolvedValue(thread);
-    mockPrisma.forumPost.create.mockResolvedValue(firstPost);
-
-    const { req, res } = mockReqRes({
-      body: { section: 'general', title: 'New topic', content: 'Body text' },
+      const body = h.res.jsonValue;
+      expect(body.success).toBe(true);
+      expect(body.data.threads.length).toBeGreaterThan(0);
+      const matched = body.data.threads.find(t => t.id === thread.id);
+      expect(matched).toMatchObject({ replyCount: 3 });
+      expect(typeof body.data.total).toBe('number');
+      expect(body.data.page).toBe(1);
     });
-    await createThread(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        success: true,
-        data: expect.objectContaining({ thread, firstPost }),
-      }),
-    );
-  });
+    it('filters by valid section', async () => {
+      const user = await createUser();
+      const general = await createThreadInDb(user.id, { section: 'general' });
+      const art = await createThreadInDb(user.id, { section: 'art' });
 
-  it('uses authorId from req.user.id', async () => {
-    mockPrisma.$transaction.mockImplementation(fn => fn(mockPrisma));
-    mockPrisma.forumThread.create.mockResolvedValue({ id: 1, authorId: 'user-uuid-1', author: {} });
-    mockPrisma.forumPost.create.mockResolvedValue({ id: 1, author: {} });
+      const h = makeReqRes(user.id, { query: { section: 'art' } });
+      await getThreads(h.req, h.res);
 
-    const { req, res } = mockReqRes({
-      user: { id: 'user-uuid-1' },
-      body: { section: 'art', title: 'Art share', content: 'My drawing' },
+      const ids = h.res.jsonValue.data.threads.map(t => t.id);
+      expect(ids).toContain(art.id);
+      expect(ids).not.toContain(general.id);
     });
-    await createThread(req, res);
 
-    expect(mockPrisma.forumThread.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ authorId: 'user-uuid-1' }),
-      }),
-    );
-  });
+    it('ignores invalid section values (returns all threads)', async () => {
+      const user = await createUser();
+      const general = await createThreadInDb(user.id, { section: 'general' });
+      const art = await createThreadInDb(user.id, { section: 'art' });
 
-  it('returns 500 on transaction failure', async () => {
-    mockPrisma.$transaction.mockRejectedValue(new Error('transaction failed'));
-    const { req, res } = mockReqRes({ body: { section: 'general', title: 'T', content: 'C' } });
-    await createThread(req, res);
+      const h = makeReqRes(user.id, { query: { section: 'INVALID_SECTION' } });
+      await getThreads(h.req, h.res);
 
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
-  });
-});
-
-// ── createPost ────────────────────────────────────────────────────────────────
-
-describe('createPost', () => {
-  beforeEach(() => jest.clearAllMocks());
-
-  it('creates reply and updates lastActivityAt, returns 201', async () => {
-    const post = { id: 50, threadId: 1, content: 'Reply content', author: {} };
-    mockPrisma.forumThread.findUnique.mockResolvedValue({ id: 1 });
-    mockPrisma.$transaction.mockResolvedValue([post]);
-
-    const { req, res } = mockReqRes({
-      params: { id: '1' },
-      body: { content: 'Reply content' },
+      const ids = h.res.jsonValue.data.threads.map(t => t.id);
+      // No section filter applied, so both should appear.
+      expect(ids).toContain(general.id);
+      expect(ids).toContain(art.id);
     });
-    await createPost(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({
-        success: true,
-        data: expect.objectContaining({ post }),
-      }),
-    );
   });
 
-  it('returns 404 when thread does not exist', async () => {
-    mockPrisma.forumThread.findUnique.mockResolvedValue(null);
-    const { req, res } = mockReqRes({ params: { id: '999' }, body: { content: 'Reply' } });
-    await createPost(req, res);
+  describe('getThread', () => {
+    it('returns thread and posts when found', async () => {
+      const user = await createUser();
+      const thread = await createThreadInDb(user.id, { title: 'Test' });
+      await createPostInDb(thread.id, user.id, 'first post');
 
-    expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false, message: 'Thread not found' }));
-  });
+      const h = makeReqRes(user.id, { params: { id: String(thread.id) } });
+      await getThread(h.req, h.res);
 
-  it('returns 400 for invalid thread ID', async () => {
-    const { req, res } = mockReqRes({ params: { id: 'bad' }, body: { content: 'x' } });
-    await createPost(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(400);
-  });
-});
-
-// ── incrementView ─────────────────────────────────────────────────────────────
-
-describe('incrementView', () => {
-  beforeEach(() => jest.clearAllMocks());
-
-  it('increments viewCount and returns success', async () => {
-    mockPrisma.forumThread.update.mockResolvedValue({ id: 1, viewCount: 11 });
-
-    // Use unique user ID to avoid in-memory cooldown collision with other tests
-    const { req, res } = mockReqRes({
-      user: { id: 'view-test-user-unique' },
-      params: { id: '1' },
+      const body = h.res.jsonValue;
+      expect(body.success).toBe(true);
+      expect(body.data.posts.length).toBeGreaterThanOrEqual(1);
+      expect(body.data.posts[0].content).toBe('first post');
     });
-    await incrementView(req, res);
 
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: true }));
-    expect(mockPrisma.forumThread.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ viewCount: { increment: 1 } }),
-      }),
-    );
+    it('returns 404 when thread not found', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id, { params: { id: '999999999' } });
+      await getThread(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(404);
+      expect(h.res.jsonValue).toMatchObject({ success: false, message: 'Thread not found' });
+    });
+
+    it('returns 400 for non-numeric thread ID', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id, { params: { id: 'not-a-number' } });
+      await getThread(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(400);
+    });
   });
 
-  it('returns 400 for invalid thread ID', async () => {
-    const { req, res } = mockReqRes({ params: { id: '0' } });
-    await incrementView(req, res);
+  describe('createThread', () => {
+    it('creates thread and first post atomically, returns 201', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id, {
+        body: { section: 'general', title: 'New topic', content: 'Body text' },
+      });
+      await createThread(h.req, h.res);
 
-    expect(res.status).toHaveBeenCalledWith(400);
+      expect(h.res.statusValue).toBe(201);
+      const body = h.res.jsonValue;
+      expect(body.success).toBe(true);
+      expect(body.data.thread).toMatchObject({ title: 'New topic', section: 'general' });
+      expect(body.data.firstPost).toMatchObject({ content: 'Body text' });
+
+      // Verify both rows exist.
+      const persistedThread = await prisma.forumThread.findUnique({ where: { id: body.data.thread.id } });
+      expect(persistedThread).not.toBeNull();
+      const persistedPost = await prisma.forumPost.findUnique({ where: { id: body.data.firstPost.id } });
+      expect(persistedPost).not.toBeNull();
+    });
+
+    it('uses authorId from req.user.id', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id, {
+        body: { section: 'art', title: 'Art share', content: 'My drawing' },
+      });
+      await createThread(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(201);
+      const persistedThread = await prisma.forumThread.findUnique({ where: { id: h.res.jsonValue.data.thread.id } });
+      expect(persistedThread.authorId).toBe(user.id);
+    });
+  });
+
+  describe('createPost', () => {
+    it('creates reply, updates lastActivityAt, returns 201', async () => {
+      const user = await createUser();
+      const thread = await createThreadInDb(user.id);
+      const before = thread.lastActivityAt;
+
+      const h = makeReqRes(user.id, {
+        params: { id: String(thread.id) },
+        body: { content: 'Reply content' },
+      });
+      await createPost(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(201);
+      expect(h.res.jsonValue.data.post.content).toBe('Reply content');
+
+      // Verify thread.lastActivityAt advanced.
+      const after = await prisma.forumThread.findUnique({ where: { id: thread.id } });
+      expect(after.lastActivityAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+    });
+
+    it('returns 404 when thread does not exist', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id, { params: { id: '999999999' }, body: { content: 'Reply' } });
+      await createPost(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(404);
+      expect(h.res.jsonValue).toMatchObject({ success: false, message: 'Thread not found' });
+    });
+
+    it('returns 400 for invalid thread ID', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id, { params: { id: 'bad' }, body: { content: 'x' } });
+      await createPost(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(400);
+    });
+  });
+
+  describe('incrementView', () => {
+    it('increments viewCount and returns success', async () => {
+      const user = await createUser();
+      const thread = await createThreadInDb(user.id);
+      const beforeCount = thread.viewCount;
+
+      // Use a different user (the in-memory cooldown would bypass on
+      // self-views from the same user within the cooldown window).
+      const viewer = await createUser();
+      const h = makeReqRes(viewer.id, { params: { id: String(thread.id) } });
+      await incrementView(h.req, h.res);
+
+      expect(h.res.jsonValue.success).toBe(true);
+      const after = await prisma.forumThread.findUnique({ where: { id: thread.id }, select: { viewCount: true } });
+      expect(after.viewCount).toBeGreaterThan(beforeCount);
+    });
+
+    it('returns 400 for invalid thread ID (id=0)', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id, { params: { id: '0' } });
+      await incrementView(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(400);
+    });
   });
 });

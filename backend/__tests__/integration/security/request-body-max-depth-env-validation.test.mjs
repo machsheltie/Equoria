@@ -18,35 +18,19 @@
  * strings that produce NaN under the original parseInt (cap fully
  * disabled pre-fix). The COINCIDENTALLY_HARDENED_VALUES list contains
  * env strings that the original parseInt clamped to a small finite
- * number; we additionally assert via jest.unstable_mockModule that
- * `logger.error` was invoked with the offending value, which ONLY
- * happens on the validator's rejection branch — proving the validator
- * actually saw and rejected the input post-fix.
+ * number; we additionally use jest.spyOn(realLogger, 'error') to
+ * observe the real logger's call args, proving the validator's
+ * rejection branch fired with the offending value (only the rejection
+ * path logs that shape).
  *
- * Iteration-3 hardening (post-bmad-code-review):
- *   - Logger spy moved from jest.spyOn-after-import to
- *     jest.unstable_mockModule-before-import. Guarantees the
- *     middleware's `import logger from ...` resolves to the mocked
- *     module by construction, eliminating the Jest-ESM-cache
- *     implementation-detail dependency that previously made the
- *     spy work "by happenstance" (Blind Hunter F1 / Edge Case
- *     Hunter F2).
- *   - UPPER_BOUND_BYPASS tests now bracket the DEFAULT_MAX_DEPTH
- *     boundary (builder(DEFAULT_MAX_DEPTH+1) accepts,
- *     builder(DEFAULT_MAX_DEPTH+2) rejects) instead of just asserting
- *     "64-deep throws." This pins the fallback to exactly
- *     DEFAULT_MAX_DEPTH; a future change that made fallback 200
- *     would break the bracketing assertion (Blind Hunter F2).
- *   - Added boundary test for MAX_ALLOWED_OVERRIDE itself: env =
- *     str(MAX_ALLOWED_OVERRIDE) accepted (cap = the override),
- *     env = str(MAX_ALLOWED_OVERRIDE+1) rejected (falls back to
- *     default). Pins the ceiling against `>` ↔ `>=` regressions
- *     (Blind Hunter F7).
- *   - Added "tightened-ceiling" test: env = '300' falls back to
- *     default. Pre-iteration-3 (when MAX_ALLOWED_OVERRIDE was 1024),
- *     300 was within the ceiling and the cap silently became 300.
- *     Post-iteration-3 the ceiling is 256, so 300 falls back to 32
- *     (Blind Hunter F3 / Edge Case Hunter F3).
+ * NO MOCKS. Rewritten 2026-04-30 (Equoria-p6fx, no-mocks doctrine
+ * epic) from a jest.unstable_mockModule-of-logger pattern to a
+ * jest.spyOn-on-real-logger-instance pattern. The real logger module
+ * is imported normally and its `error` method is spied on without
+ * being replaced — `jest.spyOn` without `.mockImplementation()`
+ * preserves the real implementation while recording call args. The
+ * production path is exercised end-to-end (real winston transport
+ * fires) AND the test observes the rejection branch's call shape.
  *
  * @module __tests__/integration/security/request-body-max-depth-env-validation
  */
@@ -55,15 +39,7 @@ import { afterEach, beforeAll, describe, expect, it, jest } from '@jest/globals'
 
 // Module path used for dynamic import — resolves relative to THIS file.
 const MIDDLEWARE_PATH = '../../../middleware/requestBodySecurity.mjs';
-
-// jest.unstable_mockModule resolves the specifier relative to THIS
-// test file (verified empirically; the older comment claiming setup.mjs
-// resolution was wrong and broke 14 suites at 9d6d12b0 → 2987d997).
-// Both paths must resolve to the same absolute file as
-// requestBodySecurity.mjs's `'./logger.mjs'` (which lives next to it
-// under utils/) for the mock to intercept production reads.
-const LOGGER_MOCK_PATH = '../../../utils/logger.mjs';
-const LOGGER_IMPORT_PATH = '../../../utils/logger.mjs';
+const LOGGER_PATH = '../../../utils/logger.mjs';
 
 function buildDeepArrayBuffer(depth) {
   let s = '';
@@ -138,26 +114,27 @@ describe('REQUEST_BODY_MAX_DEPTH env-var validation (21R-SEC-3-REVIEW-1)', () =>
   const COINCIDENTALLY_HARDENED_VALUES = ['0', '-5', '-1', '32abc', '0x20', '3.14'];
 
   for (const bad of COINCIDENTALLY_HARDENED_VALUES) {
-    it(`hardened: validator rejection branch fires when REQUEST_BODY_MAX_DEPTH=${JSON.stringify(bad)} (mocked logger captures call)`, async () => {
+    it(`hardened: validator rejection branch fires when REQUEST_BODY_MAX_DEPTH=${JSON.stringify(bad)} (real logger spied for call args)`, async () => {
       process.env.REQUEST_BODY_MAX_DEPTH = bad;
       jest.resetModules();
 
-      const errorMock = jest.fn();
-      jest.unstable_mockModule(LOGGER_MOCK_PATH, () => ({
-        default: {
-          error: errorMock,
-          warn: jest.fn(),
-          info: jest.fn(),
-          debug: jest.fn(),
-        },
-      }));
+      // Import the real logger module FIRST, then spy on its `error`
+      // method. jest.spyOn (without .mockImplementation) preserves the
+      // real winston transport — production code path fires end-to-end
+      // — while recording the call args for assertion. This is NOT
+      // module mocking; the logger module is the real one. (Per
+      // Equoria-p6fx no-mocks doctrine; jest.spyOn-on-real-instance
+      // is permitted as observation, not replacement.)
+      const loggerMod = await import(LOGGER_PATH);
+      const realLogger = loggerMod.default ?? loggerMod;
+      const errorSpy = jest.spyOn(realLogger, 'error');
 
       const { verifyJsonBody } = await import(MIDDLEWARE_PATH);
 
       // The validator's rejection branch logs with the offending raw
       // value in `provided`. Either log shape (regex-fail or
       // parse-fail) is acceptable — both prove rejection ran.
-      const matched = errorMock.mock.calls.some(call => {
+      const matched = errorSpy.mock.calls.some(call => {
         const [msg, ctx] = call;
         return typeof msg === 'string' && msg.includes('REQUEST_BODY_MAX_DEPTH') && ctx && ctx.provided === bad;
       });

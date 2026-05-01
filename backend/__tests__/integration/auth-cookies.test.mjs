@@ -90,7 +90,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       const registrationUser = {
         ...testUserData,
         email: `${SUITE_PREFIX}-reg-${randomBytes(8).toString('hex')}@example.com`,
-        username: `${SUITE_PREFIX}_r${Date.now().toString(36).slice(-6)}${Math.random().toString(36).slice(2, 6)}`,
+        username: `${SUITE_PREFIX}_r${randomBytes(8).toString('hex')}`,
       };
       const response = await request(app)
         .post('/api/auth/register')
