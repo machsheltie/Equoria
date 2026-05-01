@@ -87,13 +87,28 @@ export const UNEXPECTED_SCANNER_LOG_PREFIX =
 // assertNoPollutingKeys() can be tricked into stack overflow by a deeply
 // nested payload. Combined with a silent catch upstream, that bypasses
 // both the duplicate-key detector and the prototype-pollution detector.
-// Codebase audit (backend/__tests__/helpers/check-depth.mjs) confirmed the
-// max bracket-nesting present in real backend code/tests is 14 — well
-// below 32. The cap is configurable via REQUEST_BODY_MAX_DEPTH but the
-// value is read once at module load — changing it requires a process
-// restart. This is intentional: in-process mutation of a security cap
-// would not be auditable. Use the env var only for ops emergencies and
-// only with a doctrine review; do not relax it casually.
+//
+// Why 32: justified by threat-model reasoning, not a codebase audit.
+//   - V8 JSON.parse handles ~10 000 levels before stack overflow; any
+//     legitimate API payload is many orders of magnitude shallower.
+//   - Real-world REST/JSON APIs almost never exceed ~5 levels (request
+//     envelope + nested resource + nested fields). Internal Equoria
+//     payloads observed at <8 levels in spot-checks.
+//   - 32 is generous enough to never reject a legitimate request and
+//     small enough that an attacker cannot inflict stack-overflow CPU/
+//     memory pressure even when the payload is at the cap.
+//   (Equoria-4dtb / Equoria-x157, 2026-04-30: an earlier comment here
+//   cited a check-depth.mjs helper that scanned source-text bracket
+//   nesting rather than runtime JSON-body nesting, conflating
+//   destructured signatures and string-literal characters with payload
+//   depth. That helper has been deleted; the cap value rests on the
+//   threat-model rationale above, not a faulty audit.)
+//
+// The cap is configurable via REQUEST_BODY_MAX_DEPTH but the value is
+// read once at module load — changing it requires a process restart.
+// This is intentional: in-process mutation of a security cap would not
+// be auditable. Use the env var only for ops emergencies and only with
+// a doctrine review; do not relax it casually.
 //
 // DEPTH-COUNTING CONTRACT (21R-SEC-3-REVIEW-2, Equoria-ncbs):
 // Both the parser-layer scanner (JsonScanner.scanValue) AND the
