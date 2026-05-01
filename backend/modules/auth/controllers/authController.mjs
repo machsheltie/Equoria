@@ -660,14 +660,18 @@ export const changePassword = async (req, res, next) => {
     const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
     const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
 
-    // Update password in database
+    // Update password in database. Stamp passwordChangedAt so the JWT-verify
+    // middleware (CWE-613) can reject any access tokens issued before now —
+    // closes the residual ≤access-token-TTL window where a stolen token would
+    // otherwise outlive the password rotation.
     await prisma.user.update({
       where: { id: req.user.id },
-      data: { password: hashedPassword },
+      data: { password: hashedPassword, passwordChangedAt: new Date() },
     });
 
-    // ✅ CWE-613 MITIGATION: Invalidate ALL sessions across all devices
-    // This forces the user to re-login everywhere after password change for security
+    // ✅ CWE-613 MITIGATION: Invalidate ALL refresh tokens across all devices
+    // (access tokens are invalidated separately via the passwordChangedAt
+    // check in authenticateToken). Forces re-login everywhere after rotation.
     await prisma.refreshToken.deleteMany({
       where: { userId: req.user.id },
     });
@@ -809,10 +813,12 @@ export const resetPassword = async (req, res, next) => {
     }
 
     // Apply writes atomically: update password, mark token used, invalidate sessions.
+    // passwordChangedAt is stamped so the JWT-verify middleware (CWE-613) rejects
+    // any access tokens issued before this reset — closes the residual window.
     await prisma.$transaction(async tx => {
       await tx.user.update({
         where: { id: resetToken.userId },
-        data: { password: hashedPassword },
+        data: { password: hashedPassword, passwordChangedAt: new Date() },
       });
       await tx.$executeRawUnsafe(
         'UPDATE password_reset_tokens SET "usedAt" = NOW() WHERE id = $1',

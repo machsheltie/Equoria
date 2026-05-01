@@ -89,10 +89,15 @@ describe('Session Lifecycle Management', () => {
     });
 
     if (existing) {
-      if (existing.password !== hashedTestPassword) {
+      // Reset password AND passwordChangedAt every iteration. Without the
+      // passwordChangedAt reset, a prior test that successfully changed the
+      // password leaves a stale CWE-613 invalidation marker that causes
+      // freshly-issued tokens in subsequent tests to be rejected when they
+      // collide on the same second-precision iat boundary.
+      if (existing.password !== hashedTestPassword || existing.passwordChangedAt !== null) {
         testUser = await prisma.user.update({
           where: { id: existing.id },
-          data: { password: hashedTestPassword },
+          data: { password: hashedTestPassword, passwordChangedAt: null },
         });
       } else {
         testUser = existing;
@@ -740,6 +745,14 @@ describe('Session Lifecycle Management', () => {
       });
       expect(tokensBeforeChange).toBe(3);
 
+      // Sleep long enough to guarantee the next-second boundary crosses before
+      // the password change is stamped. JWT iat is second-precision, and the
+      // CWE-613 middleware check uses `iat < floor(passwordChangedAt / 1000)`;
+      // without this delay, a sub-second test run could leave the original
+      // tokens' iat in the same second as passwordChangedAt and the strong
+      // 401 assertion below would not fire deterministically.
+      await new Promise(resolve => setTimeout(resolve, 1100));
+
       // Step 3: Change password (invalidates all sessions)
       const newPassword = 'NewPassword456!';
       // 21R-AUTH-3: register/login/refresh now seed a CSRF cookie alongside
@@ -763,18 +776,31 @@ describe('Session Lifecycle Management', () => {
 
       expect(changePasswordResponse.body.data.sessionInvalidated).toBe(true);
 
-      // Step 4: Verify session invalidation took effect at the DB layer.
-      // NOTE: Access-token JWTs remain cryptographically valid until their
-      // 15-min expiry — closing that residual window requires a
-      // passwordChangedAt check in the JWT-verify path (Equoria-zgwl).
-      // Phase 3b's scope is fixture isolation only; this assertion verifies
-      // the invalidation behavior the system implements today:
-      // refresh-token cleanup. Restore the stronger 401 assertion when
-      // Equoria-zgwl lands.
+      // Step 4: Verify session invalidation took effect at both layers.
+      // (a) Refresh tokens for this user must be wiped — multi-session logout.
       const remainingTokens = await prisma.refreshToken.count({
         where: { userId: newUserId },
       });
       expect(remainingTokens).toBe(0);
+
+      // (b) CWE-613 strong assertion (Equoria-39r5): the access-token JWT
+      // issued before the password change must be rejected by authenticateToken,
+      // because the user's passwordChangedAt is now newer than the token's iat.
+      // This closes the residual ≤15-minute window where a stolen access token
+      // would otherwise outlive the password rotation.
+      // The variable `cookies` still holds the pre-change accessToken/refreshToken
+      // pair from registration; supertest does not auto-apply Set-Cookie clears
+      // from the change-password response, so resending these cookies exercises
+      // the exact "old token after password change" attack scenario.
+      const staleAccessTokenResponse = await request(app)
+        .get('/api/auth/profile')
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', cookies)
+        .expect(401);
+      expect(staleAccessTokenResponse.body).toMatchObject({
+        success: false,
+        status: 'error',
+      });
 
       // Step 5: Login with new password
       const loginResponse = await request(app)

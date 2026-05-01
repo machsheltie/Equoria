@@ -39,33 +39,33 @@ describe('Token Validation Unit Tests', () => {
   });
 
   describe('Valid Token Scenarios', () => {
-    it('should authenticate with valid token in cookie', () => {
+    it('should authenticate with valid token in cookie', async () => {
       const user = createMockUser();
       const token = createMockToken(user.id);
 
       req.cookies.accessToken = token;
 
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       expect(next).toHaveBeenCalledWith();
       expect(req.user).toBeDefined();
       expect(req.user.id).toBe(user.id);
     });
 
-    it('should authenticate with valid token in Authorization header', () => {
+    it('should authenticate with valid token in Authorization header', async () => {
       const user = createMockUser();
       const token = createMockToken(user.id);
 
       req.headers.authorization = `Bearer ${token}`;
 
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       expect(next).toHaveBeenCalledWith();
       expect(req.user).toBeDefined();
       expect(req.user.id).toBe(user.id);
     });
 
-    it('should prefer cookie token over Authorization header', () => {
+    it('should prefer cookie token over Authorization header', async () => {
       const user1 = createMockUser({ id: 1 });
       const user2 = createMockUser({ id: 2 });
       const cookieToken = createMockToken(user1.id);
@@ -74,13 +74,13 @@ describe('Token Validation Unit Tests', () => {
       req.cookies.accessToken = cookieToken;
       req.headers.authorization = `Bearer ${headerToken}`;
 
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       expect(next).toHaveBeenCalledWith();
       expect(req.user.id).toBe(user1.id); // Should use cookie token
     });
 
-    it('should accept token with additional custom payload', () => {
+    it('should accept token with additional custom payload', async () => {
       const user = createMockUser();
       const token = createMockToken(user.id, {
         payload: {
@@ -91,7 +91,7 @@ describe('Token Validation Unit Tests', () => {
 
       req.cookies.accessToken = token;
 
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       expect(next).toHaveBeenCalledWith();
       expect(req.user.id).toBe(user.id);
@@ -101,13 +101,13 @@ describe('Token Validation Unit Tests', () => {
   });
 
   describe('Expired Token Scenarios', () => {
-    it('should reject expired token', () => {
+    it('should reject expired token', async () => {
       const user = createMockUser();
       const expiredToken = createMockToken(user.id, { expired: true });
 
       req.cookies.accessToken = expiredToken;
 
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       expect(next).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(401);
@@ -118,7 +118,7 @@ describe('Token Validation Unit Tests', () => {
       });
     });
 
-    it('should reject token older than 7 days (CWE-613)', () => {
+    it('should reject token older than 7 days (CWE-613)', async () => {
       const user = createMockUser();
 
       // Create token with iat (issued at) from 8 days ago
@@ -133,7 +133,7 @@ describe('Token Validation Unit Tests', () => {
 
       req.cookies.accessToken = oldToken;
 
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       expect(next).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(401);
@@ -144,7 +144,7 @@ describe('Token Validation Unit Tests', () => {
       });
     });
 
-    it('should accept token exactly 7 days old', () => {
+    it('should accept token exactly 7 days old', async () => {
       const user = createMockUser();
 
       // Create token with iat exactly 7 days ago
@@ -159,13 +159,13 @@ describe('Token Validation Unit Tests', () => {
 
       req.cookies.accessToken = sevenDayToken;
 
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       expect(next).toHaveBeenCalledWith();
       expect(req.user).toBeDefined();
     });
 
-    it('should reject token slightly over 7 days old', () => {
+    it('should reject token slightly over 7 days old', async () => {
       const user = createMockUser();
 
       // Create token just over 7 days old (7 days + 15 seconds, beyond 10s tolerance)
@@ -180,7 +180,7 @@ describe('Token Validation Unit Tests', () => {
 
       req.cookies.accessToken = justExpiredToken;
 
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       expect(next).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(401);
@@ -188,10 +188,10 @@ describe('Token Validation Unit Tests', () => {
   });
 
   describe('Malformed Token Scenarios', () => {
-    it('should reject malformed token', () => {
+    it('should reject malformed token', async () => {
       req.cookies.accessToken = createMalformedToken();
 
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       expect(next).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(401);
@@ -202,13 +202,13 @@ describe('Token Validation Unit Tests', () => {
       });
     });
 
-    it('should reject token with invalid signature', () => {
+    it('should reject token with invalid signature', async () => {
       const user = createMockUser();
       const token = jwt.sign({ userId: user.id }, 'wrong-secret');
 
       req.cookies.accessToken = token;
 
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       expect(next).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(401);
@@ -219,19 +219,19 @@ describe('Token Validation Unit Tests', () => {
       });
     });
 
-    it('should reject completely invalid token string', () => {
+    it('should reject completely invalid token string', async () => {
       req.cookies.accessToken = 'not-a-jwt-token';
 
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       expect(next).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(401);
     });
 
-    it('should reject empty token string', () => {
+    it('should reject empty token string', async () => {
       req.cookies.accessToken = '';
 
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       expect(next).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(401);
@@ -242,18 +242,18 @@ describe('Token Validation Unit Tests', () => {
       });
     });
 
-    it('should reject null token', () => {
+    it('should reject null token', async () => {
       req.cookies.accessToken = null;
 
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       expect(next).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(401);
     });
 
-    it('should reject undefined token', () => {
+    it('should reject undefined token', async () => {
       // No token set at all
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       expect(next).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(401);
@@ -261,8 +261,8 @@ describe('Token Validation Unit Tests', () => {
   });
 
   describe('Missing Token Scenarios', () => {
-    it('should return 401 when no token in cookie or header', () => {
-      authenticateToken(req, res, next);
+    it('should return 401 when no token in cookie or header', async () => {
+      await authenticateToken(req, res, next);
 
       expect(next).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(401);
@@ -273,32 +273,32 @@ describe('Token Validation Unit Tests', () => {
       });
     });
 
-    it('should return 401 when Authorization header has no Bearer token', () => {
+    it('should return 401 when Authorization header has no Bearer token', async () => {
       req.headers.authorization = 'Bearer ';
 
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       expect(next).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(401);
     });
 
-    it('should return 401 when Authorization header has wrong scheme', () => {
+    it('should return 401 when Authorization header has wrong scheme', async () => {
       const user = createMockUser();
       const token = createMockToken(user.id);
       req.headers.authorization = `Basic ${token}`;
 
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       expect(next).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(401);
     });
 
-    it('should return 401 when Authorization header has no space', () => {
+    it('should return 401 when Authorization header has no space', async () => {
       const user = createMockUser();
       const token = createMockToken(user.id);
       req.headers.authorization = `Bearer${token}`; // Missing space
 
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       expect(next).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(401);
@@ -306,48 +306,48 @@ describe('Token Validation Unit Tests', () => {
   });
 
   describe('Token Payload Validation', () => {
-    it('should extract userId from token payload', () => {
+    it('should extract userId from token payload', async () => {
       const user = createMockUser({ id: 12345 });
       const token = createMockToken(user.id);
 
       req.cookies.accessToken = token;
 
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       expect(req.user.id).toBe(12345);
       expect(req.user.userId).toBe(12345);
     });
 
-    it('should handle legacy id field mapping', () => {
+    it('should handle legacy id field mapping', async () => {
       // Create token with id instead of userId
       const token = jwt.sign({ id: 99999 }, JWT_SECRET, { expiresIn: '15m' });
 
       req.cookies.accessToken = token;
 
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       expect(req.user.id).toBe(99999);
     });
 
-    it('should include iat (issued at) timestamp in user object', () => {
+    it('should include iat (issued at) timestamp in user object', async () => {
       const user = createMockUser();
       const token = createMockToken(user.id);
 
       req.cookies.accessToken = token;
 
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       expect(req.user.iat).toBeDefined();
       expect(typeof req.user.iat).toBe('number');
     });
 
-    it('should include exp (expiration) timestamp in user object', () => {
+    it('should include exp (expiration) timestamp in user object', async () => {
       const user = createMockUser();
       const token = createMockToken(user.id);
 
       req.cookies.accessToken = token;
 
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       expect(req.user.exp).toBeDefined();
       expect(typeof req.user.exp).toBe('number');
@@ -356,7 +356,7 @@ describe('Token Validation Unit Tests', () => {
   });
 
   describe('Security Edge Cases', () => {
-    it('should reject token with modified payload', () => {
+    it('should reject token with modified payload', async () => {
       const user = createMockUser({ id: 1 });
       const token = createMockToken(user.id);
 
@@ -370,7 +370,7 @@ describe('Token Validation Unit Tests', () => {
 
       req.cookies.accessToken = modifiedToken;
 
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       const unauthorized = res.status.mock.calls.length > 0 || res.json.mock.calls.length > 0;
 
@@ -383,19 +383,19 @@ describe('Token Validation Unit Tests', () => {
       }
     });
 
-    it('should reject token without userId field', () => {
+    it('should reject token without userId field', async () => {
       const token = jwt.sign({ username: 'test' }, JWT_SECRET, { expiresIn: '15m' });
 
       req.cookies.accessToken = token;
 
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       // Should still call next but req.user should handle missing userId gracefully
       expect(next).toHaveBeenCalledWith();
       expect(req.user.id).toBeUndefined();
     });
 
-    it('should reject token signed with algorithm none', () => {
+    it('should reject token signed with algorithm none', async () => {
       // Attempt to create token with algorithm 'none' (security vulnerability)
       const header = Buffer.from(JSON.stringify({ alg: 'none', typ: 'JWT' })).toString('base64');
       const payload = Buffer.from(JSON.stringify({ userId: 1 })).toString('base64');
@@ -403,7 +403,7 @@ describe('Token Validation Unit Tests', () => {
 
       req.cookies.accessToken = noneToken;
 
-      authenticateToken(req, res, next);
+      await authenticateToken(req, res, next);
 
       expect(next).not.toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(401);
