@@ -111,8 +111,8 @@ describe('HorseSelectionCard', () => {
 
       const badge = screen.getByTestId('eligibility-badge');
       expect(badge).toHaveTextContent(/eligible/i);
-      expect(badge).toHaveClass('bg-green-100');
-      expect(badge).toHaveClass('text-green-800');
+      expect(badge).toHaveClass('bg-[rgba(16,185,129,0.15)]');
+      expect(badge).toHaveClass('text-emerald-400');
     });
 
     it('displays "Too Young" badge with yellow styling and tooltip', async () => {
@@ -127,8 +127,8 @@ describe('HorseSelectionCard', () => {
 
       const badge = screen.getByTestId('eligibility-badge');
       expect(badge).toHaveTextContent(/too young/i);
-      expect(badge).toHaveClass('bg-yellow-100');
-      expect(badge).toHaveClass('text-yellow-800');
+      expect(badge).toHaveClass('bg-[rgba(245,158,11,0.15)]');
+      expect(badge).toHaveClass('text-amber-400');
 
       // Hover to show tooltip - Radix UI creates multiple tooltip elements
       await user.hover(badge);
@@ -150,8 +150,8 @@ describe('HorseSelectionCard', () => {
 
       const badge = screen.getByTestId('eligibility-badge');
       expect(badge).toHaveTextContent(/too old/i);
-      expect(badge).toHaveClass('bg-gray-100');
-      expect(badge).toHaveClass('text-gray-800');
+      expect(badge).toHaveClass('bg-[rgba(15,35,70,0.5)]');
+      expect(badge).toHaveClass('text-[rgb(148,163,184)]');
 
       // Radix UI creates multiple tooltip elements
       await user.hover(badge);
@@ -171,8 +171,8 @@ describe('HorseSelectionCard', () => {
 
       const badge = screen.getByTestId('eligibility-badge');
       expect(badge).toHaveTextContent(/wrong level/i);
-      expect(badge).toHaveClass('bg-orange-100');
-      expect(badge).toHaveClass('text-orange-800');
+      expect(badge).toHaveClass('bg-[rgba(249,115,22,0.15)]');
+      expect(badge).toHaveClass('text-orange-400');
 
       // Radix UI creates multiple tooltip elements
       await user.hover(badge);
@@ -185,8 +185,8 @@ describe('HorseSelectionCard', () => {
 
       const badge = screen.getByTestId('eligibility-badge');
       expect(badge).toHaveTextContent(/already entered/i);
-      expect(badge).toHaveClass('bg-red-100');
-      expect(badge).toHaveClass('text-red-800');
+      expect(badge).toHaveClass('bg-[rgba(239,68,68,0.15)]');
+      expect(badge).toHaveClass('text-red-400');
     });
 
     it('displays "Injured" badge with red styling and tooltip', async () => {
@@ -201,8 +201,8 @@ describe('HorseSelectionCard', () => {
 
       const badge = screen.getByTestId('eligibility-badge');
       expect(badge).toHaveTextContent(/injured/i);
-      expect(badge).toHaveClass('bg-red-100');
-      expect(badge).toHaveClass('text-red-800');
+      expect(badge).toHaveClass('bg-[rgba(239,68,68,0.15)]');
+      expect(badge).toHaveClass('text-red-400');
 
       // Radix UI creates multiple tooltip elements
       await user.hover(badge);
@@ -295,10 +295,10 @@ describe('HorseSelectionCard', () => {
       const statsContainer = screen.getByTestId('horse-stats');
       const statItems = within(statsContainer).getAllByTestId('stat-item');
 
-      // High stats (>80) should have special styling
-      expect(statItems[0]).toHaveClass('text-green-600');
-      expect(statItems[1]).toHaveClass('text-green-600');
-      expect(statItems[2]).not.toHaveClass('text-green-600');
+      // High stats (>80) should have emerald highlight per design tokens
+      expect(statItems[0]).toHaveClass('text-emerald-400');
+      expect(statItems[1]).toHaveClass('text-emerald-400');
+      expect(statItems[2]).not.toHaveClass('text-emerald-400');
     });
   });
 

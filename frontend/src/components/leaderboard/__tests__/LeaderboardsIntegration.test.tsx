@@ -132,7 +132,7 @@ beforeEach(() => {
 
   // Add MSW handler for user rank summary endpoint
   server.use(
-    http.get('http://localhost:3001/api/leaderboards/user-summary/:userId', () => {
+    http.get('http://localhost:3000/api/leaderboards/user-summary/:userId', () => {
       return HttpResponse.json({
         success: true,
         data: {
@@ -213,7 +213,8 @@ describe('Category Selection Flow', () => {
 
     // The default category "level" should be active
     const levelTab = screen.getByTestId('category-level');
-    expect(levelTab).toHaveAttribute('aria-pressed', 'true');
+    // Category tabs (role="tab") use aria-selected; period buttons keep aria-pressed
+    expect(levelTab).toHaveAttribute('aria-selected', 'true');
 
     // The default period "all-time" should be active
     const allTimeButton = screen.getByTestId('period-all-time');
@@ -237,14 +238,14 @@ describe('Category Selection Flow', () => {
     // Wait for the new data to load
     await waitFor(
       () => {
-        expect(prizeMoneyTab).toHaveAttribute('aria-pressed', 'true');
+        expect(prizeMoneyTab).toHaveAttribute('aria-selected', 'true');
       },
       { timeout: 3000 }
     );
 
     // The level tab should no longer be active
     const levelTab = screen.getByTestId('category-level');
-    expect(levelTab).toHaveAttribute('aria-pressed', 'false');
+    expect(levelTab).toHaveAttribute('aria-selected', 'false');
 
     // Wait for entries to reload with new category data
     await waitForLeaderboardToLoad();
@@ -297,7 +298,7 @@ describe('Category Selection Flow', () => {
     await user.click(winRateTab);
 
     await waitFor(() => {
-      expect(winRateTab).toHaveAttribute('aria-pressed', 'true');
+      expect(winRateTab).toHaveAttribute('aria-selected', 'true');
     });
 
     // Step 2: Switch to weekly period
@@ -309,7 +310,7 @@ describe('Category Selection Flow', () => {
     });
 
     // Both filters should be applied simultaneously
-    expect(winRateTab).toHaveAttribute('aria-pressed', 'true');
+    expect(winRateTab).toHaveAttribute('aria-selected', 'true');
     expect(weeklyButton).toHaveAttribute('aria-pressed', 'true');
   });
 });
@@ -383,8 +384,9 @@ describe('Horse Detail Modal Flow', () => {
 
     await waitForLeaderboardToLoad();
 
-    // Modal should not be visible initially
-    expect(screen.queryByTestId('horse-detail-modal')).not.toBeInTheDocument();
+    // Modal should not be visible initially (the BaseModal dialog is what we check;
+    // 'horse-detail-modal' wrapper is always rendered as a portal mount point)
+    expect(screen.queryByTestId('base-modal')).not.toBeInTheDocument();
 
     // Click the first entry
     const entries = screen.getAllByTestId('leaderboard-entry');
@@ -392,7 +394,7 @@ describe('Horse Detail Modal Flow', () => {
 
     // Modal should appear
     await waitFor(() => {
-      expect(screen.getByTestId('horse-detail-modal')).toBeInTheDocument();
+      expect(screen.getByTestId('base-modal')).toBeInTheDocument();
     });
   });
 
@@ -406,17 +408,17 @@ describe('Horse Detail Modal Flow', () => {
     await user.click(entries[0]);
 
     await waitFor(() => {
-      expect(screen.getByTestId('horse-detail-modal')).toBeInTheDocument();
+      expect(screen.getByTestId('base-modal')).toBeInTheDocument();
     });
 
-    // The modal should contain horse details
-    const modal = screen.getByTestId('horse-detail-modal');
-    // Horse name "Horse 1" should be visible in the modal
-    expect(within(modal).getByText('Horse 1')).toBeInTheDocument();
+    // The modal content section should contain horse details
+    const modalContent = screen.getByTestId('base-modal-content');
+    // Horse name "Horse 1" should be visible in the modal title (BaseModal renders title)
+    expect(screen.getByTestId('base-modal-title')).toHaveTextContent(/Horse 1/i);
     // Stats section should be present
-    expect(within(modal).getByTestId('stats-section')).toBeInTheDocument();
+    expect(within(modalContent).getByTestId('stats-section')).toBeInTheDocument();
     // Competition history section should be present
-    expect(within(modal).getByTestId('competition-history-section')).toBeInTheDocument();
+    expect(within(modalContent).getByTestId('competition-history-section')).toBeInTheDocument();
   });
 
   it('should navigate to horse profile when "View Full Profile" is clicked', async () => {
@@ -451,16 +453,16 @@ describe('Horse Detail Modal Flow', () => {
     await user.click(entries[0]);
 
     await waitFor(() => {
-      expect(screen.getByTestId('horse-detail-modal')).toBeInTheDocument();
+      expect(screen.getByTestId('base-modal')).toBeInTheDocument();
     });
 
     // Close modal
-    const closeButton = screen.getByTestId('modal-close-button');
+    const closeButton = screen.getByTestId('base-modal-close-button');
     await user.click(closeButton);
 
-    // Modal should disappear
+    // Modal dialog should disappear (wrapper div may persist as portal mount point)
     await waitFor(() => {
-      expect(screen.queryByTestId('horse-detail-modal')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('base-modal')).not.toBeInTheDocument();
     });
   });
 });
@@ -536,7 +538,7 @@ describe('User Rankings Dashboard', () => {
       // The prize-money category tab should become active
       await waitFor(() => {
         const prizeMoneyTab = screen.getByTestId('category-prize-money');
-        expect(prizeMoneyTab).toHaveAttribute('aria-pressed', 'true');
+        expect(prizeMoneyTab).toHaveAttribute('aria-selected', 'true');
       });
     } else {
       // If the specific card is not found, verify at least one card is clickable
@@ -546,7 +548,7 @@ describe('User Rankings Dashboard', () => {
       // Some category tab should have changed
       await waitFor(() => {
         const tabs = screen.getAllByRole('tab');
-        const activeTab = tabs.find((tab) => tab.getAttribute('aria-pressed') === 'true');
+        const activeTab = tabs.find((tab) => tab.getAttribute('aria-selected') === 'true');
         expect(activeTab).toBeTruthy();
       });
     }
@@ -563,13 +565,13 @@ describe('URL State Persistence', () => {
 
     await waitForLeaderboardToLoad();
 
-    // The prize-money category should be active
+    // The prize-money category should be active (tabs use aria-selected)
     const prizeMoneyTab = screen.getByTestId('category-prize-money');
-    expect(prizeMoneyTab).toHaveAttribute('aria-pressed', 'true');
+    expect(prizeMoneyTab).toHaveAttribute('aria-selected', 'true');
 
     // The level category should not be active
     const levelTab = screen.getByTestId('category-level');
-    expect(levelTab).toHaveAttribute('aria-pressed', 'false');
+    expect(levelTab).toHaveAttribute('aria-selected', 'false');
   });
 
   it('should load with correct period from URL params', async () => {
@@ -608,7 +610,7 @@ describe('Error Handling', () => {
   it('should display error state when network request fails', async () => {
     // Override the leaderboard handler to return a 500 error
     server.use(
-      http.get('http://localhost:3001/api/leaderboards/:category', () => {
+      http.get('http://localhost:3000/api/leaderboards/:category', () => {
         return HttpResponse.json(
           { status: 'error', message: 'Internal server error' },
           { status: 500 }
@@ -635,7 +637,7 @@ describe('Error Handling', () => {
 
     // First request fails, subsequent requests succeed
     server.use(
-      http.get('http://localhost:3001/api/leaderboards/:category', ({ request }) => {
+      http.get('http://localhost:3000/api/leaderboards/:category', ({ request }) => {
         requestCount++;
         if (requestCount <= 1) {
           return HttpResponse.json(

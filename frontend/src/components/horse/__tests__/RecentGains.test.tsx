@@ -145,7 +145,8 @@ describe('RecentGains', () => {
         return parent !== null; // Only gain items, not summary
       });
       gainElements.forEach((element) => {
-        expect(element).toHaveClass('text-emerald-600');
+        // Dark-theme uses -400 for stronger contrast on dark bg (was -600 in light theme)
+        expect(element).toHaveClass('text-emerald-400');
       });
     });
 

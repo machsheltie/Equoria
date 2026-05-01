@@ -224,7 +224,11 @@ describe('DisciplinePicker', () => {
       const racingButton = screen.getByRole('button', {
         name: /Select Racing discipline.*score:/i,
       });
-      expect(racingButton).toHaveClass('bg-blue-600', 'text-white', 'border-blue-600');
+      expect(racingButton).toHaveClass(
+        'bg-blue-600',
+        'text-[var(--text-primary)]',
+        'border-[var(--gold-primary)]'
+      );
     });
 
     it('should show aria-selected=true for selected discipline', () => {
@@ -271,7 +275,11 @@ describe('DisciplinePicker', () => {
       const racingButton = screen.getByRole('button', {
         name: /Select Racing discipline.*score:/i,
       });
-      expect(racingButton).toHaveClass('bg-gray-100', 'text-gray-400', 'cursor-not-allowed');
+      expect(racingButton).toHaveClass(
+        'bg-[rgba(15,35,70,0.5)]',
+        'text-[rgb(148,163,184)]',
+        'cursor-not-allowed'
+      );
     });
 
     it('should handle multiple clicks on same discipline', async () => {
@@ -309,7 +317,10 @@ describe('DisciplinePicker', () => {
       const racingButton = screen.getByRole('button', {
         name: /Select Racing discipline.*score:/i,
       });
-      expect(racingButton).toHaveClass('hover:border-blue-400', 'hover:shadow-sm');
+      expect(racingButton).toHaveClass(
+        'hover:border-[var(--gold-light)]',
+        'hover:bg-[rgba(37,99,235,0.08)]'
+      );
     });
   });
 

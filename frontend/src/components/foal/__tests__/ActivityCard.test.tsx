@@ -380,7 +380,8 @@ describe('ActivityCard Component', () => {
       const { container } = render(
         <ActivityCard activity={mockActivity} status={mockAvailableStatus} foal={mockFoal} />
       );
-      const card = container.querySelector('.bg-white');
+      // Component migrated to dark cobalt theme: bg-[rgba(15,35,70,0.5)] for available
+      const card = container.querySelector('.bg-\\[rgba\\(15\\,35\\,70\\,0\\.5\\)\\]');
       expect(card).toBeInTheDocument();
     });
 
@@ -388,7 +389,8 @@ describe('ActivityCard Component', () => {
       const { container } = render(
         <ActivityCard activity={mockActivity} status={mockCooldownStatus} foal={mockFoal} />
       );
-      const card = container.querySelector('.bg-gray-50');
+      // Component migrated to dark cobalt theme: bg-[rgba(15,35,70,0.4)] for unavailable
+      const card = container.querySelector('.bg-\\[rgba\\(15\\,35\\,70\\,0\\.4\\)\\]');
       expect(card).toBeInTheDocument();
     });
 

@@ -176,9 +176,10 @@ describe('TraitCard Component', () => {
       };
       const { container } = render(<TraitCard trait={ultraRareTrait} />);
       expect(screen.getByText('Ultra Rare')).toBeInTheDocument();
+      // Ultra-rare uses border-yellow-400 in the test mock for getTierStyle
       expect(container.querySelector('.border-yellow-400')).toBeInTheDocument();
-      // Check for decorative shine effect
-      expect(container.querySelector('.bg-white\\/20')).toBeInTheDocument();
+      // Check for decorative shine effect (now bg-white/10)
+      expect(container.querySelector('.bg-white\\/10')).toBeInTheDocument();
     });
 
     it('should render exotic tier with correct styling and decorative effect', () => {
@@ -195,9 +196,10 @@ describe('TraitCard Component', () => {
       };
       const { container } = render(<TraitCard trait={exoticTrait} />);
       expect(screen.getByText('Exotic')).toBeInTheDocument();
+      // Exotic uses border-purple-500 in the test mock for getTierStyle
       expect(container.querySelector('.border-purple-500')).toBeInTheDocument();
-      // Check for decorative shine effect
-      expect(container.querySelector('.bg-white\\/20')).toBeInTheDocument();
+      // Check for decorative shine effect (now bg-white/10)
+      expect(container.querySelector('.bg-white\\/10')).toBeInTheDocument();
     });
 
     it('should not show decorative effect for common traits', () => {
@@ -213,7 +215,7 @@ describe('TraitCard Component', () => {
         isPositive: true,
       };
       const { container } = render(<TraitCard trait={commonTrait} />);
-      expect(container.querySelector('.bg-white\\/20')).not.toBeInTheDocument();
+      expect(container.querySelector('.bg-white\\/10')).not.toBeInTheDocument();
     });
   });
 
@@ -232,7 +234,8 @@ describe('TraitCard Component', () => {
       };
       const { container } = render(<TraitCard trait={positiveTrait} />);
       expect(screen.getByText('+8')).toBeInTheDocument();
-      expect(container.querySelector('.text-green-600')).toBeInTheDocument();
+      // Positive impact icon uses emerald-400 in dark theme
+      expect(container.querySelector('.text-emerald-400')).toBeInTheDocument();
     });
 
     it('should show negative impact with TrendingDown icon', () => {
@@ -249,7 +252,8 @@ describe('TraitCard Component', () => {
       };
       const { container } = render(<TraitCard trait={negativeTrait} />);
       expect(screen.getByText('-5')).toBeInTheDocument();
-      expect(container.querySelector('.text-red-600')).toBeInTheDocument();
+      // Negative impact icon uses red-400 in dark theme
+      expect(container.querySelector('.text-red-400')).toBeInTheDocument();
     });
 
     it('should hide impact when showCompetitionImpact is false', () => {
@@ -470,7 +474,8 @@ describe('TraitCard Component', () => {
         isPositive: true,
       };
       const { container } = render(<TraitCard trait={trait} />);
-      const indicator = container.querySelector('.bg-slate-300');
+      // Hidden indicator now uses dark-theme rgb slate-500
+      const indicator = container.querySelector('.bg-\\[rgb\\(100\\,116\\,139\\)\\]');
       expect(indicator).toBeInTheDocument();
     });
   });
@@ -489,7 +494,8 @@ describe('TraitCard Component', () => {
         isPositive: true,
       };
       const { container } = render(<TraitCard trait={trait} />);
-      const positiveIndicator = Array.from(container.querySelectorAll('.text-green-600')).find(
+      // Positive indicator now uses emerald-400 in dark theme
+      const positiveIndicator = Array.from(container.querySelectorAll('.text-emerald-400')).find(
         (el) => el.textContent === '+'
       );
       expect(positiveIndicator).toBeInTheDocument();
@@ -508,7 +514,8 @@ describe('TraitCard Component', () => {
         isPositive: false,
       };
       const { container } = render(<TraitCard trait={trait} />);
-      const negativeIndicator = Array.from(container.querySelectorAll('.text-red-600')).find(
+      // Negative indicator now uses red-400 in dark theme
+      const negativeIndicator = Array.from(container.querySelectorAll('.text-red-400')).find(
         (el) => el.textContent === '−'
       );
       expect(negativeIndicator).toBeInTheDocument();

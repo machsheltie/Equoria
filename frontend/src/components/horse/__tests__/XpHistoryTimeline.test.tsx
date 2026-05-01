@@ -341,7 +341,8 @@ describe('XpHistoryTimeline', () => {
       // Entry at index 1 (sorted newest first, xp-002 is Jan 20)
       const levelUpEntryEl = entries[1];
       const entryCard = within(levelUpEntryEl).getByTestId('entry-card');
-      expect(entryCard).toHaveClass('bg-yellow-50');
+      // Component migrated to dark-theme parchment/gold token bg
+      expect(entryCard.className).toMatch(/bg-\[rgba\(212,168,67/);
     });
   });
 

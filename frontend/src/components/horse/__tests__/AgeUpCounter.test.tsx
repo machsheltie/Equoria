@@ -255,7 +255,8 @@ describe('AgeUpCounter', () => {
       const timeRemaining = screen.getByTestId('time-remaining');
       expect(timeRemaining).toHaveTextContent(/25 days/i);
       // Should have special styling when < 30 days (amber/yellow warning)
-      expect(timeRemaining.parentElement?.className).toMatch(/amber|yellow/i);
+      // Component now uses parchment/amber rgba color tokens: rgba(212,168,67,...)
+      expect(timeRemaining.parentElement?.className).toMatch(/amber|yellow|212,168,67/i);
     });
   });
 

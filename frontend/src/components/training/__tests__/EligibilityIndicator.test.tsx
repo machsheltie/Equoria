@@ -141,84 +141,84 @@ describe('EligibilityIndicator', () => {
       const { container } = render(<EligibilityIndicator horse={readyHorse} />);
 
       const indicator = container.querySelector('[data-testid="eligibility-indicator"]');
-      expect(indicator).toHaveClass('bg-green-100');
+      expect(indicator).toHaveClass('bg-[rgba(16,185,129,0.1)]');
     });
 
     it('should show correct background color for cooldown state (amber)', () => {
       const { container } = render(<EligibilityIndicator horse={cooldownHorse} />);
 
       const indicator = container.querySelector('[data-testid="eligibility-indicator"]');
-      expect(indicator).toHaveClass('bg-amber-100');
+      expect(indicator).toHaveClass('bg-[rgba(212,168,67,0.1)]');
     });
 
     it('should show correct background color for too young state (gray)', () => {
       const { container } = render(<EligibilityIndicator horse={youngHorse} />);
 
       const indicator = container.querySelector('[data-testid="eligibility-indicator"]');
-      expect(indicator).toHaveClass('bg-gray-100');
+      expect(indicator).toHaveClass('bg-[rgba(15,35,70,0.5)]');
     });
 
     it('should show correct background color for too old state (red)', () => {
       const { container } = render(<EligibilityIndicator horse={oldHorse} />);
 
       const indicator = container.querySelector('[data-testid="eligibility-indicator"]');
-      expect(indicator).toHaveClass('bg-red-100');
+      expect(indicator).toHaveClass('bg-[rgba(239,68,68,0.1)]');
     });
 
     it('should show correct border color for ready state (green)', () => {
       const { container } = render(<EligibilityIndicator horse={readyHorse} />);
 
       const indicator = container.querySelector('[data-testid="eligibility-indicator"]');
-      expect(indicator).toHaveClass('border-green-500');
+      expect(indicator).toHaveClass('border-emerald-500/30');
     });
 
     it('should show correct border color for cooldown state (amber)', () => {
       const { container } = render(<EligibilityIndicator horse={cooldownHorse} />);
 
       const indicator = container.querySelector('[data-testid="eligibility-indicator"]');
-      expect(indicator).toHaveClass('border-amber-500');
+      expect(indicator).toHaveClass('border-amber-500/30');
     });
 
     it('should show correct border color for too young state (gray)', () => {
       const { container } = render(<EligibilityIndicator horse={youngHorse} />);
 
       const indicator = container.querySelector('[data-testid="eligibility-indicator"]');
-      expect(indicator).toHaveClass('border-gray-400');
+      expect(indicator).toHaveClass('border-[rgba(37,99,235,0.2)]');
     });
 
     it('should show correct border color for too old state (red)', () => {
       const { container } = render(<EligibilityIndicator horse={oldHorse} />);
 
       const indicator = container.querySelector('[data-testid="eligibility-indicator"]');
-      expect(indicator).toHaveClass('border-red-500');
+      expect(indicator).toHaveClass('border-red-500/30');
     });
 
     it('should show correct text color for ready state (green)', () => {
       const { container } = render(<EligibilityIndicator horse={readyHorse} />);
 
       const statusText = container.querySelector('[data-testid="status-text"]');
-      expect(statusText).toHaveClass('text-green-800');
+      expect(statusText).toHaveClass('text-emerald-400');
     });
 
     it('should show correct text color for cooldown state (amber)', () => {
       const { container } = render(<EligibilityIndicator horse={cooldownHorse} />);
 
       const statusText = container.querySelector('[data-testid="status-text"]');
-      expect(statusText).toHaveClass('text-amber-800');
+      expect(statusText).toHaveClass('text-amber-400');
     });
 
     it('should show correct text color for too young state (gray)', () => {
       const { container } = render(<EligibilityIndicator horse={youngHorse} />);
 
       const statusText = container.querySelector('[data-testid="status-text"]');
-      expect(statusText).toHaveClass('text-gray-700');
+      expect(statusText).toHaveClass('text-[rgb(148,163,184)]');
     });
 
     it('should show correct text color for too old state (red)', () => {
       const { container } = render(<EligibilityIndicator horse={oldHorse} />);
 
       const statusText = container.querySelector('[data-testid="status-text"]');
-      expect(statusText).toHaveClass('text-red-800');
+      expect(statusText).toHaveClass('text-red-400');
     });
   });
 
@@ -311,7 +311,7 @@ describe('EligibilityIndicator', () => {
 
       const icon = container.querySelector('[data-testid="status-icon"]');
       expect(icon).toBeInTheDocument();
-      expect(icon).toHaveClass('text-green-600');
+      expect(icon).toHaveClass('text-emerald-400');
       // Verify it's an SVG (Lucide icons render as SVG)
       expect(icon?.tagName.toLowerCase()).toBe('svg');
     });
@@ -320,21 +320,21 @@ describe('EligibilityIndicator', () => {
       const { container } = render(<EligibilityIndicator horse={cooldownHorse} />);
 
       const icon = container.querySelector('[data-testid="status-icon"]');
-      expect(icon).toHaveClass('text-amber-600');
+      expect(icon).toHaveClass('text-amber-400');
     });
 
     it('should render X icon for too young state', () => {
       const { container } = render(<EligibilityIndicator horse={youngHorse} />);
 
       const icon = container.querySelector('[data-testid="status-icon"]');
-      expect(icon).toHaveClass('text-gray-500');
+      expect(icon).toHaveClass('text-[rgb(148,163,184)]');
     });
 
     it('should render AlertCircle icon for too old state', () => {
       const { container } = render(<EligibilityIndicator horse={oldHorse} />);
 
       const icon = container.querySelector('[data-testid="status-icon"]');
-      expect(icon).toHaveClass('text-red-600');
+      expect(icon).toHaveClass('text-red-400');
     });
   });
 

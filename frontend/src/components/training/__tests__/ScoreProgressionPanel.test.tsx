@@ -271,7 +271,7 @@ describe('ScoreProgressionPanel', () => {
     it('error message has appropriate styling', () => {
       render(<ScoreProgressionPanel horseId={1} />, { wrapper: createWrapper() });
       const errorContainer = screen.getByTestId('error-container');
-      expect(errorContainer).toHaveClass('border-red-200');
+      expect(errorContainer).toHaveClass('border-red-500/30');
     });
   });
 

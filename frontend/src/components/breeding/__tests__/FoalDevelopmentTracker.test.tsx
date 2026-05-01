@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import FoalDevelopmentTracker from '../FoalDevelopmentTracker';
@@ -76,11 +77,21 @@ describe('FoalDevelopmentTracker', () => {
     vi.mocked(useBreedingHooks.useRevealFoalTraits).mockReturnValue({
       mutate: vi.fn(),
       isPending: false,
+      isSuccess: false,
+      data: null,
     } as any);
 
     vi.mocked(useBreedingHooks.useDevelopFoal).mockReturnValue({
       mutate: vi.fn(),
       isPending: false,
+    } as any);
+
+    // useGraduateFoal hook added to component (post-graduation cinematic).
+    vi.mocked(useBreedingHooks.useGraduateFoal).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isSuccess: false,
+      data: null,
     } as any);
   });
 

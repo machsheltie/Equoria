@@ -191,7 +191,7 @@ describe('CompetitionResultsModal', () => {
     it('should display competition header info', () => {
       renderWithData();
 
-      expect(screen.getByTestId('competition-name')).toHaveTextContent(
+      expect(screen.getByTestId('competition-results-modal-title')).toHaveTextContent(
         'Spring Grand Prix Championship'
       );
       expect(screen.getByTestId('competition-discipline')).toHaveTextContent('Show Jumping');
@@ -250,7 +250,7 @@ describe('CompetitionResultsModal', () => {
       const user = userEvent.setup();
       renderWithData();
 
-      const closeButton = screen.getByTestId('close-modal-button');
+      const closeButton = screen.getByTestId('competition-results-modal-close-button');
       await user.click(closeButton);
 
       expect(mockOnClose).toHaveBeenCalledTimes(1);
@@ -260,7 +260,7 @@ describe('CompetitionResultsModal', () => {
       const user = userEvent.setup();
       renderWithData();
 
-      const backdrop = screen.getByTestId('modal-backdrop');
+      const backdrop = screen.getByTestId('competition-results-modal-backdrop');
       await user.click(backdrop);
 
       expect(mockOnClose).toHaveBeenCalledTimes(1);
@@ -278,7 +278,7 @@ describe('CompetitionResultsModal', () => {
       const user = userEvent.setup();
       renderWithData();
 
-      await user.click(screen.getByTestId('close-modal-button'));
+      await user.click(screen.getByTestId('competition-results-modal-close-button'));
 
       expect(mockOnClose).toHaveBeenCalled();
     });
@@ -300,9 +300,10 @@ describe('CompetitionResultsModal', () => {
       const userRow2 = screen.getByTestId('result-row-104');
       const otherRow = screen.getByTestId('result-row-101');
 
-      expect(userRow1).toHaveClass('bg-blue-50');
-      expect(userRow2).toHaveClass('bg-blue-50');
-      expect(otherRow).not.toHaveClass('bg-blue-50');
+      // User horses get the highlighted blue-tinted background per design tokens
+      expect(userRow1).toHaveClass('bg-[rgba(37,99,235,0.1)]');
+      expect(userRow2).toHaveClass('bg-[rgba(37,99,235,0.1)]');
+      expect(otherRow).not.toHaveClass('bg-[rgba(37,99,235,0.1)]');
     });
 
     it('should show placement badges for top 3', () => {
@@ -313,10 +314,10 @@ describe('CompetitionResultsModal', () => {
       expect(goldBadge).toBeInTheDocument();
       expect(goldBadge).toHaveClass('bg-yellow-400');
 
-      // Silver badge for 2nd place
+      // Silver badge for 2nd place (slate-tinted background per design tokens)
       const silverBadge = screen.getByTestId('placement-badge-2');
       expect(silverBadge).toBeInTheDocument();
-      expect(silverBadge).toHaveClass('bg-gray-300');
+      expect(silverBadge).toHaveClass('bg-[rgba(148,163,184,0.3)]');
 
       // Bronze badge for 3rd place
       const bronzeBadge = screen.getByTestId('placement-badge-3');
@@ -481,7 +482,8 @@ describe('CompetitionResultsModal', () => {
 
       const userRow = screen.getByTestId('result-row-102');
       expect(userRow).toHaveClass('cursor-pointer');
-      expect(userRow).toHaveClass('hover:bg-blue-100');
+      // Hover deepens the user-row blue tint per design tokens
+      expect(userRow).toHaveClass('hover:bg-[rgba(37,99,235,0.2)]');
     });
 
     it('should allow clicking multiple user horses', async () => {
@@ -514,9 +516,10 @@ describe('CompetitionResultsModal', () => {
       renderWithData();
 
       const modal = screen.getByTestId('competition-results-modal');
-      expect(modal).toHaveAttribute('aria-labelledby', 'results-modal-title');
+      // BaseModal namespaces ARIA ids by data-testid
+      expect(modal).toHaveAttribute('aria-labelledby', 'competition-results-modal-title');
 
-      const title = document.getElementById('results-modal-title');
+      const title = document.getElementById('competition-results-modal-title');
       expect(title).toBeInTheDocument();
     });
 
@@ -590,7 +593,7 @@ describe('CompetitionResultsModal', () => {
     it('should display close button with X icon', () => {
       renderWithData();
 
-      const closeButton = screen.getByTestId('close-modal-button');
+      const closeButton = screen.getByTestId('competition-results-modal-close-button');
       const icon = closeButton.querySelector('svg');
       expect(icon).toBeInTheDocument();
     });
@@ -614,9 +617,9 @@ describe('CompetitionResultsModal', () => {
       renderWithData();
 
       const rows = screen.getAllByTestId(/^result-row-/);
-      // Odd rows should have different background
-      expect(rows[0]).toHaveClass('bg-white');
-      expect(rows[1]).toHaveClass('bg-blue-50'); // User row
+      // Zebra striping uses dark navy variants for non-user rows; user rows get the blue tint
+      expect(rows[0]).toHaveClass('bg-[rgba(15,35,70,0.4)]'); // Non-user, even index
+      expect(rows[1]).toHaveClass('bg-[rgba(37,99,235,0.1)]'); // User row highlight
     });
   });
 

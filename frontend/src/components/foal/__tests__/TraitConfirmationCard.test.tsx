@@ -373,8 +373,9 @@ describe('TraitConfirmationCard Component', () => {
 
   describe('styling consistency', () => {
     it('should have consistent green styling for positive traits', () => {
+      // Component migrated to dark theme: positive trait "green" is now emerald-* family
       const { container } = render(<TraitConfirmationCard trait={mockPositiveTrait} score={4} />);
-      const greenElements = container.querySelectorAll('[class*="green"]');
+      const greenElements = container.querySelectorAll('[class*="emerald"]');
       expect(greenElements.length).toBeGreaterThan(0);
     });
 

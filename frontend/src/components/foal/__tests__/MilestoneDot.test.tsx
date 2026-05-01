@@ -280,10 +280,12 @@ describe('MilestoneDot Component', () => {
           />
         </svg>
       );
+      // The pulse ring only renders for current milestones. For pending the ring should be absent.
+      // Array.find returns undefined when not found — assert undefined directly rather than DOM.
       const pulseRing = Array.from(container.querySelectorAll('circle')).find((circle) =>
         circle.className.baseVal?.includes('animate-pulse')
       );
-      expect(pulseRing).not.toBeInTheDocument();
+      expect(pulseRing).toBeUndefined();
     });
   });
 
@@ -315,8 +317,11 @@ describe('MilestoneDot Component', () => {
       );
       const checkmark = container.querySelector('path');
       const dAttribute = checkmark?.getAttribute('d');
-      expect(dAttribute).toContain('100'); // Contains cx value
-      expect(dAttribute).toContain('200'); // Contains cy value
+      // Component now draws checkmark with offsets relative to cx,cy (e.g. M cx-3 cy L cx-1 cy+2 L cx+3 cy-2).
+      // For cx=100, cy=200 the path includes 97/99/103 (x-offsets) and 200/202/198 (y-offsets).
+      // Verify y=200 anchor and that checkmark is anchored near cx (any of the offset xs).
+      expect(dAttribute).toMatch(/9[7-9]|10[0-3]/); // cx=100 ± 3
+      expect(dAttribute).toContain('200'); // cy anchor
     });
   });
 

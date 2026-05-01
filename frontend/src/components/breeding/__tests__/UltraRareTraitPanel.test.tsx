@@ -118,20 +118,23 @@ describe('UltraRareTraitPanel Component', () => {
 
     it('should apply purple border for exotic tier', () => {
       const { container } = render(<UltraRareTraitPanel traits={[mockExoticTrait]} />);
-      const card = container.querySelector('.border-purple-300');
+      // Migrated to purple-500/40 alpha border
+      const card = container.querySelector('.border-purple-500\\/40');
       expect(card).toBeInTheDocument();
     });
 
     it('should apply purple/pink gradient background for exotic tier', () => {
       const { container } = render(<UltraRareTraitPanel traits={[mockExoticTrait]} />);
-      const card = container.querySelector('.from-purple-50.to-pink-50');
+      // Migrated from purple-50/pink-50 gradient to rgba(147,51,234,0.1) flat tint
+      const card = container.querySelector('.bg-\\[rgba\\(147\\,51\\,234\\,0\\.1\\)\\]');
       expect(card).toBeInTheDocument();
     });
 
     it('should apply purple text color for exotic tier', () => {
       render(<UltraRareTraitPanel traits={[mockExoticTrait]} />);
       const tierText = screen.getByText('Phoenix Heart');
-      expect(tierText).toHaveClass('text-purple-700');
+      // Dark theme: purple-700 -> purple-400
+      expect(tierText).toHaveClass('text-purple-400');
     });
   });
 
@@ -150,20 +153,23 @@ describe('UltraRareTraitPanel Component', () => {
 
     it('should apply amber border for ultra-rare tier', () => {
       const { container } = render(<UltraRareTraitPanel traits={[mockUltraRareTrait]} />);
-      const card = container.querySelector('.border-amber-300');
+      // Migrated to amber-500/40 alpha border
+      const card = container.querySelector('.border-amber-500\\/40');
       expect(card).toBeInTheDocument();
     });
 
     it('should apply amber/yellow gradient background for ultra-rare tier', () => {
       const { container } = render(<UltraRareTraitPanel traits={[mockUltraRareTrait]} />);
-      const card = container.querySelector('.from-amber-50.to-yellow-50');
+      // Migrated to flat rgba(212,168,67,0.1) parchment tint (no gradient)
+      const card = container.querySelector('.bg-\\[rgba\\(212\\,168\\,67\\,0\\.1\\)\\]');
       expect(card).toBeInTheDocument();
     });
 
     it('should apply amber text color for ultra-rare tier', () => {
       render(<UltraRareTraitPanel traits={[mockUltraRareTrait]} />);
       const tierText = screen.getByText('Diamond Hooves');
-      expect(tierText).toHaveClass('text-amber-700');
+      // Dark theme: amber-700 -> amber-400
+      expect(tierText).toHaveClass('text-amber-400');
     });
   });
 
@@ -332,13 +338,15 @@ describe('UltraRareTraitPanel Component', () => {
 
     it('should apply green border/bg when achievable', () => {
       const { container } = render(<UltraRareTraitPanel traits={[mockExoticTrait]} />);
-      const statusSection = container.querySelector('.border-green-200.bg-green-50\\/50');
+      // Migrated to emerald-500/30 border
+      const statusSection = container.querySelector('.border-emerald-500\\/30');
       expect(statusSection).toBeInTheDocument();
     });
 
     it('should apply amber border/bg when not achievable', () => {
       const { container } = render(<UltraRareTraitPanel traits={[mockUltraRareTrait]} />);
-      const statusSection = container.querySelector('.border-amber-200.bg-amber-50\\/50');
+      // Migrated to amber-500/30 border
+      const statusSection = container.querySelector('.border-amber-500\\/30');
       expect(statusSection).toBeInTheDocument();
     });
   });
@@ -371,7 +379,8 @@ describe('UltraRareTraitPanel Component', () => {
 
     it('should apply blue border/bg to groom section', () => {
       const { container } = render(<UltraRareTraitPanel traits={[mockExoticTrait]} />);
-      const groomSection = container.querySelector('.border-blue-200.bg-blue-50\\/50');
+      // Migrated to blue-500/30 border
+      const groomSection = container.querySelector('.border-blue-500\\/30');
       expect(groomSection).toBeInTheDocument();
     });
   });
@@ -379,7 +388,8 @@ describe('UltraRareTraitPanel Component', () => {
   describe('decorative effects', () => {
     it('should render shine effect', () => {
       const { container } = render(<UltraRareTraitPanel traits={[mockExoticTrait]} />);
-      const shineEffect = container.querySelector('.bg-white\\/20.rounded-full.blur-3xl');
+      // Migrated bg-white/20 -> bg-white/10 (lower opacity for dark theme)
+      const shineEffect = container.querySelector('.bg-white\\/10.rounded-full.blur-3xl');
       expect(shineEffect).toBeInTheDocument();
     });
   });
@@ -401,8 +411,10 @@ describe('UltraRareTraitPanel Component', () => {
       const { container } = render(
         <UltraRareTraitPanel traits={[mockExoticTrait, mockUltraRareTrait]} />
       );
-      expect(container.querySelector('.border-purple-300')).toBeInTheDocument();
-      expect(container.querySelector('.border-amber-300')).toBeInTheDocument();
+      // Migrated to alpha-channel borders
+      expect(container.querySelector('.border-purple-500\\/40')).toBeInTheDocument();
+      // Migrated to amber-500/40 for ultra-rare cards
+      expect(container.querySelector('.border-amber-500\\/40')).toBeInTheDocument();
     });
 
     it('should render 3+ traits correctly', () => {

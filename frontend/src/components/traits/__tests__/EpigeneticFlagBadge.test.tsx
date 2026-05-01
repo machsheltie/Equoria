@@ -275,7 +275,8 @@ describe('EpigeneticFlagBadge Component', () => {
       if (!badge) throw new Error('Badge not found');
       await user.hover(badge);
 
-      const tooltip = container.querySelector('.absolute.z-50.bottom-full');
+      // Tooltip now uses z-index token instead of literal z-50
+      const tooltip = container.querySelector('.absolute.z-\\[var\\(--z-modal\\)\\].bottom-full');
       expect(tooltip).toBeInTheDocument();
     });
   });

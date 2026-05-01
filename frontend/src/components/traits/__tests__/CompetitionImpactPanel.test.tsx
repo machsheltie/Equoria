@@ -97,14 +97,17 @@ describe('CompetitionImpactPanel Component', () => {
 
     it('should display trophy icon', () => {
       const { container } = render(<CompetitionImpactPanel trait={baseTrait} />);
-      expect(container.querySelector('.text-slate-600')).toBeInTheDocument();
+      // Trophy icon now uses muted-text color in dark theme
+      expect(container.querySelector('.text-\\[rgb\\(148\\,163\\,184\\)\\]')).toBeInTheDocument();
     });
   });
 
   describe('total impact calculation', () => {
     it('should display zero total impact', () => {
       render(<CompetitionImpactPanel trait={baseTrait} />);
-      expect(screen.getByText('0')).toBeInTheDocument();
+      // Multiple "0" values (per-discipline + total); assert at least one is present
+      const zeroes = screen.getAllByText('0');
+      expect(zeroes.length).toBeGreaterThan(0);
     });
 
     it('should display positive total impact', () => {
@@ -160,9 +163,9 @@ describe('CompetitionImpactPanel Component', () => {
         },
       };
       render(<CompetitionImpactPanel trait={trait} />);
-      expect(screen.getByText('🏆 Best For:')).toBeInTheDocument();
-      expect(screen.getByText('Dressage')).toBeInTheDocument();
-      expect(screen.getByText('Racing')).toBeInTheDocument();
+      expect(screen.getByText('Best For:')).toBeInTheDocument();
+      expect(screen.getAllByText('Dressage').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Racing').length).toBeGreaterThan(0);
     });
 
     it('should not display best disciplines when no positive impacts', () => {
@@ -171,7 +174,7 @@ describe('CompetitionImpactPanel Component', () => {
         competitionImpact: baseImpact,
       };
       render(<CompetitionImpactPanel trait={trait} />);
-      expect(screen.queryByText('🏆 Best For:')).not.toBeInTheDocument();
+      expect(screen.queryByText('Best For:')).not.toBeInTheDocument();
     });
 
     it('should display top 3 disciplines only', () => {
@@ -187,10 +190,10 @@ describe('CompetitionImpactPanel Component', () => {
         },
       };
       render(<CompetitionImpactPanel trait={trait} />);
-      // Should show top 3: Dressage, Show Jumping, Cross Country
-      expect(screen.getByText('Dressage')).toBeInTheDocument();
-      expect(screen.getByText('Show Jumping')).toBeInTheDocument();
-      expect(screen.getByText('Cross Country')).toBeInTheDocument();
+      // Should show top 3: Dressage, Show Jumping, Cross Country (each appears in best section + breakdown)
+      expect(screen.getAllByText('Dressage').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Show Jumping').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Cross Country').length).toBeGreaterThan(0);
     });
   });
 
@@ -249,15 +252,19 @@ describe('CompetitionImpactPanel Component', () => {
   describe('impact bars visualization', () => {
     it('should render impact bars for all disciplines', () => {
       const { container } = render(<CompetitionImpactPanel trait={baseTrait} />);
-      // Check for progress bar containers
-      const progressBars = container.querySelectorAll('.bg-slate-100.rounded-full');
+      // Progress bar tracks now use rgba dark-theme background
+      const progressBars = container.querySelectorAll(
+        '.bg-\\[rgba\\(15\\,35\\,70\\,0\\.5\\)\\].rounded-full'
+      );
       expect(progressBars.length).toBe(6); // One for each discipline
     });
 
     it('should show center line in impact bars', () => {
       const { container } = render(<CompetitionImpactPanel trait={baseTrait} />);
-      // Check for center line
-      const centerLines = container.querySelectorAll('.left-1\\/2.bg-slate-300');
+      // Center line now uses dark-theme accent
+      const centerLines = container.querySelectorAll(
+        '.left-1\\/2.bg-\\[rgba\\(37\\,99\\,235\\,0\\.3\\)\\]'
+      );
       expect(centerLines.length).toBe(6);
     });
 
@@ -370,7 +377,8 @@ describe('CompetitionImpactPanel Component', () => {
 
     it('should show Zap icon for synergies', () => {
       const { container } = render(<CompetitionImpactPanel trait={traitWithSynergy} />);
-      expect(container.querySelector('.text-purple-600')).toBeInTheDocument();
+      // Zap icon now uses purple-400 in dark theme
+      expect(container.querySelector('.text-purple-400')).toBeInTheDocument();
     });
   });
 
@@ -400,8 +408,9 @@ describe('CompetitionImpactPanel Component', () => {
   describe('styling and layout', () => {
     it('should apply gradient background to summary section', () => {
       const { container } = render(<CompetitionImpactPanel trait={baseTrait} />);
+      // Summary section now uses dark-theme rgba background
       expect(
-        container.querySelector('.bg-gradient-to-br.from-slate-50.to-gray-50')
+        container.querySelector('.bg-\\[rgba\\(15\\,35\\,70\\,0\\.4\\)\\]')
       ).toBeInTheDocument();
     });
 
@@ -414,7 +423,10 @@ describe('CompetitionImpactPanel Component', () => {
         },
       };
       const { container } = render(<CompetitionImpactPanel trait={trait} />);
-      expect(container.querySelector('.bg-green-50')).toBeInTheDocument();
+      // Best disciplines section uses emerald rgba background
+      expect(
+        container.querySelector('.bg-\\[rgba\\(16\\,185\\,129\\,0\\.1\\)\\]')
+      ).toBeInTheDocument();
     });
 
     it('should apply purple gradient to synergy section', () => {
@@ -433,14 +445,16 @@ describe('CompetitionImpactPanel Component', () => {
         },
       };
       const { container } = render(<CompetitionImpactPanel trait={traitWithSynergy} />);
-      expect(
-        container.querySelector('.bg-gradient-to-br.from-purple-50.to-pink-50')
-      ).toBeInTheDocument();
+      // Synergy section uses purple-500/30 border in dark theme
+      expect(container.querySelector('.border-purple-500\\/30')).toBeInTheDocument();
     });
 
     it('should apply blue background to explanation note', () => {
       const { container } = render(<CompetitionImpactPanel trait={baseTrait} />);
-      expect(container.querySelector('.bg-blue-50')).toBeInTheDocument();
+      // Explanation note uses blue rgba background in dark theme
+      expect(
+        container.querySelector('.bg-\\[rgba\\(37\\,99\\,235\\,0\\.1\\)\\]')
+      ).toBeInTheDocument();
     });
   });
 

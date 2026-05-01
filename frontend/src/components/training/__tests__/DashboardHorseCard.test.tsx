@@ -118,8 +118,8 @@ describe('DashboardHorseCard', () => {
       render(<DashboardHorseCard horse={readyHorse} onTrain={mockOnTrain} />);
 
       const badge = screen.getByTestId('status-badge');
-      expect(badge).toHaveClass('bg-green-100');
-      expect(badge).toHaveClass('text-green-800');
+      expect(badge).toHaveClass('bg-[rgba(16,185,129,0.1)]');
+      expect(badge).toHaveClass('text-emerald-400');
     });
 
     it('applies cooldown styling for cooldown status', () => {
@@ -133,8 +133,8 @@ describe('DashboardHorseCard', () => {
       render(<DashboardHorseCard horse={cooldownHorse} onTrain={mockOnTrain} />);
 
       const badge = screen.getByTestId('status-badge');
-      expect(badge).toHaveClass('bg-amber-100');
-      expect(badge).toHaveClass('text-amber-800');
+      expect(badge).toHaveClass('bg-[rgba(212,168,67,0.1)]');
+      expect(badge).toHaveClass('text-amber-400');
     });
 
     it('applies ineligible styling for ineligible status', () => {
@@ -147,8 +147,8 @@ describe('DashboardHorseCard', () => {
       render(<DashboardHorseCard horse={ineligibleHorse} onTrain={mockOnTrain} />);
 
       const badge = screen.getByTestId('status-badge');
-      expect(badge).toHaveClass('bg-slate-100');
-      expect(badge).toHaveClass('text-slate-700');
+      expect(badge).toHaveClass('bg-[rgba(15,35,70,0.5)]');
+      expect(badge).toHaveClass('text-[rgb(148,163,184)]');
     });
   });
 

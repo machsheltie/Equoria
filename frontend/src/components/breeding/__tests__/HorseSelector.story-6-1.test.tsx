@@ -180,7 +180,8 @@ describe('HorseSelector - Story 6-1', () => {
 
       const blazeButton = screen.getByLabelText('Select Blaze');
       expect(blazeButton).toBeDisabled();
-      expect(screen.getByText('Injured')).toBeInTheDocument();
+      // "Injured" reason text now appears in multiple places (status badge + tooltip).
+      expect(screen.getAllByText('Injured').length).toBeGreaterThan(0);
     });
 
     it('should disable horses on breeding cooldown', () => {
@@ -276,7 +277,9 @@ describe('HorseSelector - Story 6-1', () => {
       );
 
       const thunderButton = screen.getByLabelText('Select Thunder');
-      expect(thunderButton).toHaveClass('border-emerald-500', 'bg-emerald-50');
+      // Component migrated bg-emerald-50 -> bg-[rgba(16,185,129,0.1)] (dark theme)
+      expect(thunderButton).toHaveClass('border-emerald-500');
+      expect(thunderButton.className).toMatch(/bg-\[rgba\(16,185,129/);
       expect(screen.getByText('✓ Selected')).toBeInTheDocument();
     });
   });

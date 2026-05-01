@@ -681,7 +681,7 @@ describe('XpIntegration', () => {
       });
 
       // Close the modal
-      await user.click(screen.getByTestId('close-modal-button'));
+      await user.click(screen.getByTestId('competition-results-modal-close-button'));
 
       await waitFor(() => {
         expect(screen.queryByTestId('competition-results-modal')).not.toBeInTheDocument();

@@ -217,7 +217,8 @@ describe('HorseFilters', () => {
   });
 
   describe('Discipline Filter', () => {
-    const disciplines = ['Racing', 'Dressage', 'ShowJumping', 'Eventing', 'Endurance', 'Trail'];
+    // Component now sources disciplines from DISCIPLINE_VALUES; sample real names.
+    const disciplines = ['Racing', 'Dressage', 'Show Jumping', 'Eventing', 'Endurance', 'Hunter'];
 
     it('should render all discipline checkboxes', () => {
       render(<HorseFilters {...mockProps} />);

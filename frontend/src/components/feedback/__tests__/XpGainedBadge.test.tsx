@@ -143,8 +143,9 @@ describe('XpGainedBadge', () => {
     it('should have white text for contrast', () => {
       render(<XpGainedBadge xpAmount={150} show={true} />);
 
+      // Component migrated to design tokens: text-white → text-[var(--text-primary)]
       const badge = screen.getByTestId('xp-gained-badge');
-      expect(badge).toHaveClass('text-white');
+      expect(badge).toHaveClass('text-[var(--text-primary)]');
     });
 
     it('should have rounded pill shape and shadow', () => {

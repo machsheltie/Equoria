@@ -24,14 +24,15 @@ describe('NarrativeChip', () => {
   it('applies ready variant styling', () => {
     render(<NarrativeChip text="Go!" variant="ready" />);
     const chip = screen.getByText('Go!');
-    // Ready variant has gold-related classes
-    expect(chip.className).toContain('text-[var(--gold-300)]');
+    // Ready variant migrated from --gold-300 to --gold-light token
+    expect(chip.className).toContain('text-[var(--gold-light)]');
   });
 
   it('applies active variant styling', () => {
     render(<NarrativeChip text="In progress" variant="active" />);
     const chip = screen.getByText('In progress');
-    expect(chip.className).toContain('text-[var(--electric-blue-300)]');
+    // Active variant migrated from --electric-blue-300 to --status-info token
+    expect(chip.className).toContain('text-[var(--status-info)]');
   });
 
   it('applies cooldown variant styling', () => {

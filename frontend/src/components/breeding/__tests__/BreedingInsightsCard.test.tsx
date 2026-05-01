@@ -100,34 +100,37 @@ describe('BreedingInsightsCard Component', () => {
       const exceptionalInsights = { ...mockInsights, lineageQualityScore: 90 };
       render(<BreedingInsightsCard insights={exceptionalInsights} />);
       const scoreElement = screen.getByText('90');
-      expect(scoreElement).toHaveClass('text-purple-600');
+      // Dark theme: -600 -> -400 for contrast on dark bg
+      expect(scoreElement).toHaveClass('text-purple-400');
     });
 
     it('should apply green color for Excellent tier', () => {
       render(<BreedingInsightsCard insights={mockInsights} />);
       const scoreElement = screen.getByText('78');
-      expect(scoreElement).toHaveClass('text-green-600');
+      // Component uses emerald-400 (was green-600)
+      expect(scoreElement).toHaveClass('text-emerald-400');
     });
 
     it('should apply blue color for Good tier', () => {
       const goodInsights = { ...mockInsights, lineageQualityScore: 60 };
       render(<BreedingInsightsCard insights={goodInsights} />);
       const scoreElement = screen.getByText('60');
-      expect(scoreElement).toHaveClass('text-blue-600');
+      expect(scoreElement).toHaveClass('text-blue-400');
     });
 
     it('should apply yellow color for Average tier', () => {
       const averageInsights = { ...mockInsights, lineageQualityScore: 45 };
       render(<BreedingInsightsCard insights={averageInsights} />);
       const scoreElement = screen.getByText('45');
-      expect(scoreElement).toHaveClass('text-yellow-600');
+      // Component uses amber-400 (was yellow-600)
+      expect(scoreElement).toHaveClass('text-amber-400');
     });
 
     it('should apply amber color for Below Average tier', () => {
       const belowAverageInsights = { ...mockInsights, lineageQualityScore: 35 };
       render(<BreedingInsightsCard insights={belowAverageInsights} />);
       const scoreElement = screen.getByText('35');
-      expect(scoreElement).toHaveClass('text-amber-600');
+      expect(scoreElement).toHaveClass('text-amber-400');
     });
 
     it('should render progress bar with correct width', () => {
@@ -169,7 +172,8 @@ describe('BreedingInsightsCard Component', () => {
 
     it('should apply green border and background', () => {
       const { container } = render(<BreedingInsightsCard insights={mockInsights} />);
-      const strengthsSection = container.querySelector('.border-green-200.bg-green-50');
+      // Migrated to emerald-500/30 border + rgba(16,185,129,0.1) bg
+      const strengthsSection = container.querySelector('.border-emerald-500\\/30');
       expect(strengthsSection).toBeInTheDocument();
     });
   });
@@ -199,7 +203,8 @@ describe('BreedingInsightsCard Component', () => {
 
     it('should apply blue border and background', () => {
       const { container } = render(<BreedingInsightsCard insights={mockInsights} />);
-      const recsSection = container.querySelector('.border-blue-200.bg-blue-50');
+      // Migrated to blue-500/30 border + rgba(37,99,235,0.1) bg
+      const recsSection = container.querySelector('.border-blue-500\\/30');
       expect(recsSection).toBeInTheDocument();
     });
   });
@@ -231,8 +236,10 @@ describe('BreedingInsightsCard Component', () => {
 
     it('should apply emerald border and background', () => {
       const { container } = render(<BreedingInsightsCard insights={mockInsights} />);
-      const strategiesSection = container.querySelector('.border-emerald-200.bg-emerald-50');
-      expect(strategiesSection).toBeInTheDocument();
+      // Migrated to emerald-500/30 border (same palette as strengths section)
+      const sections = container.querySelectorAll('.border-emerald-500\\/30');
+      // At least 2 emerald sections: strengths + optimal care strategies
+      expect(sections.length).toBeGreaterThanOrEqual(2);
     });
   });
 
@@ -261,7 +268,10 @@ describe('BreedingInsightsCard Component', () => {
 
     it('should apply slate border and background', () => {
       const { container } = render(<BreedingInsightsCard insights={mockInsights} />);
-      const considerationsSection = container.querySelector('.border-slate-300.bg-slate-50');
+      // Migrated from slate-300/slate-50 to dark-theme rgba navy tokens
+      const considerationsSection = container.querySelector(
+        '.border-\\[rgba\\(37\\,99\\,235\\,0\\.3\\)\\].bg-\\[rgba\\(15\\,35\\,70\\,0\\.5\\)\\]'
+      );
       expect(considerationsSection).toBeInTheDocument();
     });
   });
@@ -306,7 +316,8 @@ describe('BreedingInsightsCard Component', () => {
 
     it('should apply amber border and background', () => {
       const { container } = render(<BreedingInsightsCard insights={mockInsights} />);
-      const warningsSection = container.querySelector('.border-amber-300.bg-amber-50');
+      // Migrated to amber-500/30 border + rgba(212,168,67,0.1) parchment bg
+      const warningsSection = container.querySelector('.border-amber-500\\/30');
       expect(warningsSection).toBeInTheDocument();
     });
   });
