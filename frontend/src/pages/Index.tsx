@@ -243,7 +243,7 @@ const Index = () => {
       {/* Horse grid — 300px min-width per card, auto-fill for responsive 3-col on laptop */}
       <section aria-label="Your horses">
         {horsesLoading ? (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-5">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5">
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div
                 key={i}
@@ -276,7 +276,7 @@ const Index = () => {
             </Button>
           </div>
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-5">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5">
             {horseList.slice(0, 12).map((horse) => (
               <HorseCard key={horse.id} horse={horse} />
             ))}

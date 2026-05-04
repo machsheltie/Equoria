@@ -193,7 +193,7 @@ const StableView = () => {
     if (isLoading) {
       return (
         <div
-          className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-5 p-4"
+          className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5 p-4"
           aria-label="Loading horses"
         >
           {[...Array(6)].map((_, i) => (
@@ -308,7 +308,7 @@ const StableView = () => {
 
         {/* Grid or List view */}
         {viewMode === 'grid' ? (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-5">
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5">
             {paginated.map(({ horse }) => (
               <StableHorseCard
                 key={horse.id}

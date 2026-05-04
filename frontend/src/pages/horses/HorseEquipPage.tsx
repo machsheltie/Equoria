@@ -100,7 +100,7 @@ const HorseEquipPage: React.FC = () => {
               .
             </p>
           ) : (
-            <ul className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {data.tack.map((item) => {
                 const isEquipped = item.equippedToHorseId === horseId;
                 const pendingThisItem =
@@ -206,7 +206,7 @@ const HorseEquipPage: React.FC = () => {
               </Button>
             </div>
           ) : (
-            <ul className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {data.feed.map((f) => {
                 const isEquipped = f.isCurrentlyEquippedToThisHorse;
                 const tierId = f.feedType as FeedItem['id'];
