@@ -1213,6 +1213,7 @@ router.get(
   '/:id/overview',
   queryRateLimiter,
   validateHorseId,
+  authenticateToken,
   requireOwnership('horse'),
   async (req, res) => {
     try {
