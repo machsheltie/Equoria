@@ -6,6 +6,7 @@
 
 import express from 'express';
 import { authenticateToken } from '../../../middleware/auth.mjs';
+import { requireOwnership } from '../../../middleware/ownership.mjs';
 import {
   browseListings,
   listHorse,
@@ -26,7 +27,13 @@ router.get('/', browseListings);
 
 // Seller flow
 router.post('/list', listHorse);
-router.delete('/list/:horseId', delistHorse);
+// CWE-639: requireOwnership('horse') returns 404 for both not-found and
+// not-owned, preventing horse-ID enumeration via 403 vs 404 disclosure.
+router.delete(
+  '/list/:horseId',
+  requireOwnership('horse', { idParam: 'horseId' }),
+  delistHorse,
+);
 
 // My listings and history (static segments before :horseId)
 router.get('/my-listings', myListings);

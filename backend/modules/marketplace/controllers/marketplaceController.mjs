@@ -192,27 +192,16 @@ export async function listHorse(req, res) {
  */
 export async function delistHorse(req, res) {
   try {
-    const userId = req.user.id;
-    const horseId = parseInt(req.params.horseId, 10);
+    // Ownership validated by requireOwnership('horse') middleware on the route.
+    // req.horse is the validated, owned record.
+    const horse = req.horse;
 
-    if (isNaN(horseId)) {
-      return res.status(400).json({ success: false, message: 'Invalid horseId' });
-    }
-
-    const horse = await prisma.horse.findUnique({ where: { id: horseId } });
-
-    if (!horse) {
-      return res.status(404).json({ success: false, message: 'Horse not found' });
-    }
-    if (horse.userId !== userId) {
-      return res.status(403).json({ success: false, message: 'You do not own this horse' });
-    }
     if (!horse.forSale) {
       return res.status(400).json({ success: false, message: 'Horse is not listed for sale' });
     }
 
     await prisma.horse.update({
-      where: { id: horseId },
+      where: { id: horse.id },
       data: { forSale: false, salePrice: 0 },
     });
 
