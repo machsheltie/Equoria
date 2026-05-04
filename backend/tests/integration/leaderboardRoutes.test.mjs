@@ -77,6 +77,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
           { name: { contains: 'API Test' } },
           { name: 'Competition Integration Champion' },
           { name: 'TestHorse Nova' },
+          { name: 'Cross System Test Horse' }, // crossSystemValidation suite leak
           { name: { startsWith: 'StatsActiveHorse' } },
           { name: { startsWith: 'TestHorse_' } },
           { name: { startsWith: 'CompetitionAPIHorse' } },
@@ -125,6 +126,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
           { name: { contains: 'API Test' } },
           { name: 'Competition Integration Champion' },
           { name: 'TestHorse Nova' },
+          { name: 'Cross System Test Horse' },
           { name: { startsWith: 'Atlas Prime' } }, // Beta Readiness suite leak
         ],
       },
@@ -324,6 +326,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
           { horse: { name: { contains: 'API Test' } } },
           { horse: { name: 'Competition Integration Champion' } },
           { horse: { name: 'TestHorse Nova' } },
+          { horse: { name: 'Cross System Test Horse' } },
           { showName: { contains: 'API Test' } },
           { showName: { contains: 'Grand Prix Classic' } },
           { showName: { contains: 'Regional Championship' } },
@@ -354,6 +357,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
           { name: { contains: 'API Test' } },
           { name: 'Competition Integration Champion' },
           { name: 'TestHorse Nova' },
+          { name: 'Cross System Test Horse' },
           { name: { startsWith: 'Atlas Prime' } }, // Beta Readiness suite leak
         ],
       },
