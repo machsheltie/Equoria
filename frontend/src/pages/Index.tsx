@@ -240,7 +240,7 @@ const Index = () => {
       {/* Next actions or getting started */}
       {isNewPlayer ? <GettingStartedCard /> : <NextActionsBar />}
 
-      {/* Horse grid — 300px min-width per card, auto-fill for responsive 3-col on laptop */}
+      {/* Horse grid — 250px min-width per card, auto-fill for responsive 3-col on laptop */}
       <section aria-label="Your horses">
         {horsesLoading ? (
           <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5">
