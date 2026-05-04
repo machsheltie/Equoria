@@ -26,7 +26,7 @@ describe('NavPanel — full exposure', () => {
 
     expect(screen.getByRole('link', { name: /home/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /my stable/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /training/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /inventory/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /competitions/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /breeding/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /marketplace/i })).toBeInTheDocument();

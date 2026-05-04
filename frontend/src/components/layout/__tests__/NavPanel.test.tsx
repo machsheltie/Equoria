@@ -32,9 +32,12 @@ describe('NavPanel — full navigation exposure', () => {
     expect(screen.getByRole('link', { name: /my stable/i })).toBeInTheDocument();
   });
 
-  it('shows /training link', () => {
+  it('shows /inventory link', () => {
+    // A13 (feed-system redesign 2026-04-29) swapped Training off the main
+    // nav and promoted Inventory; Training remains a route-only registration
+    // accessible by direct URL but no longer appears in NavPanel.
     renderPanel();
-    expect(screen.getByRole('link', { name: /training/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /inventory/i })).toBeInTheDocument();
   });
 
   it('shows /bank link', () => {
