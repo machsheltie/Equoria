@@ -91,7 +91,8 @@ export function sampleStat({ mean, std_dev }) {
  *   3. The clamp step may push the post-scale total back above `cap` (when
  *      some stats were rounded UP to 1). Iteratively decrement the highest
  *      stat by 1 until the total reaches `cap`. This terminates: in the
- *      worst case every stat is 1 and total = 12, well under cap.
+ *      worst case every stat is 1 and total = STAT_KEYS.length, well under
+ *      any realistic cap.
  *
  * Why proportional + iterative trim instead of a single pass: pure
  * proportional scaling can violate the cap when low-end stats clamp to 1.
@@ -120,7 +121,7 @@ export function clampStatsToTotalCap(stats, cap) {
     const sorted = Object.entries(result).sort(([, a], [, b]) => b - a);
     const target = sorted.find(([, v]) => v > 1);
     if (!target) {
-      break; // safety; mathematically unreachable when cap ≥ 12
+      break; // safety; mathematically unreachable when cap ≥ STAT_KEYS.length
     }
     result[target[0]] -= 1;
     total -= 1;

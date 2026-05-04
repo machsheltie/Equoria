@@ -273,9 +273,14 @@ export const getActiveSessions = async (req, res, next) => {
       ? hashRefreshToken(req.cookies.refreshToken)
       : null;
 
-    // Destructure tokenHash out of each row BEFORE the response mapper sees
-    // it. Defense in depth — a future maintainer who adds `...s` or
-    // `tokenHash: s.tokenHash` to the response shape cannot leak the hash.
+    // The PRIMARY defense against tokenHash leakage is the explicit
+    // 5-field allowlist below — if a field isn't named in the response
+    // object literal, it isn't returned. The destructure is a SECONDARY
+    // guard: by pulling tokenHash into a local before constructing the
+    // response, any future maintainer who naively writes `...rest` into
+    // the response object cannot accidentally splat tokenHash back in.
+    // (Writing `tokenHash: tokenHash` explicitly would still leak — but
+    // that's a code-review-visible mistake, not a quiet refactor hazard.)
     const sessionViews = sessions.map(({ tokenHash, ...rest }) => ({
       id: rest.id,
       createdAt: rest.createdAt,
