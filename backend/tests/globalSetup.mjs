@@ -56,6 +56,20 @@ export default async function globalSetup() {
     ];
     await prisma.horse.deleteMany({ where: { name: { in: testHorseNames } } });
 
+    // Prefix-pattern leaks from E2E suites that run against the same real DB.
+    // The Beta Readiness route-families spec adds afterAll cleanup for these,
+    // but a crashed-mid-test prior run can still leave them behind. Defense
+    // in depth: wipe by prefix on every jest startup.
+    await prisma.competitionResult.deleteMany({
+      where: { showName: { startsWith: 'Readiness Show' } },
+    });
+    await prisma.show.deleteMany({
+      where: { name: { startsWith: 'Readiness Show' } },
+    });
+    await prisma.horse.deleteMany({
+      where: { name: { startsWith: 'Atlas Prime' } },
+    });
+
     // Remove hardcoded test users by email or username
     const testEmails = ['ratelimit@example.com', 'memory@test.com'];
     await prisma.user.deleteMany({ where: { email: { in: testEmails } } });

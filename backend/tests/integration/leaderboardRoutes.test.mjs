@@ -80,6 +80,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
           { name: { startsWith: 'StatsActiveHorse' } },
           { name: { startsWith: 'TestHorse_' } },
           { name: { startsWith: 'CompetitionAPIHorse' } },
+          { name: { startsWith: 'Atlas Prime' } }, // Beta Readiness suite leak (`_flows` suffix)
         ],
       },
       select: { id: true },
@@ -99,6 +100,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
           { showName: { startsWith: 'StatsShow_' } },
           { showName: { startsWith: 'CompetitionAPIShow_' } },
           { showName: { startsWith: 'TestShow_' } },
+          { showName: { startsWith: 'Readiness Show' } }, // Beta Readiness suite leak
         ],
       },
     });
@@ -123,6 +125,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
           { name: { contains: 'API Test' } },
           { name: 'Competition Integration Champion' },
           { name: 'TestHorse Nova' },
+          { name: { startsWith: 'Atlas Prime' } }, // Beta Readiness suite leak
         ],
       },
     });
@@ -351,6 +354,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
           { name: { contains: 'API Test' } },
           { name: 'Competition Integration Champion' },
           { name: 'TestHorse Nova' },
+          { name: { startsWith: 'Atlas Prime' } }, // Beta Readiness suite leak
         ],
       },
     });
