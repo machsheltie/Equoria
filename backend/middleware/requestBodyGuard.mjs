@@ -323,6 +323,62 @@ export function prototypePollutionGuard() {
 }
 
 /**
+ * Express middleware: rejects requests whose parsed querystring contains
+ * any prototype-pollution key. Apply AFTER Express's query parser populates
+ * `req.query` (i.e., effectively any time after `app.set('query parser', ...)`
+ * — which is on by default).
+ *
+ * Why this exists (21R-SEC-4, Equoria-iq84): Express ships qs as the default
+ * extended query parser. qs honours bracket syntax, so `?__proto__[isAdmin]=1`
+ * yields `req.query = { __proto__: { isAdmin: '1' } }` as an own property.
+ * Without this guard, downstream handlers that spread or copy `req.query`
+ * could pollute Object.prototype indirectly (e.g.
+ * `Object.assign({}, req.query, defaults)` or via libraries that walk own
+ * properties). `prototypePollutionGuard` only inspects `req.body`, leaving
+ * the query surface unguarded — see Blind Hunter audit findings on the
+ * original 21R hardening pass.
+ *
+ * Path params (`req.params`) are intentionally NOT covered: Express
+ * populates them by matching route patterns like `/horses/:id` against the
+ * URL pathname, so each param is always a plain string. There is no nested
+ * structure where `__proto__` could appear, and the route definitions in
+ * this codebase do not use any custom param-parsing middleware. Headers
+ * and cookies are likewise plain string maps from the framework's
+ * standpoint and are not in this middleware's scope.
+ */
+export function prototypePollutionGuardQuery() {
+  return (req, res, next) => {
+    if (req.query && typeof req.query === 'object') {
+      let offendingPath;
+      try {
+        offendingPath = findPollutionKey(req.query);
+      } catch (err) {
+        if (err && err.code === 'BODY_DEPTH_EXCEEDED') {
+          logger.warn(
+            `[requestBodyGuard] Rejected over-deep querystring on ${req.method} ${req.path}: ${err.message}`,
+          );
+          return res.status(400).json({
+            success: false,
+            message: 'Querystring nesting too deep',
+          });
+        }
+        return next(err);
+      }
+      if (offendingPath) {
+        logger.warn(
+          `[requestBodyGuard] Rejected querystring prototype-pollution attempt on ${req.method} ${req.path}: key=${offendingPath}`,
+        );
+        return res.status(400).json({
+          success: false,
+          message: `Querystring contains a forbidden key (${offendingPath})`,
+        });
+      }
+    }
+    next();
+  };
+}
+
+/**
  * Express error handler that translates body-parser failures (including the
  * DUPLICATE_JSON_KEY error thrown by `secureJsonBodyParser`) into the
  * standard `{ success: false, message }` envelope with HTTP 400.

@@ -137,6 +137,7 @@ import {
   verifyJsonBody,
   verifyUrlEncodedBody,
   rejectPollutedRequestBody,
+  rejectPollutedRequestQuery,
   requestBodySecurityErrorHandler,
 } from './middleware/requestBodySecurity.mjs';
 
@@ -449,6 +450,10 @@ app.use('/api/', apiLimiter);
 app.use(express.json({ limit: '10mb', verify: verifyJsonBody }));
 app.use(express.urlencoded({ extended: true, limit: '10mb', verify: verifyUrlEncodedBody }));
 app.use(rejectPollutedRequestBody);
+// 21R-SEC-4 (Equoria-iq84): query-side companion to rejectPollutedRequestBody.
+// Express's qs parser turns `?__proto__[isAdmin]=1` into a polluting nested
+// object on req.query; this guard rejects it before any handler runs.
+app.use(rejectPollutedRequestQuery);
 
 // Cookie parsing middleware for httpOnly cookies
 app.use(cookieParser());

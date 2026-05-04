@@ -535,6 +535,98 @@ export function rejectPollutedRequestBody(req, _res, next) {
   }
 }
 
+// 21R-SEC-4 (Equoria-iq84): query-side pollution guard.
+//
+// Why this exists: Express ships qs as the default extended query parser.
+// qs honours bracket syntax, so `?constructor[prototype][isAdmin]=1` yields
+// `req.query = { constructor: { prototype: { isAdmin: '1' } } }` as own
+// properties. Without this guard, downstream handlers that spread or copy
+// req.query (e.g. `Object.assign({}, req.query, defaults)`) could pollute
+// Object.prototype indirectly. `rejectPollutedRequestBody` only inspects
+// req.body — Blind Hunter audit findings on the original 21R hardening
+// pass left req.query unguarded.
+//
+// Two-stage scan: qs in default mode silently strips `__proto__` keys
+// from the parsed object (defence-in-depth on its end), but the request
+// is still polluting and a security reviewer would expect the gate to
+// reject it explicitly rather than rely on a downstream library's
+// undocumented hygiene. Stage 1 scans the raw querystring (decoded) for
+// any forbidden key in bracket-segment position, catching `__proto__`
+// even when qs has dropped it. Stage 2 scans the parsed `req.query`
+// object via `assertNoPollutingKeys`, catching `constructor[prototype]`
+// chains qs leaves intact.
+//
+// Path params (req.params) are intentionally NOT covered: Express
+// populates them by matching route patterns like `/horses/:id` against
+// the URL pathname, so each param is always a plain string. There is no
+// nested structure where `__proto__` could appear, and the route
+// definitions in this codebase do not use any custom param-parsing
+// middleware. Headers and cookies are likewise plain string maps from
+// the framework's standpoint and outside this middleware's scope.
+//
+// Stage 2 reuses the existing `assertNoPollutingKeys` walker so the
+// detection rules (forbidden keys, depth cap, error prefix) match the
+// body-side guard. The error message prefix matches ERROR_MESSAGE_PREFIX
+// so requestBodySecurityErrorHandler returns 400 with the same envelope.
+const FORBIDDEN_QUERY_KEYS = new Set([
+  FORBIDDEN_KEY,
+  FORBIDDEN_CONSTRUCTOR_KEY,
+  FORBIDDEN_PROTOTYPE_KEY,
+]);
+
+function scanRawQueryForForbiddenKey(rawQuery) {
+  if (!rawQuery) {
+    return null;
+  }
+  // Split on '&' — qs/querystring format. Each chunk is `key=value` (or just
+  // `key`). The key portion is everything before '='.
+  for (const chunk of rawQuery.split('&')) {
+    if (!chunk) continue;
+    const eqIdx = chunk.indexOf('=');
+    const rawKey = eqIdx === -1 ? chunk : chunk.slice(0, eqIdx);
+    let decoded;
+    try {
+      // `+` → space per RFC 1866 / WHATWG URL application/x-www-form-urlencoded
+      decoded = decodeURIComponent(rawKey.replace(/\+/g, ' '));
+    } catch {
+      // Malformed percent-encoding — let qs/Express deal with it; not our
+      // problem to gate here. Skip this key.
+      continue;
+    }
+    // Bracket-syntax keys: `a[b][c]` → segments `a`, `b`, `c`. A bare key
+    // without brackets has just one segment.
+    const segments = decoded.split(/\[|\]/).filter(s => s.length > 0);
+    for (const seg of segments) {
+      if (FORBIDDEN_QUERY_KEYS.has(seg)) {
+        return seg;
+      }
+    }
+  }
+  return null;
+}
+
+export function rejectPollutedRequestQuery(req, _res, next) {
+  try {
+    // Stage 1: raw querystring scan (catches qs-stripped __proto__).
+    const qIdx = req.url ? req.url.indexOf('?') : -1;
+    if (qIdx !== -1) {
+      const rawQuery = req.url.slice(qIdx + 1);
+      const offending = scanRawQueryForForbiddenKey(rawQuery);
+      if (offending !== null) {
+        throw new AppError(`${ERROR_MESSAGE_PREFIX} forbidden key "${offending}"`, 400);
+      }
+    }
+
+    // Stage 2: parsed-object scan (catches constructor[prototype] chains).
+    if (req.query && typeof req.query === 'object') {
+      assertNoPollutingKeys(req.query, 'query');
+    }
+    next();
+  } catch (error) {
+    next(error);
+  }
+}
+
 // 21R-SEC-5 (Equoria-lf3z): urlencoded duplicate-key detector.
 //
 // Sibling to verifyJsonBody. express.urlencoded historically had no verify

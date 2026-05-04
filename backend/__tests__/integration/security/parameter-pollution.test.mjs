@@ -498,6 +498,51 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
       expect(response.body.success).toBe(false);
     });
+
+    // 21R-SEC-4 (Equoria-iq84): rejectPollutedRequestBody only inspects
+    // req.body. Without an equivalent guard on req.query, a polluting
+    // querystring like `?__proto__[isAdmin]=1` reaches the handler with
+    // qs producing { __proto__: { isAdmin: '1' } } as own properties.
+    // These sentinels assert the new query-side guard rejects with 400
+    // before any controller runs.
+    it('should reject __proto__ in querystring', async () => {
+      const response = await request(app)
+        .get('/api/horses?__proto__[isAdmin]=1')
+        .set('Authorization', `Bearer ${validToken}`)
+        .set('Origin', 'http://localhost:3000')
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toMatch(/forbidden key|__proto__/);
+    });
+
+    it('should reject constructor[prototype] in querystring', async () => {
+      const response = await request(app)
+        .get('/api/horses?constructor[prototype][isAdmin]=1')
+        .set('Authorization', `Bearer ${validToken}`)
+        .set('Origin', 'http://localhost:3000')
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toMatch(/forbidden key|constructor|prototype/);
+    });
+
+    it('should allow legitimate filter querystrings', async () => {
+      // Sentinel: prove the guard does NOT over-trigger on normal
+      // filter+pagination queries. If it did, the entire horse-list
+      // endpoint would 400 in production.
+      const response = await request(app)
+        .get('/api/horses?breed=arabian&age=5&page=1&limit=20')
+        .set('Authorization', `Bearer ${validToken}`)
+        .set('Origin', 'http://localhost:3000');
+
+      expect(response.status).not.toBe(400);
+      // The endpoint may 200 (results) or 401/403 depending on env, but
+      // must NOT 400 with the pollution-guard error.
+      if (response.status === 400) {
+        expect(response.body.message).not.toMatch(/forbidden key|__proto__|constructor/);
+      }
+    });
   });
 
   describe('Content-Type Manipulation', () => {
