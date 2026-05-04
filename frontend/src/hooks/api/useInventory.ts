@@ -34,8 +34,13 @@ export function useEquipItem() {
   return useMutation({
     mutationFn: (variables: { inventoryItemId: string; horseId: number }) =>
       inventoryApi.equipItem(variables),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      // HorseEquipPage relies on this so the tack list updates in place after
+      // equipping inline. Invalidate both the target horse and any prior horse
+      // (we don't know the prior id here — broad invalidation by prefix).
+      queryClient.invalidateQueries({ queryKey: ['equippable'] });
+      queryClient.invalidateQueries({ queryKey: ['horse', variables.horseId] });
     },
   });
 }
@@ -47,6 +52,7 @@ export function useUnequipItem() {
     mutationFn: (variables: { inventoryItemId: string }) => inventoryApi.unequipItem(variables),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      queryClient.invalidateQueries({ queryKey: ['equippable'] });
     },
   });
 }

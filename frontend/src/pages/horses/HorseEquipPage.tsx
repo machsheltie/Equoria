@@ -1,19 +1,21 @@
 /**
- * HorseEquipPage (feed-system redesign 2026-04-29, Equoria-gav7).
+ * HorseEquipPage (feed-system redesign 2026-04-29, Equoria-gav7;
+ * inline tack equip 2026-05-04, Equoria-1tho).
  *
  * Per-horse equip view at /horses/:id/equip. Two sections:
- *   - Tack: items NOT currently equipped to a different horse, with a
- *     'Equip from Inventory' link (the existing inventory equip flow handles
- *     the actual mutation — this page surfaces what's available).
- *   - Feed: the 5 catalog tiers in the user's inventory with quantity > 0,
- *     plus a 'currently equipped' card if the horse already has a tier set.
- *     Each available tier has an 'Equip' button; the equipped card has an
- *     'Unequip' button.
+ *   - Tack: items the user owns that are not equipped to a DIFFERENT horse.
+ *     Each row has an inline Equip button (or Unequip if it's already on
+ *     this horse). No detour through /inventory.
+ *   - Feed: the 5 catalog tiers in the user's inventory with quantity > 0.
+ *     The active tier renders a 'Currently equipped' label + Unequip button;
+ *     others render an Equip button that triggers an atomic switch.
  *
  * Data hooks:
  *   useEquippable(horseId)  — GET /api/v1/horses/:id/equippable
  *   useEquipFeed(horseId)   — POST /api/v1/horses/:id/equip-feed
  *   useUnequipFeed(horseId) — POST /api/v1/horses/:id/unequip-feed
+ *   useEquipItem()          — POST /api/v1/inventory/equip  (tack)
+ *   useUnequipItem()        — POST /api/v1/inventory/unequip (tack)
  */
 
 import React from 'react';
@@ -24,6 +26,7 @@ import PageHero from '@/components/layout/PageHero';
 import { Button } from '@/components/ui/button';
 import { useEquippable } from '@/hooks/api/useEquippable';
 import { useEquipFeed, useUnequipFeed } from '@/hooks/api/useEquipFeed';
+import { useEquipItem, useUnequipItem } from '@/hooks/api/useInventory';
 import { FeedItem } from '@/lib/api-client';
 
 const HorseEquipPage: React.FC = () => {
@@ -33,6 +36,8 @@ const HorseEquipPage: React.FC = () => {
   const { data, isLoading, isError } = useEquippable(horseId);
   const equipFeed = useEquipFeed(horseId);
   const unequipFeed = useUnequipFeed(horseId);
+  const equipItem = useEquipItem();
+  const unequipItem = useUnequipItem();
 
   if (isLoading) {
     return (
@@ -78,24 +83,72 @@ const HorseEquipPage: React.FC = () => {
             </p>
           ) : (
             <ul className="space-y-3">
-              {data.tack.map((item) => (
-                <li
-                  key={item.id}
-                  className="glass-panel flex items-center justify-between gap-3"
-                  data-testid={`tack-item-${item.id}`}
-                >
-                  <div>
-                    <p className="font-bold text-[var(--cream)] text-sm">{item.name}</p>
-                    {item.bonus && (
-                      <p className="text-xs text-[var(--gold-light)] mt-0.5">{item.bonus}</p>
+              {data.tack.map((item) => {
+                const isEquipped = item.equippedToHorseId === horseId;
+                const pendingThisItem =
+                  (equipItem.isPending && equipItem.variables?.inventoryItemId === item.id) ||
+                  (unequipItem.isPending && unequipItem.variables?.inventoryItemId === item.id);
+                return (
+                  <li
+                    key={item.id}
+                    className="glass-panel flex items-center justify-between gap-3"
+                    data-testid={`tack-item-${item.id}`}
+                  >
+                    <div>
+                      {isEquipped && (
+                        <p className="text-xs text-[var(--gold-light)] uppercase tracking-wide font-semibold">
+                          Currently equipped
+                        </p>
+                      )}
+                      <p className="font-bold text-[var(--cream)] text-sm">{item.name}</p>
+                      {item.bonus && (
+                        <p className="text-xs text-[var(--gold-light)] mt-0.5">{item.bonus}</p>
+                      )}
+                    </div>
+                    {isEquipped ? (
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          unequipItem.mutate(
+                            { inventoryItemId: item.id },
+                            {
+                              onSuccess: () => toast.success(`Unequipped ${item.name}.`),
+                              onError: (err) =>
+                                toast.error(
+                                  (err as { message?: string })?.message ?? 'Failed to unequip.'
+                                ),
+                            }
+                          )
+                        }
+                        disabled={pendingThisItem}
+                        data-testid={`unequip-tack-${item.id}`}
+                      >
+                        {pendingThisItem ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Unequip'}
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          equipItem.mutate(
+                            { inventoryItemId: item.id, horseId },
+                            {
+                              onSuccess: () => toast.success(`Equipped ${item.name}.`),
+                              onError: (err) =>
+                                toast.error(
+                                  (err as { message?: string })?.message ?? 'Failed to equip.'
+                                ),
+                            }
+                          )
+                        }
+                        disabled={pendingThisItem}
+                        data-testid={`equip-tack-${item.id}`}
+                      >
+                        {pendingThisItem ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Equip'}
+                      </Button>
                     )}
-                  </div>
-                  {/* Tack equip uses the existing inventory equip flow; that endpoint already exists. */}
-                  <Button asChild size="sm">
-                    <Link to="/inventory">Equip from Inventory</Link>
-                  </Button>
-                </li>
-              ))}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>
