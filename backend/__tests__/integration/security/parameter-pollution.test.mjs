@@ -266,11 +266,24 @@ describe('Parameter Pollution Attack Integration Tests', () => {
           .set('X-CSRF-Token', __csrf__.csrfToken)
           .set('Content-Type', 'application/json')
           .send(payload);
-        // We don't pin the status (the controller may accept or reject for other reasons).
-        // The contract: NO duplicate-key 400 from the security middleware.
-        if (response.status === 400 && response.body && typeof response.body.message === 'string') {
-          expect(response.body.message).not.toMatch(/duplicate/i);
-        }
+        // We don't pin the status (the controller may accept or reject for other reasons —
+        // unknown-field whitelist, validation, etc.). The contract is narrower: the security
+        // middleware MUST NOT classify these two distinct keys as duplicates.
+        //
+        // Equoria-93k8: previously this assertion was wrapped in an
+        //   `if (status === 400 && body.message is string)` guard. If the response was
+        // anything else (rate-limit 429, controller 422 with non-string message, empty
+        // body, etc.), zero assertions executed — a vacuous pass. The pattern below
+        // matches gv0r/pzpg: a 429 sentinel guards against rate-limit deflection, then
+        // a single boolean computes whether the response IS a duplicate-key rejection,
+        // and we assert that boolean is false. Mirrors the negative-control contract
+        // unconditionally.
+        expect(response.status).not.toBe(429); // not deflected by rate-limit
+        const isDuplicateKeyRejection =
+          response.status === 400 &&
+          typeof response.body?.message === 'string' &&
+          /duplicate/i.test(response.body.message);
+        expect(isDuplicateKeyRejection).toBe(false);
       });
     });
 
