@@ -130,22 +130,18 @@ interface MarketplaceData {
 ### Endpoints Used
 
 1. **GET /api/groom-marketplace**
-
    - Fetches marketplace data
    - Returns available grooms and refresh info
 
 2. **POST /api/groom-marketplace/refresh**
-
    - Refreshes marketplace with new grooms
    - Body: `{ force: boolean }`
 
 3. **POST /api/groom-marketplace/hire**
-
    - Hires a groom from marketplace
    - Body: `{ marketplaceId: string }`
 
 4. **GET /api/groom-marketplace/stats**
-
    - Retrieves marketplace statistics
    - Returns distributions and config
 
@@ -313,23 +309,19 @@ Adjust multiplier in `GroomCard` component.
 ### Planned Features
 
 1. **Filtering/Sorting**:
-
    - Filter by skill level
    - Sort by price, experience
    - Search by name/specialty
 
 2. **Favorites System**:
-
    - Bookmark grooms
    - Get notifications when favorites appear
 
 3. **Comparison Tool**:
-
    - Compare multiple grooms side-by-side
    - Stat comparison charts
 
 4. **Advanced Stats**:
-
    - Success rate predictions
    - Compatibility scores with horses
    - Historical performance data

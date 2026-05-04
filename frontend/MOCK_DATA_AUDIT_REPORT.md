@@ -24,23 +24,19 @@ All API hooks in `frontend/src/hooks/api/` are properly implemented with React Q
 #### ✅ Horse Management System (5 hooks)
 
 1. **useHorses.ts** - Horse CRUD operations
-
    - Endpoints: `/api/horses`, `/api/horses/${id}`
    - Features: List, detail, create, update, delete
    - Cache invalidation: Properly configured
 
 2. **useHorseXP.ts** - XP tracking
-
    - Endpoint: Via `horsesApi.getXP(horseId)`
    - Stale time: 1 minute
 
 3. **useProgression.ts** - Progression tracking
-
    - Endpoints: Via `horsesApi.getProgression`, `getStatHistory`, `getRecentGains`
    - Features: Stat history, recent gains
 
 4. **useHorseStats.ts** - Statistics retrieval
-
    - Endpoint: Via `horsesApi.getStats(horseId)`
 
 5. **useHorseAge.ts** - Age calculation
@@ -56,7 +52,6 @@ All API hooks in `frontend/src/hooks/api/` are properly implemented with React Q
 #### ✅ Breeding System (2 hooks)
 
 7. **useBreeding.ts** - Breeding operations
-
    - Endpoints: `/api/breeding/pairs`, `/api/breeding/foals`
    - Features: Pair horses, list foals
    - Cache invalidation: Properly configured
@@ -265,7 +260,6 @@ Test files in `frontend/src/**/__tests__/**` directories contain mocks for:
 ### Backend API Enhancements (Medium Priority)
 
 2. **Add Missing Horse Fields** (2-4 hours backend work)
-
    - Add `primary_discipline` field to Horse model
    - Add `is_legendary` boolean field
    - Include full stats in Horse API response
@@ -281,7 +275,6 @@ Test files in `frontend/src/**/__tests__/**` directories contain mocks for:
 ### Future Enhancements (Low Priority)
 
 4. **Implement Optimistic Updates** (4-6 hours)
-
    - Add optimistic updates to mutations for better UX
    - Implement rollback on mutation failure
    - Update React Query configuration

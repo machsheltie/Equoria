@@ -295,9 +295,8 @@ describe('CompetitionResultsPage', () => {
 
     it('filters passed correctly to results list', async () => {
       // Import the mocked module dynamically
-      const CompetitionResultsListModule = await import(
-        '@/components/competition/CompetitionResultsList'
-      );
+      const CompetitionResultsListModule =
+        await import('@/components/competition/CompetitionResultsList');
       const MockedResultsList = CompetitionResultsListModule.default as Mock;
 
       renderPageSimple();
