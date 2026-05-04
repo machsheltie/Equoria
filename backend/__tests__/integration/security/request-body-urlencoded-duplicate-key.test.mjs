@@ -87,11 +87,19 @@ describe('urlencoded duplicate-key rejection (21R-SEC-5)', () => {
     // payload as invalid credentials (typically 400 validation or 401),
     // but the duplicate-key message MUST NOT appear; that confirms the
     // verify hook passed through and didn't false-positive.
+    //
+    // Equoria-pzpg (2026-05-01): replaced the prior conditional
+    // `if (response.body && typeof message === 'string')` guard with
+    // unconditional assertions per OPTIMAL_FIX_DISCIPLINE §2 — same
+    // sentinel pattern as Equoria-gv0r in request-body-depth-cap.test.mjs.
     const response = await request(app).post(ENDPOINT).set('Content-Type', URLENCODED).send('email=alice@example.com');
 
-    if (response.body && typeof response.body.message === 'string') {
-      expect(response.body.message).not.toMatch(/duplicate.*urlencoded.*key/i);
-    }
+    expect(response.status).not.toBe(429);
+    const isDuplicateRejection =
+      response.status === 400 &&
+      typeof response.body?.message === 'string' &&
+      /duplicate.*urlencoded.*key/i.test(response.body.message);
+    expect(isDuplicateRejection).toBe(false);
   });
 
   it('lets distinct keys pass through (no false-positive on different names)', async () => {
@@ -100,9 +108,12 @@ describe('urlencoded duplicate-key rejection (21R-SEC-5)', () => {
       .set('Content-Type', URLENCODED)
       .send('email=a@b.c&password=secret');
 
-    if (response.body && typeof response.body.message === 'string') {
-      expect(response.body.message).not.toMatch(/duplicate.*urlencoded.*key/i);
-    }
+    expect(response.status).not.toBe(429);
+    const isDuplicateRejection =
+      response.status === 400 &&
+      typeof response.body?.message === 'string' &&
+      /duplicate.*urlencoded.*key/i.test(response.body.message);
+    expect(isDuplicateRejection).toBe(false);
   });
 
   it('respects content-type with charset parameter (matches application/x-www-form-urlencoded; charset=utf-8)', async () => {
@@ -129,17 +140,23 @@ describe('urlencoded duplicate-key rejection (21R-SEC-5)', () => {
       .set('Content-Type', 'application/json')
       .send({ email: 'a@b.c', password: 'secret' });
 
-    if (response.body && typeof response.body.message === 'string') {
-      expect(response.body.message).not.toMatch(/duplicate.*urlencoded.*key/i);
-    }
+    expect(response.status).not.toBe(429);
+    const isDuplicateRejection =
+      response.status === 400 &&
+      typeof response.body?.message === 'string' &&
+      /duplicate.*urlencoded.*key/i.test(response.body.message);
+    expect(isDuplicateRejection).toBe(false);
   });
 
   it('does not trigger on empty urlencoded body', async () => {
     const response = await request(app).post(ENDPOINT).set('Content-Type', URLENCODED).send('');
 
-    if (response.body && typeof response.body.message === 'string') {
-      expect(response.body.message).not.toMatch(/duplicate.*urlencoded.*key/i);
-    }
+    expect(response.status).not.toBe(429);
+    const isDuplicateRejection =
+      response.status === 400 &&
+      typeof response.body?.message === 'string' &&
+      /duplicate.*urlencoded.*key/i.test(response.body.message);
+    expect(isDuplicateRejection).toBe(false);
   });
 
   // Sentinel: deliberate behavior. Codebase audit (Equoria-lf3z) found no
