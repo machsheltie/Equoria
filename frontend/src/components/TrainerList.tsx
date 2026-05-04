@@ -21,6 +21,7 @@ import {
   type MarketplaceTrainer,
 } from '@/hooks/api/useTrainers';
 import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -125,17 +126,17 @@ const TrainerList: React.FC<TrainerListProps> = () => {
           <h2 className="text-xl font-bold text-white/90">Trainer Marketplace</h2>
           <p className="text-sm text-white/50 mt-0.5">Hire trainers to coach your horses</p>
         </div>
-        <button
+        <Button
           type="button"
+          size="sm"
           data-testid="refresh-marketplace-button"
           onClick={handleRefresh}
           disabled={refreshMutation.isPending}
-          className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/10 text-white/70 rounded-lg hover:bg-white/15 hover:text-[var(--text-primary)] transition-all disabled:opacity-50 text-sm"
           aria-label="Refresh marketplace"
         >
           <RefreshCw className={`w-4 h-4 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
           {data?.canRefreshFree ? 'Free Refresh' : `Refresh (${data?.refreshCost ?? 0} Coins)`}
-        </button>
+        </Button>
       </div>
 
       {/* User Balance */}
@@ -161,7 +162,7 @@ const TrainerList: React.FC<TrainerListProps> = () => {
       {/* Filters */}
       <div
         data-testid="trainer-filters"
-        className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-white/5 border border-white/10 rounded-xl"
+        className="glass-panel grid grid-cols-1 sm:grid-cols-3 gap-3"
       >
         <div>
           <label
@@ -269,7 +270,7 @@ const TrainerList: React.FC<TrainerListProps> = () => {
                 <div
                   key={trainer.marketplaceId}
                   data-testid={`trainer-card-${trainer.marketplaceId}`}
-                  className="bg-white/5 border border-white/10 rounded-xl p-5 hover:border-white/20 transition-all hover:-translate-y-0.5 hover:shadow-lg"
+                  className="glass-panel hover:-translate-y-0.5 hover:shadow-lg"
                 >
                   {/* Header */}
                   <div className="flex items-start justify-between mb-4">
@@ -324,15 +325,11 @@ const TrainerList: React.FC<TrainerListProps> = () => {
                   </p>
 
                   {/* Hire Button */}
-                  <button
+                  <Button
                     type="button"
                     onClick={() => handleHireClick(trainer)}
                     disabled={!affordable || hireMutation.isPending}
-                    className={`w-full py-2.5 px-4 rounded-lg font-bold text-sm transition-all ${
-                      affordable
-                        ? 'bg-celestial-gold/80 text-black hover:bg-celestial-gold'
-                        : 'bg-white/5 text-white/30 cursor-not-allowed border border-white/10'
-                    }`}
+                    className="w-full"
                     aria-label={`Hire ${trainer.firstName} ${trainer.lastName}`}
                     data-testid={`hire-button-${trainer.marketplaceId}`}
                   >
@@ -342,7 +339,7 @@ const TrainerList: React.FC<TrainerListProps> = () => {
                       : affordable
                         ? `Hire — ${hiringCost.toLocaleString()} Coins`
                         : 'Insufficient Funds'}
-                  </button>
+                  </Button>
                 </div>
               );
             })}
@@ -366,7 +363,7 @@ const TrainerList: React.FC<TrainerListProps> = () => {
           onClick={() => setShowHireModal(false)}
         >
           <div
-            className="bg-deep-space border border-white/10 rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200"
+            className="glass-panel-heavy rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 mb-4">
@@ -398,22 +395,23 @@ const TrainerList: React.FC<TrainerListProps> = () => {
             </div>
 
             <div className="flex gap-3">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
                 onClick={() => setShowHireModal(false)}
-                className="flex-1 px-4 py-2.5 border border-white/10 rounded-lg text-white/60 font-medium hover:bg-white/5 transition-colors text-sm"
+                className="flex-1"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={handleHireConfirm}
                 disabled={hireMutation.isPending}
-                className="flex-1 px-4 py-2.5 bg-celestial-gold/80 text-black font-bold rounded-lg hover:bg-celestial-gold transition-all active:scale-95 disabled:opacity-50 text-sm"
+                className="flex-1"
                 data-testid="confirm-hire-button"
               >
                 {hireMutation.isPending ? 'Hiring...' : 'Hire Trainer'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

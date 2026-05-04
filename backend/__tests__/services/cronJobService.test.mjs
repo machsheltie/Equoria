@@ -92,13 +92,14 @@ describe('Cron Job Service (real node-cron + real DB)', () => {
   });
 
   describe('initializeCronJobs() / stopCronJobs() lifecycle', () => {
-    it('should register two scheduled jobs visible via getCronJobStatus', () => {
+    it('should register three scheduled jobs visible via getCronJobStatus', () => {
       initializeCronJobs();
 
       const status = getCronJobStatus();
-      expect(status.totalJobs).toBe(2);
+      expect(status.totalJobs).toBe(3);
       expect(status.jobs).toHaveProperty('weeklySalaries');
       expect(status.jobs).toHaveProperty('tokenCleanup');
+      expect(status.jobs).toHaveProperty('foaling');
     });
 
     it('should report running and scheduled flags for each job', () => {

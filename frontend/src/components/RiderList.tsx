@@ -22,6 +22,7 @@ import {
 } from '@/hooks/api/useRiders';
 import { useAuth } from '@/contexts/AuthContext';
 import RiderPersonalityBadge from './rider/RiderPersonalityBadge';
+import { Button } from '@/components/ui/button';
 
 interface RiderListProps {
   userId: number;
@@ -134,16 +135,16 @@ const RiderList: React.FC<RiderListProps> = ({
 
   if (marketplaceError) {
     return (
-      <div className="bg-red-900/20 border border-red-500/30 rounded-xl p-6 text-center">
+      <div
+        className="bg-red-900/20 border border-red-500/30 rounded-xl p-6 text-center"
+        role="alert"
+      >
         <X className="w-10 h-10 text-red-400 mx-auto mb-3" />
         <h3 className="text-lg font-bold text-red-300 mb-1">Error Loading Marketplace</h3>
         <p className="text-red-400/70 text-sm">{marketplaceError.message}</p>
-        <button
-          onClick={handleRefresh}
-          className="mt-4 px-5 py-2 bg-red-700/50 text-red-200 rounded-lg hover:bg-red-700/70 text-sm"
-        >
+        <Button type="button" size="sm" onClick={handleRefresh} className="mt-4">
           Retry
-        </button>
+        </Button>
       </div>
     );
   }
@@ -156,18 +157,19 @@ const RiderList: React.FC<RiderListProps> = ({
           <h2 className="text-xl font-bold text-white/90">Rider Marketplace</h2>
           <p className="text-sm text-white/50 mt-0.5">Hire riders to compete with your horses</p>
         </div>
-        <button
+        <Button
+          type="button"
+          size="sm"
           data-testid="refresh-marketplace-button"
           onClick={handleRefresh}
           disabled={refreshMutation.isPending}
-          className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/10 text-white/70 rounded-lg hover:bg-white/15 hover:text-[var(--text-primary)] transition-all disabled:opacity-50 text-sm"
           aria-label="Refresh marketplace"
         >
           <RefreshCw className={`w-4 h-4 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
           {marketplaceData?.canRefreshFree
             ? 'Free Refresh'
             : `Refresh (${marketplaceData?.refreshCost ?? 0} Coins)`}
-        </button>
+        </Button>
       </div>
 
       {/* User Balance */}
@@ -192,7 +194,7 @@ const RiderList: React.FC<RiderListProps> = ({
       {/* Filters */}
       <div
         data-testid="rider-filters"
-        className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-4 bg-white/5 border border-white/10 rounded-xl"
+        className="glass-panel grid grid-cols-1 sm:grid-cols-3 gap-3"
       >
         <div>
           <label
@@ -260,16 +262,13 @@ const RiderList: React.FC<RiderListProps> = ({
       {/* Rider Grid */}
       <div data-testid="rider-marketplace">
         {filteredAndSortedRiders.length === 0 ? (
-          <div className="text-center py-12 border border-white/10 rounded-xl">
+          <div className="glass-panel text-center py-12">
             <Users className="w-12 h-12 text-white/20 mx-auto mb-3" />
             <h3 className="text-lg font-semibold text-white/50 mb-1">No Riders Available</h3>
             <p className="text-sm text-white/30 mb-4">Try refreshing the marketplace</p>
-            <button
-              onClick={handleRefresh}
-              className="px-5 py-2 bg-white/10 text-white/60 rounded-lg hover:bg-white/15 text-sm"
-            >
+            <Button type="button" size="sm" onClick={handleRefresh}>
               Refresh
-            </button>
+            </Button>
           </div>
         ) : (
           <div
@@ -285,7 +284,7 @@ const RiderList: React.FC<RiderListProps> = ({
                 <div
                   key={rider.marketplaceId}
                   data-testid={`rider-card-${rider.marketplaceId}`}
-                  className="bg-white/5 border border-white/10 rounded-xl p-5 hover:border-white/20 transition-all hover:-translate-y-0.5 hover:shadow-lg"
+                  className="glass-panel hover:-translate-y-0.5 hover:shadow-lg"
                 >
                   {/* Header */}
                   <div className="flex items-start justify-between mb-4">
@@ -349,14 +348,11 @@ const RiderList: React.FC<RiderListProps> = ({
                   <p className="text-xs text-white/40 italic mb-4 line-clamp-2">"{rider.bio}"</p>
 
                   {/* Hire Button */}
-                  <button
+                  <Button
+                    type="button"
                     onClick={() => handleHireClick(rider)}
                     disabled={!affordable || hireMutation.isPending}
-                    className={`w-full py-2.5 px-4 rounded-lg font-bold text-sm transition-all ${
-                      affordable
-                        ? 'bg-celestial-gold/80 text-black hover:bg-celestial-gold'
-                        : 'bg-white/5 text-white/30 cursor-not-allowed border border-white/10'
-                    }`}
+                    className="w-full"
                     aria-label={`Hire ${rider.firstName} ${rider.lastName}`}
                     data-testid={`hire-button-${rider.marketplaceId}`}
                   >
@@ -365,7 +361,7 @@ const RiderList: React.FC<RiderListProps> = ({
                       : affordable
                         ? `Hire — ${hiringCost.toLocaleString()} Coins`
                         : 'Insufficient Funds'}
-                  </button>
+                  </Button>
                 </div>
               );
             })}
@@ -389,7 +385,7 @@ const RiderList: React.FC<RiderListProps> = ({
           onClick={() => setShowHireModal(false)}
         >
           <div
-            className="bg-deep-space border border-white/10 rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200"
+            className="glass-panel-heavy rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3 mb-4">
@@ -421,20 +417,23 @@ const RiderList: React.FC<RiderListProps> = ({
             </div>
 
             <div className="flex gap-3">
-              <button
+              <Button
+                type="button"
+                variant="secondary"
                 onClick={() => setShowHireModal(false)}
-                className="flex-1 px-4 py-2.5 border border-white/10 rounded-lg text-white/60 font-medium hover:bg-white/5 transition-colors text-sm"
+                className="flex-1"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
+                type="button"
                 onClick={handleHireConfirm}
                 disabled={hireMutation.isPending}
-                className="flex-1 px-4 py-2.5 bg-celestial-gold/80 text-black font-bold rounded-lg hover:bg-celestial-gold transition-all active:scale-95 disabled:opacity-50 text-sm"
+                className="flex-1"
                 data-testid="confirm-hire-button"
               >
                 {hireMutation.isPending ? 'Hiring...' : 'Hire Rider'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

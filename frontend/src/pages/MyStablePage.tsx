@@ -14,6 +14,7 @@ import { Link } from 'react-router-dom';
 import { Star, Trophy, Heart, Award, Flame, ChevronRight } from 'lucide-react';
 import { useQueries } from '@tanstack/react-query';
 import PageHero from '@/components/layout/PageHero';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUpdateProfile } from '@/hooks/useAuth';
 import { useHorses } from '@/hooks/api/useHorses';
@@ -79,7 +80,7 @@ const StableProfileTab: React.FC<{
 }) => (
   <div className="space-y-6" data-testid="stable-profile-tab">
     {/* Stable Banner */}
-    <div className="flex items-center gap-5 p-6 bg-white/5 border border-white/10 rounded-xl">
+    <div className="flex items-center gap-5 glass-panel">
       <div className="text-5xl select-none" aria-hidden="true">
         {stable.banner}
       </div>
@@ -99,31 +100,21 @@ const StableProfileTab: React.FC<{
             className="rounded-lg bg-white/10 border border-white/20 px-3 py-2 text-sm text-white/90"
             aria-label="Stable profile name"
           />
-          <button
+          <Button
             type="button"
             onClick={onSave}
             disabled={isSaving || draftStableName.trim().length < 3}
-            className="px-4 py-2 text-sm font-medium rounded-lg bg-celestial-gold/20 border border-celestial-gold/40 text-celestial-gold disabled:opacity-50"
           >
             {isSaving ? 'Saving...' : 'Save'}
-          </button>
-          <button
-            type="button"
-            onClick={onCancelEditing}
-            disabled={isSaving}
-            className="px-4 py-2 text-sm font-medium rounded-lg bg-white/5 border border-white/10 text-white/60 disabled:opacity-50"
-          >
+          </Button>
+          <Button type="button" variant="secondary" onClick={onCancelEditing} disabled={isSaving}>
             Cancel
-          </button>
+          </Button>
         </div>
       ) : (
-        <button
-          type="button"
-          onClick={onStartEditing}
-          className="px-4 py-2 text-sm font-medium rounded-lg bg-white/5 border border-white/10 text-white/70 hover:text-white/90 hover:bg-white/10"
-        >
+        <Button type="button" onClick={onStartEditing}>
           Edit Profile
-        </button>
+        </Button>
       )}
     </div>
 
@@ -167,18 +158,17 @@ const StableProfileTab: React.FC<{
     </div>
 
     {/* Quick Link to Stable */}
-    <div className="flex items-center justify-between p-4 bg-white/5 border border-white/10 rounded-xl">
+    <div className="flex items-center justify-between glass-panel">
       <div>
         <p className="text-sm font-medium text-white/80">View Active Horses</p>
         <p className="text-xs text-white/40 mt-0.5">See all horses currently in your stable</p>
       </div>
-      <Link
-        to="/stable"
-        className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white/60 hover:text-[var(--text-primary)] hover:bg-white/10 transition-all"
-      >
-        Go to Stable
-        <ChevronRight className="w-4 h-4" />
-      </Link>
+      <Button asChild>
+        <Link to="/stable">
+          Go to Stable
+          <ChevronRight className="w-4 h-4" />
+        </Link>
+      </Button>
     </div>
   </div>
 );
@@ -188,7 +178,7 @@ const StatBlock: React.FC<{ label: string; value: number | string; icon: React.R
   value,
   icon,
 }) => (
-  <div className="p-4 bg-white/5 border border-white/10 rounded-xl">
+  <div className="glass-panel">
     <div className="flex items-center gap-2 mb-2">
       {icon}
       <span className="text-xs text-white/50 uppercase tracking-wider">{label}</span>
@@ -223,10 +213,7 @@ const LegacyHallTab: React.FC<{ entries: HallOfFameEntry[] }> = ({ entries }) =>
 );
 
 const HallOfFameCard: React.FC<{ entry: HallOfFameEntry; rank: number }> = ({ entry, rank }) => (
-  <div
-    className="bg-white/5 border border-white/10 rounded-xl p-5 hover:border-celestial-gold/30 transition-all"
-    data-testid={`hof-entry-${entry.id}`}
-  >
+  <div className="glass-panel hover:border-celestial-gold/30" data-testid={`hof-entry-${entry.id}`}>
     <div className="flex items-start gap-4">
       {/* Rank Badge */}
       <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-celestial-gold/10 border border-celestial-gold/30">

@@ -11,6 +11,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { MessageSquare, ArrowLeft, Send, Pin, Clock } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
+import { Button } from '@/components/ui/button';
 import { useThread, useCreatePost, useIncrementView } from '@/hooks/api/useForum';
 import type { ForumPost } from '@/lib/api-client';
 
@@ -26,7 +27,7 @@ function relativeTime(iso: string): string {
 
 const PostCard: React.FC<{ post: ForumPost; isFirst: boolean }> = ({ post, isFirst }) => (
   <div
-    className={`p-4 rounded-xl border transition-all ${isFirst ? 'bg-white/8 border-white/15' : 'bg-white/5 border-white/10'}`}
+    className={`glass-panel ${isFirst ? 'border-white/15' : ''}`}
     data-testid={`post-${post.id}`}
   >
     <div className="flex items-start gap-3">
@@ -119,7 +120,7 @@ const MessageThreadPage: React.FC = () => {
         </Link>
 
         {thread && (
-          <div className="flex items-center gap-3 mb-6 p-3 rounded-xl bg-white/3 border border-white/8">
+          <div className="flex items-center gap-3 mb-6 glass-panel">
             {thread.isPinned && <Pin className="w-4 h-4 text-celestial-gold/60 flex-shrink-0" />}
             <div className="text-xs text-white/40">
               Posted by <span className="text-white/60 font-medium">{thread.author.username}</span>
@@ -142,10 +143,7 @@ const MessageThreadPage: React.FC = () => {
         {isLoading && (
           <div className="space-y-3">
             {[1, 2, 3].map((n) => (
-              <div
-                key={n}
-                className="bg-white/5 border border-white/10 rounded-xl p-4 animate-pulse h-24"
-              />
+              <div key={n} className="glass-panel animate-pulse h-24" />
             ))}
           </div>
         )}
@@ -169,7 +167,7 @@ const MessageThreadPage: React.FC = () => {
         )}
 
         {!isLoading && thread && (
-          <div className="p-4 rounded-xl bg-white/5 border border-white/10" data-testid="reply-box">
+          <div className="glass-panel" data-testid="reply-box">
             <h3 className="text-sm font-semibold text-white/60 mb-3">Leave a reply</h3>
             <textarea
               className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/30 focus:outline-none focus:border-violet-500/40 resize-none mb-3"
@@ -182,16 +180,15 @@ const MessageThreadPage: React.FC = () => {
             />
             <div className="flex items-center justify-between">
               <span className="text-xs text-white/30">{reply.length}/10000</span>
-              <button
+              <Button
                 type="button"
                 onClick={handleReply}
                 disabled={!reply.trim() || submitting}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-violet-600/20 border border-violet-500/30 text-violet-300 text-sm font-medium hover:bg-violet-600/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 data-testid="submit-reply"
               >
                 <Send className="w-3.5 h-3.5" />
                 {submitting ? 'Posting…' : 'Post Reply'}
-              </button>
+              </Button>
             </div>
           </div>
         )}

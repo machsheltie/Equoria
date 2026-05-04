@@ -128,7 +128,7 @@ const CommunityPageContent: React.FC = () => {
             <Link
               key={card.href}
               to={card.href}
-              className={`group relative bg-white/5 border border-white/10 ${card.borderAccent} rounded-2xl p-6 transition-all hover:bg-white/8`}
+              className={`group relative glass-panel ${card.borderAccent} hover:bg-white/8`}
               data-testid={`community-card-${card.href.replace('/', '')}`}
             >
               {card.badge && (
@@ -187,10 +187,7 @@ const CommunityPageContent: React.FC = () => {
               icon: <Mail className="w-4 h-4" />,
             },
           ].map((stat) => (
-            <div
-              key={stat.label}
-              className="bg-white/5 border border-white/10 rounded-xl p-4 text-center"
-            >
+            <div key={stat.label} className="glass-panel text-center">
               <div className="flex justify-center mb-1 text-white/40">{stat.icon}</div>
               <div className="text-xl font-bold text-white/80">{stat.value}</div>
               <div className="text-[10px] text-white/40 uppercase tracking-wide mt-0.5">

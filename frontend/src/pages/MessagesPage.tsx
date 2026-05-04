@@ -17,6 +17,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Send, PlusCircle, Circle, CheckCircle2, Clock, User, X, Search } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
+import { Button } from '@/components/ui/button';
 import { useInbox, useSentMessages, useUnreadCount, useSendMessage } from '@/hooks/api/useMessages';
 import { usersApi } from '@/lib/api-client';
 import type { DirectMessage } from '@/lib/api-client';
@@ -84,16 +85,15 @@ const MessagesPage: React.FC = () => {
             <span>/</span>
             <span className="text-[var(--cream)]">Messages</span>
           </div>
-          <button
+          <Button
             type="button"
             onClick={() => setComposeOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 text-sm font-medium hover:bg-emerald-600/30 hover:border-emerald-500/40 transition-all"
             title="Compose a new message"
             data-testid="compose-button"
           >
             <PlusCircle className="w-4 h-4" />
             Compose
-          </button>
+          </Button>
         </div>
       </PageHero>
 
@@ -148,10 +148,7 @@ const MessagesPage: React.FC = () => {
           {isLoading ? (
             <div className="space-y-2">
               {[1, 2, 3].map((i) => (
-                <div
-                  key={i}
-                  className="bg-white/5 border border-white/10 rounded-xl p-4 animate-pulse"
-                >
+                <div key={i} className="glass-panel animate-pulse">
                   <div className="flex gap-3">
                     <div className="w-8 h-8 rounded-full bg-white/10 flex-shrink-0" />
                     <div className="flex-1 space-y-2">
@@ -386,23 +383,18 @@ const ComposeModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
 
         {/* Actions */}
         <div className="flex justify-end gap-3 pt-1">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 rounded-lg text-sm text-[var(--text-muted)] hover:text-[var(--cream)] hover:bg-white/5 transition-colors"
-          >
+          <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={handleSend}
             disabled={!canSend || sendMessage.isPending}
-            className="flex items-center gap-2 px-5 py-2 rounded-lg bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)] text-[var(--celestial-navy-900)] text-sm font-semibold hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
             data-testid="send-message-button"
           >
             <Send className="w-4 h-4" />
             {sendMessage.isPending ? 'Sending...' : 'Send'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -420,8 +412,8 @@ const MessageRow: React.FC<{ message: DirectMessage; isInbox: boolean }> = ({
 
   return (
     <div
-      className={`group bg-white/5 border rounded-xl p-4 transition-all hover:bg-white/8 ${
-        isUnread ? 'border-emerald-500/20' : 'border-white/10 hover:border-white/20'
+      className={`group glass-panel hover:bg-white/8 ${
+        isUnread ? 'border-emerald-500/20' : 'hover:border-white/20'
       }`}
       data-testid={`message-${message.id}`}
     >

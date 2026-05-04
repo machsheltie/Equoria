@@ -20,6 +20,7 @@ import {
   ChevronLeft,
 } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
+import { Button } from '@/components/ui/button';
 import { useThreads, useCreateThread } from '@/hooks/api/useForum';
 import type { ForumThread, ForumSection } from '@/lib/api-client';
 
@@ -134,15 +135,14 @@ const MessageBoardPage: React.FC = () => {
             <span>/</span>
             <span className="text-[var(--cream)]">Message Board</span>
           </div>
-          <button
+          <Button
             type="button"
             onClick={() => setShowNewThread(true)}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600/20 border border-violet-500/30 text-violet-400 text-sm font-medium hover:bg-violet-600/30 transition-colors"
             data-testid="new-post-button"
           >
             <PlusCircle className="w-4 h-4" />
             New Post
-          </button>
+          </Button>
         </div>
       </PageHero>
 
@@ -186,10 +186,7 @@ const MessageBoardPage: React.FC = () => {
           {isLoading && (
             <div className="space-y-2">
               {[1, 2, 3].map((n) => (
-                <div
-                  key={n}
-                  className="bg-white/5 border border-white/10 rounded-xl p-4 animate-pulse"
-                >
+                <div key={n} className="glass-panel animate-pulse">
                   <div className="h-4 bg-white/10 rounded w-2/3 mb-2" />
                   <div className="h-3 bg-white/10 rounded w-1/3" />
                 </div>
@@ -230,27 +227,27 @@ const MessageBoardPage: React.FC = () => {
         {/* Pagination */}
         {!isLoading && !error && totalPages > 1 && (
           <div className="flex items-center justify-center gap-3 mt-6">
-            <button
+            <Button
               type="button"
+              size="sm"
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-sm text-white/60 hover:text-white/90 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronLeft className="w-4 h-4" />
               Prev
-            </button>
+            </Button>
             <span className="text-sm text-white/40">
               {page} / {totalPages}
             </span>
-            <button
+            <Button
               type="button"
+              size="sm"
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-sm text-white/60 hover:text-white/90 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               Next
               <ChevronRight className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -258,7 +255,7 @@ const MessageBoardPage: React.FC = () => {
       {/* New Thread Modal */}
       {showNewThread && (
         <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
-          <div className="bg-[var(--space-dark,#0a1632)] border border-white/15 rounded-xl p-6 w-full max-w-lg shadow-2xl">
+          <div className="glass-panel-heavy rounded-xl p-6 w-full max-w-lg shadow-2xl">
             <h2 className="text-base font-semibold text-white mb-4">
               New Thread in {sectionConfig[activeSection].label}
             </h2>
@@ -279,9 +276,9 @@ const MessageBoardPage: React.FC = () => {
               data-testid="new-thread-content"
             />
             <div className="flex gap-3 justify-end">
-              <button
+              <Button
                 type="button"
-                className="px-4 py-2 text-sm text-white/40 hover:text-white/70 transition-colors"
+                variant="secondary"
                 onClick={() => {
                   setShowNewThread(false);
                   setNewTitle('');
@@ -289,16 +286,15 @@ const MessageBoardPage: React.FC = () => {
                 }}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 disabled={!newTitle.trim() || !newContent.trim() || createThread.isPending}
                 onClick={handlePost}
-                className="px-4 py-2 rounded-lg bg-violet-600/20 border border-violet-500/30 text-violet-300 text-sm font-medium hover:bg-violet-600/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 data-testid="submit-new-thread"
               >
                 {createThread.isPending ? 'Posting…' : 'Post Thread'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -313,7 +309,7 @@ const ThreadRow: React.FC<{ thread: ForumThread; section: ForumSection }> = ({
 }) => (
   <Link
     to={`/message-board/${thread.id}`}
-    className="group block bg-white/5 border border-white/10 hover:border-white/20 rounded-xl p-4 transition-all"
+    className="group block glass-panel hover:border-white/20"
     data-testid={`thread-${thread.id}`}
   >
     <div className="flex items-start gap-3">

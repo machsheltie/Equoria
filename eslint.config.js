@@ -80,6 +80,12 @@ export default [
       // Downgrade the TS comment ban to a warning — some test shims use
       // the older suppression directive intentionally.
       '@typescript-eslint/ban-ts-comment': 'warn',
+      // The base `no-unused-vars` rule treats TypeScript enum members as
+      // standalone variable declarations and fires "is defined but never
+      // used" on every member. The @typescript-eslint variant is
+      // enum-aware and is already configured above; disable the base
+      // rule on TS files to avoid double-reporting / false positives.
+      'no-unused-vars': 'off',
     },
   },
   {

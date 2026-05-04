@@ -20,6 +20,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
+import { Button } from '@/components/ui/button';
 import CinematicMoment from '@/components/feedback/CinematicMoment';
 import {
   useMarketplaceListings,
@@ -45,7 +46,7 @@ const SORT_OPTIONS = [
 // ─── Skeleton Card ─────────────────────────────────────────────────────────────
 
 const ListingCardSkeleton: React.FC = () => (
-  <div className="animate-pulse bg-white/5 border border-white/10 rounded-xl p-5">
+  <div className="animate-pulse glass-panel">
     <div className="flex gap-4">
       <div className="w-20 h-20 rounded-lg bg-white/10 flex-shrink-0" />
       <div className="flex-1 space-y-2">
@@ -69,7 +70,7 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, onSelect }) => (
   <button
     type="button"
     onClick={() => onSelect(listing)}
-    className="w-full text-left bg-white/5 border border-white/10 rounded-xl p-5 hover:border-white/30 hover:bg-white/[0.08] transition-all group"
+    className="w-full text-left glass-panel hover:border-white/30 hover:bg-white/[0.08] group"
   >
     <div className="flex gap-4 items-start">
       <div className="w-20 h-20 rounded-lg overflow-hidden bg-white/5 flex-shrink-0 border border-white/10">
@@ -130,7 +131,7 @@ const DetailModal: React.FC<DetailModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-[rgba(10,22,40,0.98)] border border-white/20 rounded-2xl shadow-2xl overflow-hidden">
+      <div className="w-full max-w-md glass-panel-heavy rounded-2xl shadow-2xl overflow-hidden">
         <div className="flex items-center justify-between p-5 border-b border-white/10">
           {step === 'confirm' ? (
             <button
@@ -192,15 +193,15 @@ const DetailModal: React.FC<DetailModalProps> = ({
                   more coins
                 </p>
               )}
-              <button
+              <Button
                 type="button"
+                className="w-full"
                 disabled={!canBuy}
                 onClick={() => setStep('confirm')}
                 title={!canBuy ? 'Insufficient funds' : undefined}
-                className="w-full py-3 rounded-xl bg-emerald-600/80 border border-emerald-500/40 text-white font-semibold hover:bg-emerald-600 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Buy Now
-              </button>
+              </Button>
             </div>
           </>
         ) : (
@@ -212,7 +213,7 @@ const DetailModal: React.FC<DetailModalProps> = ({
                 {listing.salePrice.toLocaleString()} coins
               </span>
             </p>
-            <div className="space-y-2 bg-white/5 rounded-xl p-4 border border-white/10">
+            <div className="space-y-2 glass-panel">
               <div className="flex justify-between text-sm">
                 <span className="text-white/50">Your balance</span>
                 <span className="text-white/80">{userBalance.toLocaleString()} 🪙</span>
@@ -229,21 +230,22 @@ const DetailModal: React.FC<DetailModalProps> = ({
               </div>
             </div>
             <div className="flex gap-3 pt-2">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                className="flex-1"
                 onClick={() => setStep('detail')}
-                className="flex-1 py-2.5 rounded-xl bg-white/5 border border-white/10 text-white/60 text-sm hover:bg-white/10 transition-colors"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                className="flex-1"
                 disabled={buyMutation.isPending}
                 onClick={handleConfirm}
-                className="flex-1 py-2.5 rounded-xl bg-emerald-600/80 border border-emerald-500/40 text-white text-sm font-semibold hover:bg-emerald-600 transition-colors disabled:opacity-50"
               >
                 {buyMutation.isPending ? 'Processing…' : 'Confirm Purchase'}
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -316,7 +318,7 @@ const BrowseTab: React.FC<BrowseTabProps> = ({ userBalance, onPurchased }) => {
 
       {/* Advanced filter panel */}
       {showFilters && (
-        <div className="mb-4 p-4 bg-white/5 border border-white/10 rounded-xl grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="mb-4 glass-panel grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { key: 'minAge' as const, label: 'Min Age' },
             { key: 'maxAge' as const, label: 'Max Age' },
@@ -432,10 +434,7 @@ const MyListingsTab: React.FC = () => {
   return (
     <div className="space-y-3">
       {(listings as MyListing[]).map((l) => (
-        <div
-          key={l.id}
-          className="flex items-center gap-4 p-4 bg-white/5 border border-white/10 rounded-xl"
-        >
+        <div key={l.id} className="glass-panel flex items-center gap-4">
           <div className="w-14 h-14 rounded-lg overflow-hidden bg-white/5 flex-shrink-0 border border-white/10">
             <img
               src={getHorseImage(l.imageUrl, l.breed)}
@@ -452,14 +451,14 @@ const MyListingsTab: React.FC = () => {
               {l.salePrice.toLocaleString()} 🪙
             </p>
           </div>
-          <button
+          <Button
             type="button"
+            size="sm"
             disabled={delistMutation.isPending}
             onClick={() => delistMutation.mutate(l.id, { onSuccess: () => refetch() })}
-            className="px-4 py-1.5 rounded-lg bg-red-900/20 border border-red-500/30 text-red-300 text-xs hover:bg-red-900/30 transition-colors disabled:opacity-50"
           >
             Delist
-          </button>
+          </Button>
         </div>
       ))}
     </div>

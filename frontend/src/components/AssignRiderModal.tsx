@@ -13,6 +13,7 @@ import { X } from 'lucide-react';
 import { useUserRiders, useAssignRider, type Rider } from '@/hooks/api/useRiders';
 import { useAuth } from '@/contexts/AuthContext';
 import RiderPersonalityBadge from './rider/RiderPersonalityBadge';
+import { Button } from '@/components/ui/button';
 
 interface AssignRiderModalProps {
   isOpen: boolean;
@@ -65,7 +66,7 @@ const AssignRiderModal: React.FC<AssignRiderModalProps> = ({
       data-testid="assign-rider-modal"
     >
       <div
-        className="bg-deep-space border border-white/10 rounded-xl shadow-2xl max-w-lg w-full p-6 animate-in zoom-in-95 duration-200"
+        className="glass-panel-heavy rounded-xl shadow-2xl max-w-lg w-full p-6 animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -99,31 +100,27 @@ const AssignRiderModal: React.FC<AssignRiderModalProps> = ({
         ) : (
           <div className="space-y-2 max-h-64 overflow-y-auto pr-1 mb-4">
             {unassignedRiders.map((rider) => (
-              <button
+              <Button
                 key={rider.id}
                 type="button"
+                variant={selectedRiderId === rider.id ? 'default' : 'secondary'}
+                size="sm"
                 onClick={() => setSelectedRiderId(rider.id)}
-                className={`w-full text-left px-4 py-3 rounded-lg border transition-all ${
-                  selectedRiderId === rider.id
-                    ? 'bg-celestial-gold/10 border-celestial-gold/50 text-white/90'
-                    : 'bg-white/5 border-white/10 text-white/70 hover:border-white/20'
-                }`}
+                className="w-full justify-between text-left"
                 data-testid={`rider-option-${rider.id}`}
               >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium text-sm">
-                      {rider.firstName} {rider.lastName}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-white/40 capitalize">{rider.skillLevel}</span>
-                      <span className="text-white/20">·</span>
-                      <span className="text-xs text-celestial-gold/70">Lv. {rider.level}</span>
-                    </div>
-                  </div>
-                  <RiderPersonalityBadge personality={rider.personality} size="sm" />
-                </div>
-              </button>
+                <span className="flex flex-col items-start">
+                  <span className="font-medium text-sm">
+                    {rider.firstName} {rider.lastName}
+                  </span>
+                  <span className="flex items-center gap-2 mt-1">
+                    <span className="text-xs opacity-70 capitalize">{rider.skillLevel}</span>
+                    <span className="opacity-40">·</span>
+                    <span className="text-xs text-[var(--gold-light)]">Lv. {rider.level}</span>
+                  </span>
+                </span>
+                <RiderPersonalityBadge personality={rider.personality} size="sm" />
+              </Button>
             ))}
           </div>
         )}
@@ -147,20 +144,18 @@ const AssignRiderModal: React.FC<AssignRiderModalProps> = ({
 
         {/* Actions */}
         <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            className="flex-1 px-4 py-2.5 border border-white/10 rounded-lg text-white/60 font-medium hover:bg-white/5 transition-colors"
-          >
+          <Button type="button" variant="secondary" onClick={onClose} className="flex-1">
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
+            type="button"
             onClick={handleAssign}
             disabled={!selectedRiderId || assignMutation.isPending}
-            className="flex-1 px-4 py-2.5 bg-celestial-gold/80 text-black font-bold rounded-lg hover:bg-celestial-gold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1"
             data-testid="confirm-assign-button"
           >
             {assignMutation.isPending ? 'Assigning...' : 'Assign Rider'}
-          </button>
+          </Button>
         </div>
       </div>
     </div>

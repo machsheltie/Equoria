@@ -60,7 +60,7 @@ export function calculatePregnancyEpigeneticChances(feedingsByTier) {
   let weightedSum = 0;
 
   for (const [tier, rawCount] of Object.entries(counters)) {
-    if (PREGNANCY_BONUS_PCT[tier] == null) {
+    if (PREGNANCY_BONUS_PCT[tier] === null || PREGNANCY_BONUS_PCT[tier] === undefined) {
       continue; // unknown tier key — ignore silently
     }
     const count = Number(rawCount) || 0;

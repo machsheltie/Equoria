@@ -25,6 +25,7 @@ import { User, Bell, Monitor, ChevronRight, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import PageHero from '@/components/layout/PageHero';
+import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUpdatePreferences } from '@/hooks/api/useUpdatePreferences';
@@ -410,10 +411,7 @@ const SettingsPage: React.FC = () => {
         <div className="md:col-span-3">
           {/* Account Section */}
           {activeSection === 'account' && (
-            <div
-              className="rounded-xl border border-white/10 bg-black/40 backdrop-blur-md p-6 space-y-6"
-              data-testid="settings-account"
-            >
+            <div className="glass-panel space-y-6" data-testid="settings-account">
               <h2 className="text-lg font-semibold text-[var(--text-primary)]">Account Settings</h2>
 
               <div className="space-y-4">
@@ -451,29 +449,27 @@ const SettingsPage: React.FC = () => {
                   />
                 </div>
 
-                <button
+                <Button
                   type="button"
                   onClick={handleSaveAccount}
                   disabled={updateProfile.isPending}
-                  className="px-4 py-2 rounded-lg bg-celestial-gold/10 border border-celestial-gold/30 text-celestial-gold text-sm font-medium hover:bg-celestial-gold/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   data-testid="settings-save-account"
                 >
                   {updateProfile.isPending ? 'Saving…' : 'Save Changes'}
-                </button>
+                </Button>
               </div>
 
               <div className="border-t border-white/10 pt-6">
                 <h3 className="text-sm font-medium text-white/70 mb-3">Change Password</h3>
 
                 {!showPasswordForm ? (
-                  <button
+                  <Button
                     type="button"
                     onClick={() => setShowPasswordForm(true)}
-                    className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white/80 text-sm font-medium hover:bg-white/10 transition-colors"
                     data-testid="settings-show-password-form"
                   >
                     Update Password
-                  </button>
+                  </Button>
                 ) : (
                   <form
                     onSubmit={handleChangePassword}
@@ -531,21 +527,16 @@ const SettingsPage: React.FC = () => {
                       />
                     </div>
                     <div className="flex gap-2 pt-1">
-                      <button
+                      <Button
                         type="submit"
                         disabled={changePassword.isPending}
-                        className="px-4 py-2 rounded-lg bg-celestial-gold/10 border border-celestial-gold/30 text-celestial-gold text-sm font-medium hover:bg-celestial-gold/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         data-testid="settings-submit-password"
                       >
                         {changePassword.isPending ? 'Changing…' : 'Change Password'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={resetPasswordForm}
-                        className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white/70 text-sm font-medium hover:bg-white/10 transition-colors"
-                      >
+                      </Button>
+                      <Button type="button" variant="secondary" onClick={resetPasswordForm}>
                         Cancel
-                      </button>
+                      </Button>
                     </div>
                   </form>
                 )}
@@ -556,24 +547,20 @@ const SettingsPage: React.FC = () => {
                 <p className="text-xs text-white/40 mb-3">
                   Permanently delete your account and all data. This cannot be undone.
                 </p>
-                <button
+                <Button
                   type="button"
                   onClick={() => setShowDeleteModal(true)}
-                  className="px-4 py-2 rounded-lg border border-red-500/30 text-red-400 text-sm font-medium hover:bg-red-500/10 transition-colors"
                   data-testid="settings-delete-account"
                 >
                   Delete Account
-                </button>
+                </Button>
               </div>
             </div>
           )}
 
           {/* Notifications Section */}
           {activeSection === 'notifications' && (
-            <div
-              className="rounded-xl border border-white/10 bg-black/40 backdrop-blur-md p-6 space-y-6"
-              data-testid="settings-notifications"
-            >
+            <div className="glass-panel space-y-6" data-testid="settings-notifications">
               <h2 className="text-lg font-semibold text-[var(--text-primary)]">
                 Notification Preferences
               </h2>
@@ -636,10 +623,7 @@ const SettingsPage: React.FC = () => {
 
           {/* Display Section */}
           {activeSection === 'display' && (
-            <div
-              className="rounded-xl border border-white/10 bg-black/40 backdrop-blur-md p-6 space-y-6"
-              data-testid="settings-display"
-            >
+            <div className="glass-panel space-y-6" data-testid="settings-display">
               <h2 className="text-lg font-semibold text-[var(--text-primary)]">Display Settings</h2>
 
               <div className="space-y-1">
@@ -697,7 +681,7 @@ const SettingsPage: React.FC = () => {
             backdropMouseDownRef.current = false;
           }}
         >
-          <div className="max-w-md w-full rounded-xl border border-red-500/30 bg-[var(--bg-night-sky)] p-6 space-y-4 shadow-2xl">
+          <div className="max-w-md w-full glass-panel-heavy rounded-xl p-6 space-y-4 shadow-2xl border border-red-500/30">
             <h3 id="delete-account-title" className="text-lg font-semibold text-red-400">
               Delete account permanently?
             </h3>
@@ -726,23 +710,22 @@ const SettingsPage: React.FC = () => {
               data-testid="settings-delete-confirm-input"
             />
             <div className="flex gap-2 justify-end pt-2">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
                 onClick={closeDeleteModal}
-                className="px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white/80 text-sm font-medium hover:bg-white/10 transition-colors"
                 data-testid="settings-delete-cancel"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={handleConfirmDelete}
                 disabled={deleteAccount.isPending || deleteConfirmText.trim() !== user.username}
-                className="px-4 py-2 rounded-lg bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-medium hover:bg-red-500/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 data-testid="settings-delete-confirm"
               >
                 {deleteAccount.isPending ? 'Deleting…' : 'Delete account permanently'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

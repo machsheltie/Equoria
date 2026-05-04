@@ -14,6 +14,7 @@
 import React, { useState } from 'react';
 import { Wrench, Lock, CheckCircle, Package, AlertCircle, Loader2 } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
+import { Button } from '@/components/ui/button';
 import { useCraftingMaterials, useCraftingRecipes, useCraftItem } from '@/hooks/api/useCrafting';
 import type { CraftingRecipe, CraftingMaterials } from '@/lib/api-client';
 
@@ -151,32 +152,31 @@ function RecipeCard({
       {!recipe.locked &&
         (confirming ? (
           <div className="flex gap-2">
-            <button
+            <Button
+              size="sm"
+              className="flex-1"
               onClick={() => {
                 setConfirming(false);
                 onCraft(recipe.id);
               }}
               disabled={isCrafting || !recipe.affordable}
-              className="flex-1 text-xs px-3 py-2 rounded-lg bg-amber-700 hover:bg-amber-600 text-white font-medium disabled:opacity-50 transition-colors"
             >
               {isCrafting ? <Loader2 className="w-3 h-3 animate-spin inline mr-1" /> : null}
               Confirm Craft
-            </button>
-            <button
-              onClick={() => setConfirming(false)}
-              className="text-xs px-3 py-2 rounded-lg border border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
-            >
+            </Button>
+            <Button variant="secondary" size="sm" onClick={() => setConfirming(false)}>
               Cancel
-            </button>
+            </Button>
           </div>
         ) : (
-          <button
+          <Button
+            size="sm"
+            className="w-full"
             onClick={() => setConfirming(true)}
             disabled={!recipe.affordable || isCrafting}
-            className="w-full text-xs px-3 py-2 rounded-lg bg-amber-800/60 hover:bg-amber-700/60 text-amber-200 font-medium disabled:opacity-40 disabled:cursor-not-allowed transition-colors border border-amber-700/40"
           >
             Craft
-          </button>
+          </Button>
         ))}
     </div>
   );
@@ -234,7 +234,7 @@ const CraftingPage: React.FC = () => {
         {!isLoading && !hasError && (
           <>
             {/* Workshop tier banner */}
-            <div className="flex items-center justify-between p-4 rounded-xl bg-[var(--bg-card)] border border-[var(--border-subtle)]">
+            <div className="flex items-center justify-between glass-panel">
               <div>
                 <p className="text-xs text-[var(--text-muted)] mb-1">Your Workshop</p>
                 <span

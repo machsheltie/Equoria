@@ -84,9 +84,7 @@ describe('createFoal — delayed pregnancy (B3)', () => {
 
   afterEach(async () => {
     if (user) {
-      await prisma.horse
-        .deleteMany({ where: { OR: [{ damId }, { sireId }, { userId: user.id }] } })
-        .catch(() => {});
+      await prisma.horse.deleteMany({ where: { OR: [{ damId }, { sireId }, { userId: user.id }] } }).catch(() => {});
       await prisma.user.deleteMany({ where: { id: user.id } }).catch(() => {});
     }
   });

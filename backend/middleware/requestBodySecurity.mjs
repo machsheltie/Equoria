@@ -264,7 +264,7 @@ class JsonScanner {
 
   scanValue(depth) {
     if (depth > MAX_DEPTH) {
-      throw new RequestBodySecurityError(`nesting too deep`);
+      throw new RequestBodySecurityError('nesting too deep');
     }
 
     this.skipWhitespace();
@@ -470,7 +470,7 @@ class JsonScanner {
 
 function assertNoPollutingKeys(value, path = 'body', depth = 0) {
   if (depth > MAX_DEPTH) {
-    throw new RequestBodySecurityError(`nesting too deep`);
+    throw new RequestBodySecurityError('nesting too deep');
   }
 
   if (!value || typeof value !== 'object') {
@@ -495,7 +495,7 @@ function assertNoPollutingKeys(value, path = 'body', depth = 0) {
       typeof child === 'object' &&
       Object.prototype.hasOwnProperty.call(child, FORBIDDEN_PROTOTYPE_KEY)
     ) {
-      throw new RequestBodySecurityError(`forbidden key path "constructor.prototype"`);
+      throw new RequestBodySecurityError('forbidden key path "constructor.prototype"');
     }
 
     assertNoPollutingKeys(child, `${path}.${key}`, depth + 1);
@@ -559,7 +559,7 @@ export function verifyJsonBody(req, _res, buffer) {
     // message falls through to the global error handler and surfaces as 500,
     // which would leak that something unusual happened upstream. The shared
     // constant prevents the two ends from drifting silently.
-    throw new RequestBodySecurityError(`scanner failure`);
+    throw new RequestBodySecurityError('scanner failure');
   }
 }
 
@@ -757,7 +757,7 @@ export function verifyUrlEncodedBody(req, _res, buffer) {
       message: sanitizeForLog(error?.message, 256),
       stack: sanitizeForLog(error?.stack, 2048),
     });
-    throw new RequestBodySecurityError(`scanner failure`);
+    throw new RequestBodySecurityError('scanner failure');
   }
 }
 

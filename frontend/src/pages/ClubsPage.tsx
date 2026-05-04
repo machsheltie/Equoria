@@ -24,6 +24,7 @@ import {
   PlusCircle,
 } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
+import { Button } from '@/components/ui/button';
 import {
   useClubs,
   useMyClubs,
@@ -83,10 +84,7 @@ const ElectionCard: React.FC<{ election: ClubElection; isMember: boolean }> = ({
   const candidates: ElectionCandidate[] = resultsData?.candidates ?? [];
 
   return (
-    <div
-      className="p-4 rounded-xl bg-white/5 border border-white/10 mb-3"
-      data-testid={`election-${election.id}`}
-    >
+    <div className="glass-panel mb-3" data-testid={`election-${election.id}`}>
       <div className="flex items-center justify-between mb-2">
         <div>
           <span className="text-sm font-semibold text-white/80">{election.position}</span>
@@ -103,13 +101,9 @@ const ElectionCard: React.FC<{ election: ClubElection; isMember: boolean }> = ({
           </span>
         </div>
         {isMember && election.status === 'open' && (
-          <button
-            type="button"
-            onClick={() => setShowNominate((v) => !v)}
-            className="text-xs text-violet-400 hover:text-violet-300 transition-colors"
-          >
+          <Button type="button" size="sm" onClick={() => setShowNominate((v) => !v)}>
             Nominate
-          </button>
+          </Button>
         )}
       </div>
 
@@ -122,18 +116,18 @@ const ElectionCard: React.FC<{ election: ClubElection; isMember: boolean }> = ({
             value={statement}
             onChange={(e) => setStatement(e.target.value)}
           />
-          <button
+          <Button
             type="button"
+            size="sm"
             disabled={nominate.isPending}
             onClick={() => {
               nominate.mutate(statement);
               setShowNominate(false);
               setStatement('');
             }}
-            className="text-xs px-3 py-1 rounded bg-violet-600/20 border border-violet-500/30 text-violet-300 hover:bg-violet-600/30 transition-colors disabled:opacity-40"
           >
             {nominate.isPending ? 'Submitting…' : 'Submit Nomination'}
-          </button>
+          </Button>
         </div>
       )}
 
@@ -149,14 +143,14 @@ const ElectionCard: React.FC<{ election: ClubElection; isMember: boolean }> = ({
               <div className="flex items-center gap-3">
                 <span className="text-white/40">{c.voteCount} votes</span>
                 {isMember && election.status === 'open' && (
-                  <button
+                  <Button
                     type="button"
+                    size="sm"
                     disabled={vote.isPending}
                     onClick={() => vote.mutate(c.id)}
-                    className="px-2 py-0.5 rounded bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-600/30 transition-colors disabled:opacity-40"
                   >
                     Vote
-                  </button>
+                  </Button>
                 )}
               </div>
             </div>
@@ -210,10 +204,7 @@ const MyClubTab: React.FC<{ allClubs: Club[] }> = ({ allClubs }) => {
           </h2>
           <div className="space-y-3">
             {myMemberships.map((m) => (
-              <div
-                key={m.id}
-                className="flex items-center gap-3 p-4 rounded-xl bg-white/5 border border-white/10"
-              >
+              <div key={m.id} className="glass-panel flex items-center gap-3">
                 <span className="text-xl">{clubIcon(m.club)}</span>
                 <div className="flex-1">
                   <div className="text-sm font-medium text-white/80">{m.club.name}</div>
@@ -252,18 +243,17 @@ const MyClubTab: React.FC<{ allClubs: Club[] }> = ({ allClubs }) => {
       )}
 
       <div className="mb-8">
-        <button
+        <Button
           type="button"
           onClick={() => setShowCreate((v) => !v)}
-          className="flex items-center gap-2 text-sm text-white/50 hover:text-white/80 transition-colors"
           data-testid="create-club-toggle"
         >
           <PlusCircle className="w-4 h-4" />
           Create a new club
-        </button>
+        </Button>
 
         {showCreate && (
-          <div className="mt-4 p-4 rounded-xl bg-white/5 border border-white/10">
+          <div className="mt-4 glass-panel">
             <h3 className="text-sm font-semibold text-white/70 mb-3">New Club</h3>
             <input
               className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/30 focus:outline-none focus:border-violet-500/40 mb-2"
@@ -299,15 +289,17 @@ const MyClubTab: React.FC<{ allClubs: Club[] }> = ({ allClubs }) => {
               data-testid="create-club-description"
             />
             <div className="flex gap-3 justify-end">
-              <button
+              <Button
                 type="button"
-                className="text-sm text-white/40 hover:text-white/70 transition-colors px-3 py-1.5"
+                variant="secondary"
+                size="sm"
                 onClick={() => setShowCreate(false)}
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                size="sm"
                 disabled={
                   !newName.trim() ||
                   !newCategory.trim() ||
@@ -315,11 +307,10 @@ const MyClubTab: React.FC<{ allClubs: Club[] }> = ({ allClubs }) => {
                   createClub.isPending
                 }
                 onClick={handleCreate}
-                className="px-4 py-1.5 rounded-lg bg-violet-600/20 border border-violet-500/30 text-violet-300 text-sm font-medium hover:bg-violet-600/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 data-testid="create-club-submit"
               >
                 {createClub.isPending ? 'Creating…' : 'Create Club'}
-              </button>
+              </Button>
             </div>
           </div>
         )}
@@ -341,7 +332,7 @@ const MyClubTab: React.FC<{ allClubs: Club[] }> = ({ allClubs }) => {
               .map((club, idx) => (
                 <div
                   key={club.id}
-                  className="flex items-center gap-3 p-3 rounded-lg bg-white/5 border border-white/10"
+                  className="glass-panel flex items-center gap-3"
                   data-testid={`leaderboard-row-${club.id}`}
                 >
                   <span className="w-6 text-center text-sm font-bold text-white/40">{idx + 1}</span>
@@ -412,10 +403,7 @@ const ClubGrid: React.FC<{
         data-testid={`${testPrefix}-clubs-grid`}
       >
         {[1, 2, 3, 4].map((i) => (
-          <div
-            key={i}
-            className="bg-white/5 border border-white/10 rounded-xl p-5 animate-pulse h-40"
-          />
+          <div key={i} className="glass-panel animate-pulse h-40" />
         ))}
       </div>
     );
@@ -437,7 +425,7 @@ const ClubGrid: React.FC<{
         return (
           <div
             key={club.id}
-            className="bg-white/5 border border-white/10 hover:border-white/20 rounded-xl p-5 transition-all"
+            className="glass-panel hover:border-white/20"
             data-testid={`club-card-${club.id}`}
           >
             <div className="flex items-start justify-between mb-3">
@@ -470,16 +458,17 @@ const ClubGrid: React.FC<{
                 ✓ Member
               </div>
             ) : (
-              <button
+              <Button
                 type="button"
+                size="sm"
+                className="w-full"
                 onClick={() => joinClub.mutate(club.id)}
                 disabled={joinClub.isPending}
-                className="w-full py-2 text-xs font-medium rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-[var(--text-primary)] hover:bg-white/10 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 data-testid={`join-button-${club.id}`}
               >
                 <ChevronRight className="w-3.5 h-3.5" />
                 {joinClub.isPending ? 'Joining…' : 'Join Club'}
-              </button>
+              </Button>
             )}
           </div>
         );

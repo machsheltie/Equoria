@@ -8,6 +8,7 @@ import cron from 'node-cron';
 import logger from '../utils/logger.mjs';
 import { processWeeklySalaries } from './groomSalaryService.mjs';
 import { cleanupExpiredTokens } from '../utils/tokenRotationService.mjs';
+import { runFoalingJob } from '../modules/horses/services/foalingService.mjs';
 // Track running jobs
 const runningJobs = new Map();
 
@@ -46,9 +47,26 @@ export function initializeCronJobs() {
 
     runningJobs.set('tokenCleanup', tokenCleanupJob);
 
+    // Foaling job — Daily at 0:05 UTC. Mares whose inFoalSinceDate is older
+    // than 7 days are foaled and their pregnancy columns are cleared.
+    // (B5, parent Equoria-3gqg / Equoria-wmnq)
+    const foalingJob = cron.schedule(
+      '5 0 * * *',
+      async () => {
+        await runFoalingJobScheduled();
+      },
+      {
+        scheduled: false,
+        timezone: 'UTC',
+      },
+    );
+
+    runningJobs.set('foaling', foalingJob);
+
     // Start all jobs
     salaryJob.start();
     tokenCleanupJob.start();
+    foalingJob.start();
 
     logger.info('[cronJobService] All cron jobs initialized and started');
   } catch (error) {
@@ -199,6 +217,40 @@ export async function triggerSalaryProcessing() {
       totalAmount: 0,
       errors: [error.message],
     };
+  }
+}
+
+/**
+ * Run the foaling job — finds mares whose 7-day gestation has elapsed,
+ * delivers their foals, and clears pregnancy state.
+ */
+async function runFoalingJobScheduled() {
+  try {
+    logger.info('[cronJobService] Starting foaling job...');
+    const results = await runFoalingJob();
+    logger.info(
+      `[cronJobService] Foaling job completed. Foals born: ${results.foalsBorn}, errors: ${results.errors.length}`,
+    );
+    return results;
+  } catch (error) {
+    logger.error(`[cronJobService] Error in foaling job: ${error.message}`);
+    return { foalsBorn: 0, errors: [{ damId: null, error: error.message }] };
+  }
+}
+
+/**
+ * Manually trigger the foaling job (for testing/admin use)
+ * @returns {Promise<{foalsBorn:number, errors:Array}>}
+ */
+export async function triggerFoalingJob() {
+  try {
+    logger.info('[cronJobService] Manually triggering foaling job...');
+    const results = await runFoalingJob();
+    logger.info(`[cronJobService] Manual foaling job completed: ${JSON.stringify(results)}`);
+    return results;
+  } catch (error) {
+    logger.error(`[cronJobService] Error in manual foaling job: ${error.message}`);
+    return { foalsBorn: 0, errors: [{ damId: null, error: error.message }] };
   }
 }
 

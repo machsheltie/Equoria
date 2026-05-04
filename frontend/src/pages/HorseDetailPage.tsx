@@ -423,25 +423,17 @@ const HorseDetailPage: React.FC = () => {
                           maxLength={50}
                           className="fantasy-title text-2xl text-[rgb(220,235,255)] bg-[rgba(15,35,70,0.6)] border border-burnished-gold/40 rounded-lg px-3 py-1 outline-none focus:border-burnished-gold/70 focus:shadow-[0_0_8px_rgba(200,168,78,0.2)]"
                         />
-                        <button
-                          type="submit"
-                          disabled={updateHorseMutation.isPending}
-                          className="px-3 py-1.5 rounded-lg text-sm font-semibold transition-all hover:brightness-110"
-                          style={{
-                            background:
-                              'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
-                            color: 'var(--bg-deep-space)',
-                          }}
-                        >
+                        <Button type="submit" size="sm" disabled={updateHorseMutation.isPending}>
                           {updateHorseMutation.isPending ? 'Saving...' : 'Save'}
-                        </button>
-                        <button
+                        </Button>
+                        <Button
                           type="button"
+                          variant="secondary"
+                          size="sm"
                           onClick={() => setIsEditing(false)}
-                          className="px-3 py-1.5 rounded-lg text-sm font-semibold text-white/60 hover:text-white/90 hover:bg-white/10 border border-white/20 transition-colors"
                         >
                           Cancel
-                        </button>
+                        </Button>
                       </form>
                     ) : (
                       <div className="flex items-center gap-3 mb-2 flex-wrap">
@@ -610,7 +602,7 @@ const HorseDetailPage: React.FC = () => {
           data-testid="rider-picker-modal"
         >
           <div
-            className="bg-[rgba(10,22,40,0.98)] border border-burnished-gold/40 rounded-xl shadow-2xl max-w-sm w-full p-6"
+            className="glass-panel-heavy rounded-xl shadow-2xl max-w-sm w-full p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="fantasy-title text-lg text-[rgb(220,235,255)] mb-4">
@@ -622,14 +614,11 @@ const HorseDetailPage: React.FC = () => {
             {!ridersLoading && (!riders || riders.length === 0) && (
               <div className="text-center py-4">
                 <p className="text-sm text-[rgb(160,175,200)] mb-3">No riders hired yet.</p>
-                <Link
-                  to="/riders"
-                  className="inline-block px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-85"
-                  style={{ background: 'var(--celestial-primary)' }}
-                  onClick={() => setShowRiderPicker(false)}
-                >
-                  Browse Rider Marketplace
-                </Link>
+                <Button asChild>
+                  <Link to="/riders" onClick={() => setShowRiderPicker(false)}>
+                    Browse Rider Marketplace
+                  </Link>
+                </Button>
               </div>
             )}
             <div className="space-y-2 max-h-60 overflow-y-auto">
@@ -654,7 +643,7 @@ const HorseDetailPage: React.FC = () => {
                     );
                   }}
                   disabled={assignRiderMutation.isPending}
-                  className="w-full text-left px-4 py-3 rounded-lg bg-white/5 border border-white/10 hover:border-burnished-gold/40 transition-all disabled:opacity-50"
+                  className="w-full text-left glass-panel hover:border-burnished-gold/40 disabled:opacity-50"
                 >
                   <p className="font-bold text-[rgb(220,235,255)] text-sm">
                     {rider.firstName} {rider.lastName}
@@ -665,13 +654,14 @@ const HorseDetailPage: React.FC = () => {
                 </button>
               ))}
             </div>
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              className="mt-4 w-full"
               onClick={() => setShowRiderPicker(false)}
-              className="mt-4 w-full py-2 text-sm text-[rgb(160,175,200)] hover:text-[rgb(220,235,255)] transition-colors"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -722,138 +712,98 @@ const HorseDetailPage: React.FC = () => {
                 });
               };
               return (
-                <button
+                <Button
                   type="button"
+                  size="sm"
                   onClick={handleFeed}
                   disabled={feedDisabledReason !== null || feedHorseMutation.isPending}
-                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)] active:brightness-95 disabled:opacity-40 disabled:cursor-not-allowed"
-                  style={{
-                    background:
-                      'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
-                    color: 'var(--bg-deep-space)',
-                  }}
                   title={feedDisabledReason ?? 'Feed this horse'}
                   data-testid="action-feed"
                 >
                   <span aria-hidden="true">🌾</span>
                   {feedHorseMutation.isPending ? 'Feeding…' : 'Feed'}
-                </button>
+                </Button>
               );
             })()}
-            <button
+            <Button
               type="button"
+              size="sm"
               onClick={() => navigate(`/training?horseId=${horse.id}`)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)] active:brightness-95"
-              style={{
-                background:
-                  'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
-                color: 'var(--bg-deep-space)',
-              }}
               data-testid="action-train"
             >
               <Dumbbell className="w-3.5 h-3.5" />
               Train
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              size="sm"
               onClick={() => navigate(`/breeding?horseId=${horse.id}`)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)] active:brightness-95"
-              style={{
-                background:
-                  'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
-                color: 'var(--bg-deep-space)',
-              }}
               data-testid="action-breed"
             >
               <Heart className="w-3.5 h-3.5" />
               Breed
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              size="sm"
               onClick={() => setShowRiderPicker(true)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)] active:brightness-95"
-              style={{
-                background:
-                  'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
-                color: 'var(--bg-deep-space)',
-              }}
               title="Assign a rider to this horse"
               data-testid="action-assign-rider"
             >
               <Users className="w-3.5 h-3.5" />
               Assign Rider
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              size="sm"
               onClick={() => navigate(`/grooms?horseId=${horse.id}`)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)] active:brightness-95"
-              style={{
-                background:
-                  'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
-                color: 'var(--bg-deep-space)',
-              }}
               title="Assign a groom to this horse"
               data-testid="action-assign-groom"
             >
               <span aria-hidden="true">🧹</span>
               Assign Groom
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              size="sm"
               onClick={() => navigate(`/horses/${horse.id}/equip`)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)] active:brightness-95"
-              style={{
-                background:
-                  'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
-                color: 'var(--bg-deep-space)',
-              }}
               title="Manage tack and feed for this horse"
               data-testid="action-equip"
             >
               <span aria-hidden="true">🎒</span>
               Equip
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
+              size="sm"
               onClick={() => navigate(`/farrier?horseId=${horse.id}`)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)] active:brightness-95"
-              style={{
-                background:
-                  'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
-                color: 'var(--bg-deep-space)',
-              }}
               title="Shoe this horse"
               data-testid="action-shoe-horse"
             >
               <span aria-hidden="true">🔧</span>
               Shoe Horse
-            </button>
+            </Button>
             {horse.forSale ? (
-              <button
+              <Button
                 type="button"
+                size="sm"
                 onClick={() => delistHorseMutation.mutate(horse.id, { onSuccess: () => refetch() })}
                 disabled={delistHorseMutation.isPending}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-900/20 border border-red-500/40 text-red-300 text-sm fantasy-body whitespace-nowrap hover:bg-red-900/30 transition-colors disabled:opacity-50"
                 data-testid="action-delist"
               >
                 <X className="w-3.5 h-3.5" />
                 Delist
-              </button>
+              </Button>
             ) : (
-              <button
+              <Button
                 type="button"
+                size="sm"
                 onClick={() => setShowListModal(true)}
-                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)] active:brightness-95"
-                style={{
-                  background:
-                    'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
-                  color: 'var(--bg-deep-space)',
-                }}
                 data-testid="action-list-for-sale"
               >
                 <Tag className="w-3.5 h-3.5" />
                 List for Sale
-              </button>
+              </Button>
             )}
           </div>
         </div>,
@@ -863,7 +813,7 @@ const HorseDetailPage: React.FC = () => {
       {/* List for Sale Modal */}
       {showListModal && (
         <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-          <div className="w-full max-w-sm bg-[rgba(10,22,40,0.97)] border border-white/20 rounded-xl p-6 shadow-2xl">
+          <div className="w-full max-w-sm glass-panel-heavy rounded-xl p-6 shadow-2xl">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-bold text-white/90">List for Sale</h2>
               <button
@@ -894,18 +844,20 @@ const HorseDetailPage: React.FC = () => {
               />
             </div>
             <div className="flex gap-3">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                className="flex-1"
                 onClick={() => {
                   setShowListModal(false);
                   setListPrice('');
                 }}
-                className="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white/60 text-sm hover:bg-white/10 transition-colors"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                className="flex-1"
                 disabled={listHorseMutation.isPending || !listPrice || Number(listPrice) < 100}
                 onClick={() => {
                   listHorseMutation.mutate(
@@ -919,10 +871,9 @@ const HorseDetailPage: React.FC = () => {
                     }
                   );
                 }}
-                className="flex-1 px-4 py-2 rounded-lg bg-emerald-600/80 border border-emerald-500/40 text-white text-sm hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {listHorseMutation.isPending ? 'Listing…' : 'Confirm'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>
@@ -2171,12 +2122,9 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
             Visit the Vet Clinic to book a health check or treatment.
           </p>
         </div>
-        <Link
-          to="/vet"
-          className="px-4 py-2 bg-[rgba(37,99,235,0.1)] border border-[rgba(37,99,235,0.3)] rounded-lg text-sm fantasy-body text-[rgb(160,175,200)] hover:bg-[rgba(37,99,235,0.2)] transition-colors whitespace-nowrap"
-        >
-          Go to Vet Clinic
-        </Link>
+        <Button asChild>
+          <Link to="/vet">Go to Vet Clinic</Link>
+        </Button>
       </div>
     </div>
   );
@@ -2279,12 +2227,9 @@ const StudSaleTab: React.FC<{
             See horses listed for sale by other players.
           </p>
         </div>
-        <Link
-          to="/marketplace/horses"
-          className="px-4 py-2 bg-[rgba(37,99,235,0.1)] border border-[rgba(37,99,235,0.3)] rounded-lg text-sm fantasy-body text-[rgb(160,175,200)] hover:bg-[rgba(37,99,235,0.2)] transition-colors whitespace-nowrap"
-        >
-          Marketplace
-        </Link>
+        <Button asChild>
+          <Link to="/marketplace/horses">Marketplace</Link>
+        </Button>
       </div>
     </div>
   );

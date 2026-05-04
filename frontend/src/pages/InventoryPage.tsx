@@ -26,6 +26,7 @@ import { toast } from 'sonner';
 import { Package, Shield, Leaf, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
 import { useInventory, useEquipItem, useUnequipItem } from '@/hooks/api/useInventory';
 import PageHero from '@/components/layout/PageHero';
+import { Button } from '@/components/ui/button';
 import { horsesApi } from '@/lib/api-client';
 import type { InventoryItem } from '@/lib/api-client';
 import { useQuery } from '@tanstack/react-query';
@@ -79,10 +80,10 @@ const HorsePicker: React.FC<HorsePickerProps> = ({ itemName, onConfirm, onClose,
       aria-modal="true"
       aria-label={`Equip ${itemName}`}
     >
-      <div className="w-full max-w-sm bg-[#0f2346] border border-white/10 rounded-xl p-6 shadow-2xl">
-        <h2 className="text-lg font-bold text-white/90 mb-1">Equip Item</h2>
-        <p className="text-sm text-white/50 mb-4">
-          Select a horse to equip <span className="text-violet-300">{itemName}</span>
+      <div className="w-full max-w-sm glass-panel-heavy rounded-xl p-6 shadow-2xl">
+        <h2 className="text-lg font-bold text-[var(--cream)] mb-1">Equip Item</h2>
+        <p className="text-sm text-[var(--text-muted)] mb-4">
+          Select a horse to equip <span className="text-[var(--gold-light)]">{itemName}</span>
         </p>
 
         {isLoading ? (
@@ -97,36 +98,29 @@ const HorsePicker: React.FC<HorsePickerProps> = ({ itemName, onConfirm, onClose,
           <ul className="space-y-2 max-h-56 overflow-y-auto mb-4">
             {horses.map((horse) => (
               <li key={horse.id}>
-                <button
+                <Button
                   type="button"
+                  variant={selectedHorseId === horse.id ? 'default' : 'secondary'}
+                  size="sm"
                   onClick={() => setSelectedHorseId(horse.id)}
-                  className={`w-full text-left px-4 py-2.5 rounded-lg border transition-all text-sm ${
-                    selectedHorseId === horse.id
-                      ? 'bg-violet-600/20 border-violet-500/50 text-white/90'
-                      : 'bg-white/5 border-white/10 text-white/60 hover:border-white/20 hover:text-white/80'
-                  }`}
+                  className="w-full justify-start"
                 >
                   {horse.name}
-                </button>
+                </Button>
               </li>
             ))}
           </ul>
         )}
 
         <div className="flex gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isPending}
-            className="flex-1 py-2 rounded-lg border border-white/10 text-sm text-white/50 hover:text-white/70 hover:border-white/20 transition-colors disabled:opacity-40"
-          >
+          <Button type="button" onClick={onClose} disabled={isPending} className="flex-1">
             Cancel
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
             onClick={() => selectedHorseId !== null && onConfirm(selectedHorseId)}
             disabled={selectedHorseId === null || isPending}
-            className="flex-1 py-2 rounded-lg bg-violet-600/20 border border-violet-500/30 text-sm font-medium text-violet-300 hover:bg-violet-600/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="flex-1"
           >
             {isPending ? (
               <span className="flex items-center justify-center gap-1">
@@ -135,7 +129,7 @@ const HorsePicker: React.FC<HorsePickerProps> = ({ itemName, onConfirm, onClose,
             ) : (
               'Equip'
             )}
-          </button>
+          </Button>
         </div>
       </div>
     </div>
@@ -172,61 +166,53 @@ const InventoryItemCard: React.FC<ItemCardProps> = ({
   const isFeed = item.category === 'feed';
 
   return (
-    <div
-      className="bg-white/5 border border-white/10 rounded-xl p-5 hover:border-white/20 transition-all"
-      data-testid={`inventory-item-${item.id}`}
-    >
+    <div className="glass-panel" data-testid={`inventory-item-${item.id}`}>
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
           <span className="text-2xl" aria-hidden="true">
             {icon}
           </span>
           <div>
-            <h3 className="font-bold text-white/90 text-sm">{item.name}</h3>
+            <h3 className="font-bold text-[var(--cream)] text-sm">{item.name}</h3>
             {item.bonus && (
-              <span className="text-xs text-violet-400/80 font-medium mt-0.5 block">
+              <span className="text-xs text-[var(--gold-light)] font-medium mt-0.5 block">
                 {item.bonus}
               </span>
             )}
           </div>
         </div>
-        <span className="text-xs font-bold bg-white/10 text-white/60 rounded-full px-2 py-0.5">
+        <span className="text-xs font-bold bg-white/10 text-[var(--cream)]/60 rounded-full px-2 py-0.5">
           ×{item.quantity}
         </span>
       </div>
 
-      <p className="text-xs text-white/50 mb-3 capitalize">{item.category}</p>
+      <p className="text-xs text-[var(--text-muted)] mb-3 capitalize">{item.category}</p>
 
       {isFeed ? (
         <p
-          className="text-xs text-white/50 italic leading-snug"
+          className="text-xs text-[var(--text-muted)] italic leading-snug"
           data-testid={`feed-equip-hint-${item.id}`}
         >
           Equipped via the horse&rsquo;s Equip page.
         </p>
       ) : item.equippedToHorseId ? (
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-emerald-400 font-medium">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-xs text-[var(--gold-light)] font-medium">
             Equipped: {item.equippedToHorseName ?? `Horse #${item.equippedToHorseId}`}
           </span>
-          <button
-            type="button"
-            onClick={() => onUnequip(item)}
-            disabled={isUnequipping}
-            className="text-xs px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:text-white/70 hover:border-white/20 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-          >
+          <Button type="button" size="sm" onClick={() => onUnequip(item)} disabled={isUnequipping}>
             {isUnequipping ? <Loader2 className="w-3 h-3 animate-spin inline" /> : 'Unequip'}
-          </button>
+          </Button>
         </div>
       ) : (
-        <button
+        <Button
           type="button"
           onClick={() => onEquipRequest(item)}
           data-onboarding-target="inventory-equip-button"
-          className="w-full py-1.5 text-xs font-medium rounded-lg bg-violet-600/10 border border-violet-500/20 text-violet-400/80 hover:bg-violet-600/20 hover:text-violet-300 transition-colors"
+          className="w-full"
         >
           Equip
-        </button>
+        </Button>
       )}
     </div>
   );

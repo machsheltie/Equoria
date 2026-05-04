@@ -25,17 +25,17 @@ import ScoreBreakdownChart, {
 // lint sweep added `_` prefixes thinking they were unused — they're not.
 let lastBarChartProps: any = null;
 let lastBarProps: any[] = [];
-let lastTooltipProps: any = null;
-let lastLegendProps: any = null;
-let lastResponsiveContainerProps: any = null;
-let lastXAxisProps: any = null;
-let lastYAxisProps: any = null;
+let _lastTooltipProps: any = null;
+let _lastLegendProps: any = null;
+let _lastResponsiveContainerProps: any = null;
+let _lastXAxisProps: any = null;
+let _lastYAxisProps: any = null;
 let lastCellProps: any[] = [];
 
 // Mock Recharts components to enable testing
 vi.mock('recharts', () => ({
   ResponsiveContainer: ({ children, height, ...props }: any) => {
-    lastResponsiveContainerProps = { height, ...props };
+    _lastResponsiveContainerProps = { height, ...props };
     return (
       <div
         data-testid="responsive-container"
@@ -73,19 +73,19 @@ vi.mock('recharts', () => ({
     return <rect data-testid="cell" data-fill={fill} {...props} />;
   },
   XAxis: ({ dataKey, type, ...props }: any) => {
-    lastXAxisProps = { dataKey, type, ...props };
+    _lastXAxisProps = { dataKey, type, ...props };
     return <g data-testid="x-axis" data-datakey={dataKey} data-type={type} />;
   },
   YAxis: ({ dataKey, type, width, ...props }: any) => {
-    lastYAxisProps = { dataKey, type, width, ...props };
+    _lastYAxisProps = { dataKey, type, width, ...props };
     return <g data-testid="y-axis" data-datakey={dataKey} data-type={type} data-width={width} />;
   },
   Tooltip: ({ content, ...props }: any) => {
-    lastTooltipProps = { content, ...props };
+    _lastTooltipProps = { content, ...props };
     return <g data-testid="tooltip" {...props} />;
   },
   Legend: ({ wrapperStyle, ...props }: any) => {
-    lastLegendProps = { wrapperStyle, ...props };
+    _lastLegendProps = { wrapperStyle, ...props };
     return <g data-testid="legend" {...props} />;
   },
   LabelList: ({ dataKey, position, ..._props }: any) => (
@@ -101,11 +101,11 @@ vi.mock('recharts', () => ({
 beforeEach(() => {
   lastBarChartProps = null;
   lastBarProps = [];
-  lastTooltipProps = null;
-  lastLegendProps = null;
-  lastResponsiveContainerProps = null;
-  lastXAxisProps = null;
-  lastYAxisProps = null;
+  _lastTooltipProps = null;
+  _lastLegendProps = null;
+  _lastResponsiveContainerProps = null;
+  _lastXAxisProps = null;
+  _lastYAxisProps = null;
   lastCellProps = [];
 });
 

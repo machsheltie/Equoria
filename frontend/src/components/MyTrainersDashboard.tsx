@@ -35,6 +35,7 @@ import {
   type TrainerAssignmentEntry,
 } from '@/hooks/api/useTrainers';
 import { useHorses } from '@/hooks/api/useHorses';
+import { Button } from '@/components/ui/button';
 
 // ─── Constants ─────────────────────────────────────────────────────────────────
 
@@ -111,13 +112,9 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
         <p className="text-sm mb-4 max-w-sm" style={{ color: 'var(--text-muted)' }}>
           Hire a specialist trainer to accelerate your horses' progress in their chosen discipline.
         </p>
-        <Link
-          to="/trainers"
-          className="inline-block px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-85"
-          style={{ background: 'var(--celestial-primary)' }}
-        >
-          Browse Trainer Marketplace
-        </Link>
+        <Button asChild>
+          <Link to="/trainers">Browse Trainer Marketplace</Link>
+        </Button>
       </div>
     );
   }
@@ -141,7 +138,7 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
   return (
     <div className="space-y-5" data-testid="my-trainers-dashboard">
       {/* Slot Counter */}
-      <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-white/5 border border-white/10">
+      <div className="glass-panel flex items-center justify-between">
         <div className="flex items-center gap-2">
           <GraduationCap className="w-4 h-4 text-white/40" />
           <span className="text-sm text-white/60">
@@ -198,7 +195,7 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
               key={trainer.id}
               data-testid={`trainer-card-${trainer.id}`}
               aria-label={`Trainer: ${trainer.firstName} ${trainer.lastName}`}
-              className="bg-white/5 border border-white/10 rounded-xl p-5 hover:border-white/20 transition-all"
+              className="glass-panel"
             >
               {/* Trainer Header */}
               <div className="mb-4">
@@ -259,14 +256,15 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
               </div>
 
               {/* Assign Button */}
-              <button
+              <Button
                 type="button"
+                size="sm"
                 onClick={() => handleAssignClick(trainer.id)}
-                className="w-full py-2 px-3 mb-3 text-sm font-medium rounded-lg bg-celestial-gold/10 border border-celestial-gold/30 text-celestial-gold hover:bg-celestial-gold/20 transition-colors"
+                className="w-full mb-3"
                 data-testid={`assign-button-${trainer.id}`}
               >
                 Assign to Horse
-              </button>
+              </Button>
 
               {/* Expand Career / Discovery */}
               <button
@@ -336,7 +334,7 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
           data-testid="horse-picker-modal"
         >
           <div
-            className="bg-deep-space border border-white/10 rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200"
+            className="glass-panel-heavy rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-lg font-bold text-white/90 mb-4">Select a Horse to Assign</h3>
@@ -348,9 +346,11 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
             )}
             <div className="space-y-2 max-h-60 overflow-y-auto">
               {horses?.map((horse) => (
-                <button
+                <Button
                   key={horse.id}
                   type="button"
+                  variant="secondary"
+                  size="sm"
                   onClick={() => {
                     assignMutation.mutate(
                       { trainerId: selectedTrainerIdForAssign, horseId: horse.id },
@@ -358,22 +358,26 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
                     );
                   }}
                   disabled={assignMutation.isPending}
-                  className="w-full text-left px-4 py-3 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 transition-all disabled:opacity-50"
+                  className="w-full justify-start text-left h-auto py-3"
                 >
-                  <p className="font-bold text-white/80">{horse.name}</p>
-                  <p className="text-xs text-white/40">
-                    {getBreedName(horse.breed)} · Age {horse.age}
-                  </p>
-                </button>
+                  <span className="flex flex-col items-start">
+                    <span className="font-bold">{horse.name}</span>
+                    <span className="text-xs opacity-60">
+                      {getBreedName(horse.breed)} · Age {horse.age}
+                    </span>
+                  </span>
+                </Button>
               ))}
             </div>
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              size="sm"
               onClick={() => setSelectedTrainerIdForAssign(null)}
-              className="mt-4 w-full py-2 text-sm text-white/40 hover:text-white/60 transition-colors"
+              className="mt-4 w-full"
             >
               Cancel
-            </button>
+            </Button>
           </div>
         </div>
       )}
