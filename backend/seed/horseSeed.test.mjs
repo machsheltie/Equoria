@@ -85,11 +85,15 @@ describe('Horse Seed Integration Tests', () => {
 
   describe('checkHorseExists - Real Database Operations', () => {
     it('should return true if horse exists in database', async () => {
-      // Create a test user first
+      // Create a test user first. Use the TestSeed_ prefix so the suite's
+      // beforeAll/afterAll cleanup catches leftover rows from crashed runs;
+      // the literal 'testuser' username collided in prior runs because it
+      // wasn't prefixed and so wasn't included in cleanup filters.
+      const userTag = `TestSeed_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
       const testUser = await prisma.user.create({
         data: {
-          username: 'testuser',
-          email: 'testuser@example.com',
+          username: userTag,
+          email: `${userTag}@example.com`,
           password: 'password',
           firstName: 'Test',
           lastName: 'User',

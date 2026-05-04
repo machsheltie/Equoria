@@ -159,9 +159,17 @@ async function cleanupSuite() {
 }
 
 describe('getWhileYouWereGone (real DB)', () => {
-  beforeAll(cleanupSuite);
-  afterAll(cleanupSuite);
-  afterEach(cleanupSuite);
+  // Prewarm the Prisma connection before the cleanup so hook time isn't
+  // burned waiting on the post-prior-suite connection handshake. The 120s
+  // hook budget covers the worst-case where the prior suite (e.g.
+  // weeklyFlagEvaluationService at ~105s) leaves the connection pool
+  // contended; cleanupSuite itself is <50ms when the connection is warm.
+  beforeAll(async () => {
+    await prisma.$queryRaw`SELECT 1`;
+    await cleanupSuite();
+  }, 120_000);
+  afterAll(cleanupSuite, 120_000);
+  afterEach(cleanupSuite, 120_000);
 
   it('returns 401 when user is not authenticated', async () => {
     const h = makeReqRes(undefined);
