@@ -213,10 +213,10 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
   });
 
   // ─── Equoria-q4yy ────────────────────────────────────────────────────────
-  describe('traitDiscoveryRoutes POST /api/v1/traits/discover/batch (all-fail)', () => {
+  describe('traitDiscoveryRoutes POST /api/v1/trait-discovery/discover/batch (all-fail)', () => {
     it('returns 404 (not 403) when all horses fail ownership; per-horse messages disclosure-resistant', async () => {
       const resAllForeign = await request(app)
-        .post('/api/v1/traits/discover/batch')
+        .post('/api/v1/trait-discovery/discover/batch')
         .set('Authorization', `Bearer ${tokenA}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
@@ -227,7 +227,7 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
       expect(resAllForeign.body.success).toBe(false);
 
       const resAllMissing = await request(app)
-        .post('/api/v1/traits/discover/batch')
+        .post('/api/v1/trait-discovery/discover/batch')
         .set('Authorization', `Bearer ${tokenA}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
