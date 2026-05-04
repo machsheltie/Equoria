@@ -255,7 +255,7 @@ jobs:
         # allow_issue_writing=false — we manage a single tracking issue
         # via the "Update ZAP tracking issue" step below instead of letting
         # the action open a fresh issue per run.
-        continue-on-error: true
+        continue-on-error: true # doctrine-allow: continue-on-error-informational
         with:
           target: 'http://localhost:3000'
           rules_file_name: '.github/zap-rules.tsv'
@@ -271,7 +271,7 @@ jobs:
         # kept opening new issues for already-triaged alerts (100000,
         # 90005, 10049). Rules are now respected, and tracking is handled
         # by the "Update ZAP tracking issue" step below.
-        continue-on-error: true
+        continue-on-error: true # doctrine-allow: continue-on-error-informational
         with:
           target: 'http://localhost:3000'
           format: openapi
@@ -452,7 +452,7 @@ jobs:
         # report_sarif.sarif" whenever a scan fails before producing output.
         if: always() && hashFiles('report_sarif.sarif') != ''
         uses: github/codeql-action/upload-sarif@v3
-        continue-on-error: true
+        continue-on-error: true # doctrine-allow: continue-on-error-informational
         with:
           sarif_file: report_sarif.sarif
           category: zap-scan
