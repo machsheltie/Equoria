@@ -134,21 +134,24 @@ export const validateBreeding = async (req, res, next) => {
       return res.status(404).json(ApiResponse.notFound('One or both horses not found'));
     }
 
-    // Ownership validation
+    // CWE-639: Disclosure-resistant ownership validation. Cross-user access
+    // returns 404 (same as not-found) so an attacker cannot enumerate horse
+    // IDs by status code or message diff. Public studs are an explicit
+    // exception to ownership for the sire only — note the guard below.
     const userOwnsOrHasAccess = horse => horse.playerId === userId || horse.ownerId === userId;
 
     if (!userOwnsOrHasAccess(sire) && sire.stud_status !== 'Public Stud') {
       logger.warn(
         `[integrity] Unauthorized breeding attempt: User ${userId} tried to use sire ${sireId}`,
       );
-      return res.status(403).json(ApiResponse.forbidden('You do not have access to this sire'));
+      return res.status(404).json(ApiResponse.notFound('One or both horses not found'));
     }
 
     if (!userOwnsOrHasAccess(dam)) {
       logger.warn(
         `[integrity] Unauthorized breeding attempt: User ${userId} tried to use dam ${damId}`,
       );
-      return res.status(403).json(ApiResponse.forbidden('You do not own this mare'));
+      return res.status(404).json(ApiResponse.notFound('One or both horses not found'));
     }
 
     // Biological validation
@@ -228,12 +231,13 @@ export const validateTraining = async (req, res, next) => {
       return res.status(404).json(ApiResponse.notFound('Horse not found'));
     }
 
-    // Ownership validation
+    // CWE-639: Disclosure-resistant ownership — cross-user returns 404
+    // (identical to not-found) so an attacker cannot enumerate horse IDs.
     if (horse.playerId !== userId && horse.ownerId !== userId) {
       logger.warn(
         `[integrity] Unauthorized training attempt: User ${userId} tried to train horse ${horseId}`,
       );
-      return res.status(403).json(ApiResponse.forbidden('You do not own this horse'));
+      return res.status(404).json(ApiResponse.notFound('Horse not found'));
     }
 
     // Age validation

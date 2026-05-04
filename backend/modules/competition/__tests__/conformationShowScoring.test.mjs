@@ -660,18 +660,29 @@ describe('validateConformationEntry (real DB)', () => {
     expect(result.errors.some(e => e.toLowerCase().includes('age'))).toBe(true);
   });
 
-  test('rejects when horse is not owned by userId', async () => {
+  // CWE-639 (Equoria-fspi): The 'You do not own this horse'/'You do not own
+  // this groom' branches were removed from validateConformationEntry as
+  // dead-code — ownership is enforced upstream by the controller via
+  // findOwnedResource('horse'/'groom') before this service is called. Cross-
+  // user enumeration is prevented at the route by returning 404, not 403,
+  // for cross-user resources. The service no longer asserts ownership; it
+  // trusts the caller to pass owned entities. These tests now document the
+  // new architecture: when a service caller manually passes a foreign-owner
+  // entity, no ownership error fires (because the rest of the validation
+  // can still surface other failures, the test asserts the absence of the
+  // ownership branch, not its presence).
+  test('does not assert ownership — enforced upstream by controller (CWE-639 architecture)', async () => {
     const notMyHorse = { ...horse, userId: 'other-user' };
     const result = await validateConformationEntry(notMyHorse, groom, validClass, user.id);
-    expect(result.valid).toBe(false);
-    expect(result.errors).toContain('You do not own this horse');
+    expect(result.errors).not.toContain('You do not own this horse');
+    expect(result.errors).not.toContain('You do not own this groom');
   });
 
-  test('rejects when groom is not owned by userId', async () => {
+  test('does not assert groom ownership — enforced upstream (CWE-639 architecture)', async () => {
     const notMyGroom = { ...groom, userId: 'other-user' };
     const result = await validateConformationEntry(horse, notMyGroom, validClass, user.id);
-    expect(result.valid).toBe(false);
-    expect(result.errors).toContain('You do not own this groom');
+    expect(result.errors).not.toContain('You do not own this groom');
+    expect(result.errors).not.toContain('You do not own this horse');
   });
 
   test('rejects invalid conformation class', async () => {

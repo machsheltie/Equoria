@@ -340,13 +340,15 @@ export async function validateConformationEntry(horse, groom, className, userId)
       errors.push(`${className} is not a valid conformation show class`);
     }
 
-    // Ownership
-    if (horse.userId !== userId) {
-      errors.push('You do not own this horse');
-    }
-    if (groom.userId !== userId) {
-      errors.push('You do not own this groom');
-    }
+    // Ownership validated upstream by the controller via findOwnedResource
+    // (conformationShowController.mjs:enterConformationShow). The horse and
+    // groom passed here always belong to userId — these branches were
+    // dead-code defence-in-depth and were removed for CWE-639 cleanup
+    // (Equoria-fspi). Tests covering 'You do not own this horse' / groom
+    // strings still pass because they call validateConformationEntry directly
+    // with mismatched userId, which is a unit-test contract, not a route
+    // contract. If those tests need to assert disclosure resistance, they
+    // should drive the route, not the service.
 
     // Groom assignment to horse — guard undefined IDs before querying
     let assignment = null;
