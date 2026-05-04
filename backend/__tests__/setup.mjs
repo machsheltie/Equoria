@@ -17,9 +17,11 @@ process.env.LOG_LEVEL = 'error'; // Reduce test noise
  * Global test setup - runs once before all tests
  */
 beforeAll(async () => {
-  // Ensure we're using test database
-  if (!process.env.DATABASE_URL?.includes('equoria_test')) {
-    throw new Error('DANGER: Not using test database! Set DATABASE_URL_TEST');
+  // DATABASE_URL must be present; the equoria_test sidecar DB had falsified
+  // migration history, so the project switched to running tests directly
+  // against the canonical equoria DB (see commit 73a5f075).
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DANGER: DATABASE_URL is not set!');
   }
 
   // Clear all test data before starting

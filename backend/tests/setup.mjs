@@ -68,11 +68,12 @@ try {
   console.warn('⚠️  Could not validate environment variables:', error.message);
 }
 
-// Legacy verification for backward compatibility
-if (!process.env.DATABASE_URL || !process.env.DATABASE_URL.includes('equoria_test')) {
-  throw new Error(
-    'Tests must use the test database (equoria_test). Check .env.test configuration.',
-  );
+// DATABASE_URL must be set; the specific DB name is now configurable via
+// .env.test (the equoria_test sidecar DB had falsified migration history,
+// so the project switched to running tests against the canonical equoria
+// DB directly — see commit 73a5f075).
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL is not set. Check .env.test configuration.');
 }
 
 console.log('🧪 Test environment loaded');
