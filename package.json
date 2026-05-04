@@ -43,7 +43,6 @@
     "pg": "^8.16.0"
   },
   "devDependencies": {
-    "mime": "^3.0.0",
     "@babel/plugin-transform-modules-commonjs": "^7.27.1",
     "@babel/preset-env": "^7.28.3",
     "@babel/preset-flow": "^7.27.1",
@@ -72,8 +71,9 @@
     "jsdom": "^26.1.0",
     "lint-staged": "^15.2.11",
     "lodash": "^4.18.1",
+    "mime": "^3.0.0",
     "nodemon": "^3.1.4",
-    "prettier": "^3.3.2",
+    "prettier": "3.8.3",
     "react-test-renderer": "^19.1.1",
     "replace-in-files": "^3.0.0",
     "supertest": "^7.0.0",
