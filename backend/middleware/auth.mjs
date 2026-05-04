@@ -175,61 +175,6 @@ export const authenticateToken = async (req, res, next) => {
 };
 
 /**
- * Optional Authentication Middleware
- * Adds user information if token is present, but doesn't require it
- */
-export const optionalAuth = (req, res, next) => {
-  try {
-    // Read token from httpOnly cookie (primary method)
-    let token = req.cookies?.accessToken;
-
-    // Fallback to Authorization header
-    if (!token) {
-      const authHeader = req.headers['authorization'];
-      token = authHeader && authHeader.split(' ')[1];
-    }
-
-    if (!token) {
-      return next(); // No token, continue without user
-    }
-
-    const secret = process.env.JWT_SECRET;
-    if (!secret) {
-      logger.error('[auth] JWT_SECRET not configured');
-      return next(); // Continue without user if JWT not configured
-    }
-
-    // SECURITY: Strict JWT algorithm enforcement (must match authenticateToken)
-    const SAFE_JWT_ALGORITHMS = ['HS256'];
-
-    jwt.verify(
-      token,
-      secret,
-      {
-        algorithms: SAFE_JWT_ALGORITHMS,
-        ignoreExpiration: false,
-        ignoreNotBefore: false,
-      },
-      (err, decoded) => {
-        if (!err && decoded) {
-          // Map userId to id for backward compatibility
-          const user = {
-            ...decoded,
-            id: decoded.userId || decoded.id,
-          };
-          req.user = user;
-          logger.info(`[auth] Optional auth: authenticated user ${user.id}`);
-        }
-        next();
-      },
-    );
-  } catch (error) {
-    logger.warn(`[auth] Optional auth error: ${error.message}`);
-    next(); // Continue without user on error
-  }
-};
-
-/**
  * Role-based Authorization Middleware
  * Requires specific roles to access endpoints
  */
