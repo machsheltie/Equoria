@@ -17,6 +17,10 @@ model User {
   email            String            @unique
   /// Hashed password
   password         String
+  /// Timestamp of last password change. CWE-613 mitigation: tokens with iat older than
+  /// this value are rejected by authenticateToken. Null = no constraint (existing users
+  /// who have never rotated their password — legacy sessions remain valid until natural expiry).
+  passwordChangedAt DateTime?
   /// First and last name for display purposes
   firstName        String
   lastName         String

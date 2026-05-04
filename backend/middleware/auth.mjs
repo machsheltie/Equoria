@@ -11,9 +11,12 @@ const suspiciousActivityCache = new Map();
 
 /**
  * JWT Authentication Middleware
- * Verifies JWT tokens and adds user information to request object
+ * Verifies JWT tokens and adds user information to request object.
+ * CWE-613 mitigation: rejects tokens whose `iat` predates the user's
+ * passwordChangedAt timestamp — closes the residual access-token-TTL window
+ * after a password rotation.
  */
-export const authenticateToken = (req, res, next) => {
+export const authenticateToken = async (req, res, next) => {
   const requestId = Math.random().toString(36).substring(7);
   logger.info(`[auth:${requestId}] Starting auth for ${req.method} ${req.path}`);
   try {
@@ -117,6 +120,46 @@ export const authenticateToken = (req, res, next) => {
       ...decoded,
       id: decoded.userId || decoded.id,
     };
+
+    // CWE-613 MITIGATION: reject access tokens issued before the user's
+    // last password rotation. Tokens are signed with iat in SECONDS; the DB
+    // column `passwordChangedAt` is millisecond-precision. We floor the DB
+    // value to whole seconds so a same-second login (iat = N) immediately
+    // after a password change at N.500 is still accepted — the granularity
+    // of iat means tokens issued anywhere within a single second are
+    // indistinguishable. The 1-second window of legacy-token validity at
+    // change time is the unavoidable cost of second-precision iat; in
+    // practice the user takes far longer than 1s to re-authenticate.
+    // Null `passwordChangedAt` (users who have never rotated) = no constraint.
+    // The User.id column is a string UUID — skip the lookup for non-string ids
+    // (forged or unit-test mock tokens). Downstream handlers will reject any
+    // malformed id when they try their own DB lookups.
+    if (decoded.iat && typeof user.id === 'string' && user.id.length > 0) {
+      try {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { passwordChangedAt: true },
+        });
+        if (
+          dbUser &&
+          dbUser.passwordChangedAt &&
+          decoded.iat < Math.floor(dbUser.passwordChangedAt.getTime() / 1000)
+        ) {
+          logger.warn(
+            `[auth:${requestId}] Token rejected: iat predates passwordChangedAt for user ${user.id}`,
+          );
+          return respondUnauthorized('Session invalidated. Please login again.');
+        }
+      } catch (lookupError) {
+        // Fail-closed on DB lookup errors in this security-critical check.
+        // (Per security boundary discipline: a transient DB failure must not
+        // become an authentication bypass for stale tokens.)
+        logger.error(
+          `[auth:${requestId}] passwordChangedAt lookup failed for user ${user.id}: ${lookupError.message}`,
+        );
+        return respondUnauthorized('Authentication unavailable. Please retry.');
+      }
+    }
 
     req.user = user;
     logger.info(`[auth:${requestId}] Authenticated user ${user.id}`);
