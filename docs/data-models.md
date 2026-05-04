@@ -255,7 +255,9 @@ Central entity for horse management. Contains stats, genetics, breeding, care, a
 | conformationScores  | **Json? (JSONB)** | Body region scores 1-100 (default: head/neck/shoulders/back/legs/hooves/topline/hindquarters = 20) |
 
 **Stats (0-100, all Int?, default: 0):**
-precision, strength, speed, agility, endurance, intelligence, stamina, balance, coordination, boldness, flexibility, obedience, focus
+precision, strength, speed, agility, endurance, intelligence, stamina, balance, boldness, flexibility, obedience, focus
+
+(12 stats. `coordination` was removed in the 2026-04-29 feed-system redesign — see `docs/superpowers/specs/2026-04-29-feed-system-redesign-design.md` §8.1.)
 
 **Breeding:**
 
@@ -304,14 +306,23 @@ precision, strength, speed, agility, endurance, intelligence, stamina, balance, 
 
 **Farrier & Feed:**
 
-| Field           | Type      | Description                          |
-| --------------- | --------- | ------------------------------------ |
-| lastFarrierDate | DateTime? | Last farrier visit                   |
-| hoofCondition   | String?   | Hoof state (default: "good")         |
-| lastShod        | DateTime? | Last shoeing date                    |
-| currentFeed     | String?   | Current feed type (default: "basic") |
-| lastFedDate     | DateTime? | Last feeding date                    |
-| energyLevel     | Int?      | Energy level (default: 100)          |
+| Field            | Type      | Description                                                                                                                               |
+| ---------------- | --------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| lastFarrierDate  | DateTime? | Last farrier visit                                                                                                                        |
+| hoofCondition    | String?   | Hoof state (default: "good")                                                                                                              |
+| lastShod         | DateTime? | Last shoeing date                                                                                                                         |
+| equippedFeedType | String?   | Per-horse equipped feed tier (basic / performance / performancePlus / highPerformance / elite). Replaces the legacy `currentFeed` column. |
+| lastFedDate      | DateTime? | Last feeding date (used by `getFeedHealth` to derive `displayedHealth`).                                                                  |
+
+(`currentFeed` was replaced by `equippedFeedType`, and `energyLevel` was removed entirely, in the 2026-04-29 feed-system redesign — see migration `20260430055822_feed_phase_a` and `docs/superpowers/specs/2026-04-29-feed-system-redesign-design.md` §5.2.)
+
+**In-foal state (Phase B — pregnancy mechanic):**
+
+| Field                   | Type      | Description                                                                                                                                    |
+| ----------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| inFoalSinceDate         | DateTime? | Gestation start; null when not in-foal. Set by `breedFoal()` and cleared by the foaling job.                                                   |
+| pregnancySireId         | Int?      | Sire for the in-progress pregnancy (null when not in-foal).                                                                                    |
+| pregnancyFeedingsByTier | Json      | Per-tier feeding counter (default: `{}`). Incremented by `feedHorse()` for in-foal mares; consumed by `runFoalingJob()` via the bonus formula. |
 
 **Indexes:** userId, breedId, stableId
 **Table:** horses

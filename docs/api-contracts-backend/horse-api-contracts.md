@@ -13,6 +13,7 @@ The Horse API provides comprehensive CRUD operations and advanced features for m
 
 **Total Endpoints:** 19
 **Categories:**
+
 - Basic CRUD (5 endpoints)
 - XP System (4 endpoints)
 - Advanced Features (10 endpoints)
@@ -73,9 +74,10 @@ interface Horse {
   intelligence: number;
 
   // Competition Stats (0-100)
+  // 12 stats total. `coordination` was removed in the 2026-04-29 feed-system
+  // redesign (see docs/superpowers/specs/2026-04-29-feed-system-redesign-design.md §8.1).
   stamina: number;
   balance: number;
-  coordination: number;
   boldness: number;
   flexibility: number;
   obedience: number;
@@ -152,12 +154,12 @@ interface ErrorResponse {
 
 #### Query Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| userId | string | No | - | Filter by owner user ID |
-| breedId | number | No | - | Filter by breed ID |
-| limit | number | No | 50 | Maximum horses to return (pagination) |
-| offset | number | No | 0 | Number of horses to skip (pagination) |
+| Parameter | Type   | Required | Default | Description                           |
+| --------- | ------ | -------- | ------- | ------------------------------------- |
+| userId    | string | No       | -       | Filter by owner user ID               |
+| breedId   | number | No       | -       | Filter by breed ID                    |
+| limit     | number | No       | 50      | Maximum horses to return (pagination) |
+| offset    | number | No       | 0       | Number of horses to skip (pagination) |
 
 #### Request Example
 
@@ -200,6 +202,7 @@ GET /horses?userId=user123&breedId=5&limit=20&offset=0
 #### Error Responses
 
 **500 Internal Server Error**
+
 ```json
 {
   "success": false,
@@ -218,9 +221,9 @@ GET /horses?userId=user123&breedId=5&limit=20&offset=0
 
 #### Path Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| id | number | Yes | Horse ID (must be positive integer) |
+| Parameter | Type   | Required | Description                         |
+| --------- | ------ | -------- | ----------------------------------- |
+| id        | number | Yes      | Horse ID (must be positive integer) |
 
 #### Request Example
 
@@ -263,7 +266,6 @@ GET /horses/1
     "intelligence": 78,
     "stamina": 88,
     "balance": 82,
-    "coordination": 86,
     "boldness": 90,
     "flexibility": 75,
     "obedience": 72,
@@ -295,6 +297,7 @@ GET /horses/1
 #### Error Responses
 
 **404 Not Found**
+
 ```json
 {
   "success": false,
@@ -303,6 +306,7 @@ GET /horses/1
 ```
 
 **400 Bad Request** (Invalid ID format)
+
 ```json
 {
   "success": false,
@@ -391,6 +395,7 @@ interface CreateHorseRequest {
 #### Error Responses
 
 **400 Bad Request** (Validation errors)
+
 ```json
 {
   "success": false,
@@ -409,6 +414,7 @@ interface CreateHorseRequest {
 ```
 
 **401 Unauthorized** (Missing or invalid token)
+
 ```json
 {
   "success": false,
@@ -426,9 +432,9 @@ interface CreateHorseRequest {
 
 #### Path Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| id | number | Yes | Horse ID to update |
+| Parameter | Type   | Required | Description        |
+| --------- | ------ | -------- | ------------------ |
+| id        | number | Yes      | Horse ID to update |
 
 #### Request Body
 
@@ -475,6 +481,7 @@ Any valid Horse model fields can be updated:
 #### Error Responses
 
 **404 Not Found**
+
 ```json
 {
   "success": false,
@@ -494,9 +501,9 @@ Any valid Horse model fields can be updated:
 
 #### Path Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| id | number | Yes | Horse ID to delete |
+| Parameter | Type   | Required | Description        |
+| --------- | ------ | -------- | ------------------ |
+| id        | number | Yes      | Horse ID to delete |
 
 #### Request Example
 
@@ -516,6 +523,7 @@ DELETE /horses/42
 #### Error Responses
 
 **404 Not Found**
+
 ```json
 {
   "success": false,
@@ -535,9 +543,9 @@ DELETE /horses/42
 
 #### Path Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| id | number | Yes | Horse ID |
+| Parameter | Type   | Required | Description |
+| --------- | ------ | -------- | ----------- |
+| id        | number | Yes      | Horse ID    |
 
 #### Response (200 OK)
 
@@ -566,9 +574,9 @@ DELETE /horses/42
 
 #### Path Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| id | number | Yes | Horse ID |
+| Parameter | Type   | Required | Description |
+| --------- | ------ | -------- | ----------- |
+| id        | number | Yes      | Horse ID    |
 
 #### Request Body
 
@@ -605,6 +613,7 @@ interface AllocateStatRequest {
 #### Error Responses
 
 **400 Bad Request** (No points available)
+
 ```json
 {
   "success": false,
@@ -613,6 +622,7 @@ interface AllocateStatRequest {
 ```
 
 **400 Bad Request** (Stat at max)
+
 ```json
 {
   "success": false,
@@ -630,10 +640,10 @@ interface AllocateStatRequest {
 
 #### Query Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| limit | number | No | 50 | Maximum events to return |
-| offset | number | No | 0 | Number of events to skip |
+| Parameter | Type   | Required | Default | Description              |
+| --------- | ------ | -------- | ------- | ------------------------ |
+| limit     | number | No       | 50      | Maximum events to return |
+| offset    | number | No       | 0       | Number of events to skip |
 
 #### Response (200 OK)
 
@@ -724,9 +734,9 @@ interface AwardXpRequest {
 
 #### Path Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| userId | string | Yes | User ID (1-50 characters) |
+| Parameter | Type   | Required | Description               |
+| --------- | ------ | -------- | ------------------------- |
+| userId    | string | Yes      | User ID (1-50 characters) |
 
 #### Response (200 OK)
 
@@ -741,14 +751,14 @@ interface AwardXpRequest {
         "name": "Thunder",
         "canTrain": true,
         "cooldownEndsAt": null,
-        "energyLevel": 100
+        "displayedHealth": "excellent"
       },
       {
         "id": 2,
         "name": "Storm",
         "canTrain": false,
         "cooldownEndsAt": "2025-12-06T10:00:00.000Z",
-        "energyLevel": 45
+        "displayedHealth": "good"
       }
     ],
     "total": 2
@@ -766,10 +776,10 @@ interface AwardXpRequest {
 
 #### Query Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| limit | number | No | 50 | Maximum results to return |
-| offset | number | No | 0 | Number of results to skip |
+| Parameter | Type   | Required | Default | Description               |
+| --------- | ------ | -------- | ------- | ------------------------- |
+| limit     | number | No       | 50      | Maximum results to return |
+| offset    | number | No       | 0       | Number of results to skip |
 
 #### Response (200 OK)
 
@@ -851,10 +861,7 @@ interface CreateFoalRequest {
     "genotype": {
       "inherited": "calculated_genetics"
     },
-    "epigeneticFlags": [
-      "early_speed_boost",
-      "stable_temperament"
-    ],
+    "epigeneticFlags": ["early_speed_boost", "stable_temperament"],
     "trait": "Speed Prodigy",
     "temperament": "Balanced",
     "personality": "Curious",
@@ -936,11 +943,11 @@ interface CreateFoalRequest {
 
 #### Query Parameters
 
-| Parameter | Type | Required | Default | Description |
-|-----------|------|----------|---------|-------------|
-| breedId | number | No | - | Filter by specific breed |
-| minAge | number | No | 0 | Minimum horse age |
-| maxAge | number | No | 50 | Maximum horse age |
+| Parameter | Type   | Required | Default | Description              |
+| --------- | ------ | -------- | ------- | ------------------------ |
+| breedId   | number | No       | -       | Filter by specific breed |
+| minAge    | number | No       | 0       | Minimum horse age        |
+| maxAge    | number | No       | 50      | Maximum horse age        |
 
 #### Response (200 OK)
 
@@ -1043,11 +1050,7 @@ interface CreateFoalRequest {
     },
     "rank": 42,
     "percentile": 95.5,
-    "achievements": [
-      "Grand Champion",
-      "Legendary Sire",
-      "Speed Record Holder"
-    ]
+    "achievements": ["Grand Champion", "Legendary Sire", "Speed Record Holder"]
   }
 }
 ```
@@ -1090,11 +1093,7 @@ interface CreateFoalRequest {
         "date": "2023-03-15T00:00:00.000Z"
       }
     ],
-    "currentTraits": [
-      "Speed Demon",
-      "Early Acceleration",
-      "Competitive Spirit"
-    ]
+    "currentTraits": ["Speed Demon", "Early Acceleration", "Competitive Spirit"]
   }
 }
 ```
@@ -1109,9 +1108,9 @@ interface CreateFoalRequest {
 
 #### Query Parameters
 
-| Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
-| mateId | number | No | ID of potential mate to predict offspring |
+| Parameter | Type   | Required | Description                               |
+| --------- | ------ | -------- | ----------------------------------------- |
+| mateId    | number | No       | ID of potential mate to predict offspring |
 
 #### Response (200 OK)
 
@@ -1181,12 +1180,12 @@ interface CreateFoalRequest {
 
 ### Standard Error Codes
 
-| Status Code | Description | Common Causes |
-|-------------|-------------|---------------|
-| 400 | Bad Request | Invalid input, validation failure |
-| 401 | Unauthorized | Missing or invalid JWT token |
-| 404 | Not Found | Horse ID doesn't exist |
-| 500 | Internal Server Error | Database error, server crash |
+| Status Code | Description           | Common Causes                     |
+| ----------- | --------------------- | --------------------------------- |
+| 400         | Bad Request           | Invalid input, validation failure |
+| 401         | Unauthorized          | Missing or invalid JWT token      |
+| 404         | Not Found             | Horse ID doesn't exist            |
+| 500         | Internal Server Error | Database error, server crash      |
 
 ### Error Response Format
 
@@ -1209,6 +1208,7 @@ interface ValidationError {
 ### Example Error Responses
 
 **Validation Error (400)**
+
 ```json
 {
   "success": false,
@@ -1227,6 +1227,7 @@ interface ValidationError {
 ```
 
 **Authentication Error (401)**
+
 ```json
 {
   "success": false,
@@ -1235,6 +1236,7 @@ interface ValidationError {
 ```
 
 **Not Found (404)**
+
 ```json
 {
   "success": false,
@@ -1243,6 +1245,7 @@ interface ValidationError {
 ```
 
 **Server Error (500)**
+
 ```json
 {
   "success": false,
@@ -1271,6 +1274,7 @@ List endpoints support pagination via query parameters:
 - `offset`: Number of items to skip (default: 0)
 
 Example:
+
 ```
 GET /horses?limit=20&offset=40
 ```
@@ -1307,6 +1311,7 @@ This reduces the need for multiple API calls.
 **Base Path:** `/api/v1/horses`
 
 Future versions will use:
+
 - `/api/v2/horses`
 - etc.
 
@@ -1315,16 +1320,19 @@ Future versions will use:
 ## Security Considerations
 
 ### Authentication
+
 - JWT tokens expire after 24 hours
 - Refresh tokens should be used for extended sessions
 - Tokens should be stored securely (httpOnly cookies recommended)
 
 ### Authorization
+
 - Users can only create/update/delete their own horses
 - Admin endpoints require special permissions
 - CORS should be configured for production
 
 ### Input Validation
+
 - All inputs are validated using express-validator
 - SQL injection protection via Prisma ORM
 - XSS protection via input sanitization
@@ -1334,11 +1342,13 @@ Future versions will use:
 ## Testing
 
 ### Test Coverage
+
 - Unit tests for all endpoints
 - Integration tests for complex flows
 - E2E tests for critical user journeys
 
 ### Test Data
+
 Mock horse data is available for testing:
 
 ```json
@@ -1357,6 +1367,7 @@ Mock horse data is available for testing:
 ## Changelog
 
 ### Version 1.0.0 (2025-12-05)
+
 - Initial API documentation
 - 19 endpoints documented
 - Request/response formats defined
@@ -1367,6 +1378,7 @@ Mock horse data is available for testing:
 ## Support
 
 For issues or questions:
+
 - Check the Prisma schema: `packages/database/prisma/schema.prisma`
 - Review route definitions: `backend/routes/horseRoutes.mjs`
 - Contact backend team for API changes
