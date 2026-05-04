@@ -106,7 +106,7 @@ const FeedShopPage: React.FC = () => {
                     src={FEED_IMAGES[tier.id]}
                     alt={`${tier.name} feed bag`}
                     loading="lazy"
-                    className="shrink-0 w-24 h-24 sm:w-32 sm:h-32 lg:w-[200px] lg:h-[200px] object-contain rounded-lg bg-black/20"
+                    className="shrink-0 w-24 h-24 sm:w-32 sm:h-32 lg:w-[150px] lg:h-[150px] object-contain"
                   />
                   <div className="flex-1 min-w-0 flex flex-col">
                     <div className="flex items-start justify-between mb-2">

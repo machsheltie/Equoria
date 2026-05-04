@@ -112,8 +112,8 @@ const HorseEquipPage: React.FC = () => {
                     className="bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] rounded-xl p-5 flex gap-4"
                     data-testid={`tack-item-${item.id}`}
                   >
-                    <div className="shrink-0 w-24 h-24 sm:w-32 sm:h-32 lg:w-[200px] lg:h-[200px] rounded-lg bg-black/20 flex items-center justify-center text-[var(--text-muted)]">
-                      <Wrench className="w-10 h-10 sm:w-14 sm:h-14 lg:w-20 lg:h-20" />
+                    <div className="shrink-0 w-24 h-24 sm:w-32 sm:h-32 lg:w-[150px] lg:h-[150px] rounded-lg bg-black/20 flex items-center justify-center text-[var(--text-muted)]">
+                      <Wrench className="w-10 h-10 sm:w-14 sm:h-14 lg:w-16 lg:h-16" />
                     </div>
                     <div className="flex-1 min-w-0 flex flex-col">
                       {isEquipped && (
@@ -221,7 +221,7 @@ const HorseEquipPage: React.FC = () => {
                       src={FEED_IMAGES[tierId]}
                       alt={`${f.name} feed bag`}
                       loading="lazy"
-                      className="shrink-0 w-24 h-24 sm:w-32 sm:h-32 lg:w-[200px] lg:h-[200px] object-contain rounded-lg bg-black/20"
+                      className="shrink-0 w-24 h-24 sm:w-32 sm:h-32 lg:w-[150px] lg:h-[150px] object-contain"
                     />
                     <div className="flex-1 min-w-0 flex flex-col">
                       {isEquipped && (
