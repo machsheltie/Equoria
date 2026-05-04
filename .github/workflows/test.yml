@@ -353,10 +353,21 @@ jobs:
 
       - name: Run Vitest with coverage
         working-directory: ./frontend
-        # 97/231 frontend Vitest files are currently failing on stale UI
-        # assertions (class/markup from an older iteration). Non-fatal
-        # until tests are refreshed. TODO: refresh frontend unit tests.
-        continue-on-error: true
+        # Equoria-zzlh (2026-05-04): removed continue-on-error: true. The
+        # original "97/231 failing" comment was stale — actual baseline was
+        # 8 failing files from two distinct bugs:
+        #   - activity-utils.ts and statistics-utils.ts had `_`-prefixed
+        #     enum members (unused-var lint sweep applied incorrectly to
+        #     enum declarations, breaking the enum API for both consumers
+        #     and tests)
+        #   - ScoreBreakdownChart.test.tsx mock factory variables had `_`
+        #     prefix on `const` declarations while assignment sites kept
+        #     the unprefixed names
+        # Plus 3 mock-setup bugs (App.story-8-1, OnboardingPage,
+        # EmptyState) where vi.mock factories omitted exports the source
+        # had since added (Footprints, Tooltip, advanceOnboarding hoist).
+        # vitest.config.ts testTimeout bumped 10s → 20s for jsdom 4-fork
+        # contention headroom. Suite now 243/243 green.
         run: npm run test:coverage
 
       - name: Upload frontend coverage

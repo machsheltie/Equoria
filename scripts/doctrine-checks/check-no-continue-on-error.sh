@@ -19,9 +19,12 @@ MARKER='doctrine-allow: continue-on-error-informational'
 # Find every `continue-on-error: true` in workflow YAML, excluding the marker.
 # Skip markdown checklist lines (`- [x]` or `- [ ]`) which appear in PR-body
 # templates and reference the literal as documentation.
+# Skip YAML comment lines (lines whose first non-whitespace char is `#`) that
+# may quote the literal string for documentation purposes inside step bodies.
 matches=$(grep -rn "continue-on-error:[[:space:]]*true" .github/workflows/ 2>/dev/null \
   | grep -v -F "$MARKER" \
-  | grep -v -E ':[[:space:]]*-[[:space:]]*\[[ x]\]' || true)
+  | grep -v -E ':[[:space:]]*-[[:space:]]*\[[ x]\]' \
+  | grep -v -E ':[[:space:]]*#' || true)
 
 if [ -z "$matches" ]; then
   exit 0
