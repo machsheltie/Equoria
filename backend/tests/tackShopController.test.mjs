@@ -1,68 +1,45 @@
 /**
- * 🧪 UNIT TEST: Tack Shop Controller — Decorative & Parade Tack System
+ * Tack Shop Controller — Decorative & Parade Tack System (REAL DB)
  *
  * Tests the decorative tack purchase and unequip flow, resolveTackBonus
  * for parade shows, and the TACK_INVENTORY decorative catalog.
  *
- * 📋 BUSINESS RULES TESTED:
- * - TACK_INVENTORY includes 5 core decorative items + 1 seasonal item
- * - resolveTackBonus returns presenceBonus for parade shows only
- * - resolveTackBonus returns presenceBonus=0 for non-parade shows
- * - purchaseTackItem appends decorative items to tack.decorations[] (not replacing)
- * - purchaseTackItem does not add duplicates to decorations[]
- * - unequipDecoration removes item by ID from tack.decorations[]
- * - unequipDecoration returns 400 if item not equipped
- * - unequipDecoration returns 404 if horse not found
- * - GET /inventory returns decorative category items in categories.decorative
- * - Seasonal items have seasonalTag field
- * - isCosmetic flag is true on all decorative items
+ * NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): converted from
+ * jest.unstable_mockModule of prismaClient + logger to a real-DB integration
+ * test against the canonical equoria DB. The original mocks dictated specific
+ * Prisma return shapes per test branch — every such branch is now exercised
+ * by setting up the corresponding real horse/user state, calling the
+ * controller, and verifying real DB mutations.
  *
- * 🔄 BALANCED MOCKING APPROACH:
- * ✅ REAL: All controller business logic, catalog lookups, tack JSON mutations
- * ✅ REAL: resolveTackBonus presenceBonus calculation
- * 🔧 MOCK: Prisma (external DB dependency)
- * 🔧 MOCK: Logger (external I/O dependency)
+ * Removed (per doctrine):
+ *   - "returns 500 on unexpected DB error" — required mocking
+ *     prisma.horse.findFirst to reject. Synthetic Prisma fault injection is
+ *     forbidden; the .catch() block in the controller IS exercised by the
+ *     production code on real DB connection loss / schema drift, but a
+ *     synthetic test of that path is not a permitted pattern.
  */
 
-import { jest, describe, beforeEach, expect, it } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { describe, beforeAll, beforeEach, afterAll, expect, it } from '@jest/globals';
+import bcrypt from 'bcryptjs';
+import { randomBytes } from 'node:crypto';
+import prisma from '../../packages/database/prismaClient.mjs';
+import {
+  TACK_INVENTORY,
+  resolveTackBonus,
+  getTackInventory,
+  purchaseTackItem,
+  unequipDecoration,
+} from '../modules/services/controllers/tackShopController.mjs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const ts = randomBytes(8).toString('hex');
+let testUser;
+let testHorse;
 
-// ── Prisma mock ───────────────────────────────────────────────────────────────
-
-const mockPrisma = {
-  horse: {
-    findFirst: jest.fn(),
-    findUnique: jest.fn(),
-    update: jest.fn(),
-  },
-  user: {
-    findUnique: jest.fn(),
-    update: jest.fn(),
-  },
-  $transaction: jest.fn(),
-};
-
-jest.unstable_mockModule(join(__dirname, '../../packages/database/prismaClient.mjs'), () => ({ default: mockPrisma }));
-
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
-  default: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
-}));
-
-// ── Load modules after mocks ──────────────────────────────────────────────────
-
-const { TACK_INVENTORY, resolveTackBonus, getTackInventory, purchaseTackItem, unequipDecoration } = await import(
-  '../modules/services/controllers/tackShopController.mjs'
-);
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
+// ── req/res helpers (no Prisma mocked here — these stub HTTP only) ────────────
 
 function makeReq(overrides = {}) {
   return {
-    user: { id: 'user-1' },
+    user: { id: testUser?.id ?? 'pre-init' },
     body: {},
     params: {},
     ...overrides,
@@ -71,23 +48,79 @@ function makeReq(overrides = {}) {
 
 function makeRes() {
   const res = {
-    status: jest.fn(),
-    json: jest.fn(),
+    status: undefined,
+    json: undefined,
     _status: null,
     _body: null,
   };
-  res.status.mockImplementation(code => {
+  res.status = code => {
     res._status = code;
     return res;
-  });
-  res.json.mockImplementation(body => {
+  };
+  res.json = body => {
     res._body = body;
     return res;
-  });
+  };
   return res;
 }
 
-// ── TACK_INVENTORY catalog tests ──────────────────────────────────────────────
+// ── Real-DB test fixtures ─────────────────────────────────────────────────────
+
+beforeAll(async () => {
+  const hashed = await bcrypt.hash('TestPass123!', 10);
+  testUser = await prisma.user.create({
+    data: {
+      username: `tackShopTest_${ts}`,
+      email: `tackShopTest_${ts}@test.com`,
+      password: hashed,
+      firstName: 'TackShop',
+      lastName: 'Test',
+      money: 10_000,
+    },
+  });
+
+  // A breed is required for horse FK; reuse Thoroughbred or create one for
+  // the suite with a unique name to avoid colliding with other tests.
+  const breed =
+    (await prisma.breed.findFirst({ where: { name: 'Thoroughbred' } })) ??
+    (await prisma.breed.create({
+      data: { name: `TackShopBreed_${ts}`, description: 'Tack shop test breed' },
+    }));
+
+  testHorse = await prisma.horse.create({
+    data: {
+      name: `TackShopHorse_${ts}`,
+      sex: 'Mare',
+      dateOfBirth: new Date('2020-01-01'),
+      breedId: breed.id,
+      userId: testUser.id,
+      tack: {},
+    },
+  });
+});
+
+beforeEach(async () => {
+  // Reset horse tack + user money to known state for each controller test.
+  await prisma.horse.update({
+    where: { id: testHorse.id },
+    data: { tack: {} },
+  });
+  await prisma.user.update({
+    where: { id: testUser.id },
+    data: { money: 10_000 },
+  });
+});
+
+afterAll(async () => {
+  if (testHorse?.id) {
+    await prisma.horse.delete({ where: { id: testHorse.id } }).catch(() => {});
+  }
+  if (testUser?.id) {
+    await prisma.user.delete({ where: { id: testUser.id } }).catch(() => {});
+  }
+});
+
+// ── TACK_INVENTORY catalog tests (pure data; no DB) ───────────────────────────
 
 describe('TACK_INVENTORY — decorative items', () => {
   const decorativeItems = TACK_INVENTORY.filter(i => i.category === 'decorative');
@@ -137,7 +170,7 @@ describe('TACK_INVENTORY — decorative items', () => {
   });
 });
 
-// ── resolveTackBonus ──────────────────────────────────────────────────────────
+// ── resolveTackBonus (pure function; no DB) ───────────────────────────────────
 
 describe('resolveTackBonus', () => {
   it('returns presenceBonus=0 for ridden show even with decorations equipped', () => {
@@ -155,7 +188,6 @@ describe('resolveTackBonus', () => {
   });
 
   it('returns summed presenceBonus for parade show', () => {
-    // show-ribbon=3, floral-browband=3 → total 6
     const tack = { decorations: ['show-ribbon', 'floral-browband'] };
     const result = resolveTackBonus(tack, 'parade');
     expect(result.presenceBonus).toBe(6);
@@ -174,7 +206,6 @@ describe('resolveTackBonus', () => {
   });
 
   it('returns full presenceBonus for all 5 core items combined', () => {
-    // show-ribbon=3, braided-mane-wrap=4, parade-blanket=5, glitter-spray=2, floral-browband=3 = 17
     const tack = {
       decorations: ['show-ribbon', 'braided-mane-wrap', 'parade-blanket', 'glitter-spray', 'floral-browband'],
     };
@@ -189,8 +220,6 @@ describe('resolveTackBonus', () => {
       decorations: ['parade-blanket'],
     };
     const result = resolveTackBonus(tack, 'parade');
-    // For parade shows, saddleBonus is still resolved but tackBonus in simulateCompetition
-    // uses presenceBonus instead — resolveTackBonus returns both for caller choice
     expect(result.saddleBonus).toBe(5);
     expect(result.presenceBonus).toBe(5);
   });
@@ -217,32 +246,11 @@ describe('getTackInventory', () => {
   });
 });
 
-// ── purchaseTackItem — decorative ─────────────────────────────────────────────
+// ── purchaseTackItem — decorative items (real DB) ─────────────────────────────
 
 describe('purchaseTackItem — decorative items', () => {
-  const userId = 'user-1';
-  const horseId = 42;
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   it('appends decorative item ID to tack.decorations array', async () => {
-    mockPrisma.horse.findFirst.mockResolvedValue({
-      id: horseId,
-      userId,
-      tack: {},
-    });
-    mockPrisma.user.findUnique.mockResolvedValue({ money: 500 });
-    mockPrisma.$transaction.mockImplementation(async ops => {
-      return ops.map(() => ({
-        id: horseId,
-        name: 'Stardust',
-        tack: { decorations: ['show-ribbon'] },
-      }));
-    });
-
-    const req = makeReq({ body: { horseId, itemId: 'show-ribbon' } });
+    const req = makeReq({ body: { horseId: testHorse.id, itemId: 'show-ribbon' } });
     const res = makeRes();
     await purchaseTackItem(req, res);
 
@@ -250,93 +258,55 @@ describe('purchaseTackItem — decorative items', () => {
     expect(res._body.success).toBe(true);
     expect(res._body.message).toContain('purchased successfully');
 
-    // Verify horse.update was called with decorations array
-    const updateCall = mockPrisma.horse.update.mock.calls[0][0];
-    const tackData = updateCall.data.tack;
-    expect(Array.isArray(tackData.decorations)).toBe(true);
-    expect(tackData.decorations).toContain('show-ribbon');
+    const horse = await prisma.horse.findUnique({ where: { id: testHorse.id } });
+    expect(Array.isArray(horse.tack.decorations)).toBe(true);
+    expect(horse.tack.decorations).toContain('show-ribbon');
   });
 
   it('appends to existing decorations array without replacing', async () => {
-    mockPrisma.horse.findFirst.mockResolvedValue({
-      id: horseId,
-      userId,
-      tack: { decorations: ['show-ribbon'] },
-    });
-    mockPrisma.user.findUnique.mockResolvedValue({ money: 500 });
-    mockPrisma.$transaction.mockImplementation(async ops => {
-      return ops.map(() => ({
-        id: horseId,
-        name: 'Stardust',
-        tack: { decorations: ['show-ribbon', 'floral-browband'] },
-      }));
+    await prisma.horse.update({
+      where: { id: testHorse.id },
+      data: { tack: { decorations: ['show-ribbon'] } },
     });
 
-    const req = makeReq({ body: { horseId, itemId: 'floral-browband' } });
+    const req = makeReq({ body: { horseId: testHorse.id, itemId: 'floral-browband' } });
     const res = makeRes();
     await purchaseTackItem(req, res);
 
     expect(res._status).toBe(200);
-    const updateCall = mockPrisma.horse.update.mock.calls[0][0];
-    const tackData = updateCall.data.tack;
-    expect(tackData.decorations).toEqual(expect.arrayContaining(['show-ribbon', 'floral-browband']));
-    expect(tackData.decorations.length).toBe(2);
+    const horse = await prisma.horse.findUnique({ where: { id: testHorse.id } });
+    expect(horse.tack.decorations).toEqual(expect.arrayContaining(['show-ribbon', 'floral-browband']));
+    expect(horse.tack.decorations.length).toBe(2);
   });
 
   it('does not add duplicate decorations on re-purchase', async () => {
-    mockPrisma.horse.findFirst.mockResolvedValue({
-      id: horseId,
-      userId,
-      tack: { decorations: ['show-ribbon'] },
-    });
-    mockPrisma.user.findUnique.mockResolvedValue({ money: 500 });
-    mockPrisma.$transaction.mockImplementation(async ops => {
-      return ops.map(() => ({
-        id: horseId,
-        name: 'Stardust',
-        tack: { decorations: ['show-ribbon'] },
-      }));
+    await prisma.horse.update({
+      where: { id: testHorse.id },
+      data: { tack: { decorations: ['show-ribbon'] } },
     });
 
-    const req = makeReq({ body: { horseId, itemId: 'show-ribbon' } });
+    const req = makeReq({ body: { horseId: testHorse.id, itemId: 'show-ribbon' } });
     const res = makeRes();
     await purchaseTackItem(req, res);
 
-    // Even if the horse already has show-ribbon, the array should not have duplicates
-    const updateCall = mockPrisma.horse.update.mock.calls[0][0];
-    const tackData = updateCall.data.tack;
-    const ribbonCount = tackData.decorations.filter(id => id === 'show-ribbon').length;
+    const horse = await prisma.horse.findUnique({ where: { id: testHorse.id } });
+    const ribbonCount = horse.tack.decorations.filter(id => id === 'show-ribbon').length;
     expect(ribbonCount).toBe(1);
   });
 
   it('does not set tack.decorative key (only tack.decorations array)', async () => {
-    mockPrisma.horse.findFirst.mockResolvedValue({
-      id: horseId,
-      userId,
-      tack: {},
-    });
-    mockPrisma.user.findUnique.mockResolvedValue({ money: 500 });
-    mockPrisma.$transaction.mockImplementation(async ops => {
-      return ops.map(() => ({
-        id: horseId,
-        name: 'Stardust',
-        tack: { decorations: ['show-ribbon'] },
-      }));
-    });
-
-    const req = makeReq({ body: { horseId, itemId: 'show-ribbon' } });
+    const req = makeReq({ body: { horseId: testHorse.id, itemId: 'show-ribbon' } });
     const res = makeRes();
     await purchaseTackItem(req, res);
 
-    const updateCall = mockPrisma.horse.update.mock.calls[0][0];
-    expect(updateCall.data.tack).not.toHaveProperty('decorative');
+    const horse = await prisma.horse.findUnique({ where: { id: testHorse.id } });
+    expect(horse.tack).not.toHaveProperty('decorative');
   });
 
   it('returns 400 if user has insufficient funds', async () => {
-    mockPrisma.horse.findFirst.mockResolvedValue({ id: horseId, userId, tack: {} });
-    mockPrisma.user.findUnique.mockResolvedValue({ money: 50 }); // show-ribbon costs 120
+    await prisma.user.update({ where: { id: testUser.id }, data: { money: 50 } });
 
-    const req = makeReq({ body: { horseId, itemId: 'show-ribbon' } });
+    const req = makeReq({ body: { horseId: testHorse.id, itemId: 'show-ribbon' } });
     const res = makeRes();
     await purchaseTackItem(req, res);
 
@@ -346,7 +316,7 @@ describe('purchaseTackItem — decorative items', () => {
   });
 
   it('returns 404 if item not in catalog', async () => {
-    const req = makeReq({ body: { horseId, itemId: 'not-a-real-item' } });
+    const req = makeReq({ body: { horseId: testHorse.id, itemId: 'not-a-real-item' } });
     const res = makeRes();
     await purchaseTackItem(req, res);
 
@@ -356,9 +326,7 @@ describe('purchaseTackItem — decorative items', () => {
   });
 
   it('returns 404 if horse not found', async () => {
-    mockPrisma.horse.findFirst.mockResolvedValue(null);
-
-    const req = makeReq({ body: { horseId, itemId: 'show-ribbon' } });
+    const req = makeReq({ body: { horseId: 999_999_999, itemId: 'show-ribbon' } });
     const res = makeRes();
     await purchaseTackItem(req, res);
 
@@ -367,29 +335,16 @@ describe('purchaseTackItem — decorative items', () => {
   });
 });
 
-// ── unequipDecoration ─────────────────────────────────────────────────────────
+// ── unequipDecoration (real DB) ───────────────────────────────────────────────
 
 describe('unequipDecoration', () => {
-  const userId = 'user-1';
-  const horseId = 42;
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   it('removes the item ID from tack.decorations[]', async () => {
-    mockPrisma.horse.findFirst.mockResolvedValue({
-      id: horseId,
-      userId,
-      tack: { decorations: ['show-ribbon', 'floral-browband'] },
-    });
-    mockPrisma.horse.update.mockResolvedValue({
-      id: horseId,
-      name: 'Stardust',
-      tack: { decorations: ['floral-browband'] },
+    await prisma.horse.update({
+      where: { id: testHorse.id },
+      data: { tack: { decorations: ['show-ribbon', 'floral-browband'] } },
     });
 
-    const req = makeReq({ body: { horseId, itemId: 'show-ribbon' } });
+    const req = makeReq({ body: { horseId: testHorse.id, itemId: 'show-ribbon' } });
     const res = makeRes();
     await unequipDecoration(req, res);
 
@@ -397,39 +352,32 @@ describe('unequipDecoration', () => {
     expect(res._body.success).toBe(true);
     expect(res._body.data.removedItemId).toBe('show-ribbon');
 
-    const updateCall = mockPrisma.horse.update.mock.calls[0][0];
-    expect(updateCall.data.tack.decorations).toEqual(['floral-browband']);
+    const horse = await prisma.horse.findUnique({ where: { id: testHorse.id } });
+    expect(horse.tack.decorations).toEqual(['floral-browband']);
   });
 
   it('returns empty decorations array after removing last item', async () => {
-    mockPrisma.horse.findFirst.mockResolvedValue({
-      id: horseId,
-      userId,
-      tack: { decorations: ['show-ribbon'] },
-    });
-    mockPrisma.horse.update.mockResolvedValue({
-      id: horseId,
-      name: 'Stardust',
-      tack: { decorations: [] },
+    await prisma.horse.update({
+      where: { id: testHorse.id },
+      data: { tack: { decorations: ['show-ribbon'] } },
     });
 
-    const req = makeReq({ body: { horseId, itemId: 'show-ribbon' } });
+    const req = makeReq({ body: { horseId: testHorse.id, itemId: 'show-ribbon' } });
     const res = makeRes();
     await unequipDecoration(req, res);
 
     expect(res._status).toBe(200);
-    const updateCall = mockPrisma.horse.update.mock.calls[0][0];
-    expect(updateCall.data.tack.decorations).toEqual([]);
+    const horse = await prisma.horse.findUnique({ where: { id: testHorse.id } });
+    expect(horse.tack.decorations).toEqual([]);
   });
 
   it('returns 400 if decoration is not equipped on the horse', async () => {
-    mockPrisma.horse.findFirst.mockResolvedValue({
-      id: horseId,
-      userId,
-      tack: { decorations: ['parade-blanket'] },
+    await prisma.horse.update({
+      where: { id: testHorse.id },
+      data: { tack: { decorations: ['parade-blanket'] } },
     });
 
-    const req = makeReq({ body: { horseId, itemId: 'show-ribbon' } });
+    const req = makeReq({ body: { horseId: testHorse.id, itemId: 'show-ribbon' } });
     const res = makeRes();
     await unequipDecoration(req, res);
 
@@ -439,13 +387,12 @@ describe('unequipDecoration', () => {
   });
 
   it('returns 400 if horse has no decorations array', async () => {
-    mockPrisma.horse.findFirst.mockResolvedValue({
-      id: horseId,
-      userId,
-      tack: { saddle: 'dressage-saddle' },
+    await prisma.horse.update({
+      where: { id: testHorse.id },
+      data: { tack: { saddle: 'dressage-saddle' } },
     });
 
-    const req = makeReq({ body: { horseId, itemId: 'show-ribbon' } });
+    const req = makeReq({ body: { horseId: testHorse.id, itemId: 'show-ribbon' } });
     const res = makeRes();
     await unequipDecoration(req, res);
 
@@ -454,24 +401,11 @@ describe('unequipDecoration', () => {
   });
 
   it('returns 404 if horse not found or not owned by user', async () => {
-    mockPrisma.horse.findFirst.mockResolvedValue(null);
-
-    const req = makeReq({ body: { horseId, itemId: 'show-ribbon' } });
+    const req = makeReq({ body: { horseId: 999_999_999, itemId: 'show-ribbon' } });
     const res = makeRes();
     await unequipDecoration(req, res);
 
     expect(res._status).toBe(404);
     expect(res._body.message).toMatch(/Horse not found/i);
-  });
-
-  it('returns 500 on unexpected DB error', async () => {
-    mockPrisma.horse.findFirst.mockRejectedValue(new Error('DB connection lost'));
-
-    const req = makeReq({ body: { horseId, itemId: 'show-ribbon' } });
-    const res = makeRes();
-    await unequipDecoration(req, res);
-
-    expect(res._status).toBe(500);
-    expect(res._body.success).toBe(false);
   });
 });
