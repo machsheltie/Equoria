@@ -36,27 +36,9 @@ export async function getHorseHandler(req, res) {
       });
     }
 
-    // Check horse ownership
-    const horse = await prisma.horse.findUnique({
-      where: { id: parsedHorseId },
-      select: { id: true, name: true, userId: true },
-    });
-
-    if (!horse) {
-      return res.status(404).json({
-        success: false,
-        message: 'Horse not found',
-        data: null,
-      });
-    }
-
-    if (horse.userId !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not own this horse',
-        data: null,
-      });
-    }
+    // Ownership validated by requireOwnership('horse') middleware on the route.
+    // req.horse is the validated, owned record (full fields from middleware).
+    const horse = req.horse;
 
     // Get assigned handler
     const handlerData = await getAssignedHandler(parsedHorseId, userId);
@@ -124,33 +106,9 @@ export async function checkHandlerEligibility(req, res) {
       });
     }
 
-    // Check horse ownership
-    const horse = await prisma.horse.findUnique({
-      where: { id: parsedHorseId },
-      select: {
-        id: true,
-        name: true,
-        userId: true,
-        bondScore: true,
-        stressLevel: true,
-      },
-    });
-
-    if (!horse) {
-      return res.status(404).json({
-        success: false,
-        message: 'Horse not found',
-        data: null,
-      });
-    }
-
-    if (horse.userId !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not own this horse',
-        data: null,
-      });
-    }
+    // Ownership validated by requireOwnership('horse') middleware on the route.
+    // req.horse is the validated, owned record (full fields from middleware).
+    const horse = req.horse;
 
     // Validate conformation class
     if (!isValidConformationClass(className)) {
@@ -256,33 +214,9 @@ export async function getHandlerRecommendations(req, res) {
       });
     }
 
-    // Check horse ownership
-    const horse = await prisma.horse.findUnique({
-      where: { id: parsedHorseId },
-      select: {
-        id: true,
-        name: true,
-        userId: true,
-        bondScore: true,
-        stressLevel: true,
-      },
-    });
-
-    if (!horse) {
-      return res.status(404).json({
-        success: false,
-        message: 'Horse not found',
-        data: null,
-      });
-    }
-
-    if (horse.userId !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not own this horse',
-        data: null,
-      });
-    }
+    // Ownership validated by requireOwnership('horse') middleware on the route.
+    // req.horse is the validated, owned record (full fields from middleware).
+    const horse = req.horse;
 
     // Get all user's grooms
     const grooms = await prisma.groom.findMany({

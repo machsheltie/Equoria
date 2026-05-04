@@ -93,7 +93,6 @@ export async function recordPerformance(req, res) {
 export async function getGroomPerformance(req, res) {
   try {
     const { groomId } = req.params;
-    const userId = req.user?.id;
 
     logger.info(`[groomPerformanceController] Getting performance for groom ${groomId}`);
 
@@ -107,27 +106,8 @@ export async function getGroomPerformance(req, res) {
       });
     }
 
-    // Check groom ownership
-    const groom = await prisma.groom.findUnique({
-      where: { id: parsedGroomId },
-      select: { id: true, userId: true },
-    });
-
-    if (!groom) {
-      return res.status(404).json({
-        success: false,
-        message: 'Groom not found',
-        data: null,
-      });
-    }
-
-    if (groom.userId !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not own this groom',
-        data: null,
-      });
-    }
+    // Ownership validated by requireOwnership('groom') middleware on the route.
+    // The middleware returns 404 for both not-found and not-owned (CWE-639).
 
     // Get performance summary
     const performanceSummary = await getGroomPerformanceSummary(parsedGroomId);
@@ -224,7 +204,6 @@ export async function getPerformanceConfig(req, res) {
 export async function getGroomAnalytics(req, res) {
   try {
     const { groomId } = req.params;
-    const userId = req.user?.id;
     const days = parseInt(req.query.days) || 30;
 
     logger.info(
@@ -241,27 +220,9 @@ export async function getGroomAnalytics(req, res) {
       });
     }
 
-    // Check groom ownership
-    const groom = await prisma.groom.findUnique({
-      where: { id: parsedGroomId },
-      select: { id: true, name: true, userId: true },
-    });
-
-    if (!groom) {
-      return res.status(404).json({
-        success: false,
-        message: 'Groom not found',
-        data: null,
-      });
-    }
-
-    if (groom.userId !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not own this groom',
-        data: null,
-      });
-    }
+    // Ownership validated by requireOwnership('groom') middleware on the route.
+    // req.groom is the validated, owned record (full fields from middleware).
+    const groom = req.groom;
 
     // Get performance records for the specified period
     const startDate = new Date();

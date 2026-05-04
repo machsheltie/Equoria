@@ -148,47 +148,11 @@ export async function getMyAssignments(req, res) {
  */
 export async function getGroomLimits(req, res) {
   try {
-    const { groomId } = req.params;
-    const userId = req.user?.id;
+    // Ownership validated by requireOwnership('groom') middleware on the route.
+    // req.groom is the validated, owned record (full fields).
+    const groom = req.groom;
 
-    logger.info(`[groomAssignmentController] Getting limits for groom ${groomId}`);
-
-    // Validate groom ID
-    const parsedGroomId = parseInt(groomId);
-    if (isNaN(parsedGroomId) || parsedGroomId <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid groom ID',
-        data: null,
-      });
-    }
-
-    // Get groom data
-    const groom = await prisma.groom.findUnique({
-      where: { id: parsedGroomId },
-      select: {
-        id: true,
-        name: true,
-        skillLevel: true,
-        userId: true,
-      },
-    });
-
-    if (!groom) {
-      return res.status(404).json({
-        success: false,
-        message: 'Groom not found',
-        data: null,
-      });
-    }
-
-    if (groom.userId !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not own this groom',
-        data: null,
-      });
-    }
+    logger.info(`[groomAssignmentController] Getting limits for groom ${groom.id}`);
 
     // Get assignment limits
     const limits = await getGroomAssignmentLimits(groom);

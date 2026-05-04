@@ -88,7 +88,6 @@ export async function getSalaryHistory(req, res) {
 export async function getGroomSalary(req, res) {
   try {
     const { groomId } = req.params;
-    const userId = req.user?.id;
 
     logger.info(`[groomSalaryController] Getting salary for groom ${groomId}`);
 
@@ -102,33 +101,9 @@ export async function getGroomSalary(req, res) {
       });
     }
 
-    // Check groom ownership
-    const groom = await prisma.groom.findUnique({
-      where: { id: parsedGroomId },
-      select: {
-        id: true,
-        name: true,
-        skillLevel: true,
-        speciality: true,
-        userId: true,
-      },
-    });
-
-    if (!groom) {
-      return res.status(404).json({
-        success: false,
-        message: 'Groom not found',
-        data: null,
-      });
-    }
-
-    if (groom.userId !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not own this groom',
-        data: null,
-      });
-    }
+    // Ownership validated by requireOwnership('groom') middleware on the route.
+    // req.groom is the validated, owned record (full fields from middleware).
+    const groom = req.groom;
 
     const weeklySalary = calculateWeeklySalary(groom);
 

@@ -106,25 +106,10 @@ export async function assignGroom(req, res) {
       });
     }
 
-    // Ownership check: Only the owner can assign a groom
-    const foal = await prisma.horse.findUnique({
-      where: { id: foalId },
-      select: { id: true, userId: true },
-    });
-    if (!foal) {
-      return res.status(404).json({
-        success: false,
-        message: 'Foal not found',
-        data: null,
-      });
-    }
-    if (foal.userId !== userId) {
-      return res.status(403).json({
-        success: false,
-        error: 'Forbidden: You do not own this horse',
-        data: null,
-      });
-    }
+    // Ownership validated by inline dual-ownership middleware on the route
+    // (groomRoutes.mjs `POST /assign`), which uses findOwnedResource('foal',...)
+    // and findOwnedResource('groom',...) and returns 404 for both not-found
+    // and not-owned (CWE-639 disclosure resistance).
 
     const result = await assignGroomToFoal(foalId, groomId, userId, {
       priority,
@@ -182,27 +167,9 @@ export async function ensureDefaultAssignment(req, res) {
       `[groomController.ensureDefaultAssignment] Ensuring default assignment for foal ${parsedFoalId}`,
     );
 
-    // Validate foal ownership
-    const foal = await prisma.horse.findUnique({
-      where: { id: parsedFoalId },
-      select: { id: true, name: true, userId: true },
-    });
-
-    if (!foal) {
-      return res.status(404).json({
-        success: false,
-        message: 'Foal not found',
-        data: null,
-      });
-    }
-
-    if (foal.userId !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: 'Forbidden: You do not own this foal',
-        data: null,
-      });
-    }
+    // Ownership validated by requireOwnership('foal') middleware on the route.
+    // req.foal is the validated, owned record. The middleware returns 404 for
+    // both not-found and not-owned (CWE-639 disclosure resistance).
 
     // Call the ensureDefaultGroomAssignment service
     const result = await ensureDefaultGroomAssignment(parsedFoalId, userId);
