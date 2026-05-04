@@ -78,19 +78,13 @@ export function getHorseImage(
 /**
  * Resolve inline style overrides for a horse image element.
  *
- * When a real portrait URL is provided the image is displayed normally
- * (object-fit: cover). For placeholder images we use object-fit: contain
- * so the placeholder graphic isn't cropped awkwardly.
- *
- * @param imageUrl - The horse's stored portrait URL (may be null/undefined)
- * @param breed    - The horse's breed name or breed object
- * @returns        A React CSSProperties object (may be empty)
+ * Returns an empty style object so the image fills its container via the
+ * caller's `object-cover` class. Kept as a function for API compatibility
+ * with existing call sites.
  */
 export function getHorseImageStyle(
-  imageUrl: string | null | undefined,
+  _imageUrl: string | null | undefined,
   _breed: string | { id?: number; name?: string; description?: string } | null | undefined
 ): CSSProperties {
-  if (imageUrl && !PLACEHOLDER_DEFAULTS.has(imageUrl)) return {};
-  // Placeholder images look better with contain + a subtle background
-  return { objectFit: 'contain', padding: '8px' };
+  return {};
 }
