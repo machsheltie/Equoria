@@ -242,9 +242,11 @@ describe('useClaimPrizes', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
+    // useClaimPrizes invalidates ['user', 'balance'] (not 'profile') after a
+    // successful claim — the balance cache is what gets refreshed.
     expect(invalidateSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        queryKey: ['profile'],
+        queryKey: ['user', 'balance'],
       })
     );
   });

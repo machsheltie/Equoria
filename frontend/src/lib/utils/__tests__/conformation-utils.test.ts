@@ -78,21 +78,23 @@ describe('conformation-utils', () => {
     });
 
     it('should return correct color classes for each rating', () => {
-      expect(getQualityRating(95).color).toBe('text-emerald-700');
-      expect(getQualityRating(85).color).toBe('text-blue-700');
-      expect(getQualityRating(75).color).toBe('text-amber-700');
-      expect(getQualityRating(65).color).toBe('text-slate-700');
-      expect(getQualityRating(55).color).toBe('text-orange-700');
-      expect(getQualityRating(45).color).toBe('text-rose-700');
+      // Dark theme: utils now use -400 shades (and CSS vars for blue/slate)
+      expect(getQualityRating(95).color).toBe('text-emerald-400');
+      expect(getQualityRating(85).color).toBe('text-[var(--gold-primary)]');
+      expect(getQualityRating(75).color).toBe('text-amber-400');
+      expect(getQualityRating(65).color).toBe('text-[var(--text-secondary)]');
+      expect(getQualityRating(55).color).toBe('text-orange-400');
+      expect(getQualityRating(45).color).toBe('text-rose-400');
     });
 
     it('should return correct background color classes for each rating', () => {
-      expect(getQualityRating(95).bgColor).toContain('bg-emerald-50');
-      expect(getQualityRating(85).bgColor).toContain('bg-blue-50');
-      expect(getQualityRating(75).bgColor).toContain('bg-amber-50');
-      expect(getQualityRating(65).bgColor).toContain('bg-slate-50');
-      expect(getQualityRating(55).bgColor).toContain('bg-orange-50');
-      expect(getQualityRating(45).bgColor).toContain('bg-rose-50');
+      // Dark theme: bgColor now contains translucent rgba arbitrary values + tinted borders
+      expect(getQualityRating(95).bgColor).toContain('bg-[rgba(16,185,129');
+      expect(getQualityRating(85).bgColor).toContain('bg-[rgba(201,162,39');
+      expect(getQualityRating(75).bgColor).toContain('bg-[rgba(245,158,11');
+      expect(getQualityRating(65).bgColor).toContain('bg-[rgba(148,163,184');
+      expect(getQualityRating(55).bgColor).toContain('bg-[rgba(249,115,22');
+      expect(getQualityRating(45).bgColor).toContain('bg-[rgba(239,68,68');
     });
   });
 
@@ -446,9 +448,9 @@ describe('conformation-utils', () => {
     });
 
     it('should return slate for Average scores (60-69)', () => {
-      expect(getScoreColor(60)).toBe('bg-slate-500');
-      expect(getScoreColor(65)).toBe('bg-slate-500');
-      expect(getScoreColor(69)).toBe('bg-slate-500');
+      expect(getScoreColor(60)).toBe('bg-slate-600');
+      expect(getScoreColor(65)).toBe('bg-slate-600');
+      expect(getScoreColor(69)).toBe('bg-slate-600');
     });
 
     it('should return orange for Below Average scores (50-59)', () => {

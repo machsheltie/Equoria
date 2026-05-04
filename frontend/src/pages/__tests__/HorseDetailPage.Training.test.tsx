@@ -19,7 +19,7 @@ import { render, screen, waitFor, fireEvent, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Routes, Route } from '../../test/utils';
+import { BrowserRouter, Routes, Route, MockAuthProvider } from '../../test/utils';
 import { vi, describe, test, expect, beforeEach, afterEach } from 'vitest';
 import HorseDetailPage from '../HorseDetailPage';
 
@@ -159,7 +159,7 @@ const createFetchMock = (
     }
 
     // Training execution endpoint
-    if (urlStr.includes('/api/training/train') && method === 'POST') {
+    if (urlStr.includes('/api/v1/training/train') && method === 'POST') {
       if (trainingError) {
         return Promise.resolve({
           ok: false,
@@ -226,11 +226,13 @@ const renderWithProviders = (ui: React.ReactElement, { route = '/horses/1' } = {
 
   return render(
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/horses/:id" element={ui} />
-        </Routes>
-      </BrowserRouter>
+      <MockAuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/horses/:id" element={ui} />
+          </Routes>
+        </BrowserRouter>
+      </MockAuthProvider>
     </QueryClientProvider>
   );
 };
@@ -571,7 +573,7 @@ describe('HorseDetailPage Training Tab Integration', () => {
       // Verify training API was called
       await waitFor(() => {
         const trainingCalls = fetchMock.mock.calls.filter((call) =>
-          call[0]?.toString().includes('/api/training/train')
+          call[0]?.toString().includes('/api/v1/training/train')
         );
         expect(trainingCalls.length).toBeGreaterThan(0);
       });
@@ -583,7 +585,7 @@ describe('HorseDetailPage Training Tab Integration', () => {
         const urlStr = typeof url === 'string' ? url : url.toString();
         const method = init?.method?.toUpperCase() || 'GET';
 
-        if (urlStr.includes('/api/training/train') && method === 'POST') {
+        if (urlStr.includes('/api/v1/training/train') && method === 'POST') {
           // Add delay to simulate loading
           return new Promise<Response>((resolve) => {
             setTimeout(() => {

@@ -49,7 +49,7 @@ describe('getTierStyle', () => {
     expect(style.borderColor).toBe('border-purple-400');
     expect(style.bgColor).toBe('bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50');
     expect(style.textColor).toBe('text-purple-700');
-    expect(style.badgeColor).toBe('bg-purple-600 text-white');
+    expect(style.badgeColor).toBe('bg-purple-600 text-[var(--text-primary)]');
   });
 
   it('should return ultra-rare tier styling', () => {
@@ -57,15 +57,16 @@ describe('getTierStyle', () => {
     expect(style.borderColor).toBe('border-amber-400');
     expect(style.bgColor).toBe('bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-50');
     expect(style.textColor).toBe('text-amber-700');
-    expect(style.badgeColor).toBe('bg-amber-600 text-white');
+    expect(style.badgeColor).toBe('bg-amber-600 text-[var(--text-primary)]');
   });
 
   it('should return rare tier styling', () => {
     const style = getTierStyle('rare');
     expect(style.borderColor).toBe('border-blue-300');
     expect(style.bgColor).toBe('bg-gradient-to-br from-blue-50 to-cyan-50');
-    expect(style.textColor).toBe('text-blue-700');
-    expect(style.badgeColor).toBe('bg-blue-600 text-white');
+    // Dark theme: rare textColor migrated to gold token
+    expect(style.textColor).toBe('text-[var(--gold-primary)]');
+    expect(style.badgeColor).toBe('bg-blue-600 text-[var(--text-primary)]');
   });
 
   it('should return uncommon tier styling', () => {
@@ -73,15 +74,16 @@ describe('getTierStyle', () => {
     expect(style.borderColor).toBe('border-green-300');
     expect(style.bgColor).toBe('bg-gradient-to-br from-green-50 to-emerald-50');
     expect(style.textColor).toBe('text-green-700');
-    expect(style.badgeColor).toBe('bg-green-600 text-white');
+    expect(style.badgeColor).toBe('bg-green-600 text-[var(--text-primary)]');
   });
 
   it('should return common tier styling', () => {
     const style = getTierStyle('common');
-    expect(style.borderColor).toBe('border-slate-300');
+    // Dark theme: common border + textColor migrated to design tokens
+    expect(style.borderColor).toBe('border-[var(--glass-border)]');
     expect(style.bgColor).toBe('bg-gradient-to-br from-slate-50 to-gray-50');
-    expect(style.textColor).toBe('text-slate-700');
-    expect(style.badgeColor).toBe('bg-slate-600 text-white');
+    expect(style.textColor).toBe('text-[var(--text-secondary)]');
+    expect(style.badgeColor).toBe('bg-[var(--bg-twilight)] text-[var(--text-primary)]');
   });
 });
 

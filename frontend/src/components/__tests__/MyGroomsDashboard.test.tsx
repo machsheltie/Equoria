@@ -144,8 +144,9 @@ describe('MyGroomsDashboard Component', () => {
       const Wrapper = createTestWrapper();
       render(<MyGroomsDashboard userId={1} />, { wrapper: Wrapper });
 
-      // When no data is provided, component shows loading state
-      expect(screen.getByText(/loading/i)).toBeInTheDocument();
+      // When no data is provided, component shows loading state — skeleton
+      // uses aria-label="Loading grooms" instead of literal "loading" text.
+      expect(screen.getByLabelText(/loading grooms/i)).toBeInTheDocument();
     });
 
     it('displays empty state when no grooms hired', () => {

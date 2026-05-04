@@ -96,8 +96,10 @@ describe('ResetPasswordPage', () => {
     test('shows "Request New Reset Link" button when no token', () => {
       renderResetPasswordPage();
 
-      const requestButton = screen.getByRole('button', { name: /request new reset link/i });
-      expect(requestButton).toBeInTheDocument();
+      // Component now wraps the Link in <Button asChild>, which renders as
+      // an anchor (role=link). Querying by button role no longer matches.
+      const requestLink = screen.getByRole('link', { name: /request new reset link/i });
+      expect(requestLink).toBeInTheDocument();
     });
 
     test('shows "Return to Login" button when no token', () => {
@@ -110,10 +112,9 @@ describe('ResetPasswordPage', () => {
     test('"Request New Reset Link" links to forgot-password', () => {
       renderResetPasswordPage();
 
-      // Get the button and find its parent link
-      const requestButton = screen.getByRole('button', { name: /request new reset link/i });
-      const linkWrapper = requestButton.closest('a');
-      expect(linkWrapper).toHaveAttribute('href', '/forgot-password');
+      // Now an <a> directly (Button asChild + Link).
+      const requestLink = screen.getByRole('link', { name: /request new reset link/i });
+      expect(requestLink).toHaveAttribute('href', '/forgot-password');
     });
   });
 
@@ -292,7 +293,7 @@ describe('ResetPasswordPage', () => {
       renderResetPasswordPage('valid-token');
 
       const passwordInput = screen.getByPlaceholderText('Create a new password');
-      await user.type(passwordInput, 'ValidPass123');
+      await user.type(passwordInput, 'ValidPass123!');
 
       await waitFor(() => {
         // All requirements should be shown for this password
@@ -317,11 +318,14 @@ describe('ResetPasswordPage', () => {
   });
 
   describe('Form Validation', () => {
+    // The schema now also requires a special character (@$!%*?&). Each input
+    // below satisfies the non-targeted requirements (incl. special char) so
+    // that the only validation error shown is the one the test names.
     test('shows error for short password', async () => {
       renderResetPasswordPage('valid-token');
 
       const passwordInput = screen.getByPlaceholderText('Create a new password');
-      await userEvent.type(passwordInput, 'Short1');
+      await userEvent.type(passwordInput, 'Short1!');
 
       const form = screen.getByRole('button', { name: /reset password/i }).closest('form')!;
       fireEvent.submit(form);
@@ -335,7 +339,7 @@ describe('ResetPasswordPage', () => {
       renderResetPasswordPage('valid-token');
 
       const passwordInput = screen.getByPlaceholderText('Create a new password');
-      await userEvent.type(passwordInput, 'PASSWORD123');
+      await userEvent.type(passwordInput, 'PASSWORD123!');
 
       const form = screen.getByRole('button', { name: /reset password/i }).closest('form')!;
       fireEvent.submit(form);
@@ -351,7 +355,7 @@ describe('ResetPasswordPage', () => {
       renderResetPasswordPage('valid-token');
 
       const passwordInput = screen.getByPlaceholderText('Create a new password');
-      await userEvent.type(passwordInput, 'password123');
+      await userEvent.type(passwordInput, 'password123!');
 
       const form = screen.getByRole('button', { name: /reset password/i }).closest('form')!;
       fireEvent.submit(form);
@@ -367,7 +371,7 @@ describe('ResetPasswordPage', () => {
       renderResetPasswordPage('valid-token');
 
       const passwordInput = screen.getByPlaceholderText('Create a new password');
-      await userEvent.type(passwordInput, 'PasswordOnly');
+      await userEvent.type(passwordInput, 'PasswordOnly!');
 
       const form = screen.getByRole('button', { name: /reset password/i }).closest('form')!;
       fireEvent.submit(form);
@@ -384,7 +388,7 @@ describe('ResetPasswordPage', () => {
       const passwordInput = screen.getByPlaceholderText('Create a new password');
       const confirmInput = screen.getByPlaceholderText('Confirm your new password');
 
-      await user.type(passwordInput, 'ValidPass123');
+      await user.type(passwordInput, 'ValidPass123!');
       await user.type(confirmInput, 'DifferentPass123');
 
       const form = screen.getByRole('button', { name: /reset password/i }).closest('form')!;
@@ -423,8 +427,8 @@ describe('ResetPasswordPage', () => {
       const passwordInput = screen.getByPlaceholderText('Create a new password');
       const confirmInput = screen.getByPlaceholderText('Confirm your new password');
 
-      await user.type(passwordInput, 'ValidPass123');
-      await user.type(confirmInput, 'ValidPass123');
+      await user.type(passwordInput, 'ValidPass123!');
+      await user.type(confirmInput, 'ValidPass123!');
 
       const form = screen.getByRole('button', { name: /reset password/i }).closest('form')!;
       fireEvent.submit(form);
@@ -433,7 +437,7 @@ describe('ResetPasswordPage', () => {
         expect(vi.mocked(apiClient.authApi.resetPassword)).toHaveBeenCalled();
         expect(vi.mocked(apiClient.authApi.resetPassword).mock.calls[0]).toEqual([
           'test-token-123',
-          'ValidPass123',
+          'ValidPass123!',
         ]);
       });
     });
@@ -448,8 +452,8 @@ describe('ResetPasswordPage', () => {
       const passwordInput = screen.getByPlaceholderText('Create a new password');
       const confirmInput = screen.getByPlaceholderText('Confirm your new password');
 
-      await user.type(passwordInput, 'ValidPass123');
-      await user.type(confirmInput, 'ValidPass123');
+      await user.type(passwordInput, 'ValidPass123!');
+      await user.type(confirmInput, 'ValidPass123!');
 
       const form = screen.getByRole('button', { name: /reset password/i }).closest('form')!;
       fireEvent.submit(form);
@@ -474,8 +478,8 @@ describe('ResetPasswordPage', () => {
       const passwordInput = screen.getByPlaceholderText('Create a new password');
       const confirmInput = screen.getByPlaceholderText('Confirm your new password');
 
-      await user.type(passwordInput, 'ValidPass123');
-      await user.type(confirmInput, 'ValidPass123');
+      await user.type(passwordInput, 'ValidPass123!');
+      await user.type(confirmInput, 'ValidPass123!');
 
       const submitButton = screen.getByRole('button', { name: /reset password/i });
       await user.click(submitButton);
@@ -502,8 +506,8 @@ describe('ResetPasswordPage', () => {
       const passwordInput = screen.getByPlaceholderText('Create a new password');
       const confirmInput = screen.getByPlaceholderText('Confirm your new password');
 
-      await user.type(passwordInput, 'ValidPass123');
-      await user.type(confirmInput, 'ValidPass123');
+      await user.type(passwordInput, 'ValidPass123!');
+      await user.type(confirmInput, 'ValidPass123!');
 
       const submitButton = screen.getByRole('button', { name: /reset password/i });
       await user.click(submitButton);
@@ -524,8 +528,8 @@ describe('ResetPasswordPage', () => {
       const passwordInput = screen.getByPlaceholderText('Create a new password');
       const confirmInput = screen.getByPlaceholderText('Confirm your new password');
 
-      await user.type(passwordInput, 'ValidPass123');
-      await user.type(confirmInput, 'ValidPass123');
+      await user.type(passwordInput, 'ValidPass123!');
+      await user.type(confirmInput, 'ValidPass123!');
 
       const submitButton = screen.getByRole('button', { name: /reset password/i });
       await user.click(submitButton);
@@ -548,8 +552,8 @@ describe('ResetPasswordPage', () => {
       const passwordInput = screen.getByPlaceholderText('Create a new password');
       const confirmInput = screen.getByPlaceholderText('Confirm your new password');
 
-      await user.type(passwordInput, 'ValidPass123');
-      await user.type(confirmInput, 'ValidPass123');
+      await user.type(passwordInput, 'ValidPass123!');
+      await user.type(confirmInput, 'ValidPass123!');
 
       const submitButton = screen.getByRole('button', { name: /reset password/i });
       await user.click(submitButton);
@@ -570,8 +574,8 @@ describe('ResetPasswordPage', () => {
       const passwordInput = screen.getByPlaceholderText('Create a new password');
       const confirmInput = screen.getByPlaceholderText('Confirm your new password');
 
-      await user.type(passwordInput, 'ValidPass123');
-      await user.type(confirmInput, 'ValidPass123');
+      await user.type(passwordInput, 'ValidPass123!');
+      await user.type(confirmInput, 'ValidPass123!');
 
       const submitButton = screen.getByRole('button', { name: /reset password/i });
       await user.click(submitButton);
@@ -598,8 +602,8 @@ describe('ResetPasswordPage', () => {
       const passwordInput = screen.getByPlaceholderText('Create a new password');
       const confirmInput = screen.getByPlaceholderText('Confirm your new password');
 
-      await user.type(passwordInput, 'ValidPass123');
-      await user.type(confirmInput, 'ValidPass123');
+      await user.type(passwordInput, 'ValidPass123!');
+      await user.type(confirmInput, 'ValidPass123!');
 
       const submitButton = screen.getByRole('button', { name: /reset password/i });
       await user.click(submitButton);
@@ -619,8 +623,8 @@ describe('ResetPasswordPage', () => {
       const passwordInput = screen.getByPlaceholderText('Create a new password');
       const confirmInput = screen.getByPlaceholderText('Confirm your new password');
 
-      await user.type(passwordInput, 'ValidPass123');
-      await user.type(confirmInput, 'ValidPass123');
+      await user.type(passwordInput, 'ValidPass123!');
+      await user.type(confirmInput, 'ValidPass123!');
 
       const submitButton = screen.getByRole('button', { name: /reset password/i });
       await user.click(submitButton);
@@ -643,8 +647,8 @@ describe('ResetPasswordPage', () => {
       const passwordInput = screen.getByPlaceholderText('Create a new password');
       const confirmInput = screen.getByPlaceholderText('Confirm your new password');
 
-      await user.type(passwordInput, 'ValidPass123');
-      await user.type(confirmInput, 'ValidPass123');
+      await user.type(passwordInput, 'ValidPass123!');
+      await user.type(confirmInput, 'ValidPass123!');
 
       const submitButton = screen.getByRole('button', { name: /reset password/i });
       await user.click(submitButton);

@@ -113,9 +113,11 @@ describe('useLeaderboardRefresh', () => {
       await result.current.refreshCategory('level', 'monthly');
     });
 
+    // leaderboardQueryKeys.list now has 5 params (category, period, discipline,
+    // page, limit) — refreshCategory with 2 args yields trailing `undefined`s.
     expect(invalidateSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        queryKey: ['leaderboards', 'level', 'monthly', undefined],
+        queryKey: ['leaderboards', 'level', 'monthly', undefined, undefined, undefined],
       })
     );
   });
@@ -186,9 +188,10 @@ describe('useLeaderboardRefresh', () => {
       await result.current.refreshCategory('discipline', 'weekly', 'dressage');
     });
 
+    // Same shape: 5-param list-key yields trailing `undefined` for page/limit.
     expect(invalidateSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        queryKey: ['leaderboards', 'discipline', 'weekly', 'dressage'],
+        queryKey: ['leaderboards', 'discipline', 'weekly', 'dressage', undefined, undefined],
       })
     );
   });

@@ -634,7 +634,7 @@ describe('HorseListView Component', () => {
 
       // Grid should contain cards for all horses (3 horses)
       const gridLayout = screen.getByTestId('desktop-grid-layout');
-      const horseCards = gridLayout.querySelectorAll('.bg-white.rounded-lg.shadow-md');
+      const horseCards = gridLayout.querySelectorAll('.glass-panel.rounded-lg');
       expect(horseCards.length).toBe(3);
 
       // Check that horse names are rendered (getAllByText since each appears in card)
@@ -793,7 +793,7 @@ describe('HorseListView Component', () => {
       // Storm doesn't have imageUrl, should use placeholder
       const stormImg = screen.getByAltText('Storm');
       expect(stormImg).toBeInTheDocument();
-      expect(stormImg).toHaveAttribute('src', '/images/horse-placeholder.png');
+      expect(stormImg).toHaveAttribute('src', '/placeholder.svg');
     });
 
     test('thumbnails have proper styling and sizing', async () => {

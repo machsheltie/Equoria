@@ -169,7 +169,10 @@ describe('useAddXp', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(xpApi.addXp).toHaveBeenCalledWith(variables);
+    // useAddXp extracts horseId out of variables and passes the rest as the body.
+    // Signature is now addXp(horseId, body) — adjust the assertion accordingly.
+    const { horseId, ...expectedBody } = variables;
+    expect(xpApi.addXp).toHaveBeenCalledWith(horseId, expectedBody);
   });
 
   // Test 4: Invalidates horse level info cache on success

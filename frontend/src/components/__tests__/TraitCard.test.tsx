@@ -279,7 +279,8 @@ describe('TraitCard', () => {
       const card = container.firstChild as HTMLElement;
 
       expect(card.className).toContain('border-blue-500');
-      expect(card.className).toContain('bg-blue-50');
+      // bg uses translucent rgba via Tailwind arbitrary value
+      expect(card.className).toContain('bg-[rgba(37,99,235');
     });
 
     it('should apply purple colors for epigenetic traits', () => {
@@ -289,7 +290,8 @@ describe('TraitCard', () => {
       const card = container.firstChild as HTMLElement;
 
       expect(card.className).toContain('border-purple-500');
-      expect(card.className).toContain('bg-purple-50');
+      // bg uses translucent rgba via Tailwind arbitrary value
+      expect(card.className).toContain('bg-[rgba(147,51,234');
     });
 
     it('should apply gold colors for rare traits', () => {
@@ -304,7 +306,9 @@ describe('TraitCard', () => {
       const { container } = render(<TraitCard trait={mockLegendaryTrait} />);
       const card = container.firstChild as HTMLElement;
 
-      expect(card.className).toContain('border-gradient-to-r');
+      // Legendary uses bg-gradient-to-br + burnished-gold border (not border-gradient-to-r)
+      expect(card.className).toContain('border-burnished-gold');
+      expect(card.className).toContain('bg-gradient-to-br');
     });
   });
 

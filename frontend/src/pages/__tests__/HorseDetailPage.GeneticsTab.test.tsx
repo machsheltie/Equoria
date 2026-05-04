@@ -17,7 +17,7 @@ import React from 'react';
 import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Routes, Route } from '../../test/utils';
+import { BrowserRouter, Routes, Route, MockAuthProvider } from '../../test/utils';
 import { vi } from 'vitest';
 import HorseDetailPage from '../HorseDetailPage';
 import * as useHorseGeneticsModule from '../../hooks/useHorseGenetics';
@@ -168,11 +168,13 @@ const createTestWrapper = () => {
 
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/horses/:id" element={children} />
-        </Routes>
-      </BrowserRouter>
+      <MockAuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/horses/:id" element={children} />
+          </Routes>
+        </BrowserRouter>
+      </MockAuthProvider>
     </QueryClientProvider>
   );
 };

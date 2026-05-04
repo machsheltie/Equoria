@@ -59,7 +59,9 @@ const mockHorses: Horse[] = [
     disciplines: ['Dressage', 'ShowJumping'],
     traits: [{ name: 'Graceful' }, { name: 'Calm' }],
     lastTrainedAt: '2026-01-28',
-    trainingCooldown: '2026-02-05',
+    // Future cooldown so the 'in_training' filter still matches Moonbeam
+    // regardless of test execution date (used to be '2026-02-05').
+    trainingCooldown: '2099-12-31',
   },
   {
     id: 4,

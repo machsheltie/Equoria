@@ -19,6 +19,8 @@ import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, MockAuthProvider } from '../../test/utils';
 import { vi } from 'vitest';
+import { http, HttpResponse } from 'msw';
+import { server } from '../../test/msw/server';
 import HorseDetailPage from '../HorseDetailPage';
 
 // Mock horse data for testing (NO MOCKING - real data structures)
@@ -145,10 +147,10 @@ describe('HorseDetailPage Component', () => {
         </TestWrapper>
       );
 
-      // Should show loading state
+      // Should show loading state — skeleton uses aria-label="Loading horse details"
       await waitFor(() => {
-        const loadingText = screen.queryByText(/loading/i);
-        expect(loadingText).toBeTruthy();
+        const loadingRegion = screen.queryByLabelText(/loading horse details/i);
+        expect(loadingRegion).toBeTruthy();
       });
     });
 
@@ -464,13 +466,17 @@ describe('HorseDetailPage Component', () => {
     });
 
     test('retry button refetches data after error', async () => {
-      let fetchCount = 0;
+      // global.fetch mock pattern (matches the rest of the file). MSW would be
+      // cleaner, but `originalFetch` captured at module-load time is the
+      // pre-MSW fetch, so MSW handlers never see calls routed through this
+      // file's mock-fetch chain. Counter only increments on the horse-detail
+      // path so genetics-endpoint pre-fetches don't consume retry attempts.
+      let horseFetchCount = 0;
 
-      // Mock fetch to fail first, then succeed (also handle genetics endpoints)
       global.fetch = vi.fn(((url: string) => {
         const urlStr = typeof url === 'string' ? url : url.toString();
 
-        // Handle genetics endpoints
+        // Pass-through mocks for adjacent endpoints the page also fetches.
         if (urlStr.includes('/epigenetic-insights')) {
           return Promise.resolve({
             ok: true,
@@ -493,19 +499,28 @@ describe('HorseDetailPage Component', () => {
           } as Response);
         }
 
-        // Handle horse endpoint with retry logic
-        fetchCount++;
-        if (fetchCount === 1) {
+        // Horse-detail path — first call fails, subsequent calls succeed.
+        if (urlStr.match(/\/api(?:\/v1)?\/horses\/1(?:\?|$)/)) {
+          horseFetchCount++;
+          if (horseFetchCount === 1) {
+            return Promise.resolve({
+              ok: false,
+              status: 500,
+              json: () => Promise.resolve({ success: false, message: 'Server error' }),
+            } as Response);
+          }
           return Promise.resolve({
-            ok: false,
-            status: 500,
-            json: () => Promise.resolve({ success: false, message: 'Server error' }),
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ success: true, data: mockHorse }),
           } as Response);
         }
+
+        // Any other path: empty success so unrelated queries don't get stuck.
         return Promise.resolve({
           ok: true,
           status: 200,
-          json: () => Promise.resolve({ success: true, data: mockHorse }),
+          json: () => Promise.resolve({ success: true, data: {} }),
         } as Response);
       }) as typeof fetch);
 
@@ -527,17 +542,12 @@ describe('HorseDetailPage Component', () => {
       const retryButton = screen.getByText('Retry');
       fireEvent.click(retryButton);
 
-      // Should now show horse data. Bump waitFor timeout from the default
-      // 1000ms — under JSDOM + react-query the refetch path can take longer
-      // than the initial fetch and the default occasionally races.
-      await waitFor(
-        () => {
-          expect(screen.getByText('Thunder')).toBeInTheDocument();
-        },
-        { timeout: 5000 }
-      );
+      // Should now show horse data
+      await waitFor(() => {
+        expect(screen.getByText('Thunder')).toBeInTheDocument();
+      });
 
-      expect(fetchCount).toBe(2);
+      expect(horseFetchCount).toBe(2);
     });
   });
 
@@ -693,9 +703,15 @@ describe('HorseDetailPage Component', () => {
         expect(screen.getByText('Thunder')).toBeInTheDocument();
       });
 
-      // Verify placeholder is used
+      // When imageUrl is missing, the page falls back via getHorseImage which
+      // first looks up a breed-specific image (Thoroughbred → thoroughbred.png)
+      // and only uses /placeholder.svg if no breed image exists. The mock
+      // horse is a Thoroughbred, so the breed image is used here.
       const horseImage = screen.getByAltText('Thunder');
-      expect(horseImage).toHaveAttribute('src', expect.stringContaining('placeholder'));
+      expect(horseImage).toHaveAttribute(
+        'src',
+        expect.stringMatching(/placeholder|breeds\/thoroughbred/)
+      );
     });
   });
 
@@ -722,7 +738,9 @@ describe('HorseDetailPage Component', () => {
 
       await waitFor(() => {
         expect(fetchSpy).toHaveBeenCalledWith(
-          expect.stringMatching(/http:\/\/localhost:3001\/api\/horses\/1(\?t=\d+)?/),
+          // API_BASE_URL is now '' (relative URL) — see src/lib/api-client.ts.
+          // Earlier this test asserted http://localhost:3001 which never matched.
+          expect.stringMatching(/^\/api\/horses\/1(\?t=\d+)?$/),
           expect.objectContaining({
             headers: expect.objectContaining({
               'Content-Type': 'application/json',
@@ -754,7 +772,9 @@ describe('HorseDetailPage Component', () => {
 
       await waitFor(() => {
         expect(fetchSpy).toHaveBeenCalledWith(
-          expect.stringMatching(/http:\/\/localhost:3001\/api\/horses\/1(\?t=\d+)?/),
+          // API_BASE_URL is now '' (relative URL) — see src/lib/api-client.ts.
+          // Earlier this test asserted http://localhost:3001 which never matched.
+          expect.stringMatching(/^\/api\/horses\/1(\?t=\d+)?$/),
           expect.objectContaining({
             credentials: 'include',
           })

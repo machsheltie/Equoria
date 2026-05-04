@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
-import { BrowserRouter } from '../../test/utils';
+import { BrowserRouter, MockAuthProvider } from '../../test/utils';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import CompetitionBrowserPage from '../CompetitionBrowserPage';
 
@@ -27,9 +27,11 @@ describe('CompetitionBrowserPage', () => {
   const renderPage = () => {
     return render(
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <CompetitionBrowserPage />
-        </BrowserRouter>
+        <MockAuthProvider>
+          <BrowserRouter>
+            <CompetitionBrowserPage />
+          </BrowserRouter>
+        </MockAuthProvider>
       </QueryClientProvider>
     );
   };
@@ -56,7 +58,9 @@ describe('CompetitionBrowserPage', () => {
       } as any);
 
       renderPage();
-      expect(screen.getByRole('heading', { name: 'Competitions', level: 1 })).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { name: 'Competition Arena', level: 1 })
+      ).toBeInTheDocument();
     });
 
     it('renders page description', () => {
@@ -269,7 +273,7 @@ describe('CompetitionBrowserPage', () => {
 
     it('page title is accessible heading', () => {
       renderPage();
-      const heading = screen.getByRole('heading', { name: 'Competitions', level: 1 });
+      const heading = screen.getByRole('heading', { name: 'Competition Arena', level: 1 });
       expect(heading.tagName).toBe('H1');
     });
 

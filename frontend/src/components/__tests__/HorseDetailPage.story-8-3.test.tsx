@@ -20,6 +20,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import HorseDetailPage from '../../pages/HorseDetailPage';
+import { MockAuthProvider } from '../../test/utils';
 
 // ─── Render helper ─────────────────────────────────────────────────────────────
 
@@ -31,11 +32,13 @@ function renderHorseDetailPage(id = '1') {
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[`/horses/${id}`]}>
-        <Routes>
-          <Route path="/horses/:id" element={<HorseDetailPage />} />
-        </Routes>
-      </MemoryRouter>
+      <MockAuthProvider>
+        <MemoryRouter initialEntries={[`/horses/${id}`]}>
+          <Routes>
+            <Route path="/horses/:id" element={<HorseDetailPage />} />
+          </Routes>
+        </MemoryRouter>
+      </MockAuthProvider>
     </QueryClientProvider>
   );
 }

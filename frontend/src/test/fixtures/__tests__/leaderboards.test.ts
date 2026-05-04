@@ -155,7 +155,10 @@ describe('Leaderboard Fixtures', () => {
 // ---------------------------------------------------------------------------
 
 describe('Leaderboard MSW Handlers', () => {
-  const base = 'http://localhost:3001';
+  // MSW handlers (src/test/msw/handlers.ts) bind to http://localhost:3000.
+  // Earlier value '3001' caused MSW to fail-open with "Cannot bypass a request
+  // when using the 'error' strategy" because no handler matched.
+  const base = 'http://localhost:3000';
 
   // Test 9: GET /api/leaderboards/level returns leaderboard data
   it('should return leaderboard data for a valid category', async () => {

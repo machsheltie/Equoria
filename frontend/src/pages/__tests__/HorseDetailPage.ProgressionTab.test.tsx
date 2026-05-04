@@ -14,7 +14,7 @@
 import { render, screen, waitFor, within } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter } from '../../test/utils';
+import { BrowserRouter, MockAuthProvider } from '../../test/utils';
 import userEvent from '@testing-library/user-event';
 import HorseDetailPage from '../HorseDetailPage';
 import { horsesApi } from '@/lib/api-client';
@@ -289,7 +289,9 @@ const createWrapper = () => {
 
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>{children}</BrowserRouter>
+      <MockAuthProvider>
+        <BrowserRouter>{children}</BrowserRouter>
+      </MockAuthProvider>
     </QueryClientProvider>
   );
 };

@@ -67,8 +67,11 @@ describe('useGroomMarketplace', () => {
     const { result } = renderHook(() => useGroomMarketplace(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.refreshCost).toBe(500);
-    expect(result.current.data?.canRefreshFree).toBe(false);
-    expect(result.current.data?.refreshCount).toBe(3);
+    // The v1 marketplace handler returns canRefreshFree: true / refreshCount: 4.
+    // Earlier non-v1 handler returned false/3; the test was pinned to that
+    // and drifted when the api-client moved to /api/v1/groom-marketplace.
+    expect(result.current.data?.canRefreshFree).toBe(true);
+    expect(result.current.data?.refreshCount).toBe(4);
   });
 });
 

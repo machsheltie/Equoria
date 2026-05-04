@@ -22,14 +22,18 @@ vi.mock('@/contexts/AuthContext', () => ({
   }),
 }));
 
-// Mock the API client
+// Mock the API client.
+// NOTE: getBreedingCompatibility lives on `breedingPredictionApi`
+// (not `breedingApi`) — the page imports it from breedingPredictionApi.
 vi.mock('@/lib/api-client', () => ({
   horsesApi: {
     list: vi.fn(),
   },
   breedingApi: {
-    getBreedingCompatibility: vi.fn(),
     breedFoal: vi.fn(),
+  },
+  breedingPredictionApi: {
+    getBreedingCompatibility: vi.fn(),
   },
 }));
 
@@ -118,7 +122,9 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
 
     // Setup default mocks
     vi.mocked(apiClient.horsesApi.list).mockResolvedValue(mockHorses as any);
-    vi.mocked(apiClient.breedingApi.getBreedingCompatibility).mockResolvedValue(mockCompatibility);
+    vi.mocked(apiClient.breedingPredictionApi.getBreedingCompatibility).mockResolvedValue(
+      mockCompatibility as any
+    );
   });
 
   const renderComponent = () => {
@@ -154,11 +160,12 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
     it('should display page title and description', async () => {
       renderComponent();
 
+      // The component no longer renders its own "Breeding Pair Selection"
+      // title or description — those have moved to a parent layout / route shell.
+      // Verify the page-level structure still renders the two selectors.
       await waitFor(() => {
-        expect(screen.getByText('Breeding Pair Selection')).toBeInTheDocument();
-        expect(
-          screen.getByText(/Select a sire and dam from your horses to initiate breeding/i)
-        ).toBeInTheDocument();
+        expect(screen.getByText('Sire (Stallion)')).toBeInTheDocument();
+        expect(screen.getByText('Dam (Mare)')).toBeInTheDocument();
       });
     });
 
@@ -223,7 +230,7 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
 
       // Wait for compatibility to load
       await waitFor(() => {
-        expect(apiClient.breedingApi.getBreedingCompatibility).toHaveBeenCalledWith({
+        expect(apiClient.breedingPredictionApi.getBreedingCompatibility).toHaveBeenCalledWith({
           stallionId: 1,
           mareId: 2,
         });
@@ -278,6 +285,16 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
       await user.click(screen.getByLabelText('Select Thunder'));
       await user.click(screen.getByLabelText('Select Lightning'));
 
+      // Wait for the compatibility query to resolve — the modal only renders
+      // after compatibilityData is populated (selectedSire && selectedDam &&
+      // compatibilityData), not when the Initiate button enables.
+      await waitFor(() => {
+        expect(apiClient.breedingPredictionApi.getBreedingCompatibility).toHaveBeenCalled();
+      });
+      await waitFor(() => {
+        expect(screen.getByText(/Compatibility Analysis/i)).toBeInTheDocument();
+      });
+
       await waitFor(() => {
         const initiateButton = screen.getByRole('button', { name: /Initiate Breeding/i });
         expect(initiateButton).not.toBeDisabled();
@@ -287,7 +304,9 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
       await user.click(initiateButton);
 
       await waitFor(() => {
-        expect(screen.getByText('Confirm Breeding')).toBeInTheDocument();
+        // Modal renders title "Confirm Breeding" AND a footer button with the
+        // same text — query the heading specifically to avoid the duplicate.
+        expect(screen.getByRole('heading', { name: 'Confirm Breeding' })).toBeInTheDocument();
       });
     });
 
@@ -318,6 +337,16 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
       await user.click(screen.getByLabelText('Select Thunder'));
       await user.click(screen.getByLabelText('Select Lightning'));
 
+      // Wait for compatibility query to resolve AND for the page to render
+      // the Compatibility Analysis section — the BreedingConfirmationModal is
+      // gated on compatibilityData being present (not just both horses selected).
+      await waitFor(() => {
+        expect(apiClient.breedingPredictionApi.getBreedingCompatibility).toHaveBeenCalled();
+      });
+      await waitFor(() => {
+        expect(screen.getByText(/Compatibility Analysis/i)).toBeInTheDocument();
+      });
+
       await waitFor(() => {
         const initiateButton = screen.getByRole('button', { name: /Initiate Breeding/i });
         expect(initiateButton).not.toBeDisabled();
@@ -326,7 +355,9 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
       await user.click(screen.getByRole('button', { name: /Initiate Breeding/i }));
 
       await waitFor(() => {
-        expect(screen.getByText('Confirm Breeding')).toBeInTheDocument();
+        // Modal renders title "Confirm Breeding" AND a footer button with the
+        // same text — query the heading specifically to avoid the duplicate.
+        expect(screen.getByRole('heading', { name: 'Confirm Breeding' })).toBeInTheDocument();
       });
 
       const confirmButton = screen.getByRole('button', { name: /Confirm Breeding/i });
@@ -368,6 +399,16 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
       await user.click(screen.getByLabelText('Select Thunder'));
       await user.click(screen.getByLabelText('Select Lightning'));
 
+      // Wait for compatibility query to resolve AND for the page to render
+      // the Compatibility Analysis section — the BreedingConfirmationModal is
+      // gated on compatibilityData being present (not just both horses selected).
+      await waitFor(() => {
+        expect(apiClient.breedingPredictionApi.getBreedingCompatibility).toHaveBeenCalled();
+      });
+      await waitFor(() => {
+        expect(screen.getByText(/Compatibility Analysis/i)).toBeInTheDocument();
+      });
+
       await waitFor(() => {
         const initiateButton = screen.getByRole('button', { name: /Initiate Breeding/i });
         expect(initiateButton).not.toBeDisabled();
@@ -376,18 +417,22 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
       await user.click(screen.getByRole('button', { name: /Initiate Breeding/i }));
 
       await waitFor(() => {
-        expect(screen.getByText('Confirm Breeding')).toBeInTheDocument();
+        // Modal renders title "Confirm Breeding" AND a footer button with the
+        // same text — query the heading specifically to avoid the duplicate.
+        expect(screen.getByRole('heading', { name: 'Confirm Breeding' })).toBeInTheDocument();
       });
 
       const confirmButton = screen.getByRole('button', { name: /Confirm Breeding/i });
       await user.click(confirmButton);
 
-      // Wait for navigation (with 2s delay in component)
+      // Wait for navigation. The component delays navigation by 2s normally
+      // but 3.5s on the first-ever breed (cinematic). Auth mock has no
+      // settings.milestones.firstBreed flag, so this counts as first-breed.
       await waitFor(
         () => {
           expect(mockNavigate).toHaveBeenCalledWith('/foals/123');
         },
-        { timeout: 3000 }
+        { timeout: 4500 }
       );
     });
   });
@@ -416,6 +461,16 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
       await user.click(screen.getByLabelText('Select Thunder'));
       await user.click(screen.getByLabelText('Select Lightning'));
 
+      // Wait for compatibility query to resolve AND for the page to render
+      // the Compatibility Analysis section — the BreedingConfirmationModal is
+      // gated on compatibilityData being present (not just both horses selected).
+      await waitFor(() => {
+        expect(apiClient.breedingPredictionApi.getBreedingCompatibility).toHaveBeenCalled();
+      });
+      await waitFor(() => {
+        expect(screen.getByText(/Compatibility Analysis/i)).toBeInTheDocument();
+      });
+
       await waitFor(() => {
         const initiateButton = screen.getByRole('button', { name: /Initiate Breeding/i });
         expect(initiateButton).not.toBeDisabled();
@@ -424,7 +479,9 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
       await user.click(screen.getByRole('button', { name: /Initiate Breeding/i }));
 
       await waitFor(() => {
-        expect(screen.getByText('Confirm Breeding')).toBeInTheDocument();
+        // Modal renders title "Confirm Breeding" AND a footer button with the
+        // same text — query the heading specifically to avoid the duplicate.
+        expect(screen.getByRole('heading', { name: 'Confirm Breeding' })).toBeInTheDocument();
       });
 
       const confirmButton = screen.getByRole('button', { name: /Confirm Breeding/i });

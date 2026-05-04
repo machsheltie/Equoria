@@ -17,7 +17,9 @@ import React from 'react';
 import { describe, it, expect } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useCompetitions, useEnterCompetition, competitionKeys } from '../useCompetitions';
+// useEnterCompetition lives in its own module — it was extracted out of useCompetitions.
+import { useCompetitions, competitionKeys } from '../useCompetitions';
+import { useEnterCompetition } from '../useEnterCompetition';
 
 // ─── Test wrapper ─────────────────────────────────────────────────────────────
 
@@ -67,7 +69,9 @@ describe('useEnterCompetition', () => {
   it('mutation succeeds and returns entryId (AC: 6)', async () => {
     const { result } = renderHook(() => useEnterCompetition(), { wrapper: createWrapper() });
     await act(async () => {
-      result.current.mutate({ horseId: 1, competitionId: 1 });
+      // Signature is { competitionId, horseIds: number[] } — was previously
+      // { horseId, competitionId } before the bulk-entry refactor.
+      result.current.mutate({ competitionId: 1, horseIds: [1] });
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data).toBeDefined();
