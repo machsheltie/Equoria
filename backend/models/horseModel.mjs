@@ -115,10 +115,12 @@ async function createHorse(horseData) {
       overallConformation: 20,
     };
 
-    // Use epigenetic modifiers from horseData if already applied by the controller (createFoal).
-    // Only apply at-birth traits here if the controller did NOT already apply them — prevents
-    // double trait application when createFoal already called applyEpigeneticTraitsAtBirth.
-    // The controller signals completion via _epigeneticTraitsApplied flag.
+    // Use epigenetic modifiers from horseData if already applied upstream
+    // (post-B3: by `foalingService.createFoalFromPregnancy()`; pre-B3 was
+    // `horseController.createFoal`). Only apply at-birth traits here when
+    // the upstream caller did NOT already apply them — prevents double
+    // trait application. The caller signals completion via the
+    // `_epigeneticTraitsApplied` flag on horseData.
     let epigeneticModifiers = horseData.epigeneticModifiers || {
       positive: [],
       negative: [],

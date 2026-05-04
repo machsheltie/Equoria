@@ -127,27 +127,30 @@ describe('Cross-System Validation Tests', () => {
 
   describe('Epigenetic Trait System Integration', () => {
     test('Trait discovery integration with groom care patterns', async () => {
-      // Create a foal for trait development testing
-      const foalData = {
-        name: 'Trait Test Foal',
-        breedId: testBreed.id,
-        sex: 'Stallion',
-        dateOfBirth: new Date(), // Newborn
-
-        sireId: testHorse.id,
-        damId: testHorse.id,
-      };
-
-      const foalResponse = await request(app)
-        .post('/api/horses/foals')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send(foalData)
-        .expect(201);
-
-      const { foal } = foalResponse.body.data;
+      // Materialise a foal directly in the DB. Pre-B3 this used the
+      // POST /api/horses/foals endpoint, which used to instant-create a
+      // foal row. After the feed-system redesign (Equoria-3gqg / B3) that
+      // endpoint sets the dam's `inFoalSinceDate` instead — foal rows are
+      // created by the foaling job (B5) at +7 days. This test's intent is
+      // *downstream trait-discovery + groom + milestone integration*, not
+      // breeding semantics, so we bypass the breeding endpoint and create
+      // a newborn foal record directly. The breeding API itself is
+      // exercised by `tests/foalCreationIntegration.test.mjs` and
+      // `__tests__/integration/breedingDelay.test.mjs`.
+      const foal = await prisma.horse.create({
+        data: {
+          name: 'Trait Test Foal',
+          breedId: testBreed.id,
+          sex: 'Stallion',
+          dateOfBirth: new Date(),
+          age: 0,
+          sireId: testHorse.id,
+          damId: testHorse.id,
+          userId: testUser.id,
+          healthStatus: 'Good',
+          epigeneticModifiers: { positive: [], negative: [], hidden: [] },
+        },
+      });
 
       // Perform groom interactions during critical development period
       const enrichmentData = {

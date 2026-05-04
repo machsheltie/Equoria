@@ -2,17 +2,26 @@
  * Integration Test: Foal Creation API — Real Database
  *
  * Tests the POST /api/horses/foals endpoint with real database operations.
- * No mocks — validates actual foal creation, parent validation, epigenetic
- * trait application, and database persistence.
+ * No mocks — validates actual pregnancy initiation, parent validation, and
+ * database persistence.
+ *
+ * UPDATED 2026-04-29 (B3, parent Equoria-3gqg) — feed-system redesign:
+ * breeding no longer creates a foal Horse row immediately. The endpoint sets
+ * the dam's pregnancy state (`inFoalSinceDate`, `pregnancySireId`,
+ * `pregnancyFeedingsByTier`, `lastBredDate`) and returns 200 with
+ * `{ success, data: { pregnancyStarted, damId, sireId, foalDueDate } }`.
+ * Foal materialisation happens 7 days later in the foaling job (B5) via
+ * `foalingService.createFoalFromPregnancy()`. Tests that previously asserted
+ * on `data.foal.*` are rewritten to assert the new pregnancy contract — the
+ * behavioral coverage is the same (validation + persistence), but the
+ * contract is delayed-foaling rather than instant-foal.
  *
  * Business rules tested:
- * - Foal creation API: POST /api/horses/foals accepts valid breeding data
+ * - Pregnancy API: POST /api/horses/foals accepts valid breeding data
  * - Request validation: name, breedId, sireId, damId, sex, healthStatus
- * - Database integration: horse creation, breed validation, parent lookup
- * - Breeding system: sire and dam must exist to create a foal
+ * - Database integration: dam pregnancy columns, breed validation, parent lookup
+ * - Breeding system: sire and dam must exist to start a pregnancy
  * - Response handling: proper HTTP status codes and error messages
- * - Data structure: foal objects have required fields and relationships
- * - Epigenetic traits: applied at birth based on mare stress and lineage
  */
 
 import { describe, beforeAll, afterAll, expect, it } from '@jest/globals';
@@ -104,9 +113,32 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     });
   });
 
+  /**
+   * Reset the dam's pregnancy state between tests so each `it()` block can
+   * cleanly start a fresh pregnancy. The previous shape created a fresh foal
+   * row each time and tracked it via `createdFoalIds`; now there are no foal
+   * rows to clean up between tests, but the dam carries forward state.
+   */
+  async function resetDamPregnancy() {
+    if (!testDam) {
+      return;
+    }
+    await prisma.horse.update({
+      where: { id: testDam.id },
+      data: {
+        inFoalSinceDate: null,
+        pregnancySireId: null,
+        pregnancyFeedingsByTier: {},
+        lastBredDate: null,
+      },
+    });
+  }
+
   afterAll(async () => {
     try {
-      // Clean up created foals and their related records
+      // No foal rows are created any more (delayed pregnancy); the
+      // createdFoalIds harness is preserved as a defensive cleanup in case
+      // a future hybrid test creates real foals via foalingService.
       for (const foalId of createdFoalIds) {
         await prisma.foalTrainingHistory.deleteMany({ where: { horseId: foalId } }).catch(() => {});
         await prisma.foalDevelopment.deleteMany({ where: { foalId } }).catch(() => {});
@@ -132,7 +164,9 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     }
   });
 
-  it('should create a foal with valid breeding data and persist it in the database', async () => {
+  it('should start a pregnancy and persist dam in-foal state in the database', async () => {
+    await resetDamPregnancy();
+
     const foalData = {
       name: `IntegrationFoal_${ts}`,
       breedId: testBreed.id,
@@ -149,31 +183,30 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
       .set('Cookie', __csrf__.cookieHeader)
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send(foalData)
-      .expect(201);
+      .expect(200);
 
     expect(response.body.success).toBe(true);
-    expect(response.body.data).toHaveProperty('foal');
-    expect(response.body.data.foal.name).toBe(foalData.name);
-    expect(response.body.data.foal.sireId).toBe(testSire.id);
-    expect(response.body.data.foal.damId).toBe(testDam.id);
+    expect(response.body.data).toBeTruthy();
+    expect(response.body.data.pregnancyStarted).toBe(true);
+    expect(response.body.data.damId).toBe(testDam.id);
+    expect(response.body.data.sireId).toBe(testSire.id);
+    expect(response.body.data.foalDueDate).toBeTruthy();
 
-    // Track for cleanup
-    createdFoalIds.push(response.body.data.foal.id);
+    // No foal row yet — foaling job (B5) materialises the foal at +7 days.
+    const foalCount = await prisma.horse.count({ where: { damId: testDam.id } });
+    expect(foalCount).toBe(0);
 
-    // Verify the foal exists in the real database
-    const dbFoal = await prisma.horse.findUnique({
-      where: { id: response.body.data.foal.id },
-    });
-
-    expect(dbFoal).toBeTruthy();
-    expect(dbFoal.name).toBe(foalData.name);
-    expect(dbFoal.age).toBe(0);
-    expect(dbFoal.sireId).toBe(testSire.id);
-    expect(dbFoal.damId).toBe(testDam.id);
-    expect(dbFoal.userId).toBe(testUser.id);
+    // Dam's pregnancy state is persisted.
+    const dbDam = await prisma.horse.findUnique({ where: { id: testDam.id } });
+    expect(dbDam.inFoalSinceDate).toBeTruthy();
+    expect(dbDam.pregnancySireId).toBe(testSire.id);
+    expect(dbDam.pregnancyFeedingsByTier).toEqual({});
+    expect(dbDam.lastBredDate).toBeTruthy();
   });
 
-  it('should apply epigenetic traits at birth', async () => {
+  it('should reject a second pregnancy while the mare is already in foal', async () => {
+    await resetDamPregnancy();
+
     const foalData = {
       name: `EpigeneticFoal_${ts}`,
       breedId: testBreed.id,
@@ -183,33 +216,32 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
       healthStatus: 'Good',
     };
 
-    const response = await request(app)
+    // First pregnancy succeeds.
+    const first = await request(app)
       .post('/api/horses/foals')
       .set('Authorization', `Bearer ${authToken}`)
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', __csrf__.cookieHeader)
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send(foalData)
-      .expect(201);
+      .expect(200);
+    expect(first.body.data.pregnancyStarted).toBe(true);
 
-    createdFoalIds.push(response.body.data.foal.id);
+    // Second attempt while mare is in foal must be rejected.
+    const second = await request(app)
+      .post('/api/horses/foals')
+      .set('Authorization', `Bearer ${authToken}`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
+      .send(foalData)
+      .expect(400);
+    expect(second.body.success).toBe(false);
+    expect(String(second.body.message || '').toLowerCase()).toContain('in foal');
 
-    expect(response.body.data).toHaveProperty('appliedTraits');
-    expect(response.body.data).toHaveProperty('breedingAnalysis');
-
-    // Breeding analysis should contain the real parent info
-    expect(response.body.data.breedingAnalysis.sire.id).toBe(testSire.id);
-    expect(response.body.data.breedingAnalysis.dam.id).toBe(testDam.id);
-    expect(typeof response.body.data.breedingAnalysis.mareStress).toBe('number');
-    expect(typeof response.body.data.breedingAnalysis.feedQuality).toBe('number');
-
-    // The foal should have epigenetic modifiers stored in DB
-    const dbFoal = await prisma.horse.findUnique({
-      where: { id: response.body.data.foal.id },
-    });
-    expect(dbFoal.epigeneticModifiers).toBeTruthy();
-    expect(dbFoal.epigeneticModifiers).toHaveProperty('positive');
-    expect(dbFoal.epigeneticModifiers).toHaveProperty('negative');
+    // Still no foal row.
+    const foalCount = await prisma.horse.count({ where: { damId: testDam.id } });
+    expect(foalCount).toBe(0);
   });
 
   it('should reject foal creation with missing required fields', async () => {
@@ -294,7 +326,9 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     expect(response.body.message).toContain('Dam');
   });
 
-  it('should accept valid foal creation data structure and return 201', async () => {
+  it('should accept valid breeding payload and return 200 pregnancy-started', async () => {
+    await resetDamPregnancy();
+
     const validFoalData = {
       name: `ValidStructureFoal_${ts}`,
       breedId: testBreed.id,
@@ -311,15 +345,13 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
       .set('Cookie', __csrf__.cookieHeader)
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .send(validFoalData)
-      .expect(201);
-
-    createdFoalIds.push(response.body.data.foal.id);
+      .expect(200);
 
     expect(response.body.success).toBe(true);
-    expect(response.body.data.foal).toHaveProperty('id');
-    expect(response.body.data.foal).toHaveProperty('name');
-    expect(response.body.data.foal).toHaveProperty('sireId');
-    expect(response.body.data.foal).toHaveProperty('damId');
+    expect(response.body.data).toHaveProperty('pregnancyStarted', true);
+    expect(response.body.data).toHaveProperty('damId', testDam.id);
+    expect(response.body.data).toHaveProperty('sireId', testSire.id);
+    expect(response.body.data).toHaveProperty('foalDueDate');
   });
 
   it('should require authentication', async () => {

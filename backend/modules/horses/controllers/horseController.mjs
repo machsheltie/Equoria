@@ -1,23 +1,13 @@
 import { getResultsByHorse } from '../../../models/resultModel.mjs';
-import { createHorse, getHorseById } from '../../../models/horseModel.mjs';
+import { getHorseById } from '../../../models/horseModel.mjs';
 import { getAnyRecentTraining } from '../../../models/trainingModel.mjs';
-import { applyEpigeneticTraitsAtBirth } from '../../../utils/applyEpigeneticTraitsAtBirth.mjs';
 import {
-  generateConformationScores,
-  generateInheritedConformationScores,
-  hasValidConformationScores,
   CONFORMATION_REGIONS,
   calculateOverallConformation,
 } from '../services/conformationService.mjs';
 import { TEMPERAMENT_TYPES } from '../data/breedGeneticProfiles.mjs';
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 import {
-  generateGaitScores,
-  generateInheritedGaitScores,
-  hasValidGaitScores,
-} from '../services/gaitService.mjs';
-import {
-  generateTemperament,
   TEMPERAMENT_TRAINING_MODIFIERS,
   TEMPERAMENT_COMPETITION_MODIFIERS,
   TEMPERAMENT_GROOM_SYNERGY,
@@ -228,30 +218,31 @@ function parseCompetitionPlacement(placement) {
 }
 
 /**
- * Create a new foal with epigenetic traits applied at birth
+ * Begin a delayed pregnancy on the dam mare.
+ *
+ * Phase B (feed-system redesign 2026-04-29): breeding no longer creates a
+ * foal Horse row. This handler validates sire/dam, then sets the mare's
+ * `inFoalSinceDate`, `pregnancySireId`, `pregnancyFeedingsByTier`, and
+ * `lastBredDate`. The foaling job (B5) materialises the foal +7 days later
+ * via `foalingService.createFoalFromPregnancy()`.
+ *
+ * Response shape: 200 with
+ *   { success, message, data: { pregnancyStarted, damId, sireId, foalDueDate } }
+ *
  * @param {Object} req - Express request object
  * @param {Object} res - Express response object
  */
 export async function createFoal(req, res) {
   try {
-    const {
-      name,
-      breedId,
-      sireId,
-      damId,
-      sex,
-      ownerId,
-      userId,
-      playerId,
-      stableId,
-      healthStatus = 'Good',
-    } = req.body;
+    const { name, breedId, sireId, damId } = req.body;
 
     logger.info(
-      `[horseController.createFoal] Creating foal: ${name} with sire ${sireId} and dam ${damId}`,
+      `[horseController.createFoal] Beginning pregnancy: sire ${sireId}, dam ${damId} (foal name "${name}")`,
     );
 
-    // Validate required fields
+    // Validate required fields. `name` and `breedId` remain required so the
+    // foaling job can later materialise the foal with the caller's intent;
+    // they will be persisted alongside pregnancy state once B5 lands.
     if (!name || !breedId || !sireId || !damId) {
       return res.status(400).json({
         success: false,
@@ -260,7 +251,7 @@ export async function createFoal(req, res) {
       });
     }
 
-    // Validate that sire and dam exist
+    // Validate that sire and dam exist.
     const [sire, dam] = await Promise.all([getHorseById(sireId), getHorseById(damId)]);
 
     if (!sire) {
@@ -279,42 +270,8 @@ export async function createFoal(req, res) {
       });
     }
 
-    // Extract mare data (dam)
-    const mare = {
-      id: dam.id,
-      name: dam.name,
-      stressLevel: dam.stressLevel || 50,
-      bondScore: dam.bondScore || 50,
-      healthStatus: dam.healthStatus || 'Good',
-    };
-
-    // Gather lineage up to 3 generations
-    const lineage = await gatherLineage(sireId, damId, 3);
-
-    // Extract feed quality from mare's health status and care quality
-    const feedQuality = assessFeedQualityFromMare(mare);
-
-    // Extract stress level from mare
-    const { stressLevel } = mare;
-
-    logger.info(
-      `[horseController.createFoal] Mare stress: ${stressLevel}, Feed quality: ${feedQuality}, Lineage count: ${lineage.length}`,
-    );
-
-    // Apply epigenetic traits at birth
-    const epigeneticTraits = applyEpigeneticTraitsAtBirth({
-      mare,
-      lineage,
-      feedQuality,
-      stressLevel,
-    });
-
-    logger.info(
-      `[horseController.createFoal] Applied epigenetic traits: ${JSON.stringify(epigeneticTraits)}`,
-    );
-
-    // Resolve breed name — conformation/gait/temperament generators all
-    // key by display name against breedProfiles.json.
+    // Validate breedId early so a malformed payload doesn't put the mare
+    // into an in-foal state with bad data.
     const normalizedBreedId = Number.parseInt(breedId, 10);
     if (!Number.isInteger(normalizedBreedId) || normalizedBreedId <= 0) {
       return res.status(400).json({
@@ -334,241 +291,60 @@ export async function createFoal(req, res) {
         data: null,
       });
     }
-    const breedName = breedRecord.name;
 
-    // Generate conformation scores — use inheritance if both parents have valid region scores, else breed-only.
-    // breedName comes from the foal's assigned breed (crossbreeding is restricted to specific combinations
-    // e.g. Thoroughbred x Arabian = Anglo Arabian — validation happens upstream). The foal's breed
-    // determines breed mean regression, not the parents' breeds.
-    const sireConformation = sire.conformationScores;
-    const damConformation = dam.conformationScores;
-    const conformationScores =
-      hasValidConformationScores(sireConformation) && hasValidConformationScores(damConformation)
-        ? generateInheritedConformationScores(breedName, sireConformation, damConformation)
-        : generateConformationScores(breedName);
-    logger.info(
-      `[horseController.createFoal] Generated conformation scores for breed "${breedName}" (${hasValidConformationScores(sireConformation) && hasValidConformationScores(damConformation) ? 'inherited' : 'breed-only'}): overall=${conformationScores.overallConformation}`,
-    );
+    // The mare must not already be in foal.
+    if (dam.inFoalSinceDate) {
+      return res.status(400).json({
+        success: false,
+        message: `${dam.name} is already in foal.`,
+        data: null,
+      });
+    }
 
-    // Generate gait scores — use inheritance if both parents have valid gait scores, else breed-only
-    const sireGaitScores = sire.gaitScores;
-    const damGaitScores = dam.gaitScores;
-    const gaitScores =
-      hasValidGaitScores(sireGaitScores) && hasValidGaitScores(damGaitScores)
-        ? generateInheritedGaitScores(breedName, sireGaitScores, damGaitScores, conformationScores)
-        : generateGaitScores(breedName, conformationScores);
-    logger.info(
-      `[horseController.createFoal] Generated gait scores for breed "${breedName}" (${hasValidGaitScores(sireGaitScores) && hasValidGaitScores(damGaitScores) ? 'inherited' : 'breed-only'})`,
-    );
-
-    // Generate temperament — always a fresh breed-weighted random roll (not inherited from parents)
-    const temperament = generateTemperament(breedName);
-    logger.info(
-      `[horseController.createFoal] Assigned temperament "${temperament}" for breed "${breedName}"`,
-    );
-
-    // Prepare horse data for creation
-    const horseData = {
-      name,
-      age: 0, // Newborn foal
-      breedId: normalizedBreedId,
-      sireId,
-      damId,
-      sex,
-      ownerId,
-      userId,
-      playerId,
-      stableId,
-      healthStatus,
-      dateOfBirth: new Date().toISOString(),
-      conformationScores,
-      gaitScores,
-      temperament,
-      epigeneticModifiers: {
-        positive: epigeneticTraits.positive || [],
-        negative: epigeneticTraits.negative || [],
-        hidden: [], // Hidden traits are revealed later through trait discovery
-      },
-      _epigeneticTraitsApplied: true, // Signal to horseModel that traits are already applied
-    };
-
-    // Create the foal
-    const newFoal = await createHorse(horseData);
-
-    logger.info(
-      `[horseController.createFoal] Successfully created foal: ${newFoal.name} (ID: ${newFoal.id})`,
-    );
-
-    res.status(201).json({
-      success: true,
-      message: `Foal ${newFoal.name} created successfully with epigenetic traits`,
+    const now = new Date();
+    await prisma.horse.update({
+      where: { id: damId },
       data: {
-        foal: newFoal,
-        appliedTraits: epigeneticTraits,
-        breedingAnalysis: {
-          mareStress: stressLevel,
-          feedQuality,
-          lineageCount: lineage.length,
-          sire: { id: sire.id, name: sire.name },
-          dam: { id: dam.id, name: dam.name },
-        },
+        inFoalSinceDate: now,
+        pregnancySireId: sireId,
+        pregnancyFeedingsByTier: {},
+        lastBredDate: now,
+      },
+    });
+
+    const foalDueDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+
+    logger.info(
+      `[horseController.createFoal] Pregnancy started for dam ${damId} (sire ${sireId}); foal due ${foalDueDate.toISOString()}`,
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: `${dam.name} is now in foal. The foal will be born in 7 days.`,
+      data: {
+        pregnancyStarted: true,
+        damId,
+        sireId,
+        foalDueDate: foalDueDate.toISOString(),
       },
     });
   } catch (error) {
-    logger.error(`[horseController.createFoal] Error creating foal: ${error.message}`);
+    logger.error(`[horseController.createFoal] Error starting pregnancy: ${error.message}`);
 
     res.status(500).json({
       success: false,
-      message: 'Internal server error during foal creation',
+      message: 'Internal server error during pregnancy start',
       error: process.env.NODE_ENV !== 'production' ? error.message : undefined,
       data: null,
     });
   }
 }
 
-/**
- * Gather lineage up to specified generations
- * @param {number} sireId - Sire's ID
- * @param {number} damId - Dam's ID
- * @param {number} generations - Number of generations to trace back
- * @returns {Array} - Flattened array of ancestor objects
- */
-async function gatherLineage(sireId, damId, generations) {
-  try {
-    logger.info(
-      `[horseController.gatherLineage] Gathering lineage for sire ${sireId} and dam ${damId}, ${generations} generations`,
-    );
-
-    const ancestors = [];
-    const toProcess = [
-      { id: sireId, generation: 0 },
-      { id: damId, generation: 0 },
-    ];
-    const processed = new Set();
-
-    while (toProcess.length > 0) {
-      const { id, generation } = toProcess.shift();
-
-      // Skip if already processed or reached generation limit
-      if (processed.has(id) || generation >= generations) {
-        continue;
-      }
-
-      processed.add(id);
-
-      // Get horse data with discipline information
-      const horse = await prisma.horse.findUnique({
-        where: { id },
-        select: {
-          id: true,
-          name: true,
-          sireId: true,
-          damId: true,
-          disciplineScores: true,
-          // Include any discipline-related fields
-          trait: true,
-          temperament: true,
-        },
-      });
-
-      if (horse) {
-        // Determine primary discipline from disciplineScores
-        let primaryDiscipline = null;
-        if (horse.disciplineScores && typeof horse.disciplineScores === 'object') {
-          let maxScore = 0;
-          Object.entries(horse.disciplineScores).forEach(([discipline, score]) => {
-            if (typeof score === 'number' && score > maxScore) {
-              maxScore = score;
-              primaryDiscipline = discipline;
-            }
-          });
-        }
-
-        // Add to ancestors array
-        ancestors.push({
-          id: horse.id,
-          name: horse.name,
-          discipline: primaryDiscipline,
-          disciplineScores: horse.disciplineScores,
-          generation,
-          trait: horse.trait,
-          temperament: horse.temperament,
-        });
-
-        // Add parents to processing queue for next generation
-        if (horse.sireId && generation + 1 < generations) {
-          toProcess.push({ id: horse.sireId, generation: generation + 1 });
-        }
-        if (horse.damId && generation + 1 < generations) {
-          toProcess.push({ id: horse.damId, generation: generation + 1 });
-        }
-      }
-    }
-
-    logger.info(`[horseController.gatherLineage] Gathered ${ancestors.length} ancestors`);
-    return ancestors;
-  } catch (error) {
-    logger.error(`[horseController.gatherLineage] Error gathering lineage: ${error.message}`);
-    return [];
-  }
-}
-
-/**
- * Assess feed quality from mare's health status and care indicators
- * @param {Object} mare - Mare object with healthStatus and other properties
- * @returns {number} - Feed quality score (0-100)
- */
-function assessFeedQualityFromMare(mare) {
-  try {
-    let feedQuality = 50; // Base quality
-
-    // Assess based on health status
-    switch (mare.healthStatus) {
-      case 'Excellent':
-        feedQuality = 90;
-        break;
-      case 'Good':
-        feedQuality = 75;
-        break;
-      case 'Fair':
-        feedQuality = 55;
-        break;
-      case 'Poor':
-        feedQuality = 30;
-        break;
-      case 'Critical':
-        feedQuality = 15;
-        break;
-      default:
-        feedQuality = 50;
-    }
-
-    // Adjust based on bond score (higher bond = better care)
-    const bondScore = mare.bondScore || 50;
-    if (bondScore >= 80) {
-      feedQuality += 10;
-    } else if (bondScore >= 60) {
-      feedQuality += 5;
-    } else if (bondScore <= 30) {
-      feedQuality -= 10;
-    }
-
-    // Cap at 100
-    feedQuality = Math.min(feedQuality, 100);
-    feedQuality = Math.max(feedQuality, 0);
-
-    logger.info(
-      `[horseController.assessFeedQualityFromMare] Mare ${mare.name} feed quality: ${feedQuality} (health: ${mare.healthStatus}, bond: ${bondScore})`,
-    );
-
-    return feedQuality;
-  } catch (error) {
-    logger.error(
-      `[horseController.assessFeedQualityFromMare] Error assessing feed quality: ${error.message}`,
-    );
-    return 50; // Default on error
-  }
-}
+// Lineage gathering + mare feed-quality assessment moved to
+// `services/foalingService.mjs` as part of the B3 delayed-foaling refactor.
+// Foal materialisation now happens in `foalingService.createFoalFromPregnancy()`
+// when the foaling job (B5) fires +7 days after `createFoal` flips the dam
+// into the in-foal state.
 
 /**
  * Get horse overview data for detailed display

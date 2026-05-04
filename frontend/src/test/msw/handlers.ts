@@ -383,13 +383,21 @@ export const handlers = [
   ),
 
   // Breeding / foals
-  // POST /api/horses/foals — correct path used by breedingApi.breedFoal
+  // POST /api/horses/foals — pregnancy-started response (B3 delayed foaling).
+  // Pre-B3 this returned an immediate foal; post-B3 the breeding endpoint
+  // only flips the mare into the in-foal state. The foaling job (B5)
+  // materialises the foal at +7 days. Mock matches the real backend shape:
+  // `{ success, message, data: { pregnancyStarted, damId, sireId, foalDueDate } }`.
   http.post(`${base}/api/horses/foals`, () =>
     HttpResponse.json({
       success: true,
-      foalId: 10,
-      message: 'Foal created',
-      foal: { id: 10, name: 'New Foal', sireId: 1, damId: 2, ageDays: 0, traits: [] },
+      message: 'Pregnancy started. Foal due in 7 days.',
+      data: {
+        pregnancyStarted: true,
+        damId: 2,
+        sireId: 1,
+        foalDueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      },
     })
   ),
   // Preserved for backward-compat (other components may call this path)
@@ -1834,13 +1842,20 @@ export const handlers = [
     });
   }),
 
-  // Breeding / foals (mirrors /api/horses/foals)
+  // Breeding / foals — pregnancy-started response (B3 delayed foaling).
+  // Mirrors the /api/horses/foals handler above; both paths exist because
+  // the backend mounts authRouter on both /api and /api/v1. See the
+  // /api/horses/foals handler comment for the contract.
   http.post(`${base}/api/v1/horses/foals`, () =>
     HttpResponse.json({
       success: true,
-      foalId: 10,
-      message: 'Foal created',
-      foal: { id: 10, name: 'New Foal', sireId: 1, damId: 2, ageDays: 0, traits: [] },
+      message: 'Pregnancy started. Foal due in 7 days.',
+      data: {
+        pregnancyStarted: true,
+        damId: 2,
+        sireId: 1,
+        foalDueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      },
     })
   ),
 
