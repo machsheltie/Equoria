@@ -1,8 +1,51 @@
 # Equoria - Claude Code Configuration
 
-**Version:** 3.3.0
-**Last Updated:** 2026-04-20
+**Version:** 3.4.0
+**Last Updated:** 2026-05-04
 **Project:** Web browser-based horse breeding simulation game
+
+---
+
+## 🚨 NON-NEGOTIABLE WORKFLOW RULES (User Mandate, 2026-05-04)
+
+These rules override every other workflow guidance in this file or any session-start hook. Established after a 62-commit rebase nightmare to master that should never have happened.
+
+### 1. MAIN ONLY. No feature branches.
+
+- Every session starts with `git checkout master && git pull --rebase origin master`.
+- Every `bd` issue lands as ONE small commit (or two if test-then-fix) **directly on master**, pushed same-session.
+- Never open a feature branch. Never accumulate work for "later landing." If a change is too big for one commit, it's too big for one session — split it.
+- The push command is `git push origin master`. If branch protection blocks the push, report it — DO NOT detour onto a side branch.
+- The user must SEE changes on Railway as we go. Branches that don't deploy don't count.
+
+### 2. REAL DB ONLY. No test database.
+
+- `.env.test` points at the canonical Equoria DB. Tests run against production data.
+- Test fixtures must coexist with real game state — never assume test data dominates leaderboards, counts, ordering, etc. Filter by name pattern or unique IDs, not relative position.
+- Cleanup logic must be SCOPED (`prisma.X.deleteMany({ where: { name: { startsWith: 'TestFixture-' } } })`), never broad. A loose cleanup pattern wipes real user data.
+- Backend test cleanup that uses raw `deleteMany()` without a where-clause is forbidden.
+- This is the user's explicit choice. Risks acknowledged. Do not propose reverting to a test DB.
+
+### 3. NO LONG-LIVED BRANCHES. EVER.
+
+- `fix/*`, `feature/*`, `epic-*`, etc. branches are forbidden going forward.
+- The only exception is a hotfix that requires staged rollback infrastructure (e.g., a major schema migration) — and even that requires explicit user authorization at the start of the work.
+- If you find yourself thinking "I'll just commit this on a branch and merge later," STOP. Land it on master or don't do it.
+
+### 4. PRE-PUSH HOOK SLOWNESS IS THE COST OF SAFETY.
+
+- The pre-push hook runs the full backend Jest suite (~10 min). That's intentional.
+- Bypass with `--no-verify` ONLY when the user has explicitly authorized it for THIS specific push (not as a standing waiver).
+- A failing pre-push test is a real signal. Fix the test or the code; don't bypass by default.
+
+### 5. ONE PUSH AT A TIME.
+
+- Never run two `git push` processes in parallel. They lock contention each other and one will silently fail.
+- If a push appears stuck, check the pre-push hook output before starting another.
+
+### Why these rules exist
+
+The 2026-05-04 incident: 56 commits accumulated on `fix/21r-security-hardening-corrected` over weeks because each session built on the prior session's branch instead of branching off master. Result: a multi-hour rebase with architectural conflicts (master and branch had parallel security-middleware refactors with different APIs), forced `--no-verify` push to bypass a leaderboard test that was brittle to real-DB drift, and bypass of 24 required CI status checks to land everything at once. None of those failure modes existed if the work had landed in small same-session commits.
 
 ---
 
