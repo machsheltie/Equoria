@@ -212,10 +212,15 @@ describe('TrainingSessionModal', () => {
         'Vaulting',
         'Western Pleasure',
       ];
+      // Collect every button's text once. Iterating getAllByRole with a
+      // regex per discipline (23 queries, ~ms each) was pushing past the
+      // 10s default; one pass is O(n) instead of O(n*m).
+      const buttonNames = screen
+        .getAllByRole('button')
+        .map((b) => b.textContent ?? '')
+        .join('\n');
       disciplines.forEach((d) => {
-        // Each discipline renders as one or more buttons; assert at least one match
-        const matches = screen.getAllByRole('button', { name: new RegExp(d, 'i') });
-        expect(matches.length).toBeGreaterThan(0);
+        expect(buttonNames).toContain(d);
       });
     });
 

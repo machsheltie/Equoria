@@ -68,10 +68,16 @@ describe('DisciplineSelector', () => {
         <DisciplineSelector selectedDiscipline="Dressage" onDisciplineChange={mockOnChange} />
       );
 
+      // Iterating getAllByRole with a regex per discipline (24 separate
+      // queries, ~390ms each) blew past the 10s vitest timeout. One pass
+      // through every button text is O(n) instead of O(n*m).
+      const buttonNames = screen
+        .getAllByRole('button')
+        .map((b) => b.textContent ?? '')
+        .join('\n');
+
       ALL_DISCIPLINES.forEach((discipline) => {
-        // Use getAllByRole because text may match multiple elements; just confirm at least one button per discipline
-        const matches = screen.getAllByRole('button', { name: new RegExp(discipline, 'i') });
-        expect(matches.length).toBeGreaterThan(0);
+        expect(buttonNames).toContain(discipline);
       });
     });
 
