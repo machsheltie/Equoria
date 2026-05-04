@@ -8,11 +8,12 @@
  * Equip is a preference flag, not an inventory reservation: 1 unit lets a
  * user equip a tier on N horses; the actual unit is decremented at feed-time.
  *
- * On success we (a) imperatively patch the ['equippable', horseId] cache via
- * setQueryData so the UI reflects the new equipped tier without waiting for
- * a refetch round-trip — this is the only way to avoid the stale-GET window
- * documented in Equoria-28cj under NODE_ENV=beta + Vite dev proxy — and
- * (b) invalidate horses queries so other surfaces eventually catch up.
+ * Optimistic update pattern (onMutate): the UI flips the instant the user
+ * clicks, before the POST round-trip starts. On success the cache is left
+ * as-is (already correct); on error we roll back to the snapshot captured
+ * in onMutate so the optimistic flip reverts. This gives "click → equipped
+ * that second" UX and survives the stale-GET window documented in
+ * Equoria-28cj under NODE_ENV=beta + Vite dev proxy.
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -35,12 +36,30 @@ function patchEquippableFeed(
 export function useEquipFeed(horseId: number) {
   const queryClient = useQueryClient();
 
-  return useMutation<{ horseId: number; equippedFeedType: string }, ApiError, FeedItem['id']>({
+  return useMutation<
+    { horseId: number; equippedFeedType: string },
+    ApiError,
+    FeedItem['id'],
+    { previous?: EquippableResponse }
+  >({
     mutationFn: (feedType) => horseFeedApi.equipFeed(horseId, feedType),
-    onSuccess: (data) => {
+    onMutate: async (feedType) => {
+      // Cancel in-flight refetches so they can't overwrite the optimistic state.
+      await queryClient.cancelQueries({ queryKey: ['equippable', horseId] });
+      const previous = queryClient.getQueryData<EquippableResponse>(['equippable', horseId]);
       queryClient.setQueryData<EquippableResponse>(['equippable', horseId], (prev) =>
-        patchEquippableFeed(prev, data.equippedFeedType)
+        patchEquippableFeed(prev, feedType)
       );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['equippable', horseId], context.previous);
+      }
+    },
+    onSettled: () => {
+      // Eventual-consistency reconciliation. Safe to re-fetch even when the
+      // GET path is racey — onMutate already showed truth to the user.
       queryClient.invalidateQueries({ queryKey: ['horses', horseId] });
       queryClient.invalidateQueries({ queryKey: ['horses'] });
       queryClient.invalidateQueries({ queryKey: ['equippable', horseId] });
@@ -51,12 +70,27 @@ export function useEquipFeed(horseId: number) {
 export function useUnequipFeed(horseId: number) {
   const queryClient = useQueryClient();
 
-  return useMutation<{ horseId: number; equippedFeedType: null }, ApiError, void>({
+  return useMutation<
+    { horseId: number; equippedFeedType: null },
+    ApiError,
+    void,
+    { previous?: EquippableResponse }
+  >({
     mutationFn: () => horseFeedApi.unequipFeed(horseId),
-    onSuccess: () => {
+    onMutate: async () => {
+      await queryClient.cancelQueries({ queryKey: ['equippable', horseId] });
+      const previous = queryClient.getQueryData<EquippableResponse>(['equippable', horseId]);
       queryClient.setQueryData<EquippableResponse>(['equippable', horseId], (prev) =>
         patchEquippableFeed(prev, null)
       );
+      return { previous };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(['equippable', horseId], context.previous);
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['horses', horseId] });
       queryClient.invalidateQueries({ queryKey: ['horses'] });
       queryClient.invalidateQueries({ queryKey: ['equippable', horseId] });

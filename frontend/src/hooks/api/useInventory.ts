@@ -5,6 +5,12 @@
  *   - useInventory()        → { items, total, isLoading, error }
  *   - useEquipItem()        → mutation({ inventoryItemId, horseId })
  *   - useUnequipItem()      → mutation({ inventoryItemId })
+ *
+ * Equip/unequip use optimistic updates (onMutate) so the UI flips the
+ * instant the user clicks, before the POST round-trip finishes. On error
+ * the snapshot captured in onMutate is restored. This avoids the
+ * "click and wait" feel and survives the stale-GET window documented in
+ * Equoria-28cj under NODE_ENV=beta + Vite dev proxy.
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -28,12 +34,6 @@ export function useInventory() {
   };
 }
 
-/**
- * Imperatively patch the ['equippable', horseId] cache for an equip/unequip
- * tack action so HorseEquipPage updates the row in place without waiting for
- * a refetch (matches the feed-equip optimistic-patch pattern; avoids the
- * stale-GET window documented in Equoria-28cj).
- */
 function patchEquippableTack(
   prev: EquippableResponse | undefined,
   inventoryItemId: string,
@@ -48,20 +48,46 @@ function patchEquippableTack(
   };
 }
 
+interface EquippableSnapshot {
+  queryKey: readonly unknown[];
+  data: EquippableResponse | undefined;
+}
+
 export function useEquipItem() {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: (variables: { inventoryItemId: string; horseId: number }) =>
-      inventoryApi.equipItem(variables),
-    onSuccess: (_data, variables) => {
+  return useMutation<
+    unknown,
+    Error,
+    { inventoryItemId: string; horseId: number },
+    { snapshots: EquippableSnapshot[] }
+  >({
+    mutationFn: (variables) => inventoryApi.equipItem(variables),
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: ['equippable', variables.horseId] });
+      // Snapshot every cached equippable view (we may need to restore them on error).
+      const cache = queryClient.getQueryCache();
+      const snapshots: EquippableSnapshot[] = cache
+        .findAll({ queryKey: ['equippable'] })
+        .map((q) => ({
+          queryKey: q.queryKey,
+          data: queryClient.getQueryData<EquippableResponse>(q.queryKey),
+        }));
+      // Optimistically flip the target equippable view.
       queryClient.setQueryData<EquippableResponse>(['equippable', variables.horseId], (prev) =>
         patchEquippableTack(prev, variables.inventoryItemId, variables.horseId)
       );
+      return { snapshots };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.snapshots) {
+        for (const snap of context.snapshots) {
+          queryClient.setQueryData(snap.queryKey, snap.data);
+        }
+      }
+    },
+    onSettled: (_data, _err, variables) => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
-      // HorseEquipPage relies on this so the tack list updates in place after
-      // equipping inline. Invalidate both the target horse and any prior horse
-      // (we don't know the prior id here — broad invalidation by prefix).
       queryClient.invalidateQueries({ queryKey: ['equippable'] });
       queryClient.invalidateQueries({ queryKey: ['horse', variables.horseId] });
     },
@@ -71,16 +97,38 @@ export function useEquipItem() {
 export function useUnequipItem() {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: (variables: { inventoryItemId: string }) => inventoryApi.unequipItem(variables),
-    onSuccess: (_data, variables) => {
-      // Patch every cached equippable view that contains this item.
+  return useMutation<
+    unknown,
+    Error,
+    { inventoryItemId: string },
+    { snapshots: EquippableSnapshot[] }
+  >({
+    mutationFn: (variables) => inventoryApi.unequipItem(variables),
+    onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: ['equippable'] });
       const cache = queryClient.getQueryCache();
-      for (const query of cache.findAll({ queryKey: ['equippable'] })) {
-        queryClient.setQueryData<EquippableResponse>(query.queryKey, (prev) =>
+      const snapshots: EquippableSnapshot[] = cache
+        .findAll({ queryKey: ['equippable'] })
+        .map((q) => ({
+          queryKey: q.queryKey,
+          data: queryClient.getQueryData<EquippableResponse>(q.queryKey),
+        }));
+      // Optimistically clear equippedToHorseId on this item across every cached view.
+      for (const snap of snapshots) {
+        queryClient.setQueryData<EquippableResponse>(snap.queryKey, (prev) =>
           patchEquippableTack(prev, variables.inventoryItemId, null)
         );
       }
+      return { snapshots };
+    },
+    onError: (_err, _vars, context) => {
+      if (context?.snapshots) {
+        for (const snap of context.snapshots) {
+          queryClient.setQueryData(snap.queryKey, snap.data);
+        }
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
       queryClient.invalidateQueries({ queryKey: ['equippable'] });
     },
