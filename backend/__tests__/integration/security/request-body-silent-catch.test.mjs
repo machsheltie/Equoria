@@ -49,6 +49,7 @@ import {
   requestBodySecurityErrorHandler,
   ERROR_MESSAGE_PREFIX,
   UNEXPECTED_SCANNER_LOG_PREFIX,
+  RequestBodySecurityError,
 } from '../../../middleware/requestBodySecurity.mjs';
 import { AppError } from '../../../errors/index.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -461,11 +462,17 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
     });
   });
 
-  describe('requestBodySecurityErrorHandler prefix-match contract sentinel', () => {
-    // These tests directly exercise the error handler in isolation, pinning
-    // the coupling between the catch block's throw message and the handler's
-    // matching logic. Both sides reference the exported ERROR_MESSAGE_PREFIX
-    // constant — these tests fail if either side drifts.
+  describe('requestBodySecurityErrorHandler sentinel-class dispatch contract', () => {
+    // 21R-SEC-6 (Equoria-tpbu): the handler now dispatches on a marker
+    // symbol carried by RequestBodySecurityError, not on a message
+    // string-prefix. These tests pin the new contract:
+    //   - sentinel-class instance → 400 + envelope
+    //   - any other error (including a plain AppError with the LEGACY
+    //     prefix message) → forwarded to next, NOT handled
+    //   - non-string / malformed errors → forwarded
+    // The "AppError-with-prefix-message-is-NOT-handled" case proves the
+    // dispatch is type-based, not string-based — a regression that
+    // re-introduces startsWith() would fail it.
 
     // Harness uses real jest.fn() spies on res.status / res.json so callers
     // can use idiomatic .toHaveBeenCalledWith() / .not.toHaveBeenCalled()
@@ -481,9 +488,9 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
       };
     };
 
-    it('handles errors whose message starts with ERROR_MESSAGE_PREFIX as 400 + envelope', () => {
+    it('handles RequestBodySecurityError as 400 + envelope', () => {
       const { req, res, next } = makeHandlerHarness();
-      const err = new AppError(`${ERROR_MESSAGE_PREFIX} scanner failure`, 400);
+      const err = new RequestBodySecurityError('scanner failure');
 
       requestBodySecurityErrorHandler(err, req, res, next);
 
@@ -495,7 +502,22 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
       expect(next).not.toHaveBeenCalled();
     });
 
-    it('forwards errors whose message does NOT start with ERROR_MESSAGE_PREFIX', () => {
+    it('forwards plain AppError with the LEGACY prefix message (not a sentinel instance)', () => {
+      // Sentinel-positive: this exact case used to be handled before
+      // 21R-SEC-6. After the refactor it must be forwarded — proving
+      // dispatch is type-based, not string-based.
+      const { req, res, next } = makeHandlerHarness();
+      const err = new AppError(`${ERROR_MESSAGE_PREFIX} scanner failure`, 400);
+
+      requestBodySecurityErrorHandler(err, req, res, next);
+
+      expect(res.status).not.toHaveBeenCalled();
+      expect(res.json).not.toHaveBeenCalled();
+      expect(next).toHaveBeenCalledTimes(1);
+      expect(next).toHaveBeenCalledWith(err);
+    });
+
+    it('forwards generic Error', () => {
       const { req, res, next } = makeHandlerHarness();
       const err = new Error('Something unrelated');
 
@@ -562,93 +584,86 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
     // handler. Adding two identical-message rows would be testing one thing
     // twice, not two things once. The label below explicitly names both
     // source sites.
+    // 21R-SEC-6 (Equoria-tpbu): replaced the legacy "constant-rename
+    // sentinel" rows below. The old tests pinned that an AppError with
+    // message `${ERROR_MESSAGE_PREFIX} ...` triggered the handler — that
+    // contract was the brittle string-prefix coupling SEC-6 removed.
+    // The new tests verify each in-source throw site is a
+    // RequestBodySecurityError with the canonical message body, and
+    // that the handler dispatches it identically regardless of which
+    // body literal it carries.
     it.each([
-      ['depth cap (scanValue:32 AND assertNoPollutingKeys:212)', 'Invalid request body: nesting too deep'],
-      ['scanObject duplicate key', 'Invalid request body: duplicate JSON key "x"'],
-      ['assertNoPollutingKeys forbidden __proto__', 'Invalid request body: forbidden key "__proto__"'],
-      [
-        'assertNoPollutingKeys forbidden constructor.prototype',
-        'Invalid request body: forbidden key path "constructor.prototype"',
-      ],
-    ])('legacy throw from %s still triggers handler match (constant-rename sentinel)', (label, legacyMessage) => {
+      ['depth cap (scanValue AND assertNoPollutingKeys)', 'nesting too deep'],
+      ['scanObject duplicate key', 'duplicate JSON key "x"'],
+      ['assertNoPollutingKeys forbidden __proto__', 'forbidden key "__proto__"'],
+      ['assertNoPollutingKeys forbidden constructor.prototype', 'forbidden key path "constructor.prototype"'],
+      ['scanner failure (silent-catch fail-closed)', 'scanner failure'],
+    ])('%s: RequestBodySecurityError(body) triggers handler 400 + envelope', (label, messageBody) => {
       const { req, res, next } = makeHandlerHarness();
-      const err = new AppError(legacyMessage, 400);
+      const err = new RequestBodySecurityError(messageBody);
 
       requestBodySecurityErrorHandler(err, req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        message: legacyMessage,
+        message: `${ERROR_MESSAGE_PREFIX} ${messageBody}`,
       });
       expect(next).not.toHaveBeenCalled();
-      // Sanity: the literal really starts with ERROR_MESSAGE_PREFIX. If a
-      // future literal is added that doesn't, this assertion catches it
-      // at test time instead of letting the silent desync ship.
-      expect(legacyMessage.startsWith(ERROR_MESSAGE_PREFIX)).toBe(
-        true,
-        // Jest's it.each interpolates `label` into the test title via %s,
-        // so the variable IS used despite no underscore prefix.
-        `${label} literal must start with ERROR_MESSAGE_PREFIX`,
-      );
+      // Sanity: the constructor wraps the body in the prefix. If a
+      // future refactor strips that wrapping, the assertion above
+      // already fires; this expect documents the contract explicitly.
+      // it.each interpolates `label` into the test title via %s, so
+      // the variable IS used despite no underscore prefix.
+      expect(err.message).toBe(`${ERROR_MESSAGE_PREFIX} ${messageBody}`);
+      expect(label).toBeTruthy();
     });
 
-    // Source-side coupling sentinel: every `throw new AppError('Invalid
-    // request body:` literal in the production source MUST start with the
-    // current value of ERROR_MESSAGE_PREFIX. If someone changes one of
-    // the legacy throws independently (e.g., 'Invalid req body: foo'),
-    // this static-source check catches it — the it.each above only
-    // catches a constant rename, not a source-side literal change.
+    // Source-side coupling sentinel (21R-SEC-6 / Equoria-tpbu): every
+    // throw in the production source that semantically belongs to the
+    // request-body security pipeline MUST be a RequestBodySecurityError
+    // (the sentinel class), NOT a plain `new AppError(...)`. If someone
+    // adds a new throw via the legacy AppError pattern with an
+    // ERROR_MESSAGE_PREFIX-shaped message, the dispatch will silently
+    // forward it instead of returning 400 — exactly the desync hazard
+    // SEC-6 closed. This static-source check catches that regression.
     //
-    // Implementation note: the regex below uses /s flag (dotall) so that a
-    // multi-line throw like:
-    //     throw new AppError(
-    //       'Invalid request body: …',
-    //       400,
-    //     );
-    // is matched. Without /s the `.` would not cross newlines and a
-    // multi-line throw would silently bypass this sentinel.
-    it('every "Invalid request body:" throw in source uses the prefix matching ERROR_MESSAGE_PREFIX', async () => {
+    // /gs flag rationale: g for all matches, s so `.` crosses newlines
+    // (covers multi-line constructor calls). The negative-counterpart
+    // assertion below uses an inverted match.
+    it('every prefix-shaped throw in source uses RequestBodySecurityError, not AppError', async () => {
       const fs = await import('node:fs/promises');
       const path = await import('node:path');
       const url = await import('node:url');
       const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
       const sourcePath = path.resolve(__dirname, '../../../middleware/requestBodySecurity.mjs');
       const source = await fs.readFile(sourcePath, 'utf8');
-      // Match both single- and multi-line throws. /gs flags: g for all
-      // matches, s so . crosses newlines (covers multi-line constructor
-      // calls). Captures the first string-literal argument (single, double,
-      // or backtick quoted).
-      const literalThrows = [...source.matchAll(/throw\s+new\s+AppError\s*\(\s*['"`]([^'"`]*)['"`]/gs)].map(m => m[1]);
-      // Defensive: if the regex starts matching nothing, the sentinel
-      // becomes vacuous. Pin a minimum-count threshold matching the
-      // current source (5 throws as of 2026-04-29). A future addition
-      // bumps this; a future removal drops to a count we expect.
-      expect(literalThrows.length).toBeGreaterThanOrEqual(5);
 
-      // Patch #13 (review hardening): after the migration to template-
-      // literal throws (`${ERROR_MESSAGE_PREFIX} ...`), the captured
-      // string contains the LITERAL text `${ERROR_MESSAGE_PREFIX}`, not
-      // its evaluated value. Substitute it before the prefix check, then
-      // assert the resulting message either starts with the prefix
-      // (intended-to-be-matched) OR clearly does not (legitimate
-      // forward-via-next throw).
-      //
-      // Patch #20: hard-pin the count of intended-to-match throws (track
-      // this number as the source evolves; its value documents how many
-      // throws currently rely on the prefix coupling).
-      const EXPECTED_PREFIX_THROWS = 5; // 1 silent-catch + 1 dup-key + 1 __proto__ + 1 constructor.prototype + 1 depth-cap (used at 2 sites)
-      const evaluated = literalThrows.map(s => s.replace(/\$\{ERROR_MESSAGE_PREFIX\}/g, ERROR_MESSAGE_PREFIX));
-      const prefixed = evaluated.filter(m => m.startsWith(ERROR_MESSAGE_PREFIX));
-      expect(prefixed.length).toBeGreaterThanOrEqual(EXPECTED_PREFIX_THROWS);
-      for (const literal of prefixed) {
-        // Sanity: the first colon falls at the prefix boundary. If a
-        // future literal slips in like 'Invalid request bodyfoo:' the
-        // startsWith check would still pass (`'Invalid request body:'`
-        // is not the same as `'Invalid request bodyfoo:'`) — but this
-        // sanity guards against subtle visual collisions.
-        expect(literal.startsWith(ERROR_MESSAGE_PREFIX)).toBe(true);
-      }
+      // Capture every RequestBodySecurityError throw — this is what we
+      // want to see. Pin a minimum count matching the current source so
+      // a future regex-failure-mode (e.g., constructor accidentally
+      // renamed) becomes a vacuous-test detector.
+      const sentinelThrows = [
+        ...source.matchAll(/throw\s+new\s+RequestBodySecurityError\s*\(\s*['"`]([^'"`]*)['"`]/gs),
+      ].map(m => m[1]);
+      const EXPECTED_SENTINEL_THROWS = 5;
+      // 1 silent-catch + 1 dup-key + 1 __proto__ + 1 constructor.prototype
+      // + 1 depth-cap (used at 2 sites) + 1 forbidden-query-key + 1
+      // urlencoded-dup-key + 1 urlencoded-scanner-failure = 8 currently;
+      // pinning the lower bound at 5 documents the architectural minimum
+      // the SEC-6 refactor preserved.
+      expect(sentinelThrows.length).toBeGreaterThanOrEqual(EXPECTED_SENTINEL_THROWS);
+
+      // Negative counterpart: any throw that uses `new AppError(...)`
+      // with a message that starts with ERROR_MESSAGE_PREFIX is a SEC-6
+      // regression — the prefix-shaped throw should be a sentinel
+      // instance instead.
+      const legacyAppErrorThrows = [...source.matchAll(/throw\s+new\s+AppError\s*\(\s*['"`]([^'"`]*)['"`]/gs)].map(
+        m => m[1],
+      );
+      const evaluated = legacyAppErrorThrows.map(s => s.replace(/\$\{ERROR_MESSAGE_PREFIX\}/g, ERROR_MESSAGE_PREFIX));
+      const offending = evaluated.filter(m => m.startsWith(ERROR_MESSAGE_PREFIX));
+      expect(offending).toEqual([]);
     });
   });
 

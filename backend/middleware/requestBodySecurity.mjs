@@ -5,6 +5,43 @@ const FORBIDDEN_KEY = '__proto__';
 const FORBIDDEN_CONSTRUCTOR_KEY = 'constructor';
 const FORBIDDEN_PROTOTYPE_KEY = 'prototype';
 
+// 21R-SEC-6 (Equoria-tpbu): sentinel error class for the request-body
+// security pipeline.
+//
+// Why this exists: prior to this commit, `requestBodySecurityErrorHandler`
+// dispatched on `err.message.startsWith('Invalid request body:')`. That
+// coupled the error contract to a string prefix — any future middleware
+// or library producing a message with that prefix would get coerced into
+// a 400, and any rename of the prefix would silently desync the catch
+// site from the throw sites. The sentinel-class approach replaces that
+// brittle coupling with type-safe dispatch.
+//
+// Marker symbol pattern mirrors AppError's APP_ERROR_MARKER: `Symbol.for(...)`
+// shares the symbol via the global registry, so `instance[MARKER] === true`
+// works regardless of which copy of this module created the instance. The
+// `isRequestBodySecurityError` static helper is the cross-module-cache-safe
+// replacement for `err instanceof RequestBodySecurityError` and is what
+// the dispatch handler uses.
+//
+// Subclass of AppError so the rest of the error-handling pipeline (status
+// code, isOperational, stack capture) continues to work unchanged.
+export const REQUEST_BODY_SECURITY_ERROR_MARKER = Symbol.for('Equoria.RequestBodySecurityError');
+
+export class RequestBodySecurityError extends AppError {
+  constructor(messageBody) {
+    super(`${ERROR_MESSAGE_PREFIX} ${messageBody}`, 400);
+    this[REQUEST_BODY_SECURITY_ERROR_MARKER] = true;
+  }
+
+  static isRequestBodySecurityError(value) {
+    return (
+      value !== null &&
+      typeof value === 'object' &&
+      value[REQUEST_BODY_SECURITY_ERROR_MARKER] === true
+    );
+  }
+}
+
 // Sanitize a value for inclusion in a structured log payload.
 //
 // Strips: ASCII C0 control chars (0x00-0x1F + 0x7F), C1 control chars
@@ -227,7 +264,7 @@ class JsonScanner {
 
   scanValue(depth) {
     if (depth > MAX_DEPTH) {
-      throw new AppError(`${ERROR_MESSAGE_PREFIX} nesting too deep`, 400);
+      throw new RequestBodySecurityError(`nesting too deep`);
     }
 
     this.skipWhitespace();
@@ -283,7 +320,7 @@ class JsonScanner {
       const key = this.scanString();
 
       if (keys.has(key)) {
-        throw new AppError(`${ERROR_MESSAGE_PREFIX} duplicate JSON key "${key}"`, 400);
+        throw new RequestBodySecurityError(`duplicate JSON key "${key}"`);
       }
       keys.add(key);
 
@@ -433,7 +470,7 @@ class JsonScanner {
 
 function assertNoPollutingKeys(value, path = 'body', depth = 0) {
   if (depth > MAX_DEPTH) {
-    throw new AppError(`${ERROR_MESSAGE_PREFIX} nesting too deep`, 400);
+    throw new RequestBodySecurityError(`nesting too deep`);
   }
 
   if (!value || typeof value !== 'object') {
@@ -449,7 +486,7 @@ function assertNoPollutingKeys(value, path = 'body', depth = 0) {
 
   for (const [key, child] of Object.entries(value)) {
     if (key === FORBIDDEN_KEY) {
-      throw new AppError(`${ERROR_MESSAGE_PREFIX} forbidden key "${key}"`, 400);
+      throw new RequestBodySecurityError(`forbidden key "${key}"`);
     }
 
     if (
@@ -458,7 +495,7 @@ function assertNoPollutingKeys(value, path = 'body', depth = 0) {
       typeof child === 'object' &&
       Object.prototype.hasOwnProperty.call(child, FORBIDDEN_PROTOTYPE_KEY)
     ) {
-      throw new AppError(`${ERROR_MESSAGE_PREFIX} forbidden key path "constructor.prototype"`, 400);
+      throw new RequestBodySecurityError(`forbidden key path "constructor.prototype"`);
     }
 
     assertNoPollutingKeys(child, `${path}.${key}`, depth + 1);
@@ -522,7 +559,7 @@ export function verifyJsonBody(req, _res, buffer) {
     // message falls through to the global error handler and surfaces as 500,
     // which would leak that something unusual happened upstream. The shared
     // constant prevents the two ends from drifting silently.
-    throw new AppError(`${ERROR_MESSAGE_PREFIX} scanner failure`, 400);
+    throw new RequestBodySecurityError(`scanner failure`);
   }
 }
 
@@ -615,7 +652,7 @@ export function rejectPollutedRequestQuery(req, _res, next) {
       const rawQuery = req.url.slice(qIdx + 1);
       const offending = scanRawQueryForForbiddenKey(rawQuery);
       if (offending !== null) {
-        throw new AppError(`${ERROR_MESSAGE_PREFIX} forbidden key "${offending}"`, 400);
+        throw new RequestBodySecurityError(`forbidden key "${offending}"`);
       }
     }
 
@@ -687,7 +724,7 @@ function detectDuplicateUrlEncodedKeys(raw) {
       key = rawKey;
     }
     if (seen.has(key)) {
-      throw new AppError(`${ERROR_MESSAGE_PREFIX} duplicate urlencoded key "${key}"`, 400);
+      throw new RequestBodySecurityError(`duplicate urlencoded key "${key}"`);
     }
     seen.add(key);
   }
@@ -720,7 +757,7 @@ export function verifyUrlEncodedBody(req, _res, buffer) {
       message: sanitizeForLog(error?.message, 256),
       stack: sanitizeForLog(error?.stack, 2048),
     });
-    throw new AppError(`${ERROR_MESSAGE_PREFIX} scanner failure`, 400);
+    throw new RequestBodySecurityError(`scanner failure`);
   }
 }
 
@@ -753,7 +790,11 @@ export const __TESTING_ONLY_JsonScanner =
   String(process.env.NODE_ENV ?? '').toLowerCase() === 'test' ? JsonScanner : undefined;
 
 export function requestBodySecurityErrorHandler(err, req, res, next) {
-  if (typeof err?.message !== 'string' || !err.message.startsWith(ERROR_MESSAGE_PREFIX)) {
+  // 21R-SEC-6 (Equoria-tpbu): dispatch by sentinel-class marker, not by
+  // string-prefix match on the message. The marker is a Symbol.for(...)
+  // tag that survives module-cache duplication, so this stays correct
+  // even when test code loads two copies of this module via mocking.
+  if (!RequestBodySecurityError.isRequestBodySecurityError(err)) {
     return next(err);
   }
 
