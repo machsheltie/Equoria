@@ -21,23 +21,41 @@
 import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Loader2, AlertCircle, ArrowLeft, Wrench } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
 import { Button } from '@/components/ui/button';
 import { useEquippable } from '@/hooks/api/useEquippable';
 import { useEquipFeed, useUnequipFeed } from '@/hooks/api/useEquipFeed';
 import { useEquipItem, useUnequipItem } from '@/hooks/api/useInventory';
+import { useFeedCatalog } from '@/hooks/api/useFeedShop';
 import { FeedItem } from '@/lib/api-client';
+
+const FEED_IMAGES: Record<FeedItem['id'], string> = {
+  basic: '/images/feed/basicfeed.png',
+  performance: '/images/feed/performancefeed.png',
+  performancePlus: '/images/feed/performanceplusfeed.png',
+  highPerformance: '/images/feed/highperformancefeed.png',
+  elite: '/images/feed/elitefeed.png',
+};
 
 const HorseEquipPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const horseId = Number(id);
   const navigate = useNavigate();
   const { data, isLoading, isError } = useEquippable(horseId);
+  const { data: catalog } = useFeedCatalog();
   const equipFeed = useEquipFeed(horseId);
   const unequipFeed = useUnequipFeed(horseId);
   const equipItem = useEquipItem();
   const unequipItem = useUnequipItem();
+
+  const catalogById = React.useMemo(() => {
+    const map: Partial<Record<FeedItem['id'], FeedItem>> = {};
+    (catalog ?? []).forEach((c) => {
+      map[c.id] = c;
+    });
+    return map;
+  }, [catalog]);
 
   if (isLoading) {
     return (
@@ -69,7 +87,7 @@ const HorseEquipPage: React.FC = () => {
         </button>
       </PageHero>
 
-      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-8">
         {/* Tack section */}
         <section data-testid="tack-section">
           <h2 className="text-lg font-bold text-[var(--cream)] mb-3">Tack</h2>
@@ -82,7 +100,7 @@ const HorseEquipPage: React.FC = () => {
               .
             </p>
           ) : (
-            <ul className="space-y-3">
+            <ul className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {data.tack.map((item) => {
                 const isEquipped = item.equippedToHorseId === horseId;
                 const pendingThisItem =
@@ -91,61 +109,77 @@ const HorseEquipPage: React.FC = () => {
                 return (
                   <li
                     key={item.id}
-                    className="glass-panel flex items-center justify-between gap-3"
+                    className="bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] rounded-xl p-5 flex gap-4"
                     data-testid={`tack-item-${item.id}`}
                   >
-                    <div>
+                    <div className="shrink-0 w-24 h-24 sm:w-32 sm:h-32 lg:w-[200px] lg:h-[200px] rounded-lg bg-black/20 flex items-center justify-center text-[var(--text-muted)]">
+                      <Wrench className="w-10 h-10 sm:w-14 sm:h-14 lg:w-20 lg:h-20" />
+                    </div>
+                    <div className="flex-1 min-w-0 flex flex-col">
                       {isEquipped && (
-                        <p className="text-xs text-[var(--gold-light)] uppercase tracking-wide font-semibold">
+                        <p className="text-xs text-[var(--gold-light)] uppercase tracking-wide font-semibold mb-1">
                           Currently equipped
                         </p>
                       )}
-                      <p className="font-bold text-[var(--cream)] text-sm">{item.name}</p>
+                      <h3 className="font-bold text-[var(--cream)]">{item.name}</h3>
+                      <p className="text-xs text-[var(--text-muted)] mt-0.5 capitalize">
+                        {item.category}
+                      </p>
                       {item.bonus && (
-                        <p className="text-xs text-[var(--gold-light)] mt-0.5">{item.bonus}</p>
+                        <p className="text-sm text-[var(--text-secondary)] mt-3">{item.bonus}</p>
                       )}
+                      <div className="mt-auto pt-4">
+                        {isEquipped ? (
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              unequipItem.mutate(
+                                { inventoryItemId: item.id },
+                                {
+                                  onSuccess: () => toast.success(`Unequipped ${item.name}.`),
+                                  onError: (err) =>
+                                    toast.error(
+                                      (err as { message?: string })?.message ?? 'Failed to unequip.'
+                                    ),
+                                }
+                              )
+                            }
+                            disabled={pendingThisItem}
+                            data-testid={`unequip-tack-${item.id}`}
+                          >
+                            {pendingThisItem ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              'Unequip'
+                            )}
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              equipItem.mutate(
+                                { inventoryItemId: item.id, horseId },
+                                {
+                                  onSuccess: () => toast.success(`Equipped ${item.name}.`),
+                                  onError: (err) =>
+                                    toast.error(
+                                      (err as { message?: string })?.message ?? 'Failed to equip.'
+                                    ),
+                                }
+                              )
+                            }
+                            disabled={pendingThisItem}
+                            data-testid={`equip-tack-${item.id}`}
+                          >
+                            {pendingThisItem ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              'Equip'
+                            )}
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                    {isEquipped ? (
-                      <Button
-                        size="sm"
-                        onClick={() =>
-                          unequipItem.mutate(
-                            { inventoryItemId: item.id },
-                            {
-                              onSuccess: () => toast.success(`Unequipped ${item.name}.`),
-                              onError: (err) =>
-                                toast.error(
-                                  (err as { message?: string })?.message ?? 'Failed to unequip.'
-                                ),
-                            }
-                          )
-                        }
-                        disabled={pendingThisItem}
-                        data-testid={`unequip-tack-${item.id}`}
-                      >
-                        {pendingThisItem ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Unequip'}
-                      </Button>
-                    ) : (
-                      <Button
-                        size="sm"
-                        onClick={() =>
-                          equipItem.mutate(
-                            { inventoryItemId: item.id, horseId },
-                            {
-                              onSuccess: () => toast.success(`Equipped ${item.name}.`),
-                              onError: (err) =>
-                                toast.error(
-                                  (err as { message?: string })?.message ?? 'Failed to equip.'
-                                ),
-                            }
-                          )
-                        }
-                        disabled={pendingThisItem}
-                        data-testid={`equip-tack-${item.id}`}
-                      >
-                        {pendingThisItem ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Equip'}
-                      </Button>
-                    )}
                   </li>
                 );
               })}
@@ -172,75 +206,100 @@ const HorseEquipPage: React.FC = () => {
               </Button>
             </div>
           ) : (
-            <ul className="space-y-3">
+            <ul className="grid grid-cols-1 lg:grid-cols-2 gap-4">
               {data.feed.map((f) => {
                 const isEquipped = f.isCurrentlyEquippedToThisHorse;
+                const tierId = f.feedType as FeedItem['id'];
+                const meta = catalogById[tierId];
                 return (
                   <li
                     key={f.feedType}
-                    className="glass-panel flex items-center justify-between gap-3"
+                    className="bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] rounded-xl p-5 flex gap-4"
                     data-testid={isEquipped ? 'equipped-feed-card' : `feed-item-${f.feedType}`}
                   >
-                    <div>
+                    <img
+                      src={FEED_IMAGES[tierId]}
+                      alt={`${f.name} feed bag`}
+                      loading="lazy"
+                      className="shrink-0 w-24 h-24 sm:w-32 sm:h-32 lg:w-[200px] lg:h-[200px] object-contain rounded-lg bg-black/20"
+                    />
+                    <div className="flex-1 min-w-0 flex flex-col">
                       {isEquipped && (
-                        <p className="text-xs text-[var(--gold-light)] uppercase tracking-wide font-semibold">
+                        <p className="text-xs text-[var(--gold-light)] uppercase tracking-wide font-semibold mb-1">
                           Currently equipped
                         </p>
                       )}
-                      <p
-                        className="font-bold text-[var(--cream)] text-sm"
+                      <h3
+                        className="font-bold text-[var(--cream)]"
                         data-testid={isEquipped ? 'equipped-feed-name' : undefined}
                       >
                         {f.name}
-                      </p>
-                      <p className="text-xs text-[var(--text-muted)]">
+                      </h3>
+                      <p className="text-xs text-[var(--text-muted)] mt-0.5">
                         {f.quantity} units in stock
                       </p>
-                    </div>
-                    {isEquipped ? (
-                      <Button
-                        size="sm"
-                        onClick={() =>
-                          unequipFeed.mutate(undefined, {
-                            onSuccess: () => toast.success('Unequipped.'),
-                            onError: (err) =>
-                              toast.error(
-                                (err as { message?: string })?.message ?? 'Failed to unequip.'
-                              ),
-                          })
-                        }
-                        disabled={unequipFeed.isPending}
-                        data-testid="unequip-feed-button"
-                      >
-                        {unequipFeed.isPending ? (
-                          <Loader2 className="w-3 h-3 animate-spin" />
+                      {meta?.description && (
+                        <p className="text-sm text-[var(--text-secondary)] mt-3">
+                          {meta.description}
+                        </p>
+                      )}
+                      {meta && (
+                        <div className="text-xs text-[var(--text-muted)] mt-3 space-y-0.5">
+                          <div>
+                            Stat-boost roll: <strong>{meta.statRollPct}%</strong>
+                          </div>
+                          <div>
+                            Pregnancy bonus: <strong>+{meta.pregnancyBonusPct}%</strong>
+                          </div>
+                        </div>
+                      )}
+                      <div className="mt-auto pt-4">
+                        {isEquipped ? (
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              unequipFeed.mutate(undefined, {
+                                onSuccess: () => toast.success('Unequipped.'),
+                                onError: (err) =>
+                                  toast.error(
+                                    (err as { message?: string })?.message ?? 'Failed to unequip.'
+                                  ),
+                              })
+                            }
+                            disabled={unequipFeed.isPending}
+                            data-testid="unequip-feed-button"
+                          >
+                            {unequipFeed.isPending ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              'Unequip'
+                            )}
+                          </Button>
                         ) : (
-                          'Unequip'
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              equipFeed.mutate(tierId, {
+                                onSuccess: () =>
+                                  toast.success(
+                                    currentlyEquippedFeed
+                                      ? `Switched to ${f.name}.`
+                                      : `Equipped ${f.name}.`
+                                  ),
+                                onError: (err) =>
+                                  toast.error(
+                                    (err as { message?: string })?.message ?? 'Failed to equip.'
+                                  ),
+                              })
+                            }
+                            disabled={equipFeed.isPending}
+                            data-testid={`equip-feed-${f.feedType}`}
+                          >
+                            Equip
+                          </Button>
                         )}
-                      </Button>
-                    ) : (
-                      <Button
-                        size="sm"
-                        onClick={() =>
-                          equipFeed.mutate(f.feedType as FeedItem['id'], {
-                            onSuccess: () =>
-                              toast.success(
-                                currentlyEquippedFeed
-                                  ? `Switched to ${f.name}.`
-                                  : `Equipped ${f.name}.`
-                              ),
-                            onError: (err) =>
-                              toast.error(
-                                (err as { message?: string })?.message ?? 'Failed to equip.'
-                              ),
-                          })
-                        }
-                        disabled={equipFeed.isPending}
-                        data-testid={`equip-feed-${f.feedType}`}
-                      >
-                        Equip
-                      </Button>
-                    )}
+                      </div>
+                    </div>
                   </li>
                 );
               })}
