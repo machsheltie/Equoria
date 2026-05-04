@@ -228,7 +228,15 @@ describe('forumController (real DB)', () => {
     it('creates reply, updates lastActivityAt, returns 201', async () => {
       const user = await createUser();
       const thread = await createThreadInDb(user.id);
-      const before = thread.lastActivityAt;
+      // Anchor lastActivityAt to a known past time so the controller's update
+      // is unambiguously later. Comparing the schema-default Postgres now() to
+      // the controller's JS new Date() at ms resolution is racy across the
+      // SQL/JS clock boundary.
+      const pastAnchor = new Date(Date.now() - 60_000);
+      await prisma.forumThread.update({
+        where: { id: thread.id },
+        data: { lastActivityAt: pastAnchor },
+      });
 
       const h = makeReqRes(user.id, {
         params: { id: String(thread.id) },
@@ -239,9 +247,9 @@ describe('forumController (real DB)', () => {
       expect(h.res.statusValue).toBe(201);
       expect(h.res.jsonValue.data.post.content).toBe('Reply content');
 
-      // Verify thread.lastActivityAt advanced.
+      // Verify thread.lastActivityAt advanced past the anchor.
       const after = await prisma.forumThread.findUnique({ where: { id: thread.id } });
-      expect(after.lastActivityAt.getTime()).toBeGreaterThanOrEqual(before.getTime());
+      expect(after.lastActivityAt.getTime()).toBeGreaterThan(pastAnchor.getTime());
     });
 
     it('returns 404 when thread does not exist', async () => {
