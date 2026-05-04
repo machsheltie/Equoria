@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import jwt from 'jsonwebtoken';
 import config from '../../config/config.mjs';
 
@@ -41,13 +42,17 @@ export const authHeader = token => {
  * Create test user data for registration/login tests
  */
 export const createTestUser = (overrides = {}) => {
-  const timestamp = Date.now();
-  const randomSuffix = Math.random().toString(36).substring(2, 8);
+  // randomBytes(8).toString('hex') replaces Date.now()+Math.random() to eliminate
+  // the same-millisecond collision class that flakes parallel real-DB suites
+  // (Math.random().toString(36) returns variable-length strings — unlucky values
+  // shrink the random suffix to 1 char of entropy). Matches the canonical
+  // pattern documented in __tests__/setup.mjs:96-110 (Equoria-3gti).
+  const uid = randomBytes(8).toString('hex');
   return {
-    username: `testuser_${timestamp}_${randomSuffix}`,
+    username: `testuser_${uid}`,
     firstName: 'Test',
     lastName: 'User',
-    email: `test_${timestamp}_${randomSuffix}@example.com`,
+    email: `test_${uid}@example.com`,
     password: 'TestPassword123!',
     money: 1000, // Added default money
     ...overrides,

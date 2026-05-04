@@ -37,6 +37,7 @@
  *    flows with actual HTTP requests, database operations, and security validation.
  */
 
+import { randomBytes } from 'crypto';
 import request from 'supertest';
 import express from 'express';
 import cookieParser from 'cookie-parser';
@@ -137,11 +138,10 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
 
   describe('User Registration', () => {
     it('should register a new user successfully', async () => {
-      const timestamp = Date.now();
-      const randomSuffix = Math.random().toString(36).substring(2, 8);
+      const uid = randomBytes(8).toString('hex');
       const userData = {
-        username: `authtestuser_${timestamp}_${randomSuffix}`,
-        email: `authtest-register_${timestamp}_${randomSuffix}@example.com`,
+        username: `authtestuser_${uid}`,
+        email: `authtest-register_${uid}@example.com`,
         password: 'TestPassword123!',
         firstName: 'Auth',
         lastName: 'User',
@@ -172,11 +172,10 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
     });
 
     it('should reject duplicate email registration', async () => {
-      const timestamp = Date.now();
-      const randomSuffix = Math.random().toString(36).substring(2, 8);
+      const uid = randomBytes(8).toString('hex');
       const userData = {
-        username: `authtestdupe_${timestamp}_${randomSuffix}`,
-        email: `authtest-duplicate_${timestamp}_${randomSuffix}@example.com`,
+        username: `authtestdupe_${uid}`,
+        email: `authtest-duplicate_${uid}@example.com`,
         password: 'TestPassword123!',
         firstName: 'Auth',
         lastName: 'User',
@@ -208,12 +207,11 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
     let loginPassword;
     beforeEach(async () => {
       // Create a test user for login tests
-      const timestamp = Date.now();
-      const randomSuffix = Math.random().toString(36).substring(2, 8);
-      loginEmail = `authtest-login_${timestamp}_${randomSuffix}@example.com`;
+      const uid = randomBytes(8).toString('hex');
+      loginEmail = `authtest-login_${uid}@example.com`;
       loginPassword = 'TestPassword123!';
       const userData = {
-        username: `authtestlogin_${timestamp}_${randomSuffix}`,
+        username: `authtestlogin_${uid}`,
         email: loginEmail,
         password: loginPassword,
         firstName: 'Auth',
@@ -274,11 +272,10 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
 
     beforeEach(async () => {
       // Create user and get refresh token
-      const timestamp = Date.now();
-      const randomSuffix = Math.random().toString(36).substring(2, 8);
+      const uid = randomBytes(8).toString('hex');
       const userData = {
-        username: `authtesttoken_${timestamp}_${randomSuffix}`,
-        email: `authtest-token_${timestamp}_${randomSuffix}@example.com`,
+        username: `authtesttoken_${uid}`,
+        email: `authtest-token_${uid}@example.com`,
         password: 'TestPassword123!',
         firstName: 'Auth',
         lastName: 'User',
@@ -341,11 +338,10 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
 
     beforeEach(async () => {
       // Create user and generate auth token using helper
-      const timestamp = Date.now();
-      const randomSuffix = Math.random().toString(36).substring(2, 8);
+      const uid = randomBytes(8).toString('hex');
       const userData = {
-        username: `authtestprotected_${timestamp}_${randomSuffix}`,
-        email: `authtest-protected_${timestamp}_${randomSuffix}@example.com`,
+        username: `authtestprotected_${uid}`,
+        email: `authtest-protected_${uid}@example.com`,
         password: 'TestPassword123!',
         firstName: 'Auth',
         lastName: 'User',

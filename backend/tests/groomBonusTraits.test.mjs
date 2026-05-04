@@ -15,6 +15,7 @@
  * Testing approach: Real database operations with zero mocking to validate actual business logic
  */
 
+import { randomBytes } from 'crypto';
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
@@ -38,9 +39,9 @@ describe('Groom Bonus Traits System', () => {
     // Unique-per-row suffix prevents same-millisecond collisions when
     // a prior run aborted leaving stale `TestBreed_<ts>` rows AND
     // protects against parallel-shard races re-using the same Date.now().
-    // Date.now() alone has hit the breed.name unique constraint in CI.
-    const uid = () =>
-      `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).substring(2, 10)}`;
+    // randomBytes(8).toString('hex') matches canonical pattern in
+    // __tests__/setup.mjs:96-110 (Equoria-3gti) — eliminates collision class.
+    const uid = () => randomBytes(8).toString('hex');
 
     // Create test breed first
     testBreed = await prisma.breed.create({

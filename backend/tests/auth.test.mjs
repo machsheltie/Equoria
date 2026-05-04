@@ -208,7 +208,10 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
       loginEmail = userData.email;
       loginPassword = userData.password;
 
-      const response = await authPost('/api/auth/register').send(userData);
+      // .expect(201) ensures any register failure (collision, validation, etc.)
+      // fails the test loudly here instead of silently leaking into a misleading
+      // 401 on the login assertion below.
+      const response = await authPost('/api/auth/register').send(userData).expect(201);
       trackUser(response);
     });
 

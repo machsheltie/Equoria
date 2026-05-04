@@ -1,3 +1,4 @@
+import { randomBytes } from 'crypto';
 import { generateTestToken } from './authHelper.mjs';
 import supertest from 'supertest';
 import app from '../../app.mjs';
@@ -86,13 +87,14 @@ export async function createTestUser(userData = {}) {
   try {
     console.log('[createTestUser] Starting user creation...');
 
-    const timestamp = Date.now();
-    const randomSuffix = Math.random().toString(36).substring(2, 8);
+    // randomBytes(8).toString('hex') eliminates same-millisecond collisions
+    // under parallel real-DB execution (see authHelper.mjs comment).
+    const uid = randomBytes(8).toString('hex');
     const defaultData = {
-      username: `testuser_${timestamp}_${randomSuffix}`,
+      username: `testuser_${uid}`,
       firstName: 'Test',
       lastName: 'User',
-      email: `test_${timestamp}_${randomSuffix}@example.com`,
+      email: `test_${uid}@example.com`,
       password: 'TestPassword123!',
       money: 5000,
       xp: 100,
@@ -177,10 +179,11 @@ export async function createTestHorse(horseData = {}) {
     });
   }
 
-  const timestamp = Date.now();
-  const randomSuffix = Math.random().toString(36).substring(2, 8);
+  // randomBytes(8).toString('hex') eliminates same-millisecond collisions
+  // under parallel real-DB execution (see authHelper.mjs comment).
+  const horseUid = randomBytes(8).toString('hex');
   const defaultData = {
-    name: `TestHorse_${timestamp}_${randomSuffix}`,
+    name: `TestHorse_${horseUid}`,
     breed: { connect: { id: breed.id } },
     age: 5,
     sex: 'Female',
