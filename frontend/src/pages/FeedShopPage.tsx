@@ -55,6 +55,17 @@ const FeedShopPage: React.FC = () => {
         </div>
       </PageHero>
 
+      {/* Banner image in glass card */}
+      <div className="max-w-[52rem] mx-auto px-4 sm:px-6 lg:px-8 pt-1 pb-4">
+        <div className="p-5 rounded-2xl bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] shadow-lg shadow-black/20">
+          <img
+            src="/images/feedstore.webp"
+            alt="Starlight Feeds — a warm feed shop with wooden shelves of grain and supplements"
+            className="w-full h-auto rounded-xl"
+          />
+        </div>
+      </div>
+
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {isLoading && (
           <div className="flex justify-center py-16" data-testid="feed-shop-loading">
