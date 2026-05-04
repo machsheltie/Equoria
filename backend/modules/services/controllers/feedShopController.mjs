@@ -79,7 +79,9 @@ export async function getFeedCatalog(_req, res) {
  * Read inventory array from User.settings, defaulting to empty array.
  */
 function getInventoryFromSettings(settings) {
-  if (!settings || typeof settings !== 'object') return [];
+  if (!settings || typeof settings !== 'object') {
+    return [];
+  }
   return Array.isArray(settings.inventory) ? settings.inventory : [];
 }
 

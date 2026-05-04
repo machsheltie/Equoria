@@ -13,7 +13,7 @@
 // any mocks. validateConformationEntry queries prisma.groomAssignment.findFirst
 // internally — that section creates real users + horses + grooms + assignments.
 
-import { afterAll, afterEach, beforeAll, beforeEach } from '@jest/globals';
+import { afterAll, beforeAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../db/index.mjs';
 import {

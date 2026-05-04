@@ -46,7 +46,9 @@ const STATS = [
 const TIER_BY_ID = Object.fromEntries(FEED_CATALOG.map(t => [t.id, t]));
 
 function getInventory(settings) {
-  if (!settings || typeof settings !== 'object') return [];
+  if (!settings || typeof settings !== 'object') {
+    return [];
+  }
   return Array.isArray(settings.inventory) ? settings.inventory : [];
 }
 
@@ -63,8 +65,12 @@ function getInventory(settings) {
  */
 export function rollStatBoost(feedTier, rng = Math.random) {
   const tier = TIER_BY_ID[feedTier];
-  if (!tier || tier.statRollPct === 0) return null;
-  if (rng() * 100 >= tier.statRollPct) return null;
+  if (!tier || tier.statRollPct === 0) {
+    return null;
+  }
+  if (rng() * 100 >= tier.statRollPct) {
+    return null;
+  }
   const stat = STATS[Math.floor(rng() * STATS.length)];
   return { stat, amount: 1 };
 }
@@ -111,7 +117,7 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
       e.status = 404;
       throw e;
     }
-    if (horse.age != null && horse.age >= 21) {
+    if (horse.age !== null && horse.age !== undefined && horse.age >= 21) {
       return { kind: 'retired', horse };
     }
     if (!horse.equippedFeedType) {

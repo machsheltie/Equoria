@@ -258,7 +258,7 @@ describe('Equip / Unequip feed endpoints', () => {
       // If these diverge, the attacker can enumerate horse IDs.
       const csrfMissing = await fetchCsrf(app);
       const resMissing = await request(app)
-        .post(`/api/horses/999999999/equip-feed`)
+        .post('/api/horses/999999999/equip-feed')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${otherToken}`)
         .set('Cookie', csrfMissing.cookieHeader)

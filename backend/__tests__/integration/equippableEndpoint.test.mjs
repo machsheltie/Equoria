@@ -245,7 +245,7 @@ describe('GET /api/horses/:id/equippable', () => {
 
       // CWE-639 sentinel: not-owned response equals not-found response.
       const resMissing = await request(app)
-        .get(`/api/horses/999999999/equippable`)
+        .get('/api/horses/999999999/equippable')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${otherToken}`);
       expect(resMissing.status).toBe(404);

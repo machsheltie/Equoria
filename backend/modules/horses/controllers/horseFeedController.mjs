@@ -27,7 +27,9 @@ const VALID_TIERS = new Set(FEED_CATALOG.map(t => t.id));
  * Read inventory array from User.settings, defaulting to empty array.
  */
 function getInventory(settings) {
-  if (!settings || typeof settings !== 'object') return [];
+  if (!settings || typeof settings !== 'object') {
+    return [];
+  }
   return Array.isArray(settings.inventory) ? settings.inventory : [];
 }
 
@@ -159,7 +161,12 @@ export async function getEquippableHandler(req, res) {
 
     const tack = inventory
       .filter(i => i.category !== 'feed')
-      .filter(i => i.equippedToHorseId == null || i.equippedToHorseId === horse.id);
+      .filter(
+        i =>
+          i.equippedToHorseId === null ||
+          i.equippedToHorseId === undefined ||
+          i.equippedToHorseId === horse.id,
+      );
 
     const feed = inventory
       .filter(i => i.category === 'feed')

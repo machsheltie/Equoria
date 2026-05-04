@@ -264,9 +264,13 @@ describe('horseStarterStats — generateStoreStats output for a known breed', ()
     for (let i = 0; i < 1000; i++) {
       const stats = generateStoreStats(KNOWN_BREED);
       const total = Object.values(stats).reduce((s, v) => s + v, 0);
-      if (total > maxTotal) maxTotal = total;
+      if (total > maxTotal) {
+        maxTotal = total;
+      }
       for (const v of Object.values(stats)) {
-        if (v < minStat) minStat = v;
+        if (v < minStat) {
+          minStat = v;
+        }
       }
       expect(total).toBeLessThanOrEqual(TOTAL_STAT_CAP);
     }
@@ -303,8 +307,9 @@ describe('horseStarterStats — data contract (every breed in the JSON)', () => 
     }
     if (incompleteBreeds.length > 0) {
       throw new Error(
-        `Found ${incompleteBreeds.length} breeds with incomplete profiles:\n` +
-          incompleteBreeds.map(b => `  ${b.breedName}: missing ${b.missing.join(', ')}`).join('\n'),
+        `Found ${incompleteBreeds.length} breeds with incomplete profiles:\n${incompleteBreeds
+          .map(b => `  ${b.breedName}: missing ${b.missing.join(', ')}`)
+          .join('\n')}`,
       );
     }
   });

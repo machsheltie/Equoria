@@ -22,7 +22,7 @@
  * @module __tests__/unit/security/validate-environment
  */
 
-import { describe, it, expect, jest, beforeAll, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import { validateEnvironment } from '../../../utils/validateEnvironment.mjs';
 
 const originalEnv = { ...process.env };

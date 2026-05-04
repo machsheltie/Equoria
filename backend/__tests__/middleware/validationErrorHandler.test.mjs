@@ -21,7 +21,7 @@
  * @module __tests__/middleware/validationErrorHandler
  */
 
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 import { body, query, param } from 'express-validator';
 import { handleValidationErrors, sanitizeRequestData } from '../../middleware/validationErrorHandler.mjs';
 

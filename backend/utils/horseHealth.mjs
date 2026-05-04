@@ -25,7 +25,9 @@ export function startOfUtcDay(date) {
  * @returns {boolean}
  */
 export function alreadyFedToday(lastFedDate, now = new Date()) {
-  if (!lastFedDate) return false;
+  if (!lastFedDate) {
+    return false;
+  }
   return startOfUtcDay(lastFedDate).getTime() === startOfUtcDay(now).getTime();
 }
 
@@ -48,16 +50,28 @@ export function alreadyFedToday(lastFedDate, now = new Date()) {
  * @returns {'excellent'|'good'|'fair'|'poor'|'critical'|'retired'}
  */
 export function getFeedHealth(horse, now = new Date()) {
-  if (horse.age != null && horse.age >= 21) return 'retired';
-  if (!horse.lastFedDate) return 'critical';
+  if (horse.age !== null && horse.age !== undefined && horse.age >= 21) {
+    return 'retired';
+  }
+  if (!horse.lastFedDate) {
+    return 'critical';
+  }
 
   const days = Math.floor(
     (startOfUtcDay(now).getTime() - startOfUtcDay(horse.lastFedDate).getTime()) / MS_PER_DAY,
   );
-  if (days <= 2) return 'excellent';
-  if (days <= 4) return 'good';
-  if (days <= 6) return 'fair';
-  if (days <= 8) return 'poor';
+  if (days <= 2) {
+    return 'excellent';
+  }
+  if (days <= 4) {
+    return 'good';
+  }
+  if (days <= 6) {
+    return 'fair';
+  }
+  if (days <= 8) {
+    return 'poor';
+  }
   return 'critical';
 }
 
@@ -90,7 +104,9 @@ function normalizeHealthOverride(healthStatus) {
  * @returns {string}
  */
 export function worseOf(a, b) {
-  if (a === 'retired' || b === 'retired') return 'retired';
+  if (a === 'retired' || b === 'retired') {
+    return 'retired';
+  }
   const ai = BAND_ORDER.indexOf(a);
   const bi = BAND_ORDER.indexOf(b);
   return BAND_ORDER[Math.max(ai, bi)];
@@ -115,17 +131,31 @@ export function worseOf(a, b) {
  * @returns {'excellent'|'good'|'fair'|'poor'|'critical'|'retired'}
  */
 export function getVetHealth(horse, now = new Date()) {
-  if (horse.age != null && horse.age >= 21) return 'retired';
-  if (horse.healthStatus != null) return normalizeHealthOverride(horse.healthStatus);
-  if (!horse.lastVettedDate) return 'critical';
+  if (horse.age !== null && horse.age !== undefined && horse.age >= 21) {
+    return 'retired';
+  }
+  if (horse.healthStatus !== null && horse.healthStatus !== undefined) {
+    return normalizeHealthOverride(horse.healthStatus);
+  }
+  if (!horse.lastVettedDate) {
+    return 'critical';
+  }
 
   const days = Math.floor(
     (startOfUtcDay(now).getTime() - startOfUtcDay(horse.lastVettedDate).getTime()) / MS_PER_DAY,
   );
-  if (days <= 7) return 'excellent';
-  if (days <= 14) return 'good';
-  if (days <= 21) return 'fair';
-  if (days <= 28) return 'poor';
+  if (days <= 7) {
+    return 'excellent';
+  }
+  if (days <= 14) {
+    return 'good';
+  }
+  if (days <= 21) {
+    return 'fair';
+  }
+  if (days <= 28) {
+    return 'poor';
+  }
   return 'critical';
 }
 
@@ -157,7 +187,9 @@ export function getDisplayedHealth(horse, now = new Date()) {
  * @returns {T & { feedHealth: string, vetHealth: string, displayedHealth: string }}
  */
 export function withHealth(horse, now = new Date()) {
-  if (!horse || typeof horse !== 'object') return horse;
+  if (!horse || typeof horse !== 'object') {
+    return horse;
+  }
   return {
     ...horse,
     feedHealth: getFeedHealth(horse, now),

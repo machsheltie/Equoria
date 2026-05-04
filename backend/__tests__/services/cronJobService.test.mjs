@@ -33,7 +33,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterEach, afterAll, beforeEach } from '@jest/globals';
-import { createTestUser, createTestRefreshToken } from '../setup.mjs';
+import { createTestRefreshToken } from '../setup.mjs';
 import prisma from '../../db/index.mjs';
 import { randomBytes } from 'node:crypto';
 import {

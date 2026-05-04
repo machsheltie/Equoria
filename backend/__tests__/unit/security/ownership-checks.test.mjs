@@ -26,7 +26,7 @@
  * @module __tests__/unit/security/ownership-checks
  */
 
-import { describe, it, expect, beforeEach, afterEach, afterAll, beforeAll } from '@jest/globals';
+import { describe, it, expect, afterEach, afterAll, beforeAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../db/index.mjs';
 import { requireOwnership, findOwnedResource, validateBatchOwnership } from '../../../middleware/ownership.mjs';

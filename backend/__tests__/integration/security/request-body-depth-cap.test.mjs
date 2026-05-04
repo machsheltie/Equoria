@@ -25,16 +25,24 @@ const ENDPOINT = '/api/v1/auth/login';
 
 function buildDeepArray(depth) {
   let s = '';
-  for (let i = 0; i < depth; i++) s += '[';
-  for (let i = 0; i < depth; i++) s += ']';
+  for (let i = 0; i < depth; i++) {
+    s += '[';
+  }
+  for (let i = 0; i < depth; i++) {
+    s += ']';
+  }
   return s;
 }
 
 function buildDeepObject(depth) {
   let s = '';
-  for (let i = 0; i < depth; i++) s += '{"a":';
+  for (let i = 0; i < depth; i++) {
+    s += '{"a":';
+  }
   s += 'null';
-  for (let i = 0; i < depth; i++) s += '}';
+  for (let i = 0; i < depth; i++) {
+    s += '}';
+  }
   return s;
 }
 

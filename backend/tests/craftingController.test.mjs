@@ -19,7 +19,7 @@
  *   - "craftItem returns 500 on unexpected error" — same reason.
  */
 
-import { describe, beforeAll, beforeEach, afterAll, expect, it } from '@jest/globals';
+import { describe, beforeAll, afterAll, expect, it } from '@jest/globals';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../packages/database/prismaClient.mjs';

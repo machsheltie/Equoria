@@ -43,8 +43,12 @@ const LOGGER_PATH = '../../../utils/logger.mjs';
 
 function buildDeepArrayBuffer(depth) {
   let s = '';
-  for (let i = 0; i < depth; i++) s += '[';
-  for (let i = 0; i < depth; i++) s += ']';
+  for (let i = 0; i < depth; i++) {
+    s += '[';
+  }
+  for (let i = 0; i < depth; i++) {
+    s += ']';
+  }
   return Buffer.from(s, 'utf8');
 }
 

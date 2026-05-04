@@ -135,7 +135,9 @@ async function cleanupSuite() {
     where: { id: { startsWith: SUITE_PREFIX } },
     select: { id: true },
   });
-  if (users.length === 0) return;
+  if (users.length === 0) {
+    return;
+  }
   const userIds = users.map(u => u.id);
   const horses = await prisma.horse.findMany({
     where: { userId: { in: userIds } },

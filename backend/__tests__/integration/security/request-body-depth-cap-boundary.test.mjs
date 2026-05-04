@@ -54,9 +54,13 @@ const MAX_DEPTH = DEFAULT_MAX_DEPTH; // env var unset in this suite → resolves
 // scanValue is called at depths 0..N, so the max depth check is N.
 function buildArrayBufferNonEmptyLeaf(n) {
   let s = '';
-  for (let i = 0; i < n; i++) s += '[';
+  for (let i = 0; i < n; i++) {
+    s += '[';
+  }
   s += 'null';
-  for (let i = 0; i < n; i++) s += ']';
+  for (let i = 0; i < n; i++) {
+    s += ']';
+  }
   return Buffer.from(s, 'utf8');
 }
 
@@ -65,9 +69,13 @@ function buildArrayBufferNonEmptyLeaf(n) {
 // Same depth math as the array version.
 function buildObjectBufferNonEmptyLeaf(n) {
   let s = '';
-  for (let i = 0; i < n; i++) s += '{"a":';
+  for (let i = 0; i < n; i++) {
+    s += '{"a":';
+  }
   s += 'null';
-  for (let i = 0; i < n; i++) s += '}';
+  for (let i = 0; i < n; i++) {
+    s += '}';
+  }
   return Buffer.from(s, 'utf8');
 }
 
@@ -77,7 +85,9 @@ function buildObjectBufferNonEmptyLeaf(n) {
 // assertNoPollutingKeys for parity comparisons.
 function buildParsedArrayNonEmptyLeaf(n) {
   let val = null;
-  for (let i = 0; i < n; i++) val = [val];
+  for (let i = 0; i < n; i++) {
+    val = [val];
+  }
   return val;
 }
 
@@ -85,7 +95,9 @@ function buildParsedArrayNonEmptyLeaf(n) {
 // innermost leaf. Mirrors buildObjectBufferNonEmptyLeaf.
 function buildParsedObjectNonEmptyLeaf(n) {
   let val = null;
-  for (let i = 0; i < n; i++) val = { a: val };
+  for (let i = 0; i < n; i++) {
+    val = { a: val };
+  }
   return val;
 }
 
@@ -100,7 +112,9 @@ function runRejectPolluted(body) {
   const req = { body };
   let captured = null;
   rejectPollutedRequestBody(req, {}, err => {
-    if (err) captured = err;
+    if (err) {
+      captured = err;
+    }
   });
   return captured;
 }
@@ -192,7 +206,9 @@ describe('Depth-cap boundary (21R-SEC-3-REVIEW-2)', () => {
         try {
           verifyJsonBody(makeReq(), {}, buildArrayBufferNonEmptyLeaf(n));
         } catch (e) {
-          if (e?.message?.match(/nesting too deep/i)) scannerThrew = true;
+          if (e?.message?.match(/nesting too deep/i)) {
+            scannerThrew = true;
+          }
         }
         const assertErr = runRejectPolluted(buildParsedArrayNonEmptyLeaf(n));
         const assertRejected = !!assertErr?.message?.match(/nesting too deep/i);
@@ -204,7 +220,9 @@ describe('Depth-cap boundary (21R-SEC-3-REVIEW-2)', () => {
         try {
           verifyJsonBody(makeReq(), {}, buildObjectBufferNonEmptyLeaf(n));
         } catch (e) {
-          if (e?.message?.match(/nesting too deep/i)) scannerThrew = true;
+          if (e?.message?.match(/nesting too deep/i)) {
+            scannerThrew = true;
+          }
         }
         const assertErr = runRejectPolluted(buildParsedObjectNonEmptyLeaf(n));
         const assertRejected = !!assertErr?.message?.match(/nesting too deep/i);
