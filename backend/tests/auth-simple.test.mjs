@@ -142,7 +142,7 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
     const cookies = response.headers['set-cookie'];
     expect(cookies.some(cookie => cookie.startsWith('accessToken='))).toBe(true);
     expect(cookies.some(cookie => cookie.startsWith('refreshToken='))).toBe(true);
-  }, 10000);
+  }, 30000); // bumped from 10000: real-DB register/login includes bcrypt(12), refresh-token issue, csrf seed, passwordChangedAt cache, and unique-constraint check against accumulated test-fixture DB (~1500+ users)
 
   it('should login with valid credentials', async () => {
     // First register a user
@@ -175,5 +175,5 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
     const cookies = response.headers['set-cookie'];
     expect(cookies.some(cookie => cookie.startsWith('accessToken='))).toBe(true);
     expect(cookies.some(cookie => cookie.startsWith('refreshToken='))).toBe(true);
-  }, 10000);
+  }, 30000); // bumped from 10000: real-DB register/login includes bcrypt(12), refresh-token issue, csrf seed, passwordChangedAt cache, and unique-constraint check against accumulated test-fixture DB (~1500+ users)
 });
