@@ -99,6 +99,23 @@ sanitized = input
 - **Input Validation**: All inputs validated before database operations
 - **Type Checking**: Strict type validation for all parameters
 
+#### **Prototype Pollution Prevention (CWE-1321)**
+
+JavaScript objects expose `__proto__`, `constructor`, and `prototype` slots that — when set as own properties on parsed user input — can mutate `Object.prototype` indirectly via downstream `Object.assign`, spread, or merge operations. The classic exploit grants `isAdmin: true` to every object in the runtime by polluting the shared prototype.
+
+Equoria's defense lives at the request-parsing boundary in `backend/middleware/requestBodySecurity.mjs` and is mounted in `backend/app.mjs` BEFORE any route handler runs:
+
+- **`verifyJsonBody`** — runs as the `verify` hook on `express.json()`. Walks the raw JSON bytes BEFORE `express.json()` produces a JS object, rejecting payloads with duplicate keys (21R-SEC-1) or excessive nesting (21R-SEC-3, depth cap 32). Fails closed: any unexpected scanner error becomes a 400, never a 200 (21R-SEC-3-FOLLOW-1).
+- **`rejectPollutedRequestBody`** — runs after `express.json()`. Walks the parsed body iteratively (DFS with explicit depth cap, not recursion — guards against stack-overflow DoS), rejecting any own property named `__proto__`, `constructor`, or the path `constructor.prototype` at any nesting depth. Inspects own properties via `Object.entries` so JSON-attached `__proto__` keys are caught (JSON.parse stores them as own data properties, not prototype changes).
+- **`rejectPollutedRequestQuery`** (21R-SEC-4, Equoria-iq84) — runs after Express's qs parser populates `req.query`. Two-stage scan: Stage 1 walks the raw URL querystring (catches `__proto__[isAdmin]=1` even when qs has stripped it from the parsed object — defence-in-depth on qs's silent hygiene); Stage 2 walks `req.query` via the same `assertNoPollutingKeys` walker as the body guard (catches `constructor[prototype][isAdmin]=1` chains qs leaves intact). Path params (`req.params`), headers, and cookies are out of scope: each is a flat string-to-string surface populated by the framework, with no nested object structure where prototype-slot keys could appear.
+- **`verifyUrlEncodedBody`** (21R-SEC-5, Equoria-lf3z) — sibling of `verifyJsonBody` for `application/x-www-form-urlencoded` bodies. Walks raw bytes, rejects duplicate keys after percent-decoding (`name=Valid&name=Hacked` cannot bypass via Content-Type swap).
+- **`requestBodySecurityErrorHandler`** — error-class dispatch handler (21R-SEC-6, Equoria-tpbu). Handles `RequestBodySecurityError` instances (sentinel class extending `AppError`, tagged with a `Symbol.for(...)` registry marker for cross-module-cache safety) by returning the canonical `{ success: false, message }` envelope at HTTP 400. Anything else forwards via `next(err)` — dispatch is type-based, not string-prefix-based, so a renamed prefix or a foreign middleware producing a similar message cannot accidentally trigger this handler.
+
+Tests:
+
+- Unit: `backend/__tests__/middleware/requestBodySecurity.test.mjs`
+- Integration: `backend/__tests__/integration/security/parameter-pollution.test.mjs` (HTTP-chain coverage of all the above), `request-body-silent-catch.test.mjs` (fail-closed + sentinel-class dispatch contract), `request-body-depth-cap.test.mjs` (32-deep cap enforcement), `request-body-urlencoded-duplicate-key.test.mjs`.
+
 ### **4. Rate Limiting & Anti-Automation**
 
 #### **Multi-Layer Rate Limiting**

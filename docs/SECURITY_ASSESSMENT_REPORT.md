@@ -123,15 +123,39 @@ Equoria implements a multi-layered security approach:
 - XSS prevention through input sanitization
 - Command injection prevention (no child_process usage with user input)
 - NoSQL injection prevention via Prisma type safety
+- Prototype-pollution prevention (CWE-1321) at the request-parsing boundary — see dedicated subsection below.
 
 **Test Coverage:**
 
 - `sql-injection-attempts.test.mjs` (20 test cases)
-- `parameter-pollution.test.mjs` (8 test cases)
+- `parameter-pollution.test.mjs` (50 test cases — body, query, headers, content-type)
+- `request-body-silent-catch.test.mjs` (56 test cases — fail-closed scanner contract + sentinel-class dispatch)
+- `request-body-depth-cap.test.mjs` + `request-body-depth-cap-boundary.test.mjs` (depth-cap enforcement)
+- `request-body-urlencoded-duplicate-key.test.mjs` (urlencoded dup-key bypass closure)
+- `__tests__/middleware/requestBodySecurity.test.mjs` (unit-level coverage of the scanner / guard / handler trio)
 - Input validation tests across all controllers
 
 **Risk Level:** VERY LOW
 **Recommendation:** None - implementation is industry-leading
+
+#### Prototype Pollution Prevention (CWE-1321)
+
+JavaScript objects expose `__proto__`, `constructor`, and `prototype` slots that — when set as own properties on parsed user input — can mutate `Object.prototype` indirectly via downstream `Object.assign`, spread, or merge operations. The classic exploit grants `isAdmin: true` (or any flag) to every object in the runtime by polluting the shared prototype.
+
+Equoria's defense lives at the request-parsing boundary in `backend/middleware/requestBodySecurity.mjs` and is mounted in `backend/app.mjs` BEFORE any route handler runs:
+
+| Defense                           | Surface                                                                 | What it catches                                                                                                                                                                                                                                                            |
+| --------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `verifyJsonBody`                  | raw JSON bytes (express.json `verify` hook)                             | duplicate keys (21R-SEC-1), excessive nesting (21R-SEC-3, depth cap 32), Unicode-escape duplicate-key obfuscation (21R-SEC-1). Fails closed on any unexpected scanner error (21R-SEC-3-FOLLOW-1).                                                                          |
+| `rejectPollutedRequestBody`       | parsed `req.body` (post-`express.json()`)                               | own properties named `__proto__`, `constructor`, or the path `constructor.prototype` at any nesting depth. Iterative DFS with explicit depth cap (no recursion → no stack-overflow DoS).                                                                                   |
+| `rejectPollutedRequestQuery`      | `req.query` + raw URL querystring (21R-SEC-4, Equoria-iq84)             | Two-stage scan. Stage 1 walks the raw URL querystring (catches `__proto__[isAdmin]=1` even when qs has stripped it from the parsed object). Stage 2 walks `req.query` for `constructor[prototype][isAdmin]=1` chains qs leaves intact.                                     |
+| `verifyUrlEncodedBody`            | raw `application/x-www-form-urlencoded` bytes (21R-SEC-5, Equoria-lf3z) | duplicate keys after percent-decoding (`name=Valid&name=Hacked` cannot bypass via Content-Type swap).                                                                                                                                                                      |
+| `requestBodySecurityErrorHandler` | error pipeline (21R-SEC-6, Equoria-tpbu)                                | dispatches via `RequestBodySecurityError` sentinel-class marker (`Symbol.for(...)` for cross-module-cache safety), NOT via message-prefix string match — so a renamed prefix or a foreign middleware producing a similar message cannot accidentally trigger this handler. |
+
+Path params (`req.params`), headers, and cookies are out of scope: each is a flat string-to-string surface populated by the framework, with no nested object structure where prototype-slot keys could appear.
+
+**Risk Level:** VERY LOW
+**Recommendation:** Continue running the `__tests__/integration/security/request-body-*` and `parameter-pollution` test files in CI. The `request-body-silent-catch.test.mjs` source-side coupling sentinel hard-pins the throw pattern, so any regression that re-introduces the legacy string-prefix dispatch fails immediately.
 
 ---
 
