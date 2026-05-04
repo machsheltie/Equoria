@@ -140,8 +140,14 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       expect(res.body.message).toMatch(/100/);
     });
 
-    it('should reject listing a horse owned by another user', async () => {
-      const res = await request(app)
+    it('should reject listing a horse owned by another user with 404 (CWE-639 disclosure resistance)', async () => {
+      // A horse owned by `seller` must not be listable by `buyer`. The route
+      // (POST /list with body horseId) MUST return 404 — not 403 — so an
+      // authenticated attacker cannot enumerate which horse IDs exist by probing
+      // them with a foreign token. The byte-identical-response sentinel below
+      // proves the 404 envelope is the same whether the horse is missing or
+      // simply not-owned.
+      const resNotOwned = await request(app)
         .post('/api/v1/marketplace/list')
         .set('Authorization', `Bearer ${buyerToken}`)
         .set('Origin', 'http://localhost:3000')
@@ -149,8 +155,22 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ horseId: testHorse.id, price: 2000 });
 
-      expect(res.status).toBe(403);
-      expect(res.body.message).toMatch(/do not own/i);
+      expect(resNotOwned.status).toBe(404);
+      expect(resNotOwned.body.success).toBe(false);
+
+      // CWE-639 sentinel: response for a not-owned horse must be byte-identical
+      // to the response for a horse that doesn't exist at all. If these diverge,
+      // the attacker can enumerate horse IDs.
+      const resMissing = await request(app)
+        .post('/api/v1/marketplace/list')
+        .set('Authorization', `Bearer ${buyerToken}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({ horseId: 999999999, price: 2000 });
+
+      expect(resMissing.status).toBe(404);
+      expect(resMissing.body).toEqual(resNotOwned.body);
     });
   });
 
@@ -439,21 +459,39 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       expect(updated.salePrice).toBe(0);
     });
 
-    it('should reject delist by non-owner', async () => {
+    it('should reject delist by non-owner with 404 (CWE-639 disclosure resistance)', async () => {
       // Re-list the horse first
       await prisma.horse.update({
         where: { id: delistHorse.id },
         data: { forSale: true, salePrice: 1000 },
       });
 
-      const res = await request(app)
+      // A horse owned by `seller` must not be delistable by `buyer`. The
+      // requireOwnership('horse') middleware returns 404 — not 403 — so an
+      // authenticated attacker cannot enumerate horse IDs by probing them with
+      // a foreign token. The byte-identical-response sentinel below proves the
+      // 404 envelope is the same whether the horse is missing or just not-owned.
+      const resNotOwned = await request(app)
         .delete(`/api/v1/marketplace/list/${delistHorse.id}`)
         .set('Authorization', `Bearer ${buyerToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken);
 
-      expect(res.status).toBe(403);
+      expect(resNotOwned.status).toBe(404);
+      expect(resNotOwned.body.success).toBe(false);
+
+      // CWE-639 sentinel: response for a not-owned horse must be byte-identical
+      // to the response for a horse that doesn't exist at all.
+      const resMissing = await request(app)
+        .delete('/api/v1/marketplace/list/999999999')
+        .set('Authorization', `Bearer ${buyerToken}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
+
+      expect(resMissing.status).toBe(404);
+      expect(resMissing.body).toEqual(resNotOwned.body);
     });
   });
 });

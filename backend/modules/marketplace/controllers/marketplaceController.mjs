@@ -11,6 +11,7 @@ import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import { createHorse } from '../../../models/horseModel.mjs';
 import { recordTransaction } from '../../../services/financialLedgerService.mjs';
+import { findOwnedResource } from '../../../middleware/ownership.mjs';
 // Shared horse starter-stats service. The same module is used by the perf
 // seed so test data has the same distribution as real store-purchased
 // horses. Random-stat seed paths are forbidden — see service module header.
@@ -158,13 +159,12 @@ export async function listHorse(req, res) {
       });
     }
 
-    const horse = await prisma.horse.findUnique({ where: { id: parseInt(horseId, 10) } });
-
+    // CWE-639: Single 404 for not-found AND not-owned. The route accepts
+    // horseId in req.body (not URL params), so requireOwnership middleware
+    // (which reads req.params) doesn't apply directly — use the helper instead.
+    const horse = await findOwnedResource('horse', parseInt(horseId, 10), userId);
     if (!horse) {
       return res.status(404).json({ success: false, message: 'Horse not found' });
-    }
-    if (horse.userId !== userId) {
-      return res.status(403).json({ success: false, message: 'You do not own this horse' });
     }
     if (horse.forSale) {
       return res.status(400).json({ success: false, message: 'Horse is already listed for sale' });
