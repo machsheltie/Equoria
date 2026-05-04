@@ -93,7 +93,7 @@ describe('EntryConfirmationModal', () => {
 
       expect(screen.getByTestId('confirm-button')).toBeInTheDocument();
       expect(screen.getByTestId('cancel-button')).toBeInTheDocument();
-      expect(screen.getByTestId('close-modal-button')).toBeInTheDocument();
+      expect(screen.getByTestId('entry-confirmation-modal-close-button')).toBeInTheDocument();
     });
   });
 
@@ -118,7 +118,7 @@ describe('EntryConfirmationModal', () => {
       render(<EntryConfirmationModal {...defaultProps} userBalance={1000} />);
 
       const balanceSection = screen.getByTestId('balance-section');
-      expect(balanceSection).toHaveClass('border-green-200');
+      expect(balanceSection).toHaveClass('border-emerald-500/30');
       expect(screen.getByTestId('balance-status-icon')).toBeInTheDocument();
     });
 
@@ -126,7 +126,7 @@ describe('EntryConfirmationModal', () => {
       render(<EntryConfirmationModal {...defaultProps} userBalance={100} />);
 
       const balanceSection = screen.getByTestId('balance-section');
-      expect(balanceSection).toHaveClass('border-red-200');
+      expect(balanceSection).toHaveClass('border-red-500/30');
       expect(screen.getByTestId('insufficient-balance-warning')).toBeInTheDocument();
     });
 
@@ -164,7 +164,7 @@ describe('EntryConfirmationModal', () => {
 
       expect(screen.getByTestId('confirm-button')).toBeDisabled();
       expect(screen.getByTestId('cancel-button')).toBeDisabled();
-      expect(screen.getByTestId('close-modal-button')).toBeDisabled();
+      expect(screen.getByTestId('entry-confirmation-modal-close-button')).toBeDisabled();
     });
 
     it('should display success state with confirmation message', () => {
@@ -212,7 +212,7 @@ describe('EntryConfirmationModal', () => {
       const user = userEvent.setup();
       render(<EntryConfirmationModal {...defaultProps} />);
 
-      const closeButton = screen.getByTestId('close-modal-button');
+      const closeButton = screen.getByTestId('entry-confirmation-modal-close-button');
       await user.click(closeButton);
 
       expect(mockOnClose).toHaveBeenCalledTimes(1);
@@ -222,7 +222,7 @@ describe('EntryConfirmationModal', () => {
       const user = userEvent.setup();
       render(<EntryConfirmationModal {...defaultProps} />);
 
-      const backdrop = screen.getByTestId('modal-backdrop');
+      const backdrop = screen.getByTestId('entry-confirmation-modal-backdrop');
       await user.click(backdrop);
 
       expect(mockOnClose).toHaveBeenCalledTimes(1);
@@ -241,7 +241,7 @@ describe('EntryConfirmationModal', () => {
       render(<EntryConfirmationModal {...defaultProps} isSubmitting={true} />);
 
       // Try backdrop click
-      const backdrop = screen.getByTestId('modal-backdrop');
+      const backdrop = screen.getByTestId('entry-confirmation-modal-backdrop');
       await user.click(backdrop);
       expect(mockOnClose).not.toHaveBeenCalled();
 
@@ -264,9 +264,9 @@ describe('EntryConfirmationModal', () => {
       render(<EntryConfirmationModal {...defaultProps} />);
 
       const modal = screen.getByTestId('entry-confirmation-modal');
-      expect(modal).toHaveAttribute('aria-labelledby', 'entry-confirmation-title');
+      expect(modal).toHaveAttribute('aria-labelledby', 'entry-confirmation-modal-title');
 
-      const title = document.getElementById('entry-confirmation-title');
+      const title = document.getElementById('entry-confirmation-modal-title');
       expect(title).toBeInTheDocument();
     });
 
@@ -423,7 +423,8 @@ describe('EntryConfirmationModal', () => {
       render(<EntryConfirmationModal {...defaultProps} />);
 
       const cancelButton = screen.getByTestId('cancel-button');
-      expect(cancelButton).toHaveClass('border-gray-300');
+      // Secondary button uses translucent blue border per design tokens
+      expect(cancelButton).toHaveClass('border-[rgba(37,99,235,0.3)]');
     });
 
     it('should show loading spinner in confirm button during submission', () => {

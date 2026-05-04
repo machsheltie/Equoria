@@ -83,14 +83,14 @@ describe('TrainingSummaryCards', () => {
     it('applies green styling to ready card', () => {
       const { container } = render(<TrainingSummaryCards summary={mockSummary} />);
 
-      const readyCard = container.querySelector('.border-green-500');
+      const readyCard = container.querySelector('.border-emerald-500');
       expect(readyCard).toBeInTheDocument();
     });
 
     it('applies yellow styling to cooldown card', () => {
       const { container } = render(<TrainingSummaryCards summary={mockSummary} />);
 
-      const cooldownCard = container.querySelector('.border-yellow-500');
+      const cooldownCard = container.querySelector('.border-amber-500');
       expect(cooldownCard).toBeInTheDocument();
     });
 

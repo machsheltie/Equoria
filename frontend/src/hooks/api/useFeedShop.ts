@@ -1,11 +1,13 @@
 /**
- * Feed Shop API Hooks (Epic 10)
+ * Feed Shop API Hooks (feed-system redesign 2026-04-29, Equoria-tt1x).
  *
- * Centralized hooks for feed shop API calls:
- * - Get feed catalog
- * - Purchase feed for a horse
+ * Centralized hooks for the bulk-purchase feed shop:
+ * - useFeedCatalog: 5-tier catalog (basic, performance, performancePlus, highPerformance, elite)
+ * - usePurchaseFeed: bulk pack purchase ({ feedTier, packs }); each pack = 100 units
  *
- * Follows useVet.ts / useGrooms.ts pattern.
+ * Inventory is pooled at the user level (User.settings.inventory) — same-tier
+ * purchases accumulate on a single inventory row. Equipping a tier to a horse
+ * is a separate action (useEquipFeed).
  */
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -29,13 +31,13 @@ export function useFeedCatalog() {
 export function usePurchaseFeed() {
   const queryClient = useQueryClient();
 
-  return useMutation<FeedPurchaseResult, ApiError, { horseId: number; feedId: string }>({
-    mutationFn: (data) => feedShopApi.purchaseFeed(data),
+  return useMutation<FeedPurchaseResult, ApiError, { feedTier: FeedItem['id']; packs: number }>({
+    mutationFn: (data) => feedShopApi.purchase(data),
     onSuccess: () => {
-      // Invalidate horse data so currentFeed / lastFedDate / energyLevel refresh
-      queryClient.invalidateQueries({ queryKey: ['horses'] });
-      // Invalidate profile so balance updates in nav
+      // Inventory grew — refresh inventory + balance + per-horse equippable.
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
       queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['equippable'] });
     },
   });
 }

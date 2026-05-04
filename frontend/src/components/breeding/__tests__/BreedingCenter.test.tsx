@@ -232,11 +232,12 @@ describe('BreedingCenter', () => {
       await user.click(screen.getByRole('button', { name: /breed now/i }));
 
       await waitFor(() => {
+        // Component now only passes sire/dam IDs to the API. Foal name is held in
+        // local state but not in the breeding payload (set after success).
         expect(mockBreedFoal).toHaveBeenCalledWith(
           expect.objectContaining({
             damId: 1,
             sireId: 3,
-            name: 'New Foal',
           })
         );
       });
@@ -433,7 +434,8 @@ describe('BreedingCenter', () => {
       const studMarketplaceTab = screen.getByRole('tab', { name: /stud marketplace/i });
       await user.click(studMarketplaceTab);
 
-      expect(studMarketplaceTab).toHaveClass('border-emerald-600');
+      // Dark theme migrated from emerald-600 to emerald-400 for contrast
+      expect(studMarketplaceTab).toHaveClass('border-emerald-400');
     });
   });
 });

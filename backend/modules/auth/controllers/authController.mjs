@@ -322,7 +322,7 @@ export const login = async (req, res, next) => {
     });
   } catch (error) {
     logger.error('[authController.login] Error logging in user:', error);
-    if (error instanceof AppError || error instanceof ValidationError) {
+    if (AppError.isAppError(error) || error instanceof ValidationError) {
       return next(error);
     }
     next(new AppError('Login failed due to an unexpected error.', 500));
@@ -384,7 +384,7 @@ export const refreshToken = async (req, res, next) => {
     });
   } catch (error) {
     logger.error('[authController.refreshToken] Error refreshing token:', error);
-    if (error instanceof AppError) {
+    if (AppError.isAppError(error)) {
       return next(error);
     }
     next(new AppError('Token refresh failed due to an unexpected error.', 500));
@@ -468,7 +468,7 @@ export const getProfile = async (req, res, next) => {
     });
   } catch (error) {
     logger.error('[authController.getProfile] Error retrieving profile:', error);
-    if (error instanceof AppError) {
+    if (AppError.isAppError(error)) {
       return next(error);
     }
     next(new AppError('Failed to retrieve profile due to an unexpected error.', 500));
@@ -690,7 +690,7 @@ export const changePassword = async (req, res, next) => {
     });
   } catch (error) {
     logger.error('[authController.changePassword] Error changing password:', error);
-    if (error instanceof AppError || error instanceof ValidationError) {
+    if (AppError.isAppError(error) || error instanceof ValidationError) {
       return next(error);
     }
     next(new AppError('Password change failed due to an unexpected error.', 500));
@@ -768,7 +768,7 @@ export const forgotPassword = async (req, res, next) => {
     });
   } catch (error) {
     logger.error('[authController.forgotPassword] Error:', error);
-    if (error instanceof AppError || error instanceof ValidationError) {
+    if (AppError.isAppError(error) || error instanceof ValidationError) {
       return next(error);
     }
     next(new AppError('Failed to request password reset.', 500));
@@ -836,7 +836,7 @@ export const resetPassword = async (req, res, next) => {
     });
   } catch (error) {
     logger.error('[authController.resetPassword] Error:', error);
-    if (error instanceof AppError || error instanceof ValidationError) {
+    if (AppError.isAppError(error) || error instanceof ValidationError) {
       return next(error);
     }
     next(new AppError('Failed to reset password.', 500));
@@ -885,7 +885,7 @@ export const verifyEmail = async (req, res, next) => {
     });
   } catch (error) {
     logger.error('[authController.verifyEmail] Error verifying email:', error);
-    if (error instanceof AppError) {
+    if (AppError.isAppError(error)) {
       return next(error);
     }
     next(new AppError('Email verification failed due to an unexpected error.', 500));
@@ -940,7 +940,7 @@ export const resendVerification = async (req, res, next) => {
     });
   } catch (error) {
     logger.error('[authController.resendVerification] Error resending verification:', error);
-    if (error instanceof AppError) {
+    if (AppError.isAppError(error)) {
       return next(error);
     }
     next(new AppError('Failed to resend verification email due to an unexpected error.', 500));
@@ -975,7 +975,7 @@ export const getVerificationStatus = async (req, res, next) => {
     });
   } catch (error) {
     logger.error('[authController.getVerificationStatus] Error checking status:', error);
-    if (error instanceof AppError) {
+    if (AppError.isAppError(error)) {
       return next(error);
     }
     next(new AppError('Failed to check verification status due to an unexpected error.', 500));
@@ -1016,7 +1016,7 @@ export const completeOnboarding = async (req, res, next) => {
     });
   } catch (error) {
     logger.error('[authController.completeOnboarding] Error:', error);
-    if (error instanceof AppError) {
+    if (AppError.isAppError(error)) {
       return next(error);
     }
     next(new AppError('Failed to complete onboarding.', 500));
@@ -1224,7 +1224,7 @@ export const advanceOnboarding = async (req, res, next) => {
     });
   } catch (error) {
     logger.error('[authController.advanceOnboarding] Error:', error);
-    if (error instanceof AppError) {
+    if (AppError.isAppError(error)) {
       return next(error);
     }
     next(new AppError('Failed to advance onboarding.', 500));
@@ -1336,7 +1336,7 @@ export const updateUserPreferences = async (req, res, next) => {
     });
   } catch (error) {
     logger.error(`[authController.updateUserPreferences] Error: ${error.message}`);
-    if (error instanceof AppError) {
+    if (AppError.isAppError(error)) {
       return next(error);
     }
     return next(new AppError('Failed to update preferences.', 500));

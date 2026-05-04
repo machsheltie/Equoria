@@ -1,0 +1,183 @@
+name: PR Body Evidence
+
+# Equoria-qj75 (B3): parses every pull request's description against the
+# template at .github/pull_request_template.md. Fails the gate if:
+#   - the doctrine-gate exit code or output block is still the template
+#     placeholder
+#   - any "No new bypass mechanisms" checkbox is unticked
+#   - the "Gate enforcement" or "Middleware test coverage" sections are
+#     not marked N/A AND have empty fields
+#
+# Triggers on every PR event that can change the body (opened, edited,
+# synchronize, ready_for_review). Re-runs as soon as the author updates
+# the description, so green status follows the most recent body.
+#
+# A sentinel self-test step runs the parser against three known
+# fixtures (good, empty, untouched-template) before the production check
+# and fails the workflow if the parser disagrees with the expected exit
+# codes. Per OPTIMAL_FIX_DISCIPLINE.md §2: a check without a positive
+# test for its own correctness is a placebo.
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, ready_for_review, reopened]
+
+# Cancel previous in-flight runs of this workflow on the same PR when a
+# new event arrives — avoids serial pile-ups when the author makes
+# rapid edits.
+concurrency:
+  group: pr-body-evidence-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  check-evidence:
+    name: 'Verify PR body evidence'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 'Checkout repository'
+        uses: actions/checkout@v4
+
+      - name: 'Setup Node.js'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: 'Sentinel self-test: parser correctness'
+        # Verifies the parser produces the right exit codes for known-
+        # good and known-bad PR body shapes. If a future edit weakens
+        # the parser (e.g., a regex change that lets unticked checkboxes
+        # pass), this step fails before the production check runs and
+        # the regression is visible rather than silent.
+        run: |
+          set -uo pipefail
+          mkdir -p .pr-fixtures
+
+          # Fixture 1: a fully-filled body. Parser must exit 0.
+          cat > .pr-fixtures/good.md <<'EOF'
+          ## Summary
+          - sentinel fixture
+
+          ## Doctrine evidence (required for merge — 21R hardening)
+
+          ### 1. Doctrine-gate result
+
+          **Exit code:** 0
+
+          **Last 5 lines of output:**
+
+          ```
+          OK: doctrine checks passed.
+          ```
+
+          ### 2. No new bypass mechanisms
+
+          - [x] No new `--exclude-dir=` flags added to CI grep scans
+          - [x] No new `continue-on-error: true` on security, coverage, or doctrine steps
+          - [x] No new `it.skip` / `test.skip` / `describe.skip` / `test.fixme` in beta-readiness paths
+          - [x] No new `if: github.ref == 'refs/heads/master'` on jobs named `*-gate*`
+
+          ### 3. Gate enforcement (only for PRs that ADD a new CI gate)
+
+          N/A — sentinel fixture, no gate added.
+
+          ### 4. Middleware test coverage (only for PRs that ADD new middleware)
+
+          N/A — sentinel fixture, no middleware.
+          EOF
+
+          # Fixture 2: empty body. Parser must exit 1.
+          cat > .pr-fixtures/empty.md <<'EOF'
+          ## Summary
+          - WIP
+          EOF
+
+          # Fixture 3: untouched-template body (all placeholders, no
+          # checkboxes ticked). Parser must exit 1.
+          cat > .pr-fixtures/untouched.md <<'EOF'
+          ## Summary
+          - some change
+
+          ## Doctrine evidence (required for merge — 21R hardening)
+
+          ### 1. Doctrine-gate result
+
+          **Exit code:** _<paste exit code here>_
+
+          **Last 5 lines of output:**
+
+          ```
+          <paste here>
+          ```
+
+          ### 2. No new bypass mechanisms
+
+          - [ ] No new --exclude-dir
+          - [ ] No new continue-on-error
+          - [ ] No new test.skip
+          - [ ] No new master-only-gate
+
+          ### 3. Gate enforcement (only for PRs that ADD a new CI gate)
+
+          - Workflow file:
+          - Job name:
+          - Deployment-gate needs-list line number:
+          - Branch-protection rule required for master: \`[ ]\`
+
+          ### 4. Middleware test coverage (only for PRs that ADD new middleware)
+
+          - New middleware file:
+          - Test file:
+          EOF
+
+          set +e
+          node scripts/check-pr-body-evidence.mjs .pr-fixtures/good.md > /dev/null 2>&1
+          good_exit=$?
+          node scripts/check-pr-body-evidence.mjs .pr-fixtures/empty.md > /dev/null 2>&1
+          empty_exit=$?
+          node scripts/check-pr-body-evidence.mjs .pr-fixtures/untouched.md > /dev/null 2>&1
+          untouched_exit=$?
+          set -e
+
+          rm -rf .pr-fixtures
+
+          fail=0
+          if [ "$good_exit" != "0" ]; then
+            echo "SENTINEL FAIL: good fixture should exit 0; got $good_exit."
+            fail=1
+          fi
+          if [ "$empty_exit" != "1" ]; then
+            echo "SENTINEL FAIL: empty fixture should exit 1; got $empty_exit."
+            fail=1
+          fi
+          if [ "$untouched_exit" != "1" ]; then
+            echo "SENTINEL FAIL: untouched-template fixture should exit 1; got $untouched_exit."
+            fail=1
+          fi
+          if [ "$fail" = "1" ]; then
+            echo "Parser correctness regression — fix scripts/check-pr-body-evidence.mjs before the production check can be trusted."
+            exit 1
+          fi
+          echo "Sentinel OK: parser exits 0 on good fixture, 1 on empty and untouched-template."
+
+      - name: 'Verify this PR body'
+        # Production check. The PR body comes via the github.event
+        # payload; we write it to a tempfile (avoiding shell-injection
+        # surface from special chars in the body) and pass the path to
+        # the parser. If the parser exits non-zero, the job fails and
+        # the PR is blocked from merging (when paired with the matching
+        # branch-protection rule).
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          set -uo pipefail
+          PR_BODY_FILE=$(mktemp --suffix=.md)
+          # printf with %s avoids backslash interpretation that `echo`
+          # would do; PR bodies legitimately contain literal backslashes.
+          printf '%s' "$PR_BODY" > "$PR_BODY_FILE"
+          set +e
+          node scripts/check-pr-body-evidence.mjs "$PR_BODY_FILE"
+          rc=$?
+          set -e
+          rm -f "$PR_BODY_FILE"
+          exit $rc

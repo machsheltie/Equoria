@@ -6,6 +6,7 @@
  */
 
 import { beforeAll, afterAll, beforeEach, afterEach, jest } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import prisma from '../db/index.mjs';
 
 // Set test environment
@@ -16,9 +17,11 @@ process.env.LOG_LEVEL = 'error'; // Reduce test noise
  * Global test setup - runs once before all tests
  */
 beforeAll(async () => {
-  // Ensure we're using test database
-  if (!process.env.DATABASE_URL?.includes('equoria_test')) {
-    throw new Error('DANGER: Not using test database! Set DATABASE_URL_TEST');
+  // DATABASE_URL must be present; the equoria_test sidecar DB had falsified
+  // migration history, so the project switched to running tests directly
+  // against the canonical equoria DB (see commit 73a5f075).
+  if (!process.env.DATABASE_URL) {
+    throw new Error('DANGER: DATABASE_URL is not set!');
   }
 
   // Clear all test data before starting
@@ -89,15 +92,38 @@ async function cleanupDatabase() {
  */
 
 /**
- * Create test user with default values
+ * Create test user with default values.
+ *
+ * Equoria-3gti (21R-SEC-3-REVIEW-2-ADJ-1, 2026-04-29): switched from
+ * `${Date.now()}-${Math.random().toString(36).substring(7)}` to
+ * `${randomBytes(8).toString('hex')}`. The legacy pattern had two collision modes that
+ * surfaced as flaky failures when test scheduling shifted (e.g. after
+ * adding a new test file in the security suite):
+ *
+ *   1. Same-millisecond Date.now() + identical Math.random() output =>
+ *      duplicate id / email / username, P2002 unique-constraint
+ *      violation on user.create.
+ *   2. Math.random().toString(36).substring(7) returns the empty
+ *      string when the base-36 representation is shorter than 7
+ *      characters (~36^-5 probability per call). The `email` defaulted
+ *      to test-${Date.now()}@example.com (no randomId at all), so the
+ *      email-collision class was already present even without the
+ *      empty-randomId case.
+ *
+ * randomBytes(8).toString('hex') is collision-free for any practical run length and has
+ * no dependence on monotonic clocks, so removes both classes. Phase 3a
+ * (commit 85246b2a) updated test-file fixtures to use slice(2,6) but
+ * did NOT update this helper — that gap is what surfaced now.
+ *
+ * The `test-` prefix is preserved so suite-level cleanup queries that
+ * filter by `where: { email: { contains: 'test' } }` continue to match.
  */
 export async function createTestUser(overrides = {}) {
-  const timestamp = Date.now();
-  const randomId = Math.random().toString(36).substring(7);
+  const uid = randomBytes(8).toString('hex');
   const defaultUser = {
-    id: `test-${timestamp}-${randomId}`,
-    username: overrides.username || `testuser-${timestamp}-${randomId}`,
-    email: overrides.email || `test-${timestamp}@example.com`,
+    id: `test-${uid}`,
+    username: overrides.username || `testuser-${uid}`,
+    email: overrides.email || `test-${uid}@example.com`,
     firstName: 'Test',
     lastName: 'User',
     password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy', // 'password123'
@@ -129,8 +155,11 @@ export async function createTestRefreshToken(userId, overrides = {}) {
     );
   }
   const { hashRefreshToken } = await import('../utils/tokenRotationService.mjs');
-  const rawToken =
-    overrides.rawToken ?? `test-token-${Date.now()}-${Math.random().toString(36).substring(7)}`;
+  // Equoria-3gti: randomBytes(8).toString('hex') replaces the Date.now()+Math.random()
+  // collision-prone pattern (see createTestUser doc comment for full
+  // rationale). The `test-token-` prefix is preserved for grep-friendly
+  // identification in audit logs.
+  const rawToken = overrides.rawToken ?? `test-token-${randomBytes(8).toString('hex')}`;
 
   // Caller-supplied `tokenHash` wins. Otherwise hash the raw value.
   const tokenHash = overrides.tokenHash ?? hashRefreshToken(rawToken);

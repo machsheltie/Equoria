@@ -28,72 +28,80 @@ describe('CompetitionHistory', () => {
   const mockOnViewPerformance = vi.fn();
   const mockOnRetry = vi.fn();
 
-  // Sample competition entries data for testing
+  // Helper: build an ISO-formatted date string N days before today (timezone-tolerant)
+  const daysAgo = (n: number): string => {
+    const d = new Date();
+    d.setDate(d.getDate() - n);
+    return d.toISOString().slice(0, 10);
+  };
+
+  // Sample competition entries data for testing — relative dates so date-range
+  // filters remain meaningful regardless of when the suite runs.
   const sampleCompetitions: CompetitionEntry[] = [
     {
       competitionId: 1,
       competitionName: 'Spring Derby Championship',
       discipline: 'racing',
-      date: '2026-01-25',
-      rank: 1,
+      date: daysAgo(2),
+      placement: 1,
       totalParticipants: 20,
-      score: 95.5,
-      prizeWon: 5000,
+      finalScore: 95.5,
+      prizeMoney: 5000,
       xpGained: 150,
     },
     {
       competitionId: 2,
       competitionName: 'Summer Dressage Classic',
       discipline: 'dressage',
-      date: '2026-01-20',
-      rank: 2,
+      date: daysAgo(5),
+      placement: 2,
       totalParticipants: 15,
-      score: 88.2,
-      prizeWon: 2500,
+      finalScore: 88.2,
+      prizeMoney: 2500,
       xpGained: 100,
     },
     {
       competitionId: 3,
       competitionName: 'Autumn Show Jumping Event',
       discipline: 'show-jumping',
-      date: '2026-01-15',
-      rank: 3,
+      date: daysAgo(10),
+      placement: 3,
       totalParticipants: 25,
-      score: 82.7,
-      prizeWon: 1500,
+      finalScore: 82.7,
+      prizeMoney: 1500,
       xpGained: 75,
     },
     {
       competitionId: 4,
       competitionName: 'Winter Endurance Challenge',
       discipline: 'endurance',
-      date: '2026-01-10',
-      rank: 8,
+      date: daysAgo(20),
+      placement: 8,
       totalParticipants: 30,
-      score: 72.1,
-      prizeWon: 0,
+      finalScore: 72.1,
+      prizeMoney: 0,
       xpGained: 25,
     },
     {
       competitionId: 5,
       competitionName: 'Cross Country Masters',
       discipline: 'cross-country',
-      date: '2026-01-05',
-      rank: 1,
+      date: daysAgo(25),
+      placement: 1,
       totalParticipants: 18,
-      score: 91.3,
-      prizeWon: 7500,
+      finalScore: 91.3,
+      prizeMoney: 7500,
       xpGained: 150,
     },
     {
       competitionId: 6,
       competitionName: 'New Year Racing Classic',
       discipline: 'racing',
-      date: '2025-12-01',
-      rank: 5,
+      date: daysAgo(150),
+      placement: 5,
       totalParticipants: 22,
-      score: 78.4,
-      prizeWon: 500,
+      finalScore: 78.4,
+      prizeMoney: 500,
       xpGained: 50,
     },
   ];
@@ -315,9 +323,9 @@ describe('CompetitionHistory', () => {
         expect(badge).toHaveClass('bg-yellow-400');
       });
 
-      // Silver badge for 2nd place
+      // Silver badge for 2nd place (uses muted slate-tinted background per design tokens)
       const silverBadge = screen.getByTestId('placement-badge-2');
-      expect(silverBadge).toHaveClass('bg-gray-300');
+      expect(silverBadge).toHaveClass('bg-[rgba(148,163,184,0.3)]');
 
       // Bronze badge for 3rd place
       const bronzeBadge = screen.getByTestId('placement-badge-3');

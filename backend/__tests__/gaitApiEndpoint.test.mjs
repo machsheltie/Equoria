@@ -3,27 +3,14 @@
 // gaited vs non-gaited breed responses, and error cases.
 
 import { jest } from '@jest/globals';
+import { getGaits } from '../modules/horses/controllers/horseController.mjs';
 
-// Mock prisma before importing controller
-const mockPrisma = {
-  horse: {
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-  },
-};
-jest.unstable_mockModule('../db/index.mjs', () => ({ default: mockPrisma }));
-
-// Mock logger to suppress output in tests
-const mockLogger = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-};
-jest.unstable_mockModule('../utils/logger.mjs', () => ({ default: mockLogger }));
-
-// Import after mocking
-const { getGaits } = await import('../modules/horses/controllers/horseController.mjs');
+// NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): the
+// previous jest.unstable_mockModule of db/index.mjs and utils/logger.mjs
+// were both defensive — db was never actually called by getGaits (the
+// controller reads from req.horse, populated by upstream middleware),
+// and logger was for noise suppression. Both removed; controller is
+// imported normally.
 
 // Helper: create mock request/response
 function createMockReqRes(horseOverrides = {}) {

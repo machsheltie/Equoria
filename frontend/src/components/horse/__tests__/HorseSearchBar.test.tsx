@@ -318,7 +318,8 @@ describe('HorseSearchBar', () => {
       );
 
       const input = container.querySelector('input');
-      expect(input).toHaveClass('bg-blue-50');
+      // Component migrated to dark-theme arbitrary rgba blue tint
+      expect(input?.className).toMatch(/bg-\[rgba\(37,99,235/);
     });
 
     it('should NOT show loading when not loading', () => {

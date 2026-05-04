@@ -69,7 +69,7 @@ describe('TrainingResultModal', () => {
 
       const title = screen.getByRole('heading', { name: /training complete/i });
       expect(title).toBeInTheDocument();
-      expect(title).toHaveClass('text-green-600');
+      expect(title).toHaveClass('text-emerald-400');
 
       // Check for celebration emoji
       const celebrationEmoji = screen.getByRole('img', { name: /celebration/i });
@@ -87,7 +87,7 @@ describe('TrainingResultModal', () => {
 
       const scoreGain = screen.getByTestId('score-gain');
       expect(scoreGain).toHaveTextContent('+6');
-      expect(scoreGain).toHaveClass('text-4xl', 'font-bold', 'text-green-600');
+      expect(scoreGain).toHaveClass('text-4xl', 'font-bold', 'text-emerald-400');
     });
 
     it('should show new score value', () => {
@@ -167,7 +167,7 @@ describe('TrainingResultModal', () => {
 
       const xpGain = screen.getByTestId('xp-gain');
       expect(xpGain).toHaveTextContent('XP: +25');
-      expect(xpGain).toHaveClass('text-yellow-600', 'font-semibold');
+      expect(xpGain).toHaveClass('text-amber-400', 'font-semibold');
     });
 
     it('should handle missing optional gains (statGains and xpGain undefined)', () => {
@@ -406,28 +406,28 @@ describe('TrainingResultModal', () => {
       render(<TrainingResultModal {...defaultProps} />);
 
       const title = screen.getByRole('heading', { name: /training complete/i });
-      expect(title).toHaveClass('text-green-600');
+      expect(title).toHaveClass('text-emerald-400');
     });
 
     it('should have green color on score gain', () => {
       render(<TrainingResultModal {...defaultProps} />);
 
       const scoreGain = screen.getByTestId('score-gain');
-      expect(scoreGain).toHaveClass('text-green-600');
+      expect(scoreGain).toHaveClass('text-emerald-400');
     });
 
     it('should have blue primary button styling on close', () => {
       render(<TrainingResultModal {...defaultProps} />);
 
       const closeButton = screen.getByTestId('close-button');
-      expect(closeButton).toHaveClass('bg-blue-600', 'text-white');
+      expect(closeButton).toHaveClass('bg-blue-600', 'text-[var(--text-primary)]');
     });
 
     it('should have modal backdrop with semi-transparent black', () => {
       render(<TrainingResultModal {...defaultProps} />);
 
       const backdrop = screen.getByTestId('training-result-modal-backdrop');
-      expect(backdrop).toHaveClass('bg-black/50');
+      expect(backdrop).toHaveClass('bg-black/70');
     });
   });
 

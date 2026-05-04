@@ -13,6 +13,7 @@ import { validationResult } from 'express-validator';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
+import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
 import {
   validateConformationEntry,
   executeConformationShow as executeShowService,
@@ -58,6 +59,23 @@ export async function enterConformationShow(req, res) {
     const horse = await findOwnedResource('horse', horseId, userId);
     if (!horse) {
       return res.status(404).json({ success: false, message: 'Horse not found' });
+    }
+
+    // Critical-health gate (A12): a horse whose displayedHealth has decayed
+    // to 'critical' (via stale lastFedDate, stale lastVettedDate, or an
+    // explicit vet finding) cannot enter competitions. Fires before the
+    // service-level validation so the rejection message specifically calls
+    // out critical health (not the older 'must be Excellent or Good' check
+    // in conformationShowService.validateConformationEntry).
+    if (getDisplayedHealth(horse) === 'critical') {
+      logger.info(
+        `[conformationShowController.POST /enter] Rejected entry: horse ${horseId} is in critical health`,
+      );
+      return res.status(400).json({
+        success: false,
+        message: `${horse.name} is in critical health and cannot enter competitions. Feed and vet to restore health.`,
+        data: null,
+      });
     }
 
     // Verify groom ownership

@@ -147,8 +147,9 @@ describe('XpHistoryEntry', () => {
       const badge = screen.getByTestId('source-badge');
       expect(badge).toBeInTheDocument();
       expect(badge).toHaveTextContent(/competition/i);
-      expect(badge).toHaveClass('bg-blue-100');
-      expect(badge).toHaveClass('text-blue-700');
+      // Dark theme: rgba blue tint + blue-400 text
+      expect(badge.className).toMatch(/bg-\[rgba\(37,99,235/);
+      expect(badge).toHaveClass('text-blue-400');
     });
 
     it('should display training badge with green styling', () => {
@@ -156,8 +157,9 @@ describe('XpHistoryEntry', () => {
 
       const badge = screen.getByTestId('source-badge');
       expect(badge).toHaveTextContent(/training/i);
-      expect(badge).toHaveClass('bg-green-100');
-      expect(badge).toHaveClass('text-green-700');
+      // Dark theme: rgba emerald tint + emerald-400 text
+      expect(badge.className).toMatch(/bg-\[rgba\(16,185,129/);
+      expect(badge).toHaveClass('text-emerald-400');
     });
 
     it('should display achievement badge with purple styling', () => {
@@ -165,8 +167,9 @@ describe('XpHistoryEntry', () => {
 
       const badge = screen.getByTestId('source-badge');
       expect(badge).toHaveTextContent(/achievement/i);
-      expect(badge).toHaveClass('bg-purple-100');
-      expect(badge).toHaveClass('text-purple-700');
+      // Dark theme: purple-900/30 alpha bg + purple-400 text
+      expect(badge).toHaveClass('bg-purple-900/30');
+      expect(badge).toHaveClass('text-purple-400');
     });
 
     it('should display bonus badge with orange styling', () => {
@@ -174,8 +177,9 @@ describe('XpHistoryEntry', () => {
 
       const badge = screen.getByTestId('source-badge');
       expect(badge).toHaveTextContent(/bonus/i);
-      expect(badge).toHaveClass('bg-orange-100');
-      expect(badge).toHaveClass('text-orange-700');
+      // Dark theme: orange-900/30 alpha bg + orange-400 text
+      expect(badge).toHaveClass('bg-orange-900/30');
+      expect(badge).toHaveClass('text-orange-400');
     });
   });
 
@@ -210,8 +214,9 @@ describe('XpHistoryEntry', () => {
       render(<XpHistoryEntry entry={levelUpEntry} isLevelUp={true} />);
 
       const entryCard = screen.getByTestId('entry-card');
-      expect(entryCard).toHaveClass('bg-yellow-50');
-      expect(entryCard).toHaveClass('border-yellow-300');
+      // Component migrated to dark-theme parchment/gold tokens (212,168,67) + amber border
+      expect(entryCard.className).toMatch(/bg-\[rgba\(212,168,67/);
+      expect(entryCard.className).toMatch(/border-amber-500/);
     });
 
     it('should display trophy icon for level-up entries', () => {

@@ -185,7 +185,7 @@ describe('TraitDetailModal Component', () => {
       const { container } = render(
         <TraitDetailModal isOpen={true} onClose={() => {}} trait={ultraRareTrait} />
       );
-      expect(container.querySelector('.bg-white\\/20')).toBeInTheDocument();
+      expect(container.querySelector('.bg-white\\/10')).toBeInTheDocument();
     });
 
     it('should show decorative effect for exotic traits', () => {
@@ -196,7 +196,7 @@ describe('TraitDetailModal Component', () => {
       const { container } = render(
         <TraitDetailModal isOpen={true} onClose={() => {}} trait={exoticTrait} />
       );
-      expect(container.querySelector('.bg-white\\/20')).toBeInTheDocument();
+      expect(container.querySelector('.bg-white\\/10')).toBeInTheDocument();
     });
 
     it('should not show decorative effect for common traits', () => {
@@ -207,7 +207,8 @@ describe('TraitDetailModal Component', () => {
       const { container } = render(
         <TraitDetailModal isOpen={true} onClose={() => {}} trait={commonTrait} />
       );
-      expect(container.querySelector('.bg-white\\/20')).not.toBeInTheDocument();
+      // Common traits don't get the bg-white/10 shine effect (only ultra-rare + exotic do)
+      expect(container.querySelector('.bg-white\\/10')).not.toBeInTheDocument();
     });
   });
 
@@ -381,8 +382,11 @@ describe('TraitDetailModal Component', () => {
       const { container } = render(
         <TraitDetailModal isOpen={true} onClose={() => {}} trait={baseTrait} />
       );
-      expect(container.querySelector('.border-green-200')).toBeInTheDocument();
-      expect(container.querySelector('.bg-green-50')).toBeInTheDocument();
+      // Beneficial trait section uses emerald-500/30 border + emerald rgba bg in dark theme
+      expect(container.querySelector('.border-emerald-500\\/30')).toBeInTheDocument();
+      expect(
+        container.querySelector('.bg-\\[rgba\\(16\\,185\\,129\\,0\\.1\\)\\]')
+      ).toBeInTheDocument();
     });
 
     it('should apply red styling for detrimental traits', () => {
@@ -393,8 +397,11 @@ describe('TraitDetailModal Component', () => {
       const { container } = render(
         <TraitDetailModal isOpen={true} onClose={() => {}} trait={negativeTrait} />
       );
-      expect(container.querySelector('.border-red-200')).toBeInTheDocument();
-      expect(container.querySelector('.bg-red-50')).toBeInTheDocument();
+      // Detrimental trait section uses red-500/30 border + red rgba bg in dark theme
+      expect(container.querySelector('.border-red-500\\/30')).toBeInTheDocument();
+      expect(
+        container.querySelector('.bg-\\[rgba\\(239\\,68\\,68\\,0\\.1\\)\\]')
+      ).toBeInTheDocument();
     });
   });
 

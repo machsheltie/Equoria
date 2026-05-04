@@ -13,6 +13,7 @@ import prisma from '../../db/index.mjs';
 import bcrypt from 'bcryptjs';
 
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
+import { randomBytes } from 'node:crypto';
 describe('POST /api/auth/advance-onboarding', () => {
   let __csrf__;
   beforeAll(async () => {
@@ -26,8 +27,8 @@ describe('POST /api/auth/advance-onboarding', () => {
   // compatibility with existing .set(rateLimitBypassHeader) call sites.
   const rateLimitBypassHeader = {};
   const testUserData = {
-    username: `advanceonboard_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-    email: `advanceonboard_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+    username: `advanceonboard_${randomBytes(8).toString('hex')}`,
+    email: `advanceonboard_${randomBytes(8).toString('hex')}@example.com`,
     password: 'TestPassword123!',
     firstName: 'Advance',
     lastName: 'Onboard',

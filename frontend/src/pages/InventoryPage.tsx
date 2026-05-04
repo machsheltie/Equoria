@@ -1,14 +1,21 @@
 /**
- * InventoryPage — Player Inventory (Epic 12 — Story 12-2 / Epic 16 — Story 16-1)
+ * InventoryPage — Player Inventory (Epic 12 — Story 12-2 / Epic 16 — Story 16-1
+ *                                  + feed-system redesign 2026-04-29 — A17)
  *
- * Shows all owned tack items (saddles, bridles, consumables, special).
- * Items can be equipped to / unequipped from horses via live API.
+ * Shows all owned items: tack (saddles, bridles), feed (5 tiers — pooled),
+ * consumables, and special.
+ *
+ * Tack: equipped/unequipped to horses directly from this page.
+ * Feed: pooled inventory rendered read-only here; equipping happens per-horse
+ *       on the horse Equip page (`/horses/:id/equip`). Feed has no
+ *       equippedToHorseId because Horse.equippedFeedType is the per-horse
+ *       source of truth, not the inventory row.
  *
  * Data sources:
  *   GET /api/inventory         → InventoryData  (useInventory hook)
  *   GET /api/horses            → HorseSummary[] (horse picker)
- *   POST /api/inventory/equip  → equip mutation
- *   POST /api/inventory/unequip → unequip mutation
+ *   POST /api/inventory/equip  → equip mutation (tack only)
+ *   POST /api/inventory/unequip → unequip mutation (tack only)
  *
  * Uses Celestial Night theme (consistent with other standalone pages).
  */
@@ -23,7 +30,7 @@ import { horsesApi } from '@/lib/api-client';
 import type { InventoryItem } from '@/lib/api-client';
 import { useQuery } from '@tanstack/react-query';
 
-type InventoryCategory = 'all' | 'saddle' | 'bridle' | 'consumables' | 'special';
+type InventoryCategory = 'all' | 'saddle' | 'bridle' | 'feed' | 'consumables' | 'special';
 
 // ── Category config ──────────────────────────────────────────────────────────
 
@@ -31,6 +38,7 @@ const categoryIcons: Record<InventoryCategory, React.ReactNode> = {
   all: <Package className="w-4 h-4" />,
   saddle: <Shield className="w-4 h-4" />,
   bridle: <Shield className="w-4 h-4" />,
+  feed: <Leaf className="w-4 h-4" />,
   consumables: <Leaf className="w-4 h-4" />,
   special: <Sparkles className="w-4 h-4" />,
 };
@@ -39,6 +47,7 @@ const categoryLabels: Record<InventoryCategory, string> = {
   all: 'All Items',
   saddle: 'Saddles',
   bridle: 'Bridles',
+  feed: 'Feed',
   consumables: 'Consumables',
   special: 'Special',
 };
@@ -154,9 +163,13 @@ const InventoryItemCard: React.FC<ItemCardProps> = ({
       ? '🪣'
       : item.category === 'bridle'
         ? '🔗'
-        : item.category === 'consumables'
-          ? '💊'
-          : '🏅';
+        : item.category === 'feed'
+          ? '🌾'
+          : (item.category as string) === 'consumables'
+            ? '💊'
+            : '🏅';
+
+  const isFeed = item.category === 'feed';
 
   return (
     <div
@@ -184,7 +197,14 @@ const InventoryItemCard: React.FC<ItemCardProps> = ({
 
       <p className="text-xs text-white/50 mb-3 capitalize">{item.category}</p>
 
-      {item.equippedToHorseId ? (
+      {isFeed ? (
+        <p
+          className="text-xs text-white/50 italic leading-snug"
+          data-testid={`feed-equip-hint-${item.id}`}
+        >
+          Equipped via the horse&rsquo;s Equip page.
+        </p>
+      ) : item.equippedToHorseId ? (
         <div className="flex items-center justify-between">
           <span className="text-xs text-emerald-400 font-medium">
             Equipped: {item.equippedToHorseName ?? `Horse #${item.equippedToHorseId}`}
@@ -223,7 +243,14 @@ const InventoryPage: React.FC = () => {
   const equipMutation = useEquipItem();
   const unequipMutation = useUnequipItem();
 
-  const categories: InventoryCategory[] = ['all', 'saddle', 'bridle', 'consumables', 'special'];
+  const categories: InventoryCategory[] = [
+    'all',
+    'saddle',
+    'bridle',
+    'feed',
+    'consumables',
+    'special',
+  ];
 
   const filteredItems =
     activeCategory === 'all' ? items : items.filter((item) => item.category === activeCategory);
@@ -389,6 +416,7 @@ const InventoryPage: React.FC = () => {
           <h3 className="font-semibold text-[var(--cream)] mb-2">About Inventory</h3>
           <ul className="space-y-1 list-disc list-inside">
             <li>Tack items can be equipped to one horse at a time</li>
+            <li>Feed is pooled inventory; equip and feed it from each horse&rsquo;s Equip page</li>
             <li>Consumables are used once and removed from inventory</li>
             <li>Special items unlock unique actions or access</li>
             <li>Items purchased in the Tack Shop and Feed Shop appear here automatically</li>

@@ -1,8 +1,51 @@
 # Equoria - Claude Code Configuration
 
-**Version:** 3.3.0
-**Last Updated:** 2026-04-20
+**Version:** 3.4.0
+**Last Updated:** 2026-05-04
 **Project:** Web browser-based horse breeding simulation game
+
+---
+
+## 🚨 NON-NEGOTIABLE WORKFLOW RULES (User Mandate, 2026-05-04)
+
+These rules override every other workflow guidance in this file or any session-start hook. Established after a 62-commit rebase nightmare to master that should never have happened.
+
+### 1. MAIN ONLY. No feature branches.
+
+- Every session starts with `git checkout master && git pull --rebase origin master`.
+- Every `bd` issue lands as ONE small commit (or two if test-then-fix) **directly on master**, pushed same-session.
+- Never open a feature branch. Never accumulate work for "later landing." If a change is too big for one commit, it's too big for one session — split it.
+- The push command is `git push origin master`. If branch protection blocks the push, report it — DO NOT detour onto a side branch.
+- The user must SEE changes on Railway as we go. Branches that don't deploy don't count.
+
+### 2. REAL DB ONLY. No test database.
+
+- `.env.test` points at the canonical Equoria DB. Tests run against production data.
+- Test fixtures must coexist with real game state — never assume test data dominates leaderboards, counts, ordering, etc. Filter by name pattern or unique IDs, not relative position.
+- Cleanup logic must be SCOPED (`prisma.X.deleteMany({ where: { name: { startsWith: 'TestFixture-' } } })`), never broad. A loose cleanup pattern wipes real user data.
+- Backend test cleanup that uses raw `deleteMany()` without a where-clause is forbidden.
+- This is the user's explicit choice. Risks acknowledged. Do not propose reverting to a test DB.
+
+### 3. NO LONG-LIVED BRANCHES. EVER.
+
+- `fix/*`, `feature/*`, `epic-*`, etc. branches are forbidden going forward.
+- The only exception is a hotfix that requires staged rollback infrastructure (e.g., a major schema migration) — and even that requires explicit user authorization at the start of the work.
+- If you find yourself thinking "I'll just commit this on a branch and merge later," STOP. Land it on master or don't do it.
+
+### 4. PRE-PUSH HOOK SLOWNESS IS THE COST OF SAFETY.
+
+- The pre-push hook runs the full backend Jest suite (~10 min). That's intentional.
+- Bypass with `--no-verify` ONLY when the user has explicitly authorized it for THIS specific push (not as a standing waiver).
+- A failing pre-push test is a real signal. Fix the test or the code; don't bypass by default.
+
+### 5. ONE PUSH AT A TIME.
+
+- Never run two `git push` processes in parallel. They lock contention each other and one will silently fail.
+- If a push appears stuck, check the pre-push hook output before starting another.
+
+### Why these rules exist
+
+The 2026-05-04 incident: 56 commits accumulated on `fix/21r-security-hardening-corrected` over weeks because each session built on the prior session's branch instead of branching off master. Result: a multi-hour rebase with architectural conflicts (master and branch had parallel security-middleware refactors with different APIs), forced `--no-verify` push to bypass a leaderboard test that was brittle to real-DB drift, and bypass of 24 required CI status checks to land everything at once. None of those failure modes existed if the work had landed in small same-session commits.
 
 ---
 
@@ -134,6 +177,15 @@ bd update <id> --status=in_progress  # Claim before starting
 ---
 
 ## 🚨 Non-Negotiable Process Rules
+
+### Fix Discipline — Two Rules That Apply To Every Defect-Fix
+
+These are the contract for ANY defect fix, hardening issue, or PR addressing reviewer feedback. Both load as session context.
+
+- **`.claude/rules/EDGE_CASE_FIX_DISCIPLINE.md`** — prevents bypasses (no skips, no continue-on-error, no widened regex, no exclusion-as-cheat, no silent catches in security boundaries). Read it before claiming any 21R-\* issue.
+- **`.claude/rules/OPTIMAL_FIX_DISCIPLINE.md`** — prevents shallow fixes (AC met but problem not actually solved). Requires: AC audit, sentinel-positive test, adjacent-locations check, no forward-reference docs, alternative considered, what-was-NOT-done report. **"Done" is the §8 checklist, not the literal AC.**
+
+If you find yourself thinking "AC met, ship it" — stop and re-read `OPTIMAL_FIX_DISCIPLINE.md` §1, §2, §6. Cheap-default ≠ correct-default.
 
 ### BMad Methodology — Follow By The Book
 
@@ -272,7 +324,7 @@ equoria/
 │   ├── routes/          # API endpoints
 │   ├── models/          # Data models
 │   └── __tests__/       # 468+ tests
-├── frontend/            # React 19 browser game (~60% complete)
+├── frontend/            # React 19 browser game (Epic 18+ shipped — see Epic Deliverables)
 │   └── src/
 ├── packages/database/   # Prisma ORM + PostgreSQL
 └── .claude/            # Documentation (call via skills)
@@ -280,31 +332,11 @@ equoria/
 
 ---
 
-## 🔧 Current Focus Areas
+## 🔧 Recent Epic Highlights
 
-### Epic 9A: Technical Health Sprint ✅ COMPLETE
+Active priority is **Epic 21R — Beta Deployment Readiness Remediation** (see top of file).
 
-1. **9A-1** ✅ Stabilize flaky tests + restore pre-push hook
-2. **9A-2** Historical Playwright E2E baseline. Any old graceful skips are invalid for 21R beta-readiness evidence.
-3. **9A-3** ✅ Project Health Pass (CLAUDE.md, sprint-status sync)
-4. **Quick Actions Bundle** ✅ AI-7-2, AI-7-3, AI-7-4, AI-8-1
-
-### Epic 9B: Navigation & World Hub ✅ COMPLETE
-
-1. **9B-1** ✅ World Hub Page (`/world`) — 8 location cards
-2. **9B-2** ✅ Navigation Restructure — fixed routes, added World/Leaderboards/Settings
-3. **9B-3** ✅ Horse Care Status Strip — `careStatus` prop on HorseCard
-4. **9B-4** ✅ Settings Page (`/settings`) — Account / Notifications / Display
-
-### Epic 9C: Rider System ✅ COMPLETE
-
-1. **9C-1** ✅ Rider Type System — 4 personalities, 3 skill levels, personality badge/display
-2. **9C-2** ✅ Rider Dashboard — slot counter, rider cards, AssignRiderModal
-3. **9C-3** ✅ Career & Discovery — XP/level progress, 3 discovery categories (6 slots)
-4. **9C-4** ✅ Rider Marketplace — RiderList with filter/sort, hire flow, RidersPage
-5. **9C-5** ⏭️ Wire to Live API — deferred (no backend rider endpoints yet)
-
-### Next Epic: TBD (Epic 10)
+For shipped Epic deliverables (9A → 18), see the **Epic Deliverables** sections above and `git log`. Epics 9A/9B/9C/11/12/13/14/16/17/18 are all closed.
 
 ---
 
@@ -318,3 +350,52 @@ equoria/
 
 **For detailed documentation, use `/` skills above.**
 **Full docs in `.claude/` - don't load manually unless debugging.**
+
+<!-- BEGIN BEADS INTEGRATION v:1 profile:minimal hash:ca08a54f -->
+
+## Beads Issue Tracker
+
+This project uses **bd (beads)** for issue tracking. Run `bd prime` to see full workflow context and commands.
+
+### Quick Reference
+
+```bash
+bd ready              # Find available work
+bd show <id>          # View issue details
+bd update <id> --claim  # Claim work
+bd close <id>         # Complete work
+```
+
+### Rules
+
+- Use `bd` for ALL task tracking — do NOT use TodoWrite, TaskCreate, or markdown TODO lists
+- Run `bd prime` for detailed command reference and session close protocol
+- Use `bd remember` for persistent knowledge — do NOT use MEMORY.md files
+
+## Session Completion
+
+**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
+
+**MANDATORY WORKFLOW:**
+
+1. **File issues for remaining work** - Create issues for anything that needs follow-up
+2. **Run quality gates** (if code changed) - Tests, linters, builds
+3. **Update issue status** - Close finished work, update in-progress items
+4. **PUSH TO REMOTE** - This is MANDATORY:
+   ```bash
+   git pull --rebase
+   bd dolt push
+   git push
+   git status  # MUST show "up to date with origin"
+   ```
+5. **Clean up** - Clear stashes, prune remote branches
+6. **Verify** - All changes committed AND pushed
+7. **Hand off** - Provide context for next session
+
+**CRITICAL RULES:**
+
+- Work is NOT complete until `git push` succeeds
+- NEVER stop before pushing - that leaves work stranded locally
+- NEVER say "ready to push when you are" - YOU must push
+- If push fails, resolve and retry until it succeeds
+<!-- END BEADS INTEGRATION -->

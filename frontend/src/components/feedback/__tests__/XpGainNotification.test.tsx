@@ -336,8 +336,9 @@ describe('XpGainNotification', () => {
     it('should have a gradient or themed background for the XP text', () => {
       render(<XpGainNotification {...defaultProps} />);
 
+      // Component migrated to dark cobalt theme: bg-white → glass-panel utility
       const notification = screen.getByTestId('xp-gain-notification');
-      expect(notification).toHaveClass('bg-white');
+      expect(notification).toHaveClass('glass-panel');
     });
 
     it('should have shadow and rounded styling', () => {

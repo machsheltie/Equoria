@@ -123,7 +123,7 @@ describe('Groom Bonus Traits System', () => {
         /* already gone */
       }
       try {
-        await prisma.horse.delete({ where: { id: testHorse.id } });
+        await prisma.horse.deleteMany({ where: { id: testHorse.id } });
       } catch {
         /* already gone */
       }
@@ -131,21 +131,21 @@ describe('Groom Bonus Traits System', () => {
     // Groom must be deleted before user because groom has a userId FK
     if (testGroom) {
       try {
-        await prisma.groom.delete({ where: { id: testGroom.id } });
+        await prisma.groom.deleteMany({ where: { id: testGroom.id } });
       } catch {
         /* already gone */
       }
     }
     if (testUser) {
       try {
-        await prisma.user.delete({ where: { id: testUser.id } });
+        await prisma.user.deleteMany({ where: { id: testUser.id } });
       } catch {
         /* already gone */
       }
     }
     if (testBreed) {
       try {
-        await prisma.breed.delete({ where: { id: testBreed.id } });
+        await prisma.breed.deleteMany({ where: { id: testBreed.id } });
       } catch {
         /* already gone */
       }

@@ -73,7 +73,8 @@ describe('PrizeNotificationModal', () => {
       renderModal({ isOpen: true });
 
       expect(screen.getByTestId('prize-notification-modal')).toBeInTheDocument();
-      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      // BaseModal nests an inner dialog inside an outer container; both have role=dialog
+      expect(screen.getAllByRole('dialog').length).toBeGreaterThanOrEqual(1);
     });
 
     it('should display horse name correctly', () => {
@@ -128,7 +129,8 @@ describe('PrizeNotificationModal', () => {
 
       const placementBadge = screen.getByTestId('placement-badge');
       expect(placementBadge).toHaveTextContent('2nd Place');
-      expect(placementBadge).toHaveClass('bg-gray-300');
+      // Silver badge uses slate-tinted background per design tokens
+      expect(placementBadge).toHaveClass('bg-[rgba(148,163,184,0.3)]');
 
       // Check for medal icons (header and badge)
       const medalIcons = screen.getAllByTestId('medal-icon');
@@ -174,7 +176,7 @@ describe('PrizeNotificationModal', () => {
       const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
       renderModal();
 
-      const backdrop = screen.getByTestId('modal-backdrop');
+      const backdrop = screen.getByTestId('prize-notification-modal-backdrop');
       await user.click(backdrop);
 
       expect(mockOnClose).toHaveBeenCalledTimes(1);
@@ -220,15 +222,20 @@ describe('PrizeNotificationModal', () => {
     it('should have fade-in animation class when opening', () => {
       renderModal();
 
-      const modal = screen.getByTestId('prize-notification-modal');
-      expect(modal).toHaveClass('animate-fade-in');
+      // Animations now live on the inner celebration wrapper inside BaseModal's content
+      const content = screen.getByTestId('prize-notification-modal-content');
+      const animatedWrapper = content.firstElementChild as HTMLElement | null;
+      expect(animatedWrapper).not.toBeNull();
+      expect(animatedWrapper).toHaveClass('animate-fade-in');
     });
 
     it('should have scale-up animation class when opening', () => {
       renderModal();
 
-      const modal = screen.getByTestId('prize-notification-modal');
-      expect(modal).toHaveClass('animate-scale-up');
+      const content = screen.getByTestId('prize-notification-modal-content');
+      const animatedWrapper = content.firstElementChild as HTMLElement | null;
+      expect(animatedWrapper).not.toBeNull();
+      expect(animatedWrapper).toHaveClass('animate-scale-up');
     });
 
     it('should have celebration gradient background', () => {
@@ -252,9 +259,10 @@ describe('PrizeNotificationModal', () => {
       renderModal();
 
       const modal = screen.getByTestId('prize-notification-modal');
-      expect(modal).toHaveAttribute('aria-labelledby', 'prize-modal-title');
+      // BaseModal namespaces ARIA ids by data-testid
+      expect(modal).toHaveAttribute('aria-labelledby', 'prize-notification-modal-title');
 
-      const title = document.getElementById('prize-modal-title');
+      const title = document.getElementById('prize-notification-modal-title');
       expect(title).toBeInTheDocument();
     });
 
@@ -432,8 +440,9 @@ describe('PrizeNotificationModal', () => {
     it('should have proper z-index to overlay other modals', () => {
       renderModal();
 
-      const backdrop = screen.getByTestId('modal-backdrop');
-      expect(backdrop).toHaveClass('z-50');
+      const backdrop = screen.getByTestId('prize-notification-modal-backdrop');
+      // Z-index uses design token to keep modal above other overlays
+      expect(backdrop).toHaveClass('z-[var(--z-modal)]');
     });
   });
 });

@@ -39,8 +39,10 @@ const errorHandler = (err, req, res, next) => {
   // If it's already our custom error class (AppError or subclass), use it directly
   let error = err;
 
-  // Only process/transform if it's NOT already an AppError instance
-  if (!(err instanceof AppError)) {
+  // Only process/transform if it's NOT already an AppError instance.
+  // Symbol-marker check survives module-cache duplication
+  // (jest.unstable_mockModule etc.); see errors/AppError.mjs comment.
+  if (!AppError.isAppError(err)) {
     error = { ...err };
     error.message = err.message;
 

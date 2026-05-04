@@ -131,41 +131,45 @@ describe('MilestoneCard Component', () => {
 
   describe('card styling', () => {
     it('should apply current milestone styling when isCurrent is true', () => {
+      // Component migrated to dark cobalt theme: blue-500/50 border + translucent blue bg + ring
       const { container } = render(
         <MilestoneCard milestone={currentMilestone} foalAge={45} isCurrent={true} />
       );
       const card = container.firstChild as HTMLElement;
-      expect(card.className).toContain('border-blue-500');
-      expect(card.className).toContain('bg-blue-50');
+      expect(card.className).toContain('border-blue-500/50');
+      expect(card.className).toContain('bg-[rgba(37,99,235,0.15)]');
       expect(card.className).toContain('ring-2');
     });
 
     it('should apply completed milestone styling', () => {
+      // Component migrated to dark theme: completed uses translucent emerald bg + border
       const { container } = render(
         <MilestoneCard milestone={completedMilestone} foalAge={30} isCurrent={false} />
       );
       const card = container.firstChild as HTMLElement;
-      expect(card.className).toContain('bg-green-50/50');
-      expect(card.className).toContain('border-green-200');
+      expect(card.className).toContain('bg-[rgba(16,185,129,0.08)]');
+      expect(card.className).toContain('border-emerald-500/30');
     });
 
     it('should apply pending milestone styling', () => {
+      // Component migrated to dark theme: pending uses translucent cobalt + opacity
       const { container } = render(
         <MilestoneCard milestone={pendingMilestone} foalAge={45} isCurrent={false} />
       );
       const card = container.firstChild as HTMLElement;
-      expect(card.className).toContain('bg-gray-50/50');
-      expect(card.className).toContain('border-gray-200');
+      expect(card.className).toContain('bg-[rgba(15,35,70,0.3)]');
+      expect(card.className).toContain('border-[rgba(37,99,235,0.2)]');
       expect(card.className).toContain('opacity-80');
     });
 
     it('should apply default styling when not current, completed, or pending', () => {
+      // Component migrated to dark theme: default uses translucent cobalt bg + border
       const { container } = render(
         <MilestoneCard milestone={currentMilestone} foalAge={45} isCurrent={false} />
       );
       const card = container.firstChild as HTMLElement;
-      expect(card.className).toContain('border-slate-200');
-      expect(card.className).toContain('bg-white');
+      expect(card.className).toContain('border-[rgba(37,99,235,0.3)]');
+      expect(card.className).toContain('bg-[rgba(15,35,70,0.4)]');
     });
   });
 
@@ -333,12 +337,14 @@ describe('MilestoneCard Component', () => {
     });
 
     it('should use green color for scores >= 5', () => {
+      // Component migrated to dark theme: formatScore returns 'text-emerald-400' for >=5
       render(<MilestoneCard milestone={completedMilestone} foalAge={30} isCurrent={false} />);
       const scoreText = screen.getByText('+8');
-      expect(scoreText).toHaveClass('text-green-600');
+      expect(scoreText).toHaveClass('text-emerald-400');
     });
 
     it('should use blue color for scores 0-4', () => {
+      // Component migrated to dark theme: formatScore returns 'text-blue-400' for 0-4
       const midScoreMilestone = {
         ...completedMilestone,
         score: 3,
@@ -346,10 +352,11 @@ describe('MilestoneCard Component', () => {
 
       render(<MilestoneCard milestone={midScoreMilestone} foalAge={30} isCurrent={false} />);
       const scoreText = screen.getByText('+3');
-      expect(scoreText).toHaveClass('text-blue-600');
+      expect(scoreText).toHaveClass('text-blue-400');
     });
 
     it('should use amber color for scores -5 to -1', () => {
+      // Component migrated to dark theme: formatScore returns 'text-amber-400' for -5..-1
       const lowScoreMilestone = {
         ...completedMilestone,
         score: -3,
@@ -357,10 +364,11 @@ describe('MilestoneCard Component', () => {
 
       render(<MilestoneCard milestone={lowScoreMilestone} foalAge={30} isCurrent={false} />);
       const scoreText = screen.getByText('-3');
-      expect(scoreText).toHaveClass('text-amber-600');
+      expect(scoreText).toHaveClass('text-amber-400');
     });
 
     it('should use red color for scores < -5', () => {
+      // Component migrated to dark theme: formatScore returns 'text-red-400' for < -5
       const veryLowScoreMilestone = {
         ...completedMilestone,
         score: -8,
@@ -368,7 +376,7 @@ describe('MilestoneCard Component', () => {
 
       render(<MilestoneCard milestone={veryLowScoreMilestone} foalAge={30} isCurrent={false} />);
       const scoreText = screen.getByText('-8');
-      expect(scoreText).toHaveClass('text-red-600');
+      expect(scoreText).toHaveClass('text-red-400');
     });
 
     it('should not display + prefix for score of 0', () => {
@@ -404,10 +412,11 @@ describe('MilestoneCard Component', () => {
     });
 
     it('should apply green badge styling to traits', () => {
+      // Component migrated to dark theme: trait badge uses translucent emerald + emerald-400 text
       render(<MilestoneCard milestone={completedMilestone} foalAge={30} isCurrent={false} />);
       const traitBadge = screen.getByText('Steady Gait');
-      expect(traitBadge).toHaveClass('bg-green-100');
-      expect(traitBadge).toHaveClass('text-green-700');
+      expect(traitBadge).toHaveClass('bg-[rgba(16,185,129,0.15)]');
+      expect(traitBadge).toHaveClass('text-emerald-400');
     });
 
     it('should not display traits section when traitsConfirmed is empty', () => {
@@ -475,7 +484,7 @@ describe('MilestoneCard Component', () => {
       const { container } = render(
         <MilestoneCard milestone={currentMilestone} foalAge={45} isCurrent={true} />
       );
-      const progressBar = container.querySelector('.bg-blue-600');
+      const progressBar = container.querySelector('.bg-blue-500');
       expect(progressBar).toBeInTheDocument();
     });
 
@@ -485,7 +494,7 @@ describe('MilestoneCard Component', () => {
       const { container } = render(
         <MilestoneCard milestone={currentMilestone} foalAge={45} isCurrent={true} />
       );
-      const progressBar = container.querySelector('.bg-blue-600') as HTMLElement;
+      const progressBar = container.querySelector('.bg-blue-500') as HTMLElement;
       const width = progressBar.style.width;
       // Check it's approximately 23.7%
       expect(width).toMatch(/2[34]\.?/); // 23 or 24 percent
@@ -496,7 +505,7 @@ describe('MilestoneCard Component', () => {
       const { container } = render(
         <MilestoneCard milestone={currentMilestone} foalAge={100} isCurrent={true} />
       );
-      const progressBar = container.querySelector('.bg-blue-600') as HTMLElement;
+      const progressBar = container.querySelector('.bg-blue-500') as HTMLElement;
       expect(progressBar.style.width).toBe('100%');
     });
 
@@ -504,7 +513,7 @@ describe('MilestoneCard Component', () => {
       const { container } = render(
         <MilestoneCard milestone={currentMilestone} foalAge={31} isCurrent={true} />
       );
-      const progressBar = container.querySelector('.bg-blue-600') as HTMLElement;
+      const progressBar = container.querySelector('.bg-blue-500') as HTMLElement;
       expect(progressBar.style.width).toBe('0%');
     });
 

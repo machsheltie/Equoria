@@ -5,24 +5,7 @@
  */
 
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-
-// Mock logger before importing service
-jest.mock(
-  '../../utils/logger.mjs',
-  () => ({
-    default: {
-      info: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-      debug: jest.fn(),
-    },
-  }),
-  { virtual: true },
-);
-
-// Dynamically import after mocking
-const featureFlagService = await import('../../services/featureFlagService.mjs');
-const {
+import {
   isFeatureEnabled,
   getFeatureVariant,
   getAllFlags,
@@ -30,7 +13,13 @@ const {
   resetEvaluationStats,
   overrideFlag,
   clearOverrides,
-} = featureFlagService;
+} from '../../services/featureFlagService.mjs';
+
+// NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): the
+// previous jest.mock-of-logger was purely cosmetic — the test never
+// asserted on logger calls, only suppressed noise. The real logger
+// runs at LOG_LEVEL=error per setup.mjs which keeps test output clean
+// enough; removing the mock exercises the real logger transport.
 
 describe('Feature Flag Service', () => {
   const originalEnv = process.env;

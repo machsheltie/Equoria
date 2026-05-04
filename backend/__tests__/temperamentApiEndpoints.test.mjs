@@ -4,18 +4,11 @@
 // No Prisma mock needed — getTemperamentDefinitions does no DB queries.
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { getTemperamentDefinitions } from '../modules/horses/controllers/horseController.mjs';
 
-// Mock logger to suppress output in tests
-const mockLogger = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-};
-jest.unstable_mockModule('../utils/logger.mjs', () => ({ default: mockLogger }));
-
-// Import after mocking
-const { getTemperamentDefinitions } = await import('../modules/horses/controllers/horseController.mjs');
+// NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): the
+// previous logger mock was for noise suppression — no logger
+// assertions in this file. Real logger runs at LOG_LEVEL=error.
 
 // Helper: create mock response
 function createMockRes() {

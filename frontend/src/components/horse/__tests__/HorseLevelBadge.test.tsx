@@ -77,15 +77,17 @@ describe('HorseLevelBadge', () => {
     });
 
     it('should apply Silver tier colors for levels 6-10', () => {
+      // Silver tier was migrated to dark-theme tokens (navy bg + blue border).
+      // Verify by class substring since arbitrary values include parens.
       const { rerender } = render(<HorseLevelBadge level={6} />);
       let badge = screen.getByTestId('horse-level-badge');
-      expect(badge).toHaveClass('bg-slate-400');
-      expect(badge).toHaveClass('text-slate-900');
-      expect(badge).toHaveClass('border-slate-500');
+      expect(badge.className).toMatch(/bg-\[rgba\(15,35,70/);
+      expect(badge.className).toMatch(/text-\[rgb\(220,235,255\)\]/);
+      expect(badge.className).toMatch(/border-\[rgba\(37,99,235/);
 
       rerender(<HorseLevelBadge level={10} />);
       badge = screen.getByTestId('horse-level-badge');
-      expect(badge).toHaveClass('bg-slate-400');
+      expect(badge.className).toMatch(/bg-\[rgba\(15,35,70/);
     });
 
     it('should apply Gold tier colors for levels 11-15', () => {
@@ -299,7 +301,8 @@ describe('HorseLevelBadge', () => {
       const result = getLevelTier(8);
       expect(result.tier).toBe('silver');
       expect(result.tierName).toBe('Silver');
-      expect(result.colorClasses).toContain('bg-slate-400');
+      // Silver was migrated to dark-theme arbitrary rgba navy palette
+      expect(result.colorClasses).toContain('bg-[rgba(15,35,70,0.5)]');
       expect(result.nextTierLevel).toBe(11);
       expect(result.nextTierName).toBe('Gold');
     });

@@ -66,8 +66,9 @@ describe('EvaluationExplanation Component', () => {
 
   describe('score-based styling - excellent (score >= 5)', () => {
     it('should show green styling for score 5', () => {
+      // Component migrated to dark theme: score >= 3 uses border-emerald-500/30
       const { container } = render(<EvaluationExplanation {...defaultProps} score={5} />);
-      const mainContainer = container.querySelector('.border-green-200');
+      const mainContainer = container.querySelector('.border-emerald-500\\/30');
       expect(mainContainer).toBeInTheDocument();
     });
 
@@ -85,8 +86,9 @@ describe('EvaluationExplanation Component', () => {
 
   describe('score-based styling - good (3 <= score < 5)', () => {
     it('should show green styling for score 3', () => {
+      // Component migrated to dark theme: score >= 3 uses border-emerald-500/30
       const { container } = render(<EvaluationExplanation {...defaultProps} score={3} />);
-      const mainContainer = container.querySelector('.border-green-200');
+      const mainContainer = container.querySelector('.border-emerald-500\\/30');
       expect(mainContainer).toBeInTheDocument();
     });
 
@@ -104,8 +106,9 @@ describe('EvaluationExplanation Component', () => {
 
   describe('score-based styling - neutral (0 <= score < 3)', () => {
     it('should show blue styling for score 0', () => {
+      // Component migrated to dark theme: 0 <= score < 3 uses border-blue-500/30
       const { container } = render(<EvaluationExplanation {...defaultProps} score={0} />);
-      const mainContainer = container.querySelector('.border-blue-200');
+      const mainContainer = container.querySelector('.border-blue-500\\/30');
       expect(mainContainer).toBeInTheDocument();
     });
 
@@ -116,16 +119,20 @@ describe('EvaluationExplanation Component', () => {
     });
 
     it('should show blue styling for score 2', () => {
+      // Component migrated to dark theme: 0 <= score < 3 uses border-blue-500/30
       const { container } = render(<EvaluationExplanation {...defaultProps} score={2} />);
-      const mainContainer = container.querySelector('.border-blue-200');
+      const mainContainer = container.querySelector('.border-blue-500\\/30');
       expect(mainContainer).toBeInTheDocument();
     });
   });
 
   describe('score-based styling - poor (-3 <= score < 0)', () => {
     it('should show amber styling for score -1', () => {
+      // Component migrated to dark theme: score < 0 uses translucent amber border
       const { container } = render(<EvaluationExplanation {...defaultProps} score={-1} />);
-      const mainContainer = container.querySelector('.border-amber-200');
+      const mainContainer = container.querySelector(
+        '.border-\\[rgba\\(212\\,168\\,67\\,0\\.3\\)\\]'
+      );
       expect(mainContainer).toBeInTheDocument();
     });
 
@@ -136,16 +143,23 @@ describe('EvaluationExplanation Component', () => {
     });
 
     it('should show amber styling for score -3', () => {
+      // Component migrated to dark theme: score < 0 uses translucent amber border
       const { container } = render(<EvaluationExplanation {...defaultProps} score={-3} />);
-      const mainContainer = container.querySelector('.border-amber-200');
+      const mainContainer = container.querySelector(
+        '.border-\\[rgba\\(212\\,168\\,67\\,0\\.3\\)\\]'
+      );
       expect(mainContainer).toBeInTheDocument();
     });
   });
 
   describe('score-based styling - critical (score < -3)', () => {
     it('should show red styling for score -4', () => {
+      // Component migrated to dark theme: score < 0 uses translucent amber border
+      // (component does not differentiate score < -3 from score < 0 in container border)
       const { container } = render(<EvaluationExplanation {...defaultProps} score={-4} />);
-      const mainContainer = container.querySelector('.border-amber-200');
+      const mainContainer = container.querySelector(
+        '.border-\\[rgba\\(212\\,168\\,67\\,0\\.3\\)\\]'
+      );
       expect(mainContainer).toBeInTheDocument();
     });
 
@@ -270,8 +284,9 @@ describe('EvaluationExplanation Component', () => {
 
   describe('icon and color consistency', () => {
     it('should show consistent green colors for high scores', () => {
+      // Component migrated to dark theme: high-score "green" is now emerald-* family
       const { container } = render(<EvaluationExplanation {...defaultProps} score={5} />);
-      const greenElements = container.querySelectorAll('[class*="green"]');
+      const greenElements = container.querySelectorAll('[class*="emerald"]');
       expect(greenElements.length).toBeGreaterThan(0);
     });
 

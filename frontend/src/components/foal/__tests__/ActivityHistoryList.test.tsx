@@ -344,7 +344,8 @@ describe('ActivityHistoryList Component', () => {
 
       render(<ActivityHistoryList history={[item]} />);
       const bondingValue = screen.getByText('+5');
-      expect(bondingValue).toHaveClass('text-green-600');
+      // Component migrated to dark theme: getResultColor returns 'text-emerald-400' for positive
+      expect(bondingValue).toHaveClass('text-emerald-400');
     });
 
     it('should display bonding change in red for negative values', () => {
@@ -359,7 +360,8 @@ describe('ActivityHistoryList Component', () => {
 
       render(<ActivityHistoryList history={[item]} />);
       const bondingValue = screen.getByText('-3');
-      expect(bondingValue).toHaveClass('text-red-600');
+      // Component migrated to dark theme: getResultColor returns 'text-red-400' for negative
+      expect(bondingValue).toHaveClass('text-red-400');
     });
 
     it('should not display bonding section when change is 0', () => {
@@ -420,8 +422,8 @@ describe('ActivityHistoryList Component', () => {
 
       render(<ActivityHistoryList history={[item]} />);
       const stressValue = screen.getByText('-5');
-      // Inverted: negative stress change (reduction) is good, so green
-      expect(stressValue).toHaveClass('text-green-600');
+      // Inverted: negative stress change (reduction) is good — dark theme uses emerald-400
+      expect(stressValue).toHaveClass('text-emerald-400');
     });
 
     it('should use red for positive stress change (increase)', () => {
@@ -436,8 +438,8 @@ describe('ActivityHistoryList Component', () => {
 
       render(<ActivityHistoryList history={[item]} />);
       const stressValue = screen.getByText('+3');
-      // Inverted: positive stress change (increase) is bad, so red
-      expect(stressValue).toHaveClass('text-red-600');
+      // Inverted: positive stress change (increase) is bad — dark theme uses red-400
+      expect(stressValue).toHaveClass('text-red-400');
     });
 
     it('should not display stress section when change is 0', () => {
@@ -543,8 +545,9 @@ describe('ActivityHistoryList Component', () => {
 
       render(<ActivityHistoryList history={[item]} />);
       const badge = screen.getByText('Boldness: +2');
-      expect(badge).toHaveClass('bg-green-50');
-      expect(badge).toHaveClass('text-green-700');
+      // Component migrated to dark theme: positive temperament uses translucent emerald
+      expect(badge).toHaveClass('bg-[rgba(16,185,129,0.1)]');
+      expect(badge).toHaveClass('text-emerald-400');
     });
 
     it('should use amber background for negative changes', () => {
@@ -566,8 +569,9 @@ describe('ActivityHistoryList Component', () => {
 
       render(<ActivityHistoryList history={[item]} />);
       const badge = screen.getByText('Boldness: -2');
-      expect(badge).toHaveClass('bg-amber-50');
-      expect(badge).toHaveClass('text-amber-700');
+      // Component migrated to dark theme: negative temperament uses translucent amber
+      expect(badge).toHaveClass('bg-[rgba(212,168,67,0.1)]');
+      expect(badge).toHaveClass('text-amber-400');
     });
 
     it('should not display temperament section when no changes', () => {
@@ -666,8 +670,9 @@ describe('ActivityHistoryList Component', () => {
 
       render(<ActivityHistoryList history={[item]} />);
       const badge = screen.getByText('Steady Gait');
-      expect(badge).toHaveClass('bg-emerald-100');
-      expect(badge).toHaveClass('text-emerald-700');
+      // Component migrated to dark theme: trait badge uses translucent emerald
+      expect(badge).toHaveClass('bg-[rgba(16,185,129,0.1)]');
+      expect(badge).toHaveClass('text-emerald-400');
     });
 
     it('should not display traits section when no traits discovered', () => {

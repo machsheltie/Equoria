@@ -1,0 +1,40 @@
+name: Doctrine Gate
+
+# Equoria-5nqe (B1): runs scripts/doctrine-checks/run-all.sh on every PR
+# and on master pushes. The suite is the machine-checked enforcement of
+# CLAUDE.md / 21R Beta Readiness Doctrine / EDGE_CASE_FIX_DISCIPLINE rules.
+# Each script aggregates one rule; failure of any script fails the gate.
+#
+# Activation as a merge-blocker requires a branch-protection rule on master
+# that requires this job. The job runs and reports today even before that
+# toggle is set so contributors see the result on PRs.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+  push:
+    branches:
+      - master
+
+permissions:
+  contents: read
+
+concurrency:
+  group: doctrine-gate-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  doctrine-gate:
+    name: Doctrine Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22.x'
+
+      - name: Run doctrine-checks suite
+        run: bash scripts/doctrine-checks/run-all.sh

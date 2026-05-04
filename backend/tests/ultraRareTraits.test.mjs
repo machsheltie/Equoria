@@ -43,7 +43,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
       }
       await prisma.horse.deleteMany({ where: { userId: staleUser.id } });
       await prisma.groom.deleteMany({ where: { userId: staleUser.id } });
-      await prisma.user.delete({ where: { id: staleUser.id } });
+      await prisma.user.deleteMany({ where: { id: staleUser.id } });
     }
 
     // Create test user

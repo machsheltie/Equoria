@@ -7,23 +7,19 @@
 import { describe, beforeAll, afterAll, beforeEach, expect, test, jest } from '@jest/globals';
 import prisma from '../../packages/database/prismaClient.mjs';
 import bcrypt from 'bcryptjs';
+import { randomBytes } from 'node:crypto';
 
-// Mock logger to suppress noise (logger is external infrastructure, not business logic)
-const mockLogger = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-};
-jest.unstable_mockModule('../utils/logger.mjs', () => ({ default: mockLogger }));
+// NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): the
+// previous jest.unstable_mockModule-of-logger was purely cosmetic
+// noise suppression — no logger assertions besides .mockClear() in
+// beforeEach. The real logger fires at LOG_LEVEL=error per setup.mjs.
 
-// Import after logger mock
-const { getConformation, getConformationAnalysis } = await import('../modules/horses/controllers/horseController.mjs');
-const { CONFORMATION_REGIONS } = await import('../modules/horses/services/conformationService.mjs');
-const { getBreedProfile } = await import('../modules/horses/data/breedProfileLoader.mjs');
+import { getConformation, getConformationAnalysis } from '../modules/horses/controllers/horseController.mjs';
+import { CONFORMATION_REGIONS } from '../modules/horses/services/conformationService.mjs';
+import { getBreedProfile } from '../modules/horses/data/breedProfileLoader.mjs';
 
 // ── Test data setup ────────────────────────────────────────────────────────
-const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).slice(2, 7)}`;
+const ts = `${randomBytes(8).toString('hex')}_${Math.random().toString(36).slice(2, 7)}`;
 let testUser;
 let testBreed;
 const createdHorseIds = [];
@@ -49,7 +45,7 @@ const BASE_SCORES = {
 async function seedHorse(scores) {
   const horse = await prisma.horse.create({
     data: {
-      name: `ConfApiTest_${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).slice(2, 5)}`,
+      name: `ConfApiTest_${randomBytes(8).toString('hex')}_${Math.random().toString(36).slice(2, 5)}`,
       sex: 'Mare',
       dateOfBirth: new Date('2020-01-01'),
       age: 4,
@@ -102,7 +98,7 @@ afterAll(async () => {
     await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } });
   }
   if (testUser?.id) {
-    await prisma.user.delete({ where: { id: testUser.id } });
+    await prisma.user.deleteMany({ where: { id: testUser.id } });
   }
 });
 
@@ -190,7 +186,6 @@ describe('getConformationAnalysis', () => {
       await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } });
       createdHorseIds.length = 0;
     }
-    mockLogger.warn.mockClear();
   });
 
   test('returns percentile analysis per region for a horse with scores', async () => {

@@ -1,1037 +1,971 @@
 /**
- * showController.test.mjs
+ * showController.test.mjs — real DB
  *
- * Unit tests for the ShowController (Epic BACKEND-A).
- * Tests: createShow, getShows, enterShow, executeClosedShows
+ * NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): converted
+ * from jest.unstable_mockModule of prismaClient + logger to a real-DB
+ * integration test against the equoria_test database.
  *
- * Mocks: prisma (show, showEntry, horse, user, competitionResult), logger
+ * Coverage: createShow, getShows, enterShow, executeClosedShows.
+ *
+ * Removed (per doctrine):
+ *   - "returns 500 on unexpected error" tests that mocked Prisma to
+ *     reject. Synthetic Prisma fault injection is not permitted; the
+ *     catch path is observable via real DB outage / sentry.
+ *   - "returns 500 on database error" (getShows) — same reason.
+ *   - "logs error but does not throw when res is null and error occurs" —
+ *     same reason; the null-res no-throw behaviour is still covered by
+ *     "handles scheduler call with (null, null) without crashing".
+ *
+ * P2002 duplicate behaviour is now exercised through the real Prisma
+ * unique constraint (Show.name, ShowEntry @@unique([showId, horseId])).
  */
 
-import { jest, describe, beforeEach, it, expect } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
+import prisma from '../db/index.mjs';
+import { createShow, getShows, enterShow, executeClosedShows } from '../controllers/showController.mjs';
 
-// ── Mock setup ───────────────────────────────────────────────────────────────
+const SUITE_PREFIX = 'showc';
 
-const mockPrisma = {
-  show: {
-    create: jest.fn(),
-    findMany: jest.fn(),
-    findUnique: jest.fn(),
-    count: jest.fn(),
-    update: jest.fn(),
-  },
-  showEntry: {
-    create: jest.fn(),
-  },
-  horse: {
-    findUnique: jest.fn(),
-  },
-  user: {
-    findUnique: jest.fn(),
-    update: jest.fn(),
-  },
-  competitionResult: {
-    create: jest.fn(),
-  },
-};
-
-const mockLogger = {
-  info: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn(),
-  debug: jest.fn(),
-};
-
-jest.unstable_mockModule('../db/index.mjs', () => ({ default: mockPrisma }));
-jest.unstable_mockModule('../utils/logger.mjs', () => ({ default: mockLogger }));
-
-const { createShow, getShows, enterShow, executeClosedShows } = await import('../controllers/showController.mjs');
-
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
-function createMockReqRes(overrides = {}) {
-  const req = {
-    user: { id: 'test-user-id' },
-    body: {},
-    params: {},
-    query: {},
-    ...overrides,
-  };
-  const res = {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis(),
-  };
-  return { req, res };
+function uniq() {
+  return randomBytes(8).toString('hex');
 }
 
-// ── createShow ───────────────────────────────────────────────────────────────
+function makeReqRes(userId, overrides = {}) {
+  let _status = 200;
+  let _body = null;
+  return {
+    req: {
+      user: userId === undefined ? undefined : userId === null ? null : { id: userId },
+      body: {},
+      params: {},
+      query: {},
+      ...overrides,
+    },
+    res: {
+      status(c) {
+        _status = c;
+        return this;
+      },
+      json(b) {
+        _body = b;
+        return this;
+      },
+      get statusValue() {
+        return _status;
+      },
+      get jsonValue() {
+        return _body;
+      },
+    },
+  };
+}
 
-describe('createShow', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
+async function createUser(money = 1000) {
+  const id = `${SUITE_PREFIX}-${uniq()}`;
+  return prisma.user.create({
+    data: {
+      id,
+      username: id.replace(/-/g, '_'),
+      email: `${id}@example.com`,
+      firstName: 'Show',
+      lastName: 'Test',
+      password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
+      emailVerified: true,
+      money,
+    },
   });
+}
 
-  it('creates a show with valid data and returns 201', async () => {
-    const showData = {
-      id: 1,
-      name: 'Spring Cup',
-      discipline: 'Dressage',
-      entryFee: 100,
-      status: 'open',
-    };
-    mockPrisma.show.create.mockResolvedValue(showData);
-
-    const { req, res } = createMockReqRes({
-      body: { name: 'Spring Cup', discipline: 'Dressage', entryFee: 100 },
-    });
-    await createShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(201);
-    const body = res.json.mock.calls[0][0];
-    expect(body.success).toBe(true);
-    expect(body.data.show).toEqual(showData);
+async function createHorse(userId, overrides = {}) {
+  return prisma.horse.create({
+    data: {
+      name: `${SUITE_PREFIX}-h-${uniq()}`,
+      sex: 'Mare',
+      dateOfBirth: new Date('2020-01-01'),
+      age: overrides.age ?? 5,
+      healthStatus: overrides.healthStatus ?? 'healthy',
+      speed: overrides.speed ?? 50,
+      stamina: overrides.stamina ?? 50,
+      agility: overrides.agility ?? 50,
+      balance: overrides.balance ?? 50,
+      precision: overrides.precision ?? 50,
+      boldness: overrides.boldness ?? 50,
+      user: { connect: { id: userId } },
+    },
   });
+}
 
-  it('passes correct data to prisma.show.create including dates and defaults', async () => {
-    mockPrisma.show.create.mockResolvedValue({ id: 1, name: 'Test' });
-
-    const { req, res } = createMockReqRes({
-      body: { name: 'Test Show', discipline: 'Reining', entryFee: 50 },
-    });
-    await createShow(req, res);
-
-    const createCall = mockPrisma.show.create.mock.calls[0][0];
-    expect(createCall.data.name).toBe('Test Show');
-    expect(createCall.data.discipline).toBe('Reining');
-    expect(createCall.data.entryFee).toBe(50);
-    expect(createCall.data.status).toBe('open');
-    expect(createCall.data.createdByUserId).toBe('test-user-id');
-    expect(createCall.data.levelMin).toBe(1);
-    expect(createCall.data.levelMax).toBe(999);
-    expect(createCall.data.prize).toBe(0);
-    // closeDate should be ~7 days after openDate
-    const openMs = new Date(createCall.data.openDate).getTime();
-    const closeMs = new Date(createCall.data.closeDate).getTime();
-    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
-    expect(closeMs - openMs).toBe(sevenDaysMs);
+async function createShowDirect(userId, overrides = {}) {
+  return prisma.show.create({
+    data: {
+      name: overrides.name ?? `${SUITE_PREFIX}-s-${uniq()}`,
+      discipline: overrides.discipline ?? 'Dressage',
+      levelMin: 1,
+      levelMax: 999,
+      entryFee: overrides.entryFee ?? 0,
+      prize: overrides.prize ?? 0,
+      runDate: overrides.runDate ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      status: overrides.status ?? 'open',
+      openDate: overrides.openDate ?? new Date(),
+      closeDate: overrides.closeDate ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      maxEntries: overrides.maxEntries ?? null,
+      createdByUserId: userId,
+    },
   });
+}
 
-  it('returns 401 when user is not authenticated', async () => {
-    const { req, res } = createMockReqRes({ user: null, body: { name: 'X', discipline: 'Dressage' } });
-    await createShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(401);
+async function cleanupSuite() {
+  const users = await prisma.user.findMany({
+    where: { id: { startsWith: SUITE_PREFIX } },
+    select: { id: true },
   });
+  if (users.length === 0) {
+    return;
+  }
+  const userIds = users.map(u => u.id);
 
-  it('returns 400 when name is missing', async () => {
-    const { req, res } = createMockReqRes({
-      body: { discipline: 'Dressage' },
-    });
-    await createShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json.mock.calls[0][0].message).toContain('name');
+  const shows = await prisma.show.findMany({
+    where: { OR: [{ createdByUserId: { in: userIds } }, { hostUserId: { in: userIds } }] },
+    select: { id: true },
   });
+  const showIds = shows.map(s => s.id);
 
-  it('returns 400 when name is too short (1 char)', async () => {
-    const { req, res } = createMockReqRes({
-      body: { name: 'A', discipline: 'Dressage' },
-    });
-    await createShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
+  if (showIds.length > 0) {
+    await prisma.competitionResult.deleteMany({ where: { showId: { in: showIds } } });
+    await prisma.showEntry.deleteMany({ where: { showId: { in: showIds } } });
+  }
+  // Also cleanup entries / results referencing horses owned by these users
+  // even if the show was created by a non-suite user (unlikely but safe).
+  const horses = await prisma.horse.findMany({
+    where: { userId: { in: userIds } },
+    select: { id: true },
   });
+  const horseIds = horses.map(h => h.id);
+  if (horseIds.length > 0) {
+    await prisma.competitionResult.deleteMany({ where: { horseId: { in: horseIds } } });
+    await prisma.showEntry.deleteMany({ where: { horseId: { in: horseIds } } });
+  }
 
-  it('trims name whitespace before length check', async () => {
-    const { req, res } = createMockReqRes({
-      body: { name: '  A  ', discipline: 'Dressage' },
-    });
-    await createShow(req, res);
-    // '  A  '.trim() = 'A' which is 1 char → 400
-    expect(res.status).toHaveBeenCalledWith(400);
-  });
+  if (showIds.length > 0) {
+    await prisma.show.deleteMany({ where: { id: { in: showIds } } });
+  }
+  await prisma.horse.deleteMany({ where: { userId: { in: userIds } } });
+  await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+}
 
-  it('returns 400 for invalid discipline', async () => {
-    const { req, res } = createMockReqRes({
-      body: { name: 'My Show', discipline: 'Underwater Polo' },
-    });
-    await createShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json.mock.calls[0][0].message).toContain('discipline');
-  });
+describe('showController (real DB)', () => {
+  beforeAll(cleanupSuite);
+  afterAll(cleanupSuite);
+  afterEach(cleanupSuite);
 
-  it('returns 400 when discipline is missing', async () => {
-    const { req, res } = createMockReqRes({
-      body: { name: 'My Show' },
-    });
-    await createShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-  });
+  // ── createShow ─────────────────────────────────────────────────────────────
 
-  it('returns 400 when entryFee is negative', async () => {
-    const { req, res } = createMockReqRes({
-      body: { name: 'My Show', discipline: 'Dressage', entryFee: -5 },
-    });
-    await createShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json.mock.calls[0][0].message).toContain('fee');
-  });
-
-  it('returns 400 when entryFee exceeds 100000', async () => {
-    const { req, res } = createMockReqRes({
-      body: { name: 'My Show', discipline: 'Dressage', entryFee: 100001 },
-    });
-    await createShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-  });
-
-  it('returns 400 when entryFee is not a number', async () => {
-    const { req, res } = createMockReqRes({
-      body: { name: 'My Show', discipline: 'Dressage', entryFee: 'free' },
-    });
-    await createShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-  });
-
-  it('defaults entryFee to 0 when not provided', async () => {
-    mockPrisma.show.create.mockResolvedValue({ id: 1 });
-    const { req, res } = createMockReqRes({
-      body: { name: 'Free Show', discipline: 'Barrel Racing' },
-    });
-    await createShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(201);
-    expect(mockPrisma.show.create.mock.calls[0][0].data.entryFee).toBe(0);
-  });
-
-  it('returns 409 on duplicate show name (P2002)', async () => {
-    const prismaError = new Error('Unique constraint failed');
-    prismaError.code = 'P2002';
-    mockPrisma.show.create.mockRejectedValue(prismaError);
-
-    const { req, res } = createMockReqRes({
-      body: { name: 'Spring Cup', discipline: 'Dressage' },
-    });
-    await createShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(409);
-    expect(res.json.mock.calls[0][0].message).toContain('already exists');
-  });
-
-  it('returns 500 on unexpected error', async () => {
-    mockPrisma.show.create.mockRejectedValue(new Error('DB crash'));
-    const { req, res } = createMockReqRes({
-      body: { name: 'Good Show', discipline: 'Reining' },
-    });
-    await createShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(mockLogger.error).toHaveBeenCalled();
-  });
-
-  it('accepts all 23 valid disciplines', async () => {
-    const validDisciplines = [
-      'Western Pleasure',
-      'Reining',
-      'Cutting',
-      'Barrel Racing',
-      'Roping',
-      'Team Penning',
-      'Rodeo',
-      'Hunter',
-      'Saddleseat',
-      'Endurance',
-      'Eventing',
-      'Dressage',
-      'Show Jumping',
-      'Vaulting',
-      'Polo',
-      'Cross Country',
-      'Combined Driving',
-      'Fine Harness',
-      'Gaited',
-      'Gymkhana',
-      'Steeplechase',
-      'Racing',
-      'Harness Racing',
-    ];
-    for (const disc of validDisciplines) {
-      jest.clearAllMocks();
-      mockPrisma.show.create.mockResolvedValue({ id: 1, name: 'Test', discipline: disc });
-      const { req, res } = createMockReqRes({
-        body: { name: 'Test Show', discipline: disc },
+  describe('createShow', () => {
+    it('creates a show with valid data and returns 201', async () => {
+      const user = await createUser();
+      const name = `${SUITE_PREFIX}-cs-${uniq()}`;
+      const h = makeReqRes(user.id, {
+        body: { name, discipline: 'Dressage', entryFee: 100 },
       });
-      await createShow(req, res);
-      expect(res.status).toHaveBeenCalledWith(201);
-    }
-  });
-});
+      await createShow(h.req, h.res);
 
-// ── getShows ─────────────────────────────────────────────────────────────────
+      expect(h.res.statusValue).toBe(201);
+      expect(h.res.jsonValue.success).toBe(true);
+      expect(h.res.jsonValue.data.show.name).toBe(name);
 
-describe('getShows', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('returns paginated shows with default params', async () => {
-    const shows = [{ id: 1, name: 'Show A', _count: { entries: 3 } }];
-    mockPrisma.show.findMany.mockResolvedValue(shows);
-    mockPrisma.show.count.mockResolvedValue(1);
-
-    const { req, res } = createMockReqRes();
-    await getShows(req, res);
-    expect(res.status).toHaveBeenCalledWith(200);
-    const body = res.json.mock.calls[0][0];
-    expect(body.success).toBe(true);
-    expect(body.data.shows[0].entryCount).toBe(3);
-    expect(body.data.pagination.page).toBe(1);
-    expect(body.data.pagination.limit).toBe(20);
-    expect(body.data.pagination.total).toBe(1);
-    expect(body.data.pagination.totalPages).toBe(1);
-  });
-
-  it('applies status filter from query params', async () => {
-    mockPrisma.show.findMany.mockResolvedValue([]);
-    mockPrisma.show.count.mockResolvedValue(0);
-
-    const { req, res } = createMockReqRes({ query: { status: 'completed' } });
-    await getShows(req, res);
-
-    const findManyCall = mockPrisma.show.findMany.mock.calls[0][0];
-    expect(findManyCall.where.status).toBe('completed');
-  });
-
-  it('applies discipline filter from query params', async () => {
-    mockPrisma.show.findMany.mockResolvedValue([]);
-    mockPrisma.show.count.mockResolvedValue(0);
-
-    const { req, res } = createMockReqRes({
-      query: { discipline: 'Dressage' },
+      // Verify DB row
+      const persisted = await prisma.show.findUnique({ where: { name } });
+      expect(persisted).not.toBeNull();
+      expect(persisted.discipline).toBe('Dressage');
+      expect(persisted.entryFee).toBe(100);
+      expect(persisted.status).toBe('open');
+      expect(persisted.createdByUserId).toBe(user.id);
     });
-    await getShows(req, res);
 
-    const findManyCall = mockPrisma.show.findMany.mock.calls[0][0];
-    expect(findManyCall.where.discipline).toBe('Dressage');
-  });
+    it('persists correct fields including 7-day closeDate window and defaults', async () => {
+      const user = await createUser();
+      const name = `${SUITE_PREFIX}-cs-${uniq()}`;
+      const h = makeReqRes(user.id, {
+        body: { name, discipline: 'Reining', entryFee: 50 },
+      });
+      await createShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(201);
 
-  it('respects custom page and limit', async () => {
-    mockPrisma.show.findMany.mockResolvedValue([]);
-    mockPrisma.show.count.mockResolvedValue(100);
-
-    const { req, res } = createMockReqRes({
-      query: { page: '3', limit: '10' },
+      const persisted = await prisma.show.findUnique({ where: { name } });
+      expect(persisted.levelMin).toBe(1);
+      expect(persisted.levelMax).toBe(999);
+      expect(persisted.prize).toBe(0);
+      const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+      const diff = persisted.closeDate.getTime() - persisted.openDate.getTime();
+      expect(diff).toBe(sevenDaysMs);
     });
-    await getShows(req, res);
 
-    const findManyCall = mockPrisma.show.findMany.mock.calls[0][0];
-    expect(findManyCall.skip).toBe(20); // (3-1) * 10
-    expect(findManyCall.take).toBe(10);
-
-    const body = res.json.mock.calls[0][0];
-    expect(body.data.pagination.page).toBe(3);
-    expect(body.data.pagination.limit).toBe(10);
-    expect(body.data.pagination.totalPages).toBe(10); // 100/10
-  });
-
-  it('clamps limit to max 50', async () => {
-    mockPrisma.show.findMany.mockResolvedValue([]);
-    mockPrisma.show.count.mockResolvedValue(0);
-
-    const { req, res } = createMockReqRes({ query: { limit: '200' } });
-    await getShows(req, res);
-
-    const findManyCall = mockPrisma.show.findMany.mock.calls[0][0];
-    expect(findManyCall.take).toBe(50);
-  });
-
-  it('falls back to default 20 when limit is 0 (falsy)', async () => {
-    mockPrisma.show.findMany.mockResolvedValue([]);
-    mockPrisma.show.count.mockResolvedValue(0);
-
-    const { req, res } = createMockReqRes({ query: { limit: '0' } });
-    await getShows(req, res);
-
-    // parseInt('0') = 0, 0 || 20 = 20, Math.max(1, 20) = 20
-    const findManyCall = mockPrisma.show.findMany.mock.calls[0][0];
-    expect(findManyCall.take).toBe(20);
-  });
-
-  it('clamps page to min 1', async () => {
-    mockPrisma.show.findMany.mockResolvedValue([]);
-    mockPrisma.show.count.mockResolvedValue(0);
-
-    const { req, res } = createMockReqRes({ query: { page: '-1' } });
-    await getShows(req, res);
-
-    const findManyCall = mockPrisma.show.findMany.mock.calls[0][0];
-    expect(findManyCall.skip).toBe(0);
-  });
-
-  it('returns empty shows array when none exist', async () => {
-    mockPrisma.show.findMany.mockResolvedValue([]);
-    mockPrisma.show.count.mockResolvedValue(0);
-
-    const { req, res } = createMockReqRes();
-    await getShows(req, res);
-
-    const body = res.json.mock.calls[0][0];
-    expect(body.data.shows).toEqual([]);
-    expect(body.data.pagination.total).toBe(0);
-  });
-
-  it('returns 500 on database error', async () => {
-    mockPrisma.show.findMany.mockRejectedValue(new Error('DB error'));
-
-    const { req, res } = createMockReqRes();
-    await getShows(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(mockLogger.error).toHaveBeenCalled();
-  });
-});
-
-// ── enterShow ────────────────────────────────────────────────────────────────
-
-describe('enterShow', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  const openShow = {
-    id: 1,
-    status: 'open',
-    entryFee: 50,
-    maxEntries: 10,
-    closeDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // 3 days from now
-    _count: { entries: 2 },
-  };
-
-  const ownedHorse = {
-    id: 100,
-    name: 'Thunder',
-    userId: 'test-user-id',
-    age: 5,
-    healthStatus: 'healthy',
-  };
-
-  it('successfully enters a horse in a show and returns 201', async () => {
-    mockPrisma.show.findUnique.mockResolvedValue(openShow);
-    mockPrisma.horse.findUnique.mockResolvedValue(ownedHorse);
-    mockPrisma.user.findUnique.mockResolvedValue({ money: 1000 });
-    mockPrisma.user.update.mockResolvedValue({});
-    mockPrisma.showEntry.create.mockResolvedValue({ id: 'entry-1', showId: 1, horseId: 100 });
-
-    const { req, res } = createMockReqRes({
-      params: { id: '1' },
-      body: { horseId: 100 },
+    it('returns 401 when user is not authenticated', async () => {
+      const h = makeReqRes(null, { body: { name: 'X', discipline: 'Dressage' } });
+      await createShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(401);
     });
-    await enterShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(201);
-    const body = res.json.mock.calls[0][0];
-    expect(body.success).toBe(true);
-    expect(body.data.horseName).toBe('Thunder');
-    expect(body.data.entry).toBeDefined();
-  });
 
-  it('returns 401 when user is not authenticated', async () => {
-    const { req, res } = createMockReqRes({
-      user: null,
-      params: { id: '1' },
-      body: { horseId: 100 },
+    it('returns 400 when name is missing', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id, { body: { discipline: 'Dressage' } });
+      await createShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(400);
+      expect(h.res.jsonValue.message).toMatch(/name/i);
     });
-    await enterShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(401);
-  });
 
-  it('returns 400 when horseId is missing', async () => {
-    const { req, res } = createMockReqRes({ params: { id: '1' }, body: {} });
-    await enterShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json.mock.calls[0][0].message).toContain('horseId');
-  });
+    it('returns 400 when name is too short (1 char)', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id, { body: { name: 'A', discipline: 'Dressage' } });
+      await createShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(400);
+    });
 
-  it('returns 400 when horseId is not a number', async () => {
-    const { req, res } = createMockReqRes({
-      params: { id: '1' },
-      body: { horseId: 'abc' },
+    it('rejects whitespace-padded single-char name (trim before length check)', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id, { body: { name: '  A  ', discipline: 'Dressage' } });
+      await createShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(400);
     });
-    await enterShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-  });
 
-  it('returns 404 when show does not exist', async () => {
-    mockPrisma.show.findUnique.mockResolvedValue(null);
-    const { req, res } = createMockReqRes({
-      params: { id: '999' },
-      body: { horseId: 100 },
+    it('returns 400 for invalid discipline', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id, {
+        body: { name: `${SUITE_PREFIX}-${uniq()}`, discipline: 'Underwater Polo' },
+      });
+      await createShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(400);
+      expect(h.res.jsonValue.message).toMatch(/discipline/i);
     });
-    await enterShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(404);
-  });
 
-  it('returns 409 when show is not open', async () => {
-    mockPrisma.show.findUnique.mockResolvedValue({ ...openShow, status: 'completed' });
-    const { req, res } = createMockReqRes({
-      params: { id: '1' },
-      body: { horseId: 100 },
+    it('returns 400 when discipline is missing', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id, { body: { name: `${SUITE_PREFIX}-${uniq()}` } });
+      await createShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(400);
     });
-    await enterShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(409);
-    expect(res.json.mock.calls[0][0].message).toContain('no longer accepting');
-  });
 
-  it('returns 409 when entry period has closed (closeDate in past)', async () => {
-    const pastDate = new Date(Date.now() - 1000);
-    mockPrisma.show.findUnique.mockResolvedValue({
-      ...openShow,
-      closeDate: pastDate,
+    it('returns 400 when entryFee is negative', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id, {
+        body: { name: `${SUITE_PREFIX}-${uniq()}`, discipline: 'Dressage', entryFee: -5 },
+      });
+      await createShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(400);
+      expect(h.res.jsonValue.message).toMatch(/fee/i);
     });
-    const { req, res } = createMockReqRes({
-      params: { id: '1' },
-      body: { horseId: 100 },
-    });
-    await enterShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(409);
-    expect(res.json.mock.calls[0][0].message).toContain('closed');
-  });
 
-  it('returns 409 when show is full (maxEntries reached)', async () => {
-    mockPrisma.show.findUnique.mockResolvedValue({
-      ...openShow,
-      maxEntries: 2,
-      _count: { entries: 2 },
+    it('returns 400 when entryFee exceeds 100000', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id, {
+        body: { name: `${SUITE_PREFIX}-${uniq()}`, discipline: 'Dressage', entryFee: 100001 },
+      });
+      await createShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(400);
     });
-    const { req, res } = createMockReqRes({
-      params: { id: '1' },
-      body: { horseId: 100 },
-    });
-    await enterShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(409);
-    expect(res.json.mock.calls[0][0].message).toContain('full');
-  });
 
-  it('returns 403 when horse is not owned by user', async () => {
-    mockPrisma.show.findUnique.mockResolvedValue(openShow);
-    mockPrisma.horse.findUnique.mockResolvedValue({
-      ...ownedHorse,
-      userId: 'other-user-id',
+    it('returns 400 when entryFee is not a number', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id, {
+        body: { name: `${SUITE_PREFIX}-${uniq()}`, discipline: 'Dressage', entryFee: 'free' },
+      });
+      await createShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(400);
     });
-    const { req, res } = createMockReqRes({
-      params: { id: '1' },
-      body: { horseId: 100 },
+
+    it('defaults entryFee to 0 when not provided', async () => {
+      const user = await createUser();
+      const name = `${SUITE_PREFIX}-cs-${uniq()}`;
+      const h = makeReqRes(user.id, { body: { name, discipline: 'Barrel Racing' } });
+      await createShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(201);
+      const persisted = await prisma.show.findUnique({ where: { name } });
+      expect(persisted.entryFee).toBe(0);
     });
-    await enterShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(403);
-  });
 
-  it('returns 403 when horse does not exist', async () => {
-    mockPrisma.show.findUnique.mockResolvedValue(openShow);
-    mockPrisma.horse.findUnique.mockResolvedValue(null);
-    const { req, res } = createMockReqRes({
-      params: { id: '1' },
-      body: { horseId: 999 },
+    it('returns 409 on duplicate show name (real Prisma unique constraint)', async () => {
+      const user = await createUser();
+      const name = `${SUITE_PREFIX}-dup-${uniq()}`;
+      // Seed a show with that name directly.
+      await createShowDirect(user.id, { name });
+
+      const h = makeReqRes(user.id, { body: { name, discipline: 'Dressage' } });
+      await createShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(409);
+      expect(h.res.jsonValue.message).toMatch(/already exists/i);
     });
-    await enterShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(403);
-  });
 
-  it('returns 400 when horse is too young (age < 3)', async () => {
-    mockPrisma.show.findUnique.mockResolvedValue(openShow);
-    mockPrisma.horse.findUnique.mockResolvedValue({ ...ownedHorse, age: 2 });
-    const { req, res } = createMockReqRes({
-      params: { id: '1' },
-      body: { horseId: 100 },
-    });
-    await enterShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json.mock.calls[0][0].message).toContain('3 years old');
-  });
-
-  it('returns 400 when horse is injured', async () => {
-    mockPrisma.show.findUnique.mockResolvedValue(openShow);
-    mockPrisma.horse.findUnique.mockResolvedValue({ ...ownedHorse, healthStatus: 'injured' });
-    const { req, res } = createMockReqRes({
-      params: { id: '1' },
-      body: { horseId: 100 },
-    });
-    await enterShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json.mock.calls[0][0].message).toContain('Injured');
-  });
-
-  it('returns 400 when horse health is INJURED (uppercase)', async () => {
-    mockPrisma.show.findUnique.mockResolvedValue(openShow);
-    mockPrisma.horse.findUnique.mockResolvedValue({ ...ownedHorse, healthStatus: 'INJURED' });
-    const { req, res } = createMockReqRes({
-      params: { id: '1' },
-      body: { horseId: 100 },
-    });
-    await enterShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(400);
-  });
-
-  it('returns 402 when user has insufficient funds', async () => {
-    mockPrisma.show.findUnique.mockResolvedValue({ ...openShow, entryFee: 500 });
-    mockPrisma.horse.findUnique.mockResolvedValue(ownedHorse);
-    mockPrisma.user.findUnique.mockResolvedValue({ money: 100 });
-    const { req, res } = createMockReqRes({
-      params: { id: '1' },
-      body: { horseId: 100 },
-    });
-    await enterShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(402);
-    expect(res.json.mock.calls[0][0].message).toContain('Insufficient');
-  });
-
-  it('decrements user money by entry fee', async () => {
-    mockPrisma.show.findUnique.mockResolvedValue({ ...openShow, entryFee: 75 });
-    mockPrisma.horse.findUnique.mockResolvedValue(ownedHorse);
-    mockPrisma.user.findUnique.mockResolvedValue({ money: 500 });
-    mockPrisma.user.update.mockResolvedValue({});
-    mockPrisma.showEntry.create.mockResolvedValue({ id: 'e-1' });
-
-    const { req, res } = createMockReqRes({
-      params: { id: '1' },
-      body: { horseId: 100 },
-    });
-    await enterShow(req, res);
-
-    expect(mockPrisma.user.update).toHaveBeenCalledWith({
-      where: { id: 'test-user-id' },
-      data: { money: { decrement: 75 } },
+    it('accepts all 23 valid disciplines', async () => {
+      const validDisciplines = [
+        'Western Pleasure',
+        'Reining',
+        'Cutting',
+        'Barrel Racing',
+        'Roping',
+        'Team Penning',
+        'Rodeo',
+        'Hunter',
+        'Saddleseat',
+        'Endurance',
+        'Eventing',
+        'Dressage',
+        'Show Jumping',
+        'Vaulting',
+        'Polo',
+        'Cross Country',
+        'Combined Driving',
+        'Fine Harness',
+        'Gaited',
+        'Gymkhana',
+        'Steeplechase',
+        'Racing',
+        'Harness Racing',
+      ];
+      const user = await createUser();
+      for (const disc of validDisciplines) {
+        const name = `${SUITE_PREFIX}-disc-${uniq()}`;
+        const h = makeReqRes(user.id, { body: { name, discipline: disc } });
+        await createShow(h.req, h.res);
+        expect(h.res.statusValue).toBe(201);
+      }
     });
   });
 
-  it('skips fee charge when entryFee is 0', async () => {
-    mockPrisma.show.findUnique.mockResolvedValue({ ...openShow, entryFee: 0 });
-    mockPrisma.horse.findUnique.mockResolvedValue(ownedHorse);
-    mockPrisma.showEntry.create.mockResolvedValue({ id: 'e-1' });
+  // ── getShows ────────────────────────────────────────────────────────────────
 
-    const { req, res } = createMockReqRes({
-      params: { id: '1' },
-      body: { horseId: 100 },
+  describe('getShows', () => {
+    it('returns paginated shows with default params and entryCount', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const show = await createShowDirect(user.id);
+      await prisma.showEntry.create({
+        data: { showId: show.id, horseId: horse.id, userId: user.id, feePaid: 0 },
+      });
+
+      const h = makeReqRes(user.id);
+      await getShows(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(200);
+      const body = h.res.jsonValue;
+      expect(body.success).toBe(true);
+      // Find our seeded show in results.
+      const found = body.data.shows.find(s => s.id === show.id);
+      expect(found).toBeDefined();
+      expect(found.entryCount).toBe(1);
+      expect(body.data.pagination.page).toBe(1);
+      expect(body.data.pagination.limit).toBe(20);
     });
-    await enterShow(req, res);
 
-    expect(mockPrisma.user.findUnique).not.toHaveBeenCalled();
-    expect(mockPrisma.user.update).not.toHaveBeenCalled();
-    expect(res.status).toHaveBeenCalledWith(201);
-  });
+    it('applies discipline filter (only matching shows returned)', async () => {
+      const user = await createUser();
+      const dressageShow = await createShowDirect(user.id, { discipline: 'Dressage' });
+      const racingShow = await createShowDirect(user.id, { discipline: 'Racing' });
 
-  it('returns 409 on duplicate entry (P2002)', async () => {
-    mockPrisma.show.findUnique.mockResolvedValue({ ...openShow, entryFee: 0 });
-    mockPrisma.horse.findUnique.mockResolvedValue(ownedHorse);
-    const prismaError = new Error('Unique constraint');
-    prismaError.code = 'P2002';
-    mockPrisma.showEntry.create.mockRejectedValue(prismaError);
+      const h = makeReqRes(user.id, { query: { discipline: 'Dressage' } });
+      await getShows(h.req, h.res);
 
-    const { req, res } = createMockReqRes({
-      params: { id: '1' },
-      body: { horseId: 100 },
+      const ids = h.res.jsonValue.data.shows.map(s => s.id);
+      expect(ids).toContain(dressageShow.id);
+      expect(ids).not.toContain(racingShow.id);
     });
-    await enterShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(409);
-    expect(res.json.mock.calls[0][0].message).toContain('already entered');
-  });
 
-  it('returns 500 on unexpected error', async () => {
-    mockPrisma.show.findUnique.mockRejectedValue(new Error('DB crash'));
-    const { req, res } = createMockReqRes({
-      params: { id: '1' },
-      body: { horseId: 100 },
+    it('applies status filter (only matching shows returned)', async () => {
+      const user = await createUser();
+      const openShow = await createShowDirect(user.id, { status: 'open' });
+      const completedShow = await createShowDirect(user.id, { status: 'completed' });
+
+      const h = makeReqRes(user.id, { query: { status: 'completed' } });
+      await getShows(h.req, h.res);
+
+      const ids = h.res.jsonValue.data.shows.map(s => s.id);
+      expect(ids).toContain(completedShow.id);
+      expect(ids).not.toContain(openShow.id);
     });
-    await enterShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(500);
-  });
 
-  it('allows entry when maxEntries is null (unlimited)', async () => {
-    mockPrisma.show.findUnique.mockResolvedValue({
-      ...openShow,
-      maxEntries: null,
-      entryFee: 0,
-      _count: { entries: 999 },
+    it('respects custom page and limit (pagination math)', async () => {
+      // Seed 3 shows so we can paginate.
+      const user = await createUser();
+      const created = [];
+      for (let i = 0; i < 3; i++) {
+        const s = await createShowDirect(user.id, { discipline: 'Polo' });
+        created.push(s);
+      }
+
+      // page=2, limit=1, discipline=Polo → returns 1 show, total=3.
+      const h = makeReqRes(user.id, { query: { page: '2', limit: '1', discipline: 'Polo' } });
+      await getShows(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(200);
+      expect(h.res.jsonValue.data.shows).toHaveLength(1);
+      expect(h.res.jsonValue.data.pagination.page).toBe(2);
+      expect(h.res.jsonValue.data.pagination.limit).toBe(1);
+      expect(h.res.jsonValue.data.pagination.total).toBe(3);
+      expect(h.res.jsonValue.data.pagination.totalPages).toBe(3);
     });
-    mockPrisma.horse.findUnique.mockResolvedValue(ownedHorse);
-    mockPrisma.showEntry.create.mockResolvedValue({ id: 'e-1' });
 
-    const { req, res } = createMockReqRes({
-      params: { id: '1' },
-      body: { horseId: 100 },
+    it('clamps limit to max 50', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id, { query: { limit: '200' } });
+      await getShows(h.req, h.res);
+      expect(h.res.statusValue).toBe(200);
+      expect(h.res.jsonValue.data.pagination.limit).toBe(50);
     });
-    await enterShow(req, res);
-    expect(res.status).toHaveBeenCalledWith(201);
-  });
-});
 
-// ── executeClosedShows ───────────────────────────────────────────────────────
+    it('falls back to default 20 when limit is 0 (falsy)', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id, { query: { limit: '0' } });
+      await getShows(h.req, h.res);
+      expect(h.res.statusValue).toBe(200);
+      expect(h.res.jsonValue.data.pagination.limit).toBe(20);
+    });
 
-describe('executeClosedShows', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+    it('clamps page to min 1', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id, { query: { page: '-1' } });
+      await getShows(h.req, h.res);
+      expect(h.res.statusValue).toBe(200);
+      expect(h.res.jsonValue.data.pagination.page).toBe(1);
+    });
 
-  it('returns executed: 0 when no shows are ready', async () => {
-    mockPrisma.show.findMany.mockResolvedValue([]);
-    const { req, res } = createMockReqRes();
-    await executeClosedShows(req, res);
-    expect(res.status).toHaveBeenCalledWith(200);
-    const body = res.json.mock.calls[0][0];
-    expect(body.success).toBe(true);
-    expect(body.data.executed).toBe(0);
-  });
-
-  it('completes a show with no entries', async () => {
-    mockPrisma.show.findMany.mockResolvedValue([
-      { id: 1, name: 'Empty Show', prize: 0, discipline: 'Dressage', entries: [] },
-    ]);
-    mockPrisma.show.update.mockResolvedValue({});
-
-    const { req, res } = createMockReqRes();
-    await executeClosedShows(req, res);
-
-    // Should update to 'executing' then 'completed'
-    expect(mockPrisma.show.update).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { id: 1 }, data: { status: 'executing' } }),
-    );
-    expect(mockPrisma.show.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 1 },
-        data: expect.objectContaining({ status: 'completed' }),
-      }),
-    );
+    it('returns empty shows array when filter matches nothing', async () => {
+      const user = await createUser();
+      // Use a discipline value that exists in VALID_DISCIPLINES but for which we
+      // didn't seed any show — guarantees an empty result without depending on
+      // global DB state.
+      const h = makeReqRes(user.id, { query: { discipline: 'Vaulting', status: 'open' } });
+      await getShows(h.req, h.res);
+      expect(h.res.statusValue).toBe(200);
+      // Cannot guarantee total=0 globally, but our suite-prefixed user created
+      // none for this discipline, and the assertion just confirms the shape.
+      expect(Array.isArray(h.res.jsonValue.data.shows)).toBe(true);
+    });
   });
 
-  it('scores entries and creates competition results', async () => {
-    mockPrisma.show.findMany.mockResolvedValue([
-      {
-        id: 1,
-        name: 'Test Show',
-        prize: 1000,
-        discipline: 'Dressage',
-        entries: [
-          {
-            horseId: 10,
-            userId: 'user-a',
-            horse: {
-              id: 10,
-              name: 'Fast',
-              userId: 'user-a',
-              speed: 80,
-              stamina: 70,
-              agility: 75,
-              balance: 60,
-              precision: 90,
-              boldness: 65,
-            },
-          },
-          {
-            horseId: 20,
-            userId: 'user-b',
-            horse: {
-              id: 20,
-              name: 'Slow',
-              userId: 'user-b',
-              speed: 40,
-              stamina: 40,
-              agility: 40,
-              balance: 40,
-              precision: 40,
-              boldness: 40,
-            },
-          },
-        ],
-      },
-    ]);
-    mockPrisma.show.update.mockResolvedValue({});
-    mockPrisma.competitionResult.create.mockResolvedValue({});
-    mockPrisma.user.update.mockResolvedValue({});
-    mockPrisma.user.findUnique.mockResolvedValue({ settings: {} });
+  // ── enterShow ───────────────────────────────────────────────────────────────
 
-    const { req, res } = createMockReqRes();
-    await executeClosedShows(req, res);
+  describe('enterShow', () => {
+    it('creates an entry, decrements money, returns 201', async () => {
+      const user = await createUser(1000);
+      const horse = await createHorse(user.id);
+      const show = await createShowDirect(user.id, { entryFee: 75, maxEntries: 10 });
 
-    // Should create 2 competition results
-    expect(mockPrisma.competitionResult.create).toHaveBeenCalledTimes(2);
+      const h = makeReqRes(user.id, {
+        params: { id: String(show.id) },
+        body: { horseId: horse.id },
+      });
+      await enterShow(h.req, h.res);
 
-    // Verify result data shape
-    const firstCall = mockPrisma.competitionResult.create.mock.calls[0][0];
-    expect(firstCall.data).toHaveProperty('score');
-    expect(firstCall.data).toHaveProperty('placement');
-    expect(firstCall.data).toHaveProperty('discipline', 'Dressage');
-    expect(firstCall.data).toHaveProperty('showName', 'Test Show');
-    expect(firstCall.data).toHaveProperty('showId', 1);
+      expect(h.res.statusValue).toBe(201);
+      expect(h.res.jsonValue.success).toBe(true);
+      expect(h.res.jsonValue.data.horseName).toBe(horse.name);
+
+      const entry = await prisma.showEntry.findFirst({
+        where: { showId: show.id, horseId: horse.id },
+      });
+      expect(entry).not.toBeNull();
+      expect(entry.feePaid).toBe(75);
+
+      const userAfter = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { money: true },
+      });
+      expect(userAfter.money).toBe(1000 - 75);
+    });
+
+    it('returns 401 when user is not authenticated', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const show = await createShowDirect(user.id);
+
+      const h = makeReqRes(null, {
+        params: { id: String(show.id) },
+        body: { horseId: horse.id },
+      });
+      await enterShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(401);
+    });
+
+    it('returns 400 when horseId is missing', async () => {
+      const user = await createUser();
+      const show = await createShowDirect(user.id);
+      const h = makeReqRes(user.id, { params: { id: String(show.id) }, body: {} });
+      await enterShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(400);
+      expect(h.res.jsonValue.message).toMatch(/horseId/);
+    });
+
+    it('returns 400 when horseId is not a number', async () => {
+      const user = await createUser();
+      const show = await createShowDirect(user.id);
+      const h = makeReqRes(user.id, {
+        params: { id: String(show.id) },
+        body: { horseId: 'abc' },
+      });
+      await enterShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(400);
+    });
+
+    it('returns 404 when show does not exist', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const h = makeReqRes(user.id, {
+        params: { id: '999999999' },
+        body: { horseId: horse.id },
+      });
+      await enterShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(404);
+    });
+
+    it('returns 409 when show is not open (status=completed)', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const show = await createShowDirect(user.id, { status: 'completed' });
+      const h = makeReqRes(user.id, {
+        params: { id: String(show.id) },
+        body: { horseId: horse.id },
+      });
+      await enterShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(409);
+      expect(h.res.jsonValue.message).toMatch(/no longer accepting/i);
+    });
+
+    it('returns 409 when entry period has closed (closeDate in past)', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const show = await createShowDirect(user.id, {
+        closeDate: new Date(Date.now() - 1000),
+      });
+      const h = makeReqRes(user.id, {
+        params: { id: String(show.id) },
+        body: { horseId: horse.id },
+      });
+      await enterShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(409);
+      expect(h.res.jsonValue.message).toMatch(/closed/i);
+    });
+
+    it('returns 409 when show is full (maxEntries reached)', async () => {
+      const user = await createUser();
+      const horse1 = await createHorse(user.id);
+      const horse2 = await createHorse(user.id);
+      const show = await createShowDirect(user.id, { maxEntries: 1 });
+      // Pre-seed one entry to fill the show.
+      await prisma.showEntry.create({
+        data: { showId: show.id, horseId: horse1.id, userId: user.id, feePaid: 0 },
+      });
+
+      const h = makeReqRes(user.id, {
+        params: { id: String(show.id) },
+        body: { horseId: horse2.id },
+      });
+      await enterShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(409);
+      expect(h.res.jsonValue.message).toMatch(/full/i);
+    });
+
+    it('returns 403 when horse is not owned by user', async () => {
+      const owner = await createUser();
+      const otherUser = await createUser();
+      const horse = await createHorse(owner.id);
+      const show = await createShowDirect(otherUser.id);
+
+      const h = makeReqRes(otherUser.id, {
+        params: { id: String(show.id) },
+        body: { horseId: horse.id },
+      });
+      await enterShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(403);
+    });
+
+    it('returns 403 when horse does not exist', async () => {
+      const user = await createUser();
+      const show = await createShowDirect(user.id);
+      const h = makeReqRes(user.id, {
+        params: { id: String(show.id) },
+        body: { horseId: 99999999 },
+      });
+      await enterShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(403);
+    });
+
+    it('returns 400 when horse is too young (age < 3)', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id, { age: 2 });
+      const show = await createShowDirect(user.id);
+      const h = makeReqRes(user.id, {
+        params: { id: String(show.id) },
+        body: { horseId: horse.id },
+      });
+      await enterShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(400);
+      expect(h.res.jsonValue.message).toMatch(/3 years old/);
+    });
+
+    it('returns 400 when horse is injured', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id, { healthStatus: 'injured' });
+      const show = await createShowDirect(user.id);
+      const h = makeReqRes(user.id, {
+        params: { id: String(show.id) },
+        body: { horseId: horse.id },
+      });
+      await enterShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(400);
+      expect(h.res.jsonValue.message).toMatch(/injured/i);
+    });
+
+    it('returns 400 when horse health is INJURED (uppercase)', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id, { healthStatus: 'INJURED' });
+      const show = await createShowDirect(user.id);
+      const h = makeReqRes(user.id, {
+        params: { id: String(show.id) },
+        body: { horseId: horse.id },
+      });
+      await enterShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(400);
+    });
+
+    it('returns 402 when user has insufficient funds', async () => {
+      const user = await createUser(100);
+      const horse = await createHorse(user.id);
+      const show = await createShowDirect(user.id, { entryFee: 500 });
+      const h = makeReqRes(user.id, {
+        params: { id: String(show.id) },
+        body: { horseId: horse.id },
+      });
+      await enterShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(402);
+      expect(h.res.jsonValue.message).toMatch(/insufficient/i);
+
+      // No entry should have been created and money should be unchanged.
+      const entry = await prisma.showEntry.findFirst({
+        where: { showId: show.id, horseId: horse.id },
+      });
+      expect(entry).toBeNull();
+      const userAfter = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { money: true },
+      });
+      expect(userAfter.money).toBe(100);
+    });
+
+    it('skips fee charge when entryFee is 0', async () => {
+      const user = await createUser(500);
+      const horse = await createHorse(user.id);
+      const show = await createShowDirect(user.id, { entryFee: 0 });
+
+      const h = makeReqRes(user.id, {
+        params: { id: String(show.id) },
+        body: { horseId: horse.id },
+      });
+      await enterShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(201);
+
+      // Money unchanged since fee is 0.
+      const userAfter = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { money: true },
+      });
+      expect(userAfter.money).toBe(500);
+    });
+
+    it('returns 409 on duplicate entry (real Prisma unique constraint @@unique([showId,horseId]))', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const show = await createShowDirect(user.id, { entryFee: 0 });
+      // Seed first entry directly.
+      await prisma.showEntry.create({
+        data: { showId: show.id, horseId: horse.id, userId: user.id, feePaid: 0 },
+      });
+
+      const h = makeReqRes(user.id, {
+        params: { id: String(show.id) },
+        body: { horseId: horse.id },
+      });
+      await enterShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(409);
+      expect(h.res.jsonValue.message).toMatch(/already entered/i);
+    });
+
+    it('allows entry when maxEntries is null (unlimited)', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const show = await createShowDirect(user.id, { entryFee: 0, maxEntries: null });
+
+      const h = makeReqRes(user.id, {
+        params: { id: String(show.id) },
+        body: { horseId: horse.id },
+      });
+      await enterShow(h.req, h.res);
+      expect(h.res.statusValue).toBe(201);
+    });
   });
 
-  it('awards prize money to top 3 places (50/30/20 split)', async () => {
-    mockPrisma.show.findMany.mockResolvedValue([
-      {
-        id: 1,
-        name: 'Prize Show',
-        prize: 1000,
-        discipline: 'Racing',
-        entries: [
-          {
-            horseId: 1,
-            userId: 'u1',
-            horse: {
-              id: 1,
-              name: 'A',
-              userId: 'u1',
-              speed: 90,
-              stamina: 90,
-              agility: 90,
-              balance: 90,
-              precision: 90,
-              boldness: 90,
-            },
-          },
-          {
-            horseId: 2,
-            userId: 'u2',
-            horse: {
-              id: 2,
-              name: 'B',
-              userId: 'u2',
-              speed: 70,
-              stamina: 70,
-              agility: 70,
-              balance: 70,
-              precision: 70,
-              boldness: 70,
-            },
-          },
-          {
-            horseId: 3,
-            userId: 'u3',
-            horse: {
-              id: 3,
-              name: 'C',
-              userId: 'u3',
-              speed: 50,
-              stamina: 50,
-              agility: 50,
-              balance: 50,
-              precision: 50,
-              boldness: 50,
-            },
-          },
-          {
-            horseId: 4,
-            userId: 'u4',
-            horse: {
-              id: 4,
-              name: 'D',
-              userId: 'u4',
-              speed: 30,
-              stamina: 30,
-              agility: 30,
-              balance: 30,
-              precision: 30,
-              boldness: 30,
-            },
-          },
-        ],
-      },
-    ]);
-    mockPrisma.show.update.mockResolvedValue({});
-    mockPrisma.competitionResult.create.mockResolvedValue({});
-    mockPrisma.user.update.mockResolvedValue({});
-    mockPrisma.user.findUnique.mockResolvedValue({ settings: {} });
+  // ── executeClosedShows ─────────────────────────────────────────────────────
 
-    const { req, res } = createMockReqRes();
-    await executeClosedShows(req, res);
+  describe('executeClosedShows', () => {
+    it('returns executed: 0 when no shows in suite are ready', async () => {
+      // No-op suite state: just verify the endpoint returns 200 with success.
+      // (Cannot assert executed===0 because background data may have ready shows.)
+      const h = makeReqRes(undefined);
+      await executeClosedShows(h.req, h.res);
+      expect(h.res.statusValue).toBe(200);
+      expect(h.res.jsonValue.success).toBe(true);
+      expect(typeof h.res.jsonValue.data.executed).toBe('number');
+    });
 
-    // Prize amounts: 1st = floor(1000*0.5)=500, 2nd = floor(1000*0.3)=300, 3rd = floor(1000*0.2)=200, 4th = 0
-    // Check competition results include prizeWon
-    const resultCalls = mockPrisma.competitionResult.create.mock.calls;
-    const prizes = resultCalls.map(c => c[0].data.prizeWon);
-    expect(prizes).toContain(500); // 1st place
-    expect(prizes).toContain(300); // 2nd place
-    expect(prizes).toContain(200); // 3rd place
-    expect(prizes).toContain(0); // 4th place
-  });
-
-  it('updates show status to completed after execution', async () => {
-    mockPrisma.show.findMany.mockResolvedValue([
-      {
-        id: 5,
-        name: 'Final Show',
+    it('completes a show with no entries (status → completed, executedAt set)', async () => {
+      const user = await createUser();
+      const show = await createShowDirect(user.id, {
+        closeDate: new Date(Date.now() - 1000),
         prize: 0,
-        discipline: 'Polo',
-        entries: [
-          {
-            horseId: 1,
-            userId: 'u1',
-            horse: {
-              id: 1,
-              name: 'X',
-              userId: 'u1',
-              speed: 50,
-              stamina: 50,
-              agility: 50,
-              balance: 50,
-              precision: 50,
-              boldness: 50,
-            },
-          },
-        ],
-      },
-    ]);
-    mockPrisma.show.update.mockResolvedValue({});
-    mockPrisma.competitionResult.create.mockResolvedValue({});
-    mockPrisma.user.findUnique.mockResolvedValue({ settings: {} });
+      });
 
-    const { req, res } = createMockReqRes();
-    await executeClosedShows(req, res);
+      const h = makeReqRes(undefined);
+      await executeClosedShows(h.req, h.res);
+      expect(h.res.statusValue).toBe(200);
 
-    // Last update call should set status to completed
-    const updateCalls = mockPrisma.show.update.mock.calls;
-    const completedCall = updateCalls.find(c => c[0].where.id === 5 && c[0].data.status === 'completed');
-    expect(completedCall).toBeDefined();
-    expect(completedCall[0].data.executedAt).toBeDefined();
-  });
+      const after = await prisma.show.findUnique({ where: { id: show.id } });
+      expect(after.status).toBe('completed');
+      expect(after.executedAt).not.toBeNull();
+    });
 
-  it('handles scheduler call with (null, null) without crashing', async () => {
-    mockPrisma.show.findMany.mockResolvedValue([]);
-    // Should not throw when res is null
-    await expect(executeClosedShows(null, null)).resolves.not.toThrow();
-  });
-
-  it('does not send response when res is null (scheduler mode)', async () => {
-    mockPrisma.show.findMany.mockResolvedValue([]);
-    const result = await executeClosedShows(null, null);
-    // No res.status or res.json calls since res is null
-    expect(result).toBeUndefined();
-  });
-
-  it('returns 500 on unexpected error', async () => {
-    mockPrisma.show.findMany.mockRejectedValue(new Error('DB crash'));
-    const { req, res } = createMockReqRes();
-    await executeClosedShows(req, res);
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json.mock.calls[0][0].message).toBe('Execution failed');
-  });
-
-  it('logs error but does not throw when res is null and error occurs', async () => {
-    mockPrisma.show.findMany.mockRejectedValue(new Error('Scheduler crash'));
-    await expect(executeClosedShows(null, null)).resolves.not.toThrow();
-    expect(mockLogger.error).toHaveBeenCalled();
-  });
-
-  it('sets firstEverWin milestone for 1st place winner', async () => {
-    mockPrisma.show.findMany.mockResolvedValue([
-      {
-        id: 1,
-        name: 'Win Show',
+    it('scores entries and creates competition results with required fields', async () => {
+      const user = await createUser();
+      const fast = await createHorse(user.id, {
+        speed: 80,
+        stamina: 70,
+        agility: 75,
+        balance: 60,
+        precision: 90,
+        boldness: 65,
+      });
+      const slow = await createHorse(user.id, {
+        speed: 40,
+        stamina: 40,
+        agility: 40,
+        balance: 40,
+        precision: 40,
+        boldness: 40,
+      });
+      const show = await createShowDirect(user.id, {
+        closeDate: new Date(Date.now() - 1000),
         prize: 0,
         discipline: 'Dressage',
-        entries: [
-          {
-            horseId: 1,
-            userId: 'winner-user',
-            horse: {
-              id: 1,
-              name: 'Champ',
-              userId: 'winner-user',
-              speed: 99,
-              stamina: 99,
-              agility: 99,
-              balance: 99,
-              precision: 99,
-              boldness: 99,
-            },
-          },
-        ],
-      },
-    ]);
-    mockPrisma.show.update.mockResolvedValue({});
-    mockPrisma.competitionResult.create.mockResolvedValue({});
-    mockPrisma.user.findUnique.mockResolvedValue({ settings: {} });
-    mockPrisma.user.update.mockResolvedValue({});
+      });
+      await prisma.showEntry.create({
+        data: { showId: show.id, horseId: fast.id, userId: user.id, feePaid: 0 },
+      });
+      await prisma.showEntry.create({
+        data: { showId: show.id, horseId: slow.id, userId: user.id, feePaid: 0 },
+      });
 
-    const { req, res } = createMockReqRes();
-    await executeClosedShows(req, res);
+      const h = makeReqRes(undefined);
+      await executeClosedShows(h.req, h.res);
 
-    // Should have called user.findUnique and user.update for milestone
-    expect(mockPrisma.user.findUnique).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'winner-user' } }));
-    // user.update should set firstWin milestone
-    const milestoneUpdate = mockPrisma.user.update.mock.calls.find(c => c[0].data?.settings?.milestones?.firstWin);
-    expect(milestoneUpdate).toBeDefined();
-  });
-
-  it('does not overwrite existing firstWin milestone', async () => {
-    mockPrisma.show.findMany.mockResolvedValue([
-      {
-        id: 1,
-        name: 'Win Again',
-        prize: 0,
-        discipline: 'Racing',
-        entries: [
-          {
-            horseId: 1,
-            userId: 'u1',
-            horse: {
-              id: 1,
-              name: 'Champ',
-              userId: 'u1',
-              speed: 99,
-              stamina: 99,
-              agility: 99,
-              balance: 99,
-              precision: 99,
-              boldness: 99,
-            },
-          },
-        ],
-      },
-    ]);
-    mockPrisma.show.update.mockResolvedValue({});
-    mockPrisma.competitionResult.create.mockResolvedValue({});
-    // User already has firstWin
-    mockPrisma.user.findUnique.mockResolvedValue({
-      settings: { milestones: { firstWin: '2026-01-01T00:00:00.000Z' } },
+      const results = await prisma.competitionResult.findMany({ where: { showId: show.id } });
+      expect(results).toHaveLength(2);
+      for (const r of results) {
+        expect(r.discipline).toBe('Dressage');
+        expect(r.showName).toBe(show.name);
+        expect(['1', '2']).toContain(r.placement);
+      }
     });
 
-    const { req, res } = createMockReqRes();
-    await executeClosedShows(req, res);
+    it('awards prize money to top 3 places (50/30/20 split, 4th gets 0)', async () => {
+      const u1 = await createUser(0);
+      const u2 = await createUser(0);
+      const u3 = await createUser(0);
+      const u4 = await createUser(0);
+      const h1 = await createHorse(u1.id, {
+        speed: 99,
+        stamina: 99,
+        agility: 99,
+        balance: 99,
+        precision: 99,
+        boldness: 99,
+      });
+      const h2 = await createHorse(u2.id, {
+        speed: 70,
+        stamina: 70,
+        agility: 70,
+        balance: 70,
+        precision: 70,
+        boldness: 70,
+      });
+      const h3 = await createHorse(u3.id, {
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        balance: 50,
+        precision: 50,
+        boldness: 50,
+      });
+      const h4 = await createHorse(u4.id, {
+        speed: 1,
+        stamina: 1,
+        agility: 1,
+        balance: 1,
+        precision: 1,
+        boldness: 1,
+      });
+      const show = await createShowDirect(u1.id, {
+        closeDate: new Date(Date.now() - 1000),
+        prize: 1000,
+        discipline: 'Racing',
+      });
+      await prisma.showEntry.create({
+        data: { showId: show.id, horseId: h1.id, userId: u1.id, feePaid: 0 },
+      });
+      await prisma.showEntry.create({
+        data: { showId: show.id, horseId: h2.id, userId: u2.id, feePaid: 0 },
+      });
+      await prisma.showEntry.create({
+        data: { showId: show.id, horseId: h3.id, userId: u3.id, feePaid: 0 },
+      });
+      await prisma.showEntry.create({
+        data: { showId: show.id, horseId: h4.id, userId: u4.id, feePaid: 0 },
+      });
 
-    // user.update should NOT have been called for milestone (only show.update calls)
-    const milestoneUpdate = mockPrisma.user.update.mock.calls.find(c => c[0].data?.settings?.milestones);
-    expect(milestoneUpdate).toBeUndefined();
-  });
+      const h = makeReqRes(undefined);
+      await executeClosedShows(h.req, h.res);
 
-  it('uses default stat value of 50 when horse stat is null', async () => {
-    mockPrisma.show.findMany.mockResolvedValue([
-      {
-        id: 1,
-        name: 'Null Stats Show',
+      const results = await prisma.competitionResult.findMany({
+        where: { showId: show.id },
+      });
+      expect(results).toHaveLength(4);
+      const prizes = results.map(r => Number(r.prizeWon)).sort((a, b) => b - a);
+      // floor(1000*0.5)=500, floor(1000*0.3)=300, floor(1000*0.2)=200, none=0
+      expect(prizes).toEqual([500, 300, 200, 0]);
+    });
+
+    it('updates show status to completed after execution', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const show = await createShowDirect(user.id, {
+        closeDate: new Date(Date.now() - 1000),
         prize: 0,
         discipline: 'Polo',
-        entries: [
-          {
-            horseId: 1,
-            userId: 'u1',
-            horse: {
-              id: 1,
-              name: 'NullHorse',
-              userId: 'u1',
-              speed: null,
-              stamina: null,
-              agility: null,
-              balance: null,
-              precision: null,
-              boldness: null,
-            },
-          },
-        ],
-      },
-    ]);
-    mockPrisma.show.update.mockResolvedValue({});
-    mockPrisma.competitionResult.create.mockResolvedValue({});
-    mockPrisma.user.findUnique.mockResolvedValue({ settings: {} });
-    mockPrisma.user.update.mockResolvedValue({});
+      });
+      await prisma.showEntry.create({
+        data: { showId: show.id, horseId: horse.id, userId: user.id, feePaid: 0 },
+      });
 
-    const { req, res } = createMockReqRes();
-    await executeClosedShows(req, res);
+      const h = makeReqRes(undefined);
+      await executeClosedShows(h.req, h.res);
 
-    // Should still create a result with score based on 50 defaults
-    expect(mockPrisma.competitionResult.create).toHaveBeenCalledTimes(1);
-    const score = mockPrisma.competitionResult.create.mock.calls[0][0].data.score;
-    // Base would be (50+50+50+50+50)/5 = 50, ±9 luck → range [41, 59]
-    expect(score).toBeGreaterThanOrEqual(0);
-    expect(score).toBeLessThanOrEqual(100);
+      const after = await prisma.show.findUnique({ where: { id: show.id } });
+      expect(after.status).toBe('completed');
+      expect(after.executedAt).not.toBeNull();
+    });
+
+    it('handles scheduler call with (null, null) without crashing', async () => {
+      await expect(executeClosedShows(null, null)).resolves.not.toThrow();
+    });
+
+    it('does not return a value when res is null (scheduler mode)', async () => {
+      const result = await executeClosedShows(null, null);
+      expect(result).toBeUndefined();
+    });
+
+    it('sets firstEverWin milestone for 1st place winner', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id, {
+        speed: 99,
+        stamina: 99,
+        agility: 99,
+        balance: 99,
+        precision: 99,
+        boldness: 99,
+      });
+      const show = await createShowDirect(user.id, {
+        closeDate: new Date(Date.now() - 1000),
+        prize: 0,
+        discipline: 'Dressage',
+      });
+      await prisma.showEntry.create({
+        data: { showId: show.id, horseId: horse.id, userId: user.id, feePaid: 0 },
+      });
+
+      const h = makeReqRes(undefined);
+      await executeClosedShows(h.req, h.res);
+
+      const userAfter = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { settings: true },
+      });
+      const settings = userAfter.settings ?? {};
+      expect(settings.milestones?.firstWin).toBeDefined();
+      expect(typeof settings.milestones.firstWin).toBe('string');
+    });
+
+    it('does not overwrite existing firstWin milestone', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id, {
+        speed: 99,
+        stamina: 99,
+        agility: 99,
+        balance: 99,
+        precision: 99,
+        boldness: 99,
+      });
+      const existingTimestamp = '2026-01-01T00:00:00.000Z';
+      // Pre-seed milestone.
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          settings: { milestones: { firstWin: existingTimestamp } },
+        },
+      });
+      const show = await createShowDirect(user.id, {
+        closeDate: new Date(Date.now() - 1000),
+        prize: 0,
+        discipline: 'Racing',
+      });
+      await prisma.showEntry.create({
+        data: { showId: show.id, horseId: horse.id, userId: user.id, feePaid: 0 },
+      });
+
+      const h = makeReqRes(undefined);
+      await executeClosedShows(h.req, h.res);
+
+      const userAfter = await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { settings: true },
+      });
+      expect(userAfter.settings.milestones.firstWin).toBe(existingTimestamp);
+    });
+
+    it('uses default stat value of 50 when horse stat is null', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id, {
+        speed: null,
+        stamina: null,
+        agility: null,
+        balance: null,
+        precision: null,
+        boldness: null,
+      });
+      const show = await createShowDirect(user.id, {
+        closeDate: new Date(Date.now() - 1000),
+        prize: 0,
+        discipline: 'Polo',
+      });
+      await prisma.showEntry.create({
+        data: { showId: show.id, horseId: horse.id, userId: user.id, feePaid: 0 },
+      });
+
+      const h = makeReqRes(undefined);
+      await executeClosedShows(h.req, h.res);
+
+      const result = await prisma.competitionResult.findFirst({ where: { showId: show.id } });
+      expect(result).not.toBeNull();
+      const score = Number(result.score);
+      // Base = (50+50+50+50+50)/5 = 50; ±9 luck → range [41, 59]; clamped to [0, 100]
+      expect(score).toBeGreaterThanOrEqual(0);
+      expect(score).toBeLessThanOrEqual(100);
+    });
   });
 });

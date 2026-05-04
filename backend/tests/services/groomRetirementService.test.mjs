@@ -426,7 +426,7 @@ describe('Groom Retirement Service', () => {
       expect(result.errors.length).toBeGreaterThanOrEqual(0); // May or may not have errors
 
       // Clean up
-      await prisma.groom.delete({ where: { id: problemGroom.id } });
+      await prisma.groom.deleteMany({ where: { id: problemGroom.id } });
     });
 
     test('should skip already retired grooms', async () => {

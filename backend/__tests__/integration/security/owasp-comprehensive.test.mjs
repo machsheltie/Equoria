@@ -22,6 +22,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { randomBytes } from 'node:crypto';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -50,8 +51,8 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
     const hashedPassword = await bcrypt.hash('TestPassword123!', 12);
     testUser = await prisma.user.create({
       data: {
-        username: `owasp-test-user-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-        email: `owasp-test-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
+        username: `owasp-test-user-${randomBytes(8).toString('hex')}`,
+        email: `owasp-test-${randomBytes(8).toString('hex')}@test.com`,
         password: hashedPassword,
         role: 'user',
         firstName: 'OWASP',
@@ -81,12 +82,16 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
   });
 
   afterAll(async () => {
-    // Cleanup
+    // Idempotent cleanup. Some tests in this suite (A09 logging, A10 SSRF)
+    // may exercise horse-delete endpoints or trigger User cascades that
+    // remove testHorse mid-run. Use deleteMany with the unique ID so a
+    // missing row is a no-op rather than a P2025 RecordNotFound that
+    // crashes the suite teardown. Same for testUser.
     if (testHorse) {
-      await prisma.horse.delete({ where: { id: testHorse.id } });
+      await prisma.horse.deleteMany({ where: { id: testHorse.id } });
     }
     if (testUser) {
-      await prisma.user.delete({ where: { id: testUser.id } });
+      await prisma.user.deleteMany({ where: { id: testUser.id } });
     }
   });
 
@@ -428,8 +433,8 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
         // Create another user's horse
         const otherUser = await prisma.user.create({
           data: {
-            username: `otheruser${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            email: `other-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
+            username: `otheruser${randomBytes(8).toString('hex')}`,
+            email: `other-${randomBytes(8).toString('hex')}@test.com`,
             password: await bcrypt.hash('TestPassword123!', 12),
             firstName: 'Other',
             lastName: 'User',
@@ -464,8 +469,8 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
         // Ownership violation should be logged (verified via audit log middleware)
 
         // Cleanup
-        await prisma.horse.delete({ where: { id: otherHorse.id } });
-        await prisma.user.delete({ where: { id: otherUser.id } });
+        await prisma.horse.deleteMany({ where: { id: otherHorse.id } });
+        await prisma.user.deleteMany({ where: { id: otherUser.id } });
       });
 
       it('should log rate limit violations', async () => {

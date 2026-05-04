@@ -71,19 +71,19 @@ describe('ScoreBreakdownPanel Component', () => {
 
     it('should show green color for positive bond modifier', () => {
       const { container } = render(<ScoreBreakdownPanel {...defaultProps} bondModifier={2} />);
-      const greenElements = container.querySelectorAll('[class*="text-green-600"]');
+      const greenElements = container.querySelectorAll('[class*="text-emerald-400"]');
       expect(greenElements.length).toBeGreaterThan(0);
     });
 
     it('should show red color for negative bond modifier', () => {
       const { container } = render(<ScoreBreakdownPanel {...defaultProps} bondModifier={-2} />);
-      const redElements = container.querySelectorAll('[class*="text-red-600"]');
+      const redElements = container.querySelectorAll('[class*="text-red-400"]');
       expect(redElements.length).toBeGreaterThan(0);
     });
 
     it('should show yellow color for zero bond modifier', () => {
       const { container } = render(<ScoreBreakdownPanel {...defaultProps} bondModifier={0} />);
-      const yellowElements = container.querySelectorAll('[class*="text-yellow-600"]');
+      const yellowElements = container.querySelectorAll('[class*="text-yellow-400"]');
       expect(yellowElements.length).toBeGreaterThan(0);
     });
 
@@ -122,19 +122,20 @@ describe('ScoreBreakdownPanel Component', () => {
 
     it('should show green color for high consistency (>=2)', () => {
       const { container } = render(<ScoreBreakdownPanel {...defaultProps} taskConsistency={3} />);
-      const greenElements = container.querySelectorAll('[class*="text-green-600"]');
+      const greenElements = container.querySelectorAll('[class*="text-emerald-400"]');
       expect(greenElements.length).toBeGreaterThan(0);
     });
 
     it('should show yellow color for medium consistency (1)', () => {
       const { container } = render(<ScoreBreakdownPanel {...defaultProps} taskConsistency={1} />);
-      const yellowElements = container.querySelectorAll('[class*="text-yellow-600"]');
+      const yellowElements = container.querySelectorAll('[class*="text-yellow-400"]');
       expect(yellowElements.length).toBeGreaterThan(0);
     });
 
     it('should show slate color for low consistency (0)', () => {
+      // Component migrated to dark theme: low consistency uses text-[rgb(148,163,184)]
       const { container } = render(<ScoreBreakdownPanel {...defaultProps} taskConsistency={0} />);
-      const slateElements = container.querySelectorAll('[class*="text-slate-600"]');
+      const slateElements = container.querySelectorAll('[class*="rgb(148,163,184)"]');
       expect(slateElements.length).toBeGreaterThan(0);
     });
 
@@ -173,7 +174,7 @@ describe('ScoreBreakdownPanel Component', () => {
 
     it('should show green color for high care quality (>=2)', () => {
       const { container } = render(<ScoreBreakdownPanel {...defaultProps} careQuality={3} />);
-      const greenElements = container.querySelectorAll('[class*="text-green-600"]');
+      const greenElements = container.querySelectorAll('[class*="text-emerald-400"]');
       expect(greenElements.length).toBeGreaterThan(0);
     });
 
@@ -214,7 +215,8 @@ describe('ScoreBreakdownPanel Component', () => {
 
     it('should show green color for high total score (>=3)', () => {
       const { container } = render(<ScoreBreakdownPanel {...defaultProps} totalScore={5} />);
-      const totalScoreElements = container.querySelectorAll('.text-xl.font-bold.text-green-600');
+      // Component migrated to dark theme: total score >= 3 uses text-emerald-400
+      const totalScoreElements = container.querySelectorAll('.text-xl.font-bold.text-emerald-400');
       expect(totalScoreElements.length).toBeGreaterThan(0);
     });
 
@@ -222,7 +224,8 @@ describe('ScoreBreakdownPanel Component', () => {
       const { container } = render(
         <ScoreBreakdownPanel bondModifier={1} taskConsistency={0} careQuality={0} totalScore={1} />
       );
-      const totalScoreElements = container.querySelectorAll('.text-xl.font-bold.text-yellow-600');
+      // Component migrated to dark theme: total score 0-2 uses text-yellow-400
+      const totalScoreElements = container.querySelectorAll('.text-xl.font-bold.text-yellow-400');
       expect(totalScoreElements.length).toBeGreaterThan(0);
     });
 
@@ -235,7 +238,8 @@ describe('ScoreBreakdownPanel Component', () => {
           totalScore={-2}
         />
       );
-      const totalScoreElements = container.querySelectorAll('.text-xl.font-bold.text-red-600');
+      // Component migrated to dark theme: negative total uses text-red-400
+      const totalScoreElements = container.querySelectorAll('.text-xl.font-bold.text-red-400');
       expect(totalScoreElements.length).toBeGreaterThan(0);
     });
 
@@ -313,19 +317,25 @@ describe('ScoreBreakdownPanel Component', () => {
   describe('progress bars', () => {
     it('should render bond modifier progress bar', () => {
       const { container } = render(<ScoreBreakdownPanel {...defaultProps} bondModifier={2} />);
-      const progressBars = container.querySelectorAll('.bg-slate-200.rounded-full');
+      const progressBars = container.querySelectorAll(
+        '.bg-\\[rgba\\(15\\,35\\,70\\,0\\.5\\)\\].rounded-full'
+      );
       expect(progressBars.length).toBeGreaterThan(0);
     });
 
     it('should render task consistency progress bar', () => {
       const { container } = render(<ScoreBreakdownPanel {...defaultProps} taskConsistency={2} />);
-      const progressBars = container.querySelectorAll('.bg-slate-200.rounded-full');
+      const progressBars = container.querySelectorAll(
+        '.bg-\\[rgba\\(15\\,35\\,70\\,0\\.5\\)\\].rounded-full'
+      );
       expect(progressBars.length).toBeGreaterThan(0);
     });
 
     it('should render care quality progress bar', () => {
       const { container } = render(<ScoreBreakdownPanel {...defaultProps} careQuality={2} />);
-      const progressBars = container.querySelectorAll('.bg-slate-200.rounded-full');
+      const progressBars = container.querySelectorAll(
+        '.bg-\\[rgba\\(15\\,35\\,70\\,0\\.5\\)\\].rounded-full'
+      );
       expect(progressBars.length).toBeGreaterThan(0);
     });
 
@@ -420,14 +430,20 @@ describe('ScoreBreakdownPanel Component', () => {
     });
 
     it('should have rounded borders on main container', () => {
+      // Component migrated to dark theme: main container uses translucent cobalt border
       const { container } = render(<ScoreBreakdownPanel {...defaultProps} />);
-      const mainContainer = container.querySelector('.rounded-lg.border.border-slate-200');
+      const mainContainer = container.querySelector(
+        '.rounded-lg.border.border-\\[rgba\\(37\\,99\\,235\\,0\\.3\\)\\]'
+      );
       expect(mainContainer).toBeInTheDocument();
     });
 
     it('should have rounded borders on key factors section', () => {
+      // Component migrated to dark theme: key factors uses translucent cobalt bg + border
       const { container } = render(<ScoreBreakdownPanel {...defaultProps} />);
-      const keyFactors = container.querySelector('.rounded-lg.bg-slate-50.border.border-slate-200');
+      const keyFactors = container.querySelector(
+        '.rounded-lg.bg-\\[rgba\\(15\\,35\\,70\\,0\\.3\\)\\].border.border-\\[rgba\\(37\\,99\\,235\\,0\\.3\\)\\]'
+      );
       expect(keyFactors).toBeInTheDocument();
     });
   });

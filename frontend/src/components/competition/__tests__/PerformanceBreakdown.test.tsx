@@ -392,7 +392,8 @@ describe('PerformanceBreakdown', () => {
       render(<PerformanceBreakdown {...defaultProps} />);
 
       const badge = screen.getByTestId('placement-badge');
-      expect(badge).toHaveClass('bg-gray-300');
+      // Silver badge uses slate-tinted background per design tokens
+      expect(badge).toHaveClass('bg-[rgba(148,163,184,0.3)]');
       expect(screen.getByText(/2nd/)).toBeInTheDocument();
     });
 
@@ -407,13 +408,13 @@ describe('PerformanceBreakdown', () => {
     it('displays positive values in green and negative in red', () => {
       render(<PerformanceBreakdown {...defaultProps} />);
 
-      // Positive rider effect (+8) should have green styling
+      // Positive rider effect (+8) should have emerald highlight per design tokens
       const riderValue = screen.getByTestId('rider-value');
-      expect(riderValue).toHaveClass('text-green-600');
+      expect(riderValue).toHaveClass('text-emerald-400');
 
-      // Negative health modifier (-3) should have red styling
+      // Negative health modifier (-3) should have red highlight per design tokens
       const healthValue = screen.getByTestId('health-value');
-      expect(healthValue).toHaveClass('text-red-600');
+      expect(healthValue).toHaveClass('text-red-400');
     });
   });
 

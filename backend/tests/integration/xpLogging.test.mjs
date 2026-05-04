@@ -61,8 +61,8 @@ afterAll(async () => {
   // Clean up xp events, training records, then horse and user
   await prisma.xpEvent.deleteMany({ where: { userId: testUser.id } });
   await prisma.trainingLog?.deleteMany({ where: { horseId: testHorse.id } }).catch(() => {}); // may not exist in all schema versions
-  await prisma.horse.delete({ where: { id: testHorse.id } });
-  await prisma.user.delete({ where: { id: testUser.id } });
+  await prisma.horse.deleteMany({ where: { id: testHorse.id } });
+  await prisma.user.deleteMany({ where: { id: testUser.id } });
 });
 
 describe('XP Logging — Training Workflow', () => {
@@ -132,7 +132,7 @@ describe('XP Logging — Training Workflow', () => {
     expect(xpAfter).toBe(xpBefore); // no XP gained
     expect(eventsAfter).toBe(eventsBefore); // no audit event written
 
-    await prisma.horse.delete({ where: { id: youngHorse.id } });
+    await prisma.horse.deleteMany({ where: { id: youngHorse.id } });
   });
 
   it('continues training even if XP audit logging fails — real resilience check', async () => {

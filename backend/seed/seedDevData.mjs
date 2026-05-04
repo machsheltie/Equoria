@@ -330,7 +330,6 @@ async function seedHorses(users, breeds) {
         flexibility: randomStat(),
         obedience: randomStat(),
         focus: randomStat(),
-        coordination: randomStat(),
         // Defaults
         healthStatus: 'Excellent',
         bondScore: randomStat(10, 60),

@@ -7,30 +7,16 @@
 // Strategy: Pure scoring functions (no Prisma) are tested directly without mocks.
 // Only validateConformationEntry requires Prisma mock (calls groomAssignment.findFirst).
 
-import { jest } from '@jest/globals';
+// NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): converted from
+// jest.unstable_mockModule of db + logger to a real-DB integration test.
+// All scoring/age-class/synergy functions are pure (no DB) and tested without
+// any mocks. validateConformationEntry queries prisma.groomAssignment.findFirst
+// internally — that section creates real users + horses + grooms + assignments.
 
-// ---------------------------------------------------------------------------
-// Mock Prisma (external DB) and logger — balanced mocking per project standards
-// ---------------------------------------------------------------------------
-
-jest.unstable_mockModule('../../../db/index.mjs', () => ({
-  default: {
-    groomAssignment: {
-      findFirst: jest.fn(),
-    },
-  },
-}));
-
-jest.unstable_mockModule('../../../utils/logger.mjs', () => ({
-  default: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-  },
-}));
-
-// Import AFTER mocks are registered
-const {
+import { afterAll, afterEach, beforeAll, beforeEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
+import prisma from '../../../db/index.mjs';
+import {
   calculateConformationScore,
   getHandlerScore,
   getConformationAgeClass,
@@ -40,10 +26,10 @@ const {
   CONFORMATION_SHOW_CONFIG,
   SHOW_HANDLING_SKILL_SCORES,
   CONFORMATION_AGE_CLASSES,
-} = await import('../../../services/conformationShowService.mjs');
+} from '../../../services/conformationShowService.mjs';
+import { CONFORMATION_CLASSES } from '../../../constants/schema.mjs';
 
-const { default: prisma } = await import('../../../db/index.mjs');
-const { CONFORMATION_CLASSES } = await import('../../../constants/schema.mjs');
+const SUITE_PREFIX = 'cfsco';
 
 // ---------------------------------------------------------------------------
 // Shared test fixtures
@@ -473,136 +459,262 @@ describe('calculateConformationShowScore', () => {
 // Task 4.6: validateConformationEntry — missing groom, bad health, age < 1
 // ---------------------------------------------------------------------------
 
-describe('validateConformationEntry', () => {
-  const userId = 'user-1';
+describe('validateConformationEntry (real DB)', () => {
+  // Suite-scoped fixtures: a real user + real horse + real groom + real
+  // active assignment that's older than the 2-day timing requirement.
+  // Each test uses these as the baseline; tests that need a different
+  // shape mutate POJO copies (the function reads from POJOs but queries
+  // assignment via prisma).
+  let user;
+  let horse; // POJO matching horse.id in DB
+  let groom; // POJO matching groom.id in DB
+  let validClass;
 
-  const horse = {
-    id: 100,
-    name: 'ValidHorse',
-    userId,
-    age: 3,
-    health: 'Excellent',
-    conformationScores: FULL_CONFORMATION_SCORES,
-    bondScore: 50,
-    temperament: 'calm',
-  };
+  beforeAll(async () => {
+    await cleanupValidationFixtures();
+    const uid = randomBytes(8).toString('hex');
+    user = await prisma.user.create({
+      data: {
+        id: `${SUITE_PREFIX}-${uid}`,
+        username: `${SUITE_PREFIX}_${uid}`,
+        email: `${SUITE_PREFIX}-${uid}@example.com`,
+        firstName: 'Cfsco',
+        lastName: 'Test',
+        password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
+        emailVerified: true,
+      },
+    });
 
-  const groom = {
-    id: 200,
-    name: 'ValidGroom',
-    userId,
-    showHandlingSkill: 'skilled',
-    personality: 'gentle',
-  };
+    const dbHorse = await prisma.horse.create({
+      data: {
+        name: 'ValidHorse',
+        sex: 'Mare',
+        dateOfBirth: new Date('2022-01-01'),
+        age: 3,
+        healthStatus: 'Excellent',
+        bondScore: 50,
+        temperament: 'calm',
+        conformationScores: FULL_CONFORMATION_SCORES,
+        user: { connect: { id: user.id } },
+      },
+    });
+    const dbGroom = await prisma.groom.create({
+      data: {
+        name: 'ValidGroom',
+        speciality: 'show_handling',
+        personality: 'gentle',
+        skillLevel: 'expert',
+        user: { connect: { id: user.id } },
+      },
+    });
 
-  const validClass = CONFORMATION_CLASSES.MARES;
+    // Real groom assignment older than the 2-day timing requirement.
+    await prisma.groomAssignment.create({
+      data: {
+        groom: { connect: { id: dbGroom.id } },
+        foal: { connect: { id: dbHorse.id } },
+        user: { connect: { id: user.id } },
+        isActive: true,
+        createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      },
+    });
 
-  const mockAssignment = {
-    id: 999,
-    groomId: 200,
-    foalId: 100,
-    userId,
-    isActive: true,
-    createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000), // 3 days ago
-  };
-
-  beforeEach(() => {
-    jest.resetAllMocks();
-    prisma.groomAssignment.findFirst.mockResolvedValue(mockAssignment);
+    // POJOs that the validation function consumes directly. IDs match
+    // the real DB rows so the internal groomAssignment.findFirst query
+    // resolves correctly.
+    horse = {
+      id: dbHorse.id,
+      name: 'ValidHorse',
+      userId: user.id,
+      age: 3,
+      health: 'Excellent',
+      conformationScores: FULL_CONFORMATION_SCORES,
+      bondScore: 50,
+      temperament: 'calm',
+    };
+    groom = {
+      id: dbGroom.id,
+      name: 'ValidGroom',
+      userId: user.id,
+      showHandlingSkill: 'skilled',
+      personality: 'gentle',
+    };
+    validClass = CONFORMATION_CLASSES.MARES;
   });
 
+  afterAll(cleanupValidationFixtures);
+
   test('passes when all requirements are met', async () => {
-    const result = await validateConformationEntry(horse, groom, validClass, userId);
+    const result = await validateConformationEntry(horse, groom, validClass, user.id);
     expect(result.valid).toBe(true);
     expect(result.errors).toHaveLength(0);
   });
 
   test('assigns correct age class for valid horse', async () => {
-    const result = await validateConformationEntry(horse, groom, validClass, userId);
-    // horse.age = 3 → Junior
+    const result = await validateConformationEntry(horse, groom, validClass, user.id);
     expect(result.ageClass).toBe(CONFORMATION_AGE_CLASSES.JUNIOR);
   });
 
   test('rejects when groom is not assigned to horse', async () => {
-    prisma.groomAssignment.findFirst.mockResolvedValue(null);
-    const result = await validateConformationEntry(horse, groom, validClass, userId);
+    // Use POJO IDs that don't match any real assignment.
+    const otherHorse = { ...horse, id: 999999998 };
+    const otherGroom = { ...groom, id: 999999999 };
+    const result = await validateConformationEntry(otherHorse, otherGroom, validClass, user.id);
     expect(result.valid).toBe(false);
     expect(result.errors).toContain('Groom must be assigned to this horse before entering conformation shows');
   });
 
   test('rejects when groom assigned too recently (< 2 days)', async () => {
-    const recentAssignment = { ...mockAssignment, createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000) }; // 1 hour ago
-    prisma.groomAssignment.findFirst.mockResolvedValue(recentAssignment);
-    const result = await validateConformationEntry(horse, groom, validClass, userId);
+    // Create a fresh user/horse/groom with a recent assignment.
+    const u = await prisma.user.create({
+      data: {
+        id: `${SUITE_PREFIX}-recent-${randomBytes(8).toString('hex')}`,
+        username: `${SUITE_PREFIX}_recent_${randomBytes(4).toString('hex')}`,
+        email: `${SUITE_PREFIX}-recent-${randomBytes(4).toString('hex')}@example.com`,
+        firstName: 'Recent',
+        lastName: 'Test',
+        password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
+        emailVerified: true,
+      },
+    });
+    const h = await prisma.horse.create({
+      data: {
+        name: 'RecentHorse',
+        sex: 'Mare',
+        dateOfBirth: new Date('2022-01-01'),
+        age: 3,
+        healthStatus: 'Excellent',
+        bondScore: 50,
+        temperament: 'calm',
+        user: { connect: { id: u.id } },
+      },
+    });
+    const g = await prisma.groom.create({
+      data: {
+        name: 'RecentGroom',
+        speciality: 'show_handling',
+        personality: 'gentle',
+        skillLevel: 'expert',
+        user: { connect: { id: u.id } },
+      },
+    });
+    await prisma.groomAssignment.create({
+      data: {
+        groom: { connect: { id: g.id } },
+        foal: { connect: { id: h.id } },
+        user: { connect: { id: u.id } },
+        isActive: true,
+        createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000), // 1 hour ago
+      },
+    });
+
+    const result = await validateConformationEntry(
+      {
+        id: h.id,
+        name: 'RecentHorse',
+        userId: u.id,
+        age: 3,
+        health: 'Excellent',
+        conformationScores: FULL_CONFORMATION_SCORES,
+        bondScore: 50,
+        temperament: 'calm',
+      },
+      { id: g.id, name: 'RecentGroom', userId: u.id, showHandlingSkill: 'skilled', personality: 'gentle' },
+      validClass,
+      u.id,
+    );
     expect(result.valid).toBe(false);
     expect(result.errors.some(e => e.includes('at least'))).toBe(true);
   });
 
   test('rejects when horse health is not Excellent or Good', async () => {
     const sickHorse = { ...horse, health: 'Poor' };
-    const result = await validateConformationEntry(sickHorse, groom, validClass, userId);
+    const result = await validateConformationEntry(sickHorse, groom, validClass, user.id);
     expect(result.valid).toBe(false);
     expect(result.errors.some(e => e.toLowerCase().includes('health'))).toBe(true);
   });
 
   test('rejects "Injured" health', async () => {
     const injuredHorse = { ...horse, health: 'Injured' };
-    const result = await validateConformationEntry(injuredHorse, groom, validClass, userId);
+    const result = await validateConformationEntry(injuredHorse, groom, validClass, user.id);
     expect(result.valid).toBe(false);
   });
 
   test('rejects "Fair" health', async () => {
     const fairHorse = { ...horse, health: 'Fair' };
-    const result = await validateConformationEntry(fairHorse, groom, validClass, userId);
+    const result = await validateConformationEntry(fairHorse, groom, validClass, user.id);
     expect(result.valid).toBe(false);
   });
 
   test('accepts horse with age 0 (Weanling)', async () => {
     const weanling = { ...horse, age: 0, health: 'Excellent' };
-    const result = await validateConformationEntry(weanling, groom, validClass, userId);
+    const result = await validateConformationEntry(weanling, groom, validClass, user.id);
     expect(result.valid).toBe(true);
     expect(result.ageClass).toBe(CONFORMATION_AGE_CLASSES.WEANLING);
   });
 
   test('rejects horse with age < 0 (invalid age)', async () => {
     const negativeAge = { ...horse, age: -1 };
-    const result = await validateConformationEntry(negativeAge, groom, validClass, userId);
+    const result = await validateConformationEntry(negativeAge, groom, validClass, user.id);
     expect(result.valid).toBe(false);
     expect(result.errors.some(e => e.toLowerCase().includes('age'))).toBe(true);
   });
 
   test('rejects when horse is not owned by userId', async () => {
     const notMyHorse = { ...horse, userId: 'other-user' };
-    const result = await validateConformationEntry(notMyHorse, groom, validClass, userId);
+    const result = await validateConformationEntry(notMyHorse, groom, validClass, user.id);
     expect(result.valid).toBe(false);
     expect(result.errors).toContain('You do not own this horse');
   });
 
   test('rejects when groom is not owned by userId', async () => {
     const notMyGroom = { ...groom, userId: 'other-user' };
-    const result = await validateConformationEntry(horse, notMyGroom, validClass, userId);
+    const result = await validateConformationEntry(horse, notMyGroom, validClass, user.id);
     expect(result.valid).toBe(false);
     expect(result.errors).toContain('You do not own this groom');
   });
 
   test('rejects invalid conformation class', async () => {
-    const result = await validateConformationEntry(horse, groom, 'Dressage', userId);
+    const result = await validateConformationEntry(horse, groom, 'Dressage', user.id);
     expect(result.valid).toBe(false);
     expect(result.errors.some(e => e.includes('not a valid conformation show class'))).toBe(true);
   });
 
   test('includes warning for missing conformationScores but does not reject', async () => {
     const horseNoScores = { ...horse, conformationScores: null };
-    const result = await validateConformationEntry(horseNoScores, groom, validClass, userId);
-    // Should NOT fail validation — only a warning
+    const result = await validateConformationEntry(horseNoScores, groom, validClass, user.id);
     expect(result.warnings.some(w => w.toLowerCase().includes('conformation scores'))).toBe(true);
   });
 
   test('returns assignment on success', async () => {
-    const result = await validateConformationEntry(horse, groom, validClass, userId);
-    expect(result.assignment).toEqual(mockAssignment);
+    const result = await validateConformationEntry(horse, groom, validClass, user.id);
+    expect(result.assignment).toBeDefined();
+    expect(result.assignment.groomId).toBe(groom.id);
+    expect(result.assignment.foalId).toBe(horse.id);
   });
 });
+
+async function cleanupValidationFixtures() {
+  const users = await prisma.user.findMany({
+    where: { id: { startsWith: SUITE_PREFIX } },
+    select: { id: true },
+  });
+  if (users.length === 0) {
+    return;
+  }
+  const userIds = users.map(u => u.id);
+  const grooms = await prisma.groom.findMany({
+    where: { userId: { in: userIds } },
+    select: { id: true },
+  });
+  const groomIds = grooms.map(g => g.id);
+  if (groomIds.length > 0) {
+    await prisma.groomAssignment.deleteMany({ where: { groomId: { in: groomIds } } });
+  }
+  await prisma.horse.deleteMany({ where: { userId: { in: userIds } } });
+  await prisma.groom.deleteMany({ where: { userId: { in: userIds } } });
+  await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+}
 
 // ---------------------------------------------------------------------------
 // CONFORMATION_SHOW_CONFIG — structural checks

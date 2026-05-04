@@ -21,6 +21,12 @@ import {
   queryRateLimiter,
 } from '../../../middleware/rateLimiting.mjs';
 import * as horseXpController from '../controllers/horseXpController.mjs';
+import {
+  equipFeedHandler,
+  unequipFeedHandler,
+  feedHorseHandler,
+  getEquippableHandler,
+} from '../controllers/horseFeedController.mjs';
 import { createHorse } from '../../../models/horseModel.mjs';
 import { generateConformationScores } from '../services/conformationService.mjs';
 import { generateGaitScores } from '../services/gaitService.mjs';
@@ -32,6 +38,7 @@ import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 import { generateMarkings, inheritMarkings } from '../services/markingGenerationService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
+import { withHealth } from '../../../utils/horseHealth.mjs';
 
 // Validation error handler
 const handleValidationErrors = (req, res, next) => {
@@ -312,7 +319,7 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
     res.json({
       success: true,
       message: `Found ${horses.length} horses`,
-      data: horses,
+      data: horses.map(h => withHealth(h)),
     });
   } catch (error) {
     logger.error(`[horseRoutes] Error getting horses: ${error.message}`);
@@ -1123,6 +1130,77 @@ router.post(
       });
     }
   },
+);
+
+/**
+ * POST /horses/:id/equip-feed
+ * Set Horse.equippedFeedType from the authenticated user's pooled inventory
+ * (feed-system redesign 2026-04-29, Equoria-wr30).
+ *
+ * Security: ownership enforced via requireOwnership('horse') middleware
+ * (CWE-639 disclosure resistance — returns 404 for both missing and
+ * not-owned). Inventory ownership enforced inside the controller.
+ */
+router.post(
+  '/:id/equip-feed',
+  mutationRateLimiter,
+  validateHorseId,
+  authenticateToken,
+  requireOwnership('horse'),
+  equipFeedHandler,
+);
+
+/**
+ * POST /horses/:id/unequip-feed
+ * Clear Horse.equippedFeedType for an owned horse.
+ *
+ * Security: ownership enforced via requireOwnership('horse') middleware
+ * (CWE-639 disclosure resistance — returns 404 for both missing and
+ * not-owned).
+ */
+router.post(
+  '/:id/unequip-feed',
+  mutationRateLimiter,
+  validateHorseId,
+  authenticateToken,
+  requireOwnership('horse'),
+  unequipFeedHandler,
+);
+
+/**
+ * POST /horses/:id/feed
+ * Daily feed action — transactional inventory decrement, lastFedDate set,
+ * stat-boost RNG roll (feed-system redesign 2026-04-29, Equoria-l5kf).
+ *
+ * Security: ownership enforced via requireOwnership('horse') middleware
+ * (CWE-639 disclosure resistance — returns 404 for both missing and
+ * not-owned). Service performs a defense-in-depth owner check inside its
+ * transaction (also returns 404 on mismatch).
+ */
+router.post(
+  '/:id/feed',
+  mutationRateLimiter,
+  validateHorseId,
+  authenticateToken,
+  requireOwnership('horse'),
+  feedHorseHandler,
+);
+
+/**
+ * GET /horses/:id/equippable
+ * Returns the tack + feed items the user can equip on this horse
+ * (feed-system redesign 2026-04-29, Equoria-o0af).
+ *
+ * Security: ownership enforced via requireOwnership('horse') middleware
+ * (CWE-639 disclosure resistance).
+ */
+router.get(
+  '/:id/equippable',
+  queryRateLimiter,
+  validateHorseId,
+  authenticateToken,
+  requireOwnership('horse'),
+  getEquippableHandler,
 );
 
 /**

@@ -54,8 +54,8 @@ describe('HiddenTraitIndicator Component', () => {
 
     it('should show Sparkles icon for all discovered state', () => {
       const { container } = render(<HiddenTraitIndicator discoveryStatus={allDiscoveredStatus} />);
-      // Sparkles icon should be present
-      expect(container.querySelector('.text-green-600')).toBeInTheDocument();
+      // Sparkles icon now uses emerald-400 in dark theme
+      expect(container.querySelector('.text-emerald-400')).toBeInTheDocument();
     });
 
     it('should not show hidden traits UI when all discovered', () => {
@@ -96,7 +96,8 @@ describe('HiddenTraitIndicator Component', () => {
 
     it('should show Lock icon for hidden traits', () => {
       const { container } = render(<HiddenTraitIndicator discoveryStatus={hiddenTraitsStatus} />);
-      expect(container.querySelector('.text-slate-600')).toBeInTheDocument();
+      // Lock icon now uses muted-text dark-theme color
+      expect(container.querySelector('.text-\\[rgb\\(148\\,163\\,184\\)\\]')).toBeInTheDocument();
     });
   });
 
@@ -175,7 +176,8 @@ describe('HiddenTraitIndicator Component', () => {
 
     it('should show HelpCircle icon with hint', () => {
       const { container } = render(<HiddenTraitIndicator discoveryStatus={hintStatus} />);
-      expect(container.querySelector('.text-blue-600')).toBeInTheDocument();
+      // HelpCircle icon now uses blue-400 in dark theme
+      expect(container.querySelector('.text-blue-400')).toBeInTheDocument();
     });
 
     it('should hide hint when showHint is false', () => {
@@ -349,8 +351,9 @@ describe('HiddenTraitIndicator Component', () => {
 
     it('should apply gradient background to main container', () => {
       const { container } = render(<HiddenTraitIndicator discoveryStatus={status} />);
+      // Main container now uses dark-theme rgba background
       expect(
-        container.querySelector('.bg-gradient-to-br.from-slate-50.to-gray-50')
+        container.querySelector('.bg-\\[rgba\\(15\\,35\\,70\\,0\\.4\\)\\]')
       ).toBeInTheDocument();
     });
 

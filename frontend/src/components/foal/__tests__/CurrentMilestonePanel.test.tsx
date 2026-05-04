@@ -253,42 +253,52 @@ describe('CurrentMilestonePanel Component', () => {
 
     it('should use green color for 75%+ progress', () => {
       // foalAge 28, window 1-30, progress = (28-1)/(30-1)*100 = 93%
+      // Component migrated to CSS variables — getProgressFill returns 'var(--status-success)' for >=75%
       const { container } = render(
         <CurrentMilestonePanel {...defaultProps} foalAge={28} daysRemaining={2} />
       );
 
-      const progressBar = container.querySelector('.bg-green-500');
+      const progressBar = container.querySelector('[role="progressbar"][aria-valuenow="93"]');
       expect(progressBar).toBeInTheDocument();
+      expect((progressBar as HTMLElement)?.style.background).toContain('--status-success');
     });
 
     it('should use blue color for 50-74% progress', () => {
       // foalAge 18, window 1-30, progress = (18-1)/(30-1)*100 = 58%
+      // Component migrated to CSS variables — returns 'var(--celestial-primary)' for 50-74%
       const { container } = render(
         <CurrentMilestonePanel {...defaultProps} foalAge={18} daysRemaining={12} />
       );
 
-      const progressBar = container.querySelector('.bg-blue-500');
+      // Math.round((18-1)/(30-1)*100) = Math.round(58.62) = 59
+      const progressBar = container.querySelector('[role="progressbar"][aria-valuenow="59"]');
       expect(progressBar).toBeInTheDocument();
+      expect((progressBar as HTMLElement)?.style.background).toContain('--celestial-primary');
     });
 
     it('should use yellow color for 25-49% progress', () => {
       // foalAge 9, window 1-30, progress = (9-1)/(30-1)*100 = 27%
+      // Component migrated to CSS variables — returns 'var(--status-warning)' for 25-49%
       const { container } = render(
         <CurrentMilestonePanel {...defaultProps} foalAge={9} daysRemaining={21} />
       );
 
-      const progressBar = container.querySelector('.bg-yellow-500');
+      // Math.round((9-1)/(30-1)*100) = Math.round(27.58) = 28
+      const progressBar = container.querySelector('[role="progressbar"][aria-valuenow="28"]');
       expect(progressBar).toBeInTheDocument();
+      expect((progressBar as HTMLElement)?.style.background).toContain('--status-warning');
     });
 
     it('should use amber color for <25% progress', () => {
       // foalAge 4, window 1-30, progress = (4-1)/(30-1)*100 = 10%
+      // Component migrated to CSS variables — returns 'var(--status-warning)' for <25%
       const { container } = render(
         <CurrentMilestonePanel {...defaultProps} foalAge={4} daysRemaining={26} />
       );
 
-      const progressBar = container.querySelector('.bg-amber-500');
+      const progressBar = container.querySelector('[role="progressbar"][aria-valuenow="10"]');
       expect(progressBar).toBeInTheDocument();
+      expect((progressBar as HTMLElement)?.style.background).toContain('--status-warning');
     });
 
     it('should have correct aria attributes', () => {
@@ -336,38 +346,40 @@ describe('CurrentMilestonePanel Component', () => {
     });
 
     it('should calculate and display percentage correctly', () => {
-      // 3/5 = 60%
+      // 3/5 = 60% — component now uses inline style with CSS variable for background
       const { container } = render(<CurrentMilestonePanel {...defaultProps} />);
-      const enrichmentBar = container.querySelector('.bg-emerald-600');
+      const enrichmentBar = container.querySelector(
+        '[role="progressbar"][aria-label*="Enrichment activities"]'
+      );
       expect(enrichmentBar).toHaveStyle({ width: '60%' });
     });
 
     it('should use green color for 80%+ completion', () => {
-      // 4/5 = 80%
+      // 4/5 = 80% — getEnrichmentStatusColor returns 'var(--status-success)' for >=80%
       render(<CurrentMilestonePanel {...defaultProps} enrichmentActivitiesCompleted={4} />);
       const statusText = screen.getByText('4 / 5');
-      expect(statusText).toHaveClass('text-green-600');
+      expect(statusText.style.color).toContain('--status-success');
     });
 
     it('should use blue color for 60-79% completion', () => {
-      // 3/5 = 60%
+      // 3/5 = 60% — getEnrichmentStatusColor returns 'var(--celestial-primary)' for 60-79%
       render(<CurrentMilestonePanel {...defaultProps} />);
       const statusText = screen.getByText('3 / 5');
-      expect(statusText).toHaveClass('text-blue-600');
+      expect(statusText.style.color).toContain('--celestial-primary');
     });
 
     it('should use yellow color for 40-59% completion', () => {
-      // 2/5 = 40%
+      // 2/5 = 40% — getEnrichmentStatusColor returns 'var(--status-warning)' for 40-59%
       render(<CurrentMilestonePanel {...defaultProps} enrichmentActivitiesCompleted={2} />);
       const statusText = screen.getByText('2 / 5');
-      expect(statusText).toHaveClass('text-yellow-600');
+      expect(statusText.style.color).toContain('--status-warning');
     });
 
     it('should use amber color for <40% completion', () => {
-      // 1/5 = 20%
+      // 1/5 = 20% — getEnrichmentStatusColor returns 'var(--status-warning)' for <40%
       render(<CurrentMilestonePanel {...defaultProps} enrichmentActivitiesCompleted={1} />);
       const statusText = screen.getByText('1 / 5');
-      expect(statusText).toHaveClass('text-amber-600');
+      expect(statusText.style.color).toContain('--status-warning');
     });
 
     it('should display excellent message for 80%+ completion', () => {

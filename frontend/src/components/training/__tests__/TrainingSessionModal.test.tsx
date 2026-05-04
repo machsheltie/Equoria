@@ -44,9 +44,9 @@ const mockUseTrainingStatus = vi.fn(() => ({
 }));
 
 const mockUseTrainingEligibility = vi.fn(() => ({
-  mutateAsync: mockCheckEligibility,
+  refetch: mockCheckEligibility,
   data: null,
-  isPending: false,
+  isFetching: false,
 }));
 
 const mockUseTrainingSession = vi.fn(() => ({
@@ -68,9 +68,9 @@ describe('TrainingSessionModal', () => {
       data: { score: 75, nextEligibleDate: null },
     });
     mockUseTrainingEligibility.mockReturnValue({
-      mutateAsync: mockCheckEligibility,
+      refetch: mockCheckEligibility,
       data: null,
-      isPending: false,
+      isFetching: false,
     });
     mockUseTrainingSession.mockReturnValue({
       mutateAsync: mockRunTraining,
@@ -154,7 +154,7 @@ describe('TrainingSessionModal', () => {
   });
 
   describe('Discipline Selection', () => {
-    it('renders discipline dropdown with label', () => {
+    it('renders discipline selector with label', () => {
       render(
         <TrainingSessionModal
           horse={mockHorse}
@@ -162,7 +162,8 @@ describe('TrainingSessionModal', () => {
           onCompleted={mockOnCompleted}
         />
       );
-      expect(screen.getByLabelText(/Discipline/i)).toBeInTheDocument();
+      // The new DisciplineSelector uses a label element + button-based picker
+      expect(screen.getByTestId('discipline-selector')).toBeInTheDocument();
     });
 
     it('has Barrel Racing as default discipline', () => {
@@ -173,8 +174,9 @@ describe('TrainingSessionModal', () => {
           onCompleted={mockOnCompleted}
         />
       );
-      const select = screen.getByLabelText(/Discipline/i) as HTMLSelectElement;
-      expect(select.value).toBe('Barrel Racing');
+      // Default selected discipline: Barrel Racing button has aria-pressed=true
+      const barrelButton = screen.getByRole('button', { name: /Barrel Racing/i });
+      expect(barrelButton).toHaveAttribute('aria-pressed', 'true');
     });
 
     it('includes all 23 disciplines', () => {
@@ -210,8 +212,15 @@ describe('TrainingSessionModal', () => {
         'Vaulting',
         'Western Pleasure',
       ];
+      // Collect every button's text once. Iterating getAllByRole with a
+      // regex per discipline (23 queries, ~ms each) was pushing past the
+      // 10s default; one pass is O(n) instead of O(n*m).
+      const buttonNames = screen
+        .getAllByRole('button')
+        .map((b) => b.textContent ?? '')
+        .join('\n');
       disciplines.forEach((d) => {
-        expect(screen.getByRole('option', { name: d })).toBeInTheDocument();
+        expect(buttonNames).toContain(d);
       });
     });
 
@@ -223,9 +232,10 @@ describe('TrainingSessionModal', () => {
           onCompleted={mockOnCompleted}
         />
       );
-      const select = screen.getByLabelText(/Discipline/i) as HTMLSelectElement;
-      fireEvent.change(select, { target: { value: 'Racing' } });
-      expect(select.value).toBe('Racing');
+      // Click the Racing button (use exact-match to avoid Barrel Racing collision)
+      const racingButton = screen.getByRole('button', { name: /^Racing/i });
+      fireEvent.click(racingButton);
+      expect(racingButton).toHaveAttribute('aria-pressed', 'true');
     });
   });
 
@@ -322,18 +332,15 @@ describe('TrainingSessionModal', () => {
       fireEvent.click(checkButton);
 
       await waitFor(() => {
-        expect(mockCheckEligibility).toHaveBeenCalledWith({
-          horseId: 1,
-          discipline: 'Barrel Racing',
-        });
+        expect(mockCheckEligibility).toHaveBeenCalled();
       });
     });
 
     it('shows "Eligible to train" when horse is eligible', () => {
       mockUseTrainingEligibility.mockReturnValue({
-        mutateAsync: mockCheckEligibility,
+        refetch: mockCheckEligibility,
         data: { eligible: true },
-        isPending: false,
+        isFetching: false,
       });
 
       render(
@@ -349,9 +356,9 @@ describe('TrainingSessionModal', () => {
 
     it('shows reason when horse is not eligible', () => {
       mockUseTrainingEligibility.mockReturnValue({
-        mutateAsync: mockCheckEligibility,
+        refetch: mockCheckEligibility,
         data: { eligible: false, reason: 'Horse is on cooldown' },
-        isPending: false,
+        isFetching: false,
       });
 
       render(
@@ -367,9 +374,9 @@ describe('TrainingSessionModal', () => {
 
     it('shows default message when not eligible and no reason', () => {
       mockUseTrainingEligibility.mockReturnValue({
-        mutateAsync: mockCheckEligibility,
+        refetch: mockCheckEligibility,
         data: { eligible: false },
-        isPending: false,
+        isFetching: false,
       });
 
       render(
@@ -385,9 +392,9 @@ describe('TrainingSessionModal', () => {
 
     it('shows "Checking..." while checking eligibility', () => {
       mockUseTrainingEligibility.mockReturnValue({
-        mutateAsync: mockCheckEligibility,
+        refetch: mockCheckEligibility,
         data: null,
-        isPending: true,
+        isFetching: true,
       });
 
       render(
@@ -403,9 +410,9 @@ describe('TrainingSessionModal', () => {
 
     it('disables Check Eligibility button while checking', () => {
       mockUseTrainingEligibility.mockReturnValue({
-        mutateAsync: mockCheckEligibility,
+        refetch: mockCheckEligibility,
         data: null,
-        isPending: true,
+        isFetching: true,
       });
 
       render(
@@ -631,9 +638,9 @@ describe('TrainingSessionModal', () => {
         expect(screen.getByText('Network error')).toBeInTheDocument();
       });
 
-      // Change discipline
-      const select = screen.getByLabelText(/Discipline/i);
-      fireEvent.change(select, { target: { value: 'Racing' } });
+      // Change discipline by clicking a different button
+      const racingButton = screen.getByRole('button', { name: /^Racing/i });
+      fireEvent.click(racingButton);
 
       await waitFor(() => {
         expect(screen.queryByText('Network error')).not.toBeInTheDocument();
@@ -656,9 +663,9 @@ describe('TrainingSessionModal', () => {
         />
       );
 
-      // Change discipline to Racing
-      const select = screen.getByLabelText(/Discipline/i);
-      fireEvent.change(select, { target: { value: 'Racing' } });
+      // Change discipline to Racing by clicking the button
+      const racingButton = screen.getByRole('button', { name: /^Racing/i });
+      fireEvent.click(racingButton);
 
       // Start training
       const trainButton = screen.getByRole('button', { name: /Start Training/i });
@@ -784,9 +791,8 @@ describe('TrainingSessionModal', () => {
         />
       );
 
-      // Change to Racing
-      const select = screen.getByLabelText(/Discipline/i);
-      fireEvent.change(select, { target: { value: 'Racing' } });
+      // Change to Racing by clicking the Racing button
+      fireEvent.click(screen.getByRole('button', { name: /^Racing/i }));
 
       expect(screen.getByTestId('trait-badge-athletic')).toBeInTheDocument();
       expect(screen.getByTestId('trait-badge-stubborn')).toBeInTheDocument();
@@ -801,9 +807,8 @@ describe('TrainingSessionModal', () => {
         />
       );
 
-      // Change to Dressage (mental)
-      const select = screen.getByLabelText(/Discipline/i);
-      fireEvent.change(select, { target: { value: 'Dressage' } });
+      // Change to Dressage (mental) by clicking the Dressage button
+      fireEvent.click(screen.getByRole('button', { name: /Dressage/i }));
 
       expect(screen.getByTestId('trait-badge-intelligent')).toBeInTheDocument();
       expect(screen.getByTestId('trait-badge-calm')).toBeInTheDocument();
@@ -818,9 +823,8 @@ describe('TrainingSessionModal', () => {
         />
       );
 
-      // Change to Cross Country (other)
-      const select = screen.getByLabelText(/Discipline/i);
-      fireEvent.change(select, { target: { value: 'Cross Country' } });
+      // Change to Cross Country (other) by clicking the button
+      fireEvent.click(screen.getByRole('button', { name: /Cross Country/i }));
 
       expect(screen.getByTestId('trait-badge-quick-learner')).toBeInTheDocument();
     });
@@ -834,14 +838,12 @@ describe('TrainingSessionModal', () => {
         />
       );
 
-      const select = screen.getByLabelText(/Discipline/i);
-
       // Start with Racing (physical)
-      fireEvent.change(select, { target: { value: 'Racing' } });
+      fireEvent.click(screen.getByRole('button', { name: /^Racing/i }));
       expect(screen.getByTestId('trait-badge-athletic')).toBeInTheDocument();
 
       // Change to Dressage (mental)
-      fireEvent.change(select, { target: { value: 'Dressage' } });
+      fireEvent.click(screen.getByRole('button', { name: /Dressage/i }));
       expect(screen.getByTestId('trait-badge-intelligent')).toBeInTheDocument();
       expect(screen.queryByTestId('trait-badge-athletic')).not.toBeInTheDocument();
     });
@@ -893,8 +895,7 @@ describe('TrainingSessionModal', () => {
       );
 
       // Change to Dressage: base 5 + intelligent 4 - calm 0 = net effect 9
-      const select = screen.getByLabelText(/Discipline/i);
-      fireEvent.change(select, { target: { value: 'Dressage' } });
+      fireEvent.click(screen.getByRole('button', { name: /Dressage/i }));
 
       // Expected score = 50 + 9 = 59
       const expectedScoreValue = screen.getByTestId('expected-score-value');
@@ -915,8 +916,7 @@ describe('TrainingSessionModal', () => {
       );
 
       // Change to Cross Country: base 5 + quick-learner 2 = net effect 7
-      const select = screen.getByLabelText(/Discipline/i);
-      fireEvent.change(select, { target: { value: 'Cross Country' } });
+      fireEvent.click(screen.getByRole('button', { name: /Cross Country/i }));
 
       // Expected score = 30 + 7 = 37
       const expectedScoreValue = screen.getByTestId('expected-score-value');
@@ -949,14 +949,12 @@ describe('TrainingSessionModal', () => {
         />
       );
 
-      const select = screen.getByLabelText(/Discipline/i);
-
       // Start with Barrel Racing: net effect = 6, expected = 106
       let expectedScoreValue = screen.getByTestId('expected-score-value');
       expect(expectedScoreValue).toHaveTextContent('106');
 
       // Change to Dressage: net effect = 9, expected = 109
-      fireEvent.change(select, { target: { value: 'Dressage' } });
+      fireEvent.click(screen.getByRole('button', { name: /Dressage/i }));
       expectedScoreValue = screen.getByTestId('expected-score-value');
       expect(expectedScoreValue).toHaveTextContent('109');
     });

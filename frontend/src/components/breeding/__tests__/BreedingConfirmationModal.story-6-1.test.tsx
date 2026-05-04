@@ -145,7 +145,8 @@ describe('BreedingConfirmationModal - Story 6-1', () => {
       render(<BreedingConfirmationModal {...defaultProps} />);
 
       const overallScore = screen.getByText('85/100');
-      expect(overallScore).toHaveClass('text-green-600');
+      // Dark theme: green -> emerald-400 for high contrast
+      expect(overallScore).toHaveClass('text-emerald-400');
     });
 
     it('should color-code good compatibility (60-80)', () => {
@@ -153,7 +154,8 @@ describe('BreedingConfirmationModal - Story 6-1', () => {
       render(<BreedingConfirmationModal {...defaultProps} compatibility={goodCompatibility} />);
 
       const overallScore = screen.getByText('70/100');
-      expect(overallScore).toHaveClass('text-yellow-600');
+      // Dark theme: yellow -> amber-400
+      expect(overallScore).toHaveClass('text-amber-400');
     });
 
     it('should color-code poor compatibility (<60)', () => {
@@ -161,7 +163,8 @@ describe('BreedingConfirmationModal - Story 6-1', () => {
       render(<BreedingConfirmationModal {...defaultProps} compatibility={poorCompatibility} />);
 
       const overallScore = screen.getByText('45/100');
-      expect(overallScore).toHaveClass('text-red-600');
+      // Dark theme: red-600 -> red-400 for contrast on dark bg
+      expect(overallScore).toHaveClass('text-red-400');
     });
   });
 

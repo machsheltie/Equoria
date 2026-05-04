@@ -215,32 +215,36 @@ describe('PrizeSummaryCard', () => {
       render(<PrizeSummaryCard {...defaultProps} />);
 
       const card = screen.getByTestId('prize-summary-card');
-      expect(card).toHaveClass('bg-yellow-50');
-      expect(card).toHaveClass('border-yellow-300');
+      // Gold styling uses burnished-gold tokenized colors
+      expect(card).toHaveClass('bg-[rgba(212,168,67,0.1)]');
+      expect(card).toHaveClass('border-burnished-gold/50');
     });
 
     it('has silver styling when best placement is 2nd', () => {
       render(<PrizeSummaryCard {...secondPlaceProps} />);
 
       const card = screen.getByTestId('prize-summary-card');
-      expect(card).toHaveClass('bg-gray-50');
-      expect(card).toHaveClass('border-gray-300');
+      // Silver styling uses slate-tinted background per design tokens
+      expect(card).toHaveClass('bg-[rgba(148,163,184,0.1)]');
+      expect(card).toHaveClass('border-[rgba(148,163,184,0.4)]');
     });
 
     it('has bronze styling when best placement is 3rd', () => {
       render(<PrizeSummaryCard {...thirdPlaceProps} />);
 
       const card = screen.getByTestId('prize-summary-card');
-      expect(card).toHaveClass('bg-orange-50');
-      expect(card).toHaveClass('border-orange-300');
+      // Bronze styling uses orange-tinted tokens
+      expect(card).toHaveClass('bg-[rgba(180,83,9,0.1)]');
+      expect(card).toHaveClass('border-orange-500/40');
     });
 
     it('has default styling when no placements (participation only)', () => {
       render(<PrizeSummaryCard {...participationOnlyProps} />);
 
       const card = screen.getByTestId('prize-summary-card');
-      expect(card).toHaveClass('bg-blue-50');
-      expect(card).toHaveClass('border-blue-300');
+      // Default (participation-only) styling uses translucent blue tokens
+      expect(card).toHaveClass('bg-[rgba(37,99,235,0.1)]');
+      expect(card).toHaveClass('border-[rgba(37,99,235,0.3)]');
     });
   });
 

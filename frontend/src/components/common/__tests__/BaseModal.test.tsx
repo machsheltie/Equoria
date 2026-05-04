@@ -352,7 +352,8 @@ describe('BaseModal', () => {
       render(<BaseModal {...defaultProps} className="custom-class" />);
 
       const modal = screen.getByRole('dialog');
-      expect(modal).toHaveClass('bg-white');
+      // Component migrated bg-white to glass-panel utility for dark theme
+      expect(modal).toHaveClass('glass-panel');
       expect(modal).toHaveClass('rounded-lg');
       expect(modal).toHaveClass('shadow-xl');
       expect(modal).toHaveClass('custom-class');

@@ -102,7 +102,8 @@ describe('TraitHistoryTimeline Component', () => {
         events: [],
       };
       const { container } = render(<TraitHistoryTimeline history={emptyHistory} />);
-      expect(container.querySelector('.text-slate-400')).toBeInTheDocument();
+      // Calendar icon now uses muted-text dark-theme color
+      expect(container.querySelector('.text-\\[rgb\\(148\\,163\\,184\\)\\]')).toBeInTheDocument();
     });
 
     it('should show helpful message in empty state', () => {
@@ -174,8 +175,9 @@ describe('TraitHistoryTimeline Component', () => {
         events: [mockEvent1, mockEvent2, mockEvent3],
       };
       render(<TraitHistoryTimeline history={history} />);
-      expect(screen.getByText('Athletic Prowess')).toBeInTheDocument();
-      expect(screen.getByText('Calm Temperament')).toBeInTheDocument();
+      // Trait names appear in both timeline + event list — assert at least one match
+      expect(screen.getAllByText('Athletic Prowess').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Calm Temperament').length).toBeGreaterThan(0);
     });
 
     it('should display event trait names', () => {
@@ -236,9 +238,9 @@ describe('TraitHistoryTimeline Component', () => {
       };
       render(<TraitHistoryTimeline history={history} />);
 
-      // All events should still be displayed
-      expect(screen.getByText('Athletic Prowess')).toBeInTheDocument();
-      expect(screen.getByText('Calm Temperament')).toBeInTheDocument();
+      // All events should still be displayed (trait names appear in timeline + event list)
+      expect(screen.getAllByText('Athletic Prowess').length).toBeGreaterThan(0);
+      expect(screen.getAllByText('Calm Temperament').length).toBeGreaterThan(0);
     });
 
     it('should handle same-day events', () => {
@@ -270,7 +272,8 @@ describe('TraitHistoryTimeline Component', () => {
         events: [mockEvent1],
       };
       const { container } = render(<TraitHistoryTimeline history={history} />);
-      expect(container.querySelector('.text-green-600')).toBeInTheDocument();
+      // Discovery events use emerald-400 in dark theme
+      expect(container.querySelector('.text-emerald-400')).toBeInTheDocument();
     });
 
     it('should apply blue styling for activation events', () => {
@@ -279,7 +282,8 @@ describe('TraitHistoryTimeline Component', () => {
         events: [mockEvent2],
       };
       const { container } = render(<TraitHistoryTimeline history={history} />);
-      expect(container.querySelector('.text-blue-600')).toBeInTheDocument();
+      // Activation events use blue-400 in dark theme
+      expect(container.querySelector('.text-blue-400')).toBeInTheDocument();
     });
 
     it('should apply amber styling for modification events', () => {
@@ -288,7 +292,8 @@ describe('TraitHistoryTimeline Component', () => {
         events: [mockEvent3],
       };
       const { container } = render(<TraitHistoryTimeline history={history} />);
-      expect(container.querySelector('.text-amber-600')).toBeInTheDocument();
+      // Modification events use amber-400 in dark theme
+      expect(container.querySelector('.text-amber-400')).toBeInTheDocument();
     });
   });
 
@@ -299,8 +304,10 @@ describe('TraitHistoryTimeline Component', () => {
         events: [mockEvent1],
       };
       const { container } = render(<TraitHistoryTimeline history={history} />);
-      // Check that icon container with green styling exists (discovery)
-      expect(container.querySelector('.text-green-600.bg-green-50')).toBeInTheDocument();
+      // Discovery icon container uses emerald-400 + emerald rgba bg in dark theme
+      expect(
+        container.querySelector('.text-emerald-400.bg-\\[rgba\\(16\\,185\\,129\\,0\\.1\\)\\]')
+      ).toBeInTheDocument();
     });
 
     it('should show Activity icon for activation events', () => {
@@ -309,8 +316,10 @@ describe('TraitHistoryTimeline Component', () => {
         events: [mockEvent2],
       };
       const { container } = render(<TraitHistoryTimeline history={history} />);
-      // Check that icon container with blue styling exists (activation)
-      expect(container.querySelector('.text-blue-600.bg-blue-50')).toBeInTheDocument();
+      // Activation icon container uses blue-400 + blue rgba bg in dark theme
+      expect(
+        container.querySelector('.text-blue-400.bg-\\[rgba\\(37\\,99\\,235\\,0\\.1\\)\\]')
+      ).toBeInTheDocument();
     });
 
     it('should show Edit3 icon for modification events', () => {
@@ -319,8 +328,10 @@ describe('TraitHistoryTimeline Component', () => {
         events: [mockEvent3],
       };
       const { container } = render(<TraitHistoryTimeline history={history} />);
-      // Check that icon container with amber styling exists (modification)
-      expect(container.querySelector('.text-amber-600.bg-amber-50')).toBeInTheDocument();
+      // Modification icon container uses amber-400 + amber rgba bg in dark theme
+      expect(
+        container.querySelector('.text-amber-400.bg-\\[rgba\\(212\\,168\\,67\\,0\\.1\\)\\]')
+      ).toBeInTheDocument();
     });
   });
 

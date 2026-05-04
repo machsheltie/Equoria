@@ -544,13 +544,33 @@ jobs:
           retention-days: 30
 
   # ──────────────────────────────────────────────────────────────────────────────
-  # JOB 8 — Security Audit (npm audit)
+  # JOB 8 — Security Gate (blocking)
+  #
+  # P0 hardening policy:
+  # - Dependency audit is blocking at high severity
+  # - Backend security suite is blocking
+  # - Environment validation is blocking
   # ──────────────────────────────────────────────────────────────────────────────
-  security-audit:
-    name: 'Dependency Security Audit'
+  security-gate:
+    name: 'Security Gate'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: [lint]
+    timeout-minutes: 20
+    needs: [lint, db-preflight]
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: equoria_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
 
     steps:
       - uses: actions/checkout@v4
@@ -563,6 +583,7 @@ jobs:
           cache-dependency-path: |
             backend/package-lock.json
             frontend/package-lock.json
+            packages/database/package-lock.json
 
       - name: Install backend dependencies
         working-directory: ./backend
@@ -572,15 +593,53 @@ jobs:
         working-directory: ./frontend
         run: npm ci
 
-      - name: npm audit — backend
-        working-directory: ./backend
-        run: npm audit --audit-level=high
-        continue-on-error: true # Report but don't block — upgrade separately
+      - name: Install database dependencies
+        working-directory: ./packages/database
+        run: npm ci
 
-      - name: npm audit — frontend
-        working-directory: ./frontend
-        run: npm audit --audit-level=high
-        continue-on-error: true
+      - name: Generate Prisma client + run migrations
+        working-directory: ./packages/database
+        run: |
+          npx prisma generate --schema=prisma/schema.prisma
+          npx prisma migrate deploy --schema=prisma/schema.prisma
+
+      - name: Validate environment policy
+        working-directory: ./backend
+        run: npm run validate-env
+
+      - name: Run backend security suite
+        working-directory: ./backend
+        run: npm run test:security
+
+      - name: Audit-allowlist sentinel — prove expiry check fires (Equoria-e7l2)
+        # Mirror of the ci-cd.yml sentinel. Plants an expired allowlist
+        # entry, asserts the audit script exits 3. Catches expiry-check
+        # regression before the real audit runs.
+        run: |
+          set -uo pipefail
+          SENTINEL_ALLOWLIST=$(mktemp --suffix=.json)
+          cat > "$SENTINEL_ALLOWLIST" <<'EOF'
+          {"allowlist":[{"id":"GHSA-doctrine-sentinel","justification":"sentinel: intentionally past expiry to prove the gate fires","expires":"2020-01-01"}]}
+          EOF
+          set +e
+          node scripts/audit-with-allowlist.mjs ./backend high "$SENTINEL_ALLOWLIST" > /dev/null 2>&1
+          actual_exit=$?
+          set -e
+          rm -f "$SENTINEL_ALLOWLIST"
+          if [ "$actual_exit" != "3" ]; then
+            echo "SENTINEL FAIL: expected exit 3 from expired allowlist; got $actual_exit."
+            exit 1
+          fi
+          echo "Sentinel OK: expiry check fires."
+
+      - name: npm audit — backend (blocking with allowlist)
+        # Equoria-e7l2 (21R-CI-3): replaced raw `npm audit --audit-level=
+        # moderate` with expiry-tracked-allowlist wrapper. See
+        # scripts/audit-with-allowlist.mjs for gate logic.
+        run: node scripts/audit-with-allowlist.mjs ./backend high
+
+      - name: npm audit — frontend (blocking with allowlist)
+        run: node scripts/audit-with-allowlist.mjs ./frontend high
 
   # ──────────────────────────────────────────────────────────────────────────────
   # JOB 9 — Docker Build Validation (master only)
@@ -636,14 +695,233 @@ jobs:
               echo 'Frontend shell and required image assets embedded'"
 
   # ──────────────────────────────────────────────────────────────────────────────
+  # JOB 9.5 — Beta Readiness Gate (master only)
+  #
+  # CI-runnable production-parity readiness lane:
+  # - static scans (cleanup routes, DB mocks, frontend mocks, bypass headers)
+  # - full Playwright readiness suite against live backend + frontend + Postgres
+  # This replaces the old "local-only signoff" assumption with reproducible CI
+  # evidence for beta readiness.
+  # ──────────────────────────────────────────────────────────────────────────────
+  beta-readiness-gate:
+    name: 'Beta Readiness Gate'
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    needs: [coverage-gate, security-gate, frontend-tests]
+
+    # Equoria-rrpw (21R-CI-4): override the workflow-level `NODE_ENV: test`
+    # for the readiness lane. Mirrors the same fix in ci-cd.yml; see that
+    # workflow for full rationale. Job-level `env` overrides workflow-
+    # level per GitHub Actions precedence.
+    env:
+      NODE_ENV: 'beta-readiness'
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: equoria_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Assert NODE_ENV is beta-readiness (Equoria-rrpw / 21R-CI-4)
+        # Sentinel for the job-level env override above. Mirrors ci-cd.yml.
+        # Catches regressions that would silently restore the workflow-
+        # level `NODE_ENV: test` value, putting readiness evidence under
+        # the wrong profile.
+        run: |
+          echo "NODE_ENV=$NODE_ENV"
+          if [ "$NODE_ENV" != "beta-readiness" ]; then
+            echo "FAIL: expected NODE_ENV=beta-readiness in this job; got '$NODE_ENV'."
+            exit 1
+          fi
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+            frontend/package-lock.json
+            packages/database/package-lock.json
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install all dependencies
+        run: |
+          npm ci
+          cd backend && npm ci
+          cd ../frontend && npm ci
+          cd ../packages/database && npm ci
+
+      - name: Setup database
+        working-directory: ./packages/database
+        run: |
+          npx prisma generate --schema=prisma/schema.prisma
+          npx prisma migrate deploy --schema=prisma/schema.prisma
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: Scan for test/cleanup routes in HTTP layer
+        run: |
+          if grep -rn "test/cleanup\|testCleanup\|test-cleanup" \
+              backend/modules/*/routes/ \
+              backend/routes/ \
+              2>/dev/null | grep -v "^Binary" | grep -q .; then
+            echo "FAIL: HTTP test-cleanup routes found"
+            exit 1
+          fi
+
+      - name: Scan integration tests for DB mocks
+        run: |
+          if grep -rn \
+              "jest\.unstable_mockModule.*prisma\|jest\.unstable_mockModule.*db/\|jest\.mock.*prisma\|jest\.mock.*db/" \
+              backend/tests/integration/ \
+              2>/dev/null | grep -v "^Binary" | grep -q .; then
+            echo "FAIL: DB mocks found in integration tests"
+            exit 1
+          fi
+
+      - name: Sentinel self-test — prove the frontend mock-data scan still gates
+        # Equoria-veql (21R-CI-2): mirrors the sentinel pattern from
+        # ci-cd.yml. Plants a `MOCK_DATA` fixture, runs the EXACT
+        # production grep below, asserts the planted violation is caught,
+        # then cleans up. Catches silent degradation of the mock-data
+        # gate (regex narrowing, include/exclude widening) before the
+        # production scan runs. See ci-cd.yml for full rationale.
+        run: |
+          set -uo pipefail
+          SENTINEL_FILE="frontend/src/__doctrine_mock_sentinel_DO_NOT_COMMIT__.tsx"
+          echo 'export const MOCK_DATA = [{ id: 1 }];' > "$SENTINEL_FILE"
+          if ! grep -rEn "mockApi|\b(const|let|var|export\s+(const|let|var))\s+MOCK_[A-Z][A-Z_]*\b|allMockHorses|mockSummary" \
+              frontend/src/ \
+              --include="*.tsx" --include="*.ts" \
+              2>/dev/null | grep -v "__tests__\|\.test\.\|\.spec\." | grep -v "^Binary" | grep -q "$SENTINEL_FILE"; then
+            rm -f "$SENTINEL_FILE"
+            echo "SENTINEL FAIL: planted MOCK_DATA fixture in $SENTINEL_FILE was NOT detected by the mock-data scan."
+            echo "The scan is broken — it would silently pass while real mock fixtures sit in production code."
+            exit 1
+          fi
+          rm -f "$SENTINEL_FILE"
+          if grep -rEn "mockApi|\b(const|let|var|export\s+(const|let|var))\s+MOCK_[A-Z][A-Z_]*\b|allMockHorses|mockSummary" \
+              frontend/src/ \
+              --include="*.tsx" --include="*.ts" \
+              2>/dev/null | grep -v "__tests__\|\.test\.\|\.spec\." | grep -v "^Binary" | grep -q "$SENTINEL_FILE"; then
+            echo "SENTINEL FAIL: residual matches for sentinel file after cleanup."
+            exit 1
+          fi
+          echo "Sentinel OK: mock-data scan correctly catches planted fixtures and cleans up."
+
+      - name: Scan frontend production code for mock data
+        # Equoria-veql (21R-CI-2): tightened from bare `MOCK_` substring
+        # (which over-matched env-flag identifiers like `VITE_MOCK_FLAG`)
+        # to a declaration-context pattern requiring `const|let|var|export
+        # const MOCK_FOO`. ERE (`-E`) for portable `(...|...)` and `\b`.
+        # See the sentinel step above and ci-cd.yml for the rationale.
+        run: |
+          if grep -rEn "mockApi|\b(const|let|var|export\s+(const|let|var))\s+MOCK_[A-Z][A-Z_]*\b|allMockHorses|mockSummary" \
+              frontend/src/ \
+              --include="*.tsx" --include="*.ts" \
+              2>/dev/null | grep -v "__tests__\|\.test\.\|\.spec\." | grep -v "^Binary" | grep -q .; then
+            echo "FAIL: Mock data in frontend production code"
+            exit 1
+          fi
+
+      - name: Sentinel self-test — prove the bypass-header scan still gates
+        # OPTIMAL_FIX_DISCIPLINE.md §2 requires a positive test for any check.
+        # This step plants a known violation in a path the scan covers, runs
+        # the EXACT production grep below, asserts the grep matches, then
+        # cleans up. If the production scan ever silently degrades (e.g.,
+        # someone narrows the regex or widens --exclude-dir), this step
+        # fails before the real scan runs and the workflow blocks. Without
+        # this sentinel, the gate could pass on every PR while catching
+        # nothing, and we'd never know.
+        run: |
+          set -uo pipefail
+          SENTINEL_FILE="tests/e2e/__doctrine_sentinel_DO_NOT_COMMIT__.txt"
+          echo 'x-test-skip-csrf' > "$SENTINEL_FILE"
+          if ! grep -rn "x-test-bypass-rate-limit\|x-test-skip-csrf\|bypass-auth\|x-test-user\|x-bypass\|VITE_E2E_TEST" \
+              tests/e2e/ frontend/src/lib/api-client.ts \
+              --exclude-dir=readiness \
+              2>/dev/null | grep -v "^Binary" | grep -q "$SENTINEL_FILE"; then
+            rm -f "$SENTINEL_FILE"
+            echo "SENTINEL FAIL: planted violation in $SENTINEL_FILE was NOT detected by the bypass-header scan."
+            echo "The scan is broken — it would silently pass even when a real violation exists."
+            echo "Investigate the regex, the path argument, or the --exclude-dir flag."
+            exit 1
+          fi
+          rm -f "$SENTINEL_FILE"
+          if grep -rn "x-test-bypass-rate-limit\|x-test-skip-csrf\|bypass-auth\|x-test-user\|x-bypass\|VITE_E2E_TEST" \
+              tests/e2e/ frontend/src/lib/api-client.ts \
+              --exclude-dir=readiness \
+              2>/dev/null | grep -v "^Binary" | grep -q "$SENTINEL_FILE"; then
+            echo "SENTINEL FAIL: residual matches for sentinel file after cleanup."
+            exit 1
+          fi
+          echo "Sentinel OK: scan correctly catches planted violations and cleans up."
+
+      - name: Scan E2E specs and api-client for bypass headers
+        # --exclude-dir=readiness is required because tests/e2e/readiness/
+        # contains the production-parity GUARD files
+        # (production-parity.guard.spec.ts and support/prodParity.ts).
+        # Those files MUST mention the literal bypass-header strings — they
+        # exist to PROVE those headers don't appear elsewhere in the
+        # readiness suite. Scanning them here would make the gate fail on
+        # its own guard. The Sentinel step ABOVE proves the scan still
+        # catches real violations outside the exclusion. See Equoria-iswu
+        # (21R-CI-1) for the defect history; Equoria-sgu8 (21R-CI-3) is a
+        # spike to eliminate the exclusion entirely by moving the guard
+        # files out of tests/e2e/readiness/.
+        run: |
+          if grep -rn "x-test-bypass-rate-limit\|x-test-skip-csrf\|bypass-auth\|x-test-user\|x-bypass\|VITE_E2E_TEST" \
+              tests/e2e/ frontend/src/lib/api-client.ts \
+              --exclude-dir=readiness \
+              2>/dev/null | grep -v "^Binary" | grep -q .; then
+            echo "FAIL: Bypass headers in E2E/api-client"
+            exit 1
+          fi
+
+      - name: Run beta-readiness Playwright suite
+        run: npm run test:e2e:beta-readiness
+
+      - name: Upload beta-readiness artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: beta-readiness-artifacts
+          path: |
+            playwright-report/beta-readiness/
+            test-results/beta-readiness/
+          retention-days: 14
+
+  # ──────────────────────────────────────────────────────────────────────────────
   # JOB 10 — Deployment Gate (master only)
-  # Blocks on: coverage-gate, e2e-tests, docker-build
-  # Does NOT block on: performance-tests, security-audit (both advisory)
+  # Blocks on: coverage-gate, security-gate, beta-readiness-gate, e2e-tests, docker-build
+  # Does NOT block on: performance-tests
   # ──────────────────────────────────────────────────────────────────────────────
   deployment-gate:
     name: 'Deployment Gate'
     runs-on: ubuntu-latest
-    needs: [coverage-gate, e2e-tests, docker-build]
+    needs: [coverage-gate, security-gate, beta-readiness-gate, e2e-tests, docker-build]
     if: github.ref == 'refs/heads/master'
 
     steps:
@@ -653,10 +931,13 @@ jobs:
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Gate | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|---|---|" >> $GITHUB_STEP_SUMMARY
+          echo "| Doctrine Gate | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
           echo "| Lint | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
           echo "| DB Migration | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
           echo "| Backend Tests (3 shards) | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
           echo "| Coverage ≥ 70% | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          echo "| Security Gate | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
+          echo "| Beta Readiness Gate | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
           echo "| Frontend Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
           echo "| E2E Tests | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
           echo "| Docker Build | ✅ Passed |" >> $GITHUB_STEP_SUMMARY
@@ -664,7 +945,7 @@ jobs:
           echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
           echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "_Advisory (non-blocking): Performance tests, Security audit_" >> $GITHUB_STEP_SUMMARY
+          echo "_Advisory (non-blocking): Performance tests_" >> $GITHUB_STEP_SUMMARY
           echo "🚀 Ready for Railway deployment"
 
   # ──────────────────────────────────────────────────────────────────────────────

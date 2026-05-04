@@ -108,7 +108,19 @@ import type { LeaderboardCategory } from '@/components/leaderboard/LeaderboardCa
 
 const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
+/**
+ * v1-migration mirror — Epic 20 moved api-client to /api/v1/... while these
+ * handlers still register /api/... Adding aliases at the end of the array
+ * keeps both shapes mocked. When a legacy /api/... route is no longer
+ * called by any production code or test, drop it AND its v1 mirror.
+ */
+
 export const handlers = [
+  // CSRF token — used by api-client before any state-changing request
+  http.get(`${base}/api/auth/csrf-token`, () =>
+    HttpResponse.json({ csrfToken: 'test-csrf-token' })
+  ),
+
   // Auth login/register/logout
   http.post(`${base}/api/auth/login`, async ({ request }) => {
     const { email, password } = (await request.json()) as { email?: string; password?: string };
@@ -1796,4 +1808,224 @@ export const handlers = [
       },
     });
   }),
+
+  // ───────────────────────────────────────────────────────────────────────
+  // v1 mirror handlers (Epic 20 api-client migration). Each handler below
+  // mirrors the response of its /api/... counterpart above. When the legacy
+  // path is no longer referenced anywhere, delete the legacy handler AND
+  // this mirror together.
+  // ───────────────────────────────────────────────────────────────────────
+
+  // Training (mirrors /api/training/check-eligibility, /api/training/train)
+  http.post(`${base}/api/v1/training/check-eligibility`, () =>
+    HttpResponse.json({ success: true, data: { eligible: true, reason: null } })
+  ),
+  http.post(`${base}/api/v1/training/train`, async ({ request }) => {
+    const body = (await request.json()) as { horseId: number; discipline: string };
+    return HttpResponse.json({
+      success: true,
+      data: {
+        updatedScore: 50,
+        nextEligibleDate: '2025-12-10T00:00:00Z',
+        discipline: body.discipline,
+        horseId: body.horseId,
+        message: 'Training completed successfully',
+      },
+    });
+  }),
+
+  // Breeding / foals (mirrors /api/horses/foals)
+  http.post(`${base}/api/v1/horses/foals`, () =>
+    HttpResponse.json({
+      success: true,
+      foalId: 10,
+      message: 'Foal created',
+      foal: { id: 10, name: 'New Foal', sireId: 1, damId: 2, ageDays: 0, traits: [] },
+    })
+  ),
+
+  // Grooms (mirrors /api/groom-assignments, /api/groom-salaries/summary,
+  // /api/groom-marketplace, /api/groom-marketplace/hire)
+  http.get(`${base}/api/v1/groom-assignments`, () =>
+    HttpResponse.json({
+      success: true,
+      data: [
+        {
+          id: 1,
+          groomId: 10,
+          horseId: 1,
+          priority: 1,
+          isActive: true,
+          startDate: '2026-01-01T00:00:00Z',
+        },
+      ],
+    })
+  ),
+  http.post(`${base}/api/v1/groom-assignments`, () => HttpResponse.json({ success: true })),
+  http.get(`${base}/api/v1/groom-salaries/summary`, () =>
+    HttpResponse.json({
+      success: true,
+      data: {
+        totalMonthlyCost: 600,
+        totalWeeklyCost: 150,
+        groomCount: 1,
+        breakdown: [
+          { groomId: 10, groomName: 'Alice Thornton', weeklyCost: 150, assignmentCount: 1 },
+        ],
+      },
+    })
+  ),
+  http.get(`${base}/api/v1/groom-marketplace`, () =>
+    HttpResponse.json({
+      success: true,
+      data: {
+        grooms: [
+          {
+            marketplaceId: 'mp-001',
+            firstName: 'Alice',
+            lastName: 'Thornton',
+            specialty: 'Dressage',
+            skillLevel: 'Expert',
+            personality: 'Calm',
+            experience: 8,
+            sessionRate: 150,
+            bio: 'Experienced dressage specialist.',
+            availability: true,
+          },
+          {
+            marketplaceId: 'mp-002',
+            firstName: 'Ben',
+            lastName: 'Marsh',
+            specialty: 'Show Jumping',
+            skillLevel: 'Intermediate',
+            personality: 'Energetic',
+            experience: 4,
+            sessionRate: 100,
+            bio: 'Show jumping enthusiast.',
+            availability: true,
+          },
+        ],
+        lastRefresh: '2026-02-25T00:00:00Z',
+        nextFreeRefresh: '2026-03-04T00:00:00Z',
+        refreshCost: 500,
+        canRefreshFree: true,
+        refreshCount: 4,
+      },
+    })
+  ),
+  http.post(`${base}/api/v1/groom-marketplace/hire`, () =>
+    HttpResponse.json({
+      success: true,
+      data: {
+        groom: {
+          id: 10,
+          name: 'Alice Thornton',
+          skillLevel: 'Expert',
+          specialty: 'Dressage',
+          personality: 'Calm',
+          experience: 8,
+          sessionRate: 150,
+          isActive: true,
+          availableSlots: 2,
+          currentAssignments: 1,
+          maxAssignments: 3,
+        },
+        cost: 150,
+        remainingMoney: 4850,
+      },
+    })
+  ),
+
+  // Competition (mirrors /api/competition)
+  http.get(`${base}/api/v1/competition`, () =>
+    HttpResponse.json({
+      success: true,
+      data: [
+        {
+          id: 1,
+          name: 'Spring Dressage Championship',
+          discipline: 'dressage',
+          date: '2026-03-15T10:00:00Z',
+          entryFee: 50,
+          prizePool: 5000,
+          status: 'open',
+          maxEntries: 20,
+          currentEntries: 12,
+          location: 'Central Arena',
+        },
+        {
+          id: 2,
+          name: 'Weekly Jumping Series',
+          discipline: 'jumping',
+          date: '2026-02-10T14:00:00Z',
+          entryFee: 25,
+          prizePool: 2500,
+          status: 'open',
+          maxEntries: 30,
+          currentEntries: 28,
+        },
+        {
+          id: 3,
+          name: 'Free Training Show',
+          discipline: 'eventing',
+          date: '2026-02-05T09:00:00Z',
+          entryFee: 0,
+          prizePool: 0,
+          status: 'open',
+          maxEntries: 50,
+          currentEntries: 15,
+        },
+      ],
+    })
+  ),
+
+  // Advanced Horse Analysis (mirrors /api/horses/:id/{environmental-analysis,
+  // trait-interactions, developmental-timeline, forecast})
+  http.get(`${base}/api/v1/horses/:id/environmental-analysis`, () =>
+    HttpResponse.json({
+      success: true,
+      data: { factors: [], summary: 'Normal environment' },
+    })
+  ),
+  http.get(`${base}/api/v1/horses/:id/trait-interactions`, () =>
+    HttpResponse.json({ success: true, data: { interactions: [] } })
+  ),
+  http.get(`${base}/api/v1/horses/:id/developmental-timeline`, () =>
+    HttpResponse.json({ success: true, data: { milestones: [] } })
+  ),
+  http.get(`${base}/api/v1/horses/:id/forecast`, () =>
+    HttpResponse.json({ success: true, data: { forecasts: [] } })
+  ),
+
+  // Genetics / breeding analysis (mirrors /api/genetics/inbreeding-analysis,
+  // /api/genetics/breeding-compatibility, /api/breeding/genetic-probability)
+  http.post(`${base}/api/v1/genetics/inbreeding-analysis`, () =>
+    HttpResponse.json({
+      success: true,
+      data: {
+        inbreedingCoefficient: 0.0625,
+        riskLevel: 'low',
+        commonAncestors: [],
+      },
+    })
+  ),
+  http.post(`${base}/api/v1/genetics/breeding-compatibility`, () =>
+    HttpResponse.json({
+      success: true,
+      data: {
+        compatibilityScore: 82,
+        recommendation: 'Good match',
+        concerns: [],
+      },
+    })
+  ),
+  http.post(`${base}/api/v1/breeding/genetic-probability`, () =>
+    HttpResponse.json({
+      success: true,
+      data: {
+        traitProbabilities: { bold: 0.75, athletic: 0.5 },
+        expectedStatRanges: { speed: [60, 80], stamina: [55, 75] },
+      },
+    })
+  ),
 ];

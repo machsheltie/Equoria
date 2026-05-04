@@ -190,7 +190,6 @@ export async function createTestHorse(horseData = {}) {
     focus: 50,
     precision: 50,
     agility: 50,
-    coordination: 50,
     boldness: 50,
     balance: 50,
     flexibility: 50,

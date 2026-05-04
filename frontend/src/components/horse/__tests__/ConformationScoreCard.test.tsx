@@ -43,7 +43,9 @@ describe('ConformationScoreCard', () => {
     it('should render with default className', () => {
       const { container } = render(<ConformationScoreCard {...defaultProps} />);
       const card = container.firstChild as HTMLElement;
-      expect(card).toHaveClass('border', 'rounded-lg', 'p-4', 'bg-white');
+      // Component now uses dark-theme arbitrary bg via rgba token, not bg-white
+      expect(card).toHaveClass('border', 'rounded-lg', 'p-4');
+      expect(card.className).toMatch(/bg-\[rgba\(15,35,70/);
     });
 
     it('should apply custom className', () => {
@@ -64,37 +66,44 @@ describe('ConformationScoreCard', () => {
     it('should display Excellent for scores 90-100', () => {
       render(<ConformationScoreCard region="head" score={95} />);
       expect(screen.getByText('Excellent')).toBeInTheDocument();
-      expect(screen.getByTestId('quality-badge-head')).toHaveClass('text-emerald-700');
+      // Dark theme uses -400 contrast levels
+      expect(screen.getByTestId('quality-badge-head')).toHaveClass('text-emerald-400');
     });
 
     it('should display Very Good for scores 80-89', () => {
       render(<ConformationScoreCard region="head" score={85} />);
       expect(screen.getByText('Very Good')).toBeInTheDocument();
-      expect(screen.getByTestId('quality-badge-head')).toHaveClass('text-blue-700');
+      // Component now uses gold token instead of blue for "Very Good"
+      expect(screen.getByTestId('quality-badge-head').className).toMatch(
+        /text-\[var\(--gold-primary\)\]/
+      );
     });
 
     it('should display Good for scores 70-79', () => {
       render(<ConformationScoreCard region="head" score={75} />);
       expect(screen.getByText('Good')).toBeInTheDocument();
-      expect(screen.getByTestId('quality-badge-head')).toHaveClass('text-amber-700');
+      expect(screen.getByTestId('quality-badge-head')).toHaveClass('text-amber-400');
     });
 
     it('should display Average for scores 60-69', () => {
       render(<ConformationScoreCard region="head" score={65} />);
       expect(screen.getByText('Average')).toBeInTheDocument();
-      expect(screen.getByTestId('quality-badge-head')).toHaveClass('text-slate-700');
+      // Component uses CSS-variable token for secondary text on Average
+      expect(screen.getByTestId('quality-badge-head').className).toMatch(
+        /text-\[var\(--text-secondary\)\]/
+      );
     });
 
     it('should display Below Average for scores 50-59', () => {
       render(<ConformationScoreCard region="head" score={55} />);
       expect(screen.getByText('Below Average')).toBeInTheDocument();
-      expect(screen.getByTestId('quality-badge-head')).toHaveClass('text-orange-700');
+      expect(screen.getByTestId('quality-badge-head')).toHaveClass('text-orange-400');
     });
 
     it('should display Poor for scores 0-49', () => {
       render(<ConformationScoreCard region="head" score={40} />);
       expect(screen.getByText('Poor')).toBeInTheDocument();
-      expect(screen.getByTestId('quality-badge-head')).toHaveClass('text-rose-700');
+      expect(screen.getByTestId('quality-badge-head')).toHaveClass('text-rose-400');
     });
   });
 
@@ -179,14 +188,16 @@ describe('ConformationScoreCard', () => {
       render(
         <ConformationScoreCard region="head" score={90} breedAverage={80} showComparison={true} />
       );
-      expect(screen.getByTestId('breed-comparison-head')).toHaveClass('text-emerald-700');
+      // Dark-theme contrast: emerald-400 (was emerald-700 in light mode)
+      expect(screen.getByTestId('breed-comparison-head')).toHaveClass('text-emerald-400');
     });
 
     it('should apply rose color for Below Average', () => {
       render(
         <ConformationScoreCard region="head" score={70} breedAverage={80} showComparison={true} />
       );
-      expect(screen.getByTestId('breed-comparison-head')).toHaveClass('text-rose-700');
+      // Dark-theme contrast: rose-400 (was rose-700 in light mode)
+      expect(screen.getByTestId('breed-comparison-head')).toHaveClass('text-rose-400');
     });
 
     it('should show breed average when comparison is not enabled', () => {
@@ -234,23 +245,28 @@ describe('ConformationScoreCard', () => {
   });
 
   describe('Keyboard Interactions', () => {
-    it('should call onRegionClick when Enter key is pressed', () => {
+    it('should call onRegionClick when Enter key is pressed', async () => {
       const handleClick = vi.fn();
+      const user = userEvent.setup();
       render(<ConformationScoreCard {...defaultProps} onRegionClick={handleClick} />);
 
       const card = screen.getByTestId('conformation-score-card-head');
-      fireEvent.keyDown(card, { key: 'Enter' });
+      // Native <button> activates on Enter via real user keyboard semantics
+      card.focus();
+      await user.keyboard('{Enter}');
 
       expect(handleClick).toHaveBeenCalledTimes(1);
       expect(handleClick).toHaveBeenCalledWith('head');
     });
 
-    it('should call onRegionClick when Space key is pressed', () => {
+    it('should call onRegionClick when Space key is pressed', async () => {
       const handleClick = vi.fn();
+      const user = userEvent.setup();
       render(<ConformationScoreCard {...defaultProps} onRegionClick={handleClick} />);
 
       const card = screen.getByTestId('conformation-score-card-head');
-      fireEvent.keyDown(card, { key: ' ' });
+      card.focus();
+      await user.keyboard(' ');
 
       expect(handleClick).toHaveBeenCalledTimes(1);
       expect(handleClick).toHaveBeenCalledWith('head');
@@ -271,13 +287,17 @@ describe('ConformationScoreCard', () => {
       const handleClick = vi.fn();
       render(<ConformationScoreCard {...defaultProps} onRegionClick={handleClick} />);
       const card = screen.getByTestId('conformation-score-card-head');
-      expect(card).toHaveAttribute('tabIndex', '0');
+      // Native <button> elements are focusable without an explicit tabIndex.
+      // Component now renders a real <button> when clickable; readonly stays a <div>.
+      expect(card.tagName).toBe('BUTTON');
     });
 
     it('should not be focusable when onRegionClick is not provided', () => {
       render(<ConformationScoreCard {...defaultProps} />);
       const card = screen.getByTestId('conformation-score-card-head');
       expect(card).not.toHaveAttribute('tabIndex');
+      // Read-only mode renders a <div>, not a button (so not in default tab order)
+      expect(card.tagName).toBe('DIV');
     });
   });
 
@@ -292,13 +312,15 @@ describe('ConformationScoreCard', () => {
       const handleClick = vi.fn();
       render(<ConformationScoreCard {...defaultProps} onRegionClick={handleClick} />);
       const card = screen.getByTestId('conformation-score-card-head');
-      expect(card).toHaveAttribute('role', 'button');
+      // Native <button> tag has implicit role='button' — no explicit attribute needed.
+      expect(card.tagName).toBe('BUTTON');
     });
 
     it('should not have button role when not clickable', () => {
       render(<ConformationScoreCard {...defaultProps} />);
       const card = screen.getByTestId('conformation-score-card-head');
       expect(card).not.toHaveAttribute('role');
+      expect(card.tagName).toBe('DIV');
     });
 
     it('should have accessible progress bar label', () => {

@@ -193,8 +193,8 @@ describe('LevelUpCelebrationModal', () => {
 
       const speedRow = screen.getByTestId('stat-row-Speed');
       const newValue = within(speedRow).getByTestId('stat-new-value');
-      // Should have green text coloring for increased stat
-      expect(newValue.className).toMatch(/green/i);
+      // Component migrated to dark theme: increased stat now uses emerald-400 (was green-*)
+      expect(newValue.className).toMatch(/emerald|green/i);
     });
   });
 
@@ -451,8 +451,9 @@ describe('LevelUpCelebrationModal', () => {
     it('should have proper z-index for stacking context', () => {
       renderModal();
 
+      // Component migrated to z-index token system (Epic 17): z-50 → z-[var(--z-modal)]
       const backdrop = screen.getByTestId('modal-backdrop');
-      expect(backdrop).toHaveClass('z-50');
+      expect(backdrop).toHaveClass('z-[var(--z-modal)]');
     });
   });
 

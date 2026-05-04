@@ -28,6 +28,7 @@ import request from 'supertest';
 import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
+import { randomBytes } from 'node:crypto';
 // All test-bypass escape hatches were removed in Workstream 4; this suite
 // exercises the real auth/rate-limit/CSRF stack with no bypass headers set.
 
@@ -259,8 +260,8 @@ describe('Security Attack Simulation Tests', () => {
               .post('/api/auth/register')
               .set('Origin', 'http://localhost:3000')
               .send({
-                email: `attacker${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${i}@evil.com`,
-                username: `attacker${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${i}`,
+                email: `attacker${randomBytes(8).toString('hex')}_${i}@evil.com`,
+                username: `attacker${randomBytes(8).toString('hex')}_${i}`,
                 password: 'EvilPass123!',
                 firstName: 'Evil',
                 lastName: 'Attacker',
@@ -332,7 +333,7 @@ describe('Security Attack Simulation Tests', () => {
               .set('Origin', 'http://localhost:3000')
               .set('Authorization', `Bearer ${attackerToken}`)
               .send({
-                username: `newname${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${i}`,
+                username: `newname${randomBytes(8).toString('hex')}_${i}`,
               }),
           );
         }
@@ -458,8 +459,8 @@ describe('Security Attack Simulation Tests', () => {
           .post('/api/auth/register')
           .set('Origin', 'http://localhost:3000')
           .send({
-            email: `test${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
-            username: `testuser${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            email: `test${randomBytes(8).toString('hex')}@example.com`,
+            username: `testuser${randomBytes(8).toString('hex')}`,
             password: 'ValidPass123!',
             firstName: '<script>alert(1)</script>',
             lastName: '<img src=x onerror=alert(1)>',

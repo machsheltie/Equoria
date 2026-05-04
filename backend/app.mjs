@@ -133,6 +133,12 @@ import { authenticateToken, requireRole } from './middleware/auth.mjs';
 
 // Import CSRF protection middleware
 import { csrfProtection, csrfErrorHandler } from './middleware/csrf.mjs';
+import {
+  verifyJsonBody,
+  verifyUrlEncodedBody,
+  rejectPollutedRequestBody,
+  requestBodySecurityErrorHandler,
+} from './middleware/requestBodySecurity.mjs';
 
 // Import Redis rate limiting (for health check and shutdown)
 import { createRateLimiter, isRedisConnected, getRedisClient } from './middleware/rateLimiting.mjs';
@@ -237,11 +243,6 @@ adminRouter.use('/', adminRoutes);
 import errorHandler from './middleware/errorHandler.mjs';
 import { requestLogger, errorRequestLogger } from './middleware/requestLogger.mjs';
 import { setupSwaggerDocs, addDocumentationHeaders } from './middleware/swaggerSetup.mjs';
-import {
-  secureJsonBodyParser,
-  prototypePollutionGuard,
-  jsonBodyErrorHandler,
-} from './middleware/requestBodyGuard.mjs';
 import {
   responseOptimization,
   paginationMiddleware,
@@ -445,36 +446,9 @@ const apiLimiter = createRateLimiter({
 app.use('/api/', apiLimiter);
 
 // Body parsing middleware
-// Equoria-ocn9: secureJsonBodyParser rejects duplicate JSON keys at parse
-// time (express.json silently keeps the last value); prototypePollutionGuard
-// rejects __proto__/constructor/prototype keys at any depth. Both respond
-// with HTTP 400.
-//
-// The pollution guard is mounted TWICE — once after the JSON parser and
-// once after the urlencoded parser — so it inspects whichever body shape
-// the request carried. Without the second mount, a payload like
-// `Content-Type: application/x-www-form-urlencoded` body
-// `__proto__[isAdmin]=true` would slip past the JSON-only inspection.
-//
-// ⚠ MULTIPART CAVEAT (Equoria-ocn9 review): the global guards above run
-// BEFORE any per-route multipart parser (multer or busboy). The codebase
-// currently does not mount a multipart parser anywhere — `horseRoutes.mjs`
-// explicitly rejects `multipart/form-data` content types. If you ever add
-// a multipart parser to a route, you MUST mount `prototypePollutionGuard()`
-// AFTER that parser on the same route, e.g.:
-//
-//   router.post('/upload', multer().single('file'), prototypePollutionGuard(), handler);
-//
-// Otherwise a multipart field named `__proto__[isAdmin]` reaches the
-// handler unfiltered. This is intentionally documented here rather than
-// enforced via a runtime check because (a) there is no multipart parser
-// to enforce against today, and (b) future maintainers must read this
-// note before mounting one.
-app.use(secureJsonBodyParser({ limit: '10mb' }));
-app.use(jsonBodyErrorHandler());
-app.use(prototypePollutionGuard());
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(prototypePollutionGuard());
+app.use(express.json({ limit: '10mb', verify: verifyJsonBody }));
+app.use(express.urlencoded({ extended: true, limit: '10mb', verify: verifyUrlEncodedBody }));
+app.use(rejectPollutedRequestBody);
 
 // Cookie parsing middleware for httpOnly cookies
 app.use(cookieParser());
@@ -724,6 +698,7 @@ attachSentryErrorHandler(app);
 
 // CSRF error handler (must be before global error handler)
 app.use(csrfErrorHandler);
+app.use(requestBodySecurityErrorHandler);
 
 // Global error handler
 app.use(errorHandler);

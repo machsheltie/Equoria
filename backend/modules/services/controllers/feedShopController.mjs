@@ -13,47 +13,54 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { recordTransaction } from '../../../services/financialLedgerService.mjs';
 
-// Feed catalog
+// 5-tier feed catalog (feed-system redesign 2026-04-29).
+// All packs sold in 100-unit increments only. Per spec §5.5.
 export const FEED_CATALOG = [
   {
     id: 'basic',
     name: 'Basic Feed',
-    description:
-      'Standard hay and grain mix suitable for everyday maintenance. Keeps your horse in good condition.',
-    billing: 'per week',
-    cost: 50,
-    energyBoost: 10,
-    feedType: 'basic',
+    description: 'Standard hay-and-grain mix. Prevents the no-feed penalty. No bonus.',
+    packPrice: 100,
+    perUnit: 1.0,
+    statRollPct: 0,
+    pregnancyBonusPct: 0,
   },
   {
     id: 'performance',
-    name: 'Performance Mix',
+    name: 'Performance Feed',
     description:
-      'High-energy blend with added electrolytes and protein for horses in active competition training.',
-    billing: 'per week',
-    cost: 120,
-    energyBoost: 25,
-    feedType: 'performance',
+      'Active-rider blend with electrolytes. 10% chance per feeding to boost a random stat by 1.',
+    packPrice: 125,
+    perUnit: 1.25,
+    statRollPct: 10,
+    pregnancyBonusPct: 5,
   },
   {
-    id: 'vitamin',
-    name: 'Supplement Package',
-    description:
-      'Vitamin and mineral supplements to support overall health, coat quality, and immune function.',
-    billing: 'per week',
-    cost: 80,
-    energyBoost: 15,
-    feedType: 'vitamin',
+    id: 'performancePlus',
+    name: 'Performance Plus Feed',
+    description: 'Enriched protein blend. 15% chance per feeding to boost a random stat by 1.',
+    packPrice: 150,
+    perUnit: 1.5,
+    statRollPct: 15,
+    pregnancyBonusPct: 10,
   },
   {
-    id: 'diet-plan',
-    name: 'Diet Plan',
-    description:
-      'Veterinarian-recommended diet for weight management, senior horses, or special dietary needs.',
-    billing: 'per week',
-    cost: 100,
-    energyBoost: 20,
-    feedType: 'diet-plan',
+    id: 'highPerformance',
+    name: 'High Performance Feed',
+    description: 'Competition-grade nutrition. 20% chance per feeding to boost a random stat by 1.',
+    packPrice: 175,
+    perUnit: 1.75,
+    statRollPct: 20,
+    pregnancyBonusPct: 15,
+  },
+  {
+    id: 'elite',
+    name: 'Elite Feed',
+    description: 'Top-tier specialised blend. 25% chance per feeding to boost a random stat by 1.',
+    packPrice: 200,
+    perUnit: 2.0,
+    statRollPct: 25,
+    pregnancyBonusPct: 20,
   },
 ];
 
@@ -69,93 +76,120 @@ export async function getFeedCatalog(_req, res) {
 }
 
 /**
+ * Read inventory array from User.settings, defaulting to empty array.
+ */
+function getInventoryFromSettings(settings) {
+  if (!settings || typeof settings !== 'object') return [];
+  return Array.isArray(settings.inventory) ? settings.inventory : [];
+}
+
+/**
  * POST /api/feed-shop/purchase
- * Body: { horseId, feedId }
+ * Body: { feedTier, packs }
+ *
+ * Bulk pack purchase. Each pack = 100 units. No per-horse application.
+ * Inventory is pooled in User.settings.inventory.
  */
 export async function purchaseFeed(req, res) {
   try {
     const userId = req.user.id;
-    const { horseId, feedId } = req.body;
+    const { feedTier, packs } = req.body;
 
-    const feed = FEED_CATALOG.find(f => f.id === feedId);
-    if (!feed) {
+    const tier = FEED_CATALOG.find(f => f.id === feedTier);
+    if (!tier) {
       return res
         .status(404)
-        .json({ success: false, message: 'Feed not found in catalog', data: null });
+        .json({ success: false, message: 'Feed tier not found in catalog', data: null });
     }
 
-    const horse = await prisma.horse.findFirst({ where: { id: horseId, userId } });
-    if (!horse) {
-      return res.status(404).json({ success: false, message: 'Horse not found', data: null });
+    if (!Number.isInteger(packs) || packs < 1) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'packs must be an integer ≥ 1', data: null });
     }
 
-    const user = await prisma.user.findUnique({ where: { id: userId }, select: { money: true } });
-    if (!user) {
-      return res.status(404).json({ success: false, message: 'User not found', data: null });
-    }
+    const totalCost = tier.packPrice * packs;
+    const totalUnits = 100 * packs;
 
-    if (user.money < feed.cost) {
-      return res.status(400).json({
-        success: false,
-        message: `Insufficient funds. ${feed.name} costs $${feed.cost}`,
-        data: { required: feed.cost, available: user.money },
-      });
-    }
-
-    // Cap energyLevel at 100
-    const currentEnergy = horse.energyLevel ?? 100;
-    const newEnergy = Math.min(100, currentEnergy + feed.energyBoost);
-
-    const { updatedHorse, updatedUser } = await prisma.$transaction(async tx => {
-      const horseUpdate = await tx.horse.update({
-        where: { id: horseId },
-        data: {
-          currentFeed: feed.feedType,
-          lastFedDate: new Date(),
-          energyLevel: newEnergy,
-        },
-      });
-      const userUpdate = await tx.user.update({
+    const result = await prisma.$transaction(async tx => {
+      const user = await tx.user.findUnique({
         where: { id: userId },
-        data: { money: { decrement: feed.cost } },
+        select: { money: true, settings: true },
+      });
+      if (!user) {
+        const err = new Error('User not found');
+        err.status = 404;
+        throw err;
+      }
+      if (user.money < totalCost) {
+        const err = new Error(
+          `Insufficient funds. ${packs} pack(s) of ${tier.name} cost ${totalCost} coins.`,
+        );
+        err.status = 400;
+        throw err;
+      }
+
+      const settings =
+        user.settings && typeof user.settings === 'object' ? { ...user.settings } : {};
+      const inventory = getInventoryFromSettings(settings).map(item => ({ ...item }));
+      const existingIdx = inventory.findIndex(item => item.id === `feed-${tier.id}`);
+
+      let inventoryItem;
+      if (existingIdx >= 0) {
+        inventoryItem = {
+          ...inventory[existingIdx],
+          quantity: inventory[existingIdx].quantity + totalUnits,
+        };
+        inventory[existingIdx] = inventoryItem;
+      } else {
+        inventoryItem = {
+          id: `feed-${tier.id}`,
+          itemId: tier.id,
+          category: 'feed',
+          name: tier.name,
+          quantity: totalUnits,
+        };
+        inventory.push(inventoryItem);
+      }
+
+      const updated = await tx.user.update({
+        where: { id: userId },
+        data: {
+          money: { decrement: totalCost },
+          settings: { ...settings, inventory },
+        },
         select: { money: true },
       });
+
       await recordTransaction(
         {
           userId,
           type: 'debit',
-          amount: feed.cost,
+          amount: totalCost,
           category: 'feed_purchase',
-          description: `${feed.name} for ${horse.name}`,
-          balanceAfter: userUpdate.money,
-          metadata: { horseId, feedId },
+          description: `${packs} pack(s) of ${tier.name}`,
+          balanceAfter: updated.money,
+          metadata: { feedTier: tier.id, packs, totalUnits },
         },
         tx,
       );
-      return { updatedHorse: horseUpdate, updatedUser: userUpdate };
+
+      return { remainingMoney: updated.money, inventoryItem };
     });
 
     logger.info(
-      `[feedShopController] User ${userId} purchased "${feed.name}" for horse ${horseId} — cost $${feed.cost}`,
+      `[feedShopController] User ${userId} purchased ${packs} pack(s) of ${tier.name} — ${totalUnits} units, ${totalCost} coins`,
     );
 
     res.status(200).json({
       success: true,
-      message: `${feed.name} purchased successfully`,
-      data: {
-        horse: {
-          id: updatedHorse.id,
-          name: updatedHorse.name,
-          currentFeed: updatedHorse.currentFeed,
-          lastFedDate: updatedHorse.lastFedDate,
-          energyLevel: updatedHorse.energyLevel,
-        },
-        feed,
-        cost: feed.cost,
-        remainingMoney: updatedUser.money,
-      },
+      message: `Purchased ${totalUnits} units of ${tier.name}.`,
+      data: result,
     });
   } catch (error) {
+    if (error && error.status) {
+      return res.status(error.status).json({ success: false, message: error.message, data: null });
+    }
     logger.error(`[feedShopController] purchaseFeed error: ${error.message}`);
     res.status(500).json({ success: false, message: 'Failed to purchase feed', data: null });
   }

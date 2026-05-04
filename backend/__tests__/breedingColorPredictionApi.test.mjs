@@ -1,32 +1,16 @@
-// Tests for breeding color prediction API endpoint (Story 31E-5, T4.7).
-// Mock req/res pattern — validates controller logic for ownership, legacy handling, and response format.
+// Tests for breeding color prediction API endpoint (Story 31E-5, T4.7) — real DB
+//
+// NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): converted from
+// jest.unstable_mockModule of db + logger to a real-DB integration test.
+// Each test creates real users + horses with controlled genotype JSON,
+// calls the real controller, and asserts on the real response.
 
-import { jest } from '@jest/globals';
+import { describe, test, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
+import prisma from '../db/index.mjs';
+import { getBreedingColorPrediction } from '../modules/horses/controllers/horseController.mjs';
 
-// Mock prisma
-const mockPrisma = {
-  horse: {
-    findUnique: jest.fn(),
-  },
-  $queryRaw: jest.fn(),
-};
-jest.unstable_mockModule('../db/index.mjs', () => ({ default: mockPrisma }));
-
-// Mock logger
-const mockLogger = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-};
-jest.unstable_mockModule('../utils/logger.mjs', () => ({ default: mockLogger }));
-
-// Import controller after mocking
-const { getBreedingColorPrediction } = await import('../modules/horses/controllers/horseController.mjs');
-
-// ---------------------------------------------------------------------------
-// Fixtures
-// ---------------------------------------------------------------------------
+const SUITE_PREFIX = 'bcpa';
 
 const MOCK_GENOTYPE = {
   E_Extension: 'E/e',
@@ -48,127 +32,177 @@ const MOCK_GENOTYPE = {
   MFSD12_Mushroom: 'N/N',
 };
 
-function createMockReqRes(bodyOverrides = {}) {
-  const req = {
-    body: { sireId: 1, damId: 2, ...bodyOverrides },
-    user: { id: 'user-123' },
-  };
-  const res = {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis(),
-  };
-  return { req, res };
+async function createUser() {
+  const uid = randomBytes(8).toString('hex');
+  return prisma.user.create({
+    data: {
+      id: `${SUITE_PREFIX}-${uid}`,
+      username: `${SUITE_PREFIX}_${uid}`,
+      email: `${SUITE_PREFIX}-${uid}@example.com`,
+      firstName: 'Bcpa',
+      lastName: 'Test',
+      password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
+      emailVerified: true,
+    },
+  });
 }
 
-beforeEach(() => {
-  jest.clearAllMocks();
-});
+async function createBreed() {
+  return prisma.breed.create({
+    data: {
+      name: `${SUITE_PREFIX}-breed-${randomBytes(4).toString('hex')}`,
+    },
+  });
+}
 
-// ---------------------------------------------------------------------------
-// Controller tests
-// ---------------------------------------------------------------------------
+async function createHorse(userId, breedId, colorGenotype, sex = 'Mare') {
+  return prisma.horse.create({
+    data: {
+      name: `${SUITE_PREFIX}-h-${randomBytes(4).toString('hex')}`,
+      sex,
+      dateOfBirth: new Date('2020-01-01'),
+      colorGenotype,
+      user: { connect: { id: userId } },
+      breed: { connect: { id: breedId } },
+    },
+  });
+}
 
-describe('getBreedingColorPrediction controller', () => {
+function makeReq(userId, sireId, damId) {
+  return {
+    body: { sireId, damId },
+    user: { id: userId },
+  };
+}
+
+function makeRes() {
+  let _status = 200;
+  let _body = null;
+  return {
+    status(code) {
+      _status = code;
+      return this;
+    },
+    json(body) {
+      _body = body;
+      return this;
+    },
+    get statusValue() {
+      return _status;
+    },
+    get jsonValue() {
+      return _body;
+    },
+  };
+}
+
+async function cleanupSuite() {
+  const users = await prisma.user.findMany({
+    where: { id: { startsWith: SUITE_PREFIX } },
+    select: { id: true },
+  });
+  if (users.length > 0) {
+    const userIds = users.map(u => u.id);
+    await prisma.horse.deleteMany({ where: { userId: { in: userIds } } });
+    await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+  }
+  await prisma.breed.deleteMany({ where: { name: { startsWith: SUITE_PREFIX } } });
+}
+
+describe('getBreedingColorPrediction controller (real DB)', () => {
+  beforeAll(cleanupSuite);
+  afterAll(cleanupSuite);
+  afterEach(cleanupSuite);
+
   test('returns 200 with prediction data for valid owned horses with genotypes', async () => {
-    mockPrisma.horse.findUnique.mockImplementation(({ where }) => {
-      if (where.id === 1) {
-        return { id: 1, name: 'Sire', colorGenotype: MOCK_GENOTYPE, userId: 'user-123', breedId: 1 };
-      }
-      if (where.id === 2) {
-        return { id: 2, name: 'Dam', colorGenotype: MOCK_GENOTYPE, userId: 'user-123', breedId: 1 };
-      }
-      return null;
-    });
-    mockPrisma.$queryRaw.mockResolvedValue([{ breedGeneticProfile: null }]);
+    const user = await createUser();
+    const breed = await createBreed();
+    const sire = await createHorse(user.id, breed.id, MOCK_GENOTYPE, 'Stallion');
+    const dam = await createHorse(user.id, breed.id, MOCK_GENOTYPE, 'Mare');
 
-    const { req, res } = createMockReqRes();
-    await getBreedingColorPrediction(req, res);
+    const res = makeRes();
+    await getBreedingColorPrediction(makeReq(user.id, sire.id, dam.id), res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    const response = res.json.mock.calls[0][0];
-    expect(response.success).toBe(true);
-    expect(response.data).toHaveProperty('sireId', 1);
-    expect(response.data).toHaveProperty('damId', 2);
-    expect(response.data).toHaveProperty('possibleColors');
-    expect(response.data).toHaveProperty('totalCombinations');
-    expect(response.data).toHaveProperty('lethalCombinationsFiltered');
-    expect(Array.isArray(response.data.possibleColors)).toBe(true);
-    expect(response.data.possibleColors.length).toBeGreaterThan(0);
+    expect(res.statusValue).toBe(200);
+    const body = res.jsonValue;
+    expect(body.success).toBe(true);
+    expect(body.data).toHaveProperty('sireId', sire.id);
+    expect(body.data).toHaveProperty('damId', dam.id);
+    expect(body.data).toHaveProperty('possibleColors');
+    expect(body.data).toHaveProperty('totalCombinations');
+    expect(body.data).toHaveProperty('lethalCombinationsFiltered');
+    expect(Array.isArray(body.data.possibleColors)).toBe(true);
+    expect(body.data.possibleColors.length).toBeGreaterThan(0);
   });
 
-  test('AC5: returns 404 when sire not found', async () => {
-    mockPrisma.horse.findUnique.mockImplementation(({ where }) => {
-      if (where.id === 1) {
-        return null;
-      } // sire not found
-      return { id: 2, name: 'Dam', colorGenotype: MOCK_GENOTYPE, userId: 'user-123', breedId: 1 };
-    });
+  test('AC5: returns 404 when sire does not exist', async () => {
+    const user = await createUser();
+    const breed = await createBreed();
+    const dam = await createHorse(user.id, breed.id, MOCK_GENOTYPE, 'Mare');
 
-    const { req, res } = createMockReqRes();
-    await getBreedingColorPrediction(req, res);
+    const res = makeRes();
+    await getBreedingColorPrediction(makeReq(user.id, 999999999, dam.id), res);
 
-    expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json.mock.calls[0][0].success).toBe(false);
+    expect(res.statusValue).toBe(404);
+    expect(res.jsonValue.success).toBe(false);
   });
 
   test('AC5: returns 404 when sire belongs to another user', async () => {
-    mockPrisma.horse.findUnique.mockImplementation(({ where }) => {
-      if (where.id === 1) {
-        return { id: 1, name: 'Sire', colorGenotype: MOCK_GENOTYPE, userId: 'other-user', breedId: 1 };
-      }
-      return { id: 2, name: 'Dam', colorGenotype: MOCK_GENOTYPE, userId: 'user-123', breedId: 1 };
-    });
+    const owner = await createUser();
+    const otherUser = await createUser();
+    const breed = await createBreed();
+    const sire = await createHorse(owner.id, breed.id, MOCK_GENOTYPE, 'Stallion');
+    const dam = await createHorse(otherUser.id, breed.id, MOCK_GENOTYPE, 'Mare');
 
-    const { req, res } = createMockReqRes();
-    await getBreedingColorPrediction(req, res);
+    const res = makeRes();
+    // Calling user is `otherUser` who owns dam but NOT sire — sire access denied → 404
+    await getBreedingColorPrediction(makeReq(otherUser.id, sire.id, dam.id), res);
 
-    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.statusValue).toBe(404);
   });
 
-  test('AC5: returns 404 when dam not owned by user', async () => {
-    mockPrisma.horse.findUnique.mockImplementation(({ where }) => {
-      if (where.id === 1) {
-        return { id: 1, name: 'Sire', colorGenotype: MOCK_GENOTYPE, userId: 'user-123', breedId: 1 };
-      }
-      return { id: 2, name: 'Dam', colorGenotype: MOCK_GENOTYPE, userId: 'other-user', breedId: 1 };
-    });
+  test('AC5: returns 404 when dam belongs to another user', async () => {
+    const owner = await createUser();
+    const otherUser = await createUser();
+    const breed = await createBreed();
+    const sire = await createHorse(otherUser.id, breed.id, MOCK_GENOTYPE, 'Stallion');
+    const dam = await createHorse(owner.id, breed.id, MOCK_GENOTYPE, 'Mare');
 
-    const { req, res } = createMockReqRes();
-    await getBreedingColorPrediction(req, res);
+    const res = makeRes();
+    // Calling user is `otherUser` who owns sire but NOT dam → 404
+    await getBreedingColorPrediction(makeReq(otherUser.id, sire.id, dam.id), res);
 
-    expect(res.status).toHaveBeenCalledWith(404);
+    expect(res.statusValue).toBe(404);
   });
 
   test('AC6: returns 200 null when sire has no genotype (legacy horse)', async () => {
-    mockPrisma.horse.findUnique.mockImplementation(({ where }) => {
-      if (where.id === 1) {
-        return { id: 1, name: 'Sire', colorGenotype: null, userId: 'user-123', breedId: 1 };
-      }
-      return { id: 2, name: 'Dam', colorGenotype: MOCK_GENOTYPE, userId: 'user-123', breedId: 1 };
-    });
+    const user = await createUser();
+    const breed = await createBreed();
+    const sire = await createHorse(user.id, breed.id, null, 'Stallion');
+    const dam = await createHorse(user.id, breed.id, MOCK_GENOTYPE, 'Mare');
 
-    const { req, res } = createMockReqRes();
-    await getBreedingColorPrediction(req, res);
+    const res = makeRes();
+    await getBreedingColorPrediction(makeReq(user.id, sire.id, dam.id), res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    const response = res.json.mock.calls[0][0];
-    expect(response.success).toBe(true);
-    expect(response.data).toBeNull();
-    expect(response.message).toBe('Color prediction requires both parents to have genetics data');
+    expect(res.statusValue).toBe(200);
+    const body = res.jsonValue;
+    expect(body.success).toBe(true);
+    expect(body.data).toBeNull();
+    expect(body.message).toBe('Color prediction requires both parents to have genetics data');
   });
 
   test('AC6: returns 200 null when dam genotype is an array (JSONB guard)', async () => {
-    mockPrisma.horse.findUnique.mockImplementation(({ where }) => {
-      if (where.id === 1) {
-        return { id: 1, name: 'Sire', colorGenotype: MOCK_GENOTYPE, userId: 'user-123', breedId: 1 };
-      }
-      return { id: 2, name: 'Dam', colorGenotype: ['E', 'e'], userId: 'user-123', breedId: 1 };
-    });
+    const user = await createUser();
+    const breed = await createBreed();
+    const sire = await createHorse(user.id, breed.id, MOCK_GENOTYPE, 'Stallion');
+    // Postgres JSONB accepts arrays; the controller's JSONB-shape guard
+    // should reject this and return null data.
+    const dam = await createHorse(user.id, breed.id, ['E', 'e'], 'Mare');
 
-    const { req, res } = createMockReqRes();
-    await getBreedingColorPrediction(req, res);
+    const res = makeRes();
+    await getBreedingColorPrediction(makeReq(user.id, sire.id, dam.id), res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json.mock.calls[0][0].data).toBeNull();
+    expect(res.statusValue).toBe(200);
+    expect(res.jsonValue.data).toBeNull();
   });
 });

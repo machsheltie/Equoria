@@ -211,10 +211,10 @@ describe('EligibilityFilter', () => {
       );
 
       const readyButton = screen.getByTestId('filter-ready');
-      expect(readyButton).toHaveClass('bg-green-600', 'text-white');
+      expect(readyButton).toHaveClass('bg-green-600', 'text-[var(--text-primary)]');
 
       const allButton = screen.getByTestId('filter-all');
-      expect(allButton).toHaveClass('bg-gray-200', 'text-gray-700');
+      expect(allButton).toHaveClass('bg-[rgba(15,35,70,0.5)]', 'text-[rgb(220,235,255)]');
     });
 
     it('should render flex-wrap for responsive layout', () => {
@@ -400,12 +400,18 @@ describe('EligibilityFilter', () => {
         <EligibilityFilter horses={[]} selectedFilter="all" onFilterChange={mockOnFilterChange} />
       );
 
-      expect(screen.getByTestId('filter-all')).toHaveClass('bg-blue-600', 'text-white');
+      expect(screen.getByTestId('filter-all')).toHaveClass(
+        'bg-blue-600',
+        'text-[var(--text-primary)]'
+      );
 
       rerender(
         <EligibilityFilter horses={[]} selectedFilter="ready" onFilterChange={mockOnFilterChange} />
       );
-      expect(screen.getByTestId('filter-ready')).toHaveClass('bg-green-600', 'text-white');
+      expect(screen.getByTestId('filter-ready')).toHaveClass(
+        'bg-green-600',
+        'text-[var(--text-primary)]'
+      );
 
       rerender(
         <EligibilityFilter
@@ -414,7 +420,10 @@ describe('EligibilityFilter', () => {
           onFilterChange={mockOnFilterChange}
         />
       );
-      expect(screen.getByTestId('filter-cooldown')).toHaveClass('bg-amber-600', 'text-white');
+      expect(screen.getByTestId('filter-cooldown')).toHaveClass(
+        'bg-amber-600',
+        'text-[var(--text-primary)]'
+      );
 
       rerender(
         <EligibilityFilter
@@ -423,7 +432,10 @@ describe('EligibilityFilter', () => {
           onFilterChange={mockOnFilterChange}
         />
       );
-      expect(screen.getByTestId('filter-ineligible')).toHaveClass('bg-gray-600', 'text-white');
+      expect(screen.getByTestId('filter-ineligible')).toHaveClass(
+        'bg-[rgba(15,35,70,0.6)]',
+        'text-[rgb(220,235,255)]'
+      );
     });
   });
 
@@ -657,21 +669,21 @@ describe('EligibilityFilter', () => {
         <EligibilityFilter horses={[]} selectedFilter="ready" onFilterChange={mockOnFilterChange} />
       );
 
-      // All inactive button should have hover:bg-gray-300
-      expect(screen.getByTestId('filter-all')).toHaveClass('hover:bg-gray-300');
-      expect(screen.getByTestId('filter-cooldown')).toHaveClass('hover:bg-gray-300');
-      expect(screen.getByTestId('filter-ineligible')).toHaveClass('hover:bg-gray-300');
+      // All inactive buttons should have the dark-theme hover background
+      expect(screen.getByTestId('filter-all')).toHaveClass('hover:bg-[rgba(37,99,235,0.1)]');
+      expect(screen.getByTestId('filter-cooldown')).toHaveClass('hover:bg-[rgba(37,99,235,0.1)]');
+      expect(screen.getByTestId('filter-ineligible')).toHaveClass('hover:bg-[rgba(37,99,235,0.1)]');
 
-      // Active button should not have the hover class
-      expect(screen.getByTestId('filter-ready')).not.toHaveClass('hover:bg-gray-300');
+      // Active button should not have the inactive hover class
+      expect(screen.getByTestId('filter-ready')).not.toHaveClass('hover:bg-[rgba(37,99,235,0.1)]');
     });
 
     it('should have correct color scheme for each filter type when selected', () => {
       const filterColors: Record<EligibilityFilterType, string[]> = {
-        all: ['bg-blue-600', 'text-white'],
-        ready: ['bg-green-600', 'text-white'],
-        cooldown: ['bg-amber-600', 'text-white'],
-        ineligible: ['bg-gray-600', 'text-white'],
+        all: ['bg-blue-600', 'text-[var(--text-primary)]'],
+        ready: ['bg-green-600', 'text-[var(--text-primary)]'],
+        cooldown: ['bg-amber-600', 'text-[var(--text-primary)]'],
+        ineligible: ['bg-[rgba(15,35,70,0.6)]', 'text-[rgb(220,235,255)]'],
       };
 
       const filters: EligibilityFilterType[] = ['all', 'ready', 'cooldown', 'ineligible'];

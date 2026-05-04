@@ -42,19 +42,12 @@
  * Use plain new Error() only when testing that filtered errors are propagated but not counted.
  */
 
+// NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): the previous
+// jest.unstable_mockModule of utils/logger.mjs was pure log-suppression — the
+// suite never asserted on logger calls. Real logger fires; output is suppressed
+// at the transport layer via NODE_ENV=test rather than module replacement.
 import { jest, describe, beforeEach, afterEach, it, expect } from '@jest/globals';
 import { createRedisCircuitBreaker } from '../../utils/redisCircuitBreaker.mjs';
-
-// ── Mock logger ───────────────────────────────────────────────────────────────
-
-jest.mock('../../utils/logger.mjs', () => ({
-  default: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
-  },
-}));
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 

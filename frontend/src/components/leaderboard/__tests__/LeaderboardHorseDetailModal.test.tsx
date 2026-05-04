@@ -113,7 +113,9 @@ describe('LeaderboardHorseDetailModal', () => {
 
     it('does not render the modal when isOpen is false', () => {
       render(<LeaderboardHorseDetailModal {...defaultProps} isOpen={false} />);
-      expect(screen.queryByTestId('horse-detail-modal')).not.toBeInTheDocument();
+      // Wrapper div remains for portal mounting; the BaseModal dialog itself is not rendered
+      expect(screen.queryByTestId('base-modal')).not.toBeInTheDocument();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
 
     it('fires onClose when the close button is clicked', async () => {
@@ -121,7 +123,7 @@ describe('LeaderboardHorseDetailModal', () => {
       const onClose = vi.fn();
       render(<LeaderboardHorseDetailModal {...defaultProps} onClose={onClose} />);
 
-      await user.click(screen.getByTestId('modal-close-button'));
+      await user.click(screen.getByTestId('base-modal-close-button'));
       expect(onClose).toHaveBeenCalledTimes(1);
     });
 
@@ -139,7 +141,7 @@ describe('LeaderboardHorseDetailModal', () => {
       const onClose = vi.fn();
       render(<LeaderboardHorseDetailModal {...defaultProps} onClose={onClose} />);
 
-      await user.click(screen.getByTestId('modal-backdrop'));
+      await user.click(screen.getByTestId('base-modal-backdrop'));
       expect(onClose).toHaveBeenCalledTimes(1);
     });
 
@@ -297,13 +299,15 @@ describe('LeaderboardHorseDetailModal', () => {
       const dialog = screen.getByRole('dialog');
       expect(dialog).toBeInTheDocument();
       expect(dialog).toHaveAttribute('aria-modal', 'true');
-      expect(dialog).toHaveAttribute('aria-labelledby', 'horse-detail-title');
+      // BaseModal namespaces ARIA ids by data-testid (default = 'base-modal')
+      expect(dialog).toHaveAttribute('aria-labelledby', 'base-modal-title');
     });
 
     it('close button has accessible aria-label', () => {
       render(<LeaderboardHorseDetailModal {...defaultProps} />);
-      const closeButton = screen.getByTestId('modal-close-button');
-      expect(closeButton).toHaveAttribute('aria-label', 'Close horse details');
+      const closeButton = screen.getByTestId('base-modal-close-button');
+      // BaseModal sets a generic 'Close modal' aria-label
+      expect(closeButton).toHaveAttribute('aria-label', 'Close modal');
     });
   });
 });

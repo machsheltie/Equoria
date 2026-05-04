@@ -7,22 +7,14 @@
  *   - simulateCompetition() parade scoring branch (presenceBonus × groomBondModifier)
  */
 
+// NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): the
+// previous jest.unstable_mockModule-of-logger was purely for noise
+// suppression — no logger.* assertions in this file. The real logger
+// runs at LOG_LEVEL=error per setup.mjs which keeps test output clean.
+
 import { jest } from '@jest/globals';
-
-// ── Mocks (must precede dynamic imports) ─────────────────────────────────────
-
-const mockLogger = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-};
-jest.unstable_mockModule('../utils/logger.mjs', () => ({ default: mockLogger }));
-
-// ── Dynamic imports (after mocks) ────────────────────────────────────────────
-
-const { TACK_INVENTORY, resolveTackBonus } = await import('../modules/services/controllers/tackShopController.mjs');
-const { simulateCompetition } = await import('../logic/simulateCompetition.mjs');
+import { TACK_INVENTORY, resolveTackBonus } from '../modules/services/controllers/tackShopController.mjs';
+import { simulateCompetition } from '../logic/simulateCompetition.mjs';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -38,7 +30,6 @@ function makeHorse(overrides = {}) {
     precision: 50,
     focus: 50,
     boldness: 50,
-    coordination: 50,
     flexibility: 50,
     obedience: 50,
     health: 'Good',

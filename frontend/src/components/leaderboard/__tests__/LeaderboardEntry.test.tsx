@@ -73,7 +73,8 @@ describe('LeaderboardEntry', () => {
       const entry = createEntry({ isCurrentUser: true });
       render(<LeaderboardEntryComponent entry={entry} category="level" />);
       const row = screen.getByTestId('leaderboard-entry');
-      expect(row).toHaveStyle({ backgroundColor: '#DBEAFE' });
+      // Current user uses translucent blue background tokens for dark theme
+      expect(row).toHaveStyle({ backgroundColor: 'rgba(37,99,235,0.15)' });
     });
 
     it('highlights the current user entry with blue border', () => {
@@ -88,7 +89,7 @@ describe('LeaderboardEntry', () => {
       const entry = createEntry({ isCurrentUser: false });
       render(<LeaderboardEntryComponent entry={entry} category="level" />);
       const row = screen.getByTestId('leaderboard-entry');
-      expect(row).not.toHaveStyle({ backgroundColor: '#DBEAFE' });
+      expect(row).not.toHaveStyle({ backgroundColor: 'rgba(37,99,235,0.15)' });
     });
   });
 
@@ -98,7 +99,8 @@ describe('LeaderboardEntry', () => {
       render(<LeaderboardEntryComponent entry={entry} category="level" />);
       const indicator = screen.getByTestId('rank-change');
       expect(indicator).toHaveTextContent('+3');
-      expect(indicator).toHaveStyle({ color: '#10B981' });
+      // Color uses tokenized status-success var
+      expect(indicator).toHaveStyle({ color: 'var(--status-success)' });
     });
 
     it('shows red down indicator for negative rank change', () => {
@@ -106,7 +108,8 @@ describe('LeaderboardEntry', () => {
       render(<LeaderboardEntryComponent entry={entry} category="level" />);
       const indicator = screen.getByTestId('rank-change');
       expect(indicator).toHaveTextContent('-2');
-      expect(indicator).toHaveStyle({ color: '#EF4444' });
+      // Color uses tokenized status-error var
+      expect(indicator).toHaveStyle({ color: 'var(--status-error)' });
     });
 
     it('shows gray dash for no rank change', () => {
@@ -115,7 +118,8 @@ describe('LeaderboardEntry', () => {
       const indicator = screen.getByTestId('rank-change');
       // U+2014 em dash
       expect(indicator).toHaveTextContent('\u2014');
-      expect(indicator).toHaveStyle({ color: '#6B7280' });
+      // Color uses tokenized text-muted var
+      expect(indicator).toHaveStyle({ color: 'var(--text-muted)' });
     });
   });
 

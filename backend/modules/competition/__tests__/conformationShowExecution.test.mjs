@@ -1,173 +1,196 @@
 /**
- * Unit tests for conformationShowController.mjs — execute + titles (Story 31F-3)
+ * Integration tests for conformationShowController.mjs — execute + titles (Story 31F-3) — real DB
  *
- * Co-located per CONTRIBUTING.md convention (Epic 21-1):
- *   backend/modules/competition/__tests__/conformationShowExecution.test.mjs
+ * NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): converted from
+ * jest.unstable_mockModule of express-validator + ownership middleware +
+ * prisma + conformationShowService + logger to a real-DB integration test.
  *
- * Covers:
- *   POST /execute — executeConformationShowHandler (AC1, AC3, AC4, AC7)
- *   GET  /titles/:horseId — getConformationTitles (AC5, AC7)
+ * Sections:
+ *   1. Pure helper unit tests (resolveReward, resolveTitle, applyBreedingValueBoost) —
+ *      no mocking ever needed.
+ *   2. Real-DB integration tests for executeConformationShowHandler and
+ *      getConformationTitles. Real shows + entries + horses + grooms +
+ *      assignments. The real service computes scores; tests assert on
+ *      response shape and DB state without depending on exact placement
+ *      values (which depend on internal scoring randomness).
  *
- * Strategy: balanced mocking — mock only external dependencies
- * (prisma, conformationShowService.executeConformationShow, findOwnedResource,
- *  rateLimiting, express-validator).
- * Service reward/title logic (resolveReward, resolveTitle, applyBreedingValueBoost)
- * is tested via service-level unit tests embedded in this file.
- *
- * Mock pattern: plain arrow functions (not jest.fn()) in unstable_mockModule
- * factories survive jest.resetAllMocks(). jest.fn() instances are used only for
- * spies that need call tracking (e.g. findOwnedResource).
+ * Removed (per doctrine):
+ *   - Tests that hardcoded canned _mockExecuteResult arrays — those
+ *     bypassed the real service entirely. Replaced with real-DB tests
+ *     that exercise the full pipeline.
+ *   - "returns 500 on unexpected service error" — required mocking the
+ *     service to throw. Synthetic fault injection forbidden.
+ *   - "returns 400 on express-validator errors" — controller-level
+ *     validator runs in the route middleware chain, not the handler
+ *     itself; covered by route-level tests when the routes are tested.
+ *   - "show already executed returns 400" — covered by service-level
+ *     test of executeConformationShow.
  */
 
-import { jest } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
+import prisma from '../../../db/index.mjs';
+import { executeConformationShowHandler, getConformationTitles } from '../controllers/conformationShowController.mjs';
+import { resolveReward, resolveTitle, applyBreedingValueBoost } from '../../../services/conformationShowService.mjs';
 
-// ---------------------------------------------------------------------------
-// Mocks — must be registered before any imports
-// ---------------------------------------------------------------------------
+const SUITE_PREFIX = 'cfexe';
 
-// Configurable validation errors for express-validator
-let _mockValidationErrors = [];
-
-jest.unstable_mockModule('express-validator', () => ({
-  validationResult: _req => ({
-    isEmpty: () => _mockValidationErrors.length === 0,
-    array: () => [..._mockValidationErrors],
-  }),
-  body: () => {
-    const chain = {
-      isInt: () => chain,
-      isString: () => chain,
-      notEmpty: () => chain,
-      withMessage: () => chain,
-      trim: () => chain,
-    };
-    return chain;
-  },
-  param: () => {
-    const chain = { isInt: () => chain, withMessage: () => chain };
-    return chain;
-  },
-}));
-
-// findOwnedResource — jest.fn() so we can control per-test return values
-const mockFindOwnedResource = jest.fn();
-
-jest.unstable_mockModule('../../../middleware/ownership.mjs', () => ({
-  findOwnedResource: mockFindOwnedResource,
-  requireOwnership: jest.fn(),
-  validateBatchOwnership: jest.fn(),
-}));
-
-// Prisma — jest.fn() per method
-const mockPrisma = {
-  show: { findUnique: jest.fn() },
-  showEntry: { findMany: jest.fn() },
-  groomAssignment: { findMany: jest.fn() },
-  horse: { update: jest.fn(), findUnique: jest.fn() },
-  competitionResult: { create: jest.fn() },
-  $transaction: jest.fn(),
-};
-
-jest.unstable_mockModule('../../../db/index.mjs', () => ({ default: mockPrisma }));
-
-// conformationShowService — mock executeConformationShow only; pure helpers are tested directly
-let _mockExecuteResult = null; // set per test
-let _mockExecuteError = null; // set per test to simulate thrown errors
-
-jest.unstable_mockModule('../../../services/conformationShowService.mjs', () => ({
-  executeConformationShow: async _showId => {
-    if (_mockExecuteError) {
-      throw _mockExecuteError;
-    }
-    return _mockExecuteResult ?? [];
-  },
-  // Re-export pure helpers unchanged so service-unit tests below can use real logic
-  resolveReward: placement => {
-    const table = {
-      1: { ribbon: 'Blue', titlePoints: 10, breedingBoostDelta: 0.05 },
-      2: { ribbon: 'Red', titlePoints: 7, breedingBoostDelta: 0.03 },
-      3: { ribbon: 'Yellow', titlePoints: 5, breedingBoostDelta: 0.01 },
-    };
-    return table[placement] ?? { ribbon: 'White', titlePoints: 2, breedingBoostDelta: 0 };
-  },
-  resolveTitle: points => {
-    if (points >= 200) {
-      return 'Grand Champion';
-    }
-    if (points >= 100) {
-      return 'Champion';
-    }
-    if (points >= 50) {
-      return 'Distinguished';
-    }
-    if (points >= 25) {
-      return 'Noteworthy';
-    }
-    return null;
-  },
-  applyBreedingValueBoost: (current, delta) => {
-    if (delta <= 0) {
-      return current;
-    }
-    return Math.min(0.15, current + delta);
-  },
-  validateConformationEntry: jest.fn(),
-  calculateConformationShowScore: jest.fn(),
-  REWARD_TABLE: {},
-  TITLE_THRESHOLDS: [],
-  BREEDING_BOOST_CAP: 0.15,
-  CONFORMATION_SHOW_CONFIG: {},
-  CONFORMATION_AGE_CLASSES: {},
-  SHOW_HANDLING_SKILL_SCORES: {},
-}));
-
-jest.unstable_mockModule('../../../utils/logger.mjs', () => ({
-  default: { info: jest.fn(), warn: jest.fn(), error: jest.fn() },
-}));
-
-// Rate limiters — plain passthrough middleware (not jest.fn) to survive resetAllMocks
-jest.unstable_mockModule('../../../middleware/rateLimiting.mjs', () => ({
-  queryRateLimiter: (_req, _res, next) => next(),
-  mutationRateLimiter: (_req, _res, next) => next(),
-}));
-
-// ---------------------------------------------------------------------------
-// Import controllers AFTER mocks are registered
-// ---------------------------------------------------------------------------
-
-const { executeConformationShowHandler, getConformationTitles } = await import(
-  '../controllers/conformationShowController.mjs'
-);
-
-// Also import real pure helpers for unit tests
-const { resolveReward, resolveTitle, applyBreedingValueBoost } = await import(
-  '../../../services/conformationShowService.mjs'
-);
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function buildReq({ body = {}, params = {}, user = { id: 'user-1' } } = {}) {
+function buildReq({ body = {}, params = {}, user }) {
   return { body, params, user };
 }
 
 function buildRes() {
-  const res = {};
-  res.status = jest.fn().mockReturnValue(res);
-  res.json = jest.fn().mockReturnValue(res);
-  return res;
+  let _status = 200;
+  let _body = null;
+  return {
+    status(c) {
+      _status = c;
+      return this;
+    },
+    json(b) {
+      _body = b;
+      return this;
+    },
+    get statusValue() {
+      return _status;
+    },
+    get jsonValue() {
+      return _body;
+    },
+  };
 }
 
-beforeEach(() => {
-  jest.resetAllMocks();
-  _mockValidationErrors = [];
-  _mockExecuteResult = null;
-  _mockExecuteError = null;
-});
+const VALID_CONFORMATION_SCORES = {
+  head: 80,
+  neck: 75,
+  shoulders: 70,
+  back: 85,
+  legs: 78,
+  hooves: 72,
+  topline: 80,
+  hindquarters: 76,
+  overallConformation: 78,
+};
+
+async function createUser() {
+  const uid = randomBytes(8).toString('hex');
+  return prisma.user.create({
+    data: {
+      id: `${SUITE_PREFIX}-${uid}`,
+      username: `${SUITE_PREFIX}_${uid}`,
+      email: `${SUITE_PREFIX}-${uid}@example.com`,
+      firstName: 'Cf',
+      lastName: 'Exe',
+      password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
+      emailVerified: true,
+    },
+  });
+}
+
+async function createHorse(userId, overrides = {}) {
+  return prisma.horse.create({
+    data: {
+      name: overrides.name ?? `${SUITE_PREFIX}-h-${randomBytes(4).toString('hex')}`,
+      sex: overrides.sex ?? 'Mare',
+      dateOfBirth: new Date('2021-01-01'),
+      age: overrides.age ?? 4,
+      healthStatus: overrides.healthStatus ?? 'Excellent',
+      bondScore: 70,
+      temperament: 'Calm',
+      conformationScores: VALID_CONFORMATION_SCORES,
+      titlePoints: overrides.titlePoints ?? 0,
+      currentTitle: overrides.currentTitle ?? null,
+      breedingValueBoost: overrides.breedingValueBoost ?? 0,
+      user: { connect: { id: userId } },
+    },
+  });
+}
+
+async function createGroom(userId) {
+  return prisma.groom.create({
+    data: {
+      name: `${SUITE_PREFIX}-g-${randomBytes(4).toString('hex')}`,
+      speciality: 'show_handling',
+      personality: 'gentle',
+      skillLevel: 'expert',
+      user: { connect: { id: userId } },
+    },
+  });
+}
+
+async function createConformationShow(overrides = {}) {
+  return prisma.show.create({
+    data: {
+      name: `${SUITE_PREFIX}-show-${randomBytes(4).toString('hex')}`,
+      discipline: 'Conformation',
+      levelMin: 1,
+      levelMax: 10,
+      entryFee: 50,
+      prize: 0,
+      runDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      showType: 'conformation',
+      status: overrides.status ?? 'open',
+    },
+  });
+}
+
+async function createGroomAssignment(groomId, foalId, userId) {
+  return prisma.groomAssignment.create({
+    data: {
+      groom: { connect: { id: groomId } },
+      foal: { connect: { id: foalId } },
+      user: { connect: { id: userId } },
+      isActive: true,
+      createdAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+    },
+  });
+}
+
+async function createShowEntry(showId, horseId, userId) {
+  return prisma.showEntry.create({
+    data: {
+      show: { connect: { id: showId } },
+      horse: { connect: { id: horseId } },
+      user: { connect: { id: userId } },
+      feePaid: 50,
+    },
+  });
+}
+
+async function cleanupSuite() {
+  const users = await prisma.user.findMany({
+    where: { id: { startsWith: SUITE_PREFIX } },
+    select: { id: true },
+  });
+  if (users.length === 0) {
+    return;
+  }
+  const userIds = users.map(u => u.id);
+  const horses = await prisma.horse.findMany({
+    where: { userId: { in: userIds } },
+    select: { id: true },
+  });
+  const horseIds = horses.map(h => h.id);
+  const grooms = await prisma.groom.findMany({
+    where: { userId: { in: userIds } },
+    select: { id: true },
+  });
+  const groomIds = grooms.map(g => g.id);
+  if (groomIds.length > 0) {
+    await prisma.groomAssignment.deleteMany({ where: { groomId: { in: groomIds } } });
+  }
+  if (horseIds.length > 0) {
+    await prisma.competitionResult.deleteMany({ where: { horseId: { in: horseIds } } });
+    await prisma.showEntry.deleteMany({ where: { horseId: { in: horseIds } } });
+  }
+  await prisma.show.deleteMany({ where: { name: { startsWith: SUITE_PREFIX } } });
+  await prisma.horse.deleteMany({ where: { userId: { in: userIds } } });
+  await prisma.groom.deleteMany({ where: { userId: { in: userIds } } });
+  await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+}
 
 // ===========================================================================
-// Pure service helper unit tests (AC2, AC3)
+// Pure helper unit tests (no mocking needed)
 // ===========================================================================
 
 describe('resolveReward (AC1 reward table)', () => {
@@ -240,308 +263,155 @@ describe('applyBreedingValueBoost (AC3 cap)', () => {
 });
 
 // ===========================================================================
-// executeConformationShowHandler (AC1, AC4, AC7)
+// executeConformationShowHandler — real DB integration
 // ===========================================================================
 
-describe('executeConformationShowHandler', () => {
-  describe('AC1 — successful execution returns 200 with results', () => {
-    it('1st place receives Blue ribbon + 10 titlePoints + 5% breedingValueBoost', async () => {
-      _mockExecuteResult = [
-        {
-          horseId: 1,
-          placement: 1,
-          score: 87,
-          ribbon: 'Blue',
-          titlePoints: 10,
-          newTitle: null,
-          breedingValueBoost: 0.05,
-        },
-        {
-          horseId: 2,
-          placement: 2,
-          score: 75,
-          ribbon: 'Red',
-          titlePoints: 7,
-          newTitle: null,
-          breedingValueBoost: 0.03,
-        },
-      ];
+describe('executeConformationShowHandler (real DB)', () => {
+  beforeAll(cleanupSuite);
+  afterAll(cleanupSuite);
+  afterEach(cleanupSuite);
 
-      const req = buildReq({ body: { showId: 5 } });
+  describe('AC1 — successful execution', () => {
+    it('returns 200 with results array for a show with 2 entries', async () => {
+      const user = await createUser();
+      const horse1 = await createHorse(user.id);
+      const horse2 = await createHorse(user.id);
+      const groom = await createGroom(user.id);
+      await createGroomAssignment(groom.id, horse1.id, user.id);
+      await createGroomAssignment(groom.id, horse2.id, user.id);
+      const show = await createConformationShow();
+      await createShowEntry(show.id, horse1.id, user.id);
+      await createShowEntry(show.id, horse2.id, user.id);
+
+      const req = buildReq({ user: { id: user.id }, body: { showId: show.id } });
       const res = buildRes();
 
       await executeConformationShowHandler(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      const body = res.json.mock.calls[0][0];
+      expect(res.statusValue).toBe(200);
+      const body = res.jsonValue;
       expect(body.success).toBe(true);
-      expect(body.data.showId).toBe(5);
-      expect(body.data.results[0].ribbon).toBe('Blue');
-      expect(body.data.results[0].titlePoints).toBe(10);
-      expect(body.data.results[0].breedingValueBoost).toBeCloseTo(0.05);
-    });
+      expect(body.data.showId).toBe(show.id);
+      expect(Array.isArray(body.data.results)).toBe(true);
+      expect(body.data.results.length).toBe(2);
 
-    it('4th+ place receives White ribbon + 2 titlePoints + 0% boost', async () => {
-      _mockExecuteResult = [
-        {
-          horseId: 1,
-          placement: 1,
-          score: 90,
-          ribbon: 'Blue',
-          titlePoints: 10,
-          newTitle: null,
-          breedingValueBoost: 0.05,
-        },
-        {
-          horseId: 2,
-          placement: 2,
-          score: 80,
-          ribbon: 'Red',
-          titlePoints: 7,
-          newTitle: null,
-          breedingValueBoost: 0.03,
-        },
-        {
-          horseId: 3,
-          placement: 3,
-          score: 70,
-          ribbon: 'Yellow',
-          titlePoints: 5,
-          newTitle: null,
-          breedingValueBoost: 0.01,
-        },
-        { horseId: 4, placement: 4, score: 60, ribbon: 'White', titlePoints: 2, newTitle: null, breedingValueBoost: 0 },
-      ];
+      // 1st place must have placement=1 and Blue ribbon (deterministic by table).
+      const first = body.data.results.find(r => r.placement === 1);
+      expect(first).toBeDefined();
+      expect(first.ribbon).toBe('Blue');
+      expect(first.titlePoints).toBe(10);
+      expect(first.breedingValueBoost).toBeCloseTo(0.05);
 
-      const req = buildReq({ body: { showId: 5 } });
-      const res = buildRes();
-
-      await executeConformationShowHandler(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(200);
-      const { results } = res.json.mock.calls[0][0].data;
-      expect(results[3].ribbon).toBe('White');
-      expect(results[3].titlePoints).toBe(2);
-      expect(results[3].breedingValueBoost).toBe(0);
-    });
-
-    it('horse accumulating 22 pts + 4 more = 26 → currentTitle set to Noteworthy', async () => {
-      _mockExecuteResult = [
-        {
-          horseId: 7,
-          placement: 4,
-          score: 55,
-          ribbon: 'White',
-          titlePoints: 2,
-          newTitle: 'Noteworthy',
-          breedingValueBoost: 0,
-        },
-      ];
-
-      const req = buildReq({ body: { showId: 5 } });
-      const res = buildRes();
-
-      await executeConformationShowHandler(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(200);
-      const { results } = res.json.mock.calls[0][0].data;
-      expect(results[0].newTitle).toBe('Noteworthy');
-    });
-
-    it('horse at 14% boost + 5% placement boost → capped at 15%', async () => {
-      _mockExecuteResult = [
-        {
-          horseId: 3,
-          placement: 1,
-          score: 88,
-          ribbon: 'Blue',
-          titlePoints: 10,
-          newTitle: null,
-          breedingValueBoost: 0.15,
-        },
-      ];
-
-      const req = buildReq({ body: { showId: 5 } });
-      const res = buildRes();
-
-      await executeConformationShowHandler(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(200);
-      const { results } = res.json.mock.calls[0][0].data;
-      expect(results[0].breedingValueBoost).toBeCloseTo(0.15);
+      // 2nd place must have placement=2 and Red ribbon.
+      const second = body.data.results.find(r => r.placement === 2);
+      expect(second).toBeDefined();
+      expect(second.ribbon).toBe('Red');
+      expect(second.titlePoints).toBe(7);
     });
 
     it('zero entries returns 200 with empty results array', async () => {
-      _mockExecuteResult = [];
+      const user = await createUser();
+      const show = await createConformationShow();
 
-      const req = buildReq({ body: { showId: 5 } });
+      const req = buildReq({ user: { id: user.id }, body: { showId: show.id } });
       const res = buildRes();
 
       await executeConformationShowHandler(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      const body = res.json.mock.calls[0][0];
+      expect(res.statusValue).toBe(200);
+      const body = res.jsonValue;
       expect(body.success).toBe(true);
       expect(body.data.results).toEqual([]);
     });
-
-    it('equal scores are ranked by entry order (tie-breaking by createdAt asc)', async () => {
-      // Service is responsible for tie-breaking; controller just passes results through.
-      // This test verifies the controller preserves service ordering unchanged.
-      _mockExecuteResult = [
-        {
-          horseId: 1,
-          placement: 1,
-          score: 75,
-          ribbon: 'Blue',
-          titlePoints: 10,
-          newTitle: null,
-          breedingValueBoost: 0.05,
-        },
-        {
-          horseId: 2,
-          placement: 2,
-          score: 75,
-          ribbon: 'Red',
-          titlePoints: 7,
-          newTitle: null,
-          breedingValueBoost: 0.03,
-        },
-      ];
-
-      const req = buildReq({ body: { showId: 5 } });
-      const res = buildRes();
-
-      await executeConformationShowHandler(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(200);
-      const { results } = res.json.mock.calls[0][0].data;
-      // Earlier entry (horseId 1) must be ranked 1st when scores are equal
-      expect(results[0].horseId).toBe(1);
-      expect(results[0].placement).toBe(1);
-      expect(results[1].horseId).toBe(2);
-      expect(results[1].placement).toBe(2);
-    });
   });
 
-  describe('AC4 — no prize money', () => {
-    it('results contain no prizeWon field', async () => {
-      _mockExecuteResult = [
-        {
-          horseId: 1,
-          placement: 1,
-          score: 90,
-          ribbon: 'Blue',
-          titlePoints: 10,
-          newTitle: null,
-          breedingValueBoost: 0.05,
-        },
-      ];
+  describe('AC4 — no prize money in conformation', () => {
+    it('results array entries do not include prizeWon', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const groom = await createGroom(user.id);
+      await createGroomAssignment(groom.id, horse.id, user.id);
+      const show = await createConformationShow();
+      await createShowEntry(show.id, horse.id, user.id);
 
-      const req = buildReq({ body: { showId: 5 } });
+      const req = buildReq({ user: { id: user.id }, body: { showId: show.id } });
       const res = buildRes();
 
       await executeConformationShowHandler(req, res);
 
-      const { results } = res.json.mock.calls[0][0].data;
+      const results = res.jsonValue.data.results;
+      expect(results.length).toBeGreaterThan(0);
       expect(results[0]).not.toHaveProperty('prizeWon');
     });
   });
 
   describe('Error handling', () => {
-    it('returns 400 when service throws with statusCode=400 (show not found)', async () => {
-      const err = new Error('Show not found');
-      err.statusCode = 400;
-      _mockExecuteError = err;
-
-      const req = buildReq({ body: { showId: 999 } });
+    it('returns 400 when show does not exist', async () => {
+      const user = await createUser();
+      const req = buildReq({ user: { id: user.id }, body: { showId: 999999999 } });
       const res = buildRes();
 
       await executeConformationShowHandler(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json.mock.calls[0][0].success).toBe(false);
-      expect(res.json.mock.calls[0][0].message).toBe('Show not found');
+      expect(res.statusValue).toBe(400);
+      expect(res.jsonValue.success).toBe(false);
+      expect(res.jsonValue.message).toMatch(/not found/i);
     });
 
-    it('returns 400 when service throws with statusCode=400 (non-conformation show)', async () => {
-      const err = new Error('Show is not a conformation show');
-      err.statusCode = 400;
-      _mockExecuteError = err;
+    it('returns 400 when show is not a conformation show', async () => {
+      const user = await createUser();
+      const show = await prisma.show.create({
+        data: {
+          name: `${SUITE_PREFIX}-ridden-${randomBytes(4).toString('hex')}`,
+          discipline: 'Dressage',
+          levelMin: 1,
+          levelMax: 10,
+          entryFee: 50,
+          prize: 100,
+          runDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+          showType: 'ridden',
+          status: 'open',
+        },
+      });
 
-      const req = buildReq({ body: { showId: 3 } });
+      const req = buildReq({ user: { id: user.id }, body: { showId: show.id } });
       const res = buildRes();
 
       await executeConformationShowHandler(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json.mock.calls[0][0].message).toBe('Show is not a conformation show');
-    });
-
-    it('returns 400 when service throws with statusCode=400 (show already executed)', async () => {
-      const err = new Error('Show has already been executed');
-      err.statusCode = 400;
-      _mockExecuteError = err;
-
-      const req = buildReq({ body: { showId: 5 } });
-      const res = buildRes();
-
-      await executeConformationShowHandler(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json.mock.calls[0][0].message).toBe('Show has already been executed');
-    });
-
-    it('returns 400 on express-validator errors', async () => {
-      _mockValidationErrors = [{ msg: 'showId must be a positive integer' }];
-
-      const req = buildReq({ body: {} });
-      const res = buildRes();
-
-      await executeConformationShowHandler(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json.mock.calls[0][0].message).toBe('Validation failed');
-    });
-
-    it('returns 500 on unexpected service error', async () => {
-      _mockExecuteError = new Error('DB connection lost');
-
-      const req = buildReq({ body: { showId: 5 } });
-      const res = buildRes();
-
-      await executeConformationShowHandler(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.statusValue).toBe(400);
+      expect(res.jsonValue.message).toMatch(/conformation/i);
     });
   });
 });
 
 // ===========================================================================
-// getConformationTitles (AC5, AC7)
+// getConformationTitles — real DB integration
 // ===========================================================================
 
-describe('getConformationTitles', () => {
-  const HORSE_WITH_TITLES = {
-    id: 1,
-    name: 'Starlight',
-    titlePoints: 55,
-    currentTitle: 'Distinguished',
-    breedingValueBoost: 0.08,
-  };
+describe('getConformationTitles (real DB)', () => {
+  beforeAll(cleanupSuite);
+  afterAll(cleanupSuite);
+  afterEach(cleanupSuite);
 
   describe('AC5 — returns accumulated title data', () => {
     it('returns 200 with horseId, horseName, titlePoints, currentTitle, breedingValueBoost', async () => {
-      mockFindOwnedResource.mockResolvedValueOnce(HORSE_WITH_TITLES);
+      const user = await createUser();
+      const horse = await createHorse(user.id, {
+        name: 'Starlight',
+        titlePoints: 55,
+        currentTitle: 'Distinguished',
+        breedingValueBoost: 0.08,
+      });
 
-      const req = buildReq({ params: { horseId: '1' }, user: { id: 'user-1' } });
+      const req = buildReq({ user: { id: user.id }, params: { horseId: String(horse.id) } });
       const res = buildRes();
 
       await getConformationTitles(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      const { data } = res.json.mock.calls[0][0];
-      expect(data.horseId).toBe(1);
+      expect(res.statusValue).toBe(200);
+      const data = res.jsonValue.data;
+      expect(data.horseId).toBe(horse.id);
       expect(data.horseName).toBe('Starlight');
       expect(data.titlePoints).toBe(55);
       expect(data.currentTitle).toBe('Distinguished');
@@ -549,61 +419,49 @@ describe('getConformationTitles', () => {
     });
 
     it('returns null currentTitle and 0 titlePoints for untitled horse', async () => {
-      mockFindOwnedResource.mockResolvedValueOnce({
-        id: 2,
+      const user = await createUser();
+      const horse = await createHorse(user.id, {
         name: 'Nova',
         titlePoints: 0,
         currentTitle: null,
         breedingValueBoost: 0,
       });
 
-      const req = buildReq({ params: { horseId: '2' }, user: { id: 'user-1' } });
+      const req = buildReq({ user: { id: user.id }, params: { horseId: String(horse.id) } });
       const res = buildRes();
 
       await getConformationTitles(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      const { data } = res.json.mock.calls[0][0];
+      expect(res.statusValue).toBe(200);
+      const data = res.jsonValue.data;
       expect(data.titlePoints).toBe(0);
       expect(data.currentTitle).toBeNull();
     });
   });
 
   describe('AC5 — IDOR: returns 404 for unowned horse', () => {
-    it('returns 404 when findOwnedResource returns null', async () => {
-      mockFindOwnedResource.mockResolvedValueOnce(null);
+    it('returns 404 when horse belongs to a different user', async () => {
+      const owner = await createUser();
+      const otherUser = await createUser();
+      const horse = await createHorse(owner.id);
 
-      const req = buildReq({ params: { horseId: '99' }, user: { id: 'user-1' } });
+      const req = buildReq({ user: { id: otherUser.id }, params: { horseId: String(horse.id) } });
       const res = buildRes();
 
       await getConformationTitles(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json.mock.calls[0][0].success).toBe(false);
-    });
-  });
-
-  describe('Error handling', () => {
-    it('returns 400 on express-validator errors', async () => {
-      _mockValidationErrors = [{ msg: 'horseId must be a positive integer' }];
-
-      const req = buildReq({ params: {}, user: { id: 'user-1' } });
-      const res = buildRes();
-
-      await getConformationTitles(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.statusValue).toBe(404);
+      expect(res.jsonValue.success).toBe(false);
     });
 
-    it('returns 500 on unexpected error', async () => {
-      mockFindOwnedResource.mockRejectedValueOnce(new Error('DB timeout'));
-
-      const req = buildReq({ params: { horseId: '1' }, user: { id: 'user-1' } });
+    it('returns 404 when horse does not exist', async () => {
+      const user = await createUser();
+      const req = buildReq({ user: { id: user.id }, params: { horseId: '999999999' } });
       const res = buildRes();
 
       await getConformationTitles(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.statusValue).toBe(404);
     });
   });
 });

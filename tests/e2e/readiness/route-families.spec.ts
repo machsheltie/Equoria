@@ -1,4 +1,6 @@
 import { test, expect } from '@playwright/test';
+// @ts-expect-error — JS module without .d.ts; import works at runtime via Node.
+import prisma from '../../../packages/database/prismaClient.mjs';
 import {
   csrfRequest,
   expectOk,
@@ -7,6 +9,33 @@ import {
   unwrapData,
   visitLiveRoute,
 } from './support/prodParity';
+
+// Cleanup hook: this E2E test creates real horses, shows, users, etc. via the
+// API (no test-bypass routes per beta doctrine). Without an afterAll teardown,
+// fixtures leak into the shared real DB and pollute global queries in other
+// suites (notably tests/integration/leaderboardRoutes.test.mjs's
+// /recent-winners endpoint, which queries the 10 most-recent 1st-place
+// results globally). Wipe by Atlas/Readiness name prefix — this also catches
+// leftovers from prior failed runs.
+test.afterAll(async () => {
+  try {
+    await prisma.competitionResult.deleteMany({
+      where: { showName: { startsWith: 'Readiness Show' } },
+    });
+    await prisma.show.deleteMany({
+      where: { name: { startsWith: 'Readiness Show' } },
+    });
+    await prisma.horse.deleteMany({
+      where: { name: { startsWith: 'Atlas Prime' } },
+    });
+    // Player accounts use suffix-formatted emails; Atlas suffix is in the user
+    // first/last name, but the registration helper uses the suffix to derive
+    // a unique email. We don't know the exact pattern from here, so we leave
+    // the user rows for now; they don't pollute leaderboards.
+  } finally {
+    await prisma.$disconnect();
+  }
+});
 
 test('all beta route families execute real read and write flows', async ({ page, browser }) => {
   const guard = installProductionParityNetworkGuard(page);

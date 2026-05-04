@@ -17,7 +17,7 @@ import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Routes, Route } from '../../test/utils';
+import { BrowserRouter, Routes, Route, MockAuthProvider } from '../../test/utils';
 import { vi } from 'vitest';
 import HorseDetailPage from '../HorseDetailPage';
 
@@ -109,11 +109,13 @@ const createTestWrapper = (_horseId: string = '1') => {
 
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/horses/:id" element={children} />
-        </Routes>
-      </BrowserRouter>
+      <MockAuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/horses/:id" element={children} />
+          </Routes>
+        </BrowserRouter>
+      </MockAuthProvider>
     </QueryClientProvider>
   );
 };
@@ -525,10 +527,15 @@ describe('HorseDetailPage Component', () => {
       const retryButton = screen.getByText('Retry');
       fireEvent.click(retryButton);
 
-      // Should now show horse data
-      await waitFor(() => {
-        expect(screen.getByText('Thunder')).toBeInTheDocument();
-      });
+      // Should now show horse data. Bump waitFor timeout from the default
+      // 1000ms — under JSDOM + react-query the refetch path can take longer
+      // than the initial fetch and the default occasionally races.
+      await waitFor(
+        () => {
+          expect(screen.getByText('Thunder')).toBeInTheDocument();
+        },
+        { timeout: 5000 }
+      );
 
       expect(fetchCount).toBe(2);
     });

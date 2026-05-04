@@ -89,14 +89,15 @@ describe('LeaderboardCategorySelector', () => {
       render(<LeaderboardCategorySelector {...defaultProps} selectedCategory="level" />);
       const levelButton = screen.getByTestId('category-level');
       expect(levelButton).toHaveClass('bg-blue-500');
-      expect(levelButton).toHaveClass('text-white');
+      expect(levelButton).toHaveClass('text-[var(--text-primary)]');
     });
 
     it('applies gray background to inactive categories', () => {
       render(<LeaderboardCategorySelector {...defaultProps} selectedCategory="level" />);
       const prizeButton = screen.getByTestId('category-prize-money');
-      expect(prizeButton).toHaveClass('bg-gray-200');
-      expect(prizeButton).toHaveClass('text-gray-800');
+      // Inactive tabs use a tokenized translucent navy background
+      expect(prizeButton).toHaveClass('bg-[rgba(15,35,70,0.5)]');
+      expect(prizeButton).toHaveClass('text-[rgb(148,163,184)]');
     });
 
     it('calls onCategoryChange when a category is clicked', async () => {
@@ -216,11 +217,12 @@ describe('LeaderboardCategorySelector', () => {
   });
 
   describe('Accessibility', () => {
-    it('category buttons have aria-pressed attribute', () => {
+    it('category buttons expose tab selection state via aria-selected', () => {
+      // Categories are tabs (role="tab"), so they use aria-selected, not aria-pressed
       render(<LeaderboardCategorySelector {...defaultProps} selectedCategory="level" />);
 
-      expect(screen.getByTestId('category-level')).toHaveAttribute('aria-pressed', 'true');
-      expect(screen.getByTestId('category-prize-money')).toHaveAttribute('aria-pressed', 'false');
+      expect(screen.getByTestId('category-level')).toHaveAttribute('aria-selected', 'true');
+      expect(screen.getByTestId('category-prize-money')).toHaveAttribute('aria-selected', 'false');
     });
 
     it('has a role of tablist on the category container', () => {

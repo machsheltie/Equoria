@@ -3,26 +3,12 @@
 // legacy horse handling, partial phenotype, JSONB type guards, and null guard behavior.
 
 import { jest } from '@jest/globals';
+import { getGenetics, getColor } from '../modules/horses/controllers/horseController.mjs';
 
-// Mock prisma before importing controller
-const mockPrisma = {
-  horse: {
-    findUnique: jest.fn(),
-  },
-};
-jest.unstable_mockModule('../db/index.mjs', () => ({ default: mockPrisma }));
-
-// Mock logger to suppress output in tests
-const mockLogger = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-};
-jest.unstable_mockModule('../utils/logger.mjs', () => ({ default: mockLogger }));
-
-// Import after mocking
-const { getGenetics, getColor } = await import('../modules/horses/controllers/horseController.mjs');
+// NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): the
+// previous prisma mock was defensive (controller reads from req.horse,
+// populated by upstream middleware — never calls prisma in this test
+// path). The logger mock was for noise. Both removed.
 
 // ---------------------------------------------------------------------------
 // Shared fixtures

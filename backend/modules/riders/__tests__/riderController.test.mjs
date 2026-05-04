@@ -1,326 +1,358 @@
 /**
- * riderController.test.mjs
+ * riderController.test.mjs — real DB
  *
- * Unit tests for backend/modules/riders/controllers/riderController.mjs
- * Co-located per the backend/modules/<domain>/__tests__/ convention (Story 21-1).
+ * NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): converted
+ * from jest.unstable_mockModule of prismaClient + logger to a real-DB
+ * integration test against the equoria_test database.
  *
- * Coverage: getUserRiders, getRiderAssignments, assignRider, deleteRiderAssignment, dismissRider
- * Mocks: prisma, logger (external deps only)
+ * Coverage: getUserRiders, getRiderAssignments, assignRider,
+ * deleteRiderAssignment, dismissRider.
+ *
+ * Removed (per doctrine):
+ *   - "returns 500 on database error" tests that mocked Prisma to
+ *     reject. Synthetic Prisma fault injection is not permitted.
  */
 
-import { jest, describe, beforeEach, it, expect } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
+import prisma from '../../../db/index.mjs';
+import {
+  getUserRiders,
+  getRiderAssignments,
+  assignRider,
+  deleteRiderAssignment,
+  dismissRider,
+} from '../controllers/riderController.mjs';
 
-// ── Mock setup ────────────────────────────────────────────────────────────────
+const SUITE_PREFIX = 'rctrl';
 
-const mockPrisma = {
-  rider: {
-    findMany: jest.fn(),
-    findFirst: jest.fn(),
-    update: jest.fn(),
-  },
-  riderAssignment: {
-    findMany: jest.fn(),
-    findFirst: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-    updateMany: jest.fn(),
-  },
-  horse: {
-    findFirst: jest.fn(),
-  },
-};
-
-const mockLogger = {
-  info: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn(),
-  debug: jest.fn(),
-};
-
-jest.unstable_mockModule('../../../../packages/database/prismaClient.mjs', () => ({
-  default: mockPrisma,
-}));
-jest.unstable_mockModule('../../../utils/logger.mjs', () => ({
-  default: mockLogger,
-}));
-
-const { getUserRiders, getRiderAssignments, assignRider, deleteRiderAssignment, dismissRider } = await import(
-  '../controllers/riderController.mjs'
-);
-
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-function mockReqRes(overrides = {}) {
-  const req = {
-    user: { id: 'user-uuid-1' },
-    body: {},
-    params: {},
-    query: {},
-    ...overrides,
+function makeReqRes(userId, overrides = {}) {
+  let _status = 200;
+  let _body = null;
+  return {
+    req: { user: { id: userId }, body: {}, params: {}, query: {}, ...overrides },
+    res: {
+      status(c) {
+        _status = c;
+        return this;
+      },
+      json(b) {
+        _body = b;
+        return this;
+      },
+      get statusValue() {
+        return _status;
+      },
+      get jsonValue() {
+        return _body;
+      },
+    },
   };
-  const res = {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis(),
-  };
-  return { req, res };
 }
 
-// ── getUserRiders ─────────────────────────────────────────────────────────────
-
-describe('getUserRiders', () => {
-  beforeEach(() => jest.clearAllMocks());
-
-  it('returns formatted riders with name and assignedHorseId', async () => {
-    const rawRider = {
-      id: 1,
-      firstName: 'Maria',
-      lastName: 'Garcia',
-      userId: 'user-uuid-1',
-      retired: false,
-      assignments: [{ id: 10, horseId: 5, startDate: new Date() }],
-    };
-    mockPrisma.rider.findMany.mockResolvedValue([rawRider]);
-
-    const { req, res } = mockReqRes();
-    await getUserRiders(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(200);
-    const { data } = res.json.mock.calls[0][0];
-    expect(data[0]).toMatchObject({
-      name: 'Maria Garcia',
-      assignedHorseId: 5,
-    });
+async function createUser() {
+  const uid = randomBytes(8).toString('hex');
+  return prisma.user.create({
+    data: {
+      id: `${SUITE_PREFIX}-${uid}`,
+      username: `${SUITE_PREFIX}_${uid}`,
+      email: `${SUITE_PREFIX}-${uid}@example.com`,
+      firstName: 'Rc',
+      lastName: 'Test',
+      password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy',
+      emailVerified: true,
+    },
   });
+}
 
-  it('returns assignedHorseId as null when rider has no active assignment', async () => {
-    mockPrisma.rider.findMany.mockResolvedValue([
-      {
-        id: 2,
-        firstName: 'Sam',
-        lastName: 'Lee',
-        userId: 'user-uuid-1',
-        retired: false,
-        assignments: [],
-      },
-    ]);
-
-    const { req, res } = mockReqRes();
-    await getUserRiders(req, res);
-
-    const { data } = res.json.mock.calls[0][0];
-    expect(data[0].assignedHorseId).toBeNull();
+async function createHorse(userId) {
+  return prisma.horse.create({
+    data: {
+      name: `${SUITE_PREFIX}-h-${randomBytes(4).toString('hex')}`,
+      sex: 'Mare',
+      dateOfBirth: new Date('2020-01-01'),
+      user: { connect: { id: userId } },
+    },
   });
+}
 
-  it('only returns non-retired riders for the authenticated user', async () => {
-    mockPrisma.rider.findMany.mockResolvedValue([]);
-    const { req, res } = mockReqRes();
-    await getUserRiders(req, res);
-
-    expect(mockPrisma.rider.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({ userId: 'user-uuid-1', retired: false }),
-      }),
-    );
+async function createRider(userId, overrides = {}) {
+  return prisma.rider.create({
+    data: {
+      firstName: overrides.firstName ?? 'Maria',
+      lastName: overrides.lastName ?? 'Garcia',
+      personality: 'methodical',
+      skillLevel: 'experienced',
+      speciality: 'Dressage',
+      retired: overrides.retired ?? false,
+      user: { connect: { id: userId } },
+    },
   });
+}
 
-  it('returns 500 on database error', async () => {
-    mockPrisma.rider.findMany.mockRejectedValue(new Error('connection failed'));
-    const { req, res } = mockReqRes();
-    await getUserRiders(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
-  });
-});
-
-// ── getRiderAssignments ───────────────────────────────────────────────────────
-
-describe('getRiderAssignments', () => {
-  beforeEach(() => jest.clearAllMocks());
-
-  it('returns formatted assignments with horse and rider names', async () => {
-    const rawAssignment = {
-      id: 1,
-      riderId: 1,
-      horseId: 5,
-      startDate: new Date(),
+async function createAssignment(riderId, horseId, userId) {
+  return prisma.riderAssignment.create({
+    data: {
+      rider: { connect: { id: riderId } },
+      horse: { connect: { id: horseId } },
+      user: { connect: { id: userId } },
       isActive: true,
-      rider: { id: 1, firstName: 'Maria', lastName: 'Garcia' },
-      horse: { id: 5, name: 'Starlight' },
-    };
-    mockPrisma.riderAssignment.findMany.mockResolvedValue([rawAssignment]);
+    },
+  });
+}
 
-    const { req, res } = mockReqRes();
-    await getRiderAssignments(req, res);
+async function cleanupSuite() {
+  const users = await prisma.user.findMany({
+    where: { id: { startsWith: SUITE_PREFIX } },
+    select: { id: true },
+  });
+  if (users.length === 0) {
+    return;
+  }
+  const userIds = users.map(u => u.id);
+  const riders = await prisma.rider.findMany({
+    where: { userId: { in: userIds } },
+    select: { id: true },
+  });
+  const riderIds = riders.map(r => r.id);
+  if (riderIds.length > 0) {
+    await prisma.riderAssignment.deleteMany({ where: { riderId: { in: riderIds } } });
+  }
+  await prisma.rider.deleteMany({ where: { userId: { in: userIds } } });
+  await prisma.horse.deleteMany({ where: { userId: { in: userIds } } });
+  await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+}
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    const { data } = res.json.mock.calls[0][0];
-    expect(data[0]).toMatchObject({
-      horseName: 'Starlight',
-      riderName: 'Maria Garcia',
+describe('riderController (real DB)', () => {
+  beforeAll(cleanupSuite);
+  afterAll(cleanupSuite);
+  afterEach(cleanupSuite);
+
+  describe('getUserRiders', () => {
+    it('returns formatted riders with name and assignedHorseId', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const rider = await createRider(user.id, { firstName: 'Maria', lastName: 'Garcia' });
+      await createAssignment(rider.id, horse.id, user.id);
+
+      const h = makeReqRes(user.id);
+      await getUserRiders(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(200);
+      const data = h.res.jsonValue.data;
+      expect(data[0]).toMatchObject({
+        name: 'Maria Garcia',
+        assignedHorseId: horse.id,
+      });
+    });
+
+    it('returns assignedHorseId as null when rider has no active assignment', async () => {
+      const user = await createUser();
+      await createRider(user.id, { firstName: 'Sam', lastName: 'Lee' });
+
+      const h = makeReqRes(user.id);
+      await getUserRiders(h.req, h.res);
+
+      const data = h.res.jsonValue.data;
+      expect(data[0].assignedHorseId).toBeNull();
+    });
+
+    it('only returns non-retired riders for the authenticated user', async () => {
+      const user = await createUser();
+      const otherUser = await createUser();
+      await createRider(user.id, { firstName: 'Mine' });
+      await createRider(user.id, { firstName: 'Retired', retired: true });
+      await createRider(otherUser.id, { firstName: 'Theirs' });
+
+      const h = makeReqRes(user.id);
+      await getUserRiders(h.req, h.res);
+
+      const data = h.res.jsonValue.data;
+      expect(data).toHaveLength(1);
+      expect(data[0].name).toBe('Mine Garcia');
     });
   });
 
-  it('returns 500 on database error', async () => {
-    mockPrisma.riderAssignment.findMany.mockRejectedValue(new Error('db error'));
-    const { req, res } = mockReqRes();
-    await getRiderAssignments(req, res);
+  describe('getRiderAssignments', () => {
+    it('returns formatted assignments with horse and rider names', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const rider = await createRider(user.id, { firstName: 'Maria', lastName: 'Garcia' });
+      await createAssignment(rider.id, horse.id, user.id);
 
-    expect(res.status).toHaveBeenCalledWith(500);
-  });
-});
+      const h = makeReqRes(user.id);
+      await getRiderAssignments(h.req, h.res);
 
-// ── assignRider ───────────────────────────────────────────────────────────────
-
-describe('assignRider', () => {
-  beforeEach(() => jest.clearAllMocks());
-
-  it('creates assignment and returns 201', async () => {
-    mockPrisma.rider.findFirst.mockResolvedValue({ id: 1, userId: 'user-uuid-1' });
-    mockPrisma.horse.findFirst.mockResolvedValue({ id: 5, userId: 'user-uuid-1' });
-    mockPrisma.riderAssignment.findFirst.mockResolvedValue(null);
-    mockPrisma.riderAssignment.updateMany.mockResolvedValue({});
-    mockPrisma.riderAssignment.create.mockResolvedValue({
-      id: 10,
-      riderId: 1,
-      horseId: 5,
-      userId: 'user-uuid-1',
-      isActive: true,
+      expect(h.res.statusValue).toBe(200);
+      const data = h.res.jsonValue.data;
+      expect(data[0]).toMatchObject({
+        horseName: horse.name,
+        riderName: 'Maria Garcia',
+      });
     });
 
-    const { req, res } = mockReqRes({ body: { riderId: 1, horseId: 5 } });
-    await assignRider(req, res);
+    it('returns empty array when user has no assignments', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id);
+      await getRiderAssignments(h.req, h.res);
 
-    expect(res.status).toHaveBeenCalledWith(201);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ success: true, message: expect.stringContaining('assigned') }),
-    );
-  });
-
-  it('returns 404 when rider does not belong to user', async () => {
-    mockPrisma.rider.findFirst.mockResolvedValue(null);
-    const { req, res } = mockReqRes({ body: { riderId: 99, horseId: 5 } });
-    await assignRider(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false, message: 'Rider not found' }));
-  });
-
-  it('returns 404 when horse does not belong to user', async () => {
-    mockPrisma.rider.findFirst.mockResolvedValue({ id: 1, userId: 'user-uuid-1' });
-    mockPrisma.horse.findFirst.mockResolvedValue(null);
-
-    const { req, res } = mockReqRes({ body: { riderId: 1, horseId: 999 } });
-    await assignRider(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false, message: 'Horse not found' }));
-  });
-
-  it('returns 400 when rider is already assigned to another horse', async () => {
-    mockPrisma.rider.findFirst.mockResolvedValue({ id: 1, userId: 'user-uuid-1' });
-    mockPrisma.horse.findFirst.mockResolvedValue({ id: 5, userId: 'user-uuid-1' });
-    mockPrisma.riderAssignment.findFirst.mockResolvedValue({ id: 99, riderId: 1, isActive: true });
-
-    const { req, res } = mockReqRes({ body: { riderId: 1, horseId: 5 } });
-    await assignRider(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith(
-      expect.objectContaining({ success: false, message: expect.stringContaining('already assigned') }),
-    );
-  });
-
-  it('deactivates any existing rider on the target horse before assigning', async () => {
-    mockPrisma.rider.findFirst.mockResolvedValue({ id: 1, userId: 'user-uuid-1' });
-    mockPrisma.horse.findFirst.mockResolvedValue({ id: 5, userId: 'user-uuid-1' });
-    mockPrisma.riderAssignment.findFirst.mockResolvedValue(null);
-    mockPrisma.riderAssignment.updateMany.mockResolvedValue({ count: 1 });
-    mockPrisma.riderAssignment.create.mockResolvedValue({ id: 10, isActive: true });
-
-    const { req, res } = mockReqRes({ body: { riderId: 1, horseId: 5 } });
-    await assignRider(req, res);
-
-    expect(mockPrisma.riderAssignment.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({ horseId: 5, isActive: true }),
-        data: { isActive: false },
-      }),
-    );
-  });
-});
-
-// ── deleteRiderAssignment ─────────────────────────────────────────────────────
-
-describe('deleteRiderAssignment', () => {
-  beforeEach(() => jest.clearAllMocks());
-
-  it('deactivates assignment and returns success', async () => {
-    mockPrisma.riderAssignment.findFirst.mockResolvedValue({
-      id: 5,
-      userId: 'user-uuid-1',
-      isActive: true,
+      expect(h.res.statusValue).toBe(200);
+      expect(h.res.jsonValue.data).toEqual([]);
     });
-    mockPrisma.riderAssignment.update.mockResolvedValue({});
-
-    const { req, res } = mockReqRes({ params: { id: '5' } });
-    await deleteRiderAssignment(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(mockPrisma.riderAssignment.update).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { isActive: false } }),
-    );
   });
 
-  it('returns 404 when assignment does not exist or belongs to another user', async () => {
-    mockPrisma.riderAssignment.findFirst.mockResolvedValue(null);
-    const { req, res } = mockReqRes({ params: { id: '999' } });
-    await deleteRiderAssignment(req, res);
+  describe('assignRider', () => {
+    it('creates assignment and returns 201', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const rider = await createRider(user.id);
 
-    expect(res.status).toHaveBeenCalledWith(404);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false, message: 'Assignment not found' }));
+      const h = makeReqRes(user.id, { body: { riderId: rider.id, horseId: horse.id } });
+      await assignRider(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(201);
+      expect(h.res.jsonValue.success).toBe(true);
+
+      const created = await prisma.riderAssignment.findFirst({
+        where: { riderId: rider.id, horseId: horse.id, isActive: true },
+      });
+      expect(created).not.toBeNull();
+    });
+
+    it('returns 404 when rider does not belong to user', async () => {
+      const user = await createUser();
+      const otherUser = await createUser();
+      const horse = await createHorse(user.id);
+      const otherRider = await createRider(otherUser.id);
+
+      const h = makeReqRes(user.id, { body: { riderId: otherRider.id, horseId: horse.id } });
+      await assignRider(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(404);
+      expect(h.res.jsonValue).toMatchObject({ success: false, message: 'Rider not found' });
+    });
+
+    it('returns 404 when horse does not belong to user', async () => {
+      const user = await createUser();
+      const otherUser = await createUser();
+      const rider = await createRider(user.id);
+      const otherHorse = await createHorse(otherUser.id);
+
+      const h = makeReqRes(user.id, { body: { riderId: rider.id, horseId: otherHorse.id } });
+      await assignRider(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(404);
+      expect(h.res.jsonValue).toMatchObject({ success: false, message: 'Horse not found' });
+    });
+
+    it('returns 400 when rider is already assigned to another horse', async () => {
+      const user = await createUser();
+      const horse1 = await createHorse(user.id);
+      const horse2 = await createHorse(user.id);
+      const rider = await createRider(user.id);
+      await createAssignment(rider.id, horse1.id, user.id);
+
+      const h = makeReqRes(user.id, { body: { riderId: rider.id, horseId: horse2.id } });
+      await assignRider(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(400);
+      expect(h.res.jsonValue).toMatchObject({
+        success: false,
+        message: expect.stringContaining('already assigned'),
+      });
+    });
+
+    it('deactivates any existing rider on the target horse before assigning new one', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const oldRider = await createRider(user.id, { firstName: 'OldRider' });
+      const newRider = await createRider(user.id, { firstName: 'NewRider' });
+      const oldAssignment = await createAssignment(oldRider.id, horse.id, user.id);
+
+      const h = makeReqRes(user.id, { body: { riderId: newRider.id, horseId: horse.id } });
+      await assignRider(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(201);
+
+      const oldAfter = await prisma.riderAssignment.findUnique({ where: { id: oldAssignment.id } });
+      expect(oldAfter.isActive).toBe(false);
+
+      const newAssignment = await prisma.riderAssignment.findFirst({
+        where: { riderId: newRider.id, horseId: horse.id, isActive: true },
+      });
+      expect(newAssignment).not.toBeNull();
+    });
   });
-});
 
-// ── dismissRider ──────────────────────────────────────────────────────────────
+  describe('deleteRiderAssignment', () => {
+    it('deactivates assignment and returns success', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const rider = await createRider(user.id);
+      const assignment = await createAssignment(rider.id, horse.id, user.id);
 
-describe('dismissRider', () => {
-  beforeEach(() => jest.clearAllMocks());
+      const h = makeReqRes(user.id, { params: { id: String(assignment.id) } });
+      await deleteRiderAssignment(h.req, h.res);
 
-  it('marks rider retired and deactivates all active assignments', async () => {
-    mockPrisma.rider.findFirst.mockResolvedValue({ id: 1, userId: 'user-uuid-1' });
-    mockPrisma.riderAssignment.updateMany.mockResolvedValue({});
-    mockPrisma.rider.update.mockResolvedValue({});
+      expect(h.res.statusValue).toBe(200);
 
-    const { req, res } = mockReqRes({ params: { id: '1' } });
-    await dismissRider(req, res);
+      const after = await prisma.riderAssignment.findUnique({ where: { id: assignment.id } });
+      expect(after.isActive).toBe(false);
+    });
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(mockPrisma.rider.update).toHaveBeenCalledWith(expect.objectContaining({ data: { retired: true } }));
-    expect(mockPrisma.riderAssignment.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({ riderId: 1, isActive: true }),
-        data: { isActive: false },
-      }),
-    );
+    it('returns 404 when assignment does not exist', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id, { params: { id: '999999999' } });
+      await deleteRiderAssignment(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(404);
+      expect(h.res.jsonValue).toMatchObject({ success: false, message: 'Assignment not found' });
+    });
+
+    it('returns 404 when assignment belongs to a different user', async () => {
+      const owner = await createUser();
+      const otherUser = await createUser();
+      const horse = await createHorse(owner.id);
+      const rider = await createRider(owner.id);
+      const assignment = await createAssignment(rider.id, horse.id, owner.id);
+
+      const h = makeReqRes(otherUser.id, { params: { id: String(assignment.id) } });
+      await deleteRiderAssignment(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(404);
+    });
   });
 
-  it('returns 404 when rider does not belong to user', async () => {
-    mockPrisma.rider.findFirst.mockResolvedValue(null);
-    const { req, res } = mockReqRes({ params: { id: '99' } });
-    await dismissRider(req, res);
+  describe('dismissRider', () => {
+    it('marks rider retired and deactivates all active assignments', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const rider = await createRider(user.id);
+      const assignment = await createAssignment(rider.id, horse.id, user.id);
 
-    expect(res.status).toHaveBeenCalledWith(404);
-    expect(mockPrisma.rider.update).not.toHaveBeenCalled();
-    expect(mockPrisma.riderAssignment.updateMany).not.toHaveBeenCalled();
-  });
+      const h = makeReqRes(user.id, { params: { id: String(rider.id) } });
+      await dismissRider(h.req, h.res);
 
-  it('returns 500 on unexpected error', async () => {
-    mockPrisma.rider.findFirst.mockRejectedValue(new Error('db crash'));
-    const { req, res } = mockReqRes({ params: { id: '1' } });
-    await dismissRider(req, res);
+      expect(h.res.statusValue).toBe(200);
 
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+      const riderAfter = await prisma.rider.findUnique({ where: { id: rider.id } });
+      expect(riderAfter.retired).toBe(true);
+      const assignmentAfter = await prisma.riderAssignment.findUnique({ where: { id: assignment.id } });
+      expect(assignmentAfter.isActive).toBe(false);
+    });
+
+    it('returns 404 when rider does not belong to user', async () => {
+      const owner = await createUser();
+      const otherUser = await createUser();
+      const rider = await createRider(owner.id);
+
+      const h = makeReqRes(otherUser.id, { params: { id: String(rider.id) } });
+      await dismissRider(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(404);
+
+      const riderAfter = await prisma.rider.findUnique({ where: { id: rider.id } });
+      expect(riderAfter.retired).toBe(false);
+    });
   });
 });
