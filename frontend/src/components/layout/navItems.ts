@@ -8,7 +8,7 @@
 import {
   Home,
   Building2,
-  Dumbbell,
+  Package,
   Trophy,
   Dna,
   PersonStanding,
@@ -36,7 +36,7 @@ export interface NavItem {
 export const NAV_SECTIONS: NavItem[] = [
   { name: 'Home', href: '/', Icon: Home },
   { name: 'My Stable', href: '/stable', Icon: Building2, shortName: 'Stable' },
-  { name: 'Training', href: '/training', Icon: Dumbbell },
+  { name: 'Inventory', href: '/inventory', Icon: Package },
   { name: 'Competitions', href: '/competitions', Icon: Trophy, shortName: 'Compete' },
   { name: 'Breeding', href: '/breeding', Icon: Dna, shortName: 'Breed' },
   { name: 'Riders', href: '/riders', Icon: PersonStanding },
