@@ -74,7 +74,11 @@ router.post(
 
       // If no horses are valid, return error
       if (validatedHorses.length === 0) {
-        return res.status(403).json({
+        // CWE-639: 404 (not 403) so cross-user enumeration cannot use status
+        // code as a side-channel. Per-horse error messages are already
+        // disclosure-resistant via findOwnedResource above (single message
+        // for not-found + not-owned).
+        return res.status(404).json({
           success: false,
           message: 'No valid horses found - all horses failed ownership validation',
           errors: ownershipErrors,
