@@ -72,20 +72,22 @@ export async function getGroomAssignmentLimits(groom) {
  */
 export async function validateAssignmentEligibility(groomId, horseId, userId) {
   try {
-    // Get groom and horse data
+    // CWE-639: Single-query ownership-scoped fetch. WHERE includes userId so
+    // not-found AND not-owned collapse to null — error message is identical
+    // for both, attacker cannot enumerate IDs by error wording.
     const [groom, horse] = await Promise.all([
-      prisma.groom.findUnique({
-        where: { id: groomId },
+      prisma.groom.findFirst({
+        where: { id: groomId, userId },
         select: {
           id: true,
           name: true,
           skillLevel: true,
           isActive: true,
-          userId: true, // Correct field name for groom ownership
+          userId: true,
         },
       }),
-      prisma.horse.findUnique({
-        where: { id: horseId },
+      prisma.horse.findFirst({
+        where: { id: horseId, userId },
         select: {
           id: true,
           name: true,
@@ -99,19 +101,12 @@ export async function validateAssignmentEligibility(groomId, horseId, userId) {
 
     if (!groom) {
       errors.push('Groom not found');
-    } else {
-      if (groom.userId !== userId) {
-        errors.push('You do not own this groom');
-      }
-      if (!groom.isActive) {
-        errors.push('Groom is not active');
-      }
+    } else if (!groom.isActive) {
+      errors.push('Groom is not active');
     }
 
     if (!horse) {
       errors.push('Horse not found');
-    } else if (horse.userId !== userId) {
-      errors.push('You do not own this horse');
     }
 
     // Check assignment limits
