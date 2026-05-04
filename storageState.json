@@ -1,25 +1,49 @@
 {
   "cookies": [
     {
-      "name": "refreshToken",
-      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MTc5MDM0MC02MTAwLTRlZTEtYWVlZi04YjEwMmNiMjllNjAiLCJ0eXBlIjoicmVmcmVzaCIsImZhbWlseUlkIjoibWp4Mzlrc3VfMjZiNDI1ZTdlMzMyMGFlNWFmYmMyOTc5NTBiMTQ3MzEiLCJqdGkiOiJyZWZyZXNoLTE3NjczNzEzNDQwMTQtODg1OTY0ODY4NDUyMTAwLTFlMjZkYTRjOTI4ZjUxNDJjYTc0NmVmOWY3MWRlNDZjIiwiaWF0IjoxNzY3MzcxMzQ0LCJleHAiOjE3Njc5NzYxNDR9.W4Pt4q5LNjG6pRJeqDaPSDKAf9Yh4TrYAOjNWviyEkI",
+      "name": "_csrf",
+      "value": "9ac940a6fa4c7a260cf02a63c359050341d82e916002d63bb8ea2476206b61a5.8e8f32636b4b7046e40abcbd3e566bd5ac4713500a2f96248c12c682f4abd2b4c39eba7aa5e28d793d5b7e104324d8b7bf4c3b09e2924b882c4dc37693dbe16f",
       "domain": "localhost",
-      "path": "/auth/refresh-token",
-      "expires": 1767976144.043603,
-      "httpOnly": true,
+      "path": "/",
+      "expires": 1777987079.963417,
+      "httpOnly": false,
       "secure": false,
-      "sameSite": "Strict"
+      "sameSite": "Lax"
     },
     {
       "name": "accessToken",
-      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2MTc5MDM0MC02MTAwLTRlZTEtYWVlZi04YjEwMmNiMjllNjAiLCJ0eXBlIjoiYWNjZXNzIiwianRpIjoiYWNjZXNzLTE3NjczNzEzNDQwMTQtODg1OTY0ODY4NDUyMTAwLTFlMjZkYTRjOTI4ZjUxNDJjYTc0NmVmOWY3MWRlNDZjIiwiaWF0IjoxNzY3MzcxMzQ0LCJleHAiOjE3NjczNzIyNDR9.DAJ39U-b-ZGPqcDAxx7jav-ZLkFadkLJHxxTKL7wsBU",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI5MGY4OTBlNy1kMzc5LTRjMzEtOTEwMy1jZTk0NmZhMmY2MzQiLCJ0eXBlIjoiYWNjZXNzIiwianRpIjoiYWNjZXNzLTE3Nzc5MDA2Nzk5MzQtMjUyMzEwNTAwNDA4MjAwLTk0MTZiZjg1MTg3ZmIzZDZlZDQ5MThiMmNhMjk0MWNhIiwiaWF0IjoxNzc3OTAwNjc5LCJleHAiOjE3Nzc5MDE1Nzl9.9CC51q3CBTypsGf2ggRwLthxL8vf8tTH05fFwhsLlfc",
       "domain": "localhost",
       "path": "/",
-      "expires": 1767372244.042587,
+      "expires": 1777901579.963235,
       "httpOnly": true,
       "secure": false,
-      "sameSite": "Strict"
+      "sameSite": "Lax"
+    },
+    {
+      "name": "refreshToken",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI5MGY4OTBlNy1kMzc5LTRjMzEtOTEwMy1jZTk0NmZhMmY2MzQiLCJ0eXBlIjoicmVmcmVzaCIsImZhbWlseUlkIjoibW9yODVzZTZfM2I4ZTUwMTRkOWJhZjExMGU2ZDQxNjQ4ZjkwZjA3ZDEiLCJqdGkiOiJyZWZyZXNoLTE3Nzc5MDA2Nzk5MzQtMjUyMzEwNTAwNDA4MjAwLTk0MTZiZjg1MTg3ZmIzZDZlZDQ5MThiMmNhMjk0MWNhIiwiaWF0IjoxNzc3OTAwNjc5LCJleHAiOjE3Nzg1MDU0Nzl9.HDWJnYgOXXu1XHJHrrGxZHZueubQMgydDvodYEVcGGQ",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1778505479.963364,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
     }
   ],
-  "origins": []
+  "origins": [
+    {
+      "origin": "http://localhost:3000",
+      "localStorage": [
+        {
+          "name": "equoria-last-visit",
+          "value": "2026-05-04T13:18:00.694Z"
+        },
+        {
+          "name": "equoria-theme-welcome-shown",
+          "value": "true"
+        }
+      ]
+    }
+  ]
 }

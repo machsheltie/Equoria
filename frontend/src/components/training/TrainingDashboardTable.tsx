@@ -13,7 +13,7 @@ import DashboardHorseCard, { DashboardHorse } from './DashboardHorseCard';
 
 export interface TrainingDashboardTableProps {
   horses: DashboardHorse[];
-  onTrain: (horseId: number) => void;
+  onTrain: (_horseId: number) => void;
   className?: string;
 }
 

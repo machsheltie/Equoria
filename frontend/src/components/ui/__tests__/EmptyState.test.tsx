@@ -7,15 +7,17 @@
 import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 
-// Mock lucide-react to avoid missing icon issues
+// Mock lucide-react to avoid missing icon issues. EmptyState.tsx imports
+// Footprints, Trophy, MessageSquare, SearchX — keep this list in sync with
+// that import or the suite fails at module-load.
 vi.mock('lucide-react', () => ({
-  Horse: (props: any) => <svg data-testid="icon-horse" {...props} />,
+  Footprints: (props: any) => <svg data-testid="icon-footprints" {...props} />,
   Trophy: (props: any) => <svg data-testid="icon-trophy" {...props} />,
   MessageSquare: (props: any) => <svg data-testid="icon-message" {...props} />,
   SearchX: (props: any) => <svg data-testid="icon-search" {...props} />,
 }));
 
-import { EmptyState, type EmptyVariant } from '../EmptyState';
+import { EmptyState } from '../EmptyState';
 
 describe('EmptyState', () => {
   describe('Variant defaults', () => {

@@ -18,7 +18,7 @@ const breedingPredictionKeys = {
  * Fetch breeding data for a single horse
  */
 export const useHorseBreedingData = (horseId: number) =>
-  useQuery<any, ApiError>({
+  useQuery<unknown, ApiError>({
     queryKey: breedingPredictionKeys.horseBreedingData(horseId),
     queryFn: () => horsesApi.getBreedingData(horseId),
     enabled: Boolean(horseId),
@@ -29,7 +29,7 @@ export const useHorseBreedingData = (horseId: number) =>
  * Calculate inbreeding analysis for a breeding pair
  */
 export const useInbreedingAnalysis = (stallionId: number, mareId: number) =>
-  useQuery<any, ApiError>({
+  useQuery<unknown, ApiError>({
     queryKey: breedingPredictionKeys.inbreeding(stallionId, mareId),
     queryFn: () => breedingPredictionApi.getInbreedingAnalysis({ stallionId, mareId }),
     enabled: Boolean(stallionId && mareId),
@@ -40,7 +40,7 @@ export const useInbreedingAnalysis = (stallionId: number, mareId: number) =>
  * Get lineage analysis for a breeding pair
  */
 export const useLineageAnalysis = (stallionId: number, mareId: number) =>
-  useQuery<any, ApiError>({
+  useQuery<unknown, ApiError>({
     queryKey: breedingPredictionKeys.lineage(stallionId, mareId),
     queryFn: () => breedingPredictionApi.getLineageAnalysis(stallionId, mareId),
     enabled: Boolean(stallionId && mareId),
@@ -51,7 +51,7 @@ export const useLineageAnalysis = (stallionId: number, mareId: number) =>
  * Calculate genetic probability for offspring
  */
 export const useGeneticProbability = (stallionId: number, mareId: number) =>
-  useQuery<any, ApiError>({
+  useQuery<unknown, ApiError>({
     queryKey: breedingPredictionKeys.genetic(stallionId, mareId),
     queryFn: () => breedingPredictionApi.getGeneticProbability({ stallionId, mareId }),
     enabled: Boolean(stallionId && mareId),
@@ -62,7 +62,7 @@ export const useGeneticProbability = (stallionId: number, mareId: number) =>
  * Get breeding compatibility score
  */
 export const useBreedingCompatibility = (stallionId: number, mareId: number) =>
-  useQuery<any, ApiError>({
+  useQuery<unknown, ApiError>({
     queryKey: breedingPredictionKeys.compatibility(stallionId, mareId),
     queryFn: () => breedingPredictionApi.getBreedingCompatibility({ stallionId, mareId }),
     enabled: Boolean(stallionId && mareId),

@@ -19,8 +19,6 @@ import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, MockAuthProvider } from '../../test/utils';
 import { vi } from 'vitest';
-import { http, HttpResponse } from 'msw';
-import { server } from '../../test/msw/server';
 import HorseDetailPage from '../HorseDetailPage';
 
 // Mock horse data for testing (NO MOCKING - real data structures)

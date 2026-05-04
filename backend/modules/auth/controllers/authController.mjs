@@ -17,6 +17,7 @@ import {
 import emailService from '../../../utils/emailService.mjs';
 import { COOKIE_OPTIONS, CLEAR_COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
 import { issueCsrfToken } from '../../../middleware/csrf.mjs';
+import { evictPasswordChangedAtCache } from '../../../middleware/auth.mjs';
 
 // Starter kit seeded for every new user at registration (Story 15-2)
 const STARTER_KIT_INVENTORY = [
@@ -669,6 +670,11 @@ export const changePassword = async (req, res, next) => {
       data: { password: hashedPassword, passwordChangedAt: new Date() },
     });
 
+    // Equoria-2bbf: evict the per-user passwordChangedAt cache so the next
+    // authenticated request reads the fresh DB value immediately rather than
+    // waiting up to ~30s for TTL expiry.
+    evictPasswordChangedAtCache(req.user.id);
+
     // ✅ CWE-613 MITIGATION: Invalidate ALL refresh tokens across all devices
     // (access tokens are invalidated separately via the passwordChangedAt
     // check in authenticateToken). Forces re-login everywhere after rotation.
@@ -828,6 +834,10 @@ export const resetPassword = async (req, res, next) => {
         where: { userId: resetToken.userId },
       });
     });
+
+    // Equoria-2bbf: evict the per-user passwordChangedAt cache so the next
+    // authenticated request reads the fresh DB value immediately.
+    evictPasswordChangedAtCache(resetToken.userId);
 
     res.clearCookie('accessToken', CLEAR_COOKIE_OPTIONS.accessToken);
     res.clearCookie('refreshToken', CLEAR_COOKIE_OPTIONS.refreshToken);

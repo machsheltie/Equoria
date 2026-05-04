@@ -11,7 +11,7 @@
  */
 
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 
 // Mock React Query for testing
@@ -25,7 +25,7 @@ const mockQueryClient = {
 const QueryClientProvider = ({ children }) => children;
 
 // Mock the enhanced reporting interface component for testing structure
-const EnhancedReportingInterface = ({ userId, selectedHorses, reportType, className }) => {
+const EnhancedReportingInterface = ({ userId, _selectedHorses, _reportType, className }) => {
   const [reportConfig, setReportConfig] = React.useState({
     title: 'Epigenetic Analysis Report',
     sections: ['overview', 'traits', 'performance'],
@@ -443,7 +443,7 @@ describe('EnhancedReportingInterface', () => {
     test('disables generate button when no sections selected', () => {
       // Create a custom component with no sections selected
       const TestComponent = () => {
-        const [reportConfig, setReportConfig] = React.useState({
+        const [reportConfig, _setReportConfig] = React.useState({
           title: 'Epigenetic Analysis Report',
           sections: [], // Start with no sections
           dateRange: 'last_30_days',

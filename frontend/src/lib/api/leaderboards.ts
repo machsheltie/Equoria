@@ -53,7 +53,7 @@ export interface UserRankSummaryResponse {
 export class LeaderboardApiError extends Error {
   constructor(
     message: string,
-    public status?: number,
+    public _status?: number,
     public _code?: string
   ) {
     super(message);

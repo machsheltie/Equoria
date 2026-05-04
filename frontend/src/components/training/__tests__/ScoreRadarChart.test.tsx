@@ -91,10 +91,10 @@ vi.mock('recharts', () => ({
 
 // Helper to get stored props
 const getRadarChartProps = () => lastRadarChartProps;
-const getRadarProps = () => lastRadarProps;
+const _getRadarProps = () => lastRadarProps;
 const getTooltipProps = () => lastTooltipProps;
-const getLegendProps = () => lastLegendProps;
-const getResponsiveContainerProps = () => lastResponsiveContainerProps;
+const _getLegendProps = () => lastLegendProps;
+const _getResponsiveContainerProps = () => lastResponsiveContainerProps;
 
 // Reset mocks between tests
 beforeEach(() => {

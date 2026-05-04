@@ -13,7 +13,7 @@
  * Only external dependencies (API, Router) are mocked
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from '../../test/utils';
@@ -278,7 +278,7 @@ describe('ForgotPasswordPage', () => {
     test('shows loading state while submitting', async () => {
       const user = userEvent.setup();
       // Create a promise that won't resolve immediately
-      let resolvePromise: (value: { message: string }) => void;
+      let resolvePromise: (_value: { message: string }) => void;
       const pendingPromise = new Promise<{ message: string }>((resolve) => {
         resolvePromise = resolve;
       });
@@ -306,7 +306,7 @@ describe('ForgotPasswordPage', () => {
 
     test('disables submit button while loading', async () => {
       const user = userEvent.setup();
-      let resolvePromise: (value: { message: string }) => void;
+      let resolvePromise: (_value: { message: string }) => void;
       const pendingPromise = new Promise<{ message: string }>((resolve) => {
         resolvePromise = resolve;
       });

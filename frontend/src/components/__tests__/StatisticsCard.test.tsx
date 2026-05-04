@@ -14,7 +14,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import StatisticsCard from '../StatisticsCard';
-import { StatisticType, TrendDirection } from '../../lib/statistics-utils';
+import { StatisticType } from '../../lib/statistics-utils';
 
 describe('StatisticsCard', () => {
   describe('Value Display (AC-1)', () => {

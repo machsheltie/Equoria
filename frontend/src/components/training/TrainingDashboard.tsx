@@ -80,7 +80,7 @@ function getEligibilityCategory(horse: TrainableHorse): 'ready' | 'cooldown' | '
  */
 interface HorseCardProps {
   horse: TrainableHorse;
-  onTrainClick: (horse: TrainableHorse) => void;
+  onTrainClick: (_horse: TrainableHorse) => void;
 }
 
 const HorseCard = ({ horse, onTrainClick }: HorseCardProps): JSX.Element => {

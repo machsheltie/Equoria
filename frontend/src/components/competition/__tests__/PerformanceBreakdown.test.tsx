@@ -13,8 +13,8 @@
  */
 
 import React from 'react';
-import { render, screen, within } from '@testing-library/react';
-import { vi, describe, it, expect, beforeEach } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { vi, describe, it, expect } from 'vitest';
 import PerformanceBreakdown, {
   type PerformanceBreakdownProps,
   type ScoreBreakdown,
@@ -107,7 +107,7 @@ const thirdPlaceProps: PerformanceBreakdownProps = {
 };
 
 // Lower rank props (8th place)
-const lowerRankProps: PerformanceBreakdownProps = {
+const _lowerRankProps: PerformanceBreakdownProps = {
   ...defaultProps,
   rank: 8,
   finalScore: 92.3,

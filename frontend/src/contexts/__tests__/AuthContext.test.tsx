@@ -11,11 +11,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode } from 'react';
-import { AuthProvider, useAuth, AuthContext } from '../AuthContext';
+import { AuthProvider, useAuth } from '../AuthContext';
 import * as apiClient from '../../lib/api-client';
 
 // Mock the API client
@@ -158,7 +158,7 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
 
     it('should show loading state while checking session', async () => {
       // Create a promise that we control
-      let resolveProfile: (value: any) => void;
+      let resolveProfile: (_value: any) => void;
       const profilePromise = new Promise((resolve) => {
         resolveProfile = resolve;
       });
@@ -303,7 +303,7 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
         },
       };
 
-      let resolveLogout: (value: any) => void;
+      let resolveLogout: (_value: any) => void;
       const logoutPromise = new Promise((resolve) => {
         resolveLogout = resolve;
       });

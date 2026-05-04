@@ -1,9 +1,6 @@
 {
   "permissions": {
-    "allow": [
-      "Bash(mv:*)",
-      "Bash(ls:*)"
-    ],
+    "allow": ["Bash(mv:*)", "Bash(ls:*)"],
     "deny": [],
     "ask": []
   }

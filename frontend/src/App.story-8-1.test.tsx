@@ -42,6 +42,9 @@ vi.mock('@/components/layout/PageBackground', () => ({
 vi.mock('@/components/ui/sonner', () => ({ Toaster: () => null }));
 vi.mock('@/components/ui/tooltip', () => ({
   TooltipProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  TooltipTrigger: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+  TooltipContent: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 // Mock AuthContext
@@ -89,45 +92,49 @@ describe('App Route Protection (Story 8.1)', () => {
     vi.clearAllMocks();
   });
 
+  // Route components are React.lazy in App.tsx (login/register/forgot/stable/
+  // profile/horse-detail/etc.). After render() the Suspense fallback shows
+  // first; the lazy import resolves on a microtask. findByTestId polls until
+  // the resolved component appears, so we use it instead of getByTestId.
   describe('Public routes — accessible without auth', () => {
-    it('renders login page at /login without auth', () => {
+    it('renders login page at /login without auth', async () => {
       mockUseAuth.mockReturnValue(makeAuthState());
       renderApp('/login');
-      expect(screen.getByTestId('login-page')).toBeInTheDocument();
+      expect(await screen.findByTestId('login-page')).toBeInTheDocument();
     });
 
-    it('renders register page at /register without auth', () => {
+    it('renders register page at /register without auth', async () => {
       mockUseAuth.mockReturnValue(makeAuthState());
       renderApp('/register');
-      expect(screen.getByTestId('register-page')).toBeInTheDocument();
+      expect(await screen.findByTestId('register-page')).toBeInTheDocument();
     });
 
-    it('renders forgot password page at /forgot-password without auth', () => {
+    it('renders forgot password page at /forgot-password without auth', async () => {
       mockUseAuth.mockReturnValue(makeAuthState());
       renderApp('/forgot-password');
-      expect(screen.getByTestId('forgot-password-page')).toBeInTheDocument();
+      expect(await screen.findByTestId('forgot-password-page')).toBeInTheDocument();
     });
   });
 
   describe('Protected routes — redirect unauthenticated users', () => {
-    it('redirects unauthenticated user from /stable to /login', () => {
+    it('redirects unauthenticated user from /stable to /login', async () => {
       mockUseAuth.mockReturnValue(makeAuthState({ isAuthenticated: false }));
       renderApp('/stable');
-      expect(screen.getByTestId('login-page')).toBeInTheDocument();
+      expect(await screen.findByTestId('login-page')).toBeInTheDocument();
       expect(screen.queryByTestId('stable-view')).not.toBeInTheDocument();
     });
 
-    it('redirects unauthenticated user from /profile to /login', () => {
+    it('redirects unauthenticated user from /profile to /login', async () => {
       mockUseAuth.mockReturnValue(makeAuthState({ isAuthenticated: false }));
       renderApp('/profile');
-      expect(screen.getByTestId('login-page')).toBeInTheDocument();
+      expect(await screen.findByTestId('login-page')).toBeInTheDocument();
       expect(screen.queryByTestId('profile-page')).not.toBeInTheDocument();
     });
 
-    it('redirects unauthenticated user from /horses/1 to /login', () => {
+    it('redirects unauthenticated user from /horses/1 to /login', async () => {
       mockUseAuth.mockReturnValue(makeAuthState({ isAuthenticated: false }));
       renderApp('/horses/1');
-      expect(screen.getByTestId('login-page')).toBeInTheDocument();
+      expect(await screen.findByTestId('login-page')).toBeInTheDocument();
       expect(screen.queryByTestId('horse-detail-page')).not.toBeInTheDocument();
     });
   });
@@ -139,22 +146,22 @@ describe('App Route Protection (Story 8.1)', () => {
       isEmailVerified: true,
     };
 
-    it('renders /stable for authenticated users', () => {
+    it('renders /stable for authenticated users', async () => {
       mockUseAuth.mockReturnValue(makeAuthState(authenticatedState));
       renderApp('/stable');
-      expect(screen.getByTestId('stable-view')).toBeInTheDocument();
+      expect(await screen.findByTestId('stable-view')).toBeInTheDocument();
     });
 
-    it('renders /profile for authenticated users', () => {
+    it('renders /profile for authenticated users', async () => {
       mockUseAuth.mockReturnValue(makeAuthState(authenticatedState));
       renderApp('/profile');
-      expect(screen.getByTestId('profile-page')).toBeInTheDocument();
+      expect(await screen.findByTestId('profile-page')).toBeInTheDocument();
     });
 
-    it('renders /horses/:id for authenticated users', () => {
+    it('renders /horses/:id for authenticated users', async () => {
       mockUseAuth.mockReturnValue(makeAuthState(authenticatedState));
       renderApp('/horses/42');
-      expect(screen.getByTestId('horse-detail-page')).toBeInTheDocument();
+      expect(await screen.findByTestId('horse-detail-page')).toBeInTheDocument();
     });
   });
 

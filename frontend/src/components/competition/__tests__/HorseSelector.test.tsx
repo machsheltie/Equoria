@@ -519,7 +519,7 @@ describe('HorseSelector', () => {
     });
 
     it('announces selection changes to screen readers', async () => {
-      const user = userEvent.setup();
+      const _user = userEvent.setup();
       render(<HorseSelector {...defaultProps} />);
 
       await waitFor(() => {

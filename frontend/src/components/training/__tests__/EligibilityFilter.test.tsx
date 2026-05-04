@@ -87,7 +87,7 @@ describe('EligibilityFilter', () => {
   };
 
   // Too old horse (over 20) - Note: canTrain only checks age < 3, but we test the component behavior
-  const mockTooOldHorse: Horse = {
+  const _mockTooOldHorse: Horse = {
     id: 7,
     name: 'Elder',
     age: 21,
@@ -105,7 +105,7 @@ describe('EligibilityFilter', () => {
   };
 
   // Boundary age horse (exactly 20)
-  const mockMaxAgeHorse: Horse = {
+  const _mockMaxAgeHorse: Horse = {
     id: 9,
     name: 'Senior',
     age: 20,

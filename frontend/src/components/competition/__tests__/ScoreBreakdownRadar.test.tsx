@@ -36,7 +36,7 @@ vi.mock('recharts', () => ({
     radarComponents.push({ name, dataKey });
     return <g data-testid={`radar-${name}`} data-name={name} data-datakey={dataKey} />;
   },
-  Tooltip: ({ content }: any) => <g data-testid="tooltip" />,
+  Tooltip: ({ _content }: any) => <g data-testid="tooltip" />,
   Legend: () => {
     legendRendered = true;
     return <g data-testid="legend" />;

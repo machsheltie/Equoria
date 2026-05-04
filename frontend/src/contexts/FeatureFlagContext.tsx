@@ -17,9 +17,9 @@ interface FeatureFlagContextValue {
   /** Map of flag names to their values */
   flags: Record<string, boolean | string>;
   /** Check if a specific flag is enabled */
-  isEnabled: (flagName: string, defaultValue?: boolean) => boolean;
+  isEnabled: (_flagName: string, _defaultValue?: boolean) => boolean;
   /** Get a flag's string value */
-  getVariant: (flagName: string, defaultValue?: string) => string;
+  getVariant: (_flagName: string, _defaultValue?: string) => string;
   /** Whether flags are still loading */
   isLoading: boolean;
   /** Whether there was an error loading flags */

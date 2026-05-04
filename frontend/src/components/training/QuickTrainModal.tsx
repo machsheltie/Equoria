@@ -14,7 +14,7 @@ export interface QuickTrainModalProps {
   isOpen: boolean;
   horses: DashboardHorse[];
   onClose: () => void;
-  onTrain: (horseIds: number[]) => void;
+  onTrain: (_horseIds: number[]) => void;
 }
 
 const QuickTrainModal = ({ isOpen, horses, onClose, onTrain }: QuickTrainModalProps) => {

@@ -118,7 +118,7 @@ const FeedShopPage: React.FC = () => {
                         setPacksByTier((p) => ({ ...p, [tier.id]: Math.max(1, packs - 1) }))
                       }
                       disabled={packs <= 1}
-                      className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 text-white/70 hover:bg-white/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                      className="w-8 h-8 rounded-lg bg-gradient-to-r from-[var(--gold-primary)] to-[var(--gold-light)] text-[var(--bg-deep-space)] font-bold shadow-[0_2px_10px_rgba(201,162,39,0.35)] hover:brightness-110 hover:shadow-[0_3px_14px_rgba(201,162,39,0.5)] active:scale-[0.95] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                       aria-label={`Decrease packs of ${tier.name}`}
                       data-testid={`pack-decrement-${tier.id}`}
                     >
@@ -133,7 +133,7 @@ const FeedShopPage: React.FC = () => {
                     <button
                       type="button"
                       onClick={() => setPacksByTier((p) => ({ ...p, [tier.id]: packs + 1 }))}
-                      className="w-7 h-7 rounded-lg bg-white/5 border border-white/10 text-white/70 hover:bg-white/10"
+                      className="w-8 h-8 rounded-lg bg-gradient-to-r from-[var(--gold-primary)] to-[var(--gold-light)] text-[var(--bg-deep-space)] font-bold shadow-[0_2px_10px_rgba(201,162,39,0.35)] hover:brightness-110 hover:shadow-[0_3px_14px_rgba(201,162,39,0.5)] active:scale-[0.95] transition-all"
                       aria-label={`Increase packs of ${tier.name}`}
                       data-testid={`pack-increment-${tier.id}`}
                     >
@@ -147,7 +147,7 @@ const FeedShopPage: React.FC = () => {
                     type="button"
                     onClick={() => handlePurchase(tier)}
                     disabled={purchase.isPending}
-                    className="w-full py-2 rounded-lg bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)] hover:bg-[var(--status-success)]/20 disabled:opacity-40 disabled:cursor-not-allowed text-sm font-medium"
+                    className="btn-cobalt w-full rounded-lg bg-gradient-to-r from-[var(--gold-primary)] to-[var(--gold-light)] text-[var(--bg-deep-space)] font-semibold tracking-wide font-[var(--font-heading)] px-6 py-3 text-sm uppercase shadow-[0_4px_20px_rgba(201,162,39,0.4)] hover:brightness-110 hover:shadow-[0_6px_28px_rgba(201,162,39,0.55)] active:scale-[0.98] transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                     data-testid={`buy-${tier.id}`}
                     data-onboarding-target={
                       tier.id === 'basic' ? 'feed-shop-purchase-button' : undefined

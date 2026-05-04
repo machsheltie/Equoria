@@ -17,7 +17,7 @@ describe('TrainingResultsDisplay', () => {
     message: 'Excellent training session!',
   };
 
-  const mockFailureResult: TrainingResult = {
+  const _mockFailureResult: TrainingResult = {
     updatedScore: 45,
     nextEligibleDate: '2025-12-10T10:00:00Z',
     discipline: 'Show Jumping',

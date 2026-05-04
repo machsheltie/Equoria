@@ -43,7 +43,7 @@ export interface EligibilityFilterProps {
   /**
    * Callback when filter changes
    */
-  onFilterChange: (filter: EligibilityFilterType) => void;
+  onFilterChange: (_filter: EligibilityFilterType) => void;
 
   /**
    * Whether to show count badges on buttons

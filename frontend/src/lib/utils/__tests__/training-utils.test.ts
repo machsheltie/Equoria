@@ -7,7 +7,7 @@
  * Story 4-1: Training Session Interface - Task 1
  */
 
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { describe, test, expect, beforeEach } from 'vitest';
 import {
   DISCIPLINES,
   getDisciplinesByCategory,
@@ -25,7 +25,7 @@ import {
   groupModifiersByCategory,
   getTraitModifiersForDiscipline,
   type Horse,
-  type Discipline,
+  type _Discipline,
   type TraitModifier,
 } from '../training-utils';
 

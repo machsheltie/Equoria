@@ -24,7 +24,7 @@ const mockQueryClient = {
 };
 
 const QueryClientProvider = ({ children }) => children;
-const useQuery = (options) => ({
+const _useQuery = (_options) => ({
   data: null,
   isLoading: false,
   error: null,
@@ -37,7 +37,7 @@ const renderWithQueryClient = (component) => {
 };
 
 // Mock data for testing
-const mockHorseData = {
+const _mockHorseData = {
   id: 1,
   name: 'Thunder',
   age: 2.5,

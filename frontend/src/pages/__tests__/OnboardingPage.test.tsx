@@ -20,8 +20,14 @@ import { ReactNode } from 'react';
 import { TestRouter } from '@/test/utils';
 
 // ── Mock API client ────────────────────────────────────────────────────────────
+// vi.hoisted runs before vi.mock factories (which are hoisted to top of file),
+// so referencing mockAdvanceOnboarding inside the factory is safe. Plain
+// `const` at module top-level is NOT — Vitest hoists vi.mock above it,
+// triggering "Cannot access 'mockAdvanceOnboarding' before initialization".
 
-const mockAdvanceOnboarding = vi.fn();
+const { mockAdvanceOnboarding } = vi.hoisted(() => ({
+  mockAdvanceOnboarding: vi.fn(),
+}));
 
 vi.mock('@/lib/api-client', () => ({
   authApi: {

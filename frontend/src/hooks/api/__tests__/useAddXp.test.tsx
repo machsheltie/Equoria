@@ -306,7 +306,7 @@ describe('useAddXp', () => {
 
   // Test 8: isPending state during mutation
   it('should return isPending state during mutation execution', async () => {
-    let resolvePromise: (value: AddXpResult) => void;
+    let resolvePromise: (_value: AddXpResult) => void;
     const pendingPromise = new Promise<AddXpResult>((resolve) => {
       resolvePromise = resolve;
     });

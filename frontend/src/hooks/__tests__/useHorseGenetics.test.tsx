@@ -34,7 +34,7 @@ vi.mock('../../lib/api-client', () => ({
 
 describe('Horse Genetics Hooks', () => {
   let queryClient: QueryClient;
-  let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
+  let wrapper: ({ _children }: { children: ReactNode }) => JSX.Element;
 
   beforeEach(() => {
     // Create fresh query client for each test

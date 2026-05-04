@@ -13,8 +13,8 @@ export type StatusFilter = 'all' | 'ready' | 'cooldown' | 'ineligible';
 export interface DashboardFiltersProps {
   statusFilter: StatusFilter;
   searchQuery: string;
-  onStatusFilterChange: (filter: StatusFilter) => void;
-  onSearchChange: (query: string) => void;
+  onStatusFilterChange: (_filter: StatusFilter) => void;
+  onSearchChange: (_query: string) => void;
   className?: string;
 }
 

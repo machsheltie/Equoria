@@ -13,14 +13,16 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import ScoreBreakdownChart, {
   type ScoreBreakdownChartProps,
   type ScoreBreakdown,
 } from '../ScoreBreakdownChart';
 
-// Store last rendered props for assertions
+// Store last rendered props for assertions. These must be `let` because the
+// Recharts mock factories below reassign them on every render. A previous
+// lint sweep added `_` prefixes thinking they were unused — they're not.
 let lastBarChartProps: any = null;
 let lastBarProps: any[] = [];
 let lastTooltipProps: any = null;
@@ -86,7 +88,7 @@ vi.mock('recharts', () => ({
     lastLegendProps = { wrapperStyle, ...props };
     return <g data-testid="legend" {...props} />;
   },
-  LabelList: ({ dataKey, position, ...props }: any) => (
+  LabelList: ({ dataKey, position, ..._props }: any) => (
     <g data-testid="label-list" data-datakey={dataKey} data-position={position} />
   ),
   CartesianGrid: (props: any) => <g data-testid="cartesian-grid" {...props} />,
@@ -298,7 +300,7 @@ describe('ScoreBreakdownChart', () => {
       const baseScoreData = chartData?.find((d: any) => d.name?.toLowerCase().includes('base'));
 
       if (baseScoreData) {
-        const expectedPercentage = (sampleBreakdown.baseScore.total / total) * 100;
+        const _expectedPercentage = (sampleBreakdown.baseScore.total / total) * 100;
         // The percentage should be calculable from the data
         expect(baseScoreData.value).toBeCloseTo(sampleBreakdown.baseScore.total, 1);
       }

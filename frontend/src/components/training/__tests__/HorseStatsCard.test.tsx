@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import { vi, describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import HorseStatsCard from '../HorseStatsCard';
 import type { TrainableHorse } from '@/lib/api-client';
 

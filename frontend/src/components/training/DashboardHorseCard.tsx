@@ -21,7 +21,7 @@ export interface DashboardHorse {
 
 export interface DashboardHorseCardProps {
   horse: DashboardHorse;
-  onTrain: (horseId: number) => void;
+  onTrain: (_horseId: number) => void;
   className?: string;
 }
 

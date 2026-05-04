@@ -46,7 +46,7 @@ import { useRoleGuard, UserRole, RoleRedirectState } from '../../hooks/useRoleGu
 /**
  * Children can be either ReactNode or a render function that receives user role
  */
-type RoleProtectedChildren = ReactNode | ((userRole: UserRole) => ReactNode);
+type RoleProtectedChildren = ReactNode | ((_userRole: UserRole) => ReactNode);
 
 /**
  * Props for RoleProtectedRoute component
@@ -134,7 +134,7 @@ export const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({
   accessDeniedMessage = 'You do not have permission to access this page.',
   loadingComponent,
 }) => {
-  const location = useLocation();
+  const _location = useLocation();
 
   // Use the role guard hook to determine access
   const { isLoading, shouldRedirect, hasRequiredRole, redirectPath, redirectState, userRole } =

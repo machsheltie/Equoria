@@ -27,7 +27,7 @@ export interface DisciplinePickerProps {
   /**
    * Callback when discipline is selected
    */
-  onSelectDiscipline: (disciplineId: string) => void;
+  onSelectDiscipline: (_disciplineId: string) => void;
 
   /**
    * Disabled disciplines (e.g., on cooldown)
@@ -49,7 +49,7 @@ interface DisciplineCategoryProps {
   title: 'Western' | 'English' | 'Specialized' | 'Racing';
   selectedDiscipline: string | null;
   disciplineScores: { [disciplineId: string]: number };
-  onSelectDiscipline: (disciplineId: string) => void;
+  onSelectDiscipline: (_disciplineId: string) => void;
   disabledDisciplines: string[];
   isLoading: boolean;
 }

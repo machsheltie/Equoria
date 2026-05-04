@@ -10,6 +10,53 @@ import prisma from '../db/index.mjs';
 const suspiciousActivityCache = new Map();
 
 /**
+ * In-memory TTL cache for User.passwordChangedAt — Equoria-2bbf.
+ * Removes the per-request DB lookup the CWE-613 check (Equoria-39r5) would
+ * otherwise perform on every authenticated route.
+ *
+ * Entry shape: { value: Date | null, expiresAt: number }
+ *   value === null → user has never rotated; no constraint.
+ *   value === Date → reject tokens with iat < floor(value/1000) seconds.
+ *
+ * Eviction:
+ * - On every successful changePassword / resetPassword (explicit eviction
+ *   so the next request reads the fresh DB value immediately).
+ * - On TTL expiry (~30s) for resilience against missed evictions.
+ */
+const PASSWORD_CHANGED_AT_CACHE_TTL_MS = 30_000;
+const passwordChangedAtCache = new Map();
+
+const getCachedPasswordChangedAt = userId => {
+  const entry = passwordChangedAtCache.get(userId);
+  if (!entry) {
+    return undefined;
+  } // miss
+  if (entry.expiresAt <= Date.now()) {
+    passwordChangedAtCache.delete(userId); // lazy expiry
+    return undefined; // miss
+  }
+  return entry.value; // hit (Date or null)
+};
+
+const setCachedPasswordChangedAt = (userId, value) => {
+  passwordChangedAtCache.set(userId, {
+    value,
+    expiresAt: Date.now() + PASSWORD_CHANGED_AT_CACHE_TTL_MS,
+  });
+};
+
+/**
+ * Evict a user's passwordChangedAt cache entry.
+ * MUST be called by changePassword / resetPassword after a successful DB
+ * update so the next authenticated request reads the freshly-stamped value.
+ */
+export const evictPasswordChangedAtCache = userId => {
+  if (typeof userId === 'string' && userId.length > 0) {
+    passwordChangedAtCache.delete(userId);
+  }
+};
+
+/**
  * JWT Authentication Middleware
  * Verifies JWT tokens and adds user information to request object.
  * CWE-613 mitigation: rejects tokens whose `iat` predates the user's
@@ -135,29 +182,35 @@ export const authenticateToken = async (req, res, next) => {
     // (forged or unit-test mock tokens). Downstream handlers will reject any
     // malformed id when they try their own DB lookups.
     if (decoded.iat && typeof user.id === 'string' && user.id.length > 0) {
-      try {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: user.id },
-          select: { passwordChangedAt: true },
-        });
-        if (
-          dbUser &&
-          dbUser.passwordChangedAt &&
-          decoded.iat < Math.floor(dbUser.passwordChangedAt.getTime() / 1000)
-        ) {
-          logger.warn(
-            `[auth:${requestId}] Token rejected: iat predates passwordChangedAt for user ${user.id}`,
+      // Equoria-2bbf: read cache first; fall back to DB on miss/expiry.
+      // Eviction is performed by changePassword/resetPassword on rotation.
+      let passwordChangedAt = getCachedPasswordChangedAt(user.id);
+      if (passwordChangedAt === undefined) {
+        try {
+          const dbUser = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: { passwordChangedAt: true },
+          });
+          // Cache the value (may be null for users who have never rotated).
+          // Only populate when we successfully read; on lookup error we
+          // fail-closed below without touching the cache.
+          passwordChangedAt = dbUser ? dbUser.passwordChangedAt : null;
+          setCachedPasswordChangedAt(user.id, passwordChangedAt);
+        } catch (lookupError) {
+          // Fail-closed on DB lookup errors in this security-critical check.
+          // (Per security boundary discipline: a transient DB failure must not
+          // become an authentication bypass for stale tokens.)
+          logger.error(
+            `[auth:${requestId}] passwordChangedAt lookup failed for user ${user.id}: ${lookupError.message}`,
           );
-          return respondUnauthorized('Session invalidated. Please login again.');
+          return respondUnauthorized('Authentication unavailable. Please retry.');
         }
-      } catch (lookupError) {
-        // Fail-closed on DB lookup errors in this security-critical check.
-        // (Per security boundary discipline: a transient DB failure must not
-        // become an authentication bypass for stale tokens.)
-        logger.error(
-          `[auth:${requestId}] passwordChangedAt lookup failed for user ${user.id}: ${lookupError.message}`,
+      }
+      if (passwordChangedAt && decoded.iat < Math.floor(passwordChangedAt.getTime() / 1000)) {
+        logger.warn(
+          `[auth:${requestId}] Token rejected: iat predates passwordChangedAt for user ${user.id}`,
         );
-        return respondUnauthorized('Authentication unavailable. Please retry.');
+        return respondUnauthorized('Session invalidated. Please login again.');
       }
     }
 

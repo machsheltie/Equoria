@@ -20,7 +20,7 @@ import CompetitionCard, { type Competition } from './CompetitionCard';
  */
 export interface CompetitionListProps {
   competitions: Competition[];
-  onCompetitionClick: (competitionId: number) => void;
+  onCompetitionClick: (_competitionId: number) => void;
   isLoading?: boolean;
   className?: string;
   title?: string;

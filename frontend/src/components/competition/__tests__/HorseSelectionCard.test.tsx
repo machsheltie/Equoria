@@ -17,7 +17,7 @@ import userEvent from '@testing-library/user-event';
 import HorseSelectionCard, {
   type HorseSelectionCardProps,
   type Horse,
-  type EligibilityStatus,
+  type _EligibilityStatus,
 } from '../HorseSelectionCard';
 
 describe('HorseSelectionCard', () => {

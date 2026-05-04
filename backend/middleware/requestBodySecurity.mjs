@@ -581,7 +581,9 @@ function scanRawQueryForForbiddenKey(rawQuery) {
   // Split on '&' — qs/querystring format. Each chunk is `key=value` (or just
   // `key`). The key portion is everything before '='.
   for (const chunk of rawQuery.split('&')) {
-    if (!chunk) continue;
+    if (!chunk) {
+      continue;
+    }
     const eqIdx = chunk.indexOf('=');
     const rawKey = eqIdx === -1 ? chunk : chunk.slice(0, eqIdx);
     let decoded;

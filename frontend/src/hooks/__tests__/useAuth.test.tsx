@@ -26,7 +26,7 @@ vi.mock('../../lib/api-client', () => ({
 
 describe('useAuth Hooks - Cookie-Based Authentication', () => {
   let queryClient: QueryClient;
-  let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
+  let wrapper: ({ _children }: { children: ReactNode }) => JSX.Element;
 
   beforeEach(() => {
     // Create fresh query client for each test

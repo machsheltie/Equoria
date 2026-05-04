@@ -80,7 +80,7 @@ export interface AddXpResult {
 export class XpApiError extends Error {
   constructor(
     message: string,
-    public status?: number,
+    public _status?: number,
     public _code?: string
   ) {
     super(message);

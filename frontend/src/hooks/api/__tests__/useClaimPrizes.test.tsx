@@ -362,7 +362,7 @@ describe('useClaimPrizes', () => {
 
   // Test 12: Loading state is correct during mutation
   it('should return loading state during mutation', async () => {
-    let resolvePromise: (value: prizesApi.PrizeClaimResult) => void;
+    let resolvePromise: (_value: prizesApi.PrizeClaimResult) => void;
     const pendingPromise = new Promise<prizesApi.PrizeClaimResult>((resolve) => {
       resolvePromise = resolve;
     });

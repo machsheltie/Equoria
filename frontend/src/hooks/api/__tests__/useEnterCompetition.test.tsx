@@ -123,7 +123,7 @@ describe('useEnterCompetition', () => {
 
   // Test 3: Returns loading state during submission
   it('should return loading state during submission', async () => {
-    let resolvePromise: (value: competitionsApi.EntryResult) => void;
+    let resolvePromise: (_value: competitionsApi.EntryResult) => void;
     const pendingPromise = new Promise<competitionsApi.EntryResult>((resolve) => {
       resolvePromise = resolve;
     });

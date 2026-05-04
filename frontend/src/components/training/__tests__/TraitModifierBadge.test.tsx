@@ -17,7 +17,7 @@ import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import TraitModifierBadge, {
   type TraitModifier,
-  type TraitModifierBadgeProps,
+  type _TraitModifierBadgeProps,
 } from '../TraitModifierBadge';
 
 describe('TraitModifierBadge', () => {

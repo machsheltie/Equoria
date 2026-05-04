@@ -47,7 +47,7 @@ vi.mock('react-chartjs-2', () => ({
 
 // Helper to get non-stringified chart options
 const getChartOptions = () => lastChartOptions;
-const getChartData = () => lastChartData;
+const _getChartData = () => lastChartData;
 
 describe('StatHistoryGraph', () => {
   let queryClient: QueryClient;
