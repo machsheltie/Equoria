@@ -152,6 +152,10 @@ model Horse {
   studStatus              String?               @default("Not at Stud")
   studFee                 Int?                  @default(0)
   lastBredDate            DateTime?             @db.Date
+  /// In-foal state (Phase B — feed-system pregnancy mechanic)
+  inFoalSinceDate         DateTime?
+  pregnancySireId         Int?
+  pregnancyFeedingsByTier Json                  @default("{}")
   forSale                 Boolean?              @default(false)
   salePrice               Int?                  @default(0)
   /// Health and care
