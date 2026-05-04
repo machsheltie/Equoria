@@ -24,6 +24,17 @@ Review weekly to spot patterns or revisit old logic
 
 ---
 
+### 2026-04-29 — Feed System Redesign Implementation Notes
+
+- ⚙️ **Pregnancy formula divisor (`max(7, totalFeedings)`):** the gestation window can span 8 UTC calendar days when the breeding moment and foaling moment fall on different times of day (e.g., bred 11pm Mon, due 11pm Mon next week = 8 distinct UTC midnights, allowing up to 8 daily feedings). Without the `max()`, 8× elite would overshoot the 20% ceiling at 22.86%. The divisor caps the bonus at the design ceiling regardless of count. Implemented in `backend/utils/pregnancyBonus.mjs` (B2, `21f433a3`).
+- ⚙️ **Two-derived health (recon Finding 2 → α):** `vetHealth` and `feedHealth` are both DERIVED from their respective dates; the existing `healthStatus` column is treated as a vet-finding override (non-null beats `lastVettedDate` decay). `displayedHealth = worseOf(vetHealth, feedHealth)`. Critical-health gates check `displayedHealth`. Helpers `getVetHealth` + `getDisplayedHealth` added in commit `26032b56`.
+- ✅ **`coordination` removal (Finding 1 → B):** the stat was dropped from the schema and the boost-roll pool. Pre-flight grep audit identified all production reads/writes; tests and seed fixtures updated. Boost pool is now 12 stats, names match `schema.prisma` exactly. Commit `b62611b5`.
+- ⚙️ **`createFoal` refactor (Phase B):** the original endpoint created foals synchronously. New flow: breed → set `inFoalSinceDate` + `pregnancySireId` (B3, `dd4ea04d`) → scheduled `runFoalingJob` polls every hour for due mares (`backend/modules/horses/services/foalingService.mjs`, scheduled in `backend/services/cronJobService.mjs`) → creates foal using lifted genetics/conformation/gait code from the original endpoint, applies the pregnancy-bonus formula to seed positive/negative epigenetic flags.
+- ⚙️ **Stat-boost RNG:** server-side only via `feedHorse({ rng })` injection. Tests inject deterministic sequences. Production uses `Math.random`.
+- 🤖 **Doc accuracy note:** at the time of this entry, `docs/data-models.md` and `docs/api-contracts-backend/horse-api-contracts.md` still reference `coordination` and `energyLevel`. Both predate the redesign and are surfaced in `PROJECT_MILESTONES.md` as separate follow-ups rather than bundled into the C1 doc commit (per `OPTIMAL_FIX_DISCIPLINE.md` §3).
+
+---
+
 ### 2025-09-02 - Task 6.2: Facility Management System Complete ✅
 
 - 🏗️ **Facility System Achievement**: Complete facility management system redesigned for meaningful gameplay benefits without boring realism complexity

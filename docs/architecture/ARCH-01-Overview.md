@@ -1,6 +1,6 @@
 # ARCH-01: Architecture Overview (Web)
 
-**Last Updated:** 2026-03-05 (Epic 20 — Backend Architecture Refactor complete)
+**Last Updated:** 2026-04-29 (Feed System Redesign — Phases A + B; Equoria-3gqg)
 
 ## Purpose
 
@@ -38,6 +38,16 @@ Document the Equoria architecture at a high level for the web stack: Express API
 
 Each module follows the structure: `routes/`, `controllers/`, and optionally `tests/`.
 Cross-cutting concerns (middleware, utils, db, config, services, models) live at `backend/` root.
+
+### 2026-04-29 update — Feed System Redesign (Phases A + B)
+
+The `services` module's feed shop and the `horses`/`breeding` modules were redesigned:
+
+- **Feed shop (Phase A)**: 5-tier bulk-purchase catalog (`basic` / `performance` / `performancePlus` / `highPerformance` / `elite`) sold in 100-unit packs to a pooled inventory; per-horse `Horse.equippedFeedType` slot; daily `POST /horses/:id/feed` consumes 1 unit and rolls a tier-weighted stat boost; `coordination` stat removed; `displayedHealth` band derived as `worseOf(feedHealth, vetHealth)` and exposed in horse JSON; critical-health gates conformation/competition entry.
+- **Pregnancy (Phase B)**: `breedFoal()` now sets `inFoalSinceDate` + `pregnancySireId` instead of creating a foal synchronously; daily `runFoalingJob()` (in `backend/modules/horses/services/foalingService.mjs`, scheduled by `backend/services/cronJobService.mjs`) materializes the foal at +7 days; `pregnancyFeedingsByTier` increments per daily feeding; the weighted-average bonus formula in `backend/utils/pregnancyBonus.mjs` applies to seed positive/negative epigenetic flags at materialization.
+- **Frontend**: `frontend/src/components/horse/PregnancyFeedingPanel.tsx` shows countdown + per-tier counter + bonus preview on `HorseDetailPage`.
+
+Spec: `docs/superpowers/specs/2026-04-29-feed-system-redesign-design.md`. Plan: `docs/superpowers/plans/2026-04-29-feed-system-redesign.md`. Closes Equoria-3gqg.
 
 ## Backward Compatibility
 

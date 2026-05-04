@@ -4,6 +4,47 @@ This file tracks significant achievements and milestones in the Equoria project 
 
 ## 📅 Milestone Timeline
 
+### 2026-04-29 — Feed System Redesign (Phases A + B) ✅
+
+**Achievement**: Replaced the per-horse feed-purchase model with a separate inventory + manual daily-feeding loop, and converted instant foaling into a 7-day delayed pregnancy mechanic with feeding-derived bonuses. Closes parent issue Equoria-3gqg.
+
+**Phase A — Feed Loop (A1–A18):**
+
+- 5-tier feed catalog sold in 100-unit packs at the Feed Shop: `basic`, `performance`, `performancePlus`, `highPerformance`, `elite`.
+- Pooled feed inventory on user account (no per-horse feed purchase).
+- Per-horse equippable feed slot via `Horse.equippedFeedType` column; equipped feed is consumed by the daily Feed action.
+- Daily `POST /horses/:id/feed` action consumes 1 unit and rolls a stat-boost RNG against the equipped tier; `coordination` removed entirely so the boost pool is now the canonical 12-stat list defined in `schema.prisma`.
+- `displayedHealth` band derived from `lastFedDate` + `lastVettedDate` (worse-of feedHealth/vetHealth) — exposed in horse JSON; critical-health gate on conformation/competition entry.
+- Playwright E2E coverage at `tests/e2e/feed-system-phase-a.spec.ts`.
+
+**Phase B — Pregnancy (B1–B6):**
+
+- B1 (`f598e0d0`): schema — `inFoalSinceDate`, `pregnancySireId`, `pregnancyFeedingsByTier` columns added to `Horse`.
+- B2 (`21f433a3`): pure-function pregnancy-bonus formula in `backend/utils/pregnancyBonus.mjs`.
+- B3 (`dd4ea04d`): `breedFoal()` now sets `inFoalSinceDate` instead of creating a foal immediately (no instant foal).
+- B4 (`22feff2b`): `feedHorse()` increments `pregnancyFeedingsByTier` for in-foal mares.
+- B5: daily `runFoalingJob()` in `backend/modules/horses/services/foalingService.mjs` materializes the foal at +7 days using lifted genetics/conformation/gait code; scheduled by `backend/services/cronJobService.mjs`.
+- B6 (`6bc67f58`): `frontend/src/components/horse/PregnancyFeedingPanel.tsx` shows countdown + per-tier counter + bonus preview, mounted on `HorseDetailPage`.
+
+**Tests added:**
+
+- 11 new foaling integration tests (`backend/__tests__/integration/foalingJob.test.mjs` and siblings).
+- 23 pregnancy-formula unit tests (`backend/__tests__/utils/pregnancyBonus.test.mjs`).
+- 63 frontend tests including an 11-input contract test verifying the frontend formula mirror agrees with the backend.
+
+**Spec / Plan:**
+
+- Spec: `docs/superpowers/specs/2026-04-29-feed-system-redesign-design.md`
+- Plan: `docs/superpowers/plans/2026-04-29-feed-system-redesign.md`
+
+**Known doc gaps (filed for follow-up, NOT fixed in this milestone):**
+
+- `docs/data-models.md` line 258 still lists `coordination` in the stat enumeration.
+- `docs/api-contracts-backend/horse-api-contracts.md` references `coordination` (lines 78, 266) and `energyLevel` (lines 744, 751); both fields no longer exist.
+- These predate the redesign and are surfaced here so they can be filed/fixed separately rather than bundled into the C1 commit.
+
+---
+
 ### 2025-10-29 - npm run test Command Fix - Windows Compatibility Achieved ✅
 
 **Achievement**: Fixed the `npm run test` command to work on Windows by resolving Unix shell script incompatibility. This milestone enables cross-platform test execution and improves developer experience for Windows-based development.
