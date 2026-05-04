@@ -29,11 +29,7 @@ router.get('/', browseListings);
 router.post('/list', listHorse);
 // CWE-639: requireOwnership('horse') returns 404 for both not-found and
 // not-owned, preventing horse-ID enumeration via 403 vs 404 disclosure.
-router.delete(
-  '/list/:horseId',
-  requireOwnership('horse', { idParam: 'horseId' }),
-  delistHorse,
-);
+router.delete('/list/:horseId', requireOwnership('horse', { idParam: 'horseId' }), delistHorse);
 
 // My listings and history (static segments before :horseId)
 router.get('/my-listings', myListings);

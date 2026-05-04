@@ -463,13 +463,10 @@ describe('validateEnvironment()', () => {
       validateEnvironment();
 
       const warnCalls = loggerWarnSpy.mock.calls.map(call => call[0]);
-      const originWarning = warnCalls.find(msg =>
-        msg.includes('ALLOWED_ORIGINS contains HTTP URLs'),
-      );
+      const originWarning = warnCalls.find(msg => msg.includes('ALLOWED_ORIGINS contains HTTP URLs'));
       expect(originWarning).toBeUndefined();
       expect(processExitSpy).not.toHaveBeenCalled();
     });
-
   });
 
   describe('Multiple errors', () => {
