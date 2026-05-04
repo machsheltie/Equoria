@@ -464,7 +464,7 @@ describe('validateEnvironment()', () => {
 
       const warnCalls = loggerWarnSpy.mock.calls.map(call => call[0]);
       const originWarning = warnCalls.find(msg =>
-        msg.includes('ALLOWED_ORIGINS contains HTTP URLs')
+        msg.includes('ALLOWED_ORIGINS contains HTTP URLs'),
       );
       expect(originWarning).toBeUndefined();
       expect(processExitSpy).not.toHaveBeenCalled();
