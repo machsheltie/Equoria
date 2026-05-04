@@ -37,7 +37,7 @@ jobs:
       - name: Run npm audit (backend)
         id: npm-audit-backend
         working-directory: ./backend
-        continue-on-error: true
+        continue-on-error: true # doctrine-allow: continue-on-error-informational
         run: |
           echo "## Backend Dependency Scan" >> $GITHUB_STEP_SUMMARY
           npm audit --json > audit-backend.json || true
@@ -73,7 +73,7 @@ jobs:
       - name: Run npm audit (frontend)
         id: npm-audit-frontend
         working-directory: ./frontend
-        continue-on-error: true
+        continue-on-error: true # doctrine-allow: continue-on-error-informational
         run: |
           echo "## Frontend Dependency Scan" >> $GITHUB_STEP_SUMMARY
           npm audit --json > audit-frontend.json || true
