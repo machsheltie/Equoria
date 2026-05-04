@@ -21,6 +21,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
+import { Button } from '@/components/ui/button';
 import { useEquippable } from '@/hooks/api/useEquippable';
 import { useEquipFeed, useUnequipFeed } from '@/hooks/api/useEquipFeed';
 import { FeedItem } from '@/lib/api-client';
@@ -77,26 +78,23 @@ const HorseEquipPage: React.FC = () => {
               .
             </p>
           ) : (
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {data.tack.map((item) => (
                 <li
                   key={item.id}
-                  className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-lg p-4 flex items-center justify-between"
+                  className="glass-panel flex items-center justify-between gap-3"
                   data-testid={`tack-item-${item.id}`}
                 >
                   <div>
                     <p className="font-bold text-[var(--cream)] text-sm">{item.name}</p>
                     {item.bonus && (
-                      <p className="text-xs text-violet-400/80 mt-0.5">{item.bonus}</p>
+                      <p className="text-xs text-[var(--gold-light)] mt-0.5">{item.bonus}</p>
                     )}
                   </div>
                   {/* Tack equip uses the existing inventory equip flow; that endpoint already exists. */}
-                  <Link
-                    to="/inventory"
-                    className="text-xs px-3 py-1.5 rounded-lg bg-violet-600/10 border border-violet-500/20 text-violet-400/80 hover:bg-violet-600/20"
-                  >
-                    Equip from Inventory
-                  </Link>
+                  <Button asChild size="sm">
+                    <Link to="/inventory">Equip from Inventory</Link>
+                  </Button>
                 </li>
               ))}
             </ul>
@@ -108,30 +106,24 @@ const HorseEquipPage: React.FC = () => {
           <h2 className="text-lg font-bold text-[var(--cream)] mb-3">Feed</h2>
 
           {!currentlyEquippedFeed && data.feed.length === 0 && (
-            <div
-              className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-lg p-5 text-center"
-              data-testid="no-feed-empty-state"
-            >
-              <p className="text-sm text-[var(--text-secondary)] mb-3">
+            <div className="glass-panel text-center" data-testid="no-feed-empty-state">
+              <p className="text-sm text-[var(--text-secondary)] mb-4">
                 No feed currently selected. Please purchase feed from the feed store and equip it to
                 your horse.
               </p>
-              <Link
-                to="/feed-shop"
-                className="inline-block px-4 py-2 rounded-lg bg-[var(--status-success)]/20 border border-[var(--status-success)]/30 text-[var(--status-success)] text-sm font-medium"
-              >
-                Go to Feed Shop
-              </Link>
+              <Button asChild>
+                <Link to="/feed-shop">Go to Feed Shop</Link>
+              </Button>
             </div>
           )}
 
           {currentlyEquippedFeed && (
             <div
-              className="bg-[var(--status-success)]/10 border border-[var(--status-success)]/30 rounded-lg p-4 mb-3 flex items-center justify-between"
+              className="glass-panel flex items-center justify-between gap-3 mb-3"
               data-testid="equipped-feed-card"
             >
               <div>
-                <p className="text-xs text-[var(--text-muted)] uppercase tracking-wide">
+                <p className="text-xs text-[var(--gold-light)] uppercase tracking-wide font-semibold">
                   Currently equipped
                 </p>
                 <p className="font-bold text-[var(--cream)]" data-testid="equipped-feed-name">
@@ -141,8 +133,8 @@ const HorseEquipPage: React.FC = () => {
                   {currentlyEquippedFeed.quantity} units in stock
                 </p>
               </div>
-              <button
-                type="button"
+              <Button
+                size="sm"
                 onClick={() =>
                   unequipFeed.mutate(undefined, {
                     onSuccess: () => toast.success('Unequipped.'),
@@ -151,28 +143,27 @@ const HorseEquipPage: React.FC = () => {
                   })
                 }
                 disabled={unequipFeed.isPending}
-                className="text-xs px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-white/70 hover:text-white/90 disabled:opacity-40"
                 data-testid="unequip-feed-button"
               >
                 {unequipFeed.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Unequip'}
-              </button>
+              </Button>
             </div>
           )}
 
           {availableFeed.length > 0 && (
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {availableFeed.map((f) => (
                 <li
                   key={f.feedType}
-                  className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-lg p-4 flex items-center justify-between"
+                  className="glass-panel flex items-center justify-between gap-3"
                   data-testid={`feed-item-${f.feedType}`}
                 >
                   <div>
                     <p className="font-bold text-[var(--cream)] text-sm">{f.name}</p>
                     <p className="text-xs text-[var(--text-muted)]">{f.quantity} units in stock</p>
                   </div>
-                  <button
-                    type="button"
+                  <Button
+                    size="sm"
                     onClick={() =>
                       equipFeed.mutate(f.feedType as FeedItem['id'], {
                         onSuccess: () => toast.success(`Equipped ${f.name}.`),
@@ -181,11 +172,10 @@ const HorseEquipPage: React.FC = () => {
                       })
                     }
                     disabled={equipFeed.isPending}
-                    className="text-xs px-3 py-1.5 rounded-lg bg-[var(--gold-primary)]/10 border border-[var(--gold-primary)]/30 text-[var(--gold-primary)] hover:bg-[var(--gold-primary)]/20 disabled:opacity-40"
                     data-testid={`equip-feed-${f.feedType}`}
                   >
                     Equip
-                  </button>
+                  </Button>
                 </li>
               ))}
             </ul>
