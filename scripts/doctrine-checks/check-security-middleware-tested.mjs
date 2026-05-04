@@ -47,8 +47,12 @@ const testFiles = walkTests(BACKEND_ROOT);
 const failures = [];
 
 for (const mw of securityMiddleware) {
+  // Match (a) dynamic `import('path')` / `require('path')` / `mockModule('path')`
+  // forms, and (b) ES module `import ... from 'path'`. Without (b) the most
+  // common static-import pattern in modern test files isn't recognized, so
+  // legitimately-tested middleware was being flagged as untested.
   const importPattern = new RegExp(
-    `(?:import|require|mockModule)\\s*\\(?\\s*['"\`][^'"\`]*${mw.basename}(?:\\.mjs)?['"\`]`,
+    `(?:(?:import|require|mockModule)\\s*\\(?\\s*['"\`][^'"\`]*${mw.basename}(?:\\.mjs)?['"\`]|from\\s+['"\`][^'"\`]*${mw.basename}(?:\\.mjs)?['"\`])`,
     's'
   );
   let found = false;
