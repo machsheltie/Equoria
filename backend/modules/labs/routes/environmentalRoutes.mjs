@@ -235,9 +235,11 @@ router.post(
       });
 
       if (horses.length !== horseIds.length) {
-        return res.status(403).json({
+        // CWE-639: 404 instead of 403 so an attacker can't distinguish
+        // exists-but-not-yours from doesn't-exist by status code.
+        return res.status(404).json({
           success: false,
-          error: 'Access denied: You do not own all specified horses',
+          error: 'One or more horses not found',
         });
       }
 
