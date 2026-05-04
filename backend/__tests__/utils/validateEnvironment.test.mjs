@@ -452,6 +452,24 @@ describe('validateEnvironment()', () => {
       const portWarningCall = warnCalls.find(msg => msg.includes('PORT is set to 80'));
       expect(portWarningCall).toBeUndefined();
     });
+
+    it('should skip origin checks when ALLOWED_ORIGINS is unset in production', () => {
+      // Branch coverage: `if (process.env.ALLOWED_ORIGINS)` falsy path.
+      // The previous tests always set the var to `http://...` or
+      // `https://...`; the unset case wasn't exercised, leaving the
+      // branch uncovered (validateEnvironment.mjs line 94).
+      delete process.env.ALLOWED_ORIGINS;
+
+      validateEnvironment();
+
+      const warnCalls = loggerWarnSpy.mock.calls.map(call => call[0]);
+      const originWarning = warnCalls.find(msg =>
+        msg.includes('ALLOWED_ORIGINS contains HTTP URLs')
+      );
+      expect(originWarning).toBeUndefined();
+      expect(processExitSpy).not.toHaveBeenCalled();
+    });
+
   });
 
   describe('Multiple errors', () => {

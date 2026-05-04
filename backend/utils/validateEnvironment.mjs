@@ -105,8 +105,11 @@ export function validateEnvironment() {
       }
     }
 
-    // Check if PORT is set to default HTTP (80) or HTTPS (443)
-    const port = parseInt(process.env.PORT || '3000', 10);
+    // Check if PORT is set to default HTTP (80) or HTTPS (443).
+    // PORT is enforced as a required variable above, so process.env.PORT
+    // is guaranteed non-empty by the time we reach this branch — no
+    // defensive `|| '3000'` fallback (which was unreachable dead code).
+    const port = parseInt(process.env.PORT, 10);
     if (port === 80) {
       logger.warn('[validateEnvironment] SECURITY WARNING: PORT is set to 80 (HTTP) in production');
       logger.warn('  Consider using HTTPS (443) or a reverse proxy with HTTPS termination');
