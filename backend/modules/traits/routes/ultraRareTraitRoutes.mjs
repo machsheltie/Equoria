@@ -7,7 +7,7 @@
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import { authenticateToken } from '../../../middleware/auth.mjs';
-import { requireOwnership } from '../../../middleware/ownership.mjs';
+import { requireOwnership, findOwnedResource } from '../../../middleware/ownership.mjs';
 import {
   evaluateUltraRareTriggers,
   evaluateExoticUnlocks,
@@ -357,29 +357,14 @@ router.post(
     try {
       const { horseId, effectType, baseValue, context = {} } = req.body;
 
-      // Get horse with ultra-rare traits
-      const horse = await prisma.horse.findUnique({
-        where: { id: parseInt(horseId) },
-        select: {
-          id: true,
-          name: true,
-          userId: true,
-          ultraRareTraits: true,
-          bondScore: true,
-        },
-      });
-
+      // CWE-639: Single 404 for not-found AND not-owned. The route accepts
+      // horseId in req.body (not URL params), so requireOwnership middleware
+      // (which reads req.params) doesn't apply directly — use the helper instead.
+      const horse = await findOwnedResource('horse', parseInt(horseId), req.user.id);
       if (!horse) {
         return res.status(404).json({
           success: false,
           message: 'Horse not found',
-        });
-      }
-
-      if (horse.userId !== req.user.id) {
-        return res.status(403).json({
-          success: false,
-          message: 'You do not own this horse',
         });
       }
 
