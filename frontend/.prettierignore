@@ -1,0 +1,29 @@
+# Build output
+dist/
+build/
+coverage/
+.vite/
+
+# Dependencies
+node_modules/
+
+# Generated files
+*.tsbuildinfo
+bundle-stats.html
+
+# Editor
+.idea/
+.vscode/
+
+# Lockfiles (Prettier shouldn't reformat these)
+package-lock.json
+
+# Legacy code outside src/ — these directories predate the current Vite/SPA
+# layout and contain JSX/TSX that doesn't parse with the current Prettier
+# config (e.g. components/GroomAssignmentManager.js has unwrapped adjacent
+# JSX siblings). Ignored from prettier-check; treated as archive.
+components/
+hooks/
+navigation/
+screens/
+__mocks__/
