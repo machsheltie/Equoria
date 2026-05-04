@@ -223,6 +223,13 @@ interface HorseSummary {
   feedHealth?: 'excellent' | 'good' | 'fair' | 'poor' | 'critical' | 'retired';
   vetHealth?: 'excellent' | 'good' | 'fair' | 'poor' | 'critical' | 'retired' | string;
   displayedHealth?: 'excellent' | 'good' | 'fair' | 'poor' | 'critical' | 'retired';
+  // Feed-system redesign 2026-04-29 (B6, Equoria-ta4s): in-foal state on the
+  // mare's row. Set by `breedFoal()` (B3); consumed by `runFoalingJob()` (B5).
+  // The panel on HorseDetailPage uses these to render the gestation-day
+  // countdown, per-tier feeding counters, and bonus preview.
+  inFoalSinceDate?: string | null;
+  pregnancySireId?: number | null;
+  pregnancyFeedingsByTier?: Record<string, number>;
 }
 
 interface HorseTrainingHistoryEntry {

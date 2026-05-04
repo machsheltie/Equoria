@@ -52,6 +52,7 @@ import {
 import { useHorse, useUpdateHorse } from '../hooks/api/useHorses';
 import { useFeedHorse } from '../hooks/api/useFeedHorse';
 import HealthBadge from '../components/horse/HealthBadge';
+import PregnancyFeedingPanel from '../components/horse/PregnancyFeedingPanel';
 import TraitCard from '../components/TraitCard';
 import {
   useHorseEpigeneticInsights,
@@ -130,6 +131,11 @@ interface Horse {
   feedHealth?: 'excellent' | 'good' | 'fair' | 'poor' | 'critical' | 'retired';
   vetHealth?: 'excellent' | 'good' | 'fair' | 'poor' | 'critical' | 'retired' | string;
   displayedHealth?: 'excellent' | 'good' | 'fair' | 'poor' | 'critical' | 'retired';
+  // Feed-system redesign 2026-04-29 (B6, Equoria-ta4s): in-foal state on the
+  // mare's row. Set by `breedFoal()` (B3); consumed by `runFoalingJob()` (B5).
+  inFoalSinceDate?: string | null;
+  pregnancySireId?: number | null;
+  pregnancyFeedingsByTier?: Record<string, number>;
 }
 
 type TabType =
@@ -211,6 +217,12 @@ const HorseDetailPage: React.FC = () => {
   // Fetch horse data — use `horseRaw` so the normalized copy can be named `horse` below,
   // keeping all downstream JSX references unchanged.
   const { data: horseRaw, isLoading, isError, error, refetch } = useHorse(Number(id));
+
+  // Sire lookup for the in-foal panel (B6, Equoria-ta4s). useHorse() is
+  // disabled when its argument is falsy (`enabled: Boolean(horseId)`), so
+  // 0 here means "not pregnant or sire not yet known — skip the fetch."
+  const pregnancySireId = horseRaw?.pregnancySireId ?? 0;
+  const { data: sireHorse } = useHorse(Number(pregnancySireId) || 0);
 
   // Fetch competition history — must be called before any early returns (Rules of Hooks).
   // Disabled until horse is loaded and competition tab is active.
@@ -340,6 +352,15 @@ const HorseDetailPage: React.FC = () => {
     finalDisplayColor:
       (rawHorse.finalDisplayColor as string | undefined) ||
       ((rawHorse.phenotype as { colorName?: string } | null)?.colorName ?? undefined),
+    // In-foal state — feed-system redesign 2026-04-29 (B6, Equoria-ta4s).
+    // Carried straight through from the backend Horse row.
+    inFoalSinceDate: (horseRaw as unknown as { inFoalSinceDate?: string | null })
+      .inFoalSinceDate ?? null,
+    pregnancySireId: (horseRaw as unknown as { pregnancySireId?: number | null })
+      .pregnancySireId ?? null,
+    pregnancyFeedingsByTier:
+      (horseRaw as unknown as { pregnancyFeedingsByTier?: Record<string, number> })
+        .pregnancyFeedingsByTier ?? {},
   };
 
   // Tab configuration
@@ -485,6 +506,18 @@ const HorseDetailPage: React.FC = () => {
                 {/* Description */}
                 {horse.description && (
                   <p className="fantasy-body text-[rgb(220,235,255)] mb-4">{horse.description}</p>
+                )}
+
+                {/* In-foal panel — feed-system redesign 2026-04-29 (B6, Equoria-ta4s). */}
+                {horse.inFoalSinceDate && (
+                  <div className="mb-4">
+                    <PregnancyFeedingPanel
+                      inFoalSinceDate={horse.inFoalSinceDate}
+                      feedings={horse.pregnancyFeedingsByTier ?? {}}
+                      sireName={sireHorse?.name ?? null}
+                      pregnancySireId={horse.pregnancySireId ?? null}
+                    />
+                  </div>
                 )}
 
                 {/* Quick Stats Summary */}
