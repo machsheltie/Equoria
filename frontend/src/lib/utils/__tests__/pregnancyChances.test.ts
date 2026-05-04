@@ -21,7 +21,7 @@ import {
 } from '../pregnancyChances';
 // Backend canonical implementation — imported directly from .mjs.
 // Vitest resolves this in node mode; it does not require a transpile step.
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+
 // @ts-expect-error — backend file has no TS types but the runtime import is fine
 import { calculatePregnancyEpigeneticChances as backendCalc } from '../../../../../backend/utils/pregnancyBonus.mjs';
 

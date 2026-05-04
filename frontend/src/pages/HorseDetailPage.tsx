@@ -354,10 +354,10 @@ const HorseDetailPage: React.FC = () => {
       ((rawHorse.phenotype as { colorName?: string } | null)?.colorName ?? undefined),
     // In-foal state — feed-system redesign 2026-04-29 (B6, Equoria-ta4s).
     // Carried straight through from the backend Horse row.
-    inFoalSinceDate: (horseRaw as unknown as { inFoalSinceDate?: string | null })
-      .inFoalSinceDate ?? null,
-    pregnancySireId: (horseRaw as unknown as { pregnancySireId?: number | null })
-      .pregnancySireId ?? null,
+    inFoalSinceDate:
+      (horseRaw as unknown as { inFoalSinceDate?: string | null }).inFoalSinceDate ?? null,
+    pregnancySireId:
+      (horseRaw as unknown as { pregnancySireId?: number | null }).pregnancySireId ?? null,
     pregnancyFeedingsByTier:
       (horseRaw as unknown as { pregnancyFeedingsByTier?: Record<string, number> })
         .pregnancyFeedingsByTier ?? {},
