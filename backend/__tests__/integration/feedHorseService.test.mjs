@@ -237,3 +237,113 @@ describe('feedHorse service — stat-boost integration (real DB)', () => {
     expect(fresh.speed).toBe(50);
   });
 });
+
+/**
+ * Phase B4: pregnancy feeding counter increments.
+ *
+ * When an in-foal mare (`inFoalSinceDate IS NOT NULL`) is fed, the per-tier
+ * counter `pregnancyFeedingsByTier` MUST increment by 1 for the equipped
+ * feed's tier. The B5 foaling job will read these counters and apply the
+ * formula in `backend/utils/pregnancyBonus.mjs`.
+ *
+ * Tier keys used here MUST exactly match `FEED_CATALOG[*].id` (which also
+ * match the keys consumed by `calculatePregnancyEpigeneticChances` in
+ * `pregnancyBonus.mjs`): basic, performance, performancePlus,
+ * highPerformance, elite.
+ *
+ * Real DB. Real prisma. No mocks.
+ */
+describe('feedHorse service — pregnancy feeding counter (Phase B4, real DB)', () => {
+  let userId;
+  let damId;
+
+  beforeEach(async () => {
+    const user = await prisma.user.create({
+      data: {
+        email: `pf-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
+        username: `pf${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+        password: 'irrelevant-test-hash',
+        firstName: 'Test',
+        lastName: 'User',
+        money: 0,
+        settings: {
+          inventory: [
+            {
+              id: 'feed-performance',
+              itemId: 'performance',
+              category: 'feed',
+              name: 'Performance Feed',
+              quantity: 10,
+            },
+          ],
+        },
+      },
+    });
+    userId = user.id;
+
+    // In-foal mare: inFoalSinceDate set, equippedFeedType = 'performance',
+    // empty counter map, no prior feeding today.
+    const dam = await prisma.horse.create({
+      data: {
+        name: `Dam${Date.now()}${Math.random().toString(36).slice(2, 5)}`,
+        sex: 'mare',
+        dateOfBirth: new Date('2020-01-01'),
+        age: 5,
+        userId,
+        equippedFeedType: 'performance',
+        inFoalSinceDate: new Date(),
+        pregnancyFeedingsByTier: {},
+      },
+    });
+    damId = dam.id;
+  });
+
+  afterEach(async () => {
+    await prisma.horse.delete({ where: { id: damId } }).catch(() => {});
+    await prisma.user.delete({ where: { id: userId } }).catch(() => {});
+  });
+
+  it('increments pregnancyFeedingsByTier[performance] by 1 when in-foal mare is fed', async () => {
+    await feedHorse({ userId, horseId: damId, rng: () => 0.99 });
+
+    const fresh = await prisma.horse.findUnique({ where: { id: damId } });
+    expect(fresh.pregnancyFeedingsByTier).toEqual({ performance: 1 });
+    // Sentinel: lastFedDate was actually set (Phase A behavior preserved).
+    expect(fresh.lastFedDate).toBeTruthy();
+  });
+
+  it('increments pregnancyFeedingsByTier[performance] to 2 across two distinct feed days', async () => {
+    // Feed 1: standard call.
+    await feedHorse({ userId, horseId: damId, rng: () => 0.99 });
+
+    // Reset lastFedDate to null between calls so alreadyFedToday() returns
+    // false on the second call. (This simulates "tomorrow" without waiting
+    // for UTC midnight.) We do NOT touch pregnancyFeedingsByTier — that's
+    // what we're testing.
+    await prisma.horse.update({
+      where: { id: damId },
+      data: { lastFedDate: null },
+    });
+
+    // Feed 2: counter must accumulate to 2 (not reset, not stuck at 1).
+    await feedHorse({ userId, horseId: damId, rng: () => 0.99 });
+
+    const fresh = await prisma.horse.findUnique({ where: { id: damId } });
+    expect(fresh.pregnancyFeedingsByTier).toEqual({ performance: 2 });
+  });
+
+  it('does NOT increment counter when mare is not in-foal (inFoalSinceDate null)', async () => {
+    // Clear in-foal state. Counter must remain {} after the feed call.
+    await prisma.horse.update({
+      where: { id: damId },
+      data: { inFoalSinceDate: null },
+    });
+
+    await feedHorse({ userId, horseId: damId, rng: () => 0.99 });
+
+    const fresh = await prisma.horse.findUnique({ where: { id: damId } });
+    expect(fresh.pregnancyFeedingsByTier).toEqual({});
+    // Sentinel: the feed action itself still succeeded (Phase A behavior).
+    expect(fresh.lastFedDate).toBeTruthy();
+  });
+});

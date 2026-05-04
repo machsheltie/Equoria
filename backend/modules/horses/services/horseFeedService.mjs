@@ -178,6 +178,39 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
       horseUpdate[statBoost.stat] = { increment: statBoost.amount };
     }
 
+    // Phase B4: pregnancy feeding counter (Equoria-kt49, parent: Equoria-3gqg).
+    //
+    // When the mare is in-foal (`inFoalSinceDate IS NOT NULL`), bump the
+    // per-tier counter `pregnancyFeedingsByTier[tier.id]` by 1. The B5
+    // foaling job reads these counters and feeds them through
+    // `calculatePregnancyEpigeneticChances` (backend/utils/pregnancyBonus.mjs).
+    //
+    // The increment runs INSIDE the same transaction as the inventory
+    // decrement and lastFedDate set, so the three writes commit atomically:
+    // either all happen (one feed = one counter bump = one inventory unit
+    // gone) or none do (rollback on any failure). This satisfies §A8
+    // atomicity rules in EDGE_CASE_FIX_DISCIPLINE.md §3.
+    //
+    // Why a read-modify-write of the JSON object rather than a JSONB merge:
+    // the codebase's existing pattern for User.settings.inventory mutations
+    // (see lines 145-148, 187 above) is the same read-spread-write within
+    // the transaction. Postgres SERIALIZABLE / REPEATABLE READ isolation
+    // would catch concurrent-feed conflicts; READ COMMITTED (Prisma's
+    // default) leaves a small lost-update window — flagged in the report.
+    // Tier keys exactly match `FEED_CATALOG[*].id` and the keys consumed by
+    // `pregnancyBonus.mjs` (basic, performance, performancePlus,
+    // highPerformance, elite). When `equippedFeedType` is null the function
+    // already 400s before reaching this branch, so we never increment under
+    // a missing tier.
+    if (horse.inFoalSinceDate) {
+      const counters =
+        horse.pregnancyFeedingsByTier && typeof horse.pregnancyFeedingsByTier === 'object'
+          ? { ...horse.pregnancyFeedingsByTier }
+          : {};
+      counters[tier.id] = (counters[tier.id] ?? 0) + 1;
+      horseUpdate.pregnancyFeedingsByTier = counters;
+    }
+
     const updatedHorse = await tx.horse.update({
       where: { id: horse.id },
       data: horseUpdate,
