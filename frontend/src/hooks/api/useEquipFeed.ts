@@ -14,6 +14,15 @@
  * in onMutate so the optimistic flip reverts. This gives "click → equipped
  * that second" UX and survives the stale-GET window documented in
  * Equoria-28cj under NODE_ENV=beta + Vite dev proxy.
+ *
+ * Stale-GET fix (2026-05-04): onSettled previously invalidated
+ * ['equippable', horseId] which triggered an immediate refetch. Under the
+ * Vite dev proxy that GET could run before the prisma.horse.update commit
+ * was visible to the next read, returning the PRE-mutation
+ * equippedFeedType and overwriting the optimistic cache — the user saw the
+ * UI flip to the new tier and then revert. We now mark the query stale
+ * with refetchType: 'none' so a fresh GET happens on next remount/focus
+ * (by which time the DB is consistent) without racing the commit.
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -58,11 +67,16 @@ export function useEquipFeed(horseId: number) {
       }
     },
     onSettled: () => {
-      // Eventual-consistency reconciliation. Safe to re-fetch even when the
-      // GET path is racey — onMutate already showed truth to the user.
+      // Refresh general horse data (no races there).
       queryClient.invalidateQueries({ queryKey: ['horses', horseId] });
       queryClient.invalidateQueries({ queryKey: ['horses'] });
-      queryClient.invalidateQueries({ queryKey: ['equippable', horseId] });
+      // Mark equippable stale but DO NOT refetch now — the immediate GET
+      // could race the DB commit and overwrite the optimistic cache. Next
+      // remount/focus picks up fresh data once the DB is consistent.
+      queryClient.invalidateQueries({
+        queryKey: ['equippable', horseId],
+        refetchType: 'none',
+      });
     },
   });
 }
@@ -93,7 +107,11 @@ export function useUnequipFeed(horseId: number) {
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['horses', horseId] });
       queryClient.invalidateQueries({ queryKey: ['horses'] });
-      queryClient.invalidateQueries({ queryKey: ['equippable', horseId] });
+      // Same stale-GET race as equipFeed — defer the equippable refetch.
+      queryClient.invalidateQueries({
+        queryKey: ['equippable', horseId],
+        refetchType: 'none',
+      });
     },
   });
 }
