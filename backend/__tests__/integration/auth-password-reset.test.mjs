@@ -172,6 +172,84 @@ describe('Auth — Password Reset Integration', () => {
   });
 
   // ────────────────────────────────────────────────────────────────────────
+  // Equoria-blku — CWE-613 sentinel-positive for the resetPassword path.
+  // Mirrors the changePassword sentinel at session-lifecycle.test.mjs:766-789.
+  // The middleware-level check (authenticateToken) rejects access-token JWTs
+  // whose `iat` predates `User.passwordChangedAt`. Both changePassword and
+  // resetPassword stamp passwordChangedAt; this test proves the resetPassword
+  // path actually invalidates a pre-reset access token (Equoria-39r5).
+  //
+  // Sentinel-positive verification: removing
+  //   `passwordChangedAt: new Date()` from authController.resetPassword
+  // makes this assertion fail (the original access token would still be
+  // accepted). Verified once at write time and pasted into bd notes.
+  it('CWE-613: resetPassword invalidates pre-reset access tokens (sentinel)', async () => {
+    const timestamp = Date.now();
+    const email = `${EMAIL_PREFIX}cwe613_${timestamp}@example.com`;
+    const originalPassword = 'OriginalPass1!';
+    const newPassword = 'NewSecurePass2@';
+
+    // 1. Create the user with a hashed password matching the login payload.
+    const hashedOriginal = await bcrypt.hash(originalPassword, 10);
+    await prisma.user.create({
+      data: {
+        username: `${EMAIL_PREFIX}cwe613_${timestamp}`,
+        email,
+        password: hashedOriginal,
+        firstName: 'CWE613',
+        lastName: 'Reset',
+      },
+    });
+
+    // 2. Login to obtain a real access-token cookie. This is the cookie
+    //    whose iat must end up older than the post-reset passwordChangedAt.
+    const loginRes = await request(app)
+      .post('/auth/login')
+      .set('Origin', 'http://localhost:3000')
+      .send({ email, password: originalPassword });
+    expect(loginRes.status).toBe(200);
+    const cookies = loginRes.headers['set-cookie'];
+    expect(cookies).toBeDefined();
+
+    // 3. Spy + forgot-password to capture the reset token.
+    jest.spyOn(emailService, 'sendPasswordResetEmail').mockImplementation(async (_to, rawToken, _u) => {
+      capturedRawToken = rawToken;
+      return { success: true, messageId: 'spy-captured', preview: '' };
+    });
+    await request(app).post('/auth/forgot-password').set('Origin', 'http://localhost:3000').send({ email });
+    expect(capturedRawToken).not.toBeNull();
+
+    // 4. Sleep across the JWT iat second-boundary. JWT iat is second-precision
+    //    and the middleware compares with `iat < floor(passwordChangedAt/1000)`.
+    //    Without this delay, a sub-second test run could leave login.iat in
+    //    the same second as resetPassword.passwordChangedAt and the strong
+    //    401 assertion below would not fire deterministically.
+    await new Promise(resolve => setTimeout(resolve, 1100));
+
+    // 5. Reset the password — stamps passwordChangedAt = now.
+    const resetRes = await request(app)
+      .post('/auth/reset-password')
+      .set('Origin', 'http://localhost:3000')
+      .send({ token: capturedRawToken, newPassword });
+    expect(resetRes.status).toBe(200);
+
+    // 6. Strong CWE-613 assertion: the pre-reset access-token cookies must
+    //    now be rejected by authenticateToken (iat older than passwordChangedAt).
+    //    Supertest does not auto-apply Set-Cookie clears from the reset
+    //    response, so resending the original cookies exercises the exact
+    //    "stolen access token survives password reset" attack scenario.
+    const profileRes = await request(app)
+      .get('/api/auth/profile')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', cookies)
+      .expect(401);
+    expect(profileRes.body).toMatchObject({
+      success: false,
+      status: 'error',
+    });
+  });
+
+  // ────────────────────────────────────────────────────────────────────────
   it('resetPassword rejects a used token (prevents token replay)', async () => {
     const timestamp = Date.now();
     const email = `${EMAIL_PREFIX}replay_${timestamp}@example.com`;
