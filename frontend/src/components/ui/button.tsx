@@ -33,9 +33,8 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        /** Primary — gold gradient, Cinzel heading font, horseshoe arcs; max ONE per screen */
+        /** Primary — gold gradient, Cinzel heading font; clean (no horseshoe arcs) */
         default: [
-          'btn-cobalt',
           'bg-gradient-to-r from-[var(--gold-primary)] to-[var(--gold-light)]',
           'text-[var(--bg-deep-space)] font-semibold tracking-wide',
           'font-[var(--font-heading)]',

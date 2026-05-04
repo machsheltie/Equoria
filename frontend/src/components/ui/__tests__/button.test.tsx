@@ -18,11 +18,11 @@ import { describe, it, expect, vi } from 'vitest';
 import { Button } from '../button';
 
 describe('Button variants', () => {
-  it('default variant includes btn-cobalt and gold gradient classes', () => {
+  it('default variant includes gold gradient classes', () => {
     render(<Button>Primary</Button>);
     const btn = screen.getByRole('button', { name: 'Primary' });
-    expect(btn.className).toContain('btn-cobalt');
     expect(btn.className).toContain('from-[var(--gold-primary)]');
+    expect(btn.className).toContain('to-[var(--gold-light)]');
   });
 
   it('secondary variant includes glass-panel-subtle class', () => {
@@ -159,6 +159,6 @@ describe('Button asChild', () => {
     const link = screen.getByRole('link', { name: 'Link Button' });
     expect(link).toBeInTheDocument();
     expect(link.tagName).toBe('A');
-    expect(link.className).toContain('btn-cobalt');
+    expect(link.className).toContain('from-[var(--gold-primary)]');
   });
 });

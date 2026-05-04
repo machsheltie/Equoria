@@ -51,7 +51,6 @@ const HorseEquipPage: React.FC = () => {
   }
 
   const currentlyEquippedFeed = data.feed.find((f) => f.isCurrentlyEquippedToThisHorse);
-  const availableFeed = data.feed.filter((f) => !f.isCurrentlyEquippedToThisHorse);
 
   return (
     <div>
@@ -101,11 +100,15 @@ const HorseEquipPage: React.FC = () => {
           )}
         </section>
 
-        {/* Feed section */}
+        {/* Feed section — unified list. Clicking Equip on any tier switches
+            equippedFeedType atomically (backend replaces unconditionally), so
+            users never need to Unequip-then-Equip to switch tiers. The
+            currently-equipped tier shows a distinct treatment + Unequip button
+            for users who want to clear the selection entirely. */}
         <section data-testid="feed-section">
           <h2 className="text-lg font-bold text-[var(--cream)] mb-3">Feed</h2>
 
-          {!currentlyEquippedFeed && data.feed.length === 0 && (
+          {data.feed.length === 0 ? (
             <div className="glass-panel text-center" data-testid="no-feed-empty-state">
               <p className="text-sm text-[var(--text-secondary)] mb-4">
                 No feed currently selected. Please purchase feed from the feed store and equip it to
@@ -115,69 +118,79 @@ const HorseEquipPage: React.FC = () => {
                 <Link to="/feed-shop">Go to Feed Shop</Link>
               </Button>
             </div>
-          )}
-
-          {currentlyEquippedFeed && (
-            <div
-              className="glass-panel flex items-center justify-between gap-3 mb-3"
-              data-testid="equipped-feed-card"
-            >
-              <div>
-                <p className="text-xs text-[var(--gold-light)] uppercase tracking-wide font-semibold">
-                  Currently equipped
-                </p>
-                <p className="font-bold text-[var(--cream)]" data-testid="equipped-feed-name">
-                  {currentlyEquippedFeed.name}
-                </p>
-                <p className="text-xs text-[var(--text-muted)]">
-                  {currentlyEquippedFeed.quantity} units in stock
-                </p>
-              </div>
-              <Button
-                size="sm"
-                onClick={() =>
-                  unequipFeed.mutate(undefined, {
-                    onSuccess: () => toast.success('Unequipped.'),
-                    onError: (err) =>
-                      toast.error((err as { message?: string })?.message ?? 'Failed to unequip.'),
-                  })
-                }
-                disabled={unequipFeed.isPending}
-                data-testid="unequip-feed-button"
-              >
-                {unequipFeed.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Unequip'}
-              </Button>
-            </div>
-          )}
-
-          {availableFeed.length > 0 && (
+          ) : (
             <ul className="space-y-3">
-              {availableFeed.map((f) => (
-                <li
-                  key={f.feedType}
-                  className="glass-panel flex items-center justify-between gap-3"
-                  data-testid={`feed-item-${f.feedType}`}
-                >
-                  <div>
-                    <p className="font-bold text-[var(--cream)] text-sm">{f.name}</p>
-                    <p className="text-xs text-[var(--text-muted)]">{f.quantity} units in stock</p>
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={() =>
-                      equipFeed.mutate(f.feedType as FeedItem['id'], {
-                        onSuccess: () => toast.success(`Equipped ${f.name}.`),
-                        onError: (err) =>
-                          toast.error((err as { message?: string })?.message ?? 'Failed to equip.'),
-                      })
-                    }
-                    disabled={equipFeed.isPending}
-                    data-testid={`equip-feed-${f.feedType}`}
+              {data.feed.map((f) => {
+                const isEquipped = f.isCurrentlyEquippedToThisHorse;
+                return (
+                  <li
+                    key={f.feedType}
+                    className="glass-panel flex items-center justify-between gap-3"
+                    data-testid={isEquipped ? 'equipped-feed-card' : `feed-item-${f.feedType}`}
                   >
-                    Equip
-                  </Button>
-                </li>
-              ))}
+                    <div>
+                      {isEquipped && (
+                        <p className="text-xs text-[var(--gold-light)] uppercase tracking-wide font-semibold">
+                          Currently equipped
+                        </p>
+                      )}
+                      <p
+                        className="font-bold text-[var(--cream)] text-sm"
+                        data-testid={isEquipped ? 'equipped-feed-name' : undefined}
+                      >
+                        {f.name}
+                      </p>
+                      <p className="text-xs text-[var(--text-muted)]">
+                        {f.quantity} units in stock
+                      </p>
+                    </div>
+                    {isEquipped ? (
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          unequipFeed.mutate(undefined, {
+                            onSuccess: () => toast.success('Unequipped.'),
+                            onError: (err) =>
+                              toast.error(
+                                (err as { message?: string })?.message ?? 'Failed to unequip.'
+                              ),
+                          })
+                        }
+                        disabled={unequipFeed.isPending}
+                        data-testid="unequip-feed-button"
+                      >
+                        {unequipFeed.isPending ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          'Unequip'
+                        )}
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() =>
+                          equipFeed.mutate(f.feedType as FeedItem['id'], {
+                            onSuccess: () =>
+                              toast.success(
+                                currentlyEquippedFeed
+                                  ? `Switched to ${f.name}.`
+                                  : `Equipped ${f.name}.`
+                              ),
+                            onError: (err) =>
+                              toast.error(
+                                (err as { message?: string })?.message ?? 'Failed to equip.'
+                              ),
+                          })
+                        }
+                        disabled={equipFeed.isPending}
+                        data-testid={`equip-feed-${f.feedType}`}
+                      >
+                        Equip
+                      </Button>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           )}
         </section>

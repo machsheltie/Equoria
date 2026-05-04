@@ -327,9 +327,9 @@ const InventoryPage: React.FC = () => {
       </PageHero>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Category Filter */}
+        {/* Category Filter — matches MyStablePage tab styling for cohesion */}
         <div
-          className="flex gap-1 p-1 bg-white/5 border border-white/10 rounded-xl mb-6 w-fit"
+          className="flex flex-wrap gap-1 p-1 bg-white/5 border border-white/10 rounded-xl mb-8 w-fit max-w-full"
           role="tablist"
           aria-label="Inventory categories"
         >
@@ -339,7 +339,7 @@ const InventoryPage: React.FC = () => {
               role="tab"
               aria-selected={activeCategory === cat}
               onClick={() => setActiveCategory(cat)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
                 activeCategory === cat
                   ? 'bg-white/10 text-white/90 shadow-sm'
                   : 'text-white/40 hover:text-white/70'
