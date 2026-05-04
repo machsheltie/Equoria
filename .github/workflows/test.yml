@@ -59,6 +59,14 @@ jobs:
             backend/package-lock.json
             frontend/package-lock.json
 
+      - name: Install root dependencies
+        # The root /eslint.config.js (flat config) imports @eslint/js and
+        # typescript-eslint from root node_modules. ESLint walks up from
+        # frontend/ when it runs and resolves these from root. Without this
+        # install step, frontend ESLint fails with ERR_MODULE_NOT_FOUND for
+        # @eslint/js.
+        run: npm ci --no-audit --no-fund
+
       - name: Install backend dependencies
         working-directory: ./backend
         run: npm ci
