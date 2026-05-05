@@ -212,7 +212,7 @@ describe('messageController (real DB)', () => {
       expect(after.isRead).toBe(true);
     });
 
-    it('returns 403 when unrelated user tries to access message', async () => {
+    it('returns 404 when unrelated user tries to access message (CWE-639 Equoria-y0l4)', async () => {
       const sender = await createUser();
       const recipient = await createUser();
       const intruder = await createUser();
@@ -221,8 +221,9 @@ describe('messageController (real DB)', () => {
       const h = makeReqRes(intruder.id, { params: { id: String(msg.id) } });
       await getMessage(h.req, h.res);
 
-      expect(h.res.statusValue).toBe(403);
-      expect(h.res.jsonValue).toMatchObject({ success: false, message: 'Access denied' });
+      // CWE-639: cross-user access must look identical to not-found, not 403.
+      expect(h.res.statusValue).toBe(404);
+      expect(h.res.jsonValue).toMatchObject({ success: false, message: 'Message not found' });
     });
 
     it('returns 404 when message does not exist', async () => {
@@ -256,7 +257,7 @@ describe('messageController (real DB)', () => {
       expect(after.isRead).toBe(true);
     });
 
-    it('returns 403 when non-recipient tries to mark read', async () => {
+    it('returns 404 when non-recipient tries to mark read (CWE-639 Equoria-a3kp)', async () => {
       const sender = await createUser();
       const recipient = await createUser();
       const intruder = await createUser();
@@ -265,7 +266,9 @@ describe('messageController (real DB)', () => {
       const h = makeReqRes(intruder.id, { params: { id: String(msg.id) } });
       await markRead(h.req, h.res);
 
-      expect(h.res.statusValue).toBe(403);
+      // CWE-639: non-recipient must look identical to not-found, not 403.
+      expect(h.res.statusValue).toBe(404);
+      expect(h.res.jsonValue).toMatchObject({ success: false, message: 'Message not found' });
 
       // Message should NOT have been marked read.
       const after = await prisma.directMessage.findUnique({ where: { id: msg.id } });

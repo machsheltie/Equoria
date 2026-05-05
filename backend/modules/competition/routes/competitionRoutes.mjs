@@ -410,23 +410,16 @@ router.post(
         `[competitionRoutes.POST /execute] User ${userId} executing competition for show ${showId}`,
       );
 
-      // Get show details
-      const show = await prisma.show.findUnique({
-        where: { id: showId },
+      // CWE-639 (Equoria-c4g3): scope show lookup by hostUserId so non-host
+      // execute attempts are indistinguishable from not-found — same 404 + body.
+      const show = await prisma.show.findFirst({
+        where: { id: showId, hostUserId: userId },
       });
 
       if (!show) {
         return res.status(404).json({
           success: false,
           message: 'Show not found',
-        });
-      }
-
-      // Check if user is authorized to execute (show host or admin)
-      if (show.hostUserId !== userId) {
-        return res.status(403).json({
-          success: false,
-          message: 'Only the show host can execute this competition',
         });
       }
 

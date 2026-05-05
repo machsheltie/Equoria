@@ -85,8 +85,13 @@ export async function getMessage(req, res) {
   }
 
   try {
-    const message = await prisma.directMessage.findUnique({
-      where: { id },
+    // CWE-639 (Equoria-y0l4): scope by sender/recipient so cross-user access
+    // is indistinguishable from not-found — same 404 + same body for both.
+    const message = await prisma.directMessage.findFirst({
+      where: {
+        id,
+        OR: [{ senderId: userId }, { recipientId: userId }],
+      },
       include: {
         sender: { select: USER_SELECT },
         recipient: { select: USER_SELECT },
@@ -95,9 +100,6 @@ export async function getMessage(req, res) {
 
     if (!message) {
       return res.status(404).json({ success: false, message: 'Message not found' });
-    }
-    if (message.senderId !== userId && message.recipientId !== userId) {
-      return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
     // Auto-mark as read when recipient fetches
@@ -153,12 +155,13 @@ export async function markRead(req, res) {
   }
 
   try {
-    const message = await prisma.directMessage.findUnique({ where: { id } });
+    // CWE-639 (Equoria-a3kp): scope by recipient so non-recipient is
+    // indistinguishable from not-found.
+    const message = await prisma.directMessage.findFirst({
+      where: { id, recipientId: userId },
+    });
     if (!message) {
       return res.status(404).json({ success: false, message: 'Message not found' });
-    }
-    if (message.recipientId !== userId) {
-      return res.status(403).json({ success: false, message: 'Access denied' });
     }
 
     await prisma.directMessage.update({ where: { id }, data: { isRead: true } });

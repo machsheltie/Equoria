@@ -293,7 +293,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
       expect(updatedEntry.placement).not.toBeNull(); // Should now have placement
     });
 
-    test('should reject execution by non-host user', async () => {
+    test('should reject execution by non-host user (CWE-639 Equoria-c4g3: 404 byte-identical to not-found)', async () => {
       // Create another user
       const otherUserResult = await createTestUser({
         username: `nonhost_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
@@ -309,10 +309,11 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
         .send({
           showId: testShow.id,
         })
-        .expect(403);
+        .expect(404);
 
+      // CWE-639: cross-user (non-host) must look identical to not-found.
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Only the show host can execute this competition');
+      expect(response.body.message).toBe('Show not found');
     });
 
     test('should reject invalid show ID', async () => {
