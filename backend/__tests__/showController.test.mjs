@@ -564,7 +564,7 @@ describe('showController (real DB)', () => {
       expect(h.res.jsonValue.message).toMatch(/full/i);
     });
 
-    it('returns 403 when horse is not owned by user', async () => {
+    it('returns 404 when horse is not owned by user (CWE-639: collapsed with not-found)', async () => {
       const owner = await createUser();
       const otherUser = await createUser();
       const horse = await createHorse(owner.id);
@@ -575,10 +575,11 @@ describe('showController (real DB)', () => {
         body: { horseId: horse.id },
       });
       await enterShow(h.req, h.res);
-      expect(h.res.statusValue).toBe(403);
+      expect(h.res.statusValue).toBe(404);
+      expect(h.res.jsonValue.message).toBe('Horse not found');
     });
 
-    it('returns 403 when horse does not exist', async () => {
+    it('returns 404 when horse does not exist', async () => {
       const user = await createUser();
       const show = await createShowDirect(user.id);
       const h = makeReqRes(user.id, {
@@ -586,7 +587,8 @@ describe('showController (real DB)', () => {
         body: { horseId: 99999999 },
       });
       await enterShow(h.req, h.res);
-      expect(h.res.statusValue).toBe(403);
+      expect(h.res.statusValue).toBe(404);
+      expect(h.res.jsonValue.message).toBe('Horse not found');
     });
 
     it('returns 400 when horse is too young (age < 3)', async () => {

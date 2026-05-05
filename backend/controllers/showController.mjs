@@ -183,16 +183,16 @@ export async function enterShow(req, res) {
       return res.status(409).json({ success: false, message: 'Show is full' });
     }
 
-    // Verify horse ownership
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
+    // Verify horse ownership via WHERE-scoped findFirst — collapses
+    // not-found and cross-user-owned into a single null result, returning
+    // a byte-identical 404 in both cases (CWE-639 hardening, Equoria-bik1).
+    const horse = await prisma.horse.findFirst({
+      where: { id: horseId, userId },
       select: { id: true, name: true, userId: true, age: true, healthStatus: true },
     });
 
-    if (!horse || horse.userId !== userId) {
-      return res
-        .status(403)
-        .json({ success: false, message: 'Horse not found or not owned by you' });
+    if (!horse) {
+      return res.status(404).json({ success: false, message: 'Horse not found' });
     }
     if (horse.age < 3) {
       return res

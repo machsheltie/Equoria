@@ -1,0 +1,152 @@
+/**
+ * CWE-639 Wave-4 Sweep — sentinel tests for Equoria-9ov8 wave 4.
+ *
+ * Each describe block covers ONE leak fixed in the wave-4 sweep. Each test
+ * asserts cross-user access returns 404 (not 403) AND that the response body
+ * is byte-identical to the not-exists case — the byte-identical sentinel is
+ * what makes these CWE-639 tests, not just "404 instead of 403" tests.
+ *
+ * Wave-4 issue:
+ *   - Equoria-bik1 — showController.enterShow (POST /api/v1/shows/:id/enter)
+ *
+ * Adjacent leaks identified in wave 4 but filed for separate landing per
+ * non-bundling rule (EDGE_CASE_FIX_DISCIPLINE.md §7):
+ *   - Equoria-y0l4 — messageController.getMessage
+ *   - Equoria-a3kp — messageController.markRead
+ *   - Equoria-c4g3 — competitionRoutes POST /execute
+ */
+
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from '@jest/globals';
+import request from 'supertest';
+import { randomBytes } from 'node:crypto';
+import app from '../../../app.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import { createMockToken } from '../../factories/index.mjs';
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+
+describe('CWE-639 wave-4 sweep (Equoria-9ov8)', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
+  let userA;
+  let userB;
+  let tokenA;
+  let horseA;
+  let horseB;
+  let show;
+
+  const NONEXISTENT_ID = 999999999;
+
+  beforeEach(async () => {
+    process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
+
+    userA = await prisma.user.create({
+      data: {
+        email: `cwe639w4a-${randomBytes(8).toString('hex')}@example.com`,
+        username: `cwe639w4a-${randomBytes(8).toString('hex')}`,
+        password: 'hashedPassword123',
+        firstName: 'Cwe',
+        lastName: 'W4A',
+        emailVerified: true,
+      },
+    });
+    userB = await prisma.user.create({
+      data: {
+        email: `cwe639w4b-${randomBytes(8).toString('hex')}@example.com`,
+        username: `cwe639w4b-${randomBytes(8).toString('hex')}`,
+        password: 'hashedPassword123',
+        firstName: 'Cwe',
+        lastName: 'W4B',
+        emailVerified: true,
+      },
+    });
+
+    tokenA = createMockToken(userA.id, {
+      payload: { email: userA.email, role: userA.role || 'user' },
+    });
+
+    // Horse owned by user A — age 5 to satisfy enterShow age gate
+    horseA = await prisma.horse.create({
+      data: {
+        name: `CweHorseW4A-${randomBytes(8).toString('hex')}`,
+        userId: userA.id,
+        sex: 'mare',
+        dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
+        healthStatus: 'Excellent',
+      },
+    });
+    // Horse owned by user B — same age/health profile so the only test variable
+    // is the cross-user ownership signal.
+    horseB = await prisma.horse.create({
+      data: {
+        name: `CweHorseW4B-${randomBytes(8).toString('hex')}`,
+        userId: userB.id,
+        sex: 'stallion',
+        dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
+        healthStatus: 'Excellent',
+      },
+    });
+
+    // An open show user A can attempt to enter
+    show = await prisma.show.create({
+      data: {
+        name: `CweShowW4-${randomBytes(8).toString('hex')}`,
+        discipline: 'Dressage',
+        levelMin: 1,
+        levelMax: 10,
+        entryFee: 0,
+        prize: 100,
+        runDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        hostUserId: userA.id,
+        status: 'open',
+      },
+    });
+  });
+
+  afterEach(async () => {
+    if (show?.id) {
+      await prisma.showEntry.deleteMany({ where: { showId: show.id } }).catch(() => {});
+      await prisma.show.delete({ where: { id: show.id } }).catch(() => {});
+    }
+    const ids = [userA?.id, userB?.id].filter(Boolean);
+    if (ids.length > 0) {
+      await prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } });
+    }
+    await prisma.horse.deleteMany({
+      where: { id: { in: [horseA?.id, horseB?.id].filter(Boolean) } },
+    });
+    await prisma.user.deleteMany({ where: { id: { in: ids } } });
+  });
+
+  // ─── Equoria-bik1 ────────────────────────────────────────────────────────
+  describe('showController.enterShow POST /api/v1/shows/:id/enter', () => {
+    it('returns 404 for cross-user horseId with byte-identical response to not-exists', async () => {
+      // Cross-user case: user A trying to enter user B's horse
+      const resCrossUser = await request(app)
+        .post(`/api/v1/shows/${show.id}/enter`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({ horseId: horseB.id });
+
+      expect(resCrossUser.status).toBe(404);
+      expect(resCrossUser.body.success).toBe(false);
+
+      // Not-exists case: user A trying to enter a non-existent horse
+      const resMissing = await request(app)
+        .post(`/api/v1/shows/${show.id}/enter`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({ horseId: NONEXISTENT_ID });
+
+      expect(resMissing.status).toBe(404);
+      // Byte-identical sentinel — divergence enables horse ID enumeration.
+      expect(resMissing.body).toEqual(resCrossUser.body);
+    });
+  });
+});
