@@ -13,10 +13,7 @@ import {
 } from '../../../utils/competitionRewards.mjs';
 import { updateHorseRewards } from '../../../utils/horseUpdates.mjs';
 import { transferEntryFees } from '../../../utils/userUpdates.mjs';
-import {
-  resolveTackBonus,
-  degradeTackCondition,
-} from '../../services/controllers/tackShopController.mjs';
+import { resolveTackBonus } from '../../services/controllers/tackShopController.mjs';
 import logger from '../../../utils/logger.mjs';
 
 /**
@@ -429,22 +426,6 @@ async function enterAndRunShow(horseIds, show) {
       throw new Error(`Failed to save competition results: ${error.message}`);
     }
 
-    // Step 8b: Degrade tack condition for all competing horses
-    const tackWearResults = [];
-    for (const horse of validHorses) {
-      try {
-        const wearResult = await degradeTackCondition(horse.id);
-        if (wearResult.tackWear.length > 0) {
-          tackWearResults.push(wearResult);
-        }
-      } catch (error) {
-        logger.error(
-          `[competitionController.enterAndRunShow] Tack degradation failed for horse ${horse.id}: ${error.message}`,
-        );
-        // Non-blocking — continue even if tack degradation fails
-      }
-    }
-
     // Step 9: Extract top three for summary with trait information
     const topThree = simulationResults
       .filter(result => result.placement !== null)
@@ -496,8 +477,6 @@ async function enterAndRunShow(horseIds, show) {
       message: 'Competition completed successfully with enhanced trait scoring',
       results: savedResults,
       failedFetches,
-      // Tack wear: items that degraded this round, grouped by horse
-      tackWear: tackWearResults,
       summary: {
         totalEntries: horseIds.length,
         validEntries: validHorses.length,

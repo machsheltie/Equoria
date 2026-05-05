@@ -3,9 +3,9 @@
  * All tack shop endpoints under /api/tack-shop.
  *
  * Path summary:
- *   GET  /inventory   → list available tack items
- *   POST /purchase    → purchase an item for a horse
- *   POST /repair      → repair a tack item (restore condition to 100)
+ *   GET  /inventory          → list available tack items
+ *   POST /purchase           → purchase an item for a horse
+ *   POST /unequip-decoration → remove a decorative item from a horse
  */
 
 import express from 'express';
@@ -14,7 +14,6 @@ import logger from '../../../utils/logger.mjs';
 import {
   getTackInventory,
   purchaseTackItem,
-  repairTackItem,
   unequipDecoration,
 } from '../controllers/tackShopController.mjs';
 
@@ -41,16 +40,6 @@ router.post(
     handleValidationErrors,
   ],
   purchaseTackItem,
-);
-
-router.post(
-  '/repair',
-  [
-    body('horseId').isInt({ min: 1 }).withMessage('horseId must be a positive integer'),
-    body('category').notEmpty().withMessage('category is required'),
-    handleValidationErrors,
-  ],
-  repairTackItem,
 );
 
 router.post(

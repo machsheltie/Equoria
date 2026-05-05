@@ -2281,19 +2281,8 @@ const TACK_DISPLAY_CATEGORIES = [
   { key: 'breastplate', label: 'Breastplate' },
 ];
 
-function getTackConditionValue(tack: Record<string, unknown>, category: string): number {
-  const val = tack[`${category}_condition`];
-  return typeof val === 'number' ? val : 100;
-}
-
-function conditionColorClasses(condition: number): { bar: string; text: string; label: string } {
-  if (condition >= 75) return { bar: 'bg-green-500', text: 'text-green-400', label: 'Good' };
-  if (condition >= 50) return { bar: 'bg-yellow-500', text: 'text-yellow-400', label: 'Fair' };
-  if (condition >= 25) return { bar: 'bg-orange-500', text: 'text-orange-400', label: 'Poor' };
-  return { bar: 'bg-red-500', text: 'text-red-400', label: condition <= 0 ? 'Broken' : 'Critical' };
-}
-
-// Tack Tab Component — shows equipped items with condition colour coding
+// Tack Tab Component — lists equipped items. Tack does not degrade with use,
+// so no condition / repair UI here.
 const TackTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   const tack = horse.tack;
 
@@ -2325,46 +2314,16 @@ const TackTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {equippedItems.map(({ key, label }) => {
           const itemId = tack[key] as string;
-          const condition = getTackConditionValue(tack, key);
-          const colors = conditionColorClasses(condition);
-
           return (
             <div
               key={key}
               className="p-4 bg-[rgba(15,35,70,0.4)] rounded border border-[rgba(37,99,235,0.2)]"
-              data-testid={`tack-condition-${key}`}
+              data-testid={`tack-equipped-${key}`}
             >
-              <div className="flex items-center justify-between mb-2">
-                <span className="fantasy-caption text-[rgb(160,175,200)] capitalize">{label}</span>
-                <span className={`text-xs font-semibold ${colors.text}`}>{colors.label}</span>
-              </div>
-              <p className="fantasy-body text-[rgb(220,235,255)] text-sm mb-3 truncate">{itemId}</p>
-
-              {/* Condition progress bar */}
-              <div className="flex items-center gap-2">
-                <div className="flex-1 h-2 bg-[rgba(15,35,70,0.6)] rounded-full overflow-hidden border border-[rgba(37,99,235,0.15)]">
-                  <div
-                    className={`h-full transition-all ${colors.bar}`}
-                    style={{ width: `${Math.max(0, Math.min(100, condition))}%` }}
-                    role="progressbar"
-                    aria-valuenow={condition}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                    aria-label={`${label} condition: ${condition}%`}
-                  />
-                </div>
-                <span className={`text-xs font-medium w-8 text-right shrink-0 ${colors.text}`}>
-                  {condition}%
-                </span>
-              </div>
-
-              {condition < 50 && (
-                <p className="text-xs text-[rgb(148,163,184)] mt-2 italic">
-                  {condition <= 0
-                    ? 'Broken — provides no bonus. Repair to restore.'
-                    : 'Below 50% — bonus is halved. Consider repairing.'}
-                </p>
-              )}
+              <span className="fantasy-caption text-[rgb(160,175,200)] capitalize block mb-1">
+                {label}
+              </span>
+              <p className="fantasy-body text-[rgb(220,235,255)] text-sm truncate">{itemId}</p>
             </div>
           );
         })}

@@ -1395,16 +1395,6 @@ export interface TackPurchaseResult {
   remainingMoney: number;
 }
 
-export interface TackRepairResult {
-  horse: { id: number; name: string; tack: Record<string, unknown> };
-  item: TackItem;
-  category: string;
-  repairCost: number;
-  previousCondition: number;
-  newCondition: number;
-  remainingMoney: number;
-}
-
 export interface TackUnequipDecorationResult {
   horse: { id: number; name: string; tack: Record<string, unknown> };
   removedItemId: string;
@@ -1414,15 +1404,12 @@ export interface TackUnequipDecorationResult {
  * Tack Shop API surface
  *   GET  /api/tack-shop/inventory              → TackInventoryData
  *   POST /api/tack-shop/purchase               → TackPurchaseResult
- *   POST /api/tack-shop/repair                 → TackRepairResult
  *   POST /api/tack-shop/unequip-decoration     → TackUnequipDecorationResult
  */
 export const tackShopApi = {
   getInventory: () => apiClient.get<TackInventoryData>('/api/v1/tack-shop/inventory'),
   purchaseItem: (data: { horseId: number; itemId: string }) =>
     apiClient.post<TackPurchaseResult>('/api/v1/tack-shop/purchase', data),
-  repairItem: (data: { horseId: number; category: string }) =>
-    apiClient.post<TackRepairResult>('/api/v1/tack-shop/repair', data),
   unequipDecoration: (data: { horseId: number; itemId: string }) =>
     apiClient.post<TackUnequipDecorationResult>('/api/v1/tack-shop/unequip-decoration', data),
 };

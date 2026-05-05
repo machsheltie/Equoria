@@ -194,7 +194,7 @@ describe('resolveTackBonus', () => {
   });
 
   it('returns presenceBonus=0 for parade with no decorations', () => {
-    const tack = { saddle: 'dressage-saddle', saddle_condition: 100 };
+    const tack = { saddle: 'dressage-saddle' };
     const result = resolveTackBonus(tack, 'parade');
     expect(result.presenceBonus).toBe(0);
   });
@@ -216,7 +216,6 @@ describe('resolveTackBonus', () => {
   it('returns both saddleBonus and presenceBonus when both are equipped for parade', () => {
     const tack = {
       saddle: 'dressage-saddle',
-      saddle_condition: 100,
       decorations: ['parade-blanket'],
     };
     const result = resolveTackBonus(tack, 'parade');
