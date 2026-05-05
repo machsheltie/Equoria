@@ -6,8 +6,8 @@ import StableView from '../StableView';
 import * as useHorsesModule from '../../hooks/api/useHorses';
 import * as useAuthModule from '../../hooks/useAuth';
 
-// StableView uses an internal StableHorseCard — the external HorseCard import was
-// removed during the Celestial Night refactor. Tests now assert on rendered DOM output.
+// StableView renders the shared HorseCard from @/components/horse/HorseCard.
+// Tests assert on rendered DOM output (name, stats, subtitle) — no component mock.
 
 vi.mock('../../components/FantasyTabs', () => ({
   FantasyTabs: ({
@@ -96,7 +96,7 @@ describe('StableView', () => {
       </Wrapper>
     );
 
-    // Horse name is rendered by StableHorseCard
+    // Horse name is rendered by the shared HorseCard
     expect(screen.getByText('Aurora')).toBeInTheDocument();
 
     // Card is accessible via aria-label

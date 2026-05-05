@@ -11,16 +11,22 @@ import { Award, Coins, Grid3X3, List, Star, Users } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FantasyTabs } from '../components/FantasyTabs';
 import { SkeletonBase } from '@/components/ui/SkeletonCard';
+import { CardGrid } from '@/components/ui/CardGrid';
 import { ErrorCard } from '@/components/ui/ErrorCard';
 import { Button } from '@/components/ui/button';
+import { HorseCard } from '@/components/horse/HorseCard';
+import { CareChip } from '@/components/common/CareChip';
+import { careChipStatus, trainingCooldownChip } from '@/lib/utils/care-status-utils';
+import { getHorseImage } from '@/lib/breed-images';
 import { useHorses } from '../hooks/api/useHorses';
 import { useProfile } from '../hooks/useAuth';
-import { getHorseImage } from '@/lib/breed-images';
 import { getXPProgressPercent } from '@/lib/xp-utils';
-import { getBreedName } from '@/lib/utils';
-import { careChipStatus, trainingCooldownChip } from '@/lib/utils/care-status-utils';
-import { CareChip } from '@/components/common/CareChip';
 import type { HorseSummary } from '@/lib/api-client';
+
+/** Resolve stat value from flat fields or nested stats object — used by list view's top-stat reducer. */
+function getStat(horse: HorseSummary, stat: keyof HorseSummary['stats']): number {
+  return (horse[stat] as number | undefined) ?? horse.stats?.[stat] ?? 0;
+}
 
 /* ─── Helpers ────────────────────────────────────────────────────────── */
 
@@ -36,118 +42,6 @@ function getHorseCategory(horse: HorseSummary): string {
   if (sex === 'stallion') return 'stallion';
   if (sex === 'mare') return 'mare';
   return 'unknown';
-}
-
-/** Resolve stat value from flat fields or nested stats object */
-function getStat(horse: HorseSummary, stat: keyof HorseSummary['stats']): number {
-  return (horse[stat] as number | undefined) ?? horse.stats?.[stat] ?? 0;
-}
-
-/* ─── Horse Card — matches direction-4-hybrid.html mockup ─────────────── */
-
-function StableHorseCard({ horse, onClick }: { horse: HorseSummary; onClick: () => void }) {
-  const age = horse.ageYears ?? horse.age ?? 0;
-  const sex = horse.sex ?? horse.gender ?? '';
-  const subtitle = [getBreedName(horse.breed), sex, `${age} yrs`].filter(Boolean).join(' · ');
-  const isLegendary = !!(horse as unknown as Record<string, unknown>).isLegendary;
-
-  const traits = horse.traits ?? (horse.trait ? [horse.trait] : []);
-
-  const stats = [
-    { label: 'PRC', value: getStat(horse, 'precision') },
-    { label: 'STR', value: getStat(horse, 'strength') },
-    { label: 'SPD', value: getStat(horse, 'speed') },
-    { label: 'AGI', value: getStat(horse, 'agility') },
-    { label: 'END', value: getStat(horse, 'endurance') },
-    { label: 'INT', value: getStat(horse, 'intelligence') },
-    { label: 'STA', value: getStat(horse, 'stamina') },
-    { label: 'BAL', value: getStat(horse, 'balance') },
-    { label: 'BLD', value: getStat(horse, 'boldness') },
-    { label: 'FLX', value: getStat(horse, 'flexibility') },
-    { label: 'OBD', value: getStat(horse, 'obedience') },
-    { label: 'FCS', value: getStat(horse, 'focus') },
-  ];
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`w-full text-left bg-[var(--glass-bg)] border rounded-[var(--radius-lg)] overflow-hidden transition-all duration-[250ms] hover:border-[var(--gold-primary)] hover:shadow-[var(--glow-gold-strong)] hover:-translate-y-1 hover:bg-[var(--glass-glow)] active:translate-y-0 active:shadow-[var(--glow-gold)] active:border-[var(--gold-primary)] cursor-pointer group [backdrop-filter:var(--glass-bg-filter)] shadow-[var(--shadow-card)] ${
-        isLegendary ? 'border-[var(--gold-dim)]' : 'border-[var(--glass-border)]'
-      }`}
-      aria-label={`View ${horse.name}`}
-      data-testid="horse-card"
-    >
-      {/* Top: portrait + info */}
-      <div className="flex gap-4 p-4 pb-0">
-        <div className="w-20 h-20 rounded-[var(--radius-md)] flex items-center justify-center flex-shrink-0 relative bg-gradient-to-br from-[var(--bg-midnight)] to-[var(--bg-twilight)] overflow-hidden">
-          <img
-            src={getHorseImage(horse.imageUrl, horse.breed)}
-            alt={horse.name}
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              (e.target as HTMLImageElement).src = '/images/horse-placeholder.png';
-            }}
-          />
-          {horse.level != null && (
-            <span className="absolute -bottom-1 -right-1 bg-[var(--glass-glow)] border border-[var(--gold-dim)] rounded-[var(--radius-sm)] px-1.5 py-px text-[0.65rem] font-bold text-[var(--gold-light)]">
-              {horse.level}
-            </span>
-          )}
-        </div>
-
-        <div className="flex-1 min-w-0">
-          <p
-            className="text-[1.1rem] font-semibold text-[var(--text-primary)] truncate mb-0.5"
-            style={{ fontFamily: 'var(--font-heading)' }}
-          >
-            {horse.name}
-          </p>
-          <p className="text-[0.75rem] text-[var(--text-secondary)] truncate">{subtitle}</p>
-        </div>
-      </div>
-
-      {/* Stats — compact 4×3 grid */}
-      <div className="grid grid-cols-4 gap-x-3 gap-y-1 px-4 pt-3">
-        {stats.map((s) => (
-          <div key={s.label} className="flex items-center justify-between">
-            <span className="text-[0.6rem] text-[var(--text-secondary)] uppercase tracking-wider font-medium">
-              {s.label}
-            </span>
-            <span className="text-[0.75rem] font-semibold text-[var(--cream)]">{s.value}</span>
-          </div>
-        ))}
-      </div>
-
-      {/* Trait chips */}
-      {traits.length > 0 && (
-        <div className="px-4 pt-2 pb-0 flex flex-wrap gap-1">
-          {traits.map((t) => (
-            <span
-              key={t}
-              className="px-2 py-0.5 rounded-[var(--radius-sm)] text-[0.6rem] font-medium bg-[var(--glass-glow)] text-[var(--gold-light)]"
-            >
-              {t}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Care strip — matches mockup */}
-      {(() => {
-        const cooldown = trainingCooldownChip(horse.trainingCooldown);
-        return (
-          <div className="flex gap-1 px-3 py-3 mt-2 border-t border-[var(--glass-border)] overflow-hidden">
-            <CareChip label="Fed" status={careChipStatus(horse.lastFedDate, 1, 3)} />
-            <CareChip label="Shod" status={careChipStatus(horse.lastShod, 7, 14)} />
-            <CareChip label="Groomed" status={careChipStatus(horse.lastGroomed, 3, 7)} />
-            <CareChip label="Vetted" status={careChipStatus(horse.lastVettedDate, 7, 14)} />
-            <CareChip label={cooldown.label} status={cooldown.status} />
-          </div>
-        );
-      })()}
-    </button>
-  );
 }
 
 /* ─── Skeleton card for loading state ─────────────────────────────────── */
@@ -192,14 +86,11 @@ const StableView = () => {
   const renderHorseList = (tabCategory: string) => {
     if (isLoading) {
       return (
-        <div
-          className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5 p-4"
-          aria-label="Loading horses"
-        >
+        <CardGrid className="p-4" aria-label="Loading horses">
           {[...Array(6)].map((_, i) => (
             <SkeletonHorseCard key={i} />
           ))}
-        </div>
+        </CardGrid>
       );
     }
 
@@ -308,15 +199,15 @@ const StableView = () => {
 
         {/* Grid or List view */}
         {viewMode === 'grid' ? (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(250px,1fr))] gap-5">
+          <CardGrid>
             {paginated.map(({ horse }) => (
-              <StableHorseCard
+              <HorseCard
                 key={horse.id}
                 horse={horse}
                 onClick={() => navigate(`/horses/${horse.id}`)}
               />
             ))}
-          </div>
+          </CardGrid>
         ) : (
           <div className="space-y-1">
             {/* List header */}
