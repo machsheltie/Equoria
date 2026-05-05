@@ -1,33 +1,39 @@
 /**
  * InventoryPage — Player Inventory (Epic 12 — Story 12-2 / Epic 16 — Story 16-1
- *                                  + feed-system redesign 2026-04-29 — A17)
+ *                                  + feed-system redesign 2026-04-29 — A17
+ *                                  + UI cohesion with HorseEquipPage 2026-05-05)
  *
  * Shows all owned items: tack (saddles, bridles), feed (5 tiers — pooled),
  * consumables, and special.
  *
- * Tack: equipped/unequipped to horses directly from this page.
- * Feed: pooled inventory rendered read-only here; equipping happens per-horse
- *       on the horse Equip page (`/horses/:id/equip`). Feed has no
- *       equippedToHorseId because Horse.equippedFeedType is the per-horse
- *       source of truth, not the inventory row.
+ * Read-only equip view: no "Equip" action here. Equipping happens per-horse on
+ * the horse Equip page (`/horses/:id/equip`). Tack unequip remains available.
  *
- * UI consistency (Equoria-rgke): consumes shared CardGrid + ItemCard + the
- * canonical FantasyTabs filter pattern from StableView.
+ * Card style matches HorseEquipPage exactly:
+ *   - Same ItemCard layout (image, gold star prefix, title, subtitle, description, meta)
+ *   - Feed: subtitle = "N units in stock", meta = stat-roll / pregnancy %, click → popup
+ *   - Tack: subtitle = category, meta = ×N quantity badge, gold border + star if equipped
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Package, Shield, Leaf, Sparkles, AlertCircle, Loader2, Wrench } from 'lucide-react';
-import { useInventory, useEquipItem, useUnequipItem } from '@/hooks/api/useInventory';
+import { Package, Shield, Leaf, Sparkles, AlertCircle, Loader2, Wrench, Star } from 'lucide-react';
+import { useInventory, useUnequipItem } from '@/hooks/api/useInventory';
+import { useFeedCatalog } from '@/hooks/api/useFeedShop';
 import PageHero from '@/components/layout/PageHero';
 import { Button } from '@/components/ui/button';
 import { CardGrid } from '@/components/ui/CardGrid';
 import { ItemCard } from '@/components/ui/ItemCard';
 import { FantasyTabs } from '@/components/FantasyTabs';
-import { horsesApi } from '@/lib/api-client';
+import {
+  GameDialog,
+  GameDialogContent,
+  GameDialogHeader,
+  GameDialogTitle,
+  GameDialogDescription,
+} from '@/components/ui/game/GameDialog';
 import type { InventoryItem, FeedItem } from '@/lib/api-client';
-import { useQuery } from '@tanstack/react-query';
 
 type InventoryCategory = 'all' | 'saddle' | 'bridle' | 'feed' | 'consumables' | 'special';
 
@@ -39,8 +45,6 @@ const FEED_IMAGES: Record<FeedItem['id'], string> = {
   elite: '/images/feed/elitefeed.png',
 };
 
-// Tack art is shipped per-item-id in /images/tack. Items without art fall
-// back to the wrench placeholder. Add new entries here as art is added.
 const TACK_IMAGES: Record<string, string> = {
   'dressage-saddle': '/images/tack/dressage-saddle.png',
   'dressage-bridle': '/images/tack/dressage-bridle.png',
@@ -53,6 +57,10 @@ function getItemImage(item: InventoryItem): string | null {
   return TACK_IMAGES[item.itemId] ?? null;
 }
 
+const EQUIPPED_STAR = (
+  <Star className="w-3.5 h-3.5 text-[var(--gold-primary)] fill-[var(--gold-primary)]" />
+);
+
 // ── Category config ──────────────────────────────────────────────────────────
 
 const CATEGORY_TABS: { value: InventoryCategory; label: string; icon: React.ReactNode }[] = [
@@ -64,107 +72,27 @@ const CATEGORY_TABS: { value: InventoryCategory; label: string; icon: React.Reac
   { value: 'special', label: 'Special', icon: <Sparkles className="w-4 h-4" /> },
 ];
 
-// ── HorsePicker modal ────────────────────────────────────────────────────────
-
-interface HorsePickerProps {
-  itemName: string;
-  onConfirm: (_horseId: number) => void;
-  onClose: () => void;
-  isPending: boolean;
-}
-
-const HorsePicker: React.FC<HorsePickerProps> = ({ itemName, onConfirm, onClose, isPending }) => {
-  const [selectedHorseId, setSelectedHorseId] = useState<number | null>(null);
-
-  const { data: horsesData, isLoading } = useQuery({
-    queryKey: ['horses-picker'],
-    queryFn: () => horsesApi.list(),
-    staleTime: 30_000,
-  });
-
-  const horses = horsesData ?? [];
-
-  return (
-    <div
-      className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/60 p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Equip ${itemName}`}
-    >
-      <div className="w-full max-w-sm glass-panel-heavy rounded-xl p-6 shadow-2xl">
-        <h2 className="text-lg font-bold text-[var(--cream)] mb-1">Equip Item</h2>
-        <p className="text-sm text-[var(--text-muted)] mb-4">
-          Select a horse to equip <span className="text-[var(--gold-light)]">{itemName}</span>
-        </p>
-
-        {isLoading ? (
-          <div className="flex justify-center py-6">
-            <Loader2 className="w-6 h-6 animate-spin text-white/40" />
-          </div>
-        ) : horses.length === 0 ? (
-          <p className="text-sm text-white/40 text-center py-4">
-            No horses found. Add a horse first.
-          </p>
-        ) : (
-          <ul className="space-y-2 max-h-56 overflow-y-auto mb-4">
-            {horses.map((horse) => (
-              <li key={horse.id}>
-                <Button
-                  type="button"
-                  variant={selectedHorseId === horse.id ? 'default' : 'secondary'}
-                  size="sm"
-                  onClick={() => setSelectedHorseId(horse.id)}
-                  className="w-full justify-start"
-                >
-                  {horse.name}
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        <div className="flex gap-2">
-          <Button type="button" onClick={onClose} disabled={isPending} className="flex-1">
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            onClick={() => selectedHorseId !== null && onConfirm(selectedHorseId)}
-            disabled={selectedHorseId === null || isPending}
-            className="flex-1"
-          >
-            {isPending ? (
-              <span className="flex items-center justify-center gap-1">
-                <Loader2 className="w-3 h-3 animate-spin" /> Equipping…
-              </span>
-            ) : (
-              'Equip'
-            )}
-          </Button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ── Inventory Card adapter ───────────────────────────────────────────────────
-// Wraps the shared ItemCard to apply inventory-specific media, action, and
-// quantity badge. Keeps ItemCard's API generic across shops/services/equip.
+// ── InventoryCard adapter ────────────────────────────────────────────────────
+// Mirrors HorseEquipPage's card layout exactly. No equip action — this page
+// is a read-only view of owned items. Unequip remains for equipped tack.
 
 interface InventoryCardProps {
   item: InventoryItem;
-  onEquipRequest: (_item: InventoryItem) => void;
   onUnequip: (_item: InventoryItem) => void;
   isUnequipping: boolean;
+  onShowInfo: (_info: { title: string; description: string }) => void;
+  feedCatalogById: Partial<Record<FeedItem['id'], FeedItem>>;
 }
 
 const InventoryCard: React.FC<InventoryCardProps> = ({
   item,
-  onEquipRequest,
   onUnequip,
   isUnequipping,
+  onShowInfo,
+  feedCatalogById,
 }) => {
   const isFeed = item.category === 'feed';
+  const isEquipped = !!item.equippedToHorseId;
   const imageSrc = getItemImage(item);
 
   const media = imageSrc ? (
@@ -175,56 +103,73 @@ const InventoryCard: React.FC<InventoryCardProps> = ({
     </div>
   );
 
-  // Quantity rendered as a small neutral badge inline with title — passed via
-  // meta so it stays out of the gold "price" slot semantics.
-  const meta = (
+  // Feed: "N units in stock" matches Equip page. Tack: category label.
+  const subtitle = isFeed ? (
+    `${item.quantity} units in stock`
+  ) : (
+    <span className="capitalize">{item.category}</span>
+  );
+
+  // Feed: stat roll / pregnancy % from catalog (matches Equip page exactly).
+  // Tack: quantity badge.
+  const feedMeta = isFeed ? feedCatalogById[item.itemId as FeedItem['id']] : undefined;
+  const meta: React.ReactNode = isFeed ? (
+    feedMeta ? (
+      <span className="text-[0.65rem] text-[var(--text-muted)]">
+        Stat-roll <strong className="text-[var(--text-secondary)]">{feedMeta.statRollPct}%</strong>{' '}
+        · Pregnancy{' '}
+        <strong className="text-[var(--text-secondary)]">+{feedMeta.pregnancyBonusPct}%</strong>
+      </span>
+    ) : undefined
+  ) : (
     <span className="text-[0.65rem] font-bold bg-white/10 text-[var(--cream)]/60 rounded-full px-2 py-0.5">
       ×{item.quantity}
     </span>
   );
 
+  // Description: feed uses catalog description; tack uses bonus field.
+  const description = isFeed
+    ? (feedMeta?.description ?? item.bonus ?? undefined)
+    : (item.bonus ?? undefined);
+
+  // Action: unequip for equipped tack only; nothing for feed or unequipped tack.
   let action: React.ReactNode;
-  if (isFeed) {
-    action = (
-      <p
-        className="text-xs text-[var(--text-muted)] italic leading-snug text-center"
-        data-testid={`feed-equip-hint-${item.id}`}
-      >
-        Equipped via the horse&rsquo;s Equip page.
-      </p>
-    );
-  } else if (item.equippedToHorseId) {
+  if (!isFeed && isEquipped) {
     action = (
       <div className="flex items-center justify-between gap-2">
         <span className="text-xs text-[var(--gold-light)] font-medium truncate">
-          Equipped: {item.equippedToHorseName ?? `Horse #${item.equippedToHorseId}`}
+          {item.equippedToHorseName ?? `Horse #${item.equippedToHorseId}`}
         </span>
-        <Button type="button" size="sm" onClick={() => onUnequip(item)} disabled={isUnequipping}>
+        <Button
+          type="button"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation();
+            onUnequip(item);
+          }}
+          disabled={isUnequipping}
+        >
           {isUnequipping ? <Loader2 className="w-3 h-3 animate-spin inline" /> : 'Unequip'}
         </Button>
       </div>
     );
-  } else {
-    action = (
-      <Button
-        type="button"
-        onClick={() => onEquipRequest(item)}
-        data-onboarding-target="inventory-equip-button"
-        className="w-full"
-      >
-        Equip
-      </Button>
-    );
   }
+
+  const handleClick = description
+    ? () => onShowInfo({ title: item.name, description: description as string })
+    : undefined;
 
   return (
     <ItemCard
       data-testid={`inventory-item-${item.id}`}
       media={media}
+      titlePrefix={isEquipped ? EQUIPPED_STAR : undefined}
       title={item.name}
-      subtitle={<span className="capitalize">{item.category}</span>}
-      description={item.bonus ?? undefined}
+      subtitle={subtitle}
+      description={description}
       meta={meta}
+      selected={isEquipped}
+      onClick={handleClick}
       action={action}
     />
   );
@@ -233,42 +178,20 @@ const InventoryCard: React.FC<InventoryCardProps> = ({
 // ── InventoryPage ─────────────────────────────────────────────────────────────
 
 const InventoryPage: React.FC = () => {
-  const [equipTarget, setEquipTarget] = useState<InventoryItem | null>(null);
   const [unequippingId, setUnequippingId] = useState<string | null>(null);
+  const [activeInfo, setActiveInfo] = useState<{ title: string; description: string } | null>(null);
 
   const { items, total, isLoading, error } = useInventory();
-  const equipMutation = useEquipItem();
   const unequipMutation = useUnequipItem();
+  const { data: catalog } = useFeedCatalog();
 
-  // ── Handlers ──
-
-  const handleEquipRequest = (item: InventoryItem) => {
-    if ((item.category as string) === 'consumables' || (item.category as string) === 'special') {
-      toast.info(
-        `To use "${item.name}", purchase it from the Feed Shop or Vet Clinic for a specific horse.`,
-        { duration: 5000 }
-      );
-      return;
-    }
-    setEquipTarget(item);
-  };
-
-  const handleEquipConfirm = (horseId: number) => {
-    if (!equipTarget) return;
-    equipMutation.mutate(
-      { inventoryItemId: equipTarget.id, horseId },
-      {
-        onSuccess: () => {
-          toast.success(`${equipTarget.name} equipped successfully`);
-          setEquipTarget(null);
-        },
-        onError: (err: unknown) => {
-          const msg = err instanceof Error ? err.message : 'Failed to equip item';
-          toast.error(msg);
-        },
-      }
-    );
-  };
+  const catalogById = useMemo(() => {
+    const map: Partial<Record<FeedItem['id'], FeedItem>> = {};
+    (catalog ?? []).forEach((c) => {
+      map[c.id] = c;
+    });
+    return map;
+  }, [catalog]);
 
   const handleUnequip = (item: InventoryItem) => {
     setUnequippingId(item.id);
@@ -288,7 +211,6 @@ const InventoryPage: React.FC = () => {
     );
   };
 
-  // Render the grid for a given category — used as each FantasyTab's content.
   const renderGrid = (category: InventoryCategory) => {
     if (isLoading) {
       return (
@@ -336,9 +258,10 @@ const InventoryPage: React.FC = () => {
           <InventoryCard
             key={item.id}
             item={item}
-            onEquipRequest={handleEquipRequest}
             onUnequip={handleUnequip}
             isUnequipping={unequippingId === item.id && unequipMutation.isPending}
+            onShowInfo={setActiveInfo}
+            feedCatalogById={catalogById}
           />
         ))}
       </CardGrid>
@@ -354,22 +277,12 @@ const InventoryPage: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      {equipTarget && (
-        <HorsePicker
-          itemName={equipTarget.name}
-          onConfirm={handleEquipConfirm}
-          onClose={() => setEquipTarget(null)}
-          isPending={equipMutation.isPending}
-        />
-      )}
-
       <PageHero
         title="Inventory"
         subtitle="Manage your tack, consumables, and special items"
         mood="golden"
         icon={<Package className="w-7 h-7 text-[var(--gold-400)]" />}
       >
-        {/* Breadcrumb + item count */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-[var(--cream)]/60">
             <Link to="/" className="hover:text-[var(--cream)] transition-colors">
@@ -388,24 +301,38 @@ const InventoryPage: React.FC = () => {
       </PageHero>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Category filter — FantasyTabs (canonical from StableView) */}
         <div data-testid="inventory-grid">
           <FantasyTabs tabs={tabs} defaultValue="all" />
         </div>
 
-        {/* Info Panel */}
         <div className="mt-10 p-5 rounded-xl glass-panel text-sm text-[var(--text-muted)]">
           <h3 className="font-semibold text-[var(--cream)] mb-2">About Inventory</h3>
           <ul className="space-y-1 list-disc list-inside">
-            <li>Tack items can be equipped to one horse at a time</li>
-            <li>Feed is pooled inventory; equip and feed it from each horse&rsquo;s Equip page</li>
+            <li>
+              Tack items can be equipped to one horse at a time — equip from the horse&rsquo;s Equip
+              page
+            </li>
+            <li>
+              Feed is pooled inventory; equip and change feed from each horse&rsquo;s Equip page
+            </li>
             <li>Consumables are used once and removed from inventory</li>
             <li>Special items unlock unique actions or access</li>
             <li>Items purchased in the Tack Shop and Feed Shop appear here automatically</li>
-            <li>Equip and unequip tack directly from this page</li>
           </ul>
         </div>
       </div>
+
+      {/* Item description popup — matches HorseEquipPage */}
+      <GameDialog open={activeInfo !== null} onOpenChange={(open) => !open && setActiveInfo(null)}>
+        <GameDialogContent>
+          <GameDialogHeader>
+            <GameDialogTitle>{activeInfo?.title}</GameDialogTitle>
+          </GameDialogHeader>
+          <GameDialogDescription className="pt-4 text-[var(--text-secondary)] text-sm leading-relaxed">
+            {activeInfo?.description}
+          </GameDialogDescription>
+        </GameDialogContent>
+      </GameDialog>
     </div>
   );
 };

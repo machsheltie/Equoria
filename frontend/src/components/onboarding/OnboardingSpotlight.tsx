@@ -86,9 +86,10 @@ const ONBOARDING_STEPS: OnboardingStep[] = [
   },
   {
     step: 10,
-    message: 'Finally, equip tack to your horse to gain stat bonuses in competition.',
-    route: '/inventory',
-    highlightTarget: 'inventory-equip-button',
+    message:
+      "Finally, open a horse's Equip page to attach tack and choose feed — both give stat bonuses in competition.",
+    route: '/stable',
+    highlightTarget: undefined,
   },
 ];
 
