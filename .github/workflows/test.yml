@@ -793,6 +793,18 @@ jobs:
           npx prisma generate --schema=prisma/schema.prisma
           npx prisma migrate deploy --schema=prisma/schema.prisma
 
+      - name: Seed breeds (required for onboarding flow)
+        # The beta-readiness Playwright suite includes
+        # tests/e2e/readiness/auth-onboarding.spec.ts which selects a breed
+        # from the BreedSelector dropdown via selectOption({ index: 1 }).
+        # The dropdown is populated from GET /api/breeds, which returns
+        # whatever's in the breeds table — empty in a fresh CI test DB.
+        # Without breed seeding the test times out waiting for option 1.
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/equoria_test
+        run: npm run seed:breeds
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
