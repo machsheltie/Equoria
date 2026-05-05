@@ -504,7 +504,10 @@ function assertNoPollutingKeys(value, path = 'body', depth = 0) {
 
 export function verifyJsonBody(req, _res, buffer) {
   const contentType = req.headers['content-type'] || '';
-  if (!contentType.includes('application/json') || buffer.length === 0) {
+  // Equoria-gbcm (21R-SEC-3-FOLLOW-7): case-insensitive match mirrors Express
+  // body-parser's type-is behavior. Application/JSON (any casing) must not
+  // bypass the duplicate-key / depth-cap gates.
+  if (!contentType.toLowerCase().includes('application/json') || buffer.length === 0) {
     return;
   }
 
@@ -568,7 +571,19 @@ export function rejectPollutedRequestBody(req, _res, next) {
     assertNoPollutingKeys(req.body);
     next();
   } catch (error) {
-    next(error);
+    // Equoria-2l00 (21R-SEC-3-FOLLOW-1B): symmetric fail-closed with verifyJsonBody.
+    // AppError subclasses propagate directly; non-AppError gets logged + wrapped → 400.
+    if (AppError.isAppError(error)) {
+      next(error);
+      return;
+    }
+    logger.warn(UNEXPECTED_SCANNER_LOG_PREFIX, {
+      unexpected: true,
+      errorClass: error?.constructor?.name,
+      message: sanitizeForLog(error?.message, 256),
+      stack: sanitizeForLog(error?.stack, 2048),
+    });
+    next(new RequestBodySecurityError('pollution check failure'));
   }
 }
 
@@ -662,7 +677,19 @@ export function rejectPollutedRequestQuery(req, _res, next) {
     }
     next();
   } catch (error) {
-    next(error);
+    // Equoria-797z (21R-SEC-3-FOLLOW-1D): symmetric fail-closed with
+    // rejectPollutedRequestBody (Equoria-2l00). Non-AppError wrapped → 400.
+    if (AppError.isAppError(error)) {
+      next(error);
+      return;
+    }
+    logger.warn(UNEXPECTED_SCANNER_LOG_PREFIX, {
+      unexpected: true,
+      errorClass: error?.constructor?.name,
+      message: sanitizeForLog(error?.message, 256),
+      stack: sanitizeForLog(error?.stack, 2048),
+    });
+    next(new RequestBodySecurityError('query pollution check failure'));
   }
 }
 
