@@ -49,6 +49,38 @@ describe('sessionManagement middleware', () => {
       expect(next).toHaveBeenCalled();
     });
 
+    it('allows when maxSessions is 0 (limit disabled)', () => {
+      // Branch coverage on sessionManagement.mjs:50 — `!maxSessions` truthy
+      // path. With maxSessions=0 the limit is effectively off and the
+      // middleware should pass through without inspecting the store.
+      const req = { session: { userId: 'u1', sessionId: 's1' } };
+      const res = mockRes();
+      const next = jest.fn();
+      sessionConcurrencyLimit(0)(req, res, next);
+      expect(next).toHaveBeenCalled();
+      expect(res.status).not.toHaveBeenCalled();
+    });
+
+    it('allows when req.session is missing', () => {
+      // Branch coverage on `!req.session` truthy path.
+      const req = {};
+      const res = mockRes();
+      const next = jest.fn();
+      sessionConcurrencyLimit(2)(req, res, next);
+      expect(next).toHaveBeenCalled();
+      expect(res.status).not.toHaveBeenCalled();
+    });
+
+    it('allows when req.session.userId is missing', () => {
+      // Branch coverage on `!req.session.userId` truthy path.
+      const req = { session: { sessionId: 's1' } };
+      const res = mockRes();
+      const next = jest.fn();
+      sessionConcurrencyLimit(2)(req, res, next);
+      expect(next).toHaveBeenCalled();
+      expect(res.status).not.toHaveBeenCalled();
+    });
+
     it('blocks when concurrency exceeded', () => {
       const store = new Map([['u1', ['s1', 's2']]]);
       const req = { session: { userId: 'u1', sessionId: 's3' } };

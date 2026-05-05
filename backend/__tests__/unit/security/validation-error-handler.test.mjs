@@ -39,6 +39,42 @@ describe('validationErrorHandler', () => {
     });
   });
 
+  it('returns 400 with redacted error details in production (CWE-209)', () => {
+    // Branch coverage on validationErrorHandler.mjs:27 —
+    // `process.env.NODE_ENV === 'production'` truthy path. The production
+    // branch redacts internal validation details (only the first error's
+    // .msg is exposed) to comply with CWE-209 (information leak).
+    const prevEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'production';
+    try {
+      const req = {
+        validationResult: jest.fn(() => ({
+          isEmpty: () => false,
+          array: () => [
+            { msg: 'Invalid email', path: 'email' },
+            { msg: 'Password too short', path: 'password' },
+          ],
+        })),
+        get: () => 'jest',
+        method: 'POST',
+        originalUrl: '/auth/register',
+        ip: '127.0.0.1',
+      };
+      const res = mockRes();
+      const next = jest.fn();
+      handleValidationErrors(req, res, next);
+      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res.json).toHaveBeenCalledWith({
+        success: false,
+        message: 'Invalid email',
+        // Only first message exposed; field paths and the second error are stripped.
+        errors: [{ message: 'Invalid email' }],
+      });
+    } finally {
+      process.env.NODE_ENV = prevEnv;
+    }
+  });
+
   it('sanitizes request body by keeping only validated fields', () => {
     const req = {
       body: { allowed: 'ok', extra: 'bad' },
