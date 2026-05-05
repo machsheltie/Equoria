@@ -40,15 +40,10 @@ describe('canonicalizeHorseSex (pure helper)', () => {
     ['Mare', 'Mare'],
     ['stallion', 'Stallion'],
     ['STALLION', 'Stallion'],
-    ['gelding', 'Gelding'],
     ['filly', 'Filly'],
     ['colt', 'Colt'],
     ['rig', 'Rig'],
-    ['spayed mare', 'Spayed Mare'],
-    ['SPAYED MARE', 'Spayed Mare'],
-    ['Spayed Mare', 'Spayed Mare'],
     ['  mare  ', 'Mare'],
-    ['spayed   mare', 'Spayed Mare'],
   ])('canonicalizes %j → %j', (input, expected) => {
     expect(canonicalizeHorseSex(input)).toBe(expected);
   });
@@ -72,15 +67,7 @@ describe('canonicalizeHorseSex (pure helper)', () => {
   });
 
   it('canonical list contains exactly the expected values', () => {
-    expect([...CANONICAL_HORSE_SEX_VALUES].sort()).toEqual([
-      'Colt',
-      'Filly',
-      'Gelding',
-      'Mare',
-      'Rig',
-      'Spayed Mare',
-      'Stallion',
-    ]);
+    expect([...CANONICAL_HORSE_SEX_VALUES].sort()).toEqual(['Colt', 'Filly', 'Mare', 'Rig', 'Stallion']);
   });
 });
 
@@ -153,7 +140,7 @@ describe('Prisma $extends — canonicalizes sex on every horse write', () => {
     ).rejects.toThrow(/not a recognized horse sex/);
   });
 
-  it('horse.update — lowercase "gelding" persists as "Gelding"', async () => {
+  it('horse.update — lowercase "mare" persists as "Mare"', async () => {
     const created = await prisma.horse.create({
       data: {
         name: `${FIXTURE_NAME_PREFIX}update-target`,
@@ -165,9 +152,9 @@ describe('Prisma $extends — canonicalizes sex on every horse write', () => {
     expect(created.sex).toBe('Colt');
     const updated = await prisma.horse.update({
       where: { id: created.id },
-      data: { sex: 'gelding' },
+      data: { sex: 'mare' },
     });
-    expect(updated.sex).toBe('Gelding');
+    expect(updated.sex).toBe('Mare');
   });
 
   it('horse.upsert — sex canonicalized on create branch', async () => {

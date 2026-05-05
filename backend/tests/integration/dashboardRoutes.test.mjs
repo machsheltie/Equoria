@@ -134,7 +134,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
         data: {
           name: 'TestDashboard Horse 3',
           age: 8,
-          sex: 'Gelding',
+          sex: 'Stallion',
           breed: { connect: { id: testBreed.id } },
           user: { connect: { id: testUser.id } },
           dateOfBirth: new Date('2017-01-01'),

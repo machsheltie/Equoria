@@ -167,7 +167,7 @@ const HORSES = [
   // newplayer's starter horse
   {
     name: 'Lucky Clover',
-    sex: 'Gelding',
+    sex: 'Stallion',
     age: 3,
     breed: 'American Quarter Horse',
     userIdx: 2,

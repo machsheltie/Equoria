@@ -44,7 +44,7 @@ describe('HorseSelector', () => {
       id: 3,
       name: 'Golden Dawn',
       age: 2,
-      sex: 'Gelding',
+      sex: 'Stallion',
       level: 3,
       health: 'healthy',
       disciplines: { racing: 40, showJumping: 35, dressage: 30 },

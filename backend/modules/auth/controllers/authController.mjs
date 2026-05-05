@@ -1131,7 +1131,7 @@ export const advanceOnboarding = async (req, res, next) => {
     if (typeof gender === 'string') {
       try {
         const canonical = canonicalizeHorseSex(gender);
-        if (canonical === 'Mare' || canonical === 'Stallion' || canonical === 'Gelding') {
+        if (canonical === 'Mare' || canonical === 'Stallion') {
           normalizedGender = canonical;
         }
       } catch {

@@ -305,7 +305,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
         data: {
           name: 'TestHorse Minimal',
           age: 3,
-          sex: 'Gelding',
+          sex: 'Stallion',
           breed: { connect: { id: minimalBreed.id } },
           user: { connect: { id: testUser.id } },
           dateOfBirth: new Date('2022-01-01'),

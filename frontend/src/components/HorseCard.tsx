@@ -21,7 +21,7 @@ interface HorseCardProps {
   discipline: string;
   // Canonical Title Case (Equoria-duz2). Backend canonicalizes at the
   // Prisma client layer, so the API always returns one of these forms.
-  sex?: 'Mare' | 'Stallion' | 'Gelding' | 'Colt' | 'Filly' | 'Rig' | 'Spayed Mare';
+  sex?: 'Mare' | 'Stallion' | 'Colt' | 'Filly' | 'Rig';
   isLegendary?: boolean;
   cooldownHours?: number;
   stats?: {

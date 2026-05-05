@@ -28,11 +28,9 @@
 export const HORSE_SEX = {
   STALLION: 'Stallion',
   MARE: 'Mare',
-  GELDING: 'Gelding',
   COLT: 'Colt',
   FILLY: 'Filly',
   RIG: 'Rig',
-  SPAYED_MARE: 'Spayed Mare',
 };
 
 export const HORSE_SEX_VALUES = Object.values(HORSE_SEX);
@@ -108,7 +106,6 @@ export const CONFORMATION_CLASSES = {
   FOALS_YOUNGSTOCK: 'Foals/Youngstock',
   MARES: 'Mares',
   STALLIONS: 'Stallions',
-  GELDINGS: 'Geldings',
   VETERANS: 'Veterans',
   OPEN_ALL_BREED: 'Open All-Breed',
   BREED_SPECIFIC: 'Breed-Specific',

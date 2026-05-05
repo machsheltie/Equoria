@@ -44,7 +44,7 @@ export interface HorseDetailData {
   horseName: string;
   breed: string;
   age: number;
-  sex: 'Stallion' | 'Mare' | 'Gelding';
+  sex: 'Stallion' | 'Mare' | 'Colt' | 'Filly' | 'Rig';
   level: number;
   stats: {
     speed: number;

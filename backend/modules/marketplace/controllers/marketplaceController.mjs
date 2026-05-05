@@ -378,9 +378,8 @@ export async function myListings(req, res) {
  *
  * Body: { breedId: number, sex: 'Mare' | 'Stallion' (case-insensitive) }
  *
- * Sex is canonicalized to Title Case before persistence. Other canonical
- * values (Gelding, Filly, Colt, etc.) exist for the broader sex domain but
- * are not sold by the store — only adult breeding-eligible animals are.
+ * Sex is canonicalized to Title Case before persistence. Only adult
+ * breeding-eligible animals (Stallion/Mare) are sold by the store.
  */
 export async function buyStoreHorse(req, res) {
   const buyerId = req.user.id;

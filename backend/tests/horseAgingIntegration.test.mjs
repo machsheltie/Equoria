@@ -273,7 +273,7 @@ describe('Horse Aging Integration', () => {
         prisma.horse.create({
           data: {
             name: 'No Birthday Horse',
-            sex: 'Gelding',
+            sex: 'Stallion',
             dateOfBirth: new Date('2025-05-01T00:00:00Z'), // 31 days ago
             age: 31, // Correct age (no birthday today)
             userId: testUser.id,

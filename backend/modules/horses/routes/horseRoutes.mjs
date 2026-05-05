@@ -14,7 +14,7 @@ import {
   getHorseCompetitionHistory,
 } from '../controllers/horseController.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
-import { requireOwnership } from '../../../middleware/ownership.mjs';
+import { requireOwnership, findOwnedResource } from '../../../middleware/ownership.mjs';
 import {
   foalRateLimiter,
   mutationRateLimiter,
@@ -198,22 +198,22 @@ const validateHorseCreation = [
       const canonical = canonicalizeHorseSex(value);
       // Limit user-creatable sex values to adult biological sex roles.
       // Foals (Filly/Colt) come from breeding, not direct creation.
-      if (!['Stallion', 'Mare', 'Gelding'].includes(canonical)) {
-        throw new Error('Sex must be stallion, mare, or gelding');
+      if (!['Stallion', 'Mare'].includes(canonical)) {
+        throw new Error('Sex must be stallion or mare');
       }
       return true;
     })
-    .withMessage('Sex must be stallion, mare, or gelding'),
+    .withMessage('Sex must be stallion or mare'),
   body('gender')
     .optional()
     .custom(value => {
       const canonical = canonicalizeHorseSex(value);
-      if (!['Stallion', 'Mare', 'Gelding'].includes(canonical)) {
-        throw new Error('Gender must be stallion, mare, or gelding');
+      if (!['Stallion', 'Mare'].includes(canonical)) {
+        throw new Error('Gender must be stallion or mare');
       }
       return true;
     })
-    .withMessage('Gender must be stallion, mare, or gelding'),
+    .withMessage('Gender must be stallion or mare'),
   body('userId')
     .optional()
     .isLength({ min: 1, max: 50 })
@@ -1124,15 +1124,56 @@ const validateFoalCreation = [
  * POST /horses/foals
  * Create a new foal with epigenetic traits applied at birth
  *
- * NOTE: Currently validates sire/dam existence but NOT ownership.
- * TODO(security): Add ownership validation for sireId/damId to prevent
- * users from creating foals with other users' horses.
+ * Security: dual ownership validation on sireId + damId via findOwnedResource
+ * (CWE-284 Equoria-b4q6 + CWE-639 disclosure resistance — same 404 'Sire not
+ * found' / 'Dam not found' for both not-found and not-owned cases). Mirrors
+ * the dual-ownership pattern at groomRoutes.mjs `POST /assign`.
  */
 router.post(
   '/foals',
   foalRateLimiter,
   authenticateToken,
   validateFoalCreation,
+  // Dual ownership validation middleware (CWE-284 + CWE-639)
+  async (req, res, next) => {
+    try {
+      const { sireId, damId } = req.body;
+      const userId = req.user.id;
+
+      // Validate sire ownership — 404 byte-identical for both not-found and
+      // cross-user (CWE-639 disclosure resistance).
+      const sire = await findOwnedResource('horse', sireId, userId);
+      if (!sire) {
+        return res.status(404).json({
+          success: false,
+          message: 'Sire not found',
+        });
+      }
+
+      // Validate dam ownership.
+      const dam = await findOwnedResource('horse', damId, userId);
+      if (!dam) {
+        return res.status(404).json({
+          success: false,
+          message: 'Dam not found',
+        });
+      }
+
+      // Attach validated resources for the controller (createFoal still
+      // re-fetches via getHorseById for breed checks etc., but having them
+      // here lets future refactors skip the re-fetch).
+      req.sire = sire;
+      req.dam = dam;
+      next();
+      return null;
+    } catch (error) {
+      logger.error('[horseRoutes POST /foals] ownership validation error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+      });
+    }
+  },
   async (req, res) => {
     try {
       // Set the owner from the authenticated user
@@ -1517,9 +1558,8 @@ router.get(
     try {
       const horseId = parseInt(req.params.id, 10);
 
-      const { generateBreedingData } = await import(
-        '../../../services/breedingPredictionService.mjs'
-      );
+      const { generateBreedingData } =
+        await import('../../../services/breedingPredictionService.mjs');
       const breedingData = await generateBreedingData(horseId);
 
       res.json({

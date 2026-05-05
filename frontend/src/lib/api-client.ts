@@ -878,8 +878,8 @@ export const horsesApi = {
   create: (data: {
     name: string;
     breedId: number;
-    sex?: 'stallion' | 'mare' | 'gelding';
-    gender?: 'STALLION' | 'MARE' | 'GELDING';
+    sex?: 'stallion' | 'mare' | 'colt' | 'filly' | 'rig';
+    gender?: 'STALLION' | 'MARE' | 'COLT' | 'FILLY' | 'RIG';
     age?: number;
   }) => apiClient.post<HorseSummary>('/api/horses', data),
   list: () => apiClient.get<HorseSummary[]>(`/api/horses?t=${Date.now()}`),

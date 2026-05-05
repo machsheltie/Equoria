@@ -221,7 +221,7 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
         breed: { connect: { id: testBreed.id } },
         user: { connect: { id: testUser.id } },
         stable: { connect: { id: testStable.id } },
-        sex: 'Gelding',
+        sex: 'Stallion',
         dateOfBirth: birthDate3YearsOld,
         healthStatus: 'Fair',
         speed: 60,

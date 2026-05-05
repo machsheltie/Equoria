@@ -64,11 +64,9 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
     it('should have all required horse sex values', () => {
       expect(HORSE_SEX.STALLION).toBe('Stallion');
       expect(HORSE_SEX.MARE).toBe('Mare');
-      expect(HORSE_SEX.GELDING).toBe('Gelding');
       expect(HORSE_SEX.COLT).toBe('Colt');
       expect(HORSE_SEX.FILLY).toBe('Filly');
       expect(HORSE_SEX.RIG).toBe('Rig');
-      expect(HORSE_SEX.SPAYED_MARE).toBe('Spayed Mare');
     });
 
     it('should validate horse sex correctly', () => {
@@ -82,7 +80,7 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
     it('should have consistent values array', () => {
       expect(HORSE_SEX_VALUES).toContain('Stallion');
       expect(HORSE_SEX_VALUES).toContain('Mare');
-      expect(HORSE_SEX_VALUES).toHaveLength(7);
+      expect(HORSE_SEX_VALUES).toHaveLength(5);
     });
   });
 
@@ -180,7 +178,7 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
       expect(isBreedingAge(20, 'Mare')).toBe(true);
       expect(isBreedingAge(21, 'Mare')).toBe(false);
 
-      expect(isBreedingAge(5, 'Gelding')).toBe(false); // Geldings can't breed
+      expect(isBreedingAge(5, 'Rig')).toBe(false); // Rigs can't breed
     });
   });
 

@@ -30,7 +30,7 @@ export interface Horse {
   id: number;
   name: string;
   age: number;
-  sex: 'Mare' | 'Stallion' | 'Gelding';
+  sex: 'Mare' | 'Stallion' | 'Colt' | 'Filly' | 'Rig';
   level: number;
   health: 'healthy' | 'injured';
   disciplines: { [key: string]: number };

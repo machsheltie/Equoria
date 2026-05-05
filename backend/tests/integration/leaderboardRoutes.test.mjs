@@ -227,7 +227,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
         data: {
           name: 'TestLeaderboard Gold Rush',
           age: 4,
-          sex: 'Gelding',
+          sex: 'Stallion',
           breed: { connect: { id: testBreed.id } },
           user: { connect: { id: testUsers[2].id } },
           dateOfBirth: new Date('2021-01-01'),

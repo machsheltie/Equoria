@@ -114,7 +114,7 @@ describe('Weekly Flag Evaluation Service', () => {
         data: {
           name: `Test Horse 2yo ${Date.now()}`,
           breedId: testBreed.id,
-          sex: 'Gelding',
+          sex: 'Colt',
           dateOfBirth: twoYearsAgo,
           userId: testUser.id,
           bondScore: 30,
