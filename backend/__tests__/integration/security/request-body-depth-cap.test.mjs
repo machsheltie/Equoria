@@ -90,6 +90,11 @@ describe('Request body depth cap (21R-SEC-3)', () => {
     // that fail when the depth-cap fires (sentinel-positive: a future
     // change that lowers MAX_DEPTH below 16 would produce a 400 with
     // /nesting too deep/ and these assertions would catch it).
+    // Equoria-ktjm (21R-SEC-3-FOLLOW-9): pin assertion count so a future
+    // refactor that accidentally short-circuits the test path (early return,
+    // try/catch swallow, restructured awaits) fails loudly instead of
+    // passing with zero assertions executed.
+    expect.assertions(2);
     const body = buildDeepObject(16);
 
     const response = await request(app).post(ENDPOINT).set('Content-Type', 'application/json').send(body);
