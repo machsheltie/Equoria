@@ -1,15 +1,20 @@
 /**
- * VeterinarianPage — World > Vet Clinic Location (Epic 10 — Story 10-1)
+ * VeterinarianPage — World > Vet Clinic Location (Epic 10 — Story 10-1;
+ * UI consistency 2026-05-05, Equoria-mlao).
  *
  * The Vet Clinic location in the World hub. Two tabs:
- * - My Horses: Lists the user's horses with health status and a "Book" button per horse.
- *   Selecting a horse then a service triggers useBookVetAppointment.
+ * - My Horses: Lists the user's horses with health status. Selecting a horse
+ *   reveals a service booking panel BELOW the grid (was inline-expand which
+ *   broke card consistency).
  * - Services: Shows available vet procedures fetched from /api/vet/services.
  *
- * Data is wired to real API hooks:
- *   useHorses()            → /api/horses
- *   useVetServices()       → /api/vet/services
- *   useBookVetAppointment()→ POST /api/vet/book-appointment
+ * Cards now share ItemCard / HorseCard / CardGrid so this page no longer
+ * renders giant 2-col cards on desktop. Tabs use FantasyTabs (canonical).
+ *
+ * Data wired to real API hooks:
+ *   useHorses()             → /api/horses
+ *   useVetServices()        → /api/vet/services
+ *   useBookVetAppointment() → POST /api/vet/book-appointment
  */
 
 import React, { useState } from 'react';
@@ -17,25 +22,15 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Heart, Activity, Clock, CheckCircle, Loader2, Leaf, AlertCircle } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
+import { CardGrid } from '@/components/ui/CardGrid';
+import { ItemCard } from '@/components/ui/ItemCard';
+import { FantasyTabs } from '@/components/FantasyTabs';
+import { HorseCard } from '@/components/horse/HorseCard';
 import { useHorses } from '@/hooks/api/useHorses';
 import { useVetServices, useBookVetAppointment } from '@/hooks/api/useVet';
 import type { VetService } from '@/hooks/api/useVet';
-import type { HorseSummary } from '@/lib/api-client';
-import { getBreedName } from '@/lib/utils';
 
 type VetTab = 'horses' | 'services';
-
-// ─── Health status badge ──────────────────────────────────────────────────────
-
-function healthBadgeClasses(status: string): string {
-  const s = status.toLowerCase();
-  if (s === 'excellent' || s === 'good')
-    return 'bg-[var(--status-success)]/20 text-[var(--status-success)] border-[var(--status-success)]/30';
-  if (s === 'fair') return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-  if (s === 'poor' || s === 'injured')
-    return 'bg-[var(--status-danger)]/20 text-[var(--status-danger)] border-[var(--status-danger)]/30';
-  return 'bg-[var(--glass-bg)] text-[var(--text-muted)] border-[var(--glass-border)]';
-}
 
 // ─── My Horses Tab ────────────────────────────────────────────────────────────
 
@@ -111,92 +106,78 @@ const HorsesHealthTab: React.FC<HorsesHealthTabProps> = ({
     );
   }
 
+  const selectedHorse = horses.find((h) => h.id === selectedHorseId) ?? null;
+
   return (
-    <div data-testid="horses-health-tab">
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {horses.map((horse: HorseSummary) => {
-          const isSelected = selectedHorseId === horse.id;
-          return (
-            <div
-              key={horse.id}
-              className={`backdrop-blur-sm border rounded-xl p-5 transition-all cursor-pointer ${
-                isSelected
-                  ? 'bg-[var(--status-success)]/10 border-[var(--status-success)]/50'
-                  : 'bg-[var(--glass-bg)] border-[var(--glass-border)] hover:border-[var(--glass-hover)]'
-              }`}
-              onClick={() => onSelectHorse(horse.id)}
-              data-testid={`horse-card-${horse.id}`}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <h3 className="font-bold text-[var(--cream)]">{horse.name}</h3>
-                  <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                    {getBreedName(horse.breed)} &middot; Age {horse.age}
-                  </p>
-                </div>
-                <span
-                  className={`text-xs font-medium px-2.5 py-1 rounded-full border ${healthBadgeClasses(horse.healthStatus)}`}
-                >
-                  {horse.healthStatus}
-                </span>
-              </div>
+    <div data-testid="horses-health-tab" className="space-y-6">
+      <CardGrid aria-label="Your horses">
+        {horses.map((horse) => (
+          <HorseCard
+            key={horse.id}
+            horse={horse}
+            selected={selectedHorseId === horse.id}
+            onClick={() => onSelectHorse(horse.id)}
+            data-testid={`horse-card-${horse.id}`}
+          />
+        ))}
+      </CardGrid>
 
-              {isSelected && services.length > 0 && (
-                <div className="mt-3 space-y-2 border-t border-[var(--glass-border)] pt-3">
-                  <p className="text-xs text-[var(--text-muted)] mb-2">Select a service to book:</p>
-                  {services.map((service: VetService) => {
-                    const isThisBooked =
-                      confirmedHorseId === horse.id && confirmedServiceId === service.id;
-                    const isThisLoading =
-                      isBooking && bookingHorseId === horse.id && bookingServiceId === service.id;
+      {/* Booking panel — appears below the grid when a horse is selected. Was
+          previously expanded inline inside each card; pulled out so cards
+          stay the same height. */}
+      {selectedHorse ? (
+        <div
+          className="rounded-xl border border-[var(--gold-dim)] bg-[var(--glass-bg)] backdrop-blur-sm p-5"
+          data-testid="vet-booking-panel"
+        >
+          <p className="text-sm text-[var(--text-secondary)] mb-3">
+            Booking for{' '}
+            <span className="font-semibold text-[var(--cream)]">{selectedHorse.name}</span>:
+          </p>
+          {services.length === 0 ? (
+            <p className="text-xs text-[var(--text-muted)]">Loading services…</p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {services.map((service) => {
+                const isThisBooked =
+                  confirmedHorseId === selectedHorse.id && confirmedServiceId === service.id;
+                const isThisLoading =
+                  isBooking &&
+                  bookingHorseId === selectedHorse.id &&
+                  bookingServiceId === service.id;
 
-                    return (
-                      <button
-                        key={service.id}
-                        type="button"
-                        disabled={isBooking}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onBook(horse.id, service.id);
-                        }}
-                        className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm border transition-all ${
-                          isThisBooked
-                            ? 'bg-[var(--status-success)]/20 border-[var(--status-success)]/40 text-[var(--status-success)]'
-                            : 'bg-[var(--glass-bg)] border-[var(--glass-border)] text-[var(--text-secondary)] hover:bg-[var(--glass-hover)]/20 hover:text-[var(--cream)] disabled:opacity-50 disabled:cursor-not-allowed'
-                        }`}
-                        data-testid={`book-btn-${horse.id}-${service.id}`}
-                        data-onboarding-target="vet-book-button"
-                      >
-                        <span className="flex items-center gap-2">
-                          {isThisBooked && (
-                            <CheckCircle className="w-3.5 h-3.5 text-[var(--status-success)] shrink-0" />
-                          )}
-                          {isThisLoading && (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
-                          )}
-                          {service.name}
-                        </span>
-                        <span className="text-[var(--gold-400)] font-semibold">
-                          ${service.cost.toLocaleString()}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
-
-              {isSelected && services.length === 0 && (
-                <p className="text-xs text-[var(--text-muted)] mt-3 border-t border-[var(--glass-border)] pt-3">
-                  Loading services…
-                </p>
-              )}
+                return (
+                  <button
+                    key={service.id}
+                    type="button"
+                    disabled={isBooking}
+                    onClick={() => onBook(selectedHorse.id, service.id)}
+                    className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm border transition-all ${
+                      isThisBooked
+                        ? 'bg-[var(--status-success)]/20 border-[var(--status-success)]/40 text-[var(--status-success)]'
+                        : 'bg-[var(--glass-bg)] border-[var(--glass-border)] text-[var(--text-secondary)] hover:bg-[var(--glass-hover)]/20 hover:text-[var(--cream)] disabled:opacity-50 disabled:cursor-not-allowed'
+                    }`}
+                    data-testid={`book-btn-${selectedHorse.id}-${service.id}`}
+                    data-onboarding-target="vet-book-button"
+                  >
+                    <span className="flex items-center gap-2">
+                      {isThisBooked && (
+                        <CheckCircle className="w-3.5 h-3.5 text-[var(--status-success)] shrink-0" />
+                      )}
+                      {isThisLoading && <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />}
+                      <span className="truncate">{service.name}</span>
+                    </span>
+                    <span className="text-[var(--gold-400)] font-semibold shrink-0">
+                      ${service.cost.toLocaleString()}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
-          );
-        })}
-      </div>
-
-      {selectedHorseId === null && (
-        <p className="text-sm text-[var(--text-muted)] text-center mt-4">
+          )}
+        </div>
+      ) : (
+        <p className="text-sm text-[var(--text-muted)] text-center">
           Click a horse card to select it and choose a service.
         </p>
       )}
@@ -250,36 +231,34 @@ const ServicesTab: React.FC = () => {
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4" data-testid="vet-services-tab">
-      {services.map((service: VetService) => (
-        <div
-          key={service.id}
-          className="bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] rounded-xl p-5 hover:border-[var(--glass-hover)] transition-all"
-          data-testid={`vet-service-${service.id}`}
-        >
-          <div className="flex items-start justify-between mb-3">
-            <div>
-              <h3 className="font-bold text-[var(--cream)]">{service.name}</h3>
-              <span className="text-xs text-[var(--text-muted)] flex items-center gap-1 mt-0.5">
+    <div data-testid="vet-services-tab">
+      <CardGrid aria-label="Vet services">
+        {services.map((service) => (
+          <ItemCard
+            key={service.id}
+            data-testid={`vet-service-${service.id}`}
+            title={service.name}
+            subtitle={
+              <span className="flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 {service.duration}
               </span>
-            </div>
-            <p className="text-lg font-bold text-[var(--gold-400)]">
-              ${service.cost.toLocaleString()}
-            </p>
-          </div>
-          <p className="text-sm text-[var(--text-muted)] mb-4">{service.description}</p>
-          <button
-            type="button"
-            disabled
-            className="w-full py-2 text-sm font-medium rounded-lg bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)]/60 cursor-not-allowed"
-            title="Select a horse from My Horses to book"
-          >
-            Select a Horse to Book
-          </button>
-        </div>
-      ))}
+            }
+            description={service.description}
+            price={`$${service.cost.toLocaleString()}`}
+            action={
+              <button
+                type="button"
+                disabled
+                className="w-full py-2 text-sm font-medium rounded-lg bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)]/60 cursor-not-allowed"
+                title="Select a horse from My Horses to book"
+              >
+                Select a Horse to Book
+              </button>
+            }
+          />
+        ))}
+      </CardGrid>
     </div>
   );
 };
@@ -332,7 +311,6 @@ const VeterinarianPage: React.FC = () => {
         mood="nature"
         icon={<Leaf className="w-7 h-7 text-[var(--gold-400)]" />}
       >
-        {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-[var(--cream)]/60">
           <Link to="/world" className="hover:text-[var(--cream)] transition-colors">
             World
@@ -354,60 +332,36 @@ const VeterinarianPage: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* My Horses / Services Tabs */}
-        <div
-          className="flex gap-1 p-1 bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] rounded-xl mb-8 w-fit"
-          role="tablist"
-          aria-label="Vet Clinic section"
-        >
-          <button
-            role="tab"
-            aria-selected={activeTab === 'horses'}
-            onClick={() => setActiveTab('horses')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'horses'
-                ? 'bg-[var(--glass-bg)] text-[var(--cream)] shadow-sm'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-            }`}
-            data-testid="horses-tab"
-          >
-            <Heart className="w-4 h-4" />
-            My Horses
-          </button>
-          <button
-            role="tab"
-            aria-selected={activeTab === 'services'}
-            onClick={() => setActiveTab('services')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'services'
-                ? 'bg-[var(--glass-bg)] text-[var(--cream)] shadow-sm'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-            }`}
-            data-testid="services-tab"
-          >
-            <Activity className="w-4 h-4" />
-            Services
-          </button>
-        </div>
-
-        {/* Tab Content */}
-        <div role="tabpanel">
-          {activeTab === 'horses' ? (
-            <HorsesHealthTab
-              selectedHorseId={selectedHorseId}
-              onSelectHorse={handleSelectHorse}
-              onBook={handleBook}
-              isBooking={isBooking}
-              bookingServiceId={bookingServiceId}
-              bookingHorseId={bookingVars?.horseId ?? null}
-              confirmedHorseId={confirmedHorseId}
-              confirmedServiceId={confirmedServiceId}
-              services={services}
-            />
-          ) : (
-            <ServicesTab />
-          )}
-        </div>
+        <FantasyTabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as VetTab)}
+          tabs={[
+            {
+              value: 'horses',
+              label: 'My Horses',
+              icon: <Heart className="w-4 h-4" />,
+              content: (
+                <HorsesHealthTab
+                  selectedHorseId={selectedHorseId}
+                  onSelectHorse={handleSelectHorse}
+                  onBook={handleBook}
+                  isBooking={isBooking}
+                  bookingServiceId={bookingServiceId}
+                  bookingHorseId={bookingVars?.horseId ?? null}
+                  confirmedHorseId={confirmedHorseId}
+                  confirmedServiceId={confirmedServiceId}
+                  services={services}
+                />
+              ),
+            },
+            {
+              value: 'services',
+              label: 'Services',
+              icon: <Activity className="w-4 h-4" />,
+              content: <ServicesTab />,
+            },
+          ]}
+        />
 
         {/* Info Panel */}
         <div className="mt-10 p-5 rounded-xl glass-panel text-sm text-[var(--text-muted)]">
