@@ -12,20 +12,30 @@
  *   price       → text-base font-bold
  *
  * Layout:
- *   [media]  Title                              [price]
+ *   [media]  [prefix] Title                         [price]
  *            Subtitle
  *            Description
  *            Meta (badges, tags, stat chips — caller-rendered)
- *   ────────────────────────────────────────────────────
+ *   ────────────────────────────────────────────────────────
  *   Action (button or footer — caller-rendered)
+ *
+ * Click behaviour:
+ *   - onClick only (no action): renders as <button> (fully interactive).
+ *   - onClick + action: renders outer as a div[role=button] so the action
+ *     footer's buttons are not nested inside a <button> (invalid HTML).
+ *     Callers must stopPropagation on action button clicks to prevent the
+ *     card's onClick from also firing.
+ *   - no onClick: non-interactive <div>.
  */
 
-import type { ReactNode } from 'react';
+import type { ReactNode, KeyboardEvent } from 'react';
 import { cn } from '@/lib/utils';
 
 interface ItemCardProps {
   /** Leading visual: image, icon, or any ReactNode. Caller controls size. */
   media?: ReactNode;
+  /** Icon or badge rendered immediately left of the title text. */
+  titlePrefix?: ReactNode;
   /** Main title (item name, service name, horse name). */
   title: string;
   /** Short qualifier under the title (category, duration, breed, etc.). */
@@ -42,7 +52,7 @@ interface ItemCardProps {
   selected?: boolean;
   /** Disabled appearance (no pointer effect, dimmed). */
   disabled?: boolean;
-  /** Optional click handler. When provided, card renders as a button. */
+  /** Optional click handler. When provided, card becomes interactive. */
   onClick?: () => void;
   /** Accessible label override; falls back to title. */
   'aria-label'?: string;
@@ -67,6 +77,7 @@ const CARD_INTERACTIVE = [
 
 export function ItemCard({
   media,
+  titlePrefix,
   title,
   subtitle,
   description,
@@ -80,14 +91,20 @@ export function ItemCard({
   'data-testid': dataTestId,
   className,
 }: ItemCardProps) {
-  const interactive = !!onClick && !disabled;
+  const hasClick = !!onClick && !disabled;
 
-  const body = (
-    <>
-      <div className="flex gap-3 p-4">
-        {media && <div className="flex-shrink-0">{media}</div>}
-        <div className="flex-1 min-w-0 flex flex-col gap-1">
-          <div className="flex items-start justify-between gap-2">
+  const stateClasses = cn(
+    selected && 'border-[var(--gold-primary)] shadow-[var(--glow-gold)]',
+    disabled && 'opacity-60 pointer-events-none'
+  );
+
+  const infoArea = (
+    <div className="flex gap-3 p-4">
+      {media && <div className="flex-shrink-0">{media}</div>}
+      <div className="flex-1 min-w-0 flex flex-col gap-1">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 min-w-0">
+            {titlePrefix && <span className="flex-shrink-0">{titlePrefix}</span>}
             <h3
               className="text-base font-semibold text-[var(--text-primary)] truncate min-w-0"
               style={{ fontFamily: 'var(--font-heading)' }}
@@ -95,29 +112,53 @@ export function ItemCard({
             >
               {title}
             </h3>
-            {price && (
-              <span className="text-base font-bold text-[var(--gold-primary)] flex-shrink-0 whitespace-nowrap">
-                {price}
-              </span>
-            )}
           </div>
-          {subtitle && <p className="text-xs text-[var(--text-muted)] truncate">{subtitle}</p>}
-          {description && (
-            <p className="text-sm text-[var(--text-secondary)] line-clamp-2">{description}</p>
+          {price && (
+            <span className="text-base font-bold text-[var(--gold-primary)] flex-shrink-0 whitespace-nowrap">
+              {price}
+            </span>
           )}
-          {meta && <div className="flex flex-wrap gap-1.5 mt-1">{meta}</div>}
         </div>
+        {subtitle && <p className="text-xs text-[var(--text-muted)] truncate">{subtitle}</p>}
+        {description && (
+          <p className="text-sm text-[var(--text-secondary)] line-clamp-2">{description}</p>
+        )}
+        {meta && <div className="flex flex-wrap gap-1.5 mt-1">{meta}</div>}
       </div>
-      {action && <div className="border-t border-[var(--glass-border)] p-3">{action}</div>}
-    </>
+    </div>
   );
 
-  const stateClasses = cn(
-    selected && 'border-[var(--gold-primary)] shadow-[var(--glow-gold)]',
-    disabled && 'opacity-60 pointer-events-none'
-  );
+  const actionArea = action ? (
+    <div className="border-t border-[var(--glass-border)] p-3">{action}</div>
+  ) : null;
 
-  if (interactive) {
+  // onClick + action: outer div[role=button] avoids <button> nesting the action's <button>s.
+  // Callers must e.stopPropagation() on action button clicks.
+  if (hasClick && action) {
+    const handleKey = (e: KeyboardEvent<HTMLDivElement>) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        onClick?.();
+      }
+    };
+    return (
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={onClick}
+        onKeyDown={handleKey}
+        aria-label={ariaLabel ?? title}
+        data-testid={dataTestId}
+        className={cn(CARD_BASE, CARD_INTERACTIVE, stateClasses, className)}
+      >
+        {infoArea}
+        {actionArea}
+      </div>
+    );
+  }
+
+  // onClick only (no action): whole card is a proper <button>.
+  if (hasClick) {
     return (
       <button
         type="button"
@@ -126,18 +167,20 @@ export function ItemCard({
         data-testid={dataTestId}
         className={cn(CARD_BASE, CARD_INTERACTIVE, stateClasses, className)}
       >
-        {body}
+        {infoArea}
       </button>
     );
   }
 
+  // Non-interactive card.
   return (
     <div
       data-testid={dataTestId}
       aria-label={ariaLabel}
       className={cn(CARD_BASE, stateClasses, className)}
     >
-      {body}
+      {infoArea}
+      {actionArea}
     </div>
   );
 }

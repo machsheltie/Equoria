@@ -8,18 +8,17 @@
  *     Each row has an inline Equip button (or Unequip if it's already on
  *     this horse). No detour through /inventory.
  *   - Feed: the 5 catalog tiers in the user's inventory with quantity > 0.
- *     The active tier renders a '✓ Equipped' indicator in the title row
- *     (price slot) so all cards stay the same height.
+ *     The active tier renders a gold ★ left of its name and a gold border.
  *
+ * Click any card to open a description popup (GameDialog).
  * Both sections consume the shared ItemCard + CardGrid so cards-per-row and
- * text sizing match the rest of the system. Each card has a Details button
- * that opens a GameDialog with the full item description.
+ * text sizing match the rest of the system.
  */
 
 import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Loader2, AlertCircle, ArrowLeft, Wrench, Info } from 'lucide-react';
+import { Loader2, AlertCircle, ArrowLeft, Wrench, Star } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
 import { Button } from '@/components/ui/button';
 import { CardGrid } from '@/components/ui/CardGrid';
@@ -45,25 +44,13 @@ const FEED_IMAGES: Record<FeedItem['id'], string> = {
   elite: '/images/feed/elitefeed.png',
 };
 
+const EQUIPPED_STAR = (
+  <Star className="w-3.5 h-3.5 text-[var(--gold-primary)] fill-[var(--gold-primary)]" />
+);
+
 interface InfoState {
   title: string;
   description: string;
-}
-
-function InfoButton({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick();
-      }}
-      className="flex items-center gap-1 text-[0.65rem] text-[var(--text-muted)] hover:text-[var(--cream)] transition-colors"
-    >
-      <Info className="w-3 h-3" />
-      Details
-    </button>
-  );
 }
 
 const HorseEquipPage: React.FC = () => {
@@ -136,11 +123,13 @@ const HorseEquipPage: React.FC = () => {
                 const pendingThisItem =
                   (equipItem.isPending && equipItem.variables?.inventoryItemId === item.id) ||
                   (unequipItem.isPending && unequipItem.variables?.inventoryItemId === item.id);
+                const description = item.bonus ?? undefined;
 
                 const action = isEquipped ? (
                   <Button
                     size="sm"
-                    onClick={() =>
+                    onClick={(e) => {
+                      e.stopPropagation();
                       unequipItem.mutate(
                         { inventoryItemId: item.id },
                         {
@@ -150,8 +139,8 @@ const HorseEquipPage: React.FC = () => {
                               (err as { message?: string })?.message ?? 'Failed to unequip.'
                             ),
                         }
-                      )
-                    }
+                      );
+                    }}
                     disabled={pendingThisItem}
                     data-testid={`unequip-tack-${item.id}`}
                     className="w-full"
@@ -161,7 +150,8 @@ const HorseEquipPage: React.FC = () => {
                 ) : (
                   <Button
                     size="sm"
-                    onClick={() =>
+                    onClick={(e) => {
+                      e.stopPropagation();
                       equipItem.mutate(
                         { inventoryItemId: item.id, horseId },
                         {
@@ -171,8 +161,8 @@ const HorseEquipPage: React.FC = () => {
                               (err as { message?: string })?.message ?? 'Failed to equip.'
                             ),
                         }
-                      )
-                    }
+                      );
+                    }}
                     disabled={pendingThisItem}
                     data-testid={`equip-tack-${item.id}`}
                     className="w-full"
@@ -190,23 +180,16 @@ const HorseEquipPage: React.FC = () => {
                         <Wrench className="w-10 h-10" />
                       </div>
                     }
+                    titlePrefix={isEquipped ? EQUIPPED_STAR : undefined}
                     title={item.name}
                     subtitle={<span className="capitalize">{item.category}</span>}
-                    description={item.bonus ?? undefined}
-                    price={isEquipped ? '✓ Equipped' : undefined}
-                    meta={
-                      item.bonus ? (
-                        <InfoButton
-                          onClick={() =>
-                            setActiveInfo({
-                              title: item.name,
-                              description: item.bonus ?? '',
-                            })
-                          }
-                        />
-                      ) : undefined
-                    }
+                    description={description}
                     selected={isEquipped}
+                    onClick={
+                      description
+                        ? () => setActiveInfo({ title: item.name, description })
+                        : undefined
+                    }
                     action={action}
                   />
                 );
@@ -217,9 +200,8 @@ const HorseEquipPage: React.FC = () => {
 
         {/* Feed section — unified list. Clicking Equip on any tier switches
             equippedFeedType atomically (backend replaces unconditionally), so
-            users never need to Unequip-then-Equip to switch tiers. The
-            currently-equipped tier shows a gold '✓ Equipped' badge in the
-            title row (price slot) so all cards stay the same height. */}
+            users never need to Unequip-then-Equip to switch tiers. Clicking
+            the card body opens a description popup. */}
         <section data-testid="feed-section">
           <h2 className="text-lg font-bold text-[var(--cream)] mb-3">Feed</h2>
 
@@ -239,19 +221,21 @@ const HorseEquipPage: React.FC = () => {
                 const isEquipped = f.isCurrentlyEquippedToThisHorse;
                 const tierId = f.feedType as FeedItem['id'];
                 const feedMeta = catalogById[tierId];
+                const description = feedMeta?.description;
 
                 const action = isEquipped ? (
                   <Button
                     size="sm"
-                    onClick={() =>
+                    onClick={(e) => {
+                      e.stopPropagation();
                       unequipFeed.mutate(undefined, {
                         onSuccess: () => toast.success('Unequipped.'),
                         onError: (err) =>
                           toast.error(
                             (err as { message?: string })?.message ?? 'Failed to unequip.'
                           ),
-                      })
-                    }
+                      });
+                    }}
                     disabled={unequipFeed.isPending}
                     data-testid="unequip-feed-button"
                     className="w-full"
@@ -265,7 +249,8 @@ const HorseEquipPage: React.FC = () => {
                 ) : (
                   <Button
                     size="sm"
-                    onClick={() =>
+                    onClick={(e) => {
+                      e.stopPropagation();
                       equipFeed.mutate(tierId, {
                         onSuccess: () =>
                           toast.success(
@@ -273,8 +258,8 @@ const HorseEquipPage: React.FC = () => {
                           ),
                         onError: (err) =>
                           toast.error((err as { message?: string })?.message ?? 'Failed to equip.'),
-                      })
-                    }
+                      });
+                    }}
                     disabled={equipFeed.isPending}
                     data-testid={`equip-feed-${f.feedType}`}
                     className="w-full"
@@ -295,37 +280,28 @@ const HorseEquipPage: React.FC = () => {
                         className="w-20 h-20 object-contain"
                       />
                     }
+                    titlePrefix={isEquipped ? EQUIPPED_STAR : undefined}
                     title={f.name}
                     subtitle={`${f.quantity} units in stock`}
-                    description={feedMeta?.description}
-                    price={isEquipped ? '✓ Equipped' : undefined}
+                    description={description}
                     meta={
-                      <>
-                        {feedMeta && (
-                          <span className="text-[0.65rem] text-[var(--text-muted)]">
-                            Stat-roll{' '}
-                            <strong className="text-[var(--text-secondary)]">
-                              {feedMeta.statRollPct}%
-                            </strong>{' '}
-                            · Pregnancy{' '}
-                            <strong className="text-[var(--text-secondary)]">
-                              +{feedMeta.pregnancyBonusPct}%
-                            </strong>
-                          </span>
-                        )}
-                        {feedMeta?.description && (
-                          <InfoButton
-                            onClick={() =>
-                              setActiveInfo({
-                                title: f.name,
-                                description: feedMeta.description,
-                              })
-                            }
-                          />
-                        )}
-                      </>
+                      feedMeta ? (
+                        <span className="text-[0.65rem] text-[var(--text-muted)]">
+                          Stat-roll{' '}
+                          <strong className="text-[var(--text-secondary)]">
+                            {feedMeta.statRollPct}%
+                          </strong>{' '}
+                          · Pregnancy{' '}
+                          <strong className="text-[var(--text-secondary)]">
+                            +{feedMeta.pregnancyBonusPct}%
+                          </strong>
+                        </span>
+                      ) : undefined
                     }
                     selected={isEquipped}
+                    onClick={
+                      description ? () => setActiveInfo({ title: f.name, description }) : undefined
+                    }
                     action={action}
                   />
                 );
