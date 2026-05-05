@@ -281,7 +281,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
   describe('🏁 STEP 4: Competition Execution & Scoring', () => {
     it('should execute competition and calculate results', async () => {
       // Import competition logic (real business logic)
-      const { calculateCompetitionScore } = await import('../../utils/competitionLogic.js');
+      const { calculateCompetitionScore } = await import('../../utils/competitionLogic.mjs');
 
       const horse = competitionHorse;
       const show = testShow;

@@ -252,7 +252,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
       });
 
       // APPLY AT-BIRTH TRAITS (Real business logic, no mocking)
-      const { applyEpigeneticTraitsAtBirth } = await import('../../utils/applyEpigeneticTraitsAtBirth.js');
+      const { applyEpigeneticTraitsAtBirth } = await import('../../utils/applyEpigeneticTraitsAtBirth.mjs');
 
       const lineage = [mare, stallion]; // Simplified lineage
       const epigeneticTraits = applyEpigeneticTraitsAtBirth({
@@ -284,7 +284,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
   describe('👥 STEP 4: Groom Assignment & Care', () => {
     it('should assign specialized foal care groom to newborn', async () => {
       // Import groom system (real business logic)
-      const { ensureDefaultGroomAssignment } = await import('../../utils/groomSystem.js');
+      const { ensureDefaultGroomAssignment } = await import('../../utils/groomSystem.mjs');
 
       // Ensure foal has a groom assignment
       const assignmentResult = await ensureDefaultGroomAssignment(foal.id, testUser.id);
@@ -306,7 +306,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
 
     it('should record groom interaction with foal', async () => {
       // Import groom system
-      const { recordGroomInteraction } = await import('../../utils/groomSystem.js');
+      const { recordGroomInteraction } = await import('../../utils/groomSystem.mjs');
 
       const interactionData = {
         foalId: foal.id,
@@ -344,7 +344,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
   describe('📈 STEP 5: Foal Development Tracking', () => {
     it('should track foal development progress', async () => {
       // Get foal development data
-      const { getFoalDevelopment } = await import('../../models/foalModel.js');
+      const { getFoalDevelopment } = await import('../../models/foalModel.mjs');
 
       const developmentData = await getFoalDevelopment(foal.id);
 

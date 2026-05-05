@@ -162,7 +162,7 @@ router.get('/traits/definitions', async (req, res) => {
   try {
     logger.info('[adminRoutes] GET /api/admin/traits/definitions');
 
-    const { getAllTraitDefinitions } = await import('../../../utils/traitEvaluation.js');
+    const { getAllTraitDefinitions } = await import('../../../utils/traitEvaluation.mjs');
     const definitions = getAllTraitDefinitions();
 
     res.json({

@@ -41,9 +41,9 @@ jest.unstable_mockModule('../utils/logger.mjs', () => ({
 }));
 
 // Import modules after setting up mocks
-const prisma = await import('../db/index.js').then(module => module.default);
-const { hireGroom, getGroomDefinitions } = await import('../controllers/groomController.js');
-const { GROOM_SPECIALTIES, SKILL_LEVELS, PERSONALITY_TRAITS } = await import('../utils/groomSystem.js');
+const prisma = await import('../db/index.mjs').then(module => module.default);
+const { hireGroom, getGroomDefinitions } = await import('../controllers/groomController.mjs');
+const { GROOM_SPECIALTIES, SKILL_LEVELS, PERSONALITY_TRAITS } = await import('../utils/groomSystem.mjs');
 
 describe('Groom Hiring Workflow Tests', () => {
   let testUser;

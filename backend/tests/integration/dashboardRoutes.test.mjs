@@ -34,7 +34,7 @@ import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
-import config from '../../config/config.js';
+import config from '../../config/config.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 // Strategic mocking: Only mock external dependencies

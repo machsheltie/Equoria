@@ -84,7 +84,7 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
   describe('Competition Integration', () => {
     it('should award horse XP when horse places in competition', async () => {
       // Simulate a competition result by directly calling the horse XP model
-      const { awardCompetitionXp } = await import('../models/horseXpModel.js');
+      const { awardCompetitionXp } = await import('../models/horseXpModel.mjs');
 
       const result = await awardCompetitionXp(testHorseId, '1st', 'Dressage');
 
@@ -112,7 +112,7 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
     });
 
     it('should award stat points when horse reaches 100 XP', async () => {
-      const { awardCompetitionXp } = await import('../models/horseXpModel.js');
+      const { awardCompetitionXp } = await import('../models/horseXpModel.mjs');
 
       // Award enough XP to get stat points (100 XP = 1 stat point)
       const _result1 = await awardCompetitionXp(testHorseId, '1st', 'Racing');
