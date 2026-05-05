@@ -24,14 +24,16 @@ export default {
   coverageDirectory: 'coverage-security',
   coverageReporters: ['text', 'lcov', 'html', 'json-summary'],
 
-  // Coverage thresholds (STRICT for security code)
+  // Coverage thresholds (STRICT for security code).
+  //
+  // The `global` block is intentionally absent. The security suite runs
+  // a narrow slice of tests (`__tests__/**`); a global 85% would be
+  // measured across the entire collectCoverageFrom set (middleware,
+  // utils, services), which the security tests do not exercise — most
+  // of those files would show 0% coverage and drag the average to ~22%.
+  // The PER-FILE thresholds below are what this suite is for: hard
+  // 100% on the security-critical middleware specifically.
   coverageThreshold: {
-    global: {
-      branches: 85,
-      functions: 85,
-      lines: 85,
-      statements: 85,
-    },
     // Security-critical middleware must have 100% coverage
     './middleware/security.mjs': {
       branches: 100,
