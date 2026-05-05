@@ -223,10 +223,15 @@ test('all beta route families execute real read and write flows', async ({ page,
       'GET /api/v1/feed-shop/catalog'
     )
   );
+  // Feed-system redesign Phase A (Equoria-gt81): the purchase endpoint
+  // now takes { feedTier, packs } — bulk-pack purchase flow that adds
+  // to a pooled User.settings.inventory rather than the legacy per-horse
+  // { horseId, feedId } write. The catalog returns tier descriptors
+  // whose `id` is the feedTier slug (e.g. "basic", "performance").
   await expectOk(
     await csrfRequest(page, 'POST', '/api/v1/feed-shop/purchase', {
-      horseId: starterHorseId,
-      feedId: feedCatalog[0].id,
+      feedTier: feedCatalog[0].id,
+      packs: 1,
     }),
     'POST /api/v1/feed-shop/purchase'
   );

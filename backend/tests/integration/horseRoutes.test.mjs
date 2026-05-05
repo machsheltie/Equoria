@@ -27,36 +27,46 @@ describe('Horse Routes Integration Tests', () => {
 
   beforeEach(async () => {
     const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).slice(2, 7)}`;
-    testUser = await prisma.user.create({
-      data: {
-        username: `testuser_hr_${ts}`,
-        email: `testuser_hr_${ts}@example.com`,
-        password: 'hashedpassword123',
-        firstName: 'Test',
-        lastName: 'User',
-      },
+    // Wrap user+horse creates in $transaction so all 3 operations run on
+    // the same connection. The previous sequential calls hit
+    // `horses_userId_fkey` violations under the pool=20 default: user.
+    // create commits on conn A, the pool returns conn B for horse.create,
+    // and B doesn't yet see the user → FK fail. Transaction-scoping
+    // forces same-connection read-after-write consistency.
+    const txResult = await prisma.$transaction(async tx => {
+      const u = await tx.user.create({
+        data: {
+          username: `testuser_hr_${ts}`,
+          email: `testuser_hr_${ts}@example.com`,
+          password: 'hashedpassword123',
+          firstName: 'Test',
+          lastName: 'User',
+        },
+      });
+      const h1 = await tx.horse.create({
+        data: {
+          name: `TrainableHorse_${ts}`,
+          sex: 'Mare',
+          dateOfBirth: new Date(Date.now() - 4 * 365.25 * 24 * 60 * 60 * 1000),
+          age: 4,
+          userId: u.id,
+        },
+      });
+      const h2 = await tx.horse.create({
+        data: {
+          name: `FoalHorse_${ts}`,
+          sex: 'Stallion',
+          dateOfBirth: new Date(Date.now() - 1 * 365.25 * 24 * 60 * 60 * 1000),
+          age: 1,
+          userId: u.id,
+        },
+      });
+      return { user: u, trainable: h1, foal: h2 };
     });
+    testUser = txResult.user;
+    trainableHorse = txResult.trainable;
+    foalHorse = txResult.foal;
     testToken = generateTestToken(testUser);
-
-    trainableHorse = await prisma.horse.create({
-      data: {
-        name: `TrainableHorse_${ts}`,
-        sex: 'Mare',
-        dateOfBirth: new Date(Date.now() - 4 * 365.25 * 24 * 60 * 60 * 1000),
-        age: 4,
-        userId: testUser.id,
-      },
-    });
-
-    foalHorse = await prisma.horse.create({
-      data: {
-        name: `FoalHorse_${ts}`,
-        sex: 'Stallion',
-        dateOfBirth: new Date(Date.now() - 1 * 365.25 * 24 * 60 * 60 * 1000),
-        age: 1,
-        userId: testUser.id,
-      },
-    });
   });
 
   afterEach(async () => {
