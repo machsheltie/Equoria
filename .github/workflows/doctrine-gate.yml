@@ -21,7 +21,7 @@ permissions:
 
 concurrency:
   group: doctrine-gate-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: true # doctrine-allow: workflow-cancel-shortrun (Equoria-sv0b: this gate is ~1 min, cancellation harmless)
 
 jobs:
   doctrine-gate:

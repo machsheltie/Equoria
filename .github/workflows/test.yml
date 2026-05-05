@@ -26,7 +26,14 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  # Equoria-sv0b: include `github.sha` so each commit's run is independent.
+  # Without this, every push to master (or PR head) cancels the in-flight
+  # run from the previous commit, killing the long-running e2e-tests job
+  # mid-execution. With per-SHA groups: different commits → different groups
+  # → no cross-commit cancellation. Same SHA re-pushed (rare: rebase + force-
+  # push, webhook duplication, manual workflow_dispatch on same commit) →
+  # same group → cancel-in-progress wins, avoiding double-runs.
+  group: ${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
   cancel-in-progress: true
 
 env:
