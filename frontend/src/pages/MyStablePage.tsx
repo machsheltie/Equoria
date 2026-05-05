@@ -15,6 +15,7 @@ import { Star, Trophy, Heart, Award, Flame, ChevronRight } from 'lucide-react';
 import { useQueries } from '@tanstack/react-query';
 import PageHero from '@/components/layout/PageHero';
 import { Button } from '@/components/ui/button';
+import { FantasyTabs } from '@/components/FantasyTabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUpdateProfile } from '@/hooks/useAuth';
 import { useHorses } from '@/hooks/api/useHorses';
@@ -370,60 +371,38 @@ const MyStablePage: React.FC = () => {
       </PageHero>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Tab Navigation */}
-        <div
-          className="flex gap-1 p-1 bg-white/5 border border-white/10 rounded-xl mb-8 w-fit"
-          role="tablist"
-          aria-label="My Stable sections"
-        >
-          <button
-            role="tab"
-            aria-selected={activeTab === 'profile'}
-            onClick={() => setActiveTab('profile')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'profile'
-                ? 'bg-white/10 text-white/90 shadow-sm'
-                : 'text-white/40 hover:text-white/70'
-            }`}
-            data-testid="profile-tab"
-          >
-            <Star className="w-4 h-4" />
-            Stable Profile
-          </button>
-          <button
-            role="tab"
-            aria-selected={activeTab === 'legacy'}
-            onClick={() => setActiveTab('legacy')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'legacy'
-                ? 'bg-white/10 text-white/90 shadow-sm'
-                : 'text-white/40 hover:text-white/70'
-            }`}
-            data-testid="legacy-tab"
-          >
-            <Trophy className="w-4 h-4" />
-            Hall of Fame
-          </button>
-        </div>
-
-        {/* Tab Content */}
-        <div role="tabpanel">
-          {activeTab === 'profile' ? (
-            <StableProfileTab
-              stable={stable}
-              isLoading={isLoading}
-              isEditing={isEditingStable}
-              draftStableName={draftStableName}
-              onDraftStableNameChange={setDraftStableName}
-              onStartEditing={handleStartEditing}
-              onCancelEditing={() => setIsEditingStable(false)}
-              onSave={handleSaveStableProfile}
-              isSaving={updateProfile.isPending}
-            />
-          ) : (
-            <LegacyHallTab entries={hallOfFameEntries} />
-          )}
-        </div>
+        {/* Tab Navigation — FantasyTabs (canonical from StableView), controlled
+            so future cross-tab navigation can drive activeTab from the parent. */}
+        <FantasyTabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as StableTab)}
+          tabs={[
+            {
+              value: 'profile',
+              label: 'Stable Profile',
+              icon: <Star className="w-4 h-4" />,
+              content: (
+                <StableProfileTab
+                  stable={stable}
+                  isLoading={isLoading}
+                  isEditing={isEditingStable}
+                  draftStableName={draftStableName}
+                  onDraftStableNameChange={setDraftStableName}
+                  onStartEditing={handleStartEditing}
+                  onCancelEditing={() => setIsEditingStable(false)}
+                  onSave={handleSaveStableProfile}
+                  isSaving={updateProfile.isPending}
+                />
+              ),
+            },
+            {
+              value: 'legacy',
+              label: 'Hall of Fame',
+              icon: <Trophy className="w-4 h-4" />,
+              content: <LegacyHallTab entries={hallOfFameEntries} />,
+            },
+          ]}
+        />
 
         {/* Info Panel */}
         <div className="mt-10 p-5 rounded-xl glass-panel text-sm text-[var(--text-muted)]">

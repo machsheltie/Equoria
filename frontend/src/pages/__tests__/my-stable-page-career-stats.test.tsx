@@ -182,8 +182,9 @@ describe('MyStablePage — career stats wiring (Story 21S-4)', () => {
     const user = (await import('@testing-library/user-event')).default;
     renderWithProviders();
 
-    // Switch to the Hall of Fame tab
-    await user.setup().click(screen.getByTestId('legacy-tab'));
+    // Switch to the Hall of Fame tab — MyStablePage uses FantasyTabs (Radix
+    // role="tab"), so match by accessible name instead of the old test id.
+    await user.setup().click(screen.getByRole('tab', { name: /hall of fame/i }));
 
     // The entry card should eventually render with real numbers
     const entry = await screen.findByTestId('hof-entry-101');
