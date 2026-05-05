@@ -75,7 +75,7 @@ describe('Trait Interaction Matrix', () => {
       prisma.horse.create({
         data: {
           name: `Test Horse Complex ${testSuffix}`,
-          sex: 'gelding',
+          sex: 'Colt',
           dateOfBirth: oneMonthAgo,
           userId: testUser.id,
           bondScore: 28,

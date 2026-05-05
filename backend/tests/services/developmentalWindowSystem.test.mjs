@@ -113,7 +113,7 @@ describe('Developmental Window System', () => {
       prisma.horse.create({
         data: {
           name: `Test Foal Month ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          sex: 'gelding',
+          sex: 'Colt',
           dateOfBirth: oneMonthAgo,
           userId: testUser.id,
           bondScore: 25,

@@ -113,7 +113,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
       prisma.horse.create({
         data: {
           name: `Test Horse Improving ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          sex: 'gelding',
+          sex: 'Colt',
           dateOfBirth: oneMonthAgo,
           userId: testUser.id,
           bondScore: 30,

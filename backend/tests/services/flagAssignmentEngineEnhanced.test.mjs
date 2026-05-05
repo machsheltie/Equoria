@@ -114,7 +114,7 @@ describe('Enhanced Flag Assignment Engine', () => {
         tx.horse.create({
           data: {
             name: `Test Foal 6mo ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            sex: 'gelding',
+            sex: 'Colt',
             dateOfBirth: sixMonthsAgo,
             userId: testUser.id,
             bondScore: 35,

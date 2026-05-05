@@ -102,7 +102,7 @@ describe('Horse Temperament Analysis', () => {
       prisma.horse.create({
         data: {
           name: `Test Horse Mixed ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          sex: 'gelding',
+          sex: 'Colt',
           dateOfBirth: oneMonthAgo,
           userId: testUser.id,
           bondScore: 22,

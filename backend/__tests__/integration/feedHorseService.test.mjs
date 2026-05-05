@@ -150,7 +150,7 @@ describe('feedHorse service — stat-boost integration (real DB)', () => {
     const horse = await prisma.horse.create({
       data: {
         name: `SvcHorse${Date.now()}${Math.random().toString(36).slice(2, 5)}`,
-        sex: 'gelding',
+        sex: 'Stallion',
         dateOfBirth: new Date('2020-01-01'),
         age: 5,
         userId,

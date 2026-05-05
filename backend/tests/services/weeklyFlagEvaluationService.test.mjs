@@ -101,7 +101,7 @@ describe('Weekly Flag Evaluation Service', () => {
       prisma.horse.create({
         data: {
           name: `Test Horse 2yo ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          sex: 'gelding',
+          sex: 'Colt',
           dateOfBirth: twoYearsAgo,
           userId: testUser.id,
           bondScore: 30,
