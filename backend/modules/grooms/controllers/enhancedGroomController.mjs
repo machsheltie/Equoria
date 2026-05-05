@@ -356,7 +356,16 @@ export async function getRelationshipDetails(req, res) {
       take: 50,
     });
 
-    // Get current horse data
+    // Get current horse data.
+    //
+    // CWE-639 hardening: ownership is enforced upstream by both
+    // requireOwnership('groom', { idParam: 'groomId' }) and
+    // requireOwnership('horse', { idParam: 'horseId' }) in
+    // enhancedGroomRoutes.mjs:101-102. By the time we reach this handler,
+    // both groom and horse are guaranteed to exist AND be owned by req.user.
+    // The previous defensive 'Horse not found or not owned by user' branch
+    // was dead code; we keep a defense-in-depth 404 fall-through (without
+    // the 'or not owned' wording) in case middleware is ever bypassed.
     const horse = await prisma.horse.findUnique({
       where: { id: parseInt(horseId) },
       select: { bondScore: true, name: true, userId: true },
@@ -365,7 +374,7 @@ export async function getRelationshipDetails(req, res) {
     if (!horse || horse.userId !== userId) {
       return res.status(404).json({
         success: false,
-        message: 'Horse not found or not owned by user',
+        message: 'Horse not found',
         data: null,
       });
     }

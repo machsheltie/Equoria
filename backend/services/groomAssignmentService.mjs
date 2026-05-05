@@ -252,9 +252,18 @@ export async function removeAssignment(assignmentId, userId, reason = 'Manual re
       throw new Error('Assignment not found');
     }
 
-    // Validate ownership
+    // CWE-639 hardening: ownership is enforced upstream by
+    // requireOwnership('groom-assignment', { idParam: 'assignmentId' })
+    // middleware in groomAssignmentRoutes.mjs:84, which returns 404 for
+    // both not-found and not-owned (matching on GroomAssignment.userId).
+    // The previous OR-check (groom.userId OR foal.userId) was a more
+    // permissive contract that is unreachable for the removeAssignment
+    // route — middleware would have already 404'd. Collapse to a
+    // disclosure-resistant 'Assignment not found' instead of the leaky
+    // 'You do not have permission' wording, in case middleware is ever
+    // bypassed or this service grows another caller.
     if (assignment.groom.userId !== userId && assignment.foal.userId !== userId) {
-      throw new Error('You do not have permission to remove this assignment');
+      throw new Error('Assignment not found');
     }
 
     if (!assignment.isActive) {

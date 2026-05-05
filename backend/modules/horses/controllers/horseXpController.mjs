@@ -70,8 +70,13 @@ export async function getHorseXpStatus(req, res) {
       throw new NotFoundError('Horse');
     }
 
+    // CWE-639 hardening: ownership is enforced upstream by
+    // requireOwnership('horse') middleware in horseRoutes.mjs:1243, which
+    // returns 404 for both not-found and not-owned. The previous 403 branch
+    // here was dead code; if cache or middleware is ever bypassed, fall
+    // through to a disclosure-resistant 404 instead of the leaky 403.
     if (data.userId !== userId) {
-      throw new AuthorizationError('You are not authorized to view this horse');
+      throw new NotFoundError('Horse');
     }
 
     // Calculate XP progression info
@@ -158,8 +163,12 @@ export async function allocateStatPoint(req, res) {
       throw new NotFoundError('Horse');
     }
 
+    // CWE-639 hardening: ownership is enforced upstream by
+    // requireOwnership('horse') middleware in horseRoutes.mjs:1269, which
+    // returns 404 for both not-found and not-owned. Previous 403 here was
+    // dead code; fall through to 404 in case middleware is ever bypassed.
     if (horse.userId !== userId) {
-      throw new AuthorizationError('You are not authorized to modify this horse');
+      throw new NotFoundError('Horse');
     }
 
     // Allocate stat point using model
@@ -241,8 +250,13 @@ export async function getHorseXpHistory(req, res) {
           return { error: 'NOT_FOUND' };
         }
 
+        // CWE-639 hardening: ownership is enforced upstream by
+        // requireOwnership('horse') middleware in horseRoutes.mjs:1295, which
+        // returns 404 for both not-found and not-owned. Previous UNAUTHORIZED
+        // path was dead code; fold into NOT_FOUND for disclosure resistance
+        // in case middleware is ever bypassed.
         if (horse.userId !== userId) {
-          return { error: 'UNAUTHORIZED' };
+          return { error: 'NOT_FOUND' };
         }
 
         // Get XP history using model
@@ -260,9 +274,8 @@ export async function getHorseXpHistory(req, res) {
     if (result.error === 'NOT_FOUND') {
       throw new NotFoundError('Horse');
     }
-    if (result.error === 'UNAUTHORIZED') {
-      throw new AuthorizationError('You are not authorized to view this horse');
-    }
+    // Note: UNAUTHORIZED branch removed — CWE-639 hardening folded the
+    // ownership-mismatch case into NOT_FOUND inside the cache function above.
     if (result.error) {
       throw new Error(result.error);
     }
@@ -337,8 +350,12 @@ export async function awardXpToHorse(req, res) {
       throw new NotFoundError('Horse');
     }
 
+    // CWE-639 hardening: ownership is enforced upstream by
+    // requireOwnership('horse') middleware in horseRoutes.mjs:1321, which
+    // returns 404 for both not-found and not-owned. Previous 403 here was
+    // dead code; fall through to 404 in case middleware is ever bypassed.
     if (horse.userId !== userId) {
-      throw new AuthorizationError('You are not authorized to modify this horse');
+      throw new NotFoundError('Horse');
     }
 
     // Award XP using model

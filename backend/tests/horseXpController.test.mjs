@@ -154,10 +154,14 @@ describe('Horse XP Controller - API Endpoints', () => {
 
       await horseXpController.getHorseXpStatus(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(403);
+      // CWE-639 hardening (Equoria-1i6w): cross-user access returns 404 with
+      // the same not-found message as a missing horse, preventing
+      // ID enumeration. Previous 403/'not authorized' response is dead code
+      // in production (route uses requireOwnership middleware).
+      expect(res.status).toHaveBeenCalledWith(404);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
-        error: 'You are not authorized to view this horse',
+        error: 'Horse not found',
       });
     });
 
