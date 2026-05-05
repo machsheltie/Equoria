@@ -45,7 +45,7 @@ beforeAll(async () => {
   testHorse = await prisma.horse.create({
     data: {
       name: `XPHorse_${UNIQUE}`,
-      sex: 'Female',
+      sex: 'Mare',
       dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000), // 4 years ago
       age: 4,
       breed: { connect: { id: breed.id } },
@@ -109,7 +109,7 @@ describe('XP Logging — Training Workflow', () => {
     const youngHorse = await prisma.horse.create({
       data: {
         name: `YoungHorse_${UNIQUE}`,
-        sex: 'Male',
+        sex: 'Stallion',
         dateOfBirth: new Date(), // born today — age 0
         age: 0,
         breed: { connect: { id: testHorse.breedId } },

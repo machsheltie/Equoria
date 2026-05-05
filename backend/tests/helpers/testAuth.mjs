@@ -186,7 +186,7 @@ export async function createTestHorse(horseData = {}) {
     name: `TestHorse_${horseUid}`,
     breed: { connect: { id: breed.id } },
     age: 5,
-    sex: 'Female',
+    sex: 'Mare',
     dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000), // 5 years ago
     speed: 50,
     stamina: 50,

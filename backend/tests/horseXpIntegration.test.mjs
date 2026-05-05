@@ -31,7 +31,7 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
         name: 'XP Test Horse',
         age: 5,
         dateOfBirth: new Date('2019-01-01'),
-        sex: 'Female',
+        sex: 'Mare',
         speed: 75,
         stamina: 70,
         focus: 65,
@@ -226,9 +226,8 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
       const initialSpeed = horse.speed;
 
       // Step 2: Simulate multiple competition placements to accumulate XP
-      const { awardCompetitionXp, getHorseXpStatus, allocateStatPoint, getHorseXpHistory } = await import(
-        '../models/horseXpModel.mjs'
-      );
+      const { awardCompetitionXp, getHorseXpStatus, allocateStatPoint, getHorseXpHistory } =
+        await import('../models/horseXpModel.mjs');
 
       await awardCompetitionXp(testHorseId, '1st', 'Racing'); // 30 XP
       await awardCompetitionXp(testHorseId, '2nd', 'Dressage'); // 27 XP

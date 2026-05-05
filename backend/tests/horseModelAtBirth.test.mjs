@@ -41,7 +41,7 @@ beforeAll(async () => {
   sire = await prisma.horse.create({
     data: {
       name: `Sire_AtBirth_${UNIQUE}`,
-      sex: 'Male',
+      sex: 'Stallion',
       age: 5,
       dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
       breed: { connect: { id: breed.id } },
@@ -53,7 +53,7 @@ beforeAll(async () => {
   dam = await prisma.horse.create({
     data: {
       name: `Dam_AtBirth_${UNIQUE}`,
-      sex: 'Female',
+      sex: 'Mare',
       age: 5,
       dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
       breed: { connect: { id: breed.id } },
@@ -76,7 +76,7 @@ describe('Horse Model At-Birth Traits — Real Database', () => {
   it('creates a foal with correct epigeneticModifiers shape when both parents present', async () => {
     const foal = await createHorse({
       name: `Foal_WithParents_${UNIQUE}`,
-      sex: 'Female',
+      sex: 'Mare',
       age: 0,
       dateOfBirth: new Date(),
       breed: { connect: { id: breed.id } },
@@ -107,7 +107,7 @@ describe('Horse Model At-Birth Traits — Real Database', () => {
 
     const foal = await createHorse({
       name: `Foal_MergeTraits_${UNIQUE}`,
-      sex: 'Male',
+      sex: 'Stallion',
       age: 0,
       dateOfBirth: new Date(),
       breed: { connect: { id: breed.id } },
@@ -126,7 +126,7 @@ describe('Horse Model At-Birth Traits — Real Database', () => {
   it('creates adult horse (age > 0) with empty epigeneticModifiers — no at-birth traits', async () => {
     const adult = await createHorse({
       name: `Adult_NoAtBirth_${UNIQUE}`,
-      sex: 'Female',
+      sex: 'Mare',
       age: 5,
       dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
       breed: { connect: { id: breed.id } },
@@ -143,7 +143,7 @@ describe('Horse Model At-Birth Traits — Real Database', () => {
   it('creates foundling foal (no parents) with empty epigeneticModifiers', async () => {
     const foundling = await createHorse({
       name: `Foundling_${UNIQUE}`,
-      sex: 'Male',
+      sex: 'Stallion',
       age: 0,
       dateOfBirth: new Date(),
       breed: { connect: { id: breed.id } },
@@ -157,7 +157,7 @@ describe('Horse Model At-Birth Traits — Real Database', () => {
   it('creates foal even when sireId is missing — no trait application', async () => {
     const foal = await createHorse({
       name: `Foal_NoSire_${UNIQUE}`,
-      sex: 'Female',
+      sex: 'Mare',
       age: 0,
       dateOfBirth: new Date(),
       breed: { connect: { id: breed.id } },
@@ -174,7 +174,7 @@ describe('Horse Model At-Birth Traits — Real Database', () => {
   it('creates foal even when damId is missing — no trait application', async () => {
     const foal = await createHorse({
       name: `Foal_NoDam_${UNIQUE}`,
-      sex: 'Male',
+      sex: 'Stallion',
       age: 0,
       dateOfBirth: new Date(),
       breed: { connect: { id: breed.id } },
@@ -199,7 +199,7 @@ describe('Horse Model At-Birth Traits — Real Database', () => {
 
     const foal = await createHorse({
       name: `Foal_PreApplied_${UNIQUE}`,
-      sex: 'Female',
+      sex: 'Mare',
       age: 0,
       dateOfBirth: new Date(),
       breed: { connect: { id: breed.id } },
@@ -219,7 +219,7 @@ describe('Horse Model At-Birth Traits — Real Database', () => {
   it('correctly links sire and dam on the created horse record', async () => {
     const foal = await createHorse({
       name: `Foal_Linked_${UNIQUE}`,
-      sex: 'Female',
+      sex: 'Mare',
       age: 0,
       dateOfBirth: new Date(),
       breed: { connect: { id: breed.id } },

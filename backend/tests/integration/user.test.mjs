@@ -45,7 +45,7 @@ beforeAll(async () => {
     const horse = await prisma.horse.create({
       data: {
         name,
-        sex: 'Female',
+        sex: 'Mare',
         dateOfBirth: new Date('2019-01-01'),
         age: 5,
         breed: { connect: { id: breed.id } },
