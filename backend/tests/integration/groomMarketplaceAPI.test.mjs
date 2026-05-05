@@ -132,8 +132,10 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
 
       const initialGrooms = initialResponse.body.data.grooms;
 
-      // Force-expire the marketplace so the free refresh window is available immediately
-      forceExpireMarketplace(_testUser.id);
+      // Force-expire the marketplace so the free refresh window is available immediately.
+      // forceExpireMarketplace is async — must be awaited or the refresh below races
+      // ahead with lastRefresh still recent → controller returns 400.
+      await forceExpireMarketplace(_testUser.id);
 
       // Refresh marketplace
       const refreshResponse = await request(app)

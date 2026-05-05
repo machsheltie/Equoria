@@ -101,7 +101,7 @@ describe('Enhanced Reporting API Routes', () => {
       prisma.horse.create({
         data: {
           name: `Test Mature Report ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          sex: 'gelding',
+          sex: 'colt',
           dateOfBirth: twoMonthsAgo,
           userId: testUser.id,
           bondScore: 40,
@@ -357,7 +357,7 @@ describe('Enhanced Reporting API Routes', () => {
       const otherHorse = await prisma.horse.create({
         data: {
           name: `Other Horse Report ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          sex: 'gelding',
+          sex: 'colt',
           dateOfBirth: new Date(),
           userId: otherUser.id,
           bondScore: 15,

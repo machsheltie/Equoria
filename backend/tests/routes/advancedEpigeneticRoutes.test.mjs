@@ -226,7 +226,7 @@ describe('Advanced Epigenetic API Routes', () => {
       const otherHorse = await prisma.horse.create({
         data: {
           name: `Other Horse ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          sex: 'gelding',
+          sex: 'colt',
           dateOfBirth: new Date(),
           userId: otherUser.id,
           bondScore: 15,
