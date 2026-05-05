@@ -645,7 +645,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
 
   describe('BUSINESS RULE: Error Handling and Data Integrity', () => {
     it('MAINTAINS database integrity when training non-existent horse', async () => {
-      const nonExistentHorseId = 99999;
+      const nonExistentHorseId = 999999999;
 
       const response = await trainingRequest().send({
         horseId: nonExistentHorseId,
