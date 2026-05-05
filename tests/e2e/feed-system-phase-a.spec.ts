@@ -140,8 +140,10 @@ test.describe.serial('Feed System Phase A — full loop', () => {
     await page.goto('/inventory', { waitUntil: 'load' });
 
     // Switch to the feed category tab so other categories don't pollute the grid.
-    await page.getByTestId('category-feed').click();
-    await expect(page.getByTestId('category-feed')).toHaveAttribute('aria-selected', 'true');
+    // Inventory uses FantasyTabs which exposes Radix role="tab" — match by name.
+    const feedTab = page.getByRole('tab', { name: /^feed$/i });
+    await feedTab.click();
+    await expect(feedTab).toHaveAttribute('data-state', 'active');
 
     // The grid should not be in its empty state for the feed category.
     await expect(page.getByTestId('empty-inventory')).toHaveCount(0);

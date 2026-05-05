@@ -11,13 +11,8 @@
  *       equippedToHorseId because Horse.equippedFeedType is the per-horse
  *       source of truth, not the inventory row.
  *
- * Data sources:
- *   GET /api/inventory         → InventoryData  (useInventory hook)
- *   GET /api/horses            → HorseSummary[] (horse picker)
- *   POST /api/inventory/equip  → equip mutation (tack only)
- *   POST /api/inventory/unequip → unequip mutation (tack only)
- *
- * Uses Celestial Night theme (consistent with other standalone pages).
+ * UI consistency (Equoria-rgke): consumes shared CardGrid + ItemCard + the
+ * canonical FantasyTabs filter pattern from StableView.
  */
 
 import React, { useState } from 'react';
@@ -27,6 +22,9 @@ import { Package, Shield, Leaf, Sparkles, AlertCircle, Loader2, Wrench } from 'l
 import { useInventory, useEquipItem, useUnequipItem } from '@/hooks/api/useInventory';
 import PageHero from '@/components/layout/PageHero';
 import { Button } from '@/components/ui/button';
+import { CardGrid } from '@/components/ui/CardGrid';
+import { ItemCard } from '@/components/ui/ItemCard';
+import { FantasyTabs } from '@/components/FantasyTabs';
 import { horsesApi } from '@/lib/api-client';
 import type { InventoryItem, FeedItem } from '@/lib/api-client';
 import { useQuery } from '@tanstack/react-query';
@@ -57,23 +55,14 @@ function getItemImage(item: InventoryItem): string | null {
 
 // ── Category config ──────────────────────────────────────────────────────────
 
-const categoryIcons: Record<InventoryCategory, React.ReactNode> = {
-  all: <Package className="w-4 h-4" />,
-  saddle: <Shield className="w-4 h-4" />,
-  bridle: <Shield className="w-4 h-4" />,
-  feed: <Leaf className="w-4 h-4" />,
-  consumables: <Leaf className="w-4 h-4" />,
-  special: <Sparkles className="w-4 h-4" />,
-};
-
-const categoryLabels: Record<InventoryCategory, string> = {
-  all: 'All Items',
-  saddle: 'Saddles',
-  bridle: 'Bridles',
-  feed: 'Feed',
-  consumables: 'Consumables',
-  special: 'Special',
-};
+const CATEGORY_TABS: { value: InventoryCategory; label: string; icon: React.ReactNode }[] = [
+  { value: 'all', label: 'All Items', icon: <Package className="w-4 h-4" /> },
+  { value: 'saddle', label: 'Saddles', icon: <Shield className="w-4 h-4" /> },
+  { value: 'bridle', label: 'Bridles', icon: <Shield className="w-4 h-4" /> },
+  { value: 'feed', label: 'Feed', icon: <Leaf className="w-4 h-4" /> },
+  { value: 'consumables', label: 'Consumables', icon: <Leaf className="w-4 h-4" /> },
+  { value: 'special', label: 'Special', icon: <Sparkles className="w-4 h-4" /> },
+];
 
 // ── HorsePicker modal ────────────────────────────────────────────────────────
 
@@ -158,16 +147,18 @@ const HorsePicker: React.FC<HorsePickerProps> = ({ itemName, onConfirm, onClose,
   );
 };
 
-// ── InventoryItemCard ─────────────────────────────────────────────────────────
+// ── Inventory Card adapter ───────────────────────────────────────────────────
+// Wraps the shared ItemCard to apply inventory-specific media, action, and
+// quantity badge. Keeps ItemCard's API generic across shops/services/equip.
 
-interface ItemCardProps {
+interface InventoryCardProps {
   item: InventoryItem;
   onEquipRequest: (_item: InventoryItem) => void;
   onUnequip: (_item: InventoryItem) => void;
   isUnequipping: boolean;
 }
 
-const InventoryItemCard: React.FC<ItemCardProps> = ({
+const InventoryCard: React.FC<InventoryCardProps> = ({
   item,
   onEquipRequest,
   onUnequip,
@@ -176,92 +167,78 @@ const InventoryItemCard: React.FC<ItemCardProps> = ({
   const isFeed = item.category === 'feed';
   const imageSrc = getItemImage(item);
 
-  return (
-    <div
-      className="bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] rounded-xl p-5 flex gap-4"
-      data-testid={`inventory-item-${item.id}`}
-    >
-      {imageSrc ? (
-        <img
-          src={imageSrc}
-          alt={`${item.name}`}
-          loading="lazy"
-          className="shrink-0 w-24 h-24 sm:w-32 sm:h-32 lg:w-[150px] lg:h-[150px] object-contain"
-        />
-      ) : (
-        <div className="shrink-0 w-24 h-24 sm:w-32 sm:h-32 lg:w-[150px] lg:h-[150px] rounded-lg bg-black/20 flex items-center justify-center text-[var(--text-muted)]">
-          <Wrench className="w-10 h-10 sm:w-14 sm:h-14 lg:w-16 lg:h-16" />
-        </div>
-      )}
-      <div className="flex-1 min-w-0 flex flex-col">
-        <div className="flex items-start justify-between gap-2 mb-1">
-          <h3 className="font-bold text-[var(--cream)]">{item.name}</h3>
-          <span className="text-xs font-bold bg-white/10 text-[var(--cream)]/60 rounded-full px-2 py-0.5 shrink-0">
-            ×{item.quantity}
-          </span>
-        </div>
-        <p className="text-xs text-[var(--text-muted)] capitalize">{item.category}</p>
-        {item.bonus && <p className="text-sm text-[var(--gold-light)] mt-2">{item.bonus}</p>}
-        <div className="mt-auto pt-4">
-          {isFeed ? (
-            <p
-              className="text-xs text-[var(--text-muted)] italic leading-snug"
-              data-testid={`feed-equip-hint-${item.id}`}
-            >
-              Equipped via the horse&rsquo;s Equip page.
-            </p>
-          ) : item.equippedToHorseId ? (
-            <div className="flex items-center justify-between gap-2">
-              <span className="text-xs text-[var(--gold-light)] font-medium">
-                Equipped: {item.equippedToHorseName ?? `Horse #${item.equippedToHorseId}`}
-              </span>
-              <Button
-                type="button"
-                size="sm"
-                onClick={() => onUnequip(item)}
-                disabled={isUnequipping}
-              >
-                {isUnequipping ? <Loader2 className="w-3 h-3 animate-spin inline" /> : 'Unequip'}
-              </Button>
-            </div>
-          ) : (
-            <Button
-              type="button"
-              onClick={() => onEquipRequest(item)}
-              data-onboarding-target="inventory-equip-button"
-              className="w-full"
-            >
-              Equip
-            </Button>
-          )}
-        </div>
-      </div>
+  const media = imageSrc ? (
+    <img src={imageSrc} alt={item.name} loading="lazy" className="w-20 h-20 object-contain" />
+  ) : (
+    <div className="w-20 h-20 rounded-lg bg-black/20 flex items-center justify-center text-[var(--text-muted)]">
+      <Wrench className="w-10 h-10" />
     </div>
+  );
+
+  // Quantity rendered as a small neutral badge inline with title — passed via
+  // meta so it stays out of the gold "price" slot semantics.
+  const meta = (
+    <span className="text-[0.65rem] font-bold bg-white/10 text-[var(--cream)]/60 rounded-full px-2 py-0.5">
+      ×{item.quantity}
+    </span>
+  );
+
+  let action: React.ReactNode;
+  if (isFeed) {
+    action = (
+      <p
+        className="text-xs text-[var(--text-muted)] italic leading-snug text-center"
+        data-testid={`feed-equip-hint-${item.id}`}
+      >
+        Equipped via the horse&rsquo;s Equip page.
+      </p>
+    );
+  } else if (item.equippedToHorseId) {
+    action = (
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-xs text-[var(--gold-light)] font-medium truncate">
+          Equipped: {item.equippedToHorseName ?? `Horse #${item.equippedToHorseId}`}
+        </span>
+        <Button type="button" size="sm" onClick={() => onUnequip(item)} disabled={isUnequipping}>
+          {isUnequipping ? <Loader2 className="w-3 h-3 animate-spin inline" /> : 'Unequip'}
+        </Button>
+      </div>
+    );
+  } else {
+    action = (
+      <Button
+        type="button"
+        onClick={() => onEquipRequest(item)}
+        data-onboarding-target="inventory-equip-button"
+        className="w-full"
+      >
+        Equip
+      </Button>
+    );
+  }
+
+  return (
+    <ItemCard
+      data-testid={`inventory-item-${item.id}`}
+      media={media}
+      title={item.name}
+      subtitle={<span className="capitalize">{item.category}</span>}
+      description={item.bonus ?? undefined}
+      meta={meta}
+      action={action}
+    />
   );
 };
 
 // ── InventoryPage ─────────────────────────────────────────────────────────────
 
 const InventoryPage: React.FC = () => {
-  const [activeCategory, setActiveCategory] = useState<InventoryCategory>('all');
   const [equipTarget, setEquipTarget] = useState<InventoryItem | null>(null);
   const [unequippingId, setUnequippingId] = useState<string | null>(null);
 
   const { items, total, isLoading, error } = useInventory();
   const equipMutation = useEquipItem();
   const unequipMutation = useUnequipItem();
-
-  const categories: InventoryCategory[] = [
-    'all',
-    'saddle',
-    'bridle',
-    'feed',
-    'consumables',
-    'special',
-  ];
-
-  const filteredItems =
-    activeCategory === 'all' ? items : items.filter((item) => item.category === activeCategory);
 
   // ── Handlers ──
 
@@ -311,7 +288,69 @@ const InventoryPage: React.FC = () => {
     );
   };
 
-  // ── Render ──
+  // Render the grid for a given category — used as each FantasyTab's content.
+  const renderGrid = (category: InventoryCategory) => {
+    if (isLoading) {
+      return (
+        <div className="flex justify-center py-16">
+          <Loader2 className="w-8 h-8 animate-spin text-white/30" />
+        </div>
+      );
+    }
+    if (error) {
+      return (
+        <div
+          className="flex flex-col items-center justify-center min-h-48 text-center p-8"
+          data-testid="inventory-error"
+        >
+          <AlertCircle className="w-10 h-10 text-red-400/50 mb-3" />
+          <p className="text-white/50 font-medium">Could not load inventory</p>
+          <p className="text-white/30 text-sm mt-1">Please refresh the page and try again.</p>
+        </div>
+      );
+    }
+    const filtered =
+      category === 'all' ? items : items.filter((item) => item.category === category);
+    if (filtered.length === 0) {
+      const label = CATEGORY_TABS.find((t) => t.value === category)?.label ?? '';
+      return (
+        <div
+          className="flex flex-col items-center justify-center min-h-48 text-center p-8"
+          data-testid="empty-inventory"
+        >
+          <AlertCircle className="w-10 h-10 text-white/20 mb-3" />
+          <p className="text-white/50 font-medium">
+            {category === 'all'
+              ? 'Your inventory is empty'
+              : `No ${label.toLowerCase()} in inventory`}
+          </p>
+          <p className="text-white/30 text-sm mt-1">
+            Visit the Tack Shop or Feed Shop to stock up.
+          </p>
+        </div>
+      );
+    }
+    return (
+      <CardGrid aria-label={`${category} inventory items`}>
+        {filtered.map((item) => (
+          <InventoryCard
+            key={item.id}
+            item={item}
+            onEquipRequest={handleEquipRequest}
+            onUnequip={handleUnequip}
+            isUnequipping={unequippingId === item.id && unequipMutation.isPending}
+          />
+        ))}
+      </CardGrid>
+    );
+  };
+
+  const tabs = CATEGORY_TABS.map((cat) => ({
+    value: cat.value,
+    label: cat.label,
+    icon: cat.icon,
+    content: renderGrid(cat.value),
+  }));
 
   return (
     <div className="min-h-screen">
@@ -349,74 +388,9 @@ const InventoryPage: React.FC = () => {
       </PageHero>
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Category Filter — matches MyStablePage tab styling for cohesion */}
-        <div
-          className="flex flex-wrap gap-1 p-1 bg-white/5 border border-white/10 rounded-xl mb-8 w-fit max-w-full"
-          role="tablist"
-          aria-label="Inventory categories"
-        >
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              role="tab"
-              aria-selected={activeCategory === cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-                activeCategory === cat
-                  ? 'bg-white/10 text-white/90 shadow-sm'
-                  : 'text-white/40 hover:text-white/70'
-              }`}
-              data-testid={`category-${cat}`}
-            >
-              {categoryIcons[cat]}
-              {categoryLabels[cat]}
-            </button>
-          ))}
-        </div>
-
-        {/* Inventory Grid */}
-        <div role="tabpanel" data-testid="inventory-grid">
-          {isLoading ? (
-            <div className="flex justify-center py-16">
-              <Loader2 className="w-8 h-8 animate-spin text-white/30" />
-            </div>
-          ) : error ? (
-            <div
-              className="flex flex-col items-center justify-center min-h-48 text-center p-8"
-              data-testid="inventory-error"
-            >
-              <AlertCircle className="w-10 h-10 text-red-400/50 mb-3" />
-              <p className="text-white/50 font-medium">Could not load inventory</p>
-              <p className="text-white/30 text-sm mt-1">Please refresh the page and try again.</p>
-            </div>
-          ) : filteredItems.length === 0 ? (
-            <div
-              className="flex flex-col items-center justify-center min-h-48 text-center p-8"
-              data-testid="empty-inventory"
-            >
-              <AlertCircle className="w-10 h-10 text-white/20 mb-3" />
-              <p className="text-white/50 font-medium">
-                {activeCategory === 'all'
-                  ? 'Your inventory is empty'
-                  : `No ${categoryLabels[activeCategory].toLowerCase()} in inventory`}
-              </p>
-              <p className="text-white/30 text-sm mt-1">
-                Visit the Tack Shop or Feed Shop to stock up.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredItems.map((item) => (
-                <InventoryItemCard
-                  key={item.id}
-                  item={item}
-                  onEquipRequest={handleEquipRequest}
-                  onUnequip={handleUnequip}
-                  isUnequipping={unequippingId === item.id && unequipMutation.isPending}
-                />
-              ))}
-            </div>
-          )}
+        {/* Category filter — FantasyTabs (canonical from StableView) */}
+        <div data-testid="inventory-grid">
+          <FantasyTabs tabs={tabs} defaultValue="all" />
         </div>
 
         {/* Info Panel */}
