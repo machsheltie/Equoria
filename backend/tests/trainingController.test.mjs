@@ -279,8 +279,8 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
     });
 
     it('should return eligible false for non-existent horse', async () => {
-      // Use non-existent horse ID 99999
-      const result = await canTrain(99999, 'Dressage');
+      // Use non-existent horse ID 999999999 (well above current DB sequence ceiling)
+      const result = await canTrain(999999999, 'Dressage');
 
       expect(result).toEqual({
         eligible: false,

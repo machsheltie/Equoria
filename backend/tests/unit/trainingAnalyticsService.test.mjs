@@ -212,7 +212,7 @@ describe('Training Analytics Service', () => {
 
   describe('Error Handling', () => {
     test('should handle non-existent horse gracefully', async () => {
-      await expect(trainingAnalyticsService.getTrainingHistory(99999)).rejects.toThrow('Horse not found');
+      await expect(trainingAnalyticsService.getTrainingHistory(999999999)).rejects.toThrow('Horse not found');
     });
 
     test('should handle horse with no training history', async () => {

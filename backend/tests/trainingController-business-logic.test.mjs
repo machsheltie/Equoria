@@ -337,7 +337,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
     });
 
     it('RETURNS eligible false for non-existent horse', async () => {
-      const result = await canTrain(99999, 'Dressage');
+      const result = await canTrain(999999999, 'Dressage');
 
       expect(result).toEqual({
         eligible: false,
@@ -467,7 +467,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
     });
 
     it('RETURNS error for non-existent horse', async () => {
-      const result = await trainHorse(99999, 'Dressage');
+      const result = await trainHorse(999999999, 'Dressage');
 
       expect(result).toEqual(
         expect.objectContaining({
@@ -520,7 +520,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
 
     it('RETURNS error status for non-existent horse', async () => {
       // Fixed: getTrainingStatus returns error status for invalid horses, doesn't throw
-      const result = await getTrainingStatus(99999, 'Dressage');
+      const result = await getTrainingStatus(999999999, 'Dressage');
 
       expect(result).toEqual(
         expect.objectContaining({
@@ -664,7 +664,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
     it('RETURNS error response for non-existent horse', async () => {
       // Fixed: Create proper mock req/res objects
       const mockReq = {
-        body: { horseId: 99999, discipline: 'Dressage' },
+        body: { horseId: 999999999, discipline: 'Dressage' },
         user: { id: testUser.id },
       };
 
