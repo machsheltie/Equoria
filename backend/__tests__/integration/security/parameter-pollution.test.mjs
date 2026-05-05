@@ -306,6 +306,15 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     });
 
     it('should reject prototype pollution attempts at the request-body layer', async () => {
+      // Equoria-bt6d (21R-SEC-3-FOLLOW-10): the prior assertions
+      // (`testUser.isAdmin === undefined` etc.) were vacuously true on modern
+      // V8 because `JSON.parse('{"__proto__":{"isAdmin":true}}')` does NOT
+      // pollute Object.prototype — it creates an own enumerable `__proto__`
+      // property on the parsed object. The test would pass even if our
+      // middleware were entirely removed, as long as the request 400'd for
+      // any other reason. Pin to the exact rejection message OUR detector
+      // emits so removing rejectPollutedRequestBody breaks this test.
+      expect.assertions(2);
       const response = await request(app)
         .put(`/api/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
@@ -316,9 +325,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
         .send('{"name":"ValidName","__proto__":{"isAdmin":true}}')
         .expect(400);
       expect(response.body.success).toBe(false);
-      expect(testUser.isAdmin).toBeUndefined();
-      expect({}.isAdmin).toBeUndefined();
-      expect(Object.prototype.isAdmin).toBeUndefined();
+      expect(response.body.message).toMatch(/forbidden key.*__proto__/);
     });
 
     it('should reject constructor pollution attempts', async () => {
