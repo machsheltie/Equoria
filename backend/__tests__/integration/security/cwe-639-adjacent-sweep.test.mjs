@@ -321,4 +321,98 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
       expect(crossUserError.message).not.toContain('You do not own');
     });
   });
+
+  // ─── Equoria-b4q6 ────────────────────────────────────────────────────────
+  // POST /api/v1/horses/foals — previously had a TODO(security) about missing
+  // sireId/damId ownership validation (CWE-284). Now enforced by the
+  // dual-ownership inline middleware in horseRoutes.mjs `POST /foals`. Both
+  // cross-user and not-exists must surface byte-identical 404s.
+  describe('horseRoutes POST /api/v1/horses/foals', () => {
+    let breed;
+
+    beforeEach(async () => {
+      breed = await prisma.breed.upsert({
+        where: { name: 'Thoroughbred' },
+        update: {},
+        create: { name: 'Thoroughbred', description: 'Shared CWE-639 sweep breed' },
+      });
+    });
+
+    it('returns 404 for cross-user sire byte-identical to nonexistent sire', async () => {
+      // Cross-user sire: userA tries to use userB's stallion (horseB) as sire,
+      // with their own mare (horseA) as dam.
+      const resCrossUserSire = await request(app)
+        .post('/api/v1/horses/foals')
+        .set('Authorization', `Bearer ${tokenA}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({
+          name: `CweFoalA-${randomBytes(4).toString('hex')}`,
+          breedId: breed.id,
+          sireId: horseB.id,
+          damId: horseA.id,
+        });
+
+      expect(resCrossUserSire.status).toBe(404);
+      expect(resCrossUserSire.body).toMatchObject({ success: false, message: 'Sire not found' });
+
+      // Nonexistent sire ID
+      const resMissingSire = await request(app)
+        .post('/api/v1/horses/foals')
+        .set('Authorization', `Bearer ${tokenA}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({
+          name: `CweFoalA-${randomBytes(4).toString('hex')}`,
+          breedId: breed.id,
+          sireId: NONEXISTENT_ID,
+          damId: horseA.id,
+        });
+
+      expect(resMissingSire.status).toBe(404);
+      // Byte-identical sentinel — divergence enables horse ID enumeration.
+      expect(resMissingSire.body).toEqual(resCrossUserSire.body);
+    });
+
+    it('returns 404 for cross-user dam byte-identical to nonexistent dam', async () => {
+      // Cross-user dam: userA tries to use userB's mare (horseB has sex
+      // 'stallion' in this fixture, but findOwnedResource just checks
+      // ownership — the test still proves dam ownership is gated).
+      const resCrossUserDam = await request(app)
+        .post('/api/v1/horses/foals')
+        .set('Authorization', `Bearer ${tokenA}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({
+          name: `CweFoalA-${randomBytes(4).toString('hex')}`,
+          breedId: breed.id,
+          sireId: horseA.id,
+          damId: horseB.id,
+        });
+
+      expect(resCrossUserDam.status).toBe(404);
+      expect(resCrossUserDam.body).toMatchObject({ success: false, message: 'Dam not found' });
+
+      // Nonexistent dam ID
+      const resMissingDam = await request(app)
+        .post('/api/v1/horses/foals')
+        .set('Authorization', `Bearer ${tokenA}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({
+          name: `CweFoalA-${randomBytes(4).toString('hex')}`,
+          breedId: breed.id,
+          sireId: horseA.id,
+          damId: NONEXISTENT_ID,
+        });
+
+      expect(resMissingDam.status).toBe(404);
+      // Byte-identical sentinel
+      expect(resMissingDam.body).toEqual(resCrossUserDam.body);
+    });
+  });
 });
