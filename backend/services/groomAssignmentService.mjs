@@ -5,6 +5,7 @@
 
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
+import NotFoundError from '../errors/NotFoundError.mjs';
 
 // Assignment configuration
 export const ASSIGNMENT_CONFIG = {
@@ -161,6 +162,10 @@ export async function createAssignment(groomId, horseId, userId, options = {}) {
     // Validate assignment eligibility
     const validation = await validateAssignmentEligibility(groomId, horseId, userId);
     if (!validation.valid) {
+      // CWE-639: horse not-found (or not-owned) → 404 to prevent ID enumeration
+      if (!validation.horse) {
+        throw new NotFoundError('Horse');
+      }
       throw new Error(validation.errors.join(', '));
     }
 

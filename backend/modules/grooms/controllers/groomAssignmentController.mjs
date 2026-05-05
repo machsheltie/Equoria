@@ -51,7 +51,7 @@ export async function createGroomAssignment(req, res) {
     });
   } catch (error) {
     logger.error(`[groomAssignmentController] Error creating assignment: ${error.message}`);
-    res.status(400).json({
+    res.status(error.statusCode || 400).json({
       success: false,
       message: error.message,
       data: null,

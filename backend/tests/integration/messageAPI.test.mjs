@@ -152,7 +152,9 @@ describe('📬 INTEGRATION: Messages API', () => {
         .get(`/api/messages/${sentMessageId}`)
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${other.token}`);
-      expect(res.status).toBe(403);
+      // CWE-639: controller scopes by OR[senderId, recipientId]; non-participant
+      // is indistinguishable from not-found → 404 (not 403) prevents ID enumeration.
+      expect(res.status).toBe(404);
     });
   });
 });
