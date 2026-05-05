@@ -19,14 +19,26 @@ interface FantasyTabsProps {
   }[];
   defaultValue?: string;
   orientation?: 'horizontal' | 'vertical';
+  /** Controlled active tab. When provided, FantasyTabs becomes controlled and
+   *  delegates state to the parent — required for cross-tab navigation. */
+  value?: string;
+  onValueChange?: (_value: string) => void;
 }
 
 export const FantasyTabs = ({
   tabs,
   defaultValue,
   orientation = 'horizontal',
+  value,
+  onValueChange,
 }: FantasyTabsProps) => {
-  const [activeTab, setActiveTab] = useState(defaultValue || tabs[0]?.value);
+  const [internalActive, setInternalActive] = useState(defaultValue || tabs[0]?.value);
+  const isControlled = value !== undefined;
+  const activeTab = isControlled ? value : internalActive;
+  const setActiveTab = (next: string) => {
+    if (!isControlled) setInternalActive(next);
+    onValueChange?.(next);
+  };
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} orientation={orientation}>

@@ -14,21 +14,16 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import {
-  Heart,
-  ShoppingBag,
-  Loader2,
-  AlertCircle,
-  CheckCircle,
-  Filter,
-  Wrench,
-} from 'lucide-react';
+import { Heart, ShoppingBag, Loader2, AlertCircle, CheckCircle, Filter } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
-import { useTackInventory, usePurchaseTackItem, useRepairTack } from '@/hooks/api/useTackShop';
+import { CardGrid } from '@/components/ui/CardGrid';
+import { ItemCard } from '@/components/ui/ItemCard';
+import { FantasyTabs } from '@/components/FantasyTabs';
+import { HorseCard } from '@/components/horse/HorseCard';
+import { useTackInventory, usePurchaseTackItem } from '@/hooks/api/useTackShop';
 import { useHorses } from '@/hooks/api/useHorses';
 import type { TackItem } from '@/hooks/api/useTackShop';
 import type { HorseSummary } from '@/lib/api-client';
-import { getBreedName } from '@/lib/utils';
 
 type TackShopTab = 'horses' | 'shop';
 
@@ -81,97 +76,13 @@ const TIER_COLORS: Record<string, { bg: string; text: string; label: string }> =
 };
 
 // ---------------------------------------------------------------------------
-// Condition helpers
-// ---------------------------------------------------------------------------
-
-/** Get Tailwind colour classes for a condition value (0–100) */
-function conditionColor(condition: number): { bar: string; text: string; label: string } {
-  if (condition >= 75) return { bar: 'bg-green-500', text: 'text-green-400', label: 'Good' };
-  if (condition >= 50) return { bar: 'bg-yellow-500', text: 'text-yellow-400', label: 'Fair' };
-  if (condition >= 25) return { bar: 'bg-orange-500', text: 'text-orange-400', label: 'Poor' };
-  return { bar: 'bg-red-500', text: 'text-red-400', label: condition <= 0 ? 'Broken' : 'Critical' };
-}
-
-/** Extract condition for a tack category from Horse.tack JSON */
-function getTackCondition(tack: Record<string, unknown> | undefined, category: string): number {
-  if (!tack) return 100;
-  const val = tack[`${category}_condition`];
-  return typeof val === 'number' ? val : 100;
-}
-
-interface TackConditionChipProps {
-  category: string;
-  itemId: string;
-  condition: number;
-  horseId: number;
-}
-
-/** Small condition chip with progress bar and optional repair button */
-const TackConditionChip: React.FC<TackConditionChipProps> = ({
-  category,
-  itemId,
-  condition,
-  horseId,
-}) => {
-  const repairMutation = useRepairTack();
-  const colors = conditionColor(condition);
-
-  const handleRepair = () => {
-    repairMutation.mutate(
-      { horseId, category },
-      {
-        onSuccess: (result) => {
-          toast.success(`Repaired ${result.item.name} for $${result.repairCost}`);
-        },
-        onError: (err) => {
-          toast.error((err as { message?: string })?.message ?? 'Repair failed.');
-        },
-      }
-    );
-  };
-
-  return (
-    <div className="flex items-center gap-2 mt-1" data-testid={`condition-chip-${category}`}>
-      <span className="text-[10px] text-[var(--text-muted)] capitalize w-12 shrink-0">
-        {category}
-      </span>
-      <div className="flex-1 h-1.5 bg-[var(--glass-bg)] rounded-full overflow-hidden border border-[var(--glass-border)]">
-        <div
-          className={`h-full transition-all ${colors.bar}`}
-          style={{ width: `${Math.max(0, Math.min(100, condition))}%` }}
-          role="progressbar"
-          aria-valuenow={condition}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label={`${category} condition: ${condition}%`}
-        />
-      </div>
-      <span className={`text-[10px] font-medium w-8 text-right shrink-0 ${colors.text}`}>
-        {condition}%
-      </span>
-      {condition < 100 && (
-        <button
-          type="button"
-          onClick={handleRepair}
-          disabled={repairMutation.isPending}
-          title={`Repair ${itemId}`}
-          className="text-[var(--text-muted)] hover:text-[var(--gold-400)] transition-colors disabled:opacity-40"
-          aria-label={`Repair ${category}`}
-        >
-          {repairMutation.isPending ? (
-            <Loader2 className="w-3 h-3 animate-spin" />
-          ) : (
-            <Wrench className="w-3 h-3" />
-          )}
-        </button>
-      )}
-    </div>
-  );
-};
-
-// ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
+// Note: tack-condition chips and the inline repair button were previously
+// rendered on each horse-picker card. They were removed here when the picker
+// migrated to the shared HorseCard. Re-adding tack-condition info to the
+// shared HorseCard (or an accompanying footer slot) is filed as a follow-up
+// so every horse-picker surface gets it in one shot.
 
 interface TackItemCardProps {
   item: TackItem;
@@ -193,89 +104,81 @@ const TackItemCard: React.FC<TackItemCardProps> = ({
     ? isPurchasing
       ? 'Purchasing…'
       : `Buy for ${selectedHorse.name}`
-    : 'Select a Horse to Purchase';
+    : 'Select a Horse';
+
+  const media = item.image ? (
+    <img src={item.image} alt={item.name} className="w-20 h-20 object-contain" />
+  ) : (
+    <div className="w-20 h-20 rounded-lg bg-black/20 flex items-center justify-center">
+      <span className="text-3xl" aria-hidden="true">
+        {item.icon ?? CATEGORY_ICONS[item.category] ?? '🏷️'}
+      </span>
+    </div>
+  );
+
+  const meta = (
+    <>
+      <span
+        className={`text-[0.6rem] font-semibold uppercase px-1.5 py-0.5 rounded ${tierStyle.bg} ${tierStyle.text}`}
+      >
+        {tierStyle.label}
+      </span>
+      {item.bonus && (
+        <span className="text-[0.65rem] text-[var(--gold-light)] font-medium">{item.bonus}</span>
+      )}
+      {item.disciplines.map((d) => (
+        <span
+          key={d}
+          className="text-[0.6rem] px-1.5 py-0.5 rounded bg-[var(--glass-glow)] text-[var(--text-muted)]"
+        >
+          {d}
+        </span>
+      ))}
+      {item.ageRestriction && (
+        <span className="text-[0.6rem] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-medium">
+          ≤ {item.ageRestriction} yrs
+        </span>
+      )}
+    </>
+  );
+
+  const action = (
+    <button
+      type="button"
+      disabled={!canPurchase}
+      onClick={() => canPurchase && onPurchase(item)}
+      className={`w-full py-2 text-sm font-medium rounded-lg transition-all ${
+        canPurchase
+          ? 'bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)] hover:bg-[var(--status-success)]/20 hover:border-[var(--status-success)]/40 cursor-pointer'
+          : 'bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)]/60 cursor-not-allowed'
+      }`}
+      title={
+        canPurchase
+          ? `Purchase ${item.name} for ${selectedHorse!.name}`
+          : 'Select a horse from My Horses to purchase'
+      }
+    >
+      {isPurchasing && canPurchase ? (
+        <span className="flex items-center justify-center gap-2">
+          <Loader2 className="w-3 h-3 animate-spin" />
+          {buttonLabel}
+        </span>
+      ) : (
+        buttonLabel
+      )}
+    </button>
+  );
 
   return (
-    <div
-      className="bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] rounded-xl p-5 hover:border-[var(--glass-hover)] transition-all"
+    <ItemCard
       data-testid={`tack-item-${item.id}`}
-    >
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex items-center gap-3">
-          {item.image ? (
-            <img src={item.image} alt={item.name} className="w-12 h-12 object-contain" />
-          ) : (
-            <span className="text-2xl" aria-hidden="true">
-              {item.icon ?? CATEGORY_ICONS[item.category] ?? '🏷️'}
-            </span>
-          )}
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="font-bold text-[var(--cream)]">{item.name}</h3>
-              <span
-                className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded ${tierStyle.bg} ${tierStyle.text}`}
-              >
-                {tierStyle.label}
-              </span>
-            </div>
-            <span className="text-xs text-[var(--gold-400)] font-medium mt-0.5 block">
-              {item.bonus}
-            </span>
-          </div>
-        </div>
-        <p className="text-lg font-bold text-[var(--gold-400)]">${item.cost.toLocaleString()}</p>
-      </div>
-
-      <p className="text-sm text-[var(--text-muted)] mb-2">{item.description}</p>
-
-      {/* Discipline tags */}
-      {item.disciplines.length > 0 && (
-        <div className="flex flex-wrap gap-1 mb-3">
-          {item.disciplines.map((d) => (
-            <span
-              key={d}
-              className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-muted)]"
-            >
-              {d}
-            </span>
-          ))}
-        </div>
-      )}
-
-      {/* Age restriction badge */}
-      {item.ageRestriction && (
-        <div className="mb-3">
-          <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-medium">
-            For horses age {item.ageRestriction} and under
-          </span>
-        </div>
-      )}
-
-      <button
-        type="button"
-        disabled={!canPurchase}
-        onClick={() => canPurchase && onPurchase(item)}
-        className={`w-full py-2 text-sm font-medium rounded-lg transition-all ${
-          canPurchase
-            ? 'bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)] hover:bg-[var(--status-success)]/20 hover:border-[var(--status-success)]/40 cursor-pointer'
-            : 'bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)]/60 cursor-not-allowed'
-        }`}
-        title={
-          canPurchase
-            ? `Purchase ${item.name} for ${selectedHorse!.name}`
-            : 'Select a horse from My Horses to purchase'
-        }
-      >
-        {isPurchasing && canPurchase ? (
-          <span className="flex items-center justify-center gap-2">
-            <Loader2 className="w-3 h-3 animate-spin" />
-            {buttonLabel}
-          </span>
-        ) : (
-          buttonLabel
-        )}
-      </button>
-    </div>
+      media={media}
+      title={item.name}
+      description={item.description}
+      meta={meta}
+      price={`$${item.cost.toLocaleString()}`}
+      action={action}
+    />
   );
 };
 
@@ -440,7 +343,7 @@ const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorses }) =>
           <h2 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-widest mb-4">
             {categoryNames[categoryKey] ?? categoryKey}
           </h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <CardGrid aria-label={`${categoryNames[categoryKey] ?? categoryKey} items`}>
             {items.map((item) => (
               <TackItemCard
                 key={item.id}
@@ -450,7 +353,7 @@ const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorses }) =>
                 isPurchasing={purchaseMutation.isPending}
               />
             ))}
-          </div>
+          </CardGrid>
         </section>
       ))}
 
@@ -473,16 +376,18 @@ const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorses }) =>
 
           {/* Regular decorative items */}
           {decorativeItems.regular.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              {decorativeItems.regular.map((item) => (
-                <TackItemCard
-                  key={item.id}
-                  item={item}
-                  selectedHorse={selectedHorse}
-                  onPurchase={handlePurchase}
-                  isPurchasing={purchaseMutation.isPending}
-                />
-              ))}
+            <div className="mb-6">
+              <CardGrid aria-label="Decorative tack">
+                {decorativeItems.regular.map((item) => (
+                  <TackItemCard
+                    key={item.id}
+                    item={item}
+                    selectedHorse={selectedHorse}
+                    onPurchase={handlePurchase}
+                    isPurchasing={purchaseMutation.isPending}
+                  />
+                ))}
+              </CardGrid>
             </div>
           )}
 
@@ -492,7 +397,7 @@ const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorses }) =>
               <h3 className="text-xs font-semibold text-amber-400 uppercase tracking-widest mb-3">
                 🍂 Seasonal
               </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <CardGrid aria-label="Seasonal decorative tack">
                 {decorativeItems.seasonal.map((item) => (
                   <TackItemCard
                     key={item.id}
@@ -502,7 +407,7 @@ const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorses }) =>
                     isPurchasing={purchaseMutation.isPending}
                   />
                 ))}
-              </div>
+              </CardGrid>
             </>
           )}
         </section>
@@ -576,92 +481,20 @@ const HorsesTackTab: React.FC<HorsesTackTabProps> = ({
   return (
     <div className="space-y-4" data-testid="horses-tack-tab">
       <p className="text-sm text-[var(--text-muted)]">
-        Select a horse, then switch to the Shop tab to purchase tack.
+        Select a horse, then switch to the Shop tab to purchase tack. Tack condition is visible on
+        each horse&rsquo;s detail page.
       </p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {horses.map((horse) => {
-          const isSelected = selectedHorse?.id === horse.id;
-          return (
-            <button
-              key={horse.id}
-              type="button"
-              onClick={() => onSelectHorse(horse)}
-              className={`text-left p-4 rounded-xl border backdrop-blur-sm transition-all ${
-                isSelected
-                  ? 'bg-[var(--status-success)]/10 border-[var(--status-success)]/50'
-                  : 'bg-[var(--glass-bg)] border-[var(--glass-border)] hover:border-[var(--glass-hover)]'
-              }`}
-              data-testid={`horse-card-${horse.id}`}
-              aria-pressed={isSelected}
-            >
-              <div className="flex items-center gap-3 mb-2">
-                <span className="text-2xl select-none" aria-hidden="true">
-                  🐎
-                </span>
-                <div className="min-w-0">
-                  <h3
-                    className={`font-bold truncate ${isSelected ? 'text-[var(--status-success)]' : 'text-[var(--cream)]'}`}
-                  >
-                    {horse.name}
-                  </h3>
-                  <p className="text-xs text-[var(--text-muted)] truncate">
-                    {getBreedName(horse.breed)} · {horse.gender}
-                  </p>
-                </div>
-                {isSelected && (
-                  <CheckCircle className="w-4 h-4 text-[var(--status-success)] flex-shrink-0 ml-auto" />
-                )}
-              </div>
-              <div className="flex items-center justify-between text-xs text-[var(--text-muted)] mb-2">
-                <span>Age {horse.age}</span>
-                <span
-                  className={
-                    horse.healthStatus === 'Healthy'
-                      ? 'text-[var(--status-success)]/70'
-                      : 'text-[var(--status-warning)]/70'
-                  }
-                >
-                  {horse.healthStatus}
-                </span>
-              </div>
-
-              {/* Tack condition bars for equipped saddle + bridle */}
-              {horse.tack && (
-                <div className="space-y-0.5">
-                  {(['saddle', 'bridle'] as const).map((cat) => {
-                    const itemId = horse.tack?.[cat];
-                    if (typeof itemId !== 'string') return null;
-                    const condition = getTackCondition(horse.tack as Record<string, unknown>, cat);
-                    return (
-                      <TackConditionChip
-                        key={cat}
-                        category={cat}
-                        itemId={itemId}
-                        condition={condition}
-                        horseId={horse.id}
-                      />
-                    );
-                  })}
-                  {/* Decorations chip */}
-                  {Array.isArray((horse.tack as Record<string, unknown>)?.decorations) &&
-                    ((horse.tack as Record<string, unknown>).decorations as string[]).length >
-                      0 && (
-                      <span className="inline-flex items-center gap-1 text-xs bg-purple-900/40 text-purple-300 px-2 py-0.5 rounded-full">
-                        ✨{' '}
-                        {((horse.tack as Record<string, unknown>).decorations as string[]).length}{' '}
-                        Decoration
-                        {((horse.tack as Record<string, unknown>).decorations as string[]).length >
-                        1
-                          ? 's'
-                          : ''}
-                      </span>
-                    )}
-                </div>
-              )}
-            </button>
-          );
-        })}
-      </div>
+      <CardGrid aria-label="Your horses">
+        {horses.map((horse) => (
+          <HorseCard
+            key={horse.id}
+            horse={horse}
+            selected={selectedHorse?.id === horse.id}
+            onClick={() => onSelectHorse(horse)}
+            data-testid={`horse-card-${horse.id}`}
+          />
+        ))}
+      </CardGrid>
 
       {selectedHorse && (
         <div className="flex justify-end pt-2">
@@ -724,62 +557,38 @@ const TackShopPage: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* My Horses / Shop Tabs */}
-        <div
-          className="flex gap-1 p-1 bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] rounded-xl mb-8 w-fit"
-          role="tablist"
-          aria-label="Tack Shop section"
-        >
-          <button
-            role="tab"
-            aria-selected={activeTab === 'horses'}
-            onClick={() => setActiveTab('horses')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'horses'
-                ? 'bg-[var(--glass-bg)] text-[var(--cream)] shadow-sm'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-            }`}
-            data-testid="horses-tab"
-          >
-            <Heart className="w-4 h-4" />
-            My Horses
-          </button>
-          <button
-            role="tab"
-            aria-selected={activeTab === 'shop'}
-            onClick={() => setActiveTab('shop')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'shop'
-                ? 'bg-[var(--glass-bg)] text-[var(--cream)] shadow-sm'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-            }`}
-            data-testid="shop-tab"
-          >
-            <ShoppingBag className="w-4 h-4" />
-            Shop
-            {selectedHorse && (
-              <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-[var(--status-success)]/20 text-[var(--status-success)]">
-                {selectedHorse.name}
-              </span>
-            )}
-          </button>
-        </div>
-
-        {/* Tab Content */}
-        <div role="tabpanel">
-          {activeTab === 'horses' ? (
-            <HorsesTackTab
-              selectedHorse={selectedHorse}
-              onSelectHorse={handleSelectHorse}
-              onGoToShop={handleGoToShop}
-            />
-          ) : (
-            <ShopTab
-              selectedHorse={selectedHorse}
-              onSwitchToHorses={() => setActiveTab('horses')}
-            />
-          )}
-        </div>
+        {/* My Horses / Shop tabs — FantasyTabs (canonical from StableView).
+            Controlled so HorsesTackTab's "Continue to Shop" and ShopTab's
+            "Change horse" can switch tabs programmatically. */}
+        <FantasyTabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as TackShopTab)}
+          tabs={[
+            {
+              value: 'horses',
+              label: 'My Horses',
+              icon: <Heart className="w-4 h-4" />,
+              content: (
+                <HorsesTackTab
+                  selectedHorse={selectedHorse}
+                  onSelectHorse={handleSelectHorse}
+                  onGoToShop={handleGoToShop}
+                />
+              ),
+            },
+            {
+              value: 'shop',
+              label: 'Shop',
+              icon: <ShoppingBag className="w-4 h-4" />,
+              content: (
+                <ShopTab
+                  selectedHorse={selectedHorse}
+                  onSwitchToHorses={() => setActiveTab('horses')}
+                />
+              ),
+            },
+          ]}
+        />
 
         {/* Info Panel (#7 — accurate descriptions) */}
         <div className="mt-10 p-5 rounded-xl glass-panel text-sm text-[var(--text-muted)]">
