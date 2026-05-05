@@ -15,11 +15,9 @@
 export const CANONICAL_HORSE_SEX_VALUES = Object.freeze([
   'Stallion',
   'Mare',
-  'Gelding',
   'Colt',
   'Filly',
   'Rig',
-  'Spayed Mare',
 ]);
 
 const LOWER_TO_CANONICAL = new Map(CANONICAL_HORSE_SEX_VALUES.map((v) => [v.toLowerCase(), v]));
