@@ -15,12 +15,7 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.mjs';
-import {
-  __TESTING_ONLY_JsonScanner,
-  UNEXPECTED_SCANNER_LOG_PREFIX,
-  RequestBodySecurityError,
-} from '../../../middleware/requestBodySecurity.mjs';
-import { AppError } from '../../../errors/index.mjs';
+import { __TESTING_ONLY_JsonScanner, RequestBodySecurityError } from '../../../middleware/requestBodySecurity.mjs';
 import logger from '../../../utils/logger.mjs';
 
 // A public endpoint that express.json() parses — we want to reach the gate
@@ -45,8 +40,9 @@ describe('Equoria-gbcm: Content-Type case-insensitive matching in verifyJsonBody
   });
 
   it('rejects 64-deep array body when Content-Type is application/JSON (mixed case)', async () => {
-    const nested =
-      Array.from({ length: 64 }, () => '[').join('') + '1' + Array.from({ length: 64 }, () => ']').join('');
+    const open = Array.from({ length: 64 }, () => '[').join('');
+    const close = Array.from({ length: 64 }, () => ']').join('');
+    const nested = `${open}1${close}`;
     const res = await request(app)
       .post(JSON_ENDPOINT)
       .set('Content-Type', 'application/JSON')
@@ -67,8 +63,9 @@ describe('Equoria-gbcm: Content-Type case-insensitive matching in verifyJsonBody
   });
 
   it('still rejects 33-deep array body when Content-Type is lowercase application/json', async () => {
-    const nested =
-      Array.from({ length: 33 }, () => '[').join('') + '1' + Array.from({ length: 33 }, () => ']').join('');
+    const open = Array.from({ length: 33 }, () => '[').join('');
+    const close = Array.from({ length: 33 }, () => ']').join('');
+    const nested = `${open}1${close}`;
     const res = await request(app)
       .post(JSON_ENDPOINT)
       .set('Content-Type', 'application/json')
@@ -158,8 +155,11 @@ describe('Equoria-2l00: rejectPollutedRequestBody fail-closed for non-AppError',
     const mockReq = { body: { email: 'a@b.com', password: 'safe' } };
     const mockRes = {};
     const mockNext = err => {
-      if (err) errors.push(err);
-      else nextCalled = true;
+      if (err) {
+        errors.push(err);
+      } else {
+        nextCalled = true;
+      }
     };
 
     rejectPollutedRequestBody(mockReq, mockRes, mockNext);
