@@ -1,0 +1,190 @@
+/**
+ * CWE-639 Wave-6 Sweep — sentinel tests for the post-wave-5 audit findings.
+ *
+ * After wave 5 closed the message + competition triplet, an adjacent-locations
+ * audit (OPTIMAL_FIX_DISCIPLINE.md §3) of every other 403 in backend/modules
+ * found two more cross-user existence-disclosure leaks in clubController:
+ *
+ *   - Equoria-w386 — clubController.nominate (POST /api/v1/clubs/elections/:id/nominate)
+ *   - Equoria-c1cv — clubController.vote     (POST /api/v1/clubs/elections/:id/vote)
+ *
+ * Both endpoints did "find election by id, then check membership" so a
+ * non-member of the election's club received 403 while a non-existent
+ * electionId received 404 — letting an attacker enumerate live election IDs.
+ *
+ * Each test asserts cross-user (non-member) access returns 404 (not 403) AND
+ * that the response body is byte-identical to the not-exists case. Closed-
+ * election (400) leaks via member-only paths are also implicitly closed: the
+ * status check now lives BEHIND the membership-scoped lookup, so closed-but-
+ * exists is invisible to non-members.
+ */
+
+import { describe, it, expect, beforeAll, beforeEach, afterEach } from '@jest/globals';
+import request from 'supertest';
+import { randomBytes } from 'node:crypto';
+import app from '../../../app.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import { createMockToken } from '../../factories/index.mjs';
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+
+describe('CWE-639 wave-6 sweep (Equoria-9ov8 post-wave-5 audit)', () => {
+  let __csrf__;
+  beforeAll(async () => {
+    __csrf__ = await fetchCsrf(app);
+  });
+
+  let leader; // president of the club — member
+  let stranger; // not a member
+  let strangerToken;
+  let club;
+  let openElection;
+
+  const NONEXISTENT_ELECTION_ID = 999999999;
+
+  beforeEach(async () => {
+    process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
+
+    leader = await prisma.user.create({
+      data: {
+        email: `cwe639w6lead-${randomBytes(8).toString('hex')}@example.com`,
+        username: `cwe639w6lead-${randomBytes(8).toString('hex')}`,
+        password: 'hashedPassword123',
+        firstName: 'Cwe',
+        lastName: 'W6L',
+        emailVerified: true,
+      },
+    });
+    stranger = await prisma.user.create({
+      data: {
+        email: `cwe639w6str-${randomBytes(8).toString('hex')}@example.com`,
+        username: `cwe639w6str-${randomBytes(8).toString('hex')}`,
+        password: 'hashedPassword123',
+        firstName: 'Cwe',
+        lastName: 'W6S',
+        emailVerified: true,
+      },
+    });
+
+    strangerToken = createMockToken(stranger.id, {
+      payload: { email: stranger.email, role: stranger.role || 'user' },
+    });
+
+    club = await prisma.club.create({
+      data: {
+        name: `cwe639w6-${randomBytes(8).toString('hex')}`,
+        type: 'discipline',
+        category: 'racing',
+        description: 'CWE-639 wave-6 sweep test club',
+        leader: { connect: { id: leader.id } },
+        members: { create: { user: { connect: { id: leader.id } }, role: 'president' } },
+      },
+    });
+
+    openElection = await prisma.clubElection.create({
+      data: {
+        club: { connect: { id: club.id } },
+        position: 'vice-president',
+        status: 'open',
+        startsAt: new Date(Date.now() - 1000),
+        endsAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      },
+    });
+  });
+
+  afterEach(async () => {
+    const ids = [leader?.id, stranger?.id].filter(Boolean);
+    if (club?.id) {
+      await prisma.clubBallot.deleteMany({ where: { electionId: openElection?.id ?? -1 } }).catch(() => {});
+      await prisma.clubCandidate.deleteMany({ where: { electionId: openElection?.id ?? -1 } }).catch(() => {});
+      await prisma.clubElection.deleteMany({ where: { clubId: club.id } }).catch(() => {});
+      await prisma.clubMembership.deleteMany({ where: { clubId: club.id } }).catch(() => {});
+      await prisma.club.delete({ where: { id: club.id } }).catch(() => {});
+    }
+    if (ids.length > 0) {
+      await prisma.refreshToken.deleteMany({ where: { userId: { in: ids } } });
+      await prisma.user.deleteMany({ where: { id: { in: ids } } });
+    }
+  });
+
+  // ─── Equoria-w386 ────────────────────────────────────────────────────────
+  describe('clubController.nominate POST /api/v1/clubs/elections/:id/nominate', () => {
+    it('returns 404 for non-member with byte-identical response to not-exists', async () => {
+      // Cross-user (non-member) case: stranger nominating in leader's club's election
+      const resCrossUser = await request(app)
+        .post(`/api/v1/clubs/elections/${openElection.id}/nominate`)
+        .set('Authorization', `Bearer ${strangerToken}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({ statement: 'I should not see this election' });
+
+      expect(resCrossUser.status).toBe(404);
+      expect(resCrossUser.body).toMatchObject({ success: false, message: 'Election not found' });
+
+      // Not-exists case
+      const resMissing = await request(app)
+        .post(`/api/v1/clubs/elections/${NONEXISTENT_ELECTION_ID}/nominate`)
+        .set('Authorization', `Bearer ${strangerToken}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({ statement: 'No such election' });
+
+      expect(resMissing.status).toBe(404);
+      // Byte-identical sentinel — divergence enables election ID enumeration.
+      expect(resMissing.body).toEqual(resCrossUser.body);
+
+      // Confirm no candidate row was created for the stranger.
+      const candidate = await prisma.clubCandidate.findFirst({
+        where: { electionId: openElection.id, userId: stranger.id },
+      });
+      expect(candidate).toBeNull();
+    });
+  });
+
+  // ─── Equoria-c1cv ────────────────────────────────────────────────────────
+  describe('clubController.vote POST /api/v1/clubs/elections/:id/vote', () => {
+    it('returns 404 for non-member with byte-identical response to not-exists', async () => {
+      // Set up a real candidate so the vote handler has something to find if
+      // membership scoping were broken.
+      const candidate = await prisma.clubCandidate.create({
+        data: {
+          election: { connect: { id: openElection.id } },
+          user: { connect: { id: leader.id } },
+          statement: 'leader candidacy',
+        },
+      });
+
+      // Cross-user (non-member) case: stranger voting in leader's club's election
+      const resCrossUser = await request(app)
+        .post(`/api/v1/clubs/elections/${openElection.id}/vote`)
+        .set('Authorization', `Bearer ${strangerToken}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({ candidateId: candidate.id });
+
+      expect(resCrossUser.status).toBe(404);
+      expect(resCrossUser.body).toMatchObject({ success: false, message: 'Election not found' });
+
+      // Not-exists case
+      const resMissing = await request(app)
+        .post(`/api/v1/clubs/elections/${NONEXISTENT_ELECTION_ID}/vote`)
+        .set('Authorization', `Bearer ${strangerToken}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({ candidateId: candidate.id });
+
+      expect(resMissing.status).toBe(404);
+      // Byte-identical sentinel
+      expect(resMissing.body).toEqual(resCrossUser.body);
+
+      // Confirm no ballot row was created for the stranger.
+      const ballot = await prisma.clubBallot.findFirst({
+        where: { electionId: openElection.id, voterId: stranger.id },
+      });
+      expect(ballot).toBeNull();
+    });
+  });
+});

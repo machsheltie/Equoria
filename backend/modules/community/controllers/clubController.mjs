@@ -219,21 +219,21 @@ export async function nominate(req, res) {
     return res.status(400).json({ success: false, message: 'Invalid election ID' });
   }
   try {
-    const election = await prisma.clubElection.findUnique({ where: { id: electionId } });
+    // CWE-639 (Equoria-w386): scope election lookup by club membership so a
+    // non-member of the election's club is indistinguishable from not-found.
+    // Status-based 400 ('Election is closed') comes AFTER the scoped lookup,
+    // so it can't leak existence either.
+    const election = await prisma.clubElection.findFirst({
+      where: {
+        id: electionId,
+        club: { members: { some: { userId } } },
+      },
+    });
     if (!election) {
       return res.status(404).json({ success: false, message: 'Election not found' });
     }
     if (election.status === 'closed') {
       return res.status(400).json({ success: false, message: 'Election is closed' });
-    }
-
-    const membership = await prisma.clubMembership.findUnique({
-      where: { clubId_userId: { clubId: election.clubId, userId } },
-    });
-    if (!membership) {
-      return res
-        .status(403)
-        .json({ success: false, message: 'You must be a club member to nominate' });
     }
 
     const existing = await prisma.clubCandidate.findUnique({
@@ -262,19 +262,21 @@ export async function vote(req, res) {
     return res.status(400).json({ success: false, message: 'Invalid election ID' });
   }
   try {
-    const election = await prisma.clubElection.findUnique({ where: { id: electionId } });
+    // CWE-639 (Equoria-c1cv): scope election lookup by club membership so a
+    // non-member of the election's club is indistinguishable from not-found.
+    // Status-based 400 ('Election is not open') comes AFTER the scoped lookup,
+    // so it can't leak existence either.
+    const election = await prisma.clubElection.findFirst({
+      where: {
+        id: electionId,
+        club: { members: { some: { userId: voterId } } },
+      },
+    });
     if (!election) {
       return res.status(404).json({ success: false, message: 'Election not found' });
     }
     if (election.status !== 'open') {
       return res.status(400).json({ success: false, message: 'Election is not open' });
-    }
-
-    const membership = await prisma.clubMembership.findUnique({
-      where: { clubId_userId: { clubId: election.clubId, userId: voterId } },
-    });
-    if (!membership) {
-      return res.status(403).json({ success: false, message: 'You must be a club member to vote' });
     }
 
     const candidate = await prisma.clubCandidate.findUnique({ where: { id: candidateId } });

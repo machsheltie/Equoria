@@ -508,7 +508,7 @@ describe('clubController (real DB)', () => {
       expect(h.res.jsonValue.message).toBe('Election is closed');
     });
 
-    it('returns 403 when user is not a club member', async () => {
+    it('returns 404 when user is not a club member (CWE-639 Equoria-w386)', async () => {
       const president = await createUser();
       const stranger = await createUser();
       const club = await createClubInDb(president.id);
@@ -517,7 +517,10 @@ describe('clubController (real DB)', () => {
       const h = makeReqRes(stranger.id, { params: { id: String(election.id) }, body: {} });
       await nominate(h.req, h.res);
 
-      expect(h.res.statusValue).toBe(403);
+      // CWE-639: non-member of the election's club must look identical to a
+      // not-found election so attackers cannot enumerate open election IDs.
+      expect(h.res.statusValue).toBe(404);
+      expect(h.res.jsonValue).toMatchObject({ success: false, message: 'Election not found' });
     });
 
     it('returns 409 when user is already a candidate', async () => {
@@ -565,7 +568,7 @@ describe('clubController (real DB)', () => {
       expect(h.res.jsonValue.message).toBe('Election is not open');
     });
 
-    it('returns 403 when voter is not a club member', async () => {
+    it('returns 404 when voter is not a club member (CWE-639 Equoria-c1cv)', async () => {
       const president = await createUser();
       const stranger = await createUser();
       const club = await createClubInDb(president.id);
@@ -575,7 +578,9 @@ describe('clubController (real DB)', () => {
       const h = makeReqRes(stranger.id, { params: { id: String(election.id) }, body: { candidateId: candidate.id } });
       await vote(h.req, h.res);
 
-      expect(h.res.statusValue).toBe(403);
+      // CWE-639: non-member must look identical to not-found.
+      expect(h.res.statusValue).toBe(404);
+      expect(h.res.jsonValue).toMatchObject({ success: false, message: 'Election not found' });
     });
 
     it('returns 400 when candidate does not belong to this election', async () => {
