@@ -72,8 +72,10 @@ export class RequestBodySecurityError extends AppError {
 // callers should pass maxLength ≥ 2. Guard added below to make this
 // explicit instead of relying on the slice math (review patch #23).
 //
-// eslint-disable-next-line no-control-regex
-const LOG_INJECTION_STRIP = /[\x00-\x1F\x7F\x80-\x9F\u200E\u200F\u202A-\u202E\u2066-\u2069\uFEFF]/g;
+
+const LOG_INJECTION_STRIP =
+  // eslint-disable-next-line no-control-regex
+  /[\x00-\x1F\x7F\x80-\x9F\u200E\u200F\u202A-\u202E\u2028\u2029\u2066-\u2069\uFEFF]/g;
 function sanitizeForLog(value, maxLength) {
   if (typeof value !== 'string') {
     return undefined;
@@ -320,7 +322,7 @@ class JsonScanner {
       const key = this.scanString();
 
       if (keys.has(key)) {
-        throw new RequestBodySecurityError(`duplicate JSON key "${key}"`);
+        throw new RequestBodySecurityError(`duplicate JSON key "${sanitizeForLog(key, 64)}"`);
       }
       keys.add(key);
 
@@ -486,7 +488,7 @@ function assertNoPollutingKeys(value, path = 'body', depth = 0) {
 
   for (const [key, child] of Object.entries(value)) {
     if (key === FORBIDDEN_KEY) {
-      throw new RequestBodySecurityError(`forbidden key "${key}"`);
+      throw new RequestBodySecurityError(`forbidden key "${sanitizeForLog(key, 64)}"`);
     }
 
     if (
@@ -667,7 +669,7 @@ export function rejectPollutedRequestQuery(req, _res, next) {
       const rawQuery = req.url.slice(qIdx + 1);
       const offending = scanRawQueryForForbiddenKey(rawQuery);
       if (offending !== null) {
-        throw new RequestBodySecurityError(`forbidden key "${offending}"`);
+        throw new RequestBodySecurityError(`forbidden key "${sanitizeForLog(offending, 64)}"`);
       }
     }
 
@@ -751,7 +753,7 @@ function detectDuplicateUrlEncodedKeys(raw) {
       key = rawKey;
     }
     if (seen.has(key)) {
-      throw new RequestBodySecurityError(`duplicate urlencoded key "${key}"`);
+      throw new RequestBodySecurityError(`duplicate urlencoded key "${sanitizeForLog(key, 64)}"`);
     }
     seen.add(key);
   }
