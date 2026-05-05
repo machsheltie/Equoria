@@ -800,10 +800,15 @@ jobs:
         # The dropdown is populated from GET /api/breeds, which returns
         # whatever's in the breeds table — empty in a fresh CI test DB.
         # Without breed seeding the test times out waiting for option 1.
+        #
+        # Use `npm run seed` (5 canonical breeds, ~5s) NOT seed:breeds
+        # (310 SQL files via $executeRawUnsafe, 15+ min — blows the
+        # 35-min job timeout per the comment in ci-cd.yml line 323).
+        # Five breeds are enough to populate the dropdown.
         working-directory: ./backend
         env:
           DATABASE_URL: postgresql://test:test@localhost:5432/equoria_test
-        run: npm run seed:breeds
+        run: npm run seed
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium

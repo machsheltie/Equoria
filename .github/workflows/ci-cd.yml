@@ -617,6 +617,21 @@ jobs:
           npx prisma generate --schema=prisma/schema.prisma
           npx prisma migrate deploy --schema=prisma/schema.prisma
 
+      - name: 'Seed Breeds (required for onboarding flow)'
+        # The beta-readiness Playwright suite (auth-onboarding.spec.ts +
+        # route-families.spec.ts) calls
+        # `breedSelect.selectOption({ index: 1 })`. The dropdown is
+        # populated from GET /api/breeds, which queries the breeds table.
+        # CI's fresh equoria_test DB has migrations applied but no seed
+        # data, so the dropdown only has its placeholder option and the
+        # test times out. `npm run seed` inserts 5 canonical breeds in
+        # ~5s (avoid `seed:breeds`, which loads 310 SQL files in 15+ min
+        # and would blow the job timeout).
+        working-directory: ./backend
+        env:
+          DATABASE_URL: postgresql://test:test@localhost:5432/equoria_test
+        run: npm run seed
+
       - name: 'Install Playwright Browsers'
         run: npx playwright install --with-deps chromium
 
