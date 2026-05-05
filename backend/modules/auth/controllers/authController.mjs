@@ -8,6 +8,7 @@ import { generateGenotype } from '../../horses/services/genotypeGenerationServic
 import { calculatePhenotype } from '../../horses/services/phenotypeCalculationService.mjs';
 import { generateMarkings } from '../../horses/services/markingGenerationService.mjs';
 import { createTokenPair, rotateRefreshToken } from '../../../utils/tokenRotationService.mjs';
+import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
 import {
   createVerificationToken,
   verifyEmailToken,
@@ -1122,8 +1123,21 @@ export const advanceOnboarding = async (req, res, next) => {
     const trimmedHorseName = typeof horseName === 'string' ? horseName.trim().slice(0, 40) : '';
     const normalizedBreedId =
       breedId !== undefined && Number.isInteger(Number(breedId)) ? Number(breedId) : null;
-    const normalizedGender =
-      gender === 'Mare' || gender === 'Stallion' || gender === 'Gelding' ? gender : null;
+    // Canonicalize the client-supplied gender to Title Case. The frontend
+    // currently sends Title Case ('Mare' / 'Stallion'), but the canonicalizer
+    // accepts any casing so this stays robust if client typings drift.
+    // Only adult sexes are valid for starter-horse selection.
+    let normalizedGender = null;
+    if (typeof gender === 'string') {
+      try {
+        const canonical = canonicalizeHorseSex(gender);
+        if (canonical === 'Mare' || canonical === 'Stallion' || canonical === 'Gelding') {
+          normalizedGender = canonical;
+        }
+      } catch {
+        normalizedGender = null;
+      }
+    }
 
     if (hasHorseCustomization) {
       if (!trimmedHorseName) {

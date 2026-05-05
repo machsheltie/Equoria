@@ -35,6 +35,7 @@ import { generateGenotype } from '../services/genotypeGenerationService.mjs';
 import { calculatePhenotype } from '../services/phenotypeCalculationService.mjs';
 import { inheritColorGenotype } from '../services/breedingColorInheritanceService.mjs';
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
+import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
 import { generateMarkings, inheritMarkings } from '../services/markingGenerationService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -188,14 +189,31 @@ const validateHorseCreation = [
     .withMessage('Name must be between 1 and 100 characters'),
   body('breedId').isInt({ min: 1 }).withMessage('Breed ID must be a positive integer'),
   body('age').optional().isInt({ min: 0, max: 50 }).withMessage('Age must be between 0 and 50'),
+  // Sex is canonicalized to Title Case at the Prisma client layer
+  // (Equoria-duz2). The validator accepts any casing of any canonical
+  // value and trusts the interceptor to normalize on write.
   body('sex')
     .optional()
-    .isIn(['stallion', 'mare', 'gelding'])
+    .custom(value => {
+      const canonical = canonicalizeHorseSex(value);
+      // Limit user-creatable sex values to adult biological sex roles.
+      // Foals (Filly/Colt) come from breeding, not direct creation.
+      if (!['Stallion', 'Mare', 'Gelding'].includes(canonical)) {
+        throw new Error('Sex must be stallion, mare, or gelding');
+      }
+      return true;
+    })
     .withMessage('Sex must be stallion, mare, or gelding'),
   body('gender')
     .optional()
-    .isIn(['STALLION', 'MARE', 'GELDING'])
-    .withMessage('Gender must be STALLION, MARE, or GELDING'),
+    .custom(value => {
+      const canonical = canonicalizeHorseSex(value);
+      if (!['Stallion', 'Mare', 'Gelding'].includes(canonical)) {
+        throw new Error('Gender must be stallion, mare, or gelding');
+      }
+      return true;
+    })
+    .withMessage('Gender must be stallion, mare, or gelding'),
   body('userId')
     .optional()
     .isLength({ min: 1, max: 50 })
@@ -694,11 +712,12 @@ router.post(
             .json({ success: false, message: `Dam horse with ID ${damId} not found` });
         }
 
-        // Validate biological sex roles
-        if (sireHorse.sex !== 'stallion') {
+        // Validate biological sex roles. Sex is canonical Title Case
+        // post-Equoria-duz2 — see packages/database/horseSexCanonical.mjs.
+        if (sireHorse.sex !== 'Stallion') {
           return res.status(400).json({ success: false, message: 'Sire must be a stallion' });
         }
-        if (damHorse.sex !== 'mare') {
+        if (damHorse.sex !== 'Mare') {
           return res.status(400).json({ success: false, message: 'Dam must be a mare' });
         }
 

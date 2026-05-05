@@ -72,9 +72,15 @@ describe('canonicalizeHorseSex (pure helper)', () => {
   });
 
   it('canonical list contains exactly the expected values', () => {
-    expect([...CANONICAL_HORSE_SEX_VALUES].sort()).toEqual(
-      ['Colt', 'Filly', 'Gelding', 'Mare', 'Rig', 'Spayed Mare', 'Stallion'],
-    );
+    expect([...CANONICAL_HORSE_SEX_VALUES].sort()).toEqual([
+      'Colt',
+      'Filly',
+      'Gelding',
+      'Mare',
+      'Rig',
+      'Spayed Mare',
+      'Stallion',
+    ]);
   });
 });
 
@@ -92,9 +98,7 @@ describe('Prisma $extends — canonicalizes sex on every horse write', () => {
   beforeAll(async () => {
     breed = await prisma.breed.findFirst();
     if (!breed) {
-      throw new Error(
-        'Cannot run sex-canonicalization sentinel: no Breed rows exist. Run breed seed first.',
-      );
+      throw new Error('Cannot run sex-canonicalization sentinel: no Breed rows exist. Run breed seed first.');
     }
   });
 

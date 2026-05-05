@@ -19,7 +19,11 @@
  */
 
 /**
- * Horse sex/gender constants
+ * Horse sex/gender constants. The canonical Title Case form is enforced at
+ * the Prisma client layer via the $extends interceptor in
+ * packages/database/prismaClient.mjs (Equoria-duz2). Keep these values in
+ * sync with CANONICAL_HORSE_SEX_VALUES in
+ * packages/database/horseSexCanonical.mjs.
  */
 export const HORSE_SEX = {
   STALLION: 'Stallion',
@@ -32,6 +36,13 @@ export const HORSE_SEX = {
 };
 
 export const HORSE_SEX_VALUES = Object.values(HORSE_SEX);
+
+// Re-export the canonicalizer so callers reaching for sex utilities have
+// one obvious place to find them.
+export {
+  canonicalizeHorseSex,
+  canonicalizeHorseSexOrNull,
+} from '../../packages/database/horseSexCanonical.mjs';
 
 /**
  * Horse temperament constants
