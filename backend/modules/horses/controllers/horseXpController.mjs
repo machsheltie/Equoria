@@ -21,7 +21,7 @@ import * as horseXpModel from '../../../models/horseXpModel.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getCachedQuery, invalidateCache } from '../../../utils/cacheHelper.mjs';
-import { ValidationError, AuthorizationError, NotFoundError } from '../../../errors/index.mjs';
+import { ValidationError, NotFoundError } from '../../../errors/index.mjs';
 
 /**
  * Get horse XP status
@@ -109,10 +109,13 @@ export async function getHorseXpStatus(req, res) {
     if (error instanceof NotFoundError || error.name === 'NotFoundError') {
       return res.status(404).json({ success: false, error: error.message });
     }
-    if (error instanceof AuthorizationError || error.name === 'AuthorizationError') {
-      return res.status(403).json({ success: false, error: error.message });
-    }
-
+    // CWE-639 hardening (Equoria-9ov8 wave 4): AuthorizationError catch
+    // branch removed — nothing in this controller throws AuthorizationError
+    // anymore (wave-3 converted ownership checks to NotFoundError so cross-
+    // user access surfaces as 404, not 403). The branch was dead code; if a
+    // future change reintroduces AuthorizationError, it would now fall
+    // through to 500 — which is the correct fail-closed default for an
+    // unexpected security-error type.
     res.status(500).json({
       success: false,
       error: 'Internal server error while retrieving horse XP status',
@@ -203,10 +206,13 @@ export async function allocateStatPoint(req, res) {
     if (error instanceof NotFoundError || error.name === 'NotFoundError') {
       return res.status(404).json({ success: false, error: error.message });
     }
-    if (error instanceof AuthorizationError || error.name === 'AuthorizationError') {
-      return res.status(403).json({ success: false, error: error.message });
-    }
-
+    // CWE-639 hardening (Equoria-9ov8 wave 4): AuthorizationError catch
+    // branch removed — nothing in this controller throws AuthorizationError
+    // anymore (wave-3 converted ownership checks to NotFoundError so cross-
+    // user access surfaces as 404, not 403). The branch was dead code; if a
+    // future change reintroduces AuthorizationError, it would now fall
+    // through to 500 — which is the correct fail-closed default for an
+    // unexpected security-error type.
     res.status(500).json({
       success: false,
       error: 'Internal server error while allocating stat point',
@@ -301,10 +307,13 @@ export async function getHorseXpHistory(req, res) {
     if (error instanceof NotFoundError || error.name === 'NotFoundError') {
       return res.status(404).json({ success: false, error: error.message });
     }
-    if (error instanceof AuthorizationError || error.name === 'AuthorizationError') {
-      return res.status(403).json({ success: false, error: error.message });
-    }
-
+    // CWE-639 hardening (Equoria-9ov8 wave 4): AuthorizationError catch
+    // branch removed — nothing in this controller throws AuthorizationError
+    // anymore (wave-3 converted ownership checks to NotFoundError so cross-
+    // user access surfaces as 404, not 403). The branch was dead code; if a
+    // future change reintroduces AuthorizationError, it would now fall
+    // through to 500 — which is the correct fail-closed default for an
+    // unexpected security-error type.
     res.status(500).json({
       success: false,
       error: 'Internal server error while retrieving horse XP history',
@@ -392,10 +401,13 @@ export async function awardXpToHorse(req, res) {
     if (error instanceof NotFoundError || error.name === 'NotFoundError') {
       return res.status(404).json({ success: false, error: error.message });
     }
-    if (error instanceof AuthorizationError || error.name === 'AuthorizationError') {
-      return res.status(403).json({ success: false, error: error.message });
-    }
-
+    // CWE-639 hardening (Equoria-9ov8 wave 4): AuthorizationError catch
+    // branch removed — nothing in this controller throws AuthorizationError
+    // anymore (wave-3 converted ownership checks to NotFoundError so cross-
+    // user access surfaces as 404, not 403). The branch was dead code; if a
+    // future change reintroduces AuthorizationError, it would now fall
+    // through to 500 — which is the correct fail-closed default for an
+    // unexpected security-error type.
     res.status(500).json({
       success: false,
       error: 'Internal server error while awarding horse XP',
