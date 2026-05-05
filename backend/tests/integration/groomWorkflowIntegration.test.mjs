@@ -501,9 +501,10 @@ describe('Groom Workflow Integration Tests', () => {
       // (groomRoutes.mjs `POST /assign` inline dual-ownership middleware), NOT
       // by the controller. This test calls the controller directly, bypassing
       // the middleware. The defence-in-depth is provided by the underlying
-      // assignGroomToFoal service which throws "You do not own groom X" — the
-      // controller's catch block converts that to a 500 (with message). The
-      // happy-path 201 is therefore not reached.
+      // assignGroomToFoal service which throws "Groom with ID X not found"
+      // (Equoria-a7dy hardening — non-disclosing error, byte-identical to the
+      // missing-row case) — the controller's catch block converts that to a
+      // 500. The happy-path 201 is therefore not reached.
       //
       // Real cross-user attempts via the HTTP route receive 404 from the
       // middleware (CWE-639 disclosure resistance) — see the inline middleware

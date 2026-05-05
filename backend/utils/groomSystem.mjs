@@ -208,8 +208,16 @@ export async function assignGroomToFoal(foalId, groomId, userId, options = {}) {
       throw new Error(`Groom with ID ${groomId} not found`);
     }
 
+    // CWE-639 (Equoria-a7dy): cross-user access must be indistinguishable
+    // from not-found. Ownership of `groom` is enforced upstream by the
+    // `findOwnedResource('groom')` middleware on POST /api/grooms/assign
+    // (groomRoutes.mjs:170), which 404s before this throw is reachable.
+    // This branch is defense-in-depth — collapse the disclosure-leaky
+    // 'You do not own groom X' string into the same 'Groom not found'
+    // message used by the missing-row case above so a bypass cannot
+    // surface ownership status via error text.
     if (groom.userId !== userId) {
-      throw new Error(`You do not own groom ${groom.name}`);
+      throw new Error(`Groom with ID ${groomId} not found`);
     }
 
     if (!groom.isActive) {

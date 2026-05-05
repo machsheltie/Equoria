@@ -290,4 +290,35 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
       expect(JSON.stringify(resForeignHorse.body)).not.toContain('You do not own');
     });
   });
+
+  // ─── Equoria-a7dy ────────────────────────────────────────────────────────
+  // groomSystem.assignGroomToFoal utility — defense-in-depth dead-code error
+  // string that previously read 'You do not own groom X'. Even though the
+  // route-level dual findOwnedResource middleware already 404s before this
+  // throw is reachable, a service-level direct call (bypass) must surface the
+  // same byte-identical 'Groom with ID X not found' error as the missing-row
+  // case so a future caller cannot leak ownership status.
+  describe('groomSystem.assignGroomToFoal direct service call (bypass middleware)', () => {
+    it('cross-user groom yields byte-identical error to missing groom', async () => {
+      const { assignGroomToFoal } = await import('../../../utils/groomSystem.mjs');
+
+      // Caller (userA) tries to assign userB's groom to a foal — bypass the
+      // route middleware by calling the utility directly.
+      const crossUserError = await assignGroomToFoal(horseA.id, groomB.id, userA.id).catch(e => e);
+
+      // Same call shape, but with a non-existent groom ID.
+      const missingError = await assignGroomToFoal(horseA.id, NONEXISTENT_ID, userA.id).catch(e => e);
+
+      expect(crossUserError).toBeInstanceOf(Error);
+      expect(missingError).toBeInstanceOf(Error);
+      // The leak vector: previously crossUserError.message contained the
+      // groom's name plus 'You do not own groom'. After Equoria-a7dy hardening
+      // both errors must read 'Groom with ID <id> not found' — the only ID-
+      // dependent variation is the literal ID the caller supplied.
+      expect(crossUserError.message).toBe(`Groom with ID ${groomB.id} not found`);
+      expect(missingError.message).toBe(`Groom with ID ${NONEXISTENT_ID} not found`);
+      // Sentinel: the leaky substring must be gone.
+      expect(crossUserError.message).not.toContain('You do not own');
+    });
+  });
 });
