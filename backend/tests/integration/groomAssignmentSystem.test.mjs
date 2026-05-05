@@ -243,16 +243,16 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
           .set('X-CSRF-Token', __csrf__.csrfToken)
           .send(assignmentData);
 
-        // POST /api/groom-assignments doesn't yet have requireOwnership
-        // middleware, so the service-level ownership check returns 400
-        // with "do not own this horse". The CWE-639 hardening (returning
-        // byte-identical 404 to mask cross-user vs not-exists) applies to
-        // routes wired with requireOwnership ('horse' / 'groom-assignment')
-        // — adding it here would require teaching the middleware to look
-        // up horseId from req.body, separate work item.
-        expect(response.status).toBe(400);
+        // CWE-639 disclosure resistance: createAssignment service throws
+        // NotFoundError('Horse') when validateAssignmentEligibility's
+        // user-scoped horse query returns null — same response for "horse
+        // doesn't exist" and "horse exists but is owned by another user."
+        // Surfaces as 404 "Horse not found" (not 400 "do not own this
+        // horse" — the descriptive message would enable ID enumeration).
+        // See backend/services/groomAssignmentService.mjs:166-167.
+        expect(response.status).toBe(404);
         expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain('do not own this horse');
+        expect(response.body.message).toContain('Horse not found');
       } finally {
         // Clean up
         await prisma.horse.deleteMany({ where: { id: otherHorse.id } });
