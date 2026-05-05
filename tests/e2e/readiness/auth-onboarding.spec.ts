@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import {
+  csrfRequest,
   installProductionParityNetworkGuard,
   latestCapturedEmail,
   loginViaUi,
@@ -115,15 +116,12 @@ test('auth, email verification signal, onboarding persistence, and password rese
   invalidResetGuard.assertClean();
   await invalidResetPage.close();
 
-  // Logout flow completes against the real backend.
-  const logoutResponse = recoveryPage.waitForResponse(
-    (response) =>
-      response.url().includes('/api/auth/logout') && response.request().method() === 'POST'
-  );
-  await recoveryPage.evaluate(() =>
-    fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
-  );
-  expect((await logoutResponse).status()).toBe(200);
+  // Logout flow completes against the real backend. Must include CSRF
+  // token — the previous raw-fetch invocation returned 403 because POST
+  // /api/auth/logout requires the X-CSRF-Token header (production
+  // parity: no bypass headers in beta-readiness).
+  const logoutHttpResponse = await csrfRequest(recoveryPage, 'POST', '/api/auth/logout');
+  expect(logoutHttpResponse.status()).toBe(200);
 
   guard.assertClean();
   recoveryGuard.assertClean();
