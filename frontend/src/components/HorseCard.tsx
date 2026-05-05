@@ -19,7 +19,9 @@ interface HorseCardProps {
   horseImage?: string;
   age: number;
   discipline: string;
-  sex?: 'mare' | 'stallion' | 'gelding' | 'colt' | 'filly';
+  // Canonical Title Case (Equoria-duz2). Backend canonicalizes at the
+  // Prisma client layer, so the API always returns one of these forms.
+  sex?: 'Mare' | 'Stallion' | 'Gelding' | 'Colt' | 'Filly' | 'Rig' | 'Spayed Mare';
   isLegendary?: boolean;
   cooldownHours?: number;
   stats?: {
@@ -247,7 +249,7 @@ const HorseCard = ({
               </span>
             </div>
             {/* Foaled: mare-only, informational — no urgency threshold */}
-            {sex === 'mare' && (
+            {sex === 'Mare' && (
               <div
                 className="flex items-center justify-between text-[10px]"
                 style={{ color: 'var(--text-muted)' }}

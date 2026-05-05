@@ -21,6 +21,54 @@ const { PrismaClient } = await import('@prisma/client');
 let prisma = null;
 
 const { buildDatabaseUrl } = await import('./dbPoolConfig.mjs');
+const { canonicalizeHorseSex } = await import('./horseSexCanonical.mjs');
+
+// Canonicalize `horse.sex` on every write path. Without this, controllers,
+// seeds, scripts, and tests have drifted between Title Case and lowercase
+// (Equoria-duz2). The interceptor is the single chokepoint — every Prisma
+// write reaches the DB through here.
+function canonicalizeHorseSexInData(data) {
+  if (data && typeof data === 'object' && 'sex' in data && data.sex !== null && data.sex !== undefined) {
+    data.sex = canonicalizeHorseSex(data.sex);
+  }
+}
+
+function applyHorseSexExtension(client) {
+  return client.$extends({
+    name: 'horseSexCanonical',
+    query: {
+      horse: {
+        async create({ args, query }) {
+          canonicalizeHorseSexInData(args.data);
+          return query(args);
+        },
+        async update({ args, query }) {
+          canonicalizeHorseSexInData(args.data);
+          return query(args);
+        },
+        async updateMany({ args, query }) {
+          canonicalizeHorseSexInData(args.data);
+          return query(args);
+        },
+        async upsert({ args, query }) {
+          canonicalizeHorseSexInData(args.create);
+          canonicalizeHorseSexInData(args.update);
+          return query(args);
+        },
+        async createMany({ args, query }) {
+          if (Array.isArray(args.data)) {
+            for (const row of args.data) {
+              canonicalizeHorseSexInData(row);
+            }
+          } else {
+            canonicalizeHorseSexInData(args.data);
+          }
+          return query(args);
+        },
+      },
+    },
+  });
+}
 
 // Connection pool configuration for Prisma
 const connectionConfig = {
@@ -37,10 +85,10 @@ const connectionConfig = {
 };
 
 if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient(connectionConfig);
+  prisma = applyHorseSexExtension(new PrismaClient(connectionConfig));
 } else {
   if (!global.__prisma) {
-    global.__prisma = new PrismaClient(connectionConfig);
+    global.__prisma = applyHorseSexExtension(new PrismaClient(connectionConfig));
   }
   prisma = global.__prisma;
 }

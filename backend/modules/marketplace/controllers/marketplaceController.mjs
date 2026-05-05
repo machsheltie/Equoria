@@ -16,6 +16,7 @@ import { findOwnedResource } from '../../../middleware/ownership.mjs';
 // seed so test data has the same distribution as real store-purchased
 // horses. Random-stat seed paths are forbidden — see service module header.
 import { generateStoreStats } from '../../../services/horseStarterStats.mjs';
+import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
 
 // ── Horse Trader store constants ──────────────────────────────────────────────
 
@@ -375,7 +376,11 @@ export async function myListings(req, res) {
  * Buy a horse from the game store. Atomically deducts STORE_PRICE coins from the
  * buyer and creates a 3-year-old horse of the chosen breed and sex.
  *
- * Body: { breedId: number, sex: 'mare' | 'stallion' }
+ * Body: { breedId: number, sex: 'Mare' | 'Stallion' (case-insensitive) }
+ *
+ * Sex is canonicalized to Title Case before persistence. Other canonical
+ * values (Gelding, Filly, Colt, etc.) exist for the broader sex domain but
+ * are not sold by the store — only adult breeding-eligible animals are.
  */
 export async function buyStoreHorse(req, res) {
   const buyerId = req.user.id;
@@ -386,8 +391,14 @@ export async function buyStoreHorse(req, res) {
   if (!parsedBreedId || parsedBreedId < 1) {
     return res.status(400).json({ success: false, message: 'Valid breedId is required' });
   }
-  if (!['mare', 'stallion'].includes(sex)) {
-    return res.status(400).json({ success: false, message: 'sex must be mare or stallion' });
+  let canonicalSex;
+  try {
+    canonicalSex = canonicalizeHorseSex(sex);
+  } catch {
+    return res.status(400).json({ success: false, message: 'sex must be Mare or Stallion' });
+  }
+  if (canonicalSex !== 'Mare' && canonicalSex !== 'Stallion') {
+    return res.status(400).json({ success: false, message: 'sex must be Mare or Stallion' });
   }
 
   // Track whether coins were deducted so the catch block can issue a refund (F1)
@@ -425,7 +436,7 @@ export async function buyStoreHorse(req, res) {
           category: 'horse_trader_purchase',
           description: `Purchased ${breedRecord.name} from Horse Trader`,
           balanceAfter: updated.money,
-          metadata: { breedId: parsedBreedId, sex },
+          metadata: { breedId: parsedBreedId, sex: canonicalSex },
         },
         tx,
       );
@@ -446,7 +457,7 @@ export async function buyStoreHorse(req, res) {
     const createdHorse = await createHorse({
       name: horseName,
       breedId: parsedBreedId,
-      sex,
+      sex: canonicalSex,
       age: 3,
       dateOfBirth: dateOfBirth.toISOString(),
       userId: buyerId,

@@ -105,8 +105,9 @@ describe('StableView', () => {
     // Speed stat value (from horse.stats.speed = 92) appears in the stat grid
     expect(screen.getByText('92')).toBeInTheDocument();
 
-    // Subtitle shows breed · sex · age
-    expect(screen.getByText('Thoroughbred · mare · 5 yrs')).toBeInTheDocument();
+    // Subtitle shows sex · age (HorseCard.tsx renders sex/age only,
+    // not breed — `[sex, age ? "${age} yrs" : null].filter(Boolean).join(' · ')`).
+    expect(screen.getByText('mare · 5 yrs')).toBeInTheDocument();
   });
 
   it('renders player stats from profile data', () => {

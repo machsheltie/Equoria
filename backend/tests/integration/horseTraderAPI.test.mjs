@@ -6,7 +6,8 @@
  *
  * Business rules exercised:
  * - Happy path: horse created, coins deducted, correct response shape
- * - Sex selection: mare / stallion stored correctly
+ * - Sex selection: 'mare' / 'stallion' input (any casing) stored as canonical
+ *   Title Case ('Mare' / 'Stallion') — Equoria-duz2
  * - Stat generation: all 12 stats in [1, 20] range, total ≤ 200
  * - Age anchor: created horse is age 3, healthStatus 'Excellent'
  * - Validation: missing / invalid breedId, invalid sex → 400
@@ -98,13 +99,15 @@ describe('🐴 INTEGRATION: Horse Trader Store API', () => {
     expect(res.body.data.pricePaid).toBe(STORE_PRICE);
     expect(res.body.data.newBalance).toBe(balanceBefore - STORE_PRICE);
     expect(res.body.data.horse).toBeDefined();
-    expect(res.body.data.horse.sex).toBe('mare');
+    // Sex is canonicalized to Title Case at the Prisma client layer (Equoria-duz2).
+    // Lowercase input is accepted for back-compat, but stored and returned as 'Mare'.
+    expect(res.body.data.horse.sex).toBe('Mare');
 
     // Verify horse exists in DB with correct owner
     const horse = await prisma.horse.findUnique({ where: { id: res.body.data.horse.id } });
     expect(horse).not.toBeNull();
     expect(horse.userId).toBe(richUser.id);
-    expect(horse.sex).toBe('mare');
+    expect(horse.sex).toBe('Mare');
     expect(horse.age).toBe(3);
     expect(horse.healthStatus).toBe('Excellent');
     createdHorseIds.push(horse.id);
@@ -120,10 +123,28 @@ describe('🐴 INTEGRATION: Horse Trader Store API', () => {
       .send({ breedId: testBreed.id, sex: 'stallion' });
 
     expect(res.status).toBe(201);
-    expect(res.body.data.horse.sex).toBe('stallion');
+    expect(res.body.data.horse.sex).toBe('Stallion');
 
     const horse = await prisma.horse.findUnique({ where: { id: res.body.data.horse.id } });
-    expect(horse.sex).toBe('stallion');
+    expect(horse.sex).toBe('Stallion');
+    createdHorseIds.push(horse.id);
+  });
+
+  it('canonicalizes mixed-case sex input — sentinel for Equoria-duz2', async () => {
+    // Send uppercase 'MARE' — must round-trip as canonical 'Mare'.
+    const res = await request(app)
+      .post('/api/v1/marketplace/store/buy')
+      .set('Authorization', `Bearer ${richToken}`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
+      .send({ breedId: testBreed.id, sex: 'MARE' });
+
+    expect(res.status).toBe(201);
+    expect(res.body.data.horse.sex).toBe('Mare');
+
+    const horse = await prisma.horse.findUnique({ where: { id: res.body.data.horse.id } });
+    expect(horse.sex).toBe('Mare');
     createdHorseIds.push(horse.id);
   });
 
