@@ -20,7 +20,13 @@ export const MARKETPLACE_CONFIG = {
   MIN_MARKETPLACE_SIZE: 6,
 
   // Refresh timing (in hours)
-  REFRESH_INTERVAL_HOURS: process.env.NODE_ENV === 'test' ? 0.00278 : 24, // 10 seconds for tests (balances stability vs testability), daily for production
+  // Test mode uses 1 hour so two consecutive HTTP calls in a single integration
+  // test can never cross the threshold and trigger a mid-test regeneration (which
+  // surfaced as a flake in groomMarketplaceAPI.test.mjs › "should return same
+  // marketplace on subsequent calls" on slow CI — Equoria-26to). Tests that need
+  // an expired marketplace call forceExpireMarketplace() explicitly; nothing
+  // relied on the prior 10-second auto-expiry. Production stays daily.
+  REFRESH_INTERVAL_HOURS: process.env.NODE_ENV === 'test' ? 1 : 24,
   PREMIUM_REFRESH_COST: 100, // Cost for manual refresh
 
   // Quality distribution (percentages)
