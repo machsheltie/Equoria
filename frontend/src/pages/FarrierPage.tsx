@@ -1,9 +1,13 @@
 /**
- * FarrierPage — World > Farrier Location (Epic 10 — Story 10-2)
+ * FarrierPage — World > Farrier Location (Epic 10 — Story 10-2;
+ * UI consistency 2026-05-05, Equoria-hfqe).
  *
  * The Farrier location in the World hub. Two modes:
  * - My Horses: Hoof status overview per horse, select a horse for booking
  * - Services: Available farrier procedures; book via two-step (horse → service)
+ *
+ * Cards now share ItemCard + HorseCard + CardGrid; tabs use FantasyTabs in
+ * controlled mode so cross-tab buttons can switch programmatically.
  *
  * Data sources:
  *   - useFarrierServices() → real service catalog from /api/farrier/services
@@ -16,10 +20,13 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Heart, Wrench, Clock, CheckCircle, Leaf, Loader2, AlertCircle } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
+import { CardGrid } from '@/components/ui/CardGrid';
+import { ItemCard } from '@/components/ui/ItemCard';
+import { FantasyTabs } from '@/components/FantasyTabs';
+import { HorseCard } from '@/components/horse/HorseCard';
 import { useHorses } from '@/hooks/api/useHorses';
 import { useFarrierServices, useBookFarrierService } from '@/hooks/api/useFarrier';
 import type { FarrierService } from '@/hooks/api/useFarrier';
-import { getBreedName } from '@/lib/utils';
 
 type FarrierTab = 'horses' | 'services';
 
@@ -86,9 +93,9 @@ const HorsesHoofTab: React.FC<HorsesHoofTabProps> = ({
   }
 
   return (
-    <div data-testid="horses-hoof-tab">
+    <div data-testid="horses-hoof-tab" className="space-y-4">
       {selectedHorseId !== null && (
-        <div className="mb-5 p-4 rounded-xl bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 flex items-center justify-between gap-4">
+        <div className="p-4 rounded-xl bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 flex items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-[var(--status-success)] text-sm font-medium">
             <CheckCircle className="w-4 h-4 flex-shrink-0" />
             Horse selected — choose a service to book
@@ -103,61 +110,17 @@ const HorsesHoofTab: React.FC<HorsesHoofTabProps> = ({
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        {horses.map((horse) => {
-          const isSelected = horse.id === selectedHorseId;
-          return (
-            <div
-              key={horse.id}
-              className={`backdrop-blur-sm border rounded-xl p-5 transition-all ${
-                isSelected
-                  ? 'bg-[var(--status-success)]/10 border-[var(--status-success)]/50'
-                  : 'bg-[var(--glass-bg)] border-[var(--glass-border)] hover:border-[var(--glass-hover)]'
-              }`}
-              data-testid={`horse-card-${horse.id}`}
-            >
-              <div className="flex items-start justify-between mb-3">
-                <div>
-                  <h3 className="font-bold text-[var(--cream)]">{horse.name}</h3>
-                  <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                    {getBreedName(horse.breed)} &middot; Age {horse.age}
-                  </p>
-                </div>
-                {isSelected && (
-                  <span className="flex-shrink-0 text-xs font-medium text-[var(--status-success)] bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 px-2 py-0.5 rounded-full">
-                    Selected
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center gap-2 mb-4">
-                <span className="text-xs text-[var(--text-muted)]">Health:</span>
-                <span
-                  className={`text-xs font-medium ${
-                    horse.healthStatus === 'healthy'
-                      ? 'text-[var(--status-success)]'
-                      : 'text-[var(--status-danger)]'
-                  }`}
-                >
-                  {horse.healthStatus}
-                </span>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => onSelectHorse(horse.id)}
-                className={`w-full py-2 text-sm font-medium rounded-lg transition-all ${
-                  isSelected
-                    ? 'bg-[var(--status-success)]/20 border border-[var(--status-success)]/40 text-[var(--status-success)]'
-                    : 'bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:bg-[var(--glass-hover)]/20 hover:text-[var(--cream)]'
-                }`}
-              >
-                {isSelected ? 'Selected' : 'Select for Service'}
-              </button>
-            </div>
-          );
-        })}
-      </div>
+      <CardGrid aria-label="Your horses">
+        {horses.map((horse) => (
+          <HorseCard
+            key={horse.id}
+            horse={horse}
+            selected={horse.id === selectedHorseId}
+            onClick={() => onSelectHorse(horse.id)}
+            data-testid={`horse-card-${horse.id}`}
+          />
+        ))}
+      </CardGrid>
     </div>
   );
 };
@@ -226,9 +189,9 @@ const ServicesTab: React.FC<ServicesTabProps> = ({
   const canBook = selectedHorseId !== null;
 
   return (
-    <div data-testid="farrier-services-tab">
+    <div data-testid="farrier-services-tab" className="space-y-4">
       {!canBook && (
-        <div className="mb-5 p-4 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] flex items-center justify-between gap-4">
+        <div className="p-4 rounded-xl bg-[var(--glass-bg)] border border-[var(--glass-border)] flex items-center justify-between gap-4">
           <p className="text-sm text-[var(--text-muted)]">
             Select a horse from the My Horses tab to unlock booking.
           </p>
@@ -243,70 +206,77 @@ const ServicesTab: React.FC<ServicesTabProps> = ({
       )}
 
       {canBook && selectedHorseName && (
-        <div className="mb-5 p-4 rounded-xl bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 flex items-center gap-2 text-[var(--status-success)] text-sm font-medium">
+        <div className="p-4 rounded-xl bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 flex items-center gap-2 text-[var(--status-success)] text-sm font-medium">
           <CheckCircle className="w-4 h-4 flex-shrink-0" />
           Booking for: {selectedHorseName}
         </div>
       )}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <CardGrid aria-label="Farrier services">
         {services.map((service) => {
           const thisIsBooking = isBooking && bookingServiceId === service.id;
-          return (
-            <div
-              key={service.id}
-              className="bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] rounded-xl p-5 hover:border-[var(--glass-hover)] transition-all"
-              data-testid={`farrier-service-${service.id}`}
+          const buttonLabel = thisIsBooking
+            ? 'Booking…'
+            : canBook
+              ? `Book — $${service.cost.toLocaleString()}`
+              : 'Select a Horse to Book';
+
+          const action = (
+            <button
+              type="button"
+              disabled={!canBook || isBooking}
+              onClick={() => canBook && onBook(service)}
+              className={`w-full py-2 text-sm font-medium rounded-lg transition-all ${
+                canBook && !isBooking
+                  ? 'bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)] hover:bg-[var(--status-success)]/20 hover:border-[var(--status-success)]/40 cursor-pointer'
+                  : 'bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)]/60 cursor-not-allowed'
+              }`}
+              title={canBook ? `Book ${service.name}` : 'Select a horse from My Horses to book'}
+              data-onboarding-target="farrier-book-button"
             >
-              <div className="flex items-start justify-between mb-3">
-                <div className="flex items-center gap-3">
-                  {service.icon ? (
-                    <span className="text-2xl" aria-hidden="true">
-                      {service.icon}
-                    </span>
-                  ) : (
-                    <Wrench className="w-6 h-6 text-[var(--gold-400)]/60" aria-hidden="true" />
-                  )}
-                  <div>
-                    <h3 className="font-bold text-[var(--cream)]">{service.name}</h3>
-                    <span className="text-xs text-[var(--text-muted)] flex items-center gap-1 mt-0.5">
-                      <Clock className="w-3 h-3" />
-                      {service.duration}
-                    </span>
-                  </div>
-                </div>
-                <p className="text-lg font-bold text-[var(--gold-400)]">
-                  ${service.cost.toLocaleString()}
-                </p>
-              </div>
-              <p className="text-sm text-[var(--text-muted)] mb-4">{service.description}</p>
-              <button
-                type="button"
-                disabled={!canBook || isBooking}
-                onClick={() => canBook && onBook(service)}
-                className={`w-full py-2 text-sm font-medium rounded-lg transition-all ${
-                  canBook && !isBooking
-                    ? 'bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)] hover:bg-[var(--status-success)]/20 hover:border-[var(--status-success)]/40 cursor-pointer'
-                    : 'bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)]/60 cursor-not-allowed'
-                }`}
-                title={canBook ? `Book ${service.name}` : 'Select a horse from My Horses to book'}
-                data-onboarding-target="farrier-book-button"
-              >
-                {thisIsBooking ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    Booking…
-                  </span>
-                ) : canBook ? (
-                  `Book — $${service.cost.toLocaleString()}`
-                ) : (
-                  'Select a Horse to Book'
-                )}
-              </button>
+              {thisIsBooking ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  {buttonLabel}
+                </span>
+              ) : (
+                buttonLabel
+              )}
+            </button>
+          );
+
+          const media = service.icon ? (
+            <span
+              className="text-3xl w-20 h-20 flex items-center justify-center"
+              aria-hidden="true"
+            >
+              {service.icon}
+            </span>
+          ) : (
+            <div className="w-20 h-20 rounded-lg bg-black/20 flex items-center justify-center text-[var(--gold-400)]/60">
+              <Wrench className="w-8 h-8" />
             </div>
           );
+
+          return (
+            <ItemCard
+              key={service.id}
+              data-testid={`farrier-service-${service.id}`}
+              media={media}
+              title={service.name}
+              subtitle={
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {service.duration}
+                </span>
+              }
+              description={service.description}
+              price={`$${service.cost.toLocaleString()}`}
+              action={action}
+            />
+          );
         })}
-      </div>
+      </CardGrid>
     </div>
   );
 };
@@ -325,7 +295,7 @@ const FarrierPage: React.FC = () => {
   const selectedHorse = horses?.find((h) => h.id === selectedHorseId) ?? null;
 
   const handleSelectHorse = (id: number) => {
-    setSelectedHorseId(id);
+    setSelectedHorseId((prev) => (prev === id ? null : id));
     setBookingSuccess(null);
   };
 
@@ -359,7 +329,6 @@ const FarrierPage: React.FC = () => {
         mood="nature"
         icon={<Leaf className="w-7 h-7 text-[var(--gold-400)]" />}
       >
-        {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-[var(--cream)]/60">
           <Link to="/world" className="hover:text-[var(--cream)] transition-colors">
             World
@@ -381,7 +350,6 @@ const FarrierPage: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Booking success banner */}
         {bookingSuccess && (
           <div className="mb-6 p-4 rounded-xl bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 flex items-center gap-2 text-[var(--status-success)] text-sm">
             <CheckCircle className="w-4 h-4 flex-shrink-0" />
@@ -389,7 +357,6 @@ const FarrierPage: React.FC = () => {
           </div>
         )}
 
-        {/* Booking error banner */}
         {bookMutation.isError && (
           <div className="mb-6 p-4 rounded-xl bg-[var(--status-danger)]/10 border border-[var(--status-danger)]/20 text-[var(--status-danger)] text-sm">
             Booking failed:{' '}
@@ -397,61 +364,39 @@ const FarrierPage: React.FC = () => {
           </div>
         )}
 
-        {/* My Horses / Services Tabs */}
-        <div
-          className="flex gap-1 p-1 bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] rounded-xl mb-8 w-fit"
-          role="tablist"
-          aria-label="Farrier section"
-        >
-          <button
-            role="tab"
-            aria-selected={activeTab === 'horses'}
-            onClick={() => setActiveTab('horses')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'horses'
-                ? 'bg-[var(--glass-bg)] text-[var(--cream)] shadow-sm'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-            }`}
-            data-testid="horses-tab"
-          >
-            <Heart className="w-4 h-4" />
-            My Horses
-          </button>
-          <button
-            role="tab"
-            aria-selected={activeTab === 'services'}
-            onClick={() => setActiveTab('services')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
-              activeTab === 'services'
-                ? 'bg-[var(--glass-bg)] text-[var(--cream)] shadow-sm'
-                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
-            }`}
-            data-testid="services-tab"
-          >
-            <Wrench className="w-4 h-4" />
-            Services
-          </button>
-        </div>
-
-        {/* Tab Content */}
-        <div role="tabpanel">
-          {activeTab === 'horses' ? (
-            <HorsesHoofTab
-              selectedHorseId={selectedHorseId}
-              onSelectHorse={handleSelectHorse}
-              onNavigateToServices={() => setActiveTab('services')}
-            />
-          ) : (
-            <ServicesTab
-              selectedHorseId={selectedHorseId}
-              selectedHorseName={selectedHorse?.name ?? null}
-              onBook={handleBook}
-              isBooking={bookMutation.isPending}
-              bookingServiceId={bookingServiceId}
-              onNavigateToHorses={() => setActiveTab('horses')}
-            />
-          )}
-        </div>
+        <FantasyTabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as FarrierTab)}
+          tabs={[
+            {
+              value: 'horses',
+              label: 'My Horses',
+              icon: <Heart className="w-4 h-4" />,
+              content: (
+                <HorsesHoofTab
+                  selectedHorseId={selectedHorseId}
+                  onSelectHorse={handleSelectHorse}
+                  onNavigateToServices={() => setActiveTab('services')}
+                />
+              ),
+            },
+            {
+              value: 'services',
+              label: 'Services',
+              icon: <Wrench className="w-4 h-4" />,
+              content: (
+                <ServicesTab
+                  selectedHorseId={selectedHorseId}
+                  selectedHorseName={selectedHorse?.name ?? null}
+                  onBook={handleBook}
+                  isBooking={bookMutation.isPending}
+                  bookingServiceId={bookingServiceId}
+                  onNavigateToHorses={() => setActiveTab('horses')}
+                />
+              ),
+            },
+          ]}
+        />
 
         {/* Info Panel */}
         <div className="mt-10 p-5 rounded-xl glass-panel text-sm text-[var(--text-muted)]">
