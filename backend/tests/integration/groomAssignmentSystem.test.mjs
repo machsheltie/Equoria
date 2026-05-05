@@ -55,7 +55,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
     testHorse1 = await prisma.horse.create({
       data: {
         name: 'Assignment Test Horse 1',
-        sex: 'male',
+        sex: 'Stallion',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
         userId: testUser.id,
         bondScore: 30,
@@ -66,7 +66,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
     testHorse2 = await prisma.horse.create({
       data: {
         name: 'Assignment Test Horse 2',
-        sex: 'female',
+        sex: 'Mare',
         dateOfBirth: new Date(Date.now() - 730 * 24 * 60 * 60 * 1000), // 2 years old
         userId: testUser.id,
         bondScore: 45,
@@ -223,7 +223,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       const otherHorse = await prisma.horse.create({
         data: {
           name: 'Other User Horse',
-          sex: 'male',
+          sex: 'Stallion',
           dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
           userId: otherUser.id,
         },
@@ -349,7 +349,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         const horse = await prisma.horse.create({
           data: {
             name: `Limit Test Horse ${i + 1}`,
-            sex: 'male',
+            sex: 'Stallion',
             dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
             userId: testUser.id,
           },

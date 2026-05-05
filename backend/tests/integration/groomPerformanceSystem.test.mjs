@@ -88,7 +88,7 @@ describe('Groom Performance System', () => {
         userId: testUser.id,
         dateOfBirth: new Date('2019-01-01'),
         age: 5,
-        sex: 'male',
+        sex: 'Stallion',
       },
     });
 

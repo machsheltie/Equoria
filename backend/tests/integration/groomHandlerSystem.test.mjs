@@ -48,7 +48,7 @@ describe('Groom Handler System Integration Tests', () => {
     testHorse = await prisma.horse.create({
       data: {
         name: 'Handler Test Horse',
-        sex: 'male',
+        sex: 'Stallion',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
         userId: testUser.id,
         bondScore: 50,
@@ -126,7 +126,7 @@ describe('Groom Handler System Integration Tests', () => {
       const noHandlerHorse = await prisma.horse.create({
         data: {
           name: 'No Handler Horse',
-          sex: 'female',
+          sex: 'Mare',
           dateOfBirth: new Date(Date.now() - 730 * 24 * 60 * 60 * 1000), // 2 years old
           userId: testUser.id,
           bondScore: 30,
@@ -167,7 +167,7 @@ describe('Groom Handler System Integration Tests', () => {
       const otherHorse = await prisma.horse.create({
         data: {
           name: 'Other User Horse',
-          sex: 'male',
+          sex: 'Stallion',
           dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
           userId: otherUser.id,
         },

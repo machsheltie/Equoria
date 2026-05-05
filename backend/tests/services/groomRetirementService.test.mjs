@@ -44,7 +44,7 @@ describe('Groom Retirement Service', () => {
     testHorse = await prisma.horse.create({
       data: {
         name: `Test Horse ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-        sex: 'male',
+        sex: 'Stallion',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
         userId: testUser.id,
         bondScore: 50,

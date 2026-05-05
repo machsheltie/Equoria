@@ -52,7 +52,7 @@ describe('Groom Legacy Service', () => {
     testHorse = await prisma.horse.create({
       data: {
         name: testHorseName,
-        sex: 'male',
+        sex: 'Stallion',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
         userId: testUser.id,
         bondScore: 50,

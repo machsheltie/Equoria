@@ -92,7 +92,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
         userId: testUser.id,
         dateOfBirth: foalBirthDate,
         age: 0,
-        sex: 'female',
+        sex: 'Mare',
         temperament: 'calm',
         epigeneticFlags: [], // Start with no flags
       },
@@ -456,7 +456,7 @@ describe('Trait History Service', () => {
         userId: testUser.id,
         dateOfBirth: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days old
         age: 0,
-        sex: 'male',
+        sex: 'Stallion',
       },
     });
 
