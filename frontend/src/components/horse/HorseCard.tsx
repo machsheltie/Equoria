@@ -63,7 +63,6 @@ export function HorseCard({
 }: HorseCardProps) {
   const age = horse.ageYears ?? horse.age ?? 0;
   const sex = horse.sex ?? horse.gender ?? '';
-  const subtitle = [getBreedName(horse.breed), sex, `${age} yrs`].filter(Boolean).join(' · ');
   const isLegendary = !!(horse as unknown as Record<string, unknown>).isLegendary;
   const traits = horse.traits ?? (horse.trait ? [horse.trait] : []);
   const cooldown = trainingCooldownChip(horse.trainingCooldown);
@@ -118,7 +117,12 @@ export function HorseCard({
           >
             {horse.name}
           </p>
-          <p className="text-xs text-[var(--text-secondary)] truncate">{subtitle}</p>
+          <p className="text-xs text-[var(--text-secondary)] truncate">
+            {getBreedName(horse.breed)}
+          </p>
+          <p className="text-[0.7rem] text-[var(--text-muted)] truncate">
+            {[sex, age ? `${age} yrs` : null].filter(Boolean).join(' · ')}
+          </p>
         </div>
       </div>
 

@@ -8,21 +8,29 @@
  *     Each row has an inline Equip button (or Unequip if it's already on
  *     this horse). No detour through /inventory.
  *   - Feed: the 5 catalog tiers in the user's inventory with quantity > 0.
- *     The active tier renders a 'Currently equipped' label + Unequip button;
- *     others render an Equip button that triggers an atomic switch.
+ *     The active tier renders a '✓ Equipped' indicator in the title row
+ *     (price slot) so all cards stay the same height.
  *
  * Both sections consume the shared ItemCard + CardGrid so cards-per-row and
- * text sizing match the rest of the system.
+ * text sizing match the rest of the system. Each card has a Details button
+ * that opens a GameDialog with the full item description.
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Loader2, AlertCircle, ArrowLeft, Wrench } from 'lucide-react';
+import { Loader2, AlertCircle, ArrowLeft, Wrench, Info } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
 import { Button } from '@/components/ui/button';
 import { CardGrid } from '@/components/ui/CardGrid';
 import { ItemCard } from '@/components/ui/ItemCard';
+import {
+  GameDialog,
+  GameDialogContent,
+  GameDialogHeader,
+  GameDialogTitle,
+  GameDialogDescription,
+} from '@/components/ui/game/GameDialog';
 import { useEquippable } from '@/hooks/api/useEquippable';
 import { useEquipFeed, useUnequipFeed } from '@/hooks/api/useEquipFeed';
 import { useEquipItem, useUnequipItem } from '@/hooks/api/useInventory';
@@ -37,11 +45,26 @@ const FEED_IMAGES: Record<FeedItem['id'], string> = {
   elite: '/images/feed/elitefeed.png',
 };
 
-const EQUIPPED_CHIP = (
-  <span className="text-[0.6rem] uppercase tracking-wider font-semibold text-[var(--gold-light)] bg-[var(--glass-glow)] px-2 py-0.5 rounded-[var(--radius-sm)]">
-    Currently Equipped
-  </span>
-);
+interface InfoState {
+  title: string;
+  description: string;
+}
+
+function InfoButton({ onClick }: { onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      className="flex items-center gap-1 text-[0.65rem] text-[var(--text-muted)] hover:text-[var(--cream)] transition-colors"
+    >
+      <Info className="w-3 h-3" />
+      Details
+    </button>
+  );
+}
 
 const HorseEquipPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -53,6 +76,8 @@ const HorseEquipPage: React.FC = () => {
   const unequipFeed = useUnequipFeed(horseId);
   const equipItem = useEquipItem();
   const unequipItem = useUnequipItem();
+
+  const [activeInfo, setActiveInfo] = useState<InfoState | null>(null);
 
   const catalogById = React.useMemo(() => {
     const map: Partial<Record<FeedItem['id'], FeedItem>> = {};
@@ -168,7 +193,19 @@ const HorseEquipPage: React.FC = () => {
                     title={item.name}
                     subtitle={<span className="capitalize">{item.category}</span>}
                     description={item.bonus ?? undefined}
-                    meta={isEquipped ? EQUIPPED_CHIP : undefined}
+                    price={isEquipped ? '✓ Equipped' : undefined}
+                    meta={
+                      item.bonus ? (
+                        <InfoButton
+                          onClick={() =>
+                            setActiveInfo({
+                              title: item.name,
+                              description: item.bonus ?? '',
+                            })
+                          }
+                        />
+                      ) : undefined
+                    }
                     selected={isEquipped}
                     action={action}
                   />
@@ -181,8 +218,8 @@ const HorseEquipPage: React.FC = () => {
         {/* Feed section — unified list. Clicking Equip on any tier switches
             equippedFeedType atomically (backend replaces unconditionally), so
             users never need to Unequip-then-Equip to switch tiers. The
-            currently-equipped tier shows a distinct treatment + Unequip button
-            for users who want to clear the selection entirely. */}
+            currently-equipped tier shows a gold '✓ Equipped' badge in the
+            title row (price slot) so all cards stay the same height. */}
         <section data-testid="feed-section">
           <h2 className="text-lg font-bold text-[var(--cream)] mb-3">Feed</h2>
 
@@ -201,7 +238,7 @@ const HorseEquipPage: React.FC = () => {
               {data.feed.map((f) => {
                 const isEquipped = f.isCurrentlyEquippedToThisHorse;
                 const tierId = f.feedType as FeedItem['id'];
-                const meta = catalogById[tierId];
+                const feedMeta = catalogById[tierId];
 
                 const action = isEquipped ? (
                   <Button
@@ -260,21 +297,31 @@ const HorseEquipPage: React.FC = () => {
                     }
                     title={f.name}
                     subtitle={`${f.quantity} units in stock`}
-                    description={meta?.description}
+                    description={feedMeta?.description}
+                    price={isEquipped ? '✓ Equipped' : undefined}
                     meta={
                       <>
-                        {isEquipped && EQUIPPED_CHIP}
-                        {meta && (
+                        {feedMeta && (
                           <span className="text-[0.65rem] text-[var(--text-muted)]">
                             Stat-roll{' '}
                             <strong className="text-[var(--text-secondary)]">
-                              {meta.statRollPct}%
+                              {feedMeta.statRollPct}%
                             </strong>{' '}
                             · Pregnancy{' '}
                             <strong className="text-[var(--text-secondary)]">
-                              +{meta.pregnancyBonusPct}%
+                              +{feedMeta.pregnancyBonusPct}%
                             </strong>
                           </span>
+                        )}
+                        {feedMeta?.description && (
+                          <InfoButton
+                            onClick={() =>
+                              setActiveInfo({
+                                title: f.name,
+                                description: feedMeta.description,
+                              })
+                            }
+                          />
                         )}
                       </>
                     }
@@ -287,6 +334,18 @@ const HorseEquipPage: React.FC = () => {
           )}
         </section>
       </div>
+
+      {/* Item description popup */}
+      <GameDialog open={activeInfo !== null} onOpenChange={(open) => !open && setActiveInfo(null)}>
+        <GameDialogContent>
+          <GameDialogHeader>
+            <GameDialogTitle>{activeInfo?.title}</GameDialogTitle>
+          </GameDialogHeader>
+          <GameDialogDescription className="pt-4 text-[var(--text-secondary)] text-sm leading-relaxed">
+            {activeInfo?.description}
+          </GameDialogDescription>
+        </GameDialogContent>
+      </GameDialog>
     </div>
   );
 };
