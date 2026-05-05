@@ -30,8 +30,13 @@ describe('Email Verification Service - Unit Tests', () => {
     jest.clearAllMocks();
     jest.clearAllTimers();
 
-    // Clean up email verification tokens
-    await prisma.emailVerificationToken.deleteMany({});
+    // Clean up email verification tokens scoped to this suite's test users
+    // (email prefix "emailtest_" matches only tokens created by this suite).
+    // An unscoped deleteMany({}) would wipe tokens across all users and cause
+    // cross-suite flakiness in the full Jest gate (CLAUDE.md §2 scoped-cleanup).
+    await prisma.emailVerificationToken.deleteMany({
+      where: { email: { startsWith: 'emailtest_' } },
+    });
 
     // Create fresh test user with unique ID
     const uniqueId = crypto.randomBytes(8).toString('hex');

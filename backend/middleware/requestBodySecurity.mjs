@@ -47,6 +47,9 @@ export class RequestBodySecurityError extends AppError {
 // Strips: ASCII C0 control chars (0x00-0x1F + 0x7F), C1 control chars
 // (0x80-0x9F — includes CSI 0x9B used by single-byte ANSI sequences),
 // Unicode bidi formatting (LRM/RLM/LRE/RLE/PDF/LRO/RLO + LRI/RLI/FSI/PDI),
+// Unicode line terminators U+2028 (LINE SEPARATOR) and U+2029 (PARAGRAPH
+// SEPARATOR) — valid inside JSON strings per spec but interpreted as line
+// endings by some log shippers, enabling log-injection via line-splitting,
 // and the BOM (U+FEFF). Bidi controls let an attacker visually re-order a
 // log line in any consumer that renders text directionally (Kibana,
 // modern terminals); the canonical example is `'\u202EkcatTA'` rendering
