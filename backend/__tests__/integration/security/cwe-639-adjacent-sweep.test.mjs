@@ -39,8 +39,7 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
   const NONEXISTENT_ID = 999999999;
 
   beforeEach(async () => {
-    process.env.JWT_SECRET =
-      process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
+    process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
 
     userA = await prisma.user.create({
       data: {

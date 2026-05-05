@@ -45,8 +45,7 @@ describe('CWE-639 wave-3 sweep (Equoria-1i6w)', () => {
   const NONEXISTENT_ID = 999999999;
 
   beforeEach(async () => {
-    process.env.JWT_SECRET =
-      process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
+    process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
 
     userA = await prisma.user.create({
       data: {
@@ -259,9 +258,7 @@ describe('CWE-639 wave-3 sweep (Equoria-1i6w)', () => {
         // The service's 'You do not have permission to remove this assignment'
         // message is dead code — ownership middleware says 'Groom-assignment
         // not found' first.
-        expect(JSON.stringify(resCrossUser.body)).not.toContain(
-          'do not have permission',
-        );
+        expect(JSON.stringify(resCrossUser.body)).not.toContain('do not have permission');
 
         const resMissing = await request(app)
           .delete(`/api/v1/groom-assignments/${NONEXISTENT_ID}`)
@@ -273,9 +270,7 @@ describe('CWE-639 wave-3 sweep (Equoria-1i6w)', () => {
         expect(resMissing.status).toBe(404);
         expect(resMissing.body).toEqual(resCrossUser.body);
       } finally {
-        await prisma.groomAssignment
-          .delete({ where: { id: assignmentB.id } })
-          .catch(() => {});
+        await prisma.groomAssignment.delete({ where: { id: assignmentB.id } }).catch(() => {});
       }
     });
   });
