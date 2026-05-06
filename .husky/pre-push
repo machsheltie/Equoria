@@ -118,40 +118,13 @@ fi
 # We probe the DATABASE_URL specified in backend/.env.test using the same
 # pg client the suite would use. If unreachable, fail fast with a clear
 # message naming the actual failure.
-DB_PROBE_OUTPUT="$(node --experimental-vm-modules - <<'NODE_EOF' 2>&1
-import dotenv from 'dotenv';
-import { Client } from 'pg';
-dotenv.config({ path: '.env.test' });
-const url = process.env.DATABASE_URL;
-if (!url) {
-  console.error('DATABASE_URL not set in backend/.env.test');
-  process.exit(2);
-}
-// Equoria-ocn9 re-review fix: connectionTimeoutMillis only covers the
-// initial connect handshake. A Postgres in a hung state (deadlocked admin
-// lock, stuck autovacuum, network proxy that black-holes traffic
-// post-handshake) will accept the connection but never respond to queries
-// — without a query-level timeout the probe would block the push forever.
-// Promise.race enforces an overall budget for connect+query+end.
-const QUERY_BUDGET_MS = 5000;
-const client = new Client({ connectionString: url, connectionTimeoutMillis: QUERY_BUDGET_MS });
-const probe = (async () => {
-  await client.connect();
-  await client.query('SELECT 1');
-  await client.end();
-})();
-const timeout = new Promise((_resolve, reject) =>
-  setTimeout(() => reject(new Error(`probe exceeded ${QUERY_BUDGET_MS}ms (Postgres reachable but unresponsive?)`)), QUERY_BUDGET_MS),
-);
-try {
-  await Promise.race([probe, timeout]);
-  console.log('ok');
-} catch (err) {
-  console.error(err && err.code ? `${err.code}: ${err.message}` : (err?.message || String(err)));
-  process.exit(3);
-}
-NODE_EOF
-)"
+#
+# Equoria-wnsc (2026-05-06): probe was previously a heredoc inside `$(...)`
+# that mis-parsed on Windows Git Bash because of JS backtick template
+# literals inside the heredoc body. Moved to a standalone .mjs file so the
+# bash parser sees a normal command, not a quoted blob. See
+# scripts/preflight/db-probe.mjs for the script.
+DB_PROBE_OUTPUT="$(node --experimental-vm-modules "$REPO_ROOT/scripts/preflight/db-probe.mjs" 2>&1)"
 DB_PROBE_STATUS=$?
 if [ $DB_PROBE_STATUS -ne 0 ]; then
   echo "[pre-push] FATAL: cannot reach the test database." >&2
