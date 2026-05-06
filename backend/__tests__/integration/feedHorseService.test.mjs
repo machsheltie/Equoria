@@ -347,3 +347,81 @@ describe('feedHorse service — pregnancy feeding counter (Phase B4, real DB)', 
     expect(fresh.lastFedDate).toBeTruthy();
   });
 });
+
+/**
+ * Concurrent-feed lost-update guard (Equoria-nsr7).
+ *
+ * Without SELECT FOR UPDATE, two parallel feedHorse() calls both read
+ * lastFedDate=null under READ COMMITTED isolation, both pass alreadyFedToday(),
+ * and both succeed — decrementing inventory twice. The SELECT FOR UPDATE added
+ * at the top of the transaction serializes access so exactly one txn reads
+ * lastFedDate=null; the rest read lastFedDate=<today> and throw "Already fed".
+ */
+describe('feedHorse service — concurrent-feed lost-update guard (Equoria-nsr7)', () => {
+  let userId;
+  let horseId;
+
+  beforeEach(async () => {
+    const user = await prisma.user.create({
+      data: {
+        email: `conc-feed-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
+        username: `concfeed${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+        password: 'irrelevant-test-hash',
+        firstName: 'Test',
+        lastName: 'User',
+        money: 0,
+        settings: {
+          inventory: [
+            {
+              id: 'feed-elite',
+              itemId: 'elite',
+              category: 'feed',
+              name: 'Elite Feed',
+              quantity: 10,
+            },
+          ],
+        },
+      },
+    });
+    userId = user.id;
+    const horse = await prisma.horse.create({
+      data: {
+        name: `ConcHorse${Date.now()}${Math.random().toString(36).slice(2, 5)}`,
+        sex: 'Stallion',
+        dateOfBirth: new Date('2020-01-01'),
+        age: 5,
+        userId,
+        equippedFeedType: 'elite',
+        speed: 50,
+        lastFedDate: null,
+      },
+    });
+    horseId = horse.id;
+  });
+
+  afterEach(async () => {
+    await prisma.horse.delete({ where: { id: horseId } }).catch(() => {});
+    await prisma.user.delete({ where: { id: userId } }).catch(() => {});
+  });
+
+  it('exactly one feed succeeds when 10 concurrent requests are fired (SELECT FOR UPDATE sentinel)', async () => {
+    const results = await Promise.allSettled(
+      Array.from({ length: 10 }, () => feedHorse({ userId, horseId, rng: () => 0.99 })),
+    );
+
+    const successes = results.filter(r => r.status === 'fulfilled');
+    const failures = results.filter(r => r.status === 'rejected');
+
+    expect(successes).toHaveLength(1);
+    for (const f of failures) {
+      expect(f.reason.message).toMatch(/already fed today/i);
+    }
+
+    // Inventory must decrement by exactly 1 unit, not by the number of
+    // concurrent requests that raced past the alreadyFedToday check.
+    const freshUser = await prisma.user.findUnique({ where: { id: userId } });
+    const inv = freshUser.settings?.inventory ?? [];
+    const feedItem = inv.find(i => i.id === 'feed-elite');
+    expect(feedItem?.quantity).toBe(9);
+  });
+});

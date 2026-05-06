@@ -102,6 +102,12 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
   // after the txn has committed, preserves the clear. This is atomic with
   // the surrounding reads — no race window between commit and clear.
   const result = await prisma.$transaction(async tx => {
+    // Lock the horse row immediately to prevent the lost-update race: without
+    // this, two concurrent feeds both read lastFedDate=null under READ COMMITTED
+    // isolation, both pass alreadyFedToday(), and both decrement inventory.
+    // FOR UPDATE blocks T2 until T1 commits, so T2 reads lastFedDate=<today>
+    // and correctly throws "Already fed today." (Equoria-nsr7)
+    await tx.$queryRaw`SELECT id FROM "horses" WHERE id = ${Number(horseId)} FOR UPDATE`;
     const horse = await tx.horse.findUnique({ where: { id: Number(horseId) } });
     if (!horse) {
       const e = new Error('Horse not found');
