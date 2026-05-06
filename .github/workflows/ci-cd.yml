@@ -6,6 +6,8 @@ on:
   pull_request:
     branches: [master, develop]
   workflow_dispatch:
+  schedule:
+    - cron: '0 2 * * *' # 2am UTC daily — session-lifetime-nightly job
 
 env:
   NODE_VERSION: '22.x'
@@ -867,3 +869,73 @@ jobs:
           configPath: .lighthouserc.yml
           uploadArtifacts: true
           temporaryPublicStorage: true
+
+  # Nightly: session-lifetime regression (21R-AUTH-6)
+  # Runs only on the schedule trigger (not on push/PR) so it doesn't gate
+  # normal merges. Exercises real credentials + real DB — no bypass headers.
+  session-lifetime-nightly:
+    name: 'Session Lifetime Nightly Regression (21R-AUTH-6)'
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: equoria_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: 'Checkout Repository'
+        uses: actions/checkout@v4
+
+      - name: 'Setup Node.js'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: 'Install Backend Dependencies'
+        working-directory: ./backend
+        run: npm ci
+
+      - name: 'Install Database Dependencies'
+        working-directory: ./packages/database
+        run: npm ci
+
+      - name: 'Setup Database'
+        working-directory: ./packages/database
+        run: |
+          npx prisma generate --schema=prisma/schema.prisma
+          npx prisma migrate deploy --schema=prisma/schema.prisma
+
+      - name: 'Seed Test Database'
+        working-directory: ./backend
+        run: npm run seed:test
+
+      - name: 'Run Session Lifetime Tests'
+        working-directory: ./backend
+        env:
+          NODE_OPTIONS: '--max-old-space-size=4096 --experimental-vm-modules'
+        run: >
+          npx jest
+          --testPathPattern="__tests__/integration/session-lifetime"
+          --forceExit
+          --runInBand
+
+      - name: 'Upload Session Lifetime Test Results'
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: session-lifetime-nightly-results
+          path: ./backend/test-results/
+          retention-days: 30

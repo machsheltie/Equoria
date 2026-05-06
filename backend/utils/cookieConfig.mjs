@@ -22,6 +22,26 @@
 import config from '../config/config.mjs';
 
 /**
+ * Token TTL constants — single source of truth for cookie maxAge AND the
+ * getNow() injection used by tests to fast-forward the clock without waiting.
+ */
+export const ACCESS_TOKEN_TTL_MS = 15 * 60 * 1000; // 15 minutes
+export const REFRESH_TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+export const CSRF_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+/**
+ * Mockable clock — defaults to Date.now in production/test.
+ * Tests that need to simulate token expiry without waiting real time can call
+ * _setNowFn(() => Date.now() + REFRESH_TOKEN_TTL_MS + 1) to advance the clock.
+ * Reset with _setNowFn(null) or _setNowFn(() => Date.now()) after each test.
+ */
+let _nowFn = () => Date.now();
+export const getNow = () => _nowFn();
+export const _setNowFn = fn => {
+  _nowFn = fn ?? (() => Date.now());
+};
+
+/**
  * Determine if we're in production environment
  * Used to enable strict security features like HTTPS-only cookies
  */
@@ -58,7 +78,7 @@ export const ACCESS_TOKEN_COOKIE_OPTIONS = {
   httpOnly: true, // Cannot be accessed by JavaScript (XSS protection)
   secure: isProduction, // HTTPS only in production (MitM protection)
   sameSite: SAME_SITE_POLICY, // CSRF protection (strictest policy)
-  maxAge: 15 * 60 * 1000, // 15 minutes (900,000ms)
+  maxAge: ACCESS_TOKEN_TTL_MS,
   path: '/', // Available to all routes
   domain: COOKIE_DOMAIN, // Subdomain sharing (if configured)
 };
@@ -76,7 +96,7 @@ export const REFRESH_TOKEN_COOKIE_OPTIONS = {
   httpOnly: true, // Cannot be accessed by JavaScript (XSS protection)
   secure: isProduction, // HTTPS only in production (MitM protection)
   sameSite: SAME_SITE_POLICY, // CSRF protection (strictest policy)
-  maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days (604,800,000ms)
+  maxAge: REFRESH_TOKEN_TTL_MS,
   path: '/', // Must cover both /auth/refresh-token and /api/auth/refresh-token mount points (21R-AUTH-1)
   domain: COOKIE_DOMAIN, // Subdomain sharing (if configured)
 };
@@ -99,7 +119,7 @@ export const CSRF_TOKEN_COOKIE_OPTIONS = {
   httpOnly: false, // Client must read this to send X-CSRF-Token header
   secure: isProduction, // HTTPS only in production (MitM protection)
   sameSite: SAME_SITE_POLICY, // CSRF protection (strictest policy)
-  maxAge: 24 * 60 * 60 * 1000, // 24 hours (21R-AUTH-2: decoupled from access token's 15-min lifetime)
+  maxAge: CSRF_TOKEN_TTL_MS, // 24 hours (21R-AUTH-2: decoupled from access token's 15-min lifetime)
   path: '/', // Available to all routes
   domain: COOKIE_DOMAIN, // Subdomain sharing (if configured)
 };
