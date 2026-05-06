@@ -432,9 +432,12 @@ class JsonScanner {
       this.index += 1;
     }
 
-    // Unterminated string — best-effort: return what we captured. The
-    // outer pipeline's JSON.parse will reject the malformed payload.
-    return this.source.slice(startIdx + 1);
+    // Unterminated string — fail closed. Returning a partial string would
+    // let the scanner proceed silently, leaving malformed-JSON detection to
+    // express.json()'s SyntaxError path rather than our controlled 400
+    // envelope. Throwing here ensures the Security error handler handles it
+    // before express.json() ever runs (21R-SEC-7, Equoria-ifxg).
+    throw new RequestBodySecurityError('malformed JSON');
   }
 
   scanNumber() {

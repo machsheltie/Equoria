@@ -288,3 +288,40 @@ describe('Equoria-qj3f: Unicode-escape dup-key bypass in JsonScanner', () => {
     expect(res.status).toBe(400);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Equoria-ifxg: 21R-SEC-7 — Scanner detects truncated string and throws
+// ─────────────────────────────────────────────────────────────────────────────
+describe('Equoria-ifxg: scanString() throws on truncated JSON payload', () => {
+  it('returns 400 with malformed JSON message when body is a truncated string (no closing quote)', async () => {
+    expect.assertions(2);
+    const truncatedPayload = '{"name":"unclo'; // no closing quote or brace
+    const res = await request(app)
+      .post(JSON_ENDPOINT)
+      .set('Content-Type', 'application/json')
+      .set('Origin', 'http://localhost:3000')
+      .send(truncatedPayload);
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/malformed json/i);
+  });
+
+  it('returns 400 with malformed JSON message when body is only an open quote', async () => {
+    expect.assertions(2);
+    const res = await request(app)
+      .post(JSON_ENDPOINT)
+      .set('Content-Type', 'application/json')
+      .set('Origin', 'http://localhost:3000')
+      .send('"unclosed');
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/malformed json/i);
+  });
+
+  it('scanner unit: scanString() throws RequestBodySecurityError on unterminated string', () => {
+    expect.assertions(1);
+    const scanner = new __TESTING_ONLY_JsonScanner('{"key":"unterminated');
+    // advance past `{` and the key
+    expect(() => scanner.scanValue(0)).toThrow(RequestBodySecurityError);
+  });
+});
