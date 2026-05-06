@@ -35,8 +35,13 @@ test.describe('Celestial Night Feature Pages', () => {
       timeout: 20000,
     });
 
-    // CompetitionFilters renders filter select elements or buttons
-    // At minimum, a discipline filter should be present
+    // CompetitionFilters renders only in the success-state branch (the
+    // wrapper testid above is now on loading/error/success per a prior fix
+    // that added page-level identification, so we need a success-only
+    // marker before checking for filter content).
+    await expect(page.locator('[data-testid="page-header"]')).toBeVisible({ timeout: 15000 });
+
+    // Now check filter content — discipline filter is a native <select>.
     const hasFilters = await page.locator('select, [role="combobox"]').count();
     const hasFilterText = await page.getByText(/discipline|filter/i).count();
     expect(hasFilters + hasFilterText).toBeGreaterThan(0);
@@ -138,13 +143,13 @@ test.describe('Celestial Night Feature Pages', () => {
 
     await expect(page.locator('h1')).toContainText('Messages', { timeout: 15000 });
 
-    // MessagesPage renders Inbox and Sent tab buttons.
-    // Equoria-qolo: previous shape used `.catch(() => false)` to silently
-    // swallow timeouts. Replaced with Locator.or() union which lets the
-    // first matching tab pass, and fails loudly with a clear timeout
-    // message naming both expected locators if neither is visible.
-    const inboxTab = page.getByRole('button', { name: /Inbox/i }).first();
-    const sentTab = page.getByRole('button', { name: /Sent/i }).first();
+    // MessagesPage renders Inbox and Sent tab buttons. They use role="tab"
+    // (MessagesPage.tsx:112, :131) — getByRole('button', ...) will not match.
+    // Equoria-qolo + this fix: query by role='tab' and use .or() union to
+    // pass when either tab is visible, fail loudly with a clear locator name
+    // if neither is.
+    const inboxTab = page.getByRole('tab', { name: /Inbox/i }).first();
+    const sentTab = page.getByRole('tab', { name: /Sent/i }).first();
 
     await expect(inboxTab.or(sentTab).first()).toBeVisible({ timeout: 5000 });
   });

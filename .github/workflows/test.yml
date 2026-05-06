@@ -474,7 +474,13 @@ jobs:
       - name: Run Playwright E2E tests
         env:
           BASE_URL: 'http://localhost:3000'
-        run: npx playwright test
+        # `playwright install` above only fetches chromium binaries — firefox
+        # and webkit projects in playwright.config.ts would fail with
+        # 'browser not installed' instantly (3-4ms) under the default invocation.
+        # Restrict the run to the chromium project to match what's actually
+        # installed. Cross-browser coverage is a separate concern; if it's
+        # added back, install the other browsers above.
+        run: npx playwright test --project=chromium
 
       - name: Upload Playwright report on failure
         if: always()

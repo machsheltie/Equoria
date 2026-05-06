@@ -11,6 +11,12 @@ dotenv.config({ path: path.resolve(__dirname, 'backend', '.env.test') });
 
 export default defineConfig({
   testDir: './tests/e2e',
+  // tests/e2e/readiness/* is the beta-readiness suite which has its own
+  // dedicated config (playwright.beta-readiness.config.ts) and runs in
+  // its own CI gate (Beta Readiness Gate). Excluding it from the broader
+  // run avoids double-execution and prevents storageState/baseURL config
+  // drift between the two configs from showing as broader-suite failures.
+  testIgnore: ['**/readiness/**'],
   globalSetup: './tests/e2e/global-setup.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
