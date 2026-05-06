@@ -329,6 +329,10 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     });
 
     it('should reject constructor pollution attempts', async () => {
+      // expect.assertions ensures the message assertion below actually runs —
+      // without it, a vacuously-passing 400 from any validator would satisfy
+      // only the envelope check and silently hide a removed rejectPollutedRequestBody.
+      expect.assertions(2);
       const response = await request(app)
         .put(`/api/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
@@ -346,6 +350,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
         .expect(400);
 
       expect(response.body.success).toBe(false);
+      expect(response.body.message).toMatch(/forbidden key path.*constructor\.prototype/);
     });
 
     it('should sanitize JSON keys with special characters', async () => {
