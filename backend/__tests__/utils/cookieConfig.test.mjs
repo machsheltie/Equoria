@@ -26,6 +26,13 @@ describe('Cookie Configuration Module', () => {
     // Save original environment
     originalEnv = { ...process.env };
 
+    // Provide production-safe fake secrets so that tests which temporarily
+    // set NODE_ENV=production to verify cookie attributes don't trip the
+    // runtimeSecretPolicy check in config.mjs (which rejects test-only
+    // secret values in deployable environments).
+    process.env.JWT_SECRET = 'StrongCookieTestSecret1234567890AB';
+    process.env.JWT_REFRESH_SECRET = 'StrongCookieRefreshSecret123456789';
+
     // Clear module cache to allow fresh imports with different env variables
     jest.resetModules();
   });

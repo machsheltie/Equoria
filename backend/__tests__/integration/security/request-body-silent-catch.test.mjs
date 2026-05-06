@@ -867,7 +867,13 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
       // import, this exercises the gate's true production behaviour
       // without leaking state to other tests.
       const originalEnv = process.env.NODE_ENV;
+      const originalJwtSecret = process.env.JWT_SECRET;
+      const originalJwtRefreshSecret = process.env.JWT_REFRESH_SECRET;
       process.env.NODE_ENV = 'production';
+      // Provide production-safe fake secrets so runtimeSecretPolicy in config.mjs
+      // (loaded transitively via logger.mjs) doesn't reject the test-only secrets.
+      process.env.JWT_SECRET = 'StrongProdTestSecret1234567890ABCDE';
+      process.env.JWT_REFRESH_SECRET = 'StrongRefreshProdTestSecret123456789';
       try {
         let testOnlyExport;
         await jest.isolateModulesAsync(async () => {
@@ -877,6 +883,8 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
         expect(testOnlyExport).toBeUndefined();
       } finally {
         process.env.NODE_ENV = originalEnv;
+        process.env.JWT_SECRET = originalJwtSecret;
+        process.env.JWT_REFRESH_SECRET = originalJwtRefreshSecret;
       }
     });
 

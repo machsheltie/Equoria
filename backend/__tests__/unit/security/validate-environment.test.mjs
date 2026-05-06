@@ -45,6 +45,7 @@ describe('validateEnvironment', () => {
   it('exits when required envs are missing or invalid', () => {
     delete process.env.DATABASE_URL;
     delete process.env.JWT_SECRET;
+    delete process.env.JWT_REFRESH_SECRET;
     process.env.NODE_ENV = 'invalid';
     process.env.PORT = 'abc';
 
@@ -56,6 +57,7 @@ describe('validateEnvironment', () => {
   it('exits when production has weak JWT secrets and HTTP origins', () => {
     process.env.DATABASE_URL = 'postgresql://user:password@localhost/db';
     process.env.JWT_SECRET = 'your-super-secret';
+    process.env.JWT_REFRESH_SECRET = 'your-super-secret-refresh-value';
     process.env.NODE_ENV = 'production';
     process.env.PORT = '80';
     process.env.ALLOWED_ORIGINS = 'http://example.com';
@@ -68,6 +70,7 @@ describe('validateEnvironment', () => {
   it('passes for valid configuration without exiting', () => {
     process.env.DATABASE_URL = 'postgresql://user:StrongP@ss@localhost:5432/dbname';
     process.env.JWT_SECRET = 'StrongSecretWithNumbers1234567890ABCDE';
+    process.env.JWT_REFRESH_SECRET = 'RefreshSecretWithNumbers1234567890AB';
     process.env.NODE_ENV = 'test';
     process.env.PORT = '3000';
 
@@ -78,6 +81,7 @@ describe('validateEnvironment', () => {
   it('exits when DATABASE_URL is shorter than 20 chars', () => {
     process.env.DATABASE_URL = 'postgresql://x';
     process.env.JWT_SECRET = 'StrongSecretWithNumbers1234567890ABCDE';
+    process.env.JWT_REFRESH_SECRET = 'RefreshSecretWithNumbers1234567890AB';
     process.env.NODE_ENV = 'test';
     process.env.PORT = '3000';
 
@@ -88,6 +92,7 @@ describe('validateEnvironment', () => {
   it('exits when JWT_SECRET is shorter than 32 chars', () => {
     process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/db';
     process.env.JWT_SECRET = 'too-short';
+    process.env.JWT_REFRESH_SECRET = 'RefreshSecretWithNumbers1234567890AB';
     process.env.NODE_ENV = 'test';
     process.env.PORT = '3000';
 
@@ -98,6 +103,7 @@ describe('validateEnvironment', () => {
   it('accepts NODE_ENV=beta (per Story 21S-3)', () => {
     process.env.DATABASE_URL = 'postgresql://user:StrongP@ss@localhost:5432/dbname';
     process.env.JWT_SECRET = 'StrongSecretWithNumbers1234567890ABCDE';
+    process.env.JWT_REFRESH_SECRET = 'RefreshSecretWithNumbers1234567890AB';
     process.env.NODE_ENV = 'beta';
     process.env.PORT = '3000';
 
@@ -112,10 +118,48 @@ describe('validateEnvironment', () => {
   it('accepts NODE_ENV=beta-readiness (per master 21R)', () => {
     process.env.DATABASE_URL = 'postgresql://user:StrongP@ss@localhost:5432/dbname';
     process.env.JWT_SECRET = 'StrongSecretWithNumbers1234567890ABCDE';
+    process.env.JWT_REFRESH_SECRET = 'RefreshSecretWithNumbers1234567890AB';
     process.env.NODE_ENV = 'beta-readiness';
     process.env.PORT = '3000';
 
     validateEnvironment();
     expect(exitSpy).not.toHaveBeenCalled();
+  });
+
+  describe('Deployable secret policy', () => {
+    beforeEach(() => {
+      process.env.DATABASE_URL = 'postgresql://user:strongpass123@localhost:5432/equoria';
+      process.env.PORT = '3001';
+    });
+
+    it('should fail in beta when JWT_SECRET uses the committed test-only value', () => {
+      process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing-only-32chars';
+      process.env.JWT_REFRESH_SECRET = 'StrongRefreshSecret1234567890ABCD';
+      process.env.NODE_ENV = 'beta';
+
+      validateEnvironment();
+
+      expect(exitSpy).toHaveBeenCalledWith(1);
+    });
+
+    it('should fail in beta-readiness when JWT_REFRESH_SECRET uses the committed test-only value', () => {
+      process.env.JWT_SECRET = 'StrongSecret1234567890ABCDEFGHIJK';
+      process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret-for-testing-only-32chars';
+      process.env.NODE_ENV = 'beta-readiness';
+
+      validateEnvironment();
+
+      expect(exitSpy).toHaveBeenCalledWith(1);
+    });
+
+    it('should allow test-only secrets in NODE_ENV=test', () => {
+      process.env.JWT_SECRET = 'test-jwt-secret-key-for-testing-only-32chars';
+      process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret-for-testing-only-32chars';
+      process.env.NODE_ENV = 'test';
+
+      validateEnvironment();
+
+      expect(exitSpy).not.toHaveBeenCalled();
+    });
   });
 });

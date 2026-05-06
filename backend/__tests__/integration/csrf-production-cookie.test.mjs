@@ -72,6 +72,10 @@ describe('CSRF cookie-name contract', () => {
       env: {
         ...process.env,
         NODE_ENV: 'production',
+        // Override test-only secrets with production-safe fakes so
+        // runtimeSecretPolicy in config.mjs doesn't reject them.
+        JWT_SECRET: 'StrongProdTestSecret1234567890ABCDE',
+        JWT_REFRESH_SECRET: 'StrongRefreshProdTestSecret123456789',
         LOG_LEVEL: 'error',
       },
       encoding: 'utf-8',
