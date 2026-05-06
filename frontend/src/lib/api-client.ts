@@ -1556,7 +1556,7 @@ export const horseFeedApi = {
       `/api/v1/horses/${horseId}/unequip-feed`
     ),
   getEquippable: (horseId: number) =>
-    apiClient.get<EquippableResponse>(`/api/v1/horses/${horseId}/equippable`),
+    apiClient.get<EquippableResponse>(`/api/v1/horses/${horseId}/equippable?t=${Date.now()}`),
 };
 
 // ── Inventory types ───────────────────────────────────────────────────────────

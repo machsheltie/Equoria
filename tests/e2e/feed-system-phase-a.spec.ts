@@ -94,50 +94,25 @@ test.describe.serial('Feed System Phase A — full loop', () => {
     expect(apiBasic, 'basic feed missing from /equippable response').toBeDefined();
     expect(apiBasic.isCurrentlyEquippedToThisHorse).toBe(true);
 
-    // Step 3: drive the daily feed action through the page's request context
-    // (same cookie jar + CSRF round trip the UI uses). We deliberately do NOT
-    // navigate back to /horses/:id and click the action-feed button: under
-    // NODE_ENV=beta + the Vite-proxied dev server, a goto-to-horse-detail
-    // immediately after a same-tab equip click intermittently lands on the
-    // detail page with a stale `equippedFeedType` (the next page-level GET
-    // returns the pre-equip snapshot even though the API has the post-equip
-    // value — tracked as Equoria-28cj). The /api/v1/horses/:id/feed endpoint
-    // is the same surface the UI button calls, so this still exercises the
-    // end-to-end feed action against the real backend with real auth and CSRF.
-    // 21R-AUTH-7 removed /api/auth backward-compat mount; canonical path is /api/v1/auth
-    const csrfRes = await page.request.get('http://localhost:3000/api/v1/auth/csrf-token');
-    const csrfBody = await csrfRes.json();
-    const csrfToken: string = csrfBody?.data?.csrfToken ?? csrfBody?.csrfToken;
-    expect(csrfToken, 'csrf-token endpoint must return a token').toBeTruthy();
-    const feedRes = await page.request.post(
-      `http://localhost:3000/api/v1/horses/${testHorseId}/feed`,
-      {
-        headers: {
-          'X-CSRF-Token': csrfToken,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-    expect(feedRes.ok(), `feed action expected to succeed; got ${feedRes.status()}`).toBeTruthy();
-    const feedBody = await feedRes.json();
-    // Per A8 backend: feedHorse decrements one unit and returns remainingUnits.
-    expect(feedBody?.data?.remainingUnits ?? feedBody?.remainingUnits).toBe(99);
-    expect(feedBody?.data?.feed?.name ?? feedBody?.feed?.name ?? feedBody?.data?.feed?.id).toMatch(
-      /Basic Feed|basic/i
-    );
+    // Step 3: navigate to horse detail and use the Feed button — the real UI
+    // flow. Equoria-28cj fix: useEquipFeed.onSuccess now writes equippedFeedType
+    // directly into the React Query cache so the detail page sees the correct
+    // value on load without racing the Prisma commit window through Vite proxy.
+    await page.goto(`/horses/${testHorseId}`, { waitUntil: 'load' });
+    const feedButton = page.getByTestId('action-feed');
+    // Wait for horse data to hydrate and button to become enabled.
+    // equippedFeedType='basic' is in the RQ cache from the equip step above.
+    await expect(feedButton).toBeEnabled({ timeout: 15_000 });
+    await feedButton.click();
+    // Success toast: "Fed [name] with Basic Feed. 99 units left."
+    await expect(page.getByText(/99 units left/)).toBeVisible({ timeout: 10_000 });
 
-    // Step 4: a second feed attempt on the same UTC day must be rejected by
-    // the alreadyFedToday guard.
-    const secondFeed = await page.request.post(
-      `http://localhost:3000/api/v1/horses/${testHorseId}/feed`,
-      {
-        headers: {
-          'X-CSRF-Token': csrfToken,
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-    expect(secondFeed.ok(), 'second same-day feed must be rejected').toBeFalsy();
+    // Step 4: after feeding, the action-feed button must be disabled for the
+    // rest of the UTC day. useFeedHorse.onSuccess (Equoria-28cj follow-up)
+    // writes lastFedDate directly into ['horses', horseId] via setQueryData, so
+    // the isAlreadyFedToday check in HorseDetailPage disables the button
+    // immediately without a background-GET race.
+    await expect(feedButton).toBeDisabled({ timeout: 5_000 });
   });
 
   test('inventory page shows the purchased feed under the feed category', async ({ page }) => {
@@ -161,10 +136,10 @@ test.describe.serial('Feed System Phase A — full loop', () => {
     // to 15s for CI Redis-reconnect contention.
     const feedItem = page.locator('[data-testid^="inventory-item-"]').first();
     await expect(feedItem).toBeVisible({ timeout: 15_000 });
-    await expect(feedHint).toContainText(/Equipped via the horse[’']s Equip page\./);
+    await expect(feedItem).toContainText(/Equipped via the horse[‘’]s Equip page\./);
 
     // The card itself must show the Basic Feed name and a quantity of ×99.
-    const card = feedHint.locator(
+    const card = feedItem.locator(
       'xpath=ancestor::*[starts-with(@data-testid, "inventory-item-")][1]'
     );
     await expect(card).toContainText('Basic Feed');

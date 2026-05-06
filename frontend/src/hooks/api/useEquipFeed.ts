@@ -9,24 +9,29 @@
  * user equip a tier on N horses; the actual unit is decremented at feed-time.
  *
  * Optimistic update pattern (onMutate): the UI flips the instant the user
- * clicks, before the POST round-trip starts. On success the cache is left
- * as-is (already correct); on error we roll back to the snapshot captured
- * in onMutate so the optimistic flip reverts. This gives "click → equipped
- * that second" UX and survives the stale-GET window documented in
- * Equoria-28cj under NODE_ENV=beta + Vite dev proxy.
+ * clicks, before the POST round-trip starts; on error we roll back to the
+ * snapshot captured in onMutate. This gives "click → equipped that second" UX.
  *
- * Stale-GET fix (2026-05-04): onSettled previously invalidated
- * ['equippable', horseId] which triggered an immediate refetch. Under the
- * Vite dev proxy that GET could run before the prisma.horse.update commit
- * was visible to the next read, returning the PRE-mutation
- * equippedFeedType and overwriting the optimistic cache — the user saw the
- * UI flip to the new tier and then revert. We now mark the query stale
- * with refetchType: 'none' so a fresh GET happens on next remount/focus
- * (by which time the DB is consistent) without racing the commit.
+ * Equoria-28cj fix (2026-05-06): the root cause was that onSettled called
+ * invalidateQueries(['horses', horseId]) which triggered an immediate
+ * background GET. Under the Vite dev proxy that GET raced the Prisma commit
+ * visibility window and returned the PRE-equip equippedFeedType=null,
+ * overwriting the optimistic cache. HorseDetailPage then saw the stale
+ * (null) value within its 60s staleTime and never re-fetched.
+ * Fix: onSuccess writes equippedFeedType directly into ['horses', horseId]
+ * via setQueryData (value comes from the POST response — no DB round-trip
+ * needed). onSettled marks all affected queries stale with refetchType:'none'
+ * so the next remount/focus refetches without racing the commit.
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { horseFeedApi, ApiError, FeedItem, EquippableResponse } from '@/lib/api-client';
+import {
+  horseFeedApi,
+  ApiError,
+  FeedItem,
+  EquippableResponse,
+  HorseSummary,
+} from '@/lib/api-client';
 
 function patchEquippableFeed(
   prev: EquippableResponse | undefined,
@@ -61,18 +66,28 @@ export function useEquipFeed(horseId: number) {
       );
       return { previous };
     },
+    onSuccess: (data) => {
+      // Write equippedFeedType directly into the horse detail cache using
+      // the value from the POST response — no refetch needed, no race
+      // window between Prisma commit visibility and the next read.
+      // (Equoria-28cj root cause: invalidateQueries triggered an immediate
+      // background GET that raced the commit and overwrote the optimistic
+      // cache with the pre-equip null.)
+      queryClient.setQueryData<HorseSummary>(['horses', data.horseId], (prev) =>
+        prev ? { ...prev, equippedFeedType: data.equippedFeedType } : prev
+      );
+    },
     onError: (_err, _vars, context) => {
       if (context?.previous) {
         queryClient.setQueryData(['equippable', horseId], context.previous);
       }
     },
     onSettled: () => {
-      // Refresh general horse data (no races there).
-      queryClient.invalidateQueries({ queryKey: ['horses', horseId] });
-      queryClient.invalidateQueries({ queryKey: ['horses'] });
-      // Mark equippable stale but DO NOT refetch now — the immediate GET
-      // could race the DB commit and overwrite the optimistic cache. Next
-      // remount/focus picks up fresh data once the DB is consistent.
+      // Mark everything stale for next remount/focus — DO NOT trigger
+      // immediate refetches; they race the Prisma commit under the Vite
+      // dev proxy (Equoria-28cj).
+      queryClient.invalidateQueries({ queryKey: ['horses', horseId], refetchType: 'none' });
+      queryClient.invalidateQueries({ queryKey: ['horses'], refetchType: 'none' });
       queryClient.invalidateQueries({
         queryKey: ['equippable', horseId],
         refetchType: 'none',
@@ -99,15 +114,19 @@ export function useUnequipFeed(horseId: number) {
       );
       return { previous };
     },
+    onSuccess: (data) => {
+      queryClient.setQueryData<HorseSummary>(['horses', data.horseId], (prev) =>
+        prev ? { ...prev, equippedFeedType: null } : prev
+      );
+    },
     onError: (_err, _vars, context) => {
       if (context?.previous) {
         queryClient.setQueryData(['equippable', horseId], context.previous);
       }
     },
     onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['horses', horseId] });
-      queryClient.invalidateQueries({ queryKey: ['horses'] });
-      // Same stale-GET race as equipFeed — defer the equippable refetch.
+      queryClient.invalidateQueries({ queryKey: ['horses', horseId], refetchType: 'none' });
+      queryClient.invalidateQueries({ queryKey: ['horses'], refetchType: 'none' });
       queryClient.invalidateQueries({
         queryKey: ['equippable', horseId],
         refetchType: 'none',
