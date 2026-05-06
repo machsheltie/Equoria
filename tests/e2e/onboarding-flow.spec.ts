@@ -75,8 +75,12 @@ test.describe('Onboarding Flow', () => {
     // Step indicator shows "Step 1 of 3"
     await expect(page.getByText('Step 1 of 3')).toBeVisible({ timeout: 5000 });
 
-    // Welcome content mentions horse breeding
-    await expect(page.getByText(/horse breeding/i)).toBeVisible({ timeout: 5000 });
+    // Welcome content mentions horse breeding. Equoria-916z: 'horse breeding'
+    // appears twice on the page (h2 'Welcome to the world of horse breeding'
+    // and step subtitle 'Your horse breeding adventure begins'). Playwright
+    // strict mode on getByText fails on multiple matches; use .first() to
+    // assert at least one is visible.
+    await expect(page.getByText(/horse breeding/i).first()).toBeVisible({ timeout: 5000 });
 
     // "Continue" button is visible
     await expect(page.locator('[data-testid="onboarding-next"]')).toBeVisible({ timeout: 5000 });
@@ -140,8 +144,10 @@ test.describe('Onboarding Flow', () => {
     // Step indicator shows "Step 3 of 3"
     await expect(page.getByText('Step 3 of 3')).toBeVisible({ timeout: 5000 });
 
-    // "Your stable awaits" text should be visible
-    await expect(page.getByText('Your stable awaits')).toBeVisible({ timeout: 5000 });
+    // "Your stable awaits" text should be visible. Equoria-916z: this string
+    // appears twice (step subtitle + ReadyStep content); use .first() to
+    // bypass Playwright strict mode.
+    await expect(page.getByText('Your stable awaits').first()).toBeVisible({ timeout: 5000 });
 
     // CTA button shows "Let's Go!" on the last step
     await expect(page.locator('[data-testid="onboarding-next"]')).toContainText("Let's Go!", {
