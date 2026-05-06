@@ -3,6 +3,7 @@ import logger from '../utils/logger.mjs';
 import { applyEpigeneticTraitsAtBirth } from '../utils/atBirthTraits.mjs';
 import { validateConformationScores } from '../modules/horses/services/conformationService.mjs';
 import { validateGaitScores } from '../modules/horses/services/gaitService.mjs';
+import { HORSE_STAT_VALUES } from '../constants/schema.mjs';
 
 async function createHorse(horseData) {
   try {
@@ -404,21 +405,10 @@ async function updateHorseStat(horseId, statName, amount) {
     );
 
     // Validate stat name
-    const validStats = [
-      'speed',
-      'agility',
-      'endurance',
-      'strength',
-      'precision',
-      'balance',
-      'intelligence',
-      'focus',
-      'obedience',
-      'boldness',
-      'flexibility',
-    ];
-    if (!validStats.includes(statName)) {
-      throw new Error(`Invalid stat name: ${statName}. Valid stats: ${validStats.join(', ')}`);
+    if (!HORSE_STAT_VALUES.includes(statName)) {
+      throw new Error(
+        `Invalid stat name: ${statName}. Valid stats: ${HORSE_STAT_VALUES.join(', ')}`,
+      );
     }
 
     // Validate amount

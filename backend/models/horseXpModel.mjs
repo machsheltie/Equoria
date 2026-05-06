@@ -19,23 +19,13 @@
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 import { DatabaseError } from '../errors/index.mjs';
+import { HORSE_STAT_VALUES } from '../constants/schema.mjs';
 
 // Horse XP System Constants
 const XP_PER_STAT_POINT = 100;
 
 // Valid horse stats that can receive stat point allocations
-const VALID_HORSE_STATS = [
-  'speed',
-  'stamina',
-  'agility',
-  'balance',
-  'precision',
-  'intelligence',
-  'boldness',
-  'flexibility',
-  'obedience',
-  'focus',
-];
+const VALID_HORSE_STATS = HORSE_STAT_VALUES;
 
 /**
  * Calculate available stat points based on horse XP

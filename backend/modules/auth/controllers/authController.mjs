@@ -19,6 +19,7 @@ import emailService from '../../../utils/emailService.mjs';
 import { COOKIE_OPTIONS, CLEAR_COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
 import { issueCsrfToken } from '../../../middleware/csrf.mjs';
 import { evictPasswordChangedAtCache } from '../../../middleware/auth.mjs';
+import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
 
 // Starter kit seeded for every new user at registration (Story 15-2)
 const STARTER_KIT_INVENTORY = [
@@ -1056,20 +1057,7 @@ const BREED_STARTER_STATS = requireJson('../../../data/breedStarterStats.json');
  * Clamps each stat to [1, 100] and ensures total does not exceed 200.
  */
 function generateStarterStats(breedName) {
-  const statNames = [
-    'speed',
-    'stamina',
-    'agility',
-    'balance',
-    'precision',
-    'intelligence',
-    'boldness',
-    'flexibility',
-    'obedience',
-    'focus',
-    'endurance',
-    'strength',
-  ];
+  const statNames = HORSE_STAT_VALUES;
   const breedData = breedName ? BREED_STARTER_STATS[breedName] : null;
 
   const stats = {};

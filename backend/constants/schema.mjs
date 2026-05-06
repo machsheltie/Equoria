@@ -181,6 +181,7 @@ export const GROOM_INTERACTION_TYPE_VALUES = Object.values(GROOM_INTERACTION_TYP
  */
 export const HORSE_STATS = {
   SPEED: 'speed',
+  STAMINA: 'stamina',
   AGILITY: 'agility',
   ENDURANCE: 'endurance',
   STRENGTH: 'strength',

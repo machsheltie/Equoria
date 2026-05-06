@@ -6,6 +6,7 @@
  */
 
 import logger from '../utils/logger.mjs';
+import { HORSE_STAT_VALUES } from '../constants/schema.mjs';
 
 // Genetic calculation constants
 const GENETIC_CONSTANTS = {
@@ -126,19 +127,7 @@ function calculateTraitInheritanceProbabilities(stallion, mare) {
  */
 function calculateStatInheritanceProbabilities(stallion, mare) {
   // Extract stats from horse objects (they're stored as individual fields, not in a stats object)
-  const statNames = [
-    'speed',
-    'stamina',
-    'agility',
-    'balance',
-    'precision',
-    'intelligence',
-    'boldness',
-    'flexibility',
-    'obedience',
-    'focus',
-    'endurance',
-  ];
+  const statNames = HORSE_STAT_VALUES;
   const statProbabilities = {};
 
   statNames.forEach(stat => {
