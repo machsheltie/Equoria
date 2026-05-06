@@ -54,7 +54,19 @@ test.describe('Breeding Loop', () => {
     await session?.context.close();
   });
 
-  test('Should navigate to Breeding Center and see my mares', async ({ page }) => {
+  // Equoria-th9a: this test was written for the form-based breeding UI
+  // (select#damId / select#sireId, 'My Mares' tab) which no longer exists.
+  // The current frontend/src/pages/breeding/BreedingPairSelection.tsx is a
+  // card-based picker (HorseSelector component, no select elements, no
+  // tabs). Rewriting against the new UI requires non-trivial exploration
+  // (HorseSelector data-testids, CompatibilityPreview waits, modal flow).
+  // Quarantined with test.fixme per th9a AC option (b). Beta-readiness
+  // coverage of the breeding flow lives in tests/e2e/readiness/route-
+  // families.spec.ts which validates POST /api/v1/horses/foals returning
+  // a started-pregnancy response shape directly via the API. A follow-up
+  // bd issue (Equoria-th9a-rewrite) tracks rebuilding this UI-level spec
+  // against the cards-picker.
+  test.fixme('Should navigate to Breeding Center and see my mares', async ({ page }) => {
     console.log('Navigating to /breeding');
     await page.goto('/breeding', { waitUntil: 'domcontentloaded' });
 
@@ -83,7 +95,14 @@ test.describe('Breeding Loop', () => {
     await expect(damSelect).toContainText('E2E Mare', { timeout: 15000 });
   });
 
-  test('Should perform breeding and create a foal', async ({ page }) => {
+  // Equoria-th9a: same as above, plus this test asserts the legacy
+  // `POST /api/horses/foals` returning 201 with a foal entity. Per the
+  // B-prefix feed/breeding redesign that response shape changed to a
+  // started-pregnancy envelope (foal materializes asynchronously by the
+  // foaling job). Quarantined with test.fixme; rewrite tracked by
+  // Equoria-th9a-rewrite. Pregnancy-start API contract is covered by
+  // tests/e2e/readiness/route-families.spec.ts.
+  test.fixme('Should perform breeding and create a foal', async ({ page }) => {
     console.log('Navigating to /breeding for perform breeding');
     await page.goto('/breeding', { waitUntil: 'domcontentloaded' });
 
