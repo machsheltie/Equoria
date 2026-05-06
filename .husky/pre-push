@@ -81,6 +81,24 @@ if [ -z "$REPO_ROOT" ]; then
   echo "[pre-push] FATAL: not inside a git working tree" >&2
   exit 1
 fi
+
+# Equoria-ocy3 (B2): run doctrine-checks BEFORE the slow backend test suite.
+# Mirror what CI's doctrine-gate workflow runs on the merge commit, so a
+# --no-verify push still gets caught at the gate (CI catches what the local
+# hook missed). Doctrine checks are fast (~2-5 sec); failing fast here saves
+# the user from a 10-min test run that would land on a broken doctrine.
+# Auto-discovered checks live in scripts/doctrine-checks/check-*.{sh,mjs}.
+DOCTRINE_SCRIPT="$REPO_ROOT/scripts/doctrine-checks/run-all.sh"
+if [ -x "$DOCTRINE_SCRIPT" ] || [ -f "$DOCTRINE_SCRIPT" ]; then
+  printf '[pre-push] Running doctrine checks ...\n'
+  if ! bash "$DOCTRINE_SCRIPT"; then
+    echo "[pre-push] FATAL: doctrine-checks/run-all.sh failed." >&2
+    echo "[pre-push]   Fix the violations above (or add a doctrine-allow marker" >&2
+    echo "[pre-push]   if the violation is intentional and documented)." >&2
+    exit 1
+  fi
+fi
+
 cd "$REPO_ROOT/backend" || {
   echo "[pre-push] FATAL: 'backend' directory not found at $REPO_ROOT/backend" >&2
   exit 1

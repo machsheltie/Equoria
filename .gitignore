@@ -74,7 +74,10 @@ next-env.d.ts
 /.bmad
 /.claude
 /.codex
-/.husky
+# .husky/ is tracked (pre-commit, pre-push); only the husky-installed
+# helper subdirectory _/  is ignored. Equoria-ocy3 (B2): hooks are shared
+# across the team and core.hooksPath is set by scripts/setup-hooks.sh.
+/.husky/_
 /.serena
 /.venv
 /.zencoder
