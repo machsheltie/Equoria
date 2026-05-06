@@ -233,7 +233,10 @@ test.describe('AC5: Competition Entry', () => {
     await expect(page.locator('[data-testid="competition-detail-modal"]')).toBeVisible({
       timeout: 10000,
     });
-    await expect(page.locator('[data-testid="competition-name"]')).toBeVisible({ timeout: 5000 });
+    // Competition name appears in the modal's BaseModal title — assert by
+    // dialog role instead of a testid that lives only in EntryConfirmation
+    // Modal / PrizeNotificationModal (not CompetitionDetailModal).
+    await expect(page.getByRole('dialog').first()).toBeVisible({ timeout: 5000 });
   });
 
   test('competition entry flow: Enter Competition → horse selection → confirm', async ({

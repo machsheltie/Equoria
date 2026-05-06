@@ -139,7 +139,7 @@ const CompetitionBrowserPage = (): JSX.Element => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-screen" data-testid="competition-browser-page">
         <PageHero
           title="Competition Arena"
           subtitle="Loading available competitions…"
@@ -166,7 +166,7 @@ const CompetitionBrowserPage = (): JSX.Element => {
   // Error state
   if (error) {
     return (
-      <div className="min-h-screen">
+      <div className="min-h-screen" data-testid="competition-browser-page">
         <PageHero
           title="Competition Arena"
           subtitle="Something went wrong."
