@@ -42,27 +42,29 @@ test.describe('Celestial Night Feature Pages', () => {
     expect(hasFilters + hasFilterText).toBeGreaterThan(0);
   });
 
-  // ── Training Dashboard ─────────────────────────────────────────────────
+  // ── Training Grounds (formerly "Training Dashboard") ──────────────────
+  // Equoria-kn1w: page is /training → TrainingPage.tsx wraps with
+  // data-testid="training-page" and renders PageHero title="Training
+  // Grounds". The previous spec used the non-existent testid
+  // "training-dashboard-page" and asserted heading "Training Dashboard".
   test('Training Dashboard loads with heading', async ({ page }) => {
     await page.goto('/training', { waitUntil: 'domcontentloaded' });
 
-    // TrainingDashboardPage renders data-testid="training-dashboard-page"
-    await expect(page.locator('[data-testid="training-dashboard-page"]')).toBeVisible({
+    await expect(page.locator('[data-testid="training-page"]')).toBeVisible({
       timeout: 20000,
     });
-    // PageHero title is "Training Dashboard"
-    await expect(page.locator('h1')).toContainText('Training Dashboard', { timeout: 15000 });
+    await expect(page.locator('h1')).toContainText('Training Grounds', { timeout: 15000 });
   });
 
   test('Training Dashboard shows content area', async ({ page }) => {
     await page.goto('/training', { waitUntil: 'domcontentloaded' });
 
-    await expect(page.locator('[data-testid="training-dashboard-page"]')).toBeVisible({
+    await expect(page.locator('[data-testid="training-page"]')).toBeVisible({
       timeout: 20000,
     });
 
-    // Should show "Training Dashboard" text within the page
-    await expect(page.getByText('Training Dashboard')).toBeVisible({ timeout: 10000 });
+    // Should show "Training Grounds" text within the page
+    await expect(page.getByText('Training Grounds').first()).toBeVisible({ timeout: 10000 });
   });
 
   // ── Breeding Hall ────────────────────────────────────────────────────────

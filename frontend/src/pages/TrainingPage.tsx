@@ -45,7 +45,7 @@ const TrainingPage = () => {
   }
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen" data-testid="training-page">
       <PageHero
         title="Training Grounds"
         subtitle="Hone your horses' skills across 23 disciplines. Each session pushes them closer to their potential."
