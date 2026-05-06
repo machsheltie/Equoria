@@ -11,6 +11,7 @@ on:
       - 'frontend/src/hooks/useAuth.ts'
       - 'backend/__tests__/integration/auth-cookies.test.mjs'
       - 'frontend/src/**/__tests__/**'
+      - '.github/workflows/test-auth-cookies.yml'
   pull_request:
     branches: [master, develop]
 
@@ -245,8 +246,13 @@ jobs:
         run: |
           echo "=== Testing Register → Login → Profile → Logout ==="
 
+          # All auth endpoints canonical at /api/v1/auth/* since 21R-AUTH-7
+          # (Equoria-grt). Public endpoints (register, login, csrf-token) live
+          # on publicRouter; authenticated endpoints (profile, logout) live on
+          # authRouter and require the httpOnly accessToken cookie set at login.
+
           # Register — firstName/lastName are required by authRoutes.mjs:184-193
-          REGISTER_RESPONSE=$(curl -i -X POST http://localhost:3000/api/auth/register \
+          REGISTER_RESPONSE=$(curl -i -X POST http://localhost:3000/api/v1/auth/register \
             -H "Content-Type: application/json" \
             -d '{"username":"e2etest","email":"e2e@test.com","password":"Test123!","firstName":"E2E","lastName":"Test"}' \
             -c cookies.txt)
@@ -260,7 +266,7 @@ jobs:
           fi
 
           # Login
-          LOGIN_RESPONSE=$(curl -i -X POST http://localhost:3000/api/auth/login \
+          LOGIN_RESPONSE=$(curl -i -X POST http://localhost:3000/api/v1/auth/login \
             -H "Content-Type: application/json" \
             -d '{"email":"e2e@test.com","password":"Test123!"}' \
             -c cookies.txt)
@@ -272,8 +278,8 @@ jobs:
             exit 1
           fi
 
-          # Get Profile (using cookies)
-          PROFILE_RESPONSE=$(curl -s http://localhost:3000/api/auth/profile \
+          # Get Profile (using cookies) — authenticated endpoint
+          PROFILE_RESPONSE=$(curl -s http://localhost:3000/api/v1/auth/profile \
             -b cookies.txt)
 
           if echo "$PROFILE_RESPONSE" | grep -q "e2e@test.com"; then
@@ -288,7 +294,8 @@ jobs:
           # Equoria-uy73: this E2E test was added before CSRF tightening on
           # auth routes, which is why logout was failing on master since
           # 2026-04-23. Wired through the double-submit pattern now.
-          CSRF_RESPONSE=$(curl -s http://localhost:3000/auth/csrf-token \
+          # Path updated to /api/v1/auth/csrf-token after 21R-AUTH-7 (Equoria-grt).
+          CSRF_RESPONSE=$(curl -s http://localhost:3000/api/v1/auth/csrf-token \
             -b cookies.txt -c cookies.txt)
           CSRF_TOKEN=$(echo "$CSRF_RESPONSE" | grep -o '"csrfToken":"[^"]*"' | cut -d'"' -f4)
           if [ -z "$CSRF_TOKEN" ]; then
@@ -297,7 +304,7 @@ jobs:
             exit 1
           fi
 
-          LOGOUT_RESPONSE=$(curl -i -X POST http://localhost:3000/api/auth/logout \
+          LOGOUT_RESPONSE=$(curl -i -X POST http://localhost:3000/api/v1/auth/logout \
             -H "X-CSRF-Token: $CSRF_TOKEN" \
             -b cookies.txt)
 
