@@ -9,6 +9,14 @@ import { fetchCsrf } from './csrfHelper.mjs';
 
 const DEFAULT_ORIGIN = 'http://localhost:3000';
 
+// Per-module-instance ID tracking. Each Jest worker gets its own module cache,
+// so these sets accumulate only the IDs created by the current test file.
+// cleanupTestData() deletes exactly those IDs — no prefix-based sweeps that
+// could wipe parallel workers' in-flight data (Equoria-8wuc).
+const _createdHorseIds = new Set();
+const _createdUserIds = new Set();
+const _createdShowIds = new Set();
+
 /**
  * Add JWT auth header + Origin to a supertest request. Synchronous.
  *
@@ -153,6 +161,7 @@ export async function createTestUser(userData = {}) {
     }
 
     console.log('[createTestUser] Returning user and token...');
+    _createdUserIds.add(user.id);
     return { user, token };
   } catch (error) {
     console.error('[createTestUser] FATAL ERROR in createTestUser:', error);
@@ -232,15 +241,18 @@ export async function createTestHorse(horseData = {}) {
           lastName: 'User',
         },
       });
+      _createdUserIds.add(defaultData.userId);
     }
 
     defaultData.user = { connect: { id: defaultData.userId } };
     delete defaultData.userId;
   }
 
-  return await prisma.horse.create({
+  const horse = await prisma.horse.create({
     data: defaultData,
   });
+  _createdHorseIds.add(horse.id);
+  return horse;
 }
 
 /**
@@ -268,84 +280,43 @@ export async function createTestShow(showData = {}) {
     defaultData.name = `${showData.name}_${timestamp}_${randomSuffix}_${processId}`;
   }
 
-  return await prisma.show.create({
+  const show = await prisma.show.create({
     data: defaultData,
   });
+  _createdShowIds.add(show.id);
+  return show;
 }
 
 /**
- * Clean up test data
+ * Clean up test data created by this module instance's helper calls.
+ *
+ * Uses tracked IDs from createTestHorse/createTestUser/createTestShow instead
+ * of broad prefix-based sweeps. This prevents parallel Jest workers from
+ * deleting each other's in-flight fixtures (Equoria-8wuc).
+ *
+ * CompetitionResult rows cascade-delete when their horse is deleted
+ * (onDelete: Cascade in schema), so no explicit result cleanup is needed.
  */
 export async function cleanupTestData() {
   try {
-    // Delete in order to respect foreign key constraints
-    await prisma.competitionResult.deleteMany({
-      where: {
-        horse: {
-          name: {
-            in: ['CompetitionAPIHorse'],
-          },
-        },
-      },
-    });
+    const horseIds = [..._createdHorseIds];
+    const userIds = [..._createdUserIds];
+    const showIds = [..._createdShowIds];
 
-    await prisma.competitionResult.deleteMany({
-      where: {
-        horse: {
-          name: {
-            startsWith: 'TestHorse_',
-          },
-        },
-      },
-    });
+    if (horseIds.length > 0) {
+      await prisma.horse.deleteMany({ where: { id: { in: horseIds } } });
+      _createdHorseIds.clear();
+    }
 
-    await prisma.horse.deleteMany({
-      where: {
-        name: {
-          in: ['CompetitionAPIHorse'],
-        },
-      },
-    });
+    if (showIds.length > 0) {
+      await prisma.show.deleteMany({ where: { id: { in: showIds } } });
+      _createdShowIds.clear();
+    }
 
-    await prisma.horse.deleteMany({
-      where: {
-        name: {
-          startsWith: 'TestHorse_',
-        },
-      },
-    });
-
-    await prisma.show.deleteMany({
-      where: {
-        name: {
-          startsWith: 'CompetitionAPIShow_',
-        },
-      },
-    });
-
-    await prisma.show.deleteMany({
-      where: {
-        name: {
-          startsWith: 'TestShow_',
-        },
-      },
-    });
-
-    await prisma.user.deleteMany({
-      where: {
-        username: {
-          startsWith: 'competitionapi_',
-        },
-      },
-    });
-
-    await prisma.user.deleteMany({
-      where: {
-        username: {
-          startsWith: 'testuser_',
-        },
-      },
-    });
+    if (userIds.length > 0) {
+      await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+      _createdUserIds.clear();
+    }
   } catch (error) {
     console.warn('Cleanup error:', error.message);
   }

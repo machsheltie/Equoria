@@ -26,10 +26,10 @@ test('auth, email verification signal, onboarding persistence, and password rese
   // the backend actually verifies the account end-to-end.
   const verifyPage = await browser.newPage();
   const verifyGuard = installProductionParityNetworkGuard(verifyPage);
-  // Frontend uses GET /api/auth/verify-email?token=... (see api-client.ts verifyEmail).
+  // Frontend uses GET /api/v1/auth/verify-email?token=... (see api-client.ts verifyEmail).
   const verifyResponse = verifyPage.waitForResponse(
     (response) =>
-      response.url().includes('/api/auth/verify-email') && response.request().method() === 'GET'
+      response.url().includes('/api/v1/auth/verify-email') && response.request().method() === 'GET'
   );
   await verifyPage.goto(verificationEmail.preview, { waitUntil: 'domcontentloaded' });
   expect((await verifyResponse).status()).toBe(200);
@@ -42,7 +42,7 @@ test('auth, email verification signal, onboarding persistence, and password rese
   const replayGuard = installProductionParityNetworkGuard(replayPage);
   const replayToken = new URL(verificationEmail.preview).searchParams.get('token');
   const replayResponse = await replayPage.request.get(
-    `/api/auth/verify-email?token=${encodeURIComponent(replayToken ?? '')}`
+    `/api/v1/auth/verify-email?token=${encodeURIComponent(replayToken ?? '')}`
   );
   expect(
     [400, 401, 404, 410].includes(replayResponse.status()),
@@ -59,7 +59,8 @@ test('auth, email verification signal, onboarding persistence, and password rese
   await recoveryPage.fill('input[name="email"]', player.email);
   const forgotResponse = recoveryPage.waitForResponse(
     (response) =>
-      response.url().includes('/api/auth/forgot-password') && response.request().method() === 'POST'
+      response.url().includes('/api/v1/auth/forgot-password') &&
+      response.request().method() === 'POST'
   );
   await recoveryPage.getByRole('button', { name: /Send Reset Link/i }).click();
   expect((await forgotResponse).status()).toBe(200);
@@ -76,7 +77,8 @@ test('auth, email verification signal, onboarding persistence, and password rese
 
   const resetResponse = recoveryPage.waitForResponse(
     (response) =>
-      response.url().includes('/api/auth/reset-password') && response.request().method() === 'POST'
+      response.url().includes('/api/v1/auth/reset-password') &&
+      response.request().method() === 'POST'
   );
   await recoveryPage.getByRole('button', { name: /Reset Password/i }).click();
   expect((await resetResponse).status()).toBe(200);
@@ -91,7 +93,7 @@ test('auth, email verification signal, onboarding persistence, and password rese
   const resetTokenValue = new URL(resetEmail.preview).searchParams.get('token');
   const reusedResetPage = await browser.newPage();
   const reusedResetGuard = installProductionParityNetworkGuard(reusedResetPage);
-  const reuseResponse = await reusedResetPage.request.post('/api/auth/reset-password', {
+  const reuseResponse = await reusedResetPage.request.post('/api/v1/auth/reset-password', {
     data: { token: resetTokenValue, password: 'Password789!' },
     headers: { 'Content-Type': 'application/json' },
   });
@@ -105,7 +107,7 @@ test('auth, email verification signal, onboarding persistence, and password rese
   // Invalid reset token must be rejected.
   const invalidResetPage = await browser.newPage();
   const invalidResetGuard = installProductionParityNetworkGuard(invalidResetPage);
-  const invalidResponse = await invalidResetPage.request.post('/api/auth/reset-password', {
+  const invalidResponse = await invalidResetPage.request.post('/api/v1/auth/reset-password', {
     data: { token: 'invalid-token-that-does-not-exist', password: 'Password789!' },
     headers: { 'Content-Type': 'application/json' },
   });
@@ -120,7 +122,7 @@ test('auth, email verification signal, onboarding persistence, and password rese
   // token — the previous raw-fetch invocation returned 403 because POST
   // /api/auth/logout requires the X-CSRF-Token header (production
   // parity: no bypass headers in beta-readiness).
-  const logoutHttpResponse = await csrfRequest(recoveryPage, 'POST', '/api/auth/logout');
+  const logoutHttpResponse = await csrfRequest(recoveryPage, 'POST', '/api/v1/auth/logout');
   expect(logoutHttpResponse.status()).toBe(200);
 
   guard.assertClean();
