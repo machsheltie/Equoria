@@ -188,10 +188,17 @@ export async function equipItem(req, res) {
     const updatedTack = { ...currentTack, [item.category]: item.itemId };
     await prisma.horse.update({ where: { id: horseId }, data: { tack: updatedTack } });
 
-    // Update inventory record
-    const updatedInventory = inventory.map((i, idx) =>
-      idx === itemIndex ? { ...i, equippedToHorseId: horseId } : i,
-    );
+    // Update inventory record — set new item, clear any other same-category item
+    // that was pointing at the same horse (stale after the saddle/bridle swap).
+    const updatedInventory = inventory.map((i, idx) => {
+      if (idx === itemIndex) {
+        return { ...i, equippedToHorseId: horseId };
+      }
+      if (i.category === item.category && i.equippedToHorseId === horseId) {
+        return { ...i, equippedToHorseId: null };
+      }
+      return i;
+    });
 
     const currentSettings =
       typeof user.settings === 'object' && user.settings !== null ? user.settings : {};
