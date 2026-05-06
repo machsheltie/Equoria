@@ -64,22 +64,28 @@ export async function getNextActions(req, res) {
     // `foal` relation (named `FoalDevelopmentFoal` via foalId FK); it
     // does NOT have a `horse` relation. The previous query traversed
     // a non-existent `horse` relation and threw at runtime; the
-    // `.catch(() => [])` silently swallowed the error so the
+    // old `.catch(() => [])` silently swallowed the error so the
     // groom-foal action was never produced for any user.
     //
     // Output `horseId` is sourced from `foalId` because that is the
     // canonical FK to horses.id. The legacy `horseId` Int? field is
     // an unused redundant column that may be null even when foalId
     // is set; do not depend on it.
-    const activeFoals = await prisma.foalDevelopment
-      .findMany({
+    let activeFoals = [];
+    try {
+      activeFoals = await prisma.foalDevelopment.findMany({
         where: {
           foal: { userId },
           isActive: true,
         },
         select: { foalId: true, foal: { select: { name: true } } },
-      })
-      .catch(() => []); // Graceful if model not yet updated
+      });
+    } catch (foalErr) {
+      logger.warn('nextActionsController: foalDevelopment query failed — schema may be missing', {
+        userId,
+        error: foalErr.message,
+      });
+    }
 
     if (activeFoals.length > 0) {
       const foalDev = activeFoals[0];
