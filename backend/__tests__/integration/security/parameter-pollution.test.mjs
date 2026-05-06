@@ -153,6 +153,11 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
   describe('JSON Parameter Pollution', () => {
     it('should reject duplicate keys in JSON payload', async () => {
+      // Equoria-vvfv: pin to the SPECIFIC message verifyJsonBody emits so the
+      // test fails if Content-Type coercion ever bypasses the JSON middleware.
+      // A generic 400 (e.g., from validation) would pass the status check but
+      // not the message check below, proving the right gate fired.
+      expect.assertions(2);
       const maliciousPayload = '{"name":"ValidName","name":"HackedName"}';
 
       const response = await request(app)
@@ -165,6 +170,33 @@ describe('Parameter Pollution Attack Integration Tests', () => {
         .send(maliciousPayload)
         .expect(400);
       expect(response.body.success).toBe(false);
+      expect(response.body.message).toMatch(/duplicate json key/i);
+    });
+
+    it('control: duplicate-key payload without Content-Type header does NOT trigger duplicate-key rejection', async () => {
+      // Verifies the Content-Type gate: without application/json, express.json()
+      // does not parse the body, verifyJsonBody does not run, and we get a
+      // different outcome (schema validation failure, not duplicate-key error).
+      const maliciousPayload = '{"name":"ValidName","name":"HackedName"}';
+
+      const response = await request(app)
+        .put(`/api/horses/${testHorse.id}`)
+        .set('Authorization', `Bearer ${validToken}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        // No Content-Type: application/json header — body treated as opaque
+        .send(maliciousPayload);
+
+      // The request should NOT be rejected for duplicate-key — verifyJsonBody
+      // only runs when Content-Type is application/json.
+      if (response.body.message) {
+        expect(response.body.message).not.toMatch(/duplicate json key/i);
+      } else {
+        // No message field — body was not parsed as JSON, which also proves
+        // verifyJsonBody did not run.
+        expect(response.body.message).toBeUndefined();
+      }
     });
 
     /**
