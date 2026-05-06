@@ -210,9 +210,7 @@ describe('Depth-cap boundary (21R-SEC-3-REVIEW-2)', () => {
     });
 
     it(`rejects empty-leaf array at depth = MAX_DEPTH+1 (=${MAX_DEPTH + 1}) — sentinel for Equoria-21kz`, () => {
-      expect(() => verifyJsonBody(makeReq(), {}, buildEmptyArray(MAX_DEPTH + 1))).toThrow(
-        /nesting too deep/i,
-      );
+      expect(() => verifyJsonBody(makeReq(), {}, buildEmptyArray(MAX_DEPTH + 1))).toThrow(/nesting too deep/i);
     });
   });
 
