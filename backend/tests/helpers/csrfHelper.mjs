@@ -1,4 +1,4 @@
-/**
+﻿/**
  * CSRF test helper — exercises the real token acquisition flow.
  *
  * Tests that need to call state-changing endpoints (POST/PUT/PATCH/DELETE)
@@ -38,7 +38,7 @@ import supertest from 'supertest';
 export async function fetchCsrf(app, options = {}) {
   const { origin = 'http://localhost:3000', extraCookies } = options;
 
-  const res = await supertest(app).get('/auth/csrf-token').set('Origin', origin);
+  const res = await supertest(app).get('/api/v1/auth/csrf-token').set('Origin', origin);
 
   if (res.status !== 200 || !res.body?.csrfToken) {
     throw new Error(

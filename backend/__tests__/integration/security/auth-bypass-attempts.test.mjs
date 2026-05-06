@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 🔒 INTEGRATION TESTS: Authentication Bypass Attempts
  *
  * Tests for preventing authentication bypass attacks including:
@@ -76,7 +76,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
   describe('Direct Endpoint Access Without Authentication', () => {
     it('should reject GET /api/users/profile without token', async () => {
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
 
         .expect(401);
@@ -90,7 +90,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
 
     it('should reject PUT /api/users/profile without token', async () => {
       const response = await request(app)
-        .put('/api/auth/profile')
+        .put('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
 
         .send({ username: 'hacker' })
@@ -136,7 +136,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       const forgedToken = jwt.sign({ userId: testUser.id }, 'wrong-secret');
 
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${forgedToken}`)
         .expect(401);
@@ -156,7 +156,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       );
 
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${forgedToken}`)
         .expect(401);
@@ -177,7 +177,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       const modifiedToken = parts.join('.');
 
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${modifiedToken}`)
         .expect(401);
@@ -191,7 +191,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       const noneToken = `${header}.${payload}.`;
 
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${noneToken}`)
         .expect(401);
@@ -201,7 +201,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
 
     it('should reject completely malformed token', async () => {
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', 'Bearer not-a-valid-token')
         .expect(401);
@@ -218,7 +218,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
 
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${expiredToken}`)
         .expect(401);
@@ -242,7 +242,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       );
 
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${oldToken}`)
         .expect(401);
@@ -266,7 +266,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       );
 
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${sevenDayToken}`)
         .expect(200);
@@ -279,7 +279,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
     it('should allow same token for multiple valid requests (expected behavior)', async () => {
       // First request
       const response1 = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(200);
@@ -288,7 +288,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
 
       // Second request with same token (should work - tokens are stateless)
       const response2 = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(200);
@@ -301,7 +301,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       const headerToken = createMockToken(99999); // Different user
 
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', `accessToken=${cookieToken}`)
         .set('Authorization', `Bearer ${headerToken}`)
@@ -316,7 +316,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
   describe('Authorization Header Manipulation', () => {
     it('should reject token without Bearer prefix', async () => {
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', validToken) // Missing "Bearer " prefix
         .expect(401);
@@ -326,7 +326,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
 
     it('should reject token with wrong scheme', async () => {
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Basic ${validToken}`)
         .expect(401);
@@ -336,7 +336,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
 
     it('should reject empty Authorization header', async () => {
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', '')
 
@@ -347,7 +347,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
 
     it('should reject Authorization header with only Bearer', async () => {
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', 'Bearer ')
         .expect(401);
@@ -357,7 +357,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
 
     it('should reject multiple Authorization headers', async () => {
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${validToken}`)
         .set('Authorization', `Bearer ${validToken}`);
@@ -376,7 +376,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
     it('should reject stolen cookie with different IP (if IP binding enabled)', async () => {
       // First request from IP 127.0.0.1
       const response1 = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', `accessToken=${validToken}`)
         .set('X-Forwarded-For', '127.0.0.1')
@@ -388,7 +388,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       // because users may have dynamic IPs. This test documents
       // expected behavior (token should work from any IP).
       const response2 = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', `accessToken=${validToken}`)
         .set('X-Forwarded-For', '192.168.1.100')
@@ -401,7 +401,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       // NOTE: This is enforced at cookie creation time, not validation time
       // Test verifies token validation still works regardless of how cookie was set
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', `accessToken=${validToken}`)
         .expect(200);
@@ -442,7 +442,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
 
     it('should allow user to access their own resources only', async () => {
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(200);
@@ -461,7 +461,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
 
       // Both tokens should work (stateless JWT behavior)
       const response1 = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token1}`)
         .expect(200);
@@ -469,7 +469,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       expectSuccessFlag(response1, true);
 
       const response2 = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token2}`)
         .expect(200);
@@ -484,7 +484,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxXHUwMDAwIiwiaWF0IjoxNjE2MjM5MDIyfQ.invalid';
 
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${maliciousToken}`)
         .expect(401);
@@ -496,7 +496,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       const longToken = 'a'.repeat(10000);
 
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${longToken}`)
         .expect(401);
@@ -508,7 +508,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       const sqlInjectionToken = jwt.sign({ userId: "1' OR '1'='1" }, JWT_SECRET);
 
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${sqlInjectionToken}`)
         .expect(res => expect([401, 403, 404]).toContain(res.status));
@@ -524,7 +524,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       );
 
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${invalidToken}`)
         .expect(401);

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 🧪 SYSTEM INTEGRATION TEST: Authentication System Cross-Platform Validation
  *
  * This test validates authentication system integration across all protected endpoints
@@ -65,7 +65,7 @@ const createTestApp = () => {
 
   // Auth routes
   app.post(
-    '/api/auth/register',
+    '/api/v1/auth/register',
     [
       body('email').isEmail().normalizeEmail(),
       body('username').isLength({ min: 3, max: 30 }),
@@ -78,15 +78,15 @@ const createTestApp = () => {
   );
 
   app.post(
-    '/api/auth/login',
+    '/api/v1/auth/login',
     [body('email').isEmail().normalizeEmail(), body('password').notEmpty(), handleValidationErrors],
     login,
   );
 
-  app.post('/api/auth/refresh', [body('refreshToken').notEmpty(), handleValidationErrors], refreshToken);
+  app.post('/api/v1/auth/refresh', [body('refreshToken').notEmpty(), handleValidationErrors], refreshToken);
 
   // Protected endpoints across different systems
-  app.get('/api/auth/profile', authenticateToken, (req, res) => {
+  app.get('/api/v1/auth/profile', authenticateToken, (req, res) => {
     res.json({ success: true, data: { userId: req.user.id, system: 'user-management' } });
   });
 
@@ -150,7 +150,7 @@ describe('🔐 Authentication System Integration Tests', () => {
     };
 
     const registerResponse = await request(app)
-      .post('/api/auth/register')
+      .post('/api/v1/auth/register')
       .set('Origin', 'http://localhost:3000')
       .send(userData);
 
@@ -178,7 +178,7 @@ describe('🔐 Authentication System Integration Tests', () => {
   describe('🌐 Cross-System Authentication Validation', () => {
     test('should authenticate successfully across all protected endpoints', async () => {
       const protectedEndpoints = [
-        '/api/auth/profile',
+        '/api/v1/auth/profile',
         '/api/horses',
         '/api/competition/my-entries',
         '/api/training/status',
@@ -203,7 +203,7 @@ describe('🔐 Authentication System Integration Tests', () => {
 
     test('should reject access to all protected endpoints without token', async () => {
       const protectedEndpoints = [
-        '/api/auth/profile',
+        '/api/v1/auth/profile',
         '/api/horses',
         '/api/competition/my-entries',
         '/api/training/status',
@@ -224,7 +224,7 @@ describe('🔐 Authentication System Integration Tests', () => {
     test('should reject access with invalid token across all systems', async () => {
       const invalidToken = 'invalid.jwt.token';
       const protectedEndpoints = [
-        '/api/auth/profile',
+        '/api/v1/auth/profile',
         '/api/horses',
         '/api/competition/my-entries',
         '/api/training/status',
@@ -251,7 +251,7 @@ describe('🔐 Authentication System Integration Tests', () => {
 
       // Refresh the token
       const refreshResponse = await request(app)
-        .post('/api/auth/refresh')
+        .post('/api/v1/auth/refresh')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', [`refreshToken=${refreshTokenValue}`])
         .send({ refreshToken: refreshTokenValue }); // Keep for backward compatibility if needed by middleware
@@ -271,7 +271,7 @@ describe('🔐 Authentication System Integration Tests', () => {
       expect(newToken).toBeDefined();
 
       // Test new token works across multiple systems
-      const testEndpoints = ['/api/auth/profile', '/api/horses', '/api/dashboard/overview'];
+      const testEndpoints = ['/api/v1/auth/profile', '/api/horses', '/api/dashboard/overview'];
 
       for (const endpoint of testEndpoints) {
         const response = await request(app)
@@ -289,7 +289,7 @@ describe('🔐 Authentication System Integration Tests', () => {
 
   describe('🛡️ Security Validation', () => {
     test('should maintain consistent error responses across systems', async () => {
-      const endpoints = ['/api/auth/profile', '/api/horses', '/api/competition/my-entries'];
+      const endpoints = ['/api/v1/auth/profile', '/api/horses', '/api/competition/my-entries'];
 
       for (const endpoint of endpoints) {
         const response = await request(app).get(endpoint).set('Origin', 'http://localhost:3000');
@@ -305,7 +305,7 @@ describe('🔐 Authentication System Integration Tests', () => {
 
       for (const header of malformedHeaders) {
         const response = await request(app)
-          .get('/api/auth/profile')
+          .get('/api/v1/auth/profile')
           .set('Origin', 'http://localhost:3000')
 
           .set('Authorization', header);

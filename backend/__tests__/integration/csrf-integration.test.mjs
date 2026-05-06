@@ -1,4 +1,4 @@
-/**
+﻿/**
  * CSRF protection — real-flow integration tests.
  *
  * These tests exercise the live CSRF enforcement path end-to-end against
@@ -7,14 +7,14 @@
  * assertion that a mutation succeeds or fails is a statement about the
  * production contract:
  *
- *   1. GET /auth/csrf-token issues a token (body) and a matching cookie.
+ *   1. GET /api/v1/auth/csrf-token issues a token (body) and a matching cookie.
  *   2. A PUT/POST/PATCH/DELETE on an authenticated route succeeds only
  *      when both the cookie and the `X-CSRF-Token` header are presented
  *      AND the HMAC validates.
  *   3. Missing cookie, missing header, or mismatched token → 403
  *      with code INVALID_CSRF_TOKEN.
  *
- * The authenticated mutation we drive is `PUT /api/auth/profile`, which
+ * The authenticated mutation we drive is `PUT /api/v1/auth/profile`, which
  * moved to `authRouter` in Workstream 2. If that route ever drifts back
  * onto `publicRouter`, `authenticated auth mutation > succeeds with real
  * CSRF` would start passing WITHOUT a CSRF token — a separate test
@@ -56,7 +56,7 @@ describe('CSRF protection — real browser flow', () => {
     const email = `${TEST_EMAIL_PREFIX}${unique}@test.com`;
     const username = `${TEST_EMAIL_PREFIX}${unique}`;
 
-    const res = await request(app).post('/auth/register').set('Origin', ORIGIN).send({
+    const res = await request(app).post('/api/v1/auth/register').set('Origin', ORIGIN).send({
       email,
       username,
       password: 'TestPass123!',
@@ -87,8 +87,8 @@ describe('CSRF protection — real browser flow', () => {
   });
 
   describe('token acquisition', () => {
-    it('GET /auth/csrf-token returns a token and Set-Cookie', async () => {
-      const res = await request(app).get('/auth/csrf-token').set('Origin', ORIGIN);
+    it('GET /api/v1/auth/csrf-token returns a token and Set-Cookie', async () => {
+      const res = await request(app).get('/api/v1/auth/csrf-token').set('Origin', ORIGIN);
 
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
@@ -104,8 +104,8 @@ describe('CSRF protection — real browser flow', () => {
     });
 
     it('consecutive token fetches produce distinct tokens', async () => {
-      const a = await request(app).get('/auth/csrf-token').set('Origin', ORIGIN);
-      const b = await request(app).get('/auth/csrf-token').set('Origin', ORIGIN);
+      const a = await request(app).get('/api/v1/auth/csrf-token').set('Origin', ORIGIN);
+      const b = await request(app).get('/api/v1/auth/csrf-token').set('Origin', ORIGIN);
       expect(a.body.csrfToken).not.toBe(b.body.csrfToken);
     });
   });
@@ -120,7 +120,7 @@ describe('CSRF protection — real browser flow', () => {
       // We exercise `notifications` because it writes real state and proves
       // the mutation reached the handler.
       const res = await request(app)
-        .put('/api/auth/profile')
+        .put('/api/v1/auth/profile')
         .set('Origin', ORIGIN)
         .set('Cookie', csrf.cookieHeader)
         .set('X-CSRF-Token', csrf.csrfToken)
@@ -137,7 +137,7 @@ describe('CSRF protection — real browser flow', () => {
       const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: accessCookie });
 
       const res = await request(app)
-        .put('/api/auth/profile')
+        .put('/api/v1/auth/profile')
         .set('Origin', ORIGIN)
         .set('Cookie', csrf.cookieHeader)
         // NOTE: no X-CSRF-Token header
@@ -151,7 +151,7 @@ describe('CSRF protection — real browser flow', () => {
       const csrf = await fetchCsrf(app, { origin: ORIGIN });
 
       const res = await request(app)
-        .put('/api/auth/profile')
+        .put('/api/v1/auth/profile')
         .set('Origin', ORIGIN)
         // Only accessToken cookie, NOT the csrf cookie:
         .set('Cookie', [accessCookie])
@@ -168,7 +168,7 @@ describe('CSRF protection — real browser flow', () => {
 
       // Cookie from fetch A, token from fetch B — HMAC mismatch.
       const res = await request(app)
-        .put('/api/auth/profile')
+        .put('/api/v1/auth/profile')
         .set('Origin', ORIGIN)
         .set('Cookie', csrfA.cookieHeader)
         .set('X-CSRF-Token', csrfB.csrfToken)
@@ -180,8 +180,8 @@ describe('CSRF protection — real browser flow', () => {
   });
 
   describe('safe methods bypass CSRF', () => {
-    it('GET /api/auth/profile returns 200 without a CSRF token', async () => {
-      const res = await request(app).get('/api/auth/profile').set('Origin', ORIGIN).set('Cookie', accessCookie);
+    it('GET /api/v1/auth/profile returns 200 without a CSRF token', async () => {
+      const res = await request(app).get('/api/v1/auth/profile').set('Origin', ORIGIN).set('Cookie', accessCookie);
 
       expect(res.status).toBe(200);
     });
@@ -201,7 +201,7 @@ describe('CSRF protection — real browser flow', () => {
       const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: accessCookie });
 
       const res = await request(app)
-        .put('/api/auth/profile')
+        .put('/api/v1/auth/profile')
         // NOTE: no Origin header — but Sec-Fetch-Mode marks this as a
         // browser request, so the no-origin gate must reject it.
         .set('Sec-Fetch-Mode', 'cors')
@@ -226,7 +226,7 @@ describe('CSRF protection — real browser flow', () => {
       const csrf = await fetchCsrf(app, { origin: ORIGIN, extraCookies: accessCookie });
 
       const res = await request(app)
-        .put('/api/auth/profile')
+        .put('/api/v1/auth/profile')
         // No Origin, no Sec-Fetch-Mode.
         .set('Cookie', csrf.cookieHeader)
         .set('X-CSRF-Token', csrf.csrfToken)
@@ -243,8 +243,8 @@ describe('CSRF protection — real browser flow', () => {
   });
 
   describe('public endpoints — no CSRF required', () => {
-    it('POST /auth/login does not require CSRF', async () => {
-      const res = await request(app).post('/auth/login').set('Origin', ORIGIN).send({
+    it('POST /api/v1/auth/login does not require CSRF', async () => {
+      const res = await request(app).post('/api/v1/auth/login').set('Origin', ORIGIN).send({
         email: testUser.email,
         password: 'TestPass123!',
       });
@@ -259,7 +259,7 @@ describe('CSRF protection — real browser flow', () => {
 // token so silent access-token refreshes do not orphan the CSRF token.
 // This block intentionally lives OUTSIDE the parent describe so that the
 // shared beforeEach (which registers a user) does not gate this assertion —
-// the contract under test is the public /auth/csrf-token endpoint only.
+// the contract under test is the public /api/v1/auth/csrf-token endpoint only.
 describe('CSRF cookie lifetime — decoupled from access token (21R-AUTH-2)', () => {
   it('issues CSRF cookie with 24h Max-Age, longer than the 15-min access token', async () => {
     // Express converts cookie maxAge (ms) into the Set-Cookie Max-Age
@@ -267,7 +267,7 @@ describe('CSRF cookie lifetime — decoupled from access token (21R-AUTH-2)', ()
     const ACCESS_TOKEN_MAX_AGE_SECS = 15 * 60; // 900s
     const CSRF_COOKIE_MAX_AGE_SECS = 24 * 60 * 60; // 86400s
 
-    const res = await request(app).get('/auth/csrf-token').set('Origin', ORIGIN);
+    const res = await request(app).get('/api/v1/auth/csrf-token').set('Origin', ORIGIN);
     expect(res.status).toBe(200);
 
     const setCookies = res.headers['set-cookie'] || [];

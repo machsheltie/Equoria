@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Advanced Breeding Genetics API Integration Tests
  *
  * Tests for API endpoints that integrate enhanced genetic probability calculations,
@@ -490,7 +490,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
     test('Genetic endpoints should handle ownership validation', async () => {
       // Create another user
       const otherUserResponse = await request(app)
-        .post('/api/auth/register')
+        .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
@@ -503,7 +503,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
         });
 
       const otherLoginResponse = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)

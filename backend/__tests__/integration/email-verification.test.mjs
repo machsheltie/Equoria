@@ -111,7 +111,10 @@ describe('Email Verification System - Integration Tests', () => {
         lastName: 'User',
       };
 
-      const response = await request(app).post('/auth/register').set('Origin', 'http://localhost:3000').send(newUser);
+      const response = await request(app)
+        .post('/api/v1/auth/register')
+        .set('Origin', 'http://localhost:3000')
+        .send(newUser);
 
       expect(response.status).toBe(201);
       expect(response.body.data.emailVerificationSent).toBe(true);
@@ -136,7 +139,10 @@ describe('Email Verification System - Integration Tests', () => {
         lastName: 'User',
       };
 
-      const response = await request(app).post('/auth/register').set('Origin', 'http://localhost:3000').send(newUser);
+      const response = await request(app)
+        .post('/api/v1/auth/register')
+        .set('Origin', 'http://localhost:3000')
+        .send(newUser);
 
       expect(response.status).toBe(201);
       expect(response.body.data.user).toHaveProperty('emailVerified');
@@ -155,7 +161,10 @@ describe('Email Verification System - Integration Tests', () => {
         lastName: 'User',
       };
 
-      const response = await request(app).post('/auth/register').set('Origin', 'http://localhost:3000').send(newUser);
+      const response = await request(app)
+        .post('/api/v1/auth/register')
+        .set('Origin', 'http://localhost:3000')
+        .send(newUser);
 
       expect(response.status).toBe(201);
       expect(response.body.data.emailVerificationSent).toBe(true);
@@ -178,7 +187,7 @@ describe('Email Verification System - Integration Tests', () => {
       const rawToken = await seedTestVerificationToken();
 
       const response = await request(app)
-        .get(`/auth/verify-email?token=${rawToken}`)
+        .get(`/api/v1/auth/verify-email?token=${rawToken}`)
         .set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(200);
@@ -191,7 +200,7 @@ describe('Email Verification System - Integration Tests', () => {
     it('should_update_user_email_verified_status', async () => {
       const rawToken = await seedTestVerificationToken();
 
-      await request(app).get(`/auth/verify-email?token=${rawToken}`).set('Origin', 'http://localhost:3000');
+      await request(app).get(`/api/v1/auth/verify-email?token=${rawToken}`).set('Origin', 'http://localhost:3000');
 
       const user = await prisma.user.findUnique({
         where: { id: testUser.id },
@@ -205,7 +214,7 @@ describe('Email Verification System - Integration Tests', () => {
     it('should_mark_token_as_used', async () => {
       const rawToken = await seedTestVerificationToken();
 
-      await request(app).get(`/auth/verify-email?token=${rawToken}`).set('Origin', 'http://localhost:3000');
+      await request(app).get(`/api/v1/auth/verify-email?token=${rawToken}`).set('Origin', 'http://localhost:3000');
 
       const tokenRecord = await prisma.emailVerificationToken.findUnique({
         where: { tokenHash: hashVerificationToken(rawToken) },
@@ -216,7 +225,7 @@ describe('Email Verification System - Integration Tests', () => {
     });
 
     it('should_reject_missing_token', async () => {
-      const response = await request(app).get('/auth/verify-email').set('Origin', 'http://localhost:3000');
+      const response = await request(app).get('/api/v1/auth/verify-email').set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(400);
       expect(response.body.message).toContain('Verification token is required');
@@ -224,7 +233,7 @@ describe('Email Verification System - Integration Tests', () => {
 
     it('should_reject_invalid_token', async () => {
       const response = await request(app)
-        .get('/auth/verify-email?token=invalid_token_here')
+        .get('/api/v1/auth/verify-email?token=invalid_token_here')
         .set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(400);
@@ -237,7 +246,7 @@ describe('Email Verification System - Integration Tests', () => {
       });
 
       const response = await request(app)
-        .get(`/auth/verify-email?token=${rawToken}`)
+        .get(`/api/v1/auth/verify-email?token=${rawToken}`)
         .set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(400);
@@ -248,11 +257,11 @@ describe('Email Verification System - Integration Tests', () => {
       const rawToken = await seedTestVerificationToken();
 
       // Use token first time
-      await request(app).get(`/auth/verify-email?token=${rawToken}`).set('Origin', 'http://localhost:3000');
+      await request(app).get(`/api/v1/auth/verify-email?token=${rawToken}`).set('Origin', 'http://localhost:3000');
 
       // Try second time
       const response = await request(app)
-        .get(`/auth/verify-email?token=${rawToken}`)
+        .get(`/api/v1/auth/verify-email?token=${rawToken}`)
         .set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(400);
@@ -264,7 +273,7 @@ describe('Email Verification System - Integration Tests', () => {
 
       // No authentication header provided
       const response = await request(app)
-        .get(`/auth/verify-email?token=${rawToken}`)
+        .get(`/api/v1/auth/verify-email?token=${rawToken}`)
         .set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(200);
@@ -275,7 +284,7 @@ describe('Email Verification System - Integration Tests', () => {
   describe('POST /auth/resend-verification', () => {
     it('should_create_new_verification_token', async () => {
       const response = await request(app)
-        .post('/api/auth/resend-verification')
+        .post('/api/v1/auth/resend-verification')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000')
@@ -296,7 +305,7 @@ describe('Email Verification System - Integration Tests', () => {
 
     it('should_require_authentication', async () => {
       const response = await request(app)
-        .post('/api/auth/resend-verification')
+        .post('/api/v1/auth/resend-verification')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000');
@@ -314,7 +323,7 @@ describe('Email Verification System - Integration Tests', () => {
       });
 
       const response = await request(app)
-        .post('/api/auth/resend-verification')
+        .post('/api/v1/auth/resend-verification')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000')
@@ -327,7 +336,7 @@ describe('Email Verification System - Integration Tests', () => {
     it('should_enforce_rate_limiting', async () => {
       // First resend
       await request(app)
-        .post('/api/auth/resend-verification')
+        .post('/api/v1/auth/resend-verification')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000')
@@ -335,7 +344,7 @@ describe('Email Verification System - Integration Tests', () => {
 
       // Immediate second resend should fail
       const response = await request(app)
-        .post('/api/auth/resend-verification')
+        .post('/api/v1/auth/resend-verification')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000')
@@ -352,7 +361,7 @@ describe('Email Verification System - Integration Tests', () => {
       });
 
       await request(app)
-        .post('/api/auth/resend-verification')
+        .post('/api/v1/auth/resend-verification')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000')
@@ -373,7 +382,7 @@ describe('Email Verification System - Integration Tests', () => {
   describe('GET /auth/verification-status', () => {
     it('should_return_unverified_status_for_new_user', async () => {
       const response = await request(app)
-        .get('/api/auth/verification-status')
+        .get('/api/v1/auth/verification-status')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -395,7 +404,7 @@ describe('Email Verification System - Integration Tests', () => {
       });
 
       const response = await request(app)
-        .get('/api/auth/verification-status')
+        .get('/api/v1/auth/verification-status')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -405,13 +414,15 @@ describe('Email Verification System - Integration Tests', () => {
     });
 
     it('should_require_authentication', async () => {
-      const response = await request(app).get('/api/auth/verification-status').set('Origin', 'http://localhost:3000');
+      const response = await request(app)
+        .get('/api/v1/auth/verification-status')
+        .set('Origin', 'http://localhost:3000');
       expect(response.status).toBe(401);
     });
 
     it('should_return_user_email_address', async () => {
       const response = await request(app)
-        .get('/api/auth/verification-status')
+        .get('/api/v1/auth/verification-status')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -479,7 +490,7 @@ describe('Email Verification System - Integration Tests', () => {
 
       // Step 1: Register
       const registerResponse = await request(app)
-        .post('/auth/register')
+        .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .send(newUser);
 
@@ -494,7 +505,7 @@ describe('Email Verification System - Integration Tests', () => {
 
       // Step 3: Verify email
       const verifyResponse = await request(app)
-        .get(`/auth/verify-email?token=${rawToken}`)
+        .get(`/api/v1/auth/verify-email?token=${rawToken}`)
         .set('Origin', 'http://localhost:3000');
 
       expect(verifyResponse.status).toBe(200);
@@ -512,7 +523,7 @@ describe('Email Verification System - Integration Tests', () => {
     it('should_handle_resend_and_verify_workflow', async () => {
       // Step 1: Check status (unverified)
       const statusResponse1 = await request(app)
-        .get('/api/auth/verification-status')
+        .get('/api/v1/auth/verification-status')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -520,7 +531,7 @@ describe('Email Verification System - Integration Tests', () => {
 
       // Step 2: Resend verification
       const resendResponse = await request(app)
-        .post('/api/auth/resend-verification')
+        .post('/api/v1/auth/resend-verification')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000')
@@ -535,14 +546,14 @@ describe('Email Verification System - Integration Tests', () => {
 
       // Step 5: Verify email
       const verifyResponse = await request(app)
-        .get(`/auth/verify-email?token=${rawToken}`)
+        .get(`/api/v1/auth/verify-email?token=${rawToken}`)
         .set('Origin', 'http://localhost:3000');
 
       expect(verifyResponse.status).toBe(200);
 
       // Step 5: Check status (verified)
       const statusResponse2 = await request(app)
-        .get('/api/auth/verification-status')
+        .get('/api/v1/auth/verification-status')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authToken}`);
 
@@ -554,20 +565,20 @@ describe('Email Verification System - Integration Tests', () => {
 
       // First verification
       const response1 = await request(app)
-        .get(`/auth/verify-email?token=${rawToken}`)
+        .get(`/api/v1/auth/verify-email?token=${rawToken}`)
         .set('Origin', 'http://localhost:3000');
       expect(response1.status).toBe(200);
 
       // Second verification attempt
       const response2 = await request(app)
-        .get(`/auth/verify-email?token=${rawToken}`)
+        .get(`/api/v1/auth/verify-email?token=${rawToken}`)
         .set('Origin', 'http://localhost:3000');
       expect(response2.status).toBe(400);
       expect(response2.body.message).toContain('already been used');
 
       // Third verification attempt
       const response3 = await request(app)
-        .get(`/auth/verify-email?token=${rawToken}`)
+        .get(`/api/v1/auth/verify-email?token=${rawToken}`)
         .set('Origin', 'http://localhost:3000');
       expect(response3.status).toBe(400);
     });
@@ -579,8 +590,8 @@ describe('Email Verification System - Integration Tests', () => {
 
       // Send two concurrent verification requests
       const [response1, response2] = await Promise.all([
-        request(app).get(`/auth/verify-email?token=${rawToken}`).set('Origin', 'http://localhost:3000'),
-        request(app).get(`/auth/verify-email?token=${rawToken}`).set('Origin', 'http://localhost:3000'),
+        request(app).get(`/api/v1/auth/verify-email?token=${rawToken}`).set('Origin', 'http://localhost:3000'),
+        request(app).get(`/api/v1/auth/verify-email?token=${rawToken}`).set('Origin', 'http://localhost:3000'),
       ]);
 
       // One should succeed, one should fail
@@ -594,7 +605,7 @@ describe('Email Verification System - Integration Tests', () => {
 
     it('should_sanitize_error_messages_to_prevent_enumeration', async () => {
       const response = await request(app)
-        .get('/auth/verify-email?token=definitely_invalid_token_123')
+        .get('/api/v1/auth/verify-email?token=definitely_invalid_token_123')
         .set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(400);
@@ -616,7 +627,7 @@ describe('Email Verification System - Integration Tests', () => {
 
       for (const malformed of malformedTokens) {
         const response = await request(app)
-          .get(`/auth/verify-email?token=${malformed || ''}`)
+          .get(`/api/v1/auth/verify-email?token=${malformed || ''}`)
           .set('Origin', 'http://localhost:3000');
 
         expect([400, 500]).toContain(response.status);

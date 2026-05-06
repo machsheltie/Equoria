@@ -1,11 +1,11 @@
-/**
+﻿/**
  * preferencesRoutes.integration.test.mjs
  *
- * ATDD RED PHASE — Story 21S-5: PATCH /api/auth/profile/preferences
+ * ATDD RED PHASE — Story 21S-5: PATCH /api/v1/auth/profile/preferences
  *
  * Closes the missing persistence layer for the /settings page. Preferences
  * are persisted inside the existing User.settings JSONB under
- * `settings.preferences`. GET /api/auth/profile flattens the object to
+ * `settings.preferences`. GET /api/v1/auth/profile flattens the object to
  * `user.preferences` in the response.
  *
  * Real-DB integration test — no mocks.
@@ -18,7 +18,7 @@ import prisma from '../../../db/index.mjs';
 import { createTestUser, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
-describe('INTEGRATION: PATCH /api/auth/profile/preferences (21S-5)', () => {
+describe('INTEGRATION: PATCH /api/v1/auth/profile/preferences (21S-5)', () => {
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
@@ -44,7 +44,7 @@ describe('INTEGRATION: PATCH /api/auth/profile/preferences (21S-5)', () => {
   describe('Auth guard', () => {
     it('returns 401 when unauthenticated', async () => {
       const res = await request(app)
-        .patch('/api/auth/profile/preferences')
+        .patch('/api/v1/auth/profile/preferences')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000')
@@ -56,7 +56,7 @@ describe('INTEGRATION: PATCH /api/auth/profile/preferences (21S-5)', () => {
   describe('Valid updates', () => {
     it('persists notification + display preferences and returns the merged object', async () => {
       const res = await request(app)
-        .patch('/api/auth/profile/preferences')
+        .patch('/api/v1/auth/profile/preferences')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000')
@@ -93,7 +93,7 @@ describe('INTEGRATION: PATCH /api/auth/profile/preferences (21S-5)', () => {
       // Prior test left the user with a non-default preferences object.
       // A partial update should preserve the prior keys and only change what was sent.
       const res = await request(app)
-        .patch('/api/auth/profile/preferences')
+        .patch('/api/v1/auth/profile/preferences')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000')
@@ -111,7 +111,7 @@ describe('INTEGRATION: PATCH /api/auth/profile/preferences (21S-5)', () => {
   describe('Validation', () => {
     it('rejects an unknown preference key with 400', async () => {
       const res = await request(app)
-        .patch('/api/auth/profile/preferences')
+        .patch('/api/v1/auth/profile/preferences')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000')
@@ -123,7 +123,7 @@ describe('INTEGRATION: PATCH /api/auth/profile/preferences (21S-5)', () => {
 
     it('rejects a non-boolean value for a known key with 400', async () => {
       const res = await request(app)
-        .patch('/api/auth/profile/preferences')
+        .patch('/api/v1/auth/profile/preferences')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Origin', 'http://localhost:3000')
@@ -134,10 +134,10 @@ describe('INTEGRATION: PATCH /api/auth/profile/preferences (21S-5)', () => {
     });
   });
 
-  describe('GET /api/auth/profile includes preferences', () => {
+  describe('GET /api/v1/auth/profile includes preferences', () => {
     it('returns the persisted preferences in the profile response', async () => {
       const res = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${token}`);
 

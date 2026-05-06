@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 🧪 Token Rotation and Reuse Detection Tests (TDD RED Phase)
  *
  * This test suite validates the implementation of refresh token rotation
@@ -95,7 +95,7 @@ describe('Token Rotation and Reuse Detection System', () => {
     it('should_rotate_refresh_token_on_each_use', async () => {
       // Step 1: Login to get initial tokens
       const loginResponse = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
@@ -112,7 +112,7 @@ describe('Token Rotation and Reuse Detection System', () => {
 
       // Step 2: Use refresh token to get new tokens
       const refreshResponse = await request(app)
-        .post('/api/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('Cookie', `refreshToken=${initialRefreshToken}`);
@@ -135,7 +135,7 @@ describe('Token Rotation and Reuse Detection System', () => {
     it('should_invalidate_old_refresh_token_after_rotation', async () => {
       // Get initial tokens
       const loginResponse = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
@@ -147,14 +147,14 @@ describe('Token Rotation and Reuse Detection System', () => {
 
       // Use refresh token to rotate
       await request(app)
-        .post('/api/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('Cookie', `refreshToken=${initialRefreshToken}`);
 
       // Attempt to use old refresh token again - should fail
       const replayResponse = await request(app)
-        .post('/api/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('Cookie', `refreshToken=${initialRefreshToken}`);
@@ -167,7 +167,7 @@ describe('Token Rotation and Reuse Detection System', () => {
 
     it('should_track_token_families_in_database', async () => {
       // Login to create token family
-      const loginResponse = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
+      const loginResponse = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
         email: testUser.email,
         password: testPassword,
       });
@@ -188,7 +188,7 @@ describe('Token Rotation and Reuse Detection System', () => {
 
       // Rotate token
       await request(app)
-        .post('/api/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', `refreshToken=${initialRefreshToken}`);
 
@@ -221,7 +221,7 @@ describe('Token Rotation and Reuse Detection System', () => {
   describe('Token Reuse Detection', () => {
     it('should_detect_refresh_token_reuse', async () => {
       // Get initial tokens
-      const loginResponse = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
+      const loginResponse = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
         email: testUser.email,
         password: testPassword,
       });
@@ -230,7 +230,7 @@ describe('Token Rotation and Reuse Detection System', () => {
 
       // Use refresh token legitimately
       const firstRefresh = await request(app)
-        .post('/api/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('Cookie', `refreshToken=${initialRefreshToken}`);
@@ -239,7 +239,7 @@ describe('Token Rotation and Reuse Detection System', () => {
 
       // Attempt to reuse the old token - should trigger reuse detection
       const reuseAttempt = await request(app)
-        .post('/api/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('Cookie', `refreshToken=${initialRefreshToken}`);
@@ -252,7 +252,7 @@ describe('Token Rotation and Reuse Detection System', () => {
 
     it('should_invalidate_entire_token_family_on_reuse_detection', async () => {
       // Get initial tokens and create a token chain
-      const loginResponse = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
+      const loginResponse = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
         email: testUser.email,
         password: testPassword,
       });
@@ -261,14 +261,14 @@ describe('Token Rotation and Reuse Detection System', () => {
 
       // Create a chain of rotated tokens
       const firstRotation = await request(app)
-        .post('/api/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', `refreshToken=${initialRefreshToken}`);
 
       const secondRefreshToken = extractRefreshTokenFromCookies(firstRotation.headers['set-cookie']);
 
       const secondRotation = await request(app)
-        .post('/api/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', `refreshToken=${secondRefreshToken}`);
 
@@ -276,7 +276,7 @@ describe('Token Rotation and Reuse Detection System', () => {
 
       // Now attempt to reuse the initial token (trigger reuse detection)
       const reuseAttempt = await request(app)
-        .post('/api/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', `refreshToken=${initialRefreshToken}`);
 
@@ -294,7 +294,7 @@ describe('Token Rotation and Reuse Detection System', () => {
 
       // Current valid token should also be invalid now
       const currentTokenTest = await request(app)
-        .post('/api/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', `refreshToken=${thirdRefreshToken}`);
 
@@ -303,7 +303,7 @@ describe('Token Rotation and Reuse Detection System', () => {
 
     it('should_require_reauthentication_after_family_invalidation', async () => {
       // Setup token family and trigger reuse detection
-      const loginResponse = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
+      const loginResponse = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
         email: testUser.email,
         password: testPassword,
       });
@@ -312,21 +312,24 @@ describe('Token Rotation and Reuse Detection System', () => {
 
       // Rotate once
       await request(app)
-        .post('/api/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', `refreshToken=${initialRefreshToken}`);
 
       // Trigger reuse detection
       await request(app)
-        .post('/api/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', `refreshToken=${initialRefreshToken}`);
 
       // User should need to login again
-      const newLoginResponse = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
-        email: testUser.email,
-        password: testPassword,
-      });
+      const newLoginResponse = await request(app)
+        .post('/api/v1/auth/login')
+        .set('Origin', 'http://localhost:3000')
+        .send({
+          email: testUser.email,
+          password: testPassword,
+        });
 
       expect([200, 403, 429]).toContain(newLoginResponse.status);
 
@@ -336,7 +339,7 @@ describe('Token Rotation and Reuse Detection System', () => {
 
       // New token should work normally
       const refreshTest = await request(app)
-        .post('/api/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', `refreshToken=${newRefreshToken}`);
 
@@ -347,7 +350,7 @@ describe('Token Rotation and Reuse Detection System', () => {
   describe('Concurrent Token Usage', () => {
     it('should_handle_concurrent_refresh_requests_gracefully', async () => {
       // Get initial tokens
-      const loginResponse = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
+      const loginResponse = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
         email: testUser.email,
         password: testPassword,
       });
@@ -357,7 +360,7 @@ describe('Token Rotation and Reuse Detection System', () => {
       // Make multiple concurrent refresh requests with same token
       const concurrentRequests = Array.from({ length: 5 }, () =>
         request(app)
-          .post('/api/auth/refresh-token')
+          .post('/api/v1/auth/refresh-token')
           .set('Origin', 'http://localhost:3000')
           .set('Cookie', `refreshToken=${refreshToken}`),
       );
@@ -378,7 +381,7 @@ describe('Token Rotation and Reuse Detection System', () => {
 
     it('should_prevent_race_conditions_in_token_rotation', async () => {
       // This test verifies database-level constraints prevent race conditions
-      const loginResponse = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
+      const loginResponse = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
         email: testUser.email,
         password: testPassword,
       });
@@ -390,7 +393,7 @@ describe('Token Rotation and Reuse Detection System', () => {
       for (let i = 0; i < 3; i++) {
         rapidRequests.push(
           request(app)
-            .post('/api/auth/refresh-token')
+            .post('/api/v1/auth/refresh-token')
             .set('Origin', 'http://localhost:3000')
             .set('Cookie', `refreshToken=${refreshToken}`),
         );
@@ -410,7 +413,7 @@ describe('Token Rotation and Reuse Detection System', () => {
       // Simulate: Legitimate user has valid refresh token,
       // Attacker somehow gets old refresh token and tries to use it
 
-      const loginResponse = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
+      const loginResponse = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
         email: testUser.email,
         password: testPassword,
       });
@@ -419,7 +422,7 @@ describe('Token Rotation and Reuse Detection System', () => {
 
       // Legitimate user rotates token
       const legitRefresh = await request(app)
-        .post('/api/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', `refreshToken=${originalToken}`);
 
@@ -427,7 +430,7 @@ describe('Token Rotation and Reuse Detection System', () => {
 
       // Attacker tries to use old token (should trigger security response)
       const attackerAttempt = await request(app)
-        .post('/api/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', `refreshToken=${originalToken}`);
 
@@ -436,7 +439,7 @@ describe('Token Rotation and Reuse Detection System', () => {
 
       // Legitimate user's current token should now be invalid too (security measure)
       const legitAfterAttack = await request(app)
-        .post('/api/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', `refreshToken=${newToken}`);
 
@@ -447,7 +450,7 @@ describe('Token Rotation and Reuse Detection System', () => {
       // Note: This test verifies security logging exists
       // In a real implementation, you'd check log files or monitoring systems
 
-      const loginResponse = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
+      const loginResponse = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
         email: testUser.email,
         password: testPassword,
       });
@@ -456,13 +459,13 @@ describe('Token Rotation and Reuse Detection System', () => {
 
       // Rotate token
       await request(app)
-        .post('/api/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', `refreshToken=${refreshToken}`);
 
       // Trigger reuse detection (should log security event)
       const reuseResponse = await request(app)
-        .post('/api/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', `refreshToken=${refreshToken}`);
 
@@ -507,7 +510,7 @@ describe('Token Rotation and Reuse Detection System', () => {
 
       // Attempt to use expired token
       const expiredResponse = await request(app)
-        .post('/api/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', `refreshToken=${shortLivedToken}`);
 
@@ -519,7 +522,7 @@ describe('Token Rotation and Reuse Detection System', () => {
 
     it('should_clean_up_invalidated_token_families', async () => {
       // Create multiple token families and invalidate one
-      const loginResponse1 = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
+      const loginResponse1 = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
         email: testUser.email,
         password: testPassword,
       });
@@ -528,11 +531,11 @@ describe('Token Rotation and Reuse Detection System', () => {
 
       // Logout to create second family
       await request(app)
-        .post('/api/auth/logout')
+        .post('/api/v1/auth/logout')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', `refreshToken=${token1}`);
 
-      const loginResponse2 = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
+      const loginResponse2 = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
         email: testUser.email,
         password: testPassword,
       });
@@ -541,19 +544,19 @@ describe('Token Rotation and Reuse Detection System', () => {
 
       // Trigger reuse detection on first family
       await request(app)
-        .post('/api/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', `refreshToken=${token2}`);
 
       await request(app)
-        .post('/api/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', `refreshToken=${token2}`);
 
       // Run cleanup (would normally be background job)
       // This endpoint should be implemented to clean old tokens
       const cleanupResponse = await request(app)
-        .post('/api/auth/cleanup-tokens')
+        .post('/api/v1/auth/cleanup-tokens')
         .set('Origin', 'http://localhost:3000')
         .send({ olderThanDays: 0 }); // Clean immediately for test
 
@@ -607,7 +610,7 @@ describe('Token Rotation and Reuse Detection System', () => {
 
       for (const token of malformedTokens) {
         const response = await request(app)
-          .post('/api/auth/refresh-token')
+          .post('/api/v1/auth/refresh-token')
           .set('Origin', 'http://localhost:3000')
           .set(rateLimitBypassHeader)
           .set('Cookie', `refreshToken=${token}`);

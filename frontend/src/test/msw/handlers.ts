@@ -1,4 +1,4 @@
-/**
+﻿/**
  * MSW Handler Path Registry (AI-8-1)
  *
  * SINGLE SOURCE OF TRUTH for all API paths mocked in tests.
@@ -9,15 +9,15 @@
  * FORMAT: METHOD /api/path  →  handler description
  *
  * ── Auth ─────────────────────────────────────────────────────────────────
- * POST   /api/auth/login                          login with email/password
- * POST   /api/auth/register                       register new user
- * POST   /api/auth/logout                         logout
- * POST   /api/auth/refresh-token                  refresh JWT
- * GET    /api/auth/profile                        get current user profile
- * GET    /api/auth/me                             alias for profile
- * POST   /api/auth/forgot-password                send reset email
- * POST   /api/auth/reset-password                 reset with token
- * GET    /api/auth/verification-status            email verification status
+ * POST   /api/v1/auth/login                          login with email/password
+ * POST   /api/v1/auth/register                       register new user
+ * POST   /api/v1/auth/logout                         logout
+ * POST   /api/v1/auth/refresh-token                  refresh JWT
+ * GET    /api/v1/auth/profile                        get current user profile
+ * GET    /api/v1/auth/me                             alias for profile
+ * POST   /api/v1/auth/forgot-password                send reset email
+ * POST   /api/v1/auth/reset-password                 reset with token
+ * GET    /api/v1/auth/verification-status            email verification status
  *
  * ── Users ────────────────────────────────────────────────────────────────
  * GET    /api/users/:id                           get user by id
@@ -117,12 +117,12 @@ const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export const handlers = [
   // CSRF token — used by api-client before any state-changing request
-  http.get(`${base}/api/auth/csrf-token`, () =>
+  http.get(`${base}/api/v1/auth/csrf-token`, () =>
     HttpResponse.json({ csrfToken: 'test-csrf-token' })
   ),
 
   // Auth login/register/logout
-  http.post(`${base}/api/auth/login`, async ({ request }) => {
+  http.post(`${base}/api/v1/auth/login`, async ({ request }) => {
     const { email, password } = (await request.json()) as { email?: string; password?: string };
 
     if (!email || !password || password === 'wrong' || email.includes('invalid')) {
@@ -155,7 +155,7 @@ export const handlers = [
       },
     });
   }),
-  http.post(`${base}/api/auth/register`, async ({ request }) => {
+  http.post(`${base}/api/v1/auth/register`, async ({ request }) => {
     const { email, username, password } = (await request.json()) as {
       email?: string;
       username?: string;
@@ -186,15 +186,15 @@ export const handlers = [
       { status: 201 }
     );
   }),
-  http.post(`${base}/api/auth/logout`, () =>
+  http.post(`${base}/api/v1/auth/logout`, () =>
     HttpResponse.json({ status: 'success', message: 'Logged out' })
   ),
-  http.post(`${base}/api/auth/refresh-token`, () =>
+  http.post(`${base}/api/v1/auth/refresh-token`, () =>
     HttpResponse.json({ status: 'success', message: 'Token refreshed' })
   ),
 
   // Auth profile
-  http.get(`${base}/api/auth/profile`, () =>
+  http.get(`${base}/api/v1/auth/profile`, () =>
     HttpResponse.json({
       status: 'success',
       data: {
@@ -209,7 +209,7 @@ export const handlers = [
       },
     })
   ),
-  http.get(`${base}/api/auth/me`, () =>
+  http.get(`${base}/api/v1/auth/me`, () =>
     HttpResponse.json({
       status: 'success',
       data: {
@@ -217,14 +217,14 @@ export const handlers = [
       },
     })
   ),
-  http.post(`${base}/api/auth/forgot-password`, async ({ request }) => {
+  http.post(`${base}/api/v1/auth/forgot-password`, async ({ request }) => {
     const { email } = (await request.json()) as { email?: string };
     if (!email) {
       return HttpResponse.json({ status: 'error', message: 'Email is required' }, { status: 400 });
     }
     return HttpResponse.json({ status: 'success', message: 'Reset email sent' });
   }),
-  http.post(`${base}/api/auth/reset-password`, async ({ request }) => {
+  http.post(`${base}/api/v1/auth/reset-password`, async ({ request }) => {
     const { token, newPassword } = (await request.json()) as {
       token?: string;
       newPassword?: string;
@@ -582,7 +582,7 @@ export const handlers = [
   http.post(`${base}/api/groom-assignments`, () => HttpResponse.json({ success: true })),
 
   // Auth Status
-  http.get(`${base}/api/auth/verification-status`, () =>
+  http.get(`${base}/api/v1/auth/verification-status`, () =>
     HttpResponse.json({
       success: true,
       data: {

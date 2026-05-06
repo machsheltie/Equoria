@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 🧪 Cross-System Validation Tests
  *
  * Comprehensive tests validating integration between different game systems
@@ -558,7 +558,7 @@ describe('Cross-System Validation Tests', () => {
       expect(apiSpec.paths).toBeDefined();
 
       // Verify key endpoints are documented (check paths that actually exist in swagger.yaml)
-      expect(apiSpec.paths['/auth/register']).toBeDefined();
+      expect(apiSpec.paths['/api/v1/auth/register']).toBeDefined();
       expect(apiSpec.info).toBeDefined();
       expect(apiSpec.info.title).toBe('Equoria API');
 

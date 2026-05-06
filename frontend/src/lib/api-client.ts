@@ -1,4 +1,4 @@
-/**
+﻿/**
  * API Client for Equoria Frontend
  *
  * Handles all HTTP requests with httpOnly cookie authentication.
@@ -543,7 +543,7 @@ async function refreshAccessToken(): Promise<boolean> {
   // that arrive between now and the first await see it immediately.
   refreshPromise = (async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/refresh-token`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/refresh-token`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -582,7 +582,7 @@ async function getCsrfToken(): Promise<string> {
 
   _csrfFetching = (async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/auth/csrf-token`, {
+      const res = await fetch(`${API_BASE_URL}/api/v1/auth/csrf-token`, {
         credentials: 'include',
       });
       const data = await res.json();
@@ -2045,7 +2045,7 @@ export const authApi = {
    */
   login: (credentials: { email: string; password: string }) => {
     return apiClient.post<{ user: { id: number; email: string; username: string } }>(
-      '/api/auth/login',
+      '/api/v1/auth/login',
       credentials
     );
   },
@@ -2072,7 +2072,7 @@ export const authApi = {
         level: number;
         xp: number;
       };
-    }>('/api/auth/register', userData);
+    }>('/api/v1/auth/register', userData);
   },
 
   /**
@@ -2096,7 +2096,7 @@ export const authApi = {
         notifications?: Record<string, boolean | string | number> | null;
         display?: Record<string, boolean | string | number> | null;
       };
-    }>('/api/auth/profile');
+    }>('/api/v1/auth/profile');
   },
 
   /**
@@ -2123,7 +2123,7 @@ export const authApi = {
         notifications?: Record<string, boolean | string | number> | null;
         display?: Record<string, boolean | string | number> | null;
       };
-    }>('/api/auth/profile', updates);
+    }>('/api/v1/auth/profile', updates);
   },
 
   /**
@@ -2136,7 +2136,7 @@ export const authApi = {
     return apiClient.patch<{
       status: string;
       data: { preferences: UserPreferences };
-    }>('/api/auth/profile/preferences', updates);
+    }>('/api/v1/auth/profile/preferences', updates);
   },
 
   /**
@@ -2144,7 +2144,7 @@ export const authApi = {
    * Clears httpOnly cookies
    */
   logout: () => {
-    return apiClient.post<{ message: string }>('/api/auth/logout');
+    return apiClient.post<{ message: string }>('/api/v1/auth/logout');
   },
 
   /**
@@ -2152,7 +2152,7 @@ export const authApi = {
    * Uses httpOnly refresh token cookie automatically
    */
   refreshToken: () => {
-    return apiClient.post<{ message: string }>('/api/auth/refresh-token');
+    return apiClient.post<{ message: string }>('/api/v1/auth/refresh-token');
   },
 
   /**
@@ -2167,7 +2167,7 @@ export const authApi = {
         email: string;
         username: string;
       };
-    }>(`/api/auth/verify-email?token=${encodeURIComponent(token)}`);
+    }>(`/api/v1/auth/verify-email?token=${encodeURIComponent(token)}`);
   },
 
   /**
@@ -2178,7 +2178,7 @@ export const authApi = {
     return apiClient.post<{
       emailSent: boolean;
       expiresAt: string;
-    }>('/api/auth/resend-verification');
+    }>('/api/v1/auth/resend-verification');
   },
 
   /**
@@ -2190,14 +2190,14 @@ export const authApi = {
       verified: boolean;
       email: string;
       verifiedAt: string | null;
-    }>('/api/auth/verification-status');
+    }>('/api/v1/auth/verification-status');
   },
 
   /**
    * Mark authenticated user's onboarding as complete.
    */
   completeOnboarding: () =>
-    apiClient.post<{ completedOnboarding: boolean }>('/api/auth/complete-onboarding', {}),
+    apiClient.post<{ completedOnboarding: boolean }>('/api/v1/auth/complete-onboarding', {}),
 
   /**
    * Advance the authenticated user's onboarding step by 1.
@@ -2206,7 +2206,7 @@ export const authApi = {
    */
   advanceOnboarding: (horseData?: { horseName?: string; breedId?: number; gender?: string }) =>
     apiClient.post<{ step: number; completed: boolean }>(
-      '/api/auth/advance-onboarding',
+      '/api/v1/auth/advance-onboarding',
       horseData ?? {}
     ),
 
@@ -2214,14 +2214,14 @@ export const authApi = {
    * Request password reset email.
    */
   forgotPassword: (email: string) => {
-    return apiClient.post<{ message: string }>('/api/auth/forgot-password', { email });
+    return apiClient.post<{ message: string }>('/api/v1/auth/forgot-password', { email });
   },
 
   /**
    * Reset password with token.
    */
   resetPassword: (token: string, newPassword: string) => {
-    return apiClient.post<{ message: string }>('/api/auth/reset-password', {
+    return apiClient.post<{ message: string }>('/api/v1/auth/reset-password', {
       token,
       newPassword,
     });
@@ -2233,7 +2233,7 @@ export const authApi = {
    * Invalidates all sessions on success (CWE-613).
    */
   changePassword: (oldPassword: string, newPassword: string) => {
-    return apiClient.post<{ message: string }>('/api/auth/change-password', {
+    return apiClient.post<{ message: string }>('/api/v1/auth/change-password', {
       oldPassword,
       newPassword,
     });

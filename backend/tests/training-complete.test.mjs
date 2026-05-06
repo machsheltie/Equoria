@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 🧪 INTEGRATION TEST: Training System Complete - End-to-End Workflow
  *
  * This test validates the complete training system workflow from authentication
@@ -15,8 +15,8 @@
  * - Response formatting: Consistent API response structure
  *
  * 🎯 FUNCTIONALITY TESTED:
- * 1. POST /api/auth/register - User registration with validation
- * 2. POST /api/auth/login - User authentication and token generation
+ * 1. POST /api/v1/auth/register - User registration with validation
+ * 2. POST /api/v1/auth/login - User authentication and token generation
  * 3. GET /api/horses/trainable/:userId - Trainable horse listing with filtering
  * 4. POST /api/training/train - Training execution with business rule validation
  * 5. Authentication middleware: Token validation and access control
@@ -68,14 +68,14 @@ const createTestApp = () => {
 
   // Auth routes
   app.post(
-    '/api/auth/register',
+    '/api/v1/auth/register',
     body('name').trim().isLength({ min: 2, max: 50 }),
     body('email').isEmail().normalizeEmail(),
     body('password').isLength({ min: 8, max: 128 }),
     register,
   );
 
-  app.post('/api/auth/login', body('email').isEmail().normalizeEmail(), body('password').notEmpty(), login);
+  app.post('/api/v1/auth/login', body('email').isEmail().normalizeEmail(), body('password').notEmpty(), login);
 
   // Training routes (simplified)
   app.get('/api/horses/trainable/:userId', authenticateToken, async (req, res) => {
@@ -178,7 +178,7 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
     };
 
     const registerResponse = await request(app)
-      .post('/api/auth/register')
+      .post('/api/v1/auth/register')
       .set('Origin', 'http://localhost:3000')
       .send(userData);
 

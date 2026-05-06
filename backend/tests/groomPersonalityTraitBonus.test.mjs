@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Comprehensive Tests for Groom Personality Trait Bonus System
  *
  * Tests the complete groom personality-temperament compatibility system using
@@ -370,7 +370,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         });
 
         // Get CSRF token for POST request
-        const csrfResponse = await request(app).get('/auth/csrf-token').set('Origin', 'http://localhost:3000');
+        const csrfResponse = await request(app).get('/api/v1/auth/csrf-token').set('Origin', 'http://localhost:3000');
         const csrfToken = csrfResponse.body.csrfToken;
         const csrfCookie = csrfResponse.headers['set-cookie'].find(cookie => cookie.startsWith('_csrf=')).split(';')[0];
 

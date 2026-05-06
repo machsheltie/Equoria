@@ -1,8 +1,8 @@
-/**
+﻿/**
  * useUpdatePreferences Hook
  *
  * Persists the authenticated user's preferences (notification + display
- * toggles) via PATCH /api/auth/profile/preferences. Applies optimistic
+ * toggles) via PATCH /api/v1/auth/profile/preferences. Applies optimistic
  * updates to the ['profile'] query cache so the UI reflects the change
  * immediately; rolls back on error.
  *

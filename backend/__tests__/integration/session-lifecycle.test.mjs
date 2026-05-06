@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Integration Tests: Session Lifecycle Management
  *
  * Tests the complete session lifecycle including:
@@ -46,7 +46,7 @@ describe('Session Lifecycle Management', () => {
 
   // Helper function to get CSRF token
   async function _getCsrfToken() {
-    const response = await request(app).get('/api/auth/csrf-token').set('Origin', 'http://localhost:3000');
+    const response = await request(app).get('/api/v1/auth/csrf-token').set('Origin', 'http://localhost:3000');
     return response.body.csrfToken;
   }
 
@@ -154,7 +154,7 @@ describe('Session Lifecycle Management', () => {
 
       // Login
       const response = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(testBypassHeaders)
         .send({
@@ -180,7 +180,7 @@ describe('Session Lifecycle Management', () => {
 
       // Login
       const response = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(testBypassHeaders)
         .send({
@@ -231,7 +231,7 @@ describe('Session Lifecycle Management', () => {
 
       // Login to get auth cookies
       const loginResponse = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(testBypassHeaders)
         .send({
@@ -252,7 +252,7 @@ describe('Session Lifecycle Management', () => {
 
       // Logout
       const response = await request(app)
-        .post('/api/auth/logout')
+        .post('/api/v1/auth/logout')
         .set('Origin', 'http://localhost:3000')
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Cookie', __allCookies__)
@@ -270,7 +270,7 @@ describe('Session Lifecycle Management', () => {
     it('should clear auth cookies on logout', async () => {
       // Login
       const loginResponse = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(testBypassHeaders)
         .send({
@@ -291,7 +291,7 @@ describe('Session Lifecycle Management', () => {
 
       // Logout
       const response = await request(app)
-        .post('/api/auth/logout')
+        .post('/api/v1/auth/logout')
         .set('Origin', 'http://localhost:3000')
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Cookie', __allCookies__)
@@ -317,7 +317,7 @@ describe('Session Lifecycle Management', () => {
 
       // Login to get auth cookies
       const loginResponse = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(testBypassHeaders)
         .send({
@@ -345,7 +345,7 @@ describe('Session Lifecycle Management', () => {
       // Change password
       const newPassword = 'NewPassword456!';
       const response = await request(app)
-        .post('/api/auth/change-password')
+        .post('/api/v1/auth/change-password')
         .set('Origin', 'http://localhost:3000')
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Cookie', __allCookies__)
@@ -382,7 +382,7 @@ describe('Session Lifecycle Management', () => {
     it('should reject password change with incorrect old password', async () => {
       // Login to get auth cookies
       const loginResponse = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(testBypassHeaders)
         .send({
@@ -403,7 +403,7 @@ describe('Session Lifecycle Management', () => {
 
       // Attempt to change password with wrong old password
       const response = await request(app)
-        .post('/api/auth/change-password')
+        .post('/api/v1/auth/change-password')
         .set('Origin', 'http://localhost:3000')
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Cookie', __allCookies__)
@@ -420,7 +420,7 @@ describe('Session Lifecycle Management', () => {
     it('should validate new password requirements', async () => {
       // Login to get auth cookies
       const loginResponse = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(testBypassHeaders)
         .send({
@@ -441,7 +441,7 @@ describe('Session Lifecycle Management', () => {
 
       // Attempt to change password with weak new password
       const response = await request(app)
-        .post('/api/auth/change-password')
+        .post('/api/v1/auth/change-password')
         .set('Origin', 'http://localhost:3000')
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Cookie', __allCookies__)
@@ -459,7 +459,7 @@ describe('Session Lifecycle Management', () => {
     it('should reject tokens older than 7 days', async () => {
       // Login first to get valid token structure
       const loginResponse = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(testBypassHeaders)
         .send({
@@ -496,7 +496,7 @@ describe('Session Lifecycle Management', () => {
 
       // Attempt to use old token
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', [`accessToken=${oldToken}`])
         .expect(401);
@@ -508,7 +508,7 @@ describe('Session Lifecycle Management', () => {
     it('should accept tokens less than 7 days old', async () => {
       // Login first to get valid token
       const loginResponse = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(testBypassHeaders)
         .send({
@@ -544,7 +544,7 @@ describe('Session Lifecycle Management', () => {
 
       // Attempt to use recent token
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', [`accessToken=${recentToken}`])
         .expect(200);
@@ -556,7 +556,7 @@ describe('Session Lifecycle Management', () => {
     it('should calculate token age correctly at the boundary (exactly 7 days)', async () => {
       // Login first
       const loginResponse = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(testBypassHeaders)
         .send({
@@ -592,7 +592,7 @@ describe('Session Lifecycle Management', () => {
 
       // This should still be valid (not > 7 days)
       const response = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', [`accessToken=${exactToken}`])
         .expect(200);
@@ -709,7 +709,7 @@ describe('Session Lifecycle Management', () => {
       };
 
       const registerResponse = await request(app)
-        .post('/api/auth/register')
+        .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .send(newUserData)
         .expect([201, 400, 429]);
@@ -723,7 +723,7 @@ describe('Session Lifecycle Management', () => {
 
       // Step 2: Verify session works
       const profileResponse1 = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', cookies)
         .expect(200);
@@ -763,7 +763,7 @@ describe('Session Lifecycle Management', () => {
         ...(__csrf__.cookieHeader || []),
       ];
       const changePasswordResponse = await request(app)
-        .post('/api/auth/change-password')
+        .post('/api/v1/auth/change-password')
         .set('Origin', 'http://localhost:3000')
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .set('Cookie', __allCookies__)
@@ -792,7 +792,7 @@ describe('Session Lifecycle Management', () => {
       // from the change-password response, so resending these cookies exercises
       // the exact "old token after password change" attack scenario.
       const staleAccessTokenResponse = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', cookies)
         .expect(401);
@@ -803,7 +803,7 @@ describe('Session Lifecycle Management', () => {
 
       // Step 5: Login with new password
       const loginResponse = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(testBypassHeaders)
         .send({
@@ -816,7 +816,7 @@ describe('Session Lifecycle Management', () => {
 
       // Step 6: Verify new session works
       const profileResponse2 = await request(app)
-        .get('/api/auth/profile')
+        .get('/api/v1/auth/profile')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', cookies)
         .expect(200);

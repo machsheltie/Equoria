@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 🍪 CENTRALIZED COOKIE CONFIGURATION
  *
  * Standardizes cookie security settings across all authentication cookies.
@@ -88,7 +88,7 @@ export const ACCESS_TOKEN_COOKIE_OPTIONS = {
  *
  * Long-lived token for obtaining new access tokens
  * Expires: 7 days (matches JWT refreshToken expiry)
- * Path: / (21R-AUTH-1: must cover both /auth/refresh-token and /api/auth/refresh-token mount points)
+ * Path: / (21R-AUTH-1: must cover both /auth/refresh-token and /api/v1/auth/refresh-token mount points)
  *
  * @type {Object}
  */
@@ -97,7 +97,7 @@ export const REFRESH_TOKEN_COOKIE_OPTIONS = {
   secure: isProduction, // HTTPS only in production (MitM protection)
   sameSite: SAME_SITE_POLICY, // CSRF protection (strictest policy)
   maxAge: REFRESH_TOKEN_TTL_MS,
-  path: '/', // Must cover both /auth/refresh-token and /api/auth/refresh-token mount points (21R-AUTH-1)
+  path: '/', // Must cover both /auth/refresh-token and /api/v1/auth/refresh-token mount points (21R-AUTH-1)
   domain: COOKIE_DOMAIN, // Subdomain sharing (if configured)
 };
 

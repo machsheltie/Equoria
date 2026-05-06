@@ -1,5 +1,5 @@
-/**
- * Integration Tests: Rate Limit Real-Path Coverage on /api/auth/login
+﻿/**
+ * Integration Tests: Rate Limit Real-Path Coverage on /api/v1/auth/login
  *
  * Equoria-ocn9 — adversarial-audit Finding 4 fix (revised after code review).
  *
@@ -11,7 +11,7 @@
  * sounds too much like mocking").
  *
  * This file is the production-faithful replacement: every test hits the
- * REAL `/api/auth/login` route on the REAL Express app with the REAL
+ * REAL `/api/v1/auth/login` route on the REAL Express app with the REAL
  * authRateLimiter (`rateLimiting.mjs#authRateLimiter`, mounted at
  * `modules/auth/routes/authRoutes.mjs:67`). No synthetic limiters, no fake
  * routes, no in-process middleware factories — just supertest against the
@@ -23,7 +23,7 @@
  * pollute the shared 127.0.0.1 bucket used by other suites.
  *
  * What we prove:
- *   1. The production-mounted authRateLimiter on /api/auth/login actually
+ *   1. The production-mounted authRateLimiter on /api/v1/auth/login actually
  *      returns 429 after the configured `max` failed attempts, with the
  *      RFC-compliant RateLimit-* headers on every response.
  *   2. None of the historical bypass headers
@@ -115,7 +115,7 @@ function uniqueTestIp(testName) {
   return ip;
 }
 
-describe('/api/auth/login authRateLimiter — real-path no-bypass coverage (Equoria-ocn9)', () => {
+describe('/api/v1/auth/login authRateLimiter — real-path no-bypass coverage (Equoria-ocn9)', () => {
   // Code-review chunk-A note: rate-limit assertions are deterministic given
   // fresh per-test IPs and counter buckets. The project-wide `--retryTimes=1`
   // re-runs failing tests in the SAME Jest worker, where the in-memory
@@ -135,12 +135,12 @@ describe('/api/auth/login authRateLimiter — real-path no-bypass coverage (Equo
   });
 
   /**
-   * Helper: send a failed login attempt to the REAL /api/auth/login route
+   * Helper: send a failed login attempt to the REAL /api/v1/auth/login route
    * with the given client IP and optional bypass headers.
    */
   const failedLogin = async (clientIp, bypassHeaders = {}) => {
     let req = request(app)
-      .post('/api/auth/login')
+      .post('/api/v1/auth/login')
       .set('Origin', 'http://localhost:3000')
       .set('X-Forwarded-For', clientIp)
       .set('Cookie', __csrf__.cookieHeader)
@@ -185,7 +185,7 @@ describe('/api/auth/login authRateLimiter — real-path no-bypass coverage (Equo
   }, 30_000);
 
   /**
-   * For each historical bypass header: verify that hitting /api/auth/login
+   * For each historical bypass header: verify that hitting /api/v1/auth/login
    * with the header set still decrements the RateLimit-Remaining counter.
    * If any header were honored as a bypass, the counter would NOT decrement
    * — proof that the production middleware ignores the header, on the real
@@ -197,7 +197,7 @@ describe('/api/auth/login authRateLimiter — real-path no-bypass coverage (Equo
    * must be strictly less than the first.
    */
   it.each(BYPASS_HEADERS)(
-    'bypass header %s does NOT prevent the counter from decrementing on real /api/auth/login',
+    'bypass header %s does NOT prevent the counter from decrementing on real /api/v1/auth/login',
     async header => {
       const ip = uniqueTestIp(`bypass-${header}`);
 
@@ -219,7 +219,7 @@ describe('/api/auth/login authRateLimiter — real-path no-bypass coverage (Equo
     },
   );
 
-  it('sending all known bypass headers together does NOT skip the limiter on real /api/auth/login', async () => {
+  it('sending all known bypass headers together does NOT skip the limiter on real /api/v1/auth/login', async () => {
     const ip = uniqueTestIp('bypass-combined');
     const allBypasses = Object.fromEntries(BYPASS_HEADERS.map(h => [h, 'true']));
 

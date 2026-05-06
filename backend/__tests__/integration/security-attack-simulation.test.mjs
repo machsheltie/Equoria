@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Security Attack Simulation Integration Tests
  *
  * Comprehensive security testing suite simulating real-world attack scenarios to verify
@@ -257,7 +257,7 @@ describe('Security Attack Simulation Tests', () => {
         for (let i = 0; i < 10; i++) {
           requests.push(
             request(app)
-              .post('/api/auth/register')
+              .post('/api/v1/auth/register')
               .set('Origin', 'http://localhost:3000')
               .send({
                 email: `attacker${randomBytes(8).toString('hex')}_${i}@evil.com`,
@@ -298,7 +298,7 @@ describe('Security Attack Simulation Tests', () => {
         for (let i = 0; i < 20; i++) {
           requests.push(
             request(app)
-              .post('/api/auth/login')
+              .post('/api/v1/auth/login')
               .set('Origin', 'http://localhost:3000')
               .send({
                 email: 'victim@example.com',
@@ -392,13 +392,16 @@ describe('Security Attack Simulation Tests', () => {
         ];
 
         for (const payload of sqlPayloads) {
-          const response = await request(app).post('/api/auth/register').set('Origin', 'http://localhost:3000').send({
-            email: payload,
-            username: 'testuser',
-            password: 'ValidPass123!',
-            firstName: 'Test',
-            lastName: 'User',
-          });
+          const response = await request(app)
+            .post('/api/v1/auth/register')
+            .set('Origin', 'http://localhost:3000')
+            .send({
+              email: payload,
+              username: 'testuser',
+              password: 'ValidPass123!',
+              firstName: 'Test',
+              lastName: 'User',
+            });
 
           // Should reject with validation error, not process SQL
           expect(response.status).toBe(400);
@@ -407,7 +410,7 @@ describe('Security Attack Simulation Tests', () => {
       });
 
       it('should block SQL injection in username field', async () => {
-        const response = await request(app).post('/api/auth/register').set('Origin', 'http://localhost:3000').send({
+        const response = await request(app).post('/api/v1/auth/register').set('Origin', 'http://localhost:3000').send({
           email: 'test@example.com',
           username: "admin' OR '1'='1",
           password: 'ValidPass123!',
@@ -432,7 +435,7 @@ describe('Security Attack Simulation Tests', () => {
 
         for (const payload of xssPayloads) {
           const response = await request(app)
-            .put('/api/auth/profile')
+            .put('/api/v1/auth/profile')
             .set('Cookie', __csrf__.cookieHeader)
             .set('X-CSRF-Token', __csrf__.csrfToken)
             .set('Origin', 'http://localhost:3000')
@@ -456,7 +459,7 @@ describe('Security Attack Simulation Tests', () => {
 
       it('should sanitize XSS payloads in name fields', async () => {
         const response = await request(app)
-          .post('/api/auth/register')
+          .post('/api/v1/auth/register')
           .set('Origin', 'http://localhost:3000')
           .send({
             email: `test${randomBytes(8).toString('hex')}@example.com`,
@@ -486,7 +489,7 @@ describe('Security Attack Simulation Tests', () => {
       it('should reject extremely long email addresses', async () => {
         const longEmail = `${'a'.repeat(1000)}@example.com`;
 
-        const response = await request(app).post('/api/auth/register').set('Origin', 'http://localhost:3000').send({
+        const response = await request(app).post('/api/v1/auth/register').set('Origin', 'http://localhost:3000').send({
           email: longEmail,
           username: 'testuser123',
           password: 'ValidPass123!',
@@ -501,7 +504,7 @@ describe('Security Attack Simulation Tests', () => {
       it('should reject extremely long usernames', async () => {
         const longUsername = 'a'.repeat(1000);
 
-        const response = await request(app).post('/api/auth/register').set('Origin', 'http://localhost:3000').send({
+        const response = await request(app).post('/api/v1/auth/register').set('Origin', 'http://localhost:3000').send({
           email: 'test@example.com',
           username: longUsername,
           password: 'ValidPass123!',
@@ -517,7 +520,7 @@ describe('Security Attack Simulation Tests', () => {
       it('should reject extremely long passwords', async () => {
         const longPassword = `A1!${'a'.repeat(500)}`;
 
-        const response = await request(app).post('/api/auth/register').set('Origin', 'http://localhost:3000').send({
+        const response = await request(app).post('/api/v1/auth/register').set('Origin', 'http://localhost:3000').send({
           email: 'test@example.com',
           username: 'testuser123',
           password: longPassword,
@@ -534,7 +537,7 @@ describe('Security Attack Simulation Tests', () => {
         const longBio = 'a'.repeat(10000);
 
         const response = await request(app)
-          .put('/api/auth/profile')
+          .put('/api/v1/auth/profile')
           .set('Cookie', __csrf__.cookieHeader)
           .set('X-CSRF-Token', __csrf__.csrfToken)
           .set('Origin', 'http://localhost:3000')
@@ -551,7 +554,7 @@ describe('Security Attack Simulation Tests', () => {
 
     describe('Special Character Injection', () => {
       it('should handle null bytes in input', async () => {
-        const response = await request(app).post('/api/auth/register').set('Origin', 'http://localhost:3000').send({
+        const response = await request(app).post('/api/v1/auth/register').set('Origin', 'http://localhost:3000').send({
           email: 'test\x00@example.com',
           username: 'testuser\x00',
           password: 'ValidPass123!',
@@ -565,7 +568,7 @@ describe('Security Attack Simulation Tests', () => {
 
       it('should handle Unicode control characters', async () => {
         const response = await request(app)
-          .put('/api/auth/profile')
+          .put('/api/v1/auth/profile')
           .set('Cookie', __csrf__.cookieHeader)
           .set('X-CSRF-Token', __csrf__.csrfToken)
           .set('Origin', 'http://localhost:3000')
@@ -715,7 +718,7 @@ describe('Security Attack Simulation Tests', () => {
     });
 
     it('should not leak stack traces in production', async () => {
-      const response = await request(app).post('/api/auth/register').set('Origin', 'http://localhost:3000').send({
+      const response = await request(app).post('/api/v1/auth/register').set('Origin', 'http://localhost:3000').send({
         // Intentionally malformed data to trigger error
         email: null,
         username: null,
@@ -727,12 +730,12 @@ describe('Security Attack Simulation Tests', () => {
     });
 
     it('should not reveal whether username exists during login', async () => {
-      const response1 = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
+      const response1 = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
         email: 'nonexistent@example.com',
         password: 'WrongPassword123!',
       });
 
-      const response2 = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
+      const response2 = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
         email: 'victim@example.com',
         password: 'WrongPassword123!',
       });

@@ -1,4 +1,4 @@
-import bcrypt from 'bcryptjs';
+﻿import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { AppError, ValidationError } from '../../../errors/index.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -1000,7 +1000,7 @@ export const getVerificationStatus = async (req, res, next) => {
 };
 
 /**
- * POST /api/auth/complete-onboarding
+ * POST /api/v1/auth/complete-onboarding
  * Marks the authenticated user's onboarding as complete in User.settings.
  */
 export const completeOnboarding = async (req, res, next) => {
@@ -1041,7 +1041,7 @@ export const completeOnboarding = async (req, res, next) => {
 };
 
 /**
- * POST /api/auth/advance-onboarding
+ * POST /api/v1/auth/advance-onboarding
  * Increments the authenticated user's onboarding step.
  * When the user reaches step 10, also sets completedOnboarding: true.
  * Used by the OnboardingSpotlight component to drive the 10-step guided tour.
@@ -1287,7 +1287,7 @@ const ALLOWED_PREFERENCE_KEYS = [
 ];
 
 /**
- * PATCH /api/auth/profile/preferences
+ * PATCH /api/v1/auth/profile/preferences
  *
  * Merges the request body into the authenticated user's stored preferences.
  * Only whitelisted keys are accepted and each value must be boolean. Returns

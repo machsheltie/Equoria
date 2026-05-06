@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Performance Regression Testing System for CI/CD Pipeline
  *
  * This script provides automated performance validation including:
@@ -42,7 +42,7 @@ const REGRESSION_CONFIG = {
     { path: '/ping', method: 'GET', weight: 1 },
     { path: '/health', method: 'GET', weight: 1 },
     {
-      path: '/api/auth/login',
+      path: '/api/v1/auth/login',
       method: 'POST',
       weight: 2,
       body: { email: 'test@example.com', password: 'testpass' },

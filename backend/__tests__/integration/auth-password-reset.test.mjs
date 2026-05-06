@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Auth Password Reset — Integration Tests
  *
  * Covers the complete forgot-password → reset-password flow against the real
@@ -86,7 +86,7 @@ describe('Auth — Password Reset Integration', () => {
 
     // 3. Call forgotPassword via HTTP — runs full controller + DB transaction
     const forgotRes = await request(app)
-      .post('/auth/forgot-password')
+      .post('/api/v1/auth/forgot-password')
       .set('Origin', 'http://localhost:3000')
       .send({ email });
 
@@ -123,7 +123,7 @@ describe('Auth — Password Reset Integration', () => {
 
     // 4. Call resetPassword with the captured raw token
     const resetRes = await request(app)
-      .post('/auth/reset-password')
+      .post('/api/v1/auth/reset-password')
       .set('Origin', 'http://localhost:3000')
       .send({ token: capturedRawToken, newPassword });
 
@@ -133,7 +133,7 @@ describe('Auth — Password Reset Integration', () => {
 
     // 5. Verify the old password no longer works
     const loginOldRes = await request(app)
-      .post('/auth/login')
+      .post('/api/v1/auth/login')
       .set('Origin', 'http://localhost:3000')
       .send({ email, password: originalPassword });
 
@@ -141,7 +141,7 @@ describe('Auth — Password Reset Integration', () => {
 
     // 6. Verify the new password works
     const loginNewRes = await request(app)
-      .post('/auth/login')
+      .post('/api/v1/auth/login')
       .set('Origin', 'http://localhost:3000')
       .send({ email, password: newPassword });
 
@@ -152,7 +152,7 @@ describe('Auth — Password Reset Integration', () => {
   // ────────────────────────────────────────────────────────────────────────
   it('forgotPassword returns 200 for unknown email (no user enumeration)', async () => {
     const resetRes = await request(app)
-      .post('/auth/forgot-password')
+      .post('/api/v1/auth/forgot-password')
       .set('Origin', 'http://localhost:3000')
       .send({ email: `nonexistent_${randomBytes(8).toString('hex')}@example.com` });
 
@@ -164,7 +164,7 @@ describe('Auth — Password Reset Integration', () => {
   // ────────────────────────────────────────────────────────────────────────
   it('resetPassword rejects an invalid/nonexistent token with 400', async () => {
     const resetRes = await request(app)
-      .post('/auth/reset-password')
+      .post('/api/v1/auth/reset-password')
       .set('Origin', 'http://localhost:3000')
       .send({ token: 'totally-fake-token-that-was-never-issued', newPassword: 'NewPass99!' });
 
@@ -204,7 +204,7 @@ describe('Auth — Password Reset Integration', () => {
     // 2. Login to obtain a real access-token cookie. This is the cookie
     //    whose iat must end up older than the post-reset passwordChangedAt.
     const loginRes = await request(app)
-      .post('/auth/login')
+      .post('/api/v1/auth/login')
       .set('Origin', 'http://localhost:3000')
       .send({ email, password: originalPassword });
     expect(loginRes.status).toBe(200);
@@ -216,7 +216,7 @@ describe('Auth — Password Reset Integration', () => {
       capturedRawToken = rawToken;
       return { success: true, messageId: 'spy-captured', preview: '' };
     });
-    await request(app).post('/auth/forgot-password').set('Origin', 'http://localhost:3000').send({ email });
+    await request(app).post('/api/v1/auth/forgot-password').set('Origin', 'http://localhost:3000').send({ email });
     expect(capturedRawToken).not.toBeNull();
 
     // 4. Sleep across the JWT iat second-boundary. JWT iat is second-precision
@@ -228,7 +228,7 @@ describe('Auth — Password Reset Integration', () => {
 
     // 5. Reset the password — stamps passwordChangedAt = now.
     const resetRes = await request(app)
-      .post('/auth/reset-password')
+      .post('/api/v1/auth/reset-password')
       .set('Origin', 'http://localhost:3000')
       .send({ token: capturedRawToken, newPassword });
     expect(resetRes.status).toBe(200);
@@ -239,7 +239,7 @@ describe('Auth — Password Reset Integration', () => {
     //    response, so resending the original cookies exercises the exact
     //    "stolen access token survives password reset" attack scenario.
     const profileRes = await request(app)
-      .get('/api/auth/profile')
+      .get('/api/v1/auth/profile')
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', cookies)
       .expect(401);
@@ -272,19 +272,19 @@ describe('Auth — Password Reset Integration', () => {
       return { success: true, messageId: 'spy-captured', preview: '' };
     });
 
-    await request(app).post('/auth/forgot-password').set('Origin', 'http://localhost:3000').send({ email });
+    await request(app).post('/api/v1/auth/forgot-password').set('Origin', 'http://localhost:3000').send({ email });
     expect(capturedRawToken).not.toBeNull();
 
     // Use the token once — should succeed
     const firstReset = await request(app)
-      .post('/auth/reset-password')
+      .post('/api/v1/auth/reset-password')
       .set('Origin', 'http://localhost:3000')
       .send({ token: capturedRawToken, newPassword });
     expect(firstReset.status).toBe(200);
 
     // Replay the same token — should be rejected
     const secondReset = await request(app)
-      .post('/auth/reset-password')
+      .post('/api/v1/auth/reset-password')
       .set('Origin', 'http://localhost:3000')
       .send({ token: capturedRawToken, newPassword: 'AnotherPass3#' });
     expect(secondReset.status).toBe(400);

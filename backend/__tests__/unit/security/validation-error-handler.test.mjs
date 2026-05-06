@@ -1,4 +1,4 @@
-import { describe, it, expect, jest } from '@jest/globals';
+﻿import { describe, it, expect, jest } from '@jest/globals';
 import { handleValidationErrors, sanitizeRequestData } from '../../../middleware/validationErrorHandler.mjs';
 
 const mockRes = () => ({
@@ -57,7 +57,7 @@ describe('validationErrorHandler', () => {
         })),
         get: () => 'jest',
         method: 'POST',
-        originalUrl: '/auth/register',
+        originalUrl: '/api/v1/auth/register',
         ip: '127.0.0.1',
       };
       const res = mockRes();

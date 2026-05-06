@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Comprehensive OWASP Top 10 Security Test Suite
  *
  * Tests security controls for OWASP categories:
@@ -118,7 +118,7 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
         for (const password of commonPasswords) {
           const timestamp = Date.now();
           const response = await request(app)
-            .post('/api/auth/register')
+            .post('/api/v1/auth/register')
             .set('Origin', 'http://localhost:3000')
             .set('Cookie', __csrf__.cookieHeader)
             .set('X-CSRF-Token', __csrf__.csrfToken)
@@ -151,7 +151,7 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
         for (const password of weakPasswords) {
           const timestamp = Date.now();
           const response = await request(app)
-            .post('/api/auth/register')
+            .post('/api/v1/auth/register')
             .set('Origin', 'http://localhost:3000')
             .set('Cookie', __csrf__.cookieHeader)
             .set('X-CSRF-Token', __csrf__.csrfToken)
@@ -228,7 +228,7 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
     describe('CORS Configuration', () => {
       it('should enforce CORS policies', async () => {
         const response = await request(app)
-          .options('/api/auth/login')
+          .options('/api/v1/auth/login')
           .set('Origin', 'https://malicious-site.com')
           .set('Access-Control-Request-Method', 'POST');
 
@@ -253,7 +253,7 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
         // 1. Rate limit headers are present in responses
         // 2. The rate limiting mechanism is functioning
         const response = await request(app)
-          .post('/api/auth/login')
+          .post('/api/v1/auth/login')
           .set('Origin', 'http://localhost:3000')
           .set('Cookie', __csrf__.cookieHeader)
           .set('X-CSRF-Token', __csrf__.csrfToken)
@@ -393,7 +393,7 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
     describe('Insecure Deserialization Prevention', () => {
       it('should reject malformed JSON payloads', async () => {
         const response = await request(app)
-          .post('/api/auth/login')
+          .post('/api/v1/auth/login')
           .set('Origin', 'http://localhost:3000')
           .set('Cookie', __csrf__.cookieHeader)
           .set('X-CSRF-Token', __csrf__.csrfToken)
@@ -410,7 +410,7 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
     describe('Authentication Event Logging', () => {
       it('should log successful authentication attempts', async () => {
         const response = await request(app)
-          .post('/api/auth/login')
+          .post('/api/v1/auth/login')
           .set('Origin', 'http://localhost:3000')
           .set('Cookie', __csrf__.cookieHeader)
           .set('X-CSRF-Token', __csrf__.csrfToken)
@@ -427,7 +427,7 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
 
       it('should log failed authentication attempts', async () => {
         const response = await request(app)
-          .post('/api/auth/login')
+          .post('/api/v1/auth/login')
           .set('Origin', 'http://localhost:3000')
           .set('Cookie', __csrf__.cookieHeader)
           .set('X-CSRF-Token', __csrf__.csrfToken)
@@ -494,7 +494,7 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
         // 1. Rate limit headers are present (indicating active monitoring)
         // 2. The rate limiting infrastructure is in place for logging
         const response = await request(app)
-          .post('/api/auth/login')
+          .post('/api/v1/auth/login')
           .set('Origin', 'http://localhost:3000')
           .set('Cookie', __csrf__.cookieHeader)
           .set('X-CSRF-Token', __csrf__.csrfToken)
@@ -520,7 +520,7 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
     describe('Audit Log Completeness', () => {
       it('should include required audit fields', async () => {
         await request(app)
-          .post('/api/auth/login')
+          .post('/api/v1/auth/login')
           .set('Origin', 'http://localhost:3000')
           .set('Cookie', __csrf__.cookieHeader)
           .set('X-CSRF-Token', __csrf__.csrfToken)
@@ -630,7 +630,7 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
     describe('Security Configuration Consistency', () => {
       it('should have consistent security settings across all endpoints', async () => {
         // Test multiple endpoints for consistent security headers
-        const endpoints = ['/health', '/api/auth/login', '/api/horses'];
+        const endpoints = ['/health', '/api/v1/auth/login', '/api/horses'];
 
         for (const endpoint of endpoints) {
           const response = await request(app).get(endpoint).set('Origin', 'http://localhost:3000');

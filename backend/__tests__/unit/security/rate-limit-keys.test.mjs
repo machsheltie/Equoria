@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 🔒 UNIT TESTS: Rate Limit Key Generation
  *
  * Tests for rate limiting key generation including:
@@ -22,7 +22,7 @@ describe('Rate Limit Key Generation Unit Tests', () => {
     req = {
       ip: '127.0.0.1',
       method: 'POST',
-      path: '/api/auth/login',
+      path: '/api/v1/auth/login',
       headers: {},
       user: null,
     };
@@ -135,12 +135,12 @@ describe('Rate Limit Key Generation Unit Tests', () => {
     it('should generate different keys for different routes', () => {
       const req1 = {
         ip: '192.168.1.1',
-        path: '/api/auth/login',
+        path: '/api/v1/auth/login',
       };
 
       const req2 = {
         ip: '192.168.1.1',
-        path: '/api/auth/register',
+        path: '/api/v1/auth/register',
       };
 
       // Same IP, different routes should have different limits
@@ -168,7 +168,7 @@ describe('Rate Limit Key Generation Unit Tests', () => {
     });
 
     it('should handle trailing slashes', () => {
-      req.path = '/api/auth/login/';
+      req.path = '/api/v1/auth/login/';
 
       expect(req.path).toMatch(/\/$/);
     });
@@ -183,29 +183,29 @@ describe('Rate Limit Key Generation Unit Tests', () => {
   describe('Combined Key Generation', () => {
     it('should generate unique keys for user+route combination', () => {
       req.user = createMockUser({ id: 1 });
-      req.path = '/api/auth/login';
+      req.path = '/api/v1/auth/login';
 
       // Key should include both user ID and route
       expect(req.user.id).toBe(1);
-      expect(req.path).toBe('/api/auth/login');
+      expect(req.path).toBe('/api/v1/auth/login');
     });
 
     it('should generate unique keys for IP+route combination', () => {
       req.ip = '192.168.1.1';
-      req.path = '/api/auth/login';
+      req.path = '/api/v1/auth/login';
 
       expect(req.ip).toBe('192.168.1.1');
-      expect(req.path).toBe('/api/auth/login');
+      expect(req.path).toBe('/api/v1/auth/login');
     });
 
     it('should generate unique keys for user+IP+route combination', () => {
       req.user = createMockUser({ id: 1 });
       req.ip = '192.168.1.1';
-      req.path = '/api/auth/login';
+      req.path = '/api/v1/auth/login';
 
       expect(req.user.id).toBe(1);
       expect(req.ip).toBe('192.168.1.1');
-      expect(req.path).toBe('/api/auth/login');
+      expect(req.path).toBe('/api/v1/auth/login');
     });
 
     it('should generate different keys for same user on different IPs', () => {
@@ -251,12 +251,12 @@ describe('Rate Limit Key Generation Unit Tests', () => {
     it('should generate consistent keys for same request parameters', () => {
       const req1 = {
         ip: '192.168.1.1',
-        path: '/api/auth/login',
+        path: '/api/v1/auth/login',
       };
 
       const req2 = {
         ip: '192.168.1.1',
-        path: '/api/auth/login',
+        path: '/api/v1/auth/login',
       };
 
       // Same parameters should generate same key
@@ -384,19 +384,19 @@ describe('Rate Limit Key Generation Unit Tests', () => {
   describe('Key Storage Format', () => {
     it('should generate Redis-compatible keys', () => {
       req.ip = '192.168.1.1';
-      req.path = '/api/auth/login';
+      req.path = '/api/v1/auth/login';
 
       const key = `ratelimit:${req.ip}:${req.path}`;
 
       // Redis key format
       expect(key).toMatch(/^ratelimit:/);
       expect(key).toContain('192.168.1.1');
-      expect(key).toContain('/api/auth/login');
+      expect(key).toContain('/api/v1/auth/login');
     });
 
     it('should use colon as delimiter', () => {
       req.ip = '192.168.1.1';
-      req.path = '/api/auth/login';
+      req.path = '/api/v1/auth/login';
 
       const key = `ratelimit:${req.ip}:${req.path}`;
 

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Performance Testing Script for Equoria Backend
  *
  * This script runs comprehensive performance tests including:
@@ -24,7 +24,13 @@ const PERFORMANCE_CONFIG = {
   memoryThreshold: 100 * 1024 * 1024, // 100MB
   concurrentUsers: 10,
   testDuration: 30000, // 30 seconds
-  endpoints: ['/ping', '/health', '/api/auth/login', '/api/horses', '/api/competition/disciplines'],
+  endpoints: [
+    '/ping',
+    '/health',
+    '/api/v1/auth/login',
+    '/api/horses',
+    '/api/competition/disciplines',
+  ],
 };
 
 // Performance metrics storage

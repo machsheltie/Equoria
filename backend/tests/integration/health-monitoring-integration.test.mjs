@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 🧪 SYSTEM INTEGRATION TEST: Health Monitoring System Validation
  *
  * This test validates health monitoring system integration including health check
@@ -60,7 +60,7 @@ const createTestApp = () => {
 
   // Auth routes for testing
   app.post(
-    '/api/auth/register',
+    '/api/v1/auth/register',
     [
       body('email').isEmail().normalizeEmail(),
       body('username').isLength({ min: 3, max: 30 }),
@@ -73,7 +73,7 @@ const createTestApp = () => {
   );
 
   app.post(
-    '/api/auth/login',
+    '/api/v1/auth/login',
     [body('email').isEmail().normalizeEmail(), body('password').notEmpty(), handleValidationErrors],
     login,
   );
@@ -181,7 +181,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
     };
 
     const registerResponse = await request(app)
-      .post('/api/auth/register')
+      .post('/api/v1/auth/register')
       .set('Origin', 'http://localhost:3000')
       .send(userData);
 

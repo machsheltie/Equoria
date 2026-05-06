@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Production cookie-name contract — regression canary.
  *
  * In production the CSRF cookie is named `__Host-csrf` (browser rules: must
@@ -14,7 +14,7 @@
  *   1. The single source of truth resolves correctly per-env. `_csrf` in
  *      the current test env, `__Host-csrf` when the module is loaded with
  *      NODE_ENV=production.
- *   2. `GET /auth/csrf-token` under production settings actually emits a
+ *   2. `GET /api/v1/auth/csrf-token` under production settings actually emits a
  *      `__Host-csrf=` Set-Cookie. (If the generator drifts back to `_csrf`
  *      in production, this test fails.)
  *
@@ -58,7 +58,7 @@ describe('CSRF cookie-name contract', () => {
     expect(CSRF_COOKIE_NAME).toBe('_csrf');
   });
 
-  it('GET /auth/csrf-token under NODE_ENV=production emits __Host-csrf Set-Cookie', () => {
+  it('GET /api/v1/auth/csrf-token under NODE_ENV=production emits __Host-csrf Set-Cookie', () => {
     // Spawn a fresh Node process with NODE_ENV=production. Running in a
     // child avoids the Jest-ESM module-registry bug that breaks the
     // jest.resetModules() + await import() pattern for modules that reach

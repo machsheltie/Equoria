@@ -1,9 +1,9 @@
-/**
- * Integration Tests: POST /api/auth/register — Starter Horse Persistence
+﻿/**
+ * Integration Tests: POST /api/v1/auth/register — Starter Horse Persistence
  *
  * Story 21R-2 Task 13 (seventh-pass correction — no mocks policy)
  *
- * Proves that POST /api/auth/register creates a user AND a starter horse
+ * Proves that POST /api/v1/auth/register creates a user AND a starter horse
  * in the real test database. Uses real Prisma, real DB — no mocked calls.
  *
  * Fail-fast contract: if the starter-horse catch-swallow in authController.mjs
@@ -24,7 +24,7 @@ import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 // governed by TEST_RATE_LIMIT_* env knobs (see middleware/rateLimiting.mjs).
 const rateLimitBypass = {};
 
-describe('POST /api/auth/register — starter horse integration', () => {
+describe('POST /api/v1/auth/register — starter horse integration', () => {
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
@@ -59,7 +59,7 @@ describe('POST /api/auth/register — starter horse integration', () => {
 
   it('creates a user and at least one starter horse in the real database', async () => {
     const res = await request(app)
-      .post('/api/auth/register')
+      .post('/api/v1/auth/register')
       .set('Origin', 'http://localhost:3000')
       .set(rateLimitBypass)
       .send(testUser)

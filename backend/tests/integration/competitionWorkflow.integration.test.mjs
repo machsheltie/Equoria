@@ -1,4 +1,4 @@
-/**
+﻿/**
  * INTEGRATION TEST: Complete Competition Workflow
  *
  * This test validates the ENTIRE competition process from horse preparation
@@ -124,7 +124,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
       };
 
       const response = await request(app)
-        .post('/api/auth/register')
+        .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .send(userData)
         .expect(201);

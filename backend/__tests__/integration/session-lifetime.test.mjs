@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Session-Lifetime Regression Tests (21R-AUTH-6)
  *
  * Proves that the token refresh flow survives access-token expiry and that
@@ -7,15 +7,14 @@
  *
  * Covers:
  *   (a) cookieConfig exports TTL constants + getNow clock injection
- *   (b) refreshToken cookie (Path=/) works on both /api/auth/refresh-token
- *       and /auth/refresh-token aliases
+ *   (b) refreshToken cookie (Path=/) works on /api/v1/auth/refresh-token
  *   (c) Expired accessToken is rejected by protected route (401)
  *   (d) Valid refreshToken issues a fresh accessToken after access-token expiry
  *   (e) Refreshed accessToken authenticates a protected route
  *   (f) Expired refreshToken is rejected by the refresh endpoint (401)
  *
- * Note: /api/v1/auth/refresh-token is NOT tested here — that route alias
- * requires route-mount consolidation tracked in Equoria-grt (21R-AUTH-7).
+ * Route consolidation (Equoria-grt / 21R-AUTH-7) complete: /api/v1/auth/* is
+ * now the single canonical auth prefix. Legacy /auth/* mounts removed.
  */
 
 import request from 'supertest';
@@ -55,7 +54,7 @@ beforeAll(async () => {
   server = app.listen(0);
   await cleanupSuiteUsers();
 
-  const res = await request(app).post('/api/auth/register').set('Origin', 'http://localhost:3000').send(credentials);
+  const res = await request(app).post('/api/v1/auth/register').set('Origin', 'http://localhost:3000').send(credentials);
   expect(res.status).toBe(201);
   testUser = res.body.data.user;
 });
@@ -72,7 +71,7 @@ afterAll(async () => {
 // sub-test that consumes a refresh token must call loginFresh() independently.
 async function loginFresh() {
   const res = await request(app)
-    .post('/api/auth/login')
+    .post('/api/v1/auth/login')
     .set('Origin', 'http://localhost:3000')
     .send({ email: credentials.email, password: credentials.password });
   expect(res.status).toBe(200);
@@ -116,10 +115,10 @@ describe('cookieConfig clock injection exports (21R-AUTH-6 contract)', () => {
 // ─── (b) Refresh aliases ─────────────────────────────────────────────────────
 
 describe('refreshToken cookie (Path=/) works on both route aliases', () => {
-  it('POST /api/auth/refresh-token accepts the cookie and rotates tokens', async () => {
+  it('POST /api/v1/auth/refresh-token accepts the cookie and rotates tokens', async () => {
     const { refreshCookie } = await loginFresh();
     const res = await request(app)
-      .post('/api/auth/refresh-token')
+      .post('/api/v1/auth/refresh-token')
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', [refreshCookie])
       .expect(200);
@@ -132,10 +131,10 @@ describe('refreshToken cookie (Path=/) works on both route aliases', () => {
     expect(newAccess).toContain('HttpOnly');
   });
 
-  it('POST /auth/refresh-token (legacy alias) accepts the same cookie structure', async () => {
+  it('POST /api/v1/auth/refresh-token accepts the cookie via canonical path', async () => {
     const { refreshCookie } = await loginFresh();
     const res = await request(app)
-      .post('/auth/refresh-token')
+      .post('/api/v1/auth/refresh-token')
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', [refreshCookie])
       .expect(200);
@@ -161,7 +160,7 @@ describe('expired accessToken is rejected by protected routes', () => {
     );
 
     await request(app)
-      .get('/api/auth/profile')
+      .get('/api/v1/auth/profile')
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', [`accessToken=${expiredAccess}`])
       .expect(401);
@@ -171,11 +170,11 @@ describe('expired accessToken is rejected by protected routes', () => {
 // ─── (d + e) Refresh restores session after access-token expiry ──────────────
 
 describe('valid refreshToken restores session after access-token expiry', () => {
-  it('issues a new accessToken via /api/auth/refresh-token', async () => {
+  it('issues a new accessToken via /api/v1/auth/refresh-token', async () => {
     const { refreshCookie } = await loginFresh();
 
     const res = await request(app)
-      .post('/api/auth/refresh-token')
+      .post('/api/v1/auth/refresh-token')
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', [refreshCookie])
       .expect(200);
@@ -193,7 +192,7 @@ describe('valid refreshToken restores session after access-token expiry', () => 
     expect(_refreshedAccessCookie).toBeDefined();
 
     const res = await request(app)
-      .get('/api/auth/profile')
+      .get('/api/v1/auth/profile')
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', [_refreshedAccessCookie])
       .expect(200);
@@ -213,7 +212,7 @@ describe('expired refreshToken is rejected by the refresh endpoint', () => {
     );
 
     const res = await request(app)
-      .post('/api/auth/refresh-token')
+      .post('/api/v1/auth/refresh-token')
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', [`refreshToken=${expiredRefresh}`])
       .expect(401);

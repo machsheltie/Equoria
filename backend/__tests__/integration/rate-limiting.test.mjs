@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Integration Tests: Rate Limiting System
  *
  * Tests comprehensive rate limiting for authentication endpoints
@@ -104,7 +104,7 @@ describe('Rate Limiting System', () => {
       // Attempt 1-5: Should be allowed but fail authentication
       for (let i = 1; i <= 5; i++) {
         const response = await request(app)
-          .post('/api/auth/login')
+          .post('/api/v1/auth/login')
           .set('Origin', 'http://localhost:3000')
           .set('X-Forwarded-For', ip)
           .send({
@@ -132,7 +132,7 @@ describe('Rate Limiting System', () => {
       // First 5 attempts (exhaust limit)
       for (let i = 0; i < 5; i++) {
         await request(app)
-          .post('/api/auth/login')
+          .post('/api/v1/auth/login')
           .set('Origin', 'http://localhost:3000')
           .set('X-Forwarded-For', ip)
           .send({
@@ -143,7 +143,7 @@ describe('Rate Limiting System', () => {
 
       // 6th attempt should be rate limited
       const response = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set('X-Forwarded-For', ip)
         .send({
@@ -162,7 +162,7 @@ describe('Rate Limiting System', () => {
       // Fail 3 times
       for (let i = 0; i < 3; i++) {
         await request(app)
-          .post('/api/auth/login')
+          .post('/api/v1/auth/login')
           .set('Origin', 'http://localhost:3000')
           .set('X-Forwarded-For', ip)
           .send({
@@ -173,7 +173,7 @@ describe('Rate Limiting System', () => {
 
       // Successful login should reset counter
       const successResponse = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set('X-Forwarded-For', ip)
         .send({
@@ -185,7 +185,7 @@ describe('Rate Limiting System', () => {
 
       // Should be able to attempt again (counter reset)
       for (let i = 0; i < 5; i++) {
-        const response = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
+        const response = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
           email: testUser.email,
           password: 'WrongPassword123!',
         });
@@ -197,13 +197,13 @@ describe('Rate Limiting System', () => {
     it('should_include_retry_after_in_rate_limit_response', async () => {
       // Exhaust rate limit
       for (let i = 0; i < 5; i++) {
-        await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
+        await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
           email: testUser.email,
           password: 'WrongPassword123!',
         });
       }
 
-      const response = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
+      const response = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
         email: testUser.email,
         password: 'WrongPassword123!',
       });
@@ -220,7 +220,7 @@ describe('Rate Limiting System', () => {
       // Exhaust rate limit from IP 1
       for (let i = 0; i < 5; i++) {
         await request(app)
-          .post('/api/auth/login')
+          .post('/api/v1/auth/login')
           .set('Origin', 'http://localhost:3000')
           .set('X-Forwarded-For', '192.168.1.1')
           .send({
@@ -231,7 +231,7 @@ describe('Rate Limiting System', () => {
 
       // IP 1 should be blocked
       const ip1Response = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set('X-Forwarded-For', '192.168.1.1')
         .send({
@@ -243,7 +243,7 @@ describe('Rate Limiting System', () => {
 
       // IP 2 should still be allowed
       const ip2Response = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set('X-Forwarded-For', '192.168.1.2')
         .send({
@@ -267,7 +267,7 @@ describe('Rate Limiting System', () => {
 
       // Register once to establish a seed user (duplicate attempts below will fail and count)
       const seedResponse = await request(app)
-        .post('/api/auth/register')
+        .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .set('X-Forwarded-For', ip)
         .send(baseData);
@@ -282,7 +282,7 @@ describe('Rate Limiting System', () => {
       // Duplicate registration returns 400 (AppError: 'User with this email or username already exists')
       for (let i = 0; i < 5; i++) {
         const response = await request(app)
-          .post('/api/auth/register')
+          .post('/api/v1/auth/register')
           .set('Origin', 'http://localhost:3000')
           .set('X-Forwarded-For', ip)
           .send(baseData); // same data → duplicate → 400 failure → counts
@@ -296,7 +296,7 @@ describe('Rate Limiting System', () => {
 
       // After 5 failures the next request (even unique data) should be rate limited
       const response = await request(app)
-        .post('/api/auth/register')
+        .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .set('X-Forwarded-For', ip)
         .send({
@@ -313,7 +313,7 @@ describe('Rate Limiting System', () => {
       const ip = getUniqueIP(11);
 
       const response = await request(app)
-        .post('/api/auth/register')
+        .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .set('X-Forwarded-For', ip)
         .send(userData);
@@ -334,7 +334,7 @@ describe('Rate Limiting System', () => {
 
       // Login to get refresh token (using a different IP than the refresh attempts)
       const loginResponse = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set('X-Forwarded-For', loginIP)
         .send({
@@ -363,7 +363,7 @@ describe('Rate Limiting System', () => {
       // First 5 refresh attempts should succeed (with rotation)
       for (let i = 0; i < 5; i++) {
         const response = await request(app)
-          .post('/api/auth/refresh-token')
+          .post('/api/v1/auth/refresh-token')
           .set('Origin', 'http://localhost:3000')
           .set('X-Forwarded-For', refreshIP)
           .set('Cookie', [currentRefreshToken]);
@@ -380,7 +380,7 @@ describe('Rate Limiting System', () => {
 
       // 6th attempt should be rate limited
       const response = await request(app)
-        .post('/api/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set('X-Forwarded-For', refreshIP)
         .set('Cookie', [currentRefreshToken]);
@@ -403,7 +403,7 @@ describe('Rate Limiting System', () => {
     it('should_include_standard_rate_limit_headers', async () => {
       const ip = getUniqueIP(30);
       const response = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set('X-Forwarded-For', ip)
         .send({
@@ -432,7 +432,7 @@ describe('Rate Limiting System', () => {
       const responses = [];
 
       for (let i = 0; i < 3; i++) {
-        const response = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
+        const response = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
           email: testUser.email,
           password: 'WrongPassword123!',
         });
@@ -451,7 +451,7 @@ describe('Rate Limiting System', () => {
     });
 
     it('should_provide_accurate_reset_timestamp', async () => {
-      const response = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
+      const response = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
         email: testUser.email,
         password: 'WrongPassword123!',
       });
@@ -473,17 +473,20 @@ describe('Rate Limiting System', () => {
 
       // Exhaust rate limit
       for (let i = 0; i < 5; i++) {
-        await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
+        await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
           email: testUser.email,
           password: 'WrongPassword123!',
         });
       }
 
       // Should be blocked
-      const blockedResponse = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
-        email: testUser.email,
-        password: 'WrongPassword123!',
-      });
+      const blockedResponse = await request(app)
+        .post('/api/v1/auth/login')
+        .set('Origin', 'http://localhost:3000')
+        .send({
+          email: testUser.email,
+          password: 'WrongPassword123!',
+        });
 
       expect([401, 429]).toContain(blockedResponse.status);
 
@@ -492,10 +495,13 @@ describe('Rate Limiting System', () => {
       await sleep(2000); // 2 seconds
 
       // Should be allowed again
-      const allowedResponse = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
-        email: testUser.email,
-        password: 'WrongPassword123!',
-      });
+      const allowedResponse = await request(app)
+        .post('/api/v1/auth/login')
+        .set('Origin', 'http://localhost:3000')
+        .send({
+          email: testUser.email,
+          password: 'WrongPassword123!',
+        });
 
       expect([200, 401, 429].includes(allowedResponse.status)).toBe(true);
     }, 30000);
@@ -507,7 +513,7 @@ describe('Rate Limiting System', () => {
       const promises = Array(10)
         .fill(null)
         .map(() =>
-          request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
+          request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
             email: testUser.email,
             password: 'WrongPassword123!',
           }),
@@ -523,7 +529,7 @@ describe('Rate Limiting System', () => {
 
   describe('Edge Cases', () => {
     it('should_handle_missing_ip_address_gracefully', async () => {
-      const response = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
+      const response = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
         email: testUser.email,
         password: 'WrongPassword123!',
       });
@@ -535,7 +541,7 @@ describe('Rate Limiting System', () => {
 
     it('should_handle_malformed_requests_with_rate_limiting', async () => {
       for (let i = 0; i < 6; i++) {
-        const response = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
+        const response = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
           // Missing password
           email: testUser.email,
         });
@@ -547,7 +553,7 @@ describe('Rate Limiting System', () => {
     it('should_not_leak_user_existence_through_rate_limiting', async () => {
       // Rate limit for non-existent user
       for (let i = 0; i < 6; i++) {
-        const response = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
+        const response = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
           email: 'nonexistent@example.com',
           password: 'WrongPassword123!',
         });

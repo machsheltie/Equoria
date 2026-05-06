@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 🧪 INTEGRATION TEST: Complete Training Progression Workflow
  *
  * This test validates the ENTIRE training progression from young horse
@@ -124,7 +124,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
       };
 
       const response = await request(app)
-        .post('/api/auth/register')
+        .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .send(userData)
         .expect(201);

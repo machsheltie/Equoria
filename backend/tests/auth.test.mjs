@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 🧪 INTEGRATION TEST: Authentication System - User Registration & Session Management
  *
  * This test validates the complete authentication system including user registration,
@@ -17,11 +17,11 @@
  * - Response consistency: success/error structure with status/message/data
  *
  * 🎯 FUNCTIONALITY TESTED:
- * 1. POST /api/auth/register - User registration with validation
- * 2. POST /api/auth/login - User authentication with credential verification
- * 3. POST /api/auth/refresh - Token refresh for session management
- * 4. GET /api/auth/me - User profile retrieval with authentication
- * 5. POST /api/auth/logout - Session termination with token cleanup
+ * 1. POST /api/v1/auth/register - User registration with validation
+ * 2. POST /api/v1/auth/login - User authentication with credential verification
+ * 3. POST /api/v1/auth/refresh - Token refresh for session management
+ * 4. GET /api/v1/auth/me - User profile retrieval with authentication
+ * 5. POST /api/v1/auth/logout - Session termination with token cleanup
  * 6. Database cleanup and cascading delete operations
  * 7. Edge cases: duplicate emails, weak passwords, invalid tokens
  *
@@ -125,11 +125,11 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     await cleanupTestData();
     // prisma.$disconnect() removed — global teardown handles disconnection
   });
-  describe('POST /api/auth/register', () => {
+  describe('POST /api/v1/auth/register', () => {
     it('should register a new user and player successfully', async () => {
       const userData = createTestUser();
 
-      const response = await authPost('/api/auth/register').send(userData).expect(201);
+      const response = await authPost('/api/v1/auth/register').send(userData).expect(201);
       trackUser(response);
       expect(response.body.status).toBe('success');
       expect(response.body.message).toBe(
@@ -165,7 +165,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
         email: 'invalid-email',
       });
 
-      const response = await authPost('/api/auth/register').send(userData).expect(400);
+      const response = await authPost('/api/v1/auth/register').send(userData).expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Valid email is required');
@@ -176,7 +176,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
         password: 'weak',
       });
 
-      const response = await authPost('/api/auth/register').send(userData).expect(400);
+      const response = await authPost('/api/v1/auth/register').send(userData).expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Password must be between 8 and 128 characters long');
@@ -186,11 +186,11 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
       const userData = createTestUser();
 
       // First registration
-      const response1 = await authPost('/api/auth/register').send(userData).expect(201);
+      const response1 = await authPost('/api/v1/auth/register').send(userData).expect(201);
       trackUser(response1);
 
       // Second registration with same email
-      const response = await authPost('/api/auth/register')
+      const response = await authPost('/api/v1/auth/register')
         .send({ ...userData, username: `other_${Date.now()}_${Math.random().toString(36).slice(2, 6)}` }) // Use a different username
         .expect(400);
 
@@ -199,7 +199,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     });
   });
 
-  describe('POST /api/auth/login', () => {
+  describe('POST /api/v1/auth/login', () => {
     let loginEmail;
     let loginPassword;
     beforeEach(async () => {
@@ -211,7 +211,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
       // .expect(201) ensures any register failure (collision, validation, etc.)
       // fails the test loudly here instead of silently leaking into a misleading
       // 401 on the login assertion below.
-      const response = await authPost('/api/auth/register').send(userData).expect(201);
+      const response = await authPost('/api/v1/auth/register').send(userData).expect(201);
       trackUser(response);
     });
 
@@ -221,7 +221,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
         password: loginPassword,
       };
 
-      const response = await authPost('/api/auth/login').send(loginData).expect(200);
+      const response = await authPost('/api/v1/auth/login').send(loginData).expect(200);
 
       expect(response.body.status).toBe('success');
       expect(response.body.message).toBe('Login successful');
@@ -244,7 +244,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
         password: 'Password123!',
       };
 
-      const response = await authPost('/api/auth/login').send(loginData).expect(401);
+      const response = await authPost('/api/v1/auth/login').send(loginData).expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Invalid credentials');
@@ -256,7 +256,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
         password: 'wrongpassword',
       };
 
-      const response = await authPost('/api/auth/login').send(loginData).expect(401);
+      const response = await authPost('/api/v1/auth/login').send(loginData).expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Invalid credentials');
@@ -268,20 +268,20 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
         password: 'Password123!',
       };
 
-      const response = await authPost('/api/auth/login').send(loginData).expect(400);
+      const response = await authPost('/api/v1/auth/login').send(loginData).expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Valid email is required');
     });
   });
 
-  describe('POST /api/auth/refresh', () => {
+  describe('POST /api/v1/auth/refresh', () => {
     let refreshTokenValue; // Renamed to avoid conflict
     beforeEach(async () => {
       // Create user and get refresh token
       const userData = createTestUser();
 
-      const registerResponse = await authPost('/api/auth/register').send(userData).expect(201);
+      const registerResponse = await authPost('/api/v1/auth/register').send(userData).expect(201);
       trackUser(registerResponse);
 
       // Extract refresh token from cookies
@@ -290,7 +290,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     });
 
     it('should refresh token successfully with valid refresh token', async () => {
-      const response = await authPost('/api/auth/refresh').send({ refreshToken: refreshTokenValue }).expect(200);
+      const response = await authPost('/api/v1/auth/refresh').send({ refreshToken: refreshTokenValue }).expect(200);
       expect(response.body.status).toBe('success');
       expect(response.body.message).toBe('Token refreshed successfully');
 
@@ -302,7 +302,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     });
 
     it('should reject refresh with invalid token', async () => {
-      const response = await authPost('/api/auth/refresh')
+      const response = await authPost('/api/v1/auth/refresh')
         .send({ refreshToken: 'invalid-token' })
 
         .expect(401);
@@ -312,21 +312,21 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     });
 
     it('should reject refresh without token', async () => {
-      const response = await authPost('/api/auth/refresh').send({}).expect(400);
+      const response = await authPost('/api/v1/auth/refresh').send({}).expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Refresh token is required');
     });
   });
 
-  describe('GET /api/auth/me', () => {
+  describe('GET /api/v1/auth/me', () => {
     let authToken;
     let testUser;
     beforeEach(async () => {
       // Create user and get auth token
       const userData = createTestUser();
 
-      const registerResponse = await authPost('/api/auth/register').send(userData).expect(201);
+      const registerResponse = await authPost('/api/v1/auth/register').send(userData).expect(201);
       trackUser(registerResponse);
 
       // Extract access token from cookies
@@ -336,7 +336,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     });
 
     it('should get user profile successfully with valid token', async () => {
-      const response = await authGet('/api/auth/me').set('Authorization', `Bearer ${authToken}`).expect(200);
+      const response = await authGet('/api/v1/auth/me').set('Authorization', `Bearer ${authToken}`).expect(200);
 
       expect(response.body.status).toBe('success');
       expect(response.body.data.user).toBeDefined();
@@ -347,28 +347,28 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     });
 
     it('should reject profile request without token', async () => {
-      const response = await authGet('/api/auth/me').expect(401);
+      const response = await authGet('/api/v1/auth/me').expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Access token is required');
     });
 
     it('should reject profile request with invalid token', async () => {
-      const response = await authGet('/api/auth/me').set('Authorization', 'Bearer invalid-token').expect(401);
+      const response = await authGet('/api/v1/auth/me').set('Authorization', 'Bearer invalid-token').expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Invalid or expired token');
     });
   });
 
-  describe('POST /api/auth/logout', () => {
+  describe('POST /api/v1/auth/logout', () => {
     let authToken;
 
     beforeEach(async () => {
       // Create user and get auth token
       const userData = createTestUser();
 
-      const registerResponse = await authPost('/api/auth/register').send(userData).expect(201);
+      const registerResponse = await authPost('/api/v1/auth/register').send(userData).expect(201);
       trackUser(registerResponse);
 
       // Extract access token from cookies
@@ -377,7 +377,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     });
 
     it('should logout successfully with valid token', async () => {
-      const response = await authPost('/api/auth/logout')
+      const response = await authPost('/api/v1/auth/logout')
         .set('Authorization', `Bearer ${authToken}`)
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
@@ -388,7 +388,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     });
 
     it('should reject logout without token', async () => {
-      const response = await authPost('/api/auth/logout').expect(401);
+      const response = await authPost('/api/v1/auth/logout').expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Access token is required');

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 🧪 INTEGRATION TEST: User Progress API - Comprehensive Progress Tracking
  *
  * This test validates the complete user progress API system including XP tracking,
@@ -142,7 +142,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
     it('should create user and establish initial progress state', async () => {
       // STEP 1: Register user
       const registerResponse = await request(app)
-        .post('/api/auth/register')
+        .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .send({
           username: 'progresstest',
@@ -158,7 +158,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
       // STEP 2: Login to get auth token
       const loginResponse = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .send({
           email: 'progress-test@example.com',

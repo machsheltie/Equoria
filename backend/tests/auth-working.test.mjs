@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 🧪 INTEGRATION TEST: Authentication System - Complete Auth Workflow Validation
  *
  * This test validates the complete authentication system using real HTTP requests
@@ -15,11 +15,11 @@
  * - Input validation: Email format, password strength, required fields
  *
  * 🎯 FUNCTIONALITY TESTED:
- * 1. POST /api/auth/register - User registration with validation and token generation
- * 2. POST /api/auth/login - User authentication with credential verification
- * 3. POST /api/auth/refresh - JWT token refresh with refresh token validation
- * 4. POST /api/auth/logout - Session termination with token invalidation
- * 5. GET /api/auth/me - Protected profile access with token authentication
+ * 1. POST /api/v1/auth/register - User registration with validation and token generation
+ * 2. POST /api/v1/auth/login - User authentication with credential verification
+ * 3. POST /api/v1/auth/refresh - JWT token refresh with refresh token validation
+ * 4. POST /api/v1/auth/logout - Session termination with token invalidation
+ * 5. GET /api/v1/auth/me - Protected profile access with token authentication
  * 6. Error handling: Duplicate emails, invalid credentials, missing tokens
  * 7. Security validation: Password hashing, token security, data sanitization
  * 8. Database operations: User CRUD, cleanup, transaction handling
@@ -58,20 +58,20 @@ const createTestApp = () => {
 
   // Auth routes with minimal validation
   app.post(
-    '/api/auth/register',
+    '/api/v1/auth/register',
     body('name').trim().isLength({ min: 2, max: 50 }),
     body('email').isEmail().normalizeEmail(),
     body('password').isLength({ min: 8, max: 128 }),
     register,
   );
 
-  app.post('/api/auth/login', body('email').isEmail().normalizeEmail(), body('password').notEmpty(), login);
+  app.post('/api/v1/auth/login', body('email').isEmail().normalizeEmail(), body('password').notEmpty(), login);
 
-  app.post('/api/auth/refresh', refreshToken); // No body validation - token comes from cookies
+  app.post('/api/v1/auth/refresh', refreshToken); // No body validation - token comes from cookies
 
-  app.post('/api/auth/logout', authenticateToken, logout);
+  app.post('/api/v1/auth/logout', authenticateToken, logout);
 
-  app.get('/api/auth/me', authenticateToken, getProfile);
+  app.get('/api/v1/auth/me', authenticateToken, getProfile);
 
   // Basic error handler for debugging
   app.use((err, req, res, _next) => {
@@ -149,7 +149,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
       };
 
       const response = await request(app)
-        .post('/api/auth/register')
+        .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .send(userData)
         .expect(201);
@@ -184,7 +184,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
 
       // First registration
       const response1 = await request(app)
-        .post('/api/auth/register')
+        .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .send(userData)
         .expect(201);
@@ -192,7 +192,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
 
       // Second registration with same email
       const response = await request(app)
-        .post('/api/auth/register')
+        .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .send(userData)
         .expect(400);
@@ -220,7 +220,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
       };
 
       const response = await request(app)
-        .post('/api/auth/register')
+        .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .send(userData);
       trackUser(response);
@@ -233,7 +233,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
       };
 
       const response = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .send(loginData)
         .expect(200);
@@ -256,7 +256,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
       };
 
       const response = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .send(loginData)
 
@@ -283,7 +283,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
       };
 
       const registerResponse = await request(app)
-        .post('/api/auth/register')
+        .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .send(userData);
       trackUser(registerResponse);
@@ -304,7 +304,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
 
     it('should refresh token successfully', async () => {
       const response = await request(app)
-        .post('/api/auth/refresh')
+        .post('/api/v1/auth/refresh')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', `refreshToken=${refreshTokenValue}`) // Send as cookie header, not body
         .expect(200);
@@ -320,7 +320,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
 
     it('should reject invalid refresh token', async () => {
       const response = await request(app)
-        .post('/api/auth/refresh')
+        .post('/api/v1/auth/refresh')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', 'refreshToken=invalid-token') // Send as cookie header, not body
 
@@ -349,7 +349,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
       };
 
       const registerResponse = await request(app)
-        .post('/api/auth/register')
+        .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .send(userData);
       trackUser(registerResponse);
@@ -366,7 +366,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
 
     it('should get user profile with valid token', async () => {
       const response = await request(app)
-        .get('/api/auth/me')
+        .get('/api/v1/auth/me')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authTokenValue}`) // Use renamed variable
         .expect(200);
@@ -381,7 +381,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
 
     it('should reject profile request without token', async () => {
       const response = await request(app)
-        .get('/api/auth/me')
+        .get('/api/v1/auth/me')
         .set('Origin', 'http://localhost:3000')
 
         .expect(401);
@@ -392,7 +392,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
 
     it('should logout successfully', async () => {
       const response = await request(app)
-        .post('/api/auth/logout')
+        .post('/api/v1/auth/logout')
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${authTokenValue}`) // Use renamed variable
         .expect(200);

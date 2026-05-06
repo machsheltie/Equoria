@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 🧪 SYSTEM INTEGRATION TEST: API Response System Validation
  *
  * This test validates API response system integration including response format
@@ -76,7 +76,7 @@ const createTestApp = () => {
 
   // Auth routes for testing
   app.post(
-    '/api/auth/register',
+    '/api/v1/auth/register',
     [
       body('email').isEmail().normalizeEmail(),
       body('username').isLength({ min: 3, max: 30 }),
@@ -89,7 +89,7 @@ const createTestApp = () => {
   );
 
   app.post(
-    '/api/auth/login',
+    '/api/v1/auth/login',
     [body('email').isEmail().normalizeEmail(), body('password').notEmpty(), handleValidationErrors],
     login,
   );
@@ -225,7 +225,7 @@ describe('🔄 API Response Integration Tests', () => {
     };
 
     const registerResponse = await request(app)
-      .post('/api/auth/register')
+      .post('/api/v1/auth/register')
       .set('Origin', 'http://localhost:3000')
       .send(userData);
 
@@ -432,7 +432,7 @@ describe('🔄 API Response Integration Tests', () => {
 
   describe('🔗 Cross-System Response Consistency', () => {
     test('should maintain consistent response format across auth endpoints', async () => {
-      const loginResponse = await request(app).post('/api/auth/login').set('Origin', 'http://localhost:3000').send({
+      const loginResponse = await request(app).post('/api/v1/auth/login').set('Origin', 'http://localhost:3000').send({
         email: 'apiresponseintegration@test.com',
         password: 'TestPassword123!',
       });
@@ -480,7 +480,7 @@ describe('🔄 API Response Integration Tests', () => {
   describe('🛡️ Error Handling Consistency', () => {
     test('should handle invalid JSON gracefully', async () => {
       const response = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set('Content-Type', 'application/json')
         .send('invalid json');
@@ -496,7 +496,7 @@ describe('🔄 API Response Integration Tests', () => {
     });
 
     test('should handle validation errors consistently', async () => {
-      const response = await request(app).post('/api/auth/register').set('Origin', 'http://localhost:3000').send({
+      const response = await request(app).post('/api/v1/auth/register').set('Origin', 'http://localhost:3000').send({
         email: 'invalid-email',
         username: 'ab', // Too short
         password: '123', // Too short

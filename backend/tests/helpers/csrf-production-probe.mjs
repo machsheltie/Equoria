@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Production-mode CSRF cookie probe.
  *
  * Run as a child process (see __tests__/integration/csrf-production-cookie.test.mjs).
@@ -30,7 +30,9 @@ const { default: app } = await import('../../app.mjs');
 const SENTINEL = '__CSRF_PROBE_JSON__';
 
 try {
-  const res = await request(app).get('/auth/csrf-token').set('Origin', 'http://localhost:3000');
+  const res = await request(app)
+    .get('/api/v1/auth/csrf-token')
+    .set('Origin', 'http://localhost:3000');
   const setCookies = res.headers['set-cookie'] || [];
   // process.exit() does NOT wait for stdout to flush when stdout is piped
   // (which it is under spawnSync). For small payloads this usually works,

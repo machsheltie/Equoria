@@ -1,4 +1,4 @@
-/**
+﻿/**
  * OnboardingPage — Celestial Night Rebuild (Epic 25-2)
  *
  * 3-step new-player wizard, fully restyled to Celestial Night.
@@ -10,7 +10,7 @@
  *   2. Ready       — stable preview + CTA to start guided tour
  *
  * Registration creates the starter horse. On completion this page calls
- * POST /api/auth/advance-onboarding to customize that starter horse, then
+ * POST /api/v1/auth/advance-onboarding to customize that starter horse, then
  * navigates to /stable so the tester sees their persisted horse.
  */
 

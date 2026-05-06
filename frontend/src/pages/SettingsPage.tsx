@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Settings Page
  *
  * Story 9B-4: Settings Page — account preferences, notification toggles,
@@ -11,9 +11,9 @@
  *
  * Equoria-ocn9 (2026-04-23): Account section is no longer a façade.
  * - Inputs are controlled and seeded from useAuth().user.
- * - Save Changes calls useUpdateProfile() (PUT /api/auth/profile).
+ * - Save Changes calls useUpdateProfile() (PUT /api/v1/auth/profile).
  * - Update Password reveals an inline form and calls useChangePassword()
- *   (POST /api/auth/change-password). On success the server invalidates all
+ *   (POST /api/v1/auth/change-password). On success the server invalidates all
  *   sessions; we sign the user out client-side to match.
  * - Delete Account opens a typed-confirmation modal and calls
  *   useDeleteAccount() (DELETE /api/users/:id). The hook clears React Query

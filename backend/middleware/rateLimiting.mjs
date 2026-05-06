@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 🚦 REDIS-BACKED DISTRIBUTED RATE LIMITING
  *
  * Enterprise-grade distributed rate limiting using Redis for multi-process/multi-server deployments.
@@ -410,7 +410,7 @@ export const queryRateLimiter = createRateLimiter({
  * Profile Endpoint Rate Limiter
  * Stricter limits for user profile access to prevent abuse.
  * ⚠️ DEV WORKFLOW NOTE: Development limit is 200/min to prevent lockouts
- * during active frontend dev where /api/auth/me may be polled frequently.
+ * during active frontend dev where /api/v1/auth/me may be polled frequently.
  * DO NOT reduce the development limit.
  * Production: 30 req / min | Development: 200 req / min
  */

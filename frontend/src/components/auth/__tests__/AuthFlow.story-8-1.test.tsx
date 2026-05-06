@@ -1,4 +1,4 @@
-/**
+﻿/**
  * AuthFlow Integration Tests (Story 8.1: Authentication End-to-End)
  *
  * Tests the full authentication flow:
@@ -93,9 +93,9 @@ describe('AuthFlow Integration Tests (Story 8.1)', () => {
   // ─── Login Flow ───────────────────────────────────────────────────────────
 
   describe('Login flow (AC: 1)', () => {
-    it('MSW handler for POST /api/auth/login returns success for valid credentials', async () => {
+    it('MSW handler for POST /api/v1/auth/login returns success for valid credentials', async () => {
       const base = 'http://localhost:3000';
-      const response = await fetch(`${base}/api/auth/login`, {
+      const response = await fetch(`${base}/api/v1/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: 'test@example.com', password: 'password123' }),
@@ -108,7 +108,7 @@ describe('AuthFlow Integration Tests (Story 8.1)', () => {
 
     it('returns generic error message for invalid credentials', async () => {
       const base = 'http://localhost:3000';
-      const response = await fetch(`${base}/api/auth/login`, {
+      const response = await fetch(`${base}/api/v1/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: 'test@example.com', password: 'wrong' }),
@@ -120,7 +120,7 @@ describe('AuthFlow Integration Tests (Story 8.1)', () => {
 
     it('returns same generic error for non-existent email (no email enumeration)', async () => {
       const base = 'http://localhost:3000';
-      const response = await fetch(`${base}/api/auth/login`, {
+      const response = await fetch(`${base}/api/v1/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: 'invalid@example.com', password: 'password123' }),
@@ -134,9 +134,9 @@ describe('AuthFlow Integration Tests (Story 8.1)', () => {
   // ─── Session Persistence ──────────────────────────────────────────────────
 
   describe('Session persistence (AC: 2)', () => {
-    it('MSW handler for GET /api/auth/profile returns authenticated user', async () => {
+    it('MSW handler for GET /api/v1/auth/profile returns authenticated user', async () => {
       const base = 'http://localhost:3000';
-      const response = await fetch(`${base}/api/auth/profile`);
+      const response = await fetch(`${base}/api/v1/auth/profile`);
       expect(response.status).toBe(200);
       const data = await response.json();
       expect(data.status).toBe('success');
@@ -169,9 +169,9 @@ describe('AuthFlow Integration Tests (Story 8.1)', () => {
       expect(screen.getByTestId('protected-content')).toBeInTheDocument();
     });
 
-    it('MSW handler for GET /api/auth/me returns user data', async () => {
+    it('MSW handler for GET /api/v1/auth/me returns user data', async () => {
       const base = 'http://localhost:3000';
-      const response = await fetch(`${base}/api/auth/me`);
+      const response = await fetch(`${base}/api/v1/auth/me`);
       expect(response.status).toBe(200);
       const data = await response.json();
       expect(data.status).toBe('success');
@@ -243,12 +243,12 @@ describe('AuthFlow Integration Tests (Story 8.1)', () => {
       const base = 'http://localhost:3000';
 
       server.use(
-        http.get(`${base}/api/auth/profile`, () =>
+        http.get(`${base}/api/v1/auth/profile`, () =>
           HttpResponse.json({ message: 'Unauthorized' }, { status: 401 })
         )
       );
 
-      const response = await fetch(`${base}/api/auth/profile`);
+      const response = await fetch(`${base}/api/v1/auth/profile`);
       expect(response.status).toBe(401);
     });
   });
@@ -256,9 +256,9 @@ describe('AuthFlow Integration Tests (Story 8.1)', () => {
   // ─── Logout Flow ──────────────────────────────────────────────────────────
 
   describe('Logout flow (AC: 4)', () => {
-    it('MSW handler for POST /api/auth/logout returns success', async () => {
+    it('MSW handler for POST /api/v1/auth/logout returns success', async () => {
       const base = 'http://localhost:3000';
-      const response = await fetch(`${base}/api/auth/logout`, { method: 'POST' });
+      const response = await fetch(`${base}/api/v1/auth/logout`, { method: 'POST' });
       expect(response.status).toBe(200);
       const data = await response.json();
       expect(data.status).toBe('success');
@@ -294,13 +294,13 @@ describe('AuthFlow Integration Tests (Story 8.1)', () => {
     it('uses same 401 status for both wrong password and non-existent email', async () => {
       const base = 'http://localhost:3000';
 
-      const wrongPwdResponse = await fetch(`${base}/api/auth/login`, {
+      const wrongPwdResponse = await fetch(`${base}/api/v1/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: 'real@example.com', password: 'wrong' }),
       });
 
-      const noEmailResponse = await fetch(`${base}/api/auth/login`, {
+      const noEmailResponse = await fetch(`${base}/api/v1/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: 'invalid.user@example.com', password: 'anything' }),
@@ -460,9 +460,9 @@ describe('AuthFlow Integration Tests (Story 8.1)', () => {
   // ─── Verification Status (AC: 2) ─────────────────────────────────────────
 
   describe('Verification status handler', () => {
-    it('MSW handler for GET /api/auth/verification-status returns verified status', async () => {
+    it('MSW handler for GET /api/v1/auth/verification-status returns verified status', async () => {
       const base = 'http://localhost:3000';
-      const response = await fetch(`${base}/api/auth/verification-status`);
+      const response = await fetch(`${base}/api/v1/auth/verification-status`);
       expect(response.status).toBe(200);
       const data = await response.json();
       expect(data.success).toBe(true);

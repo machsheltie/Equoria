@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 🔄 Token Rotation Service (TDD GREEN Implementation Phase)
  *
  * Implements refresh token rotation and reuse detection security measures.
@@ -439,7 +439,7 @@ export async function rotateRefreshToken(oldToken) {
       };
     }
 
-    // Use transaction to ensure atomicity. Two concurrent /api/auth/refresh
+    // Use transaction to ensure atomicity. Two concurrent /api/v1/auth/refresh
     // calls with the same old token must not both succeed: validateRefreshToken
     // sees isActive:true for both before either tx starts, so we cannot rely
     // on the pre-transaction validation. Instead, atomically flip

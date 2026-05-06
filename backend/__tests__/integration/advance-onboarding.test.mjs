@@ -1,5 +1,5 @@
-/**
- * Integration Tests: POST /api/auth/advance-onboarding
+﻿/**
+ * Integration Tests: POST /api/v1/auth/advance-onboarding
  *
  * Tests the advance-onboarding endpoint which increments User.settings.onboardingStep
  * and sets completedOnboarding: true when step 10 is reached.
@@ -14,7 +14,7 @@ import bcrypt from 'bcryptjs';
 
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 import { randomBytes } from 'node:crypto';
-describe('POST /api/auth/advance-onboarding', () => {
+describe('POST /api/v1/auth/advance-onboarding', () => {
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
@@ -50,7 +50,7 @@ describe('POST /api/auth/advance-onboarding', () => {
     });
 
     const loginResponse = await request(app)
-      .post('/api/auth/login')
+      .post('/api/v1/auth/login')
       .set('Origin', 'http://localhost:3000')
       .set(rateLimitBypassHeader)
       .send({ email: testUserData.email, password: testUserData.password })
@@ -91,7 +91,7 @@ describe('POST /api/auth/advance-onboarding', () => {
 
   it('should advance onboarding step from 0 to 1', async () => {
     const response = await request(app)
-      .post('/api/auth/advance-onboarding')
+      .post('/api/v1/auth/advance-onboarding')
       .set('Origin', 'http://localhost:3000')
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .set('Cookie', cookieHeader)
@@ -116,7 +116,7 @@ describe('POST /api/auth/advance-onboarding', () => {
     });
 
     const response = await request(app)
-      .post('/api/auth/advance-onboarding')
+      .post('/api/v1/auth/advance-onboarding')
       .set('Origin', 'http://localhost:3000')
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .set('Cookie', cookieHeader)
@@ -136,7 +136,7 @@ describe('POST /api/auth/advance-onboarding', () => {
     });
 
     const response = await request(app)
-      .post('/api/auth/advance-onboarding')
+      .post('/api/v1/auth/advance-onboarding')
       .set('Origin', 'http://localhost:3000')
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .set('Cookie', cookieHeader)
@@ -169,7 +169,7 @@ describe('POST /api/auth/advance-onboarding', () => {
     });
 
     const response = await request(app)
-      .post('/api/auth/advance-onboarding')
+      .post('/api/v1/auth/advance-onboarding')
       .set('Origin', 'http://localhost:3000')
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .set('Cookie', cookieHeader)
@@ -204,7 +204,7 @@ describe('POST /api/auth/advance-onboarding', () => {
 
   it('should return 401 when not authenticated', async () => {
     await request(app)
-      .post('/api/auth/advance-onboarding')
+      .post('/api/v1/auth/advance-onboarding')
       .set('Origin', 'http://localhost:3000')
       .set('X-CSRF-Token', __csrf__.csrfToken)
       .set('X-Test-Require-Auth', 'true')
@@ -218,7 +218,7 @@ describe('POST /api/auth/advance-onboarding', () => {
     });
 
     const response = await request(app)
-      .get('/api/auth/profile')
+      .get('/api/v1/auth/profile')
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', cookieHeader)
       .set('X-Test-Email', testUserData.email)
@@ -237,7 +237,7 @@ describe('POST /api/auth/advance-onboarding', () => {
     });
 
     const response = await request(app)
-      .get('/api/auth/profile')
+      .get('/api/v1/auth/profile')
       .set('Origin', 'http://localhost:3000')
       .set('Cookie', cookieHeader)
       .set('X-Test-Email', testUserData.email)

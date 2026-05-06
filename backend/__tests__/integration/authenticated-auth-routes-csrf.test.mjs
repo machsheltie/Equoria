@@ -1,17 +1,17 @@
-/**
+﻿/**
  * Authenticated auth-route CSRF protection — regression canary.
  *
- * Every authenticated state-changing route under /api/auth/* MUST traverse
+ * Every authenticated state-changing route under /api/v1/auth/* MUST traverse
  * the authRouter's `authenticateToken` + `csrfProtection` middleware stack.
  * This file asserts each one in turn:
  *
- *   - PUT    /api/auth/profile
- *   - POST   /api/auth/logout
- *   - POST   /api/auth/change-password
- *   - POST   /api/auth/resend-verification
- *   - POST   /api/auth/complete-onboarding
- *   - POST   /api/auth/advance-onboarding
- *   - PATCH  /api/auth/profile/preferences
+ *   - PUT    /api/v1/auth/profile
+ *   - POST   /api/v1/auth/logout
+ *   - POST   /api/v1/auth/change-password
+ *   - POST   /api/v1/auth/resend-verification
+ *   - POST   /api/v1/auth/complete-onboarding
+ *   - POST   /api/v1/auth/advance-onboarding
+ *   - PATCH  /api/v1/auth/profile/preferences
  *
  * For each, we prove:
  *   A) without a CSRF cookie+header, the authenticated call returns 403
@@ -54,7 +54,7 @@ describe('authenticated auth routes — CSRF enforcement canary', () => {
     const email = `${PREFIX}${unique}@test.com`;
     const username = `${PREFIX}${unique}`;
 
-    const res = await request(app).post('/auth/register').set('Origin', ORIGIN).send({
+    const res = await request(app).post('/api/v1/auth/register').set('Origin', ORIGIN).send({
       email,
       username,
       password: 'TestPass123!',
@@ -82,17 +82,17 @@ describe('authenticated auth routes — CSRF enforcement canary', () => {
   });
 
   const authenticatedMutations = [
-    { method: 'put', path: '/api/auth/profile', body: { firstName: 'X' } },
-    { method: 'post', path: '/api/auth/logout', body: {} },
+    { method: 'put', path: '/api/v1/auth/profile', body: { firstName: 'X' } },
+    { method: 'post', path: '/api/v1/auth/logout', body: {} },
     {
       method: 'post',
-      path: '/api/auth/change-password',
+      path: '/api/v1/auth/change-password',
       body: { oldPassword: 'TestPass123!', newPassword: 'NewPass123!' },
     },
-    { method: 'post', path: '/api/auth/resend-verification', body: {} },
-    { method: 'post', path: '/api/auth/complete-onboarding', body: {} },
-    { method: 'post', path: '/api/auth/advance-onboarding', body: {} },
-    { method: 'patch', path: '/api/auth/profile/preferences', body: {} },
+    { method: 'post', path: '/api/v1/auth/resend-verification', body: {} },
+    { method: 'post', path: '/api/v1/auth/complete-onboarding', body: {} },
+    { method: 'post', path: '/api/v1/auth/advance-onboarding', body: {} },
+    { method: 'patch', path: '/api/v1/auth/profile/preferences', body: {} },
   ];
 
   describe.each(authenticatedMutations)('$method $path', ({ method, path, body }) => {

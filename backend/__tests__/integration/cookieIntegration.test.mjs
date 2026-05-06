@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 🧪 COOKIE INTEGRATION TESTS
  *
  * Integration tests for cookie handling in authentication endpoints
@@ -73,7 +73,7 @@ describe('Cookie Integration Tests', () => {
   describe('Registration Endpoint Cookies', () => {
     test('should set accessToken cookie with correct attributes', async () => {
       const response = await request(app)
-        .post('/auth/register')
+        .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
@@ -115,7 +115,7 @@ describe('Cookie Integration Tests', () => {
 
     test('should set refreshToken cookie with correct attributes', async () => {
       const response = await request(app)
-        .post('/auth/register')
+        .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .send({
           username: `${SUITE_PREFIX}_r2user`,
@@ -154,7 +154,7 @@ describe('Cookie Integration Tests', () => {
 
     test('should set both cookies in a single response', async () => {
       const response = await request(app)
-        .post('/auth/register')
+        .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .send({
           username: `${SUITE_PREFIX}_r3user`,
@@ -192,7 +192,7 @@ describe('Cookie Integration Tests', () => {
     beforeEach(async () => {
       // Create test user
       await request(app)
-        .post('/auth/register')
+        .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
@@ -210,7 +210,7 @@ describe('Cookie Integration Tests', () => {
 
     test('should set cookies on successful login', async () => {
       const response = await request(app)
-        .post('/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
@@ -237,7 +237,7 @@ describe('Cookie Integration Tests', () => {
 
     test('should set accessToken cookie with correct attributes on login', async () => {
       const response = await request(app)
-        .post('/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
@@ -257,7 +257,7 @@ describe('Cookie Integration Tests', () => {
 
     test('should set refreshToken cookie with correct attributes on login', async () => {
       const response = await request(app)
-        .post('/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
@@ -282,7 +282,7 @@ describe('Cookie Integration Tests', () => {
     beforeEach(async () => {
       // Create and login test user
       await request(app)
-        .post('/auth/register')
+        .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
@@ -298,7 +298,7 @@ describe('Cookie Integration Tests', () => {
       });
 
       loginResponse = await request(app)
-        .post('/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
@@ -313,7 +313,7 @@ describe('Cookie Integration Tests', () => {
       expect(refreshTokenCookie).toBeDefined();
 
       const response = await request(app)
-        .post('/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('Cookie', refreshTokenCookie);
@@ -335,7 +335,7 @@ describe('Cookie Integration Tests', () => {
       expect(refreshTokenCookie).toBeDefined();
 
       const response = await request(app)
-        .post('/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('Cookie', refreshTokenCookie);
@@ -355,7 +355,7 @@ describe('Cookie Integration Tests', () => {
       expect(refreshTokenCookie).toBeDefined();
 
       const response = await request(app)
-        .post('/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('Cookie', refreshTokenCookie);
@@ -376,7 +376,7 @@ describe('Cookie Integration Tests', () => {
     beforeEach(async () => {
       // Create and login test user
       await request(app)
-        .post('/auth/register')
+        .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
@@ -392,7 +392,7 @@ describe('Cookie Integration Tests', () => {
       });
 
       loginResponse = await request(app)
-        .post('/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
@@ -407,7 +407,7 @@ describe('Cookie Integration Tests', () => {
       expect(accessTokenCookie).toBeDefined();
 
       const response = await request(app)
-        .post('/api/auth/logout')
+        .post('/api/v1/auth/logout')
         .set('Origin', 'http://localhost:3000')
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .set(rateLimitBypassHeader)
@@ -431,7 +431,7 @@ describe('Cookie Integration Tests', () => {
       expect(accessTokenCookie).toBeDefined();
 
       const response = await request(app)
-        .post('/api/auth/logout')
+        .post('/api/v1/auth/logout')
         .set('Origin', 'http://localhost:3000')
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .set(rateLimitBypassHeader)
@@ -453,7 +453,7 @@ describe('Cookie Integration Tests', () => {
       expect(accessTokenCookie).toBeDefined();
 
       const response = await request(app)
-        .post('/api/auth/logout')
+        .post('/api/v1/auth/logout')
         .set('Origin', 'http://localhost:3000')
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .set(rateLimitBypassHeader)
@@ -473,7 +473,7 @@ describe('Cookie Integration Tests', () => {
     test('should use consistent security attributes across all endpoints', async () => {
       // Register
       const registerResponse = await request(app)
-        .post('/auth/register')
+        .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
@@ -490,7 +490,7 @@ describe('Cookie Integration Tests', () => {
 
       // Login
       const loginResponse = await request(app)
-        .post('/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .send({
@@ -503,7 +503,7 @@ describe('Cookie Integration Tests', () => {
       const refreshTokenCookie = loginCookies.find(cookie => cookie.startsWith('refreshToken='));
       expect(refreshTokenCookie).toBeDefined();
       const refreshResponse = await request(app)
-        .post('/auth/refresh-token')
+        .post('/api/v1/auth/refresh-token')
         .set('Origin', 'http://localhost:3000')
         .set(rateLimitBypassHeader)
         .set('Cookie', refreshTokenCookie);

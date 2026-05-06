@@ -1,4 +1,4 @@
-/**
+﻿/**
  * INTEGRATION TEST: Complete Horse Breeding Workflow
  *
  * This test validates the ENTIRE horse breeding process from user registration
@@ -117,7 +117,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
       };
 
       const response = await request(app)
-        .post('/api/auth/register')
+        .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)

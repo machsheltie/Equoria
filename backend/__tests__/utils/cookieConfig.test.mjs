@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 🧪 COOKIE CONFIGURATION TESTS
  *
  * Tests for centralized cookie configuration module
@@ -120,7 +120,7 @@ describe('Cookie Configuration Module', () => {
         secure: true,
         sameSite: 'strict',
         maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        path: '/', // 21R-AUTH-1: must cover both /auth/refresh-token and /api/auth/refresh-token mounts
+        path: '/', // 21R-AUTH-1: must cover both /auth/refresh-token and /api/v1/auth/refresh-token mounts
         domain: undefined,
       });
     });
@@ -134,7 +134,7 @@ describe('Cookie Configuration Module', () => {
       expect(COOKIE_OPTIONS.refreshToken.maxAge).toBe(expectedMaxAge);
     });
 
-    test('should have path set to root so both /auth/refresh-token and /api/auth/refresh-token receive the cookie (21R-AUTH-1)', async () => {
+    test('should have path set to root so both /auth/refresh-token and /api/v1/auth/refresh-token receive the cookie (21R-AUTH-1)', async () => {
       process.env.NODE_ENV = 'production';
       const config = await import('../../utils/cookieConfig.mjs');
       COOKIE_OPTIONS = config.COOKIE_OPTIONS;

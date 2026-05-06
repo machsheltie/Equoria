@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Unit Tests: Authentication Rate Limiter
  *
  * Tests the rate limiting utility and middleware in isolation
@@ -33,7 +33,7 @@ describe('Authentication Rate Limiter (Unit)', () => {
     _mockReq = createMockRequest({
       ip: '127.0.0.1',
       method: 'POST',
-      path: '/api/auth/login',
+      path: '/api/v1/auth/login',
     });
     _mockRes = createMockResponse();
     _mockNext = jest.fn();

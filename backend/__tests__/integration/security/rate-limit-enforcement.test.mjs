@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Integration Tests: Rate Limit Enforcement (Security)
  *
  * Validates that rate limiting infrastructure is active and properly
@@ -66,7 +66,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
 
     it('should include rate limit headers on auth endpoints', async () => {
       const response = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
@@ -145,7 +145,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       // This test validates the rate limit response format
       // In test environments, rate limits are increased so we verify the infrastructure
       const response = await request(app)
-        .post('/api/auth/login')
+        .post('/api/v1/auth/login')
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)

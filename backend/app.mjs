@@ -165,10 +165,8 @@ adminRouter.use(authenticateToken, requireRole('admin'));
 adminRouter.use(csrfProtection);
 
 // PUBLIC ROUTES (No authentication)
-// Auth endpoints (login, register, password reset, CSRF token)
-publicRouter.use('/auth', authRoutes);
-// Backward compatibility for tests hitting /api/auth/*
-publicRouter.use('/api/auth', authRoutes);
+// Public auth endpoints (login, register, password reset, CSRF token) — no JWT required
+publicRouter.use('/api/v1/auth', authRoutes);
 // Documentation endpoints
 publicRouter.use('/docs', documentationRoutes);
 publicRouter.use('/api/docs', documentationRoutes);
@@ -281,7 +279,7 @@ app.use(helmet(helmetConfig));
 // CORS + no-origin policy — single authoritative source.
 //
 // Scope: the no-origin gate fires ONLY on STATE-CHANGING methods
-// (POST/PUT/PATCH/DELETE) targeting API paths (`/api/*` or `/auth/*`).
+// (POST/PUT/PATCH/DELETE) targeting API paths (`/api/*`).
 //
 // Why method-scoped:
 // - Modern browsers send `Origin` on all cross-origin requests AND on
@@ -289,11 +287,10 @@ app.use(helmet(helmetConfig));
 //   `Origin` is curl-style tooling or a forged request — safe to block.
 // - Browsers do NOT send `Origin` on same-origin GET/HEAD (per Fetch
 //   spec). In production the SPA is served same-origin, so the app's
-//   own `GET /api/auth/csrf-token`, `GET /api/auth/profile`,
-//   `GET /api/auth/verification-status`, etc. arrive without `Origin`.
-//   A read-only GET is not a CSRF attack surface (no state change), so
-//   it is safe to let these through the no-origin gate. CORS still
-//   validates the Origin value when present for cross-origin GETs.
+//   own GET endpoints under /api/v1/ (CSRF token, profile, status) arrive
+//   without `Origin`. A read-only GET is not a CSRF attack surface (no
+//   state change), so it is safe to let these through the no-origin gate.
+//   CORS still validates the Origin value when present for cross-origin GETs.
 // - SPA HTML, /assets/*, /fonts/*, /images/* are GETs below /api — not
 //   gated by this policy either way.
 //
@@ -312,7 +309,7 @@ app.use(helmet(helmetConfig));
 //
 // There is no machine-client API-key fallback. The prior dead
 // `validateApiKey` middleware has been removed — do not reintroduce it.
-const NO_ORIGIN_ENFORCED_PREFIXES = ['/api/', '/auth/'];
+const NO_ORIGIN_ENFORCED_PREFIXES = ['/api/'];
 const STATE_CHANGING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 const requiresOriginCheck = req => {

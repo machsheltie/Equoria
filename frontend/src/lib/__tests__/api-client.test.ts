@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Unit Tests: Frontend API Client
  *
  * Tests the httpOnly cookie-based API client
@@ -22,7 +22,7 @@ describe('API Client - HttpOnly Cookie Support', () => {
     server.close();
 
     // Prime the module-level CSRF token cache. Every mutation (POST/PUT/DELETE/PATCH)
-    // calls getCsrfToken() which fetches /api/auth/csrf-token; without priming, each
+    // calls getCsrfToken() which fetches /api/v1/auth/csrf-token; without priming, each
     // mutation test's first mockResolvedValueOnce would be consumed by that pre-fetch,
     // leaving the real request unmocked (→ undefined response → "Cannot read property
     // 'status'"). One priming call caches the token for the rest of the suite.
@@ -79,7 +79,7 @@ describe('API Client - HttpOnly Cookie Support', () => {
         json: async () => ({ data: { user: { id: 1 } } }),
       });
 
-      await apiClient.get('/api/auth/profile');
+      await apiClient.get('/api/v1/auth/profile');
 
       // Verify credentials: 'include' is set (browser automatically sends cookies)
       const callArgs = mockFetch.mock.calls[0][1];
@@ -204,7 +204,7 @@ describe('API Client - HttpOnly Cookie Support', () => {
 
         // Verify credentials: 'include'
         expect(mockFetch).toHaveBeenCalledWith(
-          expect.stringContaining('/api/auth/login'),
+          expect.stringContaining('/api/v1/auth/login'),
           expect.objectContaining({
             credentials: 'include',
           })
@@ -245,7 +245,7 @@ describe('API Client - HttpOnly Cookie Support', () => {
         });
 
         expect(mockFetch).toHaveBeenCalledWith(
-          expect.stringContaining('/api/auth/register'),
+          expect.stringContaining('/api/v1/auth/register'),
           expect.objectContaining({
             credentials: 'include',
           })
@@ -301,7 +301,7 @@ describe('API Client - HttpOnly Cookie Support', () => {
         const result = await authApi.logout();
 
         expect(mockFetch).toHaveBeenCalledWith(
-          expect.stringContaining('/api/auth/logout'),
+          expect.stringContaining('/api/v1/auth/logout'),
           expect.objectContaining({
             method: 'POST',
             credentials: 'include',
@@ -347,7 +347,7 @@ describe('API Client - HttpOnly Cookie Support', () => {
         }),
       });
 
-      await expect(apiClient.get('/api/auth/profile')).rejects.toMatchObject({
+      await expect(apiClient.get('/api/v1/auth/profile')).rejects.toMatchObject({
         statusCode: 401,
         message: 'Session expired. Please log in again.',
       });
@@ -387,7 +387,7 @@ describe('API Client - HttpOnly Cookie Support', () => {
         json: async () => ({ data: {} }),
       });
 
-      await apiClient.get('/api/auth/profile');
+      await apiClient.get('/api/v1/auth/profile');
 
       const callArgs = mockFetch.mock.calls[0][1];
       const headers = callArgs?.headers as Record<string, string>;
@@ -410,7 +410,7 @@ describe('API Client - HttpOnly Cookie Support', () => {
         json: async () => ({ data: { user: { id: 1 } } }),
       });
 
-      apiClient.get('/api/auth/profile');
+      apiClient.get('/api/v1/auth/profile');
 
       expect(setItemSpy).not.toHaveBeenCalled();
       expect(getItemSpy).not.toHaveBeenCalled();
