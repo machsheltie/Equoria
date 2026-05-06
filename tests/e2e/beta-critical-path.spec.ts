@@ -167,7 +167,7 @@ test.describe('Path 1: New-player critical path', () => {
     expect(typeof horseId).toBe('number');
 
     // ── 9. /stable renders a horse card with the correct name ─────────────
-    await expect(page.locator('h1')).toContainText('Your Stable', { timeout: 15000 });
+    await expect(page.locator('h1')).toContainText('My Stable', { timeout: 15000 });
     // Horse name may appear in multiple places (card + sidebar); assert the first visible one
     await expect(page.getByText(horseName).first()).toBeVisible({ timeout: 10000 });
     await expect(page.getByText(selectedHorse.breedName).first()).toBeVisible({ timeout: 10000 });
@@ -213,7 +213,7 @@ test.describe('Path 2: Returning-player login smoke', () => {
 
     // Navigate to /stable
     await page.goto('/stable', { waitUntil: 'domcontentloaded' });
-    await expect(page.locator('h1')).toContainText('Your Stable', { timeout: 15000 });
+    await expect(page.locator('h1')).toContainText('My Stable', { timeout: 15000 });
 
     // At least one horse card is visible (global-setup created a horse)
     await expect(page.locator('[data-testid="horse-card"]').first()).toBeVisible({
@@ -258,7 +258,7 @@ test.describe('Path 3: Horse detail smoke', () => {
     await page.waitForURL('/', { timeout: 20000 });
 
     await page.goto('/stable', { waitUntil: 'domcontentloaded' });
-    await expect(page.locator('h1')).toContainText('Your Stable', { timeout: 15000 });
+    await expect(page.locator('h1')).toContainText('My Stable', { timeout: 15000 });
 
     // Click the first horse card to go to /horses/:id
     const firstCard = page.locator('[data-testid="horse-card"]').first();

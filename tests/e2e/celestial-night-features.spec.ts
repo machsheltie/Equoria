@@ -35,16 +35,13 @@ test.describe('Celestial Night Feature Pages', () => {
       timeout: 20000,
     });
 
-    // CompetitionFilters renders only in the success-state branch (the
-    // wrapper testid above is now on loading/error/success per a prior fix
-    // that added page-level identification, so we need a success-only
-    // marker before checking for filter content).
-    await expect(page.locator('[data-testid="page-header"]')).toBeVisible({ timeout: 15000 });
-
-    // Now check filter content — discipline filter is a native <select>.
-    const hasFilters = await page.locator('select, [role="combobox"]').count();
-    const hasFilterText = await page.getByText(/discipline|filter/i).count();
-    expect(hasFilters + hasFilterText).toBeGreaterThan(0);
+    // Wait for any filter element directly. CompetitionFilters renders
+    // only in the success-state branch of CompetitionBrowserPage; if the
+    // /api/competitions query is slow (CI Redis-reconnect contention),
+    // success state takes longer than the default 5s. Wait for either the
+    // discipline <select> or any combobox to appear.
+    const filterLoc = page.locator('select, [role="combobox"]').first();
+    await expect(filterLoc).toBeVisible({ timeout: 20_000 });
   });
 
   // ── Training Grounds (formerly "Training Dashboard") ──────────────────

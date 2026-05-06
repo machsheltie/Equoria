@@ -1,5 +1,5 @@
 /**
- * StableView — Your Stable
+ * StableView — My Stable
  *
  * The player's horse stable matching direction-4-hybrid.html mockup:
  * atmospheric header, player info strip, tabbed horse grid with
