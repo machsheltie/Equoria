@@ -89,7 +89,7 @@ export async function registerAndCompleteOnboarding(
 
   const registerResponse = page.waitForResponse(
     (response) =>
-      response.url().includes('/api/auth/register') && response.request().method() === 'POST'
+      response.url().includes('/api/v1/auth/register') && response.request().method() === 'POST'
   );
   await page.click('button[type="submit"]');
   expect((await registerResponse).status()).toBe(201);
@@ -109,7 +109,7 @@ export async function registerAndCompleteOnboarding(
   await expect(page.locator('h1')).toContainText("You're Ready!");
   const advanceResponse = page.waitForResponse(
     (response) =>
-      response.url().includes('/api/auth/advance-onboarding') &&
+      response.url().includes('/api/v1/auth/advance-onboarding') &&
       response.request().method() === 'POST'
   );
   await page.locator('[data-testid="onboarding-next"]').click();
@@ -135,7 +135,7 @@ export async function loginViaUi(page: Page, player: Pick<RegisteredPlayer, 'ema
 
   const loginResponse = page.waitForResponse(
     (response) =>
-      response.url().includes('/api/auth/login') && response.request().method() === 'POST'
+      response.url().includes('/api/v1/auth/login') && response.request().method() === 'POST'
   );
   await page.click('button[type="submit"]');
   expect((await loginResponse).status()).toBe(200);
