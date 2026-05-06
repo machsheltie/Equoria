@@ -18,6 +18,37 @@ import { recordTransaction } from '../../../services/financialLedgerService.mjs'
 
 const router = express.Router();
 
+/**
+ * GET /api/competition (and /api/v1/competition via the v1 mount)
+ * List shows that are currently open for entry. Used by the frontend
+ * CompetitionBrowserPage which renders cards from this response.
+ *
+ * Equoria-nj0y triage: this list endpoint was missing and the frontend
+ * `competitionsApi.list()` call was 404'ing, leaving the browser in
+ * permanent loading state and breaking the broader E2E specs that wait
+ * for filter controls. The shape here matches the Competition type the
+ * client expects (id, name, discipline, dates, fee, prize, status).
+ */
+router.get('/', queryRateLimiter, auth, async (req, res) => {
+  try {
+    const shows = await prisma.show.findMany({
+      where: {
+        status: 'open',
+      },
+      orderBy: { runDate: 'asc' },
+      take: 100,
+    });
+    res.json({ success: true, data: shows });
+  } catch (error) {
+    logger.error(`[competitionRoutes.GET /] Error listing competitions: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to load competitions',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal error',
+    });
+  }
+});
+
 // Validation middleware for entering a show
 const validateEnterShow = [
   body('showId').isInt({ min: 1 }).withMessage('Show ID must be a positive integer'),
