@@ -43,7 +43,8 @@
     "seed:performance": "NODE_ENV=test node seed/seedPerformanceData.mjs",
     "health-check": "node scripts/health-check.mjs",
     "validate-env": "node scripts/validate-environment.mjs",
-    "validate-pipeline": "node scripts/test-pipeline-validation.mjs"
+    "validate-pipeline": "node scripts/test-pipeline-validation.mjs",
+    "db:reset:test": "node scripts/db-reset-test.mjs"
   },
   "keywords": [
     "equoria",
