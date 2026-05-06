@@ -35,17 +35,28 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
   let testUser;
   let authToken;
   let testHorse;
+  let testBreed;
+
+  // Suite-owned fixture name. Equoria-lxq8 (2026-05-05): the prior literal
+  // 'Test Breed' was shared across four test files, including
+  // tests/groomProgression.test.mjs which deletes by that exact name in
+  // beforeEach/afterEach. Cross-suite ordering with --maxWorkers=1 +
+  // --retryTimes=1 + worker recycling caused intermittent failures here
+  // when this suite's captured testBreed.id pointed to a row deleted by
+  // groomProgression. A per-suite random prefix gives us exclusive
+  // ownership: no other suite's name-based delete can touch our row, and
+  // the random suffix prevents leftover-from-prior-run collisions even
+  // within this suite's own retries.
+  const SUITE_BREED_PREFIX = `OWASPSuite_${randomBytes(6).toString('hex')}_Breed`;
 
   beforeAll(async () => {
-    // Create test breed (findFirst + create to avoid ID collision in test DB)
-    const testBreed =
-      (await prisma.breed.findFirst({ where: { name: 'Test Breed' } })) ??
-      (await prisma.breed.create({
-        data: {
-          name: 'Test Breed',
-          description: 'Test breed for OWASP security tests',
-        },
-      }));
+    // Always create our own breed — never findFirst against a shared name.
+    testBreed = await prisma.breed.create({
+      data: {
+        name: SUITE_BREED_PREFIX,
+        description: 'Test breed for OWASP security tests',
+      },
+    });
 
     // Create test user
     const hashedPassword = await bcrypt.hash('TestPassword123!', 12);
@@ -86,12 +97,16 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
     // may exercise horse-delete endpoints or trigger User cascades that
     // remove testHorse mid-run. Use deleteMany with the unique ID so a
     // missing row is a no-op rather than a P2025 RecordNotFound that
-    // crashes the suite teardown. Same for testUser.
+    // crashes the suite teardown. Same for testUser and testBreed.
     if (testHorse) {
       await prisma.horse.deleteMany({ where: { id: testHorse.id } });
     }
     if (testUser) {
       await prisma.user.deleteMany({ where: { id: testUser.id } });
+    }
+    if (testBreed) {
+      // Own the breed end-to-end — tracked by id, not by shared name.
+      await prisma.breed.deleteMany({ where: { id: testBreed.id } });
     }
   });
 
