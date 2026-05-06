@@ -58,19 +58,22 @@ const timeout = new Promise((_resolve, reject) =>
   setTimeout(
     () =>
       reject(
-        new Error(
-          'probe exceeded ' + QUERY_BUDGET_MS + 'ms (Postgres reachable but unresponsive?)',
-        ),
+        new Error('probe exceeded ' + QUERY_BUDGET_MS + 'ms (Postgres reachable but unresponsive?)')
       ),
-    QUERY_BUDGET_MS,
-  ),
+    QUERY_BUDGET_MS
+  )
 );
 
 try {
   await Promise.race([probe, timeout]);
   console.log('ok');
 } catch (err) {
-  const msg = err && err.code ? err.code + ': ' + err.message : err && err.message ? err.message : String(err);
+  const msg =
+    err && err.code
+      ? err.code + ': ' + err.message
+      : err && err.message
+        ? err.message
+        : String(err);
   console.error(msg);
   process.exit(3);
 }
