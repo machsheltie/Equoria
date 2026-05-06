@@ -80,9 +80,13 @@ test.describe('Celestial Night Feature Pages', () => {
 
     await expect(page.locator('h1')).toContainText('Breeding Hall', { timeout: 15000 });
 
-    // BreedingPairSelection renders mare/stallion selectors or tabs
-    const hasTabs = await page.getByRole('tab').count();
-    const hasSelects = await page.locator('select').count();
+    // BreedingPairSelection renders mare/stallion selector cards. Equoria-th9a:
+    // the previous assertion looked for tabs/selects from the legacy form-
+    // based UI which no longer exists. The current cards picker exposes
+    // 'Sire (Stallion)' and 'Dam (Mare)' section labels (BreedingPairSelection
+    // .tsx:327, :338).
+    const hasTabs = await page.getByText('Sire (Stallion)').count();
+    const hasSelects = await page.getByText('Dam (Mare)').count();
     expect(hasTabs + hasSelects).toBeGreaterThan(0);
   });
 

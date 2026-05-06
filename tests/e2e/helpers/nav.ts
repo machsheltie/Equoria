@@ -18,16 +18,19 @@ export async function openNavPanel(page: Page): Promise<Locator> {
   const viewport = page.viewportSize();
   const isDesktop = viewport ? viewport.width >= 1024 : true;
 
+  // Equoria-iiiz: use 15s timeout for the initial visibility wait — under
+  // CI Redis-reconnect contention the React hydration + useMediaQuery
+  // effect that triggers nav rendering can take longer than the default 5s.
   if (isDesktop) {
     const sidebar = page.getByTestId('sidebar-nav');
-    await expect(sidebar).toBeVisible();
+    await expect(sidebar).toBeVisible({ timeout: 15_000 });
     return sidebar;
   }
 
   const hamburger = page.getByTestId('hamburger-menu');
-  await expect(hamburger).toBeVisible();
+  await expect(hamburger).toBeVisible({ timeout: 15_000 });
   await hamburger.click();
   const panel = page.getByRole('dialog', { name: 'Navigation menu' });
-  await expect(panel).toBeVisible();
+  await expect(panel).toBeVisible({ timeout: 5_000 });
   return panel;
 }
