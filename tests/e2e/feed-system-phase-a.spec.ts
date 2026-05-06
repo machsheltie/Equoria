@@ -104,7 +104,8 @@ test.describe.serial('Feed System Phase A — full loop', () => {
     // value — tracked as Equoria-28cj). The /api/v1/horses/:id/feed endpoint
     // is the same surface the UI button calls, so this still exercises the
     // end-to-end feed action against the real backend with real auth and CSRF.
-    const csrfRes = await page.request.get('http://localhost:3000/api/auth/csrf-token');
+    // 21R-AUTH-7 removed /api/auth backward-compat mount; canonical path is /api/v1/auth
+    const csrfRes = await page.request.get('http://localhost:3000/api/v1/auth/csrf-token');
     const csrfBody = await csrfRes.json();
     const csrfToken: string = csrfBody?.data?.csrfToken ?? csrfBody?.csrfToken;
     expect(csrfToken, 'csrf-token endpoint must return a token').toBeTruthy();

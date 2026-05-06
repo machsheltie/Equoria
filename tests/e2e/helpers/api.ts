@@ -29,14 +29,15 @@ export async function createAuthedSession(browser: Browser): Promise<AuthedSessi
   const context = await browser.newContext({ storageState: STORAGE_STATE_PATH });
   const request = context.request;
 
-  const tokenResponse = await request.get('/api/auth/csrf-token');
+  // 21R-AUTH-7 removed /api/auth backward-compat mount; canonical path is /api/v1/auth
+  const tokenResponse = await request.get('/api/v1/auth/csrf-token');
   expect(
     tokenResponse.ok(),
-    `GET /api/auth/csrf-token returned ${tokenResponse.status()} — is global-setup storageState valid?`
+    `GET /api/v1/auth/csrf-token returned ${tokenResponse.status()} — is global-setup storageState valid?`
   ).toBe(true);
   const tokenJson = (await tokenResponse.json()) as { csrfToken?: string };
   const csrfToken = tokenJson.csrfToken;
-  expect(typeof csrfToken, 'csrfToken must be present in /api/auth/csrf-token response').toBe(
+  expect(typeof csrfToken, 'csrfToken must be present in /api/v1/auth/csrf-token response').toBe(
     'string'
   );
   expect(csrfToken!.length, 'csrfToken must be non-empty').toBeGreaterThan(20);

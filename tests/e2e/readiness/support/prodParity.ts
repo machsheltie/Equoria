@@ -50,8 +50,9 @@ export async function csrfRequest(
   url: string,
   data?: unknown
 ) {
-  const tokenResponse = await page.request.get('/api/auth/csrf-token');
-  const tokenJson = await expectOk(tokenResponse, 'GET /api/auth/csrf-token');
+  // 21R-AUTH-7 removed /api/auth backward-compat mount; canonical path is /api/v1/auth
+  const tokenResponse = await page.request.get('/api/v1/auth/csrf-token');
+  const tokenJson = await expectOk(tokenResponse, 'GET /api/v1/auth/csrf-token');
   const csrfToken = tokenJson.csrfToken;
   expect(typeof csrfToken, 'CSRF token must be returned by the real token endpoint').toBe('string');
   expect(csrfToken.length, 'CSRF token must be non-empty').toBeGreaterThan(20);
