@@ -5,7 +5,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
-import { createTestUser, cleanupTestData } from '../helpers/testAuth.mjs';
+import { createTestUser } from '../helpers/testAuth.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import app from '../../app.mjs';
 
@@ -31,13 +31,18 @@ describe('💬 INTEGRATION: Forum API', () => {
   });
 
   afterAll(async () => {
+    // Scoped cleanup: only delete data created by THIS test's user.
+    // cleanupTestData() deletes ALL testuser_* users which races with
+    // concurrent suites that also use that prefix (Equoria-ar59).
     try {
       await prisma.forumPost.deleteMany({ where: { authorId: testUser?.id } });
       await prisma.forumThread.deleteMany({ where: { authorId: testUser?.id } });
+      if (testUser?.id) {
+        await prisma.user.delete({ where: { id: testUser.id } });
+      }
     } catch {
-      /* ignore */
+      /* ignore — user may have been cleaned up by a parallel suite */
     }
-    await cleanupTestData();
   });
 
   describe('Authentication', () => {

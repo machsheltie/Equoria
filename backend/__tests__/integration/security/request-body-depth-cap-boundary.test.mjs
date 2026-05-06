@@ -110,13 +110,13 @@ function buildMixedBufferNonEmptyLeaf(n) {
   for (let i = 0; i < n; i++) {
     if (i % 2 === 0) {
       open += '{"a":';
-      close = '}' + close;
+      close = `}${close}`;
     } else {
       open += '[';
-      close = ']' + close;
+      close = `]${close}`;
     }
   }
-  return Buffer.from(open + 'null' + close, 'utf8');
+  return Buffer.from(`${open}null${close}`, 'utf8');
 }
 
 // Build a parsed JS mixed-nesting value matching buildMixedBufferNonEmptyLeaf.

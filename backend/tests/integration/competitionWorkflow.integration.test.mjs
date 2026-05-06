@@ -139,38 +139,43 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
       initialMoney = persistedUser.money;
       initialXp = persistedUser.xp;
 
-      // Create breed if needed
-      const breed =
-        (await prisma.breed.findFirst()) ||
-        (await prisma.breed.create({
-          data: {
-            name: 'Competition Integration Breed',
-            description: 'Test breed for competition integration',
-          },
-        }));
+      // Wrap breed find/create + horse create in a single transaction so
+      // both operations share one connection and commit atomically. This
+      // prevents Equoria-jiz2: on CI the test's Prisma client (connection A)
+      // committed the horse, but the app's Prisma client (connection B) read
+      // from a state where the horse hadn't yet propagated across pool slots.
+      competitionHorse = await prisma.$transaction(async tx => {
+        const breed =
+          (await tx.breed.findFirst()) ||
+          (await tx.breed.create({
+            data: {
+              name: 'Competition Integration Breed',
+              description: 'Test breed for competition integration',
+            },
+          }));
 
-      // Create competition-ready horse
-      competitionHorse = await prisma.horse.create({
-        data: {
-          name: 'Competition Integration Champion',
-          age: 35, // 5 years = 35 days (mature and experienced)
-          breed: { connect: { id: breed.id } },
-          user: { connect: { id: testUser.id } },
-          sex: 'Stallion',
-          dateOfBirth: new Date('2019-01-01'),
-          healthStatus: 'Excellent',
-          disciplineScores: {
-            Racing: 75,
-            Dressage: 68,
-            'Show Jumping': 82,
-            'Cross Country': 70,
+        return tx.horse.create({
+          data: {
+            name: 'Competition Integration Champion',
+            age: 35, // 5 years = 35 days (mature and experienced)
+            breed: { connect: { id: breed.id } },
+            user: { connect: { id: testUser.id } },
+            sex: 'Stallion',
+            dateOfBirth: new Date('2019-01-01'),
+            healthStatus: 'Excellent',
+            disciplineScores: {
+              Racing: 75,
+              Dressage: 68,
+              'Show Jumping': 82,
+              'Cross Country': 70,
+            },
+            epigeneticModifiers: {
+              positive: ['fast', 'athletic', 'focused', 'brave', 'resilient', 'peopleTrusting'],
+              negative: [],
+              hidden: ['champion_heart'],
+            },
           },
-          epigeneticModifiers: {
-            positive: ['fast', 'athletic', 'focused', 'brave', 'resilient', 'peopleTrusting'],
-            negative: [],
-            hidden: ['champion_heart'],
-          },
-        },
+        });
       });
 
       expect(competitionHorse.disciplineScores.Racing).toBe(75);
