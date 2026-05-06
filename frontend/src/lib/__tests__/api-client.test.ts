@@ -10,6 +10,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
 import { apiClient, authApi } from '../api-client';
 import { server } from '@/test/msw/server';
+import authSessionState from '../authSessionState';
 
 // Mock fetch globally
 const mockFetch = vi.fn();
@@ -48,6 +49,10 @@ describe('API Client - HttpOnly Cookie Support', () => {
 
   beforeEach(() => {
     mockFetch.mockClear();
+    // Restore the primed CSRF token so tests that trigger refreshAccessToken()
+    // (which now calls authSessionState.clear() on failure) don't leak null
+    // CSRF state into subsequent tests.
+    authSessionState.csrfToken = 'test-csrf';
   });
 
   afterEach(() => {

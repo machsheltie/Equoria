@@ -12,6 +12,8 @@
  * - Comprehensive error handling
  */
 
+import authSessionState from './authSessionState.js';
+
 // Nullish coalescing: empty string = relative URLs (correct for monolithic deploy).
 // Set VITE_API_URL only for split-deploy scenarios.
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
@@ -549,8 +551,17 @@ async function refreshAccessToken(): Promise<boolean> {
         headers: { 'Content-Type': 'application/json' },
       });
 
+      if (response.ok) {
+        // New access token issued — invalidate cached CSRF so the next mutation
+        // fetches a fresh token bound to the new session context.
+        authSessionState.invalidate();
+      } else {
+        // Refresh rejected — session is dead; wipe all cached state.
+        authSessionState.clear();
+      }
       return response.ok;
     } catch {
+      authSessionState.clear(); // Network error — treat as session dead
       return false;
     }
   })();
@@ -570,32 +581,26 @@ function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-/**
- * CSRF token cache — fetched once, reused for all mutations
- */
-let _csrfToken: string | null = null;
-let _csrfFetching: Promise<string> | null = null;
-
 async function getCsrfToken(): Promise<string> {
-  if (_csrfToken) return _csrfToken;
-  if (_csrfFetching) return _csrfFetching;
+  if (authSessionState.csrfToken) return authSessionState.csrfToken;
+  if (authSessionState.csrfFetching) return authSessionState.csrfFetching;
 
-  _csrfFetching = (async () => {
+  authSessionState.csrfFetching = (async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/v1/auth/csrf-token`, {
         credentials: 'include',
       });
       const data = await res.json();
-      _csrfToken = data.csrfToken || '';
-      return _csrfToken;
+      authSessionState.csrfToken = data.csrfToken || '';
+      return authSessionState.csrfToken;
     } catch {
       return '';
     } finally {
-      _csrfFetching = null;
+      authSessionState.csrfFetching = null;
     }
   })();
 
-  return _csrfFetching;
+  return authSessionState.csrfFetching;
 }
 
 /**
@@ -663,7 +668,7 @@ async function fetchWithAuth<T>(
         .json()
         .catch(() => ({}));
       if (body?.code === 'INVALID_CSRF_TOKEN') {
-        _csrfToken = null; // Invalidate cached token
+        authSessionState.invalidate();
         return fetchWithAuth<T>(endpoint, options, retryCount + 1);
       }
     }
