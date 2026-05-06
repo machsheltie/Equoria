@@ -14,6 +14,7 @@
  */
 
 import { test, expect } from '@playwright/test';
+import { openNavPanel } from './helpers/nav';
 
 // ── No auth for public pages ─────────────────────────────────────────────────
 test.use({ storageState: { cookies: [], origins: [] } });
@@ -153,16 +154,13 @@ test.describe('NavPanel active item — gold border indicator', () => {
     // was also missing a CSRF token and was 403'ing silently via .catch().
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-    // Open nav panel via hamburger
-    await page.getByTestId('hamburger-menu').click();
-
-    // The nav panel should be open
-    await expect(page.getByRole('dialog', { name: 'Navigation menu' })).toBeVisible();
+    // Equoria-d7k6: viewport-aware nav open. Desktop returns the always-
+    // visible SidebarNav; mobile clicks the hamburger and returns the
+    // NavPanel overlay dialog. Either Locator scopes the link query.
+    const navContainer = await openNavPanel(page);
 
     // Find the Home link (active on '/')
-    const homeLink = page.getByRole('dialog', { name: 'Navigation menu' }).getByRole('link', {
-      name: /home/i,
-    });
+    const homeLink = navContainer.getByRole('link', { name: /home/i });
     await expect(homeLink).toBeVisible();
 
     // Active link must have a border-l-2 (2px left border) Tailwind class

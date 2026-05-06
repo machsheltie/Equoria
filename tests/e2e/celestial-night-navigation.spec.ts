@@ -9,6 +9,7 @@
  *  - Protected routes redirect unauthenticated users to /login
  */
 import { test, expect } from '@playwright/test';
+import { openNavPanel } from './helpers/nav';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Authenticated Navigation Tests (uses storageState from global setup)
@@ -27,16 +28,18 @@ test.describe('Celestial Night Navigation — Authenticated', () => {
     // Wait for page to load
     await expect(page.locator('h1')).toBeVisible({ timeout: 15000 });
 
-    // MainNavigation requires hamburger click to show links
-    const hamburger = page.locator('[data-testid="hamburger-menu"]');
-    await expect(hamburger).toBeVisible({ timeout: 10000 });
-    await hamburger.click();
+    // Equoria-d7k6: viewport-aware nav open. Desktop returns the always-
+    // visible SidebarNav directly; mobile clicks the hamburger to open the
+    // NavPanel overlay. Either way the returned Locator scopes the link
+    // queries below. (Link list itself is tracked by Equoria-d5q1 — 'Stable'
+    // vs 'My Stable' and Training-not-in-nav drift remain that issue's scope.)
+    const navContainer = await openNavPanel(page);
 
     // NavPanel opens — check for core section links
     const expectedNavLinks = ['Home', 'Stable', 'Training', 'Competitions', 'Breeding', 'World'];
 
     for (const linkName of expectedNavLinks) {
-      const link = page.getByRole('link', { name: linkName }).first();
+      const link = navContainer.getByRole('link', { name: linkName }).first();
       await expect(link).toBeVisible({ timeout: 10000 });
     }
   });
