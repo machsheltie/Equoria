@@ -157,11 +157,12 @@ test.describe('AC4: Training Session', () => {
 
   test('training dashboard loads with Training Dashboard heading', async ({ page }) => {
     await page.goto('/training', { waitUntil: 'domcontentloaded' });
-    // TrainingDashboardPage uses data-testid="training-dashboard-page"
-    await expect(page.locator('[data-testid="training-dashboard-page"]')).toBeVisible({
+    // TrainingDashboardPage uses data-testid="training-page"
+    await expect(page.locator('[data-testid="training-page"]')).toBeVisible({
       timeout: 20000,
     });
-    await expect(page.getByText('Training Dashboard')).toBeVisible({ timeout: 10000 });
+    // Heading is "Training Grounds" per Epic 13 product design.
+    await expect(page.getByText('Training Grounds').first()).toBeVisible({ timeout: 10000 });
   });
 
   test('clicking train button opens TrainingSessionModal', async ({ page }) => {
@@ -169,7 +170,7 @@ test.describe('AC4: Training Session', () => {
     expect(trainingHorseId).not.toBeNull();
 
     await page.goto('/training', { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('[data-testid="training-dashboard-page"]', { timeout: 20000 });
+    await page.waitForSelector('[data-testid="training-page"]', { timeout: 20000 });
 
     // Wait for the fresh horse's train button — fresh horse has no cooldown
     const trainBtn = page.locator(`[data-testid="train-button-${trainingHorseId}"]`);
@@ -186,7 +187,7 @@ test.describe('AC4: Training Session', () => {
     expect(trainingHorseId).not.toBeNull();
 
     await page.goto('/training', { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('[data-testid="training-dashboard-page"]', { timeout: 20000 });
+    await page.waitForSelector('[data-testid="training-page"]', { timeout: 20000 });
 
     const trainBtn = page.locator(`[data-testid="train-button-${trainingHorseId}"]`);
     await expect(trainBtn).toBeVisible({ timeout: 15000 });

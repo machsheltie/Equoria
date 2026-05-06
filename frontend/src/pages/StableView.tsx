@@ -404,7 +404,7 @@ const StableView = () => {
               textShadow: '0 0 30px var(--glass-glow)',
             }}
           >
-            Your Stable
+            My Stable
           </h1>
 
           {/* Player Info Strip */}
