@@ -97,13 +97,20 @@ test.describe('AC3: Stable Page', () => {
     // Heading is present
     await expect(page.locator('h1')).toContainText('My Stable', { timeout: 15000 });
 
-    // No uncaught error state (the page renders something beyond a blank screen)
-    // Either horses are listed OR an empty-state message appears
-    const hasHorses = await page.locator('[data-testid="horse-card"]').count();
-    const hasEmpty = await page.locator('text=No horses in this category').count();
-    const hasStableSlots = await page.getByText(/Stable Slots/i).count();
-
-    expect(hasHorses + hasEmpty + hasStableSlots).toBeGreaterThan(0);
+    // Use expect.poll() so React Query hydration + Redis-reconnect contention
+    // (same root cause as Equoria-916z feed-section flake) settles before
+    // asserting. Bare .count() calls without polling race the first render.
+    await expect
+      .poll(
+        async () => {
+          const hasHorses = await page.locator('[data-testid="horse-card"]').count();
+          const hasEmpty = await page.locator('text=No horses in this category').count();
+          const hasStableSlots = await page.getByText(/Stable Slots/i).count();
+          return hasHorses + hasEmpty + hasStableSlots;
+        },
+        { timeout: 15000 }
+      )
+      .toBeGreaterThan(0);
   });
 });
 
@@ -218,14 +225,9 @@ test.describe('AC5: Competition Entry', () => {
     await expect(page.locator('h1')).toContainText('Competition Arena', { timeout: 10000 });
   });
 
-  // Quarantined until CI E2E seeds Show rows. The test asserts at least
-  // one [data-testid="competition-card"] is visible, but seedDatabase.mjs
-  // only seeds breeds — Show seeding is per-test in beforeEach hooks for
-  // backend integration tests, and global-setup.ts does not create shows
-  // for the E2E starter user. Without a show row, /competitions renders
-  // success-state with zero cards. Follow-up issue tracks seeding a small
-  // pool of shows so this and the next test pass deterministically.
-  test.fixme('clicking a competition card opens the detail modal', async ({ page }) => {
+  // global-setup.ts now seeds 3 Show rows (Equoria-kyrf) so competition
+  // cards are present on every run.
+  test('clicking a competition card opens the detail modal', async ({ page }) => {
     await page.goto('/competitions', { waitUntil: 'domcontentloaded' });
     await page.waitForSelector('[data-testid="competition-browser-page"]', { timeout: 20000 });
 
@@ -246,9 +248,7 @@ test.describe('AC5: Competition Entry', () => {
     await expect(page.getByRole('dialog').first()).toBeVisible({ timeout: 5000 });
   });
 
-  // Same dependency as the test above — needs at least one Show row in CI's
-  // E2E DB. Quarantined alongside the click-card test.
-  test.fixme('competition entry flow: Enter Competition → horse selection → confirm', async ({
+  test('competition entry flow: Enter Competition → horse selection → confirm', async ({
     page,
   }) => {
     const creds = readCredentials();

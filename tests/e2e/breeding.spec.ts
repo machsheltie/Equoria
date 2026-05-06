@@ -3,9 +3,11 @@ import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/a
 
 test.describe('Breeding Loop', () => {
   let session: AuthedSession;
+  let stallionName: string;
+  let mareName: string;
 
   test.beforeEach(async ({ page }) => {
-    test.setTimeout(60000);
+    test.setTimeout(90000);
     page.on('console', (msg) => console.log(`BROWSER [${msg.type()}]: ${msg.text()}`));
     page.on('pageerror', (err) => console.error(`BROWSER ERROR: ${err.message}`));
   });
@@ -16,6 +18,11 @@ test.describe('Breeding Loop', () => {
   // session.request carries the global-setup user's cookies + a CSRF token.
   test.beforeAll(async ({ browser }) => {
     session = await createAuthedSession(browser);
+
+    // Use a timestamp suffix so re-runs don't collide on duplicate horse names.
+    const suffix = Date.now();
+    stallionName = `E2E Stallion ${suffix}`;
+    mareName = `E2E Mare ${suffix}`;
 
     // Fetch a valid breedId — IDs are auto-incremented and do NOT start at 1
     let breedId = 1;
@@ -29,128 +36,95 @@ test.describe('Breeding Loop', () => {
       }
     }
 
-    // 1. Create a Stallion
-    const stallionResponse = await csrfMutate(session, 'POST', '/api/horses', {
-      name: 'E2E Stallion',
+    const stallionRes = await csrfMutate(session, 'POST', '/api/horses', {
+      name: stallionName,
       breedId,
       age: 5,
       sex: 'stallion',
     });
-    const stallion = await stallionResponse.json();
-    if (!stallion.success) throw new Error(`Stallion creation failed: ${JSON.stringify(stallion)}`);
+    if (!stallionRes.ok()) {
+      throw new Error(
+        `Stallion creation failed: ${stallionRes.status()} ${await stallionRes.text()}`
+      );
+    }
+    console.log('Created stallion:', stallionName);
 
-    // 2. Create a Mare
-    const mareResponse = await csrfMutate(session, 'POST', '/api/horses', {
-      name: 'E2E Mare',
+    const mareRes = await csrfMutate(session, 'POST', '/api/horses', {
+      name: mareName,
       breedId,
       age: 5,
       sex: 'mare',
     });
-    const mare = await mareResponse.json();
-    if (!mare.success) throw new Error(`Mare creation failed: ${JSON.stringify(mare)}`);
+    if (!mareRes.ok()) {
+      throw new Error(`Mare creation failed: ${mareRes.status()} ${await mareRes.text()}`);
+    }
+    console.log('Created mare:', mareName);
   });
 
   test.afterAll(async () => {
     await session?.context.close();
   });
 
-  // Equoria-th9a: this test was written for the form-based breeding UI
-  // (select#damId / select#sireId, 'My Mares' tab) which no longer exists.
-  // The current frontend/src/pages/breeding/BreedingPairSelection.tsx is a
-  // card-based picker (HorseSelector component, no select elements, no
-  // tabs). Rewriting against the new UI requires non-trivial exploration
-  // (HorseSelector data-testids, CompatibilityPreview waits, modal flow).
-  // Quarantined with test.fixme per th9a AC option (b). Beta-readiness
-  // coverage of the breeding flow lives in tests/e2e/readiness/route-
-  // families.spec.ts which validates POST /api/v1/horses/foals returning
-  // a started-pregnancy response shape directly via the API. A follow-up
-  // bd issue (Equoria-th9a-rewrite) tracks rebuilding this UI-level spec
-  // against the cards-picker.
-  test.fixme('Should navigate to Breeding Center and see my mares', async ({ page }) => {
-    console.log('Navigating to /breeding');
+  // Equoria-scmq: rewritten against the cards-based BreedingPairSelection UI.
+  // The previous test used select#damId / select#sireId which no longer exist.
+  // Current UI: HorseSelector component with aria-label="Select {horse.name}"
+  // on each horse card button; two panels — "Sire (Stallion)" and "Dam (Mare)".
+  test('breeding page loads with sire and dam selectors', async ({ page }) => {
     await page.goto('/breeding', { waitUntil: 'domcontentloaded' });
 
-    try {
-      console.log('Waiting for Breeding Hall heading');
-      await expect(page.getByRole('heading', { name: 'Breeding Hall' })).toBeVisible({
-        timeout: 30000,
-      });
-    } catch (e) {
-      console.log('Failed to find heading, taking screenshot');
-      await page.screenshot({ path: 'failure-breeding-page.png' });
-      const content = await page.content();
-      console.log('PAGE CONTENT:', content);
-      throw e;
-    }
+    // Wait for the two HorseSelector panels — BreedingPairSelection renders no h1
+    await expect(page.getByText('Sire (Stallion)').first()).toBeVisible({ timeout: 20000 });
+    await expect(page.getByText('Dam (Mare)').first()).toBeVisible({ timeout: 10000 });
 
-    console.log('Verifying My Mares tab');
-    await expect(page.getByRole('tab', { name: 'My Mares' })).toHaveAttribute(
-      'aria-selected',
-      'true'
-    );
-
-    console.log('Waiting for horses to load in select');
-    const damSelect = page.locator('select#damId');
-    await expect(damSelect).toBeVisible({ timeout: 15000 });
-    await expect(damSelect).toContainText('E2E Mare', { timeout: 15000 });
-  });
-
-  // Equoria-th9a: same as above, plus this test asserts the legacy
-  // `POST /api/horses/foals` returning 201 with a foal entity. Per the
-  // B-prefix feed/breeding redesign that response shape changed to a
-  // started-pregnancy envelope (foal materializes asynchronously by the
-  // foaling job). Quarantined with test.fixme; rewrite tracked by
-  // Equoria-th9a-rewrite. Pregnancy-start API contract is covered by
-  // tests/e2e/readiness/route-families.spec.ts.
-  test.fixme('Should perform breeding and create a foal', async ({ page }) => {
-    console.log('Navigating to /breeding for perform breeding');
-    await page.goto('/breeding', { waitUntil: 'domcontentloaded' });
-
-    await expect(page.getByRole('heading', { name: 'Breeding Hall' })).toBeVisible({
-      timeout: 30000,
+    // The E2E stallion created in beforeAll must appear in the sire panel
+    await expect(page.getByRole('button', { name: `Select ${stallionName}` })).toBeVisible({
+      timeout: 15000,
     });
 
-    console.log('Selecting Mare');
-    await page.selectOption('select#damId', { label: 'E2E Mare' });
+    // The E2E mare must appear in the dam panel
+    await expect(page.getByRole('button', { name: `Select ${mareName}` })).toBeVisible({
+      timeout: 15000,
+    });
+  });
 
-    console.log('Selecting Stallion');
-    await page.selectOption('select#sireId', { label: 'E2E Stallion' });
+  test('select sire and dam, confirm breeding, navigate to foal page', async ({ page }) => {
+    await page.goto('/breeding', { waitUntil: 'domcontentloaded' });
 
-    console.log('Entering Foal Name');
-    const foalName = `E2E Foal ${Date.now()}`;
-    await page.getByPlaceholder('Enter foal name').fill(foalName);
+    // Wait for both HorseSelector panels
+    await expect(page.getByText('Sire (Stallion)').first()).toBeVisible({ timeout: 20000 });
 
-    // Wait for the foal creation response — missing or non-201 means feature is broken, fail fast
-    const foalPromise = page.waitForResponse(
-      (response) => response.url().includes('/api/horses/foals'),
+    // Select the E2E stallion as sire
+    const sireBtn = page.getByRole('button', { name: `Select ${stallionName}` });
+    await expect(sireBtn).toBeVisible({ timeout: 15000 });
+    await sireBtn.click();
+    await expect(sireBtn).toHaveAttribute('aria-pressed', 'true', { timeout: 5000 });
+
+    // Select the E2E mare as dam
+    const damBtn = page.getByRole('button', { name: `Select ${mareName}` });
+    await expect(damBtn).toBeVisible({ timeout: 15000 });
+    await damBtn.click();
+    await expect(damBtn).toHaveAttribute('aria-pressed', 'true', { timeout: 5000 });
+
+    // "Initiate Breeding" becomes enabled once both sire and dam are selected
+    const initiateBtn = page.getByRole('button', { name: 'Initiate Breeding' });
+    await expect(initiateBtn).toBeEnabled({ timeout: 10000 });
+    await initiateBtn.click();
+
+    // Confirmation modal must open
+    await expect(page.getByTestId('breeding-confirmation-modal')).toBeVisible({ timeout: 10000 });
+
+    // Intercept the foal-creation POST before clicking Confirm
+    const foalPost = page.waitForResponse(
+      (resp) => resp.url().includes('/api/v1/horses/foals') && resp.request().method() === 'POST',
       { timeout: 30000 }
     );
 
-    await page.click('button:has-text("Breed Now")');
-    const foalResponse = await foalPromise;
+    await page.getByRole('button', { name: 'Confirm Breeding' }).click();
 
-    expect(foalResponse.status()).toBe(201);
-    console.log(`Foal creation successful: ${foalName}`);
+    const foalResp = await foalPost;
+    expect(foalResp.ok(), `POST /api/v1/horses/foals returned ${foalResp.status()}`).toBeTruthy();
 
-    // Verify Foal in Stable
-    console.log('Navigating to Stable...');
-    await page.goto('/stable', { waitUntil: 'networkidle' });
-
-    console.log('Selecting "All" tab in stable');
-    const allTab = page.getByRole('tab', { name: 'All', exact: true });
-    await expect(allTab).toBeVisible({ timeout: 15000 });
-    await allTab.click();
-
-    await page.reload({ waitUntil: 'networkidle' });
-
-    console.log(`Waiting for foal "${foalName}" to appear in stable`);
-    try {
-      await expect(page.getByText(foalName)).toBeVisible({ timeout: 30000 });
-    } catch (e) {
-      console.log('Stable page content on failure:');
-      console.log(await page.content());
-      await page.screenshot({ path: 'stable-failure.png' });
-      throw e;
-    }
+    // After success the page navigates to /foals/{id} (2-3.5 s UI delay)
+    await page.waitForURL(/\/foals\/\d+/, { timeout: 10000 });
   });
 });

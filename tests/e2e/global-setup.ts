@@ -120,6 +120,36 @@ async function globalSetup(config: FullConfig) {
       console.warn('Starter horse lookup failed:', horsesRes.status(), await horsesRes.text());
     }
 
+    // ── 6. Seed Show rows for AC5 Competition Entry tests ──────────────────────
+    // CompetitionBrowserPage renders cards only when Show rows exist.
+    // Without seeded shows the page shows an empty-state and AC5 tests fail.
+    // Equoria-kyrf: seeding here ensures shows are present before any test worker starts.
+    console.log('Seeding Show rows for AC5...');
+    const csrfTokenRes = await page.request.get(`${baseURL}/api/v1/auth/csrf-token`);
+    const csrfTokenJson = await csrfTokenRes.json();
+    const setupCsrfToken: string = csrfTokenJson?.data?.csrfToken ?? csrfTokenJson?.csrfToken ?? '';
+    if (setupCsrfToken) {
+      const showsToSeed = [
+        { name: `E2E Dressage Show ${timestamp}`, discipline: 'Dressage' },
+        { name: `E2E Show Jumping Show ${timestamp}`, discipline: 'Show Jumping' },
+        { name: `E2E Racing Show ${timestamp}`, discipline: 'Racing' },
+      ];
+      for (const show of showsToSeed) {
+        const res = await page.request.post(`${baseURL}/api/v1/shows/create`, {
+          data: { ...show, entryFee: 0 },
+          headers: { 'Content-Type': 'application/json', 'X-CSRF-Token': setupCsrfToken },
+        });
+        if (res.ok()) {
+          const j = await res.json();
+          console.log(`Show seeded: ${show.discipline} (id=${j?.data?.show?.id})`);
+        } else {
+          console.warn(`Show seed failed for ${show.discipline}:`, res.status(), await res.text());
+        }
+      }
+    } else {
+      console.warn('CSRF token unavailable — AC5 Show seeding skipped');
+    }
+
     console.log('Global setup complete.');
   } catch (error) {
     console.error('Global setup failed:', error);
