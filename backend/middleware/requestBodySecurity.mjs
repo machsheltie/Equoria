@@ -821,6 +821,15 @@ export function verifyUrlEncodedBody(req, _res, buffer) {
 export const __TESTING_ONLY_JsonScanner =
   String(process.env.NODE_ENV ?? '').toLowerCase() === 'test' ? JsonScanner : undefined;
 
+// Test-only export for assertNoPollutingKeys. The production surface is
+// rejectPollutedRequestBody. Exporting here lets unit tests call the function
+// directly (bypassing verifyJsonBody) to prove the depth cap is not dead code —
+// the defence-in-depth scenario where a body is parsed without going through
+// the verify hook (e.g. urlencoded route, future code path). Gated on
+// NODE_ENV=test so the internal function is inaccessible in production.
+export const __TESTING_ONLY_assertNoPollutingKeys =
+  String(process.env.NODE_ENV ?? '').toLowerCase() === 'test' ? assertNoPollutingKeys : undefined;
+
 export function requestBodySecurityErrorHandler(err, req, res, next) {
   // 21R-SEC-6 (Equoria-tpbu): dispatch by sentinel-class marker, not by
   // string-prefix match on the message. The marker is a Symbol.for(...)
