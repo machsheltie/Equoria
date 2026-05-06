@@ -195,6 +195,27 @@ describe('Depth-cap boundary (21R-SEC-3-REVIEW-2)', () => {
     });
   });
 
+  describe('empty-leaf array boundary (Equoria-21kz: scanArray depth-check uniformity)', () => {
+    // Before the fix, scanArray's early `]` short-circuit meant an empty array
+    // at depth MAX_DEPTH+1 was allowed because scanValue was never called there.
+    // After the fix, scanArray checks depth before the early-return, so
+    // empty-leaf arrays and non-empty-leaf arrays reject at the same depth.
+
+    function buildEmptyArray(depth) {
+      return Buffer.from('['.repeat(depth) + ']'.repeat(depth), 'utf8');
+    }
+
+    it(`accepts empty-leaf array at depth = MAX_DEPTH (=${MAX_DEPTH})`, () => {
+      expect(() => verifyJsonBody(makeReq(), {}, buildEmptyArray(MAX_DEPTH))).not.toThrow();
+    });
+
+    it(`rejects empty-leaf array at depth = MAX_DEPTH+1 (=${MAX_DEPTH + 1}) — sentinel for Equoria-21kz`, () => {
+      expect(() => verifyJsonBody(makeReq(), {}, buildEmptyArray(MAX_DEPTH + 1))).toThrow(
+        /nesting too deep/i,
+      );
+    });
+  });
+
   describe('cross-function symmetry', () => {
     // For the SAME nesting depth N (non-empty-leaf), scanner and
     // assertNoPollutingKeys must produce identical accept/reject

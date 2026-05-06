@@ -163,12 +163,11 @@ export const UNEXPECTED_SCANNER_LOG_PREFIX =
 //     containers; the depth check fires there.
 //   - The check is `depth > MAX_DEPTH`, so depth=MAX_DEPTH passes and
 //     depth=MAX_DEPTH+1 fails — both functions reject the same payloads.
-// For empty-leaf inputs (e.g. `[[[]]]`) the recursion exits one level
-// short of the leaf in both functions (scanner's scanArray sees `]`
-// without recursing into scanValue; assertNoPollutingKeys's forEach
-// over an empty array has nothing to recurse into), so both functions
-// reach max depth N-1 for an N-bracketed empty-leaf input — still
-// symmetric.
+// For empty-leaf inputs (e.g. `[[[]]]`): assertNoPollutingKeys exits
+// one level early (forEach over empty array has nothing to recurse into).
+// JsonScanner.scanArray now also checks depth before the early `]`
+// short-circuit (Equoria-21kz fix), so both functions reject the same
+// payloads for empty-leaf inputs as for non-empty-leaf inputs.
 // This contract is enforced by the boundary suite at
 // __tests__/integration/security/request-body-depth-cap-boundary.test.mjs
 // (12 boundary tests + 6 cross-function symmetry tests). Any change
@@ -353,6 +352,9 @@ class JsonScanner {
   }
 
   scanArray(depth) {
+    if (depth > MAX_DEPTH) {
+      throw new RequestBodySecurityError('nesting too deep');
+    }
     this.index += 1;
     this.skipWhitespace();
 

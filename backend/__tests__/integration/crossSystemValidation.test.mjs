@@ -557,8 +557,12 @@ describe('Cross-System Validation Tests', () => {
       const apiSpec = swaggerResponse.body;
       expect(apiSpec.paths).toBeDefined();
 
-      // Verify key endpoints are documented (check paths that actually exist in swagger.yaml)
-      expect(apiSpec.paths['/api/v1/auth/register']).toBeDefined();
+      // Verify key endpoints are documented. Per OpenAPI spec, path keys
+      // are relative to the `servers` URL — swagger.yaml declares servers
+      // for /api and /api/v1 prefixes (line 13-19) and lists paths without
+      // those prefixes. The test previously asserted the prefixed form,
+      // which never existed as a path key.
+      expect(apiSpec.paths['/auth/register']).toBeDefined();
       expect(apiSpec.info).toBeDefined();
       expect(apiSpec.info.title).toBe('Equoria API');
 

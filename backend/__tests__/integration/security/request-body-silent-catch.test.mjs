@@ -700,12 +700,11 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
       return s;
     };
 
-    // Boundary calculus: with `if (depth > 32)` and `scanValue(depth)` called
-    // recursively per nesting level, buildDeepArray(N) places the innermost
-    // value at scanValue depth = N - 1. So the boundary is N=33 (depth 32,
-    // allowed — see the pass-through test below) vs N=34 (depth 33, rejected).
-    // Using N=33 here as the rejection-boundary test would be WRONG and the
-    // test would correctly fail; that's how I caught my own off-by-one.
+    // Boundary calculus (Equoria-21kz fix applied): scanArray now checks
+    // `depth > MAX_DEPTH` before the early `]` return. For buildDeepArray(N),
+    // scanValue(N-1) calls scanArray(N). scanArray(N) rejects if N > 32.
+    // So the boundary is N=32 (allowed) vs N=33 (rejected) — same as objects.
+    // N=34 is still rejected and exercised here as an over-cap sentinel.
     it.each([
       [
         '34-deep nested array → depth cap fires at boundary (innermost depth = 33 = cap+1)',
@@ -713,21 +712,14 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
         /nesting too deep/i,
       ],
       ['64-deep nested array → depth cap (well over)', () => buildDeepArray(64), /nesting too deep/i],
-      // Object-path coverage. ASYMMETRY caught during §9 self-critique:
-      // scanArray's empty-check `]` short-circuits BEFORE calling scanValue
-      // at the next depth. scanObject's loop ALWAYS calls scanValue for
-      // the value position. Result: 33-deep ARRAY passes (innermost []
-      // short-circuits) but 33-deep OBJECT throws (innermost null still
-      // hits scanValue at depth 33). This is a real semantic inconsistency
-      // — operators expect "MAX_DEPTH=32 = 32 levels for any payload" but
-      // arrays get +1 effective depth from the short-circuit. Tracked as
-      // a separate issue (see bd notes for Equoria-ixqg).
-      //
-      // The boundary tests below pin the ACTUAL behavior so a future fix
-      // to the asymmetry breaks them deliberately, forcing the maintainer
-      // to update both the source and the tests together.
+      // Object-path coverage. The former ASYMMETRY (tracked as Equoria-21kz)
+      // where scanArray's `]` short-circuit allowed a 33-deep empty array
+      // while a 33-deep object was rejected has been FIXED. scanArray now
+      // checks depth BEFORE the early `]` return, so both shapes reject at
+      // the same boundary (depth > MAX_DEPTH = 33-deep for empty-leaf). The
+      // test below verifies the object boundary still holds after that fix.
       [
-        '33-deep nested object → depth cap fires (object boundary one lower than array)',
+        '33-deep nested object → depth cap fires (same boundary as array after Equoria-21kz fix)',
         () => {
           let s = '';
           for (let i = 0; i < 33; i += 1) {
@@ -781,11 +773,9 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
     // Test BOTH sides of the boundary explicitly so a future change from
     // `>` to `>=`, or from MAX_DEPTH=32 to a different value, breaks
     // exactly one of these tests and forces the maintainer to update both.
-    // Object-path equivalent of the array-rejection test for shape symmetry
-    // — same depth-cap code path, different surface. The 34-deep OBJECT
-    // rejection is in the it.each above; the 32/33-deep object PASS cases
-    // are the inverse below (reusing the array helper for brevity wouldn't
-    // exercise the object code path; we need actual `{...}` shapes).
+    // Object-path equivalent for shape symmetry — same depth-cap code path,
+    // different surface. After Equoria-21kz both arrays and objects reject at
+    // N=33. Only N=32 (both shapes) is in the pass table; N=33+ is rejected.
     const buildDeepObject = depth => {
       let s = '';
       for (let i = 0; i < depth; i += 1) {
@@ -799,12 +789,11 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
     };
 
     it.each([
-      ['array', 32, 'array (well under cap)', buildDeepArray],
-      ['array', 33, 'array (last allowed — scanArray short-circuits on innermost [])', buildDeepArray],
+      ['array', 32, 'array (last allowed)', buildDeepArray],
+      // NOTE: 33-deep array is now REJECTED (Equoria-21kz: scanArray depth check added before
+      // the empty-`]` short-circuit; array and object boundaries are now identical).
       ['object', 32, 'object (last allowed — innermost null at scanValue depth 32 = cap)', buildDeepObject],
       // NOTE: 33-deep object is REJECTED (see rejection it.each above).
-      // Object boundary is one lower than array boundary due to scanObject
-      // not having an empty-value short-circuit for the inner value.
     ])(
       'passes a %s %s-deep payload (%s) — should NOT trigger depth-cap rejection',
       async (_shape, depth, _label, builder) => {
