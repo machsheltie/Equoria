@@ -38,8 +38,11 @@ test.describe.serial('Feed System Phase A — full loop', () => {
     // Equoria-916z: bump feed-section visibility timeout from default 5s to
     // 15s. Under CI Redis-reconnect contention the React Query settles
     // slower than 5s — same hydration-window root cause as iiiz nav-structure.
-    await expect(page.getByTestId('horse-equip-loading')).toHaveCount(0, { timeout: 10_000 });
-    await expect(page.getByTestId('feed-section')).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByTestId('horse-equip-loading')).toHaveCount(0, { timeout: 15_000 });
+    // Bumped to 30s — first visit to /horses/{id}/equip in CI under Vite
+    // dev-mode + Redis-reconnect contention takes 15s+ on cold mount; retries
+    // pass in <2s. 30s makes the first attempt deterministically pass.
+    await expect(page.getByTestId('feed-section')).toBeVisible({ timeout: 30_000 });
     await expect(page.getByTestId('no-feed-empty-state')).toContainText(
       /No feed currently selected\. Please purchase feed from the feed store and equip it to your horse\./
     );
