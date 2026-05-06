@@ -314,7 +314,12 @@ describe('Parameter Pollution Attack Integration Tests', () => {
       // middleware were entirely removed, as long as the request 400'd for
       // any other reason. Pin to the exact rejection message OUR detector
       // emits so removing rejectPollutedRequestBody breaks this test.
-      expect.assertions(2);
+      //
+      // Equoria-qxtp: also assert global Object.prototype is clean after the
+      // request — catches regression if middleware is weakened in a way that
+      // lets the payload through (e.g., wrong Content-Type bypass) and V8
+      // parses it in a mode that does pollute the prototype.
+      expect.assertions(4);
       const response = await request(app)
         .put(`/api/horses/${testHorse.id}`)
         .set('Authorization', `Bearer ${validToken}`)
@@ -326,6 +331,9 @@ describe('Parameter Pollution Attack Integration Tests', () => {
         .expect(400);
       expect(response.body.success).toBe(false);
       expect(response.body.message).toMatch(/forbidden key.*__proto__/);
+      // Global pollution guards — independent of testUser shape
+      expect({}.isAdmin).toBeUndefined();
+      expect(Object.prototype.isAdmin).toBeUndefined();
     });
 
     it('should reject constructor pollution attempts', async () => {
