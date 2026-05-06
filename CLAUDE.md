@@ -1,7 +1,7 @@
 # Equoria - Claude Code Configuration
 
-**Version:** 3.4.0
-**Last Updated:** 2026-05-04
+**Version:** 3.5.0
+**Last Updated:** 2026-05-06
 **Project:** Web browser-based horse breeding simulation game
 
 ---
@@ -337,6 +337,30 @@ equoria/
 Active priority is **Epic 21R — Beta Deployment Readiness Remediation** (see top of file).
 
 For shipped Epic deliverables (9A → 18), see the **Epic Deliverables** sections above and `git log`. Epics 9A/9B/9C/11/12/13/14/16/17/18 are all closed.
+
+---
+
+## 📦 Dependency Maintenance
+
+**Last Audit:** 2026-05-06 — ✅ **0 vulnerabilities** across all packages (root / backend / frontend / database).  
+**Detail + schedule:** `.claude/DEPENDENCY_MAINTENANCE.md`
+
+**Audit command (run any idle session):**
+
+```bash
+npm audit && cd backend && npm audit  # frontend: PowerShell cd ../frontend; npm audit
+```
+
+**Pending work (safe to do any session, no breaking changes):**
+
+- Sentry: `@sentry/node` + `@sentry/profiling-node` → 10.51.0 (backend), `@sentry/react` → 10.51.0 (frontend)
+- React: `react` + `react-dom` → 19.2.5 (frontend)
+- PostgreSQL driver: `pg` → 8.20.0 (root + backend)
+- Full patch list: see `.claude/DEPENDENCY_MAINTENANCE.md` Tier 1
+
+**Major migrations (plan before touching — see Tier 3 in detail file):**
+
+- ESLint v8→v10 (flat config required), Jest v29→v30, TypeScript v5→v6, Express v4→v5, React Router v6→v7
 
 ---
 
