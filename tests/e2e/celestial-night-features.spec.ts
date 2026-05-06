@@ -98,17 +98,27 @@ test.describe('Celestial Night Feature Pages', () => {
 
     await expect(page.locator('h1')).toContainText('Community', { timeout: 15000 });
 
-    // CommunityPage has links to /message-board, /clubs, /messages
+    // CommunityPage has links to /message-board, /clubs, /messages.
+    // Equoria-qolo: previous shape used `.catch(() => false)` to silently
+    // swallow visibility failures, so the test could not meaningfully fail
+    // even if all three links broke. Wait for the heading first (already done
+    // above) so the page has rendered, then synchronously check visibility.
     const messageBoardLink = page.getByRole('link', { name: /Message Board/i }).first();
     const clubsLink = page.getByRole('link', { name: /Clubs/i }).first();
     const messagesLink = page.getByRole('link', { name: /Messages|Inbox/i }).first();
 
-    // At least 2 of the 3 should be visible (resilient to minor UI changes)
-    let visibleCount = 0;
-    if (await messageBoardLink.isVisible({ timeout: 5000 }).catch(() => false)) visibleCount++;
-    if (await clubsLink.isVisible({ timeout: 3000 }).catch(() => false)) visibleCount++;
-    if (await messagesLink.isVisible({ timeout: 3000 }).catch(() => false)) visibleCount++;
+    // Wait for at least one link to attach so the count below reflects
+    // rendered state (rather than mid-render).
+    await expect(messageBoardLink.or(clubsLink).or(messagesLink).first()).toBeVisible({
+      timeout: 10000,
+    });
 
+    const visibilityStates = await Promise.all([
+      messageBoardLink.isVisible(),
+      clubsLink.isVisible(),
+      messagesLink.isVisible(),
+    ]);
+    const visibleCount = visibilityStates.filter(Boolean).length;
     expect(visibleCount).toBeGreaterThanOrEqual(2);
   });
 
@@ -124,14 +134,15 @@ test.describe('Celestial Night Feature Pages', () => {
 
     await expect(page.locator('h1')).toContainText('Messages', { timeout: 15000 });
 
-    // MessagesPage renders Inbox and Sent tab buttons
+    // MessagesPage renders Inbox and Sent tab buttons.
+    // Equoria-qolo: previous shape used `.catch(() => false)` to silently
+    // swallow timeouts. Replaced with Locator.or() union which lets the
+    // first matching tab pass, and fails loudly with a clear timeout
+    // message naming both expected locators if neither is visible.
     const inboxTab = page.getByRole('button', { name: /Inbox/i }).first();
     const sentTab = page.getByRole('button', { name: /Sent/i }).first();
 
-    // At least one tab should be visible
-    const inboxVisible = await inboxTab.isVisible({ timeout: 5000 }).catch(() => false);
-    const sentVisible = await sentTab.isVisible({ timeout: 3000 }).catch(() => false);
-    expect(inboxVisible || sentVisible).toBeTruthy();
+    await expect(inboxTab.or(sentTab).first()).toBeVisible({ timeout: 5000 });
   });
 
   // ── Marketplace ──────────────────────────────────────────────────────────
