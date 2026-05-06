@@ -58,7 +58,8 @@ describe('Cookie Integration Tests', () => {
       await prisma.refreshToken.deleteMany({
         where: { userId: testUser.id },
       });
-      await prisma.user.delete({
+      // deleteMany is idempotent; singular delete throws if already gone
+      await prisma.user.deleteMany({
         where: { id: testUser.id },
       });
       testUser = null;

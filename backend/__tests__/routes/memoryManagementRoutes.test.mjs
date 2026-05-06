@@ -85,8 +85,9 @@ describe('Memory Management Routes', () => {
     // Cleanup memory management
     shutdownMemoryManagement();
 
-    // Cleanup test data
-    await prisma.user.delete({
+    // Cleanup test data (deleteMany is idempotent; delete throws "Not found" if
+    // globalSetup already removed this user between runs)
+    await prisma.user.deleteMany({
       where: { id: testUser.id },
     });
 

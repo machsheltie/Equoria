@@ -5,7 +5,9 @@
  * the test suite starts. This prevents unique constraint failures when
  * test afterAll hooks didn't run due to earlier test failures.
  *
- * Only removes rows by exact names/emails known to be test-only data.
+ * Removes rows by exact names/emails AND by prefix patterns that are
+ * known to accumulate when suite-level afterAll/afterEach hooks don't
+ * complete (e.g. jest worker crash, mid-run cancellation).
  */
 
 import dotenv from 'dotenv';
@@ -32,7 +34,58 @@ export default async function globalSetup() {
 
     const { default: prisma } = await import('../../packages/database/prismaClient.mjs');
 
-    // Remove hardcoded test horses by name (collected from all test suites)
+    // ── Step 1: Delete refresh tokens for all known test user patterns ──────
+    // Must run BEFORE user deletions to satisfy FK constraints.
+    // Pattern list covers every suite that uses email-prefix scoped users.
+    const tokenEmailPatterns = [
+      { contains: 'tokentest' }, // token-rotation.integration.test.mjs
+      { contains: 'tokenunit' }, // token-rotation.unit.test.mjs
+      { contains: 'authintegration' }, // auth-system-integration.test.mjs
+      { startsWith: 'memory_admin_' }, // memoryAdminGuard.integration.test.mjs
+      { startsWith: 'memory_regular_' }, // memoryAdminGuard.integration.test.mjs
+      { startsWith: 'acookie-' }, // auth-cookies.test.mjs (defence-in-depth; suite also self-cleans)
+      { startsWith: 'cintg-' }, // cookieIntegration.test.mjs (defence-in-depth; suite also self-cleans)
+    ];
+
+    for (const pattern of tokenEmailPatterns) {
+      await prisma.refreshToken.deleteMany({
+        where: { user: { email: pattern } },
+      });
+    }
+
+    // Also cover known hardcoded emails that have refresh tokens
+    await prisma.refreshToken.deleteMany({
+      where: {
+        user: {
+          email: {
+            in: [
+              'memory@test.com',
+              'ratelimit@example.com',
+              'securitytest1@test.com',
+              'authintegration@test.com',
+            ],
+          },
+        },
+      },
+    });
+
+    // ── Step 2: Delete horses for prefix-pattern test users ─────────────────
+    // Horses created by auth controller on registration have SET NULL on userId,
+    // so user deletion succeeds without cleaning horses first. But for suites
+    // that create horses directly (competitionapi_, testuser_) we clean to keep
+    // the DB tidy.
+    await prisma.horse.deleteMany({
+      where: {
+        user: {
+          OR: [
+            { username: { startsWith: 'testuser_' } },
+            { username: { startsWith: 'competitionapi_' } },
+          ],
+        },
+      },
+    });
+
+    // ── Step 3: Delete hardcoded test horses by name ─────────────────────────
     const testHorseNames = [
       'OWASP Test Horse',
       'Analytics Test Horse',
@@ -56,10 +109,7 @@ export default async function globalSetup() {
     ];
     await prisma.horse.deleteMany({ where: { name: { in: testHorseNames } } });
 
-    // Prefix-pattern leaks from E2E suites that run against the same real DB.
-    // The Beta Readiness route-families spec adds afterAll cleanup for these,
-    // but a crashed-mid-test prior run can still leave them behind. Defense
-    // in depth: wipe by prefix on every jest startup.
+    // Prefix-pattern leaks from E2E suites
     await prisma.competitionResult.deleteMany({
       where: { showName: { startsWith: 'Readiness Show' } },
     });
@@ -70,12 +120,48 @@ export default async function globalSetup() {
       where: { name: { startsWith: 'Atlas Prime' } },
     });
 
-    // Remove hardcoded test users by email or username
-    const testEmails = ['ratelimit@example.com', 'memory@test.com'];
+    // ── Step 4: Delete test users by email prefix/pattern ───────────────────
+    // Order matters: each deleteMany is independent; Prisma's FK cascade handles
+    // refreshToken via the relation (already cleaned above in Step 1).
+
+    // Prefix-pattern users (accumulated when afterAll doesn't run)
+    const usernamePatterns = [
+      { startsWith: 'memory_admin_' }, // memoryAdminGuard.integration.test.mjs
+      { startsWith: 'memory_regular_' }, // memoryAdminGuard.integration.test.mjs
+      { startsWith: 'tokentest_' }, // token-rotation.integration.test.mjs
+      { startsWith: 'tokenunit_' }, // token-rotation.unit.test.mjs
+      { startsWith: 'testuser_' }, // generic createTestUser() callers
+      { startsWith: 'competitionapi_' }, // competition API tests
+      { startsWith: 'acookie_' }, // auth-cookies.test.mjs (defence-in-depth)
+      { startsWith: 'cintg_' }, // cookieIntegration.test.mjs (defence-in-depth)
+      { startsWith: 'recovery_' }, // recovery users created by createTestHorse()
+    ];
+    for (const pattern of usernamePatterns) {
+      await prisma.user.deleteMany({ where: { username: pattern } });
+    }
+
+    // Hardcoded usernames that should not persist between runs
+    const testUsernames = ['progresstest', 'testuser123', 'memoryTestUser', 'authintegrationuser'];
+    await prisma.user.deleteMany({ where: { username: { in: testUsernames } } });
+
+    // Hardcoded and pattern emails
+    const testEmails = [
+      'ratelimit@example.com',
+      'memory@test.com',
+      'securitytest1@test.com',
+      'authintegration@test.com',
+    ];
     await prisma.user.deleteMany({ where: { email: { in: testEmails } } });
 
-    const testUsernames = ['progresstest', 'testuser123'];
-    await prisma.user.deleteMany({ where: { username: { in: testUsernames } } });
+    // Email patterns (contains) for suites that stamp timestamp into the email
+    const emailContainsPatterns = [
+      'tokentest', // token-rotation.integration.test.mjs
+      'tokenunit', // token-rotation.unit.test.mjs
+      'authintegration', // auth-system-integration.test.mjs
+    ];
+    for (const pattern of emailContainsPatterns) {
+      await prisma.user.deleteMany({ where: { email: { contains: pattern } } });
+    }
 
     await prisma.$disconnect();
     console.log('✅ Global setup: leftover test data cleaned');
