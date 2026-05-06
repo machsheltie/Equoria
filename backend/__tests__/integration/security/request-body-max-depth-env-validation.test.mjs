@@ -154,11 +154,16 @@ describe('REQUEST_BODY_MAX_DEPTH env-var validation (21R-SEC-3-REVIEW-1)', () =>
   // the validator returned them directly and the cap was effectively
   // disabled. Iteration-3 hardening: we don't just assert 64-deep
   // throws — we bracket the boundary at DEFAULT_MAX_DEPTH so the test
-  // proves fallback is exactly the default (not just <64). Builder
-  // semantics: builder(N) → max scanValue depth = N-1. With
-  // DEFAULT_MAX_DEPTH=32 the boundary is builder(33) accepts /
-  // builder(34) rejects. This pins fallback to exactly 32; a wrong
-  // fallback (e.g. 200) would break exactly one of the two assertions.
+  // proves fallback is exactly the default (not just <64).
+  //
+  // Builder semantics (post-Equoria-21kz fix): buildDeepArrayBuffer(N)
+  // creates N nested EMPTY arrays. The Equoria-21kz fix to scanArray
+  // added a depth-check BEFORE the early-return for empty arrays, so
+  // empty-leaf and non-empty-leaf arrays now reject at the same depth.
+  // builder(N) → max scanArray depth = N → boundary: builder(32) accepts /
+  // builder(33) rejects at DEFAULT_MAX_DEPTH=32. This pins fallback to
+  // exactly 32; a wrong fallback (e.g. 200) would break exactly one
+  // of the two assertions.
   const UPPER_BOUND_BYPASS_VALUES = [
     '999999999999999999999999', // ~1e24, well above MAX_SAFE_INTEGER
     '1000000000000000', // 1e15, below MAX_SAFE_INTEGER but absurdly large
@@ -172,10 +177,10 @@ describe('REQUEST_BODY_MAX_DEPTH env-var validation (21R-SEC-3-REVIEW-1)', () =>
 
       const { verifyJsonBody } = await import(MIDDLEWARE_PATH);
 
-      // builder(33) → max scanValue depth 32 → 32 > 32 false → accepted
-      expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(33))).not.toThrow();
-      // builder(34) → max scanValue depth 33 → 33 > 32 true → rejected
-      expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(34))).toThrow(/nesting too deep/i);
+      // builder(32) → scanArray reaches depth=32 → 32 > 32 false → accepted
+      expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(32))).not.toThrow();
+      // builder(33) → scanArray reaches depth=33 → 33 > 32 true → rejected
+      expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(33))).toThrow(/nesting too deep/i);
     });
   }
 
@@ -193,8 +198,8 @@ describe('REQUEST_BODY_MAX_DEPTH env-var validation (21R-SEC-3-REVIEW-1)', () =>
     const { verifyJsonBody } = await import(MIDDLEWARE_PATH);
 
     // Bracketed at default boundary — proves fallback is exactly 32, not 300.
-    expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(33))).not.toThrow();
-    expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(34))).toThrow(/nesting too deep/i);
+    expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(32))).not.toThrow();
+    expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(33))).toThrow(/nesting too deep/i);
   });
 
   // Iteration-3 boundary test for MAX_ALLOWED_OVERRIDE itself. Pins the
@@ -213,14 +218,14 @@ describe('REQUEST_BODY_MAX_DEPTH env-var validation (21R-SEC-3-REVIEW-1)', () =>
     expect(MAX_ALLOWED_OVERRIDE).toBeGreaterThan(0);
 
     // env at exactly the ceiling: accepted, cap = override.
-    // builder(MAX_ALLOWED_OVERRIDE + 1) → max scanValue depth =
-    // MAX_ALLOWED_OVERRIDE → not > MAX_ALLOWED_OVERRIDE → accepted.
+    // builder(MAX_ALLOWED_OVERRIDE) → scanArray reaches depth=MAX_ALLOWED_OVERRIDE
+    // → not > MAX_ALLOWED_OVERRIDE → accepted.
     process.env.REQUEST_BODY_MAX_DEPTH = String(MAX_ALLOWED_OVERRIDE);
     jest.resetModules();
     {
       const { verifyJsonBody } = await import(MIDDLEWARE_PATH);
-      expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(MAX_ALLOWED_OVERRIDE + 1))).not.toThrow();
-      expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(MAX_ALLOWED_OVERRIDE + 2))).toThrow(
+      expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(MAX_ALLOWED_OVERRIDE))).not.toThrow();
+      expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(MAX_ALLOWED_OVERRIDE + 1))).toThrow(
         /nesting too deep/i,
       );
     }
@@ -231,8 +236,8 @@ describe('REQUEST_BODY_MAX_DEPTH env-var validation (21R-SEC-3-REVIEW-1)', () =>
     jest.resetModules();
     {
       const { verifyJsonBody } = await import(MIDDLEWARE_PATH);
-      expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(33))).not.toThrow();
-      expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(34))).toThrow(/nesting too deep/i);
+      expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(32))).not.toThrow();
+      expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(33))).toThrow(/nesting too deep/i);
     }
   });
 
@@ -242,17 +247,16 @@ describe('REQUEST_BODY_MAX_DEPTH env-var validation (21R-SEC-3-REVIEW-1)', () =>
 
     const { verifyJsonBody } = await import(MIDDLEWARE_PATH);
 
-    // Off-by-one note: buildDeepArrayBuffer(N) produces N nested
-    // brackets; max scanValue depth = N-1 (innermost `[]` exits via
-    // scanArray seeing `]` immediately, never recursing back into
-    // scanValue). With MAX_DEPTH=32 the boundary is builder(33)
-    // accepts / builder(34) rejects. A regex typo (e.g. /^[1-9]\d?$/
-    // capping at 99) would shift the boundary and break exactly one.
-    // (Asymmetric depth counting between scanner and
-    // assertNoPollutingKeys is tracked by 21R-SEC-3-REVIEW-2,
-    // Equoria-ncbs.)
-    expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(33))).not.toThrow();
-    expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(34))).toThrow(/nesting too deep/i);
+    // Post-Equoria-21kz: buildDeepArrayBuffer(N) produces N nested EMPTY
+    // arrays; scanArray now checks depth before the early `]` short-circuit,
+    // so max scanArray depth = N (no more off-by-one for empty leaves).
+    // With MAX_DEPTH=32 the boundary is builder(32) accepts / builder(33)
+    // rejects. A regex typo (e.g. /^[1-9]\d?$/ capping at 99) would shift
+    // the boundary and break exactly one assertion.
+    // (Depth counting symmetry between scanner and assertNoPollutingKeys
+    // is pinned by 21R-SEC-3-REVIEW-2, Equoria-ncbs.)
+    expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(32))).not.toThrow();
+    expect(() => verifyJsonBody(makeReq(), {}, buildDeepArrayBuffer(33))).toThrow(/nesting too deep/i);
   });
 
   it('valid override REQUEST_BODY_MAX_DEPTH=8 rejects 16-deep', async () => {
