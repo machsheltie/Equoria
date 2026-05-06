@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 🔒 INTEGRATION TESTS: SQL Injection Attempts
  *
  * Tests for preventing SQL injection attacks including:
@@ -462,7 +462,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
     it('should prevent injection via profile data used in ownership checks', async () => {
       // Attempt to update username with SQL injection
       const response = await request(app)
-        .put('/api/auth/profile')
+        .put('/api/v1/auth/profile')
         .set('Authorization', `Bearer ${validToken}`)
         .set('Origin', 'http://localhost:3000')
         .send({
@@ -642,9 +642,6 @@ describe('SQL Injection Attempts Integration Tests', () => {
         expect([400, 403, 404]).toContain(response.status);
         expect(response.body).toHaveProperty('success', false);
         expect(response.body).toHaveProperty('message');
-        if (response.body.status !== undefined) {
-          expect(response.body).toHaveProperty('status');
-        }
       });
 
       // Error messages should be consistent (no info leakage)
