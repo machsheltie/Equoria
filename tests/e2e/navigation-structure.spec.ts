@@ -31,11 +31,15 @@ test.describe('SidebarNav — desktop (1440px)', () => {
 
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
+    // Equoria-iiiz: SidebarNav rendering depends on useMediaQuery firing
+    // after React hydration (initial SSR-safe state is `false`). Default
+    // 5s timeout was unreliable in CI under Redis-reconnect contention.
+    // 15s matches the timeout pattern used by the celestial-night specs.
     const sidebar = page.getByTestId('sidebar-nav');
-    await expect(sidebar).toBeVisible();
+    await expect(sidebar).toBeVisible({ timeout: 15000 });
 
     // Initial state — expanded
-    await expect(sidebar).toHaveAttribute('data-collapsed', 'false');
+    await expect(sidebar).toHaveAttribute('data-collapsed', 'false', { timeout: 5000 });
     const expandedBox = await sidebar.boundingBox();
     expect(expandedBox).not.toBeNull();
     expect(expandedBox!.width).toBeGreaterThan(200);
@@ -55,10 +59,13 @@ test.describe('SidebarNav — desktop (1440px)', () => {
 
   test('22-8-E2E-002: sidebar collapse state persists across reloads', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
+    // Equoria-iiiz: wait for sidebar to actually mount before clicking toggle.
+    await expect(page.getByTestId('sidebar-nav')).toBeVisible({ timeout: 15000 });
     await page.getByTestId('sidebar-toggle').click();
     await expect(page.getByTestId('sidebar-nav')).toHaveAttribute('data-collapsed', 'true');
 
     await page.reload({ waitUntil: 'domcontentloaded' });
+    await expect(page.getByTestId('sidebar-nav')).toBeVisible({ timeout: 15000 });
     await expect(page.getByTestId('sidebar-nav')).toHaveAttribute('data-collapsed', 'true');
 
     // Expand again so other tests in this file start from the canonical state
@@ -70,7 +77,7 @@ test.describe('SidebarNav — desktop (1440px)', () => {
     page,
   }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
-    await expect(page.getByTestId('sidebar-nav')).toBeVisible();
+    await expect(page.getByTestId('sidebar-nav')).toBeVisible({ timeout: 15000 });
     await expect(page.getByTestId('hamburger-menu')).toHaveCount(0);
   });
 
@@ -90,8 +97,9 @@ test.describe('MobileNav — phone (375×812)', () => {
   test('22-8-E2E-005: bottom nav renders with 5 items at 375px', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
+    // Equoria-iiiz: wait long enough for React hydration + media-query effect.
     const bottomNav = page.getByTestId('bottom-nav');
-    await expect(bottomNav).toBeVisible();
+    await expect(bottomNav).toBeVisible({ timeout: 15000 });
 
     // Links: Home, Horses, Compete, Breed + "More" button
     await expect(page.getByTestId('bottom-nav-home')).toBeVisible();
@@ -104,14 +112,21 @@ test.describe('MobileNav — phone (375×812)', () => {
   test('22-8-E2E-006: active tab shows gold-dot indicator on home route', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-    // Home is active on `/` — gold dot appears
-    await expect(page.getByTestId('bottom-nav-active-dot-')).toBeVisible();
+    // Wait for bottom nav to mount before checking the active-dot child.
+    await expect(page.getByTestId('bottom-nav')).toBeVisible({ timeout: 15000 });
+
+    // Home is active on `/` — gold dot testid is `bottom-nav-active-dot-${href.replace('/', '')}`
+    // which for href '/' becomes the empty-suffix `bottom-nav-active-dot-`.
+    await expect(page.getByTestId('bottom-nav-active-dot-')).toBeVisible({ timeout: 5000 });
   });
 
   test('22-8-E2E-007: hamburger opens NavPanel overlay', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-    await page.getByTestId('hamburger-menu').click();
+    // Wait for the mobile MainNavigation to render its hamburger before clicking.
+    const hamburger = page.getByTestId('hamburger-menu');
+    await expect(hamburger).toBeVisible({ timeout: 15000 });
+    await hamburger.click();
     await expect(page.getByRole('dialog', { name: 'Navigation menu' })).toBeVisible();
 
     // Escape closes it
@@ -124,7 +139,9 @@ test.describe('MobileNav — phone (375×812)', () => {
   }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-    await page.getByTestId('bottom-nav-more').click();
+    const moreBtn = page.getByTestId('bottom-nav-more');
+    await expect(moreBtn).toBeVisible({ timeout: 15000 });
+    await moreBtn.click();
     await expect(page.getByRole('dialog', { name: 'Navigation menu' })).toBeVisible();
   });
 });
