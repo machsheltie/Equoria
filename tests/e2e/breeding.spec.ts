@@ -1,16 +1,25 @@
-import { test, expect, type APIRequestContext } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
 
 test.describe('Breeding Loop', () => {
+  let session: AuthedSession;
+
   test.beforeEach(async ({ page }) => {
     test.setTimeout(60000);
     page.on('console', (msg) => console.log(`BROWSER [${msg.type()}]: ${msg.text()}`));
     page.on('pageerror', (err) => console.error(`BROWSER ERROR: ${err.message}`));
   });
 
-  test.beforeAll(async ({ request }: { request: APIRequestContext }) => {
+  // Equoria-oua3: bare worker-scope `request` does NOT inherit project
+  // storageState, so its POSTs land at the backend without auth and 401.
+  // createAuthedSession() spawns a context loaded from storageState.json so
+  // session.request carries the global-setup user's cookies + a CSRF token.
+  test.beforeAll(async ({ browser }) => {
+    session = await createAuthedSession(browser);
+
     // Fetch a valid breedId — IDs are auto-incremented and do NOT start at 1
     let breedId = 1;
-    const breedsRes = await request.get('/api/breeds');
+    const breedsRes = await session.request.get('/api/breeds');
     if (breedsRes.ok()) {
       const breedsJson = await breedsRes.json();
       const breeds = breedsJson?.data ?? breedsJson ?? [];
@@ -20,43 +29,29 @@ test.describe('Breeding Loop', () => {
       }
     }
 
-    // Obtain a CSRF token via the public endpoint.
-    // The request context automatically retains the _csrf cookie for subsequent POSTs.
-    const csrfRes = await request.get('/api/auth/csrf-token');
-    if (!csrfRes.ok()) {
-      throw new Error(`CSRF token fetch failed with status ${csrfRes.status()}`);
-    }
-    const csrfData = await csrfRes.json();
-    const csrfToken = (csrfData as { csrfToken?: string }).csrfToken;
-    if (!csrfToken) {
-      throw new Error('CSRF token missing from /api/auth/csrf-token response');
-    }
-
     // 1. Create a Stallion
-    const stallionResponse = await request.post('/api/horses', {
-      headers: { 'x-csrf-token': csrfToken },
-      data: {
-        name: 'E2E Stallion',
-        breedId,
-        age: 5,
-        sex: 'stallion',
-      },
+    const stallionResponse = await csrfMutate(session, 'POST', '/api/horses', {
+      name: 'E2E Stallion',
+      breedId,
+      age: 5,
+      sex: 'stallion',
     });
     const stallion = await stallionResponse.json();
     if (!stallion.success) throw new Error(`Stallion creation failed: ${JSON.stringify(stallion)}`);
 
     // 2. Create a Mare
-    const mareResponse = await request.post('/api/horses', {
-      headers: { 'x-csrf-token': csrfToken },
-      data: {
-        name: 'E2E Mare',
-        breedId,
-        age: 5,
-        sex: 'mare',
-      },
+    const mareResponse = await csrfMutate(session, 'POST', '/api/horses', {
+      name: 'E2E Mare',
+      breedId,
+      age: 5,
+      sex: 'mare',
     });
     const mare = await mareResponse.json();
     if (!mare.success) throw new Error(`Mare creation failed: ${JSON.stringify(mare)}`);
+  });
+
+  test.afterAll(async () => {
+    await session?.context.close();
   });
 
   test('Should navigate to Breeding Center and see my mares', async ({ page }) => {

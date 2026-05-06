@@ -8,10 +8,11 @@
  *  AC4: Training session — initiate to result displayed
  *  AC5: Competition entry — select horse → confirm → result displayed
  */
-import { test, expect, type APIRequestContext } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import fs from 'fs';
+import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -113,22 +114,17 @@ test.describe('AC4: Training Session', () => {
   // Always create a fresh horse so it has no training cooldown.
   // Reusing the global-setup horse risks cooldown from previous test runs.
   let trainingHorseId: number | null = null;
+  let session: AuthedSession;
 
-  test.beforeAll(async ({ request }: { request: APIRequestContext }) => {
-    // Obtain a CSRF token — the request context retains the _csrf cookie for subsequent POSTs
-    const csrfRes = await request.get('/api/auth/csrf-token');
-    if (!csrfRes.ok()) {
-      throw new Error(`CSRF token fetch failed: ${csrfRes.status()}`);
-    }
-    const csrfData = await csrfRes.json();
-    const csrfToken = (csrfData as { csrfToken?: string }).csrfToken;
-    if (!csrfToken) {
-      throw new Error('CSRF token missing from /api/auth/csrf-token response');
-    }
+  // Equoria-oua3: bare `request` does NOT inherit storageState. Use
+  // createAuthedSession() so session.request carries the global-setup
+  // user's auth cookies — otherwise POST /api/horses returns 401.
+  test.beforeAll(async ({ browser }) => {
+    session = await createAuthedSession(browser);
 
     // Fetch a valid breedId — IDs are auto-incremented and do NOT start at 1
     let breedId = 1;
-    const breedsRes = await request.get('/api/breeds');
+    const breedsRes = await session.request.get('/api/breeds');
     if (breedsRes.ok()) {
       const breedsJson = await breedsRes.json();
       const breeds = breedsJson?.data ?? breedsJson ?? [];
@@ -138,9 +134,11 @@ test.describe('AC4: Training Session', () => {
     }
 
     // Create a fresh training horse with proper auth + CSRF (no bypass headers)
-    const res = await request.post('/api/horses', {
-      headers: { 'x-csrf-token': csrfToken },
-      data: { name: `Training Horse ${Date.now()}`, breedId, age: 5, sex: 'stallion' },
+    const res = await csrfMutate(session, 'POST', '/api/horses', {
+      name: `Training Horse ${Date.now()}`,
+      breedId,
+      age: 5,
+      sex: 'stallion',
     });
     if (!res.ok()) {
       throw new Error(`Horse creation for training failed: ${res.status()} ${await res.text()}`);
@@ -151,6 +149,10 @@ test.describe('AC4: Training Session', () => {
       throw new Error(`Horse creation succeeded but returned no id: ${JSON.stringify(json)}`);
     }
     console.log('Created training horse id:', trainingHorseId);
+  });
+
+  test.afterAll(async () => {
+    await session?.context.close();
   });
 
   test('training dashboard loads with Training Dashboard heading', async ({ page }) => {
