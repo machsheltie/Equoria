@@ -248,9 +248,15 @@ test.describe('AC5: Competition Entry', () => {
     await expect(page.getByRole('dialog').first()).toBeVisible({ timeout: 5000 });
   });
 
-  test('competition entry flow: Enter Competition → horse selection → confirm', async ({
+  test('competition entry flow: select horse in modal → click Enter → API 200', async ({
     page,
   }) => {
+    // The entry flow lives entirely inside CompetitionDetailModal:
+    //   1. Click a competition card → modal opens
+    //   2. Pick a horse via competition-entry-horse-select (native <select>)
+    //   3. Click enter-competition-button
+    //   4. POST /api/v1/competition/enter returns 200 (entry persisted)
+    // There is no separate EntryConfirmationModal in the current UI.
     const creds = readCredentials();
     const horseId = creds.testHorseId;
 
@@ -267,39 +273,46 @@ test.describe('AC5: Competition Entry', () => {
       timeout: 10000,
     });
 
-    // Enter Competition button must be enabled — a disabled button means the feature
-    // is broken or the horse is ineligible, both of which are failures, not skip conditions
-    const enterBtn = page.locator('[data-testid="enter-button"]');
+    // Select horse from the inline horse-select inside the modal
+    const horseSelect = page.locator('[data-testid="competition-entry-horse-select"]');
+    await expect(horseSelect).toBeVisible({ timeout: 10000 });
+    if (horseId) {
+      // Pre-select the global-setup starter horse if available in the list
+      const valueExists = await horseSelect
+        .locator(`option[value="${horseId}"]`)
+        .count()
+        .then((c) => c > 0);
+      if (valueExists) {
+        await horseSelect.selectOption({ value: String(horseId) });
+      } else {
+        // Fall back to the first real option (index 1 skips the placeholder)
+        const optionValues = await horseSelect
+          .locator('option[value]')
+          .evaluateAll((opts: HTMLOptionElement[]) =>
+            opts.map((o) => o.value).filter((v) => v !== '')
+          );
+        if (optionValues.length > 0) {
+          await horseSelect.selectOption({ value: optionValues[0] });
+        }
+      }
+    }
+
+    // Intercept entry POST before clicking — proves the real API was called
+    const entryPost = page.waitForResponse(
+      (resp) =>
+        resp.url().includes('/api/v1/competition/enter') && resp.request().method() === 'POST',
+      { timeout: 15000 }
+    );
+
+    // Enter Competition button must be enabled (disabled = ineligible horse = real failure)
+    const enterBtn = page.locator('[data-testid="enter-competition-button"]');
     await expect(enterBtn).toBeEnabled({ timeout: 10000 });
     await enterBtn.click();
 
-    // EntryConfirmationModal must open
-    await expect(page.locator('[data-testid="entry-confirmation-modal"]')).toBeVisible({
-      timeout: 10000,
-    });
-
-    // Select horse from the selector
-    if (horseId) {
-      const horseOption = page.locator(`[data-testid="horse-option-${horseId}"]`);
-      if (await horseOption.isVisible({ timeout: 3000 }).catch(() => false)) {
-        await horseOption.click();
-      } else {
-        const firstHorse = page.locator('[data-testid^="horse-option-"]').first();
-        await expect(firstHorse).toBeVisible({ timeout: 5000 });
-        await firstHorse.click();
-      }
-    } else {
-      const firstHorse = page.locator('[data-testid^="horse-option-"]').first();
-      await expect(firstHorse).toBeVisible({ timeout: 5000 });
-      await firstHorse.click();
-    }
-
-    // Confirm Entry must be enabled — if not, horse eligibility or feature is broken
-    const confirmBtn = page.locator('[data-testid="confirm-button"]');
-    await expect(confirmBtn).toBeEnabled({ timeout: 5000 });
-    await confirmBtn.click();
-
-    // Success message must appear
-    await expect(page.locator('[data-testid="success-message"]')).toBeVisible({ timeout: 15000 });
+    const entryResp = await entryPost;
+    expect(
+      entryResp.ok(),
+      `POST /api/v1/competition/enter returned ${entryResp.status()}`
+    ).toBeTruthy();
   });
 });
