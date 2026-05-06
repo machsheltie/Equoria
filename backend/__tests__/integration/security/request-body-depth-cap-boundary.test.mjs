@@ -101,6 +101,33 @@ function buildParsedObjectNonEmptyLeaf(n) {
   return val;
 }
 
+// Build a JSON buffer with alternating object/array nesting ending in null.
+// Even levels: {"a": ...}, odd levels: [...]. For N=4: {"a":[{"a":[null]}]}.
+// Exercises the scanner's scanObject→scanArray→scanObject alternation path.
+function buildMixedBufferNonEmptyLeaf(n) {
+  let open = '';
+  let close = '';
+  for (let i = 0; i < n; i++) {
+    if (i % 2 === 0) {
+      open += '{"a":';
+      close = '}' + close;
+    } else {
+      open += '[';
+      close = ']' + close;
+    }
+  }
+  return Buffer.from(open + 'null' + close, 'utf8');
+}
+
+// Build a parsed JS mixed-nesting value matching buildMixedBufferNonEmptyLeaf.
+function buildParsedMixedNonEmptyLeaf(n) {
+  let val = null;
+  for (let i = n - 1; i >= 0; i--) {
+    val = i % 2 === 0 ? { a: val } : [val];
+  }
+  return val;
+}
+
 function makeReq() {
   return { headers: { 'content-type': 'application/json' } };
 }
@@ -214,12 +241,86 @@ describe('Depth-cap boundary (21R-SEC-3-REVIEW-2)', () => {
     });
   });
 
+  describe(`depth = MAX_DEPTH+2 (=${MAX_DEPTH + 2}) is also rejected (Equoria-7tm8)`, () => {
+    // The AC asks for explicit depth=34 tests (not just depth=33) so the
+    // boundary contract is pinned at two points above the cap.
+    it(`scanner rejects array buffer at depth = MAX_DEPTH+2 (=${MAX_DEPTH + 2})`, () => {
+      expect(() => verifyJsonBody(makeReq(), {}, buildArrayBufferNonEmptyLeaf(MAX_DEPTH + 2))).toThrow(
+        /nesting too deep/i,
+      );
+    });
+
+    it(`scanner rejects object buffer at depth = MAX_DEPTH+2 (=${MAX_DEPTH + 2})`, () => {
+      expect(() => verifyJsonBody(makeReq(), {}, buildObjectBufferNonEmptyLeaf(MAX_DEPTH + 2))).toThrow(
+        /nesting too deep/i,
+      );
+    });
+
+    it(`assertNoPollutingKeys rejects parsed array at depth = MAX_DEPTH+2 (=${MAX_DEPTH + 2})`, () => {
+      const err = runRejectPolluted(buildParsedArrayNonEmptyLeaf(MAX_DEPTH + 2));
+      expect(err).not.toBeNull();
+      expect(err?.message).toMatch(/nesting too deep/i);
+      expect(err?.statusCode ?? err?.status).toBe(400);
+    });
+
+    it(`assertNoPollutingKeys rejects parsed object at depth = MAX_DEPTH+2 (=${MAX_DEPTH + 2})`, () => {
+      const err = runRejectPolluted(buildParsedObjectNonEmptyLeaf(MAX_DEPTH + 2));
+      expect(err).not.toBeNull();
+      expect(err?.message).toMatch(/nesting too deep/i);
+      expect(err?.statusCode ?? err?.status).toBe(400);
+    });
+  });
+
+  describe('mixed array+object nesting (Equoria-7tm8)', () => {
+    // Exercises the scanner's scanObject↔scanArray alternation path.
+    // A bug in depth threading on alternation (e.g., one branch fails to
+    // increment) would leave homogeneous tests green while mixed tests fail.
+
+    describe('JsonScanner via verifyJsonBody', () => {
+      it(`accepts mixed nesting at depth = MAX_DEPTH (=${MAX_DEPTH})`, () => {
+        expect(() => verifyJsonBody(makeReq(), {}, buildMixedBufferNonEmptyLeaf(MAX_DEPTH))).not.toThrow();
+      });
+
+      it(`rejects mixed nesting at depth = MAX_DEPTH+1 (=${MAX_DEPTH + 1}) — boundary`, () => {
+        expect(() => verifyJsonBody(makeReq(), {}, buildMixedBufferNonEmptyLeaf(MAX_DEPTH + 1))).toThrow(
+          /nesting too deep/i,
+        );
+      });
+
+      it(`rejects mixed nesting at depth = MAX_DEPTH+2 (=${MAX_DEPTH + 2})`, () => {
+        expect(() => verifyJsonBody(makeReq(), {}, buildMixedBufferNonEmptyLeaf(MAX_DEPTH + 2))).toThrow(
+          /nesting too deep/i,
+        );
+      });
+    });
+
+    describe('assertNoPollutingKeys via rejectPollutedRequestBody', () => {
+      it(`accepts mixed nesting at depth = MAX_DEPTH (=${MAX_DEPTH})`, () => {
+        expect(runRejectPolluted(buildParsedMixedNonEmptyLeaf(MAX_DEPTH))).toBeNull();
+      });
+
+      it(`rejects mixed nesting at depth = MAX_DEPTH+1 (=${MAX_DEPTH + 1}) — boundary`, () => {
+        const err = runRejectPolluted(buildParsedMixedNonEmptyLeaf(MAX_DEPTH + 1));
+        expect(err).not.toBeNull();
+        expect(err?.message).toMatch(/nesting too deep/i);
+        expect(err?.statusCode ?? err?.status).toBe(400);
+      });
+
+      it(`rejects mixed nesting at depth = MAX_DEPTH+2 (=${MAX_DEPTH + 2})`, () => {
+        const err = runRejectPolluted(buildParsedMixedNonEmptyLeaf(MAX_DEPTH + 2));
+        expect(err).not.toBeNull();
+        expect(err?.message).toMatch(/nesting too deep/i);
+        expect(err?.statusCode ?? err?.status).toBe(400);
+      });
+    });
+  });
+
   describe('cross-function symmetry', () => {
     // For the SAME nesting depth N (non-empty-leaf), scanner and
     // assertNoPollutingKeys must produce identical accept/reject
     // outcomes. If the two functions ever desync, exactly one
     // assertion in this block will break — pinning the contract.
-    for (const n of [MAX_DEPTH - 1, MAX_DEPTH, MAX_DEPTH + 1]) {
+    for (const n of [MAX_DEPTH - 1, MAX_DEPTH, MAX_DEPTH + 1, MAX_DEPTH + 2]) {
       it(`array N=${n}: scanner and assertNoPollutingKeys agree`, () => {
         let scannerThrew = false;
         try {
@@ -244,6 +345,20 @@ describe('Depth-cap boundary (21R-SEC-3-REVIEW-2)', () => {
           }
         }
         const assertErr = runRejectPolluted(buildParsedObjectNonEmptyLeaf(n));
+        const assertRejected = !!assertErr?.message?.match(/nesting too deep/i);
+        expect(scannerThrew).toBe(assertRejected);
+      });
+
+      it(`mixed N=${n}: scanner and assertNoPollutingKeys agree`, () => {
+        let scannerThrew = false;
+        try {
+          verifyJsonBody(makeReq(), {}, buildMixedBufferNonEmptyLeaf(n));
+        } catch (e) {
+          if (e?.message?.match(/nesting too deep/i)) {
+            scannerThrew = true;
+          }
+        }
+        const assertErr = runRejectPolluted(buildParsedMixedNonEmptyLeaf(n));
         const assertRejected = !!assertErr?.message?.match(/nesting too deep/i);
         expect(scannerThrew).toBe(assertRejected);
       });
