@@ -225,7 +225,6 @@ router.post(
           id: true,
           name: true,
           age: true,
-          health: true,
           epigeneticModifiers: true,
           speed: true,
           stamina: true,
