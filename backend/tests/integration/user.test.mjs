@@ -17,7 +17,8 @@ let testUser;
 const testHorseIds = [];
 
 beforeAll(async () => {
-  const hashedPassword = await bcrypt.hash('TestPassword123!', 10);
+  // rounds=1: fast in tests; password is never verified (JWT generated directly)
+  const hashedPassword = await bcrypt.hash('TestPassword123!', 1);
 
   testUser = await prisma.user.create({
     data: {
@@ -54,7 +55,7 @@ beforeAll(async () => {
     });
     testHorseIds.push(horse.id);
   }
-});
+}, 120000);
 
 afterAll(async () => {
   await prisma.horse.deleteMany({ where: { id: { in: testHorseIds } } });
@@ -120,7 +121,7 @@ describe('User Model — Real Database', () => {
 
   describe('Email uniqueness (real DB constraint)', () => {
     test('attempting to create duplicate email throws', async () => {
-      const hashedPassword = await bcrypt.hash('password', 10);
+      const hashedPassword = await bcrypt.hash('password', 1);
       // .rejects.toThrow() fails under --experimental-vm-modules when the
       // rejection comes from a cross-VM-realm Prisma error class. Use a
       // manual try/catch so the assertion is realm-agnostic.

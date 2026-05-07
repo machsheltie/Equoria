@@ -65,7 +65,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
-  });
+  }, 90000);
 
   let authToken;
   let testUserId;
@@ -76,7 +76,8 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
     // Use 'trainupd_' prefix — not matched by cleanupTestData's 'testuser_' pattern,
     // so parallel suites calling cleanupTestData won't wipe this suite's data.
     const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).slice(2, 8)}`;
-    const hashedPw = await bcrypt.hash('TestPassword123!', 10);
+    // rounds=1: fast in tests; password is never verified (JWT generated directly)
+    const hashedPw = await bcrypt.hash('TestPassword123!', 1);
     const user = await prisma.user.create({
       data: {
         username: `trainupd_${ts}`,
@@ -104,7 +105,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
       data: { name: `TrainHorse2_${ts}`, sex: 'Mare', dateOfBirth: dob5yr, userId: testUserId, age: 5 },
     });
     secondHorseId = secondHorse.id;
-  });
+  }, 120000);
 
   afterAll(async () => {
     if (secondHorseId) {

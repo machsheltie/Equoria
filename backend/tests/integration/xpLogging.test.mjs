@@ -19,7 +19,8 @@ let testUser;
 let testHorse;
 
 beforeAll(async () => {
-  const hashedPassword = await bcrypt.hash('TestPassword123!', 10);
+  // rounds=1: fast in tests; password is never verified (JWT generated directly)
+  const hashedPassword = await bcrypt.hash('TestPassword123!', 1);
 
   testUser = await prisma.user.create({
     data: {
@@ -55,7 +56,7 @@ beforeAll(async () => {
       epigeneticModifiers: { positive: [], negative: [] },
     },
   });
-});
+}, 120000);
 
 afterAll(async () => {
   // Clean up xp events, training records, then horse and user

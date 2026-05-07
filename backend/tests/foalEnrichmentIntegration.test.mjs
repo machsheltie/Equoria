@@ -30,7 +30,7 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
-  });
+  }, 90000);
 
   let testUser;
   let testFoal;
@@ -39,7 +39,8 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
 
   beforeAll(async () => {
     // Create a real user in the database
-    const hashedPassword = await bcrypt.hash('TestPassword123!', 10);
+    // rounds=1: fast in tests; password is never verified (JWT generated directly)
+    const hashedPassword = await bcrypt.hash('TestPassword123!', 1);
     testUser = await prisma.user.create({
       data: {
         username: `enrichment_user_${ts}`,
@@ -65,7 +66,7 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
         stressLevel: 20,
       },
     });
-  });
+  }, 120000);
 
   afterAll(async () => {
     // Clean up in correct order to respect foreign key constraints

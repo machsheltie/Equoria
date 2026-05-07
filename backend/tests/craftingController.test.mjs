@@ -61,7 +61,8 @@ const DEFAULT_SETTINGS = {
 };
 
 beforeAll(async () => {
-  const hashed = await bcrypt.hash('TestPass123!', 10);
+  // rounds=1: fast in tests; password is never verified (JWT generated directly)
+  const hashed = await bcrypt.hash('TestPass123!', 1);
   testUser = await prisma.user.create({
     data: {
       username: `craftingTest_${ts}`,
@@ -73,7 +74,7 @@ beforeAll(async () => {
       settings: { ...DEFAULT_SETTINGS },
     },
   });
-});
+}, 120000);
 
 afterAll(async () => {
   if (testUser?.id) {

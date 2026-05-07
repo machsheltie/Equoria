@@ -38,7 +38,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
-  });
+  }, 90000);
 
   let testUser;
   let testBreed;
@@ -50,7 +50,8 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
 
   beforeAll(async () => {
     // Create a real user in the database
-    const hashedPassword = await bcrypt.hash('TestPassword123!', 10);
+    // rounds=1: fast in tests; password is never verified (JWT generated directly)
+    const hashedPassword = await bcrypt.hash('TestPassword123!', 1);
     testUser = await prisma.user.create({
       data: {
         username: `foalcreation_user_${ts}`,
@@ -111,7 +112,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
         epigeneticModifiers: { positive: ['calm'], negative: [], hidden: [] },
       },
     });
-  });
+  }, 120000);
 
   /**
    * Reset the dam's pregnancy state between tests so each `it()` block can
