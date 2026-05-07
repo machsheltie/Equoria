@@ -10,6 +10,7 @@ import jwt from 'jsonwebtoken';
 import { jest } from '@jest/globals';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { createTestUser } from '../config/test-helpers.mjs';
+import logger from '../../utils/logger.mjs';
 
 // Import functions that will be implemented
 import {
@@ -129,6 +130,23 @@ describe('Token Rotation Service - Unit Tests', () => {
       expect(dbToken.tokenHash).toBe(hashRefreshToken(tokenPair.refreshToken));
       expect(dbToken.isActive).toBe(true);
       expect(dbToken.isInvalidated).toBe(false);
+    });
+
+    it('should_store_hash_not_raw_token_in_database', async () => {
+      const familyId = generateTokenFamily();
+      const tokenPair = await createTokenPair(testUser.id, familyId);
+
+      const dbToken = await prisma.refreshToken.findFirst({
+        where: { userId: testUser.id, familyId },
+      });
+
+      expect(dbToken).toBeDefined();
+      // Equoria-ighs sentinel: the DB value MUST NOT be the raw JWT. If
+      // hashRefreshToken() were ever regressed to an identity function, the
+      // sibling test (should_store_refresh_token_in_database) would silently
+      // pass because hash(raw) === raw. This explicit negative assertion
+      // catches that regression before plaintext token storage re-enters the DB.
+      expect(dbToken.tokenHash).not.toBe(tokenPair.refreshToken);
     });
 
     it('should_set_correct_expiration_times', async () => {
@@ -269,6 +287,34 @@ describe('Token Rotation Service - Unit Tests', () => {
       // Raw refresh tokens are no longer persisted or returned in diagnostics.
       // The service returns tokenHashes in the same family for observability.
       expect(reuseDetection.affectedTokenHashes).toContain(hashRefreshToken(secondTokenPair.refreshToken));
+    });
+
+    it('should_not_log_raw_token_during_reuse_detection', async () => {
+      const familyId = generateTokenFamily();
+      const tokenPair = await createTokenPair(testUser.id, familyId);
+
+      // Mark token inactive but not invalidated — triggers the reuse-warn path.
+      await prisma.refreshToken.update({
+        where: { tokenHash: hashRefreshToken(tokenPair.refreshToken) },
+        data: { isActive: false },
+      });
+
+      const warnSpy = jest.spyOn(logger, 'warn').mockImplementation(() => {});
+      try {
+        await detectTokenReuse(tokenPair.refreshToken);
+
+        expect(warnSpy).toHaveBeenCalled();
+        // Equoria-ighs sentinel: logger.warn must NEVER receive the raw JWT.
+        // An attacker with log-read access could exfiltrate active session
+        // material if raw tokens appeared in structured log fields. The service
+        // is expected to log only tokenHashPrefix (first 12 hex chars).
+        for (const callArgs of warnSpy.mock.calls) {
+          const serialised = JSON.stringify(callArgs);
+          expect(serialised).not.toContain(tokenPair.refreshToken);
+        }
+      } finally {
+        warnSpy.mockRestore();
+      }
     });
   });
 

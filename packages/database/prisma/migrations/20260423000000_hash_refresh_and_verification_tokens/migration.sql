@@ -1,4 +1,5 @@
--- Equoria-uy73 (2026-04-23): Hash refresh tokens and email verification tokens at rest.
+-- Equoria-uy73 / Equoria-ighs (2026-04-23): Hash refresh tokens and email verification tokens at rest.
+-- ADR: docs/architecture/adr-006-refresh-token-hash-at-rest.md
 --
 -- Raw JWTs / raw verification tokens were previously stored in plaintext, so a
 -- DB read leak would immediately grant active sessions or the ability to verify
