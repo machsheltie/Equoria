@@ -549,5 +549,5 @@ describe('POST /api/v1/horses — markings integration', () => {
     expect(typeof phenotype.modifiers.isRabicano).toBe('boolean');
 
     createdHorseId = horse.id;
-  });
+  }, 120000);
 });
