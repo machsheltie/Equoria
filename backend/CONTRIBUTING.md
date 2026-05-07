@@ -1,6 +1,6 @@
 # Backend Contributing Guide — Equoria
 
-**Version:** 2.0 **Last Updated:** 2026-04-09 (Epic 31F + 31E retros)
+**Version:** 2.1 **Last Updated:** 2026-05-07 (Equoria-urld DB-health preflight)
 **Purpose:** Mandatory conventions for all backend development. Enforced at code
 review.
 
@@ -291,6 +291,50 @@ _bmad-output/implementation-artifacts/{story-key}.md
 Do not leave story files only in the sprint planning folder. The
 `implementation-artifacts/` folder is the authoritative record consulted by
 future agents.
+
+---
+
+## Pre-push DB-Health Preflight (established Equoria-urld)
+
+The pre-push hook runs a fast structural DB check **before** the ~10-minute Jest
+suite. If the check fails, the push is blocked immediately with an actionable
+error message — no waiting for Jest to discover the problem.
+
+### What it checks
+
+| Check                      | What it catches                                                                          |
+| -------------------------- | ---------------------------------------------------------------------------------------- |
+| Pending migrations         | Migration dirs in `packages/database/prisma/migrations/` not yet in `_prisma_migrations` |
+| Orphan horse rows          | `horses.userId IS NOT NULL` but the referenced `User` row is gone                        |
+| Orphan competition results | `competition_results.horseId` references a deleted horse                                 |
+
+### What the failure looks like
+
+```
+[pre-push] FATAL: test DB inconsistency detected — fix before running the suite.
+[pre-push]   [db-health] Test DB inconsistency detected:
+[pre-push]     • 1 unapplied migration(s): 20260507_add_new_column
+[pre-push]
+[pre-push]   [db-health] Reset the test DB with:
+[pre-push]     cd backend && npm run db:reset:test
+```
+
+### How to fix
+
+```bash
+cd backend && npm run db:reset:test
+```
+
+This resets the test DB, runs all migrations, and leaves the schema in a
+known-good state. Re-run your push after the reset.
+
+### Notes
+
+- Horses with `userId = NULL` are legitimately unowned (NPC/wild horses) and are
+  **not** flagged as orphans.
+- The check runs in <5 seconds on a healthy DB; it only slows down when an
+  inconsistency is detected (the failure case).
+- Script: `scripts/preflight/db-health.mjs`
 
 ---
 
