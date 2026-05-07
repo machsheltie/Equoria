@@ -226,105 +226,108 @@ export async function buyHorse(req, res) {
       return res.status(400).json({ success: false, message: 'Invalid horseId' });
     }
 
-    const result = await prisma.$transaction(async tx => {
-      // Lock the horse row by fetching inside the transaction
-      const horse = await tx.horse.findUnique({
-        where: { id: horseId },
-        include: { user: { select: { id: true, username: true } } },
-      });
+    const result = await prisma.$transaction(
+      async tx => {
+        // Lock the horse row by fetching inside the transaction
+        const horse = await tx.horse.findUnique({
+          where: { id: horseId },
+          include: { user: { select: { id: true, username: true } } },
+        });
 
-      if (!horse) {
-        throw Object.assign(new Error('Horse not found'), { statusCode: 404 });
-      }
-      if (!horse.forSale) {
-        throw Object.assign(new Error('Horse is not for sale'), { statusCode: 400 });
-      }
-      if (horse.userId === buyerId) {
-        throw Object.assign(new Error('You already own this horse'), { statusCode: 400 });
-      }
+        if (!horse) {
+          throw Object.assign(new Error('Horse not found'), { statusCode: 404 });
+        }
+        if (!horse.forSale) {
+          throw Object.assign(new Error('Horse is not for sale'), { statusCode: 400 });
+        }
+        if (horse.userId === buyerId) {
+          throw Object.assign(new Error('You already own this horse'), { statusCode: 400 });
+        }
 
-      const salePrice = horse.salePrice;
-      const sellerId = horse.userId;
+        const salePrice = horse.salePrice;
+        const sellerId = horse.userId;
 
-      // Check buyer balance
-      const buyer = await tx.user.findUnique({ where: { id: buyerId } });
-      if (!buyer) {
-        throw Object.assign(new Error('Buyer not found'), { statusCode: 404 });
-      }
-      if (buyer.money < salePrice) {
-        throw Object.assign(new Error('Insufficient funds'), { statusCode: 400 });
-      }
+        // Check buyer balance
+        const buyer = await tx.user.findUnique({ where: { id: buyerId } });
+        if (!buyer) {
+          throw Object.assign(new Error('Buyer not found'), { statusCode: 404 });
+        }
+        if (buyer.money < salePrice) {
+          throw Object.assign(new Error('Insufficient funds'), { statusCode: 400 });
+        }
 
-      // Deduct from buyer
-      const updatedBuyer = await tx.user.update({
-        where: { id: buyerId },
-        data: { money: { decrement: salePrice } },
-        select: { money: true },
-      });
+        // Deduct from buyer
+        const updatedBuyer = await tx.user.update({
+          where: { id: buyerId },
+          data: { money: { decrement: salePrice } },
+          select: { money: true },
+        });
 
-      // Credit seller
-      const updatedSeller = await tx.user.update({
-        where: { id: sellerId },
-        data: { money: { increment: salePrice } },
-        select: { money: true },
-      });
+        // Credit seller
+        const updatedSeller = await tx.user.update({
+          where: { id: sellerId },
+          data: { money: { increment: salePrice } },
+          select: { money: true },
+        });
 
-      // Transfer horse ownership
-      await tx.horse.update({
-        where: { id: horseId },
-        data: { userId: buyerId, forSale: false, salePrice: 0 },
-      });
+        // Transfer horse ownership
+        await tx.horse.update({
+          where: { id: horseId },
+          data: { userId: buyerId, forSale: false, salePrice: 0 },
+        });
 
-      // Create sale record
-      const saleRecord = await tx.horseSale.create({
-        data: {
-          horseId,
-          sellerId,
-          buyerId,
-          salePrice,
+        // Create sale record
+        const saleRecord = await tx.horseSale.create({
+          data: {
+            horseId,
+            sellerId,
+            buyerId,
+            salePrice,
+            horseName: horse.name,
+          },
+        });
+
+        await recordTransaction(
+          {
+            userId: buyerId,
+            type: 'debit',
+            amount: salePrice,
+            category: 'marketplace_purchase',
+            description: `Purchased ${horse.name}`,
+            balanceAfter: updatedBuyer.money,
+            metadata: { horseId, saleId: saleRecord.id, sellerId },
+          },
+          tx,
+        );
+        await recordTransaction(
+          {
+            userId: sellerId,
+            type: 'credit',
+            amount: salePrice,
+            category: 'marketplace_sale',
+            description: `Sold ${horse.name}`,
+            balanceAfter: updatedSeller.money,
+            metadata: { horseId, saleId: saleRecord.id, buyerId },
+          },
+          tx,
+        );
+
+        // Re-fetch buyer balance from within the transaction for an accurate post-purchase value
+        const postPurchaseBuyer = await tx.user.findUnique({
+          where: { id: buyerId },
+          select: { money: true },
+        });
+
+        return {
           horseName: horse.name,
-        },
-      });
-
-      await recordTransaction(
-        {
-          userId: buyerId,
-          type: 'debit',
-          amount: salePrice,
-          category: 'marketplace_purchase',
-          description: `Purchased ${horse.name}`,
-          balanceAfter: updatedBuyer.money,
-          metadata: { horseId, saleId: saleRecord.id, sellerId },
-        },
-        tx,
-      );
-      await recordTransaction(
-        {
-          userId: sellerId,
-          type: 'credit',
-          amount: salePrice,
-          category: 'marketplace_sale',
-          description: `Sold ${horse.name}`,
-          balanceAfter: updatedSeller.money,
-          metadata: { horseId, saleId: saleRecord.id, buyerId },
-        },
-        tx,
-      );
-
-      // Re-fetch buyer balance from within the transaction for an accurate post-purchase value
-      const postPurchaseBuyer = await tx.user.findUnique({
-        where: { id: buyerId },
-        select: { money: true },
-      });
-
-      return {
-        horseName: horse.name,
-        salePrice,
-        sellerUsername: horse.user?.username ?? 'Unknown',
-        saleId: saleRecord.id,
-        newBalance: postPurchaseBuyer.money,
-      };
-    });
+          salePrice,
+          sellerUsername: horse.user?.username ?? 'Unknown',
+          saleId: saleRecord.id,
+          newBalance: postPurchaseBuyer.money,
+        };
+      },
+      { timeout: 30000 },
+    ); // 30s — 7+ DB ops can exceed 5s default under full-suite load
 
     return res.json({
       success: true,
@@ -406,41 +409,44 @@ export async function buyStoreHorse(req, res) {
   try {
     // F3 fix: breed lookup is inside the transaction — eliminates TOCTOU gap between
     // breed verification and coin deduction.
-    const { updatedUser, breed } = await prisma.$transaction(async tx => {
-      const breedRecord = await tx.breed.findUnique({ where: { id: parsedBreedId } });
-      if (!breedRecord) {
-        throw Object.assign(new Error('Breed not found'), { statusCode: 404 });
-      }
+    const { updatedUser, breed } = await prisma.$transaction(
+      async tx => {
+        const breedRecord = await tx.breed.findUnique({ where: { id: parsedBreedId } });
+        if (!breedRecord) {
+          throw Object.assign(new Error('Breed not found'), { statusCode: 404 });
+        }
 
-      const buyer = await tx.user.findUnique({ where: { id: buyerId } });
-      if (!buyer) {
-        throw Object.assign(new Error('User not found'), { statusCode: 404 });
-      }
-      if (buyer.money < STORE_PRICE) {
-        throw Object.assign(new Error(`Insufficient funds. You need ${STORE_PRICE} coins.`), {
-          statusCode: 400,
+        const buyer = await tx.user.findUnique({ where: { id: buyerId } });
+        if (!buyer) {
+          throw Object.assign(new Error('User not found'), { statusCode: 404 });
+        }
+        if (buyer.money < STORE_PRICE) {
+          throw Object.assign(new Error(`Insufficient funds. You need ${STORE_PRICE} coins.`), {
+            statusCode: 400,
+          });
+        }
+
+        const updated = await tx.user.update({
+          where: { id: buyerId },
+          data: { money: { decrement: STORE_PRICE } },
+          select: { money: true },
         });
-      }
-
-      const updated = await tx.user.update({
-        where: { id: buyerId },
-        data: { money: { decrement: STORE_PRICE } },
-        select: { money: true },
-      });
-      await recordTransaction(
-        {
-          userId: buyerId,
-          type: 'debit',
-          amount: STORE_PRICE,
-          category: 'horse_trader_purchase',
-          description: `Purchased ${breedRecord.name} from Horse Trader`,
-          balanceAfter: updated.money,
-          metadata: { breedId: parsedBreedId, sex: canonicalSex },
-        },
-        tx,
-      );
-      return { updatedUser: updated, breed: breedRecord };
-    });
+        await recordTransaction(
+          {
+            userId: buyerId,
+            type: 'debit',
+            amount: STORE_PRICE,
+            category: 'horse_trader_purchase',
+            description: `Purchased ${breedRecord.name} from Horse Trader`,
+            balanceAfter: updated.money,
+            metadata: { breedId: parsedBreedId, sex: canonicalSex },
+          },
+          tx,
+        );
+        return { updatedUser: updated, breed: breedRecord };
+      },
+      { timeout: 30000 },
+    ); // 30s — guard against 5s default under full-suite load
 
     // Coins are now deducted — any error after this line triggers a refund attempt (F1)
     coinDeducted = true;
