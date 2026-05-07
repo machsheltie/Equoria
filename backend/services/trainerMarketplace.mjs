@@ -10,7 +10,7 @@ import crypto from 'crypto';
 
 export const TRAINER_MARKETPLACE_CONFIG = {
   DEFAULT_MARKETPLACE_SIZE: 6,
-  REFRESH_INTERVAL_HOURS: process.env.NODE_ENV === 'test' ? 0.00278 : 24,
+  REFRESH_INTERVAL_HOURS: 24,
   PREMIUM_REFRESH_COST: 50,
 
   // Session rate ranges by skill level
