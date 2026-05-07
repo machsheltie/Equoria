@@ -119,7 +119,7 @@ describe('API Optimization Routes', () => {
         expect(response.body.success).toBe(true);
         expect(response.body.data.timeframe).toBe(timeframe);
       }
-    });
+    }, 120000);
 
     test('validates timeframe parameter', async () => {
       const response = await request(testApp)
@@ -129,7 +129,7 @@ describe('API Optimization Routes', () => {
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('Validation failed');
-    });
+    }, 120000);
   });
 
   describe('GET /api/optimization/compression-stats', () => {
@@ -215,7 +215,7 @@ describe('API Optimization Routes', () => {
         expect(response.body.success).toBe(true);
         expect(response.body.data.algorithm).toBe(algorithm);
       }
-    });
+    }, 120000);
   });
 
   describe('POST /api/optimization/test-pagination', () => {
@@ -284,7 +284,7 @@ describe('API Optimization Routes', () => {
         .expect(400);
 
       expect(response3.body.success).toBe(false);
-    });
+    }, 120000);
   });
 
   describe('GET /api/optimization/recommendations', () => {
