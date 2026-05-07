@@ -163,10 +163,15 @@ fi
 # ---------------------------------------------------------------------------
 echo "${BOLD}[8/9] Bypass Header Scan — E2E Tests + API Client${RESET}"
 printf "  Running: Check E2E specs and api-client for bypass headers ...\n"
+# Guard files (tests/e2e/readiness/support/prodParity.ts and
+# production-parity.guard.spec.ts) intentionally contain bypass-header
+# literals as data — they enforce those strings don't appear elsewhere.
+# Each such line carries '// doctrine-allow: bypass-header-literal'.
+# The grep -v below filters those markers so the guard itself doesn't
+# trip the gate. Equoria-sgu8 (21R-CI-3).
 if grep -rn "x-test-bypass-rate-limit\|x-test-skip-csrf\|bypass-auth\|x-test-user\|x-bypass\|VITE_E2E_TEST" \
     tests/e2e/ frontend/src/lib/api-client.ts \
-    --exclude-dir=readiness \
-    2>/dev/null | grep -v "^Binary" | grep -q .; then
+    2>/dev/null | grep -v "^Binary" | grep -v "doctrine-allow: bypass-header-literal" | grep -q .; then
   gate_fail "No bypass headers in E2E/api-client" "found bypass header — violates 21R-3 production-parity policy"
 else
   gate_pass "No bypass headers in E2E/api-client"
