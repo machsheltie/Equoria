@@ -35,6 +35,7 @@
  *    to ensure consistent security enforcement across all application endpoints
  */
 
+import { jest } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
 import { body } from 'express-validator';
