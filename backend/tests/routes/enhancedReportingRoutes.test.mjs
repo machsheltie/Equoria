@@ -24,7 +24,7 @@ describe('Enhanced Reporting API Routes', () => {
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
-  });
+  }, 90000); // 90s — fetchCsrf GET can queue behind earlier suites under full-suite load
 
   let testUser;
   let testHorses = [];
@@ -77,7 +77,7 @@ describe('Enhanced Reporting API Routes', () => {
       prisma.horse.create({
         data: {
           name: `Test Foal Report ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          sex: 'filly',
+          sex: 'Filly',
           dateOfBirth: oneWeekAgo,
           userId: testUser.id,
           bondScore: 20,
@@ -89,7 +89,7 @@ describe('Enhanced Reporting API Routes', () => {
       prisma.horse.create({
         data: {
           name: `Test Horse Report ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          sex: 'colt',
+          sex: 'Colt',
           dateOfBirth: oneMonthAgo,
           userId: testUser.id,
           bondScore: 35,
@@ -101,7 +101,7 @@ describe('Enhanced Reporting API Routes', () => {
       prisma.horse.create({
         data: {
           name: `Test Mature Report ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          sex: 'colt',
+          sex: 'Colt',
           dateOfBirth: twoMonthsAgo,
           userId: testUser.id,
           bondScore: 40,
@@ -156,7 +156,7 @@ describe('Enhanced Reporting API Routes', () => {
       }
     }
     await Promise.all(traitLogs);
-  });
+  }, 120000); // 120s — 25+ DB creates (user/horses/grooms/interactions/traitLogs) under full-suite load
 
   afterAll(async () => {
     // Cleanup test data
@@ -357,7 +357,7 @@ describe('Enhanced Reporting API Routes', () => {
       const otherHorse = await prisma.horse.create({
         data: {
           name: `Other Horse Report ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          sex: 'colt',
+          sex: 'Colt',
           dateOfBirth: new Date(),
           userId: otherUser.id,
           bondScore: 15,
