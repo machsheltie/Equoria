@@ -110,11 +110,14 @@ describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () =
 
   afterAll(async () => {
     try {
-      if (seededCompetitionResultId) {
-        await prisma.competitionResult.delete({ where: { id: seededCompetitionResultId } }).catch(() => {});
+      // Delete all competition results referencing our horses first (FK order).
+      // Use deleteMany by horseId rather than a single delete by ID so partial
+      // FK failures (e.g. result already deleted) don't silently abort the rest.
+      if (createdHorseIds.length) {
+        await prisma.competitionResult.deleteMany({ where: { horseId: { in: createdHorseIds } } });
       }
       if (seededShowId) {
-        await prisma.show.delete({ where: { id: seededShowId } }).catch(() => {});
+        await prisma.show.deleteMany({ where: { id: seededShowId } });
       }
       if (createdHorseIds.length) {
         await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } });
@@ -129,8 +132,8 @@ describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () =
       if (seededUserIds.length) {
         await prisma.user.deleteMany({ where: { id: { in: seededUserIds } } });
       }
-    } catch {
-      /* ignore cleanup errors */
+    } catch (err) {
+      console.error('[userRankSummaryRoutes cleanup] afterAll error — fixture may have leaked:', err.message);
     }
     await cleanupTestData();
   });

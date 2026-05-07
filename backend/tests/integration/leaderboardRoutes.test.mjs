@@ -208,7 +208,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
           user: { connect: { id: testUsers[0].id } },
           dateOfBirth: new Date('2019-01-01'),
           healthStatus: 'Excellent',
-          totalEarnings: 45000,
+          totalEarnings: 200000,
         },
       }),
       prisma.horse.create({
@@ -220,7 +220,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
           user: { connect: { id: testUsers[1].id } },
           dateOfBirth: new Date('2020-01-01'),
           healthStatus: 'Excellent',
-          totalEarnings: 37500,
+          totalEarnings: 150000,
         },
       }),
       prisma.horse.create({
@@ -232,7 +232,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
           user: { connect: { id: testUsers[2].id } },
           dateOfBirth: new Date('2021-01-01'),
           healthStatus: 'Good',
-          totalEarnings: 32000,
+          totalEarnings: 100000,
         },
       }),
     ]);
@@ -422,19 +422,19 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
 
       expect(response.body.success).toBe(true);
       expect(response.body.message).toBe('Top horses by earnings retrieved successfully');
-      // Real-DB shared with non-test horses; test fixtures have 32k–45k earnings,
-      // which dominate the much smaller real-horse earnings, so they reliably
-      // occupy ranks 1–3. Assert presence at the top, not response cardinality.
+      // Real-DB shared with non-test horses; test fixtures have 100k–200k earnings,
+      // which dominate real-horse earnings so they reliably occupy ranks 1–3.
+      // Earnings raised above 50k (Equoria-actj) to survive any RankActiveHorse_ leaks.
       expect(response.body.data.horses.length).toBeGreaterThanOrEqual(3);
 
       // Verify proper sorting by earnings (desc) — top 3 are the test fixtures
       const { horses: rankings } = response.body.data;
       expect(rankings[0].name).toBe('TestLeaderboard Champion');
-      expect(rankings[0].earnings).toBe(45000);
+      expect(rankings[0].earnings).toBe(200000);
       expect(rankings[1].name).toBe('TestLeaderboard Silver Star');
-      expect(rankings[1].earnings).toBe(37500);
+      expect(rankings[1].earnings).toBe(150000);
       expect(rankings[2].name).toBe('TestLeaderboard Gold Rush');
-      expect(rankings[2].earnings).toBe(32000);
+      expect(rankings[2].earnings).toBe(100000);
 
       // Verify breed and owner information is included
       expect(rankings[0].breedName).toBe('TestBreed Thoroughbred');
