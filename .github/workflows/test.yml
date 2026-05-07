@@ -734,7 +734,13 @@ jobs:
   beta-readiness-gate:
     name: 'Beta Readiness Gate'
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    # Equoria-k5e0 (21R-CI-6): raised from 35 to 55 minutes. The old cap was
+    # tight on cold-cache runs: npm ci × 4 (~8-12 min cold), Playwright
+    # install cold (~3-5 min), Playwright suite (~5-10 min) totals ~26-30 min
+    # which leaves only ~5 min of headroom at 35. Playwright browsers are
+    # already cached via the 'Cache Playwright browsers' step; a warm-cache
+    # run completes in ~18-22 min (<40% of the new cap).
+    timeout-minutes: 55
     needs: [coverage-gate, security-gate, frontend-tests]
 
     # Equoria-rrpw (21R-CI-4): override the workflow-level `NODE_ENV: test`

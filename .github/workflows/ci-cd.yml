@@ -538,6 +538,11 @@ jobs:
   beta-readiness-gate:
     name: 'Beta Readiness Gate'
     runs-on: ubuntu-latest
+    # Equoria-k5e0 (21R-CI-6): explicit cap added (was unset = 360 min default,
+    # which masked slow-runner incidents). Mirrors test.yml. See that file for
+    # the cold-vs-warm timing analysis; 55 min gives 25+ min headroom on cold
+    # runs while bounding runaway jobs that stall waiting for CI resources.
+    timeout-minutes: 55
     needs: [build-validation, security-gate, performance-tests]
 
     # Equoria-rrpw (21R-CI-4): override the workflow-level `NODE_ENV: test`
