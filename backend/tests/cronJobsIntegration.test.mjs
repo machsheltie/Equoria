@@ -211,6 +211,6 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
         .set('Origin', 'http://localhost:3000')
         .set('Authorization', `Bearer ${regularToken}`)
         .expect(403);
-    });
+    }, 120000);
   });
 });

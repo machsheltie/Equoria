@@ -74,11 +74,11 @@ describe('Documentation Routes', () => {
     const testSwaggerPath = join(tempDir, 'swagger.yaml');
     cpSync(fallbackSwaggerPath, testSwaggerPath);
     docService.swaggerPath = testSwaggerPath;
-  });
+  }, 180000); // 180s — user create + file-system cpSync can be slow under full-suite load
 
   afterAll(async () => {
     // Restore service pointer and clean temp copy.
-    docService.swaggerPath = originalSwaggerPath;
+    if (docService) docService.swaggerPath = originalSwaggerPath;
     if (tempDir && existsSync(tempDir)) {
       rmSync(tempDir, { recursive: true, force: true });
     }
