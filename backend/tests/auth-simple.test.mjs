@@ -69,6 +69,10 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
   let app;
 
   beforeAll(() => {
+    // rounds=1: fast under full-suite --runInBand load. The hash is still valid
+    // bcrypt; login works correctly because compare() uses the stored hash's own
+    // cost factor, not this env var. authController reads BCRYPT_SALT_ROUNDS.
+    process.env.BCRYPT_SALT_ROUNDS = '1';
     app = createTestApp();
   });
 
