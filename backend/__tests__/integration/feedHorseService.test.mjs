@@ -437,11 +437,13 @@ describe('feedHorse service — concurrent-feed lost-update guard (Equoria-nsr7)
 /**
  * SELECT FOR UPDATE structural sentinel (Equoria-wsqw).
  *
- * The lost-update guard lives in horseFeedService.mjs as two $queryRaw
- * SELECT … FOR UPDATE statements — one on the horse row (prevents
- * same-horse concurrent feeds) and one on the User row (prevents
- * cross-horse concurrent feeds by the same owner). If either lock is
- * accidentally removed, this test fails immediately.
+ * The lost-update guard lives in horseFeedService.mjs as a $queryRaw
+ * SELECT … FOR UPDATE on the horse row, which prevents same-horse concurrent
+ * feeds (Equoria-nsr7). The User-row lock that was added for cross-horse
+ * concurrent feeds (Equoria-15tx) was reverted: the $queryRaw produced
+ * `relation "users" does not exist` (PostgreSQL 42P01) under full-suite
+ * --runInBand connection-pool pressure. Equoria-15tx remains tracked as a
+ * P3 issue for a non-regressing implementation.
  *
  * Why structural rather than a concurrent Promise.all test: under full-suite
  * --runInBand Prisma connection-pool pressure the pool serialises txns
@@ -453,9 +455,5 @@ describe('feedHorse service — concurrent-feed lost-update guard (Equoria-nsr7)
 describe('feedHorse — SELECT FOR UPDATE structural sentinel (Equoria-wsqw)', () => {
   it('horseFeedService.mjs contains FOR UPDATE lock on the horse row', () => {
     expect(FEED_SERVICE_SRC).toMatch(/SELECT id FROM "horses"[^;]*FOR UPDATE/);
-  });
-
-  it('horseFeedService.mjs contains FOR UPDATE lock on the User row', () => {
-    expect(FEED_SERVICE_SRC).toMatch(/SELECT id FROM "User"[^;]*FOR UPDATE/);
   });
 });
