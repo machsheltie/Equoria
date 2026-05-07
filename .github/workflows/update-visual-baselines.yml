@@ -1,0 +1,131 @@
+name: 'Update Visual Baselines'
+
+# Manually triggered to (re-)generate Playwright toHaveScreenshot baselines on
+# the ubuntu-latest + chromium stack that matches normal CI.  After this job
+# pushes the snapshots, remove any test.fixme guards from the spec and commit
+# that separately so the tests become first-class CI checks.
+#
+# Usage:
+#   GitHub UI → Actions → "Update Visual Baselines" → Run workflow
+#   Optionally override `spec` to target a different spec file.
+
+on:
+  workflow_dispatch:
+    inputs:
+      spec:
+        description: 'Spec file path (relative to repo root)'
+        required: false
+        default: 'tests/e2e/glass-panel-surface.spec.ts'
+
+permissions:
+  contents: write
+
+env:
+  NODE_VERSION: '22.x'
+  DATABASE_URL: 'postgresql://test:test@localhost:5432/equoria_test'
+  JWT_SECRET: 'Test-JWT-Secret-For-CI-Minimum-32-Chars-Long-A1'
+  JWT_REFRESH_SECRET: 'Test-Refresh-Secret-For-CI-Minimum-32-Chars-B2'
+  # beta matches the NODE_ENV the backend server uses in playwright.config.ts
+  # webServer command (PORT=3001 NODE_ENV=beta node backend/server.mjs)
+  NODE_ENV: 'beta'
+
+jobs:
+  update-baselines:
+    name: 'Generate Linux/chromium Baselines'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: equoria_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+
+      - name: 'Setup Node.js'
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+            frontend/package-lock.json
+            packages/database/package-lock.json
+
+      - name: 'Install Dependencies'
+        run: |
+          npm ci
+          cd backend && npm ci
+          cd ../frontend && npm ci
+          cd ../packages/database && npm ci
+
+      - name: 'Setup Database'
+        working-directory: ./packages/database
+        run: |
+          npx prisma generate --schema=prisma/schema.prisma
+          npx prisma migrate deploy --schema=prisma/schema.prisma
+
+      - name: 'Seed Breeds (required for onboarding in global-setup)'
+        # global-setup.ts registers a user and completes onboarding, which
+        # calls breedSelect.selectOption({ index: 1 }). Without seed data the
+        # dropdown only has its placeholder and the setup times out.
+        # `npm run seed` inserts the 5 canonical breeds in ~5s.
+        working-directory: ./backend
+        run: npm run seed
+
+      - name: 'Cache Playwright Browsers'
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: 'Install Playwright Browsers (chromium only)'
+        run: npx playwright install --with-deps chromium
+
+      - name: 'Generate Screenshot Baselines'
+        # CI=true makes webServer start fresh servers (reuseExistingServer:false)
+        # and sets workers:1, retries:2.
+        # --update-snapshots writes new baselines even for test.fixme tests —
+        # those tests still execute; they just report as "expected failure" until
+        # the fixme markers are removed in a follow-up commit.
+        run: |
+          npx playwright test "${{ github.event.inputs.spec || 'tests/e2e/glass-panel-surface.spec.ts' }}" \
+            --update-snapshots \
+            --project=chromium
+        env:
+          CI: 'true'
+
+      - name: 'Commit and Push Baselines'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Stage snapshot directories (new .png files + any updates)
+          git add tests/e2e/*-snapshots/
+
+          if git diff --staged --quiet; then
+            echo "No new or changed baselines — snapshots already up to date."
+          else
+            SPEC="${{ github.event.inputs.spec || 'tests/e2e/glass-panel-surface.spec.ts' }}"
+            SPEC_SHORT=$(basename "$SPEC" .spec.ts)
+            git commit -m "chore(e2e): generate Linux/chromium baselines for ${SPEC_SHORT} [skip ci]"
+            git push
+            echo "Baselines committed and pushed."
+            echo ""
+            echo "Next step: remove test.fixme markers from ${SPEC} and commit."
+          fi
