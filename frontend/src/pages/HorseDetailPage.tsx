@@ -361,6 +361,10 @@ const HorseDetailPage: React.FC = () => {
     pregnancyFeedingsByTier:
       (horseRaw as unknown as { pregnancyFeedingsByTier?: Record<string, number> })
         .pregnancyFeedingsByTier ?? {},
+    lastFedDate: (horseRaw as unknown as { lastFedDate?: string | null }).lastFedDate ?? null,
+    equippedFeedType:
+      (horseRaw as unknown as { equippedFeedType?: string | null }).equippedFeedType ?? null,
+    feedHealth: (horseRaw as unknown as { feedHealth?: string }).feedHealth as Horse['feedHealth'],
   };
 
   // Tab configuration
