@@ -97,13 +97,13 @@ describe('Foal Task Log and Streak Data Integration', () => {
         },
       });
     });
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   afterEach(async () => {
     // Clean up test data
     await prisma.horse.deleteMany({ where: { userId: testUserId } });
     await prisma.user.deleteMany({ where: { id: testUserId } });
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   describe('Real-World Foal Development Scenarios', () => {
     it('should handle week 1 of foal care with enrichment tasks', async () => {

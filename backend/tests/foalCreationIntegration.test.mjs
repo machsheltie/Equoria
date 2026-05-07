@@ -163,7 +163,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     } catch (error) {
       console.warn('Cleanup warning (can be ignored):', error.message);
     }
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   it('should start a pregnancy and persist dam in-foal state in the database', async () => {
     await resetDamPregnancy();

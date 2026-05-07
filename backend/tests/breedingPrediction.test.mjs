@@ -28,7 +28,7 @@ describe('Breeding Prediction System', () => {
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   let testUser;
   let testStallion;
@@ -110,7 +110,7 @@ describe('Breeding Prediction System', () => {
       expiresIn: '1h',
     });
     authToken = `Bearer ${token}`;
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   afterEach(async () => {
     // Clean up test data - use try/catch for each operation to prevent cascade failures
@@ -150,7 +150,7 @@ describe('Breeding Prediction System', () => {
         // Record may not exist if parallel tests already cleaned it up
       }
     }
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   describe('Inheritance Probability Logic', () => {
     it('should calculate trait inheritance probabilities from parent history', async () => {

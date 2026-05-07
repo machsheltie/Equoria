@@ -24,7 +24,7 @@ describe('Dynamic Compatibility Controller API', () => {
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   // Reference date anchor for all test date calculations
   const referenceDate = new Date('2025-06-01T12:00:00Z');
@@ -173,7 +173,7 @@ describe('Dynamic Compatibility Controller API', () => {
 
   beforeEach(async () => {
     await createFixture();
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   afterEach(async () => {
     if (testUser) {
@@ -184,14 +184,14 @@ describe('Dynamic Compatibility Controller API', () => {
       testGrooms = [];
       testHorses = [];
     }
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   afterAll(async () => {
     // Breed is reused across all tests in the suite; delete last.
     if (testBreedId !== null) {
       await prisma.breed.deleteMany({ where: { id: testBreedId } });
     }
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   describe('POST /api/compatibility/calculate', () => {
     test('should calculate high compatibility for calm groom with fearful horse', async () => {

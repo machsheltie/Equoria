@@ -39,7 +39,7 @@ describe('INTEGRATION: PATCH /api/v1/auth/profile/preferences (21S-5)', () => {
 
   afterAll(async () => {
     await cleanupTestData();
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   describe('Auth guard', () => {
     it('returns 401 when unauthenticated', async () => {

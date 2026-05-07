@@ -25,7 +25,7 @@ describe('INTEGRATION: Trainer Routes (21-3)', () => {
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   let _user;
   let userToken;
@@ -38,11 +38,11 @@ describe('INTEGRATION: Trainer Routes (21-3)', () => {
     });
     _user = created.user;
     userToken = created.token;
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   afterAll(async () => {
     await cleanupTestData();
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   // ─── GET /api/trainers/marketplace ───────────────────────────────────────────
 

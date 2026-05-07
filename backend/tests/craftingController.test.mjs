@@ -80,7 +80,7 @@ afterAll(async () => {
   if (testUser?.id) {
     await prisma.user.delete({ where: { id: testUser.id } }).catch(() => {});
   }
-});
+}, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
 async function setUserState({ settings = DEFAULT_SETTINGS, money = 10_000 }) {
   await prisma.user.update({

@@ -22,7 +22,7 @@ describe('INTEGRATION: GET /api/horses/:horseId/competition-history (21S-4)', ()
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   let owner;
   let ownerToken;
@@ -93,7 +93,7 @@ describe('INTEGRATION: GET /api/horses/:horseId/competition-history (21S-4)', ()
       },
     });
     createdResultIds.push(r2.id);
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   afterAll(async () => {
     try {
@@ -112,7 +112,7 @@ describe('INTEGRATION: GET /api/horses/:horseId/competition-history (21S-4)', ()
       /* ignore cleanup errors */
     }
     await cleanupTestData();
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   describe('Auth guard', () => {
     it('returns 401 when unauthenticated', async () => {

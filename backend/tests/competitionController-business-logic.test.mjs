@@ -236,7 +236,7 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
         },
       },
     });
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   afterAll(async () => {
     // Clean up test data
@@ -282,7 +282,7 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
     });
 
     // prisma.$disconnect() removed — global teardown handles disconnection
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   describe('Competition Scoring Business Logic', () => {
     it('CALCULATES realistic competition scores based on horse stats', async () => {

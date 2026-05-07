@@ -22,7 +22,7 @@ describe('INTEGRATION: GET /api/users/:userId/competition-stats (21S-4)', () => 
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   let activeUser;
   let activeToken;
@@ -113,7 +113,7 @@ describe('INTEGRATION: GET /api/users/:userId/competition-stats (21S-4)', () => 
       },
     });
     createdResultIds.push(result3.id);
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   afterAll(async () => {
     try {
@@ -136,7 +136,7 @@ describe('INTEGRATION: GET /api/users/:userId/competition-stats (21S-4)', () => 
       console.error('[competition-stats cleanup] afterAll error — fixture may have leaked:', err.message);
     }
     await cleanupTestData();
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   describe('Auth guard', () => {
     it('returns 401 when unauthenticated', async () => {

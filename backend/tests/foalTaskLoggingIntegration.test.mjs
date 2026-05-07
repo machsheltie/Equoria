@@ -38,7 +38,7 @@ describe('Foal Task Logging Integration', () => {
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   // Reference date anchor for all test date calculations
   const referenceDate = new Date('2025-06-01T12:00:00Z');
@@ -171,14 +171,14 @@ describe('Foal Task Logging Integration', () => {
       email: testUser.email,
       role: 'admin',
     });
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   afterEach(async () => {
     // Ensure we clean up timers
     jest.useRealTimers();
 
     await cleanupTaskLoggingData();
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   describe('Task Log JSON Updates', () => {
     it('should initialize task log with first enrichment task', async () => {

@@ -95,7 +95,7 @@ describe('Foal Task Log and Streak Data', () => {
         lastGroomed: null,
       },
     });
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   afterEach(async () => {
     // Clean up test data
@@ -103,7 +103,7 @@ describe('Foal Task Log and Streak Data', () => {
       await prisma.horse.deleteMany({ where: { userId: testUser.id } });
       await prisma.user.deleteMany({ where: { id: testUser.id } });
     }
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   describe('Task Log JSON Storage', () => {
     it('should initialize with null task log', async () => {

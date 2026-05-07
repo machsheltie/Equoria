@@ -134,7 +134,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
   afterAll(async () => {
     await cleanupTestData();
     // prisma.$disconnect() removed — global teardown handles disconnection
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   describe('User Registration', () => {
     it('should register a new user successfully', async () => {
@@ -224,7 +224,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
         .set('Origin', 'http://localhost:3000')
         .send(userData);
       trackUser(response);
-    });
+    }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
     it('should login successfully with valid credentials', async () => {
       const loginData = {
@@ -300,7 +300,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
       } else {
         refreshTokenValue = null;
       }
-    });
+    }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
     it('should refresh token successfully', async () => {
       const response = await request(app)
@@ -362,7 +362,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
         authTokenValue = null;
         testUserValue = null;
       }
-    });
+    }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
     it('should get user profile with valid token', async () => {
       const response = await request(app)

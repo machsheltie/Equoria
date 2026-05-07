@@ -122,11 +122,11 @@ describe('Groom Progression System', () => {
         },
       });
     });
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   afterEach(async () => {
     await cleanupProgressionData();
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   describe('XP and Leveling System', () => {
     test('Should award XP for milestone completion', async () => {

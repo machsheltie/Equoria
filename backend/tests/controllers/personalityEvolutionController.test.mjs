@@ -28,7 +28,7 @@ describe('Personality Evolution Controller API', () => {
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   // Reference date anchor for all test date calculations
   const referenceDate = new Date('2025-06-01T12:00:00Z');
@@ -132,7 +132,7 @@ describe('Personality Evolution Controller API', () => {
         },
       });
     }
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   afterAll(async () => {
     // Clean up test data
@@ -141,7 +141,7 @@ describe('Personality Evolution Controller API', () => {
     await prisma.groom.deleteMany({ where: { userId: testUser.id } });
     await prisma.breed.deleteMany({ where: { id: testBreed.id } });
     await prisma.user.deleteMany({ where: { id: testUser.id } });
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   describe('POST /api/personality-evolution/groom/:groomId/evolve', () => {
     test('should evolve groom personality successfully', async () => {

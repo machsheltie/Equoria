@@ -99,7 +99,7 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
     await prisma.user.deleteMany({
       where: { email: { in: TEST_EMAILS } },
     });
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   afterAll(async () => {
     // Delete in order to avoid foreign key constraint violations
@@ -122,7 +122,7 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
       where: { email: { in: TEST_EMAILS } },
     });
     // prisma.$disconnect() removed — global teardown handles disconnection
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   it('should register a new user', async () => {
     const userData = {

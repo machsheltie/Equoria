@@ -70,7 +70,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   // Store created user IDs for targeted cleanup
   const createdUserIds = new Set();
@@ -119,12 +119,12 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     // We don't clean up before each to avoid deleting data needed by current test
     // but we do reset rate limits
     resetAllAuthRateLimits();
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   afterAll(async () => {
     await cleanupTestData();
     // prisma.$disconnect() removed — global teardown handles disconnection
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
   describe('POST /api/v1/auth/register', () => {
     it('should register a new user and player successfully', async () => {
       const userData = createTestUser();
@@ -213,7 +213,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
       // 401 on the login assertion below.
       const response = await authPost('/api/v1/auth/register').send(userData).expect(201);
       trackUser(response);
-    });
+    }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
     it('should login successfully with valid credentials', async () => {
       const loginData = {
@@ -287,7 +287,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
       // Extract refresh token from cookies
       const cookies = registerResponse.headers['set-cookie'];
       refreshTokenValue = extractCookie(cookies, 'refreshToken');
-    });
+    }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
     it('should refresh token successfully with valid refresh token', async () => {
       const response = await authPost('/api/v1/auth/refresh').send({ refreshToken: refreshTokenValue }).expect(200);
@@ -333,7 +333,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
       const cookies = registerResponse.headers['set-cookie'];
       authToken = extractCookie(cookies, 'accessToken');
       testUser = registerResponse.body.data.user;
-    });
+    }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
     it('should get user profile successfully with valid token', async () => {
       const response = await authGet('/api/v1/auth/me').set('Authorization', `Bearer ${authToken}`).expect(200);
@@ -374,7 +374,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
       // Extract access token from cookies
       const cookies = registerResponse.headers['set-cookie'];
       authToken = extractCookie(cookies, 'accessToken');
-    });
+    }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
     it('should logout successfully with valid token', async () => {
       const response = await authPost('/api/v1/auth/logout')

@@ -97,7 +97,7 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
     } catch (error) {
       console.warn('Cleanup warning (can be ignored):', error.message);
     }
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   describe('POST /api/foals/:foalId/enrichment', () => {
     it('should complete enrichment activity successfully', async () => {

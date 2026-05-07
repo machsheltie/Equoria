@@ -68,7 +68,7 @@ describe('Horse Seed Integration Tests', () => {
     await prisma.breed.deleteMany({ where: { name: { startsWith: 'TestSeed_' } } });
     await prisma.stable.deleteMany({ where: { name: { startsWith: 'TestSeed_' } } });
     await prisma.user.deleteMany({ where: { username: { startsWith: 'TestSeed_' } } });
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   afterAll(async () => {
     // Clean up test data
@@ -77,7 +77,7 @@ describe('Horse Seed Integration Tests', () => {
     await prisma.stable.deleteMany({ where: { name: { startsWith: 'TestSeed_' } } });
     await prisma.user.deleteMany({ where: { username: { startsWith: 'TestSeed_' } } });
     // prisma.$disconnect() removed — global teardown handles disconnection
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -264,7 +264,7 @@ describe('Horse Seed Integration Tests', () => {
       // Ensure we have test users and stables
       await ensureReferencedRecordsExist();
       jest.clearAllMocks();
-    });
+    }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
     it('should log a warning and return an empty array if no users are provided', async () => {
       const result = await seedHorses(prisma, []);

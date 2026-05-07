@@ -32,7 +32,7 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   let adminUser;
   let adminToken;
@@ -89,7 +89,7 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
     } catch (error) {
       console.warn('Cleanup warning (can be ignored):', error.message);
     }
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   describe('Admin API Endpoints', () => {
     it('should get cron job status', async () => {

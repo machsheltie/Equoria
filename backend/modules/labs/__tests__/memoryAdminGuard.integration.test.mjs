@@ -19,7 +19,7 @@ describe('INTEGRATION: memory-management admin guard (21S-8)', () => {
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   let regularToken;
   let adminToken;
@@ -38,11 +38,11 @@ describe('INTEGRATION: memory-management admin guard (21S-8)', () => {
       role: 'admin',
     });
     adminToken = admin.token;
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   afterAll(async () => {
     await cleanupTestData();
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   describe('POST /api/memory/cleanup', () => {
     it('returns 401 when unauthenticated', async () => {

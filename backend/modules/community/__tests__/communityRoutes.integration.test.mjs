@@ -27,7 +27,7 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   let user;
   let userToken;
@@ -41,7 +41,7 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
     });
     user = created.user;
     userToken = created.token;
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   afterAll(async () => {
     try {
@@ -55,7 +55,7 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
       /* ignore cleanup errors */
     }
     await cleanupTestData();
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   // ─── POST /api/clubs ─────────────────────────────────────────────────────────
 

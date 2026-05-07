@@ -540,9 +540,9 @@ describe('validateConformationEntry (real DB)', () => {
       personality: 'gentle',
     };
     validClass = CONFORMATION_CLASSES.MARES;
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
-  afterAll(cleanupValidationFixtures);
+  afterAll(cleanupValidationFixtures, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   test('passes when all requirements are met', async () => {
     const result = await validateConformationEntry(horse, groom, validClass, user.id);

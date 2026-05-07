@@ -28,7 +28,7 @@ describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () =
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   let activeUser;
   let activeToken;
@@ -106,7 +106,7 @@ describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () =
     });
     emptyUser = empty.user;
     emptyToken = empty.token;
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   afterAll(async () => {
     try {
@@ -136,7 +136,7 @@ describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () =
       console.error('[userRankSummaryRoutes cleanup] afterAll error — fixture may have leaked:', err.message);
     }
     await cleanupTestData();
-  });
+  }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   describe('Auth guard', () => {
     it('returns 401 when unauthenticated', async () => {
