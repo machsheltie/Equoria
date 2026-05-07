@@ -26,9 +26,8 @@ async function updateHorseEarnings(horseId, prizeAmount) {
       },
       include: {
         breed: true,
-        owner: true,
+        user: true,
         stable: true,
-        player: true,
       },
     });
 
@@ -95,9 +94,8 @@ async function updateHorseStat(horseId, statName, increase = 1) {
       data: updateData,
       include: {
         breed: true,
-        owner: true,
+        user: true,
         stable: true,
-        player: true,
       },
     });
 
