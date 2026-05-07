@@ -227,7 +227,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
         saddleBonus: 5,
         bridleBonus: 3,
       });
-    });
+    }, 120000); // 120s — multiple DB creates can be slow under full-suite load
 
     it('should return 404 for non-existent horse', async () => {
       const response = await request(app)

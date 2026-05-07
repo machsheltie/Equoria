@@ -55,7 +55,7 @@ describe('Equip / Unequip feed endpoints', () => {
       },
     });
     horseId = horse.id;
-  });
+  }, 120000); // 120s — user+horse create can be slow under full-suite load
 
   afterEach(async () => {
     await prisma.horse.delete({ where: { id: horseId } }).catch(() => {});
