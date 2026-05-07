@@ -568,10 +568,12 @@ describe('HorseDetailPage - Progression Tab', () => {
     it('should show loading state for each component independently', async () => {
       const user = userEvent.setup();
 
-      // Delay one specific API response to test independent loading states
+      // Delay one specific API response to test independent loading states.
+      // 800ms gives the preceding waitFor calls time to complete before the
+      // delay expires, preventing the race that caused flakiness with 100ms.
       vi.mocked(horsesApi.getXP).mockResolvedValue(mockXP);
       vi.mocked(horsesApi.getXPHistory).mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve(mockXPHistory), 100))
+        () => new Promise((resolve) => setTimeout(() => resolve(mockXPHistory), 800))
       );
       vi.mocked(horsesApi.getAge).mockResolvedValue(mockHorseAge);
       vi.mocked(horsesApi.getStats).mockResolvedValue(mockHorseStats);
@@ -592,12 +594,12 @@ describe('HorseDetailPage - Progression Tab', () => {
       // Stat chart should show loading (component shows "Loading XP progression...")
       expect(screen.getByText(/loading xp progression/i)).toBeInTheDocument();
 
-      // Wait for stat chart to load
+      // Wait for stat chart to load (timeout > 800ms delay above)
       await waitFor(
         () => {
           expect(screen.queryByText(/loading xp progression/i)).not.toBeInTheDocument();
         },
-        { timeout: 200 }
+        { timeout: 1200 }
       );
     });
   });

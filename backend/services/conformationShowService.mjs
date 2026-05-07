@@ -620,7 +620,7 @@ export async function executeConformationShow(showId) {
         breedingValueBoost: newBoost,
       });
     }
-  });
+  }, { timeout: 30000 });
 
   return results;
 }
