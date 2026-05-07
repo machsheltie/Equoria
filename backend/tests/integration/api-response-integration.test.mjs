@@ -239,10 +239,15 @@ describe('🔄 API Response Integration Tests', () => {
   });
 
   afterEach(async () => {
-    // Clean up test data for current test
+    // Clean up test data for current test — delete user too so beforeEach
+    // of the next test doesn't race against a stale row (relation-filter
+    // deleteMany on RefreshToken can miss under full-suite DB pressure).
     if (testUser?.id) {
       await prisma.refreshToken.deleteMany({
         where: { userId: testUser.id },
+      });
+      await prisma.user.deleteMany({
+        where: { id: testUser.id },
       });
     }
   });
