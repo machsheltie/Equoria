@@ -164,6 +164,7 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
   let authToken;
   let testUser;
   let testHorses;
+  let createdBreedId; // tracks suite-created breed for cleanup (Equoria-wqwp)
 
   beforeAll(async () => {
     app = createTestApp();
@@ -191,18 +192,16 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
 
     expect(authToken).toBeDefined();
 
-    // Create some test horses linked to this user
-    let breed = await prisma.breed.findFirst();
-
-    // If no breed exists, create one for testing
-    if (!breed) {
-      breed = await prisma.breed.create({
-        data: {
-          name: 'Test Breed',
-          description: 'Test breed for training tests',
-        },
-      });
-    }
+    // Always use a suite-unique breed so cleanup never touches shared data.
+    // (Equoria-wqwp: old findFirst() could reuse any DB breed without cleaning up.)
+    const ts = Date.now();
+    const breed = await prisma.breed.create({
+      data: {
+        name: `TrainingComplete_Breed_${ts}`,
+        description: 'Test breed for training-complete suite',
+      },
+    });
+    createdBreedId = breed.id;
 
     testHorses = await Promise.all([
       prisma.horse.create({
@@ -259,6 +258,10 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
       await prisma.user.delete({
         where: { id: testUser.id },
       });
+    }
+
+    if (createdBreedId) {
+      await prisma.breed.deleteMany({ where: { id: createdBreedId } }).catch(() => {});
     }
 
     // prisma.$disconnect() removed — global teardown handles disconnection

@@ -117,6 +117,7 @@ describe('INTEGRATION: GET /api/users/:userId/competition-stats (21S-4)', () => 
 
   afterAll(async () => {
     try {
+      // Delete results before horse (FK order).
       if (createdResultIds.length) {
         await prisma.competitionResult.deleteMany({ where: { id: { in: createdResultIds } } });
       }
@@ -126,8 +127,13 @@ describe('INTEGRATION: GET /api/users/:userId/competition-stats (21S-4)', () => 
       if (createdShowIds.length) {
         await prisma.show.deleteMany({ where: { id: { in: createdShowIds } } });
       }
-    } catch {
-      /* ignore cleanup errors */
+      // Explicit user deletion — cleanupTestData() only removes testuser_* prefixed users.
+      const seededUserIds = [activeUser?.id, emptyUser?.id].filter(Boolean);
+      if (seededUserIds.length) {
+        await prisma.user.deleteMany({ where: { id: { in: seededUserIds } } });
+      }
+    } catch (err) {
+      console.error('[competition-stats cleanup] afterAll error — fixture may have leaked:', err.message);
     }
     await cleanupTestData();
   });

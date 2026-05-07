@@ -63,6 +63,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
   let testUser;
   let authToken;
   let testHorse;
+  let createdBreedId; // tracks suite-created breed for cleanup (Equoria-c0zr)
   const trainingRequest = () =>
     request(app)
       .post('/api/training/train')
@@ -134,6 +135,10 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       },
     });
 
+    if (createdBreedId) {
+      await prisma.breed.deleteMany({ where: { id: createdBreedId } }).catch(() => {});
+    }
+
     // Ensure proper database connection cleanup
     // prisma.$disconnect() removed — global teardown handles disconnection
   });
@@ -202,16 +207,16 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
   describe('🐎 STEP 2: Horse Creation for Training Integration', () => {
     it('should create training-eligible horse', async () => {
-      // Create or find test breed
-      let breed = await prisma.breed.findFirst();
-      if (!breed) {
-        breed = await prisma.breed.create({
-          data: {
-            name: 'Test Breed',
-            description: 'Test breed for progress API integration',
-          },
-        });
-      }
+      // Always use a suite-unique breed so cleanup never touches shared data.
+      // (Equoria-c0zr: old findFirst() could reuse any DB breed without cleaning up.)
+      const ts = Date.now();
+      const breed = await prisma.breed.create({
+        data: {
+          name: `UserProgressAPI_Breed_${ts}`,
+          description: 'Test breed for userProgressAPI suite',
+        },
+      });
+      createdBreedId = breed.id;
 
       // Calculate age from dateOfBirth for proper horse creation
       const birthDate = new Date('2020-01-01');

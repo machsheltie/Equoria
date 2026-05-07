@@ -27,7 +27,7 @@ describe('Groom Progression System', () => {
   let testGroom;
   let testHorse;
   const testUserId = 'test-user-progression';
-  const testBreedName = 'Test Breed';
+  const testBreedName = 'GroomProgressionSuite_Breed'; // suite-unique to avoid cross-suite deletes (Equoria-cqry)
 
   const cleanupProgressionData = async () => {
     const grooms = await prisma.groom.findMany({

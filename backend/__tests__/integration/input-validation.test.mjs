@@ -19,7 +19,7 @@
 
 import request from 'supertest';
 import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
-
+import { resetRateLimitStore } from '../config/test-helpers.mjs';
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 import { randomBytes } from 'node:crypto';
 
@@ -170,6 +170,9 @@ describe('Input Validation Integration Tests', () => {
       });
 
       it('should accept all supported special characters', async () => {
+        // Reset rate-limit store so full-suite accumulated request counts
+        // from earlier tests don't cause 429 on these 7 registration calls.
+        await resetRateLimitStore();
         const specialChars = ['@', '$', '!', '%', '*', '?', '&'];
 
         for (const char of specialChars) {
