@@ -123,10 +123,6 @@ const createTestApp = () => {
 };
 
 describe('🔐 Authentication System Integration Tests', () => {
-  // Raise per-test timeout: runs late in --runInBand when memory pressure is
-  // high (3 GB+) and bcrypt + DB ops can be slow.
-  jest.setTimeout(120000);
-
   let app;
   let testUser;
   let authToken;
@@ -178,7 +174,7 @@ describe('🔐 Authentication System Integration Tests', () => {
     const cookies = registerResponse.headers['set-cookie'];
     authToken = extractCookie(cookies, 'accessToken');
     refreshTokenValue = extractCookie(cookies, 'refreshToken');
-  });
+  }, 120000); // 120s — DB cleanup + bcrypt register can be slow under full-suite load
 
   afterEach(async () => {
     // Clean up test data
@@ -191,7 +187,7 @@ describe('🔐 Authentication System Integration Tests', () => {
     await prisma.user.deleteMany({
       where: { email: { contains: 'authintegration' } },
     });
-  });
+  }, 120000); // 120s — DB cleanup can be slow under full-suite load
 
   describe('🌐 Cross-System Authentication Validation', () => {
     test('should authenticate successfully across all protected endpoints', async () => {

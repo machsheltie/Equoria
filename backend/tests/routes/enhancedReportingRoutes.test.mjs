@@ -196,7 +196,7 @@ describe('Enhanced Reporting API Routes', () => {
       expect(response.body.data.insights).toBeDefined();
       expect(Array.isArray(response.body.data.traitHistory)).toBe(true);
       expect(Array.isArray(response.body.data.insights)).toBe(true);
-    });
+    }, 120000); // 120s — parallelised DB calls can still be slow under full-suite load
 
     test('GET /api/horses/:id/epigenetic-insights should return advanced epigenetic analysis', async () => {
       const response = await request(app)

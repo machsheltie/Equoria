@@ -109,22 +109,19 @@ router.get(
         }
       }
 
-      // Get trait history
-      const traitHistory = await prisma.traitHistoryLog.findMany({
-        where: whereConditions,
-        orderBy: { timestamp: 'desc' },
-      });
+      // Run all independent DB/compute calls in parallel to stay under the 30s request timeout
+      const [traitHistory, environmentalContext, developmentalTimeline, traitInteractions] =
+        await Promise.all([
+          prisma.traitHistoryLog.findMany({
+            where: whereConditions,
+            orderBy: { timestamp: 'desc' },
+          }),
+          generateEnvironmentalReport(horseId),
+          trackDevelopmentalMilestones(horseId),
+          generateInteractionMatrix(horseId),
+        ]);
 
-      // Get environmental context
-      const environmentalContext = await generateEnvironmentalReport(horseId);
-
-      // Get developmental timeline
-      const developmentalTimeline = await trackDevelopmentalMilestones(horseId);
-
-      // Get trait interactions
-      const traitInteractions = await generateInteractionMatrix(horseId);
-
-      // Generate insights
+      // Generate insights (depends on the parallel results above)
       const insights = generateTraitHistoryInsights(
         traitHistory,
         environmentalContext,

@@ -11,7 +11,7 @@
  * Real-DB integration test — no mocks.
  */
 
-import { describe, it, expect, beforeAll, afterAll, jest } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../db/index.mjs';
@@ -19,10 +19,6 @@ import { createTestUser, cleanupTestData } from '../../../tests/helpers/testAuth
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 describe('INTEGRATION: PATCH /api/v1/auth/profile/preferences (21S-5)', () => {
-  // Raise per-test timeout: this suite can run late in --runInBand (35+ min
-  // into run) when memory is high (3+ GB) and DB connections are stressed.
-  jest.setTimeout(120000);
-
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
