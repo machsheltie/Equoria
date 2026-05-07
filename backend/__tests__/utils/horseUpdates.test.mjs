@@ -38,13 +38,13 @@ beforeAll(async () => {
       dateOfBirth: fiveYearsAgo,
     },
   });
-}, 30000);
+}, 120000); // 120s — DB creates can be slow under full-suite load
 
 afterAll(async () => {
   await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
   await prisma.user.deleteMany({ where: { username: { startsWith: PREFIX } } });
   await prisma.breed.deleteMany({ where: { name: { startsWith: PREFIX } } });
-}, 30000);
+}, 120000); // 120s — cascade deletes can be slow under full-suite load
 
 // ---------------------------------------------------------------------------
 // updateHorseEarnings
