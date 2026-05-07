@@ -331,50 +331,53 @@ router.post(
         });
       }
 
-      const entry = await prisma.$transaction(async tx => {
-        const updatedUser = await tx.user.update({
-          where: { id: userId },
-          data: {
-            money: { decrement: show.entryFee },
-          },
-          select: { money: true },
-        });
-
-        const createdEntry = await tx.competitionResult.create({
-          data: {
-            horseId,
-            showId,
-            score: 0, // Will be updated when competition runs
-            placement: null,
-            discipline: show.discipline,
-            runDate: show.runDate,
-            showName: show.name,
-            prizeWon: 0,
-          },
-        });
-
-        if (show.entryFee > 0) {
-          await recordTransaction(
-            {
-              userId,
-              type: 'debit',
-              amount: show.entryFee,
-              category: 'competition_entry',
-              description: `Entry fee for ${show.name}`,
-              balanceAfter: updatedUser.money,
-              metadata: {
-                horseId,
-                showId,
-                entryId: createdEntry.id,
-                discipline: show.discipline,
-              },
+      const entry = await prisma.$transaction(
+        async tx => {
+          const updatedUser = await tx.user.update({
+            where: { id: userId },
+            data: {
+              money: { decrement: show.entryFee },
             },
-            tx,
-          );
-        }
+            select: { money: true },
+          });
 
-        return createdEntry;
-      });
+          const createdEntry = await tx.competitionResult.create({
+            data: {
+              horseId,
+              showId,
+              score: 0, // Will be updated when competition runs
+              placement: null,
+              discipline: show.discipline,
+              runDate: show.runDate,
+              showName: show.name,
+              prizeWon: 0,
+            },
+          });
+
+          if (show.entryFee > 0) {
+            await recordTransaction(
+              {
+                userId,
+                type: 'debit',
+                amount: show.entryFee,
+                category: 'competition_entry',
+                description: `Entry fee for ${show.name}`,
+                balanceAfter: updatedUser.money,
+                metadata: {
+                  horseId,
+                  showId,
+                  entryId: createdEntry.id,
+                  discipline: show.discipline,
+                },
+              },
+              tx,
+            );
+          }
+
+          return createdEntry;
+        },
+        { timeout: 30000 },
+      );
 
       logger.info(
         `[competitionRoutes.POST /enter] Successfully entered horse ${horseId} in show ${showId}`,

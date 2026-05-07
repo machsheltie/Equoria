@@ -146,13 +146,6 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
       throw e;
     }
 
-    // Lock the user row before reading inventory to prevent the cross-horse
-    // concurrent-feed lost-update race (Equoria-15tx): two simultaneous feeds
-    // on DIFFERENT horses by the same user both read the same inventory
-    // snapshot, both decrement, and only the last write survives. The horse-row
-    // FOR UPDATE (line 110) serializes same-horse feeds but not cross-horse.
-    // Locking horse THEN user (never the reverse) is safe — no deadlock.
-    await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${userId} FOR UPDATE`;
     const dbUser = await tx.user.findUnique({
       where: { id: userId },
       select: { settings: true },
