@@ -47,7 +47,7 @@ export const createUserData = (overrides = {}) => {
  */
 export const createTestUser = async (overrides = {}) => {
   const userData = createUserData(overrides);
-  const hashedPassword = await bcrypt.hash(userData.password, 10);
+  const hashedPassword = await bcrypt.hash(userData.password, 1);
 
   const user = await prisma.user.create({
     data: {

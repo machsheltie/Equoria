@@ -44,7 +44,7 @@ beforeAll(async () => {
   process.env.TEST_RATE_LIMIT_WINDOW_MS = '10000';
   process.env.TEST_RATE_LIMIT_MAX_REQUESTS = '2';
 
-  const hashed = await bcrypt.hash('TestPass123!', 10);
+  const hashed = await bcrypt.hash('TestPass123!', 1);
 
   testUser = await prisma.user.create({
     data: {

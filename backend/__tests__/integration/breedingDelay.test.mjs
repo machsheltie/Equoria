@@ -36,7 +36,7 @@ describe('createFoal — delayed pregnancy (B3)', () => {
     csrf = await fetchCsrf(app);
 
     const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-    const hashed = await bcrypt.hash('TestPassword123!', 10);
+    const hashed = await bcrypt.hash('TestPassword123!', 1);
     user = await prisma.user.create({
       data: {
         username: `b3_${ts}`,

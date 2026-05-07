@@ -65,7 +65,7 @@ describe('Auth — Password Reset Integration', () => {
     const newPassword = 'NewSecurePass2@';
 
     // 1. Create a real test user directly in the DB
-    const hashedOriginal = await bcrypt.hash(originalPassword, 10);
+    const hashedOriginal = await bcrypt.hash(originalPassword, 1);
     const user = await prisma.user.create({
       data: {
         username: `${EMAIL_PREFIX}${timestamp}`,
@@ -190,7 +190,7 @@ describe('Auth — Password Reset Integration', () => {
     const newPassword = 'NewSecurePass2@';
 
     // 1. Create the user with a hashed password matching the login payload.
-    const hashedOriginal = await bcrypt.hash(originalPassword, 10);
+    const hashedOriginal = await bcrypt.hash(originalPassword, 1);
     await prisma.user.create({
       data: {
         username: `${EMAIL_PREFIX}cwe613_${timestamp}`,
@@ -256,7 +256,7 @@ describe('Auth — Password Reset Integration', () => {
     const originalPassword = 'OriginalPass1!';
     const newPassword = 'NewSecurePass2@';
 
-    const hashedOriginal = await bcrypt.hash(originalPassword, 10);
+    const hashedOriginal = await bcrypt.hash(originalPassword, 1);
     await prisma.user.create({
       data: {
         username: `${EMAIL_PREFIX}replay_${timestamp}`,

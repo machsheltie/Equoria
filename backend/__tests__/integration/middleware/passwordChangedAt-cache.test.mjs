@@ -63,7 +63,7 @@ describe('Equoria-2bbf — passwordChangedAt cache', () => {
       data: {
         username: `${SUITE_PREFIX}${ts}`,
         email: `${SUITE_PREFIX}${ts}@example.com`,
-        password: await bcrypt.hash('TestPassword123!', 10),
+        password: await bcrypt.hash('TestPassword123!', 1),
         firstName: 'Cache',
         lastName: 'Test',
         // passwordChangedAt deliberately omitted → null at start

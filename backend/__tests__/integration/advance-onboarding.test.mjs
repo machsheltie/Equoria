@@ -37,7 +37,7 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
   beforeAll(async () => {
     server = app.listen(0);
 
-    const hashedPassword = await bcrypt.hash(testUserData.password, 10);
+    const hashedPassword = await bcrypt.hash(testUserData.password, 1);
     testUser = await prisma.user.create({
       data: {
         username: testUserData.username,

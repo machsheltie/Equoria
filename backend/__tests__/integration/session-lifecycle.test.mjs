@@ -59,7 +59,7 @@ describe('Session Lifecycle Management', () => {
     // Start server once for all tests
     server = app.listen(0);
 
-    hashedTestPassword = await bcrypt.hash(testUserData.password, 10);
+    hashedTestPassword = await bcrypt.hash(testUserData.password, 1);
 
     // Clean up any lingering rows from prior crashed runs (suite-prefix scoped).
     const stale = await prisma.user.findMany({

@@ -477,7 +477,7 @@ describe('POST /api/v1/horses — markings integration', () => {
       (await prisma.breed.create({ data: { name: 'Arabian', description: 'Arabian for marking tests' } }));
     breedId = breed.id;
 
-    const hashedPassword = await bcrypt.hash(testUserData.password, 10);
+    const hashedPassword = await bcrypt.hash(testUserData.password, 1);
     const user = await prisma.user.create({
       data: {
         username: testUserData.username,

@@ -54,7 +54,7 @@ describe('Authentication with HttpOnly Cookies', () => {
 
     // Create test user for tests that need it
     const bcrypt = (await import('bcryptjs')).default;
-    const hashedPassword = await bcrypt.hash(testUserData.password, 10);
+    const hashedPassword = await bcrypt.hash(testUserData.password, 1);
     _testUser = await prisma.user.create({
       data: {
         username: testUserData.username,
@@ -609,7 +609,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       // Create a user and manually generate token for testing
       const uniqueSuffix = Date.now();
       fallbackEmail = `fallback+${uniqueSuffix}@example.com`;
-      const hashedPassword = await bcrypt.hash('TestPassword123!', 10);
+      const hashedPassword = await bcrypt.hash('TestPassword123!', 1);
       const user = await prisma.user.create({
         data: {
           username: `fallbacktest_${uniqueSuffix}`,

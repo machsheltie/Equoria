@@ -76,7 +76,7 @@ function makeMockReqRes(horseOverrides = {}) {
 }
 
 beforeAll(async () => {
-  const hashed = await bcrypt.hash('TestPassword123!', 10);
+  const hashed = await bcrypt.hash('TestPassword123!', 1);
   testUser = await prisma.user.create({
     data: {
       username: `confApiUser_${ts}`,
