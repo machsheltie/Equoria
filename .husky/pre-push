@@ -136,6 +136,16 @@ if [ $DB_PROBE_STATUS -ne 0 ]; then
   exit 1
 fi
 
+# Preflight: test DB structurally healthy? (Equoria-urld)
+# Checks pending migrations + orphan FK rows before spending ~10 min on Jest.
+DB_HEALTH_OUTPUT="$(node --experimental-vm-modules "$REPO_ROOT/scripts/preflight/db-health.mjs" 2>&1)"
+DB_HEALTH_STATUS=$?
+if [ $DB_HEALTH_STATUS -ne 0 ]; then
+  echo "[pre-push] FATAL: test DB inconsistency detected — fix before running the suite." >&2
+  echo "[pre-push]   $DB_HEALTH_OUTPUT" >&2
+  exit 1
+fi
+
 # ---------------- run the suite ----------------
 node \
   --max-old-space-size=12288 \
