@@ -12,10 +12,8 @@
  * - Enhanced profile data aggregation
  */
 
-import { PrismaClient } from '../../packages/database/node_modules/@prisma/client/index.js';
+import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
-
-const prisma = new PrismaClient();
 
 /**
  * XP requirements per level: 100 * level

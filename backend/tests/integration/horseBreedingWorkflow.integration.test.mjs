@@ -54,6 +54,10 @@ const extractCookie = (cookies, name) => {
 };
 
 describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
+  // Raise per-test timeout: this suite runs late in --runInBand when memory
+  // pressure is high (3 GB+). 120 s gives enough headroom for bcrypt + DB ops.
+  jest.setTimeout(120000);
+
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
@@ -66,6 +70,10 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
   let assignedGroom;
 
   beforeAll(async () => {
+    // rounds=1: fast under full-suite --runInBand load. Registration goes
+    // through bcrypt.hash(pwd, BCRYPT_SALT_ROUNDS); keep it cheap here.
+    process.env.BCRYPT_SALT_ROUNDS = '1';
+
     // Clean up any existing test data
     await cleanupTestData();
 

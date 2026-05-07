@@ -19,10 +19,14 @@ import { createTestUser, cleanupTestData } from '../../../tests/helpers/testAuth
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 describe('INTEGRATION: PATCH /api/v1/auth/profile/preferences (21S-5)', () => {
+  // Raise per-test timeout: this suite can run late in --runInBand (35+ min
+  // into run) when memory is high (3+ GB) and DB connections are stressed.
+  jest.setTimeout(120000);
+
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
-  });
+  }, 120000);
 
   let user;
   let token;
@@ -35,7 +39,7 @@ describe('INTEGRATION: PATCH /api/v1/auth/profile/preferences (21S-5)', () => {
     });
     user = created.user;
     token = created.token;
-  });
+  }, 120000);
 
   afterAll(async () => {
     await cleanupTestData();

@@ -122,17 +122,31 @@ const createTestApp = () => {
 };
 
 describe('🔐 Authentication System Integration Tests', () => {
+  // Raise per-test timeout: runs late in --runInBand when memory pressure is
+  // high (3 GB+) and bcrypt + DB ops can be slow.
+  jest.setTimeout(120000);
+
   let app;
   let testUser;
   let authToken;
   let refreshTokenValue;
 
   beforeAll(async () => {
+    // rounds=1: fast under full-suite --runInBand load; registration calls
+    // bcrypt.hash(pwd, BCRYPT_SALT_ROUNDS) which is env-var-driven.
+    process.env.BCRYPT_SALT_ROUNDS = '1';
     app = createTestApp();
   });
 
   beforeEach(async () => {
-    // Clean up any existing test data
+    // Clean up any existing test data — must delete emailVerificationTokens
+    // explicitly first (FK from them → users is non-nullable); if a previous
+    // run left a user + verification token, the user.deleteMany below would
+    // cascade-delete those, but we delete email tokens up front in case
+    // cascade is somehow deferred or the user was orphaned differently.
+    await prisma.emailVerificationToken.deleteMany({
+      where: { user: { email: { contains: 'authintegration' } } },
+    });
     await prisma.refreshToken.deleteMany({
       where: { user: { email: { contains: 'authintegration' } } },
     });
@@ -167,6 +181,9 @@ describe('🔐 Authentication System Integration Tests', () => {
 
   afterEach(async () => {
     // Clean up test data
+    await prisma.emailVerificationToken.deleteMany({
+      where: { user: { email: { contains: 'authintegration' } } },
+    });
     await prisma.refreshToken.deleteMany({
       where: { user: { email: { contains: 'authintegration' } } },
     });
