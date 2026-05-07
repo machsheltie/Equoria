@@ -32,106 +32,111 @@ describe('Groom Personality Trait System', () => {
     const now = new Date();
     const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    await prisma.$transaction(async tx => {
-      // Create test user
-      testUser = await tx.user.create({
-        data: {
-          username: `groomtraits_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          email: `groomtraits_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
-          password: 'test_hash',
-          firstName: 'Test',
-          lastName: 'User',
-          money: 1000,
-          xp: 0,
-          level: 1,
-        },
-      });
+    await prisma.$transaction(
+      async tx => {
+        // Create test user
+        testUser = await tx.user.create({
+          data: {
+            username: `groomtraits_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            email: `groomtraits_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
+            password: 'test_hash',
+            firstName: 'Test',
+            lastName: 'User',
+            money: 1000,
+            xp: 0,
+            level: 1,
+          },
+        });
 
-      // Create test grooms with different personalities and experience levels
-      testGrooms = await Promise.all([
-        // Calm personality groom
-        tx.groom.create({
-          data: {
-            name: `Calm Expert Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            personality: 'calm',
-            epigeneticInfluenceType: 'calm',
-            skillLevel: 'expert',
-            speciality: 'foal_care',
-            userId: testUser.id,
-            sessionRate: 35.0,
-            experience: 150, // High experience
-            level: 8,
-          },
-        }),
-        // Energetic personality groom
-        tx.groom.create({
-          data: {
-            name: `Energetic Novice Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            personality: 'energetic',
-            epigeneticInfluenceType: 'energetic',
-            skillLevel: 'novice',
-            speciality: 'general_grooming',
-            userId: testUser.id,
-            sessionRate: 15.0,
-            experience: 25, // Low experience
-            level: 2,
-          },
-        }),
-        // Methodical personality groom
-        tx.groom.create({
-          data: {
-            name: `Methodical Experienced Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            personality: 'methodical',
-            epigeneticInfluenceType: 'methodical',
-            skillLevel: 'experienced',
-            speciality: 'foal_care',
-            userId: testUser.id,
-            sessionRate: 28.0,
-            experience: 80, // Medium experience
-            level: 5,
-          },
-        }),
-      ]);
+        // Create test grooms with different personalities and experience levels
+        testGrooms = await Promise.all([
+          // Calm personality groom
+          tx.groom.create({
+            data: {
+              name: `Calm Expert Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              personality: 'calm',
+              epigeneticInfluenceType: 'calm',
+              skillLevel: 'expert',
+              speciality: 'foal_care',
+              userId: testUser.id,
+              sessionRate: 35.0,
+              experience: 150, // High experience
+              level: 8,
+            },
+          }),
+          // Energetic personality groom
+          tx.groom.create({
+            data: {
+              name: `Energetic Novice Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              personality: 'energetic',
+              epigeneticInfluenceType: 'energetic',
+              skillLevel: 'novice',
+              speciality: 'general_grooming',
+              userId: testUser.id,
+              sessionRate: 15.0,
+              experience: 25, // Low experience
+              level: 2,
+            },
+          }),
+          // Methodical personality groom
+          tx.groom.create({
+            data: {
+              name: `Methodical Experienced Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              personality: 'methodical',
+              epigeneticInfluenceType: 'methodical',
+              skillLevel: 'experienced',
+              speciality: 'foal_care',
+              userId: testUser.id,
+              sessionRate: 28.0,
+              experience: 80, // Medium experience
+              level: 5,
+            },
+          }),
+        ]);
 
-      testHorses = await Promise.all([
-        // Nervous/fearful horse
-        tx.horse.create({
-          data: {
-            name: `Test Horse Nervous ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            sex: 'filly',
-            dateOfBirth: oneMonthAgo,
-            userId: testUser.id,
-            bondScore: 10,
-            stressLevel: 8,
-            epigeneticFlags: ['fearful', 'insecure'],
-          },
-        }),
-        // Confident/brave horse
-        tx.horse.create({
-          data: {
-            name: `Test Horse Confident ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            sex: 'colt',
-            dateOfBirth: oneMonthAgo,
-            userId: testUser.id,
-            bondScore: 35,
-            stressLevel: 2,
-            epigeneticFlags: ['brave', 'confident'],
-          },
-        }),
-        // Neutral horse
-        tx.horse.create({
-          data: {
-            name: `Test Horse Neutral ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            sex: 'Colt',
-            dateOfBirth: oneMonthAgo,
-            userId: testUser.id,
-            bondScore: 20,
-            stressLevel: 5,
-            epigeneticFlags: [],
-          },
-        }),
-      ]);
-    });
+        testHorses = await Promise.all([
+          // Nervous/fearful horse
+          tx.horse.create({
+            data: {
+              name: `Test Horse Nervous ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              sex: 'filly',
+              dateOfBirth: oneMonthAgo,
+              userId: testUser.id,
+              bondScore: 10,
+              stressLevel: 8,
+              epigeneticFlags: ['fearful', 'insecure'],
+            },
+          }),
+          // Confident/brave horse
+          tx.horse.create({
+            data: {
+              name: `Test Horse Confident ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              sex: 'colt',
+              dateOfBirth: oneMonthAgo,
+              userId: testUser.id,
+              bondScore: 35,
+              stressLevel: 2,
+              epigeneticFlags: ['brave', 'confident'],
+            },
+          }),
+          // Neutral horse
+          tx.horse.create({
+            data: {
+              name: `Test Horse Neutral ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              sex: 'Colt',
+              dateOfBirth: oneMonthAgo,
+              userId: testUser.id,
+              bondScore: 20,
+              stressLevel: 5,
+              epigeneticFlags: [],
+            },
+          }),
+        ]);
+      },
+      // Equoria-v1qf: raise from 5000ms default — under --runInBand with 312
+      // suites this beforeAll can start >20s into the run, expiring the default.
+      { timeout: 30000 },
+    );
   });
 
   afterAll(async () => {

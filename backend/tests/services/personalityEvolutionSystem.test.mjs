@@ -43,72 +43,75 @@ describe('Personality Evolution System', () => {
   let testBreed;
 
   beforeAll(async () => {
-    await prisma.$transaction(async tx => {
-      // Create test user
-      testUser = await tx.user.create({
-        data: {
-          username: `personality_evolution_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          email: `personality_evolution_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
-          password: 'test_hash',
-          firstName: 'Test',
-          lastName: 'User',
-          money: 1000,
-          xp: 0,
-          level: 1,
-        },
-      });
+    await prisma.$transaction(
+      async tx => {
+        // Create test user
+        testUser = await tx.user.create({
+          data: {
+            username: `personality_evolution_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            email: `personality_evolution_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
+            password: 'test_hash',
+            firstName: 'Test',
+            lastName: 'User',
+            money: 1000,
+            xp: 0,
+            level: 1,
+          },
+        });
 
-      // Create test breed
-      testBreed = await tx.breed.create({
-        data: {
-          name: `Test Breed ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          description: 'Test breed for personality evolution testing',
-        },
-      });
+        // Create test breed
+        testBreed = await tx.breed.create({
+          data: {
+            name: `Test Breed ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            description: 'Test breed for personality evolution testing',
+          },
+        });
 
-      // Create test groom
-      testGroom = await tx.groom.create({
-        data: {
-          userId: testUser.id,
-          name: 'Evolution Test Groom',
-          speciality: 'foal_care',
-          personality: 'calm',
-          epigeneticInfluenceType: 'calm',
-          skillLevel: 'intermediate',
-          experience: 100,
-          level: 5,
-          sessionRate: 25.0,
-          isActive: true,
-        },
-      });
+        // Create test groom
+        testGroom = await tx.groom.create({
+          data: {
+            userId: testUser.id,
+            name: 'Evolution Test Groom',
+            speciality: 'foal_care',
+            personality: 'calm',
+            epigeneticInfluenceType: 'calm',
+            skillLevel: 'intermediate',
+            experience: 100,
+            level: 5,
+            sessionRate: 25.0,
+            isActive: true,
+          },
+        });
 
-      // Create test horse
-      testHorse = await tx.horse.create({
-        data: {
-          userId: testUser.id,
-          breedId: testBreed.id,
-          name: 'Evolution Test Horse',
-          sex: 'Filly',
-          dateOfBirth: threeYearsAgo,
-          age: 2,
-          temperament: 'nervous',
-          stressLevel: 7,
-          bondScore: 20,
-          healthStatus: 'Good',
-          speed: 50,
-          stamina: 50,
-          agility: 50,
-          balance: 50,
-          precision: 50,
-          intelligence: 50,
-          boldness: 50,
-          flexibility: 50,
-          obedience: 50,
-          focus: 50,
-          epigeneticFlags: [],
-        },
-      });
-    });
+        // Create test horse
+        testHorse = await tx.horse.create({
+          data: {
+            userId: testUser.id,
+            breedId: testBreed.id,
+            name: 'Evolution Test Horse',
+            sex: 'Filly',
+            dateOfBirth: threeYearsAgo,
+            age: 2,
+            temperament: 'nervous',
+            stressLevel: 7,
+            bondScore: 20,
+            healthStatus: 'Good',
+            speed: 50,
+            stamina: 50,
+            agility: 50,
+            balance: 50,
+            precision: 50,
+            intelligence: 50,
+            boldness: 50,
+            flexibility: 50,
+            obedience: 50,
+            focus: 50,
+            epigeneticFlags: [],
+          },
+        });
+      },
+      { timeout: 30000 },
+    );
   });
 
   afterAll(async () => {

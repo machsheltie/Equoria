@@ -41,59 +41,62 @@ describe('Training Analytics Service', () => {
     await cleanupTrainingData();
 
     const timestamp = Date.now();
-    await prisma.$transaction(async tx => {
-      testUser = await tx.user.create({
-        data: {
-          username: `training_test_user_${timestamp}`,
-          email: `training_${timestamp}@test.com`,
-          password: 'test_password',
-          firstName: 'Training',
-          lastName: 'Test',
-        },
-      });
-
-      testBreed = await tx.breed.create({
-        data: {
-          name: `Training Test Breed ${timestamp}`,
-          description: 'Test breed for training analytics',
-        },
-      });
-
-      testHorse = await tx.horse.create({
-        data: {
-          name: `Training Test Horse ${timestamp}`,
-          userId: testUser.id,
-          age: 5,
-          sex: 'stallion',
-          dateOfBirth: new Date('2020-01-01'),
-          breedId: testBreed.id,
-          speed: 60,
-          stamina: 65,
-          agility: 55,
-          balance: 70,
-          precision: 58,
-          intelligence: 72,
-          boldness: 66,
-          flexibility: 54,
-          obedience: 78,
-          focus: 69,
-        },
-      });
-
-      const disciplines = ['dressage', 'show_jumping', 'racing', 'cross_country'];
-      testTrainingHistory = [];
-
-      for (let i = 0; i < 12; i++) {
-        const training = await tx.trainingLog.create({
+    await prisma.$transaction(
+      async tx => {
+        testUser = await tx.user.create({
           data: {
-            horseId: testHorse.id,
-            discipline: disciplines[i % disciplines.length],
-            trainedAt: new Date(Date.now() - i * 7 * 24 * 60 * 60 * 1000), // Weekly training
+            username: `training_test_user_${timestamp}`,
+            email: `training_${timestamp}@test.com`,
+            password: 'test_password',
+            firstName: 'Training',
+            lastName: 'Test',
           },
         });
-        testTrainingHistory.push(training);
-      }
-    });
+
+        testBreed = await tx.breed.create({
+          data: {
+            name: `Training Test Breed ${timestamp}`,
+            description: 'Test breed for training analytics',
+          },
+        });
+
+        testHorse = await tx.horse.create({
+          data: {
+            name: `Training Test Horse ${timestamp}`,
+            userId: testUser.id,
+            age: 5,
+            sex: 'stallion',
+            dateOfBirth: new Date('2020-01-01'),
+            breedId: testBreed.id,
+            speed: 60,
+            stamina: 65,
+            agility: 55,
+            balance: 70,
+            precision: 58,
+            intelligence: 72,
+            boldness: 66,
+            flexibility: 54,
+            obedience: 78,
+            focus: 69,
+          },
+        });
+
+        const disciplines = ['dressage', 'show_jumping', 'racing', 'cross_country'];
+        testTrainingHistory = [];
+
+        for (let i = 0; i < 12; i++) {
+          const training = await tx.trainingLog.create({
+            data: {
+              horseId: testHorse.id,
+              discipline: disciplines[i % disciplines.length],
+              trainedAt: new Date(Date.now() - i * 7 * 24 * 60 * 60 * 1000), // Weekly training
+            },
+          });
+          testTrainingHistory.push(training);
+        }
+      },
+      { timeout: 30000 },
+    );
   };
 
   const ensureTrainingData = async () => {

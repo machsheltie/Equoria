@@ -39,90 +39,93 @@ describe('Environmental Trigger System', () => {
     const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
     const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    await prisma.$transaction(async tx => {
-      // Create test user
-      testUser = await tx.user.create({
-        data: {
-          username: `env_trigger_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          email: `env_trigger_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
-          password: 'test_hash',
-          firstName: 'Test',
-          lastName: 'User',
-          money: 1000,
-          xp: 0,
-          level: 1,
-        },
-      });
+    await prisma.$transaction(
+      async tx => {
+        // Create test user
+        testUser = await tx.user.create({
+          data: {
+            username: `env_trigger_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            email: `env_trigger_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
+            password: 'test_hash',
+            firstName: 'Test',
+            lastName: 'User',
+            money: 1000,
+            xp: 0,
+            level: 1,
+          },
+        });
 
-      // Create test grooms for environmental interactions
-      testGrooms = await Promise.all([
-        tx.groom.create({
-          data: {
-            name: `Calm Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            personality: 'calm',
-            epigeneticInfluenceType: 'calm',
-            skillLevel: 'expert',
-            speciality: 'foal_care',
-            userId: testUser.id,
-            sessionRate: 30.0,
-            experience: 150,
-            level: 8,
-          },
-        }),
-        tx.groom.create({
-          data: {
-            name: `Energetic Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            personality: 'energetic',
-            epigeneticInfluenceType: 'energetic',
-            skillLevel: 'expert',
-            speciality: 'general_grooming',
-            userId: testUser.id,
-            sessionRate: 35.0,
-            experience: 200,
-            level: 10,
-          },
-        }),
-      ]);
+        // Create test grooms for environmental interactions
+        testGrooms = await Promise.all([
+          tx.groom.create({
+            data: {
+              name: `Calm Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              personality: 'calm',
+              epigeneticInfluenceType: 'calm',
+              skillLevel: 'expert',
+              speciality: 'foal_care',
+              userId: testUser.id,
+              sessionRate: 30.0,
+              experience: 150,
+              level: 8,
+            },
+          }),
+          tx.groom.create({
+            data: {
+              name: `Energetic Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              personality: 'energetic',
+              epigeneticInfluenceType: 'energetic',
+              skillLevel: 'expert',
+              speciality: 'general_grooming',
+              userId: testUser.id,
+              sessionRate: 35.0,
+              experience: 200,
+              level: 10,
+            },
+          }),
+        ]);
 
-      testHorses = await Promise.all([
-        // Young foal - high environmental sensitivity
-        tx.horse.create({
-          data: {
-            name: `Test Foal Young ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            sex: 'filly',
-            dateOfBirth: oneWeekAgo,
-            userId: testUser.id,
-            bondScore: 15,
-            stressLevel: 6,
-            epigeneticFlags: ['developing'],
-          },
-        }),
-        // Older foal - moderate sensitivity
-        tx.horse.create({
-          data: {
-            name: `Test Foal Older ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            sex: 'colt',
-            dateOfBirth: oneMonthAgo,
-            userId: testUser.id,
-            bondScore: 25,
-            stressLevel: 4,
-            epigeneticFlags: ['curious'],
-          },
-        }),
-        // Stressed foal - high trigger sensitivity
-        tx.horse.create({
-          data: {
-            name: `Test Foal Stressed ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            sex: 'filly',
-            dateOfBirth: twoWeeksAgo,
-            userId: testUser.id,
-            bondScore: 10,
-            stressLevel: 8,
-            epigeneticFlags: ['reactive'],
-          },
-        }),
-      ]);
-    });
+        testHorses = await Promise.all([
+          // Young foal - high environmental sensitivity
+          tx.horse.create({
+            data: {
+              name: `Test Foal Young ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              sex: 'filly',
+              dateOfBirth: oneWeekAgo,
+              userId: testUser.id,
+              bondScore: 15,
+              stressLevel: 6,
+              epigeneticFlags: ['developing'],
+            },
+          }),
+          // Older foal - moderate sensitivity
+          tx.horse.create({
+            data: {
+              name: `Test Foal Older ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              sex: 'colt',
+              dateOfBirth: oneMonthAgo,
+              userId: testUser.id,
+              bondScore: 25,
+              stressLevel: 4,
+              epigeneticFlags: ['curious'],
+            },
+          }),
+          // Stressed foal - high trigger sensitivity
+          tx.horse.create({
+            data: {
+              name: `Test Foal Stressed ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              sex: 'filly',
+              dateOfBirth: twoWeeksAgo,
+              userId: testUser.id,
+              bondScore: 10,
+              stressLevel: 8,
+              epigeneticFlags: ['reactive'],
+            },
+          }),
+        ]);
+      },
+      { timeout: 30000 },
+    );
   });
 
   afterAll(async () => {
