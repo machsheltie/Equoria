@@ -48,16 +48,32 @@ export const TACK_INVENTORY = [
     disciplines: ['Show Jumping', 'Cross-Country'],
   },
   {
-    id: 'basic-all-purpose-saddle',
+    id: 'all-purpose-saddle',
     category: 'saddle',
-    name: 'All-Purpose Saddle',
+    name: 'All Purpose Saddle',
     description:
       'Versatile saddle suitable for general riding across multiple disciplines. A great starter saddle.',
     cost: 400,
-    bonus: '+2 all disciplines',
-    numericBonus: 2,
+    bonus: '+5 all disciplines',
+    numericBonus: 5,
     tier: 'basic',
     disciplines: ['Dressage', 'Show Jumping', 'Cross-Country', 'Eventing', 'Hunter'],
+    image: '/images/tack/allpurposesaddle.png',
+  },
+  // Legacy alias — kept for backwards compat during migration window; do not remove until all Horse.tack records are migrated
+  {
+    id: 'basic-all-purpose-saddle',
+    isLegacyAlias: true,
+    category: 'saddle',
+    name: 'All Purpose Saddle',
+    description:
+      'Versatile saddle suitable for general riding across multiple disciplines. A great starter saddle.',
+    cost: 400,
+    bonus: '+5 all disciplines',
+    numericBonus: 5,
+    tier: 'basic',
+    disciplines: ['Dressage', 'Show Jumping', 'Cross-Country', 'Eventing', 'Hunter'],
+    image: '/images/tack/allpurposesaddle.png',
   },
   {
     id: 'western-saddle',
@@ -97,6 +113,48 @@ export const TACK_INVENTORY = [
   },
 
   // ── Bridles ──────────────────────────────────────────────────────────────
+  {
+    id: 'all-purpose-bridle',
+    category: 'bridle',
+    name: 'All Purpose Bridle',
+    description:
+      'Versatile bridle suitable for general training and competition across disciplines.',
+    cost: 300,
+    bonus: '+5 all disciplines',
+    numericBonus: 5,
+    tier: 'basic',
+    disciplines: [
+      'Dressage',
+      'Show Jumping',
+      'Cross-Country',
+      'Eventing',
+      'Hunter',
+      'Western Pleasure',
+      'Endurance',
+    ],
+  },
+  // Legacy alias — kept for backwards compat during migration window
+  {
+    id: 'standard-bridle',
+    isLegacyAlias: true,
+    category: 'bridle',
+    name: 'All Purpose Bridle',
+    description:
+      'Versatile bridle suitable for general training and competition across disciplines.',
+    cost: 300,
+    bonus: '+5 all disciplines',
+    numericBonus: 5,
+    tier: 'basic',
+    disciplines: [
+      'Dressage',
+      'Show Jumping',
+      'Cross-Country',
+      'Eventing',
+      'Hunter',
+      'Western Pleasure',
+      'Endurance',
+    ],
+  },
   {
     id: 'snaffle-bridle',
     category: 'bridle',
@@ -512,9 +570,9 @@ export function resolveTackBonus(tack, showType = 'ridden') {
  * Returns full catalog grouped by category.
  */
 export async function getTackInventory(_req, res) {
-  // Build categories dynamically from the catalog
+  const visibleItems = TACK_INVENTORY.filter(item => !item.isLegacyAlias);
   const categories = {};
-  for (const item of TACK_INVENTORY) {
+  for (const item of visibleItems) {
     const key = item.category;
     if (!categories[key]) {
       categories[key] = [];
@@ -526,7 +584,7 @@ export async function getTackInventory(_req, res) {
     success: true,
     message: 'Tack inventory retrieved successfully',
     data: {
-      items: TACK_INVENTORY,
+      items: visibleItems,
       categories,
       categoryDisplayNames: CATEGORY_DISPLAY,
     },

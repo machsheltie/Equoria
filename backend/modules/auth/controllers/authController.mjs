@@ -25,18 +25,18 @@ import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
 const STARTER_KIT_INVENTORY = [
   {
     id: 'starter-saddle',
-    itemId: 'training-saddle',
+    itemId: 'all-purpose-saddle',
     category: 'saddle',
-    name: 'Training Saddle',
-    bonus: 2,
+    name: 'All Purpose Saddle',
+    bonus: '+5 all disciplines',
     quantity: 1,
   },
   {
     id: 'starter-bridle',
-    itemId: 'standard-bridle',
+    itemId: 'all-purpose-bridle',
     category: 'bridle',
-    name: 'Standard Bridle',
-    bonus: 1,
+    name: 'All Purpose Bridle',
+    bonus: '+5 all disciplines',
     quantity: 1,
   },
 ];

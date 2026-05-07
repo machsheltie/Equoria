@@ -44,6 +44,12 @@ const FEED_IMAGES: Record<FeedItem['id'], string> = {
   elite: '/images/feed/elitefeed.png',
 };
 
+const TACK_IMAGES: Record<string, string> = {
+  'dressage-saddle': '/images/tack/dressage-saddle.png',
+  'dressage-bridle': '/images/tack/dressage-bridle.png',
+  'all-purpose-saddle': '/images/tack/allpurposesaddle.png',
+};
+
 const EQUIPPED_STAR = (
   <Star className="w-3.5 h-3.5 text-[var(--gold-primary)] fill-[var(--gold-primary)]" />
 );
@@ -176,9 +182,18 @@ const HorseEquipPage: React.FC = () => {
                     key={item.id}
                     data-testid={`tack-item-${item.id}`}
                     media={
-                      <div className="w-20 h-20 rounded-lg bg-black/20 flex items-center justify-center text-[var(--text-muted)]">
-                        <Wrench className="w-10 h-10" />
-                      </div>
+                      TACK_IMAGES[item.itemId] ? (
+                        <img
+                          src={TACK_IMAGES[item.itemId]}
+                          alt={item.name}
+                          loading="lazy"
+                          className="w-20 h-20 object-contain"
+                        />
+                      ) : (
+                        <div className="w-20 h-20 rounded-lg bg-black/20 flex items-center justify-center text-[var(--text-muted)]">
+                          <Wrench className="w-10 h-10" />
+                        </div>
+                      )
                     }
                     titlePrefix={isEquipped ? EQUIPPED_STAR : undefined}
                     title={item.name}

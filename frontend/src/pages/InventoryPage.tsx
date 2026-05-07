@@ -12,7 +12,7 @@
  * Card style matches HorseEquipPage exactly:
  *   - Same ItemCard layout (image, gold star prefix, title, subtitle, description, meta)
  *   - Feed: subtitle = "N units in stock", meta = stat-roll / pregnancy %, click → popup
- *   - Tack: subtitle = category, meta = ×N quantity badge, gold border + star if equipped
+ *   - Tack: subtitle = "N in inventory", meta = none, gold border + star if equipped
  */
 
 import React, { useState, useMemo } from 'react';
@@ -48,6 +48,7 @@ const FEED_IMAGES: Record<FeedItem['id'], string> = {
 const TACK_IMAGES: Record<string, string> = {
   'dressage-saddle': '/images/tack/dressage-saddle.png',
   'dressage-bridle': '/images/tack/dressage-bridle.png',
+  'all-purpose-saddle': '/images/tack/allpurposesaddle.png',
 };
 
 function getItemImage(item: InventoryItem): string | null {
@@ -103,15 +104,10 @@ const InventoryCard: React.FC<InventoryCardProps> = ({
     </div>
   );
 
-  // Feed: "N units in stock" matches Equip page. Tack: category label.
-  const subtitle = isFeed ? (
-    `${item.quantity} units in stock`
-  ) : (
-    <span className="capitalize">{item.category}</span>
-  );
+  // Feed: "N units in stock". Tack: "N in inventory" — quantity in subtitle, no badge.
+  const subtitle = isFeed ? `${item.quantity} units in stock` : `${item.quantity} in inventory`;
 
-  // Feed: stat roll / pregnancy % from catalog (matches Equip page exactly).
-  // Tack: quantity badge.
+  // Feed: stat roll / pregnancy % from catalog. Tack: no badge (quantity is in subtitle).
   const feedMeta = isFeed ? feedCatalogById[item.itemId as FeedItem['id']] : undefined;
   const meta: React.ReactNode = isFeed ? (
     feedMeta ? (
@@ -121,11 +117,7 @@ const InventoryCard: React.FC<InventoryCardProps> = ({
         <strong className="text-[var(--text-secondary)]">+{feedMeta.pregnancyBonusPct}%</strong>
       </span>
     ) : undefined
-  ) : (
-    <span className="text-[0.65rem] font-bold bg-white/10 text-[var(--cream)]/60 rounded-full px-2 py-0.5">
-      ×{item.quantity}
-    </span>
-  );
+  ) : undefined;
 
   // Description: feed uses catalog description; tack uses bonus field.
   const description = isFeed
