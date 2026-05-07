@@ -122,7 +122,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
         },
       },
     });
-  });
+  }, 120000); // 120s — cleanup + user/horse create can be slow under full-suite load
 
   afterEach(async () => {
     // Clean up test data
@@ -138,7 +138,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
     await prisma.user.deleteMany({
       where: { email: { startsWith: 'test-horse-overview' } },
     });
-  });
+  }, 120000); // 120s — cascade deletes can be slow under full-suite load
 
   describe('GET /api/horses/:id/overview', () => {
     it('should return complete horse overview data successfully', async () => {
