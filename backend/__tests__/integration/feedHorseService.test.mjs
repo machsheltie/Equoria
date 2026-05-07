@@ -14,8 +14,15 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { readFileSync } from 'node:fs';
+import { dirname, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { feedHorse, rollStatBoost } from '../../modules/horses/services/horseFeedService.mjs';
+
+// Resolved once at module load — used by the SELECT FOR UPDATE sentinel describe block.
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const FEED_SERVICE_SRC = readFileSync(resolve(__dirname, '../../modules/horses/services/horseFeedService.mjs'), 'utf8');
 
 // 12 stats matching backend/modules/horses/services/horseFeedService.mjs STATS array.
 const EXPECTED_STATS = [
@@ -424,5 +431,31 @@ describe('feedHorse service — concurrent-feed lost-update guard (Equoria-nsr7)
     const inv = freshUser.settings?.inventory ?? [];
     const feedItem = inv.find(i => i.id === 'feed-elite');
     expect(feedItem?.quantity).toBe(9);
+  });
+});
+
+/**
+ * SELECT FOR UPDATE structural sentinel (Equoria-wsqw).
+ *
+ * The lost-update guard lives in horseFeedService.mjs as two $queryRaw
+ * SELECT … FOR UPDATE statements — one on the horse row (prevents
+ * same-horse concurrent feeds) and one on the User row (prevents
+ * cross-horse concurrent feeds by the same owner). If either lock is
+ * accidentally removed, this test fails immediately.
+ *
+ * Why structural rather than a concurrent Promise.all test: under full-suite
+ * --runInBand Prisma connection-pool pressure the pool serialises txns
+ * internally before they reach PostgreSQL, so a Promise.all race is
+ * unreliable (documented in the describe block above). A source-code
+ * assertion is deterministic, never flakes, and fails on the exact change
+ * that would break production concurrency safety.
+ */
+describe('feedHorse — SELECT FOR UPDATE structural sentinel (Equoria-wsqw)', () => {
+  it('horseFeedService.mjs contains FOR UPDATE lock on the horse row', () => {
+    expect(FEED_SERVICE_SRC).toMatch(/SELECT id FROM "horses"[^;]*FOR UPDATE/);
+  });
+
+  it('horseFeedService.mjs contains FOR UPDATE lock on the User row', () => {
+    expect(FEED_SERVICE_SRC).toMatch(/SELECT id FROM "User"[^;]*FOR UPDATE/);
   });
 });

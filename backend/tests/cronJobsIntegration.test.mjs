@@ -40,8 +40,10 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
   const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).slice(2, 7)}`;
 
   beforeAll(async () => {
-    // Create a real admin user in the database
-    const hashedPassword = await bcrypt.hash('AdminPassword123!', 10);
+    // rounds=1: fast in tests; the password is never verified (JWT is generated
+    // directly via generateTestToken). bcrypt rounds=10 can exceed 60s under
+    // full-suite --runInBand load (cronJobs timeout, Equoria-v1qf follow-up).
+    const hashedPassword = await bcrypt.hash('AdminPassword123!', 1);
     adminUser = await prisma.user.create({
       data: {
         username: `cron_admin_${ts}`,
@@ -69,7 +71,7 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
       },
     });
-  });
+  }, 120000); // 120s — bcrypt + two DB creates can be slow under full-suite load
 
   afterAll(async () => {
     try {
