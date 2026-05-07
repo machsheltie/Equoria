@@ -41,6 +41,7 @@ export function useFeedHorse(horseId: number) {
       queryClient.invalidateQueries({ queryKey: ['horses', horseId], refetchType: 'none' });
       queryClient.invalidateQueries({ queryKey: ['horses'], refetchType: 'none' });
       queryClient.invalidateQueries({ queryKey: ['equippable', horseId], refetchType: 'none' });
+      queryClient.invalidateQueries({ queryKey: ['game-notifications'] });
     },
   });
 }

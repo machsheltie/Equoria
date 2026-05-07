@@ -9,6 +9,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Bell, LogOut, User } from 'lucide-react';
 import { useUnreadCount } from '@/hooks/api/useMessages';
+import { useGameNotifications } from '@/hooks/api/useGameNotifications';
 import { useAuth } from '@/contexts/AuthContext';
 import { Breadcrumb } from '@/components/layout/Breadcrumb';
 
@@ -29,9 +30,12 @@ interface MainNavigationProps {
 
 const MainNavigation: React.FC<MainNavigationProps> = ({ onOpenNav, hideHamburger = false }) => {
   const { data: unreadData } = useUnreadCount();
+  const { data: gameNotifsData } = useGameNotifications();
   const { user, logout } = useAuth();
 
-  const unreadCount = unreadData?.count ?? 0;
+  const dmUnread = unreadData?.count ?? 0;
+  const gameUnread = gameNotifsData?.unreadCount ?? 0;
+  const totalUnread = dmUnread + gameUnread;
   const displayMoney = user?.money?.toLocaleString() ?? '0';
 
   return (
@@ -94,12 +98,12 @@ const MainNavigation: React.FC<MainNavigationProps> = ({ onOpenNav, hideHamburge
           <Link
             to="/messages"
             className="relative w-8 h-8 flex items-center justify-center rounded-[var(--radius-sm)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--glass-hover)] transition-colors"
-            aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
+            aria-label={`Notifications${totalUnread > 0 ? `, ${totalUnread} unread` : ''}`}
             data-testid="notification-indicator"
             data-onboarding-target="nav-notifications"
           >
             <Bell className="w-4 h-4" />
-            {unreadCount > 0 && (
+            {totalUnread > 0 && (
               <span
                 className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-[var(--status-danger)] rounded-full border-2 border-[var(--bg-deep-space)]"
                 data-testid="notification-dot"

@@ -15,14 +15,29 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Send, PlusCircle, Circle, CheckCircle2, Clock, User, X, Search } from 'lucide-react';
+import {
+  Mail,
+  Send,
+  PlusCircle,
+  Circle,
+  CheckCircle2,
+  Clock,
+  User,
+  X,
+  Search,
+  Bell,
+} from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
 import { Button } from '@/components/ui/button';
 import { useInbox, useSentMessages, useUnreadCount, useSendMessage } from '@/hooks/api/useMessages';
+import {
+  useGameNotifications,
+  useMarkGameNotificationsRead,
+} from '@/hooks/api/useGameNotifications';
 import { usersApi } from '@/lib/api-client';
-import type { DirectMessage } from '@/lib/api-client';
+import type { DirectMessage, GameNotification } from '@/lib/api-client';
 
-type MessageTab = 'inbox' | 'sent';
+type MessageTab = 'inbox' | 'sent' | 'notifications';
 
 const tagColors: Record<string, string> = {
   Sales: 'bg-emerald-500/20 text-emerald-400',
@@ -52,13 +67,24 @@ const MessagesPage: React.FC = () => {
   const { data: inboxData, isLoading: inboxLoading } = useInbox();
   const { data: sentData, isLoading: sentLoading } = useSentMessages();
   const { data: unreadData } = useUnreadCount();
+  const { data: gameNotifsData, isLoading: gameNotifsLoading } = useGameNotifications();
+  const markGameRead = useMarkGameNotificationsRead();
+  const { mutate: markGameReadMutate } = markGameRead;
 
   const inboxMessages = inboxData?.messages ?? [];
   const sentMessages = sentData?.messages ?? [];
   const unreadCount = unreadData?.count ?? 0;
+  const gameNotifications: GameNotification[] = gameNotifsData?.notifications ?? [];
+  const gameUnreadCount = gameNotifsData?.unreadCount ?? 0;
 
   const messages = activeTab === 'inbox' ? inboxMessages : sentMessages;
   const isLoading = activeTab === 'inbox' ? inboxLoading : sentLoading;
+
+  useEffect(() => {
+    if (activeTab === 'notifications' && gameUnreadCount > 0) {
+      markGameReadMutate();
+    }
+  }, [activeTab, gameUnreadCount, markGameReadMutate]);
 
   return (
     <div className="min-h-screen">
@@ -141,11 +167,63 @@ const MessagesPage: React.FC = () => {
             <Send className="w-4 h-4" />
             Sent
           </button>
+          <button
+            role="tab"
+            aria-selected={activeTab === 'notifications'}
+            onClick={() => setActiveTab('notifications')}
+            className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'notifications'
+                ? 'bg-white/10 text-white/90 shadow-sm'
+                : 'text-white/40 hover:text-white/70'
+            }`}
+            data-testid="tab-notifications"
+          >
+            <Bell className="w-4 h-4" />
+            Notifications
+            {gameUnreadCount > 0 && (
+              <span className="text-[10px] font-bold bg-blue-500/80 text-white rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
+                {gameUnreadCount}
+              </span>
+            )}
+          </button>
         </div>
 
-        {/* Message List */}
+        {/* Message / Notification List */}
         <div role="tabpanel" data-testid="message-list">
-          {isLoading ? (
+          {activeTab === 'notifications' ? (
+            gameNotifsLoading ? (
+              <div className="space-y-2">
+                {[1, 2, 3].map((i) => (
+                  <div key={i} className="glass-panel animate-pulse">
+                    <div className="flex gap-3">
+                      <div className="w-8 h-8 rounded-full bg-white/10 flex-shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-3 bg-white/10 rounded w-1/3" />
+                        <div className="h-3 bg-white/10 rounded w-2/3" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : gameNotifications.length === 0 ? (
+              <div
+                className="flex flex-col items-center justify-center min-h-48 text-center p-8"
+                data-testid="empty-notifications"
+              >
+                <Bell className="w-10 h-10 text-white/20 mb-3" />
+                <p className="text-white/50 font-medium">No game notifications yet</p>
+                <p className="text-white/30 text-sm mt-1">
+                  Stat gains from feeding will appear here
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {[...gameNotifications].reverse().map((notif) => (
+                  <GameNotifRow key={notif.id} notif={notif} />
+                ))}
+              </div>
+            )
+          ) : isLoading ? (
             <div className="space-y-2">
               {[1, 2, 3].map((i) => (
                 <div key={i} className="glass-panel animate-pulse">
@@ -461,6 +539,58 @@ const MessageRow: React.FC<{ message: DirectMessage; isInbox: boolean }> = ({
             {message.subject}
           </div>
           <p className="text-xs text-white/40 line-clamp-1">{preview}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const GameNotifRow: React.FC<{ notif: GameNotification }> = ({ notif }) => {
+  const { horseName, stat, amount, feedName } = notif.payload;
+  const statLabel = stat.charAt(0).toUpperCase() + stat.slice(1);
+
+  return (
+    <div
+      className={`group glass-panel hover:bg-white/8 ${
+        !notif.isRead ? 'border-blue-500/20' : 'hover:border-white/20'
+      }`}
+      data-testid={`game-notif-${notif.id}`}
+    >
+      <div className="flex items-start gap-3">
+        <div className="flex-shrink-0 mt-1">
+          {!notif.isRead ? (
+            <Circle className="w-2 h-2 fill-blue-400 text-blue-400" />
+          ) : (
+            <CheckCircle2 className="w-4 h-4 text-white/15" />
+          )}
+        </div>
+
+        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center border border-white/10">
+          <span className="text-xs" aria-hidden="true">
+            🌾
+          </span>
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-2 mb-0.5">
+            <div className="flex items-center gap-2">
+              <span
+                className={`text-sm font-semibold ${!notif.isRead ? 'text-white/90' : 'text-white/70'}`}
+              >
+                {horseName}
+              </span>
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-blue-500/20 text-blue-400">
+                Stat Gain
+              </span>
+            </div>
+            <div className="flex items-center gap-1 text-[11px] text-white/30 flex-shrink-0">
+              <Clock className="w-3 h-3" />
+              {relativeTime(notif.createdAt)}
+            </div>
+          </div>
+          <p className="text-sm text-white/70">
+            +{amount} {statLabel} from {feedName}
+          </p>
         </div>
       </div>
     </div>

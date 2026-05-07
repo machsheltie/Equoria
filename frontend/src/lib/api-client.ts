@@ -2262,6 +2262,29 @@ export const usersApi = {
     ),
 };
 
+export interface GameNotification {
+  id: string;
+  type: 'stat_gain';
+  isRead: boolean;
+  createdAt: string;
+  payload: {
+    horseName: string;
+    stat: string;
+    amount: number;
+    feedName: string;
+  };
+}
+
+export interface GameNotificationsResponse {
+  notifications: GameNotification[];
+  unreadCount: number;
+}
+
+export const gameNotificationsApi = {
+  getAll: () => apiClient.get<GameNotificationsResponse>('/api/v1/users/me/game-notifications'),
+  markAllRead: () => apiClient.patch<void>('/api/v1/users/me/game-notifications/read-all'),
+};
+
 /**
  * Export both for convenience
  */

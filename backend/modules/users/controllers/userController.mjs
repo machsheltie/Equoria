@@ -728,3 +728,57 @@ export async function searchUsers(q) {
     orderBy: { username: 'asc' },
   });
 }
+
+/**
+ * GET /api/v1/users/me/game-notifications
+ *
+ * Returns the authenticated user's game notification array
+ * (stored in User.settings.gameNotifications) plus an unreadCount.
+ */
+export async function getGameNotifications(req, res) {
+  try {
+    const userId = req.user.id;
+    const dbUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { settings: true },
+    });
+    const settings = dbUser?.settings && typeof dbUser.settings === 'object' ? dbUser.settings : {};
+    const notifications = Array.isArray(settings.gameNotifications)
+      ? settings.gameNotifications
+      : [];
+    const unreadCount = notifications.filter(n => !n.isRead).length;
+    return res.json({ success: true, data: { notifications, unreadCount } });
+  } catch (error) {
+    logger.error(`[userController.getGameNotifications] ${error.message}`);
+    return res.status(500).json({ success: false, message: 'Failed to fetch game notifications' });
+  }
+}
+
+/**
+ * PATCH /api/v1/users/me/game-notifications/read-all
+ *
+ * Marks every game notification in User.settings.gameNotifications as read.
+ */
+export async function markGameNotificationsRead(req, res) {
+  try {
+    const userId = req.user.id;
+    const dbUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { settings: true },
+    });
+    const settings = dbUser?.settings && typeof dbUser.settings === 'object' ? dbUser.settings : {};
+    const notifications = Array.isArray(settings.gameNotifications)
+      ? settings.gameNotifications.map(n => ({ ...n, isRead: true }))
+      : [];
+    await prisma.user.update({
+      where: { id: userId },
+      data: { settings: { ...settings, gameNotifications: notifications } },
+    });
+    return res.json({ success: true });
+  } catch (error) {
+    logger.error(`[userController.markGameNotificationsRead] ${error.message}`);
+    return res
+      .status(500)
+      .json({ success: false, message: 'Failed to mark game notifications as read' });
+  }
+}

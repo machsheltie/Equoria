@@ -17,6 +17,8 @@ import {
   addXpController,
   searchUsers,
   getUserCompetitionStats,
+  getGameNotifications,
+  markGameNotificationsRead,
 } from '../controllers/userController.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { queryRateLimiter, mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
@@ -133,6 +135,17 @@ router.get('/search', queryRateLimiter, authenticateToken, async (req, res) => {
 });
 
 router.get('/transactions', queryRateLimiter, authenticateToken, getTransactionHistory);
+
+/** GET /api/users/me/game-notifications — unread game notification list + unreadCount */
+router.get('/me/game-notifications', queryRateLimiter, authenticateToken, getGameNotifications);
+
+/** PATCH /api/users/me/game-notifications/read-all — mark all game notifications as read */
+router.patch(
+  '/me/game-notifications/read-all',
+  mutationRateLimiter,
+  authenticateToken,
+  markGameNotificationsRead,
+);
 
 /**
  * @swagger

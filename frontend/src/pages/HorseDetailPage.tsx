@@ -737,12 +737,13 @@ const HorseDetailPage: React.FC = () => {
                     }
                     const feedName = result.feed?.name ?? 'feed';
                     const remaining = result.remainingUnits ?? 0;
+                    const statSuffix = result.statBoost
+                      ? ` +1 ${result.statBoost.stat.charAt(0).toUpperCase() + result.statBoost.stat.slice(1)}!`
+                      : '';
                     toast.success(
-                      `Fed ${result.horse.name} with ${feedName}. ${remaining} units left.`
+                      `Fed ${result.horse.name} with ${feedName}. ${remaining} units left.${statSuffix}`,
+                      { duration: result.statBoost ? 5000 : 3000 }
                     );
-                    if (result.statBoost) {
-                      toast.success(`+1 ${result.statBoost.stat}!`, { duration: 4000 });
-                    }
                   },
                   onError: (err) =>
                     toast.error((err as { message?: string })?.message ?? 'Feeding failed.'),
