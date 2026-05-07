@@ -11,7 +11,7 @@
  * Real-DB integration test — no mocks.
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, jest } from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../db/index.mjs';
