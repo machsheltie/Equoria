@@ -5,7 +5,7 @@
  * SECURITY: CWE-384 (Session Fixation), CWE-613 (Insufficient Session Expiration)
  */
 
-import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import {
   trackSessionActivity,
   enforceConcurrentSessions,
@@ -31,8 +31,8 @@ describe('Session Management Middleware', () => {
 
       await trackSessionActivity(req, res, next);
 
-      expect(next).toHaveBeenCalled();
-      expect(res.status).not.toHaveBeenCalled();
+      expect(next.called).toBe(true);
+      expect(res._statusCalled).toBe(false);
     });
 
     it('should skip tracking when no user ID', async () => {
@@ -40,8 +40,8 @@ describe('Session Management Middleware', () => {
 
       await trackSessionActivity(req, res, next);
 
-      expect(next).toHaveBeenCalled();
-      expect(res.status).not.toHaveBeenCalled();
+      expect(next.called).toBe(true);
+      expect(res._statusCalled).toBe(false);
     });
 
     it('should skip tracking when no refresh token cookie', async () => {
@@ -51,8 +51,8 @@ describe('Session Management Middleware', () => {
 
       await trackSessionActivity(req, res, next);
 
-      expect(next).toHaveBeenCalled();
-      expect(res.status).not.toHaveBeenCalled();
+      expect(next.called).toBe(true);
+      expect(res._statusCalled).toBe(false);
     });
 
     describe('Active session tracking', () => {
@@ -78,8 +78,8 @@ describe('Session Management Middleware', () => {
         });
 
         expect(updatedToken.lastActivityAt.getTime()).toBeGreaterThan(beforeUpdate.getTime());
-        expect(next).toHaveBeenCalled();
-        expect(res.status).not.toHaveBeenCalled();
+        expect(next.called).toBe(true);
+        expect(res._statusCalled).toBe(false);
       });
 
       it('should allow session within timeout window (14 minutes)', async () => {
@@ -91,8 +91,8 @@ describe('Session Management Middleware', () => {
 
         await trackSessionActivity(req, res, next);
 
-        expect(next).toHaveBeenCalled();
-        expect(res.status).not.toHaveBeenCalled();
+        expect(next.called).toBe(true);
+        expect(res._statusCalled).toBe(false);
       });
 
       it('should expire session after 15 minutes of inactivity', async () => {
@@ -104,13 +104,13 @@ describe('Session Management Middleware', () => {
 
         await trackSessionActivity(req, res, next);
 
-        expect(res.status).toHaveBeenCalledWith(401);
-        expect(res.json).toHaveBeenCalledWith({
+        expect(res.statusCode).toBe(401);
+        expect(res.body).toEqual({
           success: false,
           error: 'Session expired due to inactivity. Please login again.',
           code: 'SESSION_TIMEOUT',
         });
-        expect(next).not.toHaveBeenCalled();
+        expect(next.called).toBe(false);
 
         // Verify session was deleted
         const deletedToken = await prisma.refreshToken.findUnique({
@@ -127,8 +127,8 @@ describe('Session Management Middleware', () => {
 
         await trackSessionActivity(req, res, next);
 
-        expect(res.clearCookie).toHaveBeenCalledWith('accessToken');
-        expect(res.clearCookie).toHaveBeenCalledWith('refreshToken');
+        expect(res._clearedCookies).toContain('accessToken');
+        expect(res._clearedCookies).toContain('refreshToken');
       });
 
       it('should use createdAt if lastActivityAt is null', async () => {
@@ -140,8 +140,8 @@ describe('Session Management Middleware', () => {
         await trackSessionActivity(req, res, next);
 
         // Should use createdAt (recent) and allow request
-        expect(next).toHaveBeenCalled();
-        expect(res.status).not.toHaveBeenCalled();
+        expect(next.called).toBe(true);
+        expect(res._statusCalled).toBe(false);
       });
 
       it('should handle database errors gracefully', async () => {
@@ -151,8 +151,8 @@ describe('Session Management Middleware', () => {
         await trackSessionActivity(req, res, next);
 
         // Should not fail the request
-        expect(next).toHaveBeenCalled();
-        expect(res.status).not.toHaveBeenCalled();
+        expect(next.called).toBe(true);
+        expect(res._statusCalled).toBe(false);
       });
     });
 
@@ -206,7 +206,7 @@ describe('Session Management Middleware', () => {
 
       await enforceConcurrentSessions(req, res, next);
 
-      expect(next).toHaveBeenCalled();
+      expect(next.called).toBe(true);
     });
 
     it('should allow user with 1 session', async () => {
@@ -217,7 +217,7 @@ describe('Session Management Middleware', () => {
 
       await enforceConcurrentSessions(req, res, next);
 
-      expect(next).toHaveBeenCalled();
+      expect(next.called).toBe(true);
 
       const sessionCount = await prisma.refreshToken.count({
         where: { userId: user.id },
@@ -237,7 +237,7 @@ describe('Session Management Middleware', () => {
 
       await enforceConcurrentSessions(req, res, next);
 
-      expect(next).toHaveBeenCalled();
+      expect(next.called).toBe(true);
 
       const sessionCount = await prisma.refreshToken.count({
         where: { userId: user.id },
@@ -264,7 +264,7 @@ describe('Session Management Middleware', () => {
 
       await enforceConcurrentSessions(req, res, next);
 
-      expect(next).toHaveBeenCalled();
+      expect(next.called).toBe(true);
 
       // Should have exactly 5 sessions now
       const sessionCount = await prisma.refreshToken.count({
@@ -340,7 +340,7 @@ describe('Session Management Middleware', () => {
       await enforceConcurrentSessions(req, res, next);
 
       // Should not fail the request
-      expect(next).toHaveBeenCalled();
+      expect(next.called).toBe(true);
     });
 
     describe('Custom limit configuration', () => {
@@ -385,26 +385,26 @@ describe('Session Management Middleware', () => {
     it('should add cache control headers', () => {
       addSessionSecurityHeaders(req, res, next);
 
-      expect(res.setHeader).toHaveBeenCalledWith('Cache-Control', 'no-store, no-cache, must-revalidate, private');
-      expect(next).toHaveBeenCalled();
+      expect(res._headers['Cache-Control']).toBe('no-store, no-cache, must-revalidate, private');
+      expect(next.called).toBe(true);
     });
 
     it('should add pragma header', () => {
       addSessionSecurityHeaders(req, res, next);
 
-      expect(res.setHeader).toHaveBeenCalledWith('Pragma', 'no-cache');
+      expect(res._headers['Pragma']).toBe('no-cache');
     });
 
     it('should add expires header', () => {
       addSessionSecurityHeaders(req, res, next);
 
-      expect(res.setHeader).toHaveBeenCalledWith('Expires', '0');
+      expect(res._headers['Expires']).toBe('0');
     });
 
     it('should call next() to continue middleware chain', () => {
       addSessionSecurityHeaders(req, res, next);
 
-      expect(next).toHaveBeenCalled();
+      expect(next.called).toBe(true);
     });
   });
 
@@ -422,8 +422,8 @@ describe('Session Management Middleware', () => {
 
       await getActiveSessions(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({
+      expect(res.statusCode).toBe(401);
+      expect(res.body).toEqual({
         success: false,
         error: 'Authentication required',
       });
@@ -435,8 +435,8 @@ describe('Session Management Middleware', () => {
 
       await getActiveSessions(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toEqual({
         success: true,
         data: {
           sessions: [],
@@ -455,9 +455,9 @@ describe('Session Management Middleware', () => {
 
       await getActiveSessions(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.statusCode).toBe(200);
 
-      const responseData = res.json.mock.calls[0][0];
+      const responseData = res.body;
       expect(responseData.success).toBe(true);
       expect(responseData.data.sessions).toHaveLength(2);
       expect(responseData.data.maxConcurrent).toBe(5);
@@ -472,7 +472,7 @@ describe('Session Management Middleware', () => {
 
       await getActiveSessions(req, res, next);
 
-      const responseData = res.json.mock.calls[0][0];
+      const responseData = res.body;
       const session = responseData.data.sessions[0];
 
       expect(session.token).toBeUndefined();
@@ -496,7 +496,7 @@ describe('Session Management Middleware', () => {
 
       await revokeSession(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.statusCode).toBe(401);
     });
 
     it('should return 400 when sessionId missing', async () => {
@@ -506,8 +506,8 @@ describe('Session Management Middleware', () => {
 
       await revokeSession(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
+      expect(res.statusCode).toBe(400);
+      expect(res.body).toEqual({
         success: false,
         error: 'Session ID required',
       });
@@ -522,8 +522,8 @@ describe('Session Management Middleware', () => {
 
       await revokeSession(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith({
+      expect(res.statusCode).toBe(200);
+      expect(res.body).toEqual({
         success: true,
         message: 'Session revoked successfully',
       });
@@ -542,8 +542,8 @@ describe('Session Management Middleware', () => {
 
       await revokeSession(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({
+      expect(res.statusCode).toBe(404);
+      expect(res.body).toEqual({
         success: false,
         error: 'Session not found or already revoked',
       });
@@ -560,7 +560,7 @@ describe('Session Management Middleware', () => {
 
       await revokeSession(req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.statusCode).toBe(404);
 
       // Verify user2's session still exists
       const user2Session = await prisma.refreshToken.findUnique({

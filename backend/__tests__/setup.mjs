@@ -209,26 +209,55 @@ export function mockRequest(overrides = {}) {
 }
 
 /**
- * Mock Express response object
+ * Mock Express response object (hand-rolled, no jest.fn())
+ * Tracks calls so tests can assert on statusCode, body, _headers, _clearedCookies.
  */
 export function mockResponse() {
   const res = {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis(),
-    redirect: jest.fn().mockReturnThis(),
-    setHeader: jest.fn().mockReturnThis(),
-    clearCookie: jest.fn().mockReturnThis(),
     statusCode: 200,
     headersSent: false,
+    _statusCalled: false,
+    body: undefined,
+    _headers: {},
+    _clearedCookies: [],
+    status(code) {
+      this.statusCode = code;
+      this._statusCalled = true;
+      return this;
+    },
+    json(data) {
+      this.body = data;
+      return this;
+    },
+    redirect(url) {
+      this._redirectUrl = url;
+      return this;
+    },
+    setHeader(key, value) {
+      this._headers[key] = value;
+      return this;
+    },
+    clearCookie(name) {
+      this._clearedCookies.push(name);
+      return this;
+    },
   };
   return res;
 }
 
 /**
- * Mock Express next function
+ * Mock Express next function (hand-rolled, no jest.fn())
+ * Exposes fn.called (bool) and fn.lastArg for assertions.
  */
 export function mockNext() {
-  return jest.fn();
+  let _called = false;
+  const fn = arg => {
+    _called = true;
+    fn.lastArg = arg;
+  };
+  fn.lastArg = undefined;
+  Object.defineProperty(fn, 'called', { get: () => _called });
+  return fn;
 }
 
 /**
