@@ -455,46 +455,6 @@ export const assertFamilyInvalidation = async familyId => {
 };
 
 /**
- * Mock Token Rotation Service Functions
- * Provides mock implementations for TDD RED phase
- */
-export const mockTokenRotationService = () => {
-  return {
-    generateTokenFamily: jest.fn(() => `mock-family-${randomBytes(8).toString('hex')}`),
-    createTokenPair: jest.fn(async () => ({
-      accessToken: 'mock-access-token',
-      refreshToken: 'mock-refresh-token',
-    })),
-    validateRefreshToken: jest.fn(async () => ({
-      isValid: true,
-      decoded: { userId: 'test-user', familyId: 'test-family' },
-      error: null,
-    })),
-    rotateRefreshToken: jest.fn(async () => ({
-      success: true,
-      newTokenPair: {
-        accessToken: 'new-access-token',
-        refreshToken: 'new-refresh-token',
-      },
-    })),
-    detectTokenReuse: jest.fn(async () => ({
-      isReuse: false,
-      familyId: 'test-family',
-      shouldInvalidateFamily: false,
-    })),
-    invalidateTokenFamily: jest.fn(async () => ({
-      success: true,
-      invalidatedCount: 1,
-    })),
-    cleanupExpiredTokens: jest.fn(async () => ({
-      removedCount: 0,
-      expiredCount: 0,
-      invalidatedCount: 0,
-    })),
-  };
-};
-
-/**
  * Token Security Test Helpers
  */
 export const expectTokenSecurityHeaders = response => {
