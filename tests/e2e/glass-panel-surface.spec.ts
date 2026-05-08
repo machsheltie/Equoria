@@ -56,7 +56,7 @@ test.describe('Glass Panel Surface — Story 22-4', () => {
 
   // Screenshot variant of the above — quarantined until a CI-stable
   // baseline is generated and committed (see follow-up issue).
-  test.fixme(
+  test(
     'glass-panel-subtle screenshot — all three variants visible simultaneously',
     async ({ page }) => {
       await page.goto('/', { waitUntil: 'domcontentloaded' });
@@ -111,7 +111,7 @@ test.describe('Glass Panel Surface — Story 22-4', () => {
   // CI-stable baselines requires running playwright on the CI runner image
   // (Linux + chromium) and committing the resulting .png. Tracked as a
   // follow-up issue alongside Equoria-nj0y.
-  test.fixme('login page at 1440px — glass panel over background (screenshot)', async ({ page }) => {
+  test('login page at 1440px — glass panel over background (screenshot)', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     // Go to login (unauthenticated) — uses scene="auth" PageBackground + centered glass panel
     await page.goto('/login', { waitUntil: 'domcontentloaded' });
@@ -128,7 +128,7 @@ test.describe('Glass Panel Surface — Story 22-4', () => {
    * Screenshot test — mobile viewport (375px).
    */
   // Quarantined: same baseline-missing issue as the 1440px screenshot test.
-  test.fixme('login page at 375px — glass panel responsive (screenshot)', async ({ page }) => {
+  test('login page at 375px — glass panel responsive (screenshot)', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/login', { waitUntil: 'domcontentloaded' });
 
