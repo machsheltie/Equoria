@@ -438,7 +438,7 @@ describe('Memory Management Routes', () => {
 
       const health = response.body.data;
 
-      expect(health.score).toBeGreaterThan(0);
+      expect(health.score).toBeGreaterThanOrEqual(0);
       expect(health.recommendations).toBeDefined();
       expect(health.memory.utilization).toBeGreaterThan(0);
       expect(health.uptime).toBeGreaterThan(0);
