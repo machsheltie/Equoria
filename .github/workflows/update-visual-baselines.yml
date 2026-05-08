@@ -97,12 +97,22 @@ jobs:
       - name: 'Install Playwright Browsers (chromium only)'
         run: npx playwright install --with-deps chromium
 
+      - name: 'Remove test.fixme markers for baseline generation'
+        # test.fixme() causes Playwright to skip the test body entirely — no
+        # screenshot is ever taken, so --update-snapshots produces nothing.
+        # Temporarily promote fixme → test so the screenshot body runs and
+        # generates the PNG baselines.  The spec is committed in the next step
+        # so the markers stay removed in the repo (they were only there because
+        # baselines didn't exist yet).
+        run: |
+          SPEC="${{ github.event.inputs.spec || 'tests/e2e/glass-panel-surface.spec.ts' }}"
+          sed -i 's/test\.fixme(/test(/g' "$SPEC"
+          echo "Removed test.fixme markers from $SPEC"
+          grep -n "test\.fixme" "$SPEC" || echo "(no remaining test.fixme markers)"
+
       - name: 'Generate Screenshot Baselines'
         # CI=true makes webServer start fresh servers (reuseExistingServer:false)
         # and sets workers:1, retries:2.
-        # --update-snapshots writes new baselines even for test.fixme tests —
-        # those tests still execute; they just report as "expected failure" until
-        # the fixme markers are removed in a follow-up commit.
         run: |
           npx playwright test "${{ github.event.inputs.spec || 'tests/e2e/glass-panel-surface.spec.ts' }}" \
             --update-snapshots \
@@ -115,17 +125,19 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
+          SPEC="${{ github.event.inputs.spec || 'tests/e2e/glass-panel-surface.spec.ts' }}"
+          SPEC_SHORT=$(basename "$SPEC" .spec.ts)
+
           # Stage snapshot directories (new .png files + any updates)
-          git add tests/e2e/*-snapshots/
+          # Use --ignore-errors so the command doesn't fail if a glob expands to nothing
+          git add -- tests/e2e/*-snapshots/ 2>/dev/null || true
+          # Also stage the spec (test.fixme markers have been removed)
+          git add -- "$SPEC"
 
           if git diff --staged --quiet; then
             echo "No new or changed baselines — snapshots already up to date."
           else
-            SPEC="${{ github.event.inputs.spec || 'tests/e2e/glass-panel-surface.spec.ts' }}"
-            SPEC_SHORT=$(basename "$SPEC" .spec.ts)
-            git commit -m "chore(e2e): generate Linux/chromium baselines for ${SPEC_SHORT} [skip ci]"
+            git commit -m "chore(e2e): generate Linux/chromium baselines + remove test.fixme for ${SPEC_SHORT} [skip ci]"
             git push
             echo "Baselines committed and pushed."
-            echo ""
-            echo "Next step: remove test.fixme markers from ${SPEC} and commit."
           fi
