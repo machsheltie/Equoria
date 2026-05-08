@@ -132,7 +132,7 @@ async function seedPerformanceHorses() {
       const starterStats = generateStoreStats(breed.name);
       horses.push({
         name: `PerfHorse${user.id}_${i}`,
-        sex: Math.random() > 0.5 ? 'stallion' : 'mare',
+        sex: Math.random() > 0.5 ? 'Stallion' : 'Mare',
         dateOfBirth: new Date(Date.now() - age * 7 * 24 * 60 * 60 * 1000), // Age in weeks
         breedId: breed.id,
         userId: user.id,

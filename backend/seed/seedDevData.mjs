@@ -335,8 +335,6 @@ async function seedHorses(users, breeds) {
         bondScore: randomStat(10, 60),
         totalEarnings: horseData.userIdx === 2 ? 0 : randomStat(0, 2000),
         horseXp: horseData.userIdx === 2 ? 0 : randomStat(0, 500),
-        currentFeed: 'basic',
-        energyLevel: 100,
         lastFedDate: new Date(),
         lastVettedDate: new Date(),
       },
