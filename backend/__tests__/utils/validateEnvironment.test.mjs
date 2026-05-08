@@ -3,72 +3,36 @@
  * Tests for startup environment variable validation
  *
  * SECURITY: CWE-798 (Hardcoded Credentials), CWE-321 (Weak Secrets)
+ *
+ * NO MOCKS. No spies. Tests the pure checkEnvironment(env) function
+ * which returns { errors, warnings } arrays — no process.exit or logger
+ * to intercept.
  */
 
-import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
-import logger from '../../utils/logger.mjs';
-import { validateEnvironment } from '../../utils/validateEnvironment.mjs';
-
-// Capture logger calls without jest.spyOn by temporarily replacing methods.
-// The real implementation still runs (no behavior change); we just record calls.
-function captureLogger() {
-  const captured = { error: [], warn: [], info: [] };
-  const origError = logger.error.bind(logger);
-  const origWarn = logger.warn.bind(logger);
-  const origInfo = logger.info.bind(logger);
-
-  logger.error = (...args) => {
-    captured.error.push(args);
-  };
-  logger.warn = (...args) => {
-    captured.warn.push(args);
-  };
-  logger.info = (...args) => {
-    captured.info.push(args);
-  };
-
-  return {
-    captured,
-    restore() {
-      logger.error = origError;
-      logger.warn = origWarn;
-      logger.info = origInfo;
-    },
-  };
-}
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { checkEnvironment } from '../../utils/validateEnvironment.mjs';
 
 describe('validateEnvironment()', () => {
   let originalEnv;
-  let processExitSpy;
-  let logCapture;
 
   beforeEach(() => {
     originalEnv = { ...process.env };
-    // process.exit is a Node global builtin — spy required to prevent the
-    // test runner from terminating. This is exempt from the no-mocks doctrine
-    // (see unit/security/validate-environment.test.mjs for full rationale).
-    processExitSpy = jest.spyOn(process, 'exit').mockImplementation();
-    logCapture = captureLogger();
   });
 
   afterEach(() => {
     process.env = originalEnv;
-    processExitSpy.mockRestore();
-    logCapture.restore();
   });
 
   describe('Required variables validation', () => {
     it('should pass with all required variables present', () => {
       process.env.DATABASE_URL = 'postgresql://user:strongpassword123@localhost:5432/equoria';
       process.env.JWT_SECRET = 'a'.repeat(32);
-      process.env.JWT_REFRESH_SECRET = 'b'.repeat(32); // 32 character secret
       process.env.JWT_REFRESH_SECRET = 'b'.repeat(32);
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
-      validateEnvironment();
-
-      expect(processExitSpy).not.toHaveBeenCalled();
+      const { errors } = checkEnvironment(process.env);
+      expect(errors).toHaveLength(0);
     });
 
     it('should fail when DATABASE_URL is missing', () => {
@@ -78,11 +42,8 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
-      validateEnvironment();
-
-      const allErrors = logCapture.captured.error.map(call => call[0]).join(' ');
-      expect(allErrors).toContain('Missing required environment variable: DATABASE_URL');
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      const { errors } = checkEnvironment(process.env);
+      expect(errors.join(' ')).toContain('Missing required environment variable: DATABASE_URL');
     });
 
     it('should fail when JWT_SECRET is missing', () => {
@@ -91,11 +52,8 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
-      validateEnvironment();
-
-      const allErrors = logCapture.captured.error.map(call => call[0]).join(' ');
-      expect(allErrors).toContain('Missing required environment variable: JWT_SECRET');
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      const { errors } = checkEnvironment(process.env);
+      expect(errors.join(' ')).toContain('Missing required environment variable: JWT_SECRET');
     });
 
     it('should fail when NODE_ENV is missing', () => {
@@ -105,11 +63,8 @@ describe('validateEnvironment()', () => {
       delete process.env.NODE_ENV;
       process.env.PORT = '3000';
 
-      validateEnvironment();
-
-      const allErrors = logCapture.captured.error.map(call => call[0]).join(' ');
-      expect(allErrors).toContain('Missing required environment variable: NODE_ENV');
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      const { errors } = checkEnvironment(process.env);
+      expect(errors.join(' ')).toContain('Missing required environment variable: NODE_ENV');
     });
 
     it('should fail when PORT is missing', () => {
@@ -119,11 +74,8 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'development';
       delete process.env.PORT;
 
-      validateEnvironment();
-
-      const allErrors = logCapture.captured.error.map(call => call[0]).join(' ');
-      expect(allErrors).toContain('Missing required environment variable: PORT');
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      const { errors } = checkEnvironment(process.env);
+      expect(errors.join(' ')).toContain('Missing required environment variable: PORT');
     });
   });
 
@@ -135,11 +87,8 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
-      validateEnvironment();
-
-      const allErrors = logCapture.captured.error.map(call => call[0]).join(' ');
-      expect(allErrors).toContain('DATABASE_URL must be at least 20 characters');
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      const { errors } = checkEnvironment(process.env);
+      expect(errors.join(' ')).toContain('DATABASE_URL must be at least 20 characters');
     });
 
     it('should fail when JWT_SECRET is too short (<32 chars)', () => {
@@ -148,11 +97,8 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
-      validateEnvironment();
-
-      const allErrors = logCapture.captured.error.map(call => call[0]).join(' ');
-      expect(allErrors).toContain('JWT_SECRET must be at least 32 characters');
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      const { errors } = checkEnvironment(process.env);
+      expect(errors.join(' ')).toContain('JWT_SECRET must be at least 32 characters');
     });
 
     it('should pass when JWT_SECRET is exactly 32 characters', () => {
@@ -162,9 +108,8 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
-      validateEnvironment();
-
-      expect(processExitSpy).not.toHaveBeenCalled();
+      const { errors } = checkEnvironment(process.env);
+      expect(errors).toHaveLength(0);
     });
   });
 
@@ -176,9 +121,8 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
-      validateEnvironment();
-
-      expect(processExitSpy).not.toHaveBeenCalled();
+      const { errors } = checkEnvironment(process.env);
+      expect(errors).toHaveLength(0);
     });
 
     it('should pass when NODE_ENV is "production"', () => {
@@ -188,9 +132,8 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'production';
       process.env.PORT = '3000';
 
-      validateEnvironment();
-
-      expect(processExitSpy).not.toHaveBeenCalled();
+      const { errors } = checkEnvironment(process.env);
+      expect(errors).toHaveLength(0);
     });
 
     it('should pass when NODE_ENV is "test"', () => {
@@ -200,9 +143,8 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'test';
       process.env.PORT = '3000';
 
-      validateEnvironment();
-
-      expect(processExitSpy).not.toHaveBeenCalled();
+      const { errors } = checkEnvironment(process.env);
+      expect(errors).toHaveLength(0);
     });
 
     it('should pass when NODE_ENV is "beta-readiness"', () => {
@@ -212,9 +154,8 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'beta-readiness';
       process.env.PORT = '3001';
 
-      validateEnvironment();
-
-      expect(processExitSpy).not.toHaveBeenCalled();
+      const { errors } = checkEnvironment(process.env);
+      expect(errors).toHaveLength(0);
     });
 
     it('should fail when NODE_ENV is invalid', () => {
@@ -224,11 +165,10 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'staging'; // Not in allowed list
       process.env.PORT = '3000';
 
-      validateEnvironment();
-
-      const allErrors = logCapture.captured.error.map(call => call[0]).join(' ');
-      expect(allErrors).toContain('NODE_ENV must be one of: development, production, test, beta, beta-readiness');
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      const { errors } = checkEnvironment(process.env);
+      expect(errors.join(' ')).toContain(
+        'NODE_ENV must be one of: development, production, test, beta, beta-readiness',
+      );
     });
   });
 
@@ -240,9 +180,8 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
-      validateEnvironment();
-
-      expect(processExitSpy).not.toHaveBeenCalled();
+      const { errors } = checkEnvironment(process.env);
+      expect(errors).toHaveLength(0);
     });
 
     it('should fail when PORT is not a number', () => {
@@ -252,11 +191,8 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'development';
       process.env.PORT = 'not-a-number';
 
-      validateEnvironment();
-
-      const allErrors = logCapture.captured.error.map(call => call[0]).join(' ');
-      expect(allErrors).toContain('PORT must be a number');
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      const { errors } = checkEnvironment(process.env);
+      expect(errors.join(' ')).toContain('PORT must be a number');
     });
   });
 
@@ -267,11 +203,8 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
-      validateEnvironment();
-
-      const allErrors = logCapture.captured.error.map(call => call[0]).join(' ');
-      expect(allErrors).toContain('JWT_SECRET appears to be a placeholder value');
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      const { errors } = checkEnvironment(process.env);
+      expect(errors.join(' ')).toContain('JWT_SECRET appears to be a placeholder value');
     });
 
     it('should reject placeholder "change-this"', () => {
@@ -280,11 +213,8 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
-      validateEnvironment();
-
-      const allErrors = logCapture.captured.error.map(call => call[0]).join(' ');
-      expect(allErrors).toContain('JWT_SECRET appears to be a placeholder value');
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      const { errors } = checkEnvironment(process.env);
+      expect(errors.join(' ')).toContain('JWT_SECRET appears to be a placeholder value');
     });
 
     it('should reject placeholder "REPLACE_WITH"', () => {
@@ -293,11 +223,8 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
-      validateEnvironment();
-
-      const allErrors = logCapture.captured.error.map(call => call[0]).join(' ');
-      expect(allErrors).toContain('JWT_SECRET appears to be a placeholder value');
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      const { errors } = checkEnvironment(process.env);
+      expect(errors.join(' ')).toContain('JWT_SECRET appears to be a placeholder value');
     });
 
     it('should reject placeholder "example"', () => {
@@ -306,11 +233,8 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
-      validateEnvironment();
-
-      const allErrors = logCapture.captured.error.map(call => call[0]).join(' ');
-      expect(allErrors).toContain('JWT_SECRET appears to be a placeholder value');
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      const { errors } = checkEnvironment(process.env);
+      expect(errors.join(' ')).toContain('JWT_SECRET appears to be a placeholder value');
     });
 
     it('should warn when JWT_SECRET lacks character variety (line 72)', () => {
@@ -320,11 +244,9 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
-      validateEnvironment();
-
-      const allWarnings = logCapture.captured.warn.map(call => call[0]).join(' ');
-      expect(allWarnings).toContain('JWT_SECRET should contain a mix of characters');
-      expect(processExitSpy).not.toHaveBeenCalled(); // Warning, not error
+      const { errors, warnings } = checkEnvironment(process.env);
+      expect(warnings.join(' ')).toContain('JWT_SECRET should contain a mix of characters');
+      expect(errors).toHaveLength(0);
     });
   });
 
@@ -336,9 +258,8 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
-      validateEnvironment();
-
-      expect(processExitSpy).not.toHaveBeenCalled();
+      const { errors } = checkEnvironment(process.env);
+      expect(errors).toHaveLength(0);
     });
 
     it('should pass with postgres:// prefix', () => {
@@ -348,9 +269,8 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
-      validateEnvironment();
-
-      expect(processExitSpy).not.toHaveBeenCalled();
+      const { errors } = checkEnvironment(process.env);
+      expect(errors).toHaveLength(0);
     });
 
     it('should fail without postgresql prefix', () => {
@@ -360,11 +280,8 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
-      validateEnvironment();
-
-      const allErrors = logCapture.captured.error.map(call => call[0]).join(' ');
-      expect(allErrors).toContain('DATABASE_URL must start with postgresql:// or postgres://');
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      const { errors } = checkEnvironment(process.env);
+      expect(errors.join(' ')).toContain('DATABASE_URL must start with postgresql:// or postgres://');
     });
 
     it('should reject weak password "password"', () => {
@@ -374,11 +291,8 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
-      validateEnvironment();
-
-      const allErrors = logCapture.captured.error.map(call => call[0]).join(' ');
-      expect(allErrors).toContain('DATABASE_URL contains a weak password');
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      const { errors } = checkEnvironment(process.env);
+      expect(errors.join(' ')).toContain('DATABASE_URL contains a weak password');
     });
 
     it('should reject weak password "admin"', () => {
@@ -388,11 +302,8 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
-      validateEnvironment();
-
-      const allErrors = logCapture.captured.error.map(call => call[0]).join(' ');
-      expect(allErrors).toContain('DATABASE_URL contains a weak password');
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      const { errors } = checkEnvironment(process.env);
+      expect(errors.join(' ')).toContain('DATABASE_URL contains a weak password');
     });
 
     it('should reject weak password "123456"', () => {
@@ -402,11 +313,8 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
-      validateEnvironment();
-
-      const allErrors = logCapture.captured.error.map(call => call[0]).join(' ');
-      expect(allErrors).toContain('DATABASE_URL contains a weak password');
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      const { errors } = checkEnvironment(process.env);
+      expect(errors.join(' ')).toContain('DATABASE_URL contains a weak password');
     });
 
     it('should reject weak password "postgres"', () => {
@@ -416,11 +324,8 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'development';
       process.env.PORT = '3000';
 
-      validateEnvironment();
-
-      const allErrors = logCapture.captured.error.map(call => call[0]).join(' ');
-      expect(allErrors).toContain('DATABASE_URL contains a weak password');
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      const { errors } = checkEnvironment(process.env);
+      expect(errors.join(' ')).toContain('DATABASE_URL contains a weak password');
     });
   });
 
@@ -436,56 +341,42 @@ describe('validateEnvironment()', () => {
     it('should warn about HTTP origins in production', () => {
       process.env.ALLOWED_ORIGINS = 'http://example.com,https://secure.com';
 
-      validateEnvironment();
-
-      const allWarnings = logCapture.captured.warn.map(call => call[0]).join(' ');
-      expect(allWarnings).toContain('ALLOWED_ORIGINS contains HTTP URLs in production');
-      expect(processExitSpy).not.toHaveBeenCalled(); // Warning, not error
+      const { errors, warnings } = checkEnvironment(process.env);
+      expect(warnings.join(' ')).toContain('ALLOWED_ORIGINS contains HTTP URLs in production');
+      expect(errors).toHaveLength(0);
     });
 
     it('should NOT warn about HTTPS origins in production', () => {
       process.env.ALLOWED_ORIGINS = 'https://example.com,https://secure.com';
 
-      validateEnvironment();
-
-      const warnMessages = logCapture.captured.warn.map(call => call[0]);
-      const httpsWarningCall = warnMessages.find(msg => msg.includes('ALLOWED_ORIGINS contains HTTP URLs'));
-      expect(httpsWarningCall).toBeUndefined();
+      const { warnings } = checkEnvironment(process.env);
+      const httpsWarning = warnings.find(w => w.includes('ALLOWED_ORIGINS contains HTTP URLs'));
+      expect(httpsWarning).toBeUndefined();
     });
 
     it('should warn about PORT 80 in production', () => {
       process.env.PORT = '80';
 
-      validateEnvironment();
-
-      const allWarnings = logCapture.captured.warn.map(call => call[0]).join(' ');
-      expect(allWarnings).toContain('PORT is set to 80 (HTTP) in production');
-      expect(processExitSpy).not.toHaveBeenCalled(); // Warning, not error
+      const { errors, warnings } = checkEnvironment(process.env);
+      expect(warnings.join(' ')).toContain('PORT is set to 80 (HTTP) in production');
+      expect(errors).toHaveLength(0);
     });
 
     it('should NOT warn about PORT 443 in production', () => {
       process.env.PORT = '443';
 
-      validateEnvironment();
-
-      const warnMessages = logCapture.captured.warn.map(call => call[0]);
-      const portWarningCall = warnMessages.find(msg => msg.includes('PORT is set to 80'));
-      expect(portWarningCall).toBeUndefined();
+      const { warnings } = checkEnvironment(process.env);
+      const portWarning = warnings.find(w => w.includes('PORT is set to 80'));
+      expect(portWarning).toBeUndefined();
     });
 
     it('should skip origin checks when ALLOWED_ORIGINS is unset in production', () => {
-      // Branch coverage: `if (process.env.ALLOWED_ORIGINS)` falsy path.
-      // The previous tests always set the var to `http://...` or
-      // `https://...`; the unset case wasn't exercised, leaving the
-      // branch uncovered (validateEnvironment.mjs line 94).
       delete process.env.ALLOWED_ORIGINS;
 
-      validateEnvironment();
-
-      const warnMessages = logCapture.captured.warn.map(call => call[0]);
-      const originWarning = warnMessages.find(msg => msg.includes('ALLOWED_ORIGINS contains HTTP URLs'));
+      const { errors, warnings } = checkEnvironment(process.env);
+      const originWarning = warnings.find(w => w.includes('ALLOWED_ORIGINS contains HTTP URLs'));
       expect(originWarning).toBeUndefined();
-      expect(processExitSpy).not.toHaveBeenCalled();
+      expect(errors).toHaveLength(0);
     });
   });
 
@@ -497,19 +388,15 @@ describe('validateEnvironment()', () => {
       process.env.NODE_ENV = 'invalid'; // Invalid value
       process.env.PORT = 'notanumber'; // Invalid type
 
-      validateEnvironment();
+      const { errors } = checkEnvironment(process.env);
+      const allErrors = errors.join(' ');
 
-      // Check that all errors were logged
-      const allErrors = logCapture.captured.error.map(call => call[0]).join(' ');
-
-      expect(allErrors).toContain('Environment validation failed');
+      expect(errors.length).toBeGreaterThan(0);
       expect(allErrors).toContain('DATABASE_URL must be at least 20 characters');
       expect(allErrors).toContain('JWT_SECRET must be at least 32 characters');
       expect(allErrors).toContain('JWT_REFRESH_SECRET must be at least 32 characters');
       expect(allErrors).toContain('NODE_ENV must be one of');
       expect(allErrors).toContain('PORT must be a number');
-
-      expect(processExitSpy).toHaveBeenCalledWith(1);
     });
   });
 
@@ -524,11 +411,8 @@ describe('validateEnvironment()', () => {
       process.env.JWT_REFRESH_SECRET = 'StrongRefreshSecret1234567890ABCD';
       process.env.NODE_ENV = 'beta';
 
-      validateEnvironment();
-
-      const allErrors = logCapture.captured.error.map(call => call[0]).join(' ');
-      expect(allErrors).toContain('JWT_SECRET uses a committed test-only secret');
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      const { errors } = checkEnvironment(process.env);
+      expect(errors.join(' ')).toContain('JWT_SECRET uses a committed test-only secret');
     });
 
     it('should fail in beta-readiness when JWT_REFRESH_SECRET uses the committed test-only value', () => {
@@ -536,11 +420,8 @@ describe('validateEnvironment()', () => {
       process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret-for-testing-only-32chars';
       process.env.NODE_ENV = 'beta-readiness';
 
-      validateEnvironment();
-
-      const allErrors = logCapture.captured.error.map(call => call[0]).join(' ');
-      expect(allErrors).toContain('JWT_REFRESH_SECRET uses a committed test-only secret');
-      expect(processExitSpy).toHaveBeenCalledWith(1);
+      const { errors } = checkEnvironment(process.env);
+      expect(errors.join(' ')).toContain('JWT_REFRESH_SECRET uses a committed test-only secret');
     });
 
     it('should allow test-only secrets in NODE_ENV=test', () => {
@@ -548,9 +429,8 @@ describe('validateEnvironment()', () => {
       process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret-for-testing-only-32chars';
       process.env.NODE_ENV = 'test';
 
-      validateEnvironment();
-
-      expect(processExitSpy).not.toHaveBeenCalled();
+      const { errors } = checkEnvironment(process.env);
+      expect(errors).toHaveLength(0);
     });
   });
 });

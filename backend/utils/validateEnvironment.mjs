@@ -15,42 +15,41 @@ const REQUIRED_ENV_VARS = [
 ];
 
 /**
- * Validates environment variables at application startup
- * Fails fast if required variables are missing or invalid
- * @throws {Error} If validation fails (calls process.exit(1))
+ * Pure validation function — no side effects.
+ * Returns { errors, warnings } arrays so callers can assert on them directly
+ * without intercepting process.exit or logger.
+ * @param {object} env - environment object to validate (defaults to process.env)
+ * @returns {{ errors: string[], warnings: string[] }}
  */
-export function validateEnvironment() {
+export function checkEnvironment(env = process.env) {
   const errors = [];
+  const warnings = [];
 
   for (const { name, minLength, values, type } of REQUIRED_ENV_VARS) {
-    const value = process.env[name];
+    const value = env[name];
 
-    // Check existence
     if (!value) {
       errors.push(`Missing required environment variable: ${name}`);
       continue;
     }
 
-    // Check minimum length
     if (minLength && value.length < minLength) {
       errors.push(`${name} must be at least ${minLength} characters (current: ${value.length})`);
     }
 
-    // Check allowed values
     if (values && !values.includes(value)) {
       errors.push(`${name} must be one of: ${values.join(', ')} (current: ${value})`);
     }
 
-    // Check type
     if (type === 'number' && isNaN(Number(value))) {
       errors.push(`${name} must be a number (current: ${value})`);
     }
   }
 
-  // Additional validation: JWT secret strength and deployable secret policy
+  // JWT secret strength and deployable secret policy
   for (const secretName of ['JWT_SECRET', 'JWT_REFRESH_SECRET']) {
-    const secret = process.env[secretName];
-    const secretError = getSecretValidationError(secretName, secret, process.env.NODE_ENV);
+    const secret = env[secretName];
+    const secretError = getSecretValidationError(secretName, secret, env.NODE_ENV);
     if (secretError) {
       errors.push(secretError);
     }
@@ -59,29 +58,24 @@ export function validateEnvironment() {
       continue;
     }
 
-    // Check complexity (should have mix of characters)
     const hasUpperCase = /[A-Z]/.test(secret);
     const hasLowerCase = /[a-z]/.test(secret);
     const hasNumber = /[0-9]/.test(secret);
 
     if (secret.length >= 32 && !(hasUpperCase || hasLowerCase || hasNumber)) {
-      logger.warn(
-        `[validateEnvironment] ${secretName} should contain a mix of characters for better entropy`,
-      );
+      warnings.push(`${secretName} should contain a mix of characters for better entropy`);
     }
   }
 
-  // Additional validation: DATABASE_URL format
-  if (process.env.DATABASE_URL) {
-    const dbUrl = process.env.DATABASE_URL;
+  // DATABASE_URL format validation
+  if (env.DATABASE_URL) {
+    const dbUrl = env.DATABASE_URL;
 
     if (!dbUrl.startsWith('postgresql://') && !dbUrl.startsWith('postgres://')) {
       errors.push('DATABASE_URL must start with postgresql:// or postgres://');
     }
 
-    // Check for common weak passwords in URL
     const weakPasswords = ['password', 'admin', '123456', 'postgres'];
-    // Match password in format: postgresql://user:password@host
     const urlMatch = dbUrl.match(/\/\/[^:]+:([^@]+)@/);
     if (urlMatch) {
       const password = urlMatch[1];
@@ -91,35 +85,38 @@ export function validateEnvironment() {
     }
   }
 
-  // Additional validation: HTTPS enforcement in production (CWE-319)
-  if (process.env.NODE_ENV === 'production') {
-    // Warn if ALLOWED_ORIGINS contains non-HTTPS URLs
-    if (process.env.ALLOWED_ORIGINS) {
-      const origins = process.env.ALLOWED_ORIGINS.split(',');
+  // HTTPS enforcement warnings in production (CWE-319)
+  if (env.NODE_ENV === 'production') {
+    if (env.ALLOWED_ORIGINS) {
+      const origins = env.ALLOWED_ORIGINS.split(',');
       const httpOrigins = origins.filter(origin => origin.startsWith('http://'));
 
       if (httpOrigins.length > 0) {
-        logger.warn(
-          '[validateEnvironment] SECURITY WARNING: ALLOWED_ORIGINS contains HTTP URLs in production',
-        );
-        logger.warn(`  HTTP origins detected: ${httpOrigins.join(', ')}`);
-        logger.warn('  These should be HTTPS in production to prevent man-in-the-middle attacks');
-        // Don't fail, just warn - some reverse proxies handle HTTPS termination
+        warnings.push('ALLOWED_ORIGINS contains HTTP URLs in production');
       }
     }
 
-    // Check if PORT is set to default HTTP (80) or HTTPS (443).
-    // PORT is enforced as a required variable above, so process.env.PORT
-    // is guaranteed non-empty by the time we reach this branch — no
-    // defensive `|| '3000'` fallback (which was unreachable dead code).
-    const port = parseInt(process.env.PORT, 10);
+    const port = parseInt(env.PORT, 10);
     if (port === 80) {
-      logger.warn('[validateEnvironment] SECURITY WARNING: PORT is set to 80 (HTTP) in production');
-      logger.warn('  Consider using HTTPS (443) or a reverse proxy with HTTPS termination');
+      warnings.push('PORT is set to 80 (HTTP) in production');
     }
   }
 
-  // Log results
+  return { errors, warnings };
+}
+
+/**
+ * Validates environment variables at application startup.
+ * Thin wrapper around checkEnvironment() that handles logging and process.exit.
+ * @throws {never} Calls process.exit(1) if validation fails
+ */
+export function validateEnvironment() {
+  const { errors, warnings } = checkEnvironment();
+
+  for (const warning of warnings) {
+    logger.warn(`[validateEnvironment] SECURITY WARNING: ${warning}`);
+  }
+
   if (errors.length > 0) {
     logger.error('❌ Environment validation failed:');
     errors.forEach(err => logger.error(`  - ${err}`));
