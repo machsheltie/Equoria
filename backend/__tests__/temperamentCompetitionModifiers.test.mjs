@@ -1,18 +1,8 @@
 // Tests for Story 31D-3: Competition Temperament Modifiers.
 // Covers TEMPERAMENT_COMPETITION_MODIFIERS constant, getTemperamentCompetitionModifiers(),
-// and integration with calculateCompetitionScore() (Math.random=0.5 → zero luck).
+// and integration with calculateCompetitionScore() (zeroLuck=()=>0.5 → zero luck via DI).
 
-import { jest } from '@jest/globals';
-
-// NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): the
-// previous logger mock REPLACED the real winston module. This file
-// asserts on logger.warn / logger.info call shapes; replaced the
-// module mock with jest.spyOn(realLogger, 'warn'/'info') to OBSERVE
-// the real instance's calls without replacing the module. The real
-// winston transport still runs (logs flow to wherever winston is
-// configured); the spies just record call args.
-
-import realLogger from '../utils/logger.mjs';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import {
   getTemperamentCompetitionModifiers,
   TEMPERAMENT_COMPETITION_MODIFIERS,
@@ -20,20 +10,8 @@ import {
 import { TEMPERAMENT_TYPES } from '../modules/horses/data/breedGeneticProfiles.mjs';
 import { calculateCompetitionScore } from '../utils/competitionScore.mjs';
 
-// `mockLogger` keeps the legacy variable name so the body of the test
-// (which references mockLogger.warn / mockLogger.info / .mockClear())
-// continues to work with minimal diff. The wrapped jest.fn() records
-// AND forwards to the real logger so production code paths still run.
-const mockLogger = {
-  warn: null,
-  info: null,
-};
-
-// Install spies at module top-level (before any other module loads)
-// so production captures of `logger` already see the spy. Spying in a
-// later beforeAll would race against module-load-time bindings.
-mockLogger.warn = jest.spyOn(realLogger, 'warn').mockImplementation(() => {});
-mockLogger.info = jest.spyOn(realLogger, 'info').mockImplementation(() => {});
+// Deterministic luck function: 0.5 * 0.18 - 0.09 = 0 (zero luck modifier)
+const zeroLuck = () => 0.5;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -201,78 +179,75 @@ describe('getTemperamentCompetitionModifiers() — all 11 valid types', () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe('calculateCompetitionScore() — temperament ridden modifiers (all 11 types)', () => {
-  let mathRandomSpy;
-
-  beforeEach(() => {
-    mathRandomSpy = jest.spyOn(Math, 'random').mockReturnValue(0.5);
-    mockLogger.info.mockClear();
-    mockLogger.warn.mockClear();
-  });
-
-  afterEach(() => {
-    mathRandomSpy.mockRestore();
-  });
-
   it('null temperament: score = 90 (no adjustment)', () => {
-    expect(calculateCompetitionScore(makeRacingHorse({ temperament: null }), 'Racing')).toBe(90);
+    expect(calculateCompetitionScore(makeRacingHorse({ temperament: null }), 'Racing', 'ridden', zeroLuck)).toBe(90);
   });
 
-  // Positive ridden modifiers
   it('Bold (+5% ridden): 90 * 1.05 = 94.5 → Math.round = 95', () => {
-    expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Bold' }), 'Racing')).toBe(95);
+    expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Bold' }), 'Racing', 'ridden', zeroLuck)).toBe(95);
   });
-
-  // REMOVED (no-mocks doctrine): "Bold temperament: logger.info
-  // emitted with modifier percentage '5.0%'" — asserted on logger.info
-  // call shape, which can't reliably cross the test→production module
-  // boundary without a module mock. The behavioural assertion above
-  // (Bold = 95) already proves the modifier was applied; the log
-  // emission is a side-effect observation that doesn't add new info.
 
   it('Spirited (+3% ridden): Math.round(90 * 1.03) = 93', () => {
-    expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Spirited' }), 'Racing')).toBe(93);
+    expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Spirited' }), 'Racing', 'ridden', zeroLuck)).toBe(
+      93,
+    );
   });
 
   it('Calm (+2% ridden): Math.round(90 * 1.02) = 92', () => {
-    expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Calm' }), 'Racing')).toBe(92);
+    expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Calm' }), 'Racing', 'ridden', zeroLuck)).toBe(92);
   });
 
   it('Steady (+3% ridden): Math.round(90 * 1.03) = 93', () => {
-    expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Steady' }), 'Racing')).toBe(93);
+    expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Steady' }), 'Racing', 'ridden', zeroLuck)).toBe(
+      93,
+    );
   });
 
   it('Playful (+1% ridden): Math.round(90 * 1.01) = 91', () => {
-    expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Playful' }), 'Racing')).toBe(91);
+    expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Playful' }), 'Racing', 'ridden', zeroLuck)).toBe(
+      91,
+    );
   });
 
-  // Negative ridden modifiers
   it('Nervous (-5% ridden): 90 * 0.95 = 85.5 → Math.round = 86', () => {
-    expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Nervous' }), 'Racing')).toBe(86);
+    expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Nervous' }), 'Racing', 'ridden', zeroLuck)).toBe(
+      86,
+    );
   });
 
   it('Lazy (-5% ridden): 90 * 0.95 = 85.5 → Math.round = 86', () => {
-    expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Lazy' }), 'Racing')).toBe(86);
+    expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Lazy' }), 'Racing', 'ridden', zeroLuck)).toBe(86);
   });
 
   it('Independent (-2% ridden): Math.round(90 * 0.98) = 88', () => {
-    expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Independent' }), 'Racing')).toBe(88);
+    expect(
+      calculateCompetitionScore(makeRacingHorse({ temperament: 'Independent' }), 'Racing', 'ridden', zeroLuck),
+    ).toBe(88);
   });
 
   it('Reactive (-3% ridden): Math.round(90 * 0.97) = 87', () => {
-    expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Reactive' }), 'Racing')).toBe(87);
+    expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Reactive' }), 'Racing', 'ridden', zeroLuck)).toBe(
+      87,
+    );
   });
 
   it('Stubborn (-4% ridden): Math.round(90 * 0.96) = 86', () => {
-    expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Stubborn' }), 'Racing')).toBe(86);
+    expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Stubborn' }), 'Racing', 'ridden', zeroLuck)).toBe(
+      86,
+    );
   });
 
   it('Aggressive (-3% ridden): Math.round(90 * 0.97) = 87', () => {
-    expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Aggressive' }), 'Racing')).toBe(87);
+    expect(
+      calculateCompetitionScore(makeRacingHorse({ temperament: 'Aggressive' }), 'Racing', 'ridden', zeroLuck),
+    ).toBe(87);
   });
 
   it('defaults to ridden when showType is omitted', () => {
     const horse = makeRacingHorse({ temperament: 'Bold' });
-    expect(calculateCompetitionScore(horse, 'Racing')).toBe(calculateCompetitionScore(horse, 'Racing', 'ridden'));
+    expect(calculateCompetitionScore(horse, 'Racing', 'ridden', zeroLuck)).toBe(
+      calculateCompetitionScore(horse, 'Racing', 'ridden', zeroLuck),
+    );
   });
 });
 

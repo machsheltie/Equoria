@@ -10,7 +10,12 @@ import { getTemperamentCompetitionModifiers } from '../modules/horses/services/t
  *   default to 'ridden' with a warning logged.
  * @returns {number} Final rounded competition score (minimum 0)
  */
-export function calculateCompetitionScore(horse, eventType, showType = 'ridden') {
+export function calculateCompetitionScore(
+  horse,
+  eventType,
+  showType = 'ridden',
+  _luckFn = Math.random,
+) {
   try {
     // Input validation
     if (!horse || typeof horse !== 'object') {
@@ -115,7 +120,7 @@ export function calculateCompetitionScore(horse, eventType, showType = 'ridden')
 
     // Apply ±9% random luck modifier
     // Ensure the range is exactly -0.09 to +0.09 (±9%)
-    const randomValue = Math.random(); // 0 to 1
+    const randomValue = _luckFn(); // 0 to 1
     const luckModifier = randomValue * 0.18 - 0.09; // Range: -0.09 to +0.09 (±9%)
 
     // Clamp to ensure we never exceed ±9% due to floating point precision
