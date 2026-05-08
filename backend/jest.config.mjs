@@ -50,17 +50,23 @@ export default {
   // Coverage configuration
   collectCoverage: false, // Enable with --coverage flag
   collectCoverageFrom: [
-    '**/*.{js,mjs}',
+    '**/*.mjs',
     '!**/node_modules/**',
     '!**/coverage/**',
+    '!**/__tests__/**',
     '!**/tests/**',
     '!**/examples/**',
     '!**/docs/**',
     '!**/migrations/**',
     '!**/seed/**',
+    '!**/scripts/**',
     '!jest.config.mjs',
+    '!jest.config.*.mjs',
     '!eslint.config.mjs',
-    '!server.mjs', // Server startup file
+    '!server.mjs',
+    '!jest.setup.mjs',
+    '!tests/globalSetup.mjs',
+    '!tests/teardown.mjs',
   ],
 
   coverageDirectory: 'coverage',

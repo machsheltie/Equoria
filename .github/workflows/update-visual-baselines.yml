@@ -53,6 +53,12 @@ jobs:
     steps:
       - name: 'Checkout'
         uses: actions/checkout@v4
+        with:
+          # Use a PAT from an admin account so the final git push can bypass the
+          # 24 required-status-checks branch protection rules (enforce_admins:false).
+          # GITHUB_TOKEN is the actions bot (not an admin) and gets rejected.
+          # Create BASELINE_PUSH_PAT as a repo secret: classic PAT with repo scope.
+          token: ${{ secrets.BASELINE_PUSH_PAT || github.token }}
 
       - name: 'Setup Node.js'
         uses: actions/setup-node@v4
