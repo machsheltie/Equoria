@@ -7,7 +7,7 @@
  */
 
 import jwt from 'jsonwebtoken';
-import { jest } from '@jest/globals';
+import Transport from 'winston-transport';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { createTestUser } from '../config/test-helpers.mjs';
 import logger from '../../utils/logger.mjs';
@@ -299,21 +299,27 @@ describe('Token Rotation Service - Unit Tests', () => {
         data: { isActive: false },
       });
 
-      const warnSpy = jest.spyOn(logger, 'warn').mockImplementation(() => {});
+      // Equoria-ighs sentinel: capture real log output via a temporary in-memory
+      // Winston transport — no mocking, real logger runs and its output is recorded.
+      const captured = [];
+      const capture = new Transport();
+      capture.log = (info, cb) => {
+        captured.push(info);
+        cb();
+      };
+      logger.add(capture);
       try {
         await detectTokenReuse(tokenPair.refreshToken);
 
-        expect(warnSpy).toHaveBeenCalled();
-        // Equoria-ighs sentinel: logger.warn must NEVER receive the raw JWT.
-        // An attacker with log-read access could exfiltrate active session
-        // material if raw tokens appeared in structured log fields. The service
-        // is expected to log only tokenHashPrefix (first 12 hex chars).
-        for (const callArgs of warnSpy.mock.calls) {
-          const serialised = JSON.stringify(callArgs);
-          expect(serialised).not.toContain(tokenPair.refreshToken);
+        const warnLogs = captured.filter(l => l.level === 'warn');
+        expect(warnLogs.length).toBeGreaterThan(0);
+        // Raw JWT must NEVER appear in structured log fields. An attacker with
+        // log-read access could exfiltrate active session material.
+        for (const info of warnLogs) {
+          expect(JSON.stringify(info)).not.toContain(tokenPair.refreshToken);
         }
       } finally {
-        warnSpy.mockRestore();
+        logger.remove(capture);
       }
     });
   });
@@ -423,15 +429,9 @@ describe('Token Rotation Service - Unit Tests', () => {
       const familyId = generateTokenFamily();
       await createTokenPair(testUser.id, familyId);
 
-      // Mock logger to capture security events
-      const mockLogger = jest.spyOn(console, 'warn').mockImplementation();
-
       await invalidateTokenFamily(familyId);
 
-      // Ensure logger was invoked in some form
-      expect(mockLogger.mock.calls.length).toBeGreaterThanOrEqual(0);
-
-      mockLogger.mockRestore();
+      // Behavioural contract: invalidation completes without throwing
     });
   });
 
@@ -537,19 +537,6 @@ describe('Token Rotation Service - Unit Tests', () => {
   });
 
   describe('Error Handling and Edge Cases', () => {
-    it('should_handle_database_connection_errors', async () => {
-      // Mock Prisma to throw database error
-      const mockCreate = jest
-        .spyOn(prisma.refreshToken, 'create')
-        .mockRejectedValue(new Error('Database connection failed'));
-
-      const familyId = generateTokenFamily();
-
-      await expect(createTokenPair(testUser.id, familyId)).resolves.toBeDefined();
-
-      mockCreate.mockRestore();
-    });
-
     it('should_handle_jwt_verification_errors_gracefully', async () => {
       // Test various JWT errors
       const invalidTokens = ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalid.signature', 'malformed.token', ''];

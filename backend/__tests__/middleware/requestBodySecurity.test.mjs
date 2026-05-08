@@ -23,7 +23,7 @@
  * REAL exported functions on a real prototype-polluting payload.
  */
 
-import { describe, it, expect, jest } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 import {
   RequestBodySecurityError,
   REQUEST_BODY_SECURITY_ERROR_MARKER,
@@ -37,10 +37,20 @@ import { AppError } from '../../errors/index.mjs';
 // Express-style middleware harness. We don't need a real Request/Response;
 // the middlewares only read req.{body,query,url}, and the error handler
 // writes via res.status().json() and signals forward via next().
+function makeTracked(returnValue) {
+  const calls = [];
+  const fn = (...args) => {
+    calls.push(args);
+    return returnValue;
+  };
+  fn.mock = { calls };
+  return fn;
+}
+
 const harness = ({ body, query, url } = {}) => {
   const res = {};
-  res.status = jest.fn().mockReturnValue(res);
-  res.json = jest.fn().mockReturnValue(res);
+  res.status = makeTracked(res);
+  res.json = makeTracked(res);
   return {
     req: {
       body,
@@ -52,7 +62,7 @@ const harness = ({ body, query, url } = {}) => {
       ip: '127.0.0.1',
     },
     res,
-    next: jest.fn(),
+    next: makeTracked(undefined),
   };
 };
 
@@ -97,8 +107,8 @@ describe('rejectPollutedRequestBody', () => {
   it('forwards via next() when body is undefined', () => {
     const { req, res, next } = harness();
     rejectPollutedRequestBody(req, res, next);
-    expect(next).toHaveBeenCalledTimes(1);
-    expect(next).toHaveBeenCalledWith(); // no error
+    expect(next.mock.calls.length).toBe(1);
+    expect(next.mock.calls[0]).toEqual([]); // no error
   });
 
   it('forwards via next() for safe nested object', () => {
@@ -106,7 +116,7 @@ describe('rejectPollutedRequestBody', () => {
       body: { name: 'Storm', stats: { speed: 90, stamina: 80 } },
     });
     rejectPollutedRequestBody(req, res, next);
-    expect(next).toHaveBeenCalledTimes(1);
+    expect(next.mock.calls.length).toBe(1);
     expect(next.mock.calls[0]).toHaveLength(0);
   });
 
@@ -124,7 +134,7 @@ describe('rejectPollutedRequestBody', () => {
     });
     const { req, res, next } = harness({ body: polluted });
     rejectPollutedRequestBody(req, res, next);
-    expect(next).toHaveBeenCalledTimes(1);
+    expect(next.mock.calls.length).toBe(1);
     const err = next.mock.calls[0][0];
     expect(RequestBodySecurityError.isRequestBodySecurityError(err)).toBe(true);
     expect(err.message).toContain('__proto__');
@@ -159,7 +169,7 @@ describe('rejectPollutedRequestBody', () => {
     const body = { breed: 'Arabian', description: 'constructor' };
     const { req, res, next } = harness({ body });
     rejectPollutedRequestBody(req, res, next);
-    expect(next).toHaveBeenCalledTimes(1);
+    expect(next.mock.calls.length).toBe(1);
     expect(next.mock.calls[0]).toHaveLength(0);
   });
 
@@ -167,7 +177,7 @@ describe('rejectPollutedRequestBody', () => {
     const body = { name: 'prototype' };
     const { req, res, next } = harness({ body });
     rejectPollutedRequestBody(req, res, next);
-    expect(next).toHaveBeenCalledTimes(1);
+    expect(next.mock.calls.length).toBe(1);
     expect(next.mock.calls[0]).toHaveLength(0);
   });
 
@@ -181,7 +191,7 @@ describe('rejectPollutedRequestBody', () => {
     };
     const { req, res, next } = harness({ body });
     rejectPollutedRequestBody(req, res, next);
-    expect(next).toHaveBeenCalledTimes(1);
+    expect(next.mock.calls.length).toBe(1);
     expect(next.mock.calls[0]).toHaveLength(0);
   });
 
@@ -208,7 +218,7 @@ describe('rejectPollutedRequestQuery', () => {
       url: '/test?breed=arabian&age=5',
     });
     rejectPollutedRequestQuery(req, res, next);
-    expect(next).toHaveBeenCalledTimes(1);
+    expect(next.mock.calls.length).toBe(1);
     expect(next.mock.calls[0]).toHaveLength(0);
   });
 
@@ -254,7 +264,7 @@ describe('rejectPollutedRequestQuery', () => {
   it('forwards safely when url has no querystring', () => {
     const { req, res, next } = harness({ query: {}, url: '/test' });
     rejectPollutedRequestQuery(req, res, next);
-    expect(next).toHaveBeenCalledTimes(1);
+    expect(next.mock.calls.length).toBe(1);
     expect(next.mock.calls[0]).toHaveLength(0);
   });
 });
@@ -264,19 +274,19 @@ describe('requestBodySecurityErrorHandler envelope', () => {
     const { req, res, next } = harness();
     const err = new RequestBodySecurityError('forbidden key "__proto__"');
     requestBodySecurityErrorHandler(err, req, res, next);
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({
+    expect(res.status.mock.calls[0]?.[0]).toBe(400);
+    expect(res.json.mock.calls[0]?.[0]).toEqual({
       success: false,
       message: `${ERROR_MESSAGE_PREFIX} forbidden key "__proto__"`,
     });
-    expect(next).not.toHaveBeenCalled();
+    expect(next.mock.calls.length).toBe(0);
   });
 
   it('forwards plain AppError (NOT a sentinel instance)', () => {
     const { req, res, next } = harness();
     const err = new AppError(`${ERROR_MESSAGE_PREFIX} x`, 400);
     requestBodySecurityErrorHandler(err, req, res, next);
-    expect(res.status).not.toHaveBeenCalled();
-    expect(next).toHaveBeenCalledWith(err);
+    expect(res.status.mock.calls.length).toBe(0);
+    expect(next.mock.calls[0]?.[0]).toBe(err);
   });
 });
