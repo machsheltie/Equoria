@@ -3,26 +3,31 @@
 // groom personality derivation, and field completeness.
 // No Prisma mock needed — getTemperamentDefinitions does no DB queries.
 
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach } from '@jest/globals';
 import { getTemperamentDefinitions } from '../modules/horses/controllers/horseController.mjs';
 
 // NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): the
 // previous logger mock was for noise suppression — no logger
 // assertions in this file. Real logger runs at LOG_LEVEL=error.
 
-// Helper: create mock response
 function createMockRes() {
   const res = {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis(),
+    statusCode: 200,
+    body: undefined,
+    status(code) {
+      this.statusCode = code;
+      return this;
+    },
+    json(data) {
+      this.body = data;
+      return this;
+    },
   };
   return res;
 }
 
 describe('getTemperamentDefinitions', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+  beforeEach(() => {});
 
   // === Task 3.1: Returns 200 with success: true and all 11 definitions ===
 
@@ -32,8 +37,8 @@ describe('getTemperamentDefinitions', () => {
 
     await getTemperamentDefinitions(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    const payload = res.json.mock.calls[0][0];
+    expect(res.statusCode).toBe(200);
+    const payload = res.body;
     expect(payload.success).toBe(true);
     expect(payload.message).toBe('Temperament definitions retrieved successfully');
     expect(payload.data.definitions).toHaveLength(11);
@@ -47,7 +52,7 @@ describe('getTemperamentDefinitions', () => {
 
     await getTemperamentDefinitions(req, res);
 
-    const payload = res.json.mock.calls[0][0];
+    const payload = res.body;
     expect(payload.data.count).toBe(11);
   });
 
@@ -59,7 +64,7 @@ describe('getTemperamentDefinitions', () => {
 
     await getTemperamentDefinitions(req, res);
 
-    const { definitions } = res.json.mock.calls[0][0].data;
+    const { definitions } = res.body.data;
     for (const def of definitions) {
       expect(def).toHaveProperty('name');
       expect(def).toHaveProperty('description');
@@ -83,7 +88,7 @@ describe('getTemperamentDefinitions', () => {
 
     await getTemperamentDefinitions(req, res);
 
-    const { definitions } = res.json.mock.calls[0][0].data;
+    const { definitions } = res.body.data;
     const spirited = definitions.find(d => d.name === 'Spirited');
     expect(spirited).toBeDefined();
     expect(spirited.trainingModifiers.xpModifier).toBe(0.1);
@@ -98,7 +103,7 @@ describe('getTemperamentDefinitions', () => {
 
     await getTemperamentDefinitions(req, res);
 
-    const { definitions } = res.json.mock.calls[0][0].data;
+    const { definitions } = res.body.data;
     const lazy = definitions.find(d => d.name === 'Lazy');
     expect(lazy).toBeDefined();
     expect(lazy.trainingModifiers.xpModifier).toBe(-0.2);
@@ -113,7 +118,7 @@ describe('getTemperamentDefinitions', () => {
 
     await getTemperamentDefinitions(req, res);
 
-    const { definitions } = res.json.mock.calls[0][0].data;
+    const { definitions } = res.body.data;
     const bold = definitions.find(d => d.name === 'Bold');
     expect(bold).toBeDefined();
     expect(bold.competitionModifiers.riddenModifier).toBe(0.05);
@@ -128,7 +133,7 @@ describe('getTemperamentDefinitions', () => {
 
     await getTemperamentDefinitions(req, res);
 
-    const { definitions } = res.json.mock.calls[0][0].data;
+    const { definitions } = res.body.data;
     const nervous = definitions.find(d => d.name === 'Nervous');
     expect(nervous).toBeDefined();
     expect(nervous.competitionModifiers.riddenModifier).toBe(-0.05);
@@ -143,7 +148,7 @@ describe('getTemperamentDefinitions', () => {
 
     await getTemperamentDefinitions(req, res);
 
-    const { definitions } = res.json.mock.calls[0][0].data;
+    const { definitions } = res.body.data;
     const spirited = definitions.find(d => d.name === 'Spirited');
     expect(spirited.bestGroomPersonalities).toEqual(['energetic']);
   });
@@ -156,7 +161,7 @@ describe('getTemperamentDefinitions', () => {
 
     await getTemperamentDefinitions(req, res);
 
-    const { definitions } = res.json.mock.calls[0][0].data;
+    const { definitions } = res.body.data;
     const nervous = definitions.find(d => d.name === 'Nervous');
     expect(nervous.bestGroomPersonalities).toEqual(['patient', 'gentle']);
     expect(nervous.bestGroomPersonalities).not.toContain('strict');
@@ -170,7 +175,7 @@ describe('getTemperamentDefinitions', () => {
 
     await getTemperamentDefinitions(req, res);
 
-    const { definitions } = res.json.mock.calls[0][0].data;
+    const { definitions } = res.body.data;
     const calm = definitions.find(d => d.name === 'Calm');
     expect(calm.bestGroomPersonalities).toEqual(['gentle', 'energetic', 'patient', 'strict']);
   });
@@ -183,7 +188,7 @@ describe('getTemperamentDefinitions', () => {
 
     await getTemperamentDefinitions(req, res);
 
-    const { definitions } = res.json.mock.calls[0][0].data;
+    const { definitions } = res.body.data;
     const steady = definitions.find(d => d.name === 'Steady');
     expect(steady.bestGroomPersonalities).toEqual(['gentle', 'energetic', 'patient', 'strict']);
   });
@@ -196,7 +201,7 @@ describe('getTemperamentDefinitions', () => {
 
     await getTemperamentDefinitions(req, res);
 
-    const { definitions } = res.json.mock.calls[0][0].data;
+    const { definitions } = res.body.data;
     const expectedOrder = [
       'Spirited',
       'Nervous',
@@ -222,7 +227,7 @@ describe('getTemperamentDefinitions', () => {
 
     await getTemperamentDefinitions(req, res);
 
-    const { definitions } = res.json.mock.calls[0][0].data;
+    const { definitions } = res.body.data;
     // All definitions must have bestGroomPersonalities as an array (including empty)
     for (const def of definitions) {
       expect(Array.isArray(def.bestGroomPersonalities)).toBe(true);
@@ -243,7 +248,7 @@ describe('getTemperamentDefinitions', () => {
 
     await getTemperamentDefinitions(req, res);
 
-    const { definitions } = res.json.mock.calls[0][0].data;
+    const { definitions } = res.body.data;
     for (const def of definitions) {
       expect(typeof def.description).toBe('string');
       expect(def.description.length).toBeGreaterThan(0);
@@ -260,22 +265,27 @@ describe('getTemperamentDefinitions', () => {
     const req = {};
     let callCount = 0;
     const res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockImplementation(_body => {
+      statusCode: 200,
+      body: undefined,
+      status(code) {
+        this.statusCode = code;
+        return this;
+      },
+      json(data) {
         callCount++;
         if (callCount === 1) {
           throw new Error('Simulated serialization failure');
         }
-        return res;
-      }),
+        this.body = data;
+        return this;
+      },
     };
 
     await getTemperamentDefinitions(req, res);
 
     // catch branch calls res.status(500)
-    expect(res.status).toHaveBeenCalledWith(500);
-    const errorPayload = res.json.mock.calls[1][0];
-    expect(errorPayload.success).toBe(false);
-    expect(errorPayload.message).toBe('Internal server error while retrieving temperament definitions');
+    expect(res.statusCode).toBe(500);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toBe('Internal server error while retrieving temperament definitions');
   });
 });

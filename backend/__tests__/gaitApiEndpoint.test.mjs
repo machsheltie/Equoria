@@ -2,8 +2,24 @@
 // Validates GET /gaits response structure, legacy horse handling,
 // gaited vs non-gaited breed responses, and error cases.
 
-import { jest } from '@jest/globals';
+import { describe, test, expect, beforeEach } from '@jest/globals';
 import { getGaits } from '../modules/horses/controllers/horseController.mjs';
+
+function createMockRes() {
+  const res = {
+    statusCode: 200,
+    body: undefined,
+    status(code) {
+      this.statusCode = code;
+      return this;
+    },
+    json(data) {
+      this.body = data;
+      return this;
+    },
+  };
+  return res;
+}
 
 // NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): the
 // previous jest.unstable_mockModule of db/index.mjs and utils/logger.mjs
@@ -33,18 +49,13 @@ function createMockReqRes(horseOverrides = {}) {
     params: { id: String(horse.id) },
   };
 
-  const res = {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis(),
-  };
+  const res = createMockRes();
 
   return { req, res, horse };
 }
 
 describe('getGaits', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+  beforeEach(() => {});
 
   // === Task 3.1: Returns all 4 standard gait scores + gaiting field ===
 
@@ -53,8 +64,8 @@ describe('getGaits', () => {
 
     await getGaits(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    const response = res.json.mock.calls[0][0];
+    expect(res.statusCode).toBe(200);
+    const response = res.body;
     expect(response.success).toBe(true);
     expect(response.message).toBe('Gait scores retrieved successfully');
 
@@ -89,8 +100,8 @@ describe('getGaits', () => {
 
     await getGaits(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    const response = res.json.mock.calls[0][0];
+    expect(res.statusCode).toBe(200);
+    const response = res.body;
     const { gaitScores } = response.data;
 
     expect(Array.isArray(gaitScores.gaiting)).toBe(true);
@@ -106,8 +117,8 @@ describe('getGaits', () => {
 
     await getGaits(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    const response = res.json.mock.calls[0][0];
+    expect(res.statusCode).toBe(200);
+    const response = res.body;
     expect(response.data.gaitScores.gaiting).toBeNull();
   });
 
@@ -118,8 +129,8 @@ describe('getGaits', () => {
 
     await getGaits(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    const response = res.json.mock.calls[0][0];
+    expect(res.statusCode).toBe(200);
+    const response = res.body;
     expect(response.success).toBe(true);
     expect(response.message).toBe('No gait scores available for this horse');
     expect(response.data).toBeNull();
@@ -132,8 +143,8 @@ describe('getGaits', () => {
 
     await getGaits(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    const response = res.json.mock.calls[0][0];
+    expect(res.statusCode).toBe(200);
+    const response = res.body;
     expect(response.data).toBeNull();
   });
 
@@ -144,8 +155,8 @@ describe('getGaits', () => {
 
     await getGaits(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    const response = res.json.mock.calls[0][0];
+    expect(res.statusCode).toBe(200);
+    const response = res.body;
     expect(response.data.horseId).toBe(123);
     expect(response.data.horseName).toBe('Midnight Star');
     expect(response.data.breedId).toBe(1);
@@ -165,15 +176,12 @@ describe('getGaits', () => {
       },
     });
 
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
-    };
+    const res = createMockRes();
 
     await getGaits(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(500);
-    const response = res.json.mock.calls[0][0];
+    expect(res.statusCode).toBe(500);
+    const response = res.body;
     expect(response.success).toBe(false);
     expect(response.message).toBe('Internal server error while retrieving gait scores');
   });

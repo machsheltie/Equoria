@@ -4,7 +4,7 @@
 //
 // Real database — no mocked Prisma calls per project policy.
 
-import { describe, beforeAll, afterAll, beforeEach, expect, test, jest } from '@jest/globals';
+import { describe, beforeAll, afterAll, beforeEach, expect, test } from '@jest/globals';
 import prisma from '../../packages/database/prismaClient.mjs';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'node:crypto';
@@ -69,8 +69,16 @@ function makeMockReqRes(horseOverrides = {}) {
   };
   const req = { horse, params: { id: String(horse.id) } };
   const res = {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis(),
+    statusCode: 200,
+    body: undefined,
+    status(code) {
+      this.statusCode = code;
+      return this;
+    },
+    json(data) {
+      this.body = data;
+      return this;
+    },
   };
   return { req, res };
 }
@@ -111,8 +119,8 @@ describe('getConformation', () => {
 
     await getConformation(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    const response = res.json.mock.calls[0][0];
+    expect(res.statusCode).toBe(200);
+    const response = res.body;
     expect(response.success).toBe(true);
     expect(response.message).toBe('Conformation scores retrieved successfully');
     expect(response.data.horseId).toBe(0);
@@ -132,8 +140,8 @@ describe('getConformation', () => {
 
     await getConformation(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    const response = res.json.mock.calls[0][0];
+    expect(res.statusCode).toBe(200);
+    const response = res.body;
     expect(response.success).toBe(true);
     expect(response.message).toBe('No conformation scores available for this horse');
     expect(response.data).toBeNull();
@@ -144,8 +152,8 @@ describe('getConformation', () => {
 
     await getConformation(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    const response = res.json.mock.calls[0][0];
+    expect(res.statusCode).toBe(200);
+    const response = res.body;
     expect(response.success).toBe(true);
     expect(response.message).toBe('No conformation scores available for this horse');
     expect(response.data).toBeNull();
@@ -167,8 +175,8 @@ describe('getConformation', () => {
 
     await getConformation(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    const response = res.json.mock.calls[0][0];
+    expect(res.statusCode).toBe(200);
+    const response = res.body;
     expect(response.success).toBe(true);
     expect(response.data.conformationScores).toHaveProperty('overallConformation');
     expect(typeof response.data.conformationScores.overallConformation).toBe('number');
@@ -199,8 +207,8 @@ describe('getConformationAnalysis', () => {
 
     await getConformationAnalysis(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    const response = res.json.mock.calls[0][0];
+    expect(res.statusCode).toBe(200);
+    const response = res.body;
     expect(response.success).toBe(true);
     expect(response.message).toBe('Conformation analysis retrieved successfully');
     expect(response.data.horseId).toBe(0);
@@ -237,7 +245,7 @@ describe('getConformationAnalysis', () => {
 
     await getConformationAnalysis(req, res);
 
-    const data = res.json.mock.calls[0][0].data;
+    const data = res.body.data;
     for (const region of CONFORMATION_REGIONS) {
       expect(data.analysis[region].percentile).toBeGreaterThanOrEqual(60);
     }
@@ -254,7 +262,7 @@ describe('getConformationAnalysis', () => {
 
     await getConformationAnalysis(req, res);
 
-    const data = res.json.mock.calls[0][0].data;
+    const data = res.body.data;
     for (const region of CONFORMATION_REGIONS) {
       expect(data.analysis[region].percentile).toBeLessThanOrEqual(40);
     }
@@ -266,8 +274,8 @@ describe('getConformationAnalysis', () => {
 
     await getConformationAnalysis(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    const response = res.json.mock.calls[0][0];
+    expect(res.statusCode).toBe(200);
+    const response = res.body;
     expect(response.success).toBe(true);
     expect(response.data).toBeNull();
   });
@@ -282,7 +290,7 @@ describe('getConformationAnalysis', () => {
 
     await getConformationAnalysis(req, res);
 
-    const response = res.json.mock.calls[0][0];
+    const response = res.body;
     // Valid horses only (null excluded) — at least the 2 we just seeded
     expect(response.data.totalHorsesInBreed).toBeGreaterThanOrEqual(2);
     expect(response.success).toBe(true);
@@ -293,8 +301,8 @@ describe('getConformationAnalysis', () => {
 
     await getConformationAnalysis(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json.mock.calls[0][0].data).toBeNull();
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data).toBeNull();
   });
 
   test('uses breed mean from breedProfiles.json, not the database average', async () => {
@@ -302,7 +310,7 @@ describe('getConformationAnalysis', () => {
 
     await getConformationAnalysis(req, res);
 
-    const response = res.json.mock.calls[0][0];
+    const response = res.body;
     expect(response.data.breedMeanAvailable).toBe(true);
 
     const tbProfile = getBreedProfile('Thoroughbred').rating_profiles.conformation;

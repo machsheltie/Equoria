@@ -2,8 +2,24 @@
 // Validates GET /horses/:id/genetics and GET /horses/:id/color responses,
 // legacy horse handling, partial phenotype, JSONB type guards, and null guard behavior.
 
-import { jest } from '@jest/globals';
+import { describe, test, expect } from '@jest/globals';
 import { getGenetics, getColor } from '../modules/horses/controllers/horseController.mjs';
+
+function createMockRes() {
+  const res = {
+    statusCode: 200,
+    body: undefined,
+    status(code) {
+      this.statusCode = code;
+      return this;
+    },
+    json(data) {
+      this.body = data;
+      return this;
+    },
+  };
+  return res;
+}
 
 // NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): the
 // previous prisma mock was defensive (controller reads from req.horse,
@@ -72,10 +88,7 @@ function createMockReqRes(horseOverrides = {}) {
     params: { id: String(horse.id) },
   };
 
-  const res = {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis(),
-  };
+  const res = createMockRes();
 
   return { req, res, horse };
 }
@@ -90,8 +103,8 @@ describe('getGenetics', () => {
 
     await getGenetics(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    const response = res.json.mock.calls[0][0];
+    expect(res.statusCode).toBe(200);
+    const response = res.body;
     expect(response.success).toBe(true);
     expect(response.message).toBe('Genetics data retrieved successfully');
     expect(response.data.horseId).toBe(42);
@@ -105,7 +118,7 @@ describe('getGenetics', () => {
 
     await getGenetics(req, res);
 
-    const data = res.json.mock.calls[0][0].data;
+    const data = res.body.data;
     expect(Object.keys(data)).toEqual(['horseId', 'horseName', 'colorGenotype', 'phenotype']);
   });
 
@@ -114,8 +127,8 @@ describe('getGenetics', () => {
 
     await getGenetics(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    const response = res.json.mock.calls[0][0];
+    expect(res.statusCode).toBe(200);
+    const response = res.body;
     expect(response.success).toBe(true);
     expect(response.message).toBe('No genetics data available for this horse');
     expect(response.data).toBeNull();
@@ -126,8 +139,8 @@ describe('getGenetics', () => {
 
     await getGenetics(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json.mock.calls[0][0].data).toBeNull();
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data).toBeNull();
   });
 
   test('T3.2: phenotype is null when horse has genotype but no phenotype', async () => {
@@ -135,8 +148,8 @@ describe('getGenetics', () => {
 
     await getGenetics(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    const data = res.json.mock.calls[0][0].data;
+    expect(res.statusCode).toBe(200);
+    const data = res.body.data;
     expect(data).not.toBeNull();
     expect(data.phenotype).toBeNull();
     expect(data.colorGenotype).toEqual(MOCK_GENOTYPE);
@@ -153,8 +166,8 @@ describe('getColor', () => {
 
     await getColor(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    const response = res.json.mock.calls[0][0];
+    expect(res.statusCode).toBe(200);
+    const response = res.body;
     expect(response.success).toBe(true);
     expect(response.message).toBe('Color data retrieved successfully');
 
@@ -174,7 +187,7 @@ describe('getColor', () => {
 
     await getColor(req, res);
 
-    const data = res.json.mock.calls[0][0].data;
+    const data = res.body.data;
     expect(data).not.toHaveProperty('colorGenotype');
   });
 
@@ -183,7 +196,7 @@ describe('getColor', () => {
 
     await getColor(req, res);
 
-    const data = res.json.mock.calls[0][0].data;
+    const data = res.body.data;
     expect(Object.keys(data)).toEqual([
       'horseId',
       'horseName',
@@ -203,8 +216,8 @@ describe('getColor', () => {
 
     await getColor(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    const data = res.json.mock.calls[0][0].data;
+    expect(res.statusCode).toBe(200);
+    const data = res.body.data;
     expect(data.colorName).toBe('Chestnut');
     expect(data.shade).toBe('dark');
     expect(data.faceMarking).toBeNull();
@@ -218,8 +231,8 @@ describe('getColor', () => {
 
     await getColor(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    const response = res.json.mock.calls[0][0];
+    expect(res.statusCode).toBe(200);
+    const response = res.body;
     expect(response.success).toBe(true);
     expect(response.message).toBe('No color data available for this horse');
     expect(response.data).toBeNull();
@@ -230,8 +243,8 @@ describe('getColor', () => {
 
     await getColor(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json.mock.calls[0][0].data).toBeNull();
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data).toBeNull();
   });
 });
 
@@ -242,28 +255,22 @@ describe('getColor', () => {
 describe('D-3: req.horse null guard', () => {
   test('T3.6: getGenetics returns 500 when req.horse is not set (middleware contract violation)', async () => {
     const req = { horse: undefined, params: { id: '99' } };
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
-    };
+    const res = createMockRes();
 
     await getGenetics(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json.mock.calls[0][0].success).toBe(false);
+    expect(res.statusCode).toBe(500);
+    expect(res.body.success).toBe(false);
   });
 
   test('T3.8: getColor returns 500 when req.horse is not set (middleware contract violation)', async () => {
     const req = { horse: undefined, params: { id: '99' } };
-    const res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
-    };
+    const res = createMockRes();
 
     await getColor(req, res);
 
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json.mock.calls[0][0].success).toBe(false);
+    expect(res.statusCode).toBe(500);
+    expect(res.body.success).toBe(false);
   });
 });
 
@@ -275,29 +282,29 @@ describe('D-2: JSONB non-object value guard', () => {
   test('getGenetics: colorGenotype stored as JSON array → data: null', async () => {
     const { req, res } = createMockReqRes({ colorGenotype: ['E', 'e'] });
     await getGenetics(req, res);
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json.mock.calls[0][0].data).toBeNull();
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data).toBeNull();
   });
 
   test('getGenetics: colorGenotype stored as string → data: null', async () => {
     const { req, res } = createMockReqRes({ colorGenotype: 'Bay' });
     await getGenetics(req, res);
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json.mock.calls[0][0].data).toBeNull();
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data).toBeNull();
   });
 
   test('getColor: phenotype stored as JSON array → data: null', async () => {
     const { req, res } = createMockReqRes({ phenotype: ['colorName', 'Bay'] });
     await getColor(req, res);
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json.mock.calls[0][0].data).toBeNull();
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data).toBeNull();
   });
 
   test('getColor: phenotype stored as string → data: null', async () => {
     const { req, res } = createMockReqRes({ phenotype: 'Bay' });
     await getColor(req, res);
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json.mock.calls[0][0].data).toBeNull();
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data).toBeNull();
   });
 });
 
@@ -309,14 +316,14 @@ describe('Legacy null paths', () => {
   test('T3.7: getGenetics returns 200 null for horse with no colorGenotype', async () => {
     const { req, res } = createMockReqRes({ colorGenotype: null });
     await getGenetics(req, res);
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json.mock.calls[0][0].data).toBeNull();
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data).toBeNull();
   });
 
   test('T3.9: getColor returns 200 null for horse with no phenotype', async () => {
     const { req, res } = createMockReqRes({ phenotype: null });
     await getColor(req, res);
-    expect(res.status).toHaveBeenCalledWith(200);
-    expect(res.json.mock.calls[0][0].data).toBeNull();
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data).toBeNull();
   });
 });
