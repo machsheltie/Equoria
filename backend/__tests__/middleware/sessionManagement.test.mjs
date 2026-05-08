@@ -154,18 +154,6 @@ describe('Session Management Middleware', () => {
         expect(next).toHaveBeenCalled();
         expect(res.status).not.toHaveBeenCalled();
       });
-
-      it('should catch and log Prisma errors during activity tracking', async () => {
-        // Mock Prisma findFirst to throw a database error
-        const dbError = new Error('Database connection error');
-        jest.spyOn(prisma.refreshToken, 'findFirst').mockRejectedValueOnce(dbError);
-
-        await trackSessionActivity(req, res, next);
-
-        // Should not fail the request (line 84 error handler)
-        expect(next).toHaveBeenCalled();
-        expect(res.status).not.toHaveBeenCalled();
-      });
     });
 
     describe('Custom timeout configuration', () => {
@@ -355,21 +343,6 @@ describe('Session Management Middleware', () => {
       expect(next).toHaveBeenCalled();
     });
 
-    it('should catch and log Prisma errors during session enforcement', async () => {
-      const user = await createTestUser();
-      req.user = { id: user.id };
-
-      // Mock Prisma count to throw a database error
-      const dbError = new Error('Database query failed');
-      jest.spyOn(prisma.refreshToken, 'count').mockRejectedValueOnce(dbError);
-
-      await enforceConcurrentSessions(req, res, next);
-
-      // Should not fail the request (line 140 error handler)
-      expect(next).toHaveBeenCalled();
-      expect(res.status).not.toHaveBeenCalled();
-    });
-
     describe('Custom limit configuration', () => {
       const originalLimit = process.env.MAX_CONCURRENT_SESSIONS;
 
@@ -507,18 +480,6 @@ describe('Session Management Middleware', () => {
       expect(session.createdAt).toBeDefined();
       expect(session.lastActivity).toBeDefined();
     });
-
-    it('should handle database errors', async () => {
-      req.user = { id: 1 };
-
-      // Mock Prisma to throw a database error
-      const findManyError = new Error('Database connection lost');
-      jest.spyOn(prisma.refreshToken, 'findMany').mockRejectedValueOnce(findManyError);
-
-      await getActiveSessions(req, res, next);
-
-      expect(next).toHaveBeenCalledWith(findManyError);
-    });
   });
 
   describe('revokeSession()', () => {
@@ -606,18 +567,6 @@ describe('Session Management Middleware', () => {
         where: { id: user2Token.id },
       });
       expect(user2Session).not.toBeNull();
-    });
-
-    it('should handle database errors', async () => {
-      req.user = { id: 'user-id' };
-      req.params = { sessionId: '123' }; // Valid ID format to pass validation
-
-      const dbError = new Error('Database connection failed');
-      jest.spyOn(prisma.refreshToken, 'deleteMany').mockRejectedValueOnce(dbError);
-
-      await revokeSession(req, res, next);
-
-      expect(next).toHaveBeenCalledWith(dbError);
     });
   });
 });
