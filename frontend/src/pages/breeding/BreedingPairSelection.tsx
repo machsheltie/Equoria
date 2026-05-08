@@ -139,11 +139,12 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
     queryKey: ['horses', userId],
     queryFn: async () => {
       const response = await horsesApi.list();
+      const MALE_SEX = ['Stallion', 'Colt', 'Rig'] as const;
       return response.map((horse) => ({
         id: horse.id,
         name: horse.name,
         age: horse.ageYears || horse.age,
-        sex: horse.sex || (horse.gender === 'male' ? 'Male' : 'Female'),
+        sex: (MALE_SEX as readonly string[]).includes(horse.sex ?? '') ? 'Male' : 'Female',
         breedName: getBreedName(horse.breed),
         healthStatus: horse.healthStatus,
         level: horse.level,

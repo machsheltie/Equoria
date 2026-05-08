@@ -24,7 +24,7 @@ export function useBreeds() {
 export function useBuyStoreHorse() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ breedId, sex }: { breedId: number; sex: 'mare' | 'stallion' }) =>
+    mutationFn: ({ breedId, sex }: { breedId: number; sex: 'Mare' | 'Stallion' }) =>
       horseMarketplaceApi.buyStoreHorse(breedId, sex),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['horses'] }); // refresh My Stable

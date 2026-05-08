@@ -883,8 +883,8 @@ export const horsesApi = {
   create: (data: {
     name: string;
     breedId: number;
-    sex?: 'stallion' | 'mare' | 'colt' | 'filly' | 'rig';
-    gender?: 'STALLION' | 'MARE' | 'COLT' | 'FILLY' | 'RIG';
+    sex?: 'Stallion' | 'Mare' | 'Colt' | 'Filly' | 'Rig';
+    gender?: 'Stallion' | 'Mare' | 'Colt' | 'Filly' | 'Rig';
     age?: number;
   }) => apiClient.post<HorseSummary>('/api/horses', data),
   list: () => apiClient.get<HorseSummary[]>(`/api/horses?t=${Date.now()}`),
@@ -1346,7 +1346,7 @@ export const horseMarketplaceApi = {
     apiClient.post<BuyHorseResult>(`/api/v1/marketplace/buy/${horseId}`, {}),
   myListings: () => apiClient.get<MyListing[]>('/api/v1/marketplace/my-listings'),
   saleHistory: () => apiClient.get<SaleHistoryEntry[]>('/api/v1/marketplace/history'),
-  buyStoreHorse: (breedId: number, sex: 'mare' | 'stallion') =>
+  buyStoreHorse: (breedId: number, sex: 'Mare' | 'Stallion') =>
     apiClient.post<{ horse: HorseSummary; pricePaid: number; newBalance: number }>(
       '/api/v1/marketplace/store/buy',
       { breedId, sex }

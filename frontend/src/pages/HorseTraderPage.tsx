@@ -31,7 +31,7 @@ const HorseTraderPage: React.FC = () => {
   const [showDropdown, setShowDropdown] = useState(false);
 
   // Sex toggle state
-  const [sex, setSex] = useState<'mare' | 'stallion'>('mare');
+  const [sex, setSex] = useState<'Mare' | 'Stallion'>('Mare');
 
   // Purchase result state
   const [purchasedHorseName, setPurchasedHorseName] = useState<string | null>(null);
@@ -148,7 +148,7 @@ const HorseTraderPage: React.FC = () => {
           <div className="space-y-2">
             <span className="block text-sm font-semibold text-[var(--text-primary)]">Sex</span>
             <div className="flex gap-3">
-              {(['mare', 'stallion'] as const).map((option) => (
+              {(['Mare', 'Stallion'] as const).map((option) => (
                 <button
                   key={option}
                   type="button"
