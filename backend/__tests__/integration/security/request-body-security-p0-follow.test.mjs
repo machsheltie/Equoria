@@ -12,7 +12,7 @@
  * @module __tests__/integration/security/request-body-security-p0-follow
  */
 
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import { __TESTING_ONLY_JsonScanner, RequestBodySecurityError } from '../../../middleware/requestBodySecurity.mjs';
@@ -80,14 +80,17 @@ describe('Equoria-gbcm: Content-Type case-insensitive matching in verifyJsonBody
 // Equoria-2l00: rejectPollutedRequestBody fail-open for non-AppError
 // ─────────────────────────────────────────────────────────────────────────────
 describe('Equoria-2l00: rejectPollutedRequestBody fail-closed for non-AppError', () => {
-  let warnSpy;
+  let _warnCalls;
+  let _origWarn;
 
   beforeEach(() => {
-    warnSpy = jest.spyOn(logger, 'warn').mockImplementation(() => {});
+    _warnCalls = [];
+    _origWarn = logger.warn;
+    logger.warn = (...args) => _warnCalls.push(args);
   });
 
   afterEach(() => {
-    warnSpy.mockRestore();
+    logger.warn = _origWarn;
   });
 
   it('returns 400 (not 500) when assertNoPollutingKeys throws a non-AppError', async () => {
@@ -141,10 +144,15 @@ describe('Equoria-2l00: rejectPollutedRequestBody fail-closed for non-AppError',
     rejectPollutedRequestBody(mockReq, mockRes, mockNext);
 
     // Should log the unexpected error (same as verifyJsonBody pattern)
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining('Unexpected'),
-      expect.objectContaining({ unexpected: true }),
-    );
+    expect(
+      _warnCalls.some(
+        args =>
+          typeof args[0] === 'string' &&
+          args[0].includes('Unexpected') &&
+          args[1] != null &&
+          args[1].unexpected === true,
+      ),
+    ).toBe(true);
   });
 
   it('still passes clean bodies through', async () => {
