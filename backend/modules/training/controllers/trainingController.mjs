@@ -132,7 +132,7 @@ async function canTrain(horseId, discipline) {
  * @returns {Object} - Training result with success status, updated horse, and next eligible date
  * @throws {Error} - If validation fails or training is not allowed
  */
-async function trainHorse(horseId, discipline) {
+async function trainHorse(horseId, discipline, _randomFn = Math.random) {
   try {
     logger.info(
       `[trainingController.trainHorse] Attempting to train horse ${horseId} in ${discipline}`,
@@ -239,7 +239,7 @@ async function trainHorse(horseId, discipline) {
     }
 
     // Roll for stat gain
-    if (Math.random() < statGainChance) {
+    if (_randomFn() < statGainChance) {
       statGainOccurred = true;
 
       // Determine which stat to improve based on discipline
@@ -270,10 +270,10 @@ async function trainHorse(horseId, discipline) {
       };
 
       const relevantStats = disciplineStatMap[discipline] || ['speed', 'stamina', 'focus'];
-      const statToImprove = relevantStats[Math.floor(Math.random() * relevantStats.length)];
+      const statToImprove = relevantStats[Math.floor(_randomFn() * relevantStats.length)];
 
       // Calculate stat gain amount (base 1-3 points, capped at 10 to prevent extreme trait values)
-      let statGainAmount = Math.floor(Math.random() * 3) + 1;
+      let statGainAmount = Math.floor(_randomFn() * 3) + 1;
 
       // Apply trait effects to stat gain amount
       if (traitEffects.baseStatBoost) {

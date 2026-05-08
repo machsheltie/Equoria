@@ -8,11 +8,10 @@
 // Sections:
 //   1. Pure unit tests for getTemperamentTrainingModifiers (no DB).
 //   2. Real-DB integration tests for trainHorse() exercising temperament
-//      modifier application end-to-end. jest.spyOn(Math, 'random') is used
-//      to make stat-gain deterministic — that's a Node global intercept,
-//      not module mocking.
+//      modifier application end-to-end. _randomFn DI parameter is used
+//      to make stat-gain deterministic — no jest.spyOn needed.
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../db/index.mjs';
 import {
@@ -146,8 +145,12 @@ describe('getTemperamentTrainingModifiers — unit tests', () => {
 // 2. Integration Tests: temperament modifier applied inside trainHorse() — real DB
 // ═════════════════════════════════════════════════════════════════════════════
 
+// DI helpers: noStatGain ensures random < 0.15 threshold never fires.
+// statGain ensures it always fires. trainHorse() accepts _randomFn as 3rd arg.
+const noStatGain = () => 0.99;
+const statGain = () => 0.05;
+
 describe('trainHorse() — temperament modifier integration (real DB)', () => {
-  let mathRandomSpy;
   let breed;
 
   beforeAll(async () => {
@@ -157,23 +160,12 @@ describe('trainHorse() — temperament modifier integration (real DB)', () => {
 
   afterAll(cleanupSuite);
 
-  beforeEach(() => {
-    // Math.random is a Node global — spying is permitted (not module mock).
-    // 0.99 ensures stat-gain branch (random < 0.15) does NOT fire, so XP +
-    // score deltas are deterministic and only reflect temperament modifiers.
-    mathRandomSpy = jest.spyOn(Math, 'random').mockReturnValue(0.99);
-  });
-
-  afterEach(() => {
-    mathRandomSpy.mockRestore();
-  });
-
   it('Stubborn horse: XP and score both reduced — deltas verifiable end-to-end', async () => {
     const user = await createUser();
     const horse = await createHorse(user.id, breed.id, { temperament: 'Stubborn', disciplineScores: { Racing: 20 } });
     const userBefore = await prisma.user.findUnique({ where: { id: user.id }, select: { xp: true } });
 
-    const result = await trainHorse(horse.id, 'Racing');
+    const result = await trainHorse(horse.id, 'Racing', noStatGain);
 
     expect(result.success).toBe(true);
     expect(result.temperamentEffects).toEqual({
@@ -198,7 +190,7 @@ describe('trainHorse() — temperament modifier integration (real DB)', () => {
     const horse = await createHorse(user.id, breed.id, { temperament: 'Calm', disciplineScores: { Dressage: 0 } });
     const userBefore = await prisma.user.findUnique({ where: { id: user.id }, select: { xp: true } });
 
-    const result = await trainHorse(horse.id, 'Dressage');
+    const result = await trainHorse(horse.id, 'Dressage', noStatGain);
 
     expect(result.success).toBe(true);
     expect(result.temperamentEffects).toEqual({
@@ -221,7 +213,7 @@ describe('trainHorse() — temperament modifier integration (real DB)', () => {
     const horse = await createHorse(user.id, breed.id, { temperament: 'Lazy', disciplineScores: { Racing: 0 } });
     const userBefore = await prisma.user.findUnique({ where: { id: user.id }, select: { xp: true } });
 
-    const result = await trainHorse(horse.id, 'Racing');
+    const result = await trainHorse(horse.id, 'Racing', noStatGain);
 
     expect(result.success).toBe(true);
     expect(result.temperamentEffects).toEqual({
@@ -244,7 +236,7 @@ describe('trainHorse() — temperament modifier integration (real DB)', () => {
     const horse = await createHorse(user.id, breed.id, { temperament: null, disciplineScores: { Racing: 0 } });
     const userBefore = await prisma.user.findUnique({ where: { id: user.id }, select: { xp: true } });
 
-    const result = await trainHorse(horse.id, 'Racing');
+    const result = await trainHorse(horse.id, 'Racing', noStatGain);
 
     expect(result.success).toBe(true);
     expect(result.temperamentEffects).toBeNull();
@@ -261,7 +253,7 @@ describe('trainHorse() — temperament modifier integration (real DB)', () => {
     const horse = await createHorse(user.id, breed.id, { temperament: 'Reactive', disciplineScores: { Racing: 0 } });
     const userBefore = await prisma.user.findUnique({ where: { id: user.id }, select: { xp: true } });
 
-    const result = await trainHorse(horse.id, 'Racing');
+    const result = await trainHorse(horse.id, 'Racing', noStatGain);
 
     expect(result.success).toBe(true);
     expect(result.temperamentEffects).toEqual({
@@ -279,12 +271,11 @@ describe('trainHorse() — temperament modifier integration (real DB)', () => {
     expect(horseAfter.disciplineScores.Racing).toBe(5);
   });
 
-  it('Spirited horse triggers stat gain when Math.random < 0.15 and both paths succeed', async () => {
+  it('Spirited horse triggers stat gain when _randomFn < 0.15 and both paths succeed', async () => {
     const user = await createUser();
     const horse = await createHorse(user.id, breed.id, { temperament: 'Spirited', disciplineScores: { Racing: 0 } });
-    mathRandomSpy.mockReturnValue(0.05); // below 0.15 stat-gain threshold
 
-    const result = await trainHorse(horse.id, 'Racing');
+    const result = await trainHorse(horse.id, 'Racing', statGain);
 
     expect(result.success).toBe(true);
     expect(result.statGain).not.toBeNull();
