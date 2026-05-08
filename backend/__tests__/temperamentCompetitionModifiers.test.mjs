@@ -252,61 +252,48 @@ describe('calculateCompetitionScore() — temperament ridden modifiers (all 11 t
 });
 
 describe('calculateCompetitionScore() — temperament conformation modifiers', () => {
-  let mathRandomSpy;
-
-  beforeEach(() => {
-    mathRandomSpy = jest.spyOn(Math, 'random').mockReturnValue(0.5);
-    mockLogger.info.mockClear();
-    mockLogger.warn.mockClear();
-  });
-
-  afterEach(() => {
-    mathRandomSpy.mockRestore();
-  });
-
   it('Calm conformation (+5%): Math.round(90 * 1.05) = 95', () => {
-    expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Calm' }), 'Racing', 'conformation')).toBe(95);
+    expect(
+      calculateCompetitionScore(makeRacingHorse({ temperament: 'Calm' }), 'Racing', 'conformation', zeroLuck),
+    ).toBe(95);
   });
 
   it('Spirited conformation (-2%): Math.round(90 * 0.98) = 88', () => {
-    expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Spirited' }), 'Racing', 'conformation')).toBe(88);
+    expect(
+      calculateCompetitionScore(makeRacingHorse({ temperament: 'Spirited' }), 'Racing', 'conformation', zeroLuck),
+    ).toBe(88);
   });
 
   it('Lazy conformation (0%): score = 90 (no change)', () => {
-    expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Lazy' }), 'Racing', 'conformation')).toBe(90);
+    expect(
+      calculateCompetitionScore(makeRacingHorse({ temperament: 'Lazy' }), 'Racing', 'conformation', zeroLuck),
+    ).toBe(90);
   });
 
   it('Aggressive conformation (-5%): Math.round(90 * 0.95) = 86', () => {
-    expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Aggressive' }), 'Racing', 'conformation')).toBe(
-      86,
-    );
+    expect(
+      calculateCompetitionScore(makeRacingHorse({ temperament: 'Aggressive' }), 'Racing', 'conformation', zeroLuck),
+    ).toBe(86);
   });
 
   it('Nervous conformation (-5%): Math.round(90 * 0.95) = 86 (AC #2 — any competition)', () => {
-    expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Nervous' }), 'Racing', 'conformation')).toBe(86);
+    expect(
+      calculateCompetitionScore(makeRacingHorse({ temperament: 'Nervous' }), 'Racing', 'conformation', zeroLuck),
+    ).toBe(86);
   });
 
   it('null temperament conformation: score = 90 (no adjustment)', () => {
-    expect(calculateCompetitionScore(makeRacingHorse({ temperament: null }), 'Racing', 'conformation')).toBe(90);
+    expect(calculateCompetitionScore(makeRacingHorse({ temperament: null }), 'Racing', 'conformation', zeroLuck)).toBe(
+      90,
+    );
   });
 });
 
 describe('calculateCompetitionScore() — showType validation', () => {
-  let mathRandomSpy;
-
-  beforeEach(() => {
-    mathRandomSpy = jest.spyOn(Math, 'random').mockReturnValue(0.5);
-    mockLogger.warn.mockClear();
-  });
-
-  afterEach(() => {
-    mathRandomSpy.mockRestore();
-  });
-
   it('invalid showType: falls back to ridden modifiers (behavioural)', () => {
     const horse = makeRacingHorse({ temperament: 'Bold' });
-    const scoreInvalid = calculateCompetitionScore(horse, 'Racing', 'halter');
-    const scoreRidden = calculateCompetitionScore(horse, 'Racing', 'ridden');
+    const scoreInvalid = calculateCompetitionScore(horse, 'Racing', 'halter', zeroLuck);
+    const scoreRidden = calculateCompetitionScore(horse, 'Racing', 'ridden', zeroLuck);
     // The score equality proves the fallback fired. The associated
     // logger.warn emission was previously asserted here; per the
     // no-mocks doctrine that side-effect observation is dropped (the
@@ -317,17 +304,6 @@ describe('calculateCompetitionScore() — showType validation', () => {
 });
 
 describe('calculateCompetitionScore() — minimum score floor (AC #7)', () => {
-  let mathRandomSpy;
-
-  beforeEach(() => {
-    mathRandomSpy = jest.spyOn(Math, 'random').mockReturnValue(0.5);
-    mockLogger.warn.mockClear();
-  });
-
-  afterEach(() => {
-    mathRandomSpy.mockRestore();
-  });
-
   it('score is never negative — zero-stat horse with negative temperament returns 0', () => {
     const horse = makeRacingHorse({
       speed: 0,
@@ -335,29 +311,18 @@ describe('calculateCompetitionScore() — minimum score floor (AC #7)', () => {
       intelligence: 0,
       temperament: 'Nervous',
     });
-    expect(calculateCompetitionScore(horse, 'Racing')).toBeGreaterThanOrEqual(0);
+    expect(calculateCompetitionScore(horse, 'Racing', 'ridden', zeroLuck)).toBeGreaterThanOrEqual(0);
   });
 });
 
 describe('calculateCompetitionScore() — edge cases', () => {
-  let mathRandomSpy;
-
-  beforeEach(() => {
-    mathRandomSpy = jest.spyOn(Math, 'random').mockReturnValue(0.5);
-    mockLogger.warn.mockClear();
-  });
-
-  afterEach(() => {
-    mathRandomSpy.mockRestore();
-  });
-
   it('blank-after-trim eventType throws', () => {
     expect(() => calculateCompetitionScore(makeRacingHorse(), '   ')).toThrow('Event type cannot be blank');
   });
 
   it('Infinity stat is clamped to 0 (behavioural)', () => {
     const horse = makeRacingHorse({ speed: Infinity });
-    expect(calculateCompetitionScore(horse, 'Racing')).toBe(0);
+    expect(calculateCompetitionScore(horse, 'Racing', 'ridden', zeroLuck)).toBe(0);
     // logger.warn assertion dropped per no-mocks doctrine; the score
     // clamping IS the contract.
   });
@@ -366,23 +331,11 @@ describe('calculateCompetitionScore() — edge cases', () => {
     // Verify ?? fix — precision=0 is a valid stat value, not a missing stat
     // baseScore = (0 ?? 30) + 30 + 30 = 0 + 60 = 60; zero luck, no temperament
     const horse = makeRacingHorse({ precision: 0, agility: 30, focus: 30, stamina: 30 });
-    expect(calculateCompetitionScore(horse, 'Show Jumping')).toBe(60);
+    expect(calculateCompetitionScore(horse, 'Show Jumping', 'ridden', zeroLuck)).toBe(60);
   });
 });
 
 describe('calculateCompetitionScore() — temperament + trait stacking', () => {
-  let mathRandomSpy;
-
-  beforeEach(() => {
-    mathRandomSpy = jest.spyOn(Math, 'random').mockReturnValue(0.5);
-    mockLogger.info.mockClear();
-    mockLogger.warn.mockClear();
-  });
-
-  afterEach(() => {
-    mathRandomSpy.mockRestore();
-  });
-
   it('Bold + racing affinity trait: (90+5) * 1.05 = Math.round(99.75) = 100', () => {
     const horse = makeRacingHorse({
       temperament: 'Bold',
@@ -390,7 +343,7 @@ describe('calculateCompetitionScore() — temperament + trait stacking', () => {
     });
     // baseScore=90, traitBonus=+5 → scoreWithTraitBonus=95
     // Bold ridden +5% → 95 * 1.05 = 99.75 → Math.round = 100
-    expect(calculateCompetitionScore(horse, 'Racing')).toBe(100);
+    expect(calculateCompetitionScore(horse, 'Racing', 'ridden', zeroLuck)).toBe(100);
   });
 
   it('Nervous + racing affinity trait: (90+5) * 0.95 = Math.round(90.25) = 90', () => {
@@ -399,6 +352,6 @@ describe('calculateCompetitionScore() — temperament + trait stacking', () => {
       epigeneticModifiers: { positive: ['discipline_affinity_racing'] },
     });
     // scoreWithTraitBonus=95, Nervous ridden -5% → 95 * 0.95 = 90.25 → 90
-    expect(calculateCompetitionScore(horse, 'Racing')).toBe(90);
+    expect(calculateCompetitionScore(horse, 'Racing', 'ridden', zeroLuck)).toBe(90);
   });
 });
