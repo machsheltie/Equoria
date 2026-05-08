@@ -66,7 +66,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
     // Create test horse with temperament
     testHorse = await prisma.horse.create({
       data: {
-        name: `TestHorse_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        name: `GPT-TestHorse_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         userId: testUser.id,
         dateOfBirth: new Date(Date.now() - 0 * 24 * 60 * 60 * 1000), // 0 days old (newborn for imprinting)
         temperament: FOAL_TEMPERAMENT_TYPES.SPIRITED,

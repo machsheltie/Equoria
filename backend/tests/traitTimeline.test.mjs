@@ -76,7 +76,7 @@ describe('Trait Timeline System', () => {
     // Create test horse (3 years old)
     testHorse = await prisma.horse.create({
       data: {
-        name: `TestHorse_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        name: `TTL-TestHorse_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
         sex: 'stallion',
         dateOfBirth: new Date(Date.now() - 3 * 365 * 24 * 60 * 60 * 1000), // 3 years old
         temperament: 'spirited',

@@ -87,7 +87,7 @@ describe('Groom Bonus Traits System', () => {
     // Create test horse (foal)
     testHorse = await prisma.horse.create({
       data: {
-        name: `TestHorse_${uid()}`,
+        name: `GBT-TestHorse_${uid()}`,
         sex: 'colt',
         dateOfBirth: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days old
         temperament: 'spirited',
