@@ -11,12 +11,12 @@
  * @module __tests__/unit/security/rate-limit-keys
  */
 
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach } from '@jest/globals';
 import { authRateLimiter as _authRateLimiter } from '../../../middleware/authRateLimiter.mjs';
 import { createMockUser } from '../../factories/index.mjs';
 
 describe('Rate Limit Key Generation Unit Tests', () => {
-  let req, _res, _next;
+  let req;
 
   beforeEach(() => {
     req = {
@@ -26,14 +26,6 @@ describe('Rate Limit Key Generation Unit Tests', () => {
       headers: {},
       user: null,
     };
-
-    _res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
-      setHeader: jest.fn(),
-    };
-
-    _next = jest.fn();
   });
 
   describe('IP-Based Key Generation', () => {

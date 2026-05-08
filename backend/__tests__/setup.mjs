@@ -5,7 +5,7 @@
  * SECURITY: Test environment isolation
  */
 
-import { beforeAll, afterAll, beforeEach, afterEach, jest } from '@jest/globals';
+import { beforeAll, afterAll, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../db/index.mjs';
 
@@ -56,10 +56,6 @@ beforeEach(async () => {
  * After each test - cleanup
  */
 afterEach(async () => {
-  // Clear any lingering data
-  jest.clearAllMocks();
-  jest.restoreAllMocks();
-
   // Ensure all async operations complete before next test
   await new Promise(resolve => setImmediate(resolve));
 });

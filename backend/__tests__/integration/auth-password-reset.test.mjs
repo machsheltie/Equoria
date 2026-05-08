@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Auth Password Reset — Integration Tests
  *
  * Covers the complete forgot-password → reset-password flow against the real
@@ -6,37 +6,37 @@
  * DB via the live Express app.
  *
  * Test strategy for token capture:
- *   `sendPasswordResetEmail` is an external email-dispatch side-effect
- *   (equivalent to an SMTP client call). Spying on it to intercept the raw
- *   token is the same class of isolation as mocking nodemailer — it does NOT
- *   mock business logic or DB operations. The controller still runs its full
- *   DB transaction before calling the email service.
+ *   In non-production mode, sendPasswordResetEmail writes the resetUrl to
+ *   EMAIL_CAPTURE_FILE via captureEmailPreview(). Tests set that env var to a
+ *   per-test temp JSONL file, call forgot-password, then read the file to
+ *   extract the raw token from the preview URL — no spy or mock needed.
  */
 
-import { jest } from '@jest/globals';
 import request from 'supertest';
 import bcrypt from 'bcryptjs';
+import { readFileSync, existsSync, unlinkSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
-
-// ── email service spy ────────────────────────────────────────────────────────
-// We spy on the module-level export so the real function is replaced only for
-// the duration of each test. All DB work in forgotPassword still executes.
-import emailService from '../../utils/emailService.mjs';
-
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
 import { randomBytes } from 'node:crypto';
+
 describe('Auth — Password Reset Integration', () => {
   let __csrf__;
+  let captureFile = null;
+
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
   });
 
   const EMAIL_PREFIX = 'pwreset_int_';
-  let capturedRawToken = null;
 
   beforeEach(async () => {
-    capturedRawToken = null;
+    // Each test gets a fresh capture file so concurrent or back-to-back tests
+    // don't see each other's email payloads.
+    captureFile = path.join(os.tmpdir(), `pwreset-${randomBytes(8).toString('hex')}.jsonl`);
+    process.env.EMAIL_CAPTURE_FILE = captureFile;
 
     // Clean up any leftover test users from prior runs
     const users = await prisma.user.findMany({
@@ -53,9 +53,21 @@ describe('Auth — Password Reset Integration', () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
-    capturedRawToken = null;
+    delete process.env.EMAIL_CAPTURE_FILE;
+    if (captureFile && existsSync(captureFile)) {
+      unlinkSync(captureFile);
+    }
+    captureFile = null;
   });
+
+  function readCapturedResetToken() {
+    const lines = readFileSync(captureFile, 'utf-8').trim().split('\n').filter(Boolean);
+    const entries = lines.map(l => JSON.parse(l)).filter(e => e.kind === 'password-reset');
+    const entry = entries[entries.length - 1];
+    if (!entry) throw new Error(`No password-reset email captured in ${captureFile}`);
+    const url = new URL(entry.preview);
+    return url.searchParams.get('token');
+  }
 
   // ────────────────────────────────────────────────────────────────────────
   it('complete flow: forgot-password → reset-password → verify old/new passwords', async () => {
@@ -77,14 +89,7 @@ describe('Auth — Password Reset Integration', () => {
     });
     expect(user.id).toBeTruthy();
 
-    // 2. Spy on sendPasswordResetEmail to capture the raw token.
-    //    This replaces the SMTP side-effect only — no DB operations are affected.
-    jest.spyOn(emailService, 'sendPasswordResetEmail').mockImplementation(async (_toEmail, rawToken, _userData) => {
-      capturedRawToken = rawToken;
-      return { success: true, messageId: 'spy-captured', preview: `http://localhost/reset?token=${rawToken}` };
-    });
-
-    // 3. Call forgotPassword via HTTP — runs full controller + DB transaction
+    // 2. Call forgotPassword via HTTP — runs full controller + DB transaction
     const forgotRes = await request(app)
       .post('/api/v1/auth/forgot-password')
       .set('Origin', 'http://localhost:3000')
@@ -92,6 +97,9 @@ describe('Auth — Password Reset Integration', () => {
 
     expect(forgotRes.status).toBe(200);
     expect(forgotRes.body.status).toBe('success');
+
+    // 3. Extract raw token from the email capture file
+    const capturedRawToken = readCapturedResetToken();
     expect(capturedRawToken).not.toBeNull();
     expect(typeof capturedRawToken).toBe('string');
     expect(capturedRawToken.length).toBeGreaterThan(16);
@@ -211,12 +219,9 @@ describe('Auth — Password Reset Integration', () => {
     const cookies = loginRes.headers['set-cookie'];
     expect(cookies).toBeDefined();
 
-    // 3. Spy + forgot-password to capture the reset token.
-    jest.spyOn(emailService, 'sendPasswordResetEmail').mockImplementation(async (_to, rawToken, _u) => {
-      capturedRawToken = rawToken;
-      return { success: true, messageId: 'spy-captured', preview: '' };
-    });
+    // 3. Call forgot-password; token is captured via EMAIL_CAPTURE_FILE
     await request(app).post('/api/v1/auth/forgot-password').set('Origin', 'http://localhost:3000').send({ email });
+    const capturedRawToken = readCapturedResetToken();
     expect(capturedRawToken).not.toBeNull();
 
     // 4. Sleep across the JWT iat second-boundary. JWT iat is second-precision
@@ -267,12 +272,8 @@ describe('Auth — Password Reset Integration', () => {
       },
     });
 
-    jest.spyOn(emailService, 'sendPasswordResetEmail').mockImplementation(async (_toEmail, rawToken, _userData) => {
-      capturedRawToken = rawToken;
-      return { success: true, messageId: 'spy-captured', preview: '' };
-    });
-
     await request(app).post('/api/v1/auth/forgot-password').set('Origin', 'http://localhost:3000').send({ email });
+    const capturedRawToken = readCapturedResetToken();
     expect(capturedRawToken).not.toBeNull();
 
     // Use the token once — should succeed

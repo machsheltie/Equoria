@@ -49,6 +49,43 @@
 import { jest, describe, beforeEach, afterEach, it, expect } from '@jest/globals';
 import { createRedisCircuitBreaker } from '../../utils/redisCircuitBreaker.mjs';
 
+/**
+ * Configurable async stub — replaces jest.fn() for Redis client methods.
+ * Exposes .mock.calls (array of arg arrays), .setReturn(v), .setThrow(e),
+ * .setImpl(fn), .queueReturn(v), .queueThrow(e).
+ */
+function makeConfigurableAsync() {
+  const calls = [];
+  let _impl = async () => undefined;
+  const queue = [];
+  const fn = async (...args) => {
+    calls.push(args);
+    if (queue.length > 0) return queue.shift()();
+    return _impl(...args);
+  };
+  fn.mock = { calls };
+  fn.setReturn = v => {
+    _impl = async () => v;
+  };
+  fn.setThrow = e => {
+    _impl = async () => {
+      throw e;
+    };
+  };
+  fn.setImpl = impl => {
+    _impl = impl;
+  };
+  fn.queueReturn = v => {
+    queue.push(async () => v);
+  };
+  fn.queueThrow = e => {
+    queue.push(async () => {
+      throw e;
+    });
+  };
+  return fn;
+}
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 /**
@@ -106,18 +143,16 @@ beforeEach(() => {
   jest.useFakeTimers({ doNotFake: ['setImmediate', 'nextTick', 'performance'] });
 
   mockRedisClient = {
-    get: jest.fn(),
-    set: jest.fn(),
-    setex: jest.fn(),
-    del: jest.fn(),
-    keys: jest.fn(),
-    flushdb: jest.fn(),
-    expire: jest.fn(),
-    ttl: jest.fn(),
-    exists: jest.fn(),
+    get: makeConfigurableAsync(),
+    set: makeConfigurableAsync(),
+    setex: makeConfigurableAsync(),
+    del: makeConfigurableAsync(),
+    keys: makeConfigurableAsync(),
+    flushdb: makeConfigurableAsync(),
+    expire: makeConfigurableAsync(),
+    ttl: makeConfigurableAsync(),
+    exists: makeConfigurableAsync(),
   };
-
-  jest.clearAllMocks();
 });
 
 afterEach(async () => {
@@ -139,7 +174,7 @@ describe('AT-01: CLOSED → OPEN transition', () => {
       timeout: 1000,
     });
 
-    mockRedisClient.get.mockRejectedValue(connRefusedError());
+    mockRedisClient.get.setThrow(connRefusedError());
 
     // Fire 4 requests (> volumeThreshold=3) all failing → should open
     await openCircuit(circuitBreaker, 'get', 4);
@@ -164,7 +199,7 @@ describe('AT-02: OPEN → HALF_OPEN transition via resetTimeout', () => {
       timeout: 1000,
     });
 
-    mockRedisClient.get.mockRejectedValue(connRefusedError());
+    mockRedisClient.get.setThrow(connRefusedError());
 
     // Open the circuit
     await openCircuit(circuitBreaker, 'get', 4);
@@ -189,7 +224,7 @@ describe('AT-03: Failure count is tracked accurately', () => {
       errorThresholdPercentage: 90,
     });
 
-    mockRedisClient.get.mockRejectedValue(connRefusedError('Redis connection refused'));
+    mockRedisClient.get.setThrow(connRefusedError('Redis connection refused'));
 
     for (let i = 0; i < 4; i++) {
       await fire(circuitBreaker.operations.get);
@@ -219,7 +254,7 @@ describe('AT-04: Full state cycle CLOSED → OPEN → HALF_OPEN → CLOSED', () 
     expect(circuitBreaker.getMetrics().currentState).toBe('CLOSED');
 
     // ② Fail until OPEN
-    mockRedisClient.get.mockRejectedValue(connRefusedError());
+    mockRedisClient.get.setThrow(connRefusedError());
     await openCircuit(circuitBreaker, 'get', 4);
     expect(circuitBreaker.getMetrics().currentState).toBe('OPEN');
 
@@ -229,7 +264,7 @@ describe('AT-04: Full state cycle CLOSED → OPEN → HALF_OPEN → CLOSED', () 
     expect(circuitBreaker.getMetrics().currentState).toBe('HALF_OPEN');
 
     // ④ Succeed in HALF_OPEN → triggers CLOSED
-    mockRedisClient.get.mockResolvedValue('recovered');
+    mockRedisClient.get.setReturn('recovered');
     for (let i = 0; i < 3; i++) {
       await fire(circuitBreaker.operations.get);
     }
@@ -252,11 +287,10 @@ describe('AT-05: Intermittent failures tracked correctly (success + failure mix)
       errorThresholdPercentage: 90,
     });
 
-    mockRedisClient.get
-      .mockResolvedValueOnce('ok1')
-      .mockRejectedValueOnce(connRefusedError('fail1'))
-      .mockResolvedValueOnce('ok2')
-      .mockRejectedValueOnce(connRefusedError('fail2'));
+    mockRedisClient.get.queueReturn('ok1');
+    mockRedisClient.get.queueThrow(connRefusedError('fail1'));
+    mockRedisClient.get.queueReturn('ok2');
+    mockRedisClient.get.queueThrow(connRefusedError('fail2'));
 
     await fire(circuitBreaker.operations.get); // success
     await fire(circuitBreaker.operations.get); // failure

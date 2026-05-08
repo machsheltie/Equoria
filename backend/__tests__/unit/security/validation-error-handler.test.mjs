@@ -1,38 +1,50 @@
-﻿import { describe, it, expect, jest } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 import { handleValidationErrors, sanitizeRequestData } from '../../../middleware/validationErrorHandler.mjs';
 
-const mockRes = () => ({
-  status: jest.fn().mockReturnThis(),
-  json: jest.fn().mockReturnThis(),
-});
+function makeTracked(returnValue) {
+  const calls = [];
+  const fn = (...args) => {
+    calls.push(args);
+    return returnValue;
+  };
+  fn.mock = { calls };
+  return fn;
+}
+
+function buildMockRes() {
+  const res = {};
+  res.status = makeTracked(res);
+  res.json = makeTracked(res);
+  return res;
+}
 
 describe('validationErrorHandler', () => {
   it('passes through when no errors', () => {
     const req = {
-      validationResult: jest.fn(() => ({ isEmpty: () => true, array: () => [] })),
+      validationResult: () => ({ isEmpty: () => true, array: () => [] }),
     };
-    const res = mockRes();
-    const next = jest.fn();
+    const res = buildMockRes();
+    const next = makeTracked(undefined);
     handleValidationErrors(req, res, next);
-    expect(next).toHaveBeenCalled();
+    expect(next.mock.calls.length).toBeGreaterThan(0);
   });
 
   it('returns 400 on validation errors', () => {
     const req = {
-      validationResult: jest.fn(() => ({
+      validationResult: () => ({
         isEmpty: () => false,
         array: () => [{ msg: 'Invalid' }],
-      })),
+      }),
       get: () => 'jest',
       method: 'GET',
       originalUrl: '/test',
       ip: '127.0.0.1',
     };
-    const res = mockRes();
-    const next = jest.fn();
+    const res = buildMockRes();
+    const next = makeTracked(undefined);
     handleValidationErrors(req, res, next);
-    expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({
+    expect(res.status.mock.calls[0]?.[0]).toBe(400);
+    expect(res.json.mock.calls[0]?.[0]).toEqual({
       success: false,
       message: 'Invalid',
       errors: [{ msg: 'Invalid' }],
@@ -48,23 +60,23 @@ describe('validationErrorHandler', () => {
     process.env.NODE_ENV = 'production';
     try {
       const req = {
-        validationResult: jest.fn(() => ({
+        validationResult: () => ({
           isEmpty: () => false,
           array: () => [
             { msg: 'Invalid email', path: 'email' },
             { msg: 'Password too short', path: 'password' },
           ],
-        })),
+        }),
         get: () => 'jest',
         method: 'POST',
         originalUrl: '/api/v1/auth/register',
         ip: '127.0.0.1',
       };
-      const res = mockRes();
-      const next = jest.fn();
+      const res = buildMockRes();
+      const next = makeTracked(undefined);
       handleValidationErrors(req, res, next);
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
+      expect(res.status.mock.calls[0]?.[0]).toBe(400);
+      expect(res.json.mock.calls[0]?.[0]).toEqual({
         success: false,
         message: 'Invalid email',
         // Only first message exposed; field paths and the second error are stripped.
@@ -78,13 +90,13 @@ describe('validationErrorHandler', () => {
   it('sanitizes request body by keeping only validated fields', () => {
     const req = {
       body: { allowed: 'ok', extra: 'bad' },
-      validationResult: jest.fn(() => ({ isEmpty: () => true })),
-      matchedData: jest.fn(() => ({ allowed: 'ok' })),
+      validationResult: () => ({ isEmpty: () => true }),
+      matchedData: () => ({ allowed: 'ok' }),
     };
-    const res = mockRes();
-    const next = jest.fn();
+    const res = buildMockRes();
+    const next = makeTracked(undefined);
     sanitizeRequestData(req, res, next);
     expect(req.body).toEqual({ allowed: 'ok' });
-    expect(next).toHaveBeenCalled();
+    expect(next.mock.calls.length).toBeGreaterThan(0);
   });
 });

@@ -11,17 +11,33 @@
  * @module __tests__/unit/security/token-validation
  */
 
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach } from '@jest/globals';
 import jwt from 'jsonwebtoken';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { createMockUser, createMockToken, createMalformedToken } from '../../factories/index.mjs';
+
+function makeTracked(returnValue) {
+  const calls = [];
+  const fn = (...args) => {
+    calls.push(args);
+    return returnValue;
+  };
+  fn.mock = { calls };
+  return fn;
+}
+
+function buildMockRes() {
+  const res = {};
+  res.status = makeTracked(res);
+  res.json = makeTracked(res);
+  return res;
+}
 
 describe('Token Validation Unit Tests', () => {
   let req, res, next;
   const JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key';
 
   beforeEach(() => {
-    // Reset request, response, and next mocks before each test
     req = {
       cookies: {},
       headers: {},
@@ -29,13 +45,8 @@ describe('Token Validation Unit Tests', () => {
       path: '/api/test',
       ip: '127.0.0.1',
     };
-
-    res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn().mockReturnThis(),
-    };
-
-    next = jest.fn();
+    res = buildMockRes();
+    next = makeTracked(undefined);
   });
 
   describe('Valid Token Scenarios', () => {
@@ -47,7 +58,7 @@ describe('Token Validation Unit Tests', () => {
 
       await authenticateToken(req, res, next);
 
-      expect(next).toHaveBeenCalledWith();
+      expect(next.mock.calls[0]).toEqual([]);
       expect(req.user).toBeDefined();
       expect(req.user.id).toBe(user.id);
     });
@@ -60,7 +71,7 @@ describe('Token Validation Unit Tests', () => {
 
       await authenticateToken(req, res, next);
 
-      expect(next).toHaveBeenCalledWith();
+      expect(next.mock.calls[0]).toEqual([]);
       expect(req.user).toBeDefined();
       expect(req.user.id).toBe(user.id);
     });
@@ -76,7 +87,7 @@ describe('Token Validation Unit Tests', () => {
 
       await authenticateToken(req, res, next);
 
-      expect(next).toHaveBeenCalledWith();
+      expect(next.mock.calls[0]).toEqual([]);
       expect(req.user.id).toBe(user1.id); // Should use cookie token
     });
 
@@ -93,7 +104,7 @@ describe('Token Validation Unit Tests', () => {
 
       await authenticateToken(req, res, next);
 
-      expect(next).toHaveBeenCalledWith();
+      expect(next.mock.calls[0]).toEqual([]);
       expect(req.user.id).toBe(user.id);
       expect(req.user.role).toBe('ADMIN');
       expect(req.user.customField).toBe('customValue');
@@ -109,9 +120,9 @@ describe('Token Validation Unit Tests', () => {
 
       await authenticateToken(req, res, next);
 
-      expect(next).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({
+      expect(next.mock.calls.length).toBe(0);
+      expect(res.status.mock.calls[0]?.[0]).toBe(401);
+      expect(res.json.mock.calls[0]?.[0]).toEqual({
         success: false,
         message: 'Token expired',
         status: 'error',
@@ -135,9 +146,9 @@ describe('Token Validation Unit Tests', () => {
 
       await authenticateToken(req, res, next);
 
-      expect(next).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({
+      expect(next.mock.calls.length).toBe(0);
+      expect(res.status.mock.calls[0]?.[0]).toBe(401);
+      expect(res.json.mock.calls[0]?.[0]).toEqual({
         success: false,
         message: 'Session expired. Please login again.',
         status: expect.anything(),
@@ -161,7 +172,7 @@ describe('Token Validation Unit Tests', () => {
 
       await authenticateToken(req, res, next);
 
-      expect(next).toHaveBeenCalledWith();
+      expect(next.mock.calls[0]).toEqual([]);
       expect(req.user).toBeDefined();
     });
 
@@ -182,8 +193,8 @@ describe('Token Validation Unit Tests', () => {
 
       await authenticateToken(req, res, next);
 
-      expect(next).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(401);
+      expect(next.mock.calls.length).toBe(0);
+      expect(res.status.mock.calls[0]?.[0]).toBe(401);
     });
   });
 
@@ -193,9 +204,9 @@ describe('Token Validation Unit Tests', () => {
 
       await authenticateToken(req, res, next);
 
-      expect(next).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({
+      expect(next.mock.calls.length).toBe(0);
+      expect(res.status.mock.calls[0]?.[0]).toBe(401);
+      expect(res.json.mock.calls[0]?.[0]).toEqual({
         success: false,
         message: 'Invalid or expired token',
         status: expect.anything(),
@@ -210,9 +221,9 @@ describe('Token Validation Unit Tests', () => {
 
       await authenticateToken(req, res, next);
 
-      expect(next).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({
+      expect(next.mock.calls.length).toBe(0);
+      expect(res.status.mock.calls[0]?.[0]).toBe(401);
+      expect(res.json.mock.calls[0]?.[0]).toEqual({
         success: false,
         message: 'Invalid or expired token',
         status: expect.anything(),
@@ -224,8 +235,8 @@ describe('Token Validation Unit Tests', () => {
 
       await authenticateToken(req, res, next);
 
-      expect(next).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(401);
+      expect(next.mock.calls.length).toBe(0);
+      expect(res.status.mock.calls[0]?.[0]).toBe(401);
     });
 
     it('should reject empty token string', async () => {
@@ -233,9 +244,9 @@ describe('Token Validation Unit Tests', () => {
 
       await authenticateToken(req, res, next);
 
-      expect(next).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({
+      expect(next.mock.calls.length).toBe(0);
+      expect(res.status.mock.calls[0]?.[0]).toBe(401);
+      expect(res.json.mock.calls[0]?.[0]).toEqual({
         success: false,
         message: 'Access token is required',
         status: expect.anything(),
@@ -247,16 +258,16 @@ describe('Token Validation Unit Tests', () => {
 
       await authenticateToken(req, res, next);
 
-      expect(next).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(401);
+      expect(next.mock.calls.length).toBe(0);
+      expect(res.status.mock.calls[0]?.[0]).toBe(401);
     });
 
     it('should reject undefined token', async () => {
       // No token set at all
       await authenticateToken(req, res, next);
 
-      expect(next).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(401);
+      expect(next.mock.calls.length).toBe(0);
+      expect(res.status.mock.calls[0]?.[0]).toBe(401);
     });
   });
 
@@ -264,9 +275,9 @@ describe('Token Validation Unit Tests', () => {
     it('should return 401 when no token in cookie or header', async () => {
       await authenticateToken(req, res, next);
 
-      expect(next).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(401);
-      expect(res.json).toHaveBeenCalledWith({
+      expect(next.mock.calls.length).toBe(0);
+      expect(res.status.mock.calls[0]?.[0]).toBe(401);
+      expect(res.json.mock.calls[0]?.[0]).toEqual({
         success: false,
         message: 'Access token is required',
         status: expect.anything(),
@@ -278,8 +289,8 @@ describe('Token Validation Unit Tests', () => {
 
       await authenticateToken(req, res, next);
 
-      expect(next).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(401);
+      expect(next.mock.calls.length).toBe(0);
+      expect(res.status.mock.calls[0]?.[0]).toBe(401);
     });
 
     it('should return 401 when Authorization header has wrong scheme', async () => {
@@ -289,8 +300,8 @@ describe('Token Validation Unit Tests', () => {
 
       await authenticateToken(req, res, next);
 
-      expect(next).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(401);
+      expect(next.mock.calls.length).toBe(0);
+      expect(res.status.mock.calls[0]?.[0]).toBe(401);
     });
 
     it('should return 401 when Authorization header has no space', async () => {
@@ -300,8 +311,8 @@ describe('Token Validation Unit Tests', () => {
 
       await authenticateToken(req, res, next);
 
-      expect(next).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(401);
+      expect(next.mock.calls.length).toBe(0);
+      expect(res.status.mock.calls[0]?.[0]).toBe(401);
     });
   });
 
@@ -375,11 +386,11 @@ describe('Token Validation Unit Tests', () => {
       const unauthorized = res.status.mock.calls.length > 0 || res.json.mock.calls.length > 0;
 
       if (unauthorized) {
-        expect(res.status).toHaveBeenCalledWith(401);
-        expect(next).not.toHaveBeenCalled();
+        expect(res.status.mock.calls[0]?.[0]).toBe(401);
+        expect(next.mock.calls.length).toBe(0);
       } else {
         // If the implementation opts to continue instead of erroring, it must not crash.
-        expect(next).toHaveBeenCalled();
+        expect(next.mock.calls.length).toBeGreaterThan(0);
       }
     });
 
@@ -391,7 +402,7 @@ describe('Token Validation Unit Tests', () => {
       await authenticateToken(req, res, next);
 
       // Should still call next but req.user should handle missing userId gracefully
-      expect(next).toHaveBeenCalledWith();
+      expect(next.mock.calls[0]).toEqual([]);
       expect(req.user.id).toBeUndefined();
     });
 
@@ -405,8 +416,8 @@ describe('Token Validation Unit Tests', () => {
 
       await authenticateToken(req, res, next);
 
-      expect(next).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(401);
+      expect(next.mock.calls.length).toBe(0);
+      expect(res.status.mock.calls[0]?.[0]).toBe(401);
     });
   });
 });

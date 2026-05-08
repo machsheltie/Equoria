@@ -35,6 +35,43 @@ import { createRedisCircuitBreaker, DEFAULT_CIRCUIT_OPTIONS } from '../../utils/
 // ── Module-scope helpers ───────────────────────────────────────────────────────
 
 /**
+ * Configurable async stub — replaces jest.fn() for Redis client methods.
+ * Exposes .mock.calls (array of arg arrays), .setReturn(v), .setThrow(e),
+ * .setImpl(fn), .queueReturn(v), .queueThrow(e).
+ */
+function makeConfigurableAsync() {
+  const calls = [];
+  let _impl = async () => undefined;
+  const queue = [];
+  const fn = async (...args) => {
+    calls.push(args);
+    if (queue.length > 0) return queue.shift()();
+    return _impl(...args);
+  };
+  fn.mock = { calls };
+  fn.setReturn = v => {
+    _impl = async () => v;
+  };
+  fn.setThrow = e => {
+    _impl = async () => {
+      throw e;
+    };
+  };
+  fn.setImpl = impl => {
+    _impl = impl;
+  };
+  fn.queueReturn = v => {
+    queue.push(async () => v);
+  };
+  fn.queueThrow = e => {
+    queue.push(async () => {
+      throw e;
+    });
+  };
+  return fn;
+}
+
+/**
  * Drain residual microtasks.
  * opossum's EventEmitter callbacks are synchronous within the microtask chain,
  * so two Promise.resolve() ticks are enough to let metrics settle.
@@ -89,18 +126,16 @@ describe('Redis Circuit Breaker Integration Tests', () => {
     jest.useFakeTimers({ doNotFake: ['setImmediate', 'nextTick', 'performance'] });
 
     mockRedisClient = {
-      get: jest.fn(),
-      set: jest.fn(),
-      setex: jest.fn(),
-      del: jest.fn(),
-      keys: jest.fn(),
-      flushdb: jest.fn(),
-      expire: jest.fn(),
-      ttl: jest.fn(),
-      exists: jest.fn(),
+      get: makeConfigurableAsync(),
+      set: makeConfigurableAsync(),
+      setex: makeConfigurableAsync(),
+      del: makeConfigurableAsync(),
+      keys: makeConfigurableAsync(),
+      flushdb: makeConfigurableAsync(),
+      expire: makeConfigurableAsync(),
+      ttl: makeConfigurableAsync(),
+      exists: makeConfigurableAsync(),
     };
-
-    jest.clearAllMocks();
   });
 
   afterEach(async () => {
@@ -170,7 +205,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
       });
 
       // ECONNREFUSED errors are counted as failures in test env (errorFilter returns false).
-      mockRedisClient.get.mockRejectedValue(connRefusedError('Connection failed'));
+      mockRedisClient.get.setThrow(connRefusedError('Connection failed'));
 
       // 11 failures → exceeds volumeThreshold=10 at 100% error rate → circuit opens.
       await openCircuit(circuitBreaker, 'get', 11);
@@ -189,7 +224,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
         volumeThreshold: 5,
       });
 
-      mockRedisClient.get.mockRejectedValue(connRefusedError('Connection failed'));
+      mockRedisClient.get.setThrow(connRefusedError('Connection failed'));
       await openCircuit(circuitBreaker, 'get', 6); // exceed volumeThreshold=5
       expect(circuitBreaker.getMetrics().currentState).toBe('OPEN');
 
@@ -212,7 +247,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
       });
 
       // Force OPEN
-      mockRedisClient.get.mockRejectedValue(connRefusedError('Connection failed'));
+      mockRedisClient.get.setThrow(connRefusedError('Connection failed'));
       await openCircuit(circuitBreaker, 'get', 6);
       expect(circuitBreaker.getMetrics().currentState).toBe('OPEN');
 
@@ -222,7 +257,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
       expect(circuitBreaker.getMetrics().currentState).toBe('HALF_OPEN');
 
       // Succeed in HALF_OPEN → CLOSED
-      mockRedisClient.get.mockResolvedValue('recovered');
+      mockRedisClient.get.setReturn('recovered');
       for (let i = 0; i < 3; i++) {
         await fire(circuitBreaker.operations.get);
       }
@@ -248,7 +283,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
       // The error is re-thrown to the caller AND increments failureCount.
       // The circuit does not open yet because default volumeThreshold=10 requires more failures.
       const connectionError = connRefusedError('Connection refused');
-      mockRedisClient.get.mockRejectedValue(connectionError);
+      mockRedisClient.get.setThrow(connectionError);
 
       // Error is propagated to the caller.
       await expect(circuitBreaker.operations.get.fire('test-key')).rejects.toThrow('Connection refused');
@@ -266,7 +301,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
       // With fake timers: start the operation, advance time past the timeout,
       // then await the rejection so metrics settle.
       let timeoutHandle;
-      mockRedisClient.get.mockImplementation(() => {
+      mockRedisClient.get.setImpl(() => {
         return new Promise(resolve => {
           // 5 s — deliberately longer than opossum's 3 s timeout.
           timeoutHandle = setTimeout(() => resolve('too-slow'), 5000);
@@ -289,11 +324,10 @@ describe('Redis Circuit Breaker Integration Tests', () => {
 
     it('should handle intermittent Redis failures', async () => {
       // ECONNREFUSED errors are counted as failures in test env.
-      mockRedisClient.get
-        .mockResolvedValueOnce('success1')
-        .mockRejectedValueOnce(connRefusedError('Intermittent failure'))
-        .mockResolvedValueOnce('success2')
-        .mockRejectedValueOnce(connRefusedError('Intermittent failure'));
+      mockRedisClient.get.queueReturn('success1');
+      mockRedisClient.get.queueThrow(connRefusedError('Intermittent failure'));
+      mockRedisClient.get.queueReturn('success2');
+      mockRedisClient.get.queueThrow(connRefusedError('Intermittent failure'));
 
       const result1 = await circuitBreaker.operations.get.fire('key1');
       expect(result1).toBe('success1');
@@ -315,9 +349,9 @@ describe('Redis Circuit Breaker Integration Tests', () => {
     });
 
     it('should handle multiple operation types failing simultaneously', async () => {
-      mockRedisClient.get.mockRejectedValue(connRefusedError('Get failed'));
-      mockRedisClient.set.mockRejectedValue(connRefusedError('Set failed'));
-      mockRedisClient.del.mockRejectedValue(connRefusedError('Del failed'));
+      mockRedisClient.get.setThrow(connRefusedError('Get failed'));
+      mockRedisClient.set.setThrow(connRefusedError('Set failed'));
+      mockRedisClient.del.setThrow(connRefusedError('Del failed'));
 
       await expect(circuitBreaker.operations.get.fire('key')).rejects.toThrow('Get failed');
       await flushMicrotasks();
@@ -344,7 +378,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
     });
 
     it('should allow operations to fail when circuit is CLOSED', async () => {
-      mockRedisClient.get.mockRejectedValue(connRefusedError('Redis error'));
+      mockRedisClient.get.setThrow(connRefusedError('Redis error'));
 
       await expect(circuitBreaker.operations.get.fire('test-key')).rejects.toThrow('Redis error');
       await flushMicrotasks();
@@ -355,7 +389,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
 
     it('should reject operations immediately when circuit is OPEN', async () => {
       // Open the circuit with ECONNREFUSED failures (counted in test env).
-      mockRedisClient.get.mockRejectedValue(connRefusedError('Connection failed'));
+      mockRedisClient.get.setThrow(connRefusedError('Connection failed'));
       await openCircuit(circuitBreaker, 'get', 6); // exceed volumeThreshold=5
 
       expect(circuitBreaker.getMetrics().currentState).toBe('OPEN');
@@ -374,7 +408,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
 
     it('should remain OPEN and keep rejecting when circuit is open', async () => {
       // Open circuit.
-      mockRedisClient.get.mockRejectedValue(connRefusedError('Connection failed'));
+      mockRedisClient.get.setThrow(connRefusedError('Connection failed'));
       await openCircuit(circuitBreaker, 'get', 6);
       expect(circuitBreaker.getMetrics().currentState).toBe('OPEN');
 
@@ -396,7 +430,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
     });
 
     it('should handle concurrent successful requests', async () => {
-      mockRedisClient.get.mockResolvedValue('success');
+      mockRedisClient.get.setReturn('success');
 
       // 10 concurrent fires — all resolve immediately.
       const promises = Array(10)
@@ -415,7 +449,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
     it('should handle concurrent requests during circuit opening', async () => {
       // First 5 calls fail (ECONNREFUSED = counted); remainder succeed.
       let callCount = 0;
-      mockRedisClient.get.mockImplementation(() => {
+      mockRedisClient.get.setImpl(() => {
         callCount++;
         if (callCount <= 5) {
           return Promise.reject(connRefusedError('Connection failed'));
@@ -444,7 +478,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
     });
 
     it('should accurately track success count', async () => {
-      mockRedisClient.get.mockResolvedValue('success');
+      mockRedisClient.get.setReturn('success');
 
       await fire(circuitBreaker.operations.get);
       await fire(circuitBreaker.operations.get);
@@ -462,7 +496,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
       });
 
       // ECONNREFUSED = counted as failure in test env.
-      mockRedisClient.get.mockRejectedValue(connRefusedError('Redis error'));
+      mockRedisClient.get.setThrow(connRefusedError('Redis error'));
 
       for (let i = 0; i < 4; i++) {
         await fire(circuitBreaker.operations.get);
@@ -481,12 +515,11 @@ describe('Redis Circuit Breaker Integration Tests', () => {
       });
 
       // 3 successes, 2 failures → 40% error rate.
-      mockRedisClient.get
-        .mockResolvedValueOnce('success1')
-        .mockResolvedValueOnce('success2')
-        .mockRejectedValueOnce(connRefusedError('failure1'))
-        .mockResolvedValueOnce('success3')
-        .mockRejectedValueOnce(connRefusedError('failure2'));
+      mockRedisClient.get.queueReturn('success1');
+      mockRedisClient.get.queueReturn('success2');
+      mockRedisClient.get.queueThrow(connRefusedError('failure1'));
+      mockRedisClient.get.queueReturn('success3');
+      mockRedisClient.get.queueThrow(connRefusedError('failure2'));
 
       await fire(circuitBreaker.operations.get);
       await fire(circuitBreaker.operations.get);
@@ -518,7 +551,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
         timeout: 1000,
       });
 
-      mockRedisClient.get.mockRejectedValue(connRefusedError('Connection failed'));
+      mockRedisClient.get.setThrow(connRefusedError('Connection failed'));
       await openCircuit(circuitBreaker, 'get', 4); // 4 > volumeThreshold=3
 
       const healthStatus = circuitBreaker.getHealthStatus();
@@ -542,7 +575,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
         volumeThreshold: 3,
       });
 
-      mockRedisClient.get.mockRejectedValue(connRefusedError('Connection failed'));
+      mockRedisClient.get.setThrow(connRefusedError('Connection failed'));
       await openCircuit(circuitBreaker, 'get', 4); // open with 4 failures
       expect(circuitBreaker.getMetrics().failureCount).toBeGreaterThan(0);
       expect(circuitBreaker.getMetrics().currentState).toBe('OPEN');

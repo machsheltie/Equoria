@@ -7,10 +7,19 @@
  * Phase 2, Subtask 2.2: Rate Limiting Circuit Breaker Integration Tests
  */
 
-import { jest } from '@jest/globals';
 import express from 'express';
 import request from 'supertest';
 import { createRateLimiter, getRateLimitingHealth, isRedisConnected } from '../../middleware/rateLimiting.mjs';
+
+function makeTracked(returnValue) {
+  const calls = [];
+  const fn = (...args) => {
+    calls.push(args);
+    return returnValue;
+  };
+  fn.mock = { calls };
+  return fn;
+}
 
 // Mock Express request/response
 const createMockRequest = (overrides = {}) => ({
@@ -24,23 +33,15 @@ const createMockRequest = (overrides = {}) => ({
 
 const createMockResponse = () => {
   const res = {
-    status: jest.fn().mockReturnThis(),
-    json: jest.fn().mockReturnThis(),
     statusCode: 200,
     headersSent: false,
   };
+  res.status = makeTracked(res);
+  res.json = makeTracked(res);
   return res;
 };
 
 describe('Rate Limiting Circuit Breaker Integration Tests', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  afterEach(() => {
-    jest.restoreAllMocks();
-  });
-
   describe('Rate Limiter Initialization', () => {
     it('should create rate limiter successfully', () => {
       const limiter = createRateLimiter({
@@ -88,13 +89,13 @@ describe('Rate Limiting Circuit Breaker Integration Tests', () => {
 
       const req = createMockRequest();
       const res = createMockResponse();
-      const next = jest.fn();
+      const next = makeTracked(undefined);
 
       // First request should pass (in-memory tracking)
       limiter(req, res, next);
       await new Promise(resolve => setTimeout(resolve, 50));
 
-      expect(next).toHaveBeenCalled();
+      expect(next.mock.calls.length).toBeGreaterThan(0);
     });
 
     it('should log circuit open state when falling back', () => {
@@ -123,12 +124,12 @@ describe('Rate Limiting Circuit Breaker Integration Tests', () => {
       for (let i = 0; i < 3; i++) {
         const req = createMockRequest();
         const res = createMockResponse();
-        const next = jest.fn();
+        const next = makeTracked(undefined);
 
         limiter(req, res, next);
         await new Promise(resolve => setTimeout(resolve, 50));
 
-        expect(next).toHaveBeenCalled();
+        expect(next.mock.calls.length).toBeGreaterThan(0);
       }
     });
 
@@ -149,7 +150,7 @@ describe('Rate Limiting Circuit Breaker Integration Tests', () => {
       // Verify limiter can be called without errors
       const req = createMockRequest({ ip: '192.168.1.50' });
       const res = createMockResponse();
-      const next = jest.fn();
+      const next = makeTracked(undefined);
 
       limiter(req, res, next);
 
@@ -168,13 +169,13 @@ describe('Rate Limiting Circuit Breaker Integration Tests', () => {
         user: { id: '12345' },
       });
       const res = createMockResponse();
-      const next = jest.fn();
+      const next = makeTracked(undefined);
 
       limiter(req, res, next);
       await new Promise(resolve => setTimeout(resolve, 50));
 
       // Should use user:12345 as key
-      expect(next).toHaveBeenCalled();
+      expect(next.mock.calls.length).toBeGreaterThan(0);
     });
 
     it('should fall back to IP for unauthenticated requests', async () => {
@@ -188,13 +189,13 @@ describe('Rate Limiting Circuit Breaker Integration Tests', () => {
         ip: '192.168.1.100',
       });
       const res = createMockResponse();
-      const next = jest.fn();
+      const next = makeTracked(undefined);
 
       limiter(req, res, next);
       await new Promise(resolve => setTimeout(resolve, 50));
 
       // Should use ip:192.168.1.100 as key
-      expect(next).toHaveBeenCalled();
+      expect(next.mock.calls.length).toBeGreaterThan(0);
     });
   });
 
@@ -323,7 +324,7 @@ describe('Rate Limiting Circuit Breaker Integration Tests', () => {
 
       const req = createMockRequest();
       const res = createMockResponse();
-      const next = jest.fn();
+      const next = makeTracked(undefined);
 
       // Should not throw even if Redis has errors
       expect(() => {
@@ -355,19 +356,19 @@ describe('Rate Limiting Circuit Breaker Integration Tests', () => {
 
       // First request should pass
       let res = createMockResponse();
-      let next = jest.fn();
+      let next = makeTracked(undefined);
       limiter(req, res, next);
       await new Promise(resolve => setTimeout(resolve, 50));
 
       // Second request should be rate limited
       res = createMockResponse();
-      next = jest.fn();
+      next = makeTracked(undefined);
       limiter(req, res, next);
       await new Promise(resolve => setTimeout(resolve, 50));
 
       // Should have proper rate limit response
       if (res.status.mock.calls.length > 0) {
-        expect(res.status).toHaveBeenCalledWith(429);
+        expect(res.status.mock.calls[0]?.[0]).toBe(429);
         const jsonCall = res.json.mock.calls[0]?.[0];
         if (jsonCall) {
           expect(jsonCall).toHaveProperty('success', false);
@@ -389,7 +390,7 @@ describe('Rate Limiting Circuit Breaker Integration Tests', () => {
       // Exceed limit
       for (let i = 0; i < 2; i++) {
         const res = createMockResponse();
-        const next = jest.fn();
+        const next = makeTracked(undefined);
         limiter(req, res, next);
         await new Promise(resolve => setTimeout(resolve, 50));
       }
@@ -426,7 +427,7 @@ describe('Rate Limiting Circuit Breaker Integration Tests', () => {
       for (let i = 0; i < 3; i++) {
         const req = createMockRequest({ user: { id: 'shared-user' } });
         const res = createMockResponse();
-        const next = jest.fn();
+        const next = makeTracked(undefined);
         limiter(req, res, next);
         await new Promise(resolve => setTimeout(resolve, 50));
       }

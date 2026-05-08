@@ -15,7 +15,7 @@
  * Real DB only — no mocks (per CLAUDE.md no-mocks doctrine).
  */
 
-import { describe, it, expect, beforeAll, afterAll, jest } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'node:crypto';
@@ -24,6 +24,16 @@ import { authenticateToken, evictPasswordChangedAtCache } from '../../../middlew
 
 const SUITE_PREFIX = 'pwcache_';
 const JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-for-ci';
+
+function makeTracked(returnValue) {
+  const calls = [];
+  const fn = (...args) => {
+    calls.push(args);
+    return returnValue;
+  };
+  fn.mock = { calls };
+  return fn;
+}
 
 function makeReqRes(token) {
   const req = {
@@ -36,16 +46,16 @@ function makeReqRes(token) {
   const res = {
     _status: null,
     _body: null,
-    status: jest.fn(function (code) {
+    status(code) {
       this._status = code;
       return this;
-    }),
-    json: jest.fn(function (body) {
+    },
+    json(body) {
       this._body = body;
       return this;
-    }),
+    },
   };
-  const next = jest.fn();
+  const next = makeTracked(undefined);
   return { req, res, next };
 }
 
@@ -92,9 +102,10 @@ describe('Equoria-2bbf — passwordChangedAt cache', () => {
     {
       const { req, res, next } = makeReqRes(token);
       await authenticateToken(req, res, next);
-      expect(next).toHaveBeenCalledWith();
+      expect(next.mock.calls.length).toBeGreaterThan(0);
+      expect(next.mock.calls[0]).toEqual([]);
       expect(req.user.id).toBe(testUser.id);
-      expect(res.status).not.toHaveBeenCalledWith(401);
+      expect(res._status).not.toBe(401);
     }
 
     // Step 2: Mutate the DB directly — bypassing the controllers — to set
@@ -117,9 +128,10 @@ describe('Equoria-2bbf — passwordChangedAt cache', () => {
     {
       const { req, res, next } = makeReqRes(token);
       await authenticateToken(req, res, next);
-      expect(next).toHaveBeenCalledWith();
+      expect(next.mock.calls.length).toBeGreaterThan(0);
+      expect(next.mock.calls[0]).toEqual([]);
       expect(req.user.id).toBe(testUser.id);
-      expect(res.status).not.toHaveBeenCalledWith(401);
+      expect(res._status).not.toBe(401);
     }
 
     // Step 4: Evict the cache entry. The next request should DB-read the
@@ -129,8 +141,8 @@ describe('Equoria-2bbf — passwordChangedAt cache', () => {
     {
       const { req, res, next } = makeReqRes(token);
       await authenticateToken(req, res, next);
-      expect(next).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(401);
+      expect(next.mock.calls.length).toBe(0);
+      expect(res._status).toBe(401);
       expect(res._body).toMatchObject({
         success: false,
         message: expect.stringMatching(/Session invalidated/i),

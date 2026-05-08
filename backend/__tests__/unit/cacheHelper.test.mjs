@@ -3,7 +3,7 @@
  * Verifies the caching logic and in-memory fallback
  */
 
-import { describe, it, expect, jest, beforeEach, afterEach as _afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach } from '@jest/globals';
 import {
   getCachedQuery,
   invalidateCache,
@@ -12,6 +12,16 @@ import {
   resetCacheStatistics,
 } from '../../utils/cacheHelper.mjs';
 import { randomBytes } from 'node:crypto';
+
+function makeAsyncTracked(returnValue) {
+  const calls = [];
+  const fn = async (...args) => {
+    calls.push(args);
+    return returnValue;
+  };
+  fn.mock = { calls };
+  return fn;
+}
 
 describe('Cache Helper', () => {
   beforeEach(() => {
@@ -36,24 +46,24 @@ describe('Cache Helper', () => {
     it('should execute and cache the query result', async () => {
       const cacheKey = `test:key:${randomBytes(8).toString('hex')}`;
       const queryData = { id: 1, name: 'Test' };
-      const queryFn = jest.fn(async () => queryData);
+      const queryFn = makeAsyncTracked(queryData);
 
       // First call - Cache Miss
       const result1 = await getCachedQuery(cacheKey, queryFn, 10);
       expect(result1).toEqual(queryData);
-      expect(queryFn).toHaveBeenCalledTimes(1);
+      expect(queryFn.mock.calls.length).toBe(1);
       expect(cacheStats.localMisses).toBe(1);
 
       // Second call - Cache Hit
       const result2 = await getCachedQuery(cacheKey, queryFn, 10);
       expect(result2).toEqual(queryData);
-      expect(queryFn).toHaveBeenCalledTimes(1); // Should NOT be called again
+      expect(queryFn.mock.calls.length).toBe(1); // Should NOT be called again
       expect(cacheStats.localHits).toBe(1);
     });
 
     it('should respect TTL', async () => {
       const cacheKey = `test:ttl:${randomBytes(8).toString('hex')}`;
-      const queryFn = jest.fn(async () => ({ data: 'old' }));
+      const queryFn = makeAsyncTracked({ data: 'old' });
 
       // Cache with 0s TTL (expires immediately)
       await getCachedQuery(cacheKey, queryFn, 0);
@@ -61,23 +71,23 @@ describe('Cache Helper', () => {
       // Try again
       await getCachedQuery(cacheKey, queryFn, 10);
 
-      expect(queryFn).toHaveBeenCalledTimes(2);
+      expect(queryFn.mock.calls.length).toBe(2);
     });
 
     it('should handle undefined/null results', async () => {
       const cacheKey = `test:null:${randomBytes(8).toString('hex')}`;
-      const queryFn = jest.fn(async () => null);
+      const queryFn = makeAsyncTracked(null);
 
       const result = await getCachedQuery(cacheKey, queryFn);
       expect(result).toBeNull();
-      expect(queryFn).toHaveBeenCalledTimes(1);
+      expect(queryFn.mock.calls.length).toBe(1);
     });
   });
 
   describe('invalidateCache()', () => {
     it('should remove items from cache', async () => {
       const cacheKey = `test:invalidate:${randomBytes(8).toString('hex')}`;
-      const queryFn = jest.fn(async () => 'fresh');
+      const queryFn = makeAsyncTracked('fresh');
 
       // Cache it
       await getCachedQuery(cacheKey, queryFn);
@@ -88,7 +98,7 @@ describe('Cache Helper', () => {
       // Get again
       await getCachedQuery(cacheKey, queryFn);
 
-      expect(queryFn).toHaveBeenCalledTimes(2);
+      expect(queryFn.mock.calls.length).toBe(2);
     });
   });
 });

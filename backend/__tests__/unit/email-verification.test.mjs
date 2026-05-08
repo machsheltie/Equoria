@@ -7,7 +7,6 @@
  * Phase 1, Day 6-7: Email Verification System
  */
 
-import { jest } from '@jest/globals';
 import crypto from 'crypto';
 import {
   generateVerificationToken,
@@ -27,9 +26,6 @@ describe('Email Verification Service - Unit Tests', () => {
   let testUser;
 
   beforeEach(async () => {
-    jest.clearAllMocks();
-    jest.clearAllTimers();
-
     // Clean up email verification tokens scoped to this suite's test users
     // (email prefix "emailtest_" matches only tokens created by this suite).
     // An unscoped deleteMany({}) would wipe tokens across all users and cause
@@ -45,17 +41,6 @@ describe('Email Verification Service - Unit Tests', () => {
       email: `emailtest_${uniqueId}@example.com`,
     });
     testUser = userData;
-  });
-
-  afterEach(async () => {
-    jest.clearAllMocks();
-    jest.clearAllTimers();
-    jest.restoreAllMocks();
-  });
-
-  afterAll(async () => {
-    jest.clearAllTimers();
-    jest.restoreAllMocks();
   });
 
   describe('generateVerificationToken()', () => {

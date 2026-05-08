@@ -68,25 +68,30 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
   // we can distinguish from the canonical "Rejected malicious request body"
   // log from `requestBodySecurityErrorHandler`.
   let loggerWarnSpy;
+  let _origLoggerWarn;
+  const _origScan = __TESTING_ONLY_JsonScanner?.prototype?.scan;
 
   beforeEach(() => {
-    loggerWarnSpy = jest.spyOn(logger, 'warn').mockImplementation(() => {});
+    _origLoggerWarn = logger.warn;
+    const _warnCalls = [];
+    logger.warn = (...args) => {
+      _warnCalls.push(args);
+    };
+    logger.warn.mock = { calls: _warnCalls };
+    loggerWarnSpy = logger.warn;
   });
 
-  // No manual prototype-restore: `jest.config.security.mjs` has
-  // `restoreMocks: true`, which auto-restores every `jest.spyOn` mock
-  // (including prototype-method spies) after each test, including in the
-  // crash path where `afterEach` would not run for raw assignments.
+  afterEach(() => {
+    logger.warn = _origLoggerWarn;
+    if (_origScan !== undefined && __TESTING_ONLY_JsonScanner?.prototype) {
+      __TESTING_ONLY_JsonScanner.prototype.scan = _origScan;
+    }
+  });
 
-  // Helper: install a stubbed scanner that throws the given value verbatim
-  // via `jest.spyOn`, so it auto-restores via `restoreMocks: true` even on
-  // worker abort. Replaces the prior raw `prototype.scan = stub` pattern
-  // which was not crash-safe.
   const stubScannerToThrow = valueToThrow => {
-    jest.spyOn(__TESTING_ONLY_JsonScanner.prototype, 'scan').mockImplementation(() => {
-      // catch handles primitive throws.
+    __TESTING_ONLY_JsonScanner.prototype.scan = function () {
       throw valueToThrow;
-    });
+    };
   };
 
   // Helper: assert the response is the canonical 400 + envelope from the
@@ -474,17 +479,29 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
     // dispatch is type-based, not string-based — a regression that
     // re-introduces startsWith() would fail it.
 
-    // Harness uses real jest.fn() spies on res.status / res.json so callers
-    // can use idiomatic .toHaveBeenCalledWith() / .not.toHaveBeenCalled()
-    // assertions, matching the rest of the test file's spy patterns.
     const makeHandlerHarness = () => {
       const res = {};
-      res.status = jest.fn().mockReturnValue(res);
-      res.json = jest.fn().mockReturnValue(res);
+      const statusCalls = [];
+      res.status = (...args) => {
+        statusCalls.push(args);
+        return res;
+      };
+      res.status.mock = { calls: statusCalls };
+      const jsonCalls = [];
+      res.json = (...args) => {
+        jsonCalls.push(args);
+        return res;
+      };
+      res.json.mock = { calls: jsonCalls };
+      const nextCalls = [];
+      const next = (...args) => {
+        nextCalls.push(args);
+      };
+      next.mock = { calls: nextCalls };
       return {
         req: { originalUrl: '/x', method: 'POST', ip: '1.2.3.4' },
         res,
-        next: jest.fn(),
+        next,
       };
     };
 
@@ -494,12 +511,12 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
 
       requestBodySecurityErrorHandler(err, req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
+      expect(res.status.mock.calls[0]?.[0]).toBe(400);
+      expect(res.json.mock.calls[0]?.[0]).toEqual({
         success: false,
         message: `${ERROR_MESSAGE_PREFIX} scanner failure`,
       });
-      expect(next).not.toHaveBeenCalled();
+      expect(next.mock.calls.length).toBe(0);
     });
 
     it('forwards plain AppError with the LEGACY prefix message (not a sentinel instance)', () => {
@@ -511,10 +528,10 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
 
       requestBodySecurityErrorHandler(err, req, res, next);
 
-      expect(res.status).not.toHaveBeenCalled();
-      expect(res.json).not.toHaveBeenCalled();
-      expect(next).toHaveBeenCalledTimes(1);
-      expect(next).toHaveBeenCalledWith(err);
+      expect(res.status.mock.calls.length).toBe(0);
+      expect(res.json.mock.calls.length).toBe(0);
+      expect(next.mock.calls.length).toBe(1);
+      expect(next.mock.calls[0]?.[0]).toBe(err);
     });
 
     it('forwards generic Error', () => {
@@ -523,10 +540,10 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
 
       requestBodySecurityErrorHandler(err, req, res, next);
 
-      expect(res.status).not.toHaveBeenCalled();
-      expect(res.json).not.toHaveBeenCalled();
-      expect(next).toHaveBeenCalledTimes(1);
-      expect(next).toHaveBeenCalledWith(err);
+      expect(res.status.mock.calls.length).toBe(0);
+      expect(res.json.mock.calls.length).toBe(0);
+      expect(next.mock.calls.length).toBe(1);
+      expect(next.mock.calls[0]?.[0]).toBe(err);
     });
 
     it('forwards errors with non-string message (defensive)', () => {
@@ -535,22 +552,22 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
 
       requestBodySecurityErrorHandler(err, req, res, next);
 
-      expect(res.status).not.toHaveBeenCalled();
-      expect(next).toHaveBeenCalledTimes(1);
-      expect(next).toHaveBeenCalledWith(err);
+      expect(res.status.mock.calls.length).toBe(0);
+      expect(next.mock.calls.length).toBe(1);
+      expect(next.mock.calls[0]?.[0]).toBe(err);
     });
 
     it('forwards null/undefined err (defensive)', () => {
       const { req, res, next } = makeHandlerHarness();
 
       requestBodySecurityErrorHandler(null, req, res, next);
-      expect(next).toHaveBeenCalledWith(null);
-      expect(res.status).not.toHaveBeenCalled();
+      expect(next.mock.calls[0]?.[0]).toBeNull();
+      expect(res.status.mock.calls.length).toBe(0);
 
-      next.mockClear();
+      next.mock.calls.splice(0);
       requestBodySecurityErrorHandler(undefined, req, res, next);
-      expect(next).toHaveBeenCalledWith(undefined);
-      expect(res.status).not.toHaveBeenCalled();
+      expect(next.mock.calls[0]?.[0]).toBeUndefined();
+      expect(res.status.mock.calls.length).toBe(0);
     });
 
     it('ERROR_MESSAGE_PREFIX is non-empty and ends with a colon (catches accidental rename)', () => {
@@ -604,12 +621,12 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
 
       requestBodySecurityErrorHandler(err, req, res, next);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
+      expect(res.status.mock.calls[0]?.[0]).toBe(400);
+      expect(res.json.mock.calls[0]?.[0]).toEqual({
         success: false,
         message: `${ERROR_MESSAGE_PREFIX} ${messageBody}`,
       });
-      expect(next).not.toHaveBeenCalled();
+      expect(next.mock.calls.length).toBe(0);
       // Sanity: the constructor wraps the body in the prefix. If a
       // future refactor strips that wrapping, the assertion above
       // already fires; this expect documents the contract explicitly.

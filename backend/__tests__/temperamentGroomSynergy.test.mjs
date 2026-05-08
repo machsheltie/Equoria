@@ -7,7 +7,7 @@
  * - Data integrity — TEMPERAMENT_GROOM_SYNERGY keys match TEMPERAMENT_TYPES
  */
 
-import { describe, it, expect, jest } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 
 // NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): the
 // previous logger mock was used to assert on logger.warn / logger.info
@@ -23,10 +23,6 @@ import { GROOM_CONFIG } from '../config/groomConfig.mjs';
 import { TEMPERAMENT_TYPES } from '../modules/horses/data/breedGeneticProfiles.mjs';
 
 describe('Story 31D.4: Groom Temperament Synergy', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   // ─── Unit tests: getTemperamentGroomSynergy() ────────────────────────────
 
   describe('getTemperamentGroomSynergy() — explicit pairings (AC #3)', () => {

@@ -12,7 +12,7 @@
  * - Cache operations during Redis outage
  */
 
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach } from '@jest/globals';
 import {
   getCachedQuery,
   invalidateCache,
@@ -23,32 +23,47 @@ import {
 } from '../../utils/cacheHelper.mjs';
 import { randomBytes } from 'node:crypto';
 
+function makeAsyncTracked(returnValue) {
+  const calls = [];
+  const fn = async (...args) => {
+    calls.push(args);
+    return returnValue;
+  };
+  fn.mock = { calls };
+  return fn;
+}
+
+function makeAsyncThrows(errorMessage) {
+  const calls = [];
+  const fn = async (...args) => {
+    calls.push(args);
+    throw new Error(errorMessage);
+  };
+  fn.mock = { calls };
+  return fn;
+}
+
 describe('Caching Circuit Breaker Integration Tests', () => {
   beforeEach(() => {
     // Reset cache statistics before each test
     resetCacheStatistics();
   });
 
-  afterEach(() => {
-    // Clean up after each test
-    jest.clearAllMocks();
-  });
-
   describe('Multi-Tier Caching (L1: In-Memory, L2: Redis)', () => {
     it('should use in-memory cache when Redis is unavailable', async () => {
       const cacheKey = generateCacheKey('test', 'multi-tier', Date.now());
       const queryData = { id: 1, name: 'Test Data' };
-      const queryFn = jest.fn(async () => queryData);
+      const queryFn = makeAsyncTracked(queryData);
 
       // First call - Cache miss, execute query
       const result1 = await getCachedQuery(cacheKey, queryFn, 60);
       expect(result1).toEqual(queryData);
-      expect(queryFn).toHaveBeenCalledTimes(1);
+      expect(queryFn.mock.calls.length).toBe(1);
 
       // Second call - Should hit local cache (in test environment, Redis is disabled)
       const result2 = await getCachedQuery(cacheKey, queryFn, 60);
       expect(result2).toEqual(queryData);
-      expect(queryFn).toHaveBeenCalledTimes(1); // Query should not be called again
+      expect(queryFn.mock.calls.length).toBe(1); // Query should not be called again
 
       // Verify cache statistics
       const stats = await getCacheStatistics();
@@ -60,7 +75,7 @@ describe('Caching Circuit Breaker Integration Tests', () => {
       // that the code path for dual caching exists and doesn't error
       const cacheKey = generateCacheKey('test', 'dual-tier', Date.now());
       const queryData = { items: [1, 2, 3] };
-      const queryFn = jest.fn(async () => queryData);
+      const queryFn = makeAsyncTracked(queryData);
 
       const result = await getCachedQuery(cacheKey, queryFn, 120);
       expect(result).toEqual(queryData);
@@ -73,7 +88,12 @@ describe('Caching Circuit Breaker Integration Tests', () => {
     it('should handle TTL expiration in local cache', async () => {
       const cacheKey = generateCacheKey('test', 'ttl', Date.now());
       let callCount = 0;
-      const queryFn = jest.fn(async () => ({ count: ++callCount }));
+      const ttlCalls = [];
+      const queryFn = async () => {
+        ttlCalls.push([]);
+        return { count: ++callCount };
+      };
+      queryFn.mock = { calls: ttlCalls };
 
       // Cache with 0 second TTL (expires immediately)
       const result1 = await getCachedQuery(cacheKey, queryFn, 0);
@@ -85,7 +105,7 @@ describe('Caching Circuit Breaker Integration Tests', () => {
       // Should execute query again since cache expired
       const result2 = await getCachedQuery(cacheKey, queryFn, 60);
       expect(result2.count).toBe(2);
-      expect(queryFn).toHaveBeenCalledTimes(2);
+      expect(queryFn.mock.calls.length).toBe(2);
     });
   });
 
@@ -108,7 +128,7 @@ describe('Caching Circuit Breaker Integration Tests', () => {
 
     it('should not throw errors when circuit breaker is unavailable', async () => {
       const cacheKey = generateCacheKey('test', 'circuit-unavailable', Date.now());
-      const queryFn = jest.fn(async () => ({ data: 'test' }));
+      const queryFn = makeAsyncTracked({ data: 'test' });
 
       // Should work even without Redis/circuit breaker
       await expect(getCachedQuery(cacheKey, queryFn, 60)).resolves.toBeDefined();
@@ -119,7 +139,7 @@ describe('Caching Circuit Breaker Integration Tests', () => {
 
       const key1 = generateCacheKey('test', 'stat', '1', Date.now());
       const key2 = generateCacheKey('test', 'stat', '2', Date.now());
-      const queryFn = jest.fn(async () => ({ value: 'data' }));
+      const queryFn = makeAsyncTracked({ value: 'data' });
 
       // First cache miss
       await getCachedQuery(key1, queryFn, 60);
@@ -133,7 +153,7 @@ describe('Caching Circuit Breaker Integration Tests', () => {
       const stats = await getCacheStatistics();
       expect(stats.localHits).toBeGreaterThan(0);
       expect(stats.localMisses).toBeGreaterThan(0);
-      expect(queryFn).toHaveBeenCalledTimes(2); // Only for 2 unique keys
+      expect(queryFn.mock.calls.length).toBe(2); // Only for 2 unique keys
     });
   });
 
@@ -141,20 +161,20 @@ describe('Caching Circuit Breaker Integration Tests', () => {
     it('should fall back to query execution if cache fails', async () => {
       const cacheKey = generateCacheKey('test', 'fallback', Date.now());
       const queryData = { critical: 'data' };
-      const queryFn = jest.fn(async () => queryData);
+      const queryFn = makeAsyncTracked(queryData);
 
       // Even if Redis is down (which it is in test), query should execute
       const result = await getCachedQuery(cacheKey, queryFn, 60);
       expect(result).toEqual(queryData);
-      expect(queryFn).toHaveBeenCalled();
+      expect(queryFn.mock.calls.length).toBeGreaterThan(0);
     });
 
     it('should handle null and undefined query results', async () => {
       const key1 = generateCacheKey('test', 'null', Date.now());
       const key2 = generateCacheKey('test', 'undefined', Date.now());
 
-      const nullFn = jest.fn(async () => null);
-      const undefinedFn = jest.fn(async () => undefined);
+      const nullFn = makeAsyncTracked(null);
+      const undefinedFn = makeAsyncTracked(undefined);
 
       const result1 = await getCachedQuery(key1, nullFn, 60);
       const result2 = await getCachedQuery(key2, undefinedFn, 60);
@@ -165,9 +185,7 @@ describe('Caching Circuit Breaker Integration Tests', () => {
 
     it('should handle query function errors gracefully', async () => {
       const cacheKey = generateCacheKey('test', 'error', Date.now());
-      const errorFn = jest.fn(async () => {
-        throw new Error('Query failed');
-      });
+      const errorFn = makeAsyncThrows('Query failed');
 
       await expect(getCachedQuery(cacheKey, errorFn, 60)).rejects.toThrow('Query failed');
     });
@@ -177,7 +195,12 @@ describe('Caching Circuit Breaker Integration Tests', () => {
     it('should invalidate specific cache keys', async () => {
       const cacheKey = generateCacheKey('test', 'invalidate', Date.now());
       let callCount = 0;
-      const queryFn = jest.fn(async () => ({ count: ++callCount }));
+      const invCalls = [];
+      const queryFn = async () => {
+        invCalls.push([]);
+        return { count: ++callCount };
+      };
+      queryFn.mock = { calls: invCalls };
 
       // Cache data
       const result1 = await getCachedQuery(cacheKey, queryFn, 60);
@@ -186,7 +209,7 @@ describe('Caching Circuit Breaker Integration Tests', () => {
       // Cache hit
       const result2 = await getCachedQuery(cacheKey, queryFn, 60);
       expect(result2.count).toBe(1);
-      expect(queryFn).toHaveBeenCalledTimes(1);
+      expect(queryFn.mock.calls.length).toBe(1);
 
       // Invalidate cache
       const deletedCount = await invalidateCache(cacheKey);
@@ -195,7 +218,7 @@ describe('Caching Circuit Breaker Integration Tests', () => {
       // Should re-execute query
       const result3 = await getCachedQuery(cacheKey, queryFn, 60);
       expect(result3.count).toBe(2);
-      expect(queryFn).toHaveBeenCalledTimes(2);
+      expect(queryFn.mock.calls.length).toBe(2);
 
       // Verify invalidation was tracked
       const stats = await getCacheStatistics();
@@ -208,13 +231,13 @@ describe('Caching Circuit Breaker Integration Tests', () => {
       const key2 = generateCacheKey(prefix, 'item2');
       const key3 = generateCacheKey('different', 'item');
 
-      const queryFn = jest.fn(async () => ({ data: 'test' }));
+      const queryFn = makeAsyncTracked({ data: 'test' });
 
       // Cache multiple items
       await getCachedQuery(key1, queryFn, 60);
       await getCachedQuery(key2, queryFn, 60);
       await getCachedQuery(key3, queryFn, 60);
-      expect(queryFn).toHaveBeenCalledTimes(3);
+      expect(queryFn.mock.calls.length).toBe(3);
 
       // Invalidate by pattern
       const deletedCount = await invalidateCachePattern(`${prefix}:*`);
@@ -224,7 +247,7 @@ describe('Caching Circuit Breaker Integration Tests', () => {
       expect(deletedCount).toBeGreaterThanOrEqual(0); // May be 0 if implementation differs
 
       // Verify pattern-matched keys are invalidated by re-fetching
-      queryFn.mockClear(); // Clear call count
+      queryFn.mock.calls.splice(0); // Clear call count
       await getCachedQuery(key1, queryFn, 60);
       await getCachedQuery(key2, queryFn, 60);
       const result3 = await getCachedQuery(key3, queryFn, 60);
@@ -234,7 +257,7 @@ describe('Caching Circuit Breaker Integration Tests', () => {
       // Either way, test should verify behavior matches deletedCount
       if (deletedCount > 0) {
         // Invalidation worked - should re-fetch invalidated keys
-        expect(queryFn).toHaveBeenCalledTimes(2); // key1, key2 re-fetched
+        expect(queryFn.mock.calls.length).toBe(2); // key1, key2 re-fetched
       } else {
         // Invalidation returned 0 - cache hits expected
         expect(result3).toBeDefined(); // Just verify no errors
@@ -281,7 +304,7 @@ describe('Caching Circuit Breaker Integration Tests', () => {
 
       const key1 = generateCacheKey('test', 'hitrate', '1', Date.now());
       const key2 = generateCacheKey('test', 'hitrate', '2', Date.now());
-      const queryFn = jest.fn(async () => ({ data: 'test' }));
+      const queryFn = makeAsyncTracked({ data: 'test' });
 
       // 2 misses (first time cache)
       await getCachedQuery(key1, queryFn, 60);
@@ -318,7 +341,7 @@ describe('Caching Circuit Breaker Integration Tests', () => {
       resetCacheStatistics();
 
       const cacheKey = generateCacheKey('test', 'timestamp', Date.now());
-      const queryFn = jest.fn(async () => ({ data: 'test' }));
+      const queryFn = makeAsyncTracked({ data: 'test' });
 
       const statsBefore = await getCacheStatistics();
 
@@ -339,7 +362,7 @@ describe('Caching Circuit Breaker Integration Tests', () => {
   describe('Performance and Limits', () => {
     it('should handle multiple concurrent cache requests', async () => {
       const keys = Array.from({ length: 10 }, (_, i) => generateCacheKey('test', 'concurrent', i, Date.now()));
-      const queryFn = jest.fn(async () => ({ data: 'test' }));
+      const queryFn = makeAsyncTracked({ data: 'test' });
 
       // Execute all cache requests concurrently
       const promises = keys.map(key => getCachedQuery(key, queryFn, 60));
@@ -350,7 +373,7 @@ describe('Caching Circuit Breaker Integration Tests', () => {
       results.forEach(result => expect(result).toEqual({ data: 'test' }));
 
       // Query function should be called once per unique key
-      expect(queryFn).toHaveBeenCalledTimes(10);
+      expect(queryFn.mock.calls.length).toBe(10);
     });
 
     it('should handle large data objects', async () => {
@@ -359,7 +382,7 @@ describe('Caching Circuit Breaker Integration Tests', () => {
         array: Array.from({ length: 1000 }, (_, i) => ({ id: i, name: `Item ${i}` })),
         nested: { deep: { structure: { with: { many: { levels: 'value' } } } } },
       };
-      const queryFn = jest.fn(async () => largeData);
+      const queryFn = makeAsyncTracked(largeData);
 
       const result = await getCachedQuery(cacheKey, queryFn, 60);
       expect(result).toEqual(largeData);

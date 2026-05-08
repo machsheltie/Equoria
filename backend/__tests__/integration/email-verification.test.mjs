@@ -7,7 +7,6 @@
  * Phase 1, Day 6-7: Email Verification System
  */
 
-import { jest } from '@jest/globals';
 import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
@@ -88,17 +87,6 @@ describe('Email Verification System - Integration Tests', () => {
     });
     return rawToken;
   };
-
-  afterEach(async () => {
-    jest.clearAllMocks();
-    jest.clearAllTimers();
-    jest.restoreAllMocks();
-  });
-
-  afterAll(async () => {
-    jest.clearAllTimers();
-    jest.restoreAllMocks();
-  });
 
   describe('POST /auth/register - Email Verification Integration', () => {
     it('should_create_verification_token_on_registration', async () => {
