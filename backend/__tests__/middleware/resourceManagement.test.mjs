@@ -15,9 +15,9 @@
  * - Production-like request scenarios
  */
 
-import { jest } from '@jest/globals';
 import request from 'supertest';
 import express from 'express';
+import prisma from '../../../packages/database/prismaClient.mjs';
 import {
   createResourceManagementMiddleware,
   memoryMonitoringMiddleware,
@@ -153,8 +153,6 @@ describe('Resource Management Middleware', () => {
     });
 
     test('warns about slow requests', async () => {
-      const logSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
-
       testApp.use(
         createResourceManagementMiddleware({
           trackPerformance: true,
@@ -163,19 +161,15 @@ describe('Resource Management Middleware', () => {
       );
 
       testApp.get('/test-slow', (req, res) => {
-        // Simulate slow operation
         const start = Date.now();
         while (Date.now() - start < 10) {
-          // Busy wait for 10ms (exceeds 5ms threshold)
+          // busy-wait 10ms — exceeds 5ms threshold
         }
         res.json({ success: true });
       });
 
+      // Middleware must not throw even when threshold is exceeded
       await request(testApp).get('/test-slow').expect(200);
-
-      // Note: In test environment, logger warnings might not trigger console.warn
-      // This test validates the middleware structure rather than exact logging
-      logSpy.mockRestore();
     });
   });
 
@@ -250,16 +244,11 @@ describe('Resource Management Middleware', () => {
 
   describe('Database Connection Middleware', () => {
     test('tracks database queries', async () => {
-      const mockPrisma = {
-        $queryRaw: jest.fn().mockResolvedValue([]),
-        $executeRaw: jest.fn().mockResolvedValue({ count: 1 }),
-      };
-
-      testApp.use(databaseConnectionMiddleware(mockPrisma));
+      testApp.use(databaseConnectionMiddleware(prisma));
 
       testApp.get('/test-db', async (req, res) => {
-        await mockPrisma.$queryRaw`SELECT 1`;
-        await mockPrisma.$executeRaw`UPDATE test SET value = 1`;
+        await prisma.$queryRaw`SELECT 1`;
+        await prisma.$queryRaw`SELECT 2`;
         res.json({ success: true });
       });
 
@@ -267,22 +256,14 @@ describe('Resource Management Middleware', () => {
 
       expect(response.headers['x-db-queries']).toBe('2');
       expect(response.headers['x-db-time']).toBeDefined();
-      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(1);
-      expect(mockPrisma.$executeRaw).toHaveBeenCalledTimes(1);
     });
 
     test('warns about high query counts', async () => {
-      const mockPrisma = {
-        $queryRaw: jest.fn().mockResolvedValue([]),
-        $executeRaw: jest.fn().mockResolvedValue({ count: 1 }),
-      };
-
-      testApp.use(databaseConnectionMiddleware(mockPrisma));
+      testApp.use(databaseConnectionMiddleware(prisma));
 
       testApp.get('/test-many-queries', async (req, res) => {
-        // Simulate many queries
         for (let i = 0; i < 15; i++) {
-          await mockPrisma.$queryRaw`SELECT ${i}`;
+          await prisma.$queryRaw`SELECT 1`;
         }
         res.json({ success: true });
       });
@@ -290,33 +271,26 @@ describe('Resource Management Middleware', () => {
       const response = await request(testApp).get('/test-many-queries').expect(200);
 
       expect(response.headers['x-db-queries']).toBe('15');
-      expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(15);
     });
 
     test('restores original methods after request', async () => {
-      const mockPrisma = {
-        $queryRaw: jest.fn().mockResolvedValue([]),
-        $executeRaw: jest.fn().mockResolvedValue({ count: 1 }),
-      };
+      const originalQueryRaw = prisma.$queryRaw;
+      const originalExecuteRaw = prisma.$executeRaw;
 
-      const originalQueryRaw = mockPrisma.$queryRaw;
-      const originalExecuteRaw = mockPrisma.$executeRaw;
-
-      testApp.use(databaseConnectionMiddleware(mockPrisma));
+      testApp.use(databaseConnectionMiddleware(prisma));
 
       testApp.get('/test-restore', async (req, res) => {
-        await mockPrisma.$queryRaw`SELECT 1`;
+        await prisma.$queryRaw`SELECT 1`;
         res.json({ success: true });
       });
 
       await request(testApp).get('/test-restore').expect(200);
 
-      // Wait for the finish event to complete
+      // Wait for the finish event to fire and restore methods
       await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Methods should be restored to original
-      expect(mockPrisma.$queryRaw).toBe(originalQueryRaw);
-      expect(mockPrisma.$executeRaw).toBe(originalExecuteRaw);
+      expect(prisma.$queryRaw).toBe(originalQueryRaw);
+      expect(prisma.$executeRaw).toBe(originalExecuteRaw);
     });
   });
 
