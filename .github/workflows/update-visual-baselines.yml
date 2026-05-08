@@ -138,6 +138,11 @@ jobs:
             echo "No new or changed baselines — snapshots already up to date."
           else
             git commit -m "chore(e2e): generate Linux/chromium baselines + remove test.fixme for ${SPEC_SHORT} [skip ci]"
-            git push
+            # Rebase onto current master in case commits landed during the ~10-min run
+            git pull --rebase origin master
+            # --no-verify: skip the Husky pre-push hook (full Jest suite) in CI —
+            # the baselines commit contains only .png files + spec fixme removal,
+            # which does not require re-running the backend suite.
+            git push --no-verify
             echo "Baselines committed and pushed."
           fi
