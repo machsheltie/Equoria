@@ -121,6 +121,10 @@ jobs:
           CI: 'true'
 
       - name: 'Commit and Push Baselines'
+        env:
+          # Disable Husky so lint-staged does not run during git commit and
+          # leave the working tree dirty (which breaks git pull --rebase).
+          HUSKY: '0'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -139,16 +143,6 @@ jobs:
           else
             git commit -m "chore(e2e): generate Linux/chromium baselines + remove test.fixme for ${SPEC_SHORT} [skip ci]"
 
-            # Debug: show what files remain dirty after the commit so we can
-            # understand if npm/prisma/playwright is leaving tracked files modified.
-            echo "=== git status after commit ==="
-            git status
-            echo "=== unstaged diff files ==="
-            git diff --name-only
-
-            # --autostash: stash any remaining dirty files before rebasing,
-            # then pop them after. Handles files left dirty by npm ci / prisma
-            # generate / playwright report output that we deliberately don't commit.
             git pull --rebase --autostash origin master
             # --no-verify: skip Husky pre-push Jest suite in CI
             git push --no-verify
