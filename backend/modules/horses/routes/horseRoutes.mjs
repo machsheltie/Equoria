@@ -775,7 +775,7 @@ router.post(
         gender: req.body.gender,
         userId: req.user.id,
         dateOfBirth: computedDateOfBirth,
-        healthStatus: req.body.healthStatus || 'Good',
+        healthStatus: req.body.healthStatus || 'Excellent',
         conformationScores,
         gaitScores,
         temperament,

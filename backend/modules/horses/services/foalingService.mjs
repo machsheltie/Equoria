@@ -338,7 +338,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     userId: options.userId || dam.userId,
     playerId: options.playerId,
     stableId: options.stableId,
-    healthStatus: options.healthStatus || 'Good',
+    healthStatus: options.healthStatus || 'Excellent',
     dateOfBirth: new Date().toISOString(),
     conformationScores,
     gaitScores,
