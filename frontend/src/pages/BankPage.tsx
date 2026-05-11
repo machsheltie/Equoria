@@ -7,6 +7,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Coins, Gift, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,6 +16,7 @@ import { useTransactionHistory } from '@/hooks/api/useTransactionHistory';
 
 const BankPage: React.FC = () => {
   const { user, refetchProfile } = useAuth();
+  const queryClient = useQueryClient();
   const [claimed, setClaimed] = useState(false);
   const [claiming, setClaiming] = useState(false);
   const [claimError, setClaimError] = useState<string | null>(null);
@@ -44,10 +46,19 @@ const BankPage: React.FC = () => {
     setClaiming(true);
     setClaimError(null);
     try {
-      await bankApi.claimWeekly();
+      const result = await bankApi.claimWeekly();
       setClaimed(true);
-      await refetchTransactions();
-      await refetchProfile();
+      // Immediately apply the authoritative newBalance from the claim response so the
+      // displayed balance updates even if the background refetch is slow or fails.
+      queryClient.setQueryData(
+        ['profile'],
+        (old: { user: Record<string, unknown> } | undefined) => {
+          if (!old?.user) return old;
+          return { ...old, user: { ...old.user, money: result.newBalance } };
+        }
+      );
+      // Background syncs — failures are non-fatal; cache is already correct above.
+      void Promise.allSettled([refetchTransactions(), refetchProfile()]);
     } catch (err: unknown) {
       const msg =
         err && typeof err === 'object' && 'message' in err
