@@ -132,9 +132,124 @@ describe('getEnvironmentSummary', () => {
     expect(getEnvironmentSummary().databaseConfigured).toBe(false);
   });
 
+  it('jwtConfigured is false when JWT_SECRET is unset', () => {
+    setRequiredVars();
+    delete process.env.JWT_SECRET;
+    expect(getEnvironmentSummary().jwtConfigured).toBe(false);
+  });
+
   it('presentRequiredVars count matches present vars', () => {
     setRequiredVars();
     const summary = getEnvironmentSummary();
     expect(summary.presentRequiredVars).toBe(REQUIRED.length);
+  });
+
+  it('presentOptionalVars is 0 when no optional vars are set', () => {
+    setRequiredVars();
+    const summary = getEnvironmentSummary();
+    expect(typeof summary.presentOptionalVars).toBe('number');
+  });
+
+  it('presentOptionalVars changes when an optional var is toggled', () => {
+    setRequiredVars();
+    delete process.env.LOG_LEVEL;
+    const without = getEnvironmentSummary().presentOptionalVars;
+    process.env.LOG_LEVEL = 'error';
+    const withIt = getEnvironmentSummary().presentOptionalVars;
+    expect(withIt).toBe(without + 1);
+  });
+
+  it('nodeEnv reflects current NODE_ENV value', () => {
+    setRequiredVars();
+    process.env.NODE_ENV = 'production';
+    expect(getEnvironmentSummary().nodeEnv).toBe('production');
+  });
+
+  it('port reflects current PORT value', () => {
+    setRequiredVars();
+    process.env.PORT = '8080';
+    expect(getEnvironmentSummary().port).toBe('8080');
+  });
+});
+
+describe('validateRequiredEnvVars — additional branch coverage', () => {
+  it('adds warning when JWT_REFRESH_SECRET is shorter than 32 chars', () => {
+    setRequiredVars();
+    process.env.JWT_REFRESH_SECRET = 'tooshort';
+    const result = validateRequiredEnvVars(false);
+    expect(result.warnings.some(w => w.includes('JWT_REFRESH_SECRET'))).toBe(true);
+  });
+
+  it('treats an empty-string var as missing', () => {
+    setRequiredVars();
+    process.env.JWT_SECRET = '';
+    const result = validateRequiredEnvVars(false);
+    expect(result.missing).toContain('JWT_SECRET');
+  });
+
+  it('treats a whitespace-only var as missing', () => {
+    setRequiredVars();
+    process.env.PORT = '   ';
+    const result = validateRequiredEnvVars(false);
+    expect(result.missing).toContain('PORT');
+  });
+
+  it('accumulates multiple missing required vars', () => {
+    setRequiredVars();
+    delete process.env.JWT_SECRET;
+    delete process.env.JWT_REFRESH_SECRET;
+    const result = validateRequiredEnvVars(false);
+    expect(result.missing).toContain('JWT_SECRET');
+    expect(result.missing).toContain('JWT_REFRESH_SECRET');
+    expect(result.missing.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('returns zero warnings when all vars are long enough and env is test', () => {
+    setRequiredVars();
+    const result = validateRequiredEnvVars(false);
+    expect(result.warnings.filter(w => w.includes('JWT') || w.includes('NODE_ENV'))).toHaveLength(0);
+  });
+});
+
+describe('validateTestEnvironment — additional branch coverage', () => {
+  it('adds testWarning when DATABASE_URL does not contain "test"', () => {
+    setRequiredVars();
+    process.env.DATABASE_URL = 'postgresql://user:pass@localhost/equoria_prod';
+    const result = validateTestEnvironment();
+    expect(result.testWarnings.some(w => w.includes('DATABASE_URL'))).toBe(true);
+  });
+
+  it('adds testWarning when LOG_LEVEL is not error or warn', () => {
+    setRequiredVars();
+    process.env.LOG_LEVEL = 'debug';
+    const result = validateTestEnvironment();
+    expect(result.testWarnings.some(w => w.includes('LOG_LEVEL'))).toBe(true);
+  });
+
+  it('does not add LOG_LEVEL warning when LOG_LEVEL is "error"', () => {
+    setRequiredVars();
+    process.env.LOG_LEVEL = 'error';
+    const result = validateTestEnvironment();
+    expect(result.testWarnings.some(w => w.includes('LOG_LEVEL'))).toBe(false);
+  });
+
+  it('does not add LOG_LEVEL warning when LOG_LEVEL is "warn"', () => {
+    setRequiredVars();
+    process.env.LOG_LEVEL = 'warn';
+    const result = validateTestEnvironment();
+    expect(result.testWarnings.some(w => w.includes('LOG_LEVEL'))).toBe(false);
+  });
+
+  it('does not add LOG_LEVEL warning when LOG_LEVEL is unset', () => {
+    setRequiredVars();
+    delete process.env.LOG_LEVEL;
+    const result = validateTestEnvironment();
+    expect(result.testWarnings.some(w => w.includes('LOG_LEVEL'))).toBe(false);
+  });
+
+  it('does not add DATABASE_URL testWarning when DATABASE_URL contains "test"', () => {
+    setRequiredVars(); // DATABASE_URL already contains 'equoria_test'
+    const result = validateTestEnvironment();
+    expect(result.testWarnings.some(w => w.includes('DATABASE_URL'))).toBe(false);
   });
 });
