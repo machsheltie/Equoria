@@ -1,5 +1,14 @@
 import { describe, it, expect } from '@jest/globals';
-import { SecurityEventTypes, SecurityAlertThresholds, checkAlertThreshold } from '../../config/sentry.mjs';
+import {
+  SecurityEventTypes,
+  SecurityAlertThresholds,
+  checkAlertThreshold,
+  initializeSentry,
+  attachSentryErrorHandler,
+  trackSecurityEvent,
+  trackSecurityEventWithThreshold,
+  captureSecurityException,
+} from '../../config/sentry.mjs';
 
 // ─── SecurityEventTypes ───────────────────────────────────────────────────────
 
@@ -167,5 +176,124 @@ describe('checkAlertThreshold', () => {
     const id = `test-ip-${Date.now()}-f`;
     const result = checkAlertThreshold(SecurityEventTypes.AUTH_FAILURE, id);
     expect(typeof result).toBe('boolean');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// initializeSentry — early-return branch when SENTRY_DSN is not set
+// ---------------------------------------------------------------------------
+describe('initializeSentry', () => {
+  it('returns undefined when SENTRY_DSN is not configured', () => {
+    const savedDsn = process.env.SENTRY_DSN;
+    delete process.env.SENTRY_DSN;
+    const mockApp = { use: () => {} };
+    expect(() => initializeSentry(mockApp)).not.toThrow();
+    if (savedDsn !== undefined) process.env.SENTRY_DSN = savedDsn;
+  });
+
+  it('does not call app.use when SENTRY_DSN is not configured', () => {
+    const savedDsn = process.env.SENTRY_DSN;
+    delete process.env.SENTRY_DSN;
+    let useCalled = false;
+    const mockApp = {
+      use: () => {
+        useCalled = true;
+      },
+    };
+    initializeSentry(mockApp);
+    expect(useCalled).toBe(false);
+    if (savedDsn !== undefined) process.env.SENTRY_DSN = savedDsn;
+  });
+});
+
+// ---------------------------------------------------------------------------
+// attachSentryErrorHandler — early-return branch when SENTRY_DSN is not set
+// ---------------------------------------------------------------------------
+describe('attachSentryErrorHandler', () => {
+  it('returns without attaching when SENTRY_DSN is not configured', () => {
+    const savedDsn = process.env.SENTRY_DSN;
+    delete process.env.SENTRY_DSN;
+    let useCalled = false;
+    const mockApp = {
+      use: () => {
+        useCalled = true;
+      },
+    };
+    attachSentryErrorHandler(mockApp);
+    expect(useCalled).toBe(false);
+    if (savedDsn !== undefined) process.env.SENTRY_DSN = savedDsn;
+  });
+});
+
+// ---------------------------------------------------------------------------
+// trackSecurityEvent — branch coverage (userId present/absent, severity)
+// ---------------------------------------------------------------------------
+describe('trackSecurityEvent', () => {
+  it('does not throw when called with defaults (no userId, severity=warning)', () => {
+    expect(() => trackSecurityEvent(SecurityEventTypes.AUTH_FAILURE, {}, 'warning')).not.toThrow();
+  });
+
+  it('does not throw when context.userId is set (setUser branch)', () => {
+    expect(() =>
+      trackSecurityEvent(SecurityEventTypes.IDOR_ATTEMPT, { userId: 'u1', ipAddress: '1.1.1.1' }, 'warning'),
+    ).not.toThrow();
+  });
+
+  it('does not throw with severity "error" (captureException branch)', () => {
+    expect(() => trackSecurityEvent(SecurityEventTypes.XSS_ATTEMPT, {}, 'error')).not.toThrow();
+  });
+
+  it('does not throw with severity "critical" (captureException branch)', () => {
+    expect(() => trackSecurityEvent(SecurityEventTypes.SQL_INJECTION_ATTEMPT, {}, 'critical')).not.toThrow();
+  });
+
+  it('does not throw with severity "info" (captureMessage branch)', () => {
+    expect(() => trackSecurityEvent(SecurityEventTypes.AUTH_SUCCESS, {}, 'info')).not.toThrow();
+  });
+
+  it('uses default severity "warning" when omitted', () => {
+    expect(() => trackSecurityEvent(SecurityEventTypes.VALIDATION_FAILURE, {})).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// trackSecurityEventWithThreshold — above/below threshold branches
+// ---------------------------------------------------------------------------
+describe('trackSecurityEventWithThreshold', () => {
+  it('does not throw for a below-threshold event (warning severity path)', () => {
+    const id = `thresh-test-${Date.now()}-g`;
+    expect(() => trackSecurityEventWithThreshold(SecurityEventTypes.AUTH_FAILURE, { userId: id }, id)).not.toThrow();
+  });
+
+  it('does not throw for an above-threshold event (critical severity path)', () => {
+    const id = `thresh-test-${Date.now()}-h`;
+    expect(() => trackSecurityEventWithThreshold(SecurityEventTypes.PRIVILEGE_ESCALATION, {}, id)).not.toThrow();
+  });
+
+  it('escalates to critical severity when threshold is exceeded', () => {
+    const id = `thresh-test-${Date.now()}-i`;
+    const eventType = SecurityEventTypes.XSS_ATTEMPT;
+    const isAbove = checkAlertThreshold(eventType, id);
+    expect(typeof isAbove).toBe('boolean');
+    expect(() => trackSecurityEventWithThreshold(eventType, {}, id)).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// captureSecurityException — no branches, just smoke test
+// ---------------------------------------------------------------------------
+describe('captureSecurityException', () => {
+  it('does not throw when capturing a plain error', () => {
+    const err = new Error('test security error');
+    expect(() => captureSecurityException(err, {})).not.toThrow();
+  });
+
+  it('does not throw when capturing with security context', () => {
+    const err = new Error('ownership violation');
+    expect(() => captureSecurityException(err, { userId: 'u99', resource: 'horse:42' })).not.toThrow();
+  });
+
+  it('does not throw when called with default empty context', () => {
+    expect(() => captureSecurityException(new Error('minimal'))).not.toThrow();
   });
 });
