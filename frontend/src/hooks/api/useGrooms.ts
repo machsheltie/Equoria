@@ -75,6 +75,7 @@ export function useHireGroom() {
     mutationFn: (marketplaceId) => groomsApi.hireGroom(marketplaceId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: groomKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });
 }

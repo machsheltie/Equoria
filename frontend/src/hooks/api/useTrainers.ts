@@ -79,6 +79,7 @@ export function useHireTrainer() {
     mutationFn: (marketplaceId) => trainersApi.hireTrainer(marketplaceId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: trainerKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });
 }

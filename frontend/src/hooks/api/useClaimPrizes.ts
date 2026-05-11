@@ -8,7 +8,7 @@
  *
  * Features:
  * - Automatic cache invalidation on success
- * - Invalidates prize history, horse prize summary, and user balance caches
+ * - Invalidates prize history, horse prize summary, and profile caches
  * - Meaningful error messages from API
  * - Supports partial success handling (errors array)
  *
@@ -70,9 +70,9 @@ export function useClaimPrizes() {
         queryKey: horsePrizeSummaryQueryKeys.all,
       });
 
-      // Invalidate user balance (balance has been credited)
+      // Invalidate profile (balance has been credited — nav reads from ['profile'])
       queryClient.invalidateQueries({
-        queryKey: ['user', 'balance'],
+        queryKey: ['profile'],
       });
     },
     onError: (error) => {

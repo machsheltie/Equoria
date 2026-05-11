@@ -38,6 +38,8 @@ export function useBookVetAppointment() {
     onSuccess: () => {
       // Invalidate horse data so healthStatus / lastVettedDate refresh
       queryClient.invalidateQueries({ queryKey: ['horses'] });
+      // Invalidate profile so nav coin balance updates after payment
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });
 }

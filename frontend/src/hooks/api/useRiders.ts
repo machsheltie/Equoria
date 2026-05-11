@@ -74,10 +74,22 @@ export function useRiderDiscovery(riderId: number) {
 export function useHireRider() {
   const queryClient = useQueryClient();
 
-  return useMutation<{ success: boolean }, ApiError, string>({
+  return useMutation<
+    { success: boolean; data: { rider: Rider; cost: number; remainingMoney: number } },
+    ApiError,
+    string
+  >({
     mutationFn: (marketplaceId) => ridersApi.hireRider(marketplaceId),
-    onSuccess: () => {
+    onSuccess: (result) => {
+      queryClient.setQueryData(
+        ['profile'],
+        (old: { user: Record<string, unknown> } | undefined) => {
+          if (!old?.user) return old;
+          return { ...old, user: { ...old.user, money: result.data.remainingMoney } };
+        }
+      );
       queryClient.invalidateQueries({ queryKey: riderKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });
 }
