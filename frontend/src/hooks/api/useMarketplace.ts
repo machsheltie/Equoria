@@ -72,10 +72,14 @@ export function useBuyHorse() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (horseId: number) => horseMarketplaceApi.buyHorse(horseId),
-    onSuccess: () => {
+    onSuccess: (result) => {
+      qc.setQueryData(['profile'], (old: { user: Record<string, unknown> } | undefined) => {
+        if (!old?.user) return old;
+        return { ...old, user: { ...old.user, money: result.newBalance } };
+      });
       qc.invalidateQueries({ queryKey: ['marketplace'] });
       qc.invalidateQueries({ queryKey: ['horses'] });
-      qc.invalidateQueries({ queryKey: ['profile'] }); // update coin balance in header
+      qc.invalidateQueries({ queryKey: ['profile'] }); // background sync after instant update
     },
     onError: (err: Error) => {
       toast.error(err.message ?? 'Purchase failed');

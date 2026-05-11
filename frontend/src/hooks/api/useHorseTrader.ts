@@ -26,9 +26,16 @@ export function useBuyStoreHorse() {
   return useMutation({
     mutationFn: ({ breedId, sex }: { breedId: number; sex: 'Mare' | 'Stallion' }) =>
       horseMarketplaceApi.buyStoreHorse(breedId, sex),
-    onSuccess: () => {
+    onSuccess: (result) => {
+      queryClient.setQueryData(
+        ['profile'],
+        (old: { user: Record<string, unknown> } | undefined) => {
+          if (!old?.user) return old;
+          return { ...old, user: { ...old.user, money: result.newBalance } };
+        }
+      );
       queryClient.invalidateQueries({ queryKey: ['horses'] }); // refresh My Stable
-      queryClient.invalidateQueries({ queryKey: ['profile'] }); // refresh coin balance
+      queryClient.invalidateQueries({ queryKey: ['profile'] }); // background sync after instant update
       queryClient.invalidateQueries({ queryKey: ['next-actions'] }); // refresh notification bar
     },
   });

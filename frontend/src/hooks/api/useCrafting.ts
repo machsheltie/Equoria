@@ -44,6 +44,13 @@ export function useCraftItem() {
   return useMutation({
     mutationFn: (recipeId: string) => craftingApi.craftItem(recipeId),
     onSuccess: (data) => {
+      queryClient.setQueryData(
+        ['profile'],
+        (old: { user: Record<string, unknown> } | undefined) => {
+          if (!old?.user) return old;
+          return { ...old, user: { ...old.user, money: data.newBalance } };
+        }
+      );
       queryClient.invalidateQueries({ queryKey: ['crafting', 'materials'] });
       queryClient.invalidateQueries({ queryKey: ['crafting', 'recipes'] });
       queryClient.invalidateQueries({ queryKey: ['inventory'] });

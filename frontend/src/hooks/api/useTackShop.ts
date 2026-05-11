@@ -40,10 +40,17 @@ export function usePurchaseTackItem() {
 
   return useMutation<TackPurchaseResult, ApiError, { horseId: number; itemId: string }>({
     mutationFn: (data) => tackShopApi.purchaseItem(data),
-    onSuccess: () => {
+    onSuccess: (result) => {
+      queryClient.setQueryData(
+        ['profile'],
+        (old: { user: Record<string, unknown> } | undefined) => {
+          if (!old?.user) return old;
+          return { ...old, user: { ...old.user, money: result.remainingMoney } };
+        }
+      );
       // Invalidate horse data so tack JSON refreshes
       queryClient.invalidateQueries({ queryKey: ['horses'] });
-      // Invalidate profile so balance updates in nav
+      // Background sync after instant balance update
       queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });

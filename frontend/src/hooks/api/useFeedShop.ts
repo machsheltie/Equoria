@@ -33,7 +33,14 @@ export function usePurchaseFeed() {
 
   return useMutation<FeedPurchaseResult, ApiError, { feedTier: FeedItem['id']; packs: number }>({
     mutationFn: (data) => feedShopApi.purchase(data),
-    onSuccess: () => {
+    onSuccess: (result) => {
+      queryClient.setQueryData(
+        ['profile'],
+        (old: { user: Record<string, unknown> } | undefined) => {
+          if (!old?.user) return old;
+          return { ...old, user: { ...old.user, money: result.remainingMoney } };
+        }
+      );
       // Inventory grew — refresh inventory + balance + per-horse equippable.
       queryClient.invalidateQueries({ queryKey: ['inventory'] });
       queryClient.invalidateQueries({ queryKey: ['profile'] });

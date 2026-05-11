@@ -336,6 +336,13 @@ const MarketplacePage = () => {
   const hireMutation = useMutation({
     mutationFn: groomsApi.hireGroom,
     onSuccess: (data) => {
+      queryClient.setQueryData(
+        ['profile'],
+        (old: { user: Record<string, unknown> } | undefined) => {
+          if (!old?.user) return old;
+          return { ...old, user: { ...old.user, money: data.data.remainingMoney } };
+        }
+      );
       queryClient.invalidateQueries({ queryKey: ['marketplace'] });
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       queryClient.invalidateQueries({ queryKey: ['grooms', userId] });
