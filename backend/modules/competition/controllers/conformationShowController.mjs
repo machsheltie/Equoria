@@ -71,9 +71,11 @@ export async function enterConformationShow(req, res) {
       logger.info(
         `[conformationShowController.POST /enter] Rejected entry: horse ${horseId} is in critical health`,
       );
+      const healthMsg = `${horse.name} is in critical health and cannot enter competitions. Feed and vet to restore health.`;
       return res.status(400).json({
         success: false,
-        message: `${horse.name} is in critical health and cannot enter competitions. Feed and vet to restore health.`,
+        message: healthMsg,
+        errors: [healthMsg],
         data: null,
       });
     }
