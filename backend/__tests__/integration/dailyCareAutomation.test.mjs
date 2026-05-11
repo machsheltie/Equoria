@@ -11,6 +11,8 @@ import {
   runDailyCareAutomation,
   scheduleDailyCareAutomation,
   DAILY_CARE_ROUTINES,
+  isGroomAvailableToday,
+  determineRoutinesToPerform,
 } from '../../utils/dailyCareAutomation.mjs';
 
 const PREFIX = 'TestFixture-DailyCare-';
@@ -225,5 +227,87 @@ describe('runDailyCareAutomation — with routineTypes filter', () => {
     });
 
     expect(result.success).toBe(true);
+  });
+});
+
+// ─── isGroomAvailableToday — pure branch coverage ────────────────────────────
+
+describe('isGroomAvailableToday', () => {
+  it('returns false when groom.is_active is falsy', () => {
+    expect(isGroomAvailableToday({ is_active: false, availability: {} })).toBe(false);
+    expect(isGroomAvailableToday({ is_active: null, availability: {} })).toBe(false);
+    expect(isGroomAvailableToday({ is_active: undefined, availability: {} })).toBe(false);
+  });
+
+  it('returns true when groom.is_active is true and no availability restriction', () => {
+    const result = isGroomAvailableToday({ is_active: true, availability: {} });
+    expect(result).toBe(true);
+  });
+
+  it('returns true when groom.is_active is true and availability is null (defaults to {})', () => {
+    const result = isGroomAvailableToday({ is_active: true, availability: null });
+    expect(result).toBe(true);
+  });
+
+  it('returns false when today is blocked in availability', () => {
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const today = dayNames[new Date().getDay()];
+    const result = isGroomAvailableToday({ is_active: true, availability: { [today]: false } });
+    expect(result).toBe(false);
+  });
+
+  it('returns true when today is explicitly set to true in availability', () => {
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const today = dayNames[new Date().getDay()];
+    const result = isGroomAvailableToday({ is_active: true, availability: { [today]: true } });
+    expect(result).toBe(true);
+  });
+
+  it('returns true on error (groom is null) — error handler default', () => {
+    expect(isGroomAvailableToday(null)).toBe(true);
+  });
+});
+
+// ─── determineRoutinesToPerform — pure branch coverage ───────────────────────
+
+describe('determineRoutinesToPerform', () => {
+  it('returns all valid routines when nothing is completed', () => {
+    const result = determineRoutinesToPerform(['morning_care', 'feeding', 'grooming'], []);
+    expect(result).toEqual(['morning_care', 'feeding', 'grooming']);
+  });
+
+  it('skips an invalid routine type not in DAILY_CARE_ROUTINES', () => {
+    const result = determineRoutinesToPerform(['morning_care', 'invalid_type'], []);
+    expect(result).toEqual(['morning_care']);
+    expect(result).not.toContain('invalid_type');
+  });
+
+  it('skips routines whose interactionType is already completed', () => {
+    // morning_care and evening_care both use interactionType "daily_care"
+    const result = determineRoutinesToPerform(['morning_care', 'feeding', 'evening_care'], ['daily_care']);
+    expect(result).not.toContain('morning_care');
+    expect(result).not.toContain('evening_care');
+    expect(result).toContain('feeding');
+  });
+
+  it('returns empty array when all routines already completed', () => {
+    const all = Object.keys(DAILY_CARE_ROUTINES);
+    const allTypes = [...new Set(Object.values(DAILY_CARE_ROUTINES).map(r => r.interactionType))];
+    const result = determineRoutinesToPerform(all, allTypes);
+    expect(result).toEqual([]);
+  });
+
+  it('returns empty array for empty requested list', () => {
+    expect(determineRoutinesToPerform([], [])).toEqual([]);
+  });
+
+  it('handles all five routine types correctly when none completed', () => {
+    const all = Object.keys(DAILY_CARE_ROUTINES);
+    const result = determineRoutinesToPerform(all, []);
+    // morning_care and evening_care share interactionType "daily_care"
+    // so after filtering, no duplicates are removed at this layer
+    // (determineRoutinesToPerform just checks if interactionType is in completedRoutines)
+    expect(result.length).toBeGreaterThan(0);
+    expect(result.every(r => Object.keys(DAILY_CARE_ROUTINES).includes(r))).toBe(true);
   });
 });

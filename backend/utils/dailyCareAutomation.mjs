@@ -280,10 +280,11 @@ async function performAutomaticCare(assignment, routine) {
 
 /**
  * Check if groom is available today
+ * Exported for unit-testing pure branch coverage (Equoria-jkht)
  * @param {Object} groom - Groom object
  * @returns {boolean} Whether groom is available
  */
-function isGroomAvailableToday(groom) {
+export function isGroomAvailableToday(groom) {
   try {
     if (!groom.is_active) {
       return false;
@@ -353,11 +354,12 @@ async function checkExistingCareToday(foalId, groomId) {
 
 /**
  * Determine which routines to perform
+ * Exported for unit-testing pure branch coverage (Equoria-jkht)
  * @param {Array} requestedRoutines - Requested routine types
  * @param {Array} completedRoutines - Already completed routine types
  * @returns {Array} Routines to perform
  */
-function determineRoutinesToPerform(requestedRoutines, completedRoutines) {
+export function determineRoutinesToPerform(requestedRoutines, completedRoutines) {
   return requestedRoutines.filter(routineType => {
     const routine = DAILY_CARE_ROUTINES[routineType];
     if (!routine) {
