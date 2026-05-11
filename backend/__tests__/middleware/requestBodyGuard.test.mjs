@@ -9,7 +9,38 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { detectDuplicateJsonKeys, findPollutionKey } from '../../middleware/requestBodyGuard.mjs';
+import {
+  detectDuplicateJsonKeys,
+  findPollutionKey,
+  prototypePollutionGuard,
+  prototypePollutionGuardQuery,
+  jsonBodyErrorHandler,
+} from '../../middleware/requestBodyGuard.mjs';
+
+// Minimal Express-style mock harness (no real HTTP needed)
+function makeRes() {
+  const res = {
+    _status: null,
+    _body: null,
+    status(code) {
+      this._status = code;
+      return this;
+    },
+    json(body) {
+      this._body = body;
+      return this;
+    },
+  };
+  return res;
+}
+function makeNext() {
+  const calls = [];
+  const fn = arg => {
+    calls.push(arg);
+  };
+  fn.calls = calls;
+  return fn;
+}
 
 // ---------------------------------------------------------------------------
 // detectDuplicateJsonKeys
@@ -189,5 +220,240 @@ describe('findPollutionKey', () => {
       deep = { child: deep };
     }
     expect(() => findPollutionKey(deep)).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// prototypePollutionGuard
+// ---------------------------------------------------------------------------
+describe('prototypePollutionGuard', () => {
+  it('calls next() for a clean body', () => {
+    const mw = prototypePollutionGuard();
+    const req = { method: 'POST', path: '/test', body: { name: 'Alice', age: 30 } };
+    const res = makeRes();
+    const next = makeNext();
+    mw(req, res, next);
+    expect(next.calls).toHaveLength(1);
+    expect(next.calls[0]).toBeUndefined(); // called with no argument = success path
+  });
+
+  it('returns 400 for body containing __proto__', () => {
+    const mw = prototypePollutionGuard();
+    const req = {
+      method: 'POST',
+      path: '/test',
+      body: JSON.parse('{"__proto__":{"isAdmin":true}}'),
+    };
+    const res = makeRes();
+    const next = makeNext();
+    mw(req, res, next);
+    expect(res._status).toBe(400);
+    expect(res._body.success).toBe(false);
+    expect(next.calls).toHaveLength(0);
+  });
+
+  it('returns 400 for body containing constructor key', () => {
+    const mw = prototypePollutionGuard();
+    const req = { method: 'POST', path: '/test', body: { constructor: { evil: true } } };
+    const res = makeRes();
+    const next = makeNext();
+    mw(req, res, next);
+    expect(res._status).toBe(400);
+    expect(res._body.success).toBe(false);
+  });
+
+  it('calls next() when req.body is null', () => {
+    const mw = prototypePollutionGuard();
+    const req = { method: 'POST', path: '/test', body: null };
+    const res = makeRes();
+    const next = makeNext();
+    mw(req, res, next);
+    expect(next.calls).toHaveLength(1);
+  });
+
+  it('calls next() when req.body is a string (not an object)', () => {
+    const mw = prototypePollutionGuard();
+    const req = { method: 'POST', path: '/test', body: 'raw string' };
+    const res = makeRes();
+    const next = makeNext();
+    mw(req, res, next);
+    expect(next.calls).toHaveLength(1);
+  });
+
+  it('returns 400 for BODY_DEPTH_EXCEEDED', () => {
+    const mw = prototypePollutionGuard();
+    // Build a 202-level deep object (exceeds MAX_BODY_DEPTH=200)
+    let deep = { leaf: true };
+    for (let i = 0; i < 202; i++) deep = { child: deep };
+    const req = { method: 'POST', path: '/test', body: deep };
+    const res = makeRes();
+    const next = makeNext();
+    mw(req, res, next);
+    expect(res._status).toBe(400);
+    expect(res._body.success).toBe(false);
+    expect(res._body.message).toMatch(/too deep/i);
+    expect(next.calls).toHaveLength(0);
+  });
+
+  it('forwards unexpected errors to next(err)', () => {
+    const mw = prototypePollutionGuard();
+    // Craft an object where getOwnPropertyNames throws (extremely unusual — simulate via Proxy)
+    const evil = new Proxy(
+      {},
+      {
+        ownKeys() {
+          throw new Error('unexpected error');
+        },
+        getOwnPropertyDescriptor() {
+          return { configurable: true, enumerable: true, value: 1 };
+        },
+      },
+    );
+    const req = { method: 'POST', path: '/test', body: evil };
+    const res = makeRes();
+    const next = makeNext();
+    mw(req, res, next);
+    expect(next.calls).toHaveLength(1);
+    expect(next.calls[0]).toBeInstanceOf(Error);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// prototypePollutionGuardQuery
+// ---------------------------------------------------------------------------
+describe('prototypePollutionGuardQuery', () => {
+  it('calls next() for a clean query', () => {
+    const mw = prototypePollutionGuardQuery();
+    const req = { method: 'GET', path: '/test', query: { page: '1', limit: '10' } };
+    const res = makeRes();
+    const next = makeNext();
+    mw(req, res, next);
+    expect(next.calls).toHaveLength(1);
+    expect(next.calls[0]).toBeUndefined();
+  });
+
+  it('returns 400 for query containing __proto__', () => {
+    const mw = prototypePollutionGuardQuery();
+    const req = {
+      method: 'GET',
+      path: '/test',
+      query: JSON.parse('{"__proto__":{"isAdmin":true}}'),
+    };
+    const res = makeRes();
+    const next = makeNext();
+    mw(req, res, next);
+    expect(res._status).toBe(400);
+    expect(res._body.success).toBe(false);
+  });
+
+  it('calls next() when req.query is null', () => {
+    const mw = prototypePollutionGuardQuery();
+    const req = { method: 'GET', path: '/test', query: null };
+    const res = makeRes();
+    const next = makeNext();
+    mw(req, res, next);
+    expect(next.calls).toHaveLength(1);
+  });
+
+  it('returns 400 for BODY_DEPTH_EXCEEDED on query', () => {
+    const mw = prototypePollutionGuardQuery();
+    let deep = { leaf: true };
+    for (let i = 0; i < 202; i++) deep = { child: deep };
+    const req = { method: 'GET', path: '/test', query: deep };
+    const res = makeRes();
+    const next = makeNext();
+    mw(req, res, next);
+    expect(res._status).toBe(400);
+    expect(res._body.message).toMatch(/too deep/i);
+  });
+
+  it('forwards unexpected errors to next(err) for query', () => {
+    const mw = prototypePollutionGuardQuery();
+    const evil = new Proxy(
+      {},
+      {
+        ownKeys() {
+          throw new Error('unexpected');
+        },
+        getOwnPropertyDescriptor() {
+          return { configurable: true, enumerable: true, value: 1 };
+        },
+      },
+    );
+    const req = { method: 'GET', path: '/test', query: evil };
+    const res = makeRes();
+    const next = makeNext();
+    mw(req, res, next);
+    expect(next.calls).toHaveLength(1);
+    expect(next.calls[0]).toBeInstanceOf(Error);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// jsonBodyErrorHandler
+// ---------------------------------------------------------------------------
+describe('jsonBodyErrorHandler', () => {
+  it('calls next() when err is falsy', () => {
+    const handler = jsonBodyErrorHandler();
+    const req = {};
+    const res = makeRes();
+    const next = makeNext();
+    handler(null, req, res, next);
+    expect(next.calls).toHaveLength(1);
+  });
+
+  it('returns 400 with DUPLICATE_JSON_KEY envelope', () => {
+    const handler = jsonBodyErrorHandler();
+    const err = new Error('Duplicate key "x"');
+    err.code = 'DUPLICATE_JSON_KEY';
+    const res = makeRes();
+    const next = makeNext();
+    handler(err, {}, res, next);
+    expect(res._status).toBe(400);
+    expect(res._body.success).toBe(false);
+    expect(res._body.code).toBe('DUPLICATE_JSON_KEY');
+  });
+
+  it('returns 400 with MALFORMED_JSON_BODY envelope', () => {
+    const handler = jsonBodyErrorHandler();
+    const err = new Error('Malformed JSON');
+    err.code = 'MALFORMED_JSON_BODY';
+    const res = makeRes();
+    const next = makeNext();
+    handler(err, {}, res, next);
+    expect(res._status).toBe(400);
+    expect(res._body.code).toBe('MALFORMED_JSON_BODY');
+  });
+
+  it('returns 400 for SyntaxError (body-parser entity.parse.failed)', () => {
+    const handler = jsonBodyErrorHandler();
+    const err = new SyntaxError('Unexpected token');
+    const res = makeRes();
+    const next = makeNext();
+    handler(err, {}, res, next);
+    expect(res._status).toBe(400);
+    expect(res._body.code).toBe('JSON_PARSE_ERROR');
+  });
+
+  it('returns 400 for err.type === entity.parse.failed', () => {
+    const handler = jsonBodyErrorHandler();
+    const err = new Error('Body parse failed');
+    err.type = 'entity.parse.failed';
+    const res = makeRes();
+    const next = makeNext();
+    handler(err, {}, res, next);
+    expect(res._status).toBe(400);
+    expect(res._body.code).toBe('JSON_PARSE_ERROR');
+  });
+
+  it('forwards unknown errors to next(err)', () => {
+    const handler = jsonBodyErrorHandler();
+    const err = new Error('some other error');
+    err.code = 'UNKNOWN_CODE';
+    const res = makeRes();
+    const next = makeNext();
+    handler(err, {}, res, next);
+    expect(next.calls).toHaveLength(1);
+    expect(next.calls[0]).toBe(err);
   });
 });
