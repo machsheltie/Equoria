@@ -197,8 +197,9 @@ async function checkSuspiciousActivity(logEntry) {
 
 /**
  * Detect suspicious patterns in user activity
+ * Exported for unit-testing pure branch coverage (Equoria-jkht)
  */
-function detectSuspiciousPatterns(userActivity) {
+export function detectSuspiciousPatterns(userActivity) {
   const patterns = [];
   const now = Date.now();
 
@@ -273,8 +274,9 @@ function detectSuspiciousPatterns(userActivity) {
 
 /**
  * Sanitize sensitive data for logging
+ * Exported for unit-testing pure branch coverage (Equoria-jkht)
  */
-function sanitizeLogData(data) {
+export function sanitizeLogData(data) {
   if (!data || typeof data !== 'object') {
     return data;
   }
