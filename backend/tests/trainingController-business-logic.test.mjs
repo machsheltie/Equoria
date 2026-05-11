@@ -38,7 +38,7 @@
  *    workflows with actual database operations and validates business requirements.
  */
 
-import { describe, it, expect, beforeAll, afterAll, jest } from '@jest/globals'; // Fixed: added jest for mock functions
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import dotenv from 'dotenv';
@@ -54,6 +54,22 @@ const { default: prisma } = await import(join(__dirname, '../db/index.mjs'));
 const { canTrain, trainHorse, getTrainingStatus, getTrainableHorses, trainRouteHandler } = await import(
   join(__dirname, '../controllers/trainingController.mjs')
 );
+
+function createRes() {
+  const res = {
+    statusCode: 200,
+    body: undefined,
+    status(code) {
+      this.statusCode = code;
+      return this;
+    },
+    json(data) {
+      this.body = data;
+      return this;
+    },
+  };
+  return res;
+}
 
 describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Training Workflow', () => {
   let testUser = null;
@@ -593,118 +609,83 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
         },
       });
 
-      // Fixed: Create proper mock req/res objects
       const mockReq = {
         body: { horseId: freshHorse.id, discipline: 'Show Jumping' },
         user: { id: testUser.id },
       };
-
-      const mockRes = {
-        json: jest.fn(),
-        status: jest.fn().mockReturnThis(),
-      };
+      const mockRes = createRes();
 
       await trainRouteHandler(mockReq, mockRes);
 
-      expect(mockRes.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          message: expect.stringContaining('trained in Show Jumping'), // Fixed: match actual message format
-          updatedScore: expect.any(Number), // Fixed: match actual API structure
-        }),
-      );
+      expect(mockRes.body).toMatchObject({
+        success: true,
+        message: expect.stringContaining('trained in Show Jumping'),
+        updatedScore: expect.any(Number),
+      });
     });
 
     it('RETURNS error response for ineligible horse', async () => {
-      // Fixed: Create proper mock req/res objects
       const mockReq = {
         body: { horseId: youngHorse.id, discipline: 'Dressage' },
         user: { id: testUser.id },
       };
-
-      const mockRes = {
-        json: jest.fn(),
-        status: jest.fn().mockReturnThis(),
-      };
+      const mockRes = createRes();
 
       await trainRouteHandler(mockReq, mockRes);
 
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: expect.stringContaining('Horse is under age'), // Fixed: match actual error message
-        }),
-      );
+      expect(mockRes.statusCode).toBe(400);
+      expect(mockRes.body).toMatchObject({
+        success: false,
+        message: expect.stringContaining('Horse is under age'),
+      });
     });
 
     it('RETURNS error response for horse in cooldown', async () => {
-      // Fixed: Create proper mock req/res objects
       const mockReq = {
         body: { horseId: trainedHorse.id, discipline: 'Dressage' },
         user: { id: testUser.id },
       };
-
-      const mockRes = {
-        json: jest.fn(),
-        status: jest.fn().mockReturnThis(),
-      };
+      const mockRes = createRes();
 
       await trainRouteHandler(mockReq, mockRes);
 
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: expect.stringContaining('Training cooldown active'), // Fixed: match actual error message
-        }),
-      );
+      expect(mockRes.statusCode).toBe(400);
+      expect(mockRes.body).toMatchObject({
+        success: false,
+        message: expect.stringContaining('Training cooldown active'),
+      });
     });
 
     it('RETURNS error response for non-existent horse', async () => {
-      // Fixed: Create proper mock req/res objects
       const mockReq = {
         body: { horseId: 999999999, discipline: 'Dressage' },
         user: { id: testUser.id },
       };
-
-      const mockRes = {
-        json: jest.fn(),
-        status: jest.fn().mockReturnThis(),
-      };
+      const mockRes = createRes();
 
       await trainRouteHandler(mockReq, mockRes);
 
-      expect(mockRes.status).toHaveBeenCalledWith(400);
-      expect(mockRes.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: expect.stringContaining('Horse not found'), // Fixed: match actual error message
-        }),
-      );
+      expect(mockRes.statusCode).toBe(400);
+      expect(mockRes.body).toMatchObject({
+        success: false,
+        message: expect.stringContaining('Horse not found'),
+      });
     });
 
     it('RETURNS error response for invalid discipline', async () => {
-      // Fixed: Create proper mock req/res objects
       const mockReq = {
         body: { horseId: adultHorse.id, discipline: '' },
         user: { id: testUser.id },
       };
-
-      const mockRes = {
-        json: jest.fn(),
-        status: jest.fn().mockReturnThis(),
-      };
+      const mockRes = createRes();
 
       await trainRouteHandler(mockReq, mockRes);
 
-      expect(mockRes.status).toHaveBeenCalledWith(500); // Fixed: invalid discipline throws error, returns 500
-      expect(mockRes.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: 'Failed to train horse', // Fixed: match actual error response format
-        }),
-      );
+      expect(mockRes.statusCode).toBe(500);
+      expect(mockRes.body).toMatchObject({
+        success: false,
+        message: 'Failed to train horse',
+      });
     });
   });
 });

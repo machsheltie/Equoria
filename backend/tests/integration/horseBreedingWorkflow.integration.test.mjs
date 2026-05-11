@@ -70,22 +70,12 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
   let assignedGroom;
 
   beforeAll(async () => {
-    // rounds=1: fast under full-suite --runInBand load. Registration goes
-    // through bcrypt.hash(pwd, BCRYPT_SALT_ROUNDS); keep it cheap here.
     process.env.BCRYPT_SALT_ROUNDS = '1';
 
-    // Clean up any existing test data
     await cleanupTestData();
-
-    // Mock Math.random for deterministic trait generation (ONLY external dependency)
-    jest.spyOn(Math, 'random').mockReturnValue(0.5);
   });
 
   afterAll(async () => {
-    // Restore mocks
-    jest.restoreAllMocks();
-
-    // Clean up test data
     await cleanupTestData();
     // prisma.$disconnect() removed — global teardown handles disconnection
   });

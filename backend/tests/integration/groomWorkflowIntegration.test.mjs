@@ -1,57 +1,38 @@
 /**
- * @fileoverview Comprehensive Groom Workflow Integration Tests
+ * Groom Workflow Integration Tests
  *
- * @description
- * Complete integration test suite for the groom management system, validating
- * the entire workflow from groom hiring through trait development. Tests real
- * database operations with minimal strategic mocking following TDD best practices.
+ * Tests the complete groom management workflow (hire → assign → interact)
+ * end-to-end against the real DB. No mocks of any kind.
  *
- * @features
- * - Complete groom hiring workflow with validation
- * - Groom assignment management with priority handling
- * - Age-based task validation (0-2, 1-3, 3+ years)
- * - Daily task exclusivity enforcement across all categories
- * - Streak tracking with grace period logic (2-day grace, 3+ day reset)
- * - Burnout immunity achievement (7+ consecutive days)
- * - Task logging for trait evaluation and development
- * - Trait influence system with +3/-3 permanence rules
- * - Epigenetic trait marking for early development (before age 3)
- * - Error handling and edge case validation
- * - Database transaction integrity and concurrent operation safety
+ * Fixtures:
+ *   - Breed, User, Horses created in beforeEach; deleted in afterEach
+ *   - Grooms / Assignments / Interactions tracked per-test via Set<id>
  *
- * @dependencies
- * - @jest/globals: Testing framework with ES modules support
- * - prisma: Database client for real database operations
- * - groomController: Groom management controller functions
- * - groomSystem: Groom business logic and validation utilities
- * - traitEvaluation: Enhanced trait influence system
- * - logger: Winston logger (strategically mocked for test isolation)
- *
- * @usage
- * Run with: npm test -- groomWorkflowIntegration.test.js
- * Tests complete groom system workflow with real database operations.
- * Validates business logic, error handling, and trait development integration.
- *
- * @author Equoria Development Team
- * @since 1.2.0
- * @lastModified 2025-01-02 - Initial comprehensive integration test implementation
+ * Cleanup: createdIds sets + afterEach cleanupTestData()
  */
 
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import prisma from '../../db/index.mjs';
 import { hireGroom, assignGroom, recordInteraction } from '../../controllers/groomController.mjs';
-// Unused imports removed to fix linting errors
-// import { getGroomDefinitions } from '../../controllers/groomController.mjs';
-// import { applyGroomTraitInfluence } from '../../utils/traitEvaluation.mjs';
-// import { TASK_TRAIT_INFLUENCE_MAP } from '../../utils/taskTraitInfluenceMap.mjs';
 
-// Strategic mocking: Only mock external dependencies, not business logic
-jest.mock('../../utils/logger.mjs', () => ({
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-}));
+// ─── plain response capture ───────────────────────────────────────────────────
+
+function makeRes() {
+  return {
+    _status: null,
+    _json: null,
+    status(code) {
+      this._status = code;
+      return this;
+    },
+    json(body) {
+      this._json = body;
+      return this;
+    },
+  };
+}
+
+// ─── suite state ──────────────────────────────────────────────────────────────
 
 describe('Groom Workflow Integration Tests', () => {
   let testUser = null;
@@ -111,24 +92,23 @@ describe('Groom Workflow Integration Tests', () => {
   };
 
   beforeEach(async () => {
-    // Clean up before starting
     await cleanupTestData();
 
-    // Clean up any stale test data by name patterns
+    // Clean stale test data from previous runs by name pattern
     await prisma.groom.deleteMany({
       where: {
         OR: [
           { name: { contains: 'Sarah Johnson' } },
           { name: { contains: 'Test Assignment Groom' } },
           { name: { contains: 'Age Test Groom' } },
+          { name: { contains: 'Expert Groom' } },
+          { name: { contains: 'Novice Groom' } },
         ],
       },
     });
 
-    // Create unique suffix
-    const suffix = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).substr(2, 5)}`;
+    const suffix = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
 
-    // Create test breed
     testBreed = await prisma.breed.create({
       data: {
         name: `Test Breed ${suffix}`,
@@ -137,7 +117,6 @@ describe('Groom Workflow Integration Tests', () => {
     });
     createdBreedIds.add(testBreed.id);
 
-    // Create test user
     testUser = await prisma.user.create({
       data: {
         id: `user-groom-int-${suffix}`,
@@ -151,12 +130,11 @@ describe('Groom Workflow Integration Tests', () => {
     });
     createdUserIds.add(testUser.id);
 
-    // Create test horses of different ages
     testFoal = await prisma.horse.create({
       data: {
         name: `Test Foal ${suffix}`,
         sex: 'Filly',
-        dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
+        dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
         age: 365,
         user: { connect: { id: testUser.id } },
         breed: { connect: { id: testBreed.id } },
@@ -175,7 +153,7 @@ describe('Groom Workflow Integration Tests', () => {
       data: {
         name: `Test Young Horse ${suffix}`,
         sex: 'Colt',
-        dateOfBirth: new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000), // 2 years old
+        dateOfBirth: new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000),
         age: 730,
         user: { connect: { id: testUser.id } },
         breed: { connect: { id: testBreed.id } },
@@ -194,8 +172,8 @@ describe('Groom Workflow Integration Tests', () => {
       data: {
         name: `Test Adult Horse ${suffix}`,
         sex: 'Mare',
-        dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000), // 4 years old
-        age: 28, // 4 years old (28 days = 4 years in game time)
+        dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000),
+        age: 28,
         user: { connect: { id: testUser.id } },
         breed: { connect: { id: testBreed.id } },
         bondScore: 70,
@@ -211,23 +189,29 @@ describe('Groom Workflow Integration Tests', () => {
   });
 
   afterEach(async () => {
-    // Track any data created during tests
-    const grooms = await prisma.groom.findMany({ where: { userId: testUser.id } });
-    grooms.forEach(g => createdGroomIds.add(g.id));
+    if (testUser) {
+      const grooms = await prisma.groom.findMany({ where: { userId: testUser.id } });
+      grooms.forEach(g => createdGroomIds.add(g.id));
 
-    const assignments = await prisma.groomAssignment.findMany({ where: { userId: testUser.id } });
-    assignments.forEach(a => createdAssignmentIds.add(a.id));
+      const assignments = await prisma.groomAssignment.findMany({ where: { userId: testUser.id } });
+      assignments.forEach(a => createdAssignmentIds.add(a.id));
+    }
 
-    const interactions = await prisma.groomInteraction.findMany({
-      where: { foalId: { in: [testFoal.id, testYoungHorse.id, testAdultHorse.id] } },
-    });
-    interactions.forEach(i => createdInteractionIds.add(i.id));
+    const foalIds = [testFoal?.id, testYoungHorse?.id, testAdultHorse?.id].filter(Boolean);
+    if (foalIds.length > 0) {
+      const interactions = await prisma.groomInteraction.findMany({
+        where: { foalId: { in: foalIds } },
+      });
+      interactions.forEach(i => createdInteractionIds.add(i.id));
+    }
 
     await cleanupTestData();
   });
 
+  // ─── 1. Complete Groom Hiring Workflow ───────────────────────────────────────
+
   describe('1. Complete Groom Hiring Workflow', () => {
-    it('should hire groom with proper skill calculations and validation', async () => {
+    it('hires a groom with proper skill calculations and validation', async () => {
       const req = {
         body: {
           name: 'Sarah Johnson',
@@ -240,21 +224,14 @@ describe('Groom Workflow Integration Tests', () => {
         },
         user: { id: testUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await hireGroom(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(201);
-
-      // Extract the actual response for detailed comparison
-      const responseCall = res.json.mock.calls[0][0];
-      expect(responseCall.success).toBe(true);
-      expect(responseCall.message).toBe('Successfully hired Sarah Johnson');
-      expect(responseCall.data).toMatchObject({
+      expect(res._status).toBe(201);
+      expect(res._json.success).toBe(true);
+      expect(res._json.message).toBe('Successfully hired Sarah Johnson');
+      expect(res._json.data).toMatchObject({
         name: 'Sarah Johnson',
         speciality: 'foal_care',
         skillLevel: 'expert',
@@ -262,43 +239,31 @@ describe('Groom Workflow Integration Tests', () => {
         experience: 8,
         userId: testUser.id,
       });
-      expect(responseCall.data.sessionRate).toBeDefined();
+      expect(res._json.data.sessionRate).toBeDefined();
 
-      // Verify groom was created in database
-      const groom = await prisma.groom.findFirst({
-        where: { name: 'Sarah Johnson' },
-      });
+      const groom = await prisma.groom.findFirst({ where: { name: 'Sarah Johnson' } });
       expect(groom).toBeTruthy();
-      expect(groom.speciality).toBe('foal_care'); // Database stores the value as sent in request
+      expect(groom.speciality).toBe('foal_care');
       expect(groom.skillLevel).toBe('expert');
     });
 
-    it('should validate required fields and reject invalid groom data', async () => {
+    it('rejects a hire request with missing required fields', async () => {
       const req = {
-        body: {
-          name: 'Invalid Groom',
-          // Missing required fields
-        },
+        body: { name: 'Invalid Groom' },
         user: { id: testUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await hireGroom(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: 'name, speciality, skill_level, and personality are required',
-        }),
-      );
+      expect(res._status).toBe(400);
+      expect(res._json).toMatchObject({
+        success: false,
+        message: 'name, speciality, skill_level, and personality are required',
+      });
     });
 
-    it('should calculate proper session rates based on skill level', async () => {
+    it('charges a higher session rate for an expert groom than a novice groom', async () => {
       const expertReq = {
         body: {
           name: 'Expert Groom',
@@ -308,7 +273,6 @@ describe('Groom Workflow Integration Tests', () => {
         },
         user: { id: testUser.id },
       };
-
       const noviceReq = {
         body: {
           name: 'Novice Groom',
@@ -319,35 +283,22 @@ describe('Groom Workflow Integration Tests', () => {
         user: { id: testUser.id },
       };
 
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      await hireGroom(expertReq, makeRes());
+      await hireGroom(noviceReq, makeRes());
 
-      // Hire expert groom
-      await hireGroom(expertReq, res);
-      const expertGroom = await prisma.groom.findFirst({
-        where: { name: 'Expert Groom' },
-      });
+      const expertGroom = await prisma.groom.findFirst({ where: { name: 'Expert Groom' } });
+      const noviceGroom = await prisma.groom.findFirst({ where: { name: 'Novice Groom' } });
 
-      // Hire novice groom
-      res.status.mockClear();
-      res.json.mockClear();
-      await hireGroom(noviceReq, res);
-      const noviceGroom = await prisma.groom.findFirst({
-        where: { name: 'Novice Groom' },
-      });
-
-      // Expert should cost more than novice
       expect(parseFloat(expertGroom.sessionRate)).toBeGreaterThan(parseFloat(noviceGroom.sessionRate));
     });
   });
+
+  // ─── 2. Groom Assignment Management ─────────────────────────────────────────
 
   describe('2. Groom Assignment Management', () => {
     let testGroom = null;
 
     beforeEach(async () => {
-      // Create test groom for assignment tests
       testGroom = await prisma.groom.create({
         data: {
           name: 'Test Assignment Groom',
@@ -360,7 +311,7 @@ describe('Groom Workflow Integration Tests', () => {
       });
     });
 
-    it('should assign groom to foal with proper validation', async () => {
+    it('assigns a groom to a foal with proper validation', async () => {
       const req = {
         body: {
           foalId: testFoal.id,
@@ -370,41 +321,30 @@ describe('Groom Workflow Integration Tests', () => {
         },
         user: { id: testUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await assignGroom(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(201);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          data: expect.objectContaining({
-            foalId: testFoal.id,
-            groomId: testGroom.id,
-            priority: 1,
-            notes: 'Primary caregiver for daily enrichment',
-            isActive: true,
-          }),
-        }),
-      );
-
-      // Verify assignment was created in database
-      const assignment = await prisma.groomAssignment.findFirst({
-        where: {
+      expect(res._status).toBe(201);
+      expect(res._json).toMatchObject({
+        success: true,
+        data: {
           foalId: testFoal.id,
           groomId: testGroom.id,
+          priority: 1,
+          notes: 'Primary caregiver for daily enrichment',
+          isActive: true,
         },
+      });
+
+      const assignment = await prisma.groomAssignment.findFirst({
+        where: { foalId: testFoal.id, groomId: testGroom.id },
       });
       expect(assignment).toBeTruthy();
       expect(assignment.isActive).toBe(true);
     });
 
-    it('should handle assignment conflicts and priority management', async () => {
-      // Create first assignment
+    it('deactivates the previous priority-1 assignment when a new one is created', async () => {
       await prisma.groomAssignment.create({
         data: {
           foalId: testFoal.id,
@@ -416,7 +356,6 @@ describe('Groom Workflow Integration Tests', () => {
         },
       });
 
-      // Create second groom
       const secondGroom = await prisma.groom.create({
         data: {
           name: 'Second Test Groom',
@@ -432,47 +371,34 @@ describe('Groom Workflow Integration Tests', () => {
         body: {
           foalId: testFoal.id,
           groomId: secondGroom.id,
-          priority: 1, // Same priority should deactivate first assignment
+          priority: 1,
           notes: 'New primary caregiver',
         },
         user: { id: testUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await assignGroom(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res._status).toBe(201);
 
-      // Verify first assignment was deactivated
       const firstAssignment = await prisma.groomAssignment.findFirst({
-        where: {
-          foalId: testFoal.id,
-          groomId: testGroom.id,
-        },
+        where: { foalId: testFoal.id, groomId: testGroom.id },
       });
       expect(firstAssignment.isActive).toBe(false);
 
-      // Verify second assignment is active
       const secondAssignment = await prisma.groomAssignment.findFirst({
-        where: {
-          foalId: testFoal.id,
-          groomId: secondGroom.id,
-        },
+        where: { foalId: testFoal.id, groomId: secondGroom.id },
       });
       expect(secondAssignment.isActive).toBe(true);
     });
 
-    it('should validate ownership and authorization (service-level reject when middleware bypassed)', async () => {
-      // Create different user
+    it('returns 500 when the groom belongs to a different user (service-level ownership check)', async () => {
       const otherUser = await prisma.user.create({
         data: {
-          id: `other-user-groom-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          username: `otheruser_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          email: `other_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+          id: `other-user-groom-${Date.now()}`,
+          username: `otheruser_${Date.now()}`,
+          email: `other_${Date.now()}@example.com`,
           password: 'password',
           firstName: 'Other',
           lastName: 'User',
@@ -482,36 +408,21 @@ describe('Groom Workflow Integration Tests', () => {
       createdUserIds.add(otherUser.id);
 
       const req = {
-        body: {
-          foalId: testFoal.id,
-          groomId: testGroom.id,
-          priority: 1,
-        },
-        user: { id: otherUser.id }, // Different user trying to assign
+        body: { foalId: testFoal.id, groomId: testGroom.id, priority: 1 },
+        user: { id: otherUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await assignGroom(req, res);
 
-      // CWE-639 architecture: ownership is validated by route middleware
-      // (groomRoutes.mjs `POST /assign` inline dual-ownership middleware), NOT
-      // by the controller. This test calls the controller directly, bypassing
-      // the middleware. The defence-in-depth is provided by the underlying
-      // assignGroomToFoal service which throws "Groom with ID X not found"
-      // (Equoria-a7dy hardening — non-disclosing error, byte-identical to the
-      // missing-row case) — the controller's catch block converts that to a
-      // 500. The happy-path 201 is therefore not reached.
-      //
-      // Real cross-user attempts via the HTTP route receive 404 from the
-      // middleware (CWE-639 disclosure resistance) — see the inline middleware
-      // in groomRoutes.mjs:152-189 and adjacent CWE-639 sentinel tests.
-      expect(res.status).toHaveBeenCalledWith(500);
+      // Route middleware enforces ownership (CWE-639). Calling the controller
+      // directly bypasses it; the underlying service throws a non-disclosing
+      // error that the controller converts to 500.
+      expect(res._status).toBe(500);
     });
   });
+
+  // ─── 3. Age-Based Task Validation ────────────────────────────────────────────
 
   describe('3. Age-Based Task Validation', () => {
     let testGroom = null;
@@ -528,7 +439,6 @@ describe('Groom Workflow Integration Tests', () => {
         },
       });
 
-      // Assign groom to all test horses
       await Promise.all([
         prisma.groomAssignment.create({
           data: {
@@ -560,7 +470,7 @@ describe('Groom Workflow Integration Tests', () => {
       ]);
     });
 
-    it('should allow enrichment tasks for foals (0-2 years)', async () => {
+    it('allows enrichment tasks for foals (0-2 years)', async () => {
       const req = {
         body: {
           foalId: testFoal.id,
@@ -571,38 +481,25 @@ describe('Groom Workflow Integration Tests', () => {
         },
         user: { id: testUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await recordInteraction(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          data: expect.objectContaining({
-            interaction: expect.objectContaining({
-              interactionType: 'trust_building',
-            }),
-            effects: expect.any(Object),
-          }),
-        }),
-      );
-
-      // Verify interaction was recorded
-      const interaction = await prisma.groomInteraction.findFirst({
-        where: {
-          foalId: testFoal.id,
-          interactionType: 'trust_building',
+      expect(res._status).toBe(200);
+      expect(res._json).toMatchObject({
+        success: true,
+        data: {
+          interaction: { interactionType: 'trust_building' },
         },
+      });
+
+      const interaction = await prisma.groomInteraction.findFirst({
+        where: { foalId: testFoal.id, interactionType: 'trust_building' },
       });
       expect(interaction).toBeTruthy();
     });
 
-    it('should allow grooming tasks for horses 1-3 years old', async () => {
+    it('allows grooming tasks for horses 1-3 years old', async () => {
       const req = {
         body: {
           foalId: testYoungHorse.id,
@@ -613,75 +510,49 @@ describe('Groom Workflow Integration Tests', () => {
         },
         user: { id: testUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await recordInteraction(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          data: expect.objectContaining({
-            interaction: expect.objectContaining({
-              interactionType: 'hoof_handling',
-            }),
-            effects: expect.any(Object),
-          }),
-        }),
-      );
-
-      // Verify interaction was recorded
-      const interaction = await prisma.groomInteraction.findFirst({
-        where: {
-          foalId: testYoungHorse.id,
-          interactionType: 'hoof_handling',
+      expect(res._status).toBe(200);
+      expect(res._json).toMatchObject({
+        success: true,
+        data: {
+          interaction: { interactionType: 'hoof_handling' },
         },
+      });
+
+      const interaction = await prisma.groomInteraction.findFirst({
+        where: { foalId: testYoungHorse.id, interactionType: 'hoof_handling' },
       });
       expect(interaction).toBeTruthy();
     });
 
-    it('should allow grooming tasks for horses over 3 years old', async () => {
+    it('allows grooming tasks for horses over 3 years old', async () => {
       const req = {
         body: {
           foalId: testAdultHorse.id,
           groomId: testGroom.id,
-          interactionType: 'brushing', // Use valid adult grooming task
+          interactionType: 'brushing',
           duration: 60,
           notes: 'Brushing for adult horse',
         },
         user: { id: testUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await recordInteraction(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          data: expect.objectContaining({
-            interaction: expect.objectContaining({
-              interactionType: 'brushing',
-            }),
-            effects: expect.any(Object),
-          }),
-        }),
-      );
-
-      // Verify interaction was recorded
-      const interaction = await prisma.groomInteraction.findFirst({
-        where: {
-          foalId: testAdultHorse.id,
-          interactionType: 'brushing',
+      expect(res._status).toBe(200);
+      expect(res._json).toMatchObject({
+        success: true,
+        data: {
+          interaction: { interactionType: 'brushing' },
         },
+      });
+
+      const interaction = await prisma.groomInteraction.findFirst({
+        where: { foalId: testAdultHorse.id, interactionType: 'brushing' },
       });
       expect(interaction).toBeTruthy();
     });

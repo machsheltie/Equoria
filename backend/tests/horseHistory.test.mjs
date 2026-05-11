@@ -1,247 +1,287 @@
 /**
- * Unit Test: Horse History Controller — Competition History Retrieval
+ * Horse History Controller — Competition History Retrieval
  *
- * Tests getHorseHistory() controller logic: ID validation, data transformation
- * (prizeWon → prize, statGains JSON parsing), error handling, response structure.
+ * Tests getHorseHistory() against the real DB. No mocks of any kind.
  *
- * Scope: controller validation + transformation logic.
- * Uses real resultModel (not mocked) — only the DB client (prisma) is mocked,
- * which is the permitted infrastructure boundary.
+ * Coverage:
+ *   - ID validation (400 for non-numeric, negative, zero)
+ *   - Empty result set → 200 + []
+ *   - Field mapping: prizeWon → prize, statGains → statGain
+ *   - JSON parsing of statGains
+ *   - statGains null → statGain null
+ *   - Order preserved from DB query (newest runDate first)
  *
- * Real behavior tested:
- * - Controller validates horse ID before calling the model
- * - resultModel.getResultsByHorse runs real validation logic
- * - Controller transforms result fields (prizeWon → prize, statGains → statGain)
- * - Malformed statGains JSON triggers 500 (defensive path)
- * - DB errors bubble up and produce 500 response
+ * Note: The "malformed statGains → 500" and "DB error → 500" scenarios are
+ * not covered here because (a) PostgreSQL JSONB columns reject invalid JSON on
+ * insert, making that state unreachable via Prisma, and (b) a live DB error
+ * cannot be injected without mocking infrastructure.
+ *
+ * Fixtures: prefix TestFixture-HorseHistory-  Cleaned in beforeAll/afterAll.
  */
 
-import { jest, describe, beforeEach, expect, it } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import prisma from '../db/index.mjs';
+import { getHorseHistory } from '../controllers/horseController.mjs';
 
-// Permitted mock: DB client (infrastructure boundary only)
-const mockPrisma = {
-  competitionResult: { findMany: jest.fn() },
-  $disconnect: jest.fn(),
-};
+const PREFIX = 'TestFixture-HorseHistory-';
 
-jest.unstable_mockModule('../db/index.mjs', () => ({
-  default: mockPrisma,
-}));
+// ─── helpers ─────────────────────────────────────────────────────────────────
 
-jest.unstable_mockModule('../utils/logger.mjs', () => ({
-  default: { info: jest.fn(), error: jest.fn(), warn: jest.fn() },
-}));
+function makeRes() {
+  return {
+    _status: null,
+    _json: null,
+    status(code) {
+      this._status = code;
+      return this;
+    },
+    json(body) {
+      this._json = body;
+      return this;
+    },
+  };
+}
 
-// Import the function to test after mocking
-const { getHorseHistory } = await import('../controllers/horseController.mjs');
+function makeReq(id) {
+  return { params: { id: String(id) } };
+}
 
-describe('Horse History Controller — Competition History Retrieval', () => {
-  let req, res;
+// ─── fixtures ─────────────────────────────────────────────────────────────────
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-    req = { params: { id: '1' } };
-    res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-    };
+let testHorse, testShow;
+
+beforeAll(async () => {
+  await prisma.competitionResult.deleteMany({
+    where: { horse: { name: { startsWith: PREFIX } } },
+  });
+  await prisma.show.deleteMany({ where: { name: { startsWith: PREFIX } } });
+  await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
+
+  testHorse = await prisma.horse.create({
+    data: { name: `${PREFIX}Horse`, sex: 'Colt', dateOfBirth: new Date('2020-01-01') },
   });
 
-  describe('getHorseHistory', () => {
-    it('should return horse competition history successfully', async () => {
-      mockPrisma.competitionResult.findMany.mockResolvedValueOnce([
-        {
-          id: 1,
-          showName: 'Autumn Challenge - Barrel Racing',
-          discipline: 'Barrel Racing',
-          placement: '1st',
-          score: 162.4,
-          prizeWon: 1000,
-          statGains: '{"stat":"stamina","gain":1}',
-          runDate: new Date('2025-06-01'),
-          createdAt: new Date('2025-06-01T10:00:00Z'),
-        },
-        {
-          id: 2,
-          showName: 'Harvest Gala - Dressage',
-          discipline: 'Dressage',
-          placement: null,
-          score: 143.7,
-          prizeWon: 0,
-          statGains: null,
-          runDate: new Date('2025-05-25'),
-          createdAt: new Date('2025-05-25T14:30:00Z'),
-        },
-      ]);
+  testShow = await prisma.show.create({
+    data: {
+      name: `${PREFIX}Show`,
+      discipline: 'Barrel Racing',
+      levelMin: 1,
+      levelMax: 10,
+      entryFee: 50,
+      prize: 1000,
+      runDate: new Date('2025-06-01'),
+    },
+  });
+});
 
-      await getHorseHistory(req, res);
+afterAll(async () => {
+  await prisma.competitionResult.deleteMany({ where: { horseId: testHorse?.id } });
+  await prisma.show.deleteMany({ where: { name: { startsWith: PREFIX } } });
+  await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
+});
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      const body = res.json.mock.calls[0][0];
-      expect(body.success).toBe(true);
-      expect(body.message).toContain('2');
-      expect(body.data).toHaveLength(2);
-      expect(body.data[0]).toMatchObject({
-        id: 1,
-        showName: 'Autumn Challenge - Barrel Racing',
+// ─── ID validation ───────────────────────────────────────────────────────────
+
+describe('ID validation', () => {
+  it('rejects non-numeric horse ID with 400', async () => {
+    const res = makeRes();
+    await getHorseHistory(makeReq('invalid'), res);
+
+    expect(res._status).toBe(400);
+    expect(res._json).toMatchObject({
+      success: false,
+      message: 'Invalid horse ID. Must be a positive integer.',
+      data: null,
+    });
+  });
+
+  it('rejects negative horse ID with 400', async () => {
+    const res = makeRes();
+    await getHorseHistory(makeReq('-1'), res);
+
+    expect(res._status).toBe(400);
+    expect(res._json.success).toBe(false);
+  });
+
+  it('rejects zero horse ID with 400', async () => {
+    const res = makeRes();
+    await getHorseHistory(makeReq('0'), res);
+
+    expect(res._status).toBe(400);
+    expect(res._json.success).toBe(false);
+  });
+});
+
+// ─── empty history ────────────────────────────────────────────────────────────
+
+describe('empty history', () => {
+  it('returns empty array when horse has no competition history', async () => {
+    const emptyHorse = await prisma.horse.create({
+      data: { name: `${PREFIX}Empty`, sex: 'Filly', dateOfBirth: new Date('2020-06-01') },
+    });
+
+    try {
+      const res = makeRes();
+      await getHorseHistory(makeReq(emptyHorse.id), res);
+
+      expect(res._status).toBe(200);
+      expect(res._json.success).toBe(true);
+      expect(res._json.data).toEqual([]);
+    } finally {
+      await prisma.horse.delete({ where: { id: emptyHorse.id } }).catch(() => {});
+    }
+  });
+
+  it('returns 200 for a valid large horse ID with no results', async () => {
+    const res = makeRes();
+    await getHorseHistory(makeReq('999999999'), res);
+
+    expect(res._status).toBe(200);
+    expect(res._json.success).toBe(true);
+    expect(Array.isArray(res._json.data)).toBe(true);
+  });
+});
+
+// ─── response shape and field mapping ────────────────────────────────────────
+
+describe('response shape and field mapping', () => {
+  it('maps prizeWon → prize and returns correct response structure', async () => {
+    const r = await prisma.competitionResult.create({
+      data: {
+        horseId: testHorse.id,
+        showId: testShow.id,
+        showName: `${PREFIX}Barrel Show`,
         discipline: 'Barrel Racing',
         placement: '1st',
-        score: 162.4,
-        prize: 1000,
-        statGain: { stat: 'stamina', gain: 1 },
-      });
-      expect(body.data[1]).toMatchObject({
-        id: 2,
-        prize: 0,
-        statGain: null,
-      });
+        score: 100,
+        prizeWon: 500,
+        statGains: null,
+        runDate: new Date('2025-06-01'),
+      },
     });
 
-    it('should return empty array when horse has no competition history', async () => {
-      mockPrisma.competitionResult.findMany.mockResolvedValueOnce([]);
+    try {
+      const res = makeRes();
+      await getHorseHistory(makeReq(testHorse.id), res);
 
-      await getHorseHistory(req, res);
+      expect(res._status).toBe(200);
+      expect(res._json.success).toBe(true);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      const body = res.json.mock.calls[0][0];
-      expect(body.success).toBe(true);
-      expect(body.data).toEqual([]);
+      const found = res._json.data.find(d => d.id === r.id);
+      expect(found).toBeDefined();
+      expect(found.showName).toBe(`${PREFIX}Barrel Show`);
+      expect(found.discipline).toBe('Barrel Racing');
+      expect(found.placement).toBe('1st');
+      expect(Number(found.prize)).toBe(500);
+      expect(found.statGain).toBeNull();
+      expect(found.runDate).toBeDefined();
+    } finally {
+      await prisma.competitionResult.delete({ where: { id: r.id } }).catch(() => {});
+    }
+  });
+
+  it('parses statGains JSON string into statGain object', async () => {
+    const r = await prisma.competitionResult.create({
+      data: {
+        horseId: testHorse.id,
+        showId: testShow.id,
+        showName: `${PREFIX}Dressage Show`,
+        discipline: 'Dressage',
+        placement: '2nd',
+        score: 90,
+        prizeWon: 200,
+        statGains: JSON.stringify({ stat: 'stamina', gain: 1 }),
+        runDate: new Date('2025-05-15'),
+      },
     });
 
-    it('should reject non-numeric horse ID with 400', async () => {
-      req.params.id = 'invalid';
+    try {
+      const res = makeRes();
+      await getHorseHistory(makeReq(testHorse.id), res);
 
-      await getHorseHistory(req, res);
+      const found = res._json.data.find(d => d.id === r.id);
+      expect(found).toBeDefined();
+      expect(found.statGain).toEqual({ stat: 'stamina', gain: 1 });
+    } finally {
+      await prisma.competitionResult.delete({ where: { id: r.id } }).catch(() => {});
+    }
+  });
 
-      expect(mockPrisma.competitionResult.findMany).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json.mock.calls[0][0]).toMatchObject({
-        success: false,
-        message: 'Invalid horse ID. Must be a positive integer.',
-        data: null,
-      });
+  it('sets statGain to null when statGains is null in DB', async () => {
+    const r = await prisma.competitionResult.create({
+      data: {
+        horseId: testHorse.id,
+        showId: testShow.id,
+        showName: `${PREFIX}No Stat Show`,
+        discipline: 'Show Jumping',
+        placement: null,
+        score: 75,
+        prizeWon: 0,
+        statGains: null,
+        runDate: new Date('2025-04-01'),
+      },
     });
 
-    it('should reject negative horse ID with 400', async () => {
-      req.params.id = '-1';
+    try {
+      const res = makeRes();
+      await getHorseHistory(makeReq(testHorse.id), res);
 
-      await getHorseHistory(req, res);
+      const found = res._json.data.find(d => d.id === r.id);
+      expect(found).toBeDefined();
+      expect(found.statGain).toBeNull();
+      expect(found.placement).toBeNull();
+    } finally {
+      await prisma.competitionResult.delete({ where: { id: r.id } }).catch(() => {});
+    }
+  });
+});
 
-      expect(mockPrisma.competitionResult.findMany).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(400);
+// ─── ordering ─────────────────────────────────────────────────────────────────
+
+describe('result ordering', () => {
+  it('returns results ordered newest runDate first', async () => {
+    const older = await prisma.competitionResult.create({
+      data: {
+        horseId: testHorse.id,
+        showId: testShow.id,
+        showName: `${PREFIX}Older Show`,
+        discipline: 'Racing',
+        score: 80,
+        prizeWon: 100,
+        statGains: null,
+        runDate: new Date('2025-01-01'),
+      },
+    });
+    const newer = await prisma.competitionResult.create({
+      data: {
+        horseId: testHorse.id,
+        showId: testShow.id,
+        showName: `${PREFIX}Newer Show`,
+        discipline: 'Racing',
+        score: 85,
+        prizeWon: 150,
+        statGains: null,
+        runDate: new Date('2025-06-15'),
+      },
     });
 
-    it('should reject zero horse ID with 400', async () => {
-      req.params.id = '0';
+    try {
+      const res = makeRes();
+      await getHorseHistory(makeReq(testHorse.id), res);
 
-      await getHorseHistory(req, res);
+      const ids = res._json.data.map(d => d.id);
+      const newerIdx = ids.indexOf(newer.id);
+      const olderIdx = ids.indexOf(older.id);
 
-      expect(mockPrisma.competitionResult.findMany).not.toHaveBeenCalled();
-      expect(res.status).toHaveBeenCalledWith(400);
-    });
-
-    it('should handle database errors gracefully with 500', async () => {
-      mockPrisma.competitionResult.findMany.mockRejectedValueOnce(new Error('Database connection failed'));
-
-      await getHorseHistory(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json.mock.calls[0][0]).toMatchObject({
-        success: false,
-        message: 'Internal server error while retrieving horse history',
-        data: null,
-      });
-    });
-
-    it('should parse statGains JSON correctly', async () => {
-      mockPrisma.competitionResult.findMany.mockResolvedValueOnce([
-        {
-          id: 1,
-          showName: 'Spring Classic',
-          discipline: 'Racing',
-          placement: '1st',
-          score: 180.5,
-          prizeWon: 500,
-          statGains: '{"stat":"speed","gain":1}',
-          runDate: new Date('2025-05-15'),
-          createdAt: new Date('2025-05-15T12:00:00Z'),
-        },
-      ]);
-
-      await getHorseHistory(req, res);
-
-      const body = res.json.mock.calls[0][0];
-      expect(body.data[0].statGain).toEqual({ stat: 'speed', gain: 1 });
-    });
-
-    it('should return 500 for malformed statGains JSON', async () => {
-      mockPrisma.competitionResult.findMany.mockResolvedValueOnce([
-        {
-          id: 1,
-          showName: 'Spring Classic',
-          discipline: 'Racing',
-          placement: '1st',
-          score: 180.5,
-          prizeWon: 500,
-          statGains: 'invalid json',
-          runDate: new Date('2025-05-15'),
-          createdAt: new Date('2025-05-15T12:00:00Z'),
-        },
-      ]);
-
-      await getHorseHistory(req, res);
-
-      expect(res.status).toHaveBeenCalledWith(500);
-      expect(res.json.mock.calls[0][0]).toMatchObject({
-        success: false,
-        message: 'Internal server error while retrieving horse history',
-        data: null,
-      });
-    });
-
-    it('should accept large horse ID numbers', async () => {
-      req.params.id = '999999';
-      mockPrisma.competitionResult.findMany.mockResolvedValueOnce([]);
-
-      await getHorseHistory(req, res);
-
-      expect(mockPrisma.competitionResult.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({ where: { horseId: 999999 } }),
-      );
-      expect(res.status).toHaveBeenCalledWith(200);
-    });
-
-    it('should preserve order from database query (newest first)', async () => {
-      mockPrisma.competitionResult.findMany.mockResolvedValueOnce([
-        {
-          id: 3,
-          showName: 'Latest Show',
-          discipline: 'Jumping',
-          placement: '2nd',
-          score: 155.0,
-          prizeWon: 300,
-          statGains: null,
-          runDate: new Date('2025-06-10'),
-          createdAt: new Date('2025-06-10T16:00:00Z'),
-        },
-        {
-          id: 1,
-          showName: 'Older Show',
-          discipline: 'Dressage',
-          placement: '1st',
-          score: 170.0,
-          prizeWon: 500,
-          statGains: '{"stat":"agility","gain":1}',
-          runDate: new Date('2025-05-20'),
-          createdAt: new Date('2025-05-20T10:00:00Z'),
-        },
-      ]);
-
-      await getHorseHistory(req, res);
-
-      const body = res.json.mock.calls[0][0];
-      expect(body.data[0].showName).toBe('Latest Show');
-      expect(body.data[1].showName).toBe('Older Show');
-    });
+      expect(newerIdx).toBeGreaterThanOrEqual(0);
+      expect(olderIdx).toBeGreaterThanOrEqual(0);
+      expect(newerIdx).toBeLessThan(olderIdx); // newer appears before older
+    } finally {
+      await prisma.competitionResult
+        .deleteMany({
+          where: { id: { in: [older.id, newer.id] } },
+        })
+        .catch(() => {});
+    }
   });
 });

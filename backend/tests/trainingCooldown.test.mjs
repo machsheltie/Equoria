@@ -1,363 +1,256 @@
 /**
- * 🧪 UNIT TEST: Training Cooldown System - Horse Training Restrictions
+ * Training Cooldown System — tests
  *
- * This test validates the training cooldown system's functionality for managing
- * horse training restrictions and time-based availability calculations.
- *
- * 📋 BUSINESS RULES TESTED:
- * - Training cooldown enforcement: 7-day restriction after training session
- * - Cooldown validation: horses cannot train while cooldown is active
- * - Time calculation: accurate remaining time calculations in milliseconds
- * - Cooldown expiration: horses can train again after cooldown expires
- * - Date handling: proper past/future date comparisons and edge cases
- * - Input validation: horse ID validation, null/undefined handling
- * - Time formatting: human-readable cooldown display (days, hours, minutes)
- * - Database integration: cooldown persistence and retrieval
- * - Edge cases: zero time, negative time, boundary conditions
- *
- * 🎯 FUNCTIONALITY TESTED:
- * 1. canTrain() - Training availability validation based on cooldown status
- * 2. getCooldownTimeRemaining() - Remaining cooldown time calculations
- * 3. setCooldown() - Database cooldown setting with 7-day future date
- * 4. formatCooldown() - Human-readable time formatting for UI display
- * 5. Input validation for all functions (null, undefined, invalid IDs)
- * 6. Integration workflows: complete training cooldown lifecycle
- * 7. Edge cases: boundary conditions, timing precision, error scenarios
- *
- * 🔄 BALANCED MOCKING APPROACH:
- * ✅ REAL: All business logic, time calculations, validation rules, formatting
- * ✅ REAL: Date arithmetic, cooldown logic, input processing, error handling
- * 🔧 MOCK: Database operations (Prisma), horse model - external dependencies
- *
- * 💡 TEST STRATEGY: Unit testing with mocked database to focus on cooldown
- *    business logic while ensuring predictable test outcomes for time calculations
+ * Pure functions (canTrain, getCooldownTimeRemaining, formatCooldown) are tested
+ * with plain JS objects — no DB needed.
+ * setCooldown() calls prisma.horse.update and is tested against the real DB.
  */
 
-import { jest, describe, beforeEach, expect, it, beforeAll } from '@jest/globals';
+import { describe, beforeAll, afterAll, beforeEach, expect, it } from '@jest/globals';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import dotenv from 'dotenv';
 
-const mockPrisma = {
-  horse: {
-    update: jest.fn(),
-    findUnique: jest.fn(),
-  },
-  $disconnect: jest.fn(),
-};
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
-// Mock ONLY the database client — permitted infrastructure boundary.
-// horseModel is NOT mocked: canTrain/getCooldownTimeRemaining/formatCooldown are
-// pure functions that operate on plain horse objects; setCooldown calls prisma directly.
-jest.unstable_mockModule('../db/index.mjs', () => ({
-  default: mockPrisma,
-}));
+dotenv.config({ path: join(__dirname, '../.env.test') });
 
-// Now import the modules
+const { default: prisma } = await import(join(__dirname, '../db/index.mjs'));
 const { canTrain, getCooldownTimeRemaining, setCooldown, formatCooldown } = await import(
-  '../utils/trainingCooldown.mjs'
+  join(__dirname, '../utils/trainingCooldown.mjs')
 );
 
-describe('⏰ UNIT: Training Cooldown System - Horse Training Restrictions', () => {
-  let testHorse;
-  let testBreed;
+describe('Training Cooldown System', () => {
+  let dbHorse = null;
+  let breed = null;
+  let testUser = null;
 
-  beforeAll(() => {
-    // Mock test breed
-    testBreed = {
-      id: 1,
-      name: 'Test Training Breed',
-      description: 'Breed for training cooldown tests',
-    };
+  beforeAll(async () => {
+    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-Cooldown-' } } });
+    await prisma.user.deleteMany({ where: { email: 'cooldown-test@fixture.test' } });
+
+    testUser = await prisma.user.create({
+      data: {
+        email: 'cooldown-test@fixture.test',
+        username: 'cooldowntestuser',
+        firstName: 'Cooldown',
+        lastName: 'Tester',
+        password: 'hashedpassword',
+        money: 0,
+        level: 1,
+        xp: 0,
+        settings: {},
+      },
+    });
+
+    breed = await prisma.breed.findFirst();
+    if (!breed) {
+      breed = await prisma.breed.create({ data: { name: 'TestFixture-Cooldown-Breed', description: 'test' } });
+    }
+
+    dbHorse = await prisma.horse.create({
+      data: {
+        name: 'TestFixture-Cooldown-Horse',
+        sex: 'Mare',
+        dateOfBirth: new Date('2018-01-01'),
+        age: 7,
+        userId: testUser.id,
+        breedId: breed.id,
+        trainingCooldown: null,
+      },
+    });
   });
 
-  beforeEach(() => {
-    // Reset all mocks
-    jest.clearAllMocks();
+  afterAll(async () => {
+    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-Cooldown-' } } });
+    await prisma.user.deleteMany({ where: { email: 'cooldown-test@fixture.test' } });
+  });
 
-    // Mock test horse
-    testHorse = {
-      id: 1,
-      name: `Test Training Horse ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      age: 5,
-      breedId: testBreed.id,
-      sex: 'Mare',
-      dateOfBirth: new Date('2019-01-01'),
-      healthStatus: 'Excellent',
-      trainingCooldown: null,
-    };
-
-    // Setup default prisma mock responses
-    mockPrisma.horse.update.mockResolvedValue(testHorse);
-    mockPrisma.horse.findUnique.mockResolvedValue(testHorse);
+  beforeEach(async () => {
+    // Reset the DB horse's cooldown before each test that may have set it
+    if (dbHorse) {
+      await prisma.horse.update({
+        where: { id: dbHorse.id },
+        data: { trainingCooldown: null },
+      });
+    }
   });
 
   describe('canTrain', () => {
-    it('should return true for horse with no cooldown', () => {
-      expect(canTrain(testHorse)).toBe(true);
+    it('returns true for horse with no cooldown', () => {
+      expect(canTrain({ trainingCooldown: null })).toBe(true);
     });
 
-    it('should return true for horse with cooldown in the past', () => {
+    it('returns true for horse with cooldown in the past', () => {
       const pastDate = new Date();
-      pastDate.setDate(pastDate.getDate() - 1); // 1 day ago
-
-      const horseWithPastCooldown = {
-        ...testHorse,
-        trainingCooldown: pastDate,
-      };
-
-      expect(canTrain(horseWithPastCooldown)).toBe(true);
+      pastDate.setDate(pastDate.getDate() - 1);
+      expect(canTrain({ trainingCooldown: pastDate })).toBe(true);
     });
 
-    it('should return false for horse with cooldown in the future', () => {
+    it('returns false for horse with cooldown in the future', () => {
       const futureDate = new Date();
-      futureDate.setDate(futureDate.getDate() + 1); // 1 day from now
-
-      const horseWithFutureCooldown = {
-        ...testHorse,
-        trainingCooldown: futureDate,
-      };
-
-      expect(canTrain(horseWithFutureCooldown)).toBe(false);
+      futureDate.setDate(futureDate.getDate() + 1);
+      expect(canTrain({ trainingCooldown: futureDate })).toBe(false);
     });
 
-    it('should throw error for null horse', () => {
+    it('throws for null horse', () => {
       expect(() => canTrain(null)).toThrow('Horse object is required');
     });
 
-    it('should throw error for undefined horse', () => {
+    it('throws for undefined horse', () => {
       expect(() => canTrain()).toThrow('Horse object is required');
     });
   });
 
   describe('getCooldownTimeRemaining', () => {
-    it('should return null for horse with no cooldown', () => {
-      expect(getCooldownTimeRemaining(testHorse)).toBeNull();
+    it('returns null when no cooldown', () => {
+      expect(getCooldownTimeRemaining({ trainingCooldown: null })).toBeNull();
     });
 
-    it('should return null for horse with cooldown in the past', () => {
+    it('returns null when cooldown is in the past', () => {
       const pastDate = new Date();
-      pastDate.setDate(pastDate.getDate() - 1); // 1 day ago
-
-      const horseWithPastCooldown = {
-        ...testHorse,
-        trainingCooldown: pastDate,
-      };
-
-      expect(getCooldownTimeRemaining(horseWithPastCooldown)).toBeNull();
+      pastDate.setDate(pastDate.getDate() - 1);
+      expect(getCooldownTimeRemaining({ trainingCooldown: pastDate })).toBeNull();
     });
 
-    it('should return positive milliseconds for horse with cooldown in the future', () => {
+    it('returns positive ms when cooldown is in the future', () => {
       const futureDate = new Date();
-      futureDate.setHours(futureDate.getHours() + 1); // 1 hour from now
-
-      const horseWithFutureCooldown = {
-        ...testHorse,
-        trainingCooldown: futureDate,
-      };
-
-      const remaining = getCooldownTimeRemaining(horseWithFutureCooldown);
+      futureDate.setHours(futureDate.getHours() + 1);
+      const remaining = getCooldownTimeRemaining({ trainingCooldown: futureDate });
       expect(remaining).toBeGreaterThan(0);
-      expect(remaining).toBeLessThanOrEqual(60 * 60 * 1000); // Should be <= 1 hour in ms
+      expect(remaining).toBeLessThanOrEqual(60 * 60 * 1000);
     });
 
-    it('should return approximately correct time remaining', () => {
+    it('returns approximately correct time remaining', () => {
       const futureDate = new Date();
-      futureDate.setMinutes(futureDate.getMinutes() + 30); // 30 minutes from now
-
-      const horseWithFutureCooldown = {
-        ...testHorse,
-        trainingCooldown: futureDate,
-      };
-
-      const remaining = getCooldownTimeRemaining(horseWithFutureCooldown);
-      const expectedMs = 30 * 60 * 1000; // 30 minutes in milliseconds
-
-      // Allow for small timing differences (within 1 second)
+      futureDate.setMinutes(futureDate.getMinutes() + 30);
+      const remaining = getCooldownTimeRemaining({ trainingCooldown: futureDate });
+      const expectedMs = 30 * 60 * 1000;
       expect(remaining).toBeGreaterThan(expectedMs - 1000);
       expect(remaining).toBeLessThanOrEqual(expectedMs);
     });
 
-    it('should throw error for null horse', () => {
+    it('throws for null horse', () => {
       expect(() => getCooldownTimeRemaining(null)).toThrow('Horse object is required');
     });
 
-    it('should throw error for undefined horse', () => {
+    it('throws for undefined horse', () => {
       expect(() => getCooldownTimeRemaining()).toThrow('Horse object is required');
     });
   });
 
   describe('setCooldown', () => {
-    it('should set cooldown 7 days in the future', async () => {
+    it('sets cooldown 7 days in the future', async () => {
       const beforeTime = new Date();
-      const futureDate = new Date();
-      futureDate.setDate(futureDate.getDate() + 7);
-
-      // Mock the updated horse with cooldown
-      const updatedHorse = {
-        ...testHorse,
-        trainingCooldown: futureDate,
-      };
-
-      mockPrisma.horse.update.mockResolvedValueOnce(updatedHorse);
-
-      const result = await setCooldown(testHorse.id);
+      const result = await setCooldown(dbHorse.id);
       const afterTime = new Date();
 
       expect(result.trainingCooldown).toBeDefined();
 
       const cooldownDate = new Date(result.trainingCooldown);
-      const expectedMinDate = new Date(beforeTime);
-      expectedMinDate.setDate(expectedMinDate.getDate() + 7);
+      const expectedMinDate = new Date(beforeTime.getTime() + 7 * 24 * 60 * 60 * 1000);
+      const expectedMaxDate = new Date(afterTime.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-      const expectedMaxDate = new Date(afterTime);
-      expectedMaxDate.setDate(expectedMaxDate.getDate() + 7);
-
-      expect(cooldownDate.getTime()).toBeGreaterThanOrEqual(expectedMinDate.getTime() - 60000); // Allow 1 minute tolerance
+      expect(cooldownDate.getTime()).toBeGreaterThanOrEqual(expectedMinDate.getTime() - 60000);
       expect(cooldownDate.getTime()).toBeLessThanOrEqual(expectedMaxDate.getTime() + 60000);
     });
 
-    it('should return updated horse with relations', async () => {
-      const updatedHorse = {
-        ...testHorse,
-        trainingCooldown: new Date(),
-        breed: testBreed,
-      };
+    it('returns updated horse with relations included', async () => {
+      const result = await setCooldown(dbHorse.id);
 
-      mockPrisma.horse.update.mockResolvedValueOnce(updatedHorse);
-
-      const result = await setCooldown(testHorse.id);
-
-      expect(result.id).toBe(testHorse.id);
-      expect(result.name).toBe(testHorse.name);
+      expect(result.id).toBe(dbHorse.id);
+      expect(result.name).toBe(dbHorse.name);
+      expect(result.trainingCooldown).toBeDefined();
+      // breed relation is included in the result
       expect(result.breed).toBeDefined();
-      expect(result.breed.id).toBe(testBreed.id);
     });
 
-    it('should throw error for non-existent horse ID', async () => {
-      const nonExistentId = 999999;
-
-      // Mock database error for non-existent horse
-      mockPrisma.horse.update.mockRejectedValueOnce(new Error(`Horse with ID ${nonExistentId} not found`));
-
-      await expect(setCooldown(nonExistentId)).rejects.toThrow(`Horse with ID ${nonExistentId} not found`);
+    it('throws for non-existent horse ID', async () => {
+      await expect(setCooldown(999999999)).rejects.toThrow('Horse with ID 999999999 not found');
     });
 
-    it('should throw error for null horse ID', async () => {
+    it('throws for null horse ID', async () => {
       await expect(setCooldown(null)).rejects.toThrow('Horse ID is required');
     });
 
-    it('should throw error for undefined horse ID', async () => {
+    it('throws for undefined horse ID', async () => {
       await expect(setCooldown()).rejects.toThrow('Horse ID is required');
     });
 
-    it('should throw error for invalid horse ID (string)', async () => {
+    it('throws for invalid string horse ID', async () => {
       await expect(setCooldown('invalid')).rejects.toThrow('Horse ID must be a valid positive integer');
     });
 
-    it('should throw error for invalid horse ID (negative)', async () => {
+    it('throws for negative horse ID', async () => {
       await expect(setCooldown(-1)).rejects.toThrow('Horse ID must be a valid positive integer');
     });
 
-    it('should throw error for invalid horse ID (zero)', async () => {
+    it('throws for zero horse ID', async () => {
       await expect(setCooldown(0)).rejects.toThrow('Horse ID must be a valid positive integer');
     });
 
-    it('should handle string horse ID that can be parsed to integer', async () => {
-      const updatedHorse = {
-        ...testHorse,
-        trainingCooldown: new Date(),
-      };
-
-      mockPrisma.horse.update.mockResolvedValueOnce(updatedHorse);
-
-      const result = await setCooldown(testHorse.id.toString());
-      expect(result.id).toBe(testHorse.id);
+    it('accepts string horse ID that parses to a valid integer', async () => {
+      const result = await setCooldown(dbHorse.id.toString());
+      expect(result.id).toBe(dbHorse.id);
       expect(result.trainingCooldown).toBeDefined();
     });
   });
 
   describe('formatCooldown', () => {
-    it('should return "Ready to train" for null input', () => {
+    it('returns "Ready to train" for null', () => {
       expect(formatCooldown(null)).toBe('Ready to train');
     });
 
-    it('should return "Ready to train" for zero milliseconds', () => {
+    it('returns "Ready to train" for zero', () => {
       expect(formatCooldown(0)).toBe('Ready to train');
     });
 
-    it('should return "Ready to train" for negative milliseconds', () => {
+    it('returns "Ready to train" for negative ms', () => {
       expect(formatCooldown(-1000)).toBe('Ready to train');
     });
 
-    it('should format minutes correctly', () => {
-      const fiveMinutes = 5 * 60 * 1000;
-      expect(formatCooldown(fiveMinutes)).toBe('5 minute(s) remaining');
+    it('formats minutes correctly', () => {
+      expect(formatCooldown(5 * 60 * 1000)).toBe('5 minute(s) remaining');
     });
 
-    it('should format hours and minutes correctly', () => {
-      const twoHoursFiveMinutes = 2 * 60 * 60 * 1000 + 5 * 60 * 1000;
-      expect(formatCooldown(twoHoursFiveMinutes)).toBe('2 hour(s), 5 minute(s) remaining');
+    it('formats hours and minutes correctly', () => {
+      expect(formatCooldown(2 * 60 * 60 * 1000 + 5 * 60 * 1000)).toBe('2 hour(s), 5 minute(s) remaining');
     });
 
-    it('should format days and hours correctly', () => {
-      const threeDaysTwoHours = 3 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000;
-      expect(formatCooldown(threeDaysTwoHours)).toBe('3 day(s), 2 hour(s) remaining');
+    it('formats days and hours correctly', () => {
+      expect(formatCooldown(3 * 24 * 60 * 60 * 1000 + 2 * 60 * 60 * 1000)).toBe('3 day(s), 2 hour(s) remaining');
     });
 
-    it('should format exactly 7 days correctly', () => {
-      const sevenDays = 7 * 24 * 60 * 60 * 1000;
-      expect(formatCooldown(sevenDays)).toBe('7 day(s), 0 hour(s) remaining');
+    it('formats exactly 7 days correctly', () => {
+      expect(formatCooldown(7 * 24 * 60 * 60 * 1000)).toBe('7 day(s), 0 hour(s) remaining');
     });
   });
 
-  describe('Integration Tests', () => {
-    it('should complete full training cooldown workflow', async () => {
-      // 1. Verify horse can initially train
-      expect(canTrain(testHorse)).toBe(true);
-      expect(getCooldownTimeRemaining(testHorse)).toBeNull();
+  describe('Integration', () => {
+    it('completes full training cooldown workflow', async () => {
+      const freshHorse = { trainingCooldown: null };
+      expect(canTrain(freshHorse)).toBe(true);
+      expect(getCooldownTimeRemaining(freshHorse)).toBeNull();
 
-      // 2. Mock setting cooldown (use ms arithmetic to avoid DST clock skew)
-      const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      const result = await setCooldown(dbHorse.id);
 
-      const updatedHorse = {
-        ...testHorse,
-        trainingCooldown: futureDate,
-      };
-
-      mockPrisma.horse.update.mockResolvedValueOnce(updatedHorse);
-
-      const result = await setCooldown(testHorse.id);
-
-      // 3. Verify horse cannot train after cooldown is set
       expect(canTrain(result)).toBe(false);
 
-      // 4. Verify time remaining is approximately 7 days
       const timeRemaining = getCooldownTimeRemaining(result);
       expect(timeRemaining).toBeGreaterThan(0);
 
       const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
       expect(timeRemaining).toBeLessThanOrEqual(sevenDaysMs);
-      expect(timeRemaining).toBeGreaterThan(sevenDaysMs - 60000); // Within 1 minute of 7 days
+      expect(timeRemaining).toBeGreaterThan(sevenDaysMs - 60000);
 
-      // 5. Verify formatting works
       const formatted = formatCooldown(timeRemaining);
       expect(formatted).toContain('day(s)');
       expect(formatted).toContain('remaining');
     });
 
-    it('should work with horse object returned from setCooldown', async () => {
-      // setCooldown returns the updated horse from prisma — verify the returned
-      // object is immediately usable by the pure cooldown functions.
-      const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-
-      const horseWithCooldown = {
-        ...testHorse,
-        trainingCooldown: futureDate,
-      };
-
-      mockPrisma.horse.update.mockResolvedValueOnce(horseWithCooldown);
-
-      const updatedHorse = await setCooldown(testHorse.id);
-
-      // Verify cooldown functions work with the returned horse object
+    it('horse returned from setCooldown is usable by pure cooldown functions', async () => {
+      const updatedHorse = await setCooldown(dbHorse.id);
       expect(canTrain(updatedHorse)).toBe(false);
       expect(getCooldownTimeRemaining(updatedHorse)).toBeGreaterThan(0);
     });

@@ -159,7 +159,7 @@ model Horse {
   forSale                 Boolean?              @default(false)
   salePrice               Int?                  @default(0)
   /// Health and care
-  healthStatus            String?               @default("Excellent")
+  healthStatus            String?
   lastVettedDate          DateTime?             @default(now()) @db.Date
   bondScore               Int?                  @default(0)
   stressLevel             Int?                  @default(0)

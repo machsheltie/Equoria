@@ -145,7 +145,6 @@ export const register = async (req, res, next) => {
           focus: 17,
           endurance: 17,
           strength: 17,
-          healthStatus: 'Excellent',
         },
       });
       logger.info('[authController.register] Starter horse created', { userId: user.id });
@@ -1200,7 +1199,6 @@ export const advanceOnboarding = async (req, res, next) => {
               age: 3,
               dateOfBirth,
               userId,
-              healthStatus: 'Excellent',
             },
             include: { breed: { select: { id: true, name: true } } },
           });

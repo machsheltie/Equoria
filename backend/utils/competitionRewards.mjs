@@ -41,9 +41,10 @@ function getRelevantStats(discipline) {
  * Calculate stat gains for competition winners
  * @param {string} placement - "1st", "2nd", or "3rd"
  * @param {string} discipline - Competition discipline
+ * @param {Function} _rngFn - RNG function (default Math.random); injectable for deterministic tests
  * @returns {Object|null} - Stat gain object or null if no gain
  */
-function calculateStatGains(placement, discipline) {
+function calculateStatGains(placement, discipline, _rngFn = Math.random) {
   const chances = {
     '1st': 0.1, // 10% chance
     '2nd': 0.05, // 5% chance
@@ -51,13 +52,13 @@ function calculateStatGains(placement, discipline) {
   };
 
   const chance = chances[placement];
-  if (!chance || Math.random() > chance) {
+  if (!chance || _rngFn() > chance) {
     return null; // No stat gain
   }
 
   // Select random stat from relevant discipline stats
   const relevantStats = getRelevantStats(discipline);
-  const randomStat = relevantStats[Math.floor(Math.random() * relevantStats.length)];
+  const randomStat = relevantStats[Math.floor(_rngFn() * relevantStats.length)];
 
   logger.info(
     `[competitionRewards.calculateStatGains] ${placement} place winner gained +1 ${randomStat} (${Math.round(chance * 100)}% chance)`,

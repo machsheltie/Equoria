@@ -76,9 +76,8 @@ export async function setCooldown(horseId) {
       data: { trainingCooldown: cooldownDate },
       include: {
         breed: true,
-        owner: true,
         stable: true,
-        player: true,
+        user: true,
       },
     });
 

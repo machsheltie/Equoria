@@ -125,6 +125,13 @@ describe('worseOf', () => {
     expect(worseOf('retired', 'critical')).toBe('retired');
     expect(worseOf('critical', 'retired')).toBe('retired');
   });
+
+  it('treats unknown free-form vet findings as critical (sentinel for worseOf -1 bug)', () => {
+    expect(worseOf('excellent', 'Lameness')).toBe('critical');
+    expect(worseOf('Lameness', 'excellent')).toBe('critical');
+    expect(worseOf('Lameness', 'Lameness')).toBe('critical');
+    expect(worseOf('good', 'Tendon strain')).toBe('critical');
+  });
 });
 
 describe('getDisplayedHealth', () => {

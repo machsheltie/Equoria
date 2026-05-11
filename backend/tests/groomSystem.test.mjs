@@ -1,84 +1,6 @@
-import { expect, jest, describe, beforeEach, it } from '@jest/globals';
-
-/**
- * 🧪 UNIT TEST: Groom System - Foal Care Assignment & Management
- *
- * This test validates the groom system's functionality for assigning, managing,
- * and calculating effects of professional groom care for foals.
- *
- * 📋 BUSINESS RULES TESTED:
- * - Groom assignment to foals with validation (active status, availability)
- * - Priority-based assignment system (primary vs secondary grooms)
- * - Default groom auto-creation for new foals without assignments
- * - Groom interaction effect calculations (bonding, stress, cost)
- * - Specialty modifiers: foalCare > general > training > medical for foals
- * - Skill level impact: master > expert > intermediate > novice (cost & effectiveness)
- * - Experience bonuses: years of experience improve effectiveness
- * - Duration scaling: longer sessions = proportionally higher costs/effects
- * - Personality trait effects: gentle, energetic, patient, strict modifiers
- * - Assignment deactivation when reassigning primary grooms
- * - Database error handling with comprehensive logging
- *
- * 🎯 FUNCTIONALITY TESTED:
- * 1. assignGroomToFoal() - Groom assignment with validation and priority management
- * 2. ensureDefaultGroomAssignment() - Auto-assignment for foals without grooms
- * 3. calculateGroomInteractionEffects() - Complex effect calculation with modifiers
- * 4. System Constants - GROOM_SPECIALTIES, SKILL_LEVELS, PERSONALITY_TRAITS validation
- * 5. Error handling for missing entities and database failures
- * 6. Edge cases: inactive grooms, duplicate assignments, invalid data
- *
- * 🔄 BALANCED MOCKING APPROACH:
- * ✅ REAL: All business logic, calculation algorithms, validation rules, effect modifiers
- * ✅ REAL: Assignment priority logic, cost calculations, specialty bonuses, experience scaling
- * 🔧 MOCK: Database operations (Prisma calls) - external dependency
- * 🔧 MOCK: Logger calls - external dependency for audit trails
- *
- * 💡 TEST STRATEGY: Unit testing with mocked database to focus on groom management
- *    business logic while ensuring predictable test outcomes for complex calculations
- */
-
-// Mock dependencies
-const mockPrisma = {
-  horse: {
-    findUnique: jest.fn(),
-    update: jest.fn(),
-  },
-  groom: {
-    findUnique: jest.fn(),
-    findFirst: jest.fn(),
-    create: jest.fn(),
-    findMany: jest.fn(),
-  },
-  groomAssignment: {
-    findFirst: jest.fn(),
-    updateMany: jest.fn(),
-    create: jest.fn(),
-    findMany: jest.fn(),
-  },
-  groomInteraction: {
-    create: jest.fn(),
-    findMany: jest.fn(),
-  },
-};
-
-const mockLogger = {
-  info: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn(),
-  debug: jest.fn(),
-};
-
-// Mock the imports
-jest.unstable_mockModule('../db/index.mjs', () => ({
-  default: mockPrisma,
-}));
-
-jest.unstable_mockModule('../utils/logger.mjs', () => ({
-  default: mockLogger,
-}));
-
-// Import the module under test
-const {
+import { describe, beforeAll, afterAll, afterEach, expect, it } from '@jest/globals';
+import prisma from '../db/index.mjs';
+import {
   assignGroomToFoal,
   ensureDefaultGroomAssignment,
   calculateGroomInteractionEffects,
@@ -86,515 +8,420 @@ const {
   GROOM_SPECIALTIES,
   SKILL_LEVELS,
   PERSONALITY_TRAITS,
-} = await import('../utils/groomSystem.mjs');
+} from '../utils/groomSystem.mjs';
 
-describe('👩‍🔧 UNIT: Groom System - Foal Care Assignment & Management', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+/**
+ * Groom System Tests
+ *
+ * Pure function sections (System Constants, hasAlreadyCompletedFoalTaskToday,
+ * calculateGroomInteractionEffects) need no DB fixtures.
+ *
+ * DB-dependent sections (assignGroomToFoal, ensureDefaultGroomAssignment) use
+ * real Prisma with TestFixture-GroomSys-* prefixed records for scoped cleanup.
+ * Groom fixtures use userId: null (the field is optional) so no User FK is required.
+ * assignGroomToFoal checks groom.userId !== userId — passing null for both causes
+ * null !== null = false, so the ownership check passes without a real User.
+ */
 
-  describe('assignGroomToFoal', () => {
-    const mockFoal = {
-      id: 1,
-      name: 'Test Foal',
-      age: 1,
-    };
+// ─── Pure function: System Constants ─────────────────────────────────────────
 
-    const mockGroom = {
-      id: 1,
-      name: 'Sarah Johnson',
-      speciality: 'foalCare',
-      skillLevel: 'intermediate',
-      isActive: true,
-      userId: 'player-1', // Add userId for ownership validation
-      availability: { monday: true, tuesday: true },
-    };
+describe('System Constants', () => {
+  it('has all required groom specialties', () => {
+    expect(GROOM_SPECIALTIES).toHaveProperty('foalCare');
+    expect(GROOM_SPECIALTIES).toHaveProperty('general');
+    expect(GROOM_SPECIALTIES).toHaveProperty('training');
+    expect(GROOM_SPECIALTIES).toHaveProperty('medical');
 
-    it('should assign groom to foal successfully', async () => {
-      mockPrisma.horse.findUnique.mockResolvedValue(mockFoal);
-      mockPrisma.groom.findUnique.mockResolvedValue(mockGroom);
-      mockPrisma.groomAssignment.findFirst.mockResolvedValue(null); // No existing assignment
-      mockPrisma.groomAssignment.updateMany.mockResolvedValue({ count: 0 });
-      mockPrisma.groomAssignment.create.mockResolvedValue({
-        id: 1,
-        foalId: 1,
-        groomId: 1,
-        priority: 1,
-        isActive: true,
-        groom: mockGroom,
-        foal: mockFoal,
-      });
-
-      const result = await assignGroomToFoal(1, 1, 'player-1');
-
-      expect(result.success).toBe(true);
-      expect(result.assignment.foalId).toBe(1);
-      expect(result.assignment.groomId).toBe(1);
-      expect(mockPrisma.groomAssignment.create).toHaveBeenCalledWith({
-        data: {
-          foalId: 1,
-          groomId: 1,
-          userId: 'player-1',
-          priority: 1,
-          notes: null,
-          isDefault: false,
-          isActive: true,
-        },
-        include: {
-          groom: true,
-          foal: {
-            select: { id: true, name: true },
-          },
-        },
-      });
-    });
-
-    it('should throw error when foal not found', async () => {
-      mockPrisma.horse.findUnique.mockResolvedValue(null);
-
-      await expect(assignGroomToFoal(999, 1, 'player-1')).rejects.toThrow('Foal with ID 999 not found');
-    });
-
-    it('should throw error when groom not found', async () => {
-      mockPrisma.horse.findUnique.mockResolvedValue(mockFoal);
-      mockPrisma.groom.findUnique.mockResolvedValue(null);
-
-      await expect(assignGroomToFoal(1, 999, 'player-1')).rejects.toThrow('Groom with ID 999 not found');
-    });
-
-    it('should throw error when groom is not active', async () => {
-      mockPrisma.horse.findUnique.mockResolvedValue(mockFoal);
-      mockPrisma.groom.findUnique.mockResolvedValue({
-        ...mockGroom,
-        isActive: false,
-      });
-
-      await expect(assignGroomToFoal(1, 1, 'player-1')).rejects.toThrow('Groom Sarah Johnson is not currently active');
-    });
-
-    it('should throw error when groom already assigned', async () => {
-      mockPrisma.horse.findUnique.mockResolvedValue(mockFoal);
-      mockPrisma.groom.findUnique.mockResolvedValue(mockGroom);
-      mockPrisma.groomAssignment.findFirst.mockResolvedValue({
-        id: 1,
-        foalId: 1,
-        groomId: 1,
-        isActive: true,
-      });
-
-      await expect(assignGroomToFoal(1, 1, 'player-1')).rejects.toThrow(
-        'Groom Sarah Johnson is already assigned to this foal',
-      );
-    });
-
-    it('should deactivate existing primary assignments when assigning new primary', async () => {
-      mockPrisma.horse.findUnique.mockResolvedValue(mockFoal);
-      mockPrisma.groom.findUnique.mockResolvedValue(mockGroom);
-      mockPrisma.groomAssignment.findFirst.mockResolvedValue(null);
-      mockPrisma.groomAssignment.updateMany.mockResolvedValue({ count: 1 });
-      mockPrisma.groomAssignment.create.mockResolvedValue({
-        id: 2,
-        foalId: 1,
-        groomId: 1,
-        priority: 1,
-        isActive: true,
-        groom: mockGroom,
-        foal: mockFoal,
-      });
-
-      await assignGroomToFoal(1, 1, 'player-1', { priority: 1 });
-
-      expect(mockPrisma.groomAssignment.updateMany).toHaveBeenCalledWith({
-        where: {
-          foalId: 1,
-          priority: 1,
-          isActive: true,
-        },
-        data: {
-          isActive: false,
-          endDate: expect.any(Date),
-        },
-      });
+    Object.values(GROOM_SPECIALTIES).forEach(specialty => {
+      expect(specialty).toHaveProperty('name');
+      expect(specialty).toHaveProperty('description');
+      expect(specialty).toHaveProperty('bondingModifier');
+      expect(specialty).toHaveProperty('stressReduction');
+      expect(specialty).toHaveProperty('preferredActivities');
     });
   });
 
-  describe('ensureDefaultGroomAssignment', () => {
-    it('should return existing assignment if one exists', async () => {
-      const existingAssignment = {
-        id: 1,
-        foalId: 1,
-        groomId: 1,
-        isActive: true,
-        groom: {
-          id: 1,
-          name: 'Sarah Johnson',
-        },
-      };
+  it('has all required skill levels', () => {
+    expect(SKILL_LEVELS).toHaveProperty('novice');
+    expect(SKILL_LEVELS).toHaveProperty('intermediate');
+    expect(SKILL_LEVELS).toHaveProperty('expert');
+    expect(SKILL_LEVELS).toHaveProperty('master');
 
-      mockPrisma.groomAssignment.findFirst.mockResolvedValue(existingAssignment);
-
-      const result = await ensureDefaultGroomAssignment(1, 'player-1');
-
-      expect(result.success).toBe(true);
-      expect(result.isExisting).toBe(true);
-      expect(result.assignment).toEqual(existingAssignment);
+    Object.values(SKILL_LEVELS).forEach(level => {
+      expect(level).toHaveProperty('name');
+      expect(level).toHaveProperty('bondingModifier');
+      expect(level).toHaveProperty('costModifier');
+      expect(level).toHaveProperty('errorChance');
+      expect(level).toHaveProperty('description');
     });
+  });
 
-    it('should create default assignment if none exists', async () => {
-      mockPrisma.groomAssignment.findFirst.mockResolvedValue(null);
-      mockPrisma.groom.findFirst.mockResolvedValue(null); // No existing groom
-      mockPrisma.groom.create.mockResolvedValue({
-        id: 1,
-        name: 'Sarah Johnson',
+  it('has all required personality traits', () => {
+    expect(PERSONALITY_TRAITS).toHaveProperty('gentle');
+    expect(PERSONALITY_TRAITS).toHaveProperty('energetic');
+    expect(PERSONALITY_TRAITS).toHaveProperty('patient');
+    expect(PERSONALITY_TRAITS).toHaveProperty('strict');
+
+    Object.values(PERSONALITY_TRAITS).forEach(trait => {
+      expect(trait).toHaveProperty('name');
+      expect(trait).toHaveProperty('bondingModifier');
+      expect(trait).toHaveProperty('stressReduction');
+      expect(trait).toHaveProperty('description');
+    });
+  });
+});
+
+// ─── Pure function: hasAlreadyCompletedFoalTaskToday ─────────────────────────
+
+describe('hasAlreadyCompletedFoalTaskToday', () => {
+  const today = '2024-01-15';
+
+  it('returns false when foal has no daily task record', () => {
+    expect(hasAlreadyCompletedFoalTaskToday({ id: 1, dailyTaskRecord: null }, today)).toBe(false);
+  });
+
+  it('returns false when foal has empty daily task record', () => {
+    expect(hasAlreadyCompletedFoalTaskToday({ id: 1, dailyTaskRecord: {} }, today)).toBe(false);
+  });
+
+  it('returns false when foal has no tasks for today', () => {
+    const foal = {
+      id: 1,
+      dailyTaskRecord: { '2024-01-14': ['trust_building'], '2024-01-16': ['hoof_handling'] },
+    };
+    expect(hasAlreadyCompletedFoalTaskToday(foal, today)).toBe(false);
+  });
+
+  it('returns false when foal has empty task array for today', () => {
+    expect(hasAlreadyCompletedFoalTaskToday({ id: 1, dailyTaskRecord: { [today]: [] } }, today)).toBe(false);
+  });
+
+  it('returns true when foal has completed enrichment task today', () => {
+    expect(hasAlreadyCompletedFoalTaskToday({ id: 1, dailyTaskRecord: { [today]: ['trust_building'] } }, today)).toBe(
+      true,
+    );
+  });
+
+  it('returns true when foal has completed grooming task today', () => {
+    expect(hasAlreadyCompletedFoalTaskToday({ id: 1, dailyTaskRecord: { [today]: ['hoof_handling'] } }, today)).toBe(
+      true,
+    );
+  });
+
+  it('returns true when foal has completed multiple tasks today', () => {
+    expect(
+      hasAlreadyCompletedFoalTaskToday(
+        { id: 1, dailyTaskRecord: { [today]: ['trust_building', 'early_touch'] } },
+        today,
+      ),
+    ).toBe(true);
+  });
+
+  it('returns false when foal has completed only non-foal tasks today', () => {
+    expect(
+      hasAlreadyCompletedFoalTaskToday(
+        { id: 1, dailyTaskRecord: { [today]: ['general_grooming', 'exercise', 'medical_check'] } },
+        today,
+      ),
+    ).toBe(false);
+  });
+
+  it('returns true when foal has mixed tasks including foal tasks today', () => {
+    expect(
+      hasAlreadyCompletedFoalTaskToday(
+        { id: 1, dailyTaskRecord: { [today]: ['general_grooming', 'trust_building', 'exercise'] } },
+        today,
+      ),
+    ).toBe(true);
+  });
+
+  it('detects all enrichment tasks', () => {
+    for (const task of ['desensitization', 'trust_building', 'showground_exposure']) {
+      expect(hasAlreadyCompletedFoalTaskToday({ id: 1, dailyTaskRecord: { [today]: [task] } }, today)).toBe(true);
+    }
+  });
+
+  it('detects all grooming tasks', () => {
+    for (const task of [
+      'early_touch',
+      'hoof_handling',
+      'tying_practice',
+      'sponge_bath',
+      'coat_check',
+      'mane_tail_grooming',
+    ]) {
+      expect(hasAlreadyCompletedFoalTaskToday({ id: 1, dailyTaskRecord: { [today]: [task] } }, today)).toBe(true);
+    }
+  });
+
+  it('handles edge cases gracefully', () => {
+    expect(hasAlreadyCompletedFoalTaskToday({ id: 1, dailyTaskRecord: undefined }, today)).toBe(false);
+    const foalWithRecord = { id: 1, dailyTaskRecord: { [today]: ['trust_building'] } };
+    expect(hasAlreadyCompletedFoalTaskToday(foalWithRecord, null)).toBe(false);
+    expect(hasAlreadyCompletedFoalTaskToday(foalWithRecord, '')).toBe(false);
+  });
+});
+
+// ─── Pure function: calculateGroomInteractionEffects ─────────────────────────
+
+describe('calculateGroomInteractionEffects', () => {
+  const mockGroom = {
+    id: 1,
+    name: 'Sarah Johnson',
+    speciality: 'foalCare',
+    skillLevel: 'intermediate',
+    personality: 'gentle',
+    experience: 5,
+    sessionRate: 18.0,
+  };
+
+  const mockFoal = { id: 1, name: 'Test Foal', bondScore: 50, stressLevel: 20 };
+
+  it('returns all required effect properties', () => {
+    const effects = calculateGroomInteractionEffects(mockGroom, mockFoal, 'dailyCare', 60);
+    expect(effects).toHaveProperty('bondingChange');
+    expect(effects).toHaveProperty('stressChange');
+    expect(effects).toHaveProperty('cost');
+    expect(effects).toHaveProperty('quality');
+    expect(effects).toHaveProperty('modifiers');
+    expect(effects.bondingChange).toBeGreaterThanOrEqual(0);
+    expect(effects.bondingChange).toBeLessThanOrEqual(10);
+    expect(effects.stressChange).toBeLessThanOrEqual(5);
+    expect(effects.stressChange).toBeGreaterThanOrEqual(-15);
+    expect(effects.cost).toBeGreaterThan(0);
+    expect(['poor', 'fair', 'good', 'excellent']).toContain(effects.quality);
+  });
+
+  it('foalCare specialty modifier exceeds general specialty modifier', () => {
+    const foalCareEffects = calculateGroomInteractionEffects(
+      { ...mockGroom, speciality: 'foalCare' },
+      mockFoal,
+      'dailyCare',
+      60,
+    );
+    const generalEffects = calculateGroomInteractionEffects(
+      { ...mockGroom, speciality: 'general' },
+      mockFoal,
+      'dailyCare',
+      60,
+    );
+    expect(foalCareEffects.modifiers.specialty).toBeGreaterThan(generalEffects.modifiers.specialty);
+  });
+
+  it('expert skill modifier exceeds novice skill modifier', () => {
+    const expertEffects = calculateGroomInteractionEffects(
+      { ...mockGroom, skillLevel: 'expert' },
+      mockFoal,
+      'dailyCare',
+      60,
+    );
+    const noviceEffects = calculateGroomInteractionEffects(
+      { ...mockGroom, skillLevel: 'novice' },
+      mockFoal,
+      'dailyCare',
+      60,
+    );
+    expect(expertEffects.modifiers.skillLevel).toBeGreaterThan(noviceEffects.modifiers.skillLevel);
+    expect(expertEffects.cost).toBeGreaterThan(noviceEffects.cost);
+  });
+
+  it('experienced groom has higher experience modifier than new groom', () => {
+    const experiencedEffects = calculateGroomInteractionEffects(
+      { ...mockGroom, experience: 15 },
+      mockFoal,
+      'dailyCare',
+      60,
+    );
+    const newGroomEffects = calculateGroomInteractionEffects(
+      { ...mockGroom, experience: 1 },
+      mockFoal,
+      'dailyCare',
+      60,
+    );
+    expect(experiencedEffects.modifiers.experience).toBeGreaterThan(newGroomEffects.modifiers.experience);
+  });
+
+  it('longer duration produces higher cost', () => {
+    const shortEffects = calculateGroomInteractionEffects(mockGroom, mockFoal, 'dailyCare', 30);
+    const longEffects = calculateGroomInteractionEffects(mockGroom, mockFoal, 'dailyCare', 120);
+    expect(longEffects.cost).toBeGreaterThan(shortEffects.cost);
+  });
+});
+
+// ─── DB integration: assignGroomToFoal ───────────────────────────────────────
+
+describe('assignGroomToFoal — DB integration', () => {
+  let foal, groom, inactiveGroom, groom2;
+  const dateOfBirth = new Date('2020-01-01');
+
+  beforeAll(async () => {
+    foal = await prisma.horse.create({
+      data: { name: 'TestFixture-GroomSys-Foal', sex: 'Colt', dateOfBirth },
+    });
+    groom = await prisma.groom.create({
+      data: {
+        name: 'TestFixture-GroomSys-Groom',
         speciality: 'foalCare',
-        userId: 'player-1',
-      });
-
-      mockPrisma.horse.findUnique.mockResolvedValue({ id: 1, name: 'Test Foal', age: 1 });
-      mockPrisma.groom.findUnique.mockResolvedValue({
-        id: 1,
-        name: 'Sarah Johnson',
-        speciality: 'foalCare',
-        isActive: true,
-      });
-      mockPrisma.groomAssignment.create.mockResolvedValue({
-        id: 1,
-        foalId: 1,
-        groomId: 1,
-        isDefault: true,
-      });
-
-      const result = await ensureDefaultGroomAssignment(1, 'player-1');
-
-      expect(result.success).toBe(true);
-      expect(result.isNew).toBe(true);
-    });
-  });
-
-  describe('calculateGroomInteractionEffects', () => {
-    const mockGroom = {
-      id: 1,
-      name: 'Sarah Johnson',
-      speciality: 'foalCare',
-      skillLevel: 'intermediate',
-      personality: 'gentle',
-      experience: 5,
-      hourlyRate: 18.0,
-    };
-
-    const mockFoal = {
-      id: 1,
-      name: 'Test Foal',
-      bondScore: 50,
-      stressLevel: 20,
-    };
-
-    it('should calculate bonding and stress effects correctly', () => {
-      const effects = calculateGroomInteractionEffects(mockGroom, mockFoal, 'dailyCare', 60);
-
-      expect(effects).toHaveProperty('bondingChange');
-      expect(effects).toHaveProperty('stressChange');
-      expect(effects).toHaveProperty('cost');
-      expect(effects).toHaveProperty('quality');
-      expect(effects).toHaveProperty('modifiers');
-
-      expect(effects.bondingChange).toBeGreaterThanOrEqual(0);
-      expect(effects.bondingChange).toBeLessThanOrEqual(10);
-      expect(effects.stressChange).toBeLessThanOrEqual(5);
-      expect(effects.stressChange).toBeGreaterThanOrEqual(-15); // Allow for higher stress reduction
-      expect(effects.cost).toBeGreaterThan(0);
-      expect(['poor', 'fair', 'good', 'excellent']).toContain(effects.quality);
-    });
-
-    it('should apply specialty modifiers correctly', () => {
-      const foalCareGroom = { ...mockGroom, speciality: 'foalCare' }; // Use correct snake_case key
-      const generalGroom = { ...mockGroom, speciality: 'general' };
-
-      const foalCareEffects = calculateGroomInteractionEffects(foalCareGroom, mockFoal, 'dailyCare', 60);
-      const generalEffects = calculateGroomInteractionEffects(generalGroom, mockFoal, 'dailyCare', 60);
-
-      expect(foalCareEffects.modifiers.specialty).toBeGreaterThan(generalEffects.modifiers.specialty);
-    });
-
-    it('should apply skill level modifiers correctly', () => {
-      const expertGroom = { ...mockGroom, skillLevel: 'expert' };
-      const noviceGroom = { ...mockGroom, skillLevel: 'novice' };
-
-      const expertEffects = calculateGroomInteractionEffects(expertGroom, mockFoal, 'dailyCare', 60);
-      const noviceEffects = calculateGroomInteractionEffects(noviceGroom, mockFoal, 'dailyCare', 60);
-
-      expect(expertEffects.modifiers.skillLevel).toBeGreaterThan(noviceEffects.modifiers.skillLevel);
-      expect(expertEffects.cost).toBeGreaterThan(noviceEffects.cost);
-    });
-
-    it('should apply experience bonus correctly', () => {
-      const experiencedGroom = { ...mockGroom, experience: 15 };
-      const newGroom = { ...mockGroom, experience: 1 };
-
-      const experiencedEffects = calculateGroomInteractionEffects(experiencedGroom, mockFoal, 'dailyCare', 60);
-      const newGroomEffects = calculateGroomInteractionEffects(newGroom, mockFoal, 'dailyCare', 60);
-
-      expect(experiencedEffects.modifiers.experience).toBeGreaterThan(newGroomEffects.modifiers.experience);
-    });
-
-    it('should scale effects with duration', () => {
-      const shortEffects = calculateGroomInteractionEffects(mockGroom, mockFoal, 'dailyCare', 30);
-      const longEffects = calculateGroomInteractionEffects(mockGroom, mockFoal, 'dailyCare', 120);
-
-      expect(longEffects.cost).toBeGreaterThan(shortEffects.cost);
-    });
-  });
-
-  describe('System Constants', () => {
-    it('should have all required groom specialties', () => {
-      expect(GROOM_SPECIALTIES).toHaveProperty('foalCare');
-      expect(GROOM_SPECIALTIES).toHaveProperty('general');
-      expect(GROOM_SPECIALTIES).toHaveProperty('training');
-      expect(GROOM_SPECIALTIES).toHaveProperty('medical');
-
-      Object.values(GROOM_SPECIALTIES).forEach(specialty => {
-        expect(specialty).toHaveProperty('name');
-        expect(specialty).toHaveProperty('description');
-        expect(specialty).toHaveProperty('bondingModifier');
-        expect(specialty).toHaveProperty('stressReduction');
-        expect(specialty).toHaveProperty('preferredActivities');
-      });
-    });
-
-    it('should have all required skill levels', () => {
-      expect(SKILL_LEVELS).toHaveProperty('novice');
-      expect(SKILL_LEVELS).toHaveProperty('intermediate');
-      expect(SKILL_LEVELS).toHaveProperty('expert');
-      expect(SKILL_LEVELS).toHaveProperty('master');
-
-      Object.values(SKILL_LEVELS).forEach(level => {
-        expect(level).toHaveProperty('name');
-        expect(level).toHaveProperty('bondingModifier');
-        expect(level).toHaveProperty('costModifier');
-        expect(level).toHaveProperty('errorChance');
-        expect(level).toHaveProperty('description');
-      });
-    });
-
-    it('should have all required personality traits', () => {
-      expect(PERSONALITY_TRAITS).toHaveProperty('gentle');
-      expect(PERSONALITY_TRAITS).toHaveProperty('energetic');
-      expect(PERSONALITY_TRAITS).toHaveProperty('patient');
-      expect(PERSONALITY_TRAITS).toHaveProperty('strict');
-
-      Object.values(PERSONALITY_TRAITS).forEach(trait => {
-        expect(trait).toHaveProperty('name');
-        expect(trait).toHaveProperty('bondingModifier');
-        expect(trait).toHaveProperty('stressReduction');
-        expect(trait).toHaveProperty('description');
-      });
-    });
-  });
-
-  describe('hasAlreadyCompletedFoalTaskToday', () => {
-    const today = '2024-01-15';
-
-    it('should return false when foal has no daily task record', () => {
-      const foal = {
-        id: 1,
-        name: 'Test Foal',
-        dailyTaskRecord: null,
-      };
-
-      const result = hasAlreadyCompletedFoalTaskToday(foal, today);
-      expect(result).toBe(false);
-    });
-
-    it('should return false when foal has empty daily task record', () => {
-      const foal = {
-        id: 1,
-        name: 'Test Foal',
-        dailyTaskRecord: {},
-      };
-
-      const result = hasAlreadyCompletedFoalTaskToday(foal, today);
-      expect(result).toBe(false);
-    });
-
-    it('should return false when foal has no tasks for today', () => {
-      const foal = {
-        id: 1,
-        name: 'Test Foal',
-        dailyTaskRecord: {
-          '2024-01-14': ['trust_building'],
-          '2024-01-16': ['hoof_handling'],
-        },
-      };
-
-      const result = hasAlreadyCompletedFoalTaskToday(foal, today);
-      expect(result).toBe(false);
-    });
-
-    it('should return false when foal has empty task array for today', () => {
-      const foal = {
-        id: 1,
-        name: 'Test Foal',
-        dailyTaskRecord: {
-          [today]: [],
-        },
-      };
-
-      const result = hasAlreadyCompletedFoalTaskToday(foal, today);
-      expect(result).toBe(false);
-    });
-
-    it('should return true when foal has completed enrichment task today', () => {
-      const foal = {
-        id: 1,
-        name: 'Test Foal',
-        dailyTaskRecord: {
-          [today]: ['trust_building'],
-        },
-      };
-
-      const result = hasAlreadyCompletedFoalTaskToday(foal, today);
-      expect(result).toBe(true);
-    });
-
-    it('should return true when foal has completed grooming task today', () => {
-      const foal = {
-        id: 1,
-        name: 'Test Foal',
-        dailyTaskRecord: {
-          [today]: ['hoof_handling'],
-        },
-      };
-
-      const result = hasAlreadyCompletedFoalTaskToday(foal, today);
-      expect(result).toBe(true);
-    });
-
-    it('should return true when foal has completed multiple tasks today', () => {
-      const foal = {
-        id: 1,
-        name: 'Test Foal',
-        dailyTaskRecord: {
-          [today]: ['trust_building', 'early_touch'],
-        },
-      };
-
-      const result = hasAlreadyCompletedFoalTaskToday(foal, today);
-      expect(result).toBe(true);
-    });
-
-    it('should return false when foal has completed non-foal tasks today', () => {
-      const foal = {
-        id: 1,
-        name: 'Test Foal',
-        dailyTaskRecord: {
-          [today]: ['general_grooming', 'exercise', 'medical_check'],
-        },
-      };
-
-      const result = hasAlreadyCompletedFoalTaskToday(foal, today);
-      expect(result).toBe(false);
-    });
-
-    it('should return true when foal has mixed tasks including foal tasks today', () => {
-      const foal = {
-        id: 1,
-        name: 'Test Foal',
-        dailyTaskRecord: {
-          [today]: ['general_grooming', 'trust_building', 'exercise'],
-        },
-      };
-
-      const result = hasAlreadyCompletedFoalTaskToday(foal, today);
-      expect(result).toBe(true);
-    });
-
-    it('should test all enrichment tasks are detected', () => {
-      const enrichmentTasks = ['desensitization', 'trust_building', 'showground_exposure'];
-
-      enrichmentTasks.forEach(task => {
-        const foal = {
-          id: 1,
-          name: 'Test Foal',
-          dailyTaskRecord: {
-            [today]: [task],
-          },
-        };
-
-        const result = hasAlreadyCompletedFoalTaskToday(foal, today);
-        expect(result).toBe(true);
-      });
-    });
-
-    it('should test all grooming tasks are detected', () => {
-      const groomingTasks = [
-        'early_touch',
-        'hoof_handling',
-        'tying_practice',
-        'sponge_bath',
-        'coat_check',
-        'mane_tail_grooming',
-      ];
-
-      groomingTasks.forEach(task => {
-        const foal = {
-          id: 1,
-          name: 'Test Foal',
-          dailyTaskRecord: {
-            [today]: [task],
-          },
-        };
-
-        const result = hasAlreadyCompletedFoalTaskToday(foal, today);
-        expect(result).toBe(true);
-      });
-    });
-
-    it('should handle edge cases gracefully', () => {
-      // Test with undefined dailyTaskRecord
-      const foalUndefined = {
-        id: 1,
-        name: 'Test Foal',
-        dailyTaskRecord: undefined,
-      };
-      expect(hasAlreadyCompletedFoalTaskToday(foalUndefined, today)).toBe(false);
-
-      // Test with null today parameter
-      const foalNormal = {
-        id: 1,
-        name: 'Test Foal',
-        dailyTaskRecord: { [today]: ['trust_building'] },
-      };
-      expect(hasAlreadyCompletedFoalTaskToday(foalNormal, null)).toBe(false);
-
-      // Test with empty string today parameter
-      expect(hasAlreadyCompletedFoalTaskToday(foalNormal, '')).toBe(false);
-    });
-  });
-
-  describe('Error Handling', () => {
-    it('should handle database errors gracefully', async () => {
-      mockPrisma.horse.findUnique.mockRejectedValue(new Error('Database connection failed'));
-
-      await expect(assignGroomToFoal(1, 1, 'player-1')).rejects.toThrow('Database connection failed');
-      expect(mockLogger.error).toHaveBeenCalled();
-    });
-
-    it('should handle invalid groom data in calculations', () => {
-      const invalidGroom = {
-        id: 1,
-        name: 'Invalid Groom',
-        speciality: 'invalid_specialty',
-        skillLevel: 'invalid_level',
-        personality: 'invalid_personality',
+        skillLevel: 'intermediate',
+        personality: 'gentle',
         experience: 5,
         sessionRate: 18.0,
-      };
-
-      const effects = calculateGroomInteractionEffects(invalidGroom, { id: 1, bondScore: 50 }, 'dailyCare', 60);
-
-      expect(effects).toHaveProperty('bondingChange');
-      expect(effects).toHaveProperty('stressChange');
-      expect(effects).toHaveProperty('cost');
+        isActive: true,
+      },
     });
+    inactiveGroom = await prisma.groom.create({
+      data: {
+        name: 'TestFixture-GroomSys-InactiveGroom',
+        speciality: 'general',
+        skillLevel: 'novice',
+        personality: 'energetic',
+        experience: 1,
+        sessionRate: 12.0,
+        isActive: false,
+      },
+    });
+    groom2 = await prisma.groom.create({
+      data: {
+        name: 'TestFixture-GroomSys-Groom2',
+        speciality: 'general',
+        skillLevel: 'intermediate',
+        personality: 'patient',
+        experience: 3,
+        sessionRate: 15.0,
+        isActive: true,
+      },
+    });
+  });
+
+  afterAll(async () => {
+    await prisma.groomAssignment.deleteMany({
+      where: { foal: { name: { startsWith: 'TestFixture-GroomSys-' } } },
+    });
+    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GroomSys-' } } });
+    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-GroomSys-' } } });
+  });
+
+  afterEach(async () => {
+    await prisma.groomAssignment.deleteMany({ where: { foalId: foal.id } });
+  });
+
+  it('assigns groom to foal successfully', async () => {
+    const result = await assignGroomToFoal(foal.id, groom.id, null);
+    expect(result.success).toBe(true);
+    expect(result.assignment.foalId).toBe(foal.id);
+    expect(result.assignment.groomId).toBe(groom.id);
+  });
+
+  it('throws when foal not found', async () => {
+    await expect(assignGroomToFoal(999999999, groom.id, null)).rejects.toThrow('Foal with ID 999999999 not found');
+  });
+
+  it('throws when groom not found', async () => {
+    await expect(assignGroomToFoal(foal.id, 999999999, null)).rejects.toThrow('Groom with ID 999999999 not found');
+  });
+
+  it('throws when groom is not active', async () => {
+    await expect(assignGroomToFoal(foal.id, inactiveGroom.id, null)).rejects.toThrow('is not currently active');
+  });
+
+  it('throws when groom is already assigned to this foal', async () => {
+    await prisma.groomAssignment.create({
+      data: { foalId: foal.id, groomId: groom.id, priority: 1, isActive: true },
+    });
+    await expect(assignGroomToFoal(foal.id, groom.id, null)).rejects.toThrow('already assigned to this foal');
+  });
+
+  it('deactivates existing primary assignment when new primary is assigned', async () => {
+    await prisma.groomAssignment.create({
+      data: { foalId: foal.id, groomId: groom.id, priority: 1, isActive: true },
+    });
+
+    const result = await assignGroomToFoal(foal.id, groom2.id, null, { priority: 1 });
+    expect(result.success).toBe(true);
+
+    const oldAssignment = await prisma.groomAssignment.findFirst({
+      where: { foalId: foal.id, groomId: groom.id },
+    });
+    expect(oldAssignment.isActive).toBe(false);
+  });
+});
+
+// ─── DB integration: ensureDefaultGroomAssignment ────────────────────────────
+
+describe('ensureDefaultGroomAssignment — DB integration', () => {
+  it('returns existing assignment when one is already active', async () => {
+    const dateOfBirth = new Date('2023-01-01');
+    const localFoal = await prisma.horse.create({
+      data: { name: 'TestFixture-GroomSys-EnsureFoal1', sex: 'Filly', dateOfBirth },
+    });
+    const localGroom = await prisma.groom.create({
+      data: {
+        name: 'TestFixture-GroomSys-EnsureGroom',
+        speciality: 'foalCare',
+        skillLevel: 'intermediate',
+        personality: 'gentle',
+        experience: 3,
+        sessionRate: 15.0,
+        isActive: true,
+      },
+    });
+    await prisma.groomAssignment.create({
+      data: { foalId: localFoal.id, groomId: localGroom.id, priority: 1, isActive: true },
+    });
+
+    try {
+      const result = await ensureDefaultGroomAssignment(localFoal.id, null);
+      expect(result.success).toBe(true);
+      expect(result.isExisting).toBe(true);
+    } finally {
+      await prisma.groomAssignment.deleteMany({ where: { foalId: localFoal.id } });
+      await prisma.horse.delete({ where: { id: localFoal.id } });
+      await prisma.groom.delete({ where: { id: localGroom.id } });
+    }
+  });
+
+  it('creates default assignment when none exists (test env auto-assigns)', async () => {
+    const dateOfBirth = new Date('2023-06-01');
+    const localFoal = await prisma.horse.create({
+      data: { name: 'TestFixture-GroomSys-EnsureFoal2', sex: 'Colt', dateOfBirth },
+    });
+
+    let createdGroomId = null;
+    try {
+      const result = await ensureDefaultGroomAssignment(localFoal.id, null);
+      expect(result.success).toBe(true);
+      expect(result.isNew).toBe(true);
+
+      if (result.assignment) {
+        createdGroomId = result.assignment.groomId;
+      }
+    } finally {
+      await prisma.groomAssignment.deleteMany({ where: { foalId: localFoal.id } });
+      await prisma.horse.delete({ where: { id: localFoal.id } });
+      if (createdGroomId) {
+        await prisma.groom.delete({ where: { id: createdGroomId } }).catch(() => {});
+      }
+    }
+  });
+});
+
+// ─── Error handling: pure function fallback ───────────────────────────────────
+
+describe('Error Handling', () => {
+  it('handles invalid groom data in calculations without throwing', () => {
+    const invalidGroom = {
+      id: 1,
+      name: 'Invalid Groom',
+      speciality: 'invalid_specialty',
+      skillLevel: 'invalid_level',
+      personality: 'invalid_personality',
+      experience: 5,
+      sessionRate: 18.0,
+    };
+
+    const effects = calculateGroomInteractionEffects(invalidGroom, { id: 1, bondScore: 50 }, 'dailyCare', 60);
+    expect(effects).toHaveProperty('bondingChange');
+    expect(effects).toHaveProperty('stressChange');
+    expect(effects).toHaveProperty('cost');
   });
 });

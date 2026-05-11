@@ -107,9 +107,10 @@ export function worseOf(a, b) {
   if (a === 'retired' || b === 'retired') {
     return 'retired';
   }
+  const lastIdx = BAND_ORDER.length - 1;
   const ai = BAND_ORDER.indexOf(a);
   const bi = BAND_ORDER.indexOf(b);
-  return BAND_ORDER[Math.max(ai, bi)];
+  return BAND_ORDER[Math.max(ai === -1 ? lastIdx : ai, bi === -1 ? lastIdx : bi)];
 }
 
 /**

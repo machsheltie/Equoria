@@ -17,14 +17,9 @@
  * conditions, not exact outcomes.
  */
 
-import { jest, describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../packages/database/prismaClient.mjs';
-
-jest.unstable_mockModule('../utils/logger.mjs', () => ({
-  default: { info: jest.fn(), error: jest.fn(), warn: jest.fn() },
-}));
-
-const { createHorse } = await import('../models/horseModel.mjs');
+import { createHorse } from '../models/horseModel.mjs';
 
 const UNIQUE = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).slice(2, 8)}`;
 

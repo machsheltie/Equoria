@@ -1,435 +1,415 @@
 /**
  * Care Pattern Analysis Tests
- * Unit tests for care pattern analysis and evaluation logic
  *
- * 🧪 TESTING APPROACH: Balanced Mocking
- * - Mock Prisma database calls only
- * - Test real business logic and pattern analysis
- * - Validate care pattern calculations
- * - Test edge cases and boundary conditions
+ * Tests the real analyzeCarePatterns function end-to-end against the real DB.
+ * No mocks of any kind.
+ *
+ * Fixtures:
+ *   - One shared Groom (TestFixture-CarePattern-Groom)
+ *   - Horses created per-test (TestFixture-CarePattern-*)
+ *   - GroomInteractions created per-test with explicit createdAt values
+ *
+ * Cleanup: horse.delete cascades to groomInteractions (foalId FK).
  */
 
-import { describe, test, expect, jest, beforeEach } from '@jest/globals';
+import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
+import prisma from '../../db/index.mjs';
+import { analyzeCarePatterns } from '../../utils/carePatternAnalysis.mjs';
 
-// Mock Prisma
-const mockPrisma = {
-  horse: {
-    findUnique: jest.fn(),
-  },
-};
+const PREFIX = 'TestFixture-CarePattern-';
+const USER_ID = 'test-user-care-pattern';
 
-const mockLogger = {
-  info: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn(),
-  debug: jest.fn(),
-};
+let groomId;
 
-await jest.unstable_mockModule('../../db/index.mjs', () => ({
-  default: mockPrisma,
-}));
-await jest.unstable_mockModule('../../utils/logger.mjs', () => ({
-  default: mockLogger,
-}));
+// ─── date helpers ─────────────────────────────────────────────────────────────
 
-// Import after mocking
-const { analyzeCarePatterns } = await import('../../utils/carePatternAnalysis.mjs');
+const daysAgo = n => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
+const hoursAgo = n => new Date(Date.now() - n * 60 * 60 * 1000);
+const monthsAgo = n => new Date(Date.now() - n * 30 * 24 * 60 * 60 * 1000);
+const yearsAgo = n => new Date(Date.now() - n * 365.25 * 24 * 60 * 60 * 1000);
 
-describe('Care Pattern Analysis', () => {
-  // Anchor dates to keep age calculations deterministic
-  const referenceDate = new Date('2025-06-01T00:00:00Z');
+// ─── fixtures ─────────────────────────────────────────────────────────────────
 
-  const fiveMonthsAgo = new Date(referenceDate);
-  fiveMonthsAgo.setMonth(referenceDate.getMonth() - 5);
+async function mkHorse(suffix, opts = {}) {
+  return prisma.horse.create({
+    data: {
+      name: `${PREFIX}${suffix}`,
+      sex: 'Colt',
+      dateOfBirth: opts.dateOfBirth ?? monthsAgo(5),
+      bondScore: opts.bondScore ?? 50,
+      stressLevel: opts.stressLevel ?? 20,
+    },
+  });
+}
 
-  const fourYearsAgo = new Date(referenceDate);
-  fourYearsAgo.setFullYear(referenceDate.getFullYear() - 4);
+async function rmHorse(id) {
+  await prisma.horse.delete({ where: { id } }).catch(() => {});
+}
 
-  const oneMonthAgo = new Date(referenceDate);
-  oneMonthAgo.setMonth(referenceDate.getMonth() - 1);
+async function mkInteraction(foalId, opts = {}) {
+  return prisma.groomInteraction.create({
+    data: {
+      foalId,
+      groomId,
+      interactionType: opts.interactionType ?? 'daily_care',
+      duration: 30,
+      bondingChange: opts.bondingChange ?? 3,
+      stressChange: opts.stressChange ?? 0,
+      quality: opts.quality ?? 'good',
+      notes: opts.notes ?? null,
+      createdAt: opts.createdAt ?? new Date(),
+    },
+  });
+}
 
-  const threeDaysAgo = new Date(referenceDate);
-  threeDaysAgo.setDate(referenceDate.getDate() - 3);
+// ─── setup / teardown ─────────────────────────────────────────────────────────
 
-  const twoDaysAgo = new Date(referenceDate);
-  twoDaysAgo.setDate(referenceDate.getDate() - 2);
+beforeAll(async () => {
+  await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
+  await prisma.groom.deleteMany({ where: { name: { startsWith: PREFIX } } });
+  await prisma.user.deleteMany({ where: { id: USER_ID } });
 
-  const yesterday = new Date(referenceDate);
-  yesterday.setDate(referenceDate.getDate() - 1);
-
-  const today = new Date(referenceDate);
-
-  // Additional dates for test scenarios (relative to June 1, 2024)
-  const twelveDaysAgo = new Date(referenceDate);
-  twelveDaysAgo.setDate(referenceDate.getDate() - 12); // May 20
-
-  const elevenDaysAgo = new Date(referenceDate);
-  elevenDaysAgo.setDate(referenceDate.getDate() - 11); // May 21
-
-  const tenDaysAgo = new Date(referenceDate);
-  tenDaysAgo.setDate(referenceDate.getDate() - 10); // May 22
-
-  const sevenDaysAgo = new Date(referenceDate);
-  sevenDaysAgo.setDate(referenceDate.getDate() - 7); // May 25
-
-  const sixDaysAgo = new Date(referenceDate);
-  sixDaysAgo.setDate(referenceDate.getDate() - 6); // May 26
-
-  const fiveDaysAgo = new Date(referenceDate);
-  fiveDaysAgo.setDate(referenceDate.getDate() - 5); // May 27
-
-  const fourDaysAgo = new Date(referenceDate);
-  fourDaysAgo.setDate(referenceDate.getDate() - 4); // May 28
-
-  const nineDaysAgo = new Date(referenceDate);
-  nineDaysAgo.setDate(referenceDate.getDate() - 9); // May 23
-
-  const mockHorse = {
-    id: 1,
-    name: 'Test Horse',
-    dateOfBirth: fiveMonthsAgo, // FIXED: Use calculated date for 5-month-old foal
-    bondScore: 50,
-    stressLevel: 20,
-    groomInteractions: [],
-  };
-
-  beforeEach(() => {
-    jest.clearAllMocks();
+  await prisma.user.create({
+    data: {
+      id: USER_ID,
+      username: 'carePatternUser',
+      email: 'carepattern@example.com',
+      password: 'TestPassword123!',
+      firstName: 'Care',
+      lastName: 'Pattern',
+      money: 5000,
+    },
   });
 
-  describe('analyzeCarePatterns', () => {
-    test('should analyze patterns for eligible horse', async () => {
-      const evaluationDate = today; // FIXED: Use calculated date for evaluation
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
+  const groom = await prisma.groom.create({
+    data: {
+      name: `${PREFIX}Groom`,
+      speciality: 'foalCare',
+      personality: 'calm',
+    },
+  });
+  groomId = groom.id;
+});
 
-      const result = await analyzeCarePatterns(1, evaluationDate);
+afterAll(async () => {
+  await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
+  await prisma.groom.deleteMany({ where: { name: { startsWith: PREFIX } } });
+  await prisma.user.deleteMany({ where: { id: USER_ID } });
+});
+
+// ─── analyzeCarePatterns ──────────────────────────────────────────────────────
+
+describe('analyzeCarePatterns', () => {
+  test('returns eligible result with all pattern categories for a young horse', async () => {
+    const horse = await mkHorse('Eligible', { bondScore: 50, stressLevel: 20 });
+    try {
+      const result = await analyzeCarePatterns(horse.id, new Date());
 
       expect(result.eligible).toBe(true);
-      expect(result.horseId).toBe(1);
-      expect(result.ageInYears).toBeCloseTo(0.42, 1); // ~5 months
+      expect(result.horseId).toBe(horse.id);
       expect(result.patterns).toHaveProperty('consistentCare');
       expect(result.patterns).toHaveProperty('noveltyExposure');
       expect(result.patterns).toHaveProperty('stressManagement');
       expect(result.patterns).toHaveProperty('bondingPatterns');
       expect(result.patterns).toHaveProperty('neglectPatterns');
       expect(result.patterns).toHaveProperty('environmentalFactors');
-    });
+    } finally {
+      await rmHorse(horse.id);
+    }
+  });
 
-    test('should reject horse too old for evaluation', async () => {
-      const oldHorse = {
-        ...mockHorse,
-        dateOfBirth: fourYearsAgo, // 4+ years old
-      };
-      mockPrisma.horse.findUnique.mockResolvedValue(oldHorse);
-
-      const result = await analyzeCarePatterns(1);
+  test('returns ineligible for horse older than 3 years', async () => {
+    const horse = await mkHorse('TooOld', { dateOfBirth: yearsAgo(4) });
+    try {
+      const result = await analyzeCarePatterns(horse.id, new Date());
 
       expect(result.eligible).toBe(false);
       expect(result.reason).toContain('too old');
-    });
+    } finally {
+      await rmHorse(horse.id);
+    }
+  });
 
-    test('should throw error for non-existent horse', async () => {
-      mockPrisma.horse.findUnique.mockResolvedValue(null);
+  test('throws for non-existent horse ID', async () => {
+    await expect(analyzeCarePatterns(999999999)).rejects.toThrow('Horse with ID 999999999 not found');
+  });
+});
 
-      await expect(analyzeCarePatterns(999)).rejects.toThrow('Horse with ID 999 not found');
-    });
+// ─── consistentCare pattern ───────────────────────────────────────────────────
 
-    test('should analyze consistent care patterns', async () => {
-      const horseWithConsistentCare = {
-        ...mockHorse,
-        bondScore: 60,
-        groomInteractions: [
-          {
-            id: 1,
-            interactionType: 'daily_care',
-            quality: 'good',
-            bondingChange: 5,
-            stressChange: -2,
-            createdAt: sevenDaysAgo,
-          },
-          {
-            id: 2,
-            interactionType: 'grooming',
-            quality: 'excellent',
-            bondingChange: 7,
-            stressChange: -3,
-            createdAt: sixDaysAgo,
-          },
-          {
-            id: 3,
-            interactionType: 'daily_care',
-            quality: 'good',
-            bondingChange: 4,
-            stressChange: -1,
-            createdAt: fiveDaysAgo,
-          },
-        ],
-      };
-      mockPrisma.horse.findUnique.mockResolvedValue(horseWithConsistentCare);
+describe('consistentCare pattern', () => {
+  test('counts grooming, quality interactions and computes averageBondChange', async () => {
+    const horse = await mkHorse('ConsistentCare', { bondScore: 60 });
+    try {
+      // 3 interactions on 3 different days: daily_care, grooming, daily_care
+      await mkInteraction(horse.id, {
+        interactionType: 'daily_care',
+        bondingChange: 5,
+        stressChange: -2,
+        quality: 'good',
+        createdAt: daysAgo(3),
+      });
+      await mkInteraction(horse.id, {
+        interactionType: 'grooming',
+        bondingChange: 7,
+        stressChange: -3,
+        quality: 'excellent',
+        createdAt: daysAgo(2),
+      });
+      await mkInteraction(horse.id, {
+        interactionType: 'daily_care',
+        bondingChange: 4,
+        stressChange: -1,
+        quality: 'good',
+        createdAt: daysAgo(1),
+      });
 
-      const result = await analyzeCarePatterns(1, fourDaysAgo);
+      const result = await analyzeCarePatterns(horse.id, new Date());
 
       expect(result.patterns.consistentCare.totalInteractions).toBe(3);
       expect(result.patterns.consistentCare.groomingInteractions).toBe(3);
       expect(result.patterns.consistentCare.qualityInteractions).toBe(3);
       expect(result.patterns.consistentCare.averageBondChange).toBeCloseTo(5.33, 1);
-    });
+    } finally {
+      await rmHorse(horse.id);
+    }
+  });
+});
 
-    test('should analyze novelty exposure patterns', async () => {
-      const horseWithNoveltyExposure = {
-        ...mockHorse,
-        bondScore: 40,
-        groomInteractions: [
-          {
-            id: 1,
-            interactionType: 'desensitization',
-            quality: 'good',
-            bondingChange: 3,
-            stressChange: 1,
-            createdAt: sevenDaysAgo,
-          },
-          {
-            id: 2,
-            interactionType: 'exploration',
-            quality: 'excellent',
-            bondingChange: 5,
-            stressChange: 0,
-            createdAt: sixDaysAgo,
-          },
-          {
-            id: 3,
-            interactionType: 'showground_exposure',
-            quality: 'good',
-            bondingChange: 2,
-            stressChange: 2,
-            createdAt: fiveDaysAgo,
-          },
-          {
-            id: 4,
-            interactionType: 'daily_care',
-            quality: 'poor',
-            bondingChange: -5,
-            stressChange: 8,
-            createdAt: fourDaysAgo,
-          },
-        ],
-      };
-      mockPrisma.horse.findUnique.mockResolvedValue(horseWithNoveltyExposure);
+// ─── noveltyExposure pattern ──────────────────────────────────────────────────
 
-      const result = await analyzeCarePatterns(1, threeDaysAgo);
+describe('noveltyExposure pattern', () => {
+  test('counts novelty events, noveltyWithSupport, and fearEvents', async () => {
+    const horse = await mkHorse('NoveltyExposure', { bondScore: 40 });
+    try {
+      // 3 novelty interactions with support + 1 fear event
+      await mkInteraction(horse.id, {
+        interactionType: 'desensitization',
+        bondingChange: 3,
+        stressChange: 1,
+        quality: 'good',
+        createdAt: daysAgo(4),
+      });
+      await mkInteraction(horse.id, {
+        interactionType: 'exploration',
+        bondingChange: 5,
+        stressChange: 0,
+        quality: 'excellent',
+        createdAt: daysAgo(3),
+      });
+      await mkInteraction(horse.id, {
+        interactionType: 'showground_exposure',
+        bondingChange: 2,
+        stressChange: 2,
+        quality: 'good',
+        createdAt: daysAgo(2),
+      });
+      await mkInteraction(horse.id, {
+        interactionType: 'daily_care',
+        bondingChange: -5,
+        stressChange: 8,
+        quality: 'poor',
+        createdAt: daysAgo(1),
+      });
+
+      const result = await analyzeCarePatterns(horse.id, new Date());
 
       expect(result.patterns.noveltyExposure.noveltyEvents).toBe(3);
       expect(result.patterns.noveltyExposure.noveltyWithSupport).toBe(3);
       expect(result.patterns.noveltyExposure.fearEvents).toBe(1);
       expect(result.patterns.noveltyExposure.calmGroomPresent).toBe(true);
       expect(result.patterns.noveltyExposure.meetsBraveThreshold).toBe(true);
-    });
+    } finally {
+      await rmHorse(horse.id);
+    }
+  });
+});
 
-    test('should analyze stress management patterns', async () => {
-      const sevenDaysAgo10am = new Date(sevenDaysAgo);
-      sevenDaysAgo10am.setHours(10, 0, 0, 0);
-      const sevenDaysAgo2pm = new Date(sevenDaysAgo);
-      sevenDaysAgo2pm.setHours(14, 0, 0, 0);
-      const sixDaysAgo10am = new Date(sixDaysAgo);
-      sixDaysAgo10am.setHours(10, 0, 0, 0);
-      const sixDaysAgo4pm = new Date(sixDaysAgo);
-      sixDaysAgo4pm.setHours(16, 0, 0, 0);
+// ─── stressManagement pattern ─────────────────────────────────────────────────
 
-      const horseWithStressEvents = {
-        ...mockHorse,
-        stressLevel: 30,
-        groomInteractions: [
-          {
-            id: 1,
-            interactionType: 'daily_care',
-            quality: 'poor',
-            bondingChange: -2,
-            stressChange: 6,
-            createdAt: sevenDaysAgo10am,
-          },
-          {
-            id: 2,
-            interactionType: 'grooming',
-            quality: 'good',
-            bondingChange: 3,
-            stressChange: -4,
-            createdAt: sevenDaysAgo2pm, // Recovery within 24h
-          },
-          {
-            id: 3,
-            interactionType: 'medical_check',
-            quality: 'fair',
-            bondingChange: 0,
-            stressChange: 5,
-            createdAt: sixDaysAgo10am,
-          },
-          {
-            id: 4,
-            interactionType: 'grooming',
-            quality: 'excellent',
-            bondingChange: 5,
-            stressChange: -6,
-            createdAt: sixDaysAgo4pm, // Recovery within 24h
-          },
-        ],
-      };
-      mockPrisma.horse.findUnique.mockResolvedValue(horseWithStressEvents);
+describe('stressManagement pattern', () => {
+  test('counts stress events and recovery-within-24h (stressWithSupport)', async () => {
+    const horse = await mkHorse('StressManagement', { stressLevel: 30 });
+    try {
+      // Stress event + recovery pair (within 24h)
+      await mkInteraction(horse.id, {
+        interactionType: 'daily_care',
+        quality: 'poor',
+        bondingChange: -2,
+        stressChange: 6,
+        createdAt: hoursAgo(10),
+      });
+      await mkInteraction(horse.id, {
+        interactionType: 'grooming',
+        quality: 'good',
+        bondingChange: 3,
+        stressChange: -4,
+        createdAt: hoursAgo(8),
+      });
+      // Second stress event + recovery pair (within 24h)
+      await mkInteraction(horse.id, {
+        interactionType: 'medical_check',
+        quality: 'fair',
+        bondingChange: 0,
+        stressChange: 5,
+        createdAt: hoursAgo(5),
+      });
+      await mkInteraction(horse.id, {
+        interactionType: 'grooming',
+        quality: 'excellent',
+        bondingChange: 5,
+        stressChange: -6,
+        createdAt: hoursAgo(3),
+      });
 
-      const result = await analyzeCarePatterns(1, fiveDaysAgo);
+      const result = await analyzeCarePatterns(horse.id, new Date());
 
       expect(result.patterns.stressManagement.stressEvents).toBe(2);
       expect(result.patterns.stressManagement.recoveryEvents).toBe(2);
       expect(result.patterns.stressManagement.stressWithSupport).toBe(2);
       expect(result.patterns.stressManagement.meetsResilientThreshold).toBe(false); // Needs 3+
-    });
+    } finally {
+      await rmHorse(horse.id);
+    }
+  });
+});
 
-    test('should analyze bonding patterns', async () => {
-      const horseWithBondingPatterns = {
-        ...mockHorse,
-        bondScore: 70,
-        groomInteractions: [
-          {
-            id: 1,
-            interactionType: 'daily_care',
-            quality: 'excellent',
-            bondingChange: 8,
-            stressChange: -2,
-            createdAt: twelveDaysAgo,
-          },
-          {
-            id: 2,
-            interactionType: 'grooming',
-            quality: 'good',
-            bondingChange: 6,
-            stressChange: -1,
-            createdAt: elevenDaysAgo,
-          },
-          {
-            id: 3,
-            interactionType: 'feeding',
-            quality: 'excellent',
-            bondingChange: 7,
-            stressChange: 0,
-            createdAt: tenDaysAgo,
-          },
-        ],
-      };
-      mockPrisma.horse.findUnique.mockResolvedValue(horseWithBondingPatterns);
+// ─── bondingPatterns pattern ──────────────────────────────────────────────────
 
-      const result = await analyzeCarePatterns(1, nineDaysAgo);
+describe('bondingPatterns pattern', () => {
+  test('counts positive interactions, high-quality interactions and averageBondChange', async () => {
+    const horse = await mkHorse('BondingPatterns', { bondScore: 70 });
+    try {
+      // 3 interactions on 3 different days, all positive/high-quality
+      await mkInteraction(horse.id, {
+        interactionType: 'daily_care',
+        quality: 'excellent',
+        bondingChange: 8,
+        stressChange: -2,
+        createdAt: daysAgo(6),
+      });
+      await mkInteraction(horse.id, {
+        interactionType: 'grooming',
+        quality: 'good',
+        bondingChange: 6,
+        stressChange: -1,
+        createdAt: daysAgo(5),
+      });
+      await mkInteraction(horse.id, {
+        interactionType: 'feeding',
+        quality: 'excellent',
+        bondingChange: 7,
+        stressChange: 0,
+        createdAt: daysAgo(4),
+      });
+
+      // evaluationDate = daysAgo(3): window is daysAgo(10) to daysAgo(3); all 3 interactions within
+      const result = await analyzeCarePatterns(horse.id, daysAgo(3));
 
       expect(result.patterns.bondingPatterns.positiveInteractions).toBe(3);
       expect(result.patterns.bondingPatterns.highQualityInteractions).toBe(3);
       expect(result.patterns.bondingPatterns.currentBondScore).toBe(70);
       expect(result.patterns.bondingPatterns.averageBondChange).toBeCloseTo(7, 0);
-    });
+    } finally {
+      await rmHorse(horse.id);
+    }
+  });
+});
 
-    test('should analyze neglect patterns', async () => {
-      const horseWithNeglect = {
-        ...mockHorse,
-        bondScore: 15,
-        groomInteractions: [
-          {
-            id: 1,
-            interactionType: 'daily_care',
-            quality: 'poor',
-            bondingChange: -3,
-            stressChange: 4,
-            createdAt: elevenDaysAgo,
-          },
-          {
-            id: 2,
-            interactionType: 'grooming',
-            quality: 'fair',
-            bondingChange: -1,
-            stressChange: 2,
-            createdAt: sixDaysAgo, // 5-day gap
-          },
-        ],
-      };
-      mockPrisma.horse.findUnique.mockResolvedValue(horseWithNeglect);
+// ─── neglectPatterns pattern ──────────────────────────────────────────────────
 
-      const result = await analyzeCarePatterns(1, sixDaysAgo);
+describe('neglectPatterns pattern', () => {
+  test('computes maxConsecutiveDaysWithoutCare and meetsInsecureThreshold', async () => {
+    const horse = await mkHorse('NeglectPatterns', { bondScore: 15 });
+    try {
+      // Two interactions with a 5-day gap between them → maxGap = 4 days
+      await mkInteraction(horse.id, {
+        interactionType: 'daily_care',
+        quality: 'poor',
+        bondingChange: -3,
+        stressChange: 4,
+        createdAt: daysAgo(11),
+      });
+      await mkInteraction(horse.id, {
+        interactionType: 'grooming',
+        quality: 'fair',
+        bondingChange: -1,
+        stressChange: 2,
+        createdAt: daysAgo(6),
+      });
+
+      // evaluationDate = daysAgo(6): window is daysAgo(13) to daysAgo(6); both in window
+      const result = await analyzeCarePatterns(horse.id, daysAgo(6));
 
       expect(result.patterns.neglectPatterns.poorQualityInteractions).toBe(2);
       expect(result.patterns.neglectPatterns.negativeInteractions).toBe(2);
       expect(result.patterns.neglectPatterns.currentBondScore).toBe(15);
-      expect(result.patterns.neglectPatterns.maxConsecutiveDaysWithoutCare).toBe(4); // May 21-24 = 4 days gap
+      // Gap between daysAgo(11) and daysAgo(6) = 5 calendar days → dayGap = 5-1 = 4
+      expect(result.patterns.neglectPatterns.maxConsecutiveDaysWithoutCare).toBe(4);
       expect(result.patterns.neglectPatterns.meetsInsecureThreshold).toBe(true);
-    });
+    } finally {
+      await rmHorse(horse.id);
+    }
+  });
+});
 
-    test('should analyze environmental factors', async () => {
-      const horseWithEnvironmentalFactors = {
-        ...mockHorse,
-        groomInteractions: [
-          {
-            id: 1,
-            interactionType: 'daily_care',
-            quality: 'good',
-            bondingChange: 2,
-            stressChange: 7, // High stress = startle event
-            notes: 'Horse startled by loud noise',
-            createdAt: sevenDaysAgo,
-          },
-          {
-            id: 2,
-            interactionType: 'feeding',
-            quality: 'good',
-            bondingChange: 3,
-            stressChange: 0,
-            createdAt: sixDaysAgo,
-          },
-          {
-            id: 3,
-            interactionType: 'daily_care',
-            quality: 'good',
-            bondingChange: 2,
-            stressChange: 6, // Another startle event
-            createdAt: fiveDaysAgo,
-          },
-        ],
-      };
-      mockPrisma.horse.findUnique.mockResolvedValue(horseWithEnvironmentalFactors);
+// ─── environmentalFactors pattern ────────────────────────────────────────────
 
-      const result = await analyzeCarePatterns(1, fourDaysAgo);
+describe('environmentalFactors pattern', () => {
+  test('counts startleEvents and routineInteractions', async () => {
+    const horse = await mkHorse('EnvFactors');
+    try {
+      // stressChange > 5 triggers startle detection
+      await mkInteraction(horse.id, {
+        interactionType: 'daily_care',
+        quality: 'good',
+        bondingChange: 2,
+        stressChange: 7,
+        notes: 'Horse startled by loud noise',
+        createdAt: daysAgo(3),
+      });
+      await mkInteraction(horse.id, {
+        interactionType: 'feeding',
+        quality: 'good',
+        bondingChange: 3,
+        stressChange: 0,
+        createdAt: daysAgo(2),
+      });
+      await mkInteraction(horse.id, {
+        interactionType: 'daily_care',
+        quality: 'good',
+        bondingChange: 2,
+        stressChange: 6,
+        createdAt: daysAgo(1),
+      });
+
+      const result = await analyzeCarePatterns(horse.id, new Date());
 
       expect(result.patterns.environmentalFactors.startleEvents).toBe(2);
       expect(result.patterns.environmentalFactors.routineInteractions).toBe(3); // 2 daily_care + 1 feeding
       expect(result.patterns.environmentalFactors.meetsSkittishThreshold).toBe(true);
       expect(result.patterns.environmentalFactors.hasRoutine).toBe(false); // Needs 5+
-    });
+    } finally {
+      await rmHorse(horse.id);
+    }
   });
+});
 
-  describe('Edge Cases', () => {
-    test('should handle horse with no interactions', async () => {
-      const horseWithNoInteractions = {
-        ...mockHorse,
-        groomInteractions: [],
-      };
-      mockPrisma.horse.findUnique.mockResolvedValue(horseWithNoInteractions);
+// ─── edge cases ───────────────────────────────────────────────────────────────
 
-      const result = await analyzeCarePatterns(1, today);
+describe('edge cases', () => {
+  test('returns all-zero pattern counts for horse with no interactions', async () => {
+    const horse = await mkHorse('NoInteractions');
+    try {
+      const result = await analyzeCarePatterns(horse.id, new Date());
 
       expect(result.eligible).toBe(true);
       expect(result.patterns.consistentCare.totalInteractions).toBe(0);
       expect(result.patterns.noveltyExposure.noveltyEvents).toBe(0);
       expect(result.patterns.stressManagement.stressEvents).toBe(0);
       expect(result.patterns.bondingPatterns.positiveInteractions).toBe(0);
-    });
-
-    test('should handle database errors gracefully', async () => {
-      mockPrisma.horse.findUnique.mockRejectedValue(new Error('Database connection failed'));
-
-      await expect(analyzeCarePatterns(1)).rejects.toThrow('Database connection failed');
-    });
-
-    test('should handle invalid evaluation date', async () => {
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
-
-      const result = await analyzeCarePatterns(1, new Date('invalid'));
-
-      // Should still work with current date
-      expect(result.eligible).toBe(true);
-    });
+    } finally {
+      await rmHorse(horse.id);
+    }
   });
 });

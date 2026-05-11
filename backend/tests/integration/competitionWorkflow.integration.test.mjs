@@ -17,7 +17,7 @@
  * 🔧 MOCK: Only Math.random for deterministic competition results
  */
 
-import { jest, describe, beforeAll, afterAll, expect, it } from '@jest/globals';
+import { describe, beforeAll, afterAll, expect, it } from '@jest/globals';
 import request from 'supertest';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -62,18 +62,10 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
   let initialXp;
 
   beforeAll(async () => {
-    // Clean up any existing test data
     await cleanupTestData();
-
-    // Mock Math.random for deterministic competition results
-    jest.spyOn(Math, 'random').mockReturnValue(0.7); // Good performance
   });
 
   afterAll(async () => {
-    // Restore mocks
-    jest.restoreAllMocks();
-
-    // Clean up test data
     await cleanupTestData();
     // prisma.$disconnect() removed — global teardown handles disconnection
   });

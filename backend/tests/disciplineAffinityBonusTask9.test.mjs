@@ -33,7 +33,7 @@
  *    trait bonus accuracy and competitive advantage consistency
  */
 
-import { jest, describe, it, expect } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 import { simulateCompetition } from '../logic/simulateCompetition.mjs';
 
 describe('🏆 UNIT: Discipline Affinity Trait Bonus - Competition Score Enhancement', () => {
@@ -253,17 +253,6 @@ describe('🏆 UNIT: Discipline Affinity Trait Bonus - Competition Score Enhance
 
   describe('Integration with Existing Trait System', () => {
     it('should apply discipline affinity bonus in addition to existing trait effects', () => {
-      // Mock Math.random to make the test deterministic
-      const mockRandom = jest.spyOn(Math, 'random');
-
-      // Set up deterministic random values for consistent results
-      // We need multiple calls: one for each horse's luck modifier and trait calculations
-      mockRandom
-        .mockReturnValueOnce(0.5) // Horse 1 (super specialist) - neutral luck (0% modifier)
-        .mockReturnValueOnce(0.5) // Horse 2 (affinity only) - neutral luck (0% modifier)
-        .mockReturnValueOnce(0.5) // Horse 3 (regular) - neutral luck (0% modifier)
-        .mockReturnValue(0.5); // Any additional random calls
-
       const horseWithAffinityAndTraits = createTestHorse(1, 'SuperSpecialist', {
         positive: ['discipline_affinity_racing', 'athletic', 'resilient'],
       });
@@ -284,14 +273,8 @@ describe('🏆 UNIT: Discipline Affinity Trait Bonus - Competition Score Enhance
       const affinityResult = results.find(r => r.horseId === 2);
       const regularResult = results.find(r => r.horseId === 3);
 
-      // With deterministic random values, super specialist should have highest score
-      // Affinity only should be better than regular
-      // Regular should have lowest score
-      expect(superResult.score).toBeGreaterThan(affinityResult.score - 10); // Allow for some variance
-      expect(affinityResult.score).toBeGreaterThan(regularResult.score - 25); // Account for statistical variance
-
-      // Restore Math.random
-      mockRandom.mockRestore();
+      expect(superResult.score).toBeGreaterThan(affinityResult.score - 10);
+      expect(affinityResult.score).toBeGreaterThan(regularResult.score - 25);
     });
   });
 

@@ -1,396 +1,306 @@
 /**
- * 🧪 UNIT TEST: XP Log Model - Experience Point Event Tracking
+ * XP Log Model Tests
  *
- * This test validates the XP log model's functionality for tracking, logging,
- * and analyzing user experience point events across the game system.
+ * Tests the real logXpEvent / getUserXpEvents / getUserXpSummary /
+ * getRecentXpEvents functions end-to-end against the real DB.
+ * No mocks of any kind.
  *
- * 📋 BUSINESS RULES TESTED:
- * - XP event logging with required fields (userId, amount, reason, timestamp)
- * - Input validation: userId required, amount must be number, reason must be string
- * - Negative XP support for penalties and rule violations
- * - User XP event retrieval with pagination and date filtering
- * - XP summary calculations: total gained, total lost, net total, event count
- * - Recent XP events across all users for admin analytics
- * - Date range filtering for historical analysis
- * - Database error handling with descriptive logging
- * - Proper ordering: newest events first (desc timestamp)
+ * Fixtures:
+ *   - One User (test-user-xp-log) — created in beforeAll, deleted in afterAll
+ *   - XpEvents created per-test via prisma.xpEvent.create or logXpEvent
  *
- * 🎯 FUNCTIONALITY TESTED:
- * 1. logXpEvent() - XP event creation with validation and logging
- * 2. getUserXpEvents() - User XP history with pagination and date filters
- * 3. getUserXpSummary() - XP statistics calculation with date range support
- * 4. getRecentXpEvents() - Global XP activity feed for analytics
- * 5. Input validation for all functions
- * 6. Database error handling scenarios
- * 7. Edge cases: negative XP, empty results, date boundaries
- *
- * 🔄 BALANCED MOCKING APPROACH:
- * ✅ REAL: All business logic, validation rules, calculation algorithms, error handling
- * ✅ REAL: XP summary calculations, date filtering logic, pagination handling
- * 🔧 MOCK: Database operations (Prisma calls) - external dependency
- * 🔧 MOCK: Logger calls - external dependency for audit trails
- *
- * 💡 TEST STRATEGY: Unit testing with mocked database to focus on XP tracking
- *    business logic while ensuring predictable test outcomes for analytics calculations
+ * Cleanup: user.delete cascades to xpEvents (userId FK, onDelete: Cascade).
  */
 
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import prisma from '../db/index.mjs';
+import { logXpEvent, getUserXpEvents, getUserXpSummary, getRecentXpEvents } from '../models/xpLogModel.mjs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const USER_ID = 'test-user-xp-log';
 
-// Mock Prisma client
-const mockPrismaXpEvent = {
-  create: jest.fn(),
-  findMany: jest.fn(),
-  findUnique: jest.fn(),
-};
+// ─── date helpers ─────────────────────────────────────────────────────────────
 
-const mockPrisma = {
-  xpEvent: mockPrismaXpEvent,
-};
+const daysAgo = n => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
 
-// Mock logger
-const mockLogger = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-};
+// ─── setup / teardown ─────────────────────────────────────────────────────────
 
-await jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
-  default: mockPrisma,
-}));
+beforeAll(async () => {
+  await prisma.xpEvent.deleteMany({ where: { userId: USER_ID } });
+  await prisma.user.deleteMany({ where: { id: USER_ID } });
+  await prisma.user.create({
+    data: {
+      id: USER_ID,
+      username: 'xpLogTestUser',
+      email: 'xplog@example.com',
+      password: 'TestPassword123!',
+      firstName: 'Xp',
+      lastName: 'Log',
+      money: 1000,
+    },
+  });
+});
 
-await jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
-  default: mockLogger,
-}));
+afterAll(async () => {
+  // Cascade deletes all xpEvents for this user
+  await prisma.user.deleteMany({ where: { id: USER_ID } });
+});
 
-// Import the module after mocking
-const { logXpEvent, getUserXpEvents, getUserXpSummary, getRecentXpEvents } = await import(
-  join(__dirname, '../models/xpLogModel.mjs')
-);
+// ─── logXpEvent ───────────────────────────────────────────────────────────────
 
-describe('📊 UNIT: XP Log Model - Experience Point Event Tracking', () => {
-  // Anchor dates to keep test data deterministic
-  const referenceDate = new Date('2025-01-01T10:00:00Z');
-  const morningTimestamp = new Date(referenceDate); // Base timestamp for XP events
+describe('logXpEvent', () => {
+  it('creates an XP event and returns the record', async () => {
+    const result = await logXpEvent({
+      userId: USER_ID,
+      amount: 5,
+      reason: 'Trained horse in Dressage',
+    });
 
-  const afternoonTimestamp = new Date(referenceDate);
-  afternoonTimestamp.setHours(12, 0, 0, 0); // 2 hours later
+    expect(result.id).toBeDefined();
+    expect(result.userId).toBe(USER_ID);
+    expect(result.amount).toBe(5);
+    expect(result.reason).toBe('Trained horse in Dressage');
+    expect(result.timestamp).toBeTruthy(); // DateTime returned by Prisma
 
-  const eveningTimestamp = new Date(referenceDate);
-  eveningTimestamp.setHours(14, 0, 0, 0); // 4 hours later
-
-  const dayStart = new Date(referenceDate);
-  dayStart.setHours(0, 0, 0, 0); // Start of day
-
-  const nextDayStart = new Date(dayStart);
-  nextDayStart.setDate(dayStart.getDate() + 1); // Next day start
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockPrismaXpEvent.create.mockClear();
-    mockPrismaXpEvent.findMany.mockClear();
-    mockPrismaXpEvent.findUnique.mockClear();
-    mockLogger.info.mockClear();
-    mockLogger.warn.mockClear();
-    mockLogger.error.mockClear();
+    // Verify the event was persisted to the DB
+    const persisted = await prisma.xpEvent.findUnique({ where: { id: result.id } });
+    expect(persisted).not.toBeNull();
+    expect(persisted.amount).toBe(5);
   });
 
-  describe('logXpEvent', () => {
-    it('should log XP event successfully', async () => {
-      const mockXpEvent = {
-        id: 1,
-        userId: 'user-123',
-        amount: 5,
-        reason: 'Trained horse in Dressage',
-        timestamp: morningTimestamp,
-      };
-
-      mockPrismaXpEvent.create.mockResolvedValue(mockXpEvent);
-
-      const result = await logXpEvent({
-        userId: 'user-123',
-        amount: 5,
-        reason: 'Trained horse in Dressage',
-      });
-
-      expect(mockPrismaXpEvent.create).toHaveBeenCalledWith({
-        data: {
-          userId: 'user-123',
-          amount: 5,
-          reason: 'Trained horse in Dressage',
-        },
-      });
-
-      expect(result).toEqual({
-        id: 1,
-        userId: 'user-123',
-        amount: 5,
-        reason: 'Trained horse in Dressage',
-        timestamp: morningTimestamp,
-      });
-
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        '[xpLogModel.logXpEvent] Logging XP event: User user-123, Amount: 5, Reason: Trained horse in Dressage',
-      );
+  it('creates an XP event with a negative amount', async () => {
+    const result = await logXpEvent({
+      userId: USER_ID,
+      amount: -10,
+      reason: 'XP penalty for rule violation',
     });
 
-    it('should validate required parameters', async () => {
-      // Test missing userId
-      await expect(
-        logXpEvent({
-          amount: 5,
-          reason: 'Test reason',
-        }),
-      ).rejects.toThrow('User ID is required');
-
-      // Test invalid amount
-      await expect(
-        logXpEvent({
-          userId: 'user-123',
-          amount: 'invalid',
-          reason: 'Test reason',
-        }),
-      ).rejects.toThrow('Amount must be a number');
-
-      // Test missing reason
-      await expect(
-        logXpEvent({
-          userId: 'user-123',
-          amount: 5,
-        }),
-      ).rejects.toThrow('Reason is required and must be a string');
-
-      expect(mockPrismaXpEvent.create).not.toHaveBeenCalled();
-    });
-
-    it('should handle database errors', async () => {
-      mockPrismaXpEvent.create.mockRejectedValue(new Error('Database connection failed'));
-
-      await expect(
-        logXpEvent({
-          userId: 'user-123',
-          amount: 5,
-          reason: 'Test reason',
-        }),
-      ).rejects.toThrow('Database connection failed');
-
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        '[xpLogModel.logXpEvent] Error logging XP event: Database connection failed',
-      );
-    });
-
-    it('should handle negative XP amounts', async () => {
-      const mockXpEvent = {
-        id: 2,
-        userId: 'user-123',
-        amount: -10,
-        reason: 'XP penalty for rule violation',
-        timestamp: morningTimestamp,
-      };
-
-      mockPrismaXpEvent.create.mockResolvedValue(mockXpEvent);
-
-      const result = await logXpEvent({
-        userId: 'user-123',
-        amount: -10,
-        reason: 'XP penalty for rule violation',
-      });
-
-      expect(result.amount).toBe(-10);
-      expect(mockPrismaXpEvent.create).toHaveBeenCalledWith({
-        data: {
-          userId: 'user-123',
-          amount: -10,
-          reason: 'XP penalty for rule violation',
-        },
-      });
-    });
+    expect(result.amount).toBe(-10);
+    expect(result.userId).toBe(USER_ID);
   });
 
-  describe('getUserXpEvents', () => {
-    it('should retrieve XP events for a user', async () => {
-      const mockEvents = [
-        {
-          id: 1,
-          userId: 'user-123',
-          amount: 20,
-          reason: '1st place with horse Nova in Racing',
-          timestamp: afternoonTimestamp,
-        },
-        {
-          id: 2,
-          userId: 'user-123',
-          amount: 5,
-          reason: 'Trained horse in Dressage',
-          timestamp: morningTimestamp,
-        },
-      ];
-
-      mockPrismaXpEvent.findMany.mockResolvedValue(mockEvents);
-
-      const result = await getUserXpEvents('user-123');
-
-      expect(mockPrismaXpEvent.findMany).toHaveBeenCalledWith({
-        where: { userId: 'user-123' },
-        orderBy: { timestamp: 'desc' },
-        take: 50,
-        skip: 0,
-      });
-
-      expect(result).toEqual(mockEvents);
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        '[xpLogModel.getUserXpEvents] Getting XP events for user user-123, limit: 50, offset: 0',
-      );
-    });
-
-    it('should handle date filters', async () => {
-      const startDate = dayStart;
-      const endDate = nextDayStart;
-
-      mockPrismaXpEvent.findMany.mockResolvedValue([]);
-
-      await getUserXpEvents('user-123', {
-        limit: 10,
-        offset: 5,
-        startDate,
-        endDate,
-      });
-
-      expect(mockPrismaXpEvent.findMany).toHaveBeenCalledWith({
-        where: {
-          userId: 'user-123',
-          timestamp: {
-            gte: startDate,
-            lte: endDate,
-          },
-        },
-        orderBy: { timestamp: 'desc' },
-        take: 10,
-        skip: 5,
-      });
-    });
+  it('throws when userId is missing', async () => {
+    await expect(logXpEvent({ amount: 5, reason: 'Test reason' })).rejects.toThrow('User ID is required');
   });
 
-  describe('getUserXpSummary', () => {
-    it('should calculate XP summary correctly', async () => {
-      const mockEvents = [{ amount: 20 }, { amount: 15 }, { amount: 5 }, { amount: -5 }, { amount: 10 }];
-
-      mockPrismaXpEvent.findMany.mockResolvedValue(mockEvents);
-
-      const result = await getUserXpSummary('user-123');
-
-      expect(result).toEqual({
-        totalGained: 50, // 20 + 15 + 5 + 10
-        totalLost: 5, // abs(-5)
-        netTotal: 45, // 20 + 15 + 5 - 5 + 10
-        totalEvents: 5,
-      });
-
-      expect(mockPrismaXpEvent.findMany).toHaveBeenCalledWith({
-        where: { userId: 'user-123' },
-        select: { amount: true },
-      });
-    });
-
-    it('should handle empty results', async () => {
-      mockPrismaXpEvent.findMany.mockResolvedValue([]);
-
-      const result = await getUserXpSummary('user-123');
-
-      expect(result).toEqual({
-        totalGained: 0,
-        totalLost: 0,
-        netTotal: 0,
-        totalEvents: 0,
-      });
-    });
-
-    it('should handle date filters in summary', async () => {
-      const startDate = dayStart;
-      const endDate = nextDayStart;
-
-      mockPrismaXpEvent.findMany.mockResolvedValue([]);
-
-      await getUserXpSummary('user-123', startDate, endDate);
-
-      expect(mockPrismaXpEvent.findMany).toHaveBeenCalledWith({
-        where: {
-          userId: 'user-123',
-          timestamp: {
-            gte: startDate,
-            lte: endDate,
-          },
-        },
-        select: { amount: true },
-      });
-    });
+  it('throws when amount is not a number', async () => {
+    await expect(logXpEvent({ userId: USER_ID, amount: 'invalid', reason: 'Test reason' })).rejects.toThrow(
+      'Amount must be a number',
+    );
   });
 
-  describe('getRecentXpEvents', () => {
-    it('should retrieve recent XP events across all users', async () => {
-      const mockEvents = [
-        {
-          id: 3,
-          userId: 'user-456',
-          amount: 15,
-          reason: '2nd place with horse Star in Jumping',
-          timestamp: eveningTimestamp,
-        },
-        {
-          id: 2,
-          userId: 'user-123',
-          amount: 5,
-          reason: 'Trained horse in Dressage',
-          timestamp: morningTimestamp,
-        },
-      ];
+  it('throws when reason is missing', async () => {
+    await expect(logXpEvent({ userId: USER_ID, amount: 5 })).rejects.toThrow('Reason is required and must be a string');
+  });
+});
 
-      mockPrismaXpEvent.findMany.mockResolvedValue(mockEvents);
+// ─── getUserXpEvents ──────────────────────────────────────────────────────────
 
-      const result = await getRecentXpEvents({ limit: 10, offset: 0 });
-
-      expect(mockPrismaXpEvent.findMany).toHaveBeenCalledWith({
-        orderBy: { timestamp: 'desc' },
-        take: 10,
-        skip: 0,
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-            },
-          },
-        },
-      });
-
-      expect(result).toEqual(mockEvents);
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        '[xpLogModel.getRecentXpEvents] Getting recent XP events, limit: 10, offset: 0',
-      );
+describe('getUserXpEvents', () => {
+  it('returns events ordered newest-first with pagination', async () => {
+    const uid = 'test-user-xp-log-events';
+    await prisma.user.deleteMany({ where: { id: uid } });
+    await prisma.user.create({
+      data: {
+        id: uid,
+        username: 'xpEventsUser',
+        email: 'xpevents@example.com',
+        password: 'TestPassword123!',
+        firstName: 'Ev',
+        lastName: 'User',
+        money: 1000,
+      },
     });
 
-    it('should use default options', async () => {
-      mockPrismaXpEvent.findMany.mockResolvedValue([]);
-
-      await getRecentXpEvents();
-
-      expect(mockPrismaXpEvent.findMany).toHaveBeenCalledWith({
-        orderBy: { timestamp: 'desc' },
-        take: 100,
-        skip: 0,
-        include: {
-          user: {
-            select: {
-              id: true,
-              username: true,
-            },
-          },
-        },
+    try {
+      // Create two events with distinct timestamps
+      await prisma.xpEvent.create({
+        data: { userId: uid, amount: 20, reason: '1st place in Racing', timestamp: daysAgo(2) },
       });
+      await prisma.xpEvent.create({
+        data: { userId: uid, amount: 5, reason: 'Training session', timestamp: daysAgo(1) },
+      });
+
+      const events = await getUserXpEvents(uid, { limit: 50, offset: 0 });
+
+      expect(Array.isArray(events)).toBe(true);
+      expect(events.length).toBe(2);
+      // Ordered by timestamp desc: newest (daysAgo(1)) first
+      expect(events[0].amount).toBe(5);
+      expect(events[1].amount).toBe(20);
+    } finally {
+      await prisma.user.deleteMany({ where: { id: uid } });
+    }
+  });
+
+  it('filters events by date range', async () => {
+    const uid = 'test-user-xp-log-datefilter';
+    await prisma.user.deleteMany({ where: { id: uid } });
+    await prisma.user.create({
+      data: {
+        id: uid,
+        username: 'xpDateFilterUser',
+        email: 'xpdatefilter@example.com',
+        password: 'TestPassword123!',
+        firstName: 'Date',
+        lastName: 'Filter',
+        money: 1000,
+      },
     });
+
+    try {
+      await prisma.xpEvent.create({
+        data: { userId: uid, amount: 10, reason: 'Old event', timestamp: daysAgo(5) },
+      });
+      await prisma.xpEvent.create({
+        data: { userId: uid, amount: 20, reason: 'Mid event', timestamp: daysAgo(3) },
+      });
+      await prisma.xpEvent.create({
+        data: { userId: uid, amount: 30, reason: 'Recent event', timestamp: daysAgo(1) },
+      });
+
+      // Filter to only the mid event
+      const events = await getUserXpEvents(uid, {
+        startDate: daysAgo(4),
+        endDate: daysAgo(2),
+      });
+
+      expect(events.length).toBe(1);
+      expect(events[0].amount).toBe(20);
+      expect(events[0].reason).toBe('Mid event');
+    } finally {
+      await prisma.user.deleteMany({ where: { id: uid } });
+    }
+  });
+});
+
+// ─── getUserXpSummary ─────────────────────────────────────────────────────────
+
+describe('getUserXpSummary', () => {
+  it('calculates totalGained, totalLost, netTotal, and totalEvents', async () => {
+    const uid = 'test-user-xp-log-summary';
+    await prisma.user.deleteMany({ where: { id: uid } });
+    await prisma.user.create({
+      data: {
+        id: uid,
+        username: 'xpSummaryUser',
+        email: 'xpsummary@example.com',
+        password: 'TestPassword123!',
+        firstName: 'Sum',
+        lastName: 'Mary',
+        money: 1000,
+      },
+    });
+
+    try {
+      for (const [amount, reason] of [
+        [20, 'Competition win'],
+        [15, 'Training bonus'],
+        [5, 'Daily login'],
+        [-5, 'Rule violation'],
+        [10, 'Quest reward'],
+      ]) {
+        await prisma.xpEvent.create({ data: { userId: uid, amount, reason } });
+      }
+
+      const summary = await getUserXpSummary(uid);
+
+      expect(summary.totalGained).toBe(50); // 20 + 15 + 5 + 10
+      expect(summary.totalLost).toBe(5); // abs(-5)
+      expect(summary.netTotal).toBe(45); // 50 - 5
+      expect(summary.totalEvents).toBe(5);
+    } finally {
+      await prisma.user.deleteMany({ where: { id: uid } });
+    }
+  });
+
+  it('returns all-zero summary for user with no events', async () => {
+    const uid = 'test-user-xp-log-empty';
+    await prisma.user.deleteMany({ where: { id: uid } });
+    await prisma.user.create({
+      data: {
+        id: uid,
+        username: 'xpEmptyUser',
+        email: 'xpempty@example.com',
+        password: 'TestPassword123!',
+        firstName: 'Em',
+        lastName: 'Pty',
+        money: 1000,
+      },
+    });
+
+    try {
+      const summary = await getUserXpSummary(uid);
+
+      expect(summary.totalGained).toBe(0);
+      expect(summary.totalLost).toBe(0);
+      expect(summary.netTotal).toBe(0);
+      expect(summary.totalEvents).toBe(0);
+    } finally {
+      await prisma.user.deleteMany({ where: { id: uid } });
+    }
+  });
+
+  it('filters summary by date range', async () => {
+    const uid = 'test-user-xp-log-sumdate';
+    await prisma.user.deleteMany({ where: { id: uid } });
+    await prisma.user.create({
+      data: {
+        id: uid,
+        username: 'xpSumDateUser',
+        email: 'xpsumdate@example.com',
+        password: 'TestPassword123!',
+        firstName: 'Sum',
+        lastName: 'Date',
+        money: 1000,
+      },
+    });
+
+    try {
+      await prisma.xpEvent.create({
+        data: { userId: uid, amount: 100, reason: 'Old win', timestamp: daysAgo(10) },
+      });
+      await prisma.xpEvent.create({
+        data: { userId: uid, amount: 25, reason: 'Recent win', timestamp: daysAgo(1) },
+      });
+
+      // Only the recent event falls within the last 3 days
+      const summary = await getUserXpSummary(uid, daysAgo(3), new Date());
+
+      expect(summary.totalGained).toBe(25);
+      expect(summary.totalEvents).toBe(1);
+    } finally {
+      await prisma.user.deleteMany({ where: { id: uid } });
+    }
+  });
+});
+
+// ─── getRecentXpEvents ────────────────────────────────────────────────────────
+
+describe('getRecentXpEvents', () => {
+  it('returns events with user relation included', async () => {
+    // Create an event for USER_ID and verify it appears in the global feed
+    const event = await prisma.xpEvent.create({
+      data: { userId: USER_ID, amount: 99, reason: 'Global feed test event' },
+    });
+
+    try {
+      const results = await getRecentXpEvents({ limit: 200, offset: 0 });
+
+      expect(Array.isArray(results)).toBe(true);
+      const found = results.find(e => e.id === event.id);
+      expect(found).toBeDefined();
+      expect(found.user).toBeDefined();
+      expect(found.user.id).toBe(USER_ID);
+      expect(found.user.username).toBe('xpLogTestUser');
+    } finally {
+      await prisma.xpEvent.delete({ where: { id: event.id } }).catch(() => {});
+    }
+  });
+
+  it('uses default limit of 100 and returns an array', async () => {
+    const results = await getRecentXpEvents();
+
+    expect(Array.isArray(results)).toBe(true);
+    expect(results.length).toBeLessThanOrEqual(100);
   });
 });

@@ -1,287 +1,298 @@
 /**
- * 🧪 UNIT TEST: Horse Conformation Scoring System
+ * Horse Conformation Scoring System Tests
  *
- * This test validates the horse conformation scoring system that tracks
- * physical attributes on a 1-100 scale for breeding and competition purposes.
+ * Tests the conformation scoring logic via real function calls against the
+ * live conformationService. No mocks of any kind.
  *
- * 📋 BUSINESS RULES TESTED:
- * - Conformation scores use 1-100 sliding scale per body region
- * - Default conformation scores are set to 20 for new horses
- * - All 8 conformation regions are tracked: head, neck, shoulders, back, legs, hooves, topline, hindquarters
- * - Conformation scores affect breeding value and competition scoring
- * - Validation ensures scores stay within 1-100 range
- * - Horse creation includes default conformation scoring
- * - Conformation updates are properly validated and stored
+ * Coverage:
+ *   - CONFORMATION_REGIONS structure (8 required regions)
+ *   - clampScore: valid range enforcement and edge cases
+ *   - calculateOverallConformation: arithmetic mean of all 8 regions
+ *   - hasValidConformationScores: presence of at least one finite numeric region
+ *   - validateConformationScores: normalises/fills missing values to 50
+ *   - Default score object (all 20) passes validation unchanged
+ *   - Real DB: conformationScores stored and retrieved correctly
  *
- * 🎯 FUNCTIONALITY TESTED:
- * 1. Horse creation with default conformation scores (20 for all regions)
- * 2. Conformation score validation (1-100 range)
- * 3. Individual conformation region updates
- * 4. Bulk conformation score updates
- * 5. Conformation score retrieval and display
- * 6. Integration with horse breeding and competition systems
- * 7. Error handling for invalid scores and regions
- *
- * 🔄 BALANCED MOCKING APPROACH:
- * ✅ REAL: Conformation validation logic, score calculations, business rules
- * ✅ REAL: Data structure validation, range checking, error handling
- * 🔧 MOCK: Database operations (Prisma calls) - external dependency
- * 🔧 MOCK: Logger calls - external dependency for error reporting
- *
- * 💡 TEST STRATEGY: Unit testing with mocked database to focus on conformation
- *    scoring business logic while ensuring fast execution and isolation
+ * Fixtures: prefix TestFixture-HorseConformation-  Cleaned in beforeAll/afterAll.
  */
 
-import { jest, describe, beforeEach, expect, it } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import prisma from '../db/index.mjs';
+import {
+  CONFORMATION_REGIONS,
+  clampScore,
+  calculateOverallConformation,
+  hasValidConformationScores,
+  validateConformationScores,
+} from '../modules/horses/services/conformationService.mjs';
 
-// Mock objects must be created BEFORE jest.unstable_mockModule calls
-const mockPrisma = {
-  horse: {
-    create: jest.fn(),
-    findUnique: jest.fn(),
-    update: jest.fn(),
-  },
-};
+const PREFIX = 'TestFixture-HorseConformation-';
 
-const mockLogger = {
-  error: jest.fn(),
-  info: jest.fn(),
-};
+// ─── setup / teardown ─────────────────────────────────────────────────────────
 
-// Mock external dependencies BEFORE importing the module under test
-jest.unstable_mockModule('../db/index.mjs', () => ({
-  default: mockPrisma,
-}));
+beforeAll(async () => {
+  await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
+});
 
-jest.unstable_mockModule('../utils/logger.mjs', () => ({
-  default: mockLogger,
-}));
+afterAll(async () => {
+  await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
+});
 
-// Import the module under test
-const { createHorse } = await import('../models/horseModel.mjs');
+// ─── CONFORMATION_REGIONS ─────────────────────────────────────────────────────
 
-describe('🐎 UNIT: Horse Conformation Scoring System', () => {
-  beforeEach(() => {
-    mockPrisma.horse.create.mockClear();
-    mockPrisma.horse.findUnique.mockClear();
-    mockPrisma.horse.update.mockClear();
-    mockLogger.error.mockClear();
-    mockLogger.info.mockClear();
+describe('CONFORMATION_REGIONS', () => {
+  it('contains exactly 8 regions', () => {
+    expect(CONFORMATION_REGIONS).toHaveLength(8);
   });
 
-  describe('Default Conformation Scores', () => {
-    it('should create horse with default conformation scores of 20', async () => {
-      const expectedConformation = {
-        head: 20,
-        neck: 20,
-        shoulders: 20,
-        back: 20,
-        legs: 20,
-        hooves: 20,
-        topline: 20,
-        hindquarters: 20,
-        overallConformation: 20,
-      };
+  it('contains all required region names', () => {
+    const required = ['head', 'neck', 'shoulders', 'back', 'legs', 'hooves', 'topline', 'hindquarters'];
 
-      const mockCreatedHorse = {
-        id: 1,
-        name: 'Test Horse',
-        age: 3,
-        conformationScores: expectedConformation,
-        breed: { id: 1, name: 'Arabian' },
-        user: null,
-        stable: null,
-      };
-
-      mockPrisma.horse.create.mockResolvedValue(mockCreatedHorse);
-
-      const horse = await createHorse({
-        name: 'Test Horse',
-        age: 3,
-        breed: { connect: { id: 1 } },
-      });
-
-      expect(horse.conformationScores).toEqual(expectedConformation);
-      expect(mockPrisma.horse.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            conformationScores: expectedConformation,
-          }),
-        }),
-      );
-    });
-
-    it('should have all required conformation regions', () => {
-      const requiredRegions = ['head', 'neck', 'shoulders', 'back', 'legs', 'hooves', 'topline', 'hindquarters'];
-
-      const defaultConformation = {
-        head: 20,
-        neck: 20,
-        shoulders: 20,
-        back: 20,
-        legs: 20,
-        hooves: 20,
-        topline: 20,
-        hindquarters: 20,
-      };
-
-      requiredRegions.forEach(region => {
-        expect(defaultConformation).toHaveProperty(region);
-        expect(defaultConformation[region]).toBe(20);
-      });
-    });
+    for (const region of required) {
+      expect(CONFORMATION_REGIONS).toContain(region);
+    }
   });
 
-  describe('Conformation Score Validation', () => {
-    it('should validate conformation scores are within 1-100 range', () => {
-      const validScores = [1, 20, 50, 75, 100];
-      const invalidScores = [0, -1, 101, 150, 'invalid', null, undefined];
+  it('contains only strings', () => {
+    for (const region of CONFORMATION_REGIONS) {
+      expect(typeof region).toBe('string');
+    }
+  });
+});
 
-      // This test expects a validation function to exist
-      // We'll implement this in the actual code
-      validScores.forEach(score => {
-        expect(score).toBeGreaterThanOrEqual(1);
-        expect(score).toBeLessThanOrEqual(100);
-      });
+// ─── clampScore ───────────────────────────────────────────────────────────────
 
-      invalidScores.forEach(score => {
-        if (typeof score === 'number') {
-          expect(score < 1 || score > 100).toBe(true);
-        } else {
-          expect(typeof score !== 'number').toBe(true);
-        }
-      });
-    });
-
-    it('should validate all conformation regions are present', () => {
-      const completeConformation = {
-        head: 20,
-        neck: 20,
-        shoulders: 20,
-        back: 20,
-        legs: 20,
-        hooves: 20,
-        topline: 20,
-        hindquarters: 20,
-      };
-
-      const incompleteConformation = {
-        head: 20,
-        neck: 20,
-        // Missing other regions
-      };
-
-      expect(Object.keys(completeConformation)).toHaveLength(8);
-      expect(Object.keys(incompleteConformation)).toHaveLength(2);
-    });
+describe('clampScore', () => {
+  it('returns value unchanged for integers in [0, 100]', () => {
+    expect(clampScore(0)).toBe(0);
+    expect(clampScore(1)).toBe(1);
+    expect(clampScore(50)).toBe(50);
+    expect(clampScore(99)).toBe(99);
+    expect(clampScore(100)).toBe(100);
   });
 
-  describe('Conformation Score Updates', () => {
-    it('should update individual conformation scores', async () => {
-      const mockHorse = {
-        id: 1,
-        conformationScores: {
-          head: 20,
-          neck: 20,
-          shoulders: 20,
-          back: 20,
-          legs: 20,
-          hooves: 20,
-          topline: 20,
-          hindquarters: 20,
-        },
-      };
-
-      const mockUpdatedHorse = {
-        ...mockHorse,
-        conformationScores: {
-          ...mockHorse.conformationScores,
-          head: 85, // Updated score
-        },
-      };
-
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
-      mockPrisma.horse.update.mockResolvedValue(mockUpdatedHorse);
-
-      // This test expects an updateConformationScore function to exist
-      // We'll implement this in the actual code
-      expect(mockUpdatedHorse.conformationScores.head).toBe(85);
-      expect(mockUpdatedHorse.conformationScores.neck).toBe(20); // Unchanged
-    });
-
-    it('should handle bulk conformation updates', async () => {
-      const mockHorse = {
-        id: 1,
-        conformationScores: {
-          head: 20,
-          neck: 20,
-          shoulders: 20,
-          back: 20,
-          legs: 20,
-          hooves: 20,
-          topline: 20,
-          hindquarters: 20,
-        },
-      };
-
-      const newScores = {
-        head: 75,
-        neck: 80,
-        shoulders: 70,
-        back: 85,
-        legs: 90,
-        hooves: 65,
-        topline: 75,
-        hindquarters: 80,
-      };
-
-      const mockUpdatedHorse = {
-        ...mockHorse,
-        conformationScores: newScores,
-      };
-
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
-      mockPrisma.horse.update.mockResolvedValue(mockUpdatedHorse);
-
-      expect(mockUpdatedHorse.conformationScores).toEqual(newScores);
-    });
+  it('clamps values below 0 to 0', () => {
+    expect(clampScore(-1)).toBe(0);
+    expect(clampScore(-100)).toBe(0);
   });
 
-  describe('Error Handling', () => {
-    it('should reject invalid conformation scores', () => {
-      const invalidUpdates = [
-        { head: 0 }, // Too low
-        { neck: 101 }, // Too high
-        { shoulders: -5 }, // Negative
-        { back: 'invalid' }, // Wrong type
-        { legs: null }, // Null value
-      ];
+  it('clamps values above 100 to 100', () => {
+    expect(clampScore(101)).toBe(100);
+    expect(clampScore(200)).toBe(100);
+  });
 
-      invalidUpdates.forEach(update => {
-        const [[, score]] = [Object.entries(update)[0]];
-        if (typeof score === 'number') {
-          expect(score < 1 || score > 100).toBe(true);
-        } else {
-          expect(typeof score !== 'number').toBe(true);
-        }
-      });
+  it('rounds non-integers', () => {
+    expect(clampScore(50.4)).toBe(50);
+    expect(clampScore(50.6)).toBe(51);
+  });
+
+  it('returns 50 for non-finite inputs (NaN, Infinity)', () => {
+    expect(clampScore(NaN)).toBe(50);
+    expect(clampScore(Infinity)).toBe(50);
+    expect(clampScore(-Infinity)).toBe(50);
+  });
+});
+
+// ─── calculateOverallConformation ─────────────────────────────────────────────
+
+describe('calculateOverallConformation', () => {
+  it('returns the arithmetic mean of all 8 region scores', () => {
+    const scores = {
+      head: 20,
+      neck: 20,
+      shoulders: 20,
+      back: 20,
+      hindquarters: 20,
+      legs: 20,
+      hooves: 20,
+      topline: 20,
+    };
+    expect(calculateOverallConformation(scores)).toBe(20);
+  });
+
+  it('calculates mean for varied scores', () => {
+    const scores = {
+      head: 10,
+      neck: 20,
+      shoulders: 30,
+      back: 40,
+      hindquarters: 50,
+      legs: 60,
+      hooves: 70,
+      topline: 80,
+    };
+    // (10+20+30+40+50+60+70+80) / 8 = 360 / 8 = 45
+    expect(calculateOverallConformation(scores)).toBe(45);
+  });
+
+  it('treats missing regions as 0 in the mean calculation', () => {
+    const scores = { head: 40, neck: 40 }; // 6 missing = 0
+    // (40+40+0+0+0+0+0+0) / 8 = 80 / 8 = 10
+    expect(calculateOverallConformation(scores)).toBe(10);
+  });
+
+  it('returns 50 for null input', () => {
+    expect(calculateOverallConformation(null)).toBe(50);
+  });
+
+  it('returns 50 for undefined input', () => {
+    expect(calculateOverallConformation(undefined)).toBe(50);
+  });
+
+  it('returns 50 for non-object input', () => {
+    expect(calculateOverallConformation('string')).toBe(50);
+    expect(calculateOverallConformation(42)).toBe(50);
+  });
+});
+
+// ─── hasValidConformationScores ───────────────────────────────────────────────
+
+describe('hasValidConformationScores', () => {
+  it('returns true when at least one region has a finite numeric score', () => {
+    expect(hasValidConformationScores({ head: 20 })).toBe(true);
+    expect(hasValidConformationScores({ head: 0 })).toBe(true);
+    expect(hasValidConformationScores({ head: 100 })).toBe(true);
+  });
+
+  it('returns false for null or undefined', () => {
+    expect(hasValidConformationScores(null)).toBe(false);
+    expect(hasValidConformationScores(undefined)).toBe(false);
+  });
+
+  it('returns false for non-object', () => {
+    expect(hasValidConformationScores('string')).toBe(false);
+    expect(hasValidConformationScores(42)).toBe(false);
+  });
+
+  it('returns false when no regions contain finite numbers', () => {
+    expect(hasValidConformationScores({ head: 'invalid', neck: null })).toBe(false);
+    expect(hasValidConformationScores({})).toBe(false);
+  });
+});
+
+// ─── validateConformationScores ───────────────────────────────────────────────
+
+describe('validateConformationScores', () => {
+  it('returns all 8 regions plus overallConformation for a complete input', () => {
+    const input = {
+      head: 20,
+      neck: 20,
+      shoulders: 20,
+      back: 20,
+      hindquarters: 20,
+      legs: 20,
+      hooves: 20,
+      topline: 20,
+    };
+
+    const result = validateConformationScores(input);
+
+    for (const region of CONFORMATION_REGIONS) {
+      expect(result[region]).toBe(20);
+    }
+    expect(result.overallConformation).toBe(20);
+  });
+
+  it('fills missing regions with 50 and computes overallConformation', () => {
+    const input = { head: 80, neck: 80 };
+
+    const result = validateConformationScores(input);
+
+    expect(result.head).toBe(80);
+    expect(result.neck).toBe(80);
+    // Other 6 regions default to 50
+    for (const region of CONFORMATION_REGIONS) {
+      if (region !== 'head' && region !== 'neck') {
+        expect(result[region]).toBe(50);
+      }
+    }
+    expect(typeof result.overallConformation).toBe('number');
+  });
+
+  it('returns neutral 50 defaults for null input', () => {
+    const result = validateConformationScores(null);
+
+    for (const region of CONFORMATION_REGIONS) {
+      expect(result[region]).toBe(50);
+    }
+    expect(result.overallConformation).toBe(50);
+  });
+
+  it('clamps out-of-range values into [0, 100]', () => {
+    const input = {
+      head: -10,
+      neck: 200,
+      shoulders: 50,
+      back: 50,
+      hindquarters: 50,
+      legs: 50,
+      hooves: 50,
+      topline: 50,
+    };
+
+    const result = validateConformationScores(input);
+
+    expect(result.head).toBe(0);
+    expect(result.neck).toBe(100);
+  });
+});
+
+// ─── default score object ─────────────────────────────────────────────────────
+
+describe('default conformation score object (all 20)', () => {
+  const defaults = {
+    head: 20,
+    neck: 20,
+    shoulders: 20,
+    back: 20,
+    legs: 20,
+    hooves: 20,
+    topline: 20,
+    hindquarters: 20,
+  };
+
+  it('has all 8 required regions each set to 20', () => {
+    for (const region of CONFORMATION_REGIONS) {
+      expect(defaults[region]).toBe(20);
+    }
+  });
+
+  it('produces overallConformation of 20 when validated', () => {
+    const result = validateConformationScores(defaults);
+    expect(result.overallConformation).toBe(20);
+  });
+});
+
+// ─── real DB: conformationScores persistence ─────────────────────────────────
+
+describe('conformationScores persistence (real DB)', () => {
+  it('stores and retrieves a conformationScores object correctly', async () => {
+    const scores = {
+      head: 75,
+      neck: 80,
+      shoulders: 70,
+      back: 85,
+      hindquarters: 60,
+      legs: 90,
+      hooves: 65,
+      topline: 75,
+      overallConformation: 75,
+    };
+
+    const horse = await prisma.horse.create({
+      data: {
+        name: `${PREFIX}Persist`,
+        sex: 'Colt',
+        dateOfBirth: new Date('2020-01-01'),
+        conformationScores: scores,
+      },
     });
 
-    it('should reject invalid conformation regions', () => {
-      const invalidRegions = [
-        'invalid_region',
-        'tail', // Not a tracked region
-        'mane', // Not a tracked region
-        '', // Empty string
-        null,
-        undefined,
-      ];
-
-      const validRegions = ['head', 'neck', 'shoulders', 'back', 'legs', 'hooves', 'topline', 'hindquarters'];
-
-      invalidRegions.forEach(region => {
-        expect(validRegions.includes(region)).toBe(false);
-      });
-    });
+    try {
+      const fetched = await prisma.horse.findUnique({ where: { id: horse.id } });
+      expect(fetched.conformationScores).toEqual(scores);
+    } finally {
+      await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
+    }
   });
 });

@@ -1,49 +1,30 @@
 /**
  * @fileoverview Comprehensive Groom Hiring Workflow Tests
  *
- * @description
- * Detailed test suite for the groom hiring workflow, focusing on edge cases,
- * validation, and user account limits. This complements the existing integration
- * tests by providing more targeted coverage of the hiring process.
- *
- * @features
- * - Validation of all required fields (name, speciality, skill_level, personality)
- * - Validation of field values against defined constants
- * - Handling of optional fields and default values
- * - User account hiring limits and validation
- * - Error handling and edge case validation
- *
- * @dependencies
- * - @jest/globals: Testing framework with ES modules support
- * - prisma: Database client for real database operations
- * - groomController: Groom management controller functions
- * - groomSystem: Groom business logic and validation utilities
- * - logger: Winston logger (strategically mocked for test isolation)
- *
- * @usage
- * Run with: npm test -- groomHiringWorkflow.test.js
  * Tests the groom hiring workflow with focus on edge cases and validation.
+ * Uses real DB, real controller calls, and plain JS response capture objects.
+ * No mocking of any kind.
  */
 
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import prisma from '../db/index.mjs';
+import { hireGroom, getGroomDefinitions } from '../controllers/groomController.mjs';
+import { GROOM_SPECIALTIES, SKILL_LEVELS, PERSONALITY_TRAITS } from '../utils/groomSystem.mjs';
 
-// Define mock objects for external dependencies only
-const mockLogger = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-};
-
-// Mock only the logger (external dependency)
-jest.unstable_mockModule('../utils/logger.mjs', () => ({
-  default: mockLogger,
-}));
-
-// Import modules after setting up mocks
-const prisma = await import('../db/index.mjs').then(module => module.default);
-const { hireGroom, getGroomDefinitions } = await import('../controllers/groomController.mjs');
-const { GROOM_SPECIALTIES, SKILL_LEVELS, PERSONALITY_TRAITS } = await import('../utils/groomSystem.mjs');
+function makeRes() {
+  return {
+    _status: null,
+    _json: null,
+    status(code) {
+      this._status = code;
+      return this;
+    },
+    json(body) {
+      this._json = body;
+      return this;
+    },
+  };
+}
 
 describe('Groom Hiring Workflow Tests', () => {
   let testUser;
@@ -52,28 +33,18 @@ describe('Groom Hiring Workflow Tests', () => {
 
   const TEST_USER_IDS = ['test-user-groom-hiring', 'wealthy-user-groom-hiring', 'limited-user-groom-hiring'];
 
-  // Helper to clean up test data
   const cleanupTestData = async () => {
-    // Delete grooms associated with test users first
     await prisma.groom.deleteMany({
-      where: {
-        userId: { in: TEST_USER_IDS },
-      },
+      where: { userId: { in: TEST_USER_IDS } },
     });
-
-    // Delete test users
     await prisma.user.deleteMany({
-      where: {
-        id: { in: TEST_USER_IDS },
-      },
+      where: { id: { in: TEST_USER_IDS } },
     });
   };
 
   beforeEach(async () => {
-    // Clean up test data scoped to this test suite
     await cleanupTestData();
 
-    // Create test users with different financial situations
     testUser = await prisma.user.create({
       data: {
         id: 'test-user-groom-hiring',
@@ -82,7 +53,7 @@ describe('Groom Hiring Workflow Tests', () => {
         password: 'TestPassword123!',
         firstName: 'Groom',
         lastName: 'Hirer',
-        money: 5000, // Standard amount
+        money: 5000,
       },
     });
 
@@ -94,7 +65,7 @@ describe('Groom Hiring Workflow Tests', () => {
         password: 'TestPassword123!',
         firstName: 'Wealthy',
         lastName: 'Owner',
-        money: 50000, // Large amount
+        money: 50000,
       },
     });
 
@@ -106,146 +77,83 @@ describe('Groom Hiring Workflow Tests', () => {
         password: 'TestPassword123!',
         firstName: 'Limited',
         lastName: 'Budget',
-        money: 100, // Small amount
+        money: 100,
       },
     });
   });
 
   afterEach(async () => {
-    // Clean up test data scoped to this test suite
     await cleanupTestData();
   });
 
   describe('1. Required Field Validation', () => {
     it('should validate name is required', async () => {
       const req = {
-        body: {
-          // Missing name
-          speciality: 'foal_care',
-          skill_level: 'expert',
-          personality: 'gentle',
-        },
+        body: { speciality: 'foal_care', skill_level: 'expert', personality: 'gentle' },
         user: { id: testUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await hireGroom(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: expect.stringContaining('name'),
-        }),
-      );
+      expect(res._status).toBe(400);
+      expect(res._json).toEqual(expect.objectContaining({ success: false, message: expect.stringContaining('name') }));
     });
 
     it('should validate speciality is required', async () => {
       const req = {
-        body: {
-          name: 'Test Groom',
-          // Missing speciality
-          skill_level: 'expert',
-          personality: 'gentle',
-        },
+        body: { name: 'Test Groom', skill_level: 'expert', personality: 'gentle' },
         user: { id: testUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await hireGroom(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: expect.stringContaining('speciality'),
-        }),
+      expect(res._status).toBe(400);
+      expect(res._json).toEqual(
+        expect.objectContaining({ success: false, message: expect.stringContaining('speciality') }),
       );
     });
 
     it('should validate skill_level is required', async () => {
       const req = {
-        body: {
-          name: 'Test Groom',
-          speciality: 'foal_care',
-          // Missing skill_level
-          personality: 'gentle',
-        },
+        body: { name: 'Test Groom', speciality: 'foal_care', personality: 'gentle' },
         user: { id: testUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await hireGroom(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: expect.stringContaining('skill_level'),
-        }),
+      expect(res._status).toBe(400);
+      expect(res._json).toEqual(
+        expect.objectContaining({ success: false, message: expect.stringContaining('skill_level') }),
       );
     });
 
     it('should validate personality is required', async () => {
       const req = {
-        body: {
-          name: 'Test Groom',
-          speciality: 'foal_care',
-          skill_level: 'expert',
-          // Missing personality
-        },
+        body: { name: 'Test Groom', speciality: 'foal_care', skill_level: 'expert' },
         user: { id: testUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await hireGroom(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: expect.stringContaining('personality'),
-        }),
+      expect(res._status).toBe(400);
+      expect(res._json).toEqual(
+        expect.objectContaining({ success: false, message: expect.stringContaining('personality') }),
       );
     });
 
     it('should validate all required fields at once', async () => {
-      const req = {
-        body: {
-          // Missing all required fields
-        },
-        user: { id: testUser.id },
-      };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const req = { body: {}, user: { id: testUser.id } };
+      const res = makeRes();
 
       await hireGroom(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: expect.stringContaining('required'),
-        }),
+      expect(res._status).toBe(400);
+      expect(res._json).toEqual(
+        expect.objectContaining({ success: false, message: expect.stringContaining('required') }),
       );
     });
   });
@@ -255,27 +163,20 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Test Groom',
-          speciality: 'invalid_speciality', // Invalid value
-          experience: 10, // Valid experience to get past experience validation
+          speciality: 'invalid_speciality',
+          experience: 10,
           skill_level: 'expert',
           personality: 'gentle',
         },
         user: { id: testUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await hireGroom(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: expect.stringContaining('Invalid speciality'),
-        }),
+      expect(res._status).toBe(400);
+      expect(res._json).toEqual(
+        expect.objectContaining({ success: false, message: expect.stringContaining('Invalid speciality') }),
       );
     });
 
@@ -284,26 +185,19 @@ describe('Groom Hiring Workflow Tests', () => {
         body: {
           name: 'Test Groom',
           speciality: 'foal_care',
-          experience: 10, // Valid experience to get past experience validation
-          skill_level: 'invalid_level', // Invalid value
+          experience: 10,
+          skill_level: 'invalid_level',
           personality: 'gentle',
         },
         user: { id: testUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await hireGroom(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: expect.stringContaining('Invalid skill level'),
-        }),
+      expect(res._status).toBe(400);
+      expect(res._json).toEqual(
+        expect.objectContaining({ success: false, message: expect.stringContaining('Invalid skill level') }),
       );
     });
 
@@ -312,58 +206,36 @@ describe('Groom Hiring Workflow Tests', () => {
         body: {
           name: 'Test Groom',
           speciality: 'foal_care',
-          experience: 10, // Valid experience to get past experience validation
+          experience: 10,
           skill_level: 'expert',
-          personality: 'invalid_personality', // Invalid value
+          personality: 'invalid_personality',
         },
         user: { id: testUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await hireGroom(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: false,
-          message: expect.stringContaining('Invalid personality'),
-        }),
+      expect(res._status).toBe(400);
+      expect(res._json).toEqual(
+        expect.objectContaining({ success: false, message: expect.stringContaining('Invalid personality') }),
       );
     });
 
     it('should accept all valid speciality values', async () => {
-      // Test each valid speciality
       for (const speciality of Object.keys(GROOM_SPECIALTIES)) {
         const req = {
-          body: {
-            name: `${speciality} Specialist`,
-            speciality,
-            skill_level: 'expert',
-            personality: 'gentle',
-          },
+          body: { name: `${speciality} Specialist`, speciality, skill_level: 'expert', personality: 'gentle' },
           user: { id: testUser.id },
         };
-
-        const res = {
-          status: jest.fn().mockReturnThis(),
-          json: jest.fn(),
-        };
+        const res = makeRes();
 
         try {
           await hireGroom(req, res);
 
-          expect(res.status).toHaveBeenCalledWith(201);
-          expect(res.json).toHaveBeenCalledWith(
-            expect.objectContaining({
-              success: true,
-              data: expect.objectContaining({
-                speciality,
-              }),
-            }),
+          expect(res._status).toBe(201);
+          expect(res._json).toEqual(
+            expect.objectContaining({ success: true, data: expect.objectContaining({ speciality }) }),
           );
         } catch (error) {
           console.error(`Error testing speciality ${speciality}:`, error);
@@ -372,7 +244,6 @@ describe('Groom Hiring Workflow Tests', () => {
     });
 
     it('should accept all valid skill_level values', async () => {
-      // Test each valid skill level
       for (const skillLevel of Object.keys(SKILL_LEVELS)) {
         const req = {
           body: {
@@ -383,54 +254,30 @@ describe('Groom Hiring Workflow Tests', () => {
           },
           user: { id: testUser.id },
         };
-
-        const res = {
-          status: jest.fn().mockReturnThis(),
-          json: jest.fn(),
-        };
+        const res = makeRes();
 
         await hireGroom(req, res);
 
-        expect(res.status).toHaveBeenCalledWith(201);
-        expect(res.json).toHaveBeenCalledWith(
-          expect.objectContaining({
-            success: true,
-            data: expect.objectContaining({
-              skillLevel,
-            }),
-          }),
+        expect(res._status).toBe(201);
+        expect(res._json).toEqual(
+          expect.objectContaining({ success: true, data: expect.objectContaining({ skillLevel }) }),
         );
       }
     });
 
     it('should accept all valid personality values', async () => {
-      // Test each valid personality
       for (const personality of Object.keys(PERSONALITY_TRAITS)) {
         const req = {
-          body: {
-            name: `${personality} Groom`,
-            speciality: 'foal_care',
-            skill_level: 'expert',
-            personality,
-          },
+          body: { name: `${personality} Groom`, speciality: 'foal_care', skill_level: 'expert', personality },
           user: { id: testUser.id },
         };
-
-        const res = {
-          status: jest.fn().mockReturnThis(),
-          json: jest.fn(),
-        };
+        const res = makeRes();
 
         await hireGroom(req, res);
 
-        expect(res.status).toHaveBeenCalledWith(201);
-        expect(res.json).toHaveBeenCalledWith(
-          expect.objectContaining({
-            success: true,
-            data: expect.objectContaining({
-              personality,
-            }),
-          }),
+        expect(res._status).toBe(201);
+        expect(res._json).toEqual(
+          expect.objectContaining({ success: true, data: expect.objectContaining({ personality }) }),
         );
       }
     });
@@ -444,57 +291,33 @@ describe('Groom Hiring Workflow Tests', () => {
           speciality: 'foal_care',
           skill_level: 'expert',
           personality: 'gentle',
-          // No experience provided
         },
         user: { id: testUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await hireGroom(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(201);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          data: expect.objectContaining({
-            experience: 1, // Default value
-          }),
-        }),
+      expect(res._status).toBe(201);
+      expect(res._json).toEqual(
+        expect.objectContaining({ success: true, data: expect.objectContaining({ experience: 1 }) }),
       );
     });
 
     it('should calculate session rate based on skill level when not provided', async () => {
       const req = {
-        body: {
-          name: 'Default Rate Groom',
-          speciality: 'foal_care',
-          skill_level: 'expert',
-          personality: 'gentle',
-          // No session_rate provided
-        },
+        body: { name: 'Default Rate Groom', speciality: 'foal_care', skill_level: 'expert', personality: 'gentle' },
         user: { id: testUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await hireGroom(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res._status).toBe(201);
 
-      // Get the skill level cost modifier
       const expertModifier = SKILL_LEVELS.expert.costModifier;
       const expectedRate = expertModifier * 15.0;
-
-      // Check that the session rate was calculated correctly
-      const responseData = res.json.mock.calls[0][0].data;
-      expect(parseFloat(responseData.sessionRate)).toBeCloseTo(expectedRate);
+      expect(parseFloat(res._json.data.sessionRate)).toBeCloseTo(expectedRate);
     });
 
     it('should use provided session rate when specified', async () => {
@@ -509,19 +332,12 @@ describe('Groom Hiring Workflow Tests', () => {
         },
         user: { id: testUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await hireGroom(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(201);
-
-      // Check that the provided session rate was used
-      const responseData = res.json.mock.calls[0][0].data;
-      expect(parseFloat(responseData.sessionRate)).toBeCloseTo(customRate);
+      expect(res._status).toBe(201);
+      expect(parseFloat(res._json.data.sessionRate)).toBeCloseTo(customRate);
     });
 
     it('should store bio when provided', async () => {
@@ -536,22 +352,13 @@ describe('Groom Hiring Workflow Tests', () => {
         },
         user: { id: testUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await hireGroom(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(201);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          data: expect.objectContaining({
-            bio: customBio,
-          }),
-        }),
+      expect(res._status).toBe(201);
+      expect(res._json).toEqual(
+        expect.objectContaining({ success: true, data: expect.objectContaining({ bio: customBio }) }),
       );
     });
 
@@ -565,7 +372,6 @@ describe('Groom Hiring Workflow Tests', () => {
         saturday: false,
         sunday: false,
       };
-
       const req = {
         body: {
           name: 'Availability Groom',
@@ -576,31 +382,20 @@ describe('Groom Hiring Workflow Tests', () => {
         },
         user: { id: testUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await hireGroom(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(201);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          data: expect.objectContaining({
-            availability: customAvailability,
-          }),
-        }),
+      expect(res._status).toBe(201);
+      expect(res._json).toEqual(
+        expect.objectContaining({ success: true, data: expect.objectContaining({ availability: customAvailability }) }),
       );
     });
   });
 
   describe('4. User Account Hiring Limits', () => {
     it('should enforce maximum groom limit per user', async () => {
-      // First, determine what the limit is by checking the controller
-      // For testing purposes, we'll create grooms until we hit the limit
-      const maxGroomsToTest = 20; // Arbitrary high number to ensure we hit the limit
+      const maxGroomsToTest = 20;
       let limitReached = false;
       let groomsCreated = 0;
 
@@ -614,69 +409,49 @@ describe('Groom Hiring Workflow Tests', () => {
           },
           user: { id: testUser.id },
         };
-
-        const res = {
-          status: jest.fn().mockReturnThis(),
-          json: jest.fn(),
-        };
+        const res = makeRes();
 
         await hireGroom(req, res);
 
-        if (res.status.mock.calls[0][0] === 400 && res.json.mock.calls[0][0].message.includes('limit')) {
+        if (res._status === 400 && res._json.message.includes('limit')) {
           limitReached = true;
           break;
         }
 
-        if (res.status.mock.calls[0][0] === 201) {
+        if (res._status === 201) {
           groomsCreated++;
         }
       }
 
-      // If we've implemented a limit, this test should pass
-      // If no limit is implemented yet, this will be a reminder to add one
       if (limitReached) {
         expect(groomsCreated).toBeGreaterThan(0);
         expect(limitReached).toBe(true);
       } else {
-        // No limit implemented yet, this is a placeholder for when it is
         console.warn('No groom hiring limit implemented yet - add this feature');
       }
     });
 
     it('should validate user has sufficient funds for hiring', async () => {
-      // This test assumes there's a cost to hire grooms
-      // If there isn't, this will be a reminder to add this feature
-
-      // Try to hire an expensive groom with limited funds
       const req = {
         body: {
           name: 'Expensive Master Groom',
           speciality: 'foal_care',
-          skill_level: 'master', // Most expensive
+          skill_level: 'master',
           personality: 'gentle',
-          session_rate: 100.0, // Very high rate
+          session_rate: 100.0,
         },
-        user: { id: limitedUser.id }, // User with limited funds
+        user: { id: limitedUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await hireGroom(req, res);
 
-      // If funds validation is implemented, this should fail
-      if (res.status.mock.calls[0][0] === 400 && res.json.mock.calls[0][0].message.includes('funds')) {
-        expect(res.status).toHaveBeenCalledWith(400);
-        expect(res.json).toHaveBeenCalledWith(
-          expect.objectContaining({
-            success: false,
-            message: expect.stringContaining('funds'),
-          }),
+      if (res._status === 400 && res._json.message.includes('funds')) {
+        expect(res._status).toBe(400);
+        expect(res._json).toEqual(
+          expect.objectContaining({ success: false, message: expect.stringContaining('funds') }),
         );
       } else {
-        // No funds validation implemented yet, this is a placeholder
         console.warn('No funds validation for hiring grooms implemented yet - add this feature');
       }
     });
@@ -688,75 +463,47 @@ describe('Groom Hiring Workflow Tests', () => {
           speciality: 'foal_care',
           skill_level: 'master',
           personality: 'gentle',
-          session_rate: 100.0, // High rate
+          session_rate: 100.0,
         },
-        user: { id: wealthyUser.id }, // User with plenty of funds
+        user: { id: wealthyUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await hireGroom(req, res);
 
-      // Wealthy user should be able to hire expensive grooms
-      expect(res.status).toHaveBeenCalledWith(201);
+      expect(res._status).toBe(201);
     });
   });
 
   describe('5. Error Handling & Edge Cases', () => {
     it('should handle empty strings for required fields', async () => {
       const req = {
-        body: {
-          name: '', // Empty string
-          speciality: 'foal_care',
-          skill_level: 'expert',
-          personality: 'gentle',
-        },
+        body: { name: '', speciality: 'foal_care', skill_level: 'expert', personality: 'gentle' },
         user: { id: testUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await hireGroom(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(400);
+      expect(res._status).toBe(400);
     });
 
     it('should handle extremely long names', async () => {
-      const veryLongName = 'A'.repeat(1000); // 1000 character name
+      const veryLongName = 'A'.repeat(1000);
       const req = {
-        body: {
-          name: veryLongName,
-          speciality: 'foal_care',
-          skill_level: 'expert',
-          personality: 'gentle',
-        },
+        body: { name: veryLongName, speciality: 'foal_care', skill_level: 'expert', personality: 'gentle' },
         user: { id: testUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await hireGroom(req, res);
 
-      // The system should either truncate or reject extremely long names
-      if (res.status.mock.calls[0][0] === 400) {
-        expect(res.json).toHaveBeenCalledWith(
-          expect.objectContaining({
-            success: false,
-            message: expect.stringContaining('name'),
-          }),
+      if (res._status === 400) {
+        expect(res._json).toEqual(
+          expect.objectContaining({ success: false, message: expect.stringContaining('name') }),
         );
-      } else if (res.status.mock.calls[0][0] === 201) {
-        const responseData = res.json.mock.calls[0][0].data;
-        expect(responseData.name.length).toBeLessThan(veryLongName.length);
+      } else if (res._status === 201) {
+        expect(res._json.data.name.length).toBeLessThan(veryLongName.length);
       }
     });
 
@@ -767,29 +514,20 @@ describe('Groom Hiring Workflow Tests', () => {
           speciality: 'foal_care',
           skill_level: 'expert',
           personality: 'gentle',
-          experience: -5, // Negative value
+          experience: -5,
         },
         user: { id: testUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await hireGroom(req, res);
 
-      // The system should either correct or reject negative experience
-      if (res.status.mock.calls[0][0] === 400) {
-        expect(res.json).toHaveBeenCalledWith(
-          expect.objectContaining({
-            success: false,
-            message: expect.stringContaining('experience'),
-          }),
+      if (res._status === 400) {
+        expect(res._json).toEqual(
+          expect.objectContaining({ success: false, message: expect.stringContaining('experience') }),
         );
-      } else if (res.status.mock.calls[0][0] === 201) {
-        const responseData = res.json.mock.calls[0][0].data;
-        expect(responseData.experience).toBeGreaterThanOrEqual(0);
+      } else if (res._status === 201) {
+        expect(res._json.data.experience).toBeGreaterThanOrEqual(0);
       }
     });
 
@@ -800,67 +538,44 @@ describe('Groom Hiring Workflow Tests', () => {
           speciality: 'foal_care',
           skill_level: 'expert',
           personality: 'gentle',
-          session_rate: -20.0, // Negative value
+          session_rate: -20.0,
         },
         user: { id: testUser.id },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await hireGroom(req, res);
 
-      // The system should either correct or reject negative rates
-      if (res.status.mock.calls[0][0] === 400) {
-        expect(res.json).toHaveBeenCalledWith(
-          expect.objectContaining({
-            success: false,
-            message: expect.stringContaining('rate'),
-          }),
+      if (res._status === 400) {
+        expect(res._json).toEqual(
+          expect.objectContaining({ success: false, message: expect.stringContaining('rate') }),
         );
-      } else if (res.status.mock.calls[0][0] === 201) {
-        const responseData = res.json.mock.calls[0][0].data;
-        expect(parseFloat(responseData.sessionRate)).toBeGreaterThan(0);
+      } else if (res._status === 201) {
+        expect(parseFloat(res._json.data.sessionRate)).toBeGreaterThan(0);
       }
     });
 
     it('should handle missing user ID', async () => {
       const req = {
-        body: {
-          name: 'No User Groom',
-          speciality: 'foal_care',
-          skill_level: 'expert',
-          personality: 'gentle',
-        },
-        // No user object
+        body: { name: 'No User Groom', speciality: 'foal_care', skill_level: 'expert', personality: 'gentle' },
       };
-
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await hireGroom(req, res);
 
-      // The system should use a default user ID or reject the request
-      expect([201, 400, 401, 403, 404]).toContain(res.status.mock.calls[0][0]);
+      expect([201, 400, 401, 403, 404]).toContain(res._status);
     });
   });
 
   describe('6. System Integration', () => {
     it('should retrieve groom definitions with all required data', async () => {
       const req = {};
-      const res = {
-        status: jest.fn().mockReturnThis(),
-        json: jest.fn(),
-      };
+      const res = makeRes();
 
       await getGroomDefinitions(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(200);
-      expect(res.json).toHaveBeenCalledWith(
+      expect(res._status).toBe(200);
+      expect(res._json).toEqual(
         expect.objectContaining({
           success: true,
           data: expect.objectContaining({
@@ -871,20 +586,17 @@ describe('Groom Hiring Workflow Tests', () => {
         }),
       );
 
-      // Verify all required specialties are present
-      const { specialties } = res.json.mock.calls[0][0].data;
+      const { specialties } = res._json.data;
       Object.keys(GROOM_SPECIALTIES).forEach(key => {
         expect(specialties).toHaveProperty(key);
       });
 
-      // Verify all required skill levels are present
-      const { skillLevels } = res.json.mock.calls[0][0].data;
+      const { skillLevels } = res._json.data;
       Object.keys(SKILL_LEVELS).forEach(key => {
         expect(skillLevels).toHaveProperty(key);
       });
 
-      // Verify all required personalities are present
-      const { personalities } = res.json.mock.calls[0][0].data;
+      const { personalities } = res._json.data;
       Object.keys(PERSONALITY_TRAITS).forEach(key => {
         expect(personalities).toHaveProperty(key);
       });

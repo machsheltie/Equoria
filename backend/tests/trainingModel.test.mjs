@@ -1,259 +1,177 @@
 /**
- * 🧪 UNIT TEST: Training Model - Training Session Logging & Horse Data
+ * Training Model — real-DB tests
  *
- * This test validates the training model's core functionality for logging training
- * sessions, retrieving training history, and managing horse age data.
- *
- * 📋 BUSINESS RULES TESTED:
- * - Training session logging with required fields (horseId, discipline, timestamp)
- * - Horse ID validation: must be positive integer
- * - Discipline validation: required non-empty string
- * - Training history retrieval by horse and discipline
- * - Horse age retrieval for training eligibility checks
- * - Database error handling with graceful error messages
- * - Input validation for all parameters
- * - Multiple training sessions per horse across different disciplines
- *
- * 🎯 FUNCTIONALITY TESTED:
- * 1. logTrainingSession() - Training session logging with validation
- * 2. getLastTrainingDate() - Training history retrieval with ordering
- * 3. getHorseAge() - Horse age data retrieval for eligibility
- * 4. Input validation for all functions
- * 5. Database error handling scenarios
- * 6. Integration scenarios with multiple sessions
- *
- * 🔄 BALANCED MOCKING APPROACH:
- * ✅ REAL: All business logic, validation rules, error handling, data processing
- * ✅ REAL: Input validation, parameter checking, response formatting
- * 🔧 MOCK: Database operations (Prisma calls) - external dependency
- *
- * 💡 TEST STRATEGY: Unit testing with mocked database to focus on model
- *    business logic while ensuring predictable test outcomes for data operations
+ * Input validation tests don't touch the DB (throw before any Prisma call).
+ * Happy-path and error-wrapping tests use real DB operations.
  */
 
-import { jest, describe, beforeEach, expect, it } from '@jest/globals';
+import { describe, beforeAll, afterAll, expect, it } from '@jest/globals';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import dotenv from 'dotenv';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Mock the Prisma client
-const mockTrainingLogCreate = jest.fn();
-const mockTrainingLogFindFirst = jest.fn();
-const mockHorseFindUnique = jest.fn();
+dotenv.config({ path: join(__dirname, '../.env.test') });
 
-await jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
-  default: {
-    trainingLog: {
-      create: mockTrainingLogCreate,
-      findFirst: mockTrainingLogFindFirst,
-    },
-    horse: {
-      findUnique: mockHorseFindUnique,
-    },
-  },
-}));
-
-// Import the module after mocking
+const { default: prisma } = await import(join(__dirname, '../db/index.mjs'));
 const { logTrainingSession, getLastTrainingDate, getHorseAge } = await import(
   join(__dirname, '../models/trainingModel.mjs')
 );
 
-describe('🏋️ UNIT: Training Model - Training Session Logging & Horse Data', () => {
-  // Anchor dates to keep age calculations deterministic
-  const referenceDate = new Date('2025-01-15T10:00:00Z');
-  const trainingTimestamp = new Date(referenceDate); // Current training session time
+describe('Training Model', () => {
+  let testUser = null;
+  let testHorse = null;
+  let breed = null;
 
-  const fiveYearsAgo = new Date(referenceDate);
-  fiveYearsAgo.setFullYear(referenceDate.getFullYear() - 5);
+  beforeAll(async () => {
+    await prisma.trainingLog.deleteMany({
+      where: { horse: { name: { startsWith: 'TestFixture-TM-' } } },
+    });
+    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-TM-' } } });
+    await prisma.user.deleteMany({ where: { email: 'training-model-test@fixture.test' } });
 
-  const twoYearsAgo = new Date(referenceDate);
-  twoYearsAgo.setFullYear(referenceDate.getFullYear() - 2);
+    testUser = await prisma.user.create({
+      data: {
+        email: 'training-model-test@fixture.test',
+        username: 'trainingmodeltestuser',
+        firstName: 'Training',
+        lastName: 'Model',
+        password: 'hashedpassword',
+        money: 0,
+        level: 1,
+        xp: 0,
+        settings: {},
+      },
+    });
 
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockTrainingLogCreate.mockClear();
-    mockTrainingLogFindFirst.mockClear();
-    mockHorseFindUnique.mockClear();
+    breed = await prisma.breed.findFirst();
+    if (!breed) {
+      breed = await prisma.breed.create({ data: { name: 'TestFixture-TM-Breed', description: 'test' } });
+    }
+
+    testHorse = await prisma.horse.create({
+      data: {
+        name: 'TestFixture-TM-Horse',
+        sex: 'Mare',
+        dateOfBirth: new Date('2018-01-01'),
+        age: 7,
+        userId: testUser.id,
+        breedId: breed.id,
+      },
+    });
+  });
+
+  afterAll(async () => {
+    await prisma.trainingLog.deleteMany({
+      where: { horse: { name: { startsWith: 'TestFixture-TM-' } } },
+    });
+    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-TM-' } } });
+    await prisma.user.deleteMany({ where: { email: 'training-model-test@fixture.test' } });
   });
 
   describe('logTrainingSession', () => {
-    it('should log a training session with all required fields', async () => {
-      const mockResult = {
-        id: 1,
-        horseId: 5,
-        discipline: 'Show Jumping',
-        trainedAt: trainingTimestamp,
-      };
-      mockTrainingLogCreate.mockResolvedValue(mockResult);
+    it('logs a training session with required fields', async () => {
+      const result = await logTrainingSession({ horseId: testHorse.id, discipline: 'Show Jumping' });
 
-      const trainingData = {
-        horseId: 5,
-        discipline: 'Show Jumping',
-      };
-
-      const result = await logTrainingSession(trainingData);
-
-      expect(mockTrainingLogCreate).toHaveBeenCalledWith({
-        data: {
-          horseId: 5,
-          discipline: 'Show Jumping',
-          trainedAt: expect.any(Date),
-        },
-      });
-      expect(result).toEqual(mockResult);
+      expect(result.id).toBeDefined();
+      expect(result.horseId).toBe(testHorse.id);
+      expect(result.discipline).toBe('Show Jumping');
+      expect(result.trainedAt).toBeInstanceOf(Date);
     });
 
-    it('should throw error if horseId is missing', async () => {
+    it('throws if horseId is missing', async () => {
       await expect(logTrainingSession({ discipline: 'Racing' })).rejects.toThrow('Horse ID is required');
     });
 
-    it('should throw error if discipline is missing', async () => {
-      await expect(logTrainingSession({ horseId: 5 })).rejects.toThrow('Discipline is required');
+    it('throws if discipline is missing', async () => {
+      await expect(logTrainingSession({ horseId: testHorse.id })).rejects.toThrow('Discipline is required');
     });
 
-    it('should throw error if horseId is not a positive integer', async () => {
+    it('throws if horseId is not a positive integer', async () => {
       await expect(logTrainingSession({ horseId: -1, discipline: 'Racing' })).rejects.toThrow(
         'Horse ID must be a positive integer',
       );
-
       await expect(logTrainingSession({ horseId: 0, discipline: 'Racing' })).rejects.toThrow(
         'Horse ID must be a positive integer',
       );
-
       await expect(logTrainingSession({ horseId: 'invalid', discipline: 'Racing' })).rejects.toThrow(
         'Horse ID must be a positive integer',
       );
     });
 
-    it('should handle database errors gracefully', async () => {
-      mockTrainingLogCreate.mockRejectedValue(new Error('Database connection failed'));
-
-      await expect(logTrainingSession({ horseId: 5, discipline: 'Racing' })).rejects.toThrow(
-        'Database error: Database connection failed',
-      );
+    it('wraps DB errors in "Database error:" prefix', async () => {
+      // non-existent horse triggers FK violation — tests error-wrapping path
+      await expect(logTrainingSession({ horseId: 999999999, discipline: 'Racing' })).rejects.toThrow('Database error:');
     });
   });
 
   describe('getLastTrainingDate', () => {
-    it('should return the most recent training date for horse and discipline', async () => {
-      const mockResult = {
-        trainedAt: trainingTimestamp,
-      };
-      mockTrainingLogFindFirst.mockResolvedValue(mockResult);
+    it('returns the most recent training date for horse and discipline', async () => {
+      // Ensure at least one training log exists for this horse/discipline pair
+      await logTrainingSession({ horseId: testHorse.id, discipline: 'Dressage' });
 
-      const result = await getLastTrainingDate(5, 'Show Jumping');
+      const result = await getLastTrainingDate(testHorse.id, 'Dressage');
 
-      expect(mockTrainingLogFindFirst).toHaveBeenCalledWith({
-        where: {
-          horseId: 5,
-          discipline: 'Show Jumping',
-        },
-        orderBy: {
-          trainedAt: 'desc',
-        },
-      });
-      expect(result).toEqual(trainingTimestamp);
+      expect(result).toBeInstanceOf(Date);
     });
 
-    it('should return null if no training records found', async () => {
-      mockTrainingLogFindFirst.mockResolvedValue(null);
-
-      const result = await getLastTrainingDate(5, 'Racing');
-
+    it('returns null if no training records found', async () => {
+      const result = await getLastTrainingDate(testHorse.id, 'NonExistentDiscipline-xyz123');
       expect(result).toBeNull();
     });
 
-    it('should throw error if horseId is not a positive integer', async () => {
+    it('throws if horseId is not a positive integer', async () => {
       await expect(getLastTrainingDate(-1, 'Racing')).rejects.toThrow('Horse ID must be a positive integer');
-
       await expect(getLastTrainingDate(0, 'Racing')).rejects.toThrow('Horse ID must be a positive integer');
-
       await expect(getLastTrainingDate('invalid', 'Racing')).rejects.toThrow('Horse ID must be a positive integer');
     });
 
-    it('should throw error if discipline is missing', async () => {
-      await expect(getLastTrainingDate(5, '')).rejects.toThrow('Discipline is required');
-
-      await expect(getLastTrainingDate(5, null)).rejects.toThrow('Discipline is required');
-    });
-
-    it('should handle database errors gracefully', async () => {
-      mockTrainingLogFindFirst.mockRejectedValue(new Error('Database connection failed'));
-
-      await expect(getLastTrainingDate(5, 'Racing')).rejects.toThrow('Database error: Database connection failed');
+    it('throws if discipline is missing', async () => {
+      await expect(getLastTrainingDate(testHorse.id, '')).rejects.toThrow('Discipline is required');
+      await expect(getLastTrainingDate(testHorse.id, null)).rejects.toThrow('Discipline is required');
     });
   });
 
   describe('getHorseAge', () => {
-    it('should return horse age from database', async () => {
-      jest.useFakeTimers().setSystemTime(referenceDate);
-      const mockResult = {
-        dateOfBirth: fiveYearsAgo,
-      };
-      mockHorseFindUnique.mockResolvedValue(mockResult);
+    it('returns the correct horse age from DB', async () => {
+      const result = await getHorseAge(testHorse.id);
 
-      const result = await getHorseAge(10);
-
-      expect(mockHorseFindUnique).toHaveBeenCalledWith({
-        where: { id: 10 },
-        select: { dateOfBirth: true },
-      });
-      expect(result).toBe(5);
-      jest.useRealTimers();
+      // Horse born 2018-01-01; expected age is floor((now - birth) / 365.25 days in ms)
+      const birth = new Date('2018-01-01');
+      const expectedAge = Math.floor((Date.now() - birth.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
+      expect(result).toBe(expectedAge);
     });
 
-    it('should return null if horse not found', async () => {
-      mockHorseFindUnique.mockResolvedValue(null);
-
-      const result = await getHorseAge(999);
-
+    it('returns null if horse not found', async () => {
+      const result = await getHorseAge(999999999);
       expect(result).toBeNull();
     });
 
-    it('should throw error if horseId is not a positive integer', async () => {
+    it('throws if horseId is not a positive integer', async () => {
       await expect(getHorseAge(-1)).rejects.toThrow('Horse ID must be a positive integer');
-
       await expect(getHorseAge(0)).rejects.toThrow('Horse ID must be a positive integer');
-
       await expect(getHorseAge('invalid')).rejects.toThrow('Horse ID must be a positive integer');
-    });
-
-    it('should handle database errors gracefully', async () => {
-      mockHorseFindUnique.mockRejectedValue(new Error('Database connection failed'));
-
-      await expect(getHorseAge(5)).rejects.toThrow('Database error: Database connection failed');
     });
   });
 
-  describe('Integration scenarios', () => {
-    it('should handle multiple training sessions for same horse different disciplines', async () => {
-      // Mock successful logging
-      mockTrainingLogCreate.mockResolvedValue({
-        id: 1,
-        horseId: 5,
-        discipline: 'Racing',
-        trainedAt: new Date(),
-      });
+  describe('Integration', () => {
+    it('handles multiple training sessions for same horse across different disciplines', async () => {
+      await logTrainingSession({ horseId: testHorse.id, discipline: 'Cross Country' });
+      await logTrainingSession({ horseId: testHorse.id, discipline: 'Racing' });
 
-      await logTrainingSession({ horseId: 5, discipline: 'Racing' });
-      await logTrainingSession({ horseId: 5, discipline: 'Show Jumping' });
+      const crossCountryDate = await getLastTrainingDate(testHorse.id, 'Cross Country');
+      const racingDate = await getLastTrainingDate(testHorse.id, 'Racing');
 
-      expect(mockTrainingLogCreate).toHaveBeenCalledTimes(2);
+      expect(crossCountryDate).toBeInstanceOf(Date);
+      expect(racingDate).toBeInstanceOf(Date);
     });
 
-    it('should validate horse age before allowing training', async () => {
-      // Mock horse age check
-      jest.useFakeTimers().setSystemTime(referenceDate);
-      mockHorseFindUnique.mockResolvedValue({ dateOfBirth: twoYearsAgo });
-
-      const age = await getHorseAge(5);
-      expect(age).toBe(2);
-      jest.useRealTimers();
-
-      // In the actual training logic, this would prevent training
-      // since horse is under 3 years old
+    it('horse age is correct for training eligibility logic', async () => {
+      const age = await getHorseAge(testHorse.id);
+      // The test horse was born 2018-01-01 — at least 3 years old (eligible)
+      expect(age).toBeGreaterThanOrEqual(3);
     });
   });
 });

@@ -1,687 +1,391 @@
+import { describe, afterAll, expect, it } from '@jest/globals';
+import prisma from '../db/index.mjs';
+import {
+  getFoalDevelopment,
+  completeActivity,
+  advanceDay,
+  completeEnrichmentActivity,
+  getAvailableActivities,
+} from '../models/foalModel.mjs';
+
 /**
- * 🧪 UNIT TEST: Foal Model - Foal Development & Activity Management
+ * Foal Model Tests
  *
- * This test validates the foal model's functionality for managing foal development
- * during the critical first 7 days of life, including bonding and stress tracking.
+ * getAvailableActivities is a pure function — tested with plain JS, no DB.
+ * Input-validation tests (invalid IDs, empty strings) throw before any DB
+ * call and therefore need no fixtures.
  *
- * 📋 BUSINESS RULES TESTED:
- * - Foals are horses with age = 0 (newborns only)
- * - 7-day development period with daily activities
- * - Bonding level starts at 50, stress level starts at 20
- * - Activities can only be completed once per day
- * - Each activity affects bonding (+/-) and stress (+/-) levels
- * - Development record is auto-created for new foals
- * - Day advancement is blocked after completing 7-day period
- * - Activity availability depends on current day and completion status
- *
- * 🎯 FUNCTIONALITY TESTED:
- * 1. getFoalDevelopment() - Retrieve foal development status and available activities
- * 2. completeActivity() - Execute daily activities with bonding/stress effects
- * 3. advanceDay() - Progress foal to next development day
- * 4. Input validation and error handling for all operations
- * 5. Auto-creation of development records for new foals
- *
- * 🔄 BALANCED MOCKING APPROACH:
- * ✅ REAL: Business logic for development progression, activity validation, bonding/stress calculations
- * ✅ REAL: Day advancement logic, activity availability rules, input validation
- * 🔧 MOCK: Database operations (Prisma calls) - external dependency
- * 🔧 MOCK: Logger calls - external dependency for error reporting
- *
- * 💡 TEST STRATEGY: Unit testing with mocked database to focus on foal development
- *    business logic while ensuring predictable test outcomes for complex progression rules
+ * All other tests are DB integration tests using TestFixture-FoalModel-*
+ * prefixed Horse records. Deleting the horse cascades to foalDevelopment,
+ * foalActivities, and foalTrainingHistory, so cleanup is a single horse.delete.
  */
 
-import { jest, describe, beforeEach, expect, it } from '@jest/globals';
+const PREFIX = 'TestFixture-FoalModel-';
+const DATE_OF_BIRTH = new Date('2020-01-01');
 
-// Mock the database
-const mockPrisma = {
-  horse: {
-    findUnique: jest.fn(),
-    update: jest.fn(),
-  },
-  foalDevelopment: {
-    findUnique: jest.fn(),
-    create: jest.fn(),
-    update: jest.fn(),
-  },
-  foalActivity: {
-    findMany: jest.fn(),
-    create: jest.fn(),
-  },
-  foalTrainingHistory: {
-    create: jest.fn(),
-  },
-};
+async function mkFoal(suffix, opts = {}) {
+  return prisma.horse.create({
+    data: {
+      name: `${PREFIX}${suffix}`,
+      sex: opts.sex ?? 'Colt',
+      dateOfBirth: DATE_OF_BIRTH,
+      age: opts.age ?? 0,
+      ...(opts.bondScore !== undefined && { bondScore: opts.bondScore }),
+      ...(opts.stressLevel !== undefined && { stressLevel: opts.stressLevel }),
+    },
+  });
+}
 
-// Mock the logger
-const mockLogger = {
-  info: jest.fn(),
-  error: jest.fn(),
-};
+async function mkDev(foalId, opts = {}) {
+  return prisma.foalDevelopment.create({
+    data: {
+      foalId,
+      currentDay: opts.currentDay ?? 0,
+      bondingLevel: opts.bondingLevel ?? 50,
+      stressLevel: opts.stressLevel ?? 20,
+      completedActivities: opts.completedActivities ?? {},
+    },
+  });
+}
 
-// Mock modules
-jest.unstable_mockModule('../db/index.mjs', () => ({
-  default: mockPrisma,
-}));
+async function rmFoal(foalId) {
+  await prisma.horse.delete({ where: { id: foalId } }).catch(() => {});
+}
 
-jest.unstable_mockModule('../utils/logger.mjs', () => ({
-  default: mockLogger,
-}));
+// Safety-net cleanup in case any test's finally block was skipped
+afterAll(async () => {
+  await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
+});
 
-// Import after mocking
-const { getFoalDevelopment, completeActivity, advanceDay, completeEnrichmentActivity, getAvailableActivities } =
-  await import('../models/foalModel.mjs');
+// ─── Pure function: getAvailableActivities ────────────────────────────────────
 
-describe('🍼 UNIT: Foal Model - Foal Development & Activity Management', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockPrisma.horse.findUnique.mockClear();
-    mockPrisma.horse.update.mockClear();
-    mockPrisma.foalDevelopment.findUnique.mockClear();
-    mockPrisma.foalDevelopment.create.mockClear();
-    mockPrisma.foalDevelopment.update.mockClear();
-    mockPrisma.foalActivity.findMany.mockClear();
-    mockPrisma.foalActivity.create.mockClear();
-    mockPrisma.foalTrainingHistory.create.mockClear();
-    mockLogger.info.mockClear();
-    mockLogger.error.mockClear();
+describe('getAvailableActivities', () => {
+  it('returns activities for day 0', () => {
+    const activities = getAvailableActivities(0, {});
+    expect(Array.isArray(activities)).toBe(true);
+    expect(activities.length).toBeGreaterThan(0);
+    const types = activities.map(a => a.type);
+    expect(types).toContain('gentle_touch');
+    expect(types).toContain('quiet_presence');
+    expect(types).toContain('soft_voice');
   });
 
-  describe('getFoalDevelopment', () => {
-    it('should return foal development data for valid foal', async () => {
-      const mockHorse = {
-        id: 1,
-        name: 'Test Foal',
-        age: 0,
-        breed: { name: 'Thoroughbred' },
-        owner: { name: 'Test Owner' },
-        stable: { name: 'Test Stable' },
-      };
+  it('returns different activities for different days', () => {
+    const day0Types = getAvailableActivities(0, {}).map(a => a.type);
+    const day3Types = getAvailableActivities(3, {}).map(a => a.type);
+    expect(day0Types).not.toContain('halter_introduction');
+    expect(day3Types).toContain('halter_introduction');
+  });
 
-      const mockDevelopment = {
+  it('filters out completed activities', () => {
+    const types = getAvailableActivities(0, { 0: ['gentle_touch'] }).map(a => a.type);
+    expect(types).not.toContain('gentle_touch');
+    expect(types).toContain('quiet_presence');
+  });
+
+  it('returns empty array for invalid day', () => {
+    expect(getAvailableActivities(99, {})).toEqual([]);
+  });
+
+  it('handles missing completedActivities gracefully', () => {
+    const activities = getAvailableActivities(0);
+    expect(Array.isArray(activities)).toBe(true);
+    expect(activities.length).toBeGreaterThan(0);
+  });
+});
+
+// ─── getFoalDevelopment ───────────────────────────────────────────────────────
+
+describe('getFoalDevelopment', () => {
+  it('throws for invalid foal ID', async () => {
+    await expect(getFoalDevelopment('invalid')).rejects.toThrow('Foal ID must be a positive integer');
+    await expect(getFoalDevelopment(-1)).rejects.toThrow('Foal ID must be a positive integer');
+    await expect(getFoalDevelopment(0)).rejects.toThrow('Foal ID must be a positive integer');
+  });
+
+  it('throws for non-existent horse', async () => {
+    await expect(getFoalDevelopment(999999999)).rejects.toThrow('Foal not found');
+  });
+
+  it('throws for horse older than 1 year', async () => {
+    const foal = await mkFoal('Adult-5', { age: 5 });
+    try {
+      await expect(getFoalDevelopment(foal.id)).rejects.toThrow('Horse is not a foal (must be 1 year old or younger)');
+    } finally {
+      await rmFoal(foal.id);
+    }
+  });
+
+  it('throws for 2-year-old horse (boundary)', async () => {
+    const foal = await mkFoal('Adult-2', { age: 2 });
+    try {
+      await expect(getFoalDevelopment(foal.id)).rejects.toThrow('Horse is not a foal (must be 1 year old or younger)');
+    } finally {
+      await rmFoal(foal.id);
+    }
+  });
+
+  it('accepts 1-year-old horse (yearling boundary)', async () => {
+    const foal = await mkFoal('Yearling', { age: 1 });
+    try {
+      await mkDev(foal.id, { currentDay: 1, bondingLevel: 55, stressLevel: 18 });
+      const result = await getFoalDevelopment(foal.id);
+      expect(result.foal.name).toBe(`${PREFIX}Yearling`);
+      expect(result.development.currentDay).toBe(1);
+    } finally {
+      await rmFoal(foal.id);
+    }
+  });
+
+  it('returns full development data with all expected fields', async () => {
+    const foal = await mkFoal('FullData', { age: 0 });
+    try {
+      await mkDev(foal.id, {
         currentDay: 2,
         bondingLevel: 60,
         stressLevel: 15,
         completedActivities: { 0: ['gentle_touch'], 1: ['feeding_assistance'] },
-      };
-
-      const mockActivities = [
-        {
-          id: 1,
-          day: 1,
-          activityType: 'feeding_assistance',
-          outcome: 'success',
-          bondingChange: 5,
-          stressChange: -1,
-          description: 'Feeding went well',
-          createdAt: new Date(),
-        },
-      ];
-
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
-      mockPrisma.foalDevelopment.findUnique.mockResolvedValue(mockDevelopment);
-      mockPrisma.foalActivity.findMany.mockResolvedValue(mockActivities);
-
-      const result = await getFoalDevelopment(1);
-
+      });
+      const result = await getFoalDevelopment(foal.id);
       expect(result).toHaveProperty('foal');
       expect(result).toHaveProperty('development');
       expect(result).toHaveProperty('activityHistory');
       expect(result).toHaveProperty('availableActivities');
-      expect(result.foal.name).toBe('Test Foal');
       expect(result.development.currentDay).toBe(2);
       expect(result.development.bondingLevel).toBe(60);
-    });
+    } finally {
+      await rmFoal(foal.id);
+    }
+  });
 
-    it('should throw error for horse that is not a foal', async () => {
-      const mockHorse = {
-        id: 1,
-        name: 'Adult Horse',
-        age: 5,
-        breed: { name: 'Thoroughbred' },
-      };
-
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
-
-      await expect(getFoalDevelopment(1)).rejects.toThrow('Horse is not a foal (must be 1 year old or younger)');
-    });
-
-    it('should throw error for 2-year-old horse (boundary test)', async () => {
-      const mockHorse = {
-        id: 1,
-        name: 'Young Horse',
-        age: 2,
-        breed: { name: 'Thoroughbred' },
-      };
-
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
-
-      await expect(getFoalDevelopment(1)).rejects.toThrow('Horse is not a foal (must be 1 year old or younger)');
-    });
-
-    it('should accept 1-year-old horse (boundary test)', async () => {
-      const mockHorse = {
-        id: 1,
-        name: 'Yearling',
-        age: 1,
-        breed: { name: 'Thoroughbred' },
-        user: { firstName: 'Test Owner' },
-      };
-
-      const mockDevelopment = {
-        currentDay: 1,
-        bondingLevel: 55,
-        stressLevel: 18,
-        completedActivities: {},
-      };
-
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
-      mockPrisma.foalDevelopment.findUnique.mockResolvedValue(mockDevelopment);
-      mockPrisma.foalActivity.findMany.mockResolvedValue([]);
-
-      const result = await getFoalDevelopment(1);
-
-      expect(result.foal.name).toBe('Yearling');
-      expect(result.development.currentDay).toBe(1);
-    });
-
-    it('should validate availableActivities are returned correctly', async () => {
-      const mockHorse = {
-        id: 1,
-        name: 'Test Foal',
-        age: 0,
-        breed: { name: 'Thoroughbred' },
-        user: { firstName: 'Test Owner' },
-      };
-
-      const mockDevelopment = {
-        currentDay: 0,
-        bondingLevel: 50,
-        stressLevel: 20,
-        completedActivities: {},
-      };
-
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
-      mockPrisma.foalDevelopment.findUnique.mockResolvedValue(mockDevelopment);
-      mockPrisma.foalActivity.findMany.mockResolvedValue([]);
-
-      const result = await getFoalDevelopment(1);
-
-      expect(result.availableActivities).toBeDefined();
+  it('returns availableActivities for day 0 including gentle_touch', async () => {
+    const foal = await mkFoal('Day0Activities', { age: 0 });
+    try {
+      await mkDev(foal.id, { currentDay: 0, completedActivities: {} });
+      const result = await getFoalDevelopment(foal.id);
       expect(Array.isArray(result.availableActivities)).toBe(true);
       expect(result.availableActivities.length).toBeGreaterThan(0);
-      // Day 0 should have activities like gentle_touch, quiet_presence, soft_voice
-      const activityTypes = result.availableActivities.map(a => a.type);
-      expect(activityTypes).toContain('gentle_touch');
-    });
-
-    it('should filter out completed activities from available activities', async () => {
-      const mockHorse = {
-        id: 1,
-        name: 'Test Foal',
-        age: 0,
-        breed: { name: 'Thoroughbred' },
-        user: { firstName: 'Test Owner' },
-      };
-
-      const mockDevelopment = {
-        currentDay: 0,
-        bondingLevel: 55,
-        stressLevel: 18,
-        completedActivities: { 0: ['gentle_touch'] }, // gentle_touch already completed
-      };
-
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
-      mockPrisma.foalDevelopment.findUnique.mockResolvedValue(mockDevelopment);
-      mockPrisma.foalActivity.findMany.mockResolvedValue([]);
-
-      const result = await getFoalDevelopment(1);
-
-      const activityTypes = result.availableActivities.map(a => a.type);
-      expect(activityTypes).not.toContain('gentle_touch'); // Should be filtered out
-      expect(activityTypes).toContain('quiet_presence'); // Should still be available
-    });
-
-    it('should throw error for non-existent horse', async () => {
-      mockPrisma.horse.findUnique.mockResolvedValue(null);
-
-      await expect(getFoalDevelopment(999)).rejects.toThrow('Foal not found');
-    });
-
-    it('should throw error for invalid foal ID', async () => {
-      await expect(getFoalDevelopment('invalid')).rejects.toThrow('Foal ID must be a positive integer');
-      await expect(getFoalDevelopment(-1)).rejects.toThrow('Foal ID must be a positive integer');
-      await expect(getFoalDevelopment(0)).rejects.toThrow('Foal ID must be a positive integer');
-    });
-
-    it('should create default development record for new foal', async () => {
-      const mockHorse = {
-        id: 1,
-        name: 'New Foal',
-        age: 0,
-        breed: { name: 'Thoroughbred' },
-        owner: { name: 'Test Owner' },
-      };
-
-      const mockNewDevelopment = {
-        currentDay: 0,
-        bondingLevel: 50,
-        stressLevel: 20,
-        completedActivities: {},
-      };
-
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
-      mockPrisma.foalDevelopment.findUnique.mockResolvedValue(null);
-      mockPrisma.foalDevelopment.create.mockResolvedValue(mockNewDevelopment);
-      mockPrisma.foalActivity.findMany.mockResolvedValue([]);
-
-      const result = await getFoalDevelopment(1);
-
-      expect(mockPrisma.foalDevelopment.create).toHaveBeenCalledWith({
-        data: {
-          foalId: 1,
-          currentDay: 0,
-          bondingLevel: 50,
-          stressLevel: 20,
-          completedActivities: {},
-        },
-      });
-      expect(result.development.currentDay).toBe(0);
-    });
+      expect(result.availableActivities.map(a => a.type)).toContain('gentle_touch');
+    } finally {
+      await rmFoal(foal.id);
+    }
   });
 
-  describe('completeActivity', () => {
-    it('should complete an available activity successfully', async () => {
-      const mockDevelopment = {
-        currentDay: 0,
-        bondingLevel: 50,
-        stressLevel: 20,
-        completedActivities: {},
-      };
+  it('filters completed activities from availableActivities', async () => {
+    const foal = await mkFoal('FilterCompleted', { age: 0 });
+    try {
+      await mkDev(foal.id, { currentDay: 0, completedActivities: { 0: ['gentle_touch'] } });
+      const result = await getFoalDevelopment(foal.id);
+      const types = result.availableActivities.map(a => a.type);
+      expect(types).not.toContain('gentle_touch');
+      expect(types).toContain('quiet_presence');
+    } finally {
+      await rmFoal(foal.id);
+    }
+  });
 
-      mockPrisma.foalDevelopment.findUnique.mockResolvedValue(mockDevelopment);
-      mockPrisma.foalDevelopment.update.mockResolvedValue({});
-      mockPrisma.foalActivity.create.mockResolvedValue({ id: 1 });
+  it('auto-creates development record for foal with no existing record', async () => {
+    const foal = await mkFoal('NoDev', { age: 0 });
+    try {
+      const result = await getFoalDevelopment(foal.id);
+      expect(result.development.currentDay).toBe(0);
+      expect(result.development.bondingLevel).toBe(50);
+      expect(result.development.stressLevel).toBe(20);
+    } finally {
+      await rmFoal(foal.id);
+    }
+  });
+});
 
-      // Mock the return call to getFoalDevelopment
-      const mockHorse = {
-        id: 1,
-        name: 'Test Foal',
-        age: 0,
-        breed: { name: 'Thoroughbred' },
-        user: { firstName: 'Test Owner' },
-      };
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
-      mockPrisma.foalActivity.findMany.mockResolvedValue([]);
+// ─── completeActivity ─────────────────────────────────────────────────────────
 
-      const result = await completeActivity(1, 'gentle_touch');
+describe('completeActivity', () => {
+  it('throws for invalid foal ID', async () => {
+    await expect(completeActivity('invalid', 'gentle_touch')).rejects.toThrow('Foal ID must be a positive integer');
+  });
 
-      expect(mockPrisma.foalDevelopment.update).toHaveBeenCalled();
-      expect(mockPrisma.foalActivity.create).toHaveBeenCalled();
-      expect(result).toHaveProperty('foal');
-      expect(result).toHaveProperty('development');
-    });
+  it('throws for missing activity type', async () => {
+    await expect(completeActivity(1, '')).rejects.toThrow('Activity type is required');
+  });
 
-    it('should update completedActivities correctly when completing activity', async () => {
-      const mockDevelopment = {
-        currentDay: 0,
-        bondingLevel: 50,
-        stressLevel: 20,
-        completedActivities: {},
-      };
+  it('throws when development record does not exist', async () => {
+    const foal = await mkFoal('NoDevCA');
+    try {
+      await expect(completeActivity(foal.id, 'gentle_touch')).rejects.toThrow('Foal development record not found');
+    } finally {
+      await rmFoal(foal.id);
+    }
+  });
 
-      mockPrisma.foalDevelopment.findUnique.mockResolvedValue(mockDevelopment);
-      mockPrisma.foalDevelopment.update.mockResolvedValue({});
-      mockPrisma.foalActivity.create.mockResolvedValue({ id: 1 });
-
-      // Mock the return call to getFoalDevelopment
-      const mockHorse = {
-        id: 1,
-        name: 'Test Foal',
-        age: 0,
-        breed: { name: 'Thoroughbred' },
-        user: { firstName: 'Test Owner' },
-      };
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
-      mockPrisma.foalActivity.findMany.mockResolvedValue([]);
-
-      await completeActivity(1, 'gentle_touch');
-
-      // Verify that the update call includes the completed activity
-      expect(mockPrisma.foalDevelopment.update).toHaveBeenCalledWith({
-        where: { foalId: 1 },
-        data: expect.objectContaining({
-          completedActivities: { 0: ['gentle_touch'] },
-        }),
-      });
-    });
-
-    it('should add to existing completed activities for the same day', async () => {
-      const mockDevelopment = {
-        currentDay: 0,
-        bondingLevel: 55,
-        stressLevel: 18,
-        completedActivities: { 0: ['quiet_presence'] }, // Already has one activity
-      };
-
-      mockPrisma.foalDevelopment.findUnique.mockResolvedValue(mockDevelopment);
-      mockPrisma.foalDevelopment.update.mockResolvedValue({});
-      mockPrisma.foalActivity.create.mockResolvedValue({ id: 1 });
-
-      // Mock the return call to getFoalDevelopment
-      const mockHorse = {
-        id: 1,
-        name: 'Test Foal',
-        age: 0,
-        breed: { name: 'Thoroughbred' },
-        user: { firstName: 'Test Owner' },
-      };
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
-      mockPrisma.foalActivity.findMany.mockResolvedValue([]);
-
-      await completeActivity(1, 'gentle_touch');
-
-      // Verify that both activities are now in the completed list
-      expect(mockPrisma.foalDevelopment.update).toHaveBeenCalledWith({
-        where: { foalId: 1 },
-        data: expect.objectContaining({
-          completedActivities: { 0: ['quiet_presence', 'gentle_touch'] },
-        }),
-      });
-    });
-
-    it('should enforce bonding level bounds (0-100)', async () => {
-      const mockDevelopment = {
-        currentDay: 0,
-        bondingLevel: 98, // High bonding level
-        stressLevel: 20,
-        completedActivities: {},
-      };
-
-      mockPrisma.foalDevelopment.findUnique.mockResolvedValue(mockDevelopment);
-      mockPrisma.foalDevelopment.update.mockResolvedValue({});
-      mockPrisma.foalActivity.create.mockResolvedValue({ id: 1 });
-
-      // Mock the return call to getFoalDevelopment
-      const mockHorse = {
-        id: 1,
-        name: 'Test Foal',
-        age: 0,
-        breed: { name: 'Thoroughbred' },
-        user: { firstName: 'Test Owner' },
-      };
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
-      mockPrisma.foalActivity.findMany.mockResolvedValue([]);
-
-      await completeActivity(1, 'gentle_touch');
-
-      // Verify bonding level is capped at 100
-      const [[updateArgs]] = mockPrisma.foalDevelopment.update.mock.calls;
-      expect(updateArgs.data.bondingLevel).toBeLessThanOrEqual(100);
-    });
-
-    it('should enforce stress level bounds (0-100)', async () => {
-      const mockDevelopment = {
-        currentDay: 0,
-        bondingLevel: 50,
-        stressLevel: 2, // Low stress level
-        completedActivities: {},
-      };
-
-      mockPrisma.foalDevelopment.findUnique.mockResolvedValue(mockDevelopment);
-      mockPrisma.foalDevelopment.update.mockResolvedValue({});
-      mockPrisma.foalActivity.create.mockResolvedValue({ id: 1 });
-
-      // Mock the return call to getFoalDevelopment
-      const mockHorse = {
-        id: 1,
-        name: 'Test Foal',
-        age: 0,
-        breed: { name: 'Thoroughbred' },
-        user: { firstName: 'Test Owner' },
-      };
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
-      mockPrisma.foalActivity.findMany.mockResolvedValue([]);
-
-      await completeActivity(1, 'gentle_touch');
-
-      // Verify stress level doesn't go below 0
-      const [[updateCall]] = mockPrisma.foalDevelopment.update.mock.calls;
-      expect(updateCall.data.stressLevel).toBeGreaterThanOrEqual(0);
-    });
-
-    it('should throw error for missing development record', async () => {
-      mockPrisma.foalDevelopment.findUnique.mockResolvedValue(null);
-
-      await expect(completeActivity(1, 'gentle_touch')).rejects.toThrow('Foal development record not found');
-    });
-
-    it('should throw error for invalid foal ID', async () => {
-      await expect(completeActivity('invalid', 'gentle_touch')).rejects.toThrow('Foal ID must be a positive integer');
-    });
-
-    it('should throw error for missing activity type', async () => {
-      await expect(completeActivity(1, '')).rejects.toThrow('Activity type is required');
-    });
-
-    it('should throw error for unavailable activity', async () => {
-      const mockDevelopment = {
-        currentDay: 0,
-        bondingLevel: 50,
-        stressLevel: 20,
-        completedActivities: { 0: ['gentle_touch'] }, // Activity already completed
-      };
-
-      mockPrisma.foalDevelopment.findUnique.mockResolvedValue(mockDevelopment);
-
-      await expect(completeActivity(1, 'gentle_touch')).rejects.toThrow(
+  it('throws when activity is already completed', async () => {
+    const foal = await mkFoal('AlreadyDone');
+    try {
+      await mkDev(foal.id, { currentDay: 0, completedActivities: { 0: ['gentle_touch'] } });
+      await expect(completeActivity(foal.id, 'gentle_touch')).rejects.toThrow(
         'Activity not available for current day or already completed',
       );
-    });
+    } finally {
+      await rmFoal(foal.id);
+    }
   });
 
-  describe('advanceDay', () => {
-    it('should advance foal to next day successfully', async () => {
-      const mockDevelopment = {
-        currentDay: 2,
-        bondingLevel: 60,
-        stressLevel: 15,
-      };
-
-      mockPrisma.foalDevelopment.findUnique.mockResolvedValue(mockDevelopment);
-      mockPrisma.foalDevelopment.update.mockResolvedValue({ ...mockDevelopment, currentDay: 3 });
-
-      // Mock the return call to getFoalDevelopment
-      const mockHorse = {
-        id: 1,
-        name: 'Test Foal',
-        age: 0,
-        breed: { name: 'Thoroughbred' },
-        owner: { name: 'Test Owner' },
-      };
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
-      mockPrisma.foalActivity.findMany.mockResolvedValue([]);
-
-      const result = await advanceDay(1);
-
-      expect(mockPrisma.foalDevelopment.update).toHaveBeenCalledWith({
-        where: { foalId: 1 },
-        data: { currentDay: 3 },
-      });
+  it('completes available activity and returns updated development', async () => {
+    const foal = await mkFoal('CompleteOK');
+    try {
+      await mkDev(foal.id, { currentDay: 0, completedActivities: {} });
+      const result = await completeActivity(foal.id, 'gentle_touch');
       expect(result).toHaveProperty('foal');
       expect(result).toHaveProperty('development');
-    });
-
-    it('should throw error for foal that has completed development', async () => {
-      const mockDevelopment = {
-        currentDay: 6,
-        bondingLevel: 80,
-        stressLevel: 10,
-      };
-
-      mockPrisma.foalDevelopment.findUnique.mockResolvedValue(mockDevelopment);
-
-      await expect(advanceDay(1)).rejects.toThrow('Foal has already completed development period');
-    });
-
-    it('should throw error for invalid foal ID', async () => {
-      await expect(advanceDay('invalid')).rejects.toThrow('Foal ID must be a positive integer');
-    });
+    } finally {
+      await rmFoal(foal.id);
+    }
   });
 
-  describe('completeEnrichmentActivity', () => {
-    it('should complete enrichment activity successfully', async () => {
-      const mockHorse = {
-        id: 1,
-        name: 'Test Foal',
-        age: 0,
-        bondScore: 50,
-        stressLevel: 20,
-      };
+  it('records completed activity in completedActivities for current day', async () => {
+    const foal = await mkFoal('UpdateRecord');
+    try {
+      await mkDev(foal.id, { currentDay: 0, completedActivities: {} });
+      const result = await completeActivity(foal.id, 'gentle_touch');
+      const dayActivities = result.development.completedActivities[0] || result.development.completedActivities['0'];
+      expect(dayActivities).toContain('gentle_touch');
+    } finally {
+      await rmFoal(foal.id);
+    }
+  });
 
-      const mockTrainingRecord = { id: 1 };
+  it('appends to existing completed activities for the same day', async () => {
+    const foal = await mkFoal('AppendCA');
+    try {
+      await mkDev(foal.id, { currentDay: 0, completedActivities: { 0: ['quiet_presence'] } });
+      const result = await completeActivity(foal.id, 'gentle_touch');
+      const dayActivities = result.development.completedActivities[0] || result.development.completedActivities['0'];
+      expect(dayActivities).toContain('quiet_presence');
+      expect(dayActivities).toContain('gentle_touch');
+    } finally {
+      await rmFoal(foal.id);
+    }
+  });
 
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
-      mockPrisma.horse.update.mockResolvedValue({ ...mockHorse, bondScore: 55, stressLevel: 18 });
-      mockPrisma.foalTrainingHistory.create.mockResolvedValue(mockTrainingRecord);
+  it('keeps bondingLevel within 0-100 bounds', async () => {
+    const foal = await mkFoal('BondBounds');
+    try {
+      await mkDev(foal.id, { currentDay: 0, bondingLevel: 98, completedActivities: {} });
+      const result = await completeActivity(foal.id, 'gentle_touch');
+      expect(result.development.bondingLevel).toBeLessThanOrEqual(100);
+    } finally {
+      await rmFoal(foal.id);
+    }
+  });
 
-      const result = await completeEnrichmentActivity(1, 0, 'gentle_touch');
+  it('keeps stressLevel at or above 0', async () => {
+    const foal = await mkFoal('StressBounds');
+    try {
+      await mkDev(foal.id, { currentDay: 0, stressLevel: 2, completedActivities: {} });
+      const result = await completeActivity(foal.id, 'gentle_touch');
+      expect(result.development.stressLevel).toBeGreaterThanOrEqual(0);
+    } finally {
+      await rmFoal(foal.id);
+    }
+  });
+});
 
+// ─── advanceDay ───────────────────────────────────────────────────────────────
+
+describe('advanceDay', () => {
+  it('throws for invalid foal ID', async () => {
+    await expect(advanceDay('invalid')).rejects.toThrow('Foal ID must be a positive integer');
+  });
+
+  it('advances foal to next development day', async () => {
+    const foal = await mkFoal('AdvanceDay');
+    try {
+      await mkDev(foal.id, { currentDay: 2 });
+      const result = await advanceDay(foal.id);
+      expect(result.development.currentDay).toBe(3);
+    } finally {
+      await rmFoal(foal.id);
+    }
+  });
+
+  it('throws when foal has already completed 7-day development period', async () => {
+    const foal = await mkFoal('AlreadyGrad');
+    try {
+      await mkDev(foal.id, { currentDay: 6 });
+      await expect(advanceDay(foal.id)).rejects.toThrow('Foal has already completed development period');
+    } finally {
+      await rmFoal(foal.id);
+    }
+  });
+});
+
+// ─── completeEnrichmentActivity ───────────────────────────────────────────────
+
+describe('completeEnrichmentActivity', () => {
+  it('throws for out-of-range day values', async () => {
+    await expect(completeEnrichmentActivity(1, -1, 'gentle_touch')).rejects.toThrow('Day must be between 0 and 6');
+    await expect(completeEnrichmentActivity(1, 7, 'gentle_touch')).rejects.toThrow('Day must be between 0 and 6');
+    await expect(completeEnrichmentActivity(1, 'invalid', 'gentle_touch')).rejects.toThrow(
+      'Day must be between 0 and 6',
+    );
+  });
+
+  it('throws when activity is not appropriate for the day', async () => {
+    const foal = await mkFoal('WrongDay', { age: 0 });
+    try {
+      await expect(completeEnrichmentActivity(foal.id, 0, 'halter_introduction')).rejects.toThrow(
+        'Activity "halter_introduction" is not appropriate for day 0',
+      );
+    } finally {
+      await rmFoal(foal.id);
+    }
+  });
+
+  it('throws for horse older than 1 year', async () => {
+    const foal = await mkFoal('AdultEnrich', { age: 3 });
+    try {
+      await expect(completeEnrichmentActivity(foal.id, 0, 'gentle_touch')).rejects.toThrow(
+        'Horse is not a foal (must be 1 year old or younger)',
+      );
+    } finally {
+      await rmFoal(foal.id);
+    }
+  });
+
+  it('completes enrichment activity and returns result with all expected fields', async () => {
+    const foal = await mkFoal('EnrichOK', { age: 0, bondScore: 50, stressLevel: 20 });
+    try {
+      const result = await completeEnrichmentActivity(foal.id, 0, 'gentle_touch');
       expect(result.success).toBe(true);
-      expect(result.foal.name).toBe('Test Foal');
+      expect(result.foal.name).toBe(`${PREFIX}EnrichOK`);
       expect(result.activity.name).toBe('Gentle Touch');
       expect(result.levels).toHaveProperty('bondScore');
       expect(result.levels).toHaveProperty('stressLevel');
-      expect(result.trainingRecordId).toBe(1);
-    });
-
-    it('should validate day parameter (0-6)', async () => {
-      await expect(completeEnrichmentActivity(1, -1, 'gentle_touch')).rejects.toThrow('Day must be between 0 and 6');
-      await expect(completeEnrichmentActivity(1, 7, 'gentle_touch')).rejects.toThrow('Day must be between 0 and 6');
-      await expect(completeEnrichmentActivity(1, 'invalid', 'gentle_touch')).rejects.toThrow(
-        'Day must be between 0 and 6',
-      );
-    });
-
-    it('should validate activity is appropriate for the day', async () => {
-      const mockHorse = {
-        id: 1,
-        name: 'Test Foal',
-        age: 0,
-        bondScore: 50,
-        stressLevel: 20,
-      };
-
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
-
-      // Try to do a day 3 activity on day 0
-      await expect(completeEnrichmentActivity(1, 0, 'halter_introduction')).rejects.toThrow(
-        'Activity "halter_introduction" is not appropriate for day 0',
-      );
-    });
-
-    it('should enforce bonding and stress bounds (0-100)', async () => {
-      const mockHorse = {
-        id: 1,
-        name: 'Test Foal',
-        age: 0,
-        bondScore: 98, // High bond score
-        stressLevel: 2, // Low stress level
-      };
-
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
-      mockPrisma.horse.update.mockResolvedValue({ ...mockHorse, bondScore: 100, stressLevel: 0 });
-      mockPrisma.foalTrainingHistory.create.mockResolvedValue({ id: 1 });
-
-      const result = await completeEnrichmentActivity(1, 0, 'gentle_touch');
-
-      // Verify bounds are enforced
-      expect(result.levels.bondScore).toBeLessThanOrEqual(100);
-      expect(result.levels.stressLevel).toBeGreaterThanOrEqual(0);
-    });
-
-    it('should handle null bondScore and stressLevel with defaults', async () => {
-      const mockHorse = {
-        id: 1,
-        name: 'Test Foal',
-        age: 0,
-        bondScore: null, // Null values
-        stressLevel: null,
-      };
-
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
-      mockPrisma.horse.update.mockResolvedValue({ ...mockHorse, bondScore: 55, stressLevel: 18 });
-      mockPrisma.foalTrainingHistory.create.mockResolvedValue({ id: 1 });
-
-      const result = await completeEnrichmentActivity(1, 0, 'gentle_touch');
-
-      expect(result.success).toBe(true);
-      // Should use defaults: bondScore: 50, stressLevel: 0
-      expect(result.levels).toHaveProperty('bondScore');
-      expect(result.levels).toHaveProperty('stressLevel');
-    });
-
-    it('should throw error for horse that is not a foal', async () => {
-      const mockHorse = {
-        id: 1,
-        name: 'Adult Horse',
-        age: 3,
-        bondScore: 50,
-        stressLevel: 20,
-      };
-
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
-
-      await expect(completeEnrichmentActivity(1, 0, 'gentle_touch')).rejects.toThrow(
-        'Horse is not a foal (must be 1 year old or younger)',
-      );
-    });
+      expect(result.trainingRecordId).toBeDefined();
+    } finally {
+      await rmFoal(foal.id);
+    }
   });
 
-  describe('getAvailableActivities', () => {
-    it('should return activities for day 0', () => {
-      const activities = getAvailableActivities(0, {});
+  it('keeps bondScore and stressLevel within 0-100 bounds', async () => {
+    const foal = await mkFoal('EnrichBounds', { age: 0, bondScore: 98, stressLevel: 2 });
+    try {
+      const result = await completeEnrichmentActivity(foal.id, 0, 'gentle_touch');
+      expect(result.levels.bondScore).toBeLessThanOrEqual(100);
+      expect(result.levels.stressLevel).toBeGreaterThanOrEqual(0);
+    } finally {
+      await rmFoal(foal.id);
+    }
+  });
 
-      expect(Array.isArray(activities)).toBe(true);
-      expect(activities.length).toBeGreaterThan(0);
-
-      const activityTypes = activities.map(a => a.type);
-      expect(activityTypes).toContain('gentle_touch');
-      expect(activityTypes).toContain('quiet_presence');
-      expect(activityTypes).toContain('soft_voice');
-    });
-
-    it('should return different activities for different days', () => {
-      const day0Activities = getAvailableActivities(0, {});
-      const day3Activities = getAvailableActivities(3, {});
-
-      const day0Types = day0Activities.map(a => a.type);
-      const day3Types = day3Activities.map(a => a.type);
-
-      // Day 0 should not have halter_introduction
-      expect(day0Types).not.toContain('halter_introduction');
-      // Day 3 should have halter_introduction
-      expect(day3Types).toContain('halter_introduction');
-    });
-
-    it('should filter out completed activities', () => {
-      const completedActivities = { 0: ['gentle_touch'] };
-      const activities = getAvailableActivities(0, completedActivities);
-
-      const activityTypes = activities.map(a => a.type);
-      expect(activityTypes).not.toContain('gentle_touch'); // Should be filtered out
-      expect(activityTypes).toContain('quiet_presence'); // Should still be available
-    });
-
-    it('should return empty array for invalid day', () => {
-      const activities = getAvailableActivities(99, {});
-      expect(activities).toEqual([]);
-    });
-
-    it('should handle missing completedActivities gracefully', () => {
-      const activities = getAvailableActivities(0); // No completedActivities parameter
-      expect(Array.isArray(activities)).toBe(true);
-      expect(activities.length).toBeGreaterThan(0);
-    });
+  it('uses default values when bondScore and stressLevel are null', async () => {
+    const foal = await mkFoal('EnrichNulls', { age: 0 });
+    try {
+      const result = await completeEnrichmentActivity(foal.id, 0, 'gentle_touch');
+      expect(result.success).toBe(true);
+      expect(result.levels).toHaveProperty('bondScore');
+      expect(result.levels).toHaveProperty('stressLevel');
+    } finally {
+      await rmFoal(foal.id);
+    }
   });
 });

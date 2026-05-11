@@ -1,408 +1,441 @@
 /**
  * Flag Evaluation Engine Tests
  *
- * Tests the real flag evaluation logic end-to-end with real carePatternAnalysis.
- * carePatternAnalysis is NOT mocked — it runs its real pattern analysis code.
+ * Tests the real flag evaluation engine and carePatternAnalysis end-to-end
+ * against the real DB. No mocks of any kind.
  *
- * Permitted mocks:
- * - db/index.mjs (prisma client — infrastructure boundary)
- * - logger (permitted infrastructure)
+ * Fixtures:
+ *   - One shared Groom (TestFixture-FlagEngine-Groom)
+ *   - One User (test-user-flag-engine)
+ *   - Horses created per-test (TestFixture-FlagEngine-*)
+ *   - GroomInteractions created per-test with explicit createdAt values
  *
- * Both flagEvaluationEngine and carePatternAnalysis import from ../db/index.mjs,
- * so mocking that single module covers both. Each evaluateHorseFlags call results
- * in TWO horse.findUnique calls:
- *   1. Engine call (select fields only, no groomInteractions)
- *   2. carePatternAnalysis call (include groomInteractions)
+ * Cleanup: horse.delete cascades to groomInteractions (foalId FK).
+ * Groom is deleted in afterAll. GroomInteractions are gone before groom cleanup.
  *
- * Design note on interaction data:
- * - brave triggers when: noveltyWithSupport >= 3 AND bondScore >= 30 AND calmGroomPresent
- * - confident triggers when: consecutiveDays >= 7 AND bondScore >= 40 AND positiveInteractions >= 10 AND bondScore >= 40
- * - fearful triggers when: fearEvents >= 2 AND bondScore <= 20 AND noveltyWithSupport === 0
- * - insecure triggers when: (daysWithoutCare >= 4 AND bondScore <= 25) OR poorQualityInteractions >= 3
+ * Flag trigger conditions (derived from carePatternAnalysis + flagEvaluationEngine):
+ *   brave     — noveltyWithSupport >= 3  AND bondScore >= 30  AND calmGroomPresent
+ *   confident — consecutiveDays >= 7    AND bondScore >= 40
+ *               AND positiveInteractions >= 10 AND bondScore >= 40
+ *   fearful   — fearEvents >= 2         AND bondScore <= 20  AND noveltyWithSupport === 0
+ *   insecure  — (daysWithoutCare >= 4 AND bondScore <= 25) OR poorQualityInteractions >= 3
  */
 
-import { describe, test, expect, jest, beforeEach } from '@jest/globals';
+import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
+import prisma from '../../db/index.mjs';
+import { evaluateHorseFlags, batchEvaluateFlags, getEligibleHorses } from '../../utils/flagEvaluationEngine.mjs';
 
-const mockPrisma = {
-  horse: {
-    findUnique: jest.fn(),
-    findMany: jest.fn(),
-    update: jest.fn(),
-  },
-};
+const PREFIX = 'TestFixture-FlagEngine-';
+const USER_ID = 'test-user-flag-engine';
 
-const mockLogger = {
-  info: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn(),
-  debug: jest.fn(),
-};
+let groomId;
 
-await jest.unstable_mockModule('../../db/index.mjs', () => ({
-  default: mockPrisma,
-}));
-await jest.unstable_mockModule('../../utils/logger.mjs', () => ({
-  default: mockLogger,
-}));
-
-// carePatternAnalysis is NOT mocked — real analysis runs against mockPrisma
-
-const { evaluateHorseFlags, batchEvaluateFlags, getEligibleHorses } = await import(
-  '../../utils/flagEvaluationEngine.mjs'
-);
-
-// ─── date helpers ────────────────────────────────────────────────────────────
+// ─── date helpers ─────────────────────────────────────────────────────────────
 
 const daysAgo = n => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
 const yearsAgo = n => new Date(Date.now() - n * 365.25 * 24 * 60 * 60 * 1000);
 const monthsAgo = n => new Date(Date.now() - n * 30 * 24 * 60 * 60 * 1000);
 
-// ─── interaction factories ────────────────────────────────────────────────────
+// ─── fixtures ─────────────────────────────────────────────────────────────────
 
-/**
- * Desensitization interaction: counts toward noveltyExposure.
- * With bondingChange >= 0 and quality 'good'/'excellent', counts as noveltyWithSupport.
- */
-const desensitization = (daysAgoN, opts = {}) => ({
-  interactionType: 'desensitization',
-  bondingChange: opts.bondingChange ?? 3,
-  quality: opts.quality ?? 'good',
-  stressChange: opts.stressChange ?? 0,
-  notes: opts.notes ?? null,
-  createdAt: daysAgo(daysAgoN),
-});
+async function mkHorse(suffix, opts = {}) {
+  return prisma.horse.create({
+    data: {
+      name: `${PREFIX}${suffix}`,
+      sex: 'Colt',
+      dateOfBirth: opts.dateOfBirth ?? monthsAgo(12),
+      age: opts.age ?? 1,
+      userId: USER_ID,
+      bondScore: opts.bondScore ?? 50,
+      stressLevel: opts.stressLevel ?? 20,
+      epigeneticFlags: opts.epigeneticFlags ?? [],
+    },
+  });
+}
 
-/**
- * Daily care interaction: counts toward consistentCare (groomingInteractions).
- */
-const dailyCare = (daysAgoN, opts = {}) => ({
-  interactionType: 'daily_care',
-  bondingChange: opts.bondingChange ?? 3,
-  quality: opts.quality ?? 'good',
-  stressChange: opts.stressChange ?? 0,
-  notes: opts.notes ?? null,
-  createdAt: daysAgo(daysAgoN),
-});
+async function rmHorse(id) {
+  await prisma.horse.delete({ where: { id } }).catch(() => {});
+}
 
-// ─── mock horse builders ──────────────────────────────────────────────────────
-
-/**
- * Horse record for the engine's select query (no groomInteractions).
- */
-const engineHorse = (overrides = {}) => ({
-  id: 1,
-  name: 'Test Horse',
-  dateOfBirth: yearsAgo(1),
-  epigeneticFlags: [],
-  bondScore: 50,
-  stressLevel: 20,
-  ...overrides,
-});
-
-/**
- * Horse record for carePatternAnalysis's include query (with groomInteractions).
- */
-const careHorse = (dateOfBirth, bondScore, stressLevel, groomInteractions) => ({
-  id: 1,
-  name: 'Test Horse',
-  dateOfBirth,
-  bondScore,
-  stressLevel,
-  groomInteractions,
-});
+async function mkInteraction(foalId, opts = {}) {
+  return prisma.groomInteraction.create({
+    data: {
+      foalId,
+      groomId,
+      interactionType: opts.interactionType ?? 'daily_care',
+      duration: 30,
+      bondingChange: opts.bondingChange ?? 3,
+      stressChange: opts.stressChange ?? 0,
+      quality: opts.quality ?? 'good',
+      notes: opts.notes ?? null,
+      createdAt: opts.createdAt ?? new Date(),
+    },
+  });
+}
 
 // ─── interaction sets ─────────────────────────────────────────────────────────
 
-/**
- * 10 interactions across 7 days: 3 desensitization + 7 daily_care.
- * All positive quality. Triggers: brave + confident (+ affectionate).
- * bondScore must be >= 40 (use 60).
- */
-const braveAndConfidentInteractions = [
-  desensitization(6),
-  desensitization(5),
-  desensitization(4),
-  dailyCare(6),
-  dailyCare(5),
-  dailyCare(4),
-  dailyCare(3),
-  dailyCare(2),
-  dailyCare(1),
-  dailyCare(0),
-];
+async function addBraveAndConfidentInteractions(foalId) {
+  // 3 desensitization + 7 daily_care across 7 days → triggers brave + confident + affectionate
+  await mkInteraction(foalId, {
+    interactionType: 'desensitization',
+    bondingChange: 3,
+    quality: 'good',
+    createdAt: daysAgo(6),
+  });
+  await mkInteraction(foalId, {
+    interactionType: 'desensitization',
+    bondingChange: 3,
+    quality: 'good',
+    createdAt: daysAgo(5),
+  });
+  await mkInteraction(foalId, {
+    interactionType: 'desensitization',
+    bondingChange: 3,
+    quality: 'good',
+    createdAt: daysAgo(4),
+  });
+  await mkInteraction(foalId, {
+    interactionType: 'daily_care',
+    bondingChange: 3,
+    quality: 'good',
+    createdAt: daysAgo(6),
+  });
+  await mkInteraction(foalId, {
+    interactionType: 'daily_care',
+    bondingChange: 3,
+    quality: 'good',
+    createdAt: daysAgo(5),
+  });
+  await mkInteraction(foalId, {
+    interactionType: 'daily_care',
+    bondingChange: 3,
+    quality: 'good',
+    createdAt: daysAgo(4),
+  });
+  await mkInteraction(foalId, {
+    interactionType: 'daily_care',
+    bondingChange: 3,
+    quality: 'good',
+    createdAt: daysAgo(3),
+  });
+  await mkInteraction(foalId, {
+    interactionType: 'daily_care',
+    bondingChange: 3,
+    quality: 'good',
+    createdAt: daysAgo(2),
+  });
+  await mkInteraction(foalId, {
+    interactionType: 'daily_care',
+    bondingChange: 3,
+    quality: 'good',
+    createdAt: daysAgo(1),
+  });
+  await mkInteraction(foalId, {
+    interactionType: 'daily_care',
+    bondingChange: 3,
+    quality: 'good',
+    createdAt: daysAgo(0),
+  });
+}
 
-/**
- * 3 desensitization interactions across 3 days.
- * Triggers: brave only (not confident — only 3 days, 3 positiveInteractions).
- * bondScore must be >= 30 (use 35).
- */
-const braveOnlyInteractions = [desensitization(2), desensitization(1), desensitization(0)];
+async function addBraveOnlyInteractions(foalId) {
+  // 3 desensitization across 3 days — brave only (not enough for confident)
+  await mkInteraction(foalId, {
+    interactionType: 'desensitization',
+    bondingChange: 3,
+    quality: 'good',
+    createdAt: daysAgo(2),
+  });
+  await mkInteraction(foalId, {
+    interactionType: 'desensitization',
+    bondingChange: 3,
+    quality: 'good',
+    createdAt: daysAgo(1),
+  });
+  await mkInteraction(foalId, {
+    interactionType: 'desensitization',
+    bondingChange: 3,
+    quality: 'good',
+    createdAt: daysAgo(0),
+  });
+}
 
-/**
- * 3 daily_care interactions with strong negative bondingChange.
- * bondingChange=-5 counts as fearEvent (< -3).
- * quality='good' prevents poorQualityInteractions from accumulating.
- * interactions.length=3 prevents meetsAloofThreshold (requires < 3).
- * Triggers: fearful only.
- * bondScore must be <= 20 (use 15).
- */
-const fearfulOnlyInteractions = [
-  dailyCare(2, { bondingChange: -5, quality: 'good' }),
-  dailyCare(1, { bondingChange: -5, quality: 'good' }),
-  dailyCare(0, { bondingChange: -5, quality: 'good' }),
-];
+async function addFearfulInteractions(foalId) {
+  // 3 interactions with bondingChange < -3, quality 'good' — triggers fearful
+  await mkInteraction(foalId, {
+    interactionType: 'daily_care',
+    bondingChange: -5,
+    quality: 'good',
+    stressChange: 0,
+    createdAt: daysAgo(2),
+  });
+  await mkInteraction(foalId, {
+    interactionType: 'daily_care',
+    bondingChange: -5,
+    quality: 'good',
+    stressChange: 0,
+    createdAt: daysAgo(1),
+  });
+  await mkInteraction(foalId, {
+    interactionType: 'daily_care',
+    bondingChange: -5,
+    quality: 'good',
+    stressChange: 0,
+    createdAt: daysAgo(0),
+  });
+}
 
-/**
- * 3 poor-quality interactions.
- * Triggers: insecure via poorQualityInteractions >= 3.
- * bondingChange=-1 (not < -3 → no fearEvents).
- * interactions.length=3 prevents meetsAloofThreshold.
- */
-const insecureOnlyInteractions = [
-  dailyCare(2, { bondingChange: -1, quality: 'poor' }),
-  dailyCare(1, { bondingChange: -1, quality: 'poor' }),
-  dailyCare(0, { bondingChange: -1, quality: 'poor' }),
-];
+async function addInsecureInteractions(foalId) {
+  // 3 poor-quality interactions — triggers insecure via poorQualityInteractions >= 3
+  await mkInteraction(foalId, {
+    interactionType: 'daily_care',
+    bondingChange: -1,
+    quality: 'poor',
+    createdAt: daysAgo(2),
+  });
+  await mkInteraction(foalId, {
+    interactionType: 'daily_care',
+    bondingChange: -1,
+    quality: 'poor',
+    createdAt: daysAgo(1),
+  });
+  await mkInteraction(foalId, {
+    interactionType: 'daily_care',
+    bondingChange: -1,
+    quality: 'poor',
+    createdAt: daysAgo(0),
+  });
+}
 
-// ─── tests ────────────────────────────────────────────────────────────────────
+// ─── setup / teardown ─────────────────────────────────────────────────────────
 
-describe('Flag Evaluation Engine', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    // Default: update resolves without issues
-    mockPrisma.horse.update.mockResolvedValue({ id: 1 });
+beforeAll(async () => {
+  await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
+  await prisma.groom.deleteMany({ where: { name: { startsWith: PREFIX } } });
+  await prisma.user.deleteMany({ where: { id: USER_ID } });
+
+  await prisma.user.create({
+    data: {
+      id: USER_ID,
+      username: 'flagEngineUser',
+      email: 'flagengine@example.com',
+      password: 'TestPassword123!',
+      firstName: 'Flag',
+      lastName: 'Engine',
+      money: 5000,
+    },
   });
 
-  describe('evaluateHorseFlags', () => {
-    test('should evaluate and assign flags for eligible horse', async () => {
-      const dob = monthsAgo(5);
-      const horse = engineHorse({ dateOfBirth: dob, bondScore: 60 });
+  const groom = await prisma.groom.create({
+    data: {
+      name: `${PREFIX}Groom`,
+      speciality: 'foalCare',
+      personality: 'calm',
+    },
+  });
+  groomId = groom.id;
+});
 
-      mockPrisma.horse.findUnique
-        .mockResolvedValueOnce(horse)
-        .mockResolvedValueOnce(careHorse(dob, 60, 20, braveAndConfidentInteractions));
+afterAll(async () => {
+  await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
+  await prisma.groom.deleteMany({ where: { name: { startsWith: PREFIX } } });
+  await prisma.user.deleteMany({ where: { id: USER_ID } });
+});
 
-      const result = await evaluateHorseFlags(1);
+// ─── evaluateHorseFlags ───────────────────────────────────────────────────────
+
+describe('evaluateHorseFlags', () => {
+  test('assigns brave and confident flags to eligible horse with qualifying care patterns', async () => {
+    const horse = await mkHorse('BraveConfident', { bondScore: 60 });
+    try {
+      await addBraveAndConfidentInteractions(horse.id);
+
+      const result = await evaluateHorseFlags(horse.id);
 
       expect(result.success).toBe(true);
-      expect(result.horseId).toBe(1);
-      expect(result.horseName).toBe('Test Horse');
+      expect(result.horseId).toBe(horse.id);
+      expect(result.horseName).toBe(horse.name);
       expect(result.newFlags).toContain('brave');
       expect(result.newFlags).toContain('confident');
       expect(result.newFlags.length).toBeGreaterThan(0);
-      expect(mockPrisma.horse.update).toHaveBeenCalledWith({
-        where: { id: 1 },
-        data: {
-          epigeneticFlags: expect.arrayContaining(['brave', 'confident']),
-        },
+
+      // Verify the DB was actually updated
+      const updated = await prisma.horse.findUnique({
+        where: { id: horse.id },
+        select: { epigeneticFlags: true },
       });
-    });
+      expect(updated.epigeneticFlags).toEqual(expect.arrayContaining(['brave', 'confident']));
+    } finally {
+      await rmHorse(horse.id);
+    }
+  });
 
-    test('should reject horse outside age range', async () => {
-      const oldHorse = engineHorse({ dateOfBirth: yearsAgo(4) });
-      mockPrisma.horse.findUnique.mockResolvedValueOnce(oldHorse);
-
-      const result = await evaluateHorseFlags(1);
+  test('rejects horse outside the 0-3 year evaluation age range', async () => {
+    const horse = await mkHorse('TooOld', { dateOfBirth: yearsAgo(4), age: 4 });
+    try {
+      const result = await evaluateHorseFlags(horse.id);
 
       expect(result.success).toBe(false);
       expect(result.reason).toContain('outside evaluation range');
       expect(result.newFlags).toHaveLength(0);
-      expect(mockPrisma.horse.update).not.toHaveBeenCalled();
+    } finally {
+      await rmHorse(horse.id);
+    }
+  });
+
+  test('rejects horse that already has the maximum number of flags (5)', async () => {
+    const horse = await mkHorse('MaxFlags', {
+      epigeneticFlags: ['brave', 'confident', 'affectionate', 'resilient', 'fearful'],
     });
-
-    test('should reject horse with maximum flags', async () => {
-      const horseAtMax = engineHorse({
-        epigeneticFlags: ['brave', 'confident', 'affectionate', 'resilient', 'fearful'],
-      });
-      mockPrisma.horse.findUnique.mockResolvedValueOnce(horseAtMax);
-
-      const result = await evaluateHorseFlags(1);
+    try {
+      const result = await evaluateHorseFlags(horse.id);
 
       expect(result.success).toBe(false);
       expect(result.reason).toContain('maximum number of flags');
       expect(result.currentFlags).toHaveLength(5);
       expect(result.newFlags).toHaveLength(0);
-      expect(mockPrisma.horse.update).not.toHaveBeenCalled();
-    });
+    } finally {
+      await rmHorse(horse.id);
+    }
+  });
 
-    test('should not assign duplicate flags', async () => {
-      // Horse already has brave + confident; use empty interactions so no new flags trigger
-      const dob = yearsAgo(1);
-      const horse = engineHorse({ dateOfBirth: dob, epigeneticFlags: ['brave', 'confident'], bondScore: 50 });
-
-      mockPrisma.horse.findUnique.mockResolvedValueOnce(horse).mockResolvedValueOnce(careHorse(dob, 50, 20, []));
-
-      const result = await evaluateHorseFlags(1);
+  test('does not assign duplicate flags already present on the horse', async () => {
+    const horse = await mkHorse('NoDupes', { epigeneticFlags: ['brave', 'confident'], bondScore: 50 });
+    try {
+      // No interactions → no new flags should trigger
+      const result = await evaluateHorseFlags(horse.id);
 
       expect(result.success).toBe(true);
       expect(result.currentFlags).toContain('brave');
       expect(result.currentFlags).toContain('confident');
       expect(result.newFlags).not.toContain('brave');
       expect(result.newFlags).not.toContain('confident');
+    } finally {
+      await rmHorse(horse.id);
+    }
+  });
+
+  test('respects the 5-flag cap: assigns only 1 flag to a horse at 4 existing flags', async () => {
+    const horse = await mkHorse('FlagLimit', {
+      epigeneticFlags: ['brave', 'confident', 'affectionate', 'resilient'],
+      bondScore: 15,
     });
+    try {
+      await addInsecureInteractions(horse.id);
 
-    test('should respect flag limit during assignment', async () => {
-      // Horse at 4 flags; insecure triggers via poorQualityInteractions >= 3, reaching limit of 5
-      const dob = yearsAgo(1);
-      const horse = engineHorse({
-        dateOfBirth: dob,
-        epigeneticFlags: ['brave', 'confident', 'affectionate', 'resilient'],
-        bondScore: 15,
-      });
-
-      mockPrisma.horse.findUnique
-        .mockResolvedValueOnce(horse)
-        .mockResolvedValueOnce(careHorse(dob, 15, 20, insecureOnlyInteractions));
-
-      const result = await evaluateHorseFlags(1);
+      const result = await evaluateHorseFlags(horse.id);
 
       expect(result.success).toBe(true);
       expect(result.totalFlags).toBe(5);
       expect(result.newFlags).toHaveLength(1);
-    });
+    } finally {
+      await rmHorse(horse.id);
+    }
+  });
 
-    test('should return success with no flags when horse has no care interactions', async () => {
-      // Real carePatternAnalysis runs with empty groomInteractions — no thresholds met
-      const dob = yearsAgo(1);
-      const horse = engineHorse({ dateOfBirth: dob, bondScore: 50 });
-
-      mockPrisma.horse.findUnique.mockResolvedValueOnce(horse).mockResolvedValueOnce(careHorse(dob, 50, 20, []));
-
-      const result = await evaluateHorseFlags(1);
+  test('returns success with no new flags when horse has no care interactions', async () => {
+    const horse = await mkHorse('NoInteractions', { bondScore: 50 });
+    try {
+      const result = await evaluateHorseFlags(horse.id);
 
       expect(result.success).toBe(true);
       expect(result.newFlags).toHaveLength(0);
-      expect(mockPrisma.horse.update).not.toHaveBeenCalled();
-    });
-
-    test('should handle non-existent horse', async () => {
-      mockPrisma.horse.findUnique.mockResolvedValue(null);
-
-      await expect(evaluateHorseFlags(999)).rejects.toThrow('Horse with ID 999 not found');
-    });
-
-    test('should handle database errors', async () => {
-      mockPrisma.horse.findUnique.mockRejectedValue(new Error('Database error'));
-
-      await expect(evaluateHorseFlags(1)).rejects.toThrow('Database error');
-    });
+    } finally {
+      await rmHorse(horse.id);
+    }
   });
 
-  describe('Flag Trigger Evaluation', () => {
-    test('should trigger brave flag with correct conditions', async () => {
-      // 3 supported novelty interactions + bondScore >= 30
-      const dob = yearsAgo(1);
-      const horse = engineHorse({ name: 'Brave Horse', dateOfBirth: dob, bondScore: 35, stressLevel: 15 });
+  test('throws when horse ID does not exist', async () => {
+    await expect(evaluateHorseFlags(999999999)).rejects.toThrow('Horse with ID 999999999 not found');
+  });
+});
 
-      mockPrisma.horse.findUnique
-        .mockResolvedValueOnce(horse)
-        .mockResolvedValueOnce(careHorse(dob, 35, 15, braveOnlyInteractions));
+// ─── flag trigger conditions ──────────────────────────────────────────────────
 
-      const result = await evaluateHorseFlags(1);
+describe('flag trigger conditions', () => {
+  test('triggers brave flag: 3 supported novelty interactions and bondScore >= 30', async () => {
+    const horse = await mkHorse('BraveOnly', { bondScore: 35 });
+    try {
+      await addBraveOnlyInteractions(horse.id);
+
+      const result = await evaluateHorseFlags(horse.id);
 
       expect(result.success).toBe(true);
       expect(result.newFlags).toContain('brave');
-    });
+    } finally {
+      await rmHorse(horse.id);
+    }
+  });
 
-    test('should trigger fearful flag with correct conditions', async () => {
-      // 3 negative interactions (bondingChange < -3) + low bondScore
-      const dob = yearsAgo(1);
-      const horse = engineHorse({ name: 'Fearful Horse', dateOfBirth: dob, bondScore: 15, stressLevel: 60 });
+  test('triggers fearful flag: 3 fear events, bondScore <= 20, no novelty support', async () => {
+    const horse = await mkHorse('FearfulFlag', { bondScore: 15, stressLevel: 60 });
+    try {
+      await addFearfulInteractions(horse.id);
 
-      mockPrisma.horse.findUnique
-        .mockResolvedValueOnce(horse)
-        .mockResolvedValueOnce(careHorse(dob, 15, 60, fearfulOnlyInteractions));
-
-      const result = await evaluateHorseFlags(1);
+      const result = await evaluateHorseFlags(horse.id);
 
       expect(result.success).toBe(true);
       expect(result.newFlags).toContain('fearful');
-    });
+    } finally {
+      await rmHorse(horse.id);
+    }
   });
+});
 
-  describe('batchEvaluateFlags', () => {
-    test('should evaluate multiple horses', async () => {
-      const dob = yearsAgo(1);
-      const emptyHorse = (id, name) => ({
-        id,
-        name,
-        dateOfBirth: dob,
-        epigeneticFlags: [],
-        bondScore: 50,
-        stressLevel: 20,
-      });
-      const emptyCare = careHorse(dob, 50, 20, []);
+// ─── batchEvaluateFlags ───────────────────────────────────────────────────────
 
-      mockPrisma.horse.findUnique
-        .mockResolvedValueOnce(emptyHorse(1, 'Horse 1'))
-        .mockResolvedValueOnce(emptyCare)
-        .mockResolvedValueOnce(emptyHorse(2, 'Horse 2'))
-        .mockResolvedValueOnce(emptyCare)
-        .mockResolvedValueOnce(emptyHorse(3, 'Horse 3'))
-        .mockResolvedValueOnce(emptyCare);
-
-      const results = await batchEvaluateFlags([1, 2, 3]);
+describe('batchEvaluateFlags', () => {
+  test('evaluates multiple horses and returns one result per horse', async () => {
+    const h1 = await mkHorse('Batch1');
+    const h2 = await mkHorse('Batch2');
+    const h3 = await mkHorse('Batch3');
+    try {
+      const results = await batchEvaluateFlags([h1.id, h2.id, h3.id]);
 
       expect(results).toHaveLength(3);
-      expect(results.every(r => r.success)).toBe(true);
-    });
+      expect(results.every(r => r.success === true)).toBe(true);
+    } finally {
+      await rmHorse(h1.id);
+      await rmHorse(h2.id);
+      await rmHorse(h3.id);
+    }
+  });
 
-    test('should handle mixed success/failure in batch', async () => {
-      const dob = yearsAgo(1);
-
-      mockPrisma.horse.findUnique
-        .mockResolvedValueOnce({
-          id: 1,
-          name: 'Horse 1',
-          dateOfBirth: dob,
-          epigeneticFlags: [],
-          bondScore: 50,
-          stressLevel: 20,
-        })
-        .mockResolvedValueOnce(careHorse(dob, 50, 20, []))
-        .mockResolvedValueOnce(null); // Horse 2 not found
-
-      const results = await batchEvaluateFlags([1, 2]);
+  test('handles mixed success/failure: existing horse succeeds, non-existent horse fails', async () => {
+    const horse = await mkHorse('BatchMixed');
+    try {
+      const results = await batchEvaluateFlags([horse.id, 999999999]);
 
       expect(results).toHaveLength(2);
       expect(results[0].success).toBe(true);
       expect(results[1].success).toBe(false);
-      expect(results[1].error).toContain('Horse with ID 2 not found');
-    });
+      expect(results[1].error).toContain('Horse with ID 999999999 not found');
+    } finally {
+      await rmHorse(horse.id);
+    }
   });
+});
 
-  describe('getEligibleHorses', () => {
-    test('should return eligible horses within age range', async () => {
-      const eligibleHorses = [
-        { id: 1, name: 'Young Horse 1', dateOfBirth: yearsAgo(1), epigeneticFlags: [] },
-        { id: 2, name: 'Young Horse 2', dateOfBirth: monthsAgo(18), epigeneticFlags: ['brave'] },
-      ];
+// ─── getEligibleHorses ────────────────────────────────────────────────────────
 
-      mockPrisma.horse.findMany.mockResolvedValue(eligibleHorses);
-
-      const result = await getEligibleHorses();
-
-      expect(result).toEqual([1, 2]);
-      expect(mockPrisma.horse.findMany).toHaveBeenCalledWith({
-        where: {
-          dateOfBirth: {
-            gte: expect.any(Date),
-            lte: expect.any(Date),
-          },
-        },
-        select: {
-          id: true,
-          name: true,
-          dateOfBirth: true,
-          epigeneticFlags: true,
-        },
-      });
+describe('getEligibleHorses', () => {
+  test('includes horses in the 0-3 year age range with fewer than 5 flags', async () => {
+    const eligible = await mkHorse('Eligible', { bondScore: 50, epigeneticFlags: [] });
+    const tooOld = await mkHorse('EligOld', { dateOfBirth: yearsAgo(4), age: 4, epigeneticFlags: [] });
+    const atMax = await mkHorse('EligMax', {
+      epigeneticFlags: ['brave', 'confident', 'affectionate', 'resilient', 'fearful'],
     });
+    try {
+      const ids = await getEligibleHorses();
 
-    test('should handle database errors in getEligibleHorses', async () => {
-      mockPrisma.horse.findMany.mockRejectedValue(new Error('Database error'));
-
-      await expect(getEligibleHorses()).rejects.toThrow('Database error');
-    });
+      expect(ids).toContain(eligible.id); // 1-year-old, 0 flags → eligible
+      expect(ids).not.toContain(tooOld.id); // 4-year-old → outside age range
+      expect(ids).not.toContain(atMax.id); // 5 flags → filtered out
+    } finally {
+      await rmHorse(eligible.id);
+      await rmHorse(tooOld.id);
+      await rmHorse(atMax.id);
+    }
   });
 });

@@ -35,27 +35,10 @@
  *    focus on real data manipulation logic and edge case handling.
  */
 
-import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-
-// Mock object must be created BEFORE jest.unstable_mockModule call
-const mockLogger = {
-  info: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn(),
-};
-
-jest.unstable_mockModule('../utils/logger.mjs', () => ({
-  default: mockLogger,
-  logger: mockLogger,
-}));
-
-const { _addTraitSafely, _removeTraitSafely, _getAllTraits } = await import('../utils/horseModelTraitHelpers.mjs');
+import { describe, it, expect } from '@jest/globals';
+import { _addTraitSafely, _removeTraitSafely, _getAllTraits } from '../utils/horseModelTraitHelpers.mjs';
 
 describe('🐴 UNIT: Horse Model Trait Helpers - Utility Function Validation', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   describe('trait addition', () => {
     it('should add a trait to the correct category if not present', () => {
       const traits = {

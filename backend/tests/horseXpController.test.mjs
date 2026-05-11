@@ -1,393 +1,285 @@
 /**
  * Horse XP Controller Tests
  *
- * Testing Philosophy: Balanced Mocking Approach
- * - Strategic external dependency mocking only (database operations, authentication)
- * - Real business logic validation through controller layer
- * - Integration testing with actual HTTP requests where appropriate
- * - No over-mocking of internal business logic or horse XP calculations
- *
- * Business Rules Tested:
- * - Horse XP viewing endpoints with proper authentication
- * - Stat point allocation endpoints with validation
- * - Horse XP history retrieval with pagination
- * - Authorization checks (users can only manage their own horses)
- * - Input validation and error handling
- *
- * API Endpoints Tested:
- * - GET /api/horses/:horseId/xp - Get horse XP status
- * - POST /api/horses/:horseId/allocate-stat - Allocate stat point
- * - GET /api/horses/:horseId/xp-history - Get horse XP history
- * - POST /api/horses/:horseId/award-xp - Award XP (admin/system use)
+ * Tests controller endpoints with real DB fixtures and plain JS response capture.
+ * No mocking of any kind.
  */
 
-import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
+import prisma from '../db/index.mjs';
 import { clearAllCache } from '../utils/cacheHelper.mjs';
+import * as horseXpController from '../controllers/horseXpController.mjs';
+import { addXpToHorse } from '../models/horseXpModel.mjs';
 
-// Mock objects must be created BEFORE jest.unstable_mockModule calls
-// Mock Prisma client
-const mockPrismaHorse = {
-  findUnique: jest.fn(),
-  update: jest.fn(),
-};
+const PREFIX = 'TestFixture-HorseXpCtrl-';
+const USER_ID = 'test-user-horse-xp-ctrl';
+const OTHER_USER_ID = 'test-other-user-xp-ctrl';
 
-const mockPrismaHorseXpEvent = {
-  create: jest.fn(),
-  findMany: jest.fn(),
-  count: jest.fn(),
-};
+function makeRes() {
+  return {
+    _status: null,
+    _json: null,
+    status(code) {
+      this._status = code;
+      return this;
+    },
+    json(body) {
+      this._json = body;
+      return this;
+    },
+  };
+}
 
-const mockPrisma = {
-  horse: mockPrismaHorse,
-  horseXpEvent: mockPrismaHorseXpEvent,
-};
+async function mkHorse(suffix, opts = {}) {
+  return prisma.horse.create({
+    data: {
+      name: `${PREFIX}${suffix}`,
+      sex: 'Colt',
+      dateOfBirth: new Date('2020-01-01'),
+      age: 0,
+      userId: opts.userId ?? USER_ID,
+      horseXp: opts.horseXp ?? 0,
+      availableStatPoints: opts.availableStatPoints ?? 0,
+      ...(opts.speed !== undefined && { speed: opts.speed }),
+    },
+  });
+}
 
-// Mock logger
-const mockLogger = {
-  info: jest.fn(),
-  warn: jest.fn(),
-  error: jest.fn(),
-  debug: jest.fn(),
-};
+async function rmHorse(horseId) {
+  await prisma.horse.delete({ where: { id: horseId } }).catch(() => {});
+}
 
-// Mock external dependencies BEFORE importing the controller
-jest.unstable_mockModule('../db/index.mjs', () => ({
-  default: mockPrisma,
-}));
+beforeAll(async () => {
+  await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
+  await prisma.user.deleteMany({ where: { id: { in: [USER_ID, OTHER_USER_ID] } } });
+  await prisma.user.createMany({
+    data: [
+      {
+        id: USER_ID,
+        username: 'horsexpCtrlUser',
+        email: 'horsexpctrl@example.com',
+        password: 'TestPassword123!',
+        firstName: 'Horse',
+        lastName: 'XP',
+        money: 5000,
+      },
+      {
+        id: OTHER_USER_ID,
+        username: 'otherXpUser',
+        email: 'otherxpctrl@example.com',
+        password: 'TestPassword123!',
+        firstName: 'Other',
+        lastName: 'User',
+        money: 1000,
+      },
+    ],
+  });
+});
 
-jest.unstable_mockModule('../utils/logger.mjs', () => ({
-  default: mockLogger,
-}));
+afterAll(async () => {
+  await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
+  await prisma.user.deleteMany({ where: { id: { in: [USER_ID, OTHER_USER_ID] } } });
+});
 
-// Import the controller directly for testing after mocking
-const horseXpController = await import('../controllers/horseXpController.mjs');
+beforeEach(async () => {
+  try {
+    await clearAllCache();
+  } catch {
+    // Redis may not be available in test environment
+  }
+});
 
 describe('Horse XP Controller - API Endpoints', () => {
-  beforeEach(async () => {
-    try {
-      await clearAllCache();
-    } catch {
-      // Ignore errors if Redis is not available
-    }
-    jest.clearAllMocks();
-    mockPrismaHorse.findUnique.mockClear();
-    mockPrismaHorse.update.mockClear();
-    mockPrismaHorseXpEvent.create.mockClear();
-    mockPrismaHorseXpEvent.findMany.mockClear();
-    mockPrismaHorseXpEvent.count.mockClear();
-    mockLogger.info.mockClear();
-    mockLogger.warn.mockClear();
-    mockLogger.error.mockClear();
-    mockLogger.debug.mockClear();
-  });
-
-  afterEach(() => {
-    jest.restoreAllMocks();
-  });
-
   describe('getHorseXpStatus', () => {
     it('should return horse XP status for authorized user', async () => {
-      const mockHorse = {
-        id: 1,
-        name: 'Test Horse',
-        userId: 'user-123',
-        horseXp: 150,
-        availableStatPoints: 1,
-      };
+      const horse = await mkHorse('Status1', { horseXp: 150, availableStatPoints: 1 });
+      try {
+        const req = { params: { horseId: String(horse.id) }, user: { id: USER_ID } };
+        const res = makeRes();
 
-      mockPrismaHorse.findUnique.mockResolvedValue(mockHorse);
+        await horseXpController.getHorseXpStatus(req, res);
 
-      const req = {
-        params: { horseId: '1' },
-        user: { id: 'user-123' },
-      };
-      const res = {
-        json: jest.fn(),
-        status: jest.fn().mockReturnThis(),
-      };
-
-      await horseXpController.getHorseXpStatus(req, res);
-
-      expect(res.json).toHaveBeenCalledWith({
-        success: true,
-        data: {
-          horseId: 1,
-          horseName: 'Test Horse',
-          currentXP: 150,
-          availableStatPoints: 1,
-          nextStatPointAt: 200, // Next 100 XP milestone
-          xpToNextStatPoint: 50,
-        },
-      });
-
-      expect(mockPrismaHorse.findUnique).toHaveBeenCalledWith({
-        where: { id: 1 },
-        select: {
-          id: true,
-          name: true,
-          userId: true,
-          horseXp: true,
-          availableStatPoints: true,
-        },
-      });
+        expect(res._json).toEqual({
+          success: true,
+          data: {
+            horseId: horse.id,
+            horseName: horse.name,
+            currentXP: 150,
+            availableStatPoints: 1,
+            nextStatPointAt: 200,
+            xpToNextStatPoint: 50,
+          },
+        });
+      } finally {
+        await rmHorse(horse.id);
+      }
     });
 
-    it('should reject unauthorized access to other users horses', async () => {
-      const mockHorse = {
-        id: 2, // Different ID from first test
-        name: 'Other Horse',
-        userId: 'other-user',
-        horseXp: 150,
-        availableStatPoints: 1,
-      };
+    it('should reject unauthorized access to another user horse with 404', async () => {
+      const horse = await mkHorse('Status2', { userId: OTHER_USER_ID, horseXp: 150 });
+      try {
+        const req = { params: { horseId: String(horse.id) }, user: { id: USER_ID } };
+        const res = makeRes();
 
-      mockPrismaHorse.findUnique.mockResolvedValue(mockHorse);
+        await horseXpController.getHorseXpStatus(req, res);
 
-      const req = {
-        params: { horseId: '2' },
-        user: { id: 'user-123' },
-      };
-      const res = {
-        json: jest.fn(),
-        status: jest.fn().mockReturnThis(),
-      };
-
-      await horseXpController.getHorseXpStatus(req, res);
-
-      // CWE-639 hardening (Equoria-1i6w): cross-user access returns 404 with
-      // the same not-found message as a missing horse, preventing
-      // ID enumeration. Previous 403/'not authorized' response is dead code
-      // in production (route uses requireOwnership middleware).
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'Horse not found',
-      });
+        expect(res._status).toBe(404);
+        expect(res._json).toEqual({ success: false, error: 'Horse not found' });
+      } finally {
+        await rmHorse(horse.id);
+      }
     });
 
     it('should handle horse not found', async () => {
-      mockPrismaHorse.findUnique.mockResolvedValue(null);
-
-      const req = {
-        params: { horseId: '999' },
-        user: { id: 'user-123' },
-      };
-      const res = {
-        json: jest.fn(),
-        status: jest.fn().mockReturnThis(),
-      };
+      const req = { params: { horseId: '999999999' }, user: { id: USER_ID } };
+      const res = makeRes();
 
       await horseXpController.getHorseXpStatus(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'Horse not found',
-      });
+      expect(res._status).toBe(404);
+      expect(res._json).toEqual({ success: false, error: 'Horse not found' });
     });
   });
 
   describe('allocateStatPoint', () => {
     it('should allocate stat point successfully', async () => {
-      const mockHorse = {
-        id: 1,
-        name: 'Test Horse',
-        userId: 'user-123',
-        speed: 75,
-        availableStatPoints: 2,
-      };
+      const horse = await mkHorse('AllocCtrl1', { availableStatPoints: 2, speed: 75 });
+      try {
+        const req = {
+          params: { horseId: String(horse.id) },
+          body: { statName: 'speed' },
+          user: { id: USER_ID },
+        };
+        const res = makeRes();
 
-      const mockUpdatedHorse = {
-        speed: 76,
-        availableStatPoints: 1,
-      };
+        await horseXpController.allocateStatPoint(req, res);
 
-      mockPrismaHorse.findUnique.mockResolvedValue(mockHorse);
-      mockPrismaHorse.update.mockResolvedValue(mockUpdatedHorse);
-
-      const req = {
-        params: { horseId: '1' },
-        body: { statName: 'speed' },
-        user: { id: 'user-123' },
-      };
-      const res = {
-        json: jest.fn(),
-        status: jest.fn().mockReturnThis(),
-      };
-
-      await horseXpController.allocateStatPoint(req, res);
-
-      expect(res.json).toHaveBeenCalledWith({
-        success: true,
-        data: {
-          statName: 'speed',
-          newStatValue: 76,
-          remainingStatPoints: 1,
-        },
-      });
+        expect(res._json).toEqual({
+          success: true,
+          data: {
+            statName: 'speed',
+            newStatValue: 76,
+            remainingStatPoints: 1,
+          },
+        });
+      } finally {
+        await rmHorse(horse.id);
+      }
     });
 
-    it('should validate stat name', async () => {
-      const req = {
-        params: { horseId: '1' },
-        body: { statName: 'invalidStat' },
-        user: { id: 'user-123' },
-      };
-      const res = {
-        json: jest.fn(),
-        status: jest.fn().mockReturnThis(),
-      };
+    it('should validate stat name and return 400', async () => {
+      const horse = await mkHorse('AllocCtrl2', { availableStatPoints: 1 });
+      try {
+        const req = {
+          params: { horseId: String(horse.id) },
+          body: { statName: 'invalidStat' },
+          user: { id: USER_ID },
+        };
+        const res = makeRes();
 
-      await horseXpController.allocateStatPoint(req, res);
+        await horseXpController.allocateStatPoint(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: expect.stringContaining('Invalid stat name'),
-      });
+        expect(res._status).toBe(400);
+        expect(res._json).toEqual({
+          success: false,
+          error: expect.stringContaining('Invalid stat name'),
+        });
+      } finally {
+        await rmHorse(horse.id);
+      }
     });
 
     it('should require stat name in request body', async () => {
-      const req = {
-        params: { horseId: '1' },
-        body: {},
-        user: { id: 'user-123' },
-      };
-      const res = {
-        json: jest.fn(),
-        status: jest.fn().mockReturnThis(),
-      };
+      const horse = await mkHorse('AllocCtrl3', { availableStatPoints: 1 });
+      try {
+        const req = {
+          params: { horseId: String(horse.id) },
+          body: {},
+          user: { id: USER_ID },
+        };
+        const res = makeRes();
 
-      await horseXpController.allocateStatPoint(req, res);
+        await horseXpController.allocateStatPoint(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'statName is required',
-      });
+        expect(res._status).toBe(400);
+        expect(res._json).toEqual({
+          success: false,
+          error: 'statName is required',
+        });
+      } finally {
+        await rmHorse(horse.id);
+      }
     });
   });
 
   describe('getHorseXpHistory', () => {
     it('should return horse XP history with pagination', async () => {
-      const mockHorse = {
-        id: 1,
-        userId: 'user-123',
-      };
+      const horse = await mkHorse('HistCtrl1');
+      try {
+        await addXpToHorse(horse.id, 30, 'Competition: 1st place in Dressage');
+        await addXpToHorse(horse.id, 20, 'Training session');
 
-      const mockEvents = [
-        {
-          id: 1,
-          amount: 30,
-          reason: 'Competition: 1st place in Dressage',
-          timestamp: new Date('2024-01-01T12:00:00Z'),
-        },
-        {
-          id: 2,
-          amount: 20,
-          reason: 'Training session',
-          timestamp: new Date('2024-01-01T10:00:00Z'),
-        },
-      ];
+        const req = {
+          params: { horseId: String(horse.id) },
+          query: { limit: '10', offset: '0' },
+          user: { id: USER_ID },
+        };
+        const res = makeRes();
 
-      mockPrismaHorse.findUnique.mockResolvedValue(mockHorse);
-      mockPrismaHorseXpEvent.findMany.mockResolvedValue(mockEvents);
-      mockPrismaHorseXpEvent.count.mockResolvedValue(2);
+        await horseXpController.getHorseXpHistory(req, res);
 
-      const req = {
-        params: { horseId: '1' },
-        query: { limit: '10', offset: '0' },
-        user: { id: 'user-123' },
-      };
-      const res = {
-        json: jest.fn(),
-        status: jest.fn().mockReturnThis(),
-      };
-
-      await horseXpController.getHorseXpHistory(req, res);
-
-      expect(res.json).toHaveBeenCalledWith({
-        success: true,
-        data: {
-          events: mockEvents,
-          count: 2,
-          pagination: {
-            limit: 10,
-            offset: 0,
-            hasMore: false,
-          },
-        },
-      });
+        expect(res._json.success).toBe(true);
+        expect(res._json.data.events.length).toBeGreaterThanOrEqual(2);
+        expect(res._json.data.pagination).toMatchObject({ limit: 10, offset: 0 });
+      } finally {
+        await rmHorse(horse.id);
+      }
     });
   });
 
   describe('awardXpToHorse', () => {
-    it('should award XP to horse (system/admin use)', async () => {
-      const mockHorse = {
-        id: 1,
-        name: 'Test Horse',
-        userId: 'user-123',
-        horseXp: 50,
-        availableStatPoints: 0,
-      };
+    it('should award XP to horse and return updated status', async () => {
+      const horse = await mkHorse('AwardCtrl1', { horseXp: 50, availableStatPoints: 0 });
+      try {
+        const req = {
+          params: { horseId: String(horse.id) },
+          body: { amount: 50, reason: 'Competition participation' },
+          user: { id: USER_ID },
+        };
+        const res = makeRes();
 
-      const mockUpdatedHorse = {
-        ...mockHorse,
-        horseXp: 100,
-        availableStatPoints: 1,
-      };
+        await horseXpController.awardXpToHorse(req, res);
 
-      mockPrismaHorse.findUnique.mockResolvedValue(mockHorse);
-      mockPrismaHorse.update.mockResolvedValue(mockUpdatedHorse);
-      mockPrismaHorseXpEvent.create.mockResolvedValue({});
-
-      const req = {
-        params: { horseId: '1' },
-        body: {
-          amount: 50,
-          reason: 'Competition participation',
-        },
-        user: { id: 'user-123' },
-      };
-      const res = {
-        json: jest.fn(),
-        status: jest.fn().mockReturnThis(),
-      };
-
-      await horseXpController.awardXpToHorse(req, res);
-
-      expect(res.json).toHaveBeenCalledWith({
-        success: true,
-        data: {
-          currentXP: 100,
-          availableStatPoints: 1,
-          xpGained: 50,
-          statPointsGained: 1,
-        },
-      });
+        expect(res._json.success).toBe(true);
+        expect(res._json.data.currentXP).toBe(100);
+        expect(res._json.data.xpGained).toBe(50);
+        expect(res._json.data.statPointsGained).toBe(1);
+        expect(res._json.data.availableStatPoints).toBe(1);
+      } finally {
+        await rmHorse(horse.id);
+      }
     });
 
-    it('should validate XP amount', async () => {
-      const req = {
-        params: { horseId: '1' },
-        body: {
-          amount: -10,
-          reason: 'Test',
-        },
-        user: { id: 'user-123' },
-      };
-      const res = {
-        json: jest.fn(),
-        status: jest.fn().mockReturnThis(),
-      };
+    it('should validate XP amount and return 400', async () => {
+      const horse = await mkHorse('AwardCtrl2');
+      try {
+        const req = {
+          params: { horseId: String(horse.id) },
+          body: { amount: -10, reason: 'Test' },
+          user: { id: USER_ID },
+        };
+        const res = makeRes();
 
-      await horseXpController.awardXpToHorse(req, res);
+        await horseXpController.awardXpToHorse(req, res);
 
-      expect(res.status).toHaveBeenCalledWith(400);
-      expect(res.json).toHaveBeenCalledWith({
-        success: false,
-        error: 'XP amount must be a positive number',
-      });
+        expect(res._status).toBe(400);
+        expect(res._json).toEqual({
+          success: false,
+          error: 'XP amount must be a positive number',
+        });
+      } finally {
+        await rmHorse(horse.id);
+      }
     });
   });
 });
