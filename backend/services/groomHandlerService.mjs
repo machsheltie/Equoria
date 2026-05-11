@@ -347,12 +347,13 @@ export async function recordHandlerPerformance(competitionResult, handlerData) {
 
 /**
  * Calculate experience gain for groom based on competition performance
+ * Exported for unit-testing pure branch coverage (Equoria-jkht)
  * @param {number} placement - Competition placement
  * @param {number} totalEntries - Total number of entries
  * @param {string} skillLevel - Groom skill level
  * @returns {number} Experience points gained
  */
-function calculateGroomExperienceGain(placement, totalEntries, skillLevel) {
+export function calculateGroomExperienceGain(placement, totalEntries, skillLevel) {
   // Base experience for participation
   let experience = 1;
 
