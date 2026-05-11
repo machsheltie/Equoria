@@ -221,14 +221,14 @@ describe('useClaimPrizes', () => {
     );
   });
 
-  // Test 7: Invalidates user balance cache on success
-  it('should invalidate user query on success', async () => {
+  // Test 7: Invalidates profile cache on success (sentinel for Equoria-9ufs fix)
+  it('should invalidate profile query on success', async () => {
     vi.mocked(prizesApi.claimCompetitionPrizes).mockResolvedValue(mockClaimResult);
 
     const wrapper = createWrapper();
 
-    // Pre-populate cache with user data
-    queryClient.setQueryData(['user'], { id: 1, money: 8000 });
+    // Pre-populate cache with profile data
+    queryClient.setQueryData(['profile'], { user: { id: 1, money: 8000 } });
 
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
@@ -242,9 +242,15 @@ describe('useClaimPrizes', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    // useClaimPrizes invalidates ['user', 'balance'] (not 'profile') after a
-    // successful claim — the balance cache is what gets refreshed.
+    // Must invalidate ['profile'] so the nav coin balance updates after a prize
+    // claim. Bug: was invalidating ['user','balance'] which is unused in prod UI.
     expect(invalidateSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        queryKey: ['profile'],
+      })
+    );
+    // Must NOT use the old wrong key
+    expect(invalidateSpy).not.toHaveBeenCalledWith(
       expect.objectContaining({
         queryKey: ['user', 'balance'],
       })
