@@ -340,6 +340,19 @@ describe('getAllPersonalityTypes', () => {
 });
 
 // ---------------------------------------------------------------------------
+// calculatePersonalityEffects — successRate || 0.85 fallback (line 196)
+// ---------------------------------------------------------------------------
+describe('calculatePersonalityEffects — successRate || 0.85 fallback (line 196)', () => {
+  it('baseEffects without successRate uses 0.85 default (|| right-branch covered)', () => {
+    const groom = { personality: 'gentle' };
+    const baseWithoutRate = { bondingChange: 10, stressChange: -5 };
+    const result = calculatePersonalityEffects(groom, { traits: [] }, 'brushing', baseWithoutRate);
+    // successRate was undefined → 0.85 default → min(0.99, 0.85 * 1.1) = 0.935
+    expect(result.successRate).toBeCloseTo(Math.min(0.99, 0.85 * 1.1));
+  });
+});
+
+// ---------------------------------------------------------------------------
 // calculatePersonalityEffects — trait bonusBonding path (line 223)
 //
 // No built-in personality has BOTH horseTraits AND bonusBonding.

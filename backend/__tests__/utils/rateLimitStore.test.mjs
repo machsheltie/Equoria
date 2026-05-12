@@ -213,3 +213,28 @@ describe('cleanup timer callback (line 23) — setInterval fires automatically',
     expect(store.getStorageSize()).toBeGreaterThanOrEqual(0);
   }, 5000);
 });
+
+// ---------------------------------------------------------------------------
+// constructor: line 21 FALSE branch — cleanupInterval <= 0 skips setInterval
+// ---------------------------------------------------------------------------
+describe('constructor: line 21 FALSE branch — no timer when cleanupInterval <= 0', () => {
+  it('passing negative cleanupInterval skips setInterval (line 21 false-branch covered)', () => {
+    // cleanupInterval: -1 is truthy → stored as -1; -1 > 0 is FALSE → no timer started
+    const store = new RateLimitStore({ cleanupInterval: -1 });
+    expect(store.cleanupTimer).toBeUndefined();
+    // destroy should still be safe even without a timer
+    expect(() => store.destroy()).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// evictOldest: line 132 FALSE branch — empty store, firstKey is undefined
+// ---------------------------------------------------------------------------
+describe('evictOldest: line 132 FALSE branch — empty store', () => {
+  it('calling evictOldest on empty store does nothing and does not throw (line 132 false-branch)', () => {
+    const store = new RateLimitStore({ cleanupInterval: -1 });
+    expect(store.getStorageSize()).toBe(0);
+    expect(() => store.evictOldest()).not.toThrow();
+    expect(store.getStorageSize()).toBe(0);
+  });
+});
