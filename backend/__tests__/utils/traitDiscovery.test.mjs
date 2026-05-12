@@ -452,7 +452,7 @@ describe('revealTraits() + getDiscoveryProgress() — DB-fixture paths (Equoria-
   }, 30000);
 
   afterAll(async () => {
-    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-TD-' } } }).catch(() => {});
+    // Cascade delete via user (horses owned by tdUser are removed by FK cascade)
     await prisma.user.delete({ where: { id: tdUser.id } }).catch(() => {});
   }, 30000);
 
