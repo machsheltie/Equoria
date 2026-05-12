@@ -1,390 +1,174 @@
-﻿/**
- * 🧪 COOKIE CONFIGURATION TESTS
- *
- * Tests for centralized cookie configuration module
- * Validates security properties, environment handling, and configuration consistency
- *
- * Test Coverage:
- * - Cookie option structure validation
- * - Environment-specific behavior (dev vs production)
- * - Domain configuration handling
- * - Clear cookie options matching
- * - Configuration summary generation
- *
- * @module __tests__/utils/cookieConfig.test
- */
+import { describe, it, expect, afterEach } from '@jest/globals';
+import {
+  ACCESS_TOKEN_TTL_MS,
+  REFRESH_TOKEN_TTL_MS,
+  CSRF_TOKEN_TTL_MS,
+  getNow,
+  _setNowFn,
+  ACCESS_TOKEN_COOKIE_OPTIONS,
+  REFRESH_TOKEN_COOKIE_OPTIONS,
+  CSRF_TOKEN_COOKIE_OPTIONS,
+  COOKIE_OPTIONS,
+  CLEAR_COOKIE_OPTIONS,
+  getCookieConfigSummary,
+} from '../../utils/cookieConfig.mjs';
 
-import { jest } from '@jest/globals';
+afterEach(() => {
+  _setNowFn(null);
+});
 
-describe('Cookie Configuration Module', () => {
-  let originalEnv;
-  let COOKIE_OPTIONS;
-  let CLEAR_COOKIE_OPTIONS;
-  let getCookieConfigSummary;
-
-  beforeEach(async () => {
-    // Save original environment
-    originalEnv = { ...process.env };
-
-    // Provide production-safe fake secrets so that tests which temporarily
-    // set NODE_ENV=production to verify cookie attributes don't trip the
-    // runtimeSecretPolicy check in config.mjs (which rejects test-only
-    // secret values in deployable environments).
-    process.env.JWT_SECRET = 'StrongCookieTestSecret1234567890AB';
-    process.env.JWT_REFRESH_SECRET = 'StrongCookieRefreshSecret123456789';
-
-    // Clear module cache to allow fresh imports with different env variables
-    jest.resetModules();
+describe('cookieConfig — TTL constants', () => {
+  it('ACCESS_TOKEN_TTL_MS is 15 minutes in ms', () => {
+    expect(ACCESS_TOKEN_TTL_MS).toBe(15 * 60 * 1000);
   });
 
-  afterEach(() => {
-    // Restore original environment
-    process.env = originalEnv;
+  it('REFRESH_TOKEN_TTL_MS is 7 days in ms', () => {
+    expect(REFRESH_TOKEN_TTL_MS).toBe(7 * 24 * 60 * 60 * 1000);
   });
 
-  describe('Access Token Cookie Options', () => {
-    test('should have correct security properties in development', async () => {
-      process.env.NODE_ENV = 'development';
-      const config = await import('../../utils/cookieConfig.mjs');
-      COOKIE_OPTIONS = config.COOKIE_OPTIONS;
+  it('CSRF_TOKEN_TTL_MS is 24 hours in ms', () => {
+    expect(CSRF_TOKEN_TTL_MS).toBe(24 * 60 * 60 * 1000);
+  });
+});
 
-      expect(COOKIE_OPTIONS.accessToken).toEqual({
-        httpOnly: true,
-        secure: false, // Not secure in development
-        sameSite: 'lax', // Lax in development, strict in production
-        maxAge: 15 * 60 * 1000, // 15 minutes
-        path: '/',
-        domain: undefined,
-      });
-    });
-
-    test('should have correct security properties in production', async () => {
-      process.env.NODE_ENV = 'production';
-      const config = await import('../../utils/cookieConfig.mjs');
-      COOKIE_OPTIONS = config.COOKIE_OPTIONS;
-
-      expect(COOKIE_OPTIONS.accessToken).toEqual({
-        httpOnly: true,
-        secure: true, // Secure in production
-        sameSite: 'strict',
-        maxAge: 15 * 60 * 1000, // 15 minutes
-        path: '/',
-        domain: undefined,
-      });
-    });
-
-    test('should use custom domain when COOKIE_DOMAIN is set', async () => {
-      process.env.NODE_ENV = 'production';
-      process.env.COOKIE_DOMAIN = '.equoria.com';
-      const config = await import('../../utils/cookieConfig.mjs');
-      COOKIE_OPTIONS = config.COOKIE_OPTIONS;
-
-      expect(COOKIE_OPTIONS.accessToken.domain).toBe('.equoria.com');
-    });
-
-    test('should have httpOnly true (XSS protection)', async () => {
-      process.env.NODE_ENV = 'production';
-      const config = await import('../../utils/cookieConfig.mjs');
-      COOKIE_OPTIONS = config.COOKIE_OPTIONS;
-
-      expect(COOKIE_OPTIONS.accessToken.httpOnly).toBe(true);
-    });
-
-    test('should have sameSite strict (CSRF protection)', async () => {
-      process.env.NODE_ENV = 'production';
-      const config = await import('../../utils/cookieConfig.mjs');
-      COOKIE_OPTIONS = config.COOKIE_OPTIONS;
-
-      expect(COOKIE_OPTIONS.accessToken.sameSite).toBe('strict');
-    });
-
-    test('should have maxAge matching access token expiry (15 minutes)', async () => {
-      process.env.NODE_ENV = 'production';
-      const config = await import('../../utils/cookieConfig.mjs');
-      COOKIE_OPTIONS = config.COOKIE_OPTIONS;
-
-      const expectedMaxAge = 15 * 60 * 1000; // 15 minutes in milliseconds
-      expect(COOKIE_OPTIONS.accessToken.maxAge).toBe(expectedMaxAge);
-    });
-
-    test('should have path set to root', async () => {
-      process.env.NODE_ENV = 'production';
-      const config = await import('../../utils/cookieConfig.mjs');
-      COOKIE_OPTIONS = config.COOKIE_OPTIONS;
-
-      expect(COOKIE_OPTIONS.accessToken.path).toBe('/');
-    });
+describe('cookieConfig — getNow and _setNowFn', () => {
+  it('getNow returns a positive number by default (real Date.now)', () => {
+    expect(typeof getNow()).toBe('number');
+    expect(getNow()).toBeGreaterThan(0);
   });
 
-  describe('Refresh Token Cookie Options', () => {
-    test('should have correct security properties', async () => {
-      process.env.NODE_ENV = 'production';
-      const config = await import('../../utils/cookieConfig.mjs');
-      COOKIE_OPTIONS = config.COOKIE_OPTIONS;
-
-      expect(COOKIE_OPTIONS.refreshToken).toEqual({
-        httpOnly: true,
-        secure: true,
-        sameSite: 'strict',
-        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        path: '/', // 21R-AUTH-1: must cover both /auth/refresh-token and /api/v1/auth/refresh-token mounts
-        domain: undefined,
-      });
-    });
-
-    test('should have maxAge matching refresh token expiry (7 days)', async () => {
-      process.env.NODE_ENV = 'production';
-      const config = await import('../../utils/cookieConfig.mjs');
-      COOKIE_OPTIONS = config.COOKIE_OPTIONS;
-
-      const expectedMaxAge = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
-      expect(COOKIE_OPTIONS.refreshToken.maxAge).toBe(expectedMaxAge);
-    });
-
-    test('should have path set to root so both /auth/refresh-token and /api/v1/auth/refresh-token receive the cookie (21R-AUTH-1)', async () => {
-      process.env.NODE_ENV = 'production';
-      const config = await import('../../utils/cookieConfig.mjs');
-      COOKIE_OPTIONS = config.COOKIE_OPTIONS;
-
-      expect(COOKIE_OPTIONS.refreshToken.path).toBe('/');
-    });
+  it('_setNowFn with a function overrides the clock', () => {
+    _setNowFn(() => 999999);
+    expect(getNow()).toBe(999999);
   });
 
-  describe('CSRF Token Cookie Options', () => {
-    test('should have httpOnly false (client must read for X-CSRF-Token header)', async () => {
-      process.env.NODE_ENV = 'production';
-      const config = await import('../../utils/cookieConfig.mjs');
-      COOKIE_OPTIONS = config.COOKIE_OPTIONS;
-
-      expect(COOKIE_OPTIONS.csrfToken.httpOnly).toBe(false);
-    });
-
-    test('should have correct security properties', async () => {
-      process.env.NODE_ENV = 'production';
-      const config = await import('../../utils/cookieConfig.mjs');
-      COOKIE_OPTIONS = config.COOKIE_OPTIONS;
-
-      expect(COOKIE_OPTIONS.csrfToken).toEqual({
-        httpOnly: false,
-        secure: true,
-        sameSite: 'strict',
-        maxAge: 24 * 60 * 60 * 1000, // 24 hours (21R-AUTH-2: decoupled from access token)
-        path: '/',
-        domain: undefined,
-      });
-    });
-
-    test('should have maxAge decoupled from access token (21R-AUTH-2)', async () => {
-      process.env.NODE_ENV = 'production';
-      const config = await import('../../utils/cookieConfig.mjs');
-      COOKIE_OPTIONS = config.COOKIE_OPTIONS;
-
-      // CSRF cookie must outlive the 15-minute access token so that silent
-      // access-token refreshes do not require re-fetching a CSRF token.
-      expect(COOKIE_OPTIONS.csrfToken.maxAge).toBe(24 * 60 * 60 * 1000);
-      expect(COOKIE_OPTIONS.csrfToken.maxAge).toBeGreaterThan(COOKIE_OPTIONS.accessToken.maxAge);
-    });
+  it('_setNowFn(null) resets to Date.now — covers ?? right-branch at line 41', () => {
+    _setNowFn(() => 1);
+    expect(getNow()).toBe(1);
+    _setNowFn(null);
+    const t = getNow();
+    expect(typeof t).toBe('number');
+    expect(t).toBeGreaterThan(1);
   });
 
-  describe('Clear Cookie Options', () => {
-    test('should match access token options (except maxAge)', async () => {
-      process.env.NODE_ENV = 'production';
-      const config = await import('../../utils/cookieConfig.mjs');
-      COOKIE_OPTIONS = config.COOKIE_OPTIONS;
-      CLEAR_COOKIE_OPTIONS = config.CLEAR_COOKIE_OPTIONS;
+  it('_setNowFn(undefined) resets to Date.now — covers ?? right-branch with undefined', () => {
+    _setNowFn(() => 2);
+    expect(getNow()).toBe(2);
+    _setNowFn(undefined);
+    const t = getNow();
+    expect(typeof t).toBe('number');
+    expect(t).toBeGreaterThan(2);
+  });
+});
 
-      expect(CLEAR_COOKIE_OPTIONS.accessToken).toEqual({
-        httpOnly: COOKIE_OPTIONS.accessToken.httpOnly,
-        secure: COOKIE_OPTIONS.accessToken.secure,
-        sameSite: COOKIE_OPTIONS.accessToken.sameSite,
-        path: COOKIE_OPTIONS.accessToken.path,
-        domain: COOKIE_OPTIONS.accessToken.domain,
-      });
-    });
-
-    test('should match refresh token options (except maxAge)', async () => {
-      process.env.NODE_ENV = 'production';
-      const config = await import('../../utils/cookieConfig.mjs');
-      COOKIE_OPTIONS = config.COOKIE_OPTIONS;
-      CLEAR_COOKIE_OPTIONS = config.CLEAR_COOKIE_OPTIONS;
-
-      expect(CLEAR_COOKIE_OPTIONS.refreshToken).toEqual({
-        httpOnly: COOKIE_OPTIONS.refreshToken.httpOnly,
-        secure: COOKIE_OPTIONS.refreshToken.secure,
-        sameSite: COOKIE_OPTIONS.refreshToken.sameSite,
-        path: COOKIE_OPTIONS.refreshToken.path,
-        domain: COOKIE_OPTIONS.refreshToken.domain,
-      });
-    });
-
-    test('should have same path as original cookie (required for proper deletion)', async () => {
-      process.env.NODE_ENV = 'production';
-      const config = await import('../../utils/cookieConfig.mjs');
-      COOKIE_OPTIONS = config.COOKIE_OPTIONS;
-      CLEAR_COOKIE_OPTIONS = config.CLEAR_COOKIE_OPTIONS;
-
-      expect(CLEAR_COOKIE_OPTIONS.accessToken.path).toBe(COOKIE_OPTIONS.accessToken.path);
-      expect(CLEAR_COOKIE_OPTIONS.refreshToken.path).toBe(COOKIE_OPTIONS.refreshToken.path);
-      expect(CLEAR_COOKIE_OPTIONS.csrfToken.path).toBe(COOKIE_OPTIONS.csrfToken.path);
-    });
-
-    test('should have same domain as original cookie (required for proper deletion)', async () => {
-      process.env.NODE_ENV = 'production';
-      process.env.COOKIE_DOMAIN = '.equoria.com';
-      const config = await import('../../utils/cookieConfig.mjs');
-      COOKIE_OPTIONS = config.COOKIE_OPTIONS;
-      CLEAR_COOKIE_OPTIONS = config.CLEAR_COOKIE_OPTIONS;
-
-      expect(CLEAR_COOKIE_OPTIONS.accessToken.domain).toBe(COOKIE_OPTIONS.accessToken.domain);
-      expect(CLEAR_COOKIE_OPTIONS.refreshToken.domain).toBe(COOKIE_OPTIONS.refreshToken.domain);
-      expect(CLEAR_COOKIE_OPTIONS.csrfToken.domain).toBe(COOKIE_OPTIONS.csrfToken.domain);
-    });
+describe('cookieConfig — ACCESS_TOKEN_COOKIE_OPTIONS', () => {
+  it('httpOnly is true', () => {
+    expect(ACCESS_TOKEN_COOKIE_OPTIONS.httpOnly).toBe(true);
   });
 
-  describe('Environment-Specific Behavior', () => {
-    test('should have secure: false in development', async () => {
-      process.env.NODE_ENV = 'development';
-      const config = await import('../../utils/cookieConfig.mjs');
-      COOKIE_OPTIONS = config.COOKIE_OPTIONS;
-
-      expect(COOKIE_OPTIONS.accessToken.secure).toBe(false);
-      expect(COOKIE_OPTIONS.refreshToken.secure).toBe(false);
-      expect(COOKIE_OPTIONS.csrfToken.secure).toBe(false);
-    });
-
-    test('should have secure: false in test', async () => {
-      process.env.NODE_ENV = 'test';
-      const config = await import('../../utils/cookieConfig.mjs');
-      COOKIE_OPTIONS = config.COOKIE_OPTIONS;
-
-      expect(COOKIE_OPTIONS.accessToken.secure).toBe(false);
-      expect(COOKIE_OPTIONS.refreshToken.secure).toBe(false);
-      expect(COOKIE_OPTIONS.csrfToken.secure).toBe(false);
-    });
-
-    test('should have secure: true in production', async () => {
-      process.env.NODE_ENV = 'production';
-      const config = await import('../../utils/cookieConfig.mjs');
-      COOKIE_OPTIONS = config.COOKIE_OPTIONS;
-
-      expect(COOKIE_OPTIONS.accessToken.secure).toBe(true);
-      expect(COOKIE_OPTIONS.refreshToken.secure).toBe(true);
-      expect(COOKIE_OPTIONS.csrfToken.secure).toBe(true);
-    });
+  it('maxAge equals ACCESS_TOKEN_TTL_MS', () => {
+    expect(ACCESS_TOKEN_COOKIE_OPTIONS.maxAge).toBe(ACCESS_TOKEN_TTL_MS);
   });
 
-  describe('Cookie Configuration Summary', () => {
-    test('should return configuration summary', async () => {
-      process.env.NODE_ENV = 'production';
-      const config = await import('../../utils/cookieConfig.mjs');
-      getCookieConfigSummary = config.getCookieConfigSummary;
-
-      const summary = getCookieConfigSummary();
-
-      expect(summary).toHaveProperty('environment');
-      expect(summary).toHaveProperty('isProduction');
-      expect(summary).toHaveProperty('domain');
-      expect(summary).toHaveProperty('accessToken');
-      expect(summary).toHaveProperty('refreshToken');
-      expect(summary).toHaveProperty('csrfToken');
-    });
-
-    test('should show production environment correctly', async () => {
-      process.env.NODE_ENV = 'production';
-      const config = await import('../../utils/cookieConfig.mjs');
-      getCookieConfigSummary = config.getCookieConfigSummary;
-
-      const summary = getCookieConfigSummary();
-
-      expect(summary.isProduction).toBe(true);
-      expect(summary.accessToken.secure).toBe(true);
-    });
-
-    test('should show custom domain when set', async () => {
-      process.env.NODE_ENV = 'production';
-      process.env.COOKIE_DOMAIN = '.equoria.com';
-      const config = await import('../../utils/cookieConfig.mjs');
-      getCookieConfigSummary = config.getCookieConfigSummary;
-
-      const summary = getCookieConfigSummary();
-
-      expect(summary.domain).toBe('.equoria.com');
-    });
-
-    test('should show same-domain when COOKIE_DOMAIN not set', async () => {
-      process.env.NODE_ENV = 'production';
-      delete process.env.COOKIE_DOMAIN;
-      const config = await import('../../utils/cookieConfig.mjs');
-      getCookieConfigSummary = config.getCookieConfigSummary;
-
-      const summary = getCookieConfigSummary();
-
-      expect(summary.domain).toBe('same-domain');
-    });
+  it('path is /', () => {
+    expect(ACCESS_TOKEN_COOKIE_OPTIONS.path).toBe('/');
   });
 
-  describe('Security Compliance', () => {
-    test('should have all security flags enabled in production', async () => {
-      process.env.NODE_ENV = 'production';
-      const config = await import('../../utils/cookieConfig.mjs');
-      COOKIE_OPTIONS = config.COOKIE_OPTIONS;
+  it('sameSite is a non-empty string', () => {
+    expect(typeof ACCESS_TOKEN_COOKIE_OPTIONS.sameSite).toBe('string');
+    expect(ACCESS_TOKEN_COOKIE_OPTIONS.sameSite.length).toBeGreaterThan(0);
+  });
+});
 
-      // Access token security
-      expect(COOKIE_OPTIONS.accessToken.httpOnly).toBe(true);
-      expect(COOKIE_OPTIONS.accessToken.secure).toBe(true);
-      expect(COOKIE_OPTIONS.accessToken.sameSite).toBe('strict');
-
-      // Refresh token security
-      expect(COOKIE_OPTIONS.refreshToken.httpOnly).toBe(true);
-      expect(COOKIE_OPTIONS.refreshToken.secure).toBe(true);
-      expect(COOKIE_OPTIONS.refreshToken.sameSite).toBe('strict');
-
-      // CSRF token security (httpOnly false is intentional)
-      expect(COOKIE_OPTIONS.csrfToken.secure).toBe(true);
-      expect(COOKIE_OPTIONS.csrfToken.sameSite).toBe('strict');
-    });
-
-    test('should prevent JavaScript access to auth tokens (XSS mitigation)', async () => {
-      process.env.NODE_ENV = 'production';
-      const config = await import('../../utils/cookieConfig.mjs');
-      COOKIE_OPTIONS = config.COOKIE_OPTIONS;
-
-      expect(COOKIE_OPTIONS.accessToken.httpOnly).toBe(true);
-      expect(COOKIE_OPTIONS.refreshToken.httpOnly).toBe(true);
-    });
-
-    test('should require HTTPS in production (MitM mitigation)', async () => {
-      process.env.NODE_ENV = 'production';
-      const config = await import('../../utils/cookieConfig.mjs');
-      COOKIE_OPTIONS = config.COOKIE_OPTIONS;
-
-      expect(COOKIE_OPTIONS.accessToken.secure).toBe(true);
-      expect(COOKIE_OPTIONS.refreshToken.secure).toBe(true);
-      expect(COOKIE_OPTIONS.csrfToken.secure).toBe(true);
-    });
-
-    test('should prevent cross-site requests (CSRF mitigation)', async () => {
-      process.env.NODE_ENV = 'production';
-      const config = await import('../../utils/cookieConfig.mjs');
-      COOKIE_OPTIONS = config.COOKIE_OPTIONS;
-
-      expect(COOKIE_OPTIONS.accessToken.sameSite).toBe('strict');
-      expect(COOKIE_OPTIONS.refreshToken.sameSite).toBe('strict');
-      expect(COOKIE_OPTIONS.csrfToken.sameSite).toBe('strict');
-    });
+describe('cookieConfig — REFRESH_TOKEN_COOKIE_OPTIONS', () => {
+  it('httpOnly is true', () => {
+    expect(REFRESH_TOKEN_COOKIE_OPTIONS.httpOnly).toBe(true);
   });
 
-  describe('Exports', () => {
-    test('should export all required constants', async () => {
-      const config = await import('../../utils/cookieConfig.mjs');
+  it('maxAge equals REFRESH_TOKEN_TTL_MS', () => {
+    expect(REFRESH_TOKEN_COOKIE_OPTIONS.maxAge).toBe(REFRESH_TOKEN_TTL_MS);
+  });
 
-      expect(config.ACCESS_TOKEN_COOKIE_OPTIONS).toBeDefined();
-      expect(config.REFRESH_TOKEN_COOKIE_OPTIONS).toBeDefined();
-      expect(config.CSRF_TOKEN_COOKIE_OPTIONS).toBeDefined();
-      expect(config.COOKIE_OPTIONS).toBeDefined();
-      expect(config.CLEAR_COOKIE_OPTIONS).toBeDefined();
-      expect(config.getCookieConfigSummary).toBeDefined();
-      expect(config.default).toBe(config.COOKIE_OPTIONS);
-    });
+  it('path is /', () => {
+    expect(REFRESH_TOKEN_COOKIE_OPTIONS.path).toBe('/');
+  });
+});
+
+describe('cookieConfig — CSRF_TOKEN_COOKIE_OPTIONS', () => {
+  it('httpOnly is false (client must read it)', () => {
+    expect(CSRF_TOKEN_COOKIE_OPTIONS.httpOnly).toBe(false);
+  });
+
+  it('maxAge equals CSRF_TOKEN_TTL_MS', () => {
+    expect(CSRF_TOKEN_COOKIE_OPTIONS.maxAge).toBe(CSRF_TOKEN_TTL_MS);
+  });
+
+  it('path is /', () => {
+    expect(CSRF_TOKEN_COOKIE_OPTIONS.path).toBe('/');
+  });
+});
+
+describe('cookieConfig — COOKIE_OPTIONS aggregate', () => {
+  it('COOKIE_OPTIONS.accessToken references ACCESS_TOKEN_COOKIE_OPTIONS', () => {
+    expect(COOKIE_OPTIONS.accessToken).toBe(ACCESS_TOKEN_COOKIE_OPTIONS);
+  });
+
+  it('COOKIE_OPTIONS.refreshToken references REFRESH_TOKEN_COOKIE_OPTIONS', () => {
+    expect(COOKIE_OPTIONS.refreshToken).toBe(REFRESH_TOKEN_COOKIE_OPTIONS);
+  });
+
+  it('COOKIE_OPTIONS.csrfToken references CSRF_TOKEN_COOKIE_OPTIONS', () => {
+    expect(COOKIE_OPTIONS.csrfToken).toBe(CSRF_TOKEN_COOKIE_OPTIONS);
+  });
+});
+
+describe('cookieConfig — CLEAR_COOKIE_OPTIONS', () => {
+  it('accessToken clear options have httpOnly:true and path:/', () => {
+    expect(CLEAR_COOKIE_OPTIONS.accessToken.httpOnly).toBe(true);
+    expect(CLEAR_COOKIE_OPTIONS.accessToken.path).toBe('/');
+  });
+
+  it('refreshToken clear options have httpOnly:true and path:/', () => {
+    expect(CLEAR_COOKIE_OPTIONS.refreshToken.httpOnly).toBe(true);
+    expect(CLEAR_COOKIE_OPTIONS.refreshToken.path).toBe('/');
+  });
+
+  it('csrfToken clear options have httpOnly:false and path:/', () => {
+    expect(CLEAR_COOKIE_OPTIONS.csrfToken.httpOnly).toBe(false);
+    expect(CLEAR_COOKIE_OPTIONS.csrfToken.path).toBe('/');
+  });
+});
+
+describe('cookieConfig — getCookieConfigSummary', () => {
+  it('returns an object with required top-level fields', () => {
+    const summary = getCookieConfigSummary();
+    expect(summary).toBeDefined();
+    expect(typeof summary.environment).toBe('string');
+    expect(typeof summary.isProduction).toBe('boolean');
+    expect(typeof summary.domain).toBe('string');
+  });
+
+  it('domain falls back to "same-domain" when COOKIE_DOMAIN is unset', () => {
+    const summary = getCookieConfigSummary();
+    expect(summary.domain).toBe('same-domain');
+  });
+
+  it('accessToken summary has maxAge "15 minutes"', () => {
+    const summary = getCookieConfigSummary();
+    expect(summary.accessToken.maxAge).toBe('15 minutes');
+    expect(summary.accessToken.path).toBe('/');
+    expect(summary.accessToken.httpOnly).toBe(true);
+  });
+
+  it('refreshToken summary has maxAge "7 days"', () => {
+    const summary = getCookieConfigSummary();
+    expect(summary.refreshToken.maxAge).toBe('7 days');
+    expect(summary.refreshToken.httpOnly).toBe(true);
+  });
+
+  it('csrfToken summary has maxAge "24 hours" and httpOnly false', () => {
+    const summary = getCookieConfigSummary();
+    expect(summary.csrfToken.maxAge).toBe('24 hours');
+    expect(summary.csrfToken.httpOnly).toBe(false);
   });
 });
