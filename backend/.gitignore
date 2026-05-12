@@ -50,5 +50,7 @@ test-connection-debug.mjs
 
 # test coverage (auto-generated, never commit)
 /coverage/
+/coverage-partial/
+/coverage-temp/
 /coverage-security/
 /.jest-cache/
