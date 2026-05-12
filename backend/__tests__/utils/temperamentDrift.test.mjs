@@ -7,6 +7,7 @@
 import { describe, it, expect } from '@jest/globals';
 import {
   calculateTemperamentDrift,
+  applyTemperamentDrift,
   getTemperamentCharacteristics,
   isTemperamentStable,
 } from '../../utils/temperamentDrift.mjs';
@@ -159,5 +160,140 @@ describe('isTemperamentStable', () => {
 
   it('handles horse with no epigeneticModifiers field', () => {
     expect(isTemperamentStable({ id: 1, temperament: 'Calm' })).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// calculateTemperamentDrift — environmental factor branches (lines 108-134)
+// ---------------------------------------------------------------------------
+describe('calculateTemperamentDrift — environmental factor branches', () => {
+  it('stressLevel > 50 — exercises stress bonus branch (line 108)', () => {
+    // Uncovered branch: driftProbability += (stressLevel - 50) * 0.001
+    const horse = noTraitHorse({ temperament: 'Unpredictable' });
+    const result = calculateTemperamentDrift(horse, { stressLevel: 80 });
+    expect(result).toHaveProperty('driftOccurred');
+  });
+
+  it('recentTraining = true — exercises training bonus branch (line 113)', () => {
+    const horse = noTraitHorse({ temperament: 'Unpredictable' });
+    const result = calculateTemperamentDrift(horse, { recentTraining: true });
+    expect(result).toHaveProperty('driftOccurred');
+  });
+
+  it('recentCompetition = true — exercises competition bonus branch (line 117)', () => {
+    const horse = noTraitHorse({ temperament: 'Unpredictable' });
+    const result = calculateTemperamentDrift(horse, { recentCompetition: true });
+    expect(result).toHaveProperty('driftOccurred');
+  });
+
+  it('healthStatus Fair — exercises health penalty branch (line 122)', () => {
+    const horse = noTraitHorse({ temperament: 'Unpredictable' });
+    const result = calculateTemperamentDrift(horse, { healthStatus: 'Fair' });
+    expect(result).toHaveProperty('driftOccurred');
+  });
+
+  it('healthStatus Bad — also exercises health penalty branch', () => {
+    const horse = noTraitHorse({ temperament: 'Unpredictable' });
+    const result = calculateTemperamentDrift(horse, { healthStatus: 'Bad' });
+    expect(result).toHaveProperty('driftOccurred');
+  });
+
+  it('bondScore < 30 — exercises low bond penalty branch (line 127)', () => {
+    const horse = noTraitHorse({ temperament: 'Unpredictable' });
+    const result = calculateTemperamentDrift(horse, { bondScore: 10 });
+    expect(result).toHaveProperty('driftOccurred');
+  });
+
+  it('age < 2 — exercises young horse bonus branch (line 132)', () => {
+    const horse = noTraitHorse({ temperament: 'Unpredictable' });
+    const result = calculateTemperamentDrift(horse, { age: 1 });
+    expect(result).toHaveProperty('driftOccurred');
+  });
+
+  it('social trait — exercises temperamentStability branch (line 141, multiplies prob by 0.5)', () => {
+    // social gives temperamentStability: true but NOT suppressTemperamentDrift
+    // → reaches line 141, halves driftProbability, does NOT early-return
+    const horse = horseWithTraits(['social']);
+    const result = calculateTemperamentDrift(horse, {});
+    expect(result).toHaveProperty('driftOccurred');
+    // Should NOT be suppressed (only resilient/calm suppress drift)
+    expect(result.reason).not.toBe('Suppressed by traits');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// calculateTemperamentDrift — drift-occurred path (Math.random false branch)
+// ---------------------------------------------------------------------------
+describe('calculateTemperamentDrift — drift occurred (200-trial loop)', () => {
+  it('eventually produces driftOccurred=true with extreme stress (Unpredictable, 200 trials)', () => {
+    // Drift prob ≈ 0.154: base(0.05) + stress(0.05) + train(0.02) + comp(0.03)
+    //              + health(0.02) + bond(0.03) + age(0.02) = 0.22 × (1-0.3) = 0.154
+    // P(0 drifts in 200) < 10^-14 → essentially guaranteed
+    const horse = noTraitHorse({ temperament: 'Unpredictable' });
+    const extremeFactors = {
+      stressLevel: 100, // > 50 and > 70 → both selectNewTemperament weight branches
+      recentTraining: true,
+      recentCompetition: true,
+      healthStatus: 'Bad',
+      bondScore: 10, // < 30 → Aggressive/Unpredictable weight bonus
+      age: 1,
+    };
+
+    let gotDrift = false;
+    for (let i = 0; i < 200; i++) {
+      const result = calculateTemperamentDrift(horse, extremeFactors);
+      if (result.driftOccurred) {
+        expect(result.oldTemperament).toBe('Unpredictable');
+        expect(typeof result.newTemperament).toBe('string');
+        expect(result.reason).toBe('Environmental factors caused drift');
+        expect(result.driftProbability).toBeGreaterThan(0);
+        expect(result.factors.stressLevel).toBe(100);
+        gotDrift = true;
+        break;
+      }
+    }
+    expect(gotDrift).toBe(true);
+  });
+
+  it('eventually drifts under good conditions — exercises stressLevel<30&&bondScore>70 selectNewTemperament branch', () => {
+    // Spirited stability=0.6, prob = (0.05+0.02+0.03)×(1-0.6) = 0.04 (4%)
+    // P(0 drifts in 200) = (0.96)^200 ≈ 0.00028 < 0.1% → virtually guaranteed
+    const horse = noTraitHorse({ temperament: 'Spirited' });
+    const goodFactors = {
+      stressLevel: 10, // < 30 → stressLevel<30&&bondScore>70 → Calm/Docile weight bonus
+      bondScore: 80, // > 70
+      recentTraining: true,
+      recentCompetition: true,
+    };
+
+    let gotDrift = false;
+    for (let i = 0; i < 200; i++) {
+      const result = calculateTemperamentDrift(horse, goodFactors);
+      if (result.driftOccurred) {
+        gotDrift = true;
+        break;
+      }
+    }
+    expect(gotDrift).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// applyTemperamentDrift — async stub (no DB, always resolves)
+// ---------------------------------------------------------------------------
+describe('applyTemperamentDrift', () => {
+  it('resolves with success=true and the provided horseId', async () => {
+    const result = await applyTemperamentDrift(42);
+    expect(result.success).toBe(true);
+    expect(result.horseId).toBe(42);
+    expect(typeof result.message).toBe('string');
+  });
+
+  it('error path: throws when logger.info throws (not reachable without mocking — stub resolves cleanly)', async () => {
+    // The stub body is: return { success: true, message: ..., horseId }
+    // Verify the async form still resolves correctly for different IDs
+    const result = await applyTemperamentDrift(999);
+    expect(result.success).toBe(true);
+    expect(result.horseId).toBe(999);
   });
 });
