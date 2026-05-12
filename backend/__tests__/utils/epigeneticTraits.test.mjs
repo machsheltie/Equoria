@@ -274,3 +274,133 @@ describe('calculateEpigeneticTraits', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// validateInput — non-number and sireTraits-not-array branches
+// ---------------------------------------------------------------------------
+describe('validateInput — type-check branches', () => {
+  it('throws when damBondScore is a string (non-number branch)', () => {
+    expect(() =>
+      calculateEpigeneticTraits({
+        damTraits: [],
+        sireTraits: [],
+        damBondScore: 'high',
+        damStressLevel: 20,
+      }),
+    ).toThrow('Bond scores and stress levels must be numbers');
+  });
+
+  it('throws when damStressLevel is null (non-number branch)', () => {
+    expect(() =>
+      calculateEpigeneticTraits({
+        damTraits: [],
+        sireTraits: [],
+        damBondScore: 50,
+        damStressLevel: null,
+      }),
+    ).toThrow('Bond scores and stress levels must be numbers');
+  });
+
+  it('throws when sireTraits is not an array (right-side || branch)', () => {
+    expect(() =>
+      calculateEpigeneticTraits({
+        damTraits: [],
+        sireTraits: 'bold',
+        damBondScore: 50,
+        damStressLevel: 20,
+      }),
+    ).toThrow('Parent traits must be arrays');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// calculateInheritanceProbability — rarity switch and unknown-trait branches
+// ---------------------------------------------------------------------------
+describe('calculateEpigeneticTraits — rarity and unknown-trait branches', () => {
+  it('handles unknown/unlisted parent trait (default 0.3 probability fallback)', () => {
+    const result = calculateEpigeneticTraits({
+      damTraits: ['mystery_trait_xyz'],
+      sireTraits: [],
+      damBondScore: 50,
+      damStressLevel: 50,
+      seed: 1,
+    });
+    expect(Array.isArray(result.positive)).toBe(true);
+    expect(Array.isArray(result.negative)).toBe(true);
+  });
+
+  it('handles negative parent trait (negative probability-adjustment path)', () => {
+    const result = calculateEpigeneticTraits({
+      damTraits: ['nervous'],
+      sireTraits: ['fragile'],
+      damBondScore: 50,
+      damStressLevel: 50,
+      seed: 10,
+    });
+    expect(Array.isArray(result.negative)).toBe(true);
+  });
+
+  it('handles rare rarity parent trait (trainabilityBoost → case rare)', () => {
+    const result = calculateEpigeneticTraits({
+      damTraits: ['trainabilityBoost'],
+      sireTraits: [],
+      damBondScore: 80,
+      damStressLevel: 10,
+      seed: 1,
+    });
+    expect(Array.isArray(result.positive)).toBe(true);
+  });
+
+  it('handles legendary rarity parent trait (legendaryBloodline → case legendary)', () => {
+    const result = calculateEpigeneticTraits({
+      damTraits: ['legendaryBloodline'],
+      sireTraits: [],
+      damBondScore: 90,
+      damStressLevel: 5,
+      seed: 7,
+    });
+    expect(Array.isArray(result.positive)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// generateEnvironmentalTraits — conditional-path coverage
+// ---------------------------------------------------------------------------
+describe('calculateEpigeneticTraits — environmental condition branches', () => {
+  it('poor conditions (bondScore=10, stressLevel=80) exercises negative environmental branch', () => {
+    // environmentalFactor = (10-80)/100 = -0.7 → triggers environmentalFactor < -0.2 check
+    const result = calculateEpigeneticTraits({
+      damTraits: [],
+      sireTraits: [],
+      damBondScore: 10,
+      damStressLevel: 80,
+      seed: 5,
+    });
+    expect(Array.isArray(result.negative)).toBe(true);
+  });
+
+  it('very high stress (stressLevel=90) exercises stressLevel > 80 branch', () => {
+    const result = calculateEpigeneticTraits({
+      damTraits: [],
+      sireTraits: [],
+      damBondScore: 5,
+      damStressLevel: 90,
+      seed: 15,
+    });
+    expect(Array.isArray(result.negative)).toBe(true);
+  });
+
+  it('excellent conditions (bondScore=90, stressLevel=5) exercises positive environmental + rare-probability branches', () => {
+    // environmentalFactor = (90-5)/100 = 0.85 → > 0.5 (rare prob = 0.08) and > 0.2 (positive branch)
+    const results = [1, 5, 10, 20, 42, 100, 200, 500, 999].map(seed =>
+      calculateEpigeneticTraits({
+        damTraits: [],
+        sireTraits: [],
+        damBondScore: 90,
+        damStressLevel: 5,
+        seed,
+      }),
+    );
+    expect(results.every(r => Array.isArray(r.positive))).toBe(true);
+  });
+});
