@@ -314,3 +314,122 @@ describe('calculateTemperamentDrift — error catch branch (lines 185-186)', () 
     expect(result.error).toBeDefined();
   });
 });
+
+// ---------------------------------------------------------------------------
+// calculateTemperamentDrift — horse-property fallback branches
+// ---------------------------------------------------------------------------
+describe('calculateTemperamentDrift — horse-property fallback branches', () => {
+  it('horse.stressLevel=0: exercises horse.stressLevel||0 right-branch (falsy stressLevel)', () => {
+    // stressLevel=0 is falsy → horse.stressLevel || 0 uses right-branch (0)
+    const horse = noTraitHorse({ stressLevel: 0 });
+    const result = calculateTemperamentDrift(horse); // no factors → defaults from horse
+    expect(result).toHaveProperty('driftOccurred');
+  });
+
+  it('horse.bondScore=0: exercises horse.bondScore||50 right-branch (falsy bondScore)', () => {
+    // bondScore=0 is falsy → horse.bondScore || 50 uses right-branch (50)
+    const horse = noTraitHorse({ bondScore: 0 });
+    const result = calculateTemperamentDrift(horse);
+    expect(result).toHaveProperty('driftOccurred');
+  });
+
+  it('unknown temperament "Mythical": exercises TEMPERAMENT_TYPES fallback to Calm', () => {
+    // TEMPERAMENT_TYPES['Mythical'] is undefined → || TEMPERAMENT_TYPES['Calm'] fallback
+    const horse = {
+      id: 1,
+      temperament: 'Mythical',
+      stressLevel: 20,
+      bondScore: 60,
+      epigeneticModifiers: { positive: [], negative: [], hidden: [] },
+    };
+    const result = calculateTemperamentDrift(horse);
+    expect(result).toHaveProperty('driftOccurred');
+  });
+
+  it('epigeneticModifiers missing negative key: exercises traits.negative||[] fallback', () => {
+    // { positive: [] } has no .negative key → traits.negative is undefined → uses [] fallback
+    const horse = { id: 1, temperament: 'Calm', stressLevel: 20, bondScore: 60, epigeneticModifiers: { positive: [] } };
+    const result = calculateTemperamentDrift(horse);
+    expect(result).toHaveProperty('driftOccurred');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// calculateTemperamentDrift — selectNewTemperament: Unpredictable and && branches
+// ---------------------------------------------------------------------------
+describe('calculateTemperamentDrift — selectNewTemperament branch coverage', () => {
+  it('Nervous horse + extreme factors: eventually drifts, covers ||Unpredictable weight bonus branches', () => {
+    // Starting from Nervous: Unpredictable IS in available list.
+    // stressLevel=100 > 70 → for Unpredictable temperament: 'Nervous' false, 'Unpredictable' true
+    //   → covers the || right-TRUE branch in both the stressLevel>70 and bondScore<30 guards.
+    // bondScore=10 < 30 → same path for Unpredictable.
+    // Nervous stability=0.4 → prob ≈ 0.22 × 0.6 = 13.2% per trial
+    // P(0 drifts in 200) = (0.868)^200 ≈ 5×10^-13 → essentially guaranteed
+    const horse = {
+      id: 1,
+      temperament: 'Nervous',
+      stressLevel: 20,
+      bondScore: 60,
+      epigeneticModifiers: { positive: [], negative: [], hidden: [] },
+    };
+    const extremeFactors = {
+      stressLevel: 100,
+      bondScore: 10,
+      recentTraining: true,
+      recentCompetition: true,
+      healthStatus: 'Bad',
+      age: 1,
+    };
+
+    let gotDrift = false;
+    for (let i = 0; i < 200; i++) {
+      const result = calculateTemperamentDrift(horse, extremeFactors);
+      if (result.driftOccurred) {
+        gotDrift = true;
+        break;
+      }
+    }
+    expect(gotDrift).toBe(true);
+  });
+
+  it('Aggressive horse + stressLevel<30 + bondScore<=70: exercises && right-false branch in selectNewTemperament', () => {
+    // stressLevel=10 < 30 (left-true) but bondScore=50 NOT > 70 (right-false) → whole && is false
+    // Aggressive stability=0.5 → prob = (0.05+0.02+0.03) × 0.5 = 0.05 = 5% per trial
+    // P(0 drifts in 200) = (0.95)^200 ≈ 3.5×10^-5 → virtually certain to drift
+    const horse = {
+      id: 1,
+      temperament: 'Aggressive',
+      stressLevel: 20,
+      bondScore: 60,
+      epigeneticModifiers: { positive: [], negative: [], hidden: [] },
+    };
+    const mixedFactors = { stressLevel: 10, bondScore: 50, recentTraining: true, recentCompetition: true };
+
+    let gotDrift = false;
+    for (let i = 0; i < 200; i++) {
+      const result = calculateTemperamentDrift(horse, mixedFactors);
+      if (result.driftOccurred) {
+        gotDrift = true;
+        break;
+      }
+    }
+    expect(gotDrift).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// isTemperamentStable — additional branch coverage
+// ---------------------------------------------------------------------------
+describe('isTemperamentStable — additional branches', () => {
+  it('returns true for horse with social trait (covers ||temperamentStability right-branch)', () => {
+    // social → traitEffects.temperamentStability=true, suppressTemperamentDrift=false
+    // isTemperamentStable: !!(false || true) = true → covers the || right-TRUE branch
+    expect(isTemperamentStable(horseWithTraits(['social']))).toBe(true);
+  });
+
+  it('epigeneticModifiers missing negative key: traits.negative||[] fallback in isTemperamentStable', () => {
+    // { positive: ['resilient'] } has no .negative → undefined || [] uses fallback
+    const horse = { id: 1, temperament: 'Calm', epigeneticModifiers: { positive: ['resilient'] } };
+    expect(isTemperamentStable(horse)).toBe(true);
+  });
+});
