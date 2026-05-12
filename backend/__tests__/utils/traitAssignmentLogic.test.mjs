@@ -249,6 +249,121 @@ describe('calculateTraitProbabilityWithBonus() — catch block (lines 111-115) (
   });
 });
 
+// ── default-parameter branch coverage (Equoria-jkht) ────────────────────────
+// Calling with fewer args exercises the groomId=null default (lines 37, 126).
+
+describe('calculateTraitProbabilityWithBonus() — omitted groomId default (line 37) (Equoria-jkht)', () => {
+  it('uses null groomId when argument is omitted and returns base probability', async () => {
+    const result = await calculateTraitProbabilityWithBonus(horse.id, 'Brave', 0.5);
+    expect(result.groomId).toBeNull();
+    expect(result.finalProbability).toBe(0.5);
+    expect(result.bonusApplied).toBe(false);
+    expect(result.reason).toMatch(/no groom/i);
+  });
+});
+
+describe('applyGroomBonusesToTraitCandidates() — omitted groomId default (line 126) (Equoria-jkht)', () => {
+  it('uses null groomId when argument is omitted and returns original probabilities', async () => {
+    const candidates = [{ name: 'Brave', baseProbability: 0.4 }];
+    const result = await applyGroomBonusesToTraitCandidates(horse.id, candidates);
+    expect(result).toHaveLength(1);
+    expect(result[0].finalProbability).toBe(0.4);
+    expect(result[0].bonusApplied).toBe(false);
+  });
+});
+
+// ── selectTraitsWithGroomBonuses — if(selected) true + break branches ─────────
+
+describe('selectTraitsWithGroomBonuses() — selected=true path and break path (lines 232, 215-216) (Equoria-jkht)', () => {
+  it('pushes to selectedTraits when finalProbability=1.0 (covers if-selected true branch)', async () => {
+    const candidates = [{ name: 'Brave', baseProbability: 1.0 }];
+    const result = await selectTraitsWithGroomBonuses(horse.id, candidates, null, 1);
+    expect(result.selectedTraits).toHaveLength(1);
+    expect(result.selectedTraits[0].name).toBe('Brave');
+    expect(result.selectedTraits[0].source).toBe('randomized_with_groom_bonus');
+  });
+
+  it('breaks after maxTraits reached (covers break branch at line 215)', async () => {
+    // Two candidates both at 100% probability with maxTraits=1 → second candidate hits the break
+    const candidates = [
+      { name: 'Brave', baseProbability: 1.0 },
+      { name: 'Calm', baseProbability: 1.0 },
+    ];
+    const result = await selectTraitsWithGroomBonuses(horse.id, candidates, null, 1);
+    expect(result.selectedTraits).toHaveLength(1);
+    // Only the first trait should be selected; second was short-circuited by break
+    expect(result.selectedTraits[0].name).toBe('Brave');
+    // selectionDetails should only have the first candidate (loop broke before second)
+    expect(result.selectionDetails).toHaveLength(1);
+  });
+});
+
+// ── getTraitAssignmentSummary() — eligible=true branch (line 289-290) ─────────
+
+describe('getTraitAssignmentSummary() — eligibility.eligible=true branch (lines 289-290) (Equoria-jkht)', () => {
+  let eligibleGroom2, eligibleHorse2;
+
+  beforeAll(async () => {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const twentyNineDaysAgo = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000);
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    eligibleHorse2 = await prisma.horse.create({
+      data: {
+        name: `TestFixture-EligibleSummaryHorse-${Date.now()}`,
+        sex: 'Filly',
+        dateOfBirth: thirtyDaysAgo,
+        age: 0,
+        userId: user.id,
+      },
+    });
+
+    eligibleGroom2 = await prisma.groom.create({
+      data: {
+        name: `TestFixture-EligibleSummaryGroom-${Date.now()}`,
+        speciality: 'foal_care',
+        personality: 'gentle',
+        userId: user.id,
+        bonusTraitMap: { SummaryTrait: 0.1 },
+      },
+    });
+
+    await prisma.groomAssignment.create({
+      data: {
+        foalId: eligibleHorse2.id,
+        groomId: eligibleGroom2.id,
+        startDate: twentyNineDaysAgo,
+        isActive: true,
+      },
+    });
+
+    await prisma.groomInteraction.create({
+      data: {
+        foalId: eligibleHorse2.id,
+        groomId: eligibleGroom2.id,
+        interactionType: 'grooming',
+        duration: 30,
+        bondingChange: 10,
+        timestamp: oneDayAgo,
+      },
+    });
+  }, 30000);
+
+  afterAll(async () => {
+    await prisma.groomInteraction.deleteMany({ where: { foalId: eligibleHorse2.id } }).catch(() => {});
+    await prisma.groomAssignment.deleteMany({ where: { foalId: eligibleHorse2.id } }).catch(() => {});
+    await prisma.groom.delete({ where: { id: eligibleGroom2.id } }).catch(() => {});
+    await prisma.horse.delete({ where: { id: eligibleHorse2.id } }).catch(() => {});
+  }, 30000);
+
+  it('returns eligible summary string when groom qualifies for bonuses — covers line 290', async () => {
+    const result = await getTraitAssignmentSummary(eligibleHorse2.id, eligibleGroom2.id);
+    expect(result.canApplyBonuses).toBe(true);
+    expect(result.summary).toMatch(/groom can apply bonuses/i);
+    expect(result.potentialBonuses).toBeGreaterThanOrEqual(1);
+  });
+});
+
 // ── calculateTraitProbabilityWithBonus() — bonus applied path (lines 93-110) ─
 // Requires: groom with bonusTraitMap, eligible horse (bond >= 60, coverage >= 75%)
 // Bond: start at 50, add bondingChange=10 → 60 >= 60 ✓
@@ -325,5 +440,36 @@ describe('calculateTraitProbabilityWithBonus() — bonus applied (lines 93-110) 
     expect(result.reason).toBe('Bonus applied successfully');
     expect(result.eligibilityDetails).toBeDefined();
     expect(result.eligibilityDetails.averageBondScore).toBeGreaterThanOrEqual(60);
+  });
+
+  it('applyGroomBonusesToTraitCandidates with eligible groom — covers canApplyBonus=true branches (lines 153-158)', async () => {
+    const candidates = [{ name: 'TestEligibleTrait', baseProbability: 0.3 }];
+    const result = await applyGroomBonusesToTraitCandidates(eligibleHorse.id, candidates, eligibleGroom.id);
+    expect(result).toHaveLength(1);
+    expect(result[0].bonusApplied).toBe(true);
+    expect(result[0].bonusAmount).toBe(0.15);
+    expect(result[0].finalProbability).toBeCloseTo(0.45);
+  });
+});
+
+// ── selectTraitsWithGroomBonuses — remaining branch coverage (Equoria-jkht) ──
+
+describe('selectTraitsWithGroomBonuses() — default params and false-selected branch (Equoria-jkht)', () => {
+  it('uses null groomId and maxTraits=1 defaults when called with only 2 args (covers lines 195-196)', async () => {
+    const candidates = [{ name: 'Brave', baseProbability: 0.5 }];
+    const result = await selectTraitsWithGroomBonuses(horse.id, candidates);
+    expect(result.horseId).toBe(horse.id);
+    expect(result.groomId).toBeNull();
+    expect(result.totalCandidates).toBe(1);
+    expect(typeof result.traitsSelected).toBe('number');
+  });
+
+  it('selected=false when baseProbability=0.0 — covers if-selected false branch (line 232)', async () => {
+    // Math.random() returns [0, 1), so randomValue < 0.0 is always false → selected=false always
+    const candidates = [{ name: 'Brave', baseProbability: 0.0 }];
+    const result = await selectTraitsWithGroomBonuses(horse.id, candidates, null, 1);
+    expect(result.selectedTraits).toHaveLength(0);
+    expect(result.selectionDetails).toHaveLength(1);
+    expect(result.selectionDetails[0].selected).toBe(false);
   });
 });

@@ -230,4 +230,40 @@ describe('logger robustness (21R-OBS-3)', () => {
       expect(line).toContain('"message":"meta-pattern"');
     });
   });
+
+  // ── Additional coverage: enumerateErrorFormat + preprocessMetaValue depth guard ─
+
+  describe('enumerateErrorFormat + preprocessMetaValue depth guard (lines 6, 40, 87-88) (Equoria-jkht)', () => {
+    it('line 6 + lines 87-88: Error as first arg passes Error as info → instanceof Error TRUE → stack de-dup', () => {
+      // When logger.error(errorObject) is called, Winston mutates the Error
+      // directly as the info object (Object.assign(err, { level })), making
+      // info instanceof Error TRUE.  enumerateErrorFormat then sets
+      // info.message = info.stack (line 6).  buildMetaSuffix subsequently
+      // detects that message already contains meta.stack and strips the
+      // duplicate top-level stack field (lines 87-88).
+      logger.error(new Error('bare-first-arg-cov'));
+      expect(capturedLines).toHaveLength(1);
+      const line = capturedLines[0];
+      expect(line).toContain('bare-first-arg-cov');
+    });
+
+    it('line 40: 33-deep nested metadata triggers depth > 32 guard in preprocessMetaValue', () => {
+      // preprocessMetaValue has a hard depth cap of 32.  At depth 33 it
+      // returns the sentinel string "[meta-too-deep]" rather than recursing
+      // further.  Build an object 33 levels deep so that branch is reached.
+      function buildDeep(n) {
+        let obj = {};
+        let cur = obj;
+        for (let i = 0; i < n; i++) {
+          cur.child = {};
+          cur = cur.child;
+        }
+        return obj;
+      }
+      logger.warn('[Test] deep-meta-depth-cov', buildDeep(33));
+      expect(capturedLines).toHaveLength(1);
+      const line = capturedLines[0];
+      expect(line).toContain('[Test] deep-meta-depth-cov');
+    });
+  });
 });
