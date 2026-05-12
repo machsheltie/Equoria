@@ -16,8 +16,10 @@ import {
   checkDiscoveryConditions,
   ENRICHMENT_DISCOVERIES,
   DISCOVERY_CONDITIONS,
+  revealTraits,
+  batchRevealTraits,
+  getDiscoveryProgress,
 } from '../../utils/traitDiscovery.mjs';
-import { revealTraits, batchRevealTraits, getDiscoveryProgress } from '../../utils/traitDiscovery.mjs';
 
 // ENRICHMENT_DISCOVERIES entries and their thresholds:
 //   SOCIALIZATION_COMPLETE:       activities=[social_interaction, group_play],         minCount=3

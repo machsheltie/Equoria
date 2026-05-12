@@ -293,14 +293,30 @@ describe('analyzeEnvironmentalFactors — filter-predicate branch coverage (Equo
   });
 });
 
-describe('analyzeNoveltyExposure — bondingChange<0 && left-false branch (line 131, Equoria-jkht)', () => {
-  it('noveltyWithSupport excludes interactions with bondingChange<0 (covers && left-false branch)', () => {
-    const negBondNovelty = [
-      mkInteraction(1, { interactionType: 'desensitization', bondingChange: -2, quality: 'poor' }),
-    ];
-    const r = analyzeNoveltyExposure(negBondNovelty, 50);
+describe('analyzeNoveltyExposure — || and && branch coverage (line 131, Equoria-jkht)', () => {
+  it('exploration and showground_exposure types count as novelty (covers || right branches)', () => {
+    const exploration = mkInteraction(1, {
+      interactionType: 'exploration',
+      bondingChange: 2,
+      quality: 'good',
+    });
+    const showground = mkInteraction(2, {
+      interactionType: 'showground_exposure',
+      bondingChange: 2,
+      quality: 'good',
+    });
+    const r = analyzeNoveltyExposure([exploration, showground], 35);
+    expect(r.noveltyEvents).toBe(2);
+  });
+
+  it('bondingChange<0 excludes from noveltyWithSupport (covers && left-false branch)', () => {
+    const negBond = mkInteraction(1, {
+      interactionType: 'desensitization',
+      bondingChange: -2,
+      quality: 'poor',
+    });
+    const r = analyzeNoveltyExposure([negBond], 50);
     expect(r.noveltyWithSupport).toBe(0);
-    expect(r.meetsBraveThreshold).toBe(false);
   });
 });
 

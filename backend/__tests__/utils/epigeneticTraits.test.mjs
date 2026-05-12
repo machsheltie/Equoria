@@ -449,3 +449,25 @@ describe('calculateEpigeneticTraits — negative trait placed in result.negative
     expect(result.negative).toContain('nervous');
   });
 });
+
+// ---------------------------------------------------------------------------
+// SeededRandom constructor — || right-branch (line 9)
+//
+// `this.seed = seed || Math.floor(Math.random() * 1000000)` right-hand side
+// fires when seed is falsy (0 or omitted). Calling calculateEpigeneticTraits
+// without a seed exercises the random-seed path.
+// ---------------------------------------------------------------------------
+describe('calculateEpigeneticTraits — no-seed path (line 9 || right-branch)', () => {
+  it('omitting seed uses Math.random() fallback (line 9 right-branch covered)', () => {
+    const result = calculateEpigeneticTraits({
+      damTraits: [],
+      sireTraits: [],
+      damBondScore: 50,
+      damStressLevel: 50,
+      // seed intentionally omitted → SeededRandom uses Math.random()
+    });
+    expect(Array.isArray(result.positive)).toBe(true);
+    expect(Array.isArray(result.negative)).toBe(true);
+    expect(Array.isArray(result.hidden)).toBe(true);
+  });
+});
