@@ -1,12 +1,22 @@
 /**
- * horseAgingSystem — unit tests for pure exports (Equoria-rr7)
+ * horseAgingSystem — branch-coverage tests (Equoria-rr7)
  *
- * Only tests calculateAgeFromBirth — a pure date utility.
- * DB-requiring functions are out of scope for this unit suite.
+ * Pure functions:
+ *   calculateAgeFromBirth — date arithmetic, catch path
+ *
+ * Safe DB ("not found" / early-return paths only):
+ *   updateHorseAge          — horse-not-found → rejects
+ *   checkForMilestones      — no milestones / age-1 / additionalMilestone / retirement paths
+ *   processHorseBirthdays   — horseIds array branch (returns empty when all IDs missing)
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { calculateAgeFromBirth, processHorseBirthdays } from '../../utils/horseAgingSystem.mjs';
+import {
+  calculateAgeFromBirth,
+  updateHorseAge,
+  checkForMilestones,
+  processHorseBirthdays,
+} from '../../utils/horseAgingSystem.mjs';
 
 const daysAgo = days => new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
@@ -77,5 +87,59 @@ describe('processHorseBirthdays()', () => {
   it('accepts dryRun option without error when specificHorseId has no match', async () => {
     const result = await processHorseBirthdays({ specificHorseId: -1, dryRun: true });
     expect(result.totalProcessed).toBe(0);
+  });
+
+  it('accepts horseIds array and returns 0 when all IDs are missing (horseIds branch)', async () => {
+    const result = await processHorseBirthdays({ horseIds: [-1, -2] });
+    expect(result.totalProcessed).toBe(0);
+    expect(result.birthdaysFound).toBe(0);
+    expect(typeof result.duration).toBe('number');
+  });
+});
+
+// ── updateHorseAge — horse-not-found error path ───────────────────────────────
+
+describe('updateHorseAge()', () => {
+  it('rejects with "Horse with ID -1 not found" for a non-existent horse', async () => {
+    await expect(updateHorseAge(-1)).rejects.toThrow('Horse with ID -1 not found');
+  });
+});
+
+// ── checkForMilestones — various milestone branch paths ───────────────────────
+
+describe('checkForMilestones()', () => {
+  it('returns empty arrays when no age threshold is crossed (previousAge=newAge=0)', async () => {
+    const result = await checkForMilestones(-1, 0, 0);
+    expect(result.milestonesTriggered).toEqual([]);
+    expect(result.traitsAssigned).toEqual([]);
+    expect(result.retirementTriggered).toBe(false);
+  });
+
+  it('pushes age_1_trait_evaluation milestone when crossing 7-day threshold (horse not found → no-op)', async () => {
+    const result = await checkForMilestones(-1, 0, 7);
+    expect(result.milestonesTriggered).toContain('age_1_trait_evaluation');
+  });
+
+  it('enters additionalMilestone loop for 14-day threshold (horse not found → no-op)', async () => {
+    const result = await checkForMilestones(-1, 13, 14);
+    expect(Array.isArray(result.milestonesTriggered)).toBe(true);
+  });
+
+  it('enters additionalMilestone loop for 21-day threshold (horse not found → no-op)', async () => {
+    const result = await checkForMilestones(-1, 20, 21);
+    expect(Array.isArray(result.milestonesTriggered)).toBe(true);
+  });
+
+  it('triggers retirement milestone when crossing 147-day threshold', async () => {
+    const result = await checkForMilestones(-1, 146, 147);
+    expect(result.retirementTriggered).toBe(true);
+    expect(result.milestonesTriggered).toContain('retirement');
+  });
+
+  it('returns shape with all expected keys', async () => {
+    const result = await checkForMilestones(-1, 0, 0);
+    expect(result).toHaveProperty('milestonesTriggered');
+    expect(result).toHaveProperty('traitsAssigned');
+    expect(result).toHaveProperty('retirementTriggered');
   });
 });

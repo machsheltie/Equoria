@@ -295,7 +295,9 @@ const throwingProxy = () =>
     {},
     {
       get(_, key) {
-        if (typeof key === 'string') throw new Error('proxy bomb');
+        if (typeof key === 'string') {
+          throw new Error('proxy bomb');
+        }
         return undefined;
       },
     },
