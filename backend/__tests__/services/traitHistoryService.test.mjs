@@ -180,3 +180,236 @@ describe('analyzeTraitPatterns', () => {
     expect(Array.isArray(result.recommendations)).toBe(true);
   });
 });
+
+// ── traitHistoryService — branch coverage with rich fixture data (Equoria-jkht) ──
+// 7 log entries cover all getAgeStage branches (imprinting/socialization/fear_period/
+// juvenile/adolescent/young_adult/mature). 3 negative epigenetic traits → high risk.
+// 1-negative-trait horse → moderate risk. Groom-linked entries → groomEffectiveness.
+
+describe('traitHistoryService — branch coverage (Equoria-jkht)', () => {
+  let thUser;
+  let thGroom;
+  let thHorse;
+  let thModerateHorse;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    thUser = await prisma.user.create({
+      data: {
+        email: `th-branch-${ts}-${rand()}@test.com`,
+        username: `thbranch${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'TH',
+        lastName: 'Branch',
+        money: 1000,
+      },
+    });
+
+    thGroom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-TH-Groom-${ts}`,
+        speciality: 'foal_care',
+        personality: 'gentle',
+        userId: thUser.id,
+      },
+    });
+
+    thHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-TH-Horse-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: thUser.id,
+      },
+    });
+
+    thModerateHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-TH-ModHorse-${ts}`,
+        sex: 'Colt',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: thUser.id,
+      },
+    });
+
+    // 7 entries on thHorse — ageInDays spread to hit every getAgeStage branch
+    const entries = [
+      {
+        ageInDays: 15,
+        traitName: 'Calm',
+        isEpigenetic: true,
+        sourceType: 'groom',
+        groomId: thGroom.id,
+        influenceScore: 5,
+      },
+      {
+        ageInDays: 60,
+        traitName: 'Brave',
+        isEpigenetic: false,
+        sourceType: 'groom',
+        groomId: thGroom.id,
+        influenceScore: 4,
+      },
+      {
+        ageInDays: 120,
+        traitName: 'Curious',
+        isEpigenetic: false,
+        sourceType: 'environmental',
+        groomId: null,
+        influenceScore: 3,
+      },
+      {
+        ageInDays: 200,
+        traitName: 'Nervous',
+        isEpigenetic: true,
+        sourceType: 'groom',
+        groomId: thGroom.id,
+        influenceScore: 2,
+      },
+      {
+        ageInDays: 500,
+        traitName: 'Skittish',
+        isEpigenetic: true,
+        sourceType: 'genetic',
+        groomId: null,
+        influenceScore: 1,
+      },
+      {
+        ageInDays: 800,
+        traitName: 'Anxious',
+        isEpigenetic: true,
+        sourceType: 'milestone',
+        groomId: null,
+        influenceScore: 3,
+      },
+      {
+        ageInDays: 1200,
+        traitName: 'Focused',
+        isEpigenetic: false,
+        sourceType: 'environmental',
+        groomId: null,
+        influenceScore: 2,
+      },
+    ];
+
+    for (let i = 0; i < entries.length; i++) {
+      const e = entries[i];
+      await prisma.traitHistoryLog.create({
+        data: {
+          horseId: thHorse.id,
+          traitName: e.traitName,
+          sourceType: e.sourceType,
+          sourceId: null,
+          influenceScore: e.influenceScore,
+          isEpigenetic: e.isEpigenetic,
+          groomId: e.groomId,
+          bondScore: null,
+          stressLevel: null,
+          ageInDays: e.ageInDays,
+          timestamp: new Date(ts - (entries.length - i) * 1000),
+        },
+      });
+    }
+
+    // 1 negative epigenetic entry on thModerateHorse → moderate risk
+    await prisma.traitHistoryLog.create({
+      data: {
+        horseId: thModerateHorse.id,
+        traitName: 'Nervous',
+        sourceType: 'groom',
+        sourceId: null,
+        influenceScore: 3,
+        isEpigenetic: true,
+        groomId: null,
+        bondScore: null,
+        stressLevel: null,
+        ageInDays: 30,
+        timestamp: new Date(ts),
+      },
+    });
+  }, 60000);
+
+  afterAll(async () => {
+    await prisma.traitHistoryLog
+      .deleteMany({ where: { horseId: { in: [thHorse.id, thModerateHorse.id] } } })
+      .catch(() => {});
+    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-TH-' } } }).catch(() => {});
+    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-TH-' } } }).catch(() => {});
+    await prisma.user.delete({ where: { id: thUser.id } }).catch(() => {});
+  }, 30000);
+
+  it('getTraitHistory with isEpigenetic=true filter (whereClause.isEpigenetic branch)', async () => {
+    const result = await getTraitHistory(thHorse.id, { isEpigenetic: true });
+    expect(Array.isArray(result)).toBe(true);
+    result.forEach(entry => expect(entry.isEpigenetic).toBe(true));
+    expect(result.length).toBe(4); // Calm, Nervous, Skittish, Anxious
+  });
+
+  it('getTraitHistory with isEpigenetic=false filter', async () => {
+    const result = await getTraitHistory(thHorse.id, { isEpigenetic: false });
+    expect(Array.isArray(result)).toBe(true);
+    result.forEach(entry => expect(entry.isEpigenetic).toBe(false));
+    expect(result.length).toBe(3); // Brave, Curious, Focused
+  });
+
+  it('getTraitHistory with startDate only (timestamp.gte branch)', async () => {
+    const result = await getTraitHistory(thHorse.id, { startDate: new Date(0) });
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBe(7);
+  });
+
+  it('getTraitHistory with endDate only (timestamp.lte branch)', async () => {
+    const result = await getTraitHistory(thHorse.id, { endDate: new Date(Date.now() + 86400000) });
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBe(7);
+  });
+
+  it('getTraitHistory with both startDate and endDate (both timestamp branches)', async () => {
+    const result = await getTraitHistory(thHorse.id, {
+      startDate: new Date(0),
+      endDate: new Date(Date.now() + 86400000),
+    });
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBe(7);
+  });
+
+  it('getTraitDevelopmentSummary covers all 7 getAgeStage branches and groom contributions', async () => {
+    const result = await getTraitDevelopmentSummary(thHorse.id);
+    expect(result.totalTraits).toBe(7);
+    expect(result.epigeneticTraits).toBe(4);
+    expect(result.groomInfluencedTraits).toBe(3); // entries with sourceType='groom'
+    // All 7 age stages must appear in developmentalStages
+    expect(result.developmentalStages['imprinting']).toBe(1);
+    expect(result.developmentalStages['socialization']).toBe(1);
+    expect(result.developmentalStages['fear_period']).toBe(1);
+    expect(result.developmentalStages['juvenile']).toBe(1);
+    expect(result.developmentalStages['adolescent']).toBe(1);
+    expect(result.developmentalStages['young_adult']).toBe(1);
+    expect(result.developmentalStages['mature']).toBe(1);
+    // Groom contributions present (3 entries linked to thGroom)
+    expect(Object.keys(result.groomContributions).length).toBeGreaterThan(0);
+  });
+
+  it('getBreedingInsights returns inheritanceRisk=high for horse with 3 negative epigenetic traits', async () => {
+    const result = await getBreedingInsights(thHorse.id);
+    expect(result.inheritanceRisk).toBe('high');
+    expect(result.breedingNotes.length).toBeGreaterThan(0);
+    // bestGrooms branch: thGroom has averageInfluence > 2
+    expect(result.recommendedCarePatterns.length).toBeGreaterThan(0);
+  });
+
+  it('getBreedingInsights returns inheritanceRisk=moderate for horse with 1 negative epigenetic trait', async () => {
+    const result = await getBreedingInsights(thModerateHorse.id);
+    expect(result.inheritanceRisk).toBe('moderate');
+  });
+
+  it('analyzeTraitPatterns with groom-linked entries → groomEffectiveness populated and recommendation generated', async () => {
+    const result = await analyzeTraitPatterns([thHorse.id]);
+    expect(Object.keys(result.commonTraits).length).toBeGreaterThan(0);
+    expect(result.recommendations.length).toBeGreaterThan(0);
+  });
+});
