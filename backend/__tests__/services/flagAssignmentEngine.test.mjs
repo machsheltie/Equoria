@@ -243,3 +243,36 @@ describe('calculateFlagAssignmentScore', () => {
     expect(typeof result.totalScore).toBe('number');
   });
 });
+
+// ── calculateFlagAssignmentScore — ageModifier branches (Equoria-jkht) ────────
+// calculateAgeModifier: ≤30→1.5 (covered above), ≤90→1.3, ≤180→1.1, ≤365→1.0, >365→0.8
+
+describe('calculateFlagAssignmentScore() — ageModifier branches (Equoria-jkht)', () => {
+  it('ageModifier is 1.3 for horse 60 days old (31-90d bracket)', async () => {
+    const h = makeHorsePOJO({ dateOfBirth: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000) });
+    const care = makeCarePatterns();
+    const result = await calculateFlagAssignmentScore(h, 'brave', care);
+    expect(result.components.ageModifier).toBe(1.3);
+  });
+
+  it('ageModifier is 1.1 for horse 120 days old (91-180d bracket)', async () => {
+    const h = makeHorsePOJO({ dateOfBirth: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000) });
+    const care = makeCarePatterns();
+    const result = await calculateFlagAssignmentScore(h, 'brave', care);
+    expect(result.components.ageModifier).toBe(1.1);
+  });
+
+  it('ageModifier is 1.0 for horse 200 days old (181-365d bracket)', async () => {
+    const h = makeHorsePOJO({ dateOfBirth: new Date(Date.now() - 200 * 24 * 60 * 60 * 1000) });
+    const care = makeCarePatterns();
+    const result = await calculateFlagAssignmentScore(h, 'brave', care);
+    expect(result.components.ageModifier).toBe(1.0);
+  });
+
+  it('ageModifier is 0.8 for horse 400 days old (> 365d bracket)', async () => {
+    const h = makeHorsePOJO({ dateOfBirth: new Date(Date.now() - 400 * 24 * 60 * 60 * 1000) });
+    const care = makeCarePatterns();
+    const result = await calculateFlagAssignmentScore(h, 'brave', care);
+    expect(result.components.ageModifier).toBe(0.8);
+  });
+});

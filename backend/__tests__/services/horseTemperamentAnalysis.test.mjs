@@ -235,3 +235,147 @@ describe('detectTemperamentChanges', () => {
     expect(result.changeDirection).toBe('insufficient_data');
   });
 });
+
+// ── classifyTemperamentFromFlags — high-confidence path (bestScore >= 0.6) ──────
+
+describe('classifyTemperamentFromFlags() — high-confidence path (Equoria-jkht)', () => {
+  it('returns confidence=0.8 for a strongly-matched flag set (calm temperament: 3/3 traits)', async () => {
+    // 'calm' temperament has traits: ['calm','patient','stable']; 3/3 match → score=1.0 >= 0.6
+    const result = await classifyTemperamentFromFlags(['calm', 'patient', 'stable']);
+    expect(result.primaryTemperament).toBe('calm');
+    expect(result.confidence).toBe(0.8);
+  });
+
+  it('returns confidence=0.8 for a 2/3 match on the calm temperament', async () => {
+    // 2/3 = 0.667 >= 0.6 → confidence=0.8
+    const result = await classifyTemperamentFromFlags(['calm', 'patient']);
+    expect(result.primaryTemperament).toBe('calm');
+    expect(result.confidence).toBe(0.8);
+  });
+});
+
+// ── interactions-based paths (lines 143-175, 287-554) ────────────────────────
+// DB fixture: user + groom + horse (no flags) + 7 groomInteractions.
+// 7 interactions covers: analyzeHorseTemperament interactions≥5 path,
+// analyzeBehavioralTrends ≥3 path, detectTemperamentChanges ≥6 path.
+
+describe('horseTemperamentAnalysis — interactions-based paths (Equoria-jkht)', () => {
+  let interUser;
+  let interGroom;
+  let interHorse;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    interUser = await prisma.user.create({
+      data: {
+        email: `ht-inter-${ts}-${rand()}@test.com`,
+        username: `htinter${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'HT',
+        lastName: 'Inter',
+        money: 1000,
+      },
+    });
+
+    interGroom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-HT-Groom-${ts}`,
+        speciality: 'foalCare',
+        personality: 'gentle',
+        userId: interUser.id,
+        isActive: true,
+      },
+    });
+
+    interHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-HT-InterHorse-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+        age: 30,
+        userId: interUser.id,
+        epigeneticFlags: [],
+      },
+    });
+
+    // 7 interactions: bondingChange rising [0,1,1,2,3,4,5], stressChange constant [2],
+    // quality mix: first 4 'good', last 3 'excellent' (43% excellent > 30% threshold).
+    // Spaced 1 min apart so createdAt ordering is deterministic for detectTemperamentChanges.
+    const interactionData = [
+      { bondingChange: 0, stressChange: 2, quality: 'good' },
+      { bondingChange: 1, stressChange: 2, quality: 'good' },
+      { bondingChange: 1, stressChange: 2, quality: 'good' },
+      { bondingChange: 2, stressChange: 2, quality: 'good' },
+      { bondingChange: 3, stressChange: 2, quality: 'excellent' },
+      { bondingChange: 4, stressChange: 2, quality: 'excellent' },
+      { bondingChange: 5, stressChange: 2, quality: 'excellent' },
+    ];
+
+    for (let i = 0; i < interactionData.length; i++) {
+      const d = interactionData[i];
+      await prisma.groomInteraction.create({
+        data: {
+          foalId: interHorse.id,
+          groomId: interGroom.id,
+          interactionType: 'grooming',
+          duration: 30,
+          bondingChange: d.bondingChange,
+          stressChange: d.stressChange,
+          quality: d.quality,
+          timestamp: new Date(ts - (interactionData.length - i) * 60000),
+          createdAt: new Date(ts - (interactionData.length - i) * 60000),
+        },
+      });
+    }
+  }, 60000);
+
+  afterAll(async () => {
+    await prisma.groomInteraction.deleteMany({ where: { foalId: interHorse.id } }).catch(() => {});
+    await prisma.horse.delete({ where: { id: interHorse.id } }).catch(() => {});
+    await prisma.groom.delete({ where: { id: interGroom.id } }).catch(() => {});
+    await prisma.user.delete({ where: { id: interUser.id } }).catch(() => {});
+  }, 30000);
+
+  it('uses interactions dataSource when horse has ≥5 interactions (line 143)', async () => {
+    const result = await analyzeHorseTemperament(interHorse.id);
+    expect(result.dataSource).toBe('interactions');
+    expect(result.interactionCount).toBeGreaterThanOrEqual(5);
+    expect(result.reliabilityScore).toBeGreaterThan(0);
+  });
+
+  it('analyzeBehavioralTrends returns overallDirection=positive with rising bondingChange (lines 287-331)', async () => {
+    const result = await analyzeBehavioralTrends(interHorse.id);
+    expect(result.dataPoints).toBeGreaterThanOrEqual(3);
+    expect(result.bondingTrend).toBe('improving');
+    expect(result.overallDirection).toBe('positive');
+    expect(typeof result.trendStrength).toBe('number');
+  });
+
+  it('identifyStressResponsePatterns returns reactive when avgStressChange > 1 (line 767)', async () => {
+    const result = await identifyStressResponsePatterns(interHorse.id);
+    expect(result.responseType).toBe('reactive');
+    expect(result.avgStressChange).toBeGreaterThan(1);
+    expect(result.copingMechanisms).toContain('bonding_seeking');
+    expect(result.copingMechanisms).toContain('responds_to_quality_care');
+  });
+
+  it('analyzeBondingPreferences returns dataAvailable=true with interactions (line 428)', async () => {
+    const result = await analyzeBondingPreferences(interHorse.id);
+    expect(result.dataAvailable).toBe(true);
+    expect(result.totalInteractions).toBeGreaterThanOrEqual(7);
+    expect(typeof result.bondingSpeed).toBe('number');
+    expect(typeof result.socialNature).toBe('number');
+    expect(typeof result.trustLevel).toBe('number');
+  });
+
+  it('detectTemperamentChanges returns positive changeDirection with ≥6 interactions (lines 529-553)', async () => {
+    const result = await detectTemperamentChanges(interHorse.id);
+    expect(result.changeDetected).toBe(true);
+    expect(result.changeDirection).toBe('positive');
+    expect(result.dataPoints).toBeGreaterThanOrEqual(6);
+    expect(Array.isArray(result.contributingFactors)).toBe(true);
+    expect(result.contributingFactors).toContain('improved_bonding');
+  });
+});
