@@ -12,9 +12,10 @@
  * actually schedule background work (cron schedules but jobs don't run in tests).
  */
 
-import { describe, it, expect, afterAll } from '@jest/globals';
+import { describe, it, expect, afterAll, beforeAll } from '@jest/globals';
 import { evaluateEnhancedMilestone } from '../../utils/enhancedMilestoneEvaluation.mjs';
 import cronJobService from '../../services/cronJobs.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 
 afterAll(() => {
   // Stop any accidentally-started cron service
@@ -403,6 +404,65 @@ describe('evaluateEnhancedMilestone — personality bonus branches', () => {
     const durSum = Object.values(withDuration.personalityBonuses).reduce((a, b) => a + b, 0);
     const noDurSum = Object.values(withoutDuration.personalityBonuses).reduce((a, b) => a + b, 0);
     expect(durSum).toBeGreaterThan(noDurSum);
+  });
+});
+
+// ── evaluateEnhancedMilestone — real DB horse: ultra-rare success path (lines 70-80) ──
+//
+// Using a real DB horse (stressLevel:51) ensures evaluateUltraRareTriggers succeeds
+// (returns an array instead of throwing), covering lines 70-80 where the ultraRareEvaluation
+// object is assigned from both successful ultra-rare and exotic results.
+// Also covers lines 34-37 in ultraRareTriggerEngine (PhoenixBorn triggered).
+
+let dbMilestoneUser;
+let dbMilestoneHorse;
+
+beforeAll(async () => {
+  dbMilestoneUser = await prisma.user.create({
+    data: {
+      email: `enhancedmilestone-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
+      username: `enhancedmilestone${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+      password: 'irrelevant-hash',
+      firstName: 'EnhancedMilestone',
+      lastName: 'DBTester',
+      money: 1000,
+    },
+  });
+  dbMilestoneHorse = await prisma.horse.create({
+    data: {
+      name: `TestFixture-EnhancedMilestoneDBHorse-${Date.now()}`,
+      sex: 'Filly',
+      dateOfBirth: new Date(),
+      age: 0,
+      userId: dbMilestoneUser.id,
+      stressLevel: 51,
+    },
+  });
+}, 30000);
+
+afterAll(async () => {
+  await prisma.horse.delete({ where: { id: dbMilestoneHorse.id } }).catch(() => {});
+  await prisma.user.delete({ where: { id: dbMilestoneUser.id } }).catch(() => {});
+}, 30000);
+
+describe('evaluateEnhancedMilestone — real DB horse (ultra-rare success path, lines 70-80)', () => {
+  const milestoneDataForDB = { type: 'imprinting', completed: true, score: 75 };
+
+  it('ultraRareEvaluation success path: totalRareTraits > 0 for stressLevel:51 horse', async () => {
+    // Phoenix-Born conditions: (stressEvents>=1 || hasHighStress=51>50=true) && recoveries>=0 → true
+    const result = await evaluateEnhancedMilestone(
+      { ...dbMilestoneHorse, epigeneticModifiers: { positive: [], negative: [], hidden: [] } },
+      { interactions: [] },
+      null,
+      milestoneDataForDB,
+    );
+    expect(typeof result.ultraRareEvaluation).toBe('object');
+    expect(Array.isArray(result.ultraRareEvaluation.ultraRareTriggered)).toBe(true);
+    expect(Array.isArray(result.ultraRareEvaluation.exoticUnlocked)).toBe(true);
+    // Phoenix-Born is triggered for stressLevel:51 → totalRareTraits >= 1
+    expect(result.ultraRareEvaluation.totalRareTraits).toBeGreaterThanOrEqual(1);
+    expect(result.ultraRareEvaluation.ultraRareTriggered.length).toBeGreaterThan(0);
+    expect(result.ultraRareEvaluation.ultraRareTriggered[0].name).toBe('Phoenix-Born');
   });
 });
 

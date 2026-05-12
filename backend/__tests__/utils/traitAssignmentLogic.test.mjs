@@ -240,3 +240,90 @@ describe('calculateTraitProbabilityWithBonus() — bonus-trait eligibility check
     expect(result.eligibilityDetails).toBeDefined();
   });
 });
+
+// ── calculateTraitProbabilityWithBonus() — catch block (lines 111-115) ───────
+
+describe('calculateTraitProbabilityWithBonus() — catch block (lines 111-115) (Equoria-jkht)', () => {
+  it('rejects when groomId does not exist (getBonusTraits throws Groom not found)', async () => {
+    await expect(calculateTraitProbabilityWithBonus(horse.id, 'Brave', 0.3, -9999)).rejects.toThrow();
+  });
+});
+
+// ── calculateTraitProbabilityWithBonus() — bonus applied path (lines 93-110) ─
+// Requires: groom with bonusTraitMap, eligible horse (bond >= 60, coverage >= 75%)
+// Bond: start at 50, add bondingChange=10 → 60 >= 60 ✓
+// Coverage: assignment for 29 of 30 days → 96.7% >= 75% ✓
+
+describe('calculateTraitProbabilityWithBonus() — bonus applied (lines 93-110) (Equoria-jkht)', () => {
+  let eligibleGroom, eligibleHorse;
+
+  beforeAll(async () => {
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const twentyNineDaysAgo = new Date(Date.now() - 29 * 24 * 60 * 60 * 1000);
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    eligibleHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-EligibleBonusHorse-${Date.now()}`,
+        sex: 'Filly',
+        dateOfBirth: thirtyDaysAgo,
+        age: 0,
+        userId: user.id,
+      },
+    });
+
+    eligibleGroom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-EligibleBonusGroom-${Date.now()}`,
+        speciality: 'foal_care',
+        personality: 'gentle',
+        userId: user.id,
+        bonusTraitMap: { TestEligibleTrait: 0.15 },
+      },
+    });
+
+    // Assignment from 29 days ago → coverageDays=29, coveragePercentage=29/30=0.967 >= 0.75
+    await prisma.groomAssignment.create({
+      data: {
+        foalId: eligibleHorse.id,
+        groomId: eligibleGroom.id,
+        startDate: twentyNineDaysAgo,
+        isActive: true,
+      },
+    });
+
+    // Interaction with bondingChange=10 → averageBondScore = 50+10 = 60 >= 60
+    await prisma.groomInteraction.create({
+      data: {
+        foalId: eligibleHorse.id,
+        groomId: eligibleGroom.id,
+        interactionType: 'grooming',
+        duration: 30,
+        bondingChange: 10,
+        timestamp: oneDayAgo,
+      },
+    });
+  }, 30000);
+
+  afterAll(async () => {
+    await prisma.groomInteraction.deleteMany({ where: { foalId: eligibleHorse.id } }).catch(() => {});
+    await prisma.groomAssignment.deleteMany({ where: { foalId: eligibleHorse.id } }).catch(() => {});
+    await prisma.groom.delete({ where: { id: eligibleGroom.id } }).catch(() => {});
+    await prisma.horse.delete({ where: { id: eligibleHorse.id } }).catch(() => {});
+  }, 30000);
+
+  it('applies bonus and returns bonusApplied=true — covers lines 93-110', async () => {
+    const result = await calculateTraitProbabilityWithBonus(
+      eligibleHorse.id,
+      'TestEligibleTrait',
+      0.3,
+      eligibleGroom.id,
+    );
+    expect(result.bonusApplied).toBe(true);
+    expect(result.bonusAmount).toBe(0.15);
+    expect(result.finalProbability).toBeCloseTo(0.45);
+    expect(result.reason).toBe('Bonus applied successfully');
+    expect(result.eligibilityDetails).toBeDefined();
+    expect(result.eligibilityDetails.averageBondScore).toBeGreaterThanOrEqual(60);
+  });
+});
