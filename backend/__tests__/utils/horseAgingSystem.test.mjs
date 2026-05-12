@@ -338,3 +338,53 @@ describe('processHorseBirthdays() — dryRun else-branch (lines 416-417) (Equori
     expect(typeof result.duration).toBe('number');
   });
 });
+
+// ── checkForMilestones age_1 — if(horse) true path (Equoria-jkht) ─────────────
+// Lines 181-213: horse found → evaluateEpigeneticTagsFromFoalTasks with empty
+// taskLog → assignedTraits=[] → else branch (lines 209-213) fires.
+
+describe('checkForMilestones() — age_1 if(horse) true path, empty traits (Equoria-jkht)', () => {
+  let cm1User;
+  let cm1Horse;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    cm1User = await prisma.user.create({
+      data: {
+        email: `cm1-${ts}-${rand()}@test.com`,
+        username: `cm1fix${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'CM1',
+        lastName: 'Fixture',
+        money: 0,
+      },
+    });
+
+    cm1Horse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-CM1-${ts}`,
+        sex: 'Colt',
+        dateOfBirth: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+        age: 0,
+        userId: cm1User.id,
+      },
+    });
+  }, 30000);
+
+  afterAll(async () => {
+    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-CM1-' } } }).catch(() => {});
+    await prisma.user.delete({ where: { id: cm1User.id } }).catch(() => {});
+  }, 30000);
+
+  it('if(horse) true path: empty taskLog → assignedTraits=[] → else branch (lines 181, 183-187, 209-213)', async () => {
+    // previousAge=0 < 7, newAge=8 >= 7 → age_1 condition fires
+    // horse has no taskLog entries → evaluateEpigeneticTagsFromFoalTasks returns []
+    // → else branch at line 209 fires (no prisma.horse.update called)
+    const result = await checkForMilestones(cm1Horse.id, 0, 8);
+    expect(result.milestonesTriggered).toContain('age_1_trait_evaluation');
+    expect(result.traitsAssigned).toEqual([]);
+    expect(result.retirementTriggered).toBe(false);
+  });
+});

@@ -23,6 +23,7 @@ import {
   cleanupExpiredTokens,
   detectTokenReuse,
   invalidateTokenFamily,
+  rotateRefreshToken,
 } from '../../utils/tokenRotationService.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 
@@ -314,5 +315,94 @@ describe('validateRefreshToken() — DB record status checks (lines 282-305) (Eq
     expect(result.isValid).toBe(false);
     expect(result.error).toBe('Token has expired');
     expect(result.decoded).toBeNull();
+  });
+});
+
+// ── rotateRefreshToken + validateRefreshToken happy-path + detectTokenReuse first-use ─
+// Shared fixture: one user, one token. Tests run sequentially within the describe:
+//   1+2: read-only checks on fresh token1
+//   3:   first rotation (token1 → isActive=false, isInvalidated=false)
+//   4:   second rotation attempt → reuse detection fires (isReuse=true, familyId present)
+//   5:   malformed token → isReuse=true, familyId=null (no-family branch)
+//   6:   SESSION_UPGRADE_REQUIRED token → !validation.isValid branch (line 433-439)
+
+describe('rotateRefreshToken + validateRefreshToken happy-path + detectTokenReuse first-use (Equoria-jkht)', () => {
+  let rtUser;
+  let token1;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+    rtUser = await prisma.user.create({
+      data: {
+        email: `trs-rot-${ts}-${rand()}@test.com`,
+        username: `trsrot${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'ROT',
+        lastName: 'Fixture',
+        money: 0,
+      },
+    });
+    const pair = await createTokenPair(rtUser.id);
+    token1 = pair.refreshToken;
+  }, 30000);
+
+  afterAll(async () => {
+    await prisma.refreshToken.deleteMany({ where: { userId: rtUser.id } }).catch(() => {});
+    await prisma.user.delete({ where: { id: rtUser.id } }).catch(() => {});
+  }, 30000);
+
+  it('validateRefreshToken: returns isValid=true with decoded+tokenRecord for a fresh active token (lines 307-312)', async () => {
+    const result = await validateRefreshToken(token1);
+    expect(result.isValid).toBe(true);
+    expect(result.error).toBeNull();
+    expect(result.decoded).toBeDefined();
+    expect(result.decoded.userId).toBe(rtUser.id);
+    expect(result.tokenRecord).toBeDefined();
+    expect(result.tokenRecord.isActive).toBe(true);
+    expect(result.tokenRecord.isInvalidated).toBe(false);
+  });
+
+  it('detectTokenReuse: returns isReuse=false, reason="First use" for an active token not yet rotated (lines 384-390)', async () => {
+    const result = await detectTokenReuse(token1);
+    expect(result.isReuse).toBe(false);
+    expect(result.reason).toBe('First use');
+    expect(typeof result.familyId).toBe('string');
+    expect(result.shouldInvalidateFamily).toBe(false);
+  });
+
+  it('rotateRefreshToken: success path — returns new token pair (lines 448-492)', async () => {
+    const result = await rotateRefreshToken(token1);
+    expect(result.success).toBe(true);
+    expect(result.error).toBeNull();
+    expect(result.newTokenPair).toBeDefined();
+    expect(typeof result.newTokenPair.refreshToken).toBe('string');
+    expect(result.familyInvalidated).toBe(false);
+    // token1 is now isActive=false, isInvalidated=false — next test uses this state
+  });
+
+  it('rotateRefreshToken: reuse with familyId — success=false, familyInvalidated=true (lines 411-427)', async () => {
+    // token1 is isActive=false after the previous rotation → reuse detected with familyId present
+    const result = await rotateRefreshToken(token1);
+    expect(result.success).toBe(false);
+    expect(result.familyInvalidated).toBe(true);
+    expect(result.newTokenPair).toBeNull();
+  });
+
+  it('rotateRefreshToken: isReuse=true with familyId=null (malformed JWT) — success=false, familyInvalidated=true (lines 411-416 false branch)', async () => {
+    // detectTokenReuse sees no record → {isReuse: true, familyId: null} → skips invalidateTokenFamily
+    const result = await rotateRefreshToken('not.a.real.jwt');
+    expect(result.success).toBe(false);
+    expect(result.familyInvalidated).toBe(true);
+  });
+
+  it('rotateRefreshToken: !validation.isValid path — success=false, familyInvalidated=false (lines 431-439)', async () => {
+    // GHOST_USER_ID: detectTokenReuse → isReuse=false (SESSION_UPGRADE), then
+    // validateRefreshToken → isValid=false → !validation.isValid branch fires
+    const token = signRefreshToken({ userId: GHOST_USER_ID, type: 'refresh' });
+    const result = await rotateRefreshToken(token);
+    expect(result.success).toBe(false);
+    expect(result.familyInvalidated).toBe(false);
+    expect(result.error).toBe('SESSION_UPGRADE_REQUIRED');
   });
 });
