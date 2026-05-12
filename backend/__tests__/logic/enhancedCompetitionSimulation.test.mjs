@@ -226,4 +226,29 @@ describe('getCompetitionEligibilitySummary', () => {
     expect(summary).toBeDefined();
     expect(summary.horseLevel).toBeGreaterThanOrEqual(1);
   });
+
+  it('requiredTrait is null for non-Gaited discipline (|| null branch)', () => {
+    const summary = getCompetitionEligibilitySummary(validHorse, 'Racing');
+    expect(summary.requiredTrait).toBeNull();
+  });
+
+  it('requiredTrait is "gaited" for Gaited discipline (requiresTrait branch)', () => {
+    const summary = getCompetitionEligibilitySummary(validHorse, 'Gaited');
+    expect(summary.requiredTrait).toBe('gaited');
+  });
+
+  it('traitEligible is false for horse without "gaited" in Gaited discipline', () => {
+    const horseNoGaited = { ...validHorse, epigeneticModifiers: { positive: [], negative: [] } };
+    const summary = getCompetitionEligibilitySummary(horseNoGaited, 'Gaited');
+    expect(summary.traitEligible).toBe(false);
+  });
+
+  it('traitEligible is true for horse with "gaited" trait in Gaited discipline', () => {
+    const horseGaited = {
+      ...validHorse,
+      epigeneticModifiers: { positive: ['gaited'], negative: [] },
+    };
+    const summary = getCompetitionEligibilitySummary(horseGaited, 'Gaited');
+    expect(summary.traitEligible).toBe(true);
+  });
 });
