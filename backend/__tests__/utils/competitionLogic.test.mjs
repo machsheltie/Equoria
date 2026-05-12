@@ -410,3 +410,55 @@ describe('calculateStatGain', () => {
     expect(calculateStatGain(4, 'Underwater Polo')).toBeNull();
   });
 });
+
+// ─── Catch-block coverage (Equoria-jkht) ─────────────────────────────────────
+// Symbol arithmetic triggers TypeError inside pure-math try blocks.
+
+describe('calculateCompetitionScore — catch block (lines 202-203)', () => {
+  it('returns 0 when Symbol baseScore causes arithmetic TypeError', () => {
+    const result = calculateCompetitionScore(Symbol('bad'), {}, 6, 'Racing');
+    expect(result).toBe(0);
+  });
+});
+
+describe('calculatePrizeAmount — catch block (lines 230-231)', () => {
+  it('returns 0 when Symbol totalPrizePool causes arithmetic TypeError', () => {
+    const result = calculatePrizeAmount(Symbol('bad'), 1, 5);
+    expect(result).toBe(0);
+  });
+});
+
+describe('calculateCompetitionXP — catch block (lines 265-266)', () => {
+  it('returns 3 (minimum) when Symbol score causes arithmetic TypeError', () => {
+    const result = calculateCompetitionXP(Symbol('bad'), 1, 5);
+    expect(result).toBe(3);
+  });
+});
+
+describe('calculatePlacements — catch block (lines 286-287)', () => {
+  it('throws when null entries are passed (catch block fires then re-throws)', () => {
+    expect(() => calculatePlacements(null)).toThrow();
+  });
+});
+
+describe('calculateHorseLevel — catch block (lines 488-489)', () => {
+  it('returns 1 when null horse causes property access TypeError', () => {
+    const result = calculateHorseLevel(null, 'Racing');
+    expect(result).toBe(1);
+  });
+});
+
+describe('checkAgeRequirements — catch block (lines 504-505)', () => {
+  it('returns false when null horse causes property access TypeError', () => {
+    const result = checkAgeRequirements(null);
+    expect(result).toBe(false);
+  });
+});
+
+describe('checkTraitRequirements — catch block (lines 529-530)', () => {
+  it('returns false when null horse causes property access TypeError', () => {
+    // 'Gaited' has requiresTrait:'gaited' so execution reaches horse.epigeneticModifiers
+    const result = checkTraitRequirements(null, 'Gaited');
+    expect(result).toBe(false);
+  });
+});
