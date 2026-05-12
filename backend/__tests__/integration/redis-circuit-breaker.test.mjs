@@ -45,7 +45,9 @@ function makeConfigurableAsync() {
   const queue = [];
   const fn = async (...args) => {
     calls.push(args);
-    if (queue.length > 0) return queue.shift()();
+    if (queue.length > 0) {
+      return queue.shift()();
+    }
     return _impl(...args);
   };
   fn.mock = { calls };

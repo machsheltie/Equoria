@@ -78,7 +78,9 @@ describe('Documentation Routes', () => {
 
   afterAll(async () => {
     // Restore service pointer and clean temp copy.
-    if (docService) docService.swaggerPath = originalSwaggerPath;
+    if (docService) {
+      docService.swaggerPath = originalSwaggerPath;
+    }
     if (tempDir && existsSync(tempDir)) {
       rmSync(tempDir, { recursive: true, force: true });
     }

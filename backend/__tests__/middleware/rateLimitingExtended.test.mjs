@@ -160,7 +160,9 @@ describe('createRateLimiter — handler', () => {
         resolve();
       });
       // Handler sets status synchronously
-      if (res2.statusCode === 429) resolve();
+      if (res2.statusCode === 429) {
+        resolve();
+      }
       // Fallback resolve in case the middleware resolves differently
       setTimeout(resolve, 200);
     });

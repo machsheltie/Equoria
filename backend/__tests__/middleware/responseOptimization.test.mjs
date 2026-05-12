@@ -40,7 +40,9 @@ function makeRes(overrides = {}) {
     },
     end(...args) {
       this._ended = true;
-      if (this._originalEnd) this._originalEnd(...args);
+      if (this._originalEnd) {
+        this._originalEnd(...args);
+      }
     },
     ...overrides,
   };

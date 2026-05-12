@@ -18,8 +18,10 @@ function makeReq(overrides = {}) {
 function makeRes(overrides = {}) {
   return {
     statusCode: 200,
-    end: function (chunk, encoding) {
-      if (this._originalEnd) this._originalEnd(chunk, encoding);
+    end(chunk, encoding) {
+      if (this._originalEnd) {
+        this._originalEnd(chunk, encoding);
+      }
     },
     ...overrides,
   };

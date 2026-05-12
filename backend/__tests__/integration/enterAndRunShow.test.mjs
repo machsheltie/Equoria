@@ -82,10 +82,18 @@ afterAll(async () => {
   await prisma.competitionResult
     .deleteMany({ where: { OR: [{ horseId: horse?.id }, { horseId: horseWithRider?.id }] } })
     .catch(() => {});
-  if (show) await prisma.show.delete({ where: { id: show.id } }).catch(() => {});
-  if (horseWithRider) await prisma.horse.delete({ where: { id: horseWithRider.id } }).catch(() => {});
-  if (horse) await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  if (user) await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
+  if (show) {
+    await prisma.show.delete({ where: { id: show.id } }).catch(() => {});
+  }
+  if (horseWithRider) {
+    await prisma.horse.delete({ where: { id: horseWithRider.id } }).catch(() => {});
+  }
+  if (horse) {
+    await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
+  }
+  if (user) {
+    await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
+  }
 }, 30000);
 
 // ─── Input validation ─────────────────────────────────────────────────────────

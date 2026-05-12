@@ -30,7 +30,7 @@ function makeReq(overrides = {}) {
 function makeRes(overrides = {}) {
   return {
     statusCode: 200,
-    send: function (data) {
+    send(data) {
       this._data = data;
     },
     ...overrides,

@@ -64,7 +64,9 @@ describe('Auth — Password Reset Integration', () => {
     const lines = readFileSync(captureFile, 'utf-8').trim().split('\n').filter(Boolean);
     const entries = lines.map(l => JSON.parse(l)).filter(e => e.kind === 'password-reset');
     const entry = entries[entries.length - 1];
-    if (!entry) throw new Error(`No password-reset email captured in ${captureFile}`);
+    if (!entry) {
+      throw new Error(`No password-reset email captured in ${captureFile}`);
+    }
     const url = new URL(entry.preview);
     return url.searchParams.get('token');
   }

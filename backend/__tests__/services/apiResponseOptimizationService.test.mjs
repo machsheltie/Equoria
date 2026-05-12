@@ -399,7 +399,9 @@ describe('ResponseCacheService.shouldCache', () => {
     return {
       statusCode,
       getHeader: name => {
-        if (name === 'Cache-Control') return cacheControl;
+        if (name === 'Cache-Control') {
+          return cacheControl;
+        }
         return null;
       },
     };

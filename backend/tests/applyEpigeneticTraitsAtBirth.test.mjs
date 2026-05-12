@@ -18,7 +18,9 @@ import { applyEpigeneticTraitsAtBirth } from '../utils/applyEpigeneticTraitsAtBi
 function traitAppears(fn, traitName, category = 'positive', maxRuns = 25) {
   for (let i = 0; i < maxRuns; i++) {
     const result = fn();
-    if (result[category].includes(traitName)) return true;
+    if (result[category].includes(traitName)) {
+      return true;
+    }
   }
   return false;
 }

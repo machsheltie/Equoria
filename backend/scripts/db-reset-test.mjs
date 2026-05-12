@@ -81,7 +81,7 @@ if (!LOCALHOST_PATTERNS.includes(host)) {
   process.exit(1);
 }
 
-console.log(`\ndb:reset:test`);
+console.log('\ndb:reset:test');
 console.log(`  host    : ${host}:${port}`);
 console.log(`  database: ${dbName}`);
 console.log('');
@@ -115,7 +115,7 @@ async function resetDatabase() {
 
   // Run prisma migrate deploy from packages/database
   const pkgDbPath = path.join(repoRoot, 'packages', 'database');
-  console.log(`  → running prisma migrate deploy...`);
+  console.log('  → running prisma migrate deploy...');
   try {
     const output = execSync('npx prisma migrate deploy', {
       cwd: pkgDbPath,
@@ -137,7 +137,7 @@ async function resetDatabase() {
   const countClient = new Client({ host, port, user, password, database: dbName });
   await countClient.connect();
   const { rows } = await countClient.query(
-    `SELECT COUNT(*) AS n FROM "_prisma_migrations" WHERE finished_at IS NOT NULL`,
+    'SELECT COUNT(*) AS n FROM "_prisma_migrations" WHERE finished_at IS NOT NULL',
   );
   await countClient.end();
 

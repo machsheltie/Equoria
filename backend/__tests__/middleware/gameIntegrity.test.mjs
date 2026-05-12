@@ -120,7 +120,7 @@ describe('preventDuplication', () => {
 
   it('calls next() on first operation', async () => {
     const mw = preventDuplication('horse');
-    const req = makeReq({ body: { action: 'unique-' + Date.now() } });
+    const req = makeReq({ body: { action: `unique-${Date.now()}` } });
     const res = makeRes();
     let called = false;
     await mw(req, res, () => {
@@ -131,7 +131,7 @@ describe('preventDuplication', () => {
 
   it('returns 429 when same operation is repeated within 5 seconds', async () => {
     const mw = preventDuplication('horse');
-    const body = { action: 'dup-test-' + Date.now() };
+    const body = { action: `dup-test-${Date.now()}` };
     const req1 = makeReq({ body });
     const req2 = makeReq({ body });
     const res1 = makeRes();
@@ -143,7 +143,7 @@ describe('preventDuplication', () => {
 
   it('different users can perform the same operation', async () => {
     const mw = preventDuplication('horse');
-    const body = { action: 'shared-action-' + Date.now() };
+    const body = { action: `shared-action-${Date.now()}` };
     const req1 = makeReq({ body, user: { id: 'user-A' } });
     const req2 = makeReq({ body, user: { id: 'user-B' } });
     const res1 = makeRes();

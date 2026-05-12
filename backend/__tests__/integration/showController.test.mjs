@@ -186,7 +186,9 @@ describe('POST /api/shows/:id/enter', () => {
   });
 
   it('returns 201 or 409 when entering owned eligible horse in open show', async () => {
-    if (!createdShowId) return;
+    if (!createdShowId) {
+      return;
+    }
     const csrf = await fetchCsrf(app);
     const res = await request(app)
       .post(`/api/shows/${createdShowId}/enter`)

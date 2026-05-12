@@ -121,7 +121,7 @@ describe('createRateLimiter', () => {
       set: () => {},
       setHeader: () => {},
       getHeader: () => null,
-      status: function (code) {
+      status(code) {
         this.statusCode = code;
         return this;
       },

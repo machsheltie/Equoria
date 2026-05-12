@@ -188,7 +188,9 @@ describe('initializeSentry', () => {
     delete process.env.SENTRY_DSN;
     const mockApp = { use: () => {} };
     expect(() => initializeSentry(mockApp)).not.toThrow();
-    if (savedDsn !== undefined) process.env.SENTRY_DSN = savedDsn;
+    if (savedDsn !== undefined) {
+      process.env.SENTRY_DSN = savedDsn;
+    }
   });
 
   it('does not call app.use when SENTRY_DSN is not configured', () => {
@@ -202,7 +204,9 @@ describe('initializeSentry', () => {
     };
     initializeSentry(mockApp);
     expect(useCalled).toBe(false);
-    if (savedDsn !== undefined) process.env.SENTRY_DSN = savedDsn;
+    if (savedDsn !== undefined) {
+      process.env.SENTRY_DSN = savedDsn;
+    }
   });
 });
 
@@ -221,7 +225,9 @@ describe('attachSentryErrorHandler', () => {
     };
     attachSentryErrorHandler(mockApp);
     expect(useCalled).toBe(false);
-    if (savedDsn !== undefined) process.env.SENTRY_DSN = savedDsn;
+    if (savedDsn !== undefined) {
+      process.env.SENTRY_DSN = savedDsn;
+    }
   });
 });
 

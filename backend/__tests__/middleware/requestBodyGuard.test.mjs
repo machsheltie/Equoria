@@ -95,7 +95,7 @@ describe('detectDuplicateJsonKeys', () => {
 
   it('throws for unicode-escaped duplicate key (\\u006eame = "name")', () => {
     // n = 'n', so name = "name"
-    const payload = JSON.stringify({ name: 'a' }).slice(0, -1) + ',"name":"b"}';
+    const payload = `${JSON.stringify({ name: 'a' }).slice(0, -1)},"name":"b"}`;
     let err;
     try {
       detectDuplicateJsonKeys(payload);
@@ -284,7 +284,9 @@ describe('prototypePollutionGuard', () => {
     const mw = prototypePollutionGuard();
     // Build a 202-level deep object (exceeds MAX_BODY_DEPTH=200)
     let deep = { leaf: true };
-    for (let i = 0; i < 202; i++) deep = { child: deep };
+    for (let i = 0; i < 202; i++) {
+      deep = { child: deep };
+    }
     const req = { method: 'POST', path: '/test', body: deep };
     const res = makeRes();
     const next = makeNext();
@@ -358,7 +360,9 @@ describe('prototypePollutionGuardQuery', () => {
   it('returns 400 for BODY_DEPTH_EXCEEDED on query', () => {
     const mw = prototypePollutionGuardQuery();
     let deep = { leaf: true };
-    for (let i = 0; i < 202; i++) deep = { child: deep };
+    for (let i = 0; i < 202; i++) {
+      deep = { child: deep };
+    }
     const req = { method: 'GET', path: '/test', query: deep };
     const res = makeRes();
     const next = makeNext();

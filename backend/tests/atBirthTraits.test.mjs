@@ -31,7 +31,9 @@ import {
 async function traitAppears(fn, traitName, category = 'positive', maxRuns = 50) {
   for (let i = 0; i < maxRuns; i++) {
     const result = await fn();
-    if (result.traits[category].includes(traitName)) return true;
+    if (result.traits[category].includes(traitName)) {
+      return true;
+    }
   }
   return false;
 }

@@ -89,7 +89,9 @@ describe('calculateOverallConformation', () => {
 
   it('returns 80 when all 8 regions are 80', () => {
     const scores = {};
-    for (const r of CONFORMATION_REGIONS) scores[r] = 80;
+    for (const r of CONFORMATION_REGIONS) {
+      scores[r] = 80;
+    }
     expect(calculateOverallConformation(scores)).toBe(80);
   });
 
@@ -104,7 +106,9 @@ describe('calculateOverallConformation', () => {
 
   it('ignores extra keys beyond the 8 regions', () => {
     const scores = {};
-    for (const r of CONFORMATION_REGIONS) scores[r] = 70;
+    for (const r of CONFORMATION_REGIONS) {
+      scores[r] = 70;
+    }
     scores.extraKey = 9999;
     expect(calculateOverallConformation(scores)).toBe(70);
   });
@@ -137,7 +141,9 @@ describe('hasValidConformationScores', () => {
 
   it('returns true when all regions are present', () => {
     const scores = {};
-    for (const r of CONFORMATION_REGIONS) scores[r] = 65;
+    for (const r of CONFORMATION_REGIONS) {
+      scores[r] = 65;
+    }
     expect(hasValidConformationScores(scores)).toBe(true);
   });
 
@@ -165,7 +171,9 @@ describe('validateConformationScores', () => {
 
   it('preserves valid integer region scores', () => {
     const scores = {};
-    for (const r of CONFORMATION_REGIONS) scores[r] = 80;
+    for (const r of CONFORMATION_REGIONS) {
+      scores[r] = 80;
+    }
     const result = validateConformationScores(scores);
     for (const r of CONFORMATION_REGIONS) {
       expect(result[r]).toBe(80);
@@ -175,7 +183,9 @@ describe('validateConformationScores', () => {
   it('clamps out-of-range values', () => {
     const scores = { head: -5, neck: 120 };
     for (const r of CONFORMATION_REGIONS) {
-      if (!scores[r]) scores[r] = 70;
+      if (!scores[r]) {
+        scores[r] = 70;
+      }
     }
     const result = validateConformationScores(scores);
     expect(result.head).toBe(0);
@@ -191,7 +201,9 @@ describe('validateConformationScores', () => {
 
   it('sets overallConformation from region values', () => {
     const scores = {};
-    for (const r of CONFORMATION_REGIONS) scores[r] = 60;
+    for (const r of CONFORMATION_REGIONS) {
+      scores[r] = 60;
+    }
     const result = validateConformationScores(scores);
     expect(result.overallConformation).toBe(60);
   });

@@ -268,7 +268,7 @@ describe('Trait Assignment with Streak Bonuses', () => {
 
 describe('Real-World Player Scenarios', () => {
   it('casual player: 2-day weekends lose streak after 5 weekdays (beyond grace period)', () => {
-    let streak = buildStreak(2);
+    const streak = buildStreak(2);
     expect(streak).toBe(2);
 
     const weekdayResult = updateConsecutiveDays(streak, false, 5);
