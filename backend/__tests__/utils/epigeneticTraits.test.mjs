@@ -404,3 +404,26 @@ describe('calculateEpigeneticTraits — environmental condition branches', () =>
     expect(results.every(r => Array.isArray(r.positive))).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// determineTraitVisibility — legendary hidden branch (line 386)
+//
+// Derivation (seed=100, bondScore=100, stressLevel=0):
+//   SeededRandom(100) call sequence:
+//     call1 = 46277/233280 ≈ 0.198 < 0.40 (legendaryBloodline inheritance prob) → INHERITED
+//     call2 = 70074/233280 ≈ 0.300 (barely ≥ 0.3 threshold) → no positive env trait
+//     call3 = 23251/233280 ≈ 0.100 (≥ 0.08 rare threshold)   → no rare env trait
+//     call4 = 56288/233280 ≈ 0.241 < 0.9 threshold            → HIDDEN (line 386 hit)
+// ---------------------------------------------------------------------------
+describe('calculateEpigeneticTraits — legendary trait hidden (line 386)', () => {
+  it('legendaryBloodline (legendary rarity) is placed in hidden with seed=100, covers line 386', () => {
+    const result = calculateEpigeneticTraits({
+      damTraits: ['legendaryBloodline'],
+      sireTraits: [],
+      damBondScore: 100,
+      damStressLevel: 0,
+      seed: 100,
+    });
+    expect(result.hidden).toContain('legendaryBloodline');
+  });
+});

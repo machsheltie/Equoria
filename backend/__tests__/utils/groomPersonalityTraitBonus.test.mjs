@@ -176,3 +176,39 @@ describe('validatePersonalityTemperament', () => {
     expect(result.validPersonalities.length).toBeGreaterThan(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// calculatePersonalityCompatibility — default bondScore parameter (line 164)
+// ---------------------------------------------------------------------------
+describe('calculatePersonalityCompatibility — default bondScore=0 branch (line 164)', () => {
+  it('omitting bondScore uses default 0 → isStrongMatch is false for match with low default bond', () => {
+    // Calm + Reactive is an ideal match; bond defaults to 0 (not > 60) → isStrongMatch false
+    const result = calculatePersonalityCompatibility('Calm', 'Reactive');
+    expect(result.isMatch).toBe(true);
+    expect(result.isStrongMatch).toBe(false);
+    expect(result.traitModifierScore).toBe(1); // traitDevBonus for regular match
+  });
+});
+
+// ---------------------------------------------------------------------------
+// calculatePersonalityCompatibility — catch block (lines 213-215)
+// ---------------------------------------------------------------------------
+describe('calculatePersonalityCompatibility — catch block (lines 213-215)', () => {
+  it('returns error fallback when bondScore.valueOf() throws during isStrongMatch evaluation', () => {
+    // Strategy: pick a known personality+temperament that IS a match (isMatch=true),
+    // then pass a bondScore whose valueOf() throws.  JavaScript ToPrimitive calls
+    // valueOf() when evaluating `bondScore > 60`, which throws and lands in catch.
+    const throwingBond = {
+      valueOf() {
+        throw new Error('bond evaluation bomb');
+      },
+    };
+    const result = calculatePersonalityCompatibility('Calm', 'Reactive', throwingBond);
+    expect(result.isMatch).toBe(false);
+    expect(result.isStrongMatch).toBe(false);
+    expect(result.traitModifierScore).toBe(0);
+    expect(result.stressResistanceBonus).toBe(0);
+    expect(result.bondModifier).toBe(0);
+    expect(result.description).toBe('Error calculating compatibility');
+  });
+});

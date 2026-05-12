@@ -315,3 +315,42 @@ describe('calculateCompetitionScore — horse.id || "(unknown)" logger right-bra
     expect(typeof score).toBe('number');
   });
 });
+
+// ─── convertEventTypeToTraitName — || fallback branch (line 166) ──────────────
+
+describe('calculateCompetitionScore — convertEventTypeToTraitName fallback (line 166)', () => {
+  it('unknown discipline with matching epigeneticModifiers exercises the || fallback on line 166', () => {
+    // 'Polo' is not in eventTypeMap, so convertEventTypeToTraitName falls back to
+    // the template-literal path: `discipline_affinity_polo`. The horse has that trait,
+    // so traitBonus=5 is applied — proving the right-hand branch of `||` on line 166 ran.
+    const horse = makeHorse({
+      speed: 0,
+      stamina: 0,
+      intelligence: 0,
+      epigeneticModifiers: { positive: ['discipline_affinity_polo'] },
+    });
+    const score = calculateCompetitionScore(horse, 'Polo', 'ridden', () => 0.5);
+    // Base=0, traitBonus=5, luck=0 (luckFn=0.5 → modifier=0), so score=5
+    expect(score).toBe(5);
+  });
+});
+
+// ─── calculateCompetitionScore — line 117 horse.id/unknown branch (Equoria-jkht) ──
+
+describe('calculateCompetitionScore — line-117 logger horse.id || (unknown) branches', () => {
+  it('non-zero temperament + id-only horse covers horse.id branch in line-117 logger', () => {
+    // clampedTempMod=0.05 (Bold ridden) fires logger.info; horse.name absent → horse.id=99 used
+    const horse = { id: 99, speed: 50, stamina: 50, intelligence: 50, temperament: 'Bold' };
+    const score = calculateCompetitionScore(horse, 'Racing', 'ridden', () => 0.5);
+    expect(typeof score).toBe('number');
+    expect(score).toBeGreaterThan(0);
+  });
+
+  it('non-zero temperament + no name/id horse covers "(unknown)" branch in line-117 logger', () => {
+    // clampedTempMod=-0.05 (Nervous ridden) fires logger.info; both horse.name and horse.id absent
+    const horse = { speed: 50, stamina: 50, intelligence: 50, temperament: 'Nervous' };
+    const score = calculateCompetitionScore(horse, 'Racing', 'ridden', () => 0.5);
+    expect(typeof score).toBe('number');
+    expect(score).toBeGreaterThanOrEqual(0);
+  });
+});

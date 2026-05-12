@@ -1,4 +1,4 @@
-export const DEPLOYABLE_ENVS = new Set(['production', 'beta']);
+export const DEPLOYABLE_ENVS = new Set(['production', 'beta', 'beta-readiness']);
 
 const GENERIC_PLACEHOLDER_PATTERNS = [
   'your-super-secret',
