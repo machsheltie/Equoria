@@ -104,3 +104,45 @@ describe('getTransactionsForUser pagination', () => {
     expect(result.page).toBe(2);
   });
 });
+
+// ── recordTransaction — validation branches (Equoria-jkht) ───────────────────
+
+describe('recordTransaction — validation branches (Equoria-jkht)', () => {
+  it('throws for invalid type (not credit/debit)', async () => {
+    await expect(
+      recordTransaction({ userId: user.id, type: 'invalid', amount: 100, category: 'x', description: 'x' }),
+    ).rejects.toThrow('Invalid ledger transaction payload');
+  });
+
+  it('throws for amount=0 (normalizedAmount <= 0 branch)', async () => {
+    await expect(
+      recordTransaction({ userId: user.id, type: 'credit', amount: 0, category: 'x', description: 'x' }),
+    ).rejects.toThrow('Invalid ledger transaction payload');
+  });
+
+  it('throws for negative amount (normalizedAmount <= 0 branch)', async () => {
+    await expect(
+      recordTransaction({ userId: user.id, type: 'credit', amount: -50, category: 'x', description: 'x' }),
+    ).rejects.toThrow('Invalid ledger transaction payload');
+  });
+
+  it('throws for missing userId (!userId branch)', async () => {
+    await expect(
+      recordTransaction({ userId: null, type: 'credit', amount: 100, category: 'x', description: 'x' }),
+    ).rejects.toThrow('Invalid ledger transaction payload');
+  });
+});
+
+// ── getTransactionsForUser — clamp branches (Equoria-jkht) ───────────────────
+
+describe('getTransactionsForUser — clamp branches (Equoria-jkht)', () => {
+  it('clamps pageSize to 100 when pageSize > 100 (Math.min branch)', async () => {
+    const result = await getTransactionsForUser(user.id, { page: 1, pageSize: 200 });
+    expect(result.pageSize).toBe(100);
+  });
+
+  it('clamps page to 1 when page < 1 (Math.max branch)', async () => {
+    const result = await getTransactionsForUser(user.id, { page: 0, pageSize: 5 });
+    expect(result.page).toBe(1);
+  });
+});
