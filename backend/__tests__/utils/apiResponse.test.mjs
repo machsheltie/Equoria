@@ -289,3 +289,34 @@ describe('responseHandler — default parameter branches for middleware methods'
     expect(res.body.meta.validationErrors).toEqual([]);
   });
 });
+
+// ── responseHandler — default-param branches for apiSuccess/apiError/apiCreated ──
+// Lines 83-93: these three methods have `data = null`, `meta = null`, `statusCode = 500`
+// defaults that are only covered when the methods are called with fewer arguments.
+describe('responseHandler — apiSuccess/apiError/apiCreated default params (Equoria-jkht)', () => {
+  const app3 = express();
+  app3.use(responseHandler);
+  app3.get('/default-success', (req, res) => res.apiSuccess('done'));
+  app3.get('/default-error', (req, res) => res.apiError('fail'));
+  app3.get('/default-created', (req, res) => res.apiCreated('created'));
+
+  it('apiSuccess() with no data/meta covers data=null and meta=null defaults', async () => {
+    const res = await request(app3).get('/default-success');
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.message).toBe('done');
+  });
+
+  it('apiError() with no statusCode defaults to 500', async () => {
+    const res = await request(app3).get('/default-error');
+    expect(res.status).toBe(500);
+    expect(res.body.success).toBe(false);
+  });
+
+  it('apiCreated() with no data/meta covers data=null and meta=null defaults', async () => {
+    const res = await request(app3).get('/default-created');
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+    expect(res.body.message).toBe('created');
+  });
+});

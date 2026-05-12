@@ -429,3 +429,17 @@ describe('applyBondingChange — error catch branch (lines 248-249)', () => {
     expect(() => applyBondingChange(null, 'grooming', {})).toThrow();
   });
 });
+
+// ---------------------------------------------------------------------------
+// calculateBaseBondingChange — default case (line 210)
+// ---------------------------------------------------------------------------
+describe('calculateBondingChange — default switch case (line 210)', () => {
+  it('unknown activity hits default: break and returns base change unmodified', () => {
+    // 'hand_wash' is not in the switch cases — hits default: break, covering line 210
+    const result = calculateBondingChange(noTraitHorse(), 'hand_wash', {});
+    expect(result).toHaveProperty('modifiedChange');
+    expect(result).toHaveProperty('activity', 'hand_wash');
+    // Base change is used as-is; should be a non-negative number
+    expect(result.modifiedChange).toBeGreaterThanOrEqual(0);
+  });
+});

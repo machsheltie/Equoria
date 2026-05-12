@@ -496,3 +496,22 @@ describe('calculateEpigeneticTraits — duplicate env trait skipped (line 351 fa
     expect(Array.isArray(result.negative)).toBe(true);
   });
 });
+
+// ── determineTraitVisibility — rare hidden branch (line 383) ──────────────────
+//
+// seed=2 sequence makes trainabilityBoost (rarity='rare') land in hidden:
+//   first rng.next() < inheritance probability → trait inherited
+//   then in determineTraitVisibility: rng.next() < 0.7 → return 'hidden' (line 383)
+// ---------------------------------------------------------------------------
+describe('calculateEpigeneticTraits — rare trait hidden (line 383, Equoria-jkht)', () => {
+  it('trainabilityBoost (rare rarity) is placed in hidden with seed=2, covers line 383', () => {
+    const result = calculateEpigeneticTraits({
+      damTraits: ['trainabilityBoost'],
+      sireTraits: [],
+      damBondScore: 80,
+      damStressLevel: 10,
+      seed: 2,
+    });
+    expect(result.hidden).toContain('trainabilityBoost');
+  });
+});

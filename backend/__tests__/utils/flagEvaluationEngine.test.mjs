@@ -180,3 +180,16 @@ describe('getEligibleHorses — catch block (lines 347-348)', () => {
     await expect(getEligibleHorses(null)).rejects.toThrow();
   });
 });
+
+// ── evaluateFlagTriggers — default case (line 201, Equoria-jkht) ──────────────
+// evaluateFlagTriggers is accessible via the default export.
+// Calling it with an unknown flag name triggers the default: logger.warn branch.
+import flagEvalDefault from '../../utils/flagEvaluationEngine.mjs';
+
+describe('evaluateFlagTriggers — unknown flag name (line 201, Equoria-jkht)', () => {
+  it('logs a warning and returns triggered=false for an unknown flag name', () => {
+    const result = flagEvalDefault.evaluateFlagTriggers({ name: 'unknown_test_flag', triggerConditions: {} }, {});
+    expect(result.triggered).toBe(false);
+    expect(result.score).toBe(0);
+  });
+});

@@ -4,7 +4,7 @@
  * Pure functions, no DB required.
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import {
   GROOM_PERSONALITY_EFFECTS,
   calculatePersonalityEffects,
@@ -336,5 +336,47 @@ describe('getAllPersonalityTypes', () => {
     const gentle = getAllPersonalityTypes().find(p => p.type === 'gentle');
     expect(gentle).toBeDefined();
     expect(gentle.isPenalty).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// calculatePersonalityEffects — trait bonusBonding path (line 223)
+//
+// No built-in personality has BOTH horseTraits AND bonusBonding.
+// We temporarily inject a synthetic personality to reach that branch,
+// then clean up so other suites see the original config.
+// ---------------------------------------------------------------------------
+describe('calculatePersonalityEffects — trait bonusBonding branch (line 223)', () => {
+  beforeAll(() => {
+    GROOM_PERSONALITY_EFFECTS._testTraitBonding = {
+      bonusTasks: [],
+      effect: 'test only',
+      successRateModifier: 1.0,
+      bondingModifier: 1.0,
+      stressReductionModifier: 1.0,
+      streakGrowthModifier: 1.0,
+      burnoutRiskModifier: 1.0,
+      traitInfluenceModifier: 1.0,
+      specialConditions: {
+        horseTraits: ['docile'],
+        bonusBonding: 0.5, // triggers line 223 when horse has 'docile' trait
+      },
+    };
+  });
+
+  afterAll(() => {
+    delete GROOM_PERSONALITY_EFFECTS._testTraitBonding;
+  });
+
+  it('horse with matching trait and bonusBonding applies bondingChange bonus (line 223 covered)', () => {
+    const groom = { personality: '_testTraitBonding' };
+    const horse = { traits: ['docile'], age: 500 };
+    const baseEffects = { successRate: 0.85, bondingChange: 10, stressChange: -5 };
+
+    const result = calculatePersonalityEffects(groom, horse, 'brushing', baseEffects);
+
+    // bonusBonding=0.5 → bondingChange += round(10 * 0.5) = 5 → final 15
+    expect(result.bondingChange).toBe(15);
+    expect(result.personalityEffects.bonusesApplied).toContain('trait_match');
   });
 });
