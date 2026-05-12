@@ -471,3 +471,28 @@ describe('calculateEpigeneticTraits — no-seed path (line 9 || right-branch)', 
     expect(Array.isArray(result.hidden)).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// generateEnvironmentalTraits — line 351 false-branch (duplicate env trait skipped)
+//
+// seed=21, bond=0, stress=90:
+//   call1=0.0486 < 0.6 → first negative block → call2 picks 'fragile' (index 1)
+//   call3=0.2529 < 0.3 → second block (stress>80) → call4 also picks 'fragile' (index 1)
+//   !traits.negative.includes('fragile') = FALSE → duplicate skipped (line 351 false-branch)
+// ---------------------------------------------------------------------------
+describe('calculateEpigeneticTraits — duplicate env trait skipped (line 351 false-branch)', () => {
+  it('seed=21 bond=0 stress=90 picks "fragile" twice; duplicate is not added (line 351 false)', () => {
+    const result = calculateEpigeneticTraits({
+      damTraits: [],
+      sireTraits: [],
+      damBondScore: 0,
+      damStressLevel: 90,
+      seed: 21,
+    });
+    // Duplicate 'fragile' must not be added — at most one across all categories
+    const allTraits = [...result.positive, ...result.negative, ...result.hidden];
+    const fragileCount = allTraits.filter(t => t === 'fragile').length;
+    expect(fragileCount).toBeLessThanOrEqual(1);
+    expect(Array.isArray(result.negative)).toBe(true);
+  });
+});
