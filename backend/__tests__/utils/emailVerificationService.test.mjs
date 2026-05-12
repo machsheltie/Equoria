@@ -6,10 +6,13 @@
  *   hashVerificationToken     — deterministic SHA-256
  *
  * Safe DB (no fixtures needed — "not found" / cleanup paths):
- *   verifyEmailToken       — unknown token → INVALID_TOKEN (timing-safe 100ms delay)
- *   getTokenInfo           — unknown token → null
- *   checkVerificationStatus — unknown userId → {verified:false, error:'User not found'}
- *   cleanupExpiredTokens   — safe delete of already-expired rows, returns count shape
+ *   verifyEmailToken           — unknown token → INVALID_TOKEN (timing-safe 100ms delay)
+ *   verifyEmailToken(null)     — outer catch → VERIFICATION_ERROR (lines 222-241)
+ *   getTokenInfo               — unknown token → null
+ *   checkVerificationStatus    — unknown userId → {verified:false, error:'User not found'}
+ *   cleanupExpiredTokens       — safe delete of already-expired rows, returns count shape
+ *   createVerificationToken    — ghost UUID → count+findFirst safe, create→FK fail→catch
+ *   resendVerificationEmail    — ghost UUID → user not found → AppError catch + re-throw
  */
 
 import { describe, it, expect } from '@jest/globals';
@@ -20,7 +23,13 @@ import {
   getTokenInfo,
   checkVerificationStatus,
   cleanupExpiredTokens,
+  createVerificationToken,
+  resendVerificationEmail,
 } from '../../utils/emailVerificationService.mjs';
+
+// Non-existent user UUID — never in the users table; count/findFirst queries
+// return 0/null safely; create() hits FK constraint and throws.
+const GHOST_UUID = '00000000-0000-0000-0000-ffffffffffff';
 
 // ── generateVerificationToken ─────────────────────────────────────────────────
 
@@ -105,5 +114,46 @@ describe('cleanupExpiredTokens()', () => {
   it('accepts custom olderThanDays', async () => {
     const result = await cleanupExpiredTokens({ olderThanDays: 60 });
     expect(typeof result.removedCount).toBe('number');
+  });
+});
+
+// ── createVerificationToken — count+findFirst+create-FK-fail (lines 63-133) ───
+
+describe('createVerificationToken() — safe DB paths (lines 63-133)', () => {
+  it('throws when userId references a non-existent user (count→0, findFirst→null, create→FK fail→catch+rethrow)', async () => {
+    // pendingTokens count=0 (no max-tokens error), recentToken=null (no cooldown),
+    // then create() throws a FK constraint error which the catch re-throws.
+    let thrown = false;
+    try {
+      await createVerificationToken(GHOST_UUID, 'ghost@example.com');
+    } catch {
+      thrown = true;
+    }
+    expect(thrown).toBe(true);
+  });
+});
+
+// ── verifyEmailToken — outer catch path (lines 222-241) ──────────────────────
+
+describe('verifyEmailToken() — outer catch → VERIFICATION_ERROR', () => {
+  it('returns VERIFICATION_ERROR when token is null (hashVerificationToken throws, caught at line 222)', async () => {
+    const result = await verifyEmailToken(null);
+    expect(result.success).toBe(false);
+    expect(result.code).toBe('VERIFICATION_ERROR');
+    expect(typeof result.error).toBe('string');
+  });
+});
+
+// ── resendVerificationEmail — user-not-found path (lines 303-317, 345-348) ────
+
+describe('resendVerificationEmail() — user not found (lines 303-317, 345-348)', () => {
+  it('rejects when userId does not exist (findUnique→null→AppError→catch+rethrow)', async () => {
+    let thrown = false;
+    try {
+      await resendVerificationEmail(GHOST_UUID);
+    } catch {
+      thrown = true;
+    }
+    expect(thrown).toBe(true);
   });
 });
