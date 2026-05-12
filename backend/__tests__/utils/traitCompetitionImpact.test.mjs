@@ -149,4 +149,39 @@ describe('calculateTraitCompetitionImpact', () => {
       expect(true).toBe(true);
     }
   });
+
+  // -------------------------------------------------------------------
+  // calculateDiminishingReturns branch coverage (lines 411-419)
+  // -------------------------------------------------------------------
+  it('applies 0.9 diminishing factor for 3 applied traits (line 411-413)', () => {
+    const horse = makeHorse({ positive: ['resilient', 'bold', 'intelligent'] });
+    const result = calculateTraitCompetitionImpact(horse, 'Racing', 70);
+    expect(result.appliedTraits.length).toBe(3);
+    // diminishing factor 0.9 means modifier < sum of individual modifiers
+    expect(result.totalScoreModifier).toBeGreaterThan(0);
+  });
+
+  it('applies 0.85 diminishing factor for 4 applied traits (line 414-416)', () => {
+    const horse = makeHorse({ positive: ['resilient', 'bold', 'intelligent', 'calm'] });
+    const result = calculateTraitCompetitionImpact(horse, 'Racing', 70);
+    expect(result.appliedTraits.length).toBe(4);
+    expect(result.totalScoreModifier).toBeGreaterThan(0);
+  });
+
+  it('applies 0.8 diminishing factor for 5+ applied traits (line 417-419)', () => {
+    const horse = makeHorse({ positive: ['resilient', 'bold', 'intelligent', 'calm', 'athletic'] });
+    const result = calculateTraitCompetitionImpact(horse, 'Racing', 70);
+    expect(result.appliedTraits.length).toBe(5);
+    expect(result.totalScoreModifier).toBeGreaterThan(0);
+  });
+
+  // -------------------------------------------------------------------
+  // catch block coverage (lines 386-387)
+  // -------------------------------------------------------------------
+  it('returns zero-modifier default shape when horse is null (triggers catch, lines 386-387)', () => {
+    const result = calculateTraitCompetitionImpact(null, 'Racing', 70);
+    expect(result.totalScoreModifier).toBe(0);
+    expect(result.appliedTraits).toEqual([]);
+    expect(result.finalScoreAdjustment).toBe(0);
+  });
 });
