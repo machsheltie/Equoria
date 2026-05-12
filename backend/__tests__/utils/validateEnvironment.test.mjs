@@ -415,13 +415,14 @@ describe('validateEnvironment()', () => {
       expect(errors.join(' ')).toContain('JWT_SECRET uses a committed test-only secret');
     });
 
-    it('should fail in beta-readiness when JWT_REFRESH_SECRET uses the committed test-only value', () => {
+    it('should allow test-only secrets in beta-readiness (local E2E harness, not a real deployment)', () => {
       process.env.JWT_SECRET = 'StrongSecret1234567890ABCDEFGHIJK';
       process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret-for-testing-only-32chars';
       process.env.NODE_ENV = 'beta-readiness';
 
       const { errors } = checkEnvironment(process.env);
-      expect(errors.join(' ')).toContain('JWT_REFRESH_SECRET uses a committed test-only secret');
+      // beta-readiness is not in DEPLOYABLE_ENVS (per runtimeSecretPolicy.mjs), so test-only secrets are allowed
+      expect(errors.filter(e => e.includes('committed test-only secret'))).toHaveLength(0);
     });
 
     it('should allow test-only secrets in NODE_ENV=test', () => {
