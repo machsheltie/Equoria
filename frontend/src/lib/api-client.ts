@@ -632,6 +632,7 @@ async function fetchWithAuth<T>(
 
   const config: RequestInit = {
     ...options,
+    cache: 'no-store', // Auth state changes must never be served from browser HTTP cache
     headers: {
       'Content-Type': 'application/json',
       ...csrfHeader,

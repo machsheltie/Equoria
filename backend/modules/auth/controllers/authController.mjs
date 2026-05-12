@@ -445,6 +445,10 @@ export const getProfile = async (req, res, next) => {
         ? settings.preferences
         : {};
 
+    // Auth state changes (onboarding, balance, role) must never be served from
+    // browser HTTP cache — a stale cached response causes OnboardingGuard to
+    // redirect incorrectly on full-page navigations (e.g. page.goto('/bank')).
+    res.setHeader('Cache-Control', 'no-store');
     res.status(200).json({
       status: 'success',
       data: {
