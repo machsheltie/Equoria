@@ -9,8 +9,11 @@ export const getPoolConfig = (env = process.env) => {
   const defaults = {
     // Railway PgBouncer Session mode has a limited pool_size (typically ≤10 on Hobby tier).
     // Keep production connections small; override with DB_POOL_SIZE env var if needed.
-    // Test mode: 3 per worker × maxWorkers(50%) keeps total within Railway Hobby tier limits.
-    connection_limit: isTestEnv ? 3 : 3,
+    // Test mode: 1 per worker prevents pool exhaustion when Jest runs are chained in quick
+    // succession. forceExit kills the process but PostgreSQL holds TCP slots open for ~30 s,
+    // so back-to-back runs accumulate: workers(50%) × 3 × runs = 18+ which exceeds Railway's
+    // ~25 max_connections. 1 per worker keeps even 3 overlapping runs under that ceiling.
+    connection_limit: isTestEnv ? 1 : 3,
     pool_timeout: 30,
     connect_timeout: 30,
   };
