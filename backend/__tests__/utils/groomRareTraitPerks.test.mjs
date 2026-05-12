@@ -24,13 +24,14 @@
  * the private evaluatePerkEligibility are out of scope.
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import {
   applyRareTraitBoosterEffects,
   assignRareTraitBoosterPerks,
   getRevealedPerks,
   RARE_TRAIT_BOOSTER_PERKS,
 } from '../../utils/groomRareTraitPerks.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 
 // Convenience: build groomData with a specific perk pre-installed
 function groomWith(perkKey, perkOverrides = {}) {
@@ -326,5 +327,165 @@ describe('applyRareTraitBoosterEffects', () => {
     const groomData = groomWith(PHOENIX_PERK, { triggerCount: 5, revealed: true });
     const result = applyRareTraitBoosterEffects(PHOENIX_TRAIT, 0.1, groomData);
     expect(result.perkBonus).toBeCloseTo(result.modifiedChance - result.originalChance, 10);
+  });
+
+  // ── shouldRevealPerk — default: case (line 295) ───────────────────────────────
+  // RARE_TRAIT_BOOSTER_PERKS is a non-frozen exported const object; property
+  // mutation in beforeAll/afterAll is safe and isolated to this describe block.
+
+  describe('shouldRevealPerk — default revealCondition (line 295)', () => {
+    const SYNTHETIC_KEY = 'test-unknown-reveal-perk-jkht';
+    const SYNTHETIC_TRAIT = 'test-unknown-trait-jkht';
+
+    beforeAll(() => {
+      RARE_TRAIT_BOOSTER_PERKS[SYNTHETIC_KEY] = {
+        name: 'Test Unknown Reveal Perk',
+        description: 'Synthetic perk for branch coverage',
+        targetTrait: SYNTHETIC_TRAIT,
+        baseBonus: 0.05,
+        stackedBonus: 0.02,
+        requiredTags: [],
+        requiredExperience: 0,
+        revealCondition: 'unrecognised_condition',
+      };
+    });
+
+    afterAll(() => {
+      delete RARE_TRAIT_BOOSTER_PERKS[SYNTHETIC_KEY];
+    });
+
+    it('default: case returns revealed=true when triggerCount reaches 2', () => {
+      const groomData = {
+        id: 1,
+        rareTraitPerks: {
+          [SYNTHETIC_KEY]: {
+            ...RARE_TRAIT_BOOSTER_PERKS[SYNTHETIC_KEY],
+            triggerCount: 1,
+            revealed: false,
+          },
+        },
+      };
+      applyRareTraitBoosterEffects(SYNTHETIC_TRAIT, 0.1, groomData);
+      // triggerCount 1 → incremented to 2 → default: 2 >= 2 → true → revealed flips
+      expect(groomData.rareTraitPerks[SYNTHETIC_KEY].revealed).toBe(true);
+    });
+
+    it('default: case returns revealed=false when triggerCount has not reached 2', () => {
+      const groomData = {
+        id: 1,
+        rareTraitPerks: {
+          [SYNTHETIC_KEY]: {
+            ...RARE_TRAIT_BOOSTER_PERKS[SYNTHETIC_KEY],
+            triggerCount: 0,
+            revealed: false,
+          },
+        },
+      };
+      applyRareTraitBoosterEffects(SYNTHETIC_TRAIT, 0.1, groomData);
+      // triggerCount 0 → incremented to 1 → default: 1 >= 2 → false → revealed stays false
+      expect(groomData.rareTraitPerks[SYNTHETIC_KEY].revealed).toBe(false);
+    });
+  });
+
+  // ── getRevealedPerks — body when groom exists with revealed perks (lines 315-334) ─
+
+  describe('getRevealedPerks — groom with revealed perks (lines 315-334)', () => {
+    let groomId;
+
+    beforeAll(async () => {
+      const groom = await prisma.groom.create({
+        data: {
+          name: `TestFixture-RareTraitPerks-${Date.now()}`,
+          speciality: 'Foal Care',
+          personality: 'patient',
+          rareTraitPerks: {
+            'phoenix-born-booster': {
+              ...RARE_TRAIT_BOOSTER_PERKS['phoenix-born-booster'],
+              triggerCount: 5,
+              revealed: true,
+              assignedAt: new Date().toISOString(),
+            },
+            'twin-harmonizer': {
+              ...RARE_TRAIT_BOOSTER_PERKS['twin-harmonizer'],
+              triggerCount: 1,
+              revealed: false,
+              assignedAt: new Date().toISOString(),
+            },
+          },
+        },
+      });
+      groomId = groom.id;
+    }, 30000);
+
+    afterAll(async () => {
+      await prisma.groom.delete({ where: { id: groomId } }).catch(() => {});
+    }, 30000);
+
+    it('returns non-empty array with perk shape when groom has revealed perks', async () => {
+      const result = await getRevealedPerks(groomId);
+      expect(Array.isArray(result)).toBe(true);
+      expect(result.length).toBeGreaterThan(0);
+      expect(result[0]).toHaveProperty('key', 'phoenix-born-booster');
+      expect(result[0]).toHaveProperty('name');
+      expect(result[0]).toHaveProperty('targetTrait');
+      expect(result[0]).toHaveProperty('triggerCount');
+    });
+
+    it('excludes unrevealed perks — false branch of if(perkData.revealed)', async () => {
+      const result = await getRevealedPerks(groomId);
+      // twin-harmonizer has revealed:false — must NOT appear in results
+      const keys = result.map(p => p.key);
+      expect(keys).not.toContain('twin-harmonizer');
+    });
+
+    it('returns [] from catch block when groomId type is invalid (triggers Prisma validation error)', async () => {
+      // Passing a non-integer string where Int is expected → PrismaClientValidationError → catch
+      const result = await getRevealedPerks('not-a-valid-integer');
+      expect(result).toEqual([]);
+    });
+  });
+
+  // ── assignRareTraitBoosterPerks — success return path (line 154) ─────────────
+
+  describe('assignRareTraitBoosterPerks — success return (line 154)', () => {
+    let groomId;
+
+    beforeAll(async () => {
+      const groom = await prisma.groom.create({
+        data: {
+          name: `TestFixture-AssignPerks-${Date.now()}`,
+          speciality: 'Foal Care',
+          personality: 'patient',
+        },
+      });
+      groomId = groom.id;
+    }, 30000);
+
+    afterAll(async () => {
+      await prisma.groom.delete({ where: { id: groomId } }).catch(() => {});
+    }, 30000);
+
+    it('returns assignedPerks object (line 154) for eligible groom in DB', async () => {
+      // phoenix-born-booster: requiredTags ['mindful','guardian'], requiredExperience 5
+      const groomData = {
+        experience: 10,
+        personality: { tags: ['mindful', 'guardian'] },
+        bonusTraitMap: {},
+      };
+      const result = await assignRareTraitBoosterPerks(groomId, groomData);
+      expect(typeof result).toBe('object');
+      expect(result).not.toBeNull();
+      expect(result).toHaveProperty('phoenix-born-booster');
+    });
+
+    it('covers lines 174 (personality?.tags || []) and 179 (bonusTraitMap || {})', async () => {
+      // No personality and no bonusTraitMap → both || fallbacks fire.
+      // experience:15 passes all 4 perks' experience gates.
+      // fey-touched has any-with-3-rare-bonuses → reaches line 179.
+      const groomData = { experience: 15 };
+      const result = await assignRareTraitBoosterPerks(groomId, groomData);
+      // No tags → no perk eligibility → empty assignedPerks
+      expect(typeof result).toBe('object');
+    });
   });
 });

@@ -12,7 +12,7 @@
  *   catch:   getter throws
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import {
   hasAlreadyCompletedFoalTaskToday,
   calculateGroomInteractionEffects,
@@ -25,6 +25,7 @@ import {
   SKILL_LEVELS,
   PERSONALITY_TRAITS,
 } from '../../utils/groomSystem.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 
 const GHOST_UUID = '00000000-0000-0000-0000-ffffffffffff';
 import { ELIGIBLE_FOAL_ENRICHMENT_TASKS, FOAL_GROOMING_TASKS } from '../../config/groomConfig.mjs';
@@ -327,5 +328,52 @@ describe('recordGroomInteraction() — horse not found → success=false envelop
     expect(result.success).toBe(false);
     expect(typeof result.error).toBe('string');
     expect(result.error).toMatch(/Horse with ID -1 not found/);
+  });
+});
+
+// ── assignGroomToFoal — groom-not-found path (lines 194-209) ─────────────────
+//
+// Foal exists, but groomId=-1 does not exist → lines 194-208 (groom lookup) +
+// line 209 (throw "Groom with ID -1 not found") are covered.
+
+let groomNotFoundUser;
+let groomNotFoundHorse;
+
+beforeAll(async () => {
+  groomNotFoundUser = await prisma.user.create({
+    data: {
+      email: `groomsys-gnf-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
+      username: `groomsysgnf${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+      password: 'irrelevant-hash',
+      firstName: 'GroomSys',
+      lastName: 'GNFTester',
+      money: 1000,
+    },
+  });
+  groomNotFoundHorse = await prisma.horse.create({
+    data: {
+      name: `TestFixture-GroomSysGNFHorse-${Date.now()}`,
+      sex: 'Filly',
+      dateOfBirth: new Date(),
+      age: 0,
+      userId: groomNotFoundUser.id,
+    },
+  });
+}, 30000);
+
+afterAll(async () => {
+  await prisma.horse.delete({ where: { id: groomNotFoundHorse.id } }).catch(() => {});
+  await prisma.user.delete({ where: { id: groomNotFoundUser.id } }).catch(() => {});
+}, 30000);
+
+describe('assignGroomToFoal() — groom not found (foal exists, groom=-1)', () => {
+  it('rejects when foal exists but groomId=-1 does not (covers groom lookup lines 194-209)', async () => {
+    let thrown = false;
+    try {
+      await assignGroomToFoal(groomNotFoundHorse.id, -1, groomNotFoundUser.id);
+    } catch {
+      thrown = true;
+    }
+    expect(thrown).toBe(true);
   });
 });

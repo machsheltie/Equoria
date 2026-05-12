@@ -164,4 +164,9 @@ describe('updateHorseRewards', () => {
   it('skips stat gain when statGain is null', async () => {
     await expect(updateHorseRewards(testHorse.id, 50, null)).resolves.toBeDefined();
   });
+
+  it('catch block fires and re-throws when updateHorseEarnings throws (lines 131-134)', async () => {
+    // null horseId → updateHorseEarnings validates and throws → propagates to catch block
+    await expect(updateHorseRewards(null, 100)).rejects.toThrow('Valid horse ID is required');
+  });
 });

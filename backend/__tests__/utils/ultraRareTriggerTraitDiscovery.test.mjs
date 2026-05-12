@@ -110,3 +110,51 @@ describe('getDiscoveryProgress', () => {
     expect(Array.isArray(result.conditions)).toBe(true);
   });
 });
+
+// ── evaluateUltraRareTriggers — Phoenix-Born triggered via high stressLevel ───
+//
+// evaluatePhoenixBornConditions: `(stressEvents >= 1 || hasHighStress) && recoveries >= 0`
+// recoveries >= 0 is always true; hasHighStress = stressLevel > 50.
+// A horse with stressLevel: 51 triggers Phoenix-Born, covering lines 34-37
+// (logger.info + triggeredTraits.push branch) in evaluateUltraRareTriggers.
+
+let highStressUser;
+let highStressHorse;
+
+beforeAll(async () => {
+  highStressUser = await prisma.user.create({
+    data: {
+      email: `ultratrait-hs-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
+      username: `ultratraiths${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+      password: 'irrelevant-hash',
+      firstName: 'HighStress',
+      lastName: 'Tester',
+      money: 1000,
+    },
+  });
+  highStressHorse = await prisma.horse.create({
+    data: {
+      name: `TestFixture-HighStressHorse-${Date.now()}`,
+      sex: 'Filly',
+      dateOfBirth: new Date(),
+      age: 0,
+      userId: highStressUser.id,
+      stressLevel: 51,
+    },
+  });
+}, 30000);
+
+afterAll(async () => {
+  await prisma.horse.delete({ where: { id: highStressHorse.id } }).catch(() => {});
+  await prisma.user.delete({ where: { id: highStressUser.id } }).catch(() => {});
+}, 30000);
+
+describe('evaluateUltraRareTriggers — high-stress horse triggers Phoenix-Born (lines 34-37)', () => {
+  it('returns at least one triggered ultra-rare trait for stressLevel:51 horse', async () => {
+    const result = await evaluateUltraRareTriggers(highStressHorse.id);
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBeGreaterThan(0);
+    expect(result[0].tier).toBe('ultra-rare');
+    expect(result[0].name).toBe('Phoenix-Born');
+  });
+});
