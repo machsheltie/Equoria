@@ -252,3 +252,44 @@ describe('getCompetitionEligibilitySummary', () => {
     expect(summary.traitEligible).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// validateCompetitionEntry — trait-failure branch (lines 52-54) (Equoria-jkht)
+// ---------------------------------------------------------------------------
+
+describe('validateCompetitionEntry — trait-failure branch', () => {
+  it('rejects horse without gaited trait entering Gaited discipline (lines 52-54)', async () => {
+    const gaitedShow = {
+      name: 'Gaited Classic',
+      discipline: 'Gaited',
+      levelMin: 1,
+      levelMax: 15,
+      entryFee: 0,
+      showType: 'ridden',
+    };
+    const horseNoGaited = {
+      ...validHorse,
+      epigeneticModifiers: { positive: [], negative: [] },
+    };
+    const result = await validateCompetitionEntry(horseNoGaited, gaitedShow, validUser);
+    expect(result.eligible).toBe(false);
+    expect(result.errors.some(e => /gaited/i.test(e))).toBe(true);
+  });
+
+  it('accepts horse with gaited trait entering Gaited discipline', async () => {
+    const gaitedShow = {
+      name: 'Gaited Classic',
+      discipline: 'Gaited',
+      levelMin: 1,
+      levelMax: 15,
+      entryFee: 0,
+      showType: 'ridden',
+    };
+    const horseGaited = {
+      ...validHorse,
+      epigeneticModifiers: { positive: ['gaited'], negative: [] },
+    };
+    const result = await validateCompetitionEntry(horseGaited, gaitedShow, validUser);
+    expect(result.errors.every(e => !/gaited/i.test(e))).toBe(true);
+  });
+});

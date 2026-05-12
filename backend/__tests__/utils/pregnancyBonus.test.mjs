@@ -170,6 +170,26 @@ describe('calculatePregnancyEpigeneticChances', () => {
     const r = calculatePregnancyEpigeneticChances({ elite: 10 });
     expect(r.negative_chance).toBe(0); // not negative, not undefined
   });
+
+  it('null rawCount for valid tier: Number(null)=0 falls through || 0 false branch (line 66)', () => {
+    // elite is a valid tier, so no continue; but rawCount=null → Number(null)=0 (falsy) → || 0 used
+    const r = calculatePregnancyEpigeneticChances({ elite: null });
+    expect(r.positive_chance).toBe(0);
+    expect(r.negative_chance).toBe(GESTATION_DAYS * NEG_PER_MISSED_DAY);
+  });
+
+  it('non-numeric string rawCount for valid tier: Number("abc")=NaN (falsy) → || 0 false branch', () => {
+    const r = calculatePregnancyEpigeneticChances({ performance: 'abc' });
+    expect(r.positive_chance).toBe(0);
+    expect(r.negative_chance).toBe(GESTATION_DAYS * NEG_PER_MISSED_DAY);
+  });
+
+  it('zero rawCount for valid tier: Number(0)=0 (falsy) → || 0 false branch', () => {
+    const r = calculatePregnancyEpigeneticChances({ elite: 0, basic: 7 });
+    // elite: 0 → 0 feedings from elite; basic: 7 → 7 feedings at 0 weight
+    expect(r.positive_chance).toBe(0);
+    expect(r.negative_chance).toBe(0);
+  });
 });
 
 describe('exported constants', () => {

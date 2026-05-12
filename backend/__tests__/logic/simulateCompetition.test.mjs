@@ -182,4 +182,60 @@ describe('simulateCompetition — error recovery', () => {
     expect(results[0].score).toBe(0);
     expect(results[0].placement).toBe('1st');
   });
+
+  it('horse with non-iterable epigeneticModifiers.positive triggers catch (lines 175-176)', () => {
+    // positive=5 (truthy number) → spread throws TypeError → catch fires → score:0
+    const horse = makeHorse({ epigeneticModifiers: { positive: 5, negative: [], hidden: [] } });
+    const results = simulateCompetition([horse], makeShow());
+    expect(results).toHaveLength(1);
+    expect(results[0].score).toBe(0);
+  });
+});
+
+// ─── stress-resistance trait branches (lines 107-108, 115) ───────────────────
+// (Equoria-jkht)
+
+describe('simulateCompetition — stress-resistance trait branches', () => {
+  it('resilient trait + high stress covers competitionStressResistance branch (lines 107-108)', () => {
+    // resilient has competitionStressResistance:0.15 and trainingStressReduction:0.15
+    // stress_level > 0 triggers the stress block; resilient covers the resistance branch
+    const horse = makeHorse({
+      epigeneticModifiers: { positive: ['resilient'], negative: [], hidden: [] },
+      stress_level: 70,
+    });
+    const result = simulateCompetition([horse], makeShow());
+    expect(result[0].stressDetails.baseStressLevel).toBe(70);
+    expect(typeof result[0].score).toBe('number');
+  });
+
+  it('calm trait + stress covers trainingStressReduction branch (line 115)', () => {
+    // calm has trainingStressReduction:0.2 and competitionStressResistance:0.25
+    const horse = makeHorse({
+      epigeneticModifiers: { positive: ['calm'], negative: [], hidden: [] },
+      stress_level: 60,
+    });
+    const result = simulateCompetition([horse], makeShow());
+    expect(result[0].stressDetails.baseStressLevel).toBe(60);
+    expect(typeof result[0].score).toBe('number');
+  });
+});
+
+// ─── appliedTraits logger + details map (lines 135, 156-176) ─────────────────
+// (Equoria-jkht)
+
+describe('simulateCompetition — appliedTraits details map', () => {
+  it('horse with resilient trait produces non-empty details array (lines 135, 156-176)', () => {
+    // resilient has competitionScoreModifier:0.03 which calculateTraitCompetitionImpact
+    // picks up as an applied trait, making appliedTraits.length > 0 so the map executes
+    const horse = makeHorse({
+      epigeneticModifiers: { positive: ['resilient'], negative: [], hidden: [] },
+    });
+    const result = simulateCompetition([horse], makeShow());
+    const details = result[0].traitImpact.details;
+    // appliedTraits.length > 0 → details array is populated with trait objects
+    expect(Array.isArray(details)).toBe(true);
+    expect(details.length).toBeGreaterThan(0);
+    expect(typeof details[0].name).toBe('string');
+    expect(typeof details[0].modifier).toBe('number');
+  });
 });
