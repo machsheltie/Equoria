@@ -229,6 +229,73 @@ describe('getPersonalityEffectSummary', () => {
   });
 });
 
+// ─── calculatePersonalityEffects — additional branch coverage ─────────────────
+
+describe('calculatePersonalityEffects — additional branches', () => {
+  const baseEffects = {
+    bondingChange: 10,
+    stressChange: -5,
+    successRate: 0.85,
+    streakGrowth: 1,
+    burnoutRisk: 0.1,
+    traitInfluence: 5,
+  };
+
+  it('high_energy personality: applies extraTraitPoints branch (traitInfluence += 1)', () => {
+    const groom = { personality: 'high_energy' };
+    const result = calculatePersonalityEffects(groom, { traits: [] }, 'obstacle_course', baseEffects);
+    // high_energy traitInfluenceModifier=1.4, +1 extra = round(5*1.4)+1 = 8
+    expect(result.traitInfluence).toBe(Math.round(5 * 1.4) + 1);
+    expect(result.personalityEffects.bonusesApplied).toContain('extra_trait_points');
+  });
+
+  it('firm + stubborn horse: hasMatchingTrait=true but bonusSuccessRate is absent (false branch)', () => {
+    const groom = { personality: 'firm' };
+    const stubbornHorse = { traits: [{ name: 'stubborn' }] };
+    const result = calculatePersonalityEffects(groom, stubbornHorse, 'leading_practice', baseEffects);
+    // firm has horseTraits: ['stubborn',...] but no bonusSuccessRate → bonusSuccessRate false branch
+    expect(result.personalityEffects.specialConditionMet).toBe(true);
+    expect(result.personalityEffects.bonusesApplied).toContain('trait_match');
+  });
+
+  it('gentle + horse without .traits property: horseTraits false branch when horse.traits absent', () => {
+    const groom = { personality: 'gentle' };
+    const noTraitsHorse = {}; // no .traits key at all
+    const result = calculatePersonalityEffects(groom, noTraitsHorse, 'brushing', baseEffects);
+    // specialConditions.horseTraits exists but horse.traits is undefined → condition is false
+    expect(result.personalityEffects.specialConditionMet).toBe(false);
+  });
+
+  it('patient + leading_practice: categorizeTaskForPersonality returns "training" → taskCategories match', () => {
+    const groom = { personality: 'patient' };
+    const result = calculatePersonalityEffects(groom, { traits: [] }, 'leading_practice', baseEffects);
+    // patient taskCategories includes 'training'; leading_practice maps to 'training'
+    expect(result.personalityEffects.specialConditionMet).toBe(true);
+    expect(result.personalityEffects.bonusesApplied).toContain('category_match');
+  });
+
+  it('patient + jumping: categorizeTaskForPersonality returns "general" → taskCategories no match', () => {
+    const groom = { personality: 'patient' };
+    const result = calculatePersonalityEffects(groom, { traits: [] }, 'jumping', baseEffects);
+    // 'jumping' not in any task list → 'general' → not in patient's taskCategories
+    expect(result.personalityEffects.specialConditionMet).toBe(false);
+  });
+
+  it('playful + horse age 0: ageRange branch is false when age is 0 (falsy)', () => {
+    const groom = { personality: 'playful' };
+    const newbornHorse = { traits: [], age: 0 };
+    const result = calculatePersonalityEffects(groom, newbornHorse, 'grooming_game', baseEffects);
+    // specialConditions.ageRange && horse.age → false when age=0 (falsy)
+    expect(result.personalityEffects.specialConditionMet).toBe(false);
+  });
+
+  it('null groom triggers catch block and returns baseEffects unchanged', () => {
+    // null groom → const { personality } = null throws TypeError → catch returns baseEffects
+    const result = calculatePersonalityEffects(null, { traits: [] }, 'brushing', baseEffects);
+    expect(result).toBe(baseEffects);
+  });
+});
+
 // ---------------------------------------------------------------------------
 // getAllPersonalityTypes
 // ---------------------------------------------------------------------------
