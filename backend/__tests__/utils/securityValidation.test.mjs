@@ -714,6 +714,32 @@ describe('validateTrainingData — missing discipline branch (line 243)', () => 
 });
 
 // ---------------------------------------------------------------------------
+// validateHorseData — financial field FALSE branches (lines 68, 76, 84)
+// Existing tests already cover the TRUE branch (invalid values push errors).
+// The FALSE branches (valid value → skip error block) are never exercised
+// because no prior test passes a valid value for these fields.
+// ---------------------------------------------------------------------------
+describe('validateHorseData — financial field valid-value FALSE branches (lines 68, 76, 84)', () => {
+  it('valid total_earnings skips error and is accepted (line 68 FALSE branch)', () => {
+    const result = validateHorseData({ total_earnings: 500 });
+    expect(result.isValid).toBe(true);
+    expect(result.errors.some(e => e.toLowerCase().includes('earnings'))).toBe(false);
+  });
+
+  it('valid stud_fee skips error and is accepted (line 76 FALSE branch)', () => {
+    const result = validateHorseData({ stud_fee: 1000 });
+    expect(result.isValid).toBe(true);
+    expect(result.errors.some(e => e.toLowerCase().includes('fee'))).toBe(false);
+  });
+
+  it('valid sale_price skips error and is accepted (line 84 FALSE branch)', () => {
+    const result = validateHorseData({ sale_price: 5000 });
+    expect(result.isValid).toBe(true);
+    expect(result.errors.some(e => e.toLowerCase().includes('price'))).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // validateTransactionData — missing type branch (line 291)
 // ---------------------------------------------------------------------------
 describe('validateTransactionData — missing type branch (line 291)', () => {

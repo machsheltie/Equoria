@@ -236,3 +236,18 @@ describe('buildQueryParams — default preset and options parameter branches (li
     expect(result.select).toMatchObject(FIELD_PRESETS.Horse.list);
   });
 });
+
+// ---------------------------------------------------------------------------
+// buildSelectObject — line 538 || undefined branch
+// NOTE: All current FIELD_PRESETS models have a list preset, so the
+// || undefined path (right-hand side) is dead code in the current codebase.
+// The test below documents the fallback-to-list behavior when an unknown
+// preset is requested on a known model (Show).
+// ---------------------------------------------------------------------------
+describe('buildSelectObject — fallback to list on unknown preset (line 534)', () => {
+  it('returns the model list preset when an unknown preset name is requested (Show)', () => {
+    const result = buildSelectObject('Show', 'nonexistent');
+    expect(result).toBeDefined();
+    expect(result).toMatchObject(FIELD_PRESETS.Show.list);
+  });
+});
