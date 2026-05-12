@@ -31,12 +31,15 @@ export const cleanupPrismaInstances = async () => {
 
 // Register cleanup for Jest
 if (process.env.NODE_ENV === 'test') {
-  // Clean up after all tests complete
-  process.on('exit', cleanupPrismaInstances);
-  process.on('SIGINT', cleanupPrismaInstances);
-  process.on('SIGTERM', cleanupPrismaInstances);
-  process.on('beforeExit', cleanupPrismaInstances);
-
+  // NOTE: process.on('exit') / SIGINT / SIGTERM are SYNCHRONOUS — they cannot
+  // await Promises. Registering cleanupPrismaInstances (async) on those events
+  // means $disconnect() is called but never awaited, so connections are NOT
+  // actually closed before the process exits. This causes TCP connections to
+  // linger on the PostgreSQL server side (until its keepalive timeout, which
+  // can be hours), leading to "too many clients already" on back-to-back runs.
+  //
+  // The correct cleanup path is the async afterAll hook in tests/setup.mjs,
+  // which DOES await cleanupPrismaInstances(). Don't add synchronous handlers.
   // NOTE: Per-test-file cleanup is now handled in tests/setup.mjs via afterAll hook
   // The broken global.afterEach override has been removed as it interfered with test execution
 }
