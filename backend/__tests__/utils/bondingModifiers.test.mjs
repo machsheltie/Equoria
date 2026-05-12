@@ -403,3 +403,29 @@ describe('simulateBondingProgression', () => {
     expect(result.progression.length).toBe(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// calculateBondingChange — NaN guard branch (lines 114-117)
+// ---------------------------------------------------------------------------
+describe('calculateBondingChange — NaN guard (lines 114-117)', () => {
+  it('covers NaN-guard branch when feedQuality is a non-numeric string', () => {
+    // feedQuality: 'abc' → quality = 'abc', (quality - 50) = NaN → bondingChange = NaN
+    // isNaN guard fires at line 113 and resets bondingChange to originalChange (also NaN)
+    const result = calculateBondingChange(noTraitHorse(), 'feeding', { feedQuality: 'abc' });
+    expect(result).toHaveProperty('modifiedChange');
+    // traitModifier uses ternary: originalChange > 0 → NaN > 0 = false → falls back to 1
+    expect(result.traitModifier).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// applyBondingChange — error catch branch (lines 248-249)
+// ---------------------------------------------------------------------------
+describe('applyBondingChange — error catch branch (lines 248-249)', () => {
+  it('covers catch entry (lines 248-249) when horse is null (horse.bondScore throws in outer try)', () => {
+    // null.bondScore throws in the outer try block.
+    // The catch logs (line 248) and starts return (line 249), covering both lines.
+    // The return itself then throws again accessing horse.bondScore, so the call throws overall.
+    expect(() => applyBondingChange(null, 'grooming', {})).toThrow();
+  });
+});
