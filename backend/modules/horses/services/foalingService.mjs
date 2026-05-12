@@ -37,6 +37,7 @@ import { generateTemperament } from './temperamentService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import { calculatePregnancyEpigeneticChances } from '../../../utils/pregnancyBonus.mjs';
+import { createNotification } from '../../../utils/notificationService.mjs';
 
 /**
  * Length of an Equoria gestation. Mirrors GESTATION_DAYS in
@@ -352,6 +353,16 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   };
 
   const newFoal = await createHorse(horseData);
+
+  const notifUserId = options.userId || dam.userId;
+  if (notifUserId) {
+    await createNotification(notifUserId, 'foal_born', {
+      foalName: newFoal.name,
+      foalId: newFoal.id,
+      damName: dam.name,
+      sireName: sire.name,
+    });
+  }
 
   // Clear the mare's pregnancy state. The foaling job already cleared it as
   // part of the atomic per-mare claim (skipDamReset=true) so we don't
