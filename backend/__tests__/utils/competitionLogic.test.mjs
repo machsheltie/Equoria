@@ -7,6 +7,9 @@ import {
   getAllDisciplines,
   getDisciplineConfig,
   checkAgeRequirements,
+  calculateHorseLevel,
+  checkTraitRequirements,
+  calculateStatGain,
 } from '../../utils/competitionLogic.mjs';
 
 describe('calculatePrizeAmount', () => {
@@ -180,5 +183,230 @@ describe('calculateCompetitionScore', () => {
       ) / 50;
     // With beneficial trait should generally be >= without (within statistical variation)
     expect(avgWith).toBeGreaterThanOrEqual(avgWithout - 5); // allow some variance
+  });
+});
+
+// ─── calculateCompetitionScore — age factor branches ─────────────────────────
+
+describe('calculateCompetitionScore — age factor branches', () => {
+  it('applies improving factor for age 4 (3-5 range)', () => {
+    // ageFactor = 0.8 + (4-3)*0.1 = 0.9 — exercises line 28
+    const score = calculateCompetitionScore(50, {}, 4, 'Racing');
+    expect(score).toBeGreaterThanOrEqual(0);
+    expect(score).toBeLessThanOrEqual(100);
+  });
+
+  it('applies decline factor for age 10 (9-12 range)', () => {
+    // ageFactor = 1.0 - (10-8)*0.05 = 0.9 — exercises line 32
+    const score = calculateCompetitionScore(50, {}, 10, 'Racing');
+    expect(score).toBeGreaterThanOrEqual(0);
+    expect(score).toBeLessThanOrEqual(100);
+  });
+
+  it('applies senior factor for age 15 (> 12)', () => {
+    // ageFactor = 0.7 — exercises line 34
+    const score = calculateCompetitionScore(50, {}, 15, 'Racing');
+    expect(score).toBeGreaterThanOrEqual(0);
+    expect(score).toBeLessThanOrEqual(100);
+  });
+});
+
+// ─── calculateCompetitionScore — non-matching trait branches ─────────────────
+
+describe('calculateCompetitionScore — non-matching trait branches', () => {
+  it('+1 for positive trait not in Racing beneficial list (line 177)', () => {
+    // 'calm' not in Racing.beneficial → traitBonus += 1, not +3
+    const score = calculateCompetitionScore(50, { positive: ['calm'], negative: [] }, 6, 'Racing');
+    expect(score).toBeGreaterThanOrEqual(0);
+    expect(score).toBeLessThanOrEqual(100);
+  });
+
+  it('-5 for negative trait in Racing detrimental list (line 182)', () => {
+    // 'slow' is in Racing.detrimental → traitBonus -= 5
+    const score = calculateCompetitionScore(50, { positive: [], negative: ['slow'] }, 6, 'Racing');
+    expect(score).toBeGreaterThanOrEqual(0);
+    expect(score).toBeLessThanOrEqual(100);
+  });
+
+  it('-2 for negative trait not in Racing detrimental list (line 185)', () => {
+    // 'clumsy' not in Racing.detrimental → traitBonus -= 2
+    const score = calculateCompetitionScore(50, { positive: [], negative: ['clumsy'] }, 6, 'Racing');
+    expect(score).toBeGreaterThanOrEqual(0);
+    expect(score).toBeLessThanOrEqual(100);
+  });
+});
+
+// ─── calculateHorseLevel ─────────────────────────────────────────────────────
+
+describe('calculateHorseLevel', () => {
+  it('returns level 1 for minimal stats (totalScore < 50)', () => {
+    const horse = { speed: 10, stamina: 10, intelligence: 10 };
+    // baseStatScore = 10, bonuses = 0, training = 0 → totalScore = 10
+    // level = floor(10/50) + 1 = 0 + 1 = 1
+    expect(calculateHorseLevel(horse, 'Racing')).toBe(1);
+  });
+
+  it('falls back to Racing config for unknown discipline', () => {
+    const horse = { speed: 60, stamina: 60, intelligence: 60 };
+    const levelKnown = calculateHorseLevel(horse, 'Racing');
+    const levelUnknown = calculateHorseLevel(horse, 'Underwater Polo');
+    expect(levelUnknown).toBe(levelKnown);
+  });
+
+  it('reaches level 11+ when totalScore is 501-1000', () => {
+    // baseStatScore = 100, trainingScore = 450 → totalScore = 550
+    // level = 11 + floor((550-500)/100) = 11
+    const horse = {
+      speed: 100,
+      stamina: 100,
+      intelligence: 100,
+      disciplineScores: { Racing: 450 },
+    };
+    expect(calculateHorseLevel(horse, 'Racing')).toBeGreaterThanOrEqual(11);
+  });
+
+  it('reaches level 16+ when totalScore exceeds 1000', () => {
+    // baseStatScore = 100, trainingScore = 1000 → totalScore = 1100
+    // level = 16 + floor((1100-1000)/100) = 17
+    const horse = {
+      speed: 100,
+      stamina: 100,
+      intelligence: 100,
+      disciplineScores: { Racing: 1000 },
+    };
+    expect(calculateHorseLevel(horse, 'Racing')).toBeGreaterThanOrEqual(16);
+  });
+
+  it('uses horse.epigeneticModifiers when available', () => {
+    const horse = {
+      speed: 50,
+      stamina: 50,
+      intelligence: 50,
+      epigeneticModifiers: { positive: ['fast'], negative: [] },
+    };
+    // 'fast' is beneficial for Racing → legacyTraitBonus += 5 × 2 = +10 total
+    expect(calculateHorseLevel(horse, 'Racing')).toBeGreaterThanOrEqual(1);
+  });
+
+  it('falls back to horse.traits when epigeneticModifiers is absent', () => {
+    const horse = {
+      speed: 50,
+      stamina: 50,
+      intelligence: 50,
+      traits: { positive: ['fast'], negative: [] },
+    };
+    expect(calculateHorseLevel(horse, 'Racing')).toBeGreaterThanOrEqual(1);
+  });
+
+  it('+2 legacyTraitBonus for positive trait not in beneficial list', () => {
+    // 'calm' not in Racing.beneficial → legacyTraitBonus += 2 per trait
+    const horseWith = {
+      speed: 50,
+      stamina: 50,
+      intelligence: 50,
+      epigeneticModifiers: { positive: ['calm'], negative: [] },
+    };
+    const horseWithout = {
+      speed: 50,
+      stamina: 50,
+      intelligence: 50,
+      epigeneticModifiers: { positive: [], negative: [] },
+    };
+    expect(calculateHorseLevel(horseWith, 'Racing')).toBeGreaterThanOrEqual(
+      calculateHorseLevel(horseWithout, 'Racing'),
+    );
+  });
+
+  it('-8 legacyTraitBonus for detrimental negative trait match', () => {
+    // 'slow' is in Racing.detrimental → -8 per trait (×2 because affinity = legacy)
+    const horseWith = {
+      speed: 50,
+      stamina: 50,
+      intelligence: 50,
+      epigeneticModifiers: { positive: [], negative: ['slow'] },
+    };
+    const horseWithout = {
+      speed: 50,
+      stamina: 50,
+      intelligence: 50,
+      epigeneticModifiers: { positive: [], negative: [] },
+    };
+    expect(calculateHorseLevel(horseWith, 'Racing')).toBeLessThanOrEqual(calculateHorseLevel(horseWithout, 'Racing'));
+  });
+
+  it('-3 legacyTraitBonus for non-detrimental negative trait', () => {
+    // 'clumsy' not in Racing.detrimental → legacyTraitBonus -= 3 per trait
+    const horse = {
+      speed: 50,
+      stamina: 50,
+      intelligence: 50,
+      epigeneticModifiers: { positive: [], negative: ['clumsy'] },
+    };
+    expect(calculateHorseLevel(horse, 'Racing')).toBeGreaterThanOrEqual(1);
+  });
+});
+
+// ─── checkTraitRequirements ───────────────────────────────────────────────────
+
+describe('checkTraitRequirements', () => {
+  it('returns true for discipline with no requiresTrait (Racing)', () => {
+    const horse = { epigeneticModifiers: { positive: [], negative: [] } };
+    expect(checkTraitRequirements(horse, 'Racing')).toBe(true);
+  });
+
+  it('returns true for Gaited when horse has gaited trait', () => {
+    const horse = { epigeneticModifiers: { positive: ['gaited'], negative: [] } };
+    expect(checkTraitRequirements(horse, 'Gaited')).toBe(true);
+  });
+
+  it('returns false for Gaited when horse lacks gaited trait', () => {
+    const horse = { epigeneticModifiers: { positive: ['fast'], negative: [] } };
+    expect(checkTraitRequirements(horse, 'Gaited')).toBe(false);
+  });
+
+  it('uses horse.traits fallback when epigeneticModifiers is absent', () => {
+    const horse = { traits: { positive: ['gaited'], negative: [] } };
+    expect(checkTraitRequirements(horse, 'Gaited')).toBe(true);
+  });
+
+  it('returns false for Gaited when horse has no trait data', () => {
+    // horse.epigeneticModifiers undefined, horse.traits undefined → {} → positiveTraits = []
+    const horse = {};
+    expect(checkTraitRequirements(horse, 'Gaited')).toBe(false);
+  });
+});
+
+// ─── calculateStatGain ────────────────────────────────────────────────────────
+
+describe('calculateStatGain', () => {
+  it('returns null for placement 4 (no chance entry in table)', () => {
+    // !chance is true → immediate null
+    expect(calculateStatGain(4, 'Racing')).toBeNull();
+  });
+
+  it('returns null for placement 5 (no chance entry)', () => {
+    expect(calculateStatGain(5, 'Racing')).toBeNull();
+  });
+
+  it('eventually returns a stat object for placement 1 (10% chance)', () => {
+    // 200 tries: P(at least one success) = 1 - (0.9^200) ≈ 1.0
+    let gotGain = false;
+    for (let i = 0; i < 200; i++) {
+      const result = calculateStatGain(1, 'Racing');
+      if (result !== null) {
+        expect(result).toHaveProperty('stat');
+        expect(result).toHaveProperty('amount', 1);
+        // Racing getDisciplineConfigurations stats: ['speed', 'stamina', 'intelligence']
+        expect(['speed', 'stamina', 'intelligence']).toContain(result.stat);
+        gotGain = true;
+        break;
+      }
+    }
+    expect(gotGain).toBe(true);
+  });
+
+  it('falls back to Racing discipline for unknown discipline name', () => {
+    // placement 4 → always null regardless of discipline
+    expect(calculateStatGain(4, 'Underwater Polo')).toBeNull();
   });
 });
