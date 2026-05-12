@@ -290,3 +290,96 @@ describe('evaluateEnhancedMilestone() — DB-fixture paths (Equoria-jkht)', () =
     expect(result.existingEvaluation).toBeDefined();
   });
 });
+
+// ── evaluateEnhancedMilestone — personality effects + interaction branch ────────
+// Covers lines 168-180 (personality+temperament block) and line 297 (averageQuality
+// ternary true-branch inside getGroomCareHistory).
+//
+// Fixture: horse with temperament set + active groom assignment + groomInteraction today.
+
+describe('evaluateEnhancedMilestone() — personality effects + interaction branch (lines 168-180, 297) (Equoria-rr7)', () => {
+  let personalityUser;
+  let personalityGroom;
+  let personalityHorse;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    personalityUser = await prisma.user.create({
+      data: {
+        email: `emes-personality-${ts}-${rand()}@test.com`,
+        username: `emespersonality${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'EMES',
+        lastName: 'Personality',
+        money: 1000,
+      },
+    });
+
+    personalityGroom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-PersonalityGroom-${ts}`,
+        speciality: 'foalCare',
+        personality: 'gentle',
+        userId: personalityUser.id,
+        isActive: true,
+      },
+    });
+
+    // Horse born today (age=0) → in IMPRINTING window {start:0, end:1}
+    // temperament must be non-null to trigger personality effects block
+    personalityHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-PersonalityHorse-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: personalityUser.id,
+        temperament: 'bold',
+      },
+    });
+
+    // Active groomAssignment → currentGroom is set in evaluateEnhancedMilestone
+    await prisma.groomAssignment.create({
+      data: {
+        foalId: personalityHorse.id,
+        groomId: personalityGroom.id,
+        userId: personalityUser.id,
+        priority: 1,
+        isActive: true,
+      },
+    });
+
+    // A groomInteraction today → interactions.length > 0 → covers line 297
+    await prisma.groomInteraction.create({
+      data: {
+        foalId: personalityHorse.id,
+        groomId: personalityGroom.id,
+        interactionType: 'grooming',
+        duration: 30,
+        bondingChange: 5,
+        timestamp: new Date(),
+      },
+    });
+  }, 30000);
+
+  afterAll(async () => {
+    // cascade: milestoneTraitLog rows deleted by Horse onDelete:Cascade
+    await prisma.groomInteraction.deleteMany({ where: { foalId: personalityHorse.id } }).catch(() => {});
+    await prisma.groomAssignment.deleteMany({ where: { foalId: personalityHorse.id } }).catch(() => {});
+    await prisma.horse.delete({ where: { id: personalityHorse.id } }).catch(() => {});
+    await prisma.groom.delete({ where: { id: personalityGroom.id } }).catch(() => {});
+    await prisma.user.delete({ where: { id: personalityUser.id } }).catch(() => {});
+  }, 30000);
+
+  it('applies personality effects (lines 168-180) and computes averageQuality from interactions (line 297)', async () => {
+    const result = await evaluateEnhancedMilestone(personalityHorse.id, MILESTONE_TYPES.IMPRINTING);
+    expect(result.success).toBe(true);
+    expect(result.milestoneLog).toBeDefined();
+    // personalityCompatibility should be set (non-null) since groom has personality and horse has temperament
+    expect(result.personalityCompatibility).toBeDefined();
+    // finalScore reflects personality modifier
+    expect(typeof result.finalScore).toBe('number');
+  });
+});

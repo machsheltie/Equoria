@@ -233,14 +233,13 @@ describe('logger robustness (21R-OBS-3)', () => {
 
   // ── Additional coverage: enumerateErrorFormat + preprocessMetaValue depth guard ─
 
-  describe('enumerateErrorFormat + preprocessMetaValue depth guard (lines 6, 40, 87-88) (Equoria-jkht)', () => {
-    it('line 6 + lines 87-88: Error as first arg passes Error as info → instanceof Error TRUE → stack de-dup', () => {
+  describe('enumerateErrorFormat + preprocessMetaValue depth/proto guards (lines 6, 40, 71, 87-88) (Equoria-jkht)', () => {
+    it('line 6: Error as first arg passes Error directly as info → instanceof Error TRUE branch', () => {
       // When logger.error(errorObject) is called, Winston mutates the Error
       // directly as the info object (Object.assign(err, { level })), making
       // info instanceof Error TRUE.  enumerateErrorFormat then sets
-      // info.message = info.stack (line 6).  buildMetaSuffix subsequently
-      // detects that message already contains meta.stack and strips the
-      // duplicate top-level stack field (lines 87-88).
+      // info.message = info.stack (line 6) — visible in the output as the
+      // stack trace appearing as the log message.
       logger.error(new Error('bare-first-arg-cov'));
       expect(capturedLines).toHaveLength(1);
       const line = capturedLines[0];
@@ -264,6 +263,66 @@ describe('logger robustness (21R-OBS-3)', () => {
       expect(capturedLines).toHaveLength(1);
       const line = capturedLines[0];
       expect(line).toContain('[Test] deep-meta-depth-cov');
+    });
+
+    it('line 71: non-plain-object value (Date) in metadata returns value unchanged', () => {
+      // preprocessMetaValue line 71 returns the value as-is when its
+      // prototype is neither null nor Object.prototype (e.g. Date objects).
+      // Pass a Date inside a metadata object so that code path is reached.
+      logger.warn('[Test] date-value-cov', { created: new Date('2026-01-01') });
+      expect(capturedLines).toHaveLength(1);
+      const line = capturedLines[0];
+      expect(line).toContain('[Test] date-value-cov');
+      expect(line).toContain('created');
+    });
+
+    it('lines 87-88: explicit meta.stack matching message → stack stripped from suffix (de-dup)', () => {
+      // buildMetaSuffix lines 87-88 strip meta.stack when message already
+      // contains it (to prevent double-emission in the log line).
+      // Error.stack is non-enumerable so the bare-Error test above does NOT
+      // reach this path.  Instead, pass a plain {stack} object so the
+      // splat format merges it as an enumerable property on info, then
+      // feed the same string as the message so message.includes(meta.stack)
+      // is TRUE and the destructuring at lines 87-88 fires.
+      const stackStr = 'Error: de-dup-cov-sentinel\n    at Coverage (/file.js:1:1)';
+      logger.warn(stackStr, { stack: stackStr });
+      expect(capturedLines).toHaveLength(1);
+      const line = capturedLines[0];
+      expect(line).toContain('de-dup-cov-sentinel');
+    });
+
+    it('line 49 FALSE: Error with non-string stack emits undefined (omitted from JSON)', () => {
+      // preprocessMetaValue line 49 has a ternary:
+      //   typeof value.stack === 'string' ? value.stack.slice(...) : undefined
+      // The FALSE branch (non-string stack) is only reached when an Error
+      // object has had its stack replaced with a non-string value.
+      const e = new Error('non-string-stack-cov');
+      e.stack = 99999; // numeric, not a string — triggers FALSE branch
+      logger.warn('[Test] non-string-stack', { err: e });
+      expect(capturedLines).toHaveLength(1);
+      const line = capturedLines[0];
+      expect(line).toContain('[Test] non-string-stack');
+      // undefined values are omitted by JSON.stringify, so "stack" key absent
+      expect(line).not.toContain('"stack"');
+    });
+
+    it('lines 99-100 RIGHT: catch with nullish-constructor thrown value uses ?? fallbacks', () => {
+      // buildMetaSuffix lines 99-100 have `err?.constructor?.name ?? 'Error'`
+      // and `err?.message ?? ''`.  The RIGHT side of each ?? is only reached
+      // when the caught value has no constructor name / message.  Trigger by
+      // passing an object whose toJSON() throws null: JSON.stringify calls
+      // toJSON(), the throw propagates to buildMetaSuffix's catch, and err=null
+      // makes both optional-chain lookups return undefined → ?? fallbacks fire.
+      const triggerObj = {
+        toJSON: () => {
+          throw null;
+        },
+      };
+      logger.warn('[Test] toJSON-throw', { data: triggerObj });
+      expect(capturedLines).toHaveLength(1);
+      const line = capturedLines[0];
+      expect(line).toContain('[Test] toJSON-throw');
+      expect(line).toContain('[unserializable meta: Error:');
     });
   });
 });

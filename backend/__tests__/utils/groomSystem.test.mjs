@@ -377,3 +377,173 @@ describe('assignGroomToFoal() — groom not found (foal exists, groom=-1)', () =
     expect(thrown).toBe(true);
   });
 });
+
+// ── assignGroomToFoal success path + ensureDefault + validateInteraction ────────
+//
+// Fixture set for lines 219-278 (assignGroomToFoal success path),
+// lines 312-316 (ensureDefaultGroomAssignment existing assignment),
+// lines 351-368 (ensureDefaultGroomAssignment test-mode creation),
+// line 406 (getOrCreateDefaultGroom existing groom),
+// lines 455 + 498-505 (validateFoalInteractionLimits daily limit),
+// lines 509-528 (recordGroomInteraction success path).
+
+let successUser;
+let groomForSuccessAssign;
+let foalForSuccessAssign;
+let foalForInteractTest;
+let foalPreAssigned;
+let foalForEnsure;
+
+beforeAll(async () => {
+  const ts = Date.now();
+  const rand = () => Math.random().toString(36).slice(2, 8);
+
+  successUser = await prisma.user.create({
+    data: {
+      email: `groomsys-succ-${ts}-${rand()}@test.com`,
+      username: `groomsyssucc${ts}${rand()}`,
+      password: 'irrelevant-hash',
+      firstName: 'GroomSys',
+      lastName: 'SuccTester',
+      money: 1000,
+    },
+  });
+
+  groomForSuccessAssign = await prisma.groom.create({
+    data: {
+      name: `TestFixture-SuccessAssignGroom-${ts}`,
+      speciality: 'foalCare',
+      personality: 'gentle',
+      userId: successUser.id,
+      isActive: true,
+    },
+  });
+
+  foalForSuccessAssign = await prisma.horse.create({
+    data: {
+      name: `TestFixture-SuccessAssignFoal-${ts}`,
+      sex: 'Filly',
+      dateOfBirth: new Date(),
+      age: 0,
+      userId: successUser.id,
+    },
+  });
+
+  foalForInteractTest = await prisma.horse.create({
+    data: {
+      name: `TestFixture-InteractFoal-${ts}`,
+      sex: 'Colt',
+      dateOfBirth: new Date(),
+      age: 0,
+      userId: successUser.id,
+    },
+  });
+
+  foalPreAssigned = await prisma.horse.create({
+    data: {
+      name: `TestFixture-PreAssignedFoal-${ts}`,
+      sex: 'Filly',
+      dateOfBirth: new Date(),
+      age: 0,
+      userId: successUser.id,
+    },
+  });
+  await prisma.groomAssignment.create({
+    data: {
+      foalId: foalPreAssigned.id,
+      groomId: groomForSuccessAssign.id,
+      userId: successUser.id,
+      priority: 1,
+      isActive: true,
+    },
+  });
+
+  foalForEnsure = await prisma.horse.create({
+    data: {
+      name: `TestFixture-EnsureFoal-${ts}`,
+      sex: 'Colt',
+      dateOfBirth: new Date(),
+      age: 0,
+      userId: successUser.id,
+    },
+  });
+}, 30000);
+
+afterAll(async () => {
+  await prisma.groomInteraction.deleteMany({ where: { foalId: foalForInteractTest.id } }).catch(() => {});
+  await prisma.groomAssignment
+    .deleteMany({
+      where: {
+        foalId: { in: [foalPreAssigned.id, foalForSuccessAssign.id, foalForEnsure.id] },
+      },
+    })
+    .catch(() => {});
+  await prisma.horse.delete({ where: { id: foalForSuccessAssign.id } }).catch(() => {});
+  await prisma.horse.delete({ where: { id: foalForInteractTest.id } }).catch(() => {});
+  await prisma.horse.delete({ where: { id: foalPreAssigned.id } }).catch(() => {});
+  await prisma.horse.delete({ where: { id: foalForEnsure.id } }).catch(() => {});
+  await prisma.groom.delete({ where: { id: groomForSuccessAssign.id } }).catch(() => {});
+  await prisma.user.delete({ where: { id: successUser.id } }).catch(() => {});
+}, 30000);
+
+describe('assignGroomToFoal() — success path (lines 219 false-branch, 228-282) (Equoria-rr7)', () => {
+  it('creates groomAssignment and returns success when groom owned by user is active (lines 219-278)', async () => {
+    const result = await assignGroomToFoal(foalForSuccessAssign.id, groomForSuccessAssign.id, successUser.id);
+    expect(result.success).toBe(true);
+    expect(result.assignment).toBeDefined();
+    expect(typeof result.message).toBe('string');
+  });
+});
+
+describe('getOrCreateDefaultGroom() — existing foalCare groom path (line 406) (Equoria-rr7)', () => {
+  it('returns existing foalCare groom without creating a new one (line 406)', async () => {
+    const result = await getOrCreateDefaultGroom(successUser.id);
+    expect(result.id).toBe(groomForSuccessAssign.id);
+  });
+});
+
+describe('ensureDefaultGroomAssignment() — existing assignment early return (lines 312-316) (Equoria-rr7)', () => {
+  it('returns isExisting=true when foal already has active assignment (lines 312-316)', async () => {
+    const result = await ensureDefaultGroomAssignment(foalPreAssigned.id, successUser.id);
+    expect(result.success).toBe(true);
+    expect(result.isExisting).toBe(true);
+  });
+});
+
+describe('ensureDefaultGroomAssignment() — test-mode assignment creation (lines 351-368) (Equoria-rr7)', () => {
+  it('creates assignment for foal with no prior assignment in test mode (lines 351-368)', async () => {
+    const result = await ensureDefaultGroomAssignment(foalForEnsure.id, successUser.id);
+    expect(result.success).toBe(true);
+    expect(result.isNew).toBe(true);
+  });
+});
+
+describe('recordGroomInteraction() — success path (lines 509-528) (Equoria-rr7)', () => {
+  it('records interaction and returns success for horse with no prior interactions today (lines 509-528)', async () => {
+    const result = await recordGroomInteraction(
+      foalForInteractTest.id,
+      groomForSuccessAssign.id,
+      'grooming',
+      30,
+      successUser.id,
+    );
+    expect(result.success).toBe(true);
+    expect(result.interaction).toBeDefined();
+    expect(result.interaction.foalId).toBe(foalForInteractTest.id);
+  });
+});
+
+describe('recordGroomInteraction() — daily limit reached (lines 455, 498-505) (Equoria-rr7)', () => {
+  it('returns dailyLimitReached=true on second call today for same horse (lines 455, 498-505)', async () => {
+    // foalForInteractTest already has an interaction from the previous test
+    const result = await recordGroomInteraction(
+      foalForInteractTest.id,
+      groomForSuccessAssign.id,
+      'grooming',
+      30,
+      successUser.id,
+    );
+    expect(result.success).toBe(false);
+    expect(result.dailyLimitReached).toBe(true);
+  });
+});
