@@ -17,6 +17,11 @@ import {
   checkLineageForDisciplineAffinity,
   getMostCommonDisciplineFromHistory,
   getHighestScoringDiscipline,
+  assessFeedQuality,
+  getAncestors,
+  analyzeLineage,
+  detectInbreeding,
+  applyEpigeneticTraitsAtBirth,
 } from '../../utils/atBirthTraits.mjs';
 
 // ── AT_BIRTH_TRAITS constant ──────────────────────────────────────────────────
@@ -298,5 +303,93 @@ describe('checkLineageForDisciplineAffinity()', () => {
     const result = checkLineageForDisciplineAffinity([evil]);
     expect(result.affinity).toBe(false);
     expect(typeof result.error).toBe('string');
+  });
+});
+
+// ── assessFeedQuality — mare-not-found path (lines 304-317) ──────────────────
+
+describe('assessFeedQuality() — non-existent mare returns default score', () => {
+  it('returns 50 when mareId -1 is not in DB (mare not found → default quality)', async () => {
+    const result = await assessFeedQuality(-1);
+    expect(result).toBe(50);
+    expect(typeof result).toBe('number');
+  });
+});
+
+// ── getAncestors — early-return and empty-result paths (lines 239-297) ────────
+
+describe('getAncestors() — guard branches and safe DB query', () => {
+  it('returns [] when horseIds is empty (guard branch, line 241)', async () => {
+    const result = await getAncestors([], 3);
+    expect(result).toEqual([]);
+  });
+
+  it('returns [] when generations is 0 (guard branch, line 240)', async () => {
+    const result = await getAncestors([-1], 0);
+    expect(result).toEqual([]);
+  });
+
+  it('returns [] when horse IDs do not exist in DB (findMany→[], lines 244-296)', async () => {
+    const result = await getAncestors([-1, -2], 3);
+    expect(result).toEqual([]);
+  });
+});
+
+// ── analyzeLineage — empty-ancestors path (lines 98-168) ─────────────────────
+
+describe('analyzeLineage() — non-existent sire/dam returns zero-result shape', () => {
+  it('returns zero-result shape when sire/dam IDs do not exist in DB', async () => {
+    const result = await analyzeLineage(-1, -1);
+    expect(result.ancestors).toEqual([]);
+    expect(result.disciplineSpecialization).toBe(false);
+    expect(result.specializedDiscipline).toBeNull();
+    expect(result.specializationStrength).toBe(0);
+    expect(result.totalCompetitions).toBe(0);
+  });
+});
+
+// ── detectInbreeding — no-common-ancestors path (lines 176-231) ──────────────
+
+describe('detectInbreeding() — non-existent sire/dam returns no-inbreeding shape', () => {
+  it('returns inbreedingDetected=false and empty commonAncestors when sire/dam do not exist', async () => {
+    const result = await detectInbreeding(-1, -1);
+    expect(result.inbreedingDetected).toBe(false);
+    expect(result.commonAncestors).toEqual([]);
+    expect(result.sireAncestorCount).toBe(0);
+    expect(result.damAncestorCount).toBe(0);
+  });
+});
+
+// ── applyEpigeneticTraitsAtBirth — validation and mare-not-found paths ────────
+
+describe('applyEpigeneticTraitsAtBirth() — throws on invalid or missing inputs', () => {
+  it('rejects when sireId is 0 — validation fails (lines 378-380)', async () => {
+    let thrown = false;
+    try {
+      await applyEpigeneticTraitsAtBirth({ sireId: 0, damId: 1 });
+    } catch {
+      thrown = true;
+    }
+    expect(thrown).toBe(true);
+  });
+
+  it('rejects when damId is 0 — validation fails (lines 378-380)', async () => {
+    let thrown = false;
+    try {
+      await applyEpigeneticTraitsAtBirth({ sireId: 1, damId: 0 });
+    } catch {
+      thrown = true;
+    }
+    expect(thrown).toBe(true);
+  });
+
+  it('rejects when dam (damId=-1) is not found in DB — mare-not-found (lines 383-391)', async () => {
+    let thrown = false;
+    try {
+      await applyEpigeneticTraitsAtBirth({ sireId: -1, damId: -1 });
+    } catch {
+      thrown = true;
+    }
+    expect(thrown).toBe(true);
   });
 });
