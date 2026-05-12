@@ -393,3 +393,94 @@ describe('calculatePersonalityEffects — trait bonusBonding branch (line 223)',
     expect(result.personalityEffects.bonusesApplied).toContain('trait_match');
   });
 });
+
+// ---------------------------------------------------------------------------
+// calculatePersonalityEffects — specialConditions FALSE branches (lines 204, 237, 252)
+// ---------------------------------------------------------------------------
+describe('calculatePersonalityEffects — specialConditions FALSE branches (lines 204, 237, 252)', () => {
+  const baseEffects = {
+    bondingChange: 10,
+    stressChange: -5,
+    successRate: 0.85,
+    streakGrowth: 1,
+    burnoutRisk: 0.1,
+    traitInfluence: 5,
+  };
+
+  beforeAll(() => {
+    // line 204 FALSE: personality with no specialConditions key
+    GROOM_PERSONALITY_EFFECTS._testNoSpecialConditions = {
+      bonusTasks: [],
+      effect: 'test only — no specialConditions',
+      successRateModifier: 1.0,
+      bondingModifier: 1.0,
+      stressReductionModifier: 1.0,
+      streakGrowthModifier: 1.0,
+      burnoutRiskModifier: 1.0,
+      traitInfluenceModifier: 1.0,
+      // intentionally omitted: specialConditions
+    };
+
+    // line 237 FALSE: personality with ageRange but no bonusBonding
+    GROOM_PERSONALITY_EFFECTS._testAgeRangeNoBonusBonding = {
+      bonusTasks: [],
+      effect: 'test only — ageRange, no bonusBonding',
+      successRateModifier: 1.0,
+      bondingModifier: 1.0,
+      stressReductionModifier: 1.0,
+      streakGrowthModifier: 1.0,
+      burnoutRiskModifier: 1.0,
+      traitInfluenceModifier: 1.0,
+      specialConditions: {
+        ageRange: [0, 9999],
+        // intentionally omitted: bonusBonding
+      },
+    };
+
+    // line 252 FALSE: personality with taskCategories match but no bonusSuccessRate
+    GROOM_PERSONALITY_EFFECTS._testTaskCatNoBonusRate = {
+      bonusTasks: [],
+      effect: 'test only — taskCategories, no bonusSuccessRate',
+      successRateModifier: 1.0,
+      bondingModifier: 1.0,
+      stressReductionModifier: 1.0,
+      streakGrowthModifier: 1.0,
+      burnoutRiskModifier: 1.0,
+      traitInfluenceModifier: 1.0,
+      specialConditions: {
+        taskCategories: ['enrichment'],
+        // intentionally omitted: bonusSuccessRate
+      },
+    };
+  });
+
+  afterAll(() => {
+    delete GROOM_PERSONALITY_EFFECTS._testNoSpecialConditions;
+    delete GROOM_PERSONALITY_EFFECTS._testAgeRangeNoBonusBonding;
+    delete GROOM_PERSONALITY_EFFECTS._testTaskCatNoBonusRate;
+  });
+
+  it('no specialConditions: skips entire specialConditions block (line 204 FALSE branch)', () => {
+    const groom = { personality: '_testNoSpecialConditions' };
+    const result = calculatePersonalityEffects(groom, { traits: [] }, 'brushing', baseEffects);
+    expect(result.personalityEffects.specialConditionMet).toBe(false);
+    expect(result.personalityEffects.bonusesApplied).toHaveLength(0);
+  });
+
+  it('ageRange matches but no bonusBonding: skips bondingChange bonus (line 237 FALSE branch)', () => {
+    const groom = { personality: '_testAgeRangeNoBonusBonding' };
+    const foal = { traits: [], age: 100 }; // within [0, 9999]
+    const result = calculatePersonalityEffects(groom, foal, 'brushing', baseEffects);
+    // specialConditionMet=true (age matched), but bondingChange unchanged (no bonusBonding)
+    expect(result.personalityEffects.specialConditionMet).toBe(true);
+    expect(result.bondingChange).toBe(baseEffects.bondingChange); // no bonus applied
+  });
+
+  it('taskCategory matches but no bonusSuccessRate: skips rate bonus (line 252 FALSE branch)', () => {
+    const groom = { personality: '_testTaskCatNoBonusRate' };
+    // puddle_training → 'enrichment' → matches taskCategories: ['enrichment']
+    const result = calculatePersonalityEffects(groom, { traits: [] }, 'puddle_training', baseEffects);
+    expect(result.personalityEffects.specialConditionMet).toBe(true);
+    expect(result.successRate).toBeCloseTo(baseEffects.successRate); // no bonusSuccessRate added
+  });
+});

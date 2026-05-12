@@ -16,6 +16,7 @@ import {
   calculateTaskConsistencyModifier,
   calculateCareGapsPenalty,
   determineTraitOutcome,
+  evaluateEnhancedMilestone,
   MILESTONE_TYPES,
   MILESTONE_TRAIT_POOLS,
   TRAIT_THRESHOLDS,
@@ -159,5 +160,31 @@ describe('determineTraitOutcome()', () => {
       expect(() => determineTraitOutcome(-5, type)).not.toThrow();
       expect(() => determineTraitOutcome(0, type)).not.toThrow();
     });
+  });
+});
+
+// ── evaluateEnhancedMilestone — validation + horse-not-found paths (lines 75-252) ──
+
+describe('evaluateEnhancedMilestone() — safe throw paths', () => {
+  it('rejects with "Invalid milestone type" for an unrecognised milestoneType (lines 82-84)', async () => {
+    await expect(evaluateEnhancedMilestone(-1, 'invalid_type')).rejects.toThrow('Invalid milestone type: invalid_type');
+  });
+
+  it('rejects with "Horse with ID -1 not found" for a valid type but missing horse (lines 97-99)', async () => {
+    await expect(evaluateEnhancedMilestone(-1, MILESTONE_TYPES.IMPRINTING)).rejects.toThrow(
+      'Horse with ID -1 not found',
+    );
+  });
+
+  it('rejects for all milestone types when horse does not exist', async () => {
+    for (const type of Object.values(MILESTONE_TYPES)) {
+      let thrown = false;
+      try {
+        await evaluateEnhancedMilestone(-1, type);
+      } catch {
+        thrown = true;
+      }
+      expect(thrown).toBe(true);
+    }
   });
 });

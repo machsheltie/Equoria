@@ -16,10 +16,17 @@ import { describe, it, expect } from '@jest/globals';
 import {
   hasAlreadyCompletedFoalTaskToday,
   calculateGroomInteractionEffects,
+  assignGroomToFoal,
+  ensureDefaultGroomAssignment,
+  getOrCreateDefaultGroom,
+  validateFoalInteractionLimits,
+  recordGroomInteraction,
   GROOM_SPECIALTIES,
   SKILL_LEVELS,
   PERSONALITY_TRAITS,
 } from '../../utils/groomSystem.mjs';
+
+const GHOST_UUID = '00000000-0000-0000-0000-ffffffffffff';
 import { ELIGIBLE_FOAL_ENRICHMENT_TASKS, FOAL_GROOMING_TASKS } from '../../config/groomConfig.mjs';
 
 const TODAY = '2026-05-12';
@@ -259,5 +266,66 @@ describe('calculateGroomInteractionEffects()', () => {
 
   it('throws when groom is null (catch re-throws)', () => {
     expect(() => calculateGroomInteractionEffects(null, foal, 'grooming', 60)).toThrow();
+  });
+});
+
+// ── assignGroomToFoal — foal-not-found path (lines 177-191) ──────────────────
+
+describe('assignGroomToFoal() — foal not found', () => {
+  it('rejects with "Foal with ID -1 not found" for a non-existent foal', async () => {
+    let thrown = false;
+    try {
+      await assignGroomToFoal(-1, -1, 'any-user');
+    } catch {
+      thrown = true;
+    }
+    expect(thrown).toBe(true);
+  });
+});
+
+// ── ensureDefaultGroomAssignment — FK-fail in test mode (lines 295-381) ──────
+
+describe('ensureDefaultGroomAssignment() — FK violation on groom.create in test mode', () => {
+  it('rejects when userId is a ghost UUID (groom.create FK P2003 → catch + rethrow)', async () => {
+    let thrown = false;
+    try {
+      await ensureDefaultGroomAssignment(-1, GHOST_UUID);
+    } catch {
+      thrown = true;
+    }
+    expect(thrown).toBe(true);
+  });
+});
+
+// ── getOrCreateDefaultGroom — no-groom-found path (lines 390-416) ────────────
+
+describe('getOrCreateDefaultGroom() — no foalCare groom found for ghost userId', () => {
+  it('rejects when userId has no foalCare groom in DB (null → throw → catch + rethrow)', async () => {
+    let thrown = false;
+    try {
+      await getOrCreateDefaultGroom(GHOST_UUID);
+    } catch {
+      thrown = true;
+    }
+    expect(thrown).toBe(true);
+  });
+});
+
+// ── validateFoalInteractionLimits — horse-not-found path (lines 424-434) ─────
+
+describe('validateFoalInteractionLimits() — horse not found', () => {
+  it('rejects with "Horse with ID -1 not found" for a non-existent horse', async () => {
+    await expect(validateFoalInteractionLimits(-1)).rejects.toThrow('Horse with ID -1 not found');
+  });
+});
+
+// ── recordGroomInteraction — horse-not-found → catch returns object (lines 491-535)
+
+describe('recordGroomInteraction() — horse not found → success=false envelope', () => {
+  it('returns { success: false, error } when foalId -1 does not exist (catch envelope, lines 529-534)', async () => {
+    const result = await recordGroomInteraction(-1, -1, 'feeding', 30, GHOST_UUID);
+    expect(result.success).toBe(false);
+    expect(typeof result.error).toBe('string');
+    expect(result.error).toMatch(/Horse with ID -1 not found/);
   });
 });
