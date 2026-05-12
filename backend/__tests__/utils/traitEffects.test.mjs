@@ -157,4 +157,13 @@ describe('getCombinedTraitEffects', () => {
     const combined = getCombinedTraitEffects(['resilient', 'telekinesis']);
     expect(combined.competitionScoreModifier).toBeDefined();
   });
+
+  it('object effect overwrites prior non-object value for same key — line 699 else branch', () => {
+    // eager_learner.baseStatBoost = 1 (number) → stored directly (line 667)
+    // athletic.baseStatBoost = { stamina:2, agility:2, balance:1 } (object)
+    // combinedEffects.baseStatBoost = 1 (truthy, not object) → outer else-if fires at line 679
+    // inner if at 681 is FALSE (number ≠ object) → else at line 699 overwrites with spread
+    const combined = getCombinedTraitEffects(['eager_learner', 'athletic']);
+    expect(combined.baseStatBoost).toEqual({ stamina: 2, agility: 2, balance: 1 });
+  });
 });

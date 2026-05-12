@@ -4,7 +4,7 @@
  * Pure functions (logger + taskTraitInfluenceMap imports only). No DB required.
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
 import {
   TRAIT_DEFINITIONS,
   TRAIT_CONFLICTS,
@@ -550,11 +550,14 @@ describe('evaluateTraitRevelation — catch block (lines 341-342)', () => {
 // ---------------------------------------------------------------------------
 describe('evaluateEpigeneticTagsFromFoalTasks — catch block (lines 531-532)', () => {
   it('re-throws when Object.entries(taskLog) throws (Proxy ownKeys trap)', () => {
-    const evil = new Proxy({}, {
-      ownKeys() {
-        throw new Error('proxy bomb');
+    const evil = new Proxy(
+      {},
+      {
+        ownKeys() {
+          throw new Error('proxy bomb');
+        },
       },
-    });
+    );
     expect(() => evaluateEpigeneticTagsFromFoalTasks(evil, 0)).toThrow();
   });
 });
@@ -565,5 +568,45 @@ describe('evaluateEpigeneticTagsFromFoalTasks — catch block (lines 531-532)', 
 describe('applyGroomTraitInfluence — catch block (lines 620-621)', () => {
   it('re-throws when horse is null (horse.age access throws TypeError)', () => {
     expect(() => applyGroomTraitInfluence(null, 'brushing', {})).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// evaluateTraitRevelation — conflict blocking FALSE branches (lines 266, 293)
+// Math.random pinned to 0 so all probability gates pass deterministically.
+// Line 320 (rare-trait conflict) is dead code: no rare trait has TRAIT_CONFLICTS
+// entries, so hasTraitConflict always returns false for rare traits.
+// ---------------------------------------------------------------------------
+describe('evaluateTraitRevelation — conflict blocking FALSE branches (lines 266, 293)', () => {
+  let mathRandomSpy;
+
+  beforeEach(() => {
+    mathRandomSpy = jest.spyOn(Math, 'random').mockReturnValue(0);
+  });
+
+  afterEach(() => {
+    mathRandomSpy.mockRestore();
+  });
+
+  it('positive trait calm blocked by pre-existing nervous (line 266 FALSE branch)', () => {
+    // calm conflicts with nervous; all reveal conditions met with bondScore=100, stressLevel=0
+    // Math.random()=0 makes probability gate pass, but hasTraitConflict('calm',{nervous})=true
+    // → !hasTraitConflict is FALSE → line 266 FALSE branch covered; calm absent from result
+    const foal = { id: 99, bondScore: 100, stressLevel: 0, age: 0 };
+    const currentTraits = { positive: [], negative: ['nervous'], hidden: [] };
+    const result = evaluateTraitRevelation(foal, currentTraits, 6);
+    const all = [...result.positive, ...result.negative, ...result.hidden];
+    expect(all).not.toContain('calm');
+  });
+
+  it('negative trait nervous blocked by pre-existing calm (line 293 FALSE branch)', () => {
+    // nervous conflicts with calm; conditions met with bondScore=0, stressLevel=100
+    // Math.random()=0 passes probability gate, hasTraitConflict('nervous',{calm})=true
+    // → !hasTraitConflict is FALSE → line 293 FALSE branch covered; nervous absent from result
+    const foal = { id: 98, bondScore: 0, stressLevel: 100, age: 0 };
+    const currentTraits = { positive: ['calm'], negative: [], hidden: [] };
+    const result = evaluateTraitRevelation(foal, currentTraits, 6);
+    const all = [...result.positive, ...result.negative, ...result.hidden];
+    expect(all).not.toContain('nervous');
   });
 });
