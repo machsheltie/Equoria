@@ -189,3 +189,235 @@ describe('applyPersonalityEvolutionEffects', () => {
     expect(result.evolutionLogged).toBe(true);
   });
 });
+
+// ── applyPersonalityEvolutionEffects — uncovered if-branches (Equoria-jkht) ────
+
+describe('applyPersonalityEvolutionEffects — uncovered branches (Equoria-jkht)', () => {
+  it('effectsApplied includes personality-change string when newPersonality !== oldPersonality', async () => {
+    const result = await applyPersonalityEvolutionEffects({
+      entityId: 1,
+      entityType: 'groom',
+      evolutionType: 'personality_shift',
+      newTraits: [],
+      oldPersonality: 'gentle',
+      newPersonality: 'calm',
+      stabilityPeriod: 14,
+      effectStrength: 0.5,
+    });
+    expect(result.success).toBe(true);
+    const hasChange = result.effectsApplied.some(e => e.includes('Personality changed'));
+    expect(hasChange).toBe(true);
+  });
+
+  it('effectsApplied has no trait-added entry when newTraits is empty (false branch)', async () => {
+    const result = await applyPersonalityEvolutionEffects({
+      entityId: 1,
+      entityType: 'groom',
+      evolutionType: 'personality_shift',
+      newTraits: [],
+      oldPersonality: 'calm',
+      newPersonality: 'calm',
+      stabilityPeriod: 14,
+      effectStrength: 0.5,
+    });
+    expect(result.success).toBe(true);
+    const hasTraits = result.effectsApplied.some(e => e.includes('Added traits'));
+    expect(hasTraits).toBe(false);
+  });
+});
+
+// ── predictPersonalityEvolution — timeframeDays filter (Equoria-jkht) ─────────
+
+describe('predictPersonalityEvolution — timeframeDays filter (Equoria-jkht)', () => {
+  it('returns 1 prediction when timeframeDays=7 (filter keeps only [7])', async () => {
+    const result = await predictPersonalityEvolution(groom.id, 'groom', 7);
+    expect(result.success).toBe(true);
+    expect(result.predictions).toHaveLength(1);
+    expect(result.predictions[0].timeframe).toBe(7);
+  });
+
+  it('returns 5 predictions when timeframeDays=90 (all timeframes [7,14,30,60,90] included)', async () => {
+    const result = await predictPersonalityEvolution(groom.id, 'groom', 90);
+    expect(result.success).toBe(true);
+    expect(result.predictions).toHaveLength(5);
+  });
+});
+
+// ── evolve path — shouldEvolve=true, insufficient-interaction, determineNewTemperament (Equoria-jkht) ──
+
+describe('personalityEvolutionSystem — evolve path branch coverage (Equoria-jkht)', () => {
+  let evUser;
+  let evGroom;
+  let evGroomNoInt;
+  let evHorseNervous;
+  let evHorseDeveloping;
+  let evGroomForHorses;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    evUser = await prisma.user.create({
+      data: {
+        email: `pes-ev-${ts}-${rand()}@test.com`,
+        username: `pesev${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'PES',
+        lastName: 'Evolve',
+        money: 1000,
+      },
+    });
+
+    evGroomNoInt = await prisma.groom.create({
+      data: {
+        name: `TestFixture-PES-GroomNoInt-${ts}`,
+        speciality: 'foal_care',
+        personality: 'calm',
+        userId: evUser.id,
+        experience: 100,
+      },
+    });
+
+    evGroom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-PES-GroomEvolves-${ts}`,
+        speciality: 'foal_care',
+        personality: 'calm',
+        userId: evUser.id,
+        experience: 100,
+      },
+    });
+
+    evGroomForHorses = await prisma.groom.create({
+      data: {
+        name: `TestFixture-PES-GroomForHorses-${ts}`,
+        speciality: 'foal_care',
+        personality: 'gentle',
+        userId: evUser.id,
+      },
+    });
+
+    evHorseNervous = await prisma.horse.create({
+      data: {
+        name: `TestFixture-PES-HorseNervous-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(ts - 2 * 365.25 * 24 * 60 * 60 * 1000),
+        age: 2,
+        userId: evUser.id,
+        temperament: 'nervous',
+      },
+    });
+
+    evHorseDeveloping = await prisma.horse.create({
+      data: {
+        name: `TestFixture-PES-HorseDeveloping-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(ts - 2 * 365.25 * 24 * 60 * 60 * 1000),
+        age: 2,
+        userId: evUser.id,
+        temperament: 'developing',
+      },
+    });
+
+    // 15 excellent groomInteractions for evGroom (groom side — groomId=evGroom, foalId=evHorseNervous)
+    for (let i = 0; i < 15; i++) {
+      await prisma.groomInteraction.create({
+        data: {
+          foalId: evHorseNervous.id,
+          groomId: evGroom.id,
+          interactionType: 'daily_care',
+          duration: 30,
+          bondingChange: 2,
+          stressChange: 0,
+          quality: 'excellent',
+          taskType: 'grooming',
+          createdAt: new Date(ts - (15 - i) * 60000),
+          timestamp: new Date(ts - (15 - i) * 60000),
+        },
+      });
+    }
+
+    // 10 excellent groomInteractions for evHorseNervous (horse side — foalId=evHorseNervous)
+    for (let i = 0; i < 10; i++) {
+      await prisma.groomInteraction.create({
+        data: {
+          foalId: evHorseNervous.id,
+          groomId: evGroomForHorses.id,
+          interactionType: 'daily_care',
+          duration: 30,
+          bondingChange: 2,
+          stressChange: 0,
+          quality: 'excellent',
+          taskType: 'grooming',
+          createdAt: new Date(ts - (10 - i) * 60000 - 1000000),
+          timestamp: new Date(ts - (10 - i) * 60000 - 1000000),
+        },
+      });
+    }
+
+    // 10 excellent groomInteractions for evHorseDeveloping (horse side)
+    for (let i = 0; i < 10; i++) {
+      await prisma.groomInteraction.create({
+        data: {
+          foalId: evHorseDeveloping.id,
+          groomId: evGroomForHorses.id,
+          interactionType: 'daily_care',
+          duration: 30,
+          bondingChange: 2,
+          stressChange: 0,
+          quality: 'excellent',
+          taskType: 'grooming',
+          createdAt: new Date(ts - (10 - i) * 60000 - 2000000),
+          timestamp: new Date(ts - (10 - i) * 60000 - 2000000),
+        },
+      });
+    }
+  }, 60000);
+
+  afterAll(async () => {
+    await prisma.groomInteraction
+      .deleteMany({ where: { groomId: { in: [evGroom.id, evGroomForHorses.id] } } })
+      .catch(() => {});
+    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-PES-' } } }).catch(() => {});
+    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-PES-' } } }).catch(() => {});
+    await prisma.user.delete({ where: { id: evUser.id } }).catch(() => {});
+  }, 30000);
+
+  it('evolveGroomPersonality returns personalityEvolved=false reason=insufficient_interaction_data for groom with experience>=50 but 0 interactions', async () => {
+    const result = await evolveGroomPersonality(evGroomNoInt.id);
+    expect(result.personalityEvolved).toBe(false);
+    expect(result.reason).toBe('insufficient_interaction_data');
+  });
+
+  it('evolveGroomPersonality returns personalityEvolved=true when experience>=50 and 15+ excellent interactions (shouldEvolve=true branch)', async () => {
+    const result = await evolveGroomPersonality(evGroom.id);
+    expect(result.success).toBe(true);
+    expect(result.personalityEvolved).toBe(true);
+    expect(result.evolutionType).toBe('trait_strengthening');
+    expect(Array.isArray(result.newTraits)).toBe(true);
+    expect(result.newTraits.length).toBeGreaterThan(0);
+    expect(typeof result.stabilityScore).toBe('number');
+  });
+
+  it('evolveHorseTemperament with nervous+age>=1+10 excellent interactions → temperamentEvolved=true, newTemperament=developing (determineNewTemperament branch)', async () => {
+    const result = await evolveHorseTemperament(evHorseNervous.id);
+    expect(result.success).toBe(true);
+    expect(result.temperamentEvolved).toBe(true);
+    expect(result.oldTemperament).toBe('nervous');
+    expect(result.newTemperament).toBe('developing');
+  });
+
+  it('evolveHorseTemperament with developing+age>=1+10 excellent interactions → temperamentEvolved=true, newTemperament=confident', async () => {
+    const result = await evolveHorseTemperament(evHorseDeveloping.id);
+    expect(result.success).toBe(true);
+    expect(result.temperamentEvolved).toBe(true);
+    expect(result.oldTemperament).toBe('developing');
+    expect(result.newTemperament).toBe('confident');
+  });
+
+  it('analyzePersonalityStability for horse with 20 interactions → calculateGroomInfluence >10 branch returns 0.6', async () => {
+    const result = await analyzePersonalityStability(evHorseNervous.id, 'horse');
+    expect(result.success).toBe(true);
+    expect(result.stabilityFactors.groomInfluence).toBe(0.6);
+  });
+});
