@@ -297,3 +297,20 @@ describe('applyTemperamentDrift', () => {
     expect(result.horseId).toBe(999);
   });
 });
+
+// ---------------------------------------------------------------------------
+// calculateTemperamentDrift — error catch branch (lines 185-186)
+// ---------------------------------------------------------------------------
+describe('calculateTemperamentDrift — error catch branch (lines 185-186)', () => {
+  it('returns error default shape when factors is null (triggers catch via destructuring TypeError)', () => {
+    // Passing explicit null for factors causes `const { stressLevel = ... } = null`
+    // to throw a TypeError at the destructuring site (lines 98-105).
+    // The catch block catches it and returns the safe-default shape.
+    const horse = { id: 1, temperament: 'Calm' };
+    const result = calculateTemperamentDrift(horse, null);
+    expect(result.driftOccurred).toBe(false);
+    expect(result.newTemperament).toBe('Calm');
+    expect(result.reason).toBe('Error in calculation');
+    expect(result.error).toBeDefined();
+  });
+});
