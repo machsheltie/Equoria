@@ -111,3 +111,13 @@ describe('setCooldown — pure validation branches (Equoria-jkht)', () => {
     await expect(setCooldown(-5)).rejects.toThrow('Horse ID must be a valid positive integer');
   });
 });
+
+// ---------------------------------------------------------------------------
+// setCooldown — DB path (P2025 catch branch, lines 69-88)
+// Uses a non-existent horse ID to enter the try block and hit the P2025 handler
+// ---------------------------------------------------------------------------
+describe('setCooldown — P2025 not-found catch (Equoria-jkht)', () => {
+  it('throws "Horse with ID ... not found" for a non-existent positive ID (P2025 catch path)', async () => {
+    await expect(setCooldown(999999999)).rejects.toThrow('Horse with ID 999999999 not found');
+  });
+});

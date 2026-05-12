@@ -245,6 +245,16 @@ describe('calculateGroomInteractionEffects()', () => {
     expect(resultNo.modifiers.experience).toBe(0); // Math.floor(0/5)=0
   });
 
+  // ── quality = 'fair' branch (line 598) — very short duration → bondingChange < 4 ─
+
+  it("quality is 'fair' (or 'poor' on rare error) when duration is extremely short", () => {
+    // duration=1 → baseBondingChange=0 → bondingChange=0 < 4
+    // master errorChance=0.01 → 99% no error → quality='fair' (line 598)
+    const groom = makeGroom({ skillLevel: 'master', experience: 0 });
+    const result = calculateGroomInteractionEffects(groom, foal, 'grooming', 1);
+    expect(['fair', 'poor']).toContain(result.quality);
+  });
+
   // ── catch path ──────────────────────────────────────────────────────────────
 
   it('throws when groom is null (catch re-throws)', () => {

@@ -260,6 +260,24 @@ describe('applyRareTraitBoosterEffects', () => {
       // TypeError from null.experience is caught, logged, and re-thrown
       await expect(assignRareTraitBoosterPerks(-1, null)).rejects.toThrow();
     });
+
+    it('hits isEligible=true block (lines 135-142) when tags match phoenix-born-booster', async () => {
+      // phoenix-born-booster requiredTags: ['mindful','guardian'], requiredExperience: 5
+      // With experience=10 and matching tags, evaluatePerkEligibility returns true → lines 135-142 execute
+      // DB update for id=-1 then throws P2025 (as expected)
+      const groomData = {
+        experience: 10,
+        personality: { tags: ['mindful', 'guardian'] },
+        bonusTraitMap: {},
+      };
+      let thrown = false;
+      try {
+        await assignRareTraitBoosterPerks(-1, groomData);
+      } catch {
+        thrown = true;
+      }
+      expect(thrown).toBe(true);
+    });
   });
 
   // ─── getRevealedPerks — not-found path (lines 295-334) ───────────────────────
