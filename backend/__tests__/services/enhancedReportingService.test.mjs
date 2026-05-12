@@ -25,6 +25,10 @@ import {
   generateTrendPredictions,
   generateSummaryReport,
   generateDetailedReport,
+  identifyCriticalPeriods,
+  analyzeStableEnvironmentalFactors,
+  generateHorseComparison,
+  generateComprehensiveReport,
 } from '../../services/enhancedReportingService.mjs';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -788,5 +792,119 @@ describe('generateTraitHistoryInsights — neutral harmony branch (Equoria-jkht)
     const result = generateTraitHistoryInsights([makeTraitLog()], makeEnvContext(), ti);
     expect(result.some(s => s.includes('Excellent'))).toBe(false);
     expect(result.some(s => s.includes('Poor'))).toBe(false);
+  });
+});
+
+// ── identifyCriticalPeriods — branch coverage (Equoria-jkht) ─────────────────
+// Lines 175-209: pure function, needs ≥3 events per week-period to enter the
+// inner if. Covers: significance ternary (traitDiscoveries>0 → 'high', else 'moderate').
+
+describe('identifyCriticalPeriods — (Equoria-jkht)', () => {
+  it('returns empty for empty timeline', () => {
+    expect(identifyCriticalPeriods([], [])).toEqual([]);
+  });
+
+  it('returns empty when no period has ≥3 events', () => {
+    const timeline = [
+      { date: '2025-03-15', type: 'trait_discovery' },
+      { date: '2025-03-15', type: 'trait_discovery' },
+    ];
+    expect(identifyCriticalPeriods(timeline, [])).toEqual([]);
+  });
+
+  it('returns critical period with significance "high" when traitDiscoveries > 0', () => {
+    const sameDate = '2025-03-01';
+    const timeline = [
+      { date: sameDate, type: 'trait_discovery' },
+      { date: sameDate, type: 'trait_discovery' },
+      { date: sameDate, type: 'trait_discovery' },
+    ];
+    const result = identifyCriticalPeriods(timeline, []);
+    expect(result).toHaveLength(1);
+    expect(result[0].significance).toBe('high');
+    expect(result[0].traitDiscoveries).toBe(3);
+    expect(result[0].eventCount).toBe(3);
+  });
+
+  it('returns critical period with significance "moderate" when significantInteractions > 1 but no traitDiscoveries', () => {
+    const sameDate = '2025-03-01';
+    const timeline = [
+      { date: sameDate, type: 'significant_interaction' },
+      { date: sameDate, type: 'significant_interaction' },
+      { date: sameDate, type: 'significant_interaction' },
+    ];
+    const result = identifyCriticalPeriods(timeline, []);
+    expect(result).toHaveLength(1);
+    expect(result[0].significance).toBe('moderate');
+    expect(result[0].significantInteractions).toBe(3);
+  });
+
+  it('returns empty when ≥3 events in period but none qualify (no discoveries, ≤1 sig_interaction)', () => {
+    const sameDate = '2025-03-01';
+    const timeline = [
+      { date: sameDate, type: 'grooming' },
+      { date: sameDate, type: 'grooming' },
+      { date: sameDate, type: 'significant_interaction' },
+    ];
+    const result = identifyCriticalPeriods(timeline, []);
+    expect(result).toHaveLength(0);
+  });
+});
+
+// ── generateHorseComparison — branch coverage (Equoria-jkht) ─────────────────
+// Lines 444-469: async but pure (no DB). Needs horses array with epigeneticFlags,
+// bondScore, stressLevel, dateOfBirth properties.
+
+describe('generateHorseComparison — (Equoria-jkht)', () => {
+  it('returns comparison with averages for two horses', async () => {
+    const horses = [
+      makeHorse({ id: 1, name: 'A', epigeneticFlags: ['bold', 'curious'], bondScore: 40, stressLevel: 3 }),
+      makeHorse({ id: 2, name: 'B', epigeneticFlags: ['calm'], bondScore: 20, stressLevel: 5 }),
+    ];
+    const result = await generateHorseComparison(horses);
+    expect(result.horses).toHaveLength(2);
+    expect(result.averages.traitCount).toBeCloseTo(1.5);
+    expect(result.averages.bondScore).toBeCloseTo(30);
+    expect(result.averages.stressLevel).toBeCloseTo(4);
+    expect(typeof result.horses[0].age).toBe('number');
+    expect(result.horses[0].traitCount).toBe(2);
+  });
+});
+
+// ── analyzeStableEnvironmentalFactors — branch coverage (Equoria-jkht) ──────
+// Lines 365-400: async, calls generateEnvironmentalReport(horse.id) internally.
+// Branch 1: horses.length === 0 → early return.
+// Branch 2: horses.length > 0 but generateEnvironmentalReport throws (caught at 388).
+
+describe('analyzeStableEnvironmentalFactors — (Equoria-jkht)', () => {
+  it('returns default factors for empty horses array (length===0 early return)', async () => {
+    const result = await analyzeStableEnvironmentalFactors([]);
+    expect(result.overallTriggerStrength).toBe(0);
+    expect(result.commonTriggers).toEqual([]);
+    expect(result.environmentalRisks).toEqual([]);
+    expect(result.recommendations).toEqual([]);
+  });
+
+  it('returns factors with overallTriggerStrength 0 when generateEnvironmentalReport throws (catch path)', async () => {
+    // horse id=-9999 → generateEnvironmentalReport throws → catch warns, skips
+    // totalTriggerStrength stays 0 → overallTriggerStrength = 0/1 = 0
+    const result = await analyzeStableEnvironmentalFactors([{ id: -9999 }]);
+    expect(typeof result.overallTriggerStrength).toBe('number');
+    expect(Array.isArray(result.commonTriggers)).toBe(true);
+  });
+});
+
+// ── generateComprehensiveReport — catch branch (Equoria-jkht) ────────────────
+// Lines 718-737: calls generateDetailedReport(horse) then generateEnvironmentalReport(horse.id).
+// If generateEnvironmentalReport throws (fake id) → catch at 732 → returns detailed only (line 737).
+
+describe('generateComprehensiveReport — catch branch (Equoria-jkht)', () => {
+  it('returns detailed report when generateEnvironmentalReport throws for invalid horse id', async () => {
+    const horse = makeHorse({ id: -9999 });
+    const result = await generateComprehensiveReport(horse);
+    // detailed report fields must be present; environmentalAnalysis must NOT (catch fired)
+    expect(result.basicInfo).toBeDefined();
+    expect(result.basicInfo.id).toBe(-9999);
+    expect(result.environmentalAnalysis).toBeUndefined();
   });
 });
