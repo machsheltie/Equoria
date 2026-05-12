@@ -9,6 +9,7 @@
 
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
+import { createNotification } from '../../../utils/notificationService.mjs';
 import { createHorse } from '../../../models/horseModel.mjs';
 import { recordTransaction } from '../../../services/financialLedgerService.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
@@ -321,6 +322,7 @@ export async function buyHorse(req, res) {
         return {
           horseName: horse.name,
           salePrice,
+          sellerId,
           sellerUsername: horse.user?.username ?? 'Unknown',
           saleId: saleRecord.id,
           newBalance: postPurchaseBuyer.money,
@@ -328,6 +330,16 @@ export async function buyHorse(req, res) {
       },
       { timeout: 30000 },
     ); // 30s — 7+ DB ops can exceed 5s default under full-suite load
+
+    await createNotification(buyerId, 'horse_purchased', {
+      horseName: result.horseName,
+      salePrice: result.salePrice,
+      sellerUsername: result.sellerUsername,
+    });
+    await createNotification(result.sellerId, 'horse_sold', {
+      horseName: result.horseName,
+      salePrice: result.salePrice,
+    });
 
     return res.json({
       success: true,
