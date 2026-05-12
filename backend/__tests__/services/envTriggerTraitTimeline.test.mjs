@@ -208,3 +208,287 @@ describe('getTraitTimelineSummary', () => {
     expect(result.totalTraits).toBe(0);
   });
 });
+
+// ── calculateTriggerThresholds / evaluateTraitExpressionProbability /
+//    assessCriticalPeriodSensitivity — age-bracket + residual-sensitivity
+//    branches (Equoria-jkht) ────────────────────────────────────────────────────
+//
+// calculateTriggerThresholds ageModifier tiers:
+//   <= 7  → 0.6  (covered by newborn fixture above)
+//   <= 30 → 0.7  ← horse10d
+//   <= 90 → 0.8  ← horse60d
+//   > 90  → 1.0  ← horse100d
+//
+// evaluateTraitExpressionProbability ageModifier tiers:
+//   <= 30 → 1.5  (covered by newborn fixture above)
+//   <= 90 → 1.2  ← horse60d
+//   > 90  → 0.8  ← horse100d (finalP≈0.08 → 'very_unlikely')
+//
+// assessCriticalPeriodSensitivity residual sensitivity:
+//   daysSinceLastPeriod < 30  → 0.3  ← horse125d (125-120=5)
+//   daysSinceLastPeriod >= 30 → 0.1  ← horse160d (160-120=40)
+
+describe('age-bracket + residual-sensitivity branches (Equoria-jkht)', () => {
+  let ageUser;
+  let horse10d;
+  let horse60d;
+  let horse100d;
+  let horse125d;
+  let horse160d;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    ageUser = await prisma.user.create({
+      data: {
+        email: `et-ageb-${ts}-${rand()}@test.com`,
+        username: `etageb${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'ET',
+        lastName: 'AgeBranch',
+        money: 1000,
+      },
+    });
+
+    const makeHorse = (name, daysAgo) =>
+      prisma.horse.create({
+        data: {
+          name,
+          sex: 'Filly',
+          dateOfBirth: new Date(ts - daysAgo * 24 * 60 * 60 * 1000),
+          age: 0,
+          userId: ageUser.id,
+        },
+      });
+
+    [horse10d, horse60d, horse100d, horse125d, horse160d] = await Promise.all([
+      makeHorse(`TestFixture-ET-Age10-${ts}`, 10),
+      makeHorse(`TestFixture-ET-Age60-${ts}`, 60),
+      makeHorse(`TestFixture-ET-Age100-${ts}`, 100),
+      makeHorse(`TestFixture-ET-Age125-${ts}`, 125),
+      makeHorse(`TestFixture-ET-Age160-${ts}`, 160),
+    ]);
+  }, 30000);
+
+  afterAll(async () => {
+    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-ET-Age' } } }).catch(() => {});
+    await prisma.user.delete({ where: { id: ageUser.id } }).catch(() => {});
+  }, 30000);
+
+  // ── calculateTriggerThresholds ageModifier ──────────────────────────────────
+
+  it('calculateTriggerThresholds: ageModifier=0.7 for horse 10 days old (8-30d bracket)', async () => {
+    const result = await calculateTriggerThresholds(horse10d.id);
+    expect(result.ageModifier).toBe(0.7);
+    expect(result.ageInDays).toBeGreaterThanOrEqual(9);
+    expect(result.ageInDays).toBeLessThanOrEqual(11);
+  });
+
+  it('calculateTriggerThresholds: ageModifier=0.8 for horse 60 days old (31-90d bracket)', async () => {
+    const result = await calculateTriggerThresholds(horse60d.id);
+    expect(result.ageModifier).toBe(0.8);
+  });
+
+  it('calculateTriggerThresholds: ageModifier=1.0 for horse 100 days old (>90d bracket)', async () => {
+    const result = await calculateTriggerThresholds(horse100d.id);
+    expect(result.ageModifier).toBe(1.0);
+  });
+
+  // ── evaluateTraitExpressionProbability ageModifier + expressionLikelihood ───
+
+  it('evaluateTraitExpressionProbability: ageModifier=1.2 for horse 60 days old (31-90d)', async () => {
+    const result = await evaluateTraitExpressionProbability(horse60d.id, 'calm');
+    expect(result.ageModifier).toBe(1.2);
+  });
+
+  it('evaluateTraitExpressionProbability: ageModifier=0.8 for horse 100 days old (>90d)', async () => {
+    const result = await evaluateTraitExpressionProbability(horse100d.id, 'patient');
+    expect(result.ageModifier).toBe(0.8);
+  });
+
+  it('expressionLikelihood=unlikely for horse 60d with calm trait (finalP≈0.12)', async () => {
+    // stressLevel=0: stressModifier=Math.max(0.5, 1.0-0/30)=1.0; no interactions → envModifier=1.0
+    // finalP = 0.1 * 1.0 * 1.2 * 1.0 = 0.12 → 0.1 ≤ 0.12 < 0.3 → 'unlikely'
+    const result = await evaluateTraitExpressionProbability(horse60d.id, 'calm');
+    expect(result.expressionLikelihood).toBe('unlikely');
+  });
+
+  it('expressionLikelihood=very_unlikely for horse 100d with neutral trait (finalP≈0.08)', async () => {
+    // 'patient' is not in negativeTraits or positiveTraits → stressModifier=1.0
+    // finalP = 0.1 * 1.0 * 0.8 * 1.0 = 0.08 → < 0.1 → 'very_unlikely'
+    const result = await evaluateTraitExpressionProbability(horse100d.id, 'patient');
+    expect(result.expressionLikelihood).toBe('very_unlikely');
+  });
+
+  // ── assessCriticalPeriodSensitivity residual sensitivity ────────────────────
+
+  it('sensitivityLevel=0.3 when daysSinceLastPeriod=5 (horse 125 days old)', async () => {
+    // independence_development ends at day 120; 125-120=5 < 30 → 0.3
+    const result = await assessCriticalPeriodSensitivity(horse125d.id);
+    expect(result.activeWindows).toHaveLength(0);
+    expect(result.sensitivityLevel).toBe(0.3);
+  });
+
+  it('sensitivityLevel=0.1 when daysSinceLastPeriod=40 (horse 160 days old)', async () => {
+    // independence_development ends at day 120; 160-120=40 ≥ 30 → 0.1
+    const result = await assessCriticalPeriodSensitivity(horse160d.id);
+    expect(result.activeWindows).toHaveLength(0);
+    expect(result.sensitivityLevel).toBe(0.1);
+  });
+});
+
+// ── analyzeStressEnvironmentTriggers — stressful interactions (Equoria-jkht) ──
+// Creates a horse with stressLevel=8 plus 4 groomInteractions:
+//   taskType='bathing':  stressChange=4,4 → avgStress=4 > 3  → severity='high'
+//   taskType='feeding':  stressChange=2,3 → avgStress=2.5 > 2 → severity='moderate'
+// Covers:
+//   • interactions.length > 0 path in analyzeStressEnvironmentTriggers
+//   • avgStress > 3 → severity='high'
+//   • 2 < avgStress ≤ 3 → severity='moderate'
+//   • stressLevel > 7 → extra interventions in generateStressInterventions
+//   • severity='high' → "Avoid..." intervention
+//   • else → "Use extra caution..." intervention
+//   • trackCumulativeExposure non-empty path + calculateInteractionExposure stressChange>2 branch
+
+describe('analyzeStressEnvironmentTriggers — stressful interactions (Equoria-jkht)', () => {
+  let stressUser;
+  let stressGroom;
+  let stressHorse;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    stressUser = await prisma.user.create({
+      data: {
+        email: `et-str-${ts}-${rand()}@test.com`,
+        username: `etstr${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'ET',
+        lastName: 'StressB',
+        money: 1000,
+      },
+    });
+
+    stressGroom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-ET-StrGroom-${ts}`,
+        speciality: 'foalCare',
+        personality: 'gentle',
+        userId: stressUser.id,
+        isActive: true,
+      },
+    });
+
+    stressHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-ET-StrHorse-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: stressUser.id,
+        stressLevel: 8,
+      },
+    });
+
+    // 2 bathing interactions: stressChange=4 each → avgStress=4 > 3 → severity='high'
+    for (let i = 0; i < 2; i++) {
+      await prisma.groomInteraction.create({
+        data: {
+          foalId: stressHorse.id,
+          groomId: stressGroom.id,
+          interactionType: 'daily_care',
+          duration: 30,
+          bondingChange: 0,
+          stressChange: 4,
+          quality: 'poor',
+          taskType: 'bathing',
+          createdAt: new Date(ts - (i + 1) * 60000),
+          timestamp: new Date(ts - (i + 1) * 60000),
+        },
+      });
+    }
+
+    // 2 feeding interactions: stressChange=2 and stressChange=3 → avgStress=2.5 → severity='moderate'
+    await prisma.groomInteraction.create({
+      data: {
+        foalId: stressHorse.id,
+        groomId: stressGroom.id,
+        interactionType: 'daily_care',
+        duration: 20,
+        bondingChange: 0,
+        stressChange: 2,
+        quality: 'fair',
+        taskType: 'feeding',
+        createdAt: new Date(ts - 3 * 60000),
+        timestamp: new Date(ts - 3 * 60000),
+      },
+    });
+    await prisma.groomInteraction.create({
+      data: {
+        foalId: stressHorse.id,
+        groomId: stressGroom.id,
+        interactionType: 'daily_care',
+        duration: 20,
+        bondingChange: 0,
+        stressChange: 3,
+        quality: 'fair',
+        taskType: 'feeding',
+        createdAt: new Date(ts - 4 * 60000),
+        timestamp: new Date(ts - 4 * 60000),
+      },
+    });
+  }, 60000);
+
+  afterAll(async () => {
+    await prisma.groomInteraction.deleteMany({ where: { foalId: stressHorse.id } }).catch(() => {});
+    await prisma.horse.delete({ where: { id: stressHorse.id } }).catch(() => {});
+    await prisma.groom.delete({ where: { id: stressGroom.id } }).catch(() => {});
+    await prisma.user.delete({ where: { id: stressUser.id } }).catch(() => {});
+  }, 30000);
+
+  it('stressfulInteractionCount=4 (all 4 have stressChange > 0)', async () => {
+    const result = await analyzeStressEnvironmentTriggers(stressHorse.id);
+    expect(result.stressfulInteractionCount).toBe(4);
+    expect(result.triggerIntensity).toBeGreaterThan(0);
+  });
+
+  it('stressTriggers includes severity=high for bathing (avgStress=4 > 3)', async () => {
+    const result = await analyzeStressEnvironmentTriggers(stressHorse.id);
+    const highTrigger = result.stressTriggers.find(t => t.trigger === 'bathing');
+    expect(highTrigger).toBeDefined();
+    expect(highTrigger.severity).toBe('high');
+    expect(highTrigger.averageStressIncrease).toBe(4);
+  });
+
+  it('stressTriggers includes severity=moderate for feeding (avgStress=2.5)', async () => {
+    const result = await analyzeStressEnvironmentTriggers(stressHorse.id);
+    const moderateTrigger = result.stressTriggers.find(t => t.trigger === 'feeding');
+    expect(moderateTrigger).toBeDefined();
+    expect(moderateTrigger.severity).toBe('moderate');
+    expect(moderateTrigger.averageStressIncrease).toBe(2.5);
+  });
+
+  it('recommendedInterventions includes immediate-stress-reduction when stressLevel=8 (> 7)', async () => {
+    const result = await analyzeStressEnvironmentTriggers(stressHorse.id);
+    expect(result.recommendedInterventions.some(r => r.includes('Immediate stress reduction'))).toBe(true);
+  });
+
+  it('recommendedInterventions includes Avoid message for high-severity bathing trigger', async () => {
+    const result = await analyzeStressEnvironmentTriggers(stressHorse.id);
+    expect(result.recommendedInterventions.some(r => r.includes('Avoid bathing'))).toBe(true);
+  });
+
+  it('recommendedInterventions includes extra-caution message for moderate feeding trigger', async () => {
+    const result = await analyzeStressEnvironmentTriggers(stressHorse.id);
+    expect(result.recommendedInterventions.some(r => r.includes('extra caution with feeding'))).toBe(true);
+  });
+
+  it('trackCumulativeExposure returns non-zero exposure for horse with 4 interactions', async () => {
+    const result = await trackCumulativeExposure(stressHorse.id);
+    expect(result.totalExposure).toBeGreaterThan(0);
+    expect(result.exposureTimeline).toHaveLength(4);
+    expect(Object.keys(result.exposureByType).length).toBeGreaterThan(0);
+  });
+});
