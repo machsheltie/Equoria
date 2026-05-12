@@ -156,3 +156,35 @@ describe('triggerWeeklyFlagEvaluation', () => {
     }
   });
 });
+
+// ── processHorseForFlagEvaluation — max-flags branch (Equoria-jkht) ───────────
+
+describe('processHorseForFlagEvaluation — max-flags branch (Equoria-jkht)', () => {
+  let mfHorse;
+
+  beforeAll(async () => {
+    mfHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-WF-MaxFlags-${Date.now()}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: user.id,
+        epigeneticFlags: ['brave', 'confident', 'affectionate', 'resilient', 'fearful'],
+      },
+    });
+  }, 30000);
+
+  afterAll(async () => {
+    await prisma.horse.delete({ where: { id: mfHorse.id } }).catch(() => {});
+  }, 30000);
+
+  it('returns evaluated:true with empty flagsAssigned and max-flags reason when horse already has 5 flags', async () => {
+    const result = await processHorseForFlagEvaluation(mfHorse.id);
+    expect(result.evaluated).toBe(true);
+    expect(Array.isArray(result.flagsAssigned)).toBe(true);
+    expect(result.flagsAssigned).toHaveLength(0);
+    expect(result.reason).toBe('Horse already has maximum 5 flags');
+    expect(result.currentFlags).toHaveLength(5);
+  });
+});
