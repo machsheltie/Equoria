@@ -10,7 +10,7 @@
  *   if (completedCount >= minCount) → threshold met / not met (×4 ENRICHMENT entries)
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import {
   checkEnrichmentDiscoveries,
   checkDiscoveryConditions,
@@ -20,6 +20,7 @@ import {
   batchRevealTraits,
   getDiscoveryProgress,
 } from '../../utils/traitDiscovery.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 
 // ENRICHMENT_DISCOVERIES entries and their thresholds:
 //   SOCIALIZATION_COMPLETE:       activities=[social_interaction, group_play],         minCount=3
@@ -393,4 +394,93 @@ describe('checkDiscoveryConditions() — condition-throws catch path (Equoria-jk
     // Should not throw; should return an array (empty since no conditions met)
     expect(Array.isArray(result)).toBe(true);
   }, 10000);
+});
+
+// ── revealTraits — DB-fixture paths (lines 190-253) ──────────────────────────
+// Covers:
+//   no-hidden-traits early return (lines 190-206) — horse with empty hidden array
+//   no-conditions-met early return (lines 237-253) — horse with hidden trait, bond=0, stress=100
+//   getDiscoveryProgress happy path — horse exists, returns progress object
+
+describe('revealTraits() + getDiscoveryProgress() — DB-fixture paths (Equoria-jkht)', () => {
+  let tdUser;
+  let noHiddenHorse;
+  let noConditionsHorse;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    tdUser = await prisma.user.create({
+      data: {
+        email: `td-fixture-${ts}-${rand()}@test.com`,
+        username: `tdfix${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'TD',
+        lastName: 'Fixture',
+        money: 1000,
+      },
+    });
+
+    // Horse with no hidden traits → revealTraits returns early at line 190
+    noHiddenHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-TD-NoHidden-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        bondScore: 50,
+        stressLevel: 30,
+        userId: tdUser.id,
+        epigeneticModifiers: { positive: [], negative: [], hidden: [] },
+      },
+    });
+
+    // Horse with one hidden trait but bond=0, stress=100 → no conditions met at line 237
+    noConditionsHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-TD-NoConditions-${ts}`,
+        sex: 'Colt',
+        dateOfBirth: new Date(),
+        age: 1,
+        bondScore: 0,
+        stressLevel: 100,
+        userId: tdUser.id,
+        epigeneticModifiers: { positive: [], negative: [], hidden: ['ConfidentInCrowd'] },
+      },
+    });
+  }, 30000);
+
+  afterAll(async () => {
+    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-TD-' } } }).catch(() => {});
+    await prisma.user.delete({ where: { id: tdUser.id } }).catch(() => {});
+  }, 30000);
+
+  it('returns success:true with empty traitsRevealed when horse has no hidden traits (lines 190-206)', async () => {
+    const result = await revealTraits(noHiddenHorse.id);
+    expect(result.success).toBe(true);
+    expect(result.traitsRevealed).toEqual([]);
+    expect(result.totalHiddenBefore).toBe(0);
+    expect(result.message).toMatch(/no hidden traits/i);
+  }, 15000);
+
+  it('returns success:true with empty traitsRevealed when no discovery conditions met (lines 237-253)', async () => {
+    const result = await revealTraits(noConditionsHorse.id);
+    expect(result.success).toBe(true);
+    expect(result.traitsRevealed).toEqual([]);
+    expect(result.totalHiddenBefore).toBe(1);
+    expect(result.message).toMatch(/no discovery conditions/i);
+  }, 15000);
+
+  it('getDiscoveryProgress returns progress object for existing horse (happy path)', async () => {
+    const result = await getDiscoveryProgress(noHiddenHorse.id);
+    expect(result.horseId).toBe(noHiddenHorse.id);
+    expect(result.horseName).toBe(noHiddenHorse.name);
+    expect(typeof result.discoveredTraits).toBe('number');
+    expect(typeof result.totalPossibleTraits).toBe('number');
+    expect(typeof result.progressPercentage).toBe('number');
+    expect(Array.isArray(result.traits)).toBe(true);
+    expect(typeof result.hiddenTraitsCount).toBe('number');
+    expect(Array.isArray(result.conditions)).toBe(true);
+  }, 15000);
 });

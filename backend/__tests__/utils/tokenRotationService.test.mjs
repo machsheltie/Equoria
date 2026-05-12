@@ -13,16 +13,18 @@
  *   invalidateTokenFamily — nonexistent family (updateMany returns 0)
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import jwt from 'jsonwebtoken';
 import {
   hashRefreshToken,
   generateTokenFamily,
+  createTokenPair,
   validateRefreshToken,
   cleanupExpiredTokens,
   detectTokenReuse,
   invalidateTokenFamily,
 } from '../../utils/tokenRotationService.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 
 // Synthetic UUID — never created in the real DB; all refreshToken.count queries
 // for this userId will return 0, triggering SESSION_UPGRADE_REQUIRED paths.
@@ -200,5 +202,117 @@ describe('invalidateTokenFamily()', () => {
     expect(result).toHaveProperty('success', true);
     expect(result).toHaveProperty('invalidatedCount', 0);
     expect(result).toHaveProperty('familyId', familyId);
+  });
+});
+
+// ── createTokenPair — auto-generates familyId when not provided (line 147-149) ─
+
+describe('createTokenPair() — familyId auto-generation branch (lines 147-149) (Equoria-jkht)', () => {
+  let trsUser;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+    trsUser = await prisma.user.create({
+      data: {
+        email: `trs-ctp-${ts}-${rand()}@test.com`,
+        username: `trsctp${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'TRS',
+        lastName: 'CTP',
+        money: 0,
+      },
+    });
+  }, 30000);
+
+  afterAll(async () => {
+    await prisma.refreshToken.deleteMany({ where: { userId: trsUser.id } }).catch(() => {});
+    await prisma.user.delete({ where: { id: trsUser.id } }).catch(() => {});
+  }, 30000);
+
+  it('auto-generates familyId when called without one (line 147-149)', async () => {
+    const result = await createTokenPair(trsUser.id);
+    expect(typeof result.accessToken).toBe('string');
+    expect(result.accessToken.length).toBeGreaterThan(0);
+    expect(typeof result.refreshToken).toBe('string');
+    expect(result.refreshToken.length).toBeGreaterThan(0);
+    expect(typeof result.familyId).toBe('string');
+    expect(result.familyId).toContain('_');
+  });
+});
+
+// ── validateRefreshToken — DB record status checks (lines 282-305) ────────────
+// Covers: isActive=false (line 282), isInvalidated=true (line 290), expiresAt past (line 299)
+
+describe('validateRefreshToken() — DB record status checks (lines 282-305) (Equoria-jkht)', () => {
+  let vrtUser;
+  let inactiveToken;
+  let invalidatedToken;
+  let expiredToken;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    vrtUser = await prisma.user.create({
+      data: {
+        email: `trs-vrt-${ts}-${rand()}@test.com`,
+        username: `trsvrt${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'VRT',
+        lastName: 'Fixture',
+        money: 0,
+      },
+    });
+
+    // Token 1: will be set isActive=false
+    const pair1 = await createTokenPair(vrtUser.id);
+    inactiveToken = pair1.refreshToken;
+    await prisma.refreshToken.update({
+      where: { tokenHash: hashRefreshToken(inactiveToken) },
+      data: { isActive: false },
+    });
+
+    // Token 2: will be set isInvalidated=true
+    const pair2 = await createTokenPair(vrtUser.id);
+    invalidatedToken = pair2.refreshToken;
+    await prisma.refreshToken.update({
+      where: { tokenHash: hashRefreshToken(invalidatedToken) },
+      data: { isInvalidated: true },
+    });
+
+    // Token 3: will have expiresAt set to the past
+    const pair3 = await createTokenPair(vrtUser.id);
+    expiredToken = pair3.refreshToken;
+    await prisma.refreshToken.update({
+      where: { tokenHash: hashRefreshToken(expiredToken) },
+      data: { expiresAt: new Date(Date.now() - 60 * 1000) },
+    });
+  }, 60000);
+
+  afterAll(async () => {
+    await prisma.refreshToken.deleteMany({ where: { userId: vrtUser.id } }).catch(() => {});
+    await prisma.user.delete({ where: { id: vrtUser.id } }).catch(() => {});
+  }, 30000);
+
+  it('returns isValid=false with "Token is inactive" when isActive=false (line 282-288)', async () => {
+    const result = await validateRefreshToken(inactiveToken);
+    expect(result.isValid).toBe(false);
+    expect(result.error).toBe('Token is inactive');
+    expect(result.decoded).toBeNull();
+  });
+
+  it('returns isValid=false with "Token has been invalidated" when isInvalidated=true (lines 290-296)', async () => {
+    const result = await validateRefreshToken(invalidatedToken);
+    expect(result.isValid).toBe(false);
+    expect(result.error).toBe('Token has been invalidated');
+    expect(result.decoded).toBeNull();
+  });
+
+  it('returns isValid=false with "Token has expired" when expiresAt is in the past (lines 299-305)', async () => {
+    const result = await validateRefreshToken(expiredToken);
+    expect(result.isValid).toBe(false);
+    expect(result.error).toBe('Token has expired');
+    expect(result.decoded).toBeNull();
   });
 });

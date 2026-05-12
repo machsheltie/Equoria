@@ -10,13 +10,14 @@
  *   processHorseBirthdays   — horseIds array branch (returns empty when all IDs missing)
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import {
   calculateAgeFromBirth,
   updateHorseAge,
   checkForMilestones,
   processHorseBirthdays,
 } from '../../utils/horseAgingSystem.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 
 const daysAgo = days => new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
@@ -155,5 +156,73 @@ describe('checkForMilestones()', () => {
     expect(result.milestonesTriggered).toEqual([]);
     expect(result.traitsAssigned).toEqual([]);
     expect(result.retirementTriggered).toBe(false);
+  });
+});
+
+// ── updateHorseAge — DB-fixture paths (lines 95-135) ─────────────────────────
+// Covers the age-up-to-date early-return (calculatedAge === storedAge → ageUpdated:false)
+// and the age-update path (calculatedAge !== storedAge → DB update → ageUpdated:true).
+
+describe('updateHorseAge() — DB-fixture paths (lines 95-135) (Equoria-jkht)', () => {
+  let fixtureUser;
+  let currentAgeHorse;
+  let staleAgeHorse;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    fixtureUser = await prisma.user.create({
+      data: {
+        email: `has-fixture-${ts}-${Math.random().toString(36).slice(2, 8)}@test.com`,
+        username: `hasfix${ts}${Math.random().toString(36).slice(2, 6)}`,
+        password: 'irrelevant-hash',
+        firstName: 'HAS',
+        lastName: 'Fixture',
+        money: 1000,
+      },
+    });
+
+    // Horse born today, stored age=0 → calculatedAge=0 === storedAge → early return (lines 95-107)
+    currentAgeHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-HAS-Current-${ts}`,
+        sex: 'Colt',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: fixtureUser.id,
+      },
+    });
+
+    // Horse born 1 day ago, stored age=0 → calculatedAge=1 !== storedAge → DB update (lines 109-135)
+    staleAgeHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-HAS-Stale-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+        age: 0,
+        userId: fixtureUser.id,
+      },
+    });
+  }, 30000);
+
+  afterAll(async () => {
+    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-HAS-' } } }).catch(() => {});
+    await prisma.user.delete({ where: { id: fixtureUser.id } }).catch(() => {});
+  }, 30000);
+
+  it('returns { ageUpdated:false } when calculated age equals stored age (lines 95-107)', async () => {
+    const result = await updateHorseAge(currentAgeHorse.id);
+    expect(result.ageUpdated).toBe(false);
+    expect(result.hadBirthday).toBe(false);
+    expect(result.horseId).toBe(currentAgeHorse.id);
+    expect(typeof result.newAge).toBe('number');
+    expect(Array.isArray(result.milestonesTriggered)).toBe(true);
+  });
+
+  it('returns { ageUpdated:true } when calculated age differs from stored age (lines 109-135)', async () => {
+    const result = await updateHorseAge(staleAgeHorse.id);
+    expect(result.ageUpdated).toBe(true);
+    expect(result.newAge).toBeGreaterThanOrEqual(1);
+    expect(result.horseId).toBe(staleAgeHorse.id);
+    expect(Array.isArray(result.milestonesTriggered)).toBe(true);
   });
 });
