@@ -9,7 +9,11 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
-import { evaluateHorseFlags, batchEvaluateFlags, getEligibleHorses } from '../../utils/flagEvaluationEngine.mjs';
+import flagEvalDefault, {
+  evaluateHorseFlags,
+  batchEvaluateFlags,
+  getEligibleHorses,
+} from '../../utils/flagEvaluationEngine.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 
 let user;
@@ -184,7 +188,6 @@ describe('getEligibleHorses — catch block (lines 347-348)', () => {
 // ── evaluateFlagTriggers — default case (line 201, Equoria-jkht) ──────────────
 // evaluateFlagTriggers is accessible via the default export.
 // Calling it with an unknown flag name triggers the default: logger.warn branch.
-import flagEvalDefault from '../../utils/flagEvaluationEngine.mjs';
 
 describe('evaluateFlagTriggers — unknown flag name (line 201, Equoria-jkht)', () => {
   it('logs a warning and returns triggered=false for an unknown flag name', () => {
