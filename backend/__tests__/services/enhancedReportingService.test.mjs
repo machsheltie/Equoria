@@ -712,3 +712,81 @@ describe('generateComparisonInsights', () => {
     expect(insights.some(i => i.includes('2.0'))).toBe(true);
   });
 });
+
+// ── enhancedReportingService — uncovered branches (Equoria-jkht) ──────────────
+// generateDetailedReport: ageCategory 'young' and 'juvenile' + getDevelopmentalStage branches.
+// generateSummaryReport: 'developing' bond category (bondScore <= 20).
+// generateBasicRecommendations: < 3 flags branch and default-no-recs branch.
+// generateComparisonInsights: empty similarities and empty differences paths.
+// generateTraitHistoryInsights: neutral harmony (0.4–0.7, neither message).
+
+describe('generateDetailedReport — ageCategory young and juvenile (Equoria-jkht)', () => {
+  it('ageCategory is young + active_development for 30-day-old horse', async () => {
+    // 30 days: ageCategory=young (<90), developmentalStage=active_development (<60)
+    const horse = makeHorse({ dateOfBirth: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) });
+    const report = await generateDetailedReport(horse);
+    expect(report.developmentalAnalysis.ageCategory).toBe('young');
+    expect(report.developmentalAnalysis.developmentalStage).toBe('active_development');
+  });
+
+  it('ageCategory is young + stabilization for 60-day-old horse', async () => {
+    // 60 days: ageCategory=young (<90), developmentalStage=stabilization (60 is NOT <60)
+    const horse = makeHorse({ dateOfBirth: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000) });
+    const report = await generateDetailedReport(horse);
+    expect(report.developmentalAnalysis.ageCategory).toBe('young');
+    expect(report.developmentalAnalysis.developmentalStage).toBe('stabilization');
+  });
+
+  it('ageCategory is juvenile + stabilization for 200-day-old horse', async () => {
+    // 200 days: ageCategory=juvenile (<365), developmentalStage=stabilization (<365)
+    const horse = makeHorse({ dateOfBirth: new Date(Date.now() - 200 * 24 * 60 * 60 * 1000) });
+    const report = await generateDetailedReport(horse);
+    expect(report.developmentalAnalysis.ageCategory).toBe('juvenile');
+    expect(report.developmentalAnalysis.developmentalStage).toBe('stabilization');
+  });
+});
+
+describe('generateSummaryReport — developing bond category (Equoria-jkht)', () => {
+  it('returns "developing" in summary when bondScore <= 20', async () => {
+    const horse = makeHorse({ bondScore: 10 });
+    const report = await generateSummaryReport(horse);
+    expect(report.summary).toContain('developing');
+  });
+});
+
+describe('generateBasicRecommendations — low trait count and no-recs branches (Equoria-jkht)', () => {
+  it('adds enrichment recommendation when epigeneticFlags.length < 3', async () => {
+    const horse = makeHorse({ epigeneticFlags: ['bold'], stressLevel: 3, bondScore: 40 });
+    const report = await generateDetailedReport(horse);
+    expect(report.recommendations.some(r => r.includes('enrichment'))).toBe(true);
+  });
+
+  it('returns "Continue current care approach" when no recs triggered', async () => {
+    const horse = makeHorse({ stressLevel: 3, bondScore: 40, epigeneticFlags: ['bold', 'curious', 'calm'] });
+    const report = await generateDetailedReport(horse);
+    expect(report.recommendations).toContain('Continue current care approach');
+  });
+});
+
+describe('generateComparisonInsights — empty similarities and differences (Equoria-jkht)', () => {
+  const comparison = { averages: { traitCount: 2, bondScore: 30, stressLevel: 4 } };
+
+  it('skips similarity insight when similarities is empty', () => {
+    const insights = generateComparisonInsights(comparison, [], []);
+    expect(insights.some(i => i.includes('Highest similarity'))).toBe(false);
+  });
+
+  it('skips most-different insight when differences is empty', () => {
+    const insights = generateComparisonInsights(comparison, [], []);
+    expect(insights.some(i => i.includes('Most different'))).toBe(false);
+  });
+});
+
+describe('generateTraitHistoryInsights — neutral harmony branch (Equoria-jkht)', () => {
+  it('adds no harmony message when overallHarmony is between 0.4 and 0.7', () => {
+    const ti = makeTraitInteractions({ traitInteractions: { overallHarmony: 0.55 } });
+    const result = generateTraitHistoryInsights([makeTraitLog()], makeEnvContext(), ti);
+    expect(result.some(s => s.includes('Excellent'))).toBe(false);
+    expect(result.some(s => s.includes('Poor'))).toBe(false);
+  });
+});

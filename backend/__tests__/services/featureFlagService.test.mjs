@@ -156,3 +156,54 @@ describe('overrideFlag and clearOverrides', () => {
     expect(() => clearOverrides()).not.toThrow();
   });
 });
+
+// ── featureFlagService — uncovered branches (Equoria-jkht) ────────────────────
+// USER_LIST type branches: userId match, email match, no match.
+// Default truthy string path: STRING-type flag with truthy default value.
+
+describe('featureFlagService — USER_LIST and default truthy branches (Equoria-jkht)', () => {
+  beforeEach(() => {
+    resetEvaluationStats();
+    clearOverrides();
+  });
+
+  afterEach(() => {
+    delete process.env.FF_BETA_FEATURES;
+    resetEvaluationStats();
+    clearOverrides();
+  });
+
+  it('USER_LIST: returns true when context.userId is in whitelist', async () => {
+    process.env.FF_BETA_FEATURES = 'user-123,user-456';
+    const result = await isFeatureEnabled('FF_BETA_FEATURES', { userId: 'user-123' });
+    expect(result).toBe(true);
+  });
+
+  it('USER_LIST: returns true when context.email is in whitelist', async () => {
+    process.env.FF_BETA_FEATURES = 'admin@test.com,tester@test.com';
+    const result = await isFeatureEnabled('FF_BETA_FEATURES', { email: 'tester@test.com' });
+    expect(result).toBe(true);
+  });
+
+  it('USER_LIST: returns false when neither userId nor email matches whitelist', async () => {
+    process.env.FF_BETA_FEATURES = 'user-999';
+    const result = await isFeatureEnabled('FF_BETA_FEATURES', { userId: 'user-000', email: 'other@test.com' });
+    expect(result).toBe(false);
+  });
+
+  it('Default truthy path: STRING-type flag with truthy default returns true', async () => {
+    // FF_AB_LANDING_PAGE has type STRING and defaultValue 'control' (truthy string)
+    // isFeatureEnabled falls through to Boolean(rawValue) → true
+    delete process.env.FF_AB_LANDING_PAGE;
+    const result = await isFeatureEnabled('FF_AB_LANDING_PAGE');
+    expect(result).toBe(true);
+  });
+
+  it('getEvaluationStats includes enabledRate=0 for flag never enabled', async () => {
+    delete process.env.FF_AUTH_PASSWORDLESS_LOGIN;
+    await isFeatureEnabled('FF_AUTH_PASSWORDLESS_LOGIN');
+    const stats = getEvaluationStats();
+    expect(stats.FF_AUTH_PASSWORDLESS_LOGIN.enabled).toBe(0);
+    expect(stats.FF_AUTH_PASSWORDLESS_LOGIN.enabledRate).toBe(0);
+  });
+});
