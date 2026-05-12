@@ -207,3 +207,80 @@ describe('getHighestScoringDiscipline', () => {
     expect(getHighestScoringDiscipline({ Racing: 80, Dressage: 'high' })).toBe('Racing');
   });
 });
+
+// ---------------------------------------------------------------------------
+// getAncestorPreferredDiscipline — competitions fallback (line 101)
+// ---------------------------------------------------------------------------
+describe('getAncestorPreferredDiscipline — competitions field', () => {
+  it('falls back to competitions array when no discipline/competitionHistory/disciplineScores (line 101)', () => {
+    const ancestor = {
+      competitions: [{ discipline: 'Jumping' }, { discipline: 'Jumping' }, { discipline: 'Racing' }],
+    };
+    expect(getAncestorPreferredDiscipline(ancestor)).toBe('Jumping');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// catch-block coverage — non-iterable input triggers for...of TypeError
+// ---------------------------------------------------------------------------
+describe('checkLineageForDisciplineAffinity — error catch branch (line 73-74)', () => {
+  it('returns { affinity: false } when ancestors is non-iterable (triggers catch)', () => {
+    // A plain number passes the !ancestors guard but throws in for...of
+    expect(checkLineageForDisciplineAffinity(42)).toEqual({ affinity: false });
+  });
+});
+
+describe('checkLineageForDisciplineAffinityDetailed — error catch branch (line 209-212)', () => {
+  it('returns error shape when ancestors is non-iterable (triggers catch)', () => {
+    const result = checkLineageForDisciplineAffinityDetailed(42);
+    expect(result.affinity).toBe(false);
+    expect(result.totalAnalyzed).toBe(0);
+    expect(result.affinityStrength).toBe(0);
+  });
+});
+
+describe('checkSpecificDisciplineAffinity — error catch branch (line 267-268)', () => {
+  it('returns error shape when ancestors is non-iterable (triggers catch)', () => {
+    // 42 passes !ancestors and targetDiscipline guards but throws in for...of
+    const result = checkSpecificDisciplineAffinity(42, 'Racing');
+    expect(result.hasAffinity).toBe(false);
+    expect(result.count).toBe(0);
+    expect(result.error).toBeDefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// ancestor.id fallback (lines 39, 248) + zero-disciplines ternary (line 198)
+// ---------------------------------------------------------------------------
+describe('ancestor.id fallback when name is absent (lines 39, 248)', () => {
+  it('checkLineageForDisciplineAffinity uses ancestor.id when name is missing (line 39)', () => {
+    const ancestors = [
+      { id: 'h1', discipline: 'Racing' },
+      { id: 'h2', discipline: 'Racing' },
+      { id: 'h3', discipline: 'Racing' },
+    ];
+    const result = checkLineageForDisciplineAffinity(ancestors);
+    expect(result.affinity).toBe(true);
+    expect(result.discipline).toBe('Racing');
+  });
+
+  it('checkSpecificDisciplineAffinity uses ancestor.id when name is missing (line 248)', () => {
+    const ancestors = [
+      { id: 'h1', discipline: 'Racing' },
+      { id: 'h2', discipline: 'Racing' },
+      { id: 'h3', discipline: 'Racing' },
+    ];
+    const result = checkSpecificDisciplineAffinity(ancestors, 'Racing');
+    expect(result.hasAffinity).toBe(true);
+    expect(result.matchingAncestors).toEqual(['h1', 'h2', 'h3']);
+  });
+});
+
+describe('checkLineageForDisciplineAffinityDetailed — zero disciplines ternary (line 198)', () => {
+  it('affinityStrength is 0 when no ancestor has any discipline (line 198 ternary false)', () => {
+    const ancestors = [{ id: 'x' }, { id: 'y' }];
+    const result = checkLineageForDisciplineAffinityDetailed(ancestors);
+    expect(result.affinityStrength).toBe(0);
+    expect(result.totalWithDisciplines).toBe(0);
+  });
+});
