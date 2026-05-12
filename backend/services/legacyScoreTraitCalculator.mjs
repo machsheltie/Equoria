@@ -188,7 +188,8 @@ export async function calculateTraitScore(horseId) {
  * @param {Array} milestoneData - Array of milestone trait logs
  * @returns {number} Groom care consistency score (0-5)
  */
-function calculateGroomCareConsistency(milestoneData) {
+// Exported for unit-testing pure branch coverage (Equoria-jkht)
+export function calculateGroomCareConsistency(milestoneData) {
   if (milestoneData.length === 0) {
     return 0;
   }

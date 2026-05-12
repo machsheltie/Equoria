@@ -130,7 +130,8 @@ export async function calculateLegacyScore(horseId) {
  * @param {Object} horse - Horse object with stats
  * @returns {Object} Base stats score breakdown
  */
-function calculateBaseStatsScore(horse) {
+// Exported for unit-testing pure branch coverage (Equoria-jkht)
+export function calculateBaseStatsScore(horse) {
   const stats = [
     horse.speed || 0,
     horse.stamina || 0,
@@ -176,7 +177,8 @@ function calculateBaseStatsScore(horse) {
  * @param {Object} horse - Horse object with competition results
  * @returns {Object} Achievements score breakdown
  */
-async function calculateAchievementsScore(horse) {
+// Exported for unit-testing pure branch coverage (Equoria-jkht)
+export async function calculateAchievementsScore(horse) {
   const results = horse.competitionResults || [];
 
   // Count wins by placement
@@ -236,7 +238,8 @@ async function calculateAchievementsScore(horse) {
  * @param {Object} horse - Horse object with offspring data
  * @returns {Object} Breeding value score breakdown
  */
-function calculateBreedingValueScore(horse) {
+// Exported for unit-testing pure branch coverage (Equoria-jkht)
+export function calculateBreedingValueScore(horse) {
   const offspring = [...(horse.damOffspring || []), ...(horse.sireOffspring || [])];
   const offspringCount = offspring.length;
 
@@ -271,7 +274,8 @@ function calculateBreedingValueScore(horse) {
  * @param {number} totalScore - Total legacy score
  * @returns {string} Legacy grade (S, A, B, C, D)
  */
-function calculateLegacyGrade(totalScore) {
+// Exported for unit-testing pure branch coverage (Equoria-jkht)
+export function calculateLegacyGrade(totalScore) {
   if (totalScore >= 90) {
     return 'S';
   } // Legendary
