@@ -1,5 +1,6 @@
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { canTrain, getCooldownTimeRemaining, formatCooldown, setCooldown } from '../../utils/trainingCooldown.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 
 const pastDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(); // yesterday
 const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // +7 days
@@ -119,5 +120,56 @@ describe('setCooldown — pure validation branches (Equoria-jkht)', () => {
 describe('setCooldown — P2025 not-found catch (Equoria-jkht)', () => {
   it('throws "Horse with ID ... not found" for a non-existent positive ID (P2025 catch path)', async () => {
     await expect(setCooldown(999999999)).rejects.toThrow('Horse with ID 999999999 not found');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// setCooldown — success path (line 84: return updatedHorse)
+// Requires a real horse fixture so the update succeeds and returns the horse.
+// ---------------------------------------------------------------------------
+describe('setCooldown — success path (line 84) (Equoria-jkht)', () => {
+  let testUser, testBreed, testHorse;
+
+  beforeAll(async () => {
+    const RUN_ID = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    testBreed = await prisma.breed.create({
+      data: { name: `TCooldown_breed_${RUN_ID}` },
+    });
+    testUser = await prisma.user.create({
+      data: {
+        username: `TCooldown_${RUN_ID}`.slice(0, 50),
+        email: `tcooldown_${RUN_ID}@test.invalid`,
+        password: 'x',
+        firstName: 'TC',
+        lastName: 'Test',
+      },
+    });
+    const fiveYearsAgo = new Date();
+    fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+    testHorse = await prisma.horse.create({
+      data: {
+        name: `TCooldown_horse_${RUN_ID}`,
+        breed: { connect: { id: testBreed.id } },
+        user: { connect: { id: testUser.id } },
+        age: 5,
+        sex: 'Stallion',
+        dateOfBirth: fiveYearsAgo,
+      },
+    });
+  }, 30000);
+
+  afterAll(async () => {
+    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TCooldown_horse' } } }).catch(() => {});
+    await prisma.user.deleteMany({ where: { username: { startsWith: 'TCooldown_' } } }).catch(() => {});
+    await prisma.breed.deleteMany({ where: { name: { startsWith: 'TCooldown_breed' } } }).catch(() => {});
+  }, 30000);
+
+  it('returns the updated horse when called with a real existing horseId (covers line 84)', async () => {
+    const result = await setCooldown(testHorse.id);
+    expect(result).toBeDefined();
+    expect(result.id).toBe(testHorse.id);
+    // trainingCooldown should now be set to a future date (~7 days from now)
+    expect(result.trainingCooldown).not.toBeNull();
+    expect(new Date(result.trainingCooldown) > new Date()).toBe(true);
   });
 });

@@ -533,3 +533,27 @@ describe('processGroomingSession() — happy path, groomId=null (lines 300-380)'
     expect(result.horse.id).toBe(horse.id);
   });
 });
+
+// ── processGroomingSession — happy path WITH groomId (line 337) ───────────────
+// The existing tests only ever pass groomId=null, leaving line 337
+// (`await prisma.groomInteraction.create(...)`) and the groomId-truthy arm of
+// the `groom = groomId ? findUnique : null` ternary uncovered.
+
+describe('processGroomingSession() — happy path, groomId provided (line 337 + groomId-truthy arm) (Equoria-jkht)', () => {
+  it('creates a groomInteraction record and returns success:true when groomId is truthy', async () => {
+    // groom fixture is created in beforeAll; horse.age=0 → 'desensitization' is eligible
+    const result = await processGroomingSession(horse.id, groom.id, 'desensitization', 45);
+    expect(result.success).toBe(true);
+    expect(result.bondingEffects).toBeDefined();
+    expect(result.horse.id).toBe(horse.id);
+
+    // Verify the interaction was persisted (covers line 337)
+    const interaction = await prisma.groomInteraction.findFirst({
+      where: { foalId: horse.id, groomId: groom.id },
+      orderBy: { timestamp: 'desc' },
+    });
+    expect(interaction).not.toBeNull();
+    expect(interaction.groomId).toBe(groom.id);
+    expect(interaction.interactionType).toBe('desensitization');
+  });
+});

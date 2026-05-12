@@ -325,3 +325,39 @@ describe('getFlagInfluenceSummary — catch block (lines 365-366)', () => {
     expect(result.flagCount).toBe(2);
   });
 });
+
+// ── Line 51 FALSE branch: modifier <= 0 → '' in logger.debug ternary (Equoria-jkht) ──
+// `affectionate` has traitWeightModifiers: { antisocial: -0.4, withdrawn: -0.3, ... }
+// Passing { antisocial: 0.5 } as baseTraitWeights ensures `modifiedWeights[traitName]`
+// is defined, the logger.debug fires, and the ternary `modifier > 0 ? '+' : ''` takes
+// its FALSE arm (-0.4 is not > 0 → '').
+
+describe('applyFlagInfluencesToTraitWeights — logger.debug ternary FALSE arm (line 51) (Equoria-jkht)', () => {
+  it("emits '' prefix (not +) in logger.debug when modifier is negative (affectionate antisocial=-0.4)", () => {
+    // affectionate.traitWeightModifiers.antisocial = -0.4 → modifier <= 0 → FALSE arm
+    const result = applyFlagInfluencesToTraitWeights(['affectionate'], { antisocial: 0.5 });
+    // antisocial weight reduced by 0.4: max(0, 0.5 - 0.4) = 0.1
+    expect(result.antisocial).toBeCloseTo(0.1, 5);
+  });
+});
+
+// ── Line 274 both branches: groomEffectiveness present (TRUE) and absent (FALSE) ──
+// TRUE arm: `affectionate` has groomEffectiveness:0.15 → if-body fires, property set.
+// FALSE arm: `brave` has NO groomEffectiveness → condition is undefined (falsy) → if skipped.
+
+describe('applyFlagInfluencesToBonding — groomEffectiveness branch TRUE + FALSE arms (line 274) (Equoria-jkht)', () => {
+  it('sets appliedModifiers.groomEffectiveness when affectionate flag is present (TRUE arm)', () => {
+    const result = applyFlagInfluencesToBonding(10, ['affectionate']);
+    expect(result.appliedModifiers).toHaveProperty('groomEffectiveness');
+    expect(result.appliedModifiers.groomEffectiveness).toBeCloseTo(10 * 0.15, 5);
+  });
+
+  it('does not set groomEffectiveness when brave flag is present (FALSE arm — brave has no groomEffectiveness)', () => {
+    // brave.behaviorModifiers: { stressReduction, competitionBonus, statRecoveryBonus, stressResistance }
+    // No groomEffectiveness → `if (behaviorModifiers.groomEffectiveness)` is false → skipped
+    const result = applyFlagInfluencesToBonding(10, [BRAVE]);
+    expect(result.appliedModifiers).not.toHaveProperty('groomEffectiveness');
+    // modifiedBondingChange unchanged (brave has no bonding-specific modifiers)
+    expect(result.modifiedBondingChange).toBe(10);
+  });
+});
