@@ -456,3 +456,60 @@ describe('evaluateTraitRevelation — uncovered branch paths', () => {
     expect(revealed).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// evaluateTraitRevelation — age>0 and currentTraits fallback branches
+// ---------------------------------------------------------------------------
+describe('evaluateTraitRevelation — age and currentTraits fallback branches', () => {
+  it('age>0 + currentDay>6 exercises false-branch of age===0 ternary and Math.min cap', () => {
+    // age=100 > 0 → developmentAge = Math.min(8, 6) = 6 (cap branch exercised)
+    const adultFoal = { id: 60, bondScore: 90, stressLevel: 10, age: 100 };
+    const result = evaluateTraitRevelation(adultFoal, { positive: [], negative: [], hidden: [] }, 8);
+    expect(Array.isArray(result.positive)).toBe(true);
+    expect(Array.isArray(result.negative)).toBe(true);
+  });
+
+  it('age>0 + currentDay<=6 exercises false-branch of age===0 ternary without Math.min cap', () => {
+    // age=200 > 0 → developmentAge = Math.min(3, 6) = 3 (no cap)
+    const adultFoal2 = { id: 61, bondScore: 90, stressLevel: 10, age: 200 };
+    const result = evaluateTraitRevelation(adultFoal2, { positive: [], negative: [], hidden: [] }, 3);
+    expect(Array.isArray(result.positive)).toBe(true);
+  });
+
+  it('currentTraits={} (no keys) exercises positive||[], negative||[], hidden||[] fallbacks', () => {
+    // {} has no .positive/.negative/.hidden → each ||[] fallback is exercised
+    const goodFoal2 = { id: 62, bondScore: 90, stressLevel: 10, age: 0 };
+    const result = evaluateTraitRevelation(goodFoal2, {}, 5);
+    expect(Array.isArray(result.positive)).toBe(true);
+    expect(Array.isArray(result.negative)).toBe(true);
+    expect(Array.isArray(result.hidden)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// applyGroomTraitInfluence — default parameter branch
+// ---------------------------------------------------------------------------
+describe('applyGroomTraitInfluence — default parameter branch', () => {
+  const youngHorse2 = { id: 70, age: 30 };
+
+  it('calling without currentTraitInfluences exercises the default={} parameter branch', () => {
+    // Third arg omitted → currentTraitInfluences defaults to {} (default parameter branch)
+    const result = applyGroomTraitInfluence(youngHorse2, 'brushing');
+    expect(result.updatedInfluences).toBeDefined();
+    expect(result.newPermanentTraits).toBeDefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// evaluateEpigeneticTagsFromFoalTasks — traitPoints accumulation left-branch
+// ---------------------------------------------------------------------------
+describe('evaluateEpigeneticTagsFromFoalTasks — traitPoints accumulation left-branch', () => {
+  it('multiple tasks sharing same trait exercise traitPoints[tag]||0 left-branch (already-set value)', () => {
+    // trust_building and gentle_touch both influence 'bonded'
+    // First iteration: traitPoints['bonded'] = (undefined || 0) + basePoints  → right-branch
+    // Second iteration: traitPoints['bonded'] = (number || 0) + basePoints    → left-branch
+    const result = evaluateEpigeneticTagsFromFoalTasks({ trust_building: 5, gentle_touch: 5 });
+    expect(Array.isArray(result)).toBe(true);
+    // Both tasks contribute to 'bonded' → higher chance → at least the logic ran
+  });
+});
