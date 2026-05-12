@@ -222,4 +222,68 @@ describe('getPersonalityEffectPreview', () => {
     const preview = getPersonalityEffectPreview('', '', 0);
     expect(preview).toHaveProperty('compatibilityLevel');
   });
+
+  // ── default bondScore=0 branch ──────────────────────────────────────────────
+  it('uses default bondScore=0 when not provided (no isStrongMatch → good)', () => {
+    // Calm+Nervous is a match, but bond=0 → isStrongMatch=false → 'good'
+    const preview = getPersonalityEffectPreview('Calm', 'Nervous');
+    expect(preview.compatibilityLevel).toBe('good');
+    expect(preview.isCompatible).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Branch-coverage additions (Equoria-jkht): default params + catch paths
+// ---------------------------------------------------------------------------
+
+describe('applyPersonalityEffectsToMilestone — defaults + catch', () => {
+  it('uses default 0 for baseMilestoneScore/baseStressLevel/baseBondingRate when omitted', () => {
+    const result = applyPersonalityEffectsToMilestone({
+      groomPersonality: 'Calm',
+      foalTemperament: 'Nervous',
+      bondScore: 50,
+    });
+    expect(result.baseMilestoneScore).toBe(0);
+    expect(result.baseStressLevel).toBe(0);
+    expect(result.baseBondingRate).toBe(0);
+    expect(result.personalityEffectApplied).toBe(true);
+  });
+
+  it('returns safe fallback when params getter throws (catch path)', () => {
+    const evil = Object.defineProperty({}, 'groomPersonality', {
+      get() {
+        throw new Error('params getter bomb');
+      },
+    });
+    const result = applyPersonalityEffectsToMilestone(evil);
+    expect(result.personalityEffectApplied).toBe(false);
+    expect(result.modifiedMilestoneScore).toBe(0);
+    expect(result.modifiedStressLevel).toBe(0);
+    expect(result.modifiedBondingRate).toBe(0);
+  });
+});
+
+describe('calculateTraitDevelopmentBonus — defaults + catch', () => {
+  it('uses default bondScore=0 and baseMilestoneScore=0 when omitted', () => {
+    // Calm+Nervous: isMatch=true, isStrongMatch=(0>60)=false → traitModifier=1
+    // finalScore = 0 + 1 = 1 → 'randomized'
+    const result = calculateTraitDevelopmentBonus({
+      groomPersonality: 'Calm',
+      foalTemperament: 'Nervous',
+    });
+    expect(result.traitModifier).toBe(1);
+    expect(result.finalTraitAssignment).toBe('randomized');
+  });
+
+  it('returns fallback when params getter throws (catch path)', () => {
+    const evil = Object.defineProperty({}, 'groomPersonality', {
+      get() {
+        throw new Error('bomb');
+      },
+    });
+    const result = calculateTraitDevelopmentBonus(evil);
+    expect(result.personalityEffectApplied).toBe(false);
+    expect(result.finalTraitAssignment).toBe('randomized');
+    expect(result.traitModifier).toBe(0);
+  });
 });
