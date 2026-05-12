@@ -172,3 +172,11 @@ describe('getEligibleHorses', () => {
     }
   });
 });
+
+// ── getEligibleHorses catch block (lines 347-348) ─────────────────────────────
+
+describe('getEligibleHorses — catch block (lines 347-348)', () => {
+  it('re-throws when evaluationDate.getTime() throws (null passed as date)', async () => {
+    await expect(getEligibleHorses(null)).rejects.toThrow();
+  });
+});
