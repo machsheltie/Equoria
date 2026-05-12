@@ -7,12 +7,15 @@
 import { describe, it, expect } from '@jest/globals';
 import {
   validateHorseData,
+  validatePlayerData,
+  validateBreedingData,
   validateTrainingData,
   validateTransactionData,
   generateDataHash,
   verifyDataIntegrity,
   sanitizeInput,
   validateId,
+  validateRateLimit,
   validateFileUpload,
 } from '../../utils/securityValidation.mjs';
 
@@ -330,5 +333,262 @@ describe('validateFileUpload', () => {
     for (const mimetype of ['image/jpeg', 'image/png', 'image/gif', 'image/webp']) {
       expect(validateFileUpload({ ...validFile, mimetype }).isValid).toBe(true);
     }
+  });
+
+  it('rejects file with invalid filename characters', () => {
+    const bad = { ...validFile, originalname: '../../../etc/passwd' };
+    expect(validateFileUpload(bad).isValid).toBe(false);
+  });
+
+  it('uses file.name when originalname is absent', () => {
+    const { isValid } = validateFileUpload({ size: 512, mimetype: 'image/png', name: 'horse.png' });
+    expect(isValid).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateHorseData — additional branches not in original suite
+// ---------------------------------------------------------------------------
+describe('validateHorseData — additional branches', () => {
+  it('rejects stat value below 0', () => {
+    const { isValid, errors } = validateHorseData({ speed: -1 });
+    expect(isValid).toBe(false);
+    expect(errors.some(e => e.includes('speed'))).toBe(true);
+  });
+
+  it('rejects stat value above 100', () => {
+    const { isValid, errors } = validateHorseData({ agility: 101 });
+    expect(isValid).toBe(false);
+    expect(errors.some(e => e.includes('agility'))).toBe(true);
+  });
+
+  it('accepts stat values at boundary 0 and 100', () => {
+    const { isValid } = validateHorseData({ precision: 0, endurance: 100 });
+    expect(isValid).toBe(true);
+  });
+
+  it('rejects total_earnings above max', () => {
+    const { isValid } = validateHorseData({ total_earnings: 10_000_001 });
+    expect(isValid).toBe(false);
+  });
+
+  it('rejects stud_fee above max', () => {
+    const { isValid } = validateHorseData({ stud_fee: 1_000_001 });
+    expect(isValid).toBe(false);
+  });
+
+  it('rejects sale_price above max', () => {
+    const { isValid } = validateHorseData({ sale_price: 10_000_001 });
+    expect(isValid).toBe(false);
+  });
+
+  it('accepts age = 0 (foal)', () => {
+    const { isValid } = validateHorseData({ age: 0 });
+    expect(isValid).toBe(true);
+  });
+
+  it('strips id and createdAt when isUpdate = true', () => {
+    const { sanitized } = validateHorseData({ name: 'Storm', id: 99, createdAt: 'now' }, true);
+    expect(sanitized.id).toBeUndefined();
+    expect(sanitized.createdAt).toBeUndefined();
+  });
+
+  it('does not strip id when isUpdate = false', () => {
+    const { sanitized } = validateHorseData({ name: 'Storm', id: 99 }, false);
+    expect(sanitized.id).toBe(99);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validatePlayerData
+// ---------------------------------------------------------------------------
+describe('validatePlayerData', () => {
+  it('returns valid for complete player data', () => {
+    const { isValid } = validatePlayerData({
+      name: 'Rider1',
+      email: 'rider@example.com',
+      money: 500,
+      level: 5,
+      xp: 1000,
+    });
+    expect(isValid).toBe(true);
+  });
+
+  it('rejects name shorter than 2 chars', () => {
+    const { isValid, errors } = validatePlayerData({ name: 'X' });
+    expect(isValid).toBe(false);
+    expect(errors.some(e => e.includes('name'))).toBe(true);
+  });
+
+  it('rejects name longer than 30 chars', () => {
+    const { isValid } = validatePlayerData({ name: 'A'.repeat(31) });
+    expect(isValid).toBe(false);
+  });
+
+  it('rejects name with special characters (player names allow only alphanumeric, space, hyphen, underscore)', () => {
+    const { isValid } = validatePlayerData({ name: "O'Malley" });
+    expect(isValid).toBe(false);
+  });
+
+  it('rejects invalid email format', () => {
+    const { isValid, errors } = validatePlayerData({ email: 'notanemail' });
+    expect(isValid).toBe(false);
+    expect(errors.some(e => e.includes('email'))).toBe(true);
+  });
+
+  it('normalizes email to lowercase', () => {
+    const { sanitized } = validatePlayerData({ email: 'RIDER@Example.COM' });
+    expect(sanitized.email).toBe('rider@example.com');
+  });
+
+  it('rejects negative money', () => {
+    const { isValid } = validatePlayerData({ money: -1 });
+    expect(isValid).toBe(false);
+  });
+
+  it('rejects money above max (100M)', () => {
+    const { isValid } = validatePlayerData({ money: 100_000_001 });
+    expect(isValid).toBe(false);
+  });
+
+  it('rejects level below 1', () => {
+    const { isValid } = validatePlayerData({ level: 0 });
+    expect(isValid).toBe(false);
+  });
+
+  it('rejects level above 100', () => {
+    const { isValid } = validatePlayerData({ level: 101 });
+    expect(isValid).toBe(false);
+  });
+
+  it('rejects xp above max', () => {
+    const { isValid } = validatePlayerData({ xp: 10_000_001 });
+    expect(isValid).toBe(false);
+  });
+
+  it('rejects non-object settings', () => {
+    const { isValid, errors } = validatePlayerData({ settings: 'dark' });
+    expect(isValid).toBe(false);
+    expect(errors.some(e => e.includes('Settings'))).toBe(true);
+  });
+
+  it('strips disallowed setting keys, keeps allowed ones', () => {
+    const { sanitized } = validatePlayerData({ settings: { darkMode: true, hackKey: true } });
+    expect(sanitized.settings.darkMode).toBe(true);
+    expect(sanitized.settings.hackKey).toBeUndefined();
+  });
+
+  it('accepts all four allowed setting keys', () => {
+    const { isValid } = validatePlayerData({
+      settings: { darkMode: true, notifications: false, privacy: 'public', language: 'en' },
+    });
+    expect(isValid).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateBreedingData
+// ---------------------------------------------------------------------------
+describe('validateBreedingData', () => {
+  it('returns valid for correct breeding data', () => {
+    const { isValid } = validateBreedingData({ sireId: 1, damId: 2 });
+    expect(isValid).toBe(true);
+  });
+
+  it('rejects missing sireId', () => {
+    const { isValid, errors } = validateBreedingData({ damId: 2 });
+    expect(isValid).toBe(false);
+    expect(errors.some(e => e.includes('sire') || e.includes('dam'))).toBe(true);
+  });
+
+  it('rejects missing damId', () => {
+    const { isValid } = validateBreedingData({ sireId: 1 });
+    expect(isValid).toBe(false);
+  });
+
+  it('rejects non-numeric sireId', () => {
+    const { isValid, errors } = validateBreedingData({ sireId: 'abc', damId: 2 });
+    expect(isValid).toBe(false);
+    expect(errors.some(e => e.includes('sire'))).toBe(true);
+  });
+
+  it('rejects sireId <= 0', () => {
+    const { isValid } = validateBreedingData({ sireId: 0, damId: 2 });
+    expect(isValid).toBe(false);
+  });
+
+  it('rejects invalid damId (negative)', () => {
+    const { isValid, errors } = validateBreedingData({ sireId: 1, damId: -1 });
+    expect(isValid).toBe(false);
+    expect(errors.some(e => e.includes('dam'))).toBe(true);
+  });
+
+  it('rejects self-breeding (sireId === damId)', () => {
+    const { isValid, errors } = validateBreedingData({ sireId: 5, damId: 5 });
+    expect(isValid).toBe(false);
+    expect(errors.some(e => e.includes('itself'))).toBe(true);
+  });
+
+  it('rejects breeding fee above 1,000,000', () => {
+    const { isValid } = validateBreedingData({ sireId: 1, damId: 2, breedingFee: 1_000_001 });
+    expect(isValid).toBe(false);
+  });
+
+  it('rejects negative breeding fee', () => {
+    const { isValid } = validateBreedingData({ sireId: 1, damId: 2, breedingFee: -1 });
+    expect(isValid).toBe(false);
+  });
+
+  it('accepts zero breeding fee', () => {
+    const { isValid } = validateBreedingData({ sireId: 1, damId: 2, breedingFee: 0 });
+    expect(isValid).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateRateLimit
+// ---------------------------------------------------------------------------
+describe('validateRateLimit', () => {
+  beforeEach(() => {
+    if (global.rateLimitStore) {
+      global.rateLimitStore.clear();
+    }
+  });
+
+  it('allows first request and returns remaining count', () => {
+    const result = validateRateLimit('user1', 'testOp', 3, 60_000);
+    expect(result.allowed).toBe(true);
+    expect(result.remaining).toBe(2);
+  });
+
+  it('tracks remaining correctly across calls', () => {
+    validateRateLimit('user2', 'op', 5, 60_000);
+    validateRateLimit('user2', 'op', 5, 60_000);
+    const result = validateRateLimit('user2', 'op', 5, 60_000);
+    expect(result.remaining).toBe(2);
+  });
+
+  it('blocks request when max is reached', () => {
+    for (let i = 0; i < 3; i++) {
+      validateRateLimit('user3', 'limitedOp', 3, 60_000);
+    }
+    const result = validateRateLimit('user3', 'limitedOp', 3, 60_000);
+    expect(result.allowed).toBe(false);
+    expect(result.resetTime).toBeGreaterThan(Date.now());
+  });
+
+  it('different users have independent limits', () => {
+    for (let i = 0; i < 3; i++) {
+      validateRateLimit('userA', 'op', 3, 60_000);
+    }
+    const result = validateRateLimit('userB', 'op', 3, 60_000);
+    expect(result.allowed).toBe(true);
+  });
+
+  it('initialises global store when absent', () => {
+    delete global.rateLimitStore;
+    const result = validateRateLimit('fresh', 'op', 5, 60_000);
+    expect(result.allowed).toBe(true);
+    expect(global.rateLimitStore).toBeDefined();
   });
 });
