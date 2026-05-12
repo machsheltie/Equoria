@@ -272,3 +272,240 @@ describe('predictOffspringPerformance', () => {
     expect(typeof result).toBe('object');
   });
 });
+
+// ── calculateGeneticDiversityImpact — riskLevel + recommendations branches (Equoria-jkht) ──
+// Drives getRiskLevel 'high' / 'moderate' / 'low' and all four generateDiversityRecommendations
+// branches by constructing lineage fixtures with controllable inbreeding coefficients.
+
+describe('calculateGeneticDiversityImpact() — riskLevel + recommendations branches (Equoria-jkht)', () => {
+  it('returns riskLevel=high when shared sireId causes coefficient > 0.25', () => {
+    // stallionAncestors={anc-A,anc-B,lin-X,lin-Y}, mareAncestors={anc-A,anc-C,lin-X,lin-Y}
+    // sharedAncestors=[anc-A,lin-X,lin-Y]=3, total=8 → coefficient=3/8=0.375 > 0.25 → 'high'
+    const s = { sireId: 'anc-A', damId: 'anc-B', traits: { positive: [], negative: [], hidden: [] } };
+    const m = { sireId: 'anc-A', damId: 'anc-C', traits: { positive: [], negative: [], hidden: [] } };
+    const lineage = [
+      { horses: [{ id: 'lin-X', traits: { positive: [], negative: [], hidden: [] } }] },
+      { horses: [{ id: 'lin-Y', traits: { positive: [], negative: [], hidden: [] } }] },
+    ];
+    const result = calculateGeneticDiversityImpact(s, m, lineage);
+    expect(result.riskLevel).toBe('high');
+    expect(result.inbreedingCoefficient).toBeGreaterThan(0.25);
+  });
+
+  it('returns riskLevel=moderate when coefficient is 0.25 (> 0.125 but not > 0.25)', () => {
+    // Different parents but 2 shared lineage horses → coefficient=2/8=0.25 → 'moderate'
+    const s = { sireId: 'sire-A', damId: 'dam-B', traits: { positive: ['calm'], negative: [], hidden: [] } };
+    const m = { sireId: 'sire-C', damId: 'dam-D', traits: { positive: ['patient'], negative: [], hidden: [] } };
+    const lineage = [
+      { horses: [{ id: 'lin-1', traits: { positive: [], negative: [], hidden: [] } }] },
+      { horses: [{ id: 'lin-2', traits: { positive: [], negative: [], hidden: [] } }] },
+    ];
+    const result = calculateGeneticDiversityImpact(s, m, lineage);
+    expect(result.riskLevel).toBe('moderate');
+    expect(result.inbreedingCoefficient).toBe(0.25);
+  });
+
+  it('returns riskLevel=low with fully diverse parents and empty lineage', () => {
+    // coefficient=0 (no lineage), diversityScore=80 (all unique traits), healthScore=95 → 'low'
+    const s = { traits: { positive: ['brave', 'athletic'], negative: [], hidden: [] } };
+    const m = { traits: { positive: ['calm', 'patient'], negative: [], hidden: [] } };
+    const result = calculateGeneticDiversityImpact(s, m, []);
+    expect(result.riskLevel).toBe('low');
+    expect(result.inbreedingCoefficient).toBe(0);
+  });
+
+  it('includes outcrossing recommendation when inbreedingCoefficient > 0.125', () => {
+    const s = { sireId: 'anc-A', damId: 'anc-B', traits: { positive: ['nervous'], negative: [], hidden: [] } };
+    const m = { sireId: 'anc-A', damId: 'anc-C', traits: { positive: ['nervous'], negative: [], hidden: [] } };
+    const lineage = [
+      { horses: [{ id: 'lx', traits: { positive: [], negative: [], hidden: [] } }] },
+      { horses: [{ id: 'ly', traits: { positive: [], negative: [], hidden: [] } }] },
+    ];
+    const result = calculateGeneticDiversityImpact(s, m, lineage);
+    expect(result.diversityRecommendations).toEqual(expect.arrayContaining([expect.stringMatching(/outcrossing/i)]));
+  });
+
+  it('includes diversity recommendation when diversityScore < 40', () => {
+    // All same traits → diversityRatio=0 → diversityScore=0 < 40 → 'Seek breeding partners'
+    const s = { traits: { positive: ['nervous', 'stubborn'], negative: [], hidden: [] } };
+    const m = { traits: { positive: ['nervous', 'stubborn'], negative: [], hidden: [] } };
+    const result = calculateGeneticDiversityImpact(s, m, []);
+    expect(result.diversityRecommendations).toEqual(
+      expect.arrayContaining([expect.stringMatching(/different trait profiles/i)]),
+    );
+  });
+
+  it('includes excellent-diversity recommendation when diversityScore > 80 and coefficient < 0.05', () => {
+    // All unique traits + 1 lineage gen (lineageBonus=2) → diversityScore=82 > 80, coeff=0 < 0.05
+    const s = { traits: { positive: ['brave', 'athletic', 'bold', 'focused'], negative: [], hidden: [] } };
+    const m = { traits: { positive: ['calm', 'patient', 'resilient', 'curious'], negative: [], hidden: [] } };
+    const lineage = [{ horses: [{ id: 'u1', traits: { positive: ['special'], negative: [], hidden: [] } }] }];
+    const result = calculateGeneticDiversityImpact(s, m, lineage);
+    expect(result.diversityRecommendations).toEqual(
+      expect.arrayContaining([expect.stringMatching(/excellent genetic diversity/i)]),
+    );
+  });
+});
+
+// ── generateBreedingRecommendations — 'Highly Recommended' / 'Not Recommended' (Equoria-jkht) ──
+
+describe('generateBreedingRecommendations() — tier branches (Equoria-jkht)', () => {
+  it('returns Highly Recommended for pair with 5 shared positive traits and complementary stats', () => {
+    // traitScore=90, statScore=85 (all complementary), disciplineScore=88, diversityScore=62 → overall≈83
+    const s = {
+      traits: {
+        positive: ['athletic', 'intelligent', 'calm', 'bold', 'resilient', 'focused'],
+        negative: [],
+        hidden: ['h1', 'h2', 'h3'],
+      },
+      stats: {
+        speed: 70,
+        stamina: 80,
+        agility: 60,
+        balance: 75,
+        precision: 65,
+        intelligence: 80,
+        boldness: 70,
+        flexibility: 75,
+        obedience: 65,
+        focus: 80,
+      },
+      disciplineScores: { racing: 90, dressage: 85 },
+    };
+    const m = {
+      traits: {
+        positive: ['athletic', 'intelligent', 'calm', 'bold', 'resilient', 'curious'],
+        negative: [],
+        hidden: ['hA', 'hB', 'hC'],
+      },
+      stats: {
+        speed: 80,
+        stamina: 65,
+        agility: 75,
+        balance: 60,
+        precision: 80,
+        intelligence: 65,
+        boldness: 80,
+        flexibility: 60,
+        obedience: 80,
+        focus: 65,
+      },
+      disciplineScores: { racing: 85, dressage: 90 },
+    };
+    const result = generateBreedingRecommendations(s, m);
+    expect(result.overallRecommendation).toBe('Highly Recommended');
+  });
+
+  it('returns Not Recommended for conflicting-trait pair with incompatible stats', () => {
+    // 6 trait conflicts (3 each direction) → traitScore=0, extreme stat diffs → statScore=40
+    const s = {
+      traits: {
+        positive: ['nervous', 'stubborn', 'lazy'],
+        negative: ['athletic', 'calm', 'bold'],
+        hidden: [],
+      },
+      stats: { speed: 20, stamina: 90 },
+    };
+    const m = {
+      traits: {
+        positive: ['athletic', 'calm', 'bold'],
+        negative: ['nervous', 'stubborn', 'lazy'],
+        hidden: [],
+      },
+      stats: { speed: 90, stamina: 20 },
+    };
+    const result = generateBreedingRecommendations(s, m);
+    expect(result.overallRecommendation).toBe('Not Recommended');
+  });
+});
+
+// ── calculateMultiGenerationalPredictions — analyzeLineagePatterns weaknesses (Equoria-jkht) ──
+
+describe('calculateMultiGenerationalPredictions() — lineageWeaknesses branch (Equoria-jkht)', () => {
+  it('returns non-empty lineageWeaknesses when lineage horses have nervous/stubborn/lazy traits', () => {
+    const s = { traits: { positive: [], negative: [], hidden: [] } };
+    const m = { traits: { positive: [], negative: [], hidden: [] } };
+    const lineage = [
+      {
+        horses: [
+          { id: 1, traits: { positive: [], negative: ['nervous', 'stubborn'], hidden: [] } },
+          { id: 2, traits: { positive: [], negative: ['lazy'], hidden: [] } },
+        ],
+      },
+    ];
+    const result = calculateMultiGenerationalPredictions(s, m, lineage);
+    expect(Array.isArray(result.lineageWeaknesses)).toBe(true);
+    expect(result.lineageWeaknesses.length).toBeGreaterThan(0);
+    const weaknessTraits = result.lineageWeaknesses.map(w => w.trait);
+    expect(weaknessTraits).toEqual(expect.arrayContaining(['nervous']));
+  });
+
+  it('returns overallLineageScore reduced by weaknesses (score = max(0, 75 - weaknesses*10 + strengths*5))', () => {
+    const s = { traits: { positive: [], negative: [], hidden: [] } };
+    const m = { traits: { positive: [], negative: [], hidden: [] } };
+    // 4 horses: each negative trait appears 1/4=25% < 30% threshold → NOT counted as strengths
+    // weaknesses=3 (nervous/stubborn/lazy appear at least once), strengths=0 → score = max(0,75-30+0)=45
+    const lineage = [
+      {
+        horses: [
+          { id: 3, traits: { positive: [], negative: ['nervous', 'stubborn', 'lazy'], hidden: [] } },
+          { id: 6, traits: { positive: ['athletic'], negative: [], hidden: [] } },
+          { id: 7, traits: { positive: ['brave'], negative: [], hidden: [] } },
+          { id: 8, traits: { positive: ['calm'], negative: [], hidden: [] } },
+        ],
+      },
+    ];
+    const result = calculateMultiGenerationalPredictions(s, m, lineage);
+    // 3 weaknesses, 0 strengths → score = max(0, 75 - 30 + 0) = 45
+    expect(result.overallLineageScore).toBe(45);
+    expect(result.lineageWeaknesses).toHaveLength(3);
+  });
+
+  it('returns lineageStrengths when trait appears in > 30% of horses', () => {
+    const s = { traits: { positive: [], negative: [], hidden: [] } };
+    const m = { traits: { positive: [], negative: [], hidden: [] } };
+    const lineage = [
+      {
+        horses: [
+          { id: 4, traits: { positive: ['athletic'], negative: [], hidden: [] } },
+          { id: 5, traits: { positive: ['athletic'], negative: [], hidden: [] } },
+        ],
+      },
+    ];
+    const result = calculateMultiGenerationalPredictions(s, m, lineage);
+    // 2/2 = 100% > 30% → 'athletic' in strengths
+    expect(Array.isArray(result.lineageStrengths)).toBe(true);
+    expect(result.lineageStrengths.map(s => s.trait)).toContain('athletic');
+  });
+});
+
+// ── calculateTraitCompatibility — compatibilityLevel 'excellent' / 'poor' (Equoria-jkht) ──
+
+describe('calculateGeneticCompatibilityScore() — compatibilityLevel branches (Equoria-jkht)', () => {
+  it('traitCompatibility.compatibilityLevel is excellent when score > 75 (5+ shared positives)', () => {
+    const s = { traits: { positive: ['brave', 'athletic', 'bold', 'calm', 'resilient'], negative: [], hidden: [] } };
+    const m = { traits: { positive: ['brave', 'athletic', 'bold', 'calm', 'resilient'], negative: [], hidden: [] } };
+    const result = calculateGeneticCompatibilityScore(s, m);
+    expect(result.traitCompatibility.compatibilityLevel).toBe('excellent');
+  });
+
+  it('traitCompatibility.compatibilityLevel is poor when score <= 50 (many conflicts)', () => {
+    const s = { traits: { positive: ['nervous', 'stubborn'], negative: ['calm', 'athletic'], hidden: [] } };
+    const m = { traits: { positive: ['calm', 'athletic'], negative: ['nervous', 'stubborn'], hidden: [] } };
+    const result = calculateGeneticCompatibilityScore(s, m);
+    // 4 conflicts → score = 50 - 60 = max(0,-10)=0 → NOT > 50 → 'poor'
+    expect(result.traitCompatibility.compatibilityLevel).toBe('poor');
+  });
+});
+
+// ── calculateStatCompatibility — allStats.size === 0 early return (Equoria-jkht) ──
+
+describe('calculateGeneticCompatibilityScore() — empty stats balanceScore=50 branch (Equoria-jkht)', () => {
+  it('statCompatibility.balanceScore is 50 when both horses have no stats', () => {
+    const s = { traits: { positive: ['brave'], negative: [], hidden: [] } };
+    const m = { traits: { positive: ['calm'], negative: [], hidden: [] } };
+    // no stats property → calculateStatCompatibility({},{}) → allStats.size=0 → {balanceScore:50}
+    const result = calculateGeneticCompatibilityScore(s, m);
+    expect(result.statCompatibility.balanceScore).toBe(50);
+  });
+});
