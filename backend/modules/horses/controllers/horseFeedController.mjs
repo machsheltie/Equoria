@@ -16,11 +16,11 @@
  * persistence.
  */
 
-import { randomUUID } from 'crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 import { FEED_CATALOG } from '../../services/controllers/feedShopController.mjs';
 import { feedHorse } from '../services/horseFeedService.mjs';
+import { createNotification } from '../../../utils/notificationService.mjs';
 
 const VALID_TIERS = new Set(FEED_CATALOG.map(t => t.id));
 
@@ -221,44 +221,13 @@ export async function feedHorseHandler(req, res) {
       });
     }
 
-    // Write a game notification when a stat boost fires. This runs OUTSIDE
-    // the service transaction so a notification-write failure cannot roll back
-    // the feed itself (defence-in-depth: the feed already committed above).
     if (result.statBoost) {
-      try {
-        const userId = req.user.id;
-        const dbUser = await prisma.user.findUnique({
-          where: { id: userId },
-          select: { settings: true },
-        });
-        const settings =
-          dbUser?.settings && typeof dbUser.settings === 'object' ? dbUser.settings : {};
-        const existing = Array.isArray(settings.gameNotifications)
-          ? settings.gameNotifications
-          : [];
-        const newNotif = {
-          id: randomUUID(),
-          type: 'stat_gain',
-          isRead: false,
-          createdAt: new Date().toISOString(),
-          payload: {
-            horseName: result.horse.name,
-            stat: result.statBoost.stat,
-            amount: result.statBoost.amount,
-            feedName: result.feed.name,
-          },
-        };
-        await prisma.user.update({
-          where: { id: userId },
-          data: {
-            settings: { ...settings, gameNotifications: [...existing, newNotif].slice(-100) },
-          },
-        });
-      } catch (notifErr) {
-        logger.error(
-          `[horseFeedController.feedHorse] game notification write failed: ${notifErr.message}`,
-        );
-      }
+      await createNotification(req.user.id, 'stat_gain', {
+        horseName: result.horse.name,
+        stat: result.statBoost.stat,
+        amount: result.statBoost.amount,
+        feedName: result.feed.name,
+      });
     }
 
     return res.status(200).json({
