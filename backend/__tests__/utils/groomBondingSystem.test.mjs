@@ -469,3 +469,32 @@ describe('checkTaskMutualExclusivity', () => {
     expect(result.conflict).toBe(false);
   });
 });
+
+// ── calculateBondingEffects — synergyMod !== 0 branch (line 144) ──────────────
+// When a known temperament+personality pair has non-zero synergy, the logger.info
+// branch fires and the returned synergyModifier is non-zero.
+
+describe('calculateBondingEffects — non-zero synergy branch', () => {
+  it('fires synergyMod !== 0 branch for Nervous+gentle (synergy=0.25)', () => {
+    // Nervous temperament + gentle groom → synergy = 0.25 from TEMPERAMENT_GROOM_SYNERGY
+    const result = calculateBondingEffects(50, FOAL_GROOM_TASK, 'gentle', 'Nervous');
+    expect(result.eligible).toBe(true);
+    expect(result.synergyModifier).toBeCloseTo(0.25);
+    expect(result.bondChange).toBeGreaterThan(GROOM_CONFIG.DAILY_BOND_GAIN); // +25% bonus
+  });
+});
+
+// ── validateGroomingEligibility — task-not-eligible branch (line 174) ─────────
+// With a foal (age=0), eligible tasks are enrichment-only.
+// Passing a general grooming task ('brushing') triggers the !eligibleTasks.includes branch.
+
+describe('validateGroomingEligibility — task-not-eligible branch', () => {
+  it('returns eligible:false when task is not in the eligible list for this age', async () => {
+    const foal = { age: 0 }; // newborn: only enrichment tasks are eligible
+    const result = await validateGroomingEligibility(foal, GENERAL_TASK); // 'brushing'
+    expect(result.eligible).toBe(false);
+    expect(result.eligibleTasks).toBeDefined();
+    expect(result.ageGroup).toBeDefined();
+    expect(result.horseAge).toBe(0);
+  });
+});
