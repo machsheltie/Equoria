@@ -226,3 +226,115 @@ describe('updateHorseAge() — DB-fixture paths (lines 95-135) (Equoria-jkht)', 
     expect(Array.isArray(result.milestonesTriggered)).toBe(true);
   });
 });
+
+// ── checkForMilestones — milestone age 14 DB-fixture (lines 250-308) ─────────────
+// Covers the if(horse) block and both eligibility branches:
+//   not-eligible (303-306): horse.age=0 → Math.floor(0/365)=0 → not in MILESTONE_AGES
+//   eligible+success (254-296): horse.age=365 → Math.floor(365/365)=1 → in MILESTONE_AGES
+
+describe('checkForMilestones() — milestone age 14 DB-fixture paths (lines 250-308) (Equoria-rr7)', () => {
+  let masUser;
+  let masHorseNotEligible;
+  let masHorseEligible;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+    masUser = await prisma.user.create({
+      data: {
+        email: `mas-fixture-${ts}-${rand()}@test.com`,
+        username: `masfix${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'MAS',
+        lastName: 'Fixture',
+        money: 1000,
+      },
+    });
+    // age=0: Math.floor(0/365)=0 → not in MILESTONE_AGES → eligible:false → not-eligible branch
+    masHorseNotEligible = await prisma.horse.create({
+      data: {
+        name: `TestFixture-MAS-NotElig-${ts}`,
+        sex: 'Colt',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: masUser.id,
+      },
+    });
+    // age=365: Math.floor(365/365)=1 → in MILESTONE_AGES, no prior milestone → eligible:true → success branch
+    masHorseEligible = await prisma.horse.create({
+      data: {
+        name: `TestFixture-MAS-Eligible-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
+        age: 365,
+        userId: masUser.id,
+      },
+    });
+  }, 30000);
+
+  afterAll(async () => {
+    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-MAS-' } } }).catch(() => {});
+    await prisma.user.delete({ where: { id: masUser.id } }).catch(() => {});
+  }, 30000);
+
+  it('enters if(horse) block and not-eligible branch (lines 250, 303-306) when horse.age=0', async () => {
+    const result = await checkForMilestones(masHorseNotEligible.id, 13, 14);
+    expect(Array.isArray(result.milestonesTriggered)).toBe(true);
+    expect(result.retirementTriggered).toBe(false);
+    expect(result.traitsAssigned).toEqual([]);
+  });
+
+  it('enters if(horse) block and eligible+success branch (lines 254-296) when horse.age=365', async () => {
+    const result = await checkForMilestones(masHorseEligible.id, 13, 14);
+    expect(Array.isArray(result.milestonesTriggered)).toBe(true);
+    expect(result.retirementTriggered).toBe(false);
+    expect(Array.isArray(result.traitsAssigned)).toBe(true);
+  });
+});
+
+// ── processHorseBirthdays — dryRun else-branch (lines 416-417) ───────────────────
+// Requires: specificHorseId with calculatedAge > storedAge + dryRun:true
+
+describe('processHorseBirthdays() — dryRun else-branch (lines 416-417) (Equoria-rr7)', () => {
+  let pbUser;
+  let pbHorse;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+    pbUser = await prisma.user.create({
+      data: {
+        email: `pb-fixture-${ts}-${rand()}@test.com`,
+        username: `pbfix${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'PB',
+        lastName: 'Fixture',
+        money: 1000,
+      },
+    });
+    // born 1 day ago, age=0 → calculatedAge(1) !== storedAge(0) → birthdaysFound++ then dryRun branch
+    pbHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-PB-DryRun-${ts}`,
+        sex: 'Colt',
+        dateOfBirth: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+        age: 0,
+        userId: pbUser.id,
+      },
+    });
+  }, 30000);
+
+  afterAll(async () => {
+    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-PB-' } } }).catch(() => {});
+    await prisma.user.delete({ where: { id: pbUser.id } }).catch(() => {});
+  }, 30000);
+
+  it('covers dryRun else-branch (lines 416-417): birthdaysFound>=1, results=[] when dryRun:true', async () => {
+    const result = await processHorseBirthdays({ specificHorseId: pbHorse.id, dryRun: true });
+    expect(result.birthdaysFound).toBeGreaterThanOrEqual(1);
+    expect(result.totalProcessed).toBeGreaterThanOrEqual(1);
+    expect(Array.isArray(result.results)).toBe(true);
+    expect(result.results).toHaveLength(0);
+    expect(typeof result.duration).toBe('number');
+  });
+});
