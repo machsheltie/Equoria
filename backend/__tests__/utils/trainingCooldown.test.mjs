@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { canTrain, getCooldownTimeRemaining, formatCooldown } from '../../utils/trainingCooldown.mjs';
+import { canTrain, getCooldownTimeRemaining, formatCooldown, setCooldown } from '../../utils/trainingCooldown.mjs';
 
 const pastDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(); // yesterday
 const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // +7 days
@@ -84,5 +84,30 @@ describe('formatCooldown', () => {
   it('formats 0 minutes as "0 minute(s) remaining" for sub-minute amounts', () => {
     const ms = 30 * 1000; // 30 seconds
     expect(formatCooldown(ms)).toBe('0 minute(s) remaining');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// setCooldown — pure validation branches (no DB — throws before Prisma call)
+// ---------------------------------------------------------------------------
+describe('setCooldown — pure validation branches (Equoria-jkht)', () => {
+  it('throws when horseId is null (horseId===null||undefined true-branch)', async () => {
+    await expect(setCooldown(null)).rejects.toThrow('Horse ID is required');
+  });
+
+  it('throws when horseId is undefined (||undefined true-branch)', async () => {
+    await expect(setCooldown(undefined)).rejects.toThrow('Horse ID is required');
+  });
+
+  it('throws when horseId is a non-numeric string (isNaN true-branch)', async () => {
+    await expect(setCooldown('abc')).rejects.toThrow('Horse ID must be a valid positive integer');
+  });
+
+  it('throws when horseId is 0 (id<=0 true-branch with isNaN false)', async () => {
+    await expect(setCooldown(0)).rejects.toThrow('Horse ID must be a valid positive integer');
+  });
+
+  it('throws when horseId is negative (id<=0 true-branch)', async () => {
+    await expect(setCooldown(-5)).rejects.toThrow('Horse ID must be a valid positive integer');
   });
 });

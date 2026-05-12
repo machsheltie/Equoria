@@ -324,3 +324,131 @@ describe('applyTraitToHorse — error catch branch (lines 288-291)', () => {
     expect(() => applyTraitToHorse(horse, 'calm', { epigenetic: true })).toThrow();
   });
 });
+
+// ---------------------------------------------------------------------------
+// Uncovered branch targets (Equoria-jkht)
+// ---------------------------------------------------------------------------
+
+describe('evaluateTraitMilestones — task_log||[] right-branch', () => {
+  it('horse with no task_log property exercises task_log||[] right-branch', () => {
+    // task_log is absent → task_log || [] defaults to [] → empty scores → no traits
+    const horse = {
+      id: 1,
+      age: AGE_YEAR_1,
+      trait_milestones: {},
+      epigeneticModifiers: { positive: [], negative: [], hidden: [], epigenetic: [] },
+    };
+    const result = evaluateTraitMilestones(horse);
+    expect(result.success).toBe(true);
+    expect(result.traitsApplied).toHaveLength(0);
+  });
+});
+
+describe('evaluateTraitMilestones — traitResult.applied false-branches', () => {
+  it('positive trait already present: traitResult.applied=false branch at line 118', () => {
+    // brushing x3 → bonded score=3 (=POSITIVE_THRESHOLD), patient score=3
+    // pre-seed bonded → applyTraitToHorse returns applied=false for bonded
+    const horse = emptyHorse(AGE_YEAR_2);
+    horse.task_log = [{ task: BRUSHING }, { task: BRUSHING }, { task: BRUSHING }];
+    horse.epigeneticModifiers.positive = ['bonded']; // already has bonded
+    const result = evaluateTraitMilestones(horse);
+    // bonded won't be applied (false branch) but patient will be
+    expect(result.success).toBe(true);
+    const names = result.traitsApplied.map(t => t.name);
+    expect(names).not.toContain('bonded');
+    expect(names).toContain('patient');
+  });
+
+  it('resistance trait already present: traitResult.applied=false branch at line 136', () => {
+    // brushing x3 → aloof score=-3 (=NEGATIVE_THRESHOLD) → resists_aloof
+    // pre-seed resists_aloof → applyTraitToHorse returns applied=false
+    const horse = emptyHorse(AGE_YEAR_2);
+    horse.task_log = [{ task: BRUSHING }, { task: BRUSHING }, { task: BRUSHING }];
+    horse.epigeneticModifiers.negative = ['resists_aloof']; // already has it
+    const result = evaluateTraitMilestones(horse);
+    const names = result.traitsApplied.map(t => t.name);
+    expect(names).not.toContain('resists_aloof');
+  });
+});
+
+describe('applyTraitToHorse — default metadata parameter branch', () => {
+  it('calling without 3rd argument exercises metadata={} default parameter', () => {
+    const horse = emptyHorse(AGE_YEAR_1);
+    const result = applyTraitToHorse(horse, 'calm');
+    // metadata defaults to {} → epigenetic=false, source='milestone_evaluation'
+    expect(result.applied).toBe(true);
+    expect(horse.epigeneticModifiers.positive).toContain('calm');
+  });
+});
+
+describe('hasExistingTraitInHorse — sparse epigeneticModifiers || [] branches', () => {
+  it('missing negative array exercises negative||[] right-branch (uses resists_ trait to push to negative)', () => {
+    // no negative key → negative||[] right-branch covered; push goes to negative after being created by code
+    // We apply 'resists_brave' (starts with resists_) so push targets negative, which we provide
+    const horse = {
+      id: 1,
+      epigeneticModifiers: { positive: ['something_else'], negative: [], hidden: [], epigenetic: [] },
+    };
+    // Remove negative to trigger the || [] branch during hasExistingTraitInHorse check
+    // but restore type so push succeeds — achieved by setting negative: undefined for CHECK
+    // and then code uses || default ... actually we need a different approach:
+    // Pass epigeneticModifiers with negative explicitly undefined but positive present
+    horse.epigeneticModifiers = { positive: ['something_else'] };
+    // Apply a resists_ trait — check uses positive||[] (found) + negative||[] (undefined→[]) etc.
+    // But push target: since resists_ → tries negative.push(), negative is undefined → throws
+    // Switch to non-resists trait, push goes to positive which IS present
+    horse.epigeneticModifiers = { positive: [], negative: undefined, hidden: [], epigenetic: [] };
+    // 'calm' is non-resists, non-epigenetic → push to positive (which exists as [])
+    // check: positive||[] → [] (left branch, fine); negative||[] → undefined→[] (right branch covered)
+    const result = applyTraitToHorse(horse, 'calm', { epigenetic: false });
+    expect(result.applied).toBe(true);
+    expect(horse.epigeneticModifiers.positive).toContain('calm');
+  });
+
+  it('missing hidden array exercises hidden||[] right-branch', () => {
+    const horse = {
+      id: 1,
+      epigeneticModifiers: { positive: [], negative: [], hidden: undefined, epigenetic: [] },
+    };
+    const result = applyTraitToHorse(horse, 'brave', { epigenetic: false });
+    expect(result.applied).toBe(true);
+  });
+
+  it('missing epigenetic array exercises epigenetic||[] right-branch', () => {
+    const horse = {
+      id: 1,
+      epigeneticModifiers: { positive: [], negative: [], hidden: [], epigenetic: undefined },
+    };
+    const result = applyTraitToHorse(horse, 'resilient', { epigenetic: false });
+    expect(result.applied).toBe(true);
+  });
+
+  it('missing positive array exercises positive||[] right-branch (uses resists_ to push to negative)', () => {
+    // positive is falsy → positive||[] right-branch covered; push targets negative (present)
+    const horse = {
+      id: 1,
+      epigeneticModifiers: { positive: undefined, negative: [], hidden: [], epigenetic: [] },
+    };
+    // 'resists_calm' starts with 'resists_' → push to negative (negative exists)
+    const result = applyTraitToHorse(horse, 'resists_calm', { epigenetic: false });
+    expect(result.applied).toBe(true);
+    expect(horse.epigeneticModifiers.negative).toContain('resists_calm');
+  });
+});
+
+describe('getMilestoneSummary — trait_milestones||{} right-branch', () => {
+  it('horse with null trait_milestones exercises || {} right-branch', () => {
+    const horse = { id: 1, age: AGE_YEAR_1, trait_milestones: null };
+    const summary = getMilestoneSummary(horse);
+    expect(Array.isArray(summary.completedMilestones)).toBe(true);
+    expect(summary.completedMilestones).toHaveLength(0);
+  });
+
+  it('horse with undefined trait_milestones exercises || {} right-branch', () => {
+    const horse = { id: 1, age: AGE_YEAR_2 };
+    const summary = getMilestoneSummary(horse);
+    expect(summary.completedMilestones).toHaveLength(0);
+    expect(summary.pendingMilestones).toContain('age_1');
+    expect(summary.pendingMilestones).toContain('age_2');
+  });
+});
