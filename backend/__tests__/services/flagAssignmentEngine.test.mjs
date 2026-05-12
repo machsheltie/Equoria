@@ -244,6 +244,121 @@ describe('calculateFlagAssignmentScore', () => {
   });
 });
 
+// ── evaluateFlagTriggers — trigger function branch coverage (Equoria-jkht) ────
+// Covers: evaluateAffectionateTriggers triggered=true, evaluateConfidentTriggers
+// triggered=true, evaluateFearfulTriggers triggered=true, evaluateInsecureTriggers
+// triggered=true, evaluateGenericTriggers POSITIVE triggered=true (resilient),
+// evaluateGenericTriggers NEGATIVE triggered=true (aloof),
+// hasConflictingFlags returns true (brave skipped when horse has fearful).
+
+describe('evaluateFlagTriggers — trigger branch coverage (Equoria-jkht)', () => {
+  it('evaluateAffectionateTriggers triggered=true: frequent care + consistent groom + improving bond', async () => {
+    const h = makeHorsePOJO({ epigeneticFlags: [] });
+    const care = makeCarePatterns({
+      consistency: { consistencyScore: 0.9, averageInteractionsPerDay: 1.0, qualityInteractions: 10, careGaps: [] },
+      bondTrends: { trend: 'improving', averageChange: 2, positiveRatio: 0.8, positiveInteractions: 10 },
+      groomConsistency: { consistencyScore: 0.9, groomChanges: 0 },
+      stressPatterns: { averageReduction: -0.5, stressSpikes: [] },
+      taskDiversity: { diversity: 0.4, excellentQualityRatio: 0.3 },
+      neglectPatterns: { neglectRatio: 0.1 },
+    });
+    const result = await evaluateFlagTriggers(h, care);
+    expect(result.eligibleFlags).toContain('affectionate');
+  });
+
+  it('evaluateConfidentTriggers triggered=true: high bond growth + low stress + task diversity', async () => {
+    const h = makeHorsePOJO({ epigeneticFlags: [], stressLevel: 3 });
+    const care = makeCarePatterns({
+      bondTrends: { trend: 'improving', averageChange: 2.0, positiveRatio: 0.5, positiveInteractions: 5 },
+      taskDiversity: { diversity: 0.7, excellentQualityRatio: 0.6 },
+      consistency: { consistencyScore: 0.5, averageInteractionsPerDay: 0.5, qualityInteractions: 3, careGaps: [] },
+      stressPatterns: { averageReduction: -0.5, stressSpikes: [] },
+      groomConsistency: { consistencyScore: 0.5, groomChanges: 1 },
+      neglectPatterns: { neglectRatio: 0.1 },
+    });
+    const result = await evaluateFlagTriggers(h, care);
+    expect(result.eligibleFlags).toContain('confident');
+  });
+
+  it('evaluateFearfulTriggers triggered=true: many stress spikes + poor stress management', async () => {
+    const h = makeHorsePOJO({ epigeneticFlags: [] });
+    const care = makeCarePatterns({
+      stressPatterns: { averageReduction: -0.3, stressSpikes: [1, 2, 3, 4] },
+      consistency: { consistencyScore: 0.5, averageInteractionsPerDay: 0.5, qualityInteractions: 2, careGaps: [] },
+      bondTrends: { trend: 'stable', averageChange: 0.5, positiveRatio: 0.5, positiveInteractions: 3 },
+      taskDiversity: { diversity: 0.4, excellentQualityRatio: 0.3 },
+      groomConsistency: { consistencyScore: 0.5, groomChanges: 1 },
+      neglectPatterns: { neglectRatio: 0.1 },
+    });
+    const result = await evaluateFlagTriggers(h, care);
+    expect(result.eligibleFlags).toContain('fearful');
+  });
+
+  it('evaluateInsecureTriggers triggered=true: frequent groom changes + declining bond', async () => {
+    const h = makeHorsePOJO({ epigeneticFlags: [] });
+    const care = makeCarePatterns({
+      groomConsistency: { consistencyScore: 0.3, groomChanges: 3 },
+      bondTrends: { trend: 'declining', averageChange: -1, positiveRatio: 0.5, positiveInteractions: 2 },
+      consistency: { consistencyScore: 0.5, averageInteractionsPerDay: 0.5, qualityInteractions: 2, careGaps: [] },
+      stressPatterns: { averageReduction: -0.5, stressSpikes: [] },
+      taskDiversity: { diversity: 0.4, excellentQualityRatio: 0.3 },
+      neglectPatterns: { neglectRatio: 0.1 },
+    });
+    const result = await evaluateFlagTriggers(h, care);
+    expect(result.eligibleFlags).toContain('insecure');
+  });
+
+  it('evaluateGenericTriggers POSITIVE triggered=true: resilient flag with good care', async () => {
+    const h = makeHorsePOJO({ epigeneticFlags: [] });
+    const care = makeCarePatterns({
+      consistency: { consistencyScore: 0.8, averageInteractionsPerDay: 1.0, qualityInteractions: 10, careGaps: [] },
+      bondTrends: { trend: 'improving', averageChange: 2.0, positiveRatio: 0.8, positiveInteractions: 10 },
+      taskDiversity: { diversity: 0.7, excellentQualityRatio: 0.6 },
+      stressPatterns: { averageReduction: -2, stressSpikes: [] },
+      groomConsistency: { consistencyScore: 0.85, groomChanges: 0 },
+      neglectPatterns: { neglectRatio: 0.05 },
+    });
+    const result = await evaluateFlagTriggers(h, care);
+    // resilient falls to default case → evaluateGenericTriggers (POSITIVE); goodCare=true + positiveBond=true
+    expect(result.eligibleFlags).toContain('resilient');
+  });
+
+  it('evaluateGenericTriggers NEGATIVE triggered=true: aloof flag with poor care', async () => {
+    const h = makeHorsePOJO({ epigeneticFlags: [] });
+    const care = makeCarePatterns({
+      consistency: {
+        consistencyScore: 0.3,
+        averageInteractionsPerDay: 0.2,
+        qualityInteractions: 1,
+        careGaps: [1, 2, 3],
+      },
+      bondTrends: { trend: 'declining', averageChange: -0.5, positiveRatio: 0.2, positiveInteractions: 1 },
+      stressPatterns: { averageReduction: -0.3, stressSpikes: [] },
+      taskDiversity: { diversity: 0.2, excellentQualityRatio: 0.1 },
+      groomConsistency: { consistencyScore: 0.2, groomChanges: 3 },
+      neglectPatterns: { neglectRatio: 0.4 },
+    });
+    const result = await evaluateFlagTriggers(h, care);
+    // aloof falls to default case → evaluateGenericTriggers (NEGATIVE); poorCare=true (0.3 < 0.4)
+    expect(result.eligibleFlags).toContain('aloof');
+  });
+
+  it('hasConflictingFlags returns true: brave skipped when horse already has fearful', async () => {
+    const h = makeHorsePOJO({ epigeneticFlags: ['fearful'] });
+    const care = makeCarePatterns({
+      consistency: { consistencyScore: 0.95, averageInteractionsPerDay: 1.5, qualityInteractions: 15, careGaps: [] },
+      stressPatterns: { averageReduction: -3, stressSpikes: [] },
+      bondTrends: { trend: 'improving', averageChange: 4, positiveRatio: 0.95, positiveInteractions: 15 },
+      taskDiversity: { diversity: 0.9, excellentQualityRatio: 0.85 },
+      groomConsistency: { consistencyScore: 0.95, groomChanges: 0 },
+      neglectPatterns: { neglectRatio: 0.0 },
+    });
+    const result = await evaluateFlagTriggers(h, care);
+    // brave.conflictsWith includes 'fearful' → hasConflictingFlags returns true → brave skipped
+    expect(result.eligibleFlags).not.toContain('brave');
+  });
+});
+
 // ── calculateFlagAssignmentScore — ageModifier branches (Equoria-jkht) ────────
 // calculateAgeModifier: ≤30→1.5 (covered above), ≤90→1.3, ≤180→1.1, ≤365→1.0, >365→0.8
 
