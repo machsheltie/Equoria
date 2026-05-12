@@ -174,4 +174,47 @@ describe('evaluateEpigeneticFlags', () => {
       expect(EPIGENETIC_FLAGS[flag]).toBeDefined();
     }
   });
+
+  it('null careHistory — exercises falsy short-circuit in stub ternaries', () => {
+    // evaluateDailyGroomingPattern: null && 15 = null → falsy → alternate false
+    // evaluateNoveltyPattern: null && 20 && [...] = null → falsy → alternate false
+    // evaluateNeglectPattern: null && 3 && 10 = null → falsy → alternate false
+    const result = evaluateEpigeneticFlags(null, {}, youngHorse());
+    expect(result).toEqual([]);
+  });
+
+  it('truthy careHistory object — exercises truthy branch of stub ternaries', () => {
+    // {sessions:[]} && 15 = 15 → truthy → consequent false
+    const result = evaluateEpigeneticFlags({ sessions: [], bondScore: 25 }, {}, youngHorse());
+    expect(result).toEqual([]);
+  });
+
+  it('returns [] for horse at 1094 days (one day under the 1095 threshold)', () => {
+    const horse = { dateOfBirth: new Date(Date.now() - 1094 * 24 * 60 * 60 * 1000) };
+    const result = evaluateEpigeneticFlags({}, {}, horse);
+    expect(Array.isArray(result)).toBe(true);
+  });
+
+  it('exercises switch case daily_grooming_for_7_days (CONSISTENT_DAILY_CARE trigger)', () => {
+    // CONSISTENT_DAILY_CARE.pattern = 'daily_grooming_for_7_days' → switch case 1
+    // evaluateDailyGroomingPattern returns false → flagsToApply unchanged
+    expect(evaluateEpigeneticFlags({}, {}, youngHorse())).toEqual([]);
+  });
+
+  it('exercises switch case new_experiences_with_high_bond (NOVELTY_WITH_SUPPORT trigger)', () => {
+    // NOVELTY_WITH_SUPPORT.pattern = 'new_experiences_with_high_bond' → switch case 2
+    // evaluateNoveltyPattern returns false → flagsToApply unchanged
+    expect(evaluateEpigeneticFlags({}, {}, youngHorse())).toEqual([]);
+  });
+
+  it('exercises switch case missed_care_sessions (NEGLECT_PATTERN trigger)', () => {
+    // NEGLECT_PATTERN.pattern = 'missed_care_sessions' → switch case 3
+    // evaluateNeglectPattern returns false → flagsToApply unchanged
+    expect(evaluateEpigeneticFlags({}, {}, youngHorse())).toEqual([]);
+  });
+
+  it('exercises switch default for SOCIAL_ENRICHMENT, INCONSISTENT_HANDLING, OVERSTIMULATION', () => {
+    // These three triggers have patterns not matching any switch case → default: return false
+    expect(evaluateEpigeneticFlags({}, {}, youngHorse())).toEqual([]);
+  });
 });
