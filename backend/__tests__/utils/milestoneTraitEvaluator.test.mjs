@@ -298,3 +298,29 @@ describe('evaluateTraitMilestones', () => {
     expect(typeof result.traitScores).toBe('object');
   });
 });
+
+// ---------------------------------------------------------------------------
+// evaluateTraitMilestones — error catch branch (lines 167-170)
+// ---------------------------------------------------------------------------
+describe('evaluateTraitMilestones — error catch branch (lines 167-170)', () => {
+  it('re-throws when horse is null (triggers catch at line 167 via horse.id TypeError)', () => {
+    // null.id throws in the logger call at the top of the try block.
+    // The catch block logs and re-throws — test confirms the throw propagates.
+    expect(() => evaluateTraitMilestones(null)).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// applyTraitToHorse — error catch branch (lines 288-291)
+// ---------------------------------------------------------------------------
+describe('applyTraitToHorse — error catch branch (lines 288-291)', () => {
+  it('re-throws when epigeneticModifiers lacks epigenetic array (triggers catch at line 288)', () => {
+    // horse.epigeneticModifiers is truthy (so || default is skipped),
+    // but has no `epigenetic` property → currentModifiers.epigenetic.push() throws.
+    const horse = {
+      id: 1,
+      epigeneticModifiers: { positive: [], negative: [], hidden: [] },
+    };
+    expect(() => applyTraitToHorse(horse, 'calm', { epigenetic: true })).toThrow();
+  });
+});
