@@ -241,10 +241,11 @@ describe('runDailyCareAutomation() — main loop body, dryRun path (lines 108-17
     await prisma.user.delete({ where: { id: dcaUser.id } }).catch(() => {});
   }, 30000);
 
-  it('enters loop, skips groom (is_active vs isActive mismatch), returns success with processed >= 1 (lines 108-114)', async () => {
-    // Note: isGroomAvailableToday checks groom.is_active (snake_case) but Prisma returns
-    // groom.isActive (camelCase), so the groom is always considered unavailable from the DB.
-    // This test covers: assignment query, loop entry (line 108), groom-unavailable continue (lines 111-114).
+  it('enters loop, runs groom care routines, returns success with processed >= 1 (lines 108-176)', async () => {
+    // isGroomAvailableToday uses groom.isActive ?? groom.is_active (handles both Prisma camelCase
+    // and plain objects). With a real DB groom (isActive=true), the groom is available and
+    // care routines are executed in dryRun mode.
+    // This test covers: assignment query, loop entry, groom-available path, care execution.
     const result = await runDailyCareAutomation({
       specificFoalId: dcaHorse.id,
       dryRun: true,

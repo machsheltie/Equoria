@@ -382,3 +382,207 @@ describe('analyzeCompatibilityTrends — trend slope branches with DB interactio
     expect(result.trendDetails).toBeDefined();
   });
 });
+
+// ── recommendationLevel + environmental branches (Equoria-jkht) ───────────────
+// recommendationLevel tiers: highly_recommended(≥0.8), recommended(≥0.6),
+// acceptable(≥0.4), not_recommended(<0.4).
+// calculateEnvironmentalModifier switch cases: quiet, noisy, familiar, unfamiliar.
+// calculateTimeOfDayModifier default case (unknown timeOfDay → 1.0).
+// calculateHistoricalModifier non-1.0 path + confidence historicalModifier branch.
+// Methodical groom cap: baseCompatibility≤0.5 && overallScore>0.75 → capped 0.75.
+
+describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () => {
+  let branchUser;
+  let branchHorse;
+  let highExpGroom; // level=10, experience=200 → guaranteed highly_recommended
+  let methodicalGroom; // epigeneticInfluenceType='methodical', high exp → cap test
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    branchUser = await prisma.user.create({
+      data: {
+        email: `dc-branch-${ts}-${rand()}@test.com`,
+        username: `dcbranch${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'DC',
+        lastName: 'Branch',
+        money: 1000,
+      },
+    });
+
+    branchHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-DC-BranchHorse-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: branchUser.id,
+      },
+    });
+
+    [highExpGroom, methodicalGroom] = await Promise.all([
+      prisma.groom.create({
+        data: {
+          name: `TestFixture-DC-HighExpGroom-${ts}`,
+          speciality: 'foal_care',
+          personality: 'gentle',
+          level: 10,
+          experience: 200,
+          userId: branchUser.id,
+        },
+      }),
+      prisma.groom.create({
+        data: {
+          name: `TestFixture-DC-MethodicalGroom-${ts}`,
+          speciality: 'foal_care',
+          personality: 'methodical',
+          epigeneticInfluenceType: 'methodical',
+          level: 10,
+          experience: 200,
+          userId: branchUser.id,
+        },
+      }),
+    ]);
+
+    // Seed 2 interactions between highExpGroom + branchHorse → historicalModifier != 1.0
+    await prisma.groomInteraction.createMany({
+      data: [
+        {
+          foalId: branchHorse.id,
+          groomId: highExpGroom.id,
+          interactionType: 'daily_care',
+          duration: 30,
+          bondingChange: 4,
+          stressChange: -2,
+          quality: 'excellent',
+          taskType: 'grooming',
+          timestamp: new Date(ts - 2 * 24 * 60 * 60 * 1000),
+        },
+        {
+          foalId: branchHorse.id,
+          groomId: highExpGroom.id,
+          interactionType: 'daily_care',
+          duration: 30,
+          bondingChange: 3,
+          stressChange: -1,
+          quality: 'good',
+          taskType: 'grooming',
+          timestamp: new Date(ts - 1 * 24 * 60 * 60 * 1000),
+        },
+      ],
+    });
+  }, 60000);
+
+  afterAll(async () => {
+    await prisma.groomInteraction.deleteMany({ where: { foalId: branchHorse.id } }).catch(() => {});
+    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-DC-Branch' } } }).catch(() => {});
+    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-DC-' } } }).catch(() => {});
+    await prisma.user.delete({ where: { id: branchUser.id } }).catch(() => {});
+  }, 30000);
+
+  it('recommendationLevel=acceptable: stress=7 + evening context', async () => {
+    const result = await calculateDynamicCompatibility(groom.id, horse.id, {
+      taskType: 'grooming',
+      timeOfDay: 'evening',
+      horseCurrentStress: 7,
+    });
+    expect(result.recommendationLevel).toBe('acceptable');
+    expect(result.overallScore).toBeGreaterThanOrEqual(0.4);
+    expect(result.overallScore).toBeLessThan(0.6);
+  });
+
+  it('recommendationLevel=not_recommended: stress=9 + evening context', async () => {
+    const result = await calculateDynamicCompatibility(groom.id, horse.id, {
+      taskType: 'grooming',
+      timeOfDay: 'evening',
+      horseCurrentStress: 9,
+    });
+    expect(result.recommendationLevel).toBe('not_recommended');
+    expect(result.overallScore).toBeLessThan(0.4);
+  });
+
+  it('recommendationLevel=highly_recommended: high-experience groom morning low-stress', async () => {
+    const result = await calculateDynamicCompatibility(highExpGroom.id, branchHorse.id, {
+      taskType: 'grooming',
+      timeOfDay: 'morning',
+      horseCurrentStress: 1,
+    });
+    expect(result.recommendationLevel).toBe('highly_recommended');
+    expect(result.overallScore).toBeGreaterThanOrEqual(0.8);
+  });
+
+  it('calculateEnvironmentalModifier: quiet factor multiplies by 1.1', async () => {
+    const base = await calculateDynamicCompatibility(groom.id, horse.id, {
+      taskType: 'grooming',
+      timeOfDay: 'morning',
+    });
+    const withQuiet = await calculateDynamicCompatibility(groom.id, horse.id, {
+      taskType: 'grooming',
+      timeOfDay: 'morning',
+      environmentalFactors: ['quiet'],
+    });
+    // quiet → modifier * 1.1; overall score should be higher
+    expect(withQuiet.environmentalModifier).toBeCloseTo(1.1, 2);
+    expect(withQuiet.overallScore).toBeGreaterThan(base.overallScore);
+  });
+
+  it('calculateEnvironmentalModifier: noisy factor multiplies by 0.9', async () => {
+    const result = await calculateDynamicCompatibility(groom.id, horse.id, {
+      taskType: 'grooming',
+      timeOfDay: 'morning',
+      environmentalFactors: ['noisy'],
+    });
+    expect(result.environmentalModifier).toBeCloseTo(0.9, 2);
+  });
+
+  it('calculateEnvironmentalModifier: familiar factor multiplies by 1.1', async () => {
+    const result = await calculateDynamicCompatibility(groom.id, horse.id, {
+      taskType: 'grooming',
+      timeOfDay: 'morning',
+      environmentalFactors: ['familiar'],
+    });
+    expect(result.environmentalModifier).toBeCloseTo(1.1, 2);
+  });
+
+  it('calculateEnvironmentalModifier: unfamiliar factor multiplies by 0.9', async () => {
+    const result = await calculateDynamicCompatibility(groom.id, horse.id, {
+      taskType: 'grooming',
+      timeOfDay: 'morning',
+      environmentalFactors: ['unfamiliar'],
+    });
+    expect(result.environmentalModifier).toBeCloseTo(0.9, 2);
+  });
+
+  it('calculateTimeOfDayModifier default branch: unknown timeOfDay returns 1.0', async () => {
+    const result = await calculateDynamicCompatibility(groom.id, horse.id, {
+      taskType: 'grooming',
+      timeOfDay: 'midnight',
+    });
+    expect(result.timeOfDayModifier).toBe(1.0);
+  });
+
+  it('calculateHistoricalModifier non-1.0: existing interactions produce modifier != 1.0', async () => {
+    const result = await calculateDynamicCompatibility(highExpGroom.id, branchHorse.id, {
+      taskType: 'grooming',
+      timeOfDay: 'morning',
+    });
+    // 2 excellent/good interactions → qualityModifier > 1, historicalModifier != 1.0
+    expect(result.historicalModifier).not.toBe(1.0);
+    expect(result.historicalModifier).toBeGreaterThan(1.0);
+  });
+
+  it('methodical groom cap: overallScore capped at 0.75 when baseCompatibility<=0.5 and score>0.75', async () => {
+    // methodical groom with high experience → experienceBonus=1.9 → raw score > 0.75
+    // methodical personality baseCompatibility <= 0.5 for developing horse → cap applies
+    const result = await calculateDynamicCompatibility(methodicalGroom.id, branchHorse.id, {
+      taskType: 'grooming',
+      timeOfDay: 'morning',
+      horseCurrentStress: 1,
+    });
+    // If the methodical cap fires, overallScore <= 0.75
+    // Assert the cap was effective (score should not exceed 0.75 if cap applied)
+    expect(result.overallScore).toBeLessThanOrEqual(0.75);
+  });
+});

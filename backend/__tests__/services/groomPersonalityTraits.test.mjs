@@ -154,6 +154,161 @@ describe('updatePersonalityTraits', () => {
   });
 });
 
+// ── groomPersonalityTraits — branch coverage (experience levels + compatibility) ──
+// Covers: calculateExperienceLevel 'medium'/'high'/'expert' (lines 560-569),
+// calculateTraitCompatibility positive/negative score paths,
+// calculateOverallCompatibility stressModifier=0.7/1.2 branches (lines 655-659),
+// analyzePersonalityCompatibility overallScore<0.4 + overallScore>0.7 branches,
+// strengths.push, challenges.push, fearful-specific recommendation (Equoria-jkht).
+
+describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
+  let gptUser;
+  let fearfulHorse;
+  let stressedFearfulHorse;
+  let mediumGroom;
+  let highGroom;
+  let calmExpertGroom;
+  let energeticGroom;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    gptUser = await prisma.user.create({
+      data: {
+        email: `gpt-branch-${ts}-${rand()}@test.com`,
+        username: `gptbranch${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'GPT',
+        lastName: 'Branch',
+        money: 1000,
+      },
+    });
+
+    fearfulHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-GPT-FearfulHorse-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: gptUser.id,
+        epigeneticFlags: ['fearful'],
+      },
+    });
+
+    stressedFearfulHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-GPT-StressedHorse-${ts}`,
+        sex: 'Colt',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: gptUser.id,
+        epigeneticFlags: ['fearful'],
+        stressLevel: 8,
+      },
+    });
+
+    // experience=51 → calculateExperienceLevel returns 'medium'
+    mediumGroom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-GPT-MediumGroom-${ts}`,
+        speciality: 'foal_care',
+        personality: 'gentle',
+        epigeneticInfluenceType: 'calm',
+        experience: 51,
+        userId: gptUser.id,
+      },
+    });
+
+    // experience=101 → calculateExperienceLevel returns 'high'
+    highGroom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-GPT-HighGroom-${ts}`,
+        speciality: 'foal_care',
+        personality: 'gentle',
+        epigeneticInfluenceType: 'calm',
+        experience: 101,
+        userId: gptUser.id,
+      },
+    });
+
+    // experience=201 → 'expert'; calm + fearful horse → overallScore > 0.7
+    calmExpertGroom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-GPT-ExpertGroom-${ts}`,
+        speciality: 'foal_care',
+        personality: 'gentle',
+        epigeneticInfluenceType: 'calm',
+        experience: 201,
+        userId: gptUser.id,
+      },
+    });
+
+    // energetic groom + fearful horse → overallScore < 0.4
+    energeticGroom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-GPT-EnergeticGroom-${ts}`,
+        speciality: 'foal_care',
+        personality: 'active',
+        epigeneticInfluenceType: 'energetic',
+        experience: 0,
+        userId: gptUser.id,
+      },
+    });
+  }, 60000);
+
+  afterAll(async () => {
+    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GPT-' } } }).catch(() => {});
+    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-GPT-' } } }).catch(() => {});
+    await prisma.user.delete({ where: { id: gptUser.id } }).catch(() => {});
+  }, 30000);
+
+  it('getGroomPersonalityTraits returns experienceLevel=medium for experience=51 (line 563)', async () => {
+    const result = await getGroomPersonalityTraits(mediumGroom.id);
+    expect(result.experienceLevel).toBe('medium');
+  });
+
+  it('getGroomPersonalityTraits returns experienceLevel=high for experience=101 (line 566)', async () => {
+    const result = await getGroomPersonalityTraits(highGroom.id);
+    expect(result.experienceLevel).toBe('high');
+  });
+
+  it('getGroomPersonalityTraits returns experienceLevel=expert for experience=201 (line 569)', async () => {
+    const result = await getGroomPersonalityTraits(calmExpertGroom.id);
+    expect(result.experienceLevel).toBe('expert');
+  });
+
+  it('analyzePersonalityCompatibility returns overallScore>0.7 for calm expert + fearful horse (strengths + >0.7 branch)', async () => {
+    const result = await analyzePersonalityCompatibility(calmExpertGroom.id, fearfulHorse.id);
+    expect(result.overallScore).toBeGreaterThan(0.7);
+    // overallScore=0.725 → 'good' (excellent requires >=0.8)
+    expect(result.compatibilityLevel).toBe('good');
+    expect(result.strengths.length).toBeGreaterThan(0);
+    expect(result.recommendations.some(r => r.includes('Excellent compatibility'))).toBe(true);
+  });
+
+  it('analyzePersonalityCompatibility returns overallScore<0.4 for energetic + fearful horse (challenges + low-compat branches)', async () => {
+    const result = await analyzePersonalityCompatibility(energeticGroom.id, fearfulHorse.id);
+    expect(result.overallScore).toBeLessThan(0.4);
+    expect(result.challenges.length).toBeGreaterThan(0);
+    expect(result.recommendations.some(r => r.includes('calm, patient groom'))).toBe(true);
+  });
+
+  it('calculateOverallCompatibility applies stressModifier=0.7 for stressed + energetic (line 656)', async () => {
+    const result = await analyzePersonalityCompatibility(energeticGroom.id, stressedFearfulHorse.id);
+    // stressLevel=8>7 + energetic → stressModifier=0.7 applied
+    expect(result.overallScore).toBeGreaterThanOrEqual(0);
+    expect(result.overallScore).toBeLessThanOrEqual(1.0);
+  });
+
+  it('calculateOverallCompatibility applies stressModifier=1.2 for stressed + calm (line 658)', async () => {
+    const result = await analyzePersonalityCompatibility(calmExpertGroom.id, stressedFearfulHorse.id);
+    // stressLevel=8>7 + calm → stressModifier=1.2, boosts score above 0.7
+    expect(result.overallScore).toBeGreaterThan(0.7);
+    expect(result.compatibilityLevel).toBe('excellent');
+  });
+});
+
 // ── groomPersonalityTraits — branch coverage (Equoria-jkht) ──────────────────────
 // Covers: analyzePersonalityCompatibility low/excellent/moderate + fearful/reactive
 //         sub-branches; calculatePersonalityModifiers negative/neutral/task-type

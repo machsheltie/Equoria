@@ -286,7 +286,8 @@ async function performAutomaticCare(assignment, routine) {
  */
 export function isGroomAvailableToday(groom) {
   try {
-    if (!groom.is_active) {
+    const groomIsActive = groom.isActive ?? groom.is_active;
+    if (!groomIsActive) {
       return false;
     }
 
