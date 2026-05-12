@@ -591,4 +591,111 @@ describe('validateRateLimit', () => {
     expect(result.allowed).toBe(true);
     expect(global.rateLimitStore).toBeDefined();
   });
+
+  it('expired requests are pruned from the window (filter false-branch)', () => {
+    if (!global.rateLimitStore) global.rateLimitStore = new Map();
+    // Inject a 2-minute-old timestamp — outside 60s window
+    global.rateLimitStore.set('expUser_expOp', [Date.now() - 120_000]);
+    const result = validateRateLimit('expUser', 'expOp', 2, 60_000);
+    // Old timestamp filtered out → only 1 new request now → 2-1=1 remaining
+    expect(result.allowed).toBe(true);
+    expect(result.remaining).toBe(1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateHorseData — NaN and financial branches
+// ---------------------------------------------------------------------------
+describe('validateHorseData — NaN and financial branches', () => {
+  it('NaN age (non-numeric string) exercises isNaN(age) true-branch', () => {
+    const { isValid, errors } = validateHorseData({ age: 'old' });
+    expect(isValid).toBe(false);
+    expect(errors.some(e => e.includes('age'))).toBe(true);
+  });
+
+  it('NaN stat value (non-numeric string) exercises isNaN(value) true-branch in stat loop', () => {
+    const { isValid, errors } = validateHorseData({ speed: 'fast' });
+    expect(isValid).toBe(false);
+    expect(errors.some(e => e.includes('speed'))).toBe(true);
+  });
+
+  it('NaN total_earnings exercises isNaN(earnings) true-branch', () => {
+    const { isValid } = validateHorseData({ total_earnings: 'lots' });
+    expect(isValid).toBe(false);
+  });
+
+  it('NaN stud_fee exercises isNaN(fee) true-branch', () => {
+    const { isValid } = validateHorseData({ stud_fee: 'free' });
+    expect(isValid).toBe(false);
+  });
+
+  it('NaN sale_price exercises isNaN(price) true-branch', () => {
+    const { isValid } = validateHorseData({ sale_price: 'priceless' });
+    expect(isValid).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validatePlayerData — NaN numeric field branches
+// ---------------------------------------------------------------------------
+describe('validatePlayerData — NaN numeric field branches', () => {
+  it('NaN money (non-numeric string) exercises isNaN(money) true-branch', () => {
+    const { isValid, errors } = validatePlayerData({ money: 'lots' });
+    expect(isValid).toBe(false);
+    expect(errors.some(e => e.toLowerCase().includes('money'))).toBe(true);
+  });
+
+  it('NaN level (non-numeric string) exercises isNaN(level) true-branch', () => {
+    const { isValid, errors } = validatePlayerData({ level: 'top' });
+    expect(isValid).toBe(false);
+    expect(errors.some(e => e.toLowerCase().includes('level'))).toBe(true);
+  });
+
+  it('NaN xp (non-numeric string) exercises isNaN(xp) true-branch', () => {
+    const { isValid, errors } = validatePlayerData({ xp: 'many' });
+    expect(isValid).toBe(false);
+    expect(errors.some(e => e.toLowerCase().includes('xp'))).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateTrainingData — invalid horseId within else-branch
+// ---------------------------------------------------------------------------
+describe('validateTrainingData — invalid horseId branches', () => {
+  it('negative horseId exercises horseId<=0 true-branch within else', () => {
+    const { isValid, errors } = validateTrainingData({ horseId: -1, discipline: 'Racing' });
+    expect(isValid).toBe(false);
+    expect(errors.some(e => e.toLowerCase().includes('horse'))).toBe(true);
+  });
+
+  it('NaN horseId (string) exercises isNaN(horseId) true-branch within else', () => {
+    const { isValid, errors } = validateTrainingData({ horseId: 'abc', discipline: 'Racing' });
+    expect(isValid).toBe(false);
+    expect(errors.some(e => e.toLowerCase().includes('horse'))).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateBreedingData — NaN damId branch
+// ---------------------------------------------------------------------------
+describe('validateBreedingData — NaN damId branch', () => {
+  it('NaN damId (string) exercises isNaN(damId) true-branch', () => {
+    const { isValid, errors } = validateBreedingData({ sireId: 1, damId: 'xyz' });
+    expect(isValid).toBe(false);
+    expect(errors.some(e => e.toLowerCase().includes('dam'))).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateFileUpload — missing filename fallback branch
+// ---------------------------------------------------------------------------
+describe('validateFileUpload — filename fallback branch', () => {
+  it('file with no originalname and no name exercises ||"" fallback branch', () => {
+    // originalname: undefined, name: undefined → fileName = '' → regex fails → error
+    const result = validateFileUpload({ size: 512, mimetype: 'image/png' });
+    expect(result.isValid).toBe(false);
+    expect(result.errors.some(e => e.toLowerCase().includes('file name') || e.toLowerCase().includes('filename'))).toBe(
+      true,
+    );
+  });
 });
