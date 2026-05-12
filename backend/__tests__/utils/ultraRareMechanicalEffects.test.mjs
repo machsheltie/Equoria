@@ -463,3 +463,151 @@ describe('hasUltraRareAbility', () => {
     expect(hasUltraRareAbility({}, 'stress_immunity')).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// null-horse catch blocks — one test per exported function (lines 92-93,
+// 144-147, 241-242, 377-380, 471-472, 538-539, 611-612, 682-683)
+// ---------------------------------------------------------------------------
+describe('null-horse catch blocks', () => {
+  it('applyUltraRareStressEffects — catch (92-93): returns safe default when horse is null', () => {
+    const result = applyUltraRareStressEffects(null, 50);
+    expect(result.originalStress).toBe(50);
+    expect(result.modifiedStress).toBe(50);
+    expect(result.appliedEffects).toEqual([]);
+    expect(result.totalReduction).toBe(0);
+  });
+
+  it('applyUltraRareStressDecayEffects — catch (144-147): returns safe default when horse is null', () => {
+    const result = applyUltraRareStressDecayEffects(null, 10);
+    expect(result.originalDecay).toBe(10);
+    expect(result.modifiedDecay).toBe(10);
+    expect(result.appliedEffects).toEqual([]);
+    expect(result.totalBonus).toBe(0);
+  });
+
+  it('applyUltraRareTrainingEffects — catch (241-242): returns safe default when horse is null', () => {
+    const trainingData = { success: false };
+    const result = applyUltraRareTrainingEffects(null, trainingData);
+    expect(result.originalTrainingData).toBe(trainingData);
+    expect(result.modifiedTrainingData).toBe(trainingData);
+    expect(result.appliedEffects).toEqual([]);
+  });
+
+  it('applyUltraRareCompetitionEffects — catch (377-380): returns safe default when horse is null', () => {
+    const result = applyUltraRareCompetitionEffects(null, 70);
+    expect(result.originalScore).toBe(70);
+    expect(result.modifiedScore).toBe(70);
+    expect(result.appliedEffects).toEqual([]);
+    expect(result.totalBonus).toBe(0);
+  });
+
+  it('applyUltraRareBondingEffects — catch (471-472): returns safe default when horse is null', () => {
+    const result = applyUltraRareBondingEffects(null, 5);
+    expect(result.originalBondChange).toBe(5);
+    expect(result.modifiedBondChange).toBe(5);
+    expect(result.appliedEffects).toEqual([]);
+    expect(result.totalModification).toBe(0);
+  });
+
+  it('applyUltraRareBurnoutEffects — catch (538-539): returns safe default when horse is null', () => {
+    const result = applyUltraRareBurnoutEffects(null, 7);
+    expect(result.originalBurnoutDays).toBe(7);
+    expect(result.modifiedBurnoutDays).toBe(7);
+    expect(result.appliedEffects).toEqual([]);
+    expect(result.totalReduction).toBe(0);
+  });
+
+  it('applyUltraRareStatEffects — catch (611-612): returns safe default when horse is null', () => {
+    const baseStats = { speed: 50 };
+    const result = applyUltraRareStatEffects(null, baseStats);
+    expect(result.originalStats).toBe(baseStats);
+    expect(result.modifiedStats).toBe(baseStats);
+    expect(result.appliedEffects).toEqual([]);
+  });
+
+  it('hasUltraRareAbility — catch (682-683): returns false when horse is null', () => {
+    expect(hasUltraRareAbility(null, 'stress_immunity')).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// phantom-trait continue branches — trait with no definition skips loop body
+// (lines 119, 173, 268, 407, 498, 565, 634)
+// ---------------------------------------------------------------------------
+describe('phantom-trait continue branches (no trait definition found)', () => {
+  const phantomHorse = {
+    ultraRareTraits: {
+      ultraRare: [{ name: 'nonexistent_trait_xyz_phantom' }],
+      exotic: [],
+    },
+  };
+
+  it('applyUltraRareStressDecayEffects continue (119): phantom trait skips loop body', () => {
+    const result = applyUltraRareStressDecayEffects(phantomHorse, 10);
+    expect(result.modifiedDecay).toBe(10);
+    expect(result.appliedEffects).toEqual([]);
+  });
+
+  it('applyUltraRareTrainingEffects continue (173): phantom trait skips loop body', () => {
+    const result = applyUltraRareTrainingEffects(phantomHorse, { success: true });
+    expect(result.appliedEffects).toEqual([]);
+  });
+
+  it('applyUltraRareCompetitionEffects continue (268): phantom trait skips loop body', () => {
+    const result = applyUltraRareCompetitionEffects(phantomHorse, 70);
+    expect(result.modifiedScore).toBe(70);
+    expect(result.appliedEffects).toEqual([]);
+  });
+
+  it('applyUltraRareBondingEffects continue (407): phantom trait skips loop body', () => {
+    const result = applyUltraRareBondingEffects(phantomHorse, 5);
+    expect(result.modifiedBondChange).toBe(5);
+    expect(result.appliedEffects).toEqual([]);
+  });
+
+  it('applyUltraRareBurnoutEffects continue (498): phantom trait skips loop body', () => {
+    const result = applyUltraRareBurnoutEffects(phantomHorse, 7);
+    expect(result.modifiedBurnoutDays).toBe(7);
+    expect(result.appliedEffects).toEqual([]);
+  });
+
+  it('applyUltraRareStatEffects continue (565): phantom trait skips loop body', () => {
+    const result = applyUltraRareStatEffects(phantomHorse, { speed: 50 });
+    expect(result.modifiedStats.speed).toBe(50);
+    expect(result.appliedEffects).toEqual([]);
+  });
+
+  it('hasUltraRareAbility continue (634): phantom trait skips loop body → returns false', () => {
+    expect(hasUltraRareAbility(phantomHorse, 'stress_immunity')).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// hasUltraRareAbility switch break branches — trait has mechanicalEffects
+// but not the specific ability checked (lines 644, 654, 659, 664, 669, 674)
+// ---------------------------------------------------------------------------
+describe('hasUltraRareAbility — switch break branches', () => {
+  it('stress_immunity break (644): phoenix-born lacks stressImmunity → returns false', () => {
+    expect(hasUltraRareAbility(withUltraRare('phoenix-born'), 'stress_immunity')).toBe(false);
+  });
+
+  it('training_fatigue_immunity break (654): phoenix-born lacks trainingFatigueImmunity → returns false', () => {
+    expect(hasUltraRareAbility(withUltraRare('phoenix-born'), 'training_fatigue_immunity')).toBe(false);
+  });
+
+  it('weather_immunity break (659): phoenix-born lacks weatherImmunity → returns false', () => {
+    expect(hasUltraRareAbility(withUltraRare('phoenix-born'), 'weather_immunity')).toBe(false);
+  });
+
+  it('mystical_resilience break (664): phoenix-born lacks mysticalResilience → returns false', () => {
+    expect(hasUltraRareAbility(withUltraRare('phoenix-born'), 'mystical_resilience')).toBe(false);
+  });
+
+  it('exclusive_bonding break (669): phoenix-born lacks exclusiveBonding → returns false', () => {
+    expect(hasUltraRareAbility(withUltraRare('phoenix-born'), 'exclusive_bonding')).toBe(false);
+  });
+
+  it('reassignment_impossible break (674): phoenix-born lacks reassignmentImpossible → returns false', () => {
+    expect(hasUltraRareAbility(withUltraRare('phoenix-born'), 'reassignment_impossible')).toBe(false);
+  });
+});
