@@ -324,5 +324,39 @@ describe('logger robustness (21R-OBS-3)', () => {
       expect(line).toContain('[Test] toJSON-throw');
       expect(line).toContain('[unserializable meta: Error:');
     });
+
+    it('line 43: null value inside metadata takes null/undefined return branch', () => {
+      // preprocessMetaValue line 42-43: `if (value === null || value === undefined) return value`
+      // The TRUE branch fires when a null or undefined property value is
+      // encountered during recursive traversal of the metadata object.
+      logger.warn('[Test] null-value-cov', { key: null, other: undefined });
+      expect(capturedLines).toHaveLength(1);
+      const line = capturedLines[0];
+      expect(line).toContain('[Test] null-value-cov');
+    });
+
+    it('line 61: circular reference in metadata triggers seen.has() TRUE branch (throws TypeError)', () => {
+      // preprocessMetaValue lines 60-62: if (seen.has(value)) throw TypeError
+      // The circular-ref path fires when an object appears twice in the
+      // traversal (parent → child → back to parent). buildMetaSuffix's catch
+      // then records it as an unserializable marker.
+      const circ = {};
+      circ.self = circ; // circular reference
+      logger.warn('[Test] circular-cov', { data: circ });
+      expect(capturedLines).toHaveLength(1);
+      const line = capturedLines[0];
+      expect(line).toContain('[Test] circular-cov');
+      expect(line).toContain('[unserializable meta:');
+    });
+
+    it('line 65: Array value in metadata takes Array.isArray() TRUE branch', () => {
+      // preprocessMetaValue line 64-65: if (Array.isArray(value)) return value.map(...)
+      // Pass an array as a nested metadata value to trigger the array branch.
+      logger.warn('[Test] array-value-cov', { tags: ['alpha', 'beta', 'gamma'] });
+      expect(capturedLines).toHaveLength(1);
+      const line = capturedLines[0];
+      expect(line).toContain('[Test] array-value-cov');
+      expect(line).toContain('"tags"');
+    });
   });
 });
