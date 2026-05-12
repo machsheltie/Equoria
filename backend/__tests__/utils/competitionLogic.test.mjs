@@ -1,4 +1,4 @@
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, jest, afterEach } from '@jest/globals';
 import {
   calculateCompetitionScore,
   calculatePrizeAmount,
@@ -460,5 +460,28 @@ describe('checkTraitRequirements — catch block (lines 529-530)', () => {
     // 'Gaited' has requiresTrait:'gaited' so execution reaches horse.epigeneticModifiers
     const result = checkTraitRequirements(null, 'Gaited');
     expect(result).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// calculateStatGain — catch block (lines 567-568)
+// Force Math.random to return 0 so the chance check passes (0 < 0.1),
+// then pass a discipline whose toString() throws to trigger the catch.
+// ---------------------------------------------------------------------------
+describe('calculateStatGain — catch block (lines 567-568)', () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('returns null when discipline.toString() throws inside try block (lines 567-568 covered)', () => {
+    // placement=1 → chance=0.1; Math.random()=0 → 0 > 0.1 is false → proceed past null check
+    jest.spyOn(Math, 'random').mockReturnValue(0);
+    const badDiscipline = {
+      toString() {
+        throw new TypeError('forced toString error');
+      },
+    };
+    const result = calculateStatGain(1, badDiscipline);
+    expect(result).toBeNull();
   });
 });

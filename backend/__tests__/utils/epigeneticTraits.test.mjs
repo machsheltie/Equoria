@@ -515,3 +515,32 @@ describe('calculateEpigeneticTraits — rare trait hidden (line 383, Equoria-jkh
     expect(result.hidden).toContain('trainabilityBoost');
   });
 });
+
+// ---------------------------------------------------------------------------
+// removeConflictingTraits — line 312 FALSE branch
+//
+// With seed=500, bond=0, stress=100:
+//   rng.next()≈0.147 < 0.15 → 'resilient' inherited  (line 274 TRUE: negative-type branch)
+//   rng.next()≈0.664 < 0.85 → 'fragile'   inherited  (both conflict with each other)
+//   removeConflictingTraits: 'fragile' conflicts with 'resilient' already in filtered →
+//   hasConflict=true → 'fragile' is NOT pushed (line 312 FALSE branch)
+//
+// Lines 274 and 457 are dead-code FALSE branches:
+//   Line 274: all TRAIT_DEFINITIONS have type 'positive'|'negative' — third type unreachable
+//   Line 457: determineTraitVisibility returns only 'hidden'|type — fourth value unreachable
+// ---------------------------------------------------------------------------
+describe('calculateEpigeneticTraits — removeConflictingTraits line 312 FALSE branch (Equoria-jkht)', () => {
+  it('seed=500 bond=0 stress=100 inherits resilient+fragile; fragile blocked by conflict (line 312 FALSE)', () => {
+    const result = calculateEpigeneticTraits({
+      damTraits: ['resilient', 'fragile'],
+      sireTraits: [],
+      damBondScore: 0,
+      damStressLevel: 100,
+      seed: 500,
+    });
+    // 'fragile' conflicts with 'resilient'; only one survives
+    const allTraits = [...result.positive, ...result.negative, ...result.hidden];
+    expect(allTraits).not.toContain('fragile');
+    expect(allTraits.some(t => t === 'resilient')).toBe(true);
+  });
+});
