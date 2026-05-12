@@ -71,9 +71,23 @@ model User {
   showsCreated            Show[]                   @relation("ShowCreator")
   showEntries             ShowEntry[]              @relation("ShowEntries")
   staffMarketplaceStates  StaffMarketplaceState[]
+  notifications             Notification[]
 
   @@index([email])
   @@index([emailVerified])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  isRead    Boolean  @default(false)
+  payload   Json
+  createdAt DateTime @default(now())
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt(sort: Desc)])
 }
 
 model Breed {
