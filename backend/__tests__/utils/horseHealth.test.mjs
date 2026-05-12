@@ -6,6 +6,7 @@ import {
   getVetHealth,
   getDisplayedHealth,
   worseOf,
+  withHealth,
 } from '../../utils/horseHealth.mjs';
 
 describe('getFeedHealth', () => {
@@ -157,5 +158,25 @@ describe('getDisplayedHealth', () => {
 
   it('returns retired for age >= 21 even if vet/feed are critical', () => {
     expect(getDisplayedHealth({ age: 22 }, NOW)).toBe('retired');
+  });
+});
+
+describe('withHealth', () => {
+  const NOW = new Date('2026-04-29T15:30:00Z');
+
+  it('returns null as-is when horse is null (null guard, lines 191-194)', () => {
+    expect(withHealth(null, NOW)).toBeNull();
+  });
+
+  it('returns non-object input as-is (string guard)', () => {
+    expect(withHealth('not-an-object', NOW)).toBe('not-an-object');
+  });
+
+  it('adds feedHealth, vetHealth, displayedHealth to a valid horse', () => {
+    const horse = { age: 5, lastFedDate: NOW, lastVettedDate: NOW };
+    const result = withHealth(horse, NOW);
+    expect(result).toHaveProperty('feedHealth');
+    expect(result).toHaveProperty('vetHealth');
+    expect(result).toHaveProperty('displayedHealth');
   });
 });

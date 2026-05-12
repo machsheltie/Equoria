@@ -294,6 +294,14 @@ describe('calculatePersonalityEffects — additional branches', () => {
     const result = calculatePersonalityEffects(null, { traits: [] }, 'brushing', baseEffects);
     expect(result).toBe(baseEffects);
   });
+
+  it('patient + brushing: categorizeTaskForPersonality returns "grooming" (line 350)', () => {
+    const groom = { personality: 'patient' };
+    // brushing is in groomingTasks → categorizeTaskForPersonality returns 'grooming'
+    // patient taskCategories does not include 'grooming' → specialConditionMet false
+    const result = calculatePersonalityEffects(groom, { traits: [] }, 'brushing', baseEffects);
+    expect(result.personalityEffects.specialConditionMet).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------

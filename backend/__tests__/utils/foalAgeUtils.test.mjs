@@ -148,6 +148,11 @@ describe('checkBondMilestones', () => {
     checkBondMilestones(original, 100, NOW);
     expect(original).toEqual({});
   });
+
+  it('uses current date when now parameter is omitted (default branch, line 176)', () => {
+    const { newMilestones } = checkBondMilestones({}, 30);
+    expect(newMilestones).toContain('bond25');
+  });
 });
 
 // ---------------------------------------------------------------------------
