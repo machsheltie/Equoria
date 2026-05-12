@@ -113,6 +113,299 @@ describe('evaluateEnhancedMilestone — with groom object', () => {
   });
 });
 
+// ── age categories (getAgeCategory + getDevelopmentalStage branches) ──────────
+
+const milestoneData = { type: 'growth', completed: true, score: 70 };
+const daysAgo = d => new Date(Date.now() - d * 24 * 60 * 60 * 1000);
+
+describe('evaluateEnhancedMilestone — age category branches', () => {
+  it('weanling + juvenile at 200 days', async () => {
+    const horse = {
+      id: -1,
+      dateOfBirth: daysAgo(200),
+      age: 0,
+      epigeneticModifiers: { positive: [], negative: [], hidden: [] },
+    };
+    const result = await evaluateEnhancedMilestone(horse, {}, null, milestoneData);
+    expect(result.ageCategory).toBe('weanling');
+    expect(result.developmentalStage).toBe('juvenile');
+  });
+
+  it('yearling + adolescent at 400 days', async () => {
+    const horse = {
+      id: -1,
+      dateOfBirth: daysAgo(400),
+      age: 1,
+      epigeneticModifiers: { positive: [], negative: [], hidden: [] },
+    };
+    const result = await evaluateEnhancedMilestone(horse, {}, null, milestoneData);
+    expect(result.ageCategory).toBe('yearling');
+    expect(result.developmentalStage).toBe('adolescent');
+  });
+
+  it('two_year_old + young_adult at 800 days', async () => {
+    const horse = {
+      id: -1,
+      dateOfBirth: daysAgo(800),
+      age: 2,
+      epigeneticModifiers: { positive: [], negative: [], hidden: [] },
+    };
+    const result = await evaluateEnhancedMilestone(horse, {}, null, milestoneData);
+    expect(result.ageCategory).toBe('two_year_old');
+    expect(result.developmentalStage).toBe('young_adult');
+  });
+
+  it('foal + fear_period at 100 days', async () => {
+    const horse = {
+      id: -1,
+      dateOfBirth: daysAgo(100),
+      age: 0,
+      epigeneticModifiers: { positive: [], negative: [], hidden: [] },
+    };
+    const result = await evaluateEnhancedMilestone(horse, {}, null, milestoneData);
+    expect(result.ageCategory).toBe('foal');
+    expect(result.developmentalStage).toBe('fear_period');
+  });
+});
+
+// ── care consistency bonus branches ──────────────────────────────────────────
+
+describe('evaluateEnhancedMilestone — care consistency bonus', () => {
+  const youngHorse = {
+    id: -1,
+    dateOfBirth: daysAgo(50),
+    age: 0,
+    epigeneticModifiers: { positive: [], negative: [], hidden: [] },
+  };
+
+  it('careConsistencyBonus is 0.8 when all interactions are >30 days old', async () => {
+    const oldInteraction = { timestamp: daysAgo(40).toISOString(), quality: 'good', type: 'grooming' };
+    const result = await evaluateEnhancedMilestone(youngHorse, { interactions: [oldInteraction] }, null, milestoneData);
+    expect(result.careConsistencyBonus).toBe(0.8);
+  });
+
+  it('careConsistencyBonus is in [0.8,1.3] range with recent interactions', async () => {
+    const recentInteractions = [
+      { timestamp: new Date().toISOString(), quality: 'excellent', type: 'grooming' },
+      { timestamp: daysAgo(1).toISOString(), quality: 'excellent', type: 'feeding' },
+      { timestamp: daysAgo(2).toISOString(), quality: 'good', type: 'grooming' },
+    ];
+    const result = await evaluateEnhancedMilestone(
+      youngHorse,
+      { interactions: recentInteractions },
+      null,
+      milestoneData,
+    );
+    expect(result.careConsistencyBonus).toBeGreaterThanOrEqual(0.8);
+    expect(result.careConsistencyBonus).toBeLessThanOrEqual(1.3);
+  });
+});
+
+// ── care quality branches (calculateCareQuality) ─────────────────────────────
+
+describe('evaluateEnhancedMilestone — care quality thresholds', () => {
+  const youngHorse = {
+    id: -1,
+    dateOfBirth: daysAgo(60),
+    age: 0,
+    epigeneticModifiers: { positive: [], negative: [], hidden: [] },
+  };
+
+  it('careQuality is excellent with all excellent interactions', async () => {
+    const interactions = [
+      { timestamp: new Date().toISOString(), quality: 'excellent' },
+      { timestamp: daysAgo(1).toISOString(), quality: 'excellent' },
+    ];
+    const result = await evaluateEnhancedMilestone(youngHorse, { interactions }, null, milestoneData);
+    expect(result.enhancementFactors.careQuality).toBe('excellent');
+  });
+
+  it('careQuality is good with all good interactions', async () => {
+    const interactions = [
+      { timestamp: new Date().toISOString(), quality: 'good' },
+      { timestamp: daysAgo(1).toISOString(), quality: 'good' },
+    ];
+    const result = await evaluateEnhancedMilestone(youngHorse, { interactions }, null, milestoneData);
+    expect(result.enhancementFactors.careQuality).toBe('good');
+  });
+
+  it('careQuality is fair with all fair interactions', async () => {
+    const interactions = [
+      { timestamp: new Date().toISOString(), quality: 'fair' },
+      { timestamp: daysAgo(1).toISOString(), quality: 'fair' },
+    ];
+    const result = await evaluateEnhancedMilestone(youngHorse, { interactions }, null, milestoneData);
+    expect(result.enhancementFactors.careQuality).toBe('fair');
+  });
+
+  it('careQuality is poor with all poor interactions', async () => {
+    const interactions = [
+      { timestamp: new Date().toISOString(), quality: 'poor' },
+      { timestamp: daysAgo(1).toISOString(), quality: 'poor' },
+    ];
+    const result = await evaluateEnhancedMilestone(youngHorse, { interactions }, null, milestoneData);
+    expect(result.enhancementFactors.careQuality).toBe('poor');
+  });
+
+  it('careQuality is unknown when interactions array is absent', async () => {
+    const result = await evaluateEnhancedMilestone(youngHorse, {}, null, milestoneData);
+    expect(result.enhancementFactors.careQuality).toBe('unknown');
+  });
+});
+
+// ── bond stability branches (calculateBondStability) ─────────────────────────
+
+describe('evaluateEnhancedMilestone — bond stability branches', () => {
+  const youngHorse = {
+    id: -1,
+    dateOfBirth: daysAgo(70),
+    age: 0,
+    epigeneticModifiers: { positive: [], negative: [], hidden: [] },
+  };
+
+  it('bondStability is stable when bondHistory is absent', async () => {
+    const result = await evaluateEnhancedMilestone(youngHorse, {}, null, milestoneData);
+    expect(result.enhancementFactors.bondStability).toBe('stable');
+  });
+
+  it('bondStability is stable with a single bondHistory entry', async () => {
+    const history = { bondHistory: [{ bondScore: 75 }] };
+    const result = await evaluateEnhancedMilestone(youngHorse, history, null, milestoneData);
+    expect(result.enhancementFactors.bondStability).toBe('stable');
+  });
+
+  it('bondStability is very_stable with low-variance bond scores', async () => {
+    // variance([80,82]) = 1 < 5 → very_stable
+    const history = { bondHistory: [{ bondScore: 80 }, { bondScore: 82 }] };
+    const result = await evaluateEnhancedMilestone(youngHorse, history, null, milestoneData);
+    expect(result.enhancementFactors.bondStability).toBe('very_stable');
+  });
+
+  it('bondStability is stable with medium-low variance bond scores', async () => {
+    // variance([70,76]) = 9, between 5 and 15 → stable
+    const history = { bondHistory: [{ bondScore: 70 }, { bondScore: 76 }] };
+    const result = await evaluateEnhancedMilestone(youngHorse, history, null, milestoneData);
+    expect(result.enhancementFactors.bondStability).toBe('stable');
+  });
+
+  it('bondStability is fluctuating with medium variance bond scores', async () => {
+    // variance([70,80]) = 25, between 15 and 30 → fluctuating
+    const history = { bondHistory: [{ bondScore: 70 }, { bondScore: 80 }] };
+    const result = await evaluateEnhancedMilestone(youngHorse, history, null, milestoneData);
+    expect(result.enhancementFactors.bondStability).toBe('fluctuating');
+  });
+
+  it('bondStability is unstable with high variance bond scores', async () => {
+    // variance([40,80]) = 400 >= 30 → unstable
+    const history = { bondHistory: [{ bondScore: 40 }, { bondScore: 80 }] };
+    const result = await evaluateEnhancedMilestone(youngHorse, history, null, milestoneData);
+    expect(result.enhancementFactors.bondStability).toBe('unstable');
+  });
+});
+
+// ── stress management branches (calculateStressManagement) ───────────────────
+
+describe('evaluateEnhancedMilestone — stress management branches', () => {
+  const youngHorse = {
+    id: -1,
+    dateOfBirth: daysAgo(80),
+    age: 0,
+    epigeneticModifiers: { positive: [], negative: [], hidden: [] },
+  };
+
+  it('stressManagement is good when stressHistory is absent', async () => {
+    const result = await evaluateEnhancedMilestone(youngHorse, {}, null, milestoneData);
+    expect(result.enhancementFactors.stressManagement).toBe('good');
+  });
+
+  it('stressManagement is excellent with very low avg stress', async () => {
+    const history = { stressHistory: [{ stressLevel: 1 }, { stressLevel: 2 }] };
+    const result = await evaluateEnhancedMilestone(youngHorse, history, null, milestoneData);
+    expect(result.enhancementFactors.stressManagement).toBe('excellent');
+  });
+
+  it('stressManagement is good with moderate stress (3-4)', async () => {
+    const history = { stressHistory: [{ stressLevel: 3 }, { stressLevel: 4 }] };
+    const result = await evaluateEnhancedMilestone(youngHorse, history, null, milestoneData);
+    expect(result.enhancementFactors.stressManagement).toBe('good');
+  });
+
+  it('stressManagement is fair with stress around 5-6', async () => {
+    const history = { stressHistory: [{ stressLevel: 5 }, { stressLevel: 6 }] };
+    const result = await evaluateEnhancedMilestone(youngHorse, history, null, milestoneData);
+    expect(result.enhancementFactors.stressManagement).toBe('fair');
+  });
+
+  it('stressManagement is poor with high avg stress (>= 7)', async () => {
+    const history = { stressHistory: [{ stressLevel: 7 }, { stressLevel: 8 }] };
+    const result = await evaluateEnhancedMilestone(youngHorse, history, null, milestoneData);
+    expect(result.enhancementFactors.stressManagement).toBe('poor');
+  });
+});
+
+// ── personality bonus branches (calculatePersonalityBonuses) ─────────────────
+
+describe('evaluateEnhancedMilestone — personality bonus branches', () => {
+  const youngHorse = {
+    id: -1,
+    dateOfBirth: daysAgo(45),
+    age: 0,
+    temperament: 'nervous',
+    epigeneticModifiers: { positive: [], negative: [], hidden: [] },
+  };
+
+  it('personalityBonuses is {} when groom has no epigeneticInfluenceType', async () => {
+    const groom = { id: 5, name: 'NoTypeGroom' };
+    const result = await evaluateEnhancedMilestone(youngHorse, {}, groom, milestoneData);
+    expect(result.personalityBonuses).toEqual({});
+  });
+
+  it('personalityBonuses is {} for unknown personality type', async () => {
+    const groom = { id: 5, name: 'UnknownGroom', epigeneticInfluenceType: 'mythical_unicorn_handler' };
+    const result = await evaluateEnhancedMilestone(youngHorse, {}, groom, milestoneData);
+    expect(result.personalityBonuses).toEqual({});
+  });
+
+  it('personalityBonuses has trait keys for a valid gentle groom', async () => {
+    const groom = { id: 5, name: 'GentleGroom', epigeneticInfluenceType: 'gentle' };
+    const result = await evaluateEnhancedMilestone(youngHorse, {}, groom, milestoneData);
+    expect(typeof result.personalityBonuses).toBe('object');
+    // GENTLE personality has AFFECTIONATE, CONFIDENT, RESILIENT bonuses
+    expect('AFFECTIONATE' in result.personalityBonuses || 'CONFIDENT' in result.personalityBonuses).toBe(true);
+  });
+
+  it('temperament synergy is applied when horse.temperament matches personality', async () => {
+    // GENTLE.temperamentSynergy has nervous: +0.2
+    const groom = { id: 5, name: 'GentleGroom', epigeneticInfluenceType: 'gentle' };
+    const noSynergyHorse = { ...youngHorse, temperament: undefined };
+    const synergyHorse = { ...youngHorse, temperament: 'nervous' };
+
+    const withoutSynergy = await evaluateEnhancedMilestone(noSynergyHorse, {}, groom, milestoneData);
+    const withSynergy = await evaluateEnhancedMilestone(synergyHorse, {}, groom, milestoneData);
+
+    // With synergy bonus applied, all bonuses should be higher
+    const noSynergySum = Object.values(withoutSynergy.personalityBonuses).reduce((a, b) => a + b, 0);
+    const synergySum = Object.values(withSynergy.personalityBonuses).reduce((a, b) => a + b, 0);
+    expect(synergySum).toBeGreaterThan(noSynergySum);
+  });
+
+  it('care duration multiplier is applied when groomCareHistory has assignments', async () => {
+    const groom = { id: 7, name: 'AssignedGroom', epigeneticInfluenceType: 'gentle' };
+    const historyWithAssignment = {
+      assignments: [{ groomId: 7, startDate: daysAgo(30).toISOString() }],
+    };
+    const historyNoAssignment = {};
+
+    const withDuration = await evaluateEnhancedMilestone(youngHorse, historyWithAssignment, groom, milestoneData);
+    const withoutDuration = await evaluateEnhancedMilestone(youngHorse, historyNoAssignment, groom, milestoneData);
+
+    // Duration multiplier = 1 + 30/90 = 1.33 → bonuses should be higher with assignment
+    const durSum = Object.values(withDuration.personalityBonuses).reduce((a, b) => a + b, 0);
+    const noDurSum = Object.values(withoutDuration.personalityBonuses).reduce((a, b) => a + b, 0);
+    expect(durSum).toBeGreaterThan(noDurSum);
+  });
+});
+
 // ── cronJobs ──────────────────────────────────────────────────────────────────
 
 describe('cronJobService', () => {
