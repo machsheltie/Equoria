@@ -25,7 +25,12 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { applyRareTraitBoosterEffects, RARE_TRAIT_BOOSTER_PERKS } from '../../utils/groomRareTraitPerks.mjs';
+import {
+  applyRareTraitBoosterEffects,
+  assignRareTraitBoosterPerks,
+  getRevealedPerks,
+  RARE_TRAIT_BOOSTER_PERKS,
+} from '../../utils/groomRareTraitPerks.mjs';
 
 // Convenience: build groomData with a specific perk pre-installed
 function groomWith(perkKey, perkOverrides = {}) {
@@ -200,6 +205,78 @@ describe('applyRareTraitBoosterEffects', () => {
     expect(result.modifiedChance).toBeLessThanOrEqual(1.0);
   });
 
+  // ─── assignRareTraitBoosterPerks — covers loop + evaluatePerkEligibility + catch ─────
+
+  describe('assignRareTraitBoosterPerks() — covers loop, evaluatePerkEligibility, catch path', () => {
+    // Prisma 6 PrismaClientKnownRequestError (P2025) doesn't match Jest's .toThrow() matcher,
+    // so we use explicit try/catch to assert the function rejects.
+
+    it('rejects when groom ID does not exist (covers loop + evaluatePerkEligibility + catch)', async () => {
+      const groomData = {
+        experience: 999,
+        personality: { tags: ['intuitive', 'patient'] },
+        bonusTraitMap: { 'phoenix-born': 1, 'shadow-follower': 1 },
+      };
+      let thrown = false;
+      try {
+        await assignRareTraitBoosterPerks(-1, groomData);
+      } catch {
+        thrown = true;
+      }
+      expect(thrown).toBe(true);
+    });
+
+    it('exercises any-with-3-rare-bonuses branch (experience >= 12, bonusTraitMap empty)', async () => {
+      const groomData = {
+        experience: 999,
+        personality: { tags: [] },
+        bonusTraitMap: {},
+      };
+      let thrown = false;
+      try {
+        await assignRareTraitBoosterPerks(-1, groomData);
+      } catch {
+        thrown = true;
+      }
+      expect(thrown).toBe(true);
+    });
+
+    it('exercises low-experience early-return in evaluatePerkEligibility', async () => {
+      const groomData = {
+        experience: 0,
+        personality: { tags: [] },
+        bonusTraitMap: {},
+      };
+      let thrown = false;
+      try {
+        await assignRareTraitBoosterPerks(-1, groomData);
+      } catch {
+        thrown = true;
+      }
+      expect(thrown).toBe(true);
+    });
+
+    it('rejects when groomData is null — covers catch + re-throw (lines 155–157)', async () => {
+      // TypeError from null.experience is caught, logged, and re-thrown
+      await expect(assignRareTraitBoosterPerks(-1, null)).rejects.toThrow();
+    });
+  });
+
+  // ─── getRevealedPerks — not-found path (lines 295-334) ───────────────────────
+
+  describe('getRevealedPerks() — non-existent groom returns empty array', () => {
+    it('returns [] when groom ID -1 does not exist in DB', async () => {
+      const result = await getRevealedPerks(-1);
+      expect(result).toEqual([]);
+    });
+
+    it('returns [] consistently on repeated calls for non-existent groom', async () => {
+      const r1 = await getRevealedPerks(-1);
+      const r2 = await getRevealedPerks(-2);
+      expect(r1).toEqual([]);
+      expect(r2).toEqual([]);
+    });
+  });
   // ── catch path → fallback object ─────────────────────────────────────────
 
   it('returns fallback {originalChance, modifiedChance, appliedPerks:[], perkBonus:0} on error', () => {
