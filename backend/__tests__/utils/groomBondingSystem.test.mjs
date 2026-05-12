@@ -13,6 +13,7 @@ import {
   getAgeGroupDescription,
   calculateBondingEffects,
   validateGroomingEligibility,
+  processGroomingSession,
   updateConsecutiveDays,
   checkBurnoutImmunity,
   updateTaskLog,
@@ -496,5 +497,13 @@ describe('validateGroomingEligibility — task-not-eligible branch', () => {
     expect(result.eligibleTasks).toBeDefined();
     expect(result.ageGroup).toBeDefined();
     expect(result.horseAge).toBe(0);
+  });
+});
+
+// ── processGroomingSession — horse-not-found path (lines 280-298, 381-383) ──────
+
+describe('processGroomingSession() — horse not found', () => {
+  it('rejects with "Horse with ID -1 not found" for a non-existent horse (lines 280-298, 381-383)', async () => {
+    await expect(processGroomingSession(-1, null, 'brushing', 30)).rejects.toThrow('Horse with ID -1 not found');
   });
 });

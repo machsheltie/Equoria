@@ -169,3 +169,29 @@ describe('getTraitAssignmentSummary', () => {
     expect(typeof result.summary).toBe('string');
   });
 });
+
+// ── catch paths — null traitCandidates triggers TypeError → rethrow ────────────
+
+describe('applyGroomBonusesToTraitCandidates() — catch path (lines 177-180)', () => {
+  it('rejects when traitCandidates is null (null.length → TypeError → catch + rethrow)', async () => {
+    let thrown = false;
+    try {
+      await applyGroomBonusesToTraitCandidates(1, null, null);
+    } catch {
+      thrown = true;
+    }
+    expect(thrown).toBe(true);
+  });
+});
+
+describe('selectTraitsWithGroomBonuses() — catch path (lines 260-263)', () => {
+  it('rejects when traitCandidates is null (null.length → TypeError → catch + rethrow)', async () => {
+    let thrown = false;
+    try {
+      await selectTraitsWithGroomBonuses(1, null, null, 1);
+    } catch {
+      thrown = true;
+    }
+    expect(thrown).toBe(true);
+  });
+});
