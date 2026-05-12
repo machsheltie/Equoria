@@ -109,11 +109,10 @@ export const validateBreeding = async (req, res, next) => {
           id: true,
           sex: true,
           age: true,
-          playerId: true,
-          ownerId: true,
-          last_bred_date: true,
-          stud_status: true,
-          health_status: true,
+          userId: true,
+          lastBredDate: true,
+          studStatus: true,
+          healthStatus: true,
         },
       }),
       prisma.horse.findUnique({
@@ -122,10 +121,9 @@ export const validateBreeding = async (req, res, next) => {
           id: true,
           sex: true,
           age: true,
-          playerId: true,
-          ownerId: true,
-          last_bred_date: true,
-          health_status: true,
+          userId: true,
+          lastBredDate: true,
+          healthStatus: true,
         },
       }),
     ]);
@@ -138,9 +136,9 @@ export const validateBreeding = async (req, res, next) => {
     // returns 404 (same as not-found) so an attacker cannot enumerate horse
     // IDs by status code or message diff. Public studs are an explicit
     // exception to ownership for the sire only — note the guard below.
-    const userOwnsOrHasAccess = horse => horse.playerId === userId || horse.ownerId === userId;
+    const userOwnsOrHasAccess = horse => horse.userId === userId;
 
-    if (!userOwnsOrHasAccess(sire) && sire.stud_status !== 'Public Stud') {
+    if (!userOwnsOrHasAccess(sire) && sire.studStatus !== 'Public Stud') {
       logger.warn(
         `[integrity] Unauthorized breeding attempt: User ${userId} tried to use sire ${sireId}`,
       );
@@ -171,7 +169,7 @@ export const validateBreeding = async (req, res, next) => {
     }
 
     // Health validation
-    if (sire.health_status === 'Injured' || dam.health_status === 'Injured') {
+    if (sire.healthStatus === 'Injured' || dam.healthStatus === 'Injured') {
       return res.status(400).json(ApiResponse.badRequest('Injured horses cannot breed'));
     }
 
@@ -179,15 +177,15 @@ export const validateBreeding = async (req, res, next) => {
     const now = new Date();
     const breedingCooldown = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
 
-    if (sire.last_bred_date) {
-      const timeSinceLastBreed = now - new Date(sire.last_bred_date);
+    if (sire.lastBredDate) {
+      const timeSinceLastBreed = now - new Date(sire.lastBredDate);
       if (timeSinceLastBreed < breedingCooldown) {
         return res.status(400).json(ApiResponse.badRequest('Sire is still in breeding cooldown'));
       }
     }
 
-    if (dam.last_bred_date) {
-      const timeSinceLastBreed = now - new Date(dam.last_bred_date);
+    if (dam.lastBredDate) {
+      const timeSinceLastBreed = now - new Date(dam.lastBredDate);
       if (timeSinceLastBreed < breedingCooldown) {
         return res.status(400).json(ApiResponse.badRequest('Dam is still in breeding cooldown'));
       }
@@ -220,9 +218,8 @@ export const validateTraining = async (req, res, next) => {
       select: {
         id: true,
         age: true,
-        playerId: true,
-        ownerId: true,
-        health_status: true,
+        userId: true,
+        healthStatus: true,
         trainingCooldown: true,
       },
     });
@@ -233,7 +230,7 @@ export const validateTraining = async (req, res, next) => {
 
     // CWE-639: Disclosure-resistant ownership — cross-user returns 404
     // (identical to not-found) so an attacker cannot enumerate horse IDs.
-    if (horse.playerId !== userId && horse.ownerId !== userId) {
+    if (horse.userId !== userId) {
       logger.warn(
         `[integrity] Unauthorized training attempt: User ${userId} tried to train horse ${horseId}`,
       );
@@ -248,7 +245,7 @@ export const validateTraining = async (req, res, next) => {
     }
 
     // Health validation
-    if (horse.health_status === 'Injured') {
+    if (horse.healthStatus === 'Injured') {
       return res.status(400).json(ApiResponse.badRequest('Injured horses cannot train'));
     }
 
@@ -293,7 +290,7 @@ export const validateTransaction = transactionType => {
       }
 
       // Fetch user's current balance
-      const user = await prisma.player.findUnique({
+      const user = await prisma.user.findUnique({
         where: { id: userId },
         select: { money: true },
       });
@@ -323,7 +320,7 @@ export const validateTransaction = transactionType => {
           return res.status(400).json(ApiResponse.badRequest('Cannot transfer to yourself'));
         }
 
-        const targetUser = await prisma.player.findUnique({
+        const targetUser = await prisma.user.findUnique({
           where: { id: targetUserId },
           select: { id: true },
         });
