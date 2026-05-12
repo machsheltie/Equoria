@@ -14,6 +14,7 @@ import {
 import { updateHorseRewards } from '../../../utils/horseUpdates.mjs';
 import { transferEntryFees } from '../../../utils/userUpdates.mjs';
 import { resolveTackBonus } from '../../services/controllers/tackShopController.mjs';
+import { createNotification } from '../../../utils/notificationService.mjs';
 import logger from '../../../utils/logger.mjs';
 
 /**
@@ -406,6 +407,16 @@ async function enterAndRunShow(horseIds, show) {
                   `[competitionController.enterAndRunShow] Error awarding Horse XP to ${horse.name}: ${horseXpError.message}`,
                 );
                 // Continue with other horses even if horse XP award fails
+              }
+
+              if (statGains) {
+                await createNotification(horse.userId, 'stat_gain', {
+                  horseName: horse.name,
+                  stat: statGains.stat,
+                  amount: statGains.gain,
+                  placement: simResult.placement,
+                  discipline: show.discipline,
+                });
               }
             }
           } catch (error) {

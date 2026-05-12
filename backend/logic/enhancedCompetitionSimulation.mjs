@@ -11,6 +11,7 @@
 
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
+import { createNotification } from '../utils/notificationService.mjs';
 import { saveResult } from '../models/resultModel.mjs';
 import { calculateCompetitionScore } from '../utils/competitionScore.mjs';
 import { awardCompetitionXp } from '../models/horseXpModel.mjs';
@@ -209,6 +210,14 @@ export async function executeEnhancedCompetition(show, entries) {
           stat: statGain.stat,
           amount: statGain.amount,
           placement,
+        });
+
+        await createNotification(user.id, 'stat_gain', {
+          horseName: horse.name,
+          stat: statGain.stat,
+          amount: statGain.amount,
+          placement: placementString,
+          discipline: show.discipline,
         });
       }
 
