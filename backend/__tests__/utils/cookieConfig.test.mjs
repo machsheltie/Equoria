@@ -172,3 +172,22 @@ describe('cookieConfig — getCookieConfigSummary', () => {
     expect(summary.csrfToken.httpOnly).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// _setNowFn — ?? null fallback (line 41)
+// ---------------------------------------------------------------------------
+describe('_setNowFn — ?? null fallback (line 41)', () => {
+  it('passing null uses Date.now() fallback (line 41 ?? right-branch)', async () => {
+    const { _setNowFn, getNow } = await import('../../utils/cookieConfig.mjs');
+    // Verify custom fn works
+    _setNowFn(() => 99999);
+    expect(getNow()).toBe(99999);
+    // null triggers ?? right-branch → _nowFn = () => Date.now()
+    _setNowFn(null);
+    const now = getNow();
+    expect(typeof now).toBe('number');
+    expect(now).toBeGreaterThan(0);
+    // Restore to default
+    _setNowFn(null);
+  });
+});

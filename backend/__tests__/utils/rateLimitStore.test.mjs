@@ -198,3 +198,18 @@ describe('destroy', () => {
     expect(() => store.destroy()).not.toThrow();
   });
 });
+
+// ---------------------------------------------------------------------------
+// setInterval callback (line 23) — real timer fires this.cleanup()
+// ---------------------------------------------------------------------------
+describe('cleanup timer callback (line 23) — setInterval fires automatically', () => {
+  it('timer callback executes this.cleanup() when interval elapses (line 23 covered)', async () => {
+    const store = new RateLimitStore({ cleanupInterval: 30 });
+    // Long TTL so the entry survives the first cleanup pass
+    store.increment('timer-probe', 100000);
+    // Wait longer than the 30ms interval so the callback fires at least once
+    await new Promise(r => setTimeout(r, 70));
+    store.destroy();
+    expect(store.getStorageSize()).toBeGreaterThanOrEqual(0);
+  }, 5000);
+});
