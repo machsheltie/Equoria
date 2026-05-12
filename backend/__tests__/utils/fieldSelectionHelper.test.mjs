@@ -209,3 +209,30 @@ describe('calculateBandwidthSavings', () => {
     expect(percent).toBe(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Default parameter branch coverage (lines 524, 556, 593)
+// ---------------------------------------------------------------------------
+describe('buildSelectObject — default preset parameter branch (line 524)', () => {
+  it('omitting preset uses "list" default and returns Horse list fields', () => {
+    const result = buildSelectObject('Horse');
+    expect(result).toMatchObject(FIELD_PRESETS.Horse.list);
+  });
+});
+
+describe('buildIncludeObject — default preset parameter branch (line 556)', () => {
+  it('omitting preset uses "list" default and returns Horse list includes', () => {
+    const result = buildIncludeObject('Horse');
+    expect(result).toBeDefined();
+    expect(result.breed).toBeDefined();
+  });
+});
+
+describe('buildQueryParams — default preset and options parameter branches (line 593)', () => {
+  it('omitting preset and options uses defaults and returns Horse list params', () => {
+    const result = buildQueryParams('Horse');
+    expect(result).toHaveProperty('select');
+    expect(result).toHaveProperty('include');
+    expect(result.select).toMatchObject(FIELD_PRESETS.Horse.list);
+  });
+});
