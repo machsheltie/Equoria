@@ -738,14 +738,11 @@ export async function searchUsers(q) {
 export async function getGameNotifications(req, res) {
   try {
     const userId = req.user.id;
-    const dbUser = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { settings: true },
+    const notifications = await prisma.notification.findMany({
+      where: { userId },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
     });
-    const settings = dbUser?.settings && typeof dbUser.settings === 'object' ? dbUser.settings : {};
-    const notifications = Array.isArray(settings.gameNotifications)
-      ? settings.gameNotifications
-      : [];
     const unreadCount = notifications.filter(n => !n.isRead).length;
     return res.json({ success: true, data: { notifications, unreadCount } });
   } catch (error) {
@@ -762,17 +759,9 @@ export async function getGameNotifications(req, res) {
 export async function markGameNotificationsRead(req, res) {
   try {
     const userId = req.user.id;
-    const dbUser = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { settings: true },
-    });
-    const settings = dbUser?.settings && typeof dbUser.settings === 'object' ? dbUser.settings : {};
-    const notifications = Array.isArray(settings.gameNotifications)
-      ? settings.gameNotifications.map(n => ({ ...n, isRead: true }))
-      : [];
-    await prisma.user.update({
-      where: { id: userId },
-      data: { settings: { ...settings, gameNotifications: notifications } },
+    await prisma.notification.updateMany({
+      where: { userId, isRead: false },
+      data: { isRead: true },
     });
     return res.json({ success: true });
   } catch (error) {
