@@ -97,6 +97,14 @@ describe('_removeTraitSafely', () => {
   it('throws for invalid category', () => {
     expect(() => _removeTraitSafely(emptyTraits(), 'resilient', 'invalid')).toThrow();
   });
+
+  it('throws for empty trait name (line 71: Valid trait name is required)', () => {
+    expect(() => _removeTraitSafely(emptyTraits(), '', 'positive')).toThrow('Valid trait name is required');
+  });
+
+  it('throws for null trait name (line 71: Valid trait name is required)', () => {
+    expect(() => _removeTraitSafely(emptyTraits(), null, 'positive')).toThrow('Valid trait name is required');
+  });
 });
 
 // ---------------------------------------------------------------------------
