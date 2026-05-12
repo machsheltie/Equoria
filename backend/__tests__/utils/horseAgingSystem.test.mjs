@@ -142,4 +142,18 @@ describe('checkForMilestones()', () => {
     expect(result).toHaveProperty('traitsAssigned');
     expect(result).toHaveProperty('retirementTriggered');
   });
+
+  it('returns fallback when newAge comparison throws (outer catch path lines 337-338)', async () => {
+    // previousAge=0 < 7 is true → short-circuit evaluates newAge >= 7
+    // evil.valueOf() throws → propagates past inner try (not wrapped) → outer catch fires
+    const evil = {
+      valueOf() {
+        throw new Error('evil valueOf');
+      },
+    };
+    const result = await checkForMilestones(-1, 0, evil);
+    expect(result.milestonesTriggered).toEqual([]);
+    expect(result.traitsAssigned).toEqual([]);
+    expect(result.retirementTriggered).toBe(false);
+  });
 });

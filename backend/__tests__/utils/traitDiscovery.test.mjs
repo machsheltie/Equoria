@@ -372,3 +372,25 @@ describe('getDiscoveryProgress() — error paths', () => {
     await expect(getDiscoveryProgress(-1)).rejects.toThrow(/not found/i);
   });
 });
+
+// ── checkDiscoveryConditions — catch path (line 340) ─────────────────────────
+// When a condition evaluator (synchronous) throws, the per-condition catch fires,
+// logs a warning, and the function continues to the next condition.
+
+describe('checkDiscoveryConditions() — condition-throws catch path (Equoria-jkht)', () => {
+  it('silently skips conditions whose synchronous evaluator throws (catch path line 340)', async () => {
+    // bondScore getter throws → HIGH_BOND, EXCELLENT_BOND, PERFECT_CARE all throw
+    // checkDiscoveryConditions catches each and continues — returns remaining met conditions
+    const evil = {
+      get bondScore() {
+        throw new Error('bond bomb');
+      },
+      id: -1,
+      stressLevel: 100,
+      age: 0,
+    };
+    const result = await checkDiscoveryConditions(evil);
+    // Should not throw; should return an array (empty since no conditions met)
+    expect(Array.isArray(result)).toBe(true);
+  }, 10000);
+});
