@@ -18,6 +18,7 @@ import {
   calculateConformationShowScore,
   resolveReward,
   resolveTitle,
+  applyBreedingValueBoost,
 } from '../../services/conformationShowService.mjs';
 
 // ── isValidConformationClass ──────────────────────────────────────────────────
@@ -211,5 +212,98 @@ describe('resolveTitle', () => {
   it('returns a string for high accumulated points', () => {
     const result = resolveTitle(1000);
     expect(typeof result === 'string' || result === null).toBe(true);
+  });
+});
+
+// ── getConformationAgeClass — missing age-class branches (Equoria-jkht) ────────
+
+describe('getConformationAgeClass — all age-class branches (Equoria-jkht)', () => {
+  it('returns Youngstock for age=2 (2 <= age < 3)', () => {
+    expect(getConformationAgeClass(2)).toBe(CONFORMATION_AGE_CLASSES.YOUNGSTOCK);
+  });
+
+  it('returns Junior for age=4 (3 <= age < 6)', () => {
+    expect(getConformationAgeClass(4)).toBe(CONFORMATION_AGE_CLASSES.JUNIOR);
+  });
+
+  it('returns Senior for age=7 (age >= 6)', () => {
+    expect(getConformationAgeClass(7)).toBe(CONFORMATION_AGE_CLASSES.SENIOR);
+  });
+
+  it('returns Weanling for NaN (!Number.isFinite branch)', () => {
+    expect(getConformationAgeClass(NaN)).toBe(CONFORMATION_AGE_CLASSES.WEANLING);
+  });
+});
+
+// ── calculateSynergy — neutral return when config exists but no personality match (Equoria-jkht) ──
+
+describe('calculateSynergy — neutral personality branch (Equoria-jkht)', () => {
+  it('returns NEUTRAL_SYNERGY_SCORE (0) when personality is neither beneficial nor detrimental for calm temperament', () => {
+    expect(calculateSynergy('calm', 'confident')).toBe(0);
+  });
+
+  it('returns detrimental score for calm+energetic', () => {
+    expect(calculateSynergy('calm', 'energetic')).toBe(23);
+  });
+
+  it('returns beneficial score for nervous+gentle (100)', () => {
+    expect(calculateSynergy('nervous', 'gentle')).toBe(100);
+  });
+});
+
+// ── resolveReward — placement 2 and 3 branches (Equoria-jkht) ────────────────
+
+describe('resolveReward — placement 2 and 3 (Equoria-jkht)', () => {
+  it('returns Red ribbon with titlePoints=7 for placement 2', () => {
+    const result = resolveReward(2);
+    expect(result.ribbon).toBe('Red');
+    expect(result.titlePoints).toBe(7);
+    expect(result.breedingBoostDelta).toBe(0.03);
+  });
+
+  it('returns Yellow ribbon with titlePoints=5 for placement 3', () => {
+    const result = resolveReward(3);
+    expect(result.ribbon).toBe('Yellow');
+    expect(result.titlePoints).toBe(5);
+    expect(result.breedingBoostDelta).toBe(0.01);
+  });
+});
+
+// ── resolveTitle — intermediate threshold branches (Equoria-jkht) ─────────────
+
+describe('resolveTitle — intermediate thresholds (Equoria-jkht)', () => {
+  it('returns Noteworthy for 25 points (>= 25, < 50)', () => {
+    expect(resolveTitle(25)).toBe('Noteworthy');
+  });
+
+  it('returns Distinguished for 50 points (>= 50, < 100)', () => {
+    expect(resolveTitle(50)).toBe('Distinguished');
+  });
+
+  it('returns Champion for 100 points (>= 100, < 200)', () => {
+    expect(resolveTitle(100)).toBe('Champion');
+  });
+
+  it('returns Grand Champion for 200 points (>= 200)', () => {
+    expect(resolveTitle(200)).toBe('Grand Champion');
+  });
+});
+
+// ── applyBreedingValueBoost — delta branches (Equoria-jkht) ──────────────────
+
+describe('applyBreedingValueBoost (Equoria-jkht)', () => {
+  it('returns currentBoost unchanged when delta <= 0 (early-return branch)', () => {
+    expect(applyBreedingValueBoost(0.05, 0)).toBe(0.05);
+    expect(applyBreedingValueBoost(0.1, -0.02)).toBe(0.1);
+  });
+
+  it('adds delta when delta > 0 and result is under cap', () => {
+    expect(applyBreedingValueBoost(0.0, 0.05)).toBeCloseTo(0.05);
+    expect(applyBreedingValueBoost(0.05, 0.03)).toBeCloseTo(0.08);
+  });
+
+  it('clamps to BREEDING_BOOST_CAP (0.15) when sum exceeds cap', () => {
+    expect(applyBreedingValueBoost(0.12, 0.05)).toBeCloseTo(0.15);
+    expect(applyBreedingValueBoost(0.15, 0.05)).toBeCloseTo(0.15);
   });
 });
