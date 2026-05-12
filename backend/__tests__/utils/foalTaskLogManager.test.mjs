@@ -326,6 +326,52 @@ describe('getFoalCareSummary', () => {
 });
 
 // ---------------------------------------------------------------------------
+// getCompletedTasks — non-numeric count branch (line 106)
+// ---------------------------------------------------------------------------
+describe('getCompletedTasks — non-numeric values', () => {
+  it('excludes tasks with non-numeric counts (line 106 typeof guard)', () => {
+    const log = { brushing: 3, badEntry: 'not-a-number', empty: 0 };
+    const result = getCompletedTasks(log);
+    expect(result).toContain('brushing');
+    expect(result).not.toContain('badEntry');
+    expect(result).not.toContain('empty');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// calculateStreakFromLastCareDate — invalid currentDate branch (line 140)
+// ---------------------------------------------------------------------------
+describe('calculateStreakFromLastCareDate — invalid currentDate', () => {
+  it('throws when currentDate is invalid (line 140 isNaN check)', () => {
+    expect(() => calculateStreakFromLastCareDate(new Date(), 'not-a-date')).toThrow('Invalid currentDate provided');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// updateFoalCareData — same-day care branch (line 192)
+// ---------------------------------------------------------------------------
+describe('updateFoalCareData — same-day care', () => {
+  it('does not increment streak when care is on the same day (line 192 daysSinceLastCare===0)', () => {
+    const now = new Date();
+    const data = { taskLog: {}, lastGroomed: now, daysGroomedInARow: 4 };
+    const result = updateFoalCareData(data, 'brushing', now);
+    // Same day: streak unchanged (stays at 4, not incremented to 5)
+    expect(result.daysGroomedInARow).toBe(4);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateTaskLog — empty-string key branch (line 238-239)
+// ---------------------------------------------------------------------------
+describe('validateTaskLog — empty-string task name', () => {
+  it('returns invalid when a task key is an empty string (line 238 taskName.length===0)', () => {
+    const result = validateTaskLog({ '': 3 });
+    expect(result.isValid).toBe(false);
+    expect(result.errors.length).toBeGreaterThan(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // resetFoalCareStreak
 // ---------------------------------------------------------------------------
 describe('resetFoalCareStreak', () => {
