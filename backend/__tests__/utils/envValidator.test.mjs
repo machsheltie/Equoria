@@ -253,3 +253,44 @@ describe('validateTestEnvironment — additional branch coverage', () => {
     expect(result.testWarnings.some(w => w.includes('DATABASE_URL'))).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Default parameter branch (line 54) + getEnvironmentSummary fallbacks (lines 184-185)
+// ---------------------------------------------------------------------------
+describe('validateRequiredEnvVars — default throwOnMissing parameter branch (line 54)', () => {
+  it('calling without args uses default throwOnMissing=true and throws when a var is missing', () => {
+    setRequiredVars();
+    delete process.env.PORT;
+    // No explicit arg → throwOnMissing defaults to true → should throw
+    expect(() => validateRequiredEnvVars()).toThrow('Missing required environment variables');
+  });
+
+  it('calling without args uses default throwOnMissing=true and does not throw when all present', () => {
+    setRequiredVars();
+    // All required vars present; no arg → throwOnMissing=true but nothing is missing
+    expect(() => validateRequiredEnvVars()).not.toThrow();
+  });
+});
+
+describe('getEnvironmentSummary — || "undefined" fallback branches (lines 184-185)', () => {
+  it('nodeEnv falls back to "undefined" when NODE_ENV is not set', () => {
+    setRequiredVars();
+    delete process.env.NODE_ENV;
+    const summary = getEnvironmentSummary();
+    expect(summary.nodeEnv).toBe('undefined');
+  });
+
+  it('port falls back to "undefined" when PORT is not set', () => {
+    setRequiredVars();
+    delete process.env.PORT;
+    const summary = getEnvironmentSummary();
+    expect(summary.port).toBe('undefined');
+  });
+
+  it('logLevel falls back to "undefined" when LOG_LEVEL is not set', () => {
+    setRequiredVars();
+    delete process.env.LOG_LEVEL;
+    const summary = getEnvironmentSummary();
+    expect(summary.logLevel).toBe('undefined');
+  });
+});

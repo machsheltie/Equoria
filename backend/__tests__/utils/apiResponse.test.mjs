@@ -209,3 +209,83 @@ describe('responseHandler middleware', () => {
     expect(res.body.meta.pagination.total).toBe(5);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Default parameter branch coverage (lines 31-35, 51, 83-103, 123)
+// ---------------------------------------------------------------------------
+describe('ApiResponse static methods — default parameter branches', () => {
+  it('notFound() with no args uses default message "Resource not found"', () => {
+    const r = ApiResponse.notFound();
+    expect(r.success).toBe(false);
+    expect(r.message).toBe('Resource not found');
+    expect(r.meta.statusCode).toBe(404);
+  });
+
+  it('badRequest() with no args uses default message "Bad request"', () => {
+    const r = ApiResponse.badRequest();
+    expect(r.success).toBe(false);
+    expect(r.message).toBe('Bad request');
+    expect(r.meta.statusCode).toBe(400);
+  });
+
+  it('validationError() with no args uses default message and empty errors array', () => {
+    const r = ApiResponse.validationError();
+    expect(r.success).toBe(false);
+    expect(r.message).toBe('Validation failed');
+    expect(r.meta.validationErrors).toEqual([]);
+  });
+
+  it('serverError() with no args uses default message', () => {
+    const r = ApiResponse.serverError();
+    expect(r.message).toBe('Internal server error');
+  });
+});
+
+describe('responseHandler — default parameter branches for middleware methods', () => {
+  const app2 = express();
+  app2.use(responseHandler);
+
+  app2.get('/default-not-found', (req, res) => res.apiNotFound());
+  app2.get('/default-bad-request', (req, res) => res.apiBadRequest());
+  app2.get('/default-unauthorized', (req, res) => res.apiUnauthorized());
+  app2.get('/default-forbidden', (req, res) => res.apiForbidden());
+  app2.get('/default-conflict', (req, res) => res.apiConflict());
+  app2.get('/default-validation', (req, res) => res.apiValidationError());
+
+  it('apiNotFound() uses default message', async () => {
+    const res = await request(app2).get('/default-not-found');
+    expect(res.status).toBe(404);
+    expect(res.body.message).toBe('Resource not found');
+  });
+
+  it('apiBadRequest() uses default message', async () => {
+    const res = await request(app2).get('/default-bad-request');
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('Bad request');
+  });
+
+  it('apiUnauthorized() uses default message', async () => {
+    const res = await request(app2).get('/default-unauthorized');
+    expect(res.status).toBe(401);
+    expect(res.body.message).toBe('Unauthorized');
+  });
+
+  it('apiForbidden() uses default message', async () => {
+    const res = await request(app2).get('/default-forbidden');
+    expect(res.status).toBe(403);
+    expect(res.body.message).toBe('Forbidden');
+  });
+
+  it('apiConflict() uses default message', async () => {
+    const res = await request(app2).get('/default-conflict');
+    expect(res.status).toBe(409);
+    expect(res.body.message).toBe('Resource conflict');
+  });
+
+  it('apiValidationError() uses default message and empty errors', async () => {
+    const res = await request(app2).get('/default-validation');
+    expect(res.status).toBe(400);
+    expect(res.body.message).toBe('Validation failed');
+    expect(res.body.meta.validationErrors).toEqual([]);
+  });
+});

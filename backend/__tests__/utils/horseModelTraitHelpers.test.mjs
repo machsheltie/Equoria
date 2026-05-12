@@ -285,3 +285,46 @@ describe('validateTraitStructure', () => {
     expect(validateTraitStructure('string')).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Catch-block coverage via Proxy (lines 128-129, 179-182, 244-245, 295-298)
+// ---------------------------------------------------------------------------
+
+const throwingProxy = () =>
+  new Proxy(
+    {},
+    {
+      get(_, key) {
+        if (typeof key === 'string') throw new Error('proxy bomb');
+        return undefined;
+      },
+    },
+  );
+
+describe('_getAllTraits — catch block (lines 128-129)', () => {
+  it('returns [] and does not throw when Proxy triggers property-access error', () => {
+    const result = _getAllTraits(throwingProxy());
+    expect(result).toEqual([]);
+  });
+});
+
+describe('getTraitCategory — catch block (lines 179-182)', () => {
+  it('returns null and does not throw when Proxy triggers property-access error', () => {
+    const result = getTraitCategory(throwingProxy(), 'resilient');
+    expect(result).toBeNull();
+  });
+});
+
+describe('countTraits — catch block (lines 244-245)', () => {
+  it('returns 0 and does not throw when Proxy triggers property-access error', () => {
+    const result = countTraits(throwingProxy());
+    expect(result).toBe(0);
+  });
+});
+
+describe('validateTraitStructure — catch block (lines 295-298)', () => {
+  it('returns false and does not throw when Proxy triggers property-access error', () => {
+    const result = validateTraitStructure(throwingProxy());
+    expect(result).toBe(false);
+  });
+});
