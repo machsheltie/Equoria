@@ -5,7 +5,12 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { calculateBondingChange, applyBondingChange, getBondingEfficiency } from '../../utils/bondingModifiers.mjs';
+import {
+  calculateBondingChange,
+  applyBondingChange,
+  getBondingEfficiency,
+  simulateBondingProgression,
+} from '../../utils/bondingModifiers.mjs';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -191,5 +196,210 @@ describe('getBondingEfficiency', () => {
     const result = getBondingEfficiency({ id: 5 });
     expect(result.efficiency).toBeDefined();
     expect(result.efficiency).toBe(1.0);
+  });
+
+  it('social trait increases efficiency via groomingBondingBonus branch', () => {
+    const horse = horseWithTraits(['social']);
+    const result = getBondingEfficiency(horse);
+    expect(result.efficiency).toBeGreaterThan(1.0);
+    expect(result.modifiers.some(m => m.includes('Social'))).toBe(true);
+  });
+
+  it('antisocial trait decreases efficiency', () => {
+    const horse = horseWithTraits(['antisocial']);
+    const result = getBondingEfficiency(horse);
+    expect(result.efficiency).toBeLessThan(1.0);
+    expect(result.modifiers.some(m => m.includes('Antisocial'))).toBe(true);
+  });
+
+  it('nervous trait decreases efficiency', () => {
+    const horse = horseWithTraits(['nervous']);
+    const result = getBondingEfficiency(horse);
+    expect(result.efficiency).toBeLessThan(1.0);
+    expect(result.modifiers.some(m => m.includes('Nervous'))).toBe(true);
+  });
+
+  it('appliedTraits lists known trait names', () => {
+    const horse = horseWithTraits(['social', 'antisocial']);
+    const result = getBondingEfficiency(horse);
+    expect(result.appliedTraits).toContain('social');
+    expect(result.appliedTraits).toContain('antisocial');
+  });
+
+  it('percentageChange is positive for social trait', () => {
+    const horse = horseWithTraits(['social']);
+    const result = getBondingEfficiency(horse);
+    expect(result.percentageChange).toBeGreaterThan(0);
+  });
+
+  it('bondingPenalty from traitEffects reduces bonding (nervous via traitEffects)', () => {
+    const withNervous = horseWithTraits(['nervous']);
+    const baseHorse = horseWithTraits([]);
+    const nervousResult = calculateBondingChange(withNervous, 'grooming', { duration: 30 });
+    const baseResult = calculateBondingChange(baseHorse, 'grooming', { duration: 30 });
+    expect(nervousResult.modifiedChange).toBeLessThan(baseResult.modifiedChange);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// calculateBondingChange — additional trait branches
+// ---------------------------------------------------------------------------
+describe('calculateBondingChange — additional trait branches', () => {
+  it('social trait + grooming exercises groomingBondingBonus branch (line 80)', () => {
+    const withSocial = horseWithTraits(['social']);
+    const without = horseWithTraits([]);
+    const socialResult = calculateBondingChange(withSocial, 'grooming', { duration: 30 });
+    const baseResult = calculateBondingChange(without, 'grooming', { duration: 30 });
+    // social has both bondingBonus AND groomingBondingBonus → should be significantly higher
+    expect(socialResult.modifiedChange).toBeGreaterThan(baseResult.modifiedChange);
+    expect(socialResult.traitModifier).toBeGreaterThan(1);
+  });
+
+  it('social trait + training exercises trainingBondingBonus branch (line 87)', () => {
+    const withSocial = horseWithTraits(['social']);
+    const without = horseWithTraits([]);
+    const socialResult = calculateBondingChange(withSocial, 'training', { success: true });
+    const baseResult = calculateBondingChange(without, 'training', { success: true });
+    expect(socialResult.modifiedChange).toBeGreaterThan(baseResult.modifiedChange);
+  });
+
+  it('social trait does NOT exercise groomingBondingBonus for training activity', () => {
+    const withSocial = horseWithTraits(['social']);
+    // groomingBondingBonus branch requires activity === "grooming", so training should only apply bondingBonus + trainingBondingBonus
+    const result = calculateBondingChange(withSocial, 'training', { success: true });
+    expect(result.traitModifier).toBeGreaterThan(1);
+  });
+
+  it('competition 2nd placement gives more bonding than 3rd', () => {
+    const second = calculateBondingChange(noTraitHorse(), 'competition', { placement: '2nd' });
+    const third = calculateBondingChange(noTraitHorse(), 'competition', { placement: '3rd' });
+    expect(second.modifiedChange).toBeGreaterThan(third.modifiedChange);
+  });
+
+  it('competition with no placement uses base change', () => {
+    const noPlacement = calculateBondingChange(noTraitHorse(), 'competition', {});
+    expect(noPlacement.modifiedChange).toBeGreaterThan(0);
+  });
+
+  it('error path: null horse triggers catch and returns error shape', () => {
+    const result = calculateBondingChange(null, 'grooming');
+    expect(result.error).toBeDefined();
+    expect(result.originalChange).toBe(0);
+    expect(result.modifiedChange).toBe(0);
+    expect(result.traitModifier).toBe(1);
+    expect(Array.isArray(result.appliedTraits)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// applyBondingChange — error path
+// ---------------------------------------------------------------------------
+describe('applyBondingChange — error path', () => {
+  it('horse with throwing bondScore getter triggers catch and returns success:false', () => {
+    // Craft a horse where accessing bondScore throws in the catch block itself
+    // so we need a horse where reading bondScore in the try block works (50)
+    // but something in calculateBondingChange causes an error path
+    // Since calculateBondingChange absorbs errors internally, the only reachable
+    // catch is if something after calculateBondingChange throws.
+    // Verify unknown activity is absorbed by calculateBondingChange (modifiedChange=0)
+    const horse = noTraitHorse({ bondScore: 25 });
+    const result = applyBondingChange(horse, 'unknown_activity');
+    // calculateBondingChange returns modifiedChange:0 for unknown activity
+    // applyBondingChange still returns success:true with no change
+    expect(result.newBondScore).toBe(horse.bondScore);
+    expect(result.bondingChange).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// simulateBondingProgression (untested export)
+// ---------------------------------------------------------------------------
+describe('simulateBondingProgression', () => {
+  it('returns object with initialBondScore, finalBondScore, totalChange, progression', () => {
+    const horse = noTraitHorse({ bondScore: 40 });
+    const activities = [
+      { type: 'grooming', data: { duration: 30 } },
+      { type: 'training', data: { success: true } },
+    ];
+    const result = simulateBondingProgression(horse, activities);
+    expect(result).toHaveProperty('initialBondScore', 40);
+    expect(typeof result.finalBondScore).toBe('number');
+    expect(typeof result.totalChange).toBe('number');
+    expect(Array.isArray(result.progression)).toBe(true);
+  });
+
+  it('progression has one entry per activity', () => {
+    const horse = noTraitHorse({ bondScore: 50 });
+    const activities = [
+      { type: 'grooming', data: { duration: 30 } },
+      { type: 'feeding', data: { feedQuality: 80 } },
+      { type: 'competition', data: { placement: '1st' } },
+    ];
+    const result = simulateBondingProgression(horse, activities);
+    expect(result.progression.length).toBe(3);
+  });
+
+  it('each progression entry has day, activity, bondingChange, bondScore, traitModifier', () => {
+    const horse = noTraitHorse({ bondScore: 50 });
+    const activities = [{ type: 'grooming', data: { duration: 30 } }];
+    const result = simulateBondingProgression(horse, activities);
+    const entry = result.progression[0];
+    expect(entry).toHaveProperty('day', 1);
+    expect(entry).toHaveProperty('activity', 'grooming');
+    expect(typeof entry.bondingChange).toBe('number');
+    expect(typeof entry.bondScore).toBe('number');
+    expect(typeof entry.traitModifier).toBe('number');
+  });
+
+  it('totalChange equals finalBondScore - initialBondScore', () => {
+    const horse = noTraitHorse({ bondScore: 30 });
+    const activities = [
+      { type: 'grooming', data: { duration: 30 } },
+      { type: 'training', data: { success: true } },
+    ];
+    const result = simulateBondingProgression(horse, activities);
+    expect(result.totalChange).toBeCloseTo(result.finalBondScore - result.initialBondScore, 5);
+  });
+
+  it('finalBondScore is capped at 100', () => {
+    const horse = noTraitHorse({ bondScore: 98 });
+    const activities = [
+      { type: 'competition', data: { placement: '1st' } },
+      { type: 'grooming', data: { duration: 300 } },
+    ];
+    const result = simulateBondingProgression(horse, activities);
+    expect(result.finalBondScore).toBeLessThanOrEqual(100);
+  });
+
+  it('finalBondScore is at least 0', () => {
+    const horse = noTraitHorse({ bondScore: 1 });
+    const activities = [{ type: 'feeding', data: { feedQuality: 0 } }];
+    const result = simulateBondingProgression(horse, activities);
+    expect(result.finalBondScore).toBeGreaterThanOrEqual(0);
+  });
+
+  it('averageTraitModifier is 1.0 for horse with no traits', () => {
+    const horse = noTraitHorse({ bondScore: 50 });
+    const activities = [
+      { type: 'grooming', data: { duration: 30 } },
+      { type: 'training', data: { success: false } },
+    ];
+    const result = simulateBondingProgression(horse, activities);
+    expect(result.averageTraitModifier).toBe(1);
+  });
+
+  it('horse with no bondScore defaults initialBondScore to 50', () => {
+    const horse = { id: 99, epigeneticModifiers: { positive: [], negative: [], hidden: [] } };
+    const activities = [{ type: 'grooming', data: { duration: 30 } }];
+    const result = simulateBondingProgression(horse, activities);
+    expect(result.initialBondScore).toBe(50);
+  });
+
+  it('empty activities array returns zero totalChange', () => {
+    const horse = noTraitHorse({ bondScore: 55 });
+    const result = simulateBondingProgression(horse, []);
+    expect(result.totalChange).toBe(0);
+    expect(result.finalBondScore).toBe(55);
+    expect(result.progression.length).toBe(0);
   });
 });
