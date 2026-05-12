@@ -701,3 +701,25 @@ describe('validateFileUpload — filename fallback branch', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// validateTrainingData — missing discipline branch (line 243)
+// ---------------------------------------------------------------------------
+describe('validateTrainingData — missing discipline branch (line 243)', () => {
+  it('omitting discipline pushes "Discipline is required" and fails validation (line 243)', () => {
+    const result = validateTrainingData({ horseId: 1 });
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toContain('Discipline is required');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// validateTransactionData — missing type branch (line 291)
+// ---------------------------------------------------------------------------
+describe('validateTransactionData — missing type branch (line 291)', () => {
+  it('omitting type pushes "Transaction type is required" and fails validation (line 291)', () => {
+    const result = validateTransactionData({ amount: 100 });
+    expect(result.isValid).toBe(false);
+    expect(result.errors).toContain('Transaction type is required');
+  });
+});

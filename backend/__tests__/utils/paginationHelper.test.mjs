@@ -15,6 +15,8 @@ import {
   buildCursorPaginationMetadata,
   getPrismaQueryParams,
   paginationMiddleware,
+  buildPaginatedResponse,
+  buildCursorPaginatedResponse,
 } from '../../utils/paginationHelper.mjs';
 
 // Minimal fake req builder
@@ -304,5 +306,59 @@ describe('paginationMiddleware', () => {
     const req = { method: 'POST', query: {} };
     middleware(req, {}, () => {});
     expect(req.pagination).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildPaginatedResponse — lines 148-152
+// ---------------------------------------------------------------------------
+describe('buildPaginatedResponse', () => {
+  const makeRes = () => ({
+    status: code => ({ json: body => ({ statusCode: code, ...body }) }),
+  });
+
+  it('returns 200 response with success, data, pagination, meta (lines 148-152)', () => {
+    const res = makeRes();
+    const data = [{ id: 1 }, { id: 2 }];
+    const result = buildPaginatedResponse(res, data, { page: 1, limit: 20, total: 2 });
+    expect(result.statusCode).toBe(200);
+    expect(result.success).toBe(true);
+    expect(result.data).toBe(data);
+    expect(result.pagination).toBeDefined();
+    expect(typeof result.meta.timestamp).toBe('string');
+  });
+
+  it('spreads additionalMeta into response meta object', () => {
+    const res = makeRes();
+    const result = buildPaginatedResponse(res, [], { page: 1, limit: 10, total: 0 }, { cached: true });
+    expect(result.meta.cached).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildCursorPaginatedResponse — lines 289-291
+// ---------------------------------------------------------------------------
+describe('buildCursorPaginatedResponse', () => {
+  const makeRes = () => ({
+    status: code => ({ json: body => ({ statusCode: code, ...body }) }),
+  });
+
+  it('returns 200 cursor-paginated response (lines 289-291)', () => {
+    const res = makeRes();
+    const data = [{ id: 1 }, { id: 2 }];
+    const result = buildCursorPaginatedResponse(res, data, 20);
+    expect(result.statusCode).toBe(200);
+    expect(result.success).toBe(true);
+    expect(result.data).toBe(data);
+    expect(result.pagination).toBeDefined();
+    expect(typeof result.meta.timestamp).toBe('string');
+  });
+
+  it('uses custom cursorField and merges additionalMeta', () => {
+    const res = makeRes();
+    const data = [{ uuid: 'aaa' }, { uuid: 'bbb' }];
+    const result = buildCursorPaginatedResponse(res, data, 2, 'uuid', { source: 'db' });
+    expect(result.pagination.cursorField).toBe('uuid');
+    expect(result.meta.source).toBe('db');
   });
 });
