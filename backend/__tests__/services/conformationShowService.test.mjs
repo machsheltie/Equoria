@@ -19,6 +19,8 @@ import {
   resolveReward,
   resolveTitle,
   applyBreedingValueBoost,
+  validateConformationEntry,
+  executeConformationShow,
 } from '../../services/conformationShowService.mjs';
 
 // ── isValidConformationClass ──────────────────────────────────────────────────
@@ -305,5 +307,93 @@ describe('applyBreedingValueBoost (Equoria-jkht)', () => {
   it('clamps to BREEDING_BOOST_CAP (0.15) when sum exceeds cap', () => {
     expect(applyBreedingValueBoost(0.12, 0.05)).toBeCloseTo(0.15);
     expect(applyBreedingValueBoost(0.15, 0.05)).toBeCloseTo(0.15);
+  });
+});
+
+// ── calculateConformationShowScore — null horse path (Equoria-jkht) ──────────
+// Line 223: !horse → throws inside try → caught at 274 → returns error shape.
+
+describe('calculateConformationShowScore — null horse (Equoria-jkht)', () => {
+  it('returns error shape with finalScore 0 when horse is null (line 223 throw)', () => {
+    const groom = { showHandlingSkill: 'novice', personality: 'gentle' };
+    const result = calculateConformationShowScore(null, groom, 'Mares');
+    expect(result.finalScore).toBe(0);
+    expect(result.error).toBe('horse and groom are required');
+  });
+});
+
+// ── validateConformationEntry — pure-input branches (Equoria-jkht) ────────────
+// Tests that cover lines 324-422 using in-memory objects (no real DB needed for
+// null-id paths; the groom-assignment DB query is skipped when horse.id === null).
+
+describe('validateConformationEntry — pure-input branches (Equoria-jkht)', () => {
+  it('returns early with Horse/groom required when horse is null (lines 325-332)', async () => {
+    const result = await validateConformationEntry(null, { id: 1 }, 'Mares', 'uid');
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('Horse and groom are required');
+    expect(result.assignment).toBeNull();
+    expect(result.ageClass).toBeNull();
+  });
+
+  it('pushes invalid-class error and groom-not-assigned error when class is bad and ids are null', async () => {
+    const horse = { id: null, age: 2, healthStatus: 'Good', stressLevel: 5, conformationScores: { head: 70 } };
+    const groom = { id: null };
+    const result = await validateConformationEntry(horse, groom, 'BadClass', 'uid');
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => e.includes('not a valid conformation show class'))).toBe(true);
+    expect(result.errors.some(e => e.includes('Groom must be assigned'))).toBe(true);
+  });
+
+  it('pushes age-invalid error when horse.age < 0 (line 389-391)', async () => {
+    const horse = { id: null, age: -1, healthStatus: 'Good', stressLevel: 5, conformationScores: null };
+    const groom = { id: null };
+    const result = await validateConformationEntry(horse, groom, 'Mares', 'uid');
+    expect(result.errors.some(e => e.includes('invalid'))).toBe(true);
+  });
+
+  it('pushes health error when healthStatus is not Excellent or Good (lines 398-401)', async () => {
+    const horse = { id: null, age: 2, healthStatus: 'Injured', stressLevel: 5, conformationScores: null };
+    const groom = { id: null };
+    const result = await validateConformationEntry(horse, groom, 'Mares', 'uid');
+    expect(result.errors.some(e => e.includes('healthy'))).toBe(true);
+  });
+
+  it('adds stress warning when stressLevel > 80 (lines 404-406)', async () => {
+    const horse = { id: null, age: 2, healthStatus: 'Good', stressLevel: 90, conformationScores: null };
+    const groom = { id: null };
+    const result = await validateConformationEntry(horse, groom, 'Mares', 'uid');
+    expect(result.warnings.some(w => w.includes('stress'))).toBe(true);
+  });
+
+  it('adds no-conformationScores warning when conformationScores is null (lines 409-411)', async () => {
+    const horse = { id: null, age: 2, healthStatus: 'Excellent', stressLevel: 5, conformationScores: null };
+    const groom = { id: null };
+    const result = await validateConformationEntry(horse, groom, 'Mares', 'uid');
+    expect(result.warnings.some(w => w.includes('conformation scores'))).toBe(true);
+  });
+
+  it('catch block: returns Validation error occurred when horse.id access throws (lines 420-428)', async () => {
+    // A Proxy that throws on property access after the !horse check passes
+    const throwingHorse = new Proxy(
+      {},
+      {
+        get(target, prop) {
+          if (prop === 'id') throw new Error('id access bomb');
+          return undefined;
+        },
+      },
+    );
+    const result = await validateConformationEntry(throwingHorse, { id: null }, 'Mares', 'uid');
+    expect(result.valid).toBe(false);
+    expect(result.errors).toContain('Validation error occurred');
+  });
+});
+
+// ── executeConformationShow — show-not-found path (Equoria-jkht) ──────────────
+// Lines 521-525: showId not found → throws 'Show not found' with statusCode 400.
+
+describe('executeConformationShow — show-not-found (Equoria-jkht)', () => {
+  it('throws "Show not found" for a non-existent showId', async () => {
+    await expect(executeConformationShow(-9999)).rejects.toThrow('Show not found');
   });
 });
