@@ -593,7 +593,9 @@ describe('validateRateLimit', () => {
   });
 
   it('expired requests are pruned from the window (filter false-branch)', () => {
-    if (!global.rateLimitStore) global.rateLimitStore = new Map();
+    if (!global.rateLimitStore) {
+      global.rateLimitStore = new Map();
+    }
     // Inject a 2-minute-old timestamp — outside 60s window
     global.rateLimitStore.set('expUser_expOp', [Date.now() - 120_000]);
     const result = validateRateLimit('expUser', 'expOp', 2, 60_000);

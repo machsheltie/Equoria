@@ -149,7 +149,7 @@ describe('Equoria-2l00: rejectPollutedRequestBody fail-closed for non-AppError',
         args =>
           typeof args[0] === 'string' &&
           args[0].includes('Unexpected') &&
-          args[1] != null &&
+          args[1] !== null &&
           args[1].unexpected === true,
       ),
     ).toBe(true);

@@ -35,7 +35,7 @@ describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () =
   let emptyUser;
   let emptyToken;
   let seededShowId;
-  let seededCompetitionResultId;
+  let _seededCompetitionResultId;
   const createdHorseIds = [];
 
   beforeAll(async () => {
@@ -94,7 +94,7 @@ describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () =
         showId: show.id,
       },
     });
-    seededCompetitionResultId = result.id;
+    _seededCompetitionResultId = result.id;
 
     // User with no horses, no xp events — should still appear in level ranking
     // but have 0 for horse-earnings/horse-performance primary stats.

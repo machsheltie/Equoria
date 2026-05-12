@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { HealthCheck, healthCheckHandler, livenessHandler, readinessHandler } from '../../utils/healthCheck.mjs';
+import { HealthCheck } from '../../utils/healthCheck.mjs';
 import {
   AT_BIRTH_TRAITS,
   evaluateTraitConditions,

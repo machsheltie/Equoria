@@ -128,12 +128,7 @@ describe('createRateLimiter', () => {
       json: () => {},
       send: () => {},
     };
-    let nextCalled = false;
-    expect(() =>
-      limiter(req, res, () => {
-        nextCalled = true;
-      }),
-    ).not.toThrow();
+    expect(() => limiter(req, res, () => {})).not.toThrow();
   });
 });
 

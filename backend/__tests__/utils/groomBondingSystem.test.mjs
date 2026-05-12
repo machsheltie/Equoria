@@ -17,6 +17,7 @@ import {
   checkBurnoutImmunity,
   updateTaskLog,
   updateStreakTracking,
+  checkTaskMutualExclusivity,
 } from '../../utils/groomBondingSystem.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 
@@ -211,7 +212,6 @@ describe('validateGroomingEligibility', () => {
 // The tests above cover happy-path shapes; the tests below cover every branch.
 
 import { GROOM_CONFIG } from '../../config/groomConfig.mjs';
-import { checkTaskMutualExclusivity } from '../../utils/groomBondingSystem.mjs';
 
 const ENRICHMENT_TASK = GROOM_CONFIG.ELIGIBLE_FOAL_ENRICHMENT_TASKS[0]; // 'desensitization'
 const ENRICHMENT_TASK2 = GROOM_CONFIG.ELIGIBLE_FOAL_ENRICHMENT_TASKS[1]; // 'trust_building'

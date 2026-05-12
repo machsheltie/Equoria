@@ -7,7 +7,7 @@
  * without controlling Math.random.
  */
 
-import { describe, beforeEach, expect, it } from '@jest/globals';
+import { describe, expect, it } from '@jest/globals';
 import { applyEpigeneticTraitsAtBirth } from '../utils/applyEpigeneticTraitsAtBirth.mjs';
 
 /**

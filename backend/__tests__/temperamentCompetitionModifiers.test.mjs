@@ -2,7 +2,7 @@
 // Covers TEMPERAMENT_COMPETITION_MODIFIERS constant, getTemperamentCompetitionModifiers(),
 // and integration with calculateCompetitionScore() (zeroLuck=()=>0.5 → zero luck via DI).
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 import {
   getTemperamentCompetitionModifiers,
   TEMPERAMENT_COMPETITION_MODIFIERS,

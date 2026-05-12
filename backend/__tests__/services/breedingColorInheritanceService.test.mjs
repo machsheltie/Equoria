@@ -16,7 +16,7 @@ import {
   inheritColorGenotype,
   LETHAL_COMBINATIONS,
 } from '../../modules/horses/services/breedingColorInheritanceService.mjs';
-import { CORE_LOCI, GENERIC_DEFAULTS } from '../../modules/horses/services/genotypeGenerationService.mjs';
+import { CORE_LOCI } from '../../modules/horses/services/genotypeGenerationService.mjs';
 
 // ---------------------------------------------------------------------------
 // splitAlleles

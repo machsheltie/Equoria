@@ -13,7 +13,7 @@ describe('statMap', () => {
   });
 
   it('each discipline has exactly 3 stats', () => {
-    for (const [discipline, stats] of Object.entries(statMap)) {
+    for (const [_discipline, stats] of Object.entries(statMap)) {
       expect(stats).toHaveLength(3);
       expect(stats.every(s => typeof s === 'string')).toBe(true);
     }

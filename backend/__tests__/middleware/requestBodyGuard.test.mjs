@@ -191,7 +191,7 @@ describe('findPollutionKey', () => {
   });
 
   it('detects pollution inside array elements', () => {
-    const obj = { items: [{ __proto__: { evil: true } }] };
+    const _obj = { items: [{ __proto__: { evil: true } }] };
     // JSON.parse version for reliable own-property testing
     const parsed = JSON.parse('{"items":[{"__proto__":{"evil":true}}]}');
     const result = findPollutionKey(parsed);

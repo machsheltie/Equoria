@@ -14,7 +14,6 @@ import { describe, it, expect, beforeEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import {
   getCachedQuery,
-  invalidateCache,
   invalidateCachePattern,
   invalidateCacheMultiple,
   clearAllCache,
@@ -27,10 +26,6 @@ import {
 
 function uid() {
   return randomBytes(6).toString('hex');
-}
-
-function noop() {
-  return async () => ({ noop: true });
 }
 
 beforeEach(() => {
