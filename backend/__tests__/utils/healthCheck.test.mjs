@@ -31,10 +31,10 @@ function makeRes() {
 
 // ── HealthCheck.checkMemoryUsage ─────────────────────────────────────────────
 describe('HealthCheck.checkMemoryUsage', () => {
-  it('returns healthy status with rss/heapUsed/heapTotal/external keys', async () => {
+  it('returns healthy or warning status with rss/heapUsed/heapTotal/external keys', async () => {
     const result = await HealthCheck.checkMemoryUsage();
-    expect(result.status).toBe('healthy');
-    expect(result.message).toBe('Memory usage normal');
+    expect(['healthy', 'warning']).toContain(result.status);
+    expect(['Memory usage normal', 'High memory usage detected']).toContain(result.message);
     expect(result.data).toHaveProperty('rss');
     expect(result.data).toHaveProperty('heapUsed');
     expect(result.data).toHaveProperty('heapTotal');

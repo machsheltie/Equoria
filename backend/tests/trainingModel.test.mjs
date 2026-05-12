@@ -78,7 +78,7 @@ describe('Training Model', () => {
       expect(result.id).toBeDefined();
       expect(result.horseId).toBe(testHorse.id);
       expect(result.discipline).toBe('Show Jumping');
-      expect(result.trainedAt).toBeInstanceOf(Date);
+      expect(Object.prototype.toString.call(result.trainedAt)).toBe('[object Date]');
     });
 
     it('throws if horseId is missing', async () => {
@@ -114,7 +114,7 @@ describe('Training Model', () => {
 
       const result = await getLastTrainingDate(testHorse.id, 'Dressage');
 
-      expect(result).toBeInstanceOf(Date);
+      expect(Object.prototype.toString.call(result)).toBe('[object Date]');
     });
 
     it('returns null if no training records found', async () => {
@@ -164,8 +164,8 @@ describe('Training Model', () => {
       const crossCountryDate = await getLastTrainingDate(testHorse.id, 'Cross Country');
       const racingDate = await getLastTrainingDate(testHorse.id, 'Racing');
 
-      expect(crossCountryDate).toBeInstanceOf(Date);
-      expect(racingDate).toBeInstanceOf(Date);
+      expect(Object.prototype.toString.call(crossCountryDate)).toBe('[object Date]');
+      expect(Object.prototype.toString.call(racingDate)).toBe('[object Date]');
     });
 
     it('horse age is correct for training eligibility logic', async () => {
