@@ -264,3 +264,181 @@ describe('applyEpigeneticTraitsAtBirth — error handling', () => {
     expect(Array.isArray(result.positive)).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// inbreeding severity branches
+// ---------------------------------------------------------------------------
+describe('applyEpigeneticTraitsAtBirth — inbreeding severity branches', () => {
+  it('moderate severity (3 occurrences): exercises second ternary true-branch (fragileChance=0.5)', () => {
+    // maxCount=3: first ternary (>=4) false → second ternary (>=3) true → severity='moderate'
+    let found = false;
+    for (let i = 0; i < 200; i++) {
+      const result = applyEpigeneticTraitsAtBirth({
+        mare: baseMare(),
+        lineage: lineageWithInbreeding(55, 3),
+        feedQuality: 50,
+        stressLevel: 30,
+      });
+      if (result.negative.includes('fragile') || result.negative.includes('reactive')) {
+        found = true;
+        break;
+      }
+    }
+    expect(found).toBe(true);
+  });
+
+  it('low severity (2 occurrences): exercises both ternary false-branches (fragileChance=0.25, reactiveChance=0.2)', () => {
+    // maxCount=2: first ternary (>=4) false → second ternary (>=3) false → severity='low'
+    let found = false;
+    for (let i = 0; i < 200; i++) {
+      const result = applyEpigeneticTraitsAtBirth({
+        mare: baseMare(),
+        lineage: lineageWithInbreeding(66, 2),
+        feedQuality: 50,
+        stressLevel: 30,
+      });
+      if (
+        result.negative.includes('fragile') ||
+        result.negative.includes('reactive') ||
+        result.negative.includes('low_immunity')
+      ) {
+        found = true;
+        break;
+      }
+    }
+    expect(found).toBe(true);
+  });
+
+  it('null ancestor in lineage exercises ancestor&&ancestor.id false-branch in analyzeInbreeding', () => {
+    // null ancestor → `ancestor && ancestor.id` is false → skipped
+    const lineageWithNull = [null, { id: 10 }, { id: 10 }];
+    const result = applyEpigeneticTraitsAtBirth({
+      mare: baseMare(),
+      lineage: lineageWithNull,
+      feedQuality: 50,
+      stressLevel: 30,
+    });
+    expect(Array.isArray(result.positive)).toBe(true);
+    expect(Array.isArray(result.negative)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// analyzeDisciplineSpecialization branches
+// ---------------------------------------------------------------------------
+describe('applyEpigeneticTraitsAtBirth — analyzeDisciplineSpecialization branches', () => {
+  it('3 ancestors with mostCompetedDiscipline exercises that true-branch in analyzeDisciplineSpecialization', () => {
+    const lineage = Array.from({ length: 3 }, (_, i) => ({
+      id: i + 200,
+      mostCompetedDiscipline: 'Racing',
+    }));
+    let found = false;
+    for (let i = 0; i < 100; i++) {
+      const result = applyEpigeneticTraitsAtBirth({
+        mare: baseMare(),
+        lineage,
+        feedQuality: 50,
+        stressLevel: 30,
+      });
+      if (result.positive.some(t => t.includes('discipline_affinity') || t === 'legacy_talent')) {
+        found = true;
+        break;
+      }
+    }
+    expect(found).toBe(true);
+  });
+
+  it('3 ancestors with disciplineScores exercises that true-branch and calls getHighestScoringDiscipline', () => {
+    const lineage = Array.from({ length: 3 }, (_, i) => ({
+      id: i + 300,
+      disciplineScores: { Dressage: 90, Racing: 50 },
+    }));
+    let found = false;
+    for (let i = 0; i < 100; i++) {
+      const result = applyEpigeneticTraitsAtBirth({
+        mare: baseMare(),
+        lineage,
+        feedQuality: 50,
+        stressLevel: 30,
+      });
+      if (result.positive.some(t => t.includes('discipline_affinity'))) {
+        found = true;
+        break;
+      }
+    }
+    expect(found).toBe(true);
+  });
+
+  it('null ancestor exercises ancestor&&ancestor.discipline false-branch in analyzeDisciplineSpecialization', () => {
+    // null → all three `ancestor && ancestor.X` checks in analyzeDisciplineSpecialization are false
+    const lineage = [null, { id: 20, discipline: 'Jumping' }];
+    const result = applyEpigeneticTraitsAtBirth({
+      mare: baseMare(),
+      lineage,
+      feedQuality: 50,
+      stressLevel: 30,
+    });
+    expect(Array.isArray(result.positive)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// getHighestScoringDiscipline branches
+// ---------------------------------------------------------------------------
+describe('applyEpigeneticTraitsAtBirth — getHighestScoringDiscipline branches', () => {
+  it('string disciplineScores exercises typeof!==object guard true-branch → returns null, no affinity', () => {
+    // ancestor.disciplineScores = 'Racing' (string) → typeof 'Racing' !== 'object' is true → null returned
+    const lineage = [{ id: 400, disciplineScores: 'Racing' }];
+    const result = applyEpigeneticTraitsAtBirth({
+      mare: baseMare(),
+      lineage,
+      feedQuality: 50,
+      stressLevel: 30,
+    });
+    // Only 1 ancestor → count < 3 → no specialization
+    expect(result.positive.some(t => t.includes('discipline_affinity'))).toBe(false);
+  });
+
+  it('mixed score types exercise typeof score===number false-branch for non-number entries', () => {
+    // disciplineScores: { Racing: 'fast', Dressage: 90 }
+    // Racing: typeof 'fast' !== 'number' → false branch (skip)
+    // Dressage: typeof 90 === 'number' → true branch (counted as highest)
+    // 3 ancestors → Dressage count = 3 → specialization triggers
+    const lineage = Array.from({ length: 3 }, (_, i) => ({
+      id: i + 500,
+      disciplineScores: { Racing: 'fast', Dressage: 90 },
+    }));
+    let found = false;
+    for (let i = 0; i < 100; i++) {
+      const result = applyEpigeneticTraitsAtBirth({
+        mare: baseMare(),
+        lineage,
+        feedQuality: 50,
+        stressLevel: 30,
+      });
+      if (result.positive.some(t => t.includes('discipline_affinity_dressage'))) {
+        found = true;
+        break;
+      }
+    }
+    expect(found).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// fallback branches
+// ---------------------------------------------------------------------------
+describe('applyEpigeneticTraitsAtBirth — fallback branches', () => {
+  it('mare without stressLevel property exercises mare.stressLevel||50 right-branch (defaults to 50)', () => {
+    // stressLevel param omitted → stressLevel!==undefined is false → use mare.stressLevel||50
+    // mare has no stressLevel key → undefined||50 = 50 (right-branch of || covered)
+    const mare = { id: 1 };
+    const result = applyEpigeneticTraitsAtBirth({
+      mare,
+      lineage: emptyLineage(),
+      feedQuality: 50,
+    });
+    expect(Array.isArray(result.positive)).toBe(true);
+    expect(Array.isArray(result.negative)).toBe(true);
+  });
+});
