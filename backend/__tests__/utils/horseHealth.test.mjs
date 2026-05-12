@@ -90,6 +90,11 @@ describe('getVetHealth', () => {
     ).toBe('excellent');
   });
 
+  it('returns free-form vet finding unchanged when not in KNOWN_BANDS (normalizeHealthOverride false-branch)', () => {
+    // 'Lameness' is not a known band → normalizeHealthOverride returns it unchanged
+    expect(getVetHealth({ age: 5, lastVettedDate: NOW, healthStatus: 'Lameness' }, NOW)).toBe('Lameness');
+  });
+
   it('returns excellent for ≤7 day gap', () => {
     expect(getVetHealth({ age: 5, lastVettedDate: new Date('2026-04-22T00:00:00Z') }, NOW)).toBe('excellent');
   });
@@ -178,5 +183,40 @@ describe('withHealth', () => {
     expect(result).toHaveProperty('feedHealth');
     expect(result).toHaveProperty('vetHealth');
     expect(result).toHaveProperty('displayedHealth');
+  });
+});
+
+// ── default-now branches (Equoria-jkht) ────────────────────────────────────────
+// All exported functions use `now = new Date()` default. Calling each without
+// `now` covers the default-parameter branch that no existing test exercised.
+
+describe('default now= parameter branches', () => {
+  it('alreadyFedToday uses new Date() default when now is omitted', () => {
+    // null lastFedDate → early false (no date math needed, safe to omit now)
+    expect(alreadyFedToday(null)).toBe(false);
+  });
+
+  it('getFeedHealth uses new Date() default when now is omitted', () => {
+    // age >= 21 → retired early, no date math — safe to omit now
+    expect(getFeedHealth({ age: 21 })).toBe('retired');
+  });
+
+  it('getVetHealth uses new Date() default when now is omitted', () => {
+    // age >= 21 → retired early, no date math — safe to omit now
+    expect(getVetHealth({ age: 25 })).toBe('retired');
+  });
+
+  it('getDisplayedHealth uses new Date() default when now is omitted', () => {
+    // retired horse: both sub-calls return 'retired', worseOf returns 'retired'
+    const result = getDisplayedHealth({ age: 22 });
+    expect(result).toBe('retired');
+  });
+
+  it('withHealth uses new Date() default when now is omitted', () => {
+    // retired horse: all three health fields = 'retired'
+    const result = withHealth({ age: 22 });
+    expect(result.feedHealth).toBe('retired');
+    expect(result.vetHealth).toBe('retired');
+    expect(result.displayedHealth).toBe('retired');
   });
 });

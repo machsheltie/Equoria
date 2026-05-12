@@ -427,3 +427,25 @@ describe('calculateEpigeneticTraits — legendary trait hidden (line 386)', () =
     expect(result.hidden).toContain('legendaryBloodline');
   });
 });
+
+// ---------------------------------------------------------------------------
+// determineTraitVisibility — negative trait visible branch (line 457)
+//
+// With seed=1 and damTraits=['nervous'] (negative, common), bondScore=50, stressLevel=50:
+//   call1 = 0.251 < 0.50 (inheritance prob for negative + neutral bond/stress) → INHERITED
+//   generateEnvironmentalTraits: environmentalFactor=0, no env traits generated
+//   determineTraitVisibility('nervous'): not rare/legendary; visibilityFactor=0 (not < -0.2)
+//   → returns traitDef.type = 'negative' → result.negative.push('nervous') (line 457)
+// ---------------------------------------------------------------------------
+describe('calculateEpigeneticTraits — negative trait placed in result.negative (line 457)', () => {
+  it('nervous (negative type) ends up in result.negative when not hidden, covers line 457', () => {
+    const result = calculateEpigeneticTraits({
+      damTraits: ['nervous'],
+      sireTraits: [],
+      damBondScore: 50,
+      damStressLevel: 50,
+      seed: 1,
+    });
+    expect(result.negative).toContain('nervous');
+  });
+});

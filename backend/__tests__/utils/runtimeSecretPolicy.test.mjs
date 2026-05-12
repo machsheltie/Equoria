@@ -27,8 +27,8 @@ describe('DEPLOYABLE_ENVS', () => {
     expect(DEPLOYABLE_ENVS.has('beta')).toBe(true);
   });
 
-  it('contains beta-readiness', () => {
-    expect(DEPLOYABLE_ENVS.has('beta-readiness')).toBe(true);
+  it('does not contain beta-readiness (local E2E harness, not a real deployment)', () => {
+    expect(DEPLOYABLE_ENVS.has('beta-readiness')).toBe(false);
   });
 
   it('does not contain development', () => {
@@ -52,8 +52,8 @@ describe('isDeployableEnvironment', () => {
     expect(isDeployableEnvironment('beta')).toBe(true);
   });
 
-  it('returns true for beta-readiness', () => {
-    expect(isDeployableEnvironment('beta-readiness')).toBe(true);
+  it('returns false for beta-readiness (local E2E harness, not a real deployment)', () => {
+    expect(isDeployableEnvironment('beta-readiness')).toBe(false);
   });
 
   it('returns false for development', () => {
