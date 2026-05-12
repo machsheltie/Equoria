@@ -50,10 +50,10 @@
     "tmp-auth-check.mjs",
     "verify-test-db.mjs"
   ],
-  "branches": 60,
-  "lines": 63,
-  "functions": 66,
-  "statements": 62,
+  "branches": 75,
+  "lines": 79,
+  "functions": 85,
+  "statements": 79,
   "watermarks": {
     "lines": [80, 95],
     "functions": [80, 95],

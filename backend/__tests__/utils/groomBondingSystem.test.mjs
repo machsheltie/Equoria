@@ -507,3 +507,29 @@ describe('processGroomingSession() — horse not found', () => {
     await expect(processGroomingSession(-1, null, 'brushing', 30)).rejects.toThrow('Horse with ID -1 not found');
   });
 });
+
+// ── processGroomingSession — ineligible-task path (lines 309-316) ────────────
+
+describe('processGroomingSession() — ineligible task returns success:false (lines 309-316)', () => {
+  it('returns { success:false } when task is not eligible for this horse age', async () => {
+    // horse.age=0 → only enrichment tasks eligible; 'brushing' is NOT eligible
+    const result = await processGroomingSession(horse.id, null, 'brushing', 30);
+    expect(result.success).toBe(false);
+    expect(result.reason).toBeDefined();
+  });
+});
+
+// ── processGroomingSession — happy path with no groom (lines 300-380) ─────────
+
+describe('processGroomingSession() — happy path, groomId=null (lines 300-380)', () => {
+  it('returns { success:true } with bonding effects for eligible task and no groom', async () => {
+    // horse.age=0 + 'desensitization' is an eligible enrichment task
+    const result = await processGroomingSession(horse.id, null, 'desensitization', 30);
+    expect(result.success).toBe(true);
+    expect(result.bondingEffects).toBeDefined();
+    expect(result.consecutiveDaysUpdate).toBeDefined();
+    expect(result.immunityCheck).toBeDefined();
+    expect(result.horse).toBeDefined();
+    expect(result.horse.id).toBe(horse.id);
+  });
+});

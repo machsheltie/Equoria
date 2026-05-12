@@ -611,3 +611,84 @@ describe('hasUltraRareAbility — switch break branches', () => {
     expect(hasUltraRareAbility(withUltraRare('phoenix-born'), 'reassignment_impossible')).toBe(false);
   });
 });
+
+// ---------------------------------------------------------------------------
+// || fallback branches — horse missing ultraRareTraits field (Equoria-jkht)
+// Lines 110, 164, 259, 398, 489, 556 (line 19/628 already covered by existing tests)
+// ---------------------------------------------------------------------------
+describe('missing-ultraRareTraits || fallback branches (Equoria-jkht)', () => {
+  it('applyUltraRareStressDecayEffects (line 110): {} horse uses [] fallback, decay unchanged', () => {
+    const result = applyUltraRareStressDecayEffects({}, 10);
+    expect(result.modifiedDecay).toBe(10);
+    expect(result.appliedEffects).toEqual([]);
+  });
+
+  it('applyUltraRareTrainingEffects (line 164): {} horse uses [] fallback, no effects applied', () => {
+    const result = applyUltraRareTrainingEffects({}, { success: true });
+    expect(result.appliedEffects).toEqual([]);
+  });
+
+  it('applyUltraRareCompetitionEffects (line 259): {} horse uses [] fallback, score unchanged', () => {
+    const result = applyUltraRareCompetitionEffects({}, 70);
+    expect(result.modifiedScore).toBe(70);
+    expect(result.appliedEffects).toEqual([]);
+  });
+
+  it('applyUltraRareBondingEffects (line 398): {} horse uses [] fallback, bond unchanged', () => {
+    const result = applyUltraRareBondingEffects({}, 5);
+    expect(result.modifiedBondChange).toBe(5);
+    expect(result.appliedEffects).toEqual([]);
+  });
+
+  it('applyUltraRareBurnoutEffects (line 489): {} horse uses [] fallback, burnout unchanged', () => {
+    const result = applyUltraRareBurnoutEffects({}, 7);
+    expect(result.modifiedBurnoutDays).toBe(7);
+    expect(result.appliedEffects).toEqual([]);
+  });
+
+  it('applyUltraRareStatEffects (line 556): {} horse uses [] fallback, stats unchanged', () => {
+    const result = applyUltraRareStatEffects({}, { speed: 50 });
+    expect(result.modifiedStats.speed).toBe(50);
+    expect(result.appliedEffects).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// if-condition FALSE branches — trait has mechanicalEffects but lacks the checked field
+// Line 125: stressDecayMultiplier FALSE
+// Line 450: bondCap FALSE
+// Line 516: burnoutRecoveryBonus FALSE
+// Line 572: (modifiedStats.stamina || 0) RIGHT branch when stamina is undefined
+// ---------------------------------------------------------------------------
+describe('if-condition FALSE branches — field absent despite mechanicalEffects (Equoria-jkht)', () => {
+  it('line 125 FALSE: iron-willed has mechanicalEffects but no stressDecayMultiplier → no multiplier', () => {
+    const result = applyUltraRareStressDecayEffects(withUltraRare('iron-willed'), 10);
+    expect(result.modifiedDecay).toBe(10);
+    expect(result.appliedEffects.some(e => e.effect === 'stress_decay_multiplier')).toBe(false);
+  });
+
+  it('line 450 FALSE: iron-willed has mechanicalEffects but no bondCap → no cap applied', () => {
+    const result = applyUltraRareBondingEffects(withUltraRare('iron-willed'), 5);
+    expect(result.appliedEffects.some(e => e.effect === 'bond_cap')).toBe(false);
+  });
+
+  it('line 516 FALSE: empathic-mirror has mechanicalEffects but no burnoutRecoveryBonus → days unchanged', () => {
+    const result = applyUltraRareBurnoutEffects(withUltraRare('empathic-mirror'), 7);
+    expect(result.modifiedBurnoutDays).toBe(7);
+    expect(result.appliedEffects.some(e => e.effect === 'burnout_recovery_bonus')).toBe(false);
+  });
+
+  it('line 572 RIGHT || branch: iron-willed staminaBonus with undefined stamina initialises from 0', () => {
+    const result = applyUltraRareStatEffects(withUltraRare('iron-willed'), { speed: 50 });
+    expect(result.modifiedStats.stamina).toBe(5); // undefined || 0 → 0 + 5 = 5
+  });
+
+  it('line 450 RIGHT || branch: ghostwalker bondCap with no bondScore uses 0 as currentBond', () => {
+    // horse has no bondScore → horse.bondScore || 0 = undefined || 0 = 0 (RIGHT branch)
+    const horse = { ...withExotic('ghostwalker') }; // no bondScore property
+    // maxAllowedChange = Math.max(0, 60-0) = 60; baseBondChange 70 > 60 → capped
+    const result = applyUltraRareBondingEffects(horse, 70);
+    expect(result.modifiedBondChange).toBe(60);
+    expect(result.appliedEffects.some(e => e.effect === 'bond_cap')).toBe(true);
+  });
+});

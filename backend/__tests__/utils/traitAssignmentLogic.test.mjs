@@ -195,3 +195,48 @@ describe('selectTraitsWithGroomBonuses() — catch path (lines 260-263)', () => 
     expect(thrown).toBe(true);
   });
 });
+
+// ── getTraitAssignmentSummary() — catch path (lines 299-304) ─────────────────
+
+describe('getTraitAssignmentSummary() — catch path (lines 299-304) (Equoria-jkht)', () => {
+  it('rejects for non-existent groomId (-9999) — getBonusTraits throws → catch + rethrow', async () => {
+    let thrown = false;
+    try {
+      await getTraitAssignmentSummary(horse.id, -9999);
+    } catch {
+      thrown = true;
+    }
+    expect(thrown).toBe(true);
+  });
+});
+
+// ── calculateTraitProbabilityWithBonus() — bonus-trait ineligibility path (lines 77-90) ──
+
+describe('calculateTraitProbabilityWithBonus() — bonus-trait eligibility check (lines 77-90) (Equoria-jkht)', () => {
+  let groomWithBonus;
+
+  beforeAll(async () => {
+    groomWithBonus = await prisma.groom.create({
+      data: {
+        name: `TestFixture-BonusTraitGroom-${Date.now()}`,
+        speciality: 'foal_care',
+        personality: 'gentle',
+        userId: user.id,
+        bonusTraitMap: { Brave: 0.1 },
+      },
+    });
+  }, 30000);
+
+  afterAll(async () => {
+    await prisma.groom.delete({ where: { id: groomWithBonus.id } }).catch(() => {});
+  }, 30000);
+
+  it('enters eligibility check when groom has bonus for trait; returns ineligible (bond 50 < 60) — covers lines 77-90', async () => {
+    const result = await calculateTraitProbabilityWithBonus(horse.id, 'Brave', 0.3, groomWithBonus.id);
+    expect(result).toBeDefined();
+    expect(result.bonusApplied).toBe(false);
+    expect(result.horseId).toBe(horse.id);
+    expect(result.groomId).toBe(groomWithBonus.id);
+    expect(result.eligibilityDetails).toBeDefined();
+  });
+});

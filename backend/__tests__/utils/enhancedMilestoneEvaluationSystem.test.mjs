@@ -10,7 +10,7 @@
  * No DB calls. No mocks.
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import {
   calculateBondModifier,
   calculateTaskConsistencyModifier,
@@ -20,7 +20,9 @@ import {
   MILESTONE_TYPES,
   MILESTONE_TRAIT_POOLS,
   TRAIT_THRESHOLDS,
+  DEVELOPMENTAL_WINDOWS,
 } from '../../utils/enhancedMilestoneEvaluationSystem.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 
 // Minimal groomCareHistory stub used by functions that accept it but don't branch on it
 const emptyHistory = { totalInteractions: 0, taskDiversity: 0, averageQuality: 0, interactions: [] };
@@ -186,5 +188,105 @@ describe('evaluateEnhancedMilestone() — safe throw paths', () => {
       }
       expect(thrown).toBe(true);
     }
+  });
+});
+
+// ── evaluateEnhancedMilestone — DB-fixture paths (lines 102-233) ──────────────
+// Tests the "too old", "wrong window", "fresh horse success", and "already evaluated"
+// branches that require real DB fixtures.
+
+describe('evaluateEnhancedMilestone() — DB-fixture paths (Equoria-jkht)', () => {
+  let fixtureUser;
+  let tooOldHorse;
+  let wrongWindowHorse;
+  let freshHorse;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    fixtureUser = await prisma.user.create({
+      data: {
+        email: `emes-fixture-${ts}-${Math.random().toString(36).slice(2, 8)}@test.com`,
+        username: `emesfix${ts}${Math.random().toString(36).slice(2, 6)}`,
+        password: 'irrelevant-hash',
+        firstName: 'EMES',
+        lastName: 'Fixture',
+        money: 1000,
+      },
+    });
+
+    // Horse born 1100 days ago → ageInDays >= 1095 → "too old" path (lines 107-113)
+    tooOldHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-EMES-TooOld-${ts}`,
+        sex: 'Colt',
+        dateOfBirth: new Date(Date.now() - 1100 * 24 * 60 * 60 * 1000),
+        age: 1100,
+        userId: fixtureUser.id,
+      },
+    });
+
+    // Horse born 30 days ago → ageInDays=30 > IMPRINTING.end=1 → "wrong window" (lines 117-124)
+    wrongWindowHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-EMES-WrongWindow-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+        age: 30,
+        userId: fixtureUser.id,
+      },
+    });
+
+    // Horse born today → ageInDays=0 → in IMPRINTING window {start:0,end:1} (lines 127-232)
+    freshHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-EMES-Fresh-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: fixtureUser.id,
+      },
+    });
+  }, 30000);
+
+  afterAll(async () => {
+    // cascade deletes milestoneTraitLog rows (onDelete: Cascade on Horse relation)
+    await prisma.horse
+      .deleteMany({
+        where: { name: { startsWith: 'TestFixture-EMES-' } },
+      })
+      .catch(() => {});
+    await prisma.user.delete({ where: { id: fixtureUser.id } }).catch(() => {});
+  }, 30000);
+
+  it('returns { success:false, reason:/too old/ } for horse >= 1095 days old (lines 107-113)', async () => {
+    const result = await evaluateEnhancedMilestone(tooOldHorse.id, MILESTONE_TYPES.IMPRINTING);
+    expect(result.success).toBe(false);
+    expect(result.reason).toMatch(/too old/i);
+    expect(result.ageInDays).toBeGreaterThanOrEqual(1095);
+  });
+
+  it('returns { success:false, reason:/age window/ } when horse is outside milestone window (lines 117-124)', async () => {
+    const result = await evaluateEnhancedMilestone(wrongWindowHorse.id, MILESTONE_TYPES.IMPRINTING);
+    expect(result.success).toBe(false);
+    expect(result.reason).toMatch(/age window|appropriate age/i);
+    expect(result.ageInDays).toBeGreaterThan(DEVELOPMENTAL_WINDOWS[MILESTONE_TYPES.IMPRINTING].end);
+  });
+
+  it('returns { success:true, milestoneLog } for a fresh horse in IMPRINTING window (lines 127-233)', async () => {
+    const result = await evaluateEnhancedMilestone(freshHorse.id, MILESTONE_TYPES.IMPRINTING);
+    expect(result.success).toBe(true);
+    expect(result.milestoneLog).toBeDefined();
+    expect(result.milestoneLog.horseId).toBe(freshHorse.id);
+    expect(result.milestoneLog.milestoneType).toBe(MILESTONE_TYPES.IMPRINTING);
+    expect(typeof result.finalScore).toBe('number');
+    expect(result.traitOutcome).toBeDefined();
+  });
+
+  it('returns { success:false, reason:/already evaluated/ } on second call (lines 134-140)', async () => {
+    // First call was in the previous test — this is the second call for the same horse+type
+    const result = await evaluateEnhancedMilestone(freshHorse.id, MILESTONE_TYPES.IMPRINTING);
+    expect(result.success).toBe(false);
+    expect(result.reason).toMatch(/already evaluated|already/i);
+    expect(result.existingEvaluation).toBeDefined();
   });
 });
