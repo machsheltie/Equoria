@@ -11,6 +11,7 @@ import {
   getTraitDefinition,
   getAllTraitDefinitions,
   evaluateTraitRevelation,
+  evaluateEpigeneticTagsFromFoalTasks,
   applyGroomTraitInfluence,
 } from '../../utils/traitEvaluation.mjs';
 
@@ -277,5 +278,181 @@ describe('applyGroomTraitInfluence', () => {
     const original = { bonded: 1 };
     applyGroomTraitInfluence(youngHorse, 'brushing', existing);
     expect(existing).toEqual(original);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// evaluateEpigeneticTagsFromFoalTasks
+// ---------------------------------------------------------------------------
+describe('evaluateEpigeneticTagsFromFoalTasks', () => {
+  it('null taskLog returns empty array', () => {
+    expect(evaluateEpigeneticTagsFromFoalTasks(null)).toEqual([]);
+  });
+
+  it('non-object taskLog (string) returns empty array', () => {
+    expect(evaluateEpigeneticTagsFromFoalTasks('bad')).toEqual([]);
+  });
+
+  it('empty taskLog object returns empty array', () => {
+    expect(evaluateEpigeneticTagsFromFoalTasks({})).toEqual([]);
+  });
+
+  it('streak >= 7 exercises streakBonus=10 branch and returns array', () => {
+    expect(Array.isArray(evaluateEpigeneticTagsFromFoalTasks({}, 7))).toBe(true);
+  });
+
+  it('streak < 7 exercises streakBonus=0 branch and returns array', () => {
+    expect(Array.isArray(evaluateEpigeneticTagsFromFoalTasks({}, 6))).toBe(true);
+  });
+
+  it('unknown task name is skipped — no trait points accumulated', () => {
+    expect(evaluateEpigeneticTagsFromFoalTasks({ teleportation: 5 })).toEqual([]);
+  });
+
+  it('count=0 for valid task is skipped', () => {
+    expect(evaluateEpigeneticTagsFromFoalTasks({ desensitization: 0 })).toEqual([]);
+  });
+
+  it('count=-1 (negative) for valid task is skipped', () => {
+    expect(evaluateEpigeneticTagsFromFoalTasks({ desensitization: -1 })).toEqual([]);
+  });
+
+  it('non-number count for valid task is skipped', () => {
+    expect(evaluateEpigeneticTagsFromFoalTasks({ desensitization: 'five' })).toEqual([]);
+  });
+
+  it('high-count valid task eventually assigns trait (200 trials, 60% cap)', () => {
+    // desensitization × 20 → 100 pts → capped to 60% → P(0 assigned in 200) = 0.4^200 ≈ 0
+    let found = false;
+    for (let i = 0; i < 200; i++) {
+      if (evaluateEpigeneticTagsFromFoalTasks({ desensitization: 20 }).includes('confident')) {
+        found = true;
+        break;
+      }
+    }
+    expect(found).toBe(true);
+  });
+
+  it('streak=7 + high-count exercises streak bonus accumulation path', () => {
+    // points = 100 + 10 = 110 → still capped to 60%
+    let found = false;
+    for (let i = 0; i < 200; i++) {
+      if (evaluateEpigeneticTagsFromFoalTasks({ desensitization: 20 }, 7).includes('confident')) {
+        found = true;
+        break;
+      }
+    }
+    expect(found).toBe(true);
+  });
+
+  it('result is an array of strings when non-empty', () => {
+    let found = false;
+    for (let i = 0; i < 200; i++) {
+      const result = evaluateEpigeneticTagsFromFoalTasks({ desensitization: 20 });
+      if (result.length > 0) {
+        result.forEach(t => expect(typeof t).toBe('string'));
+        found = true;
+        break;
+      }
+    }
+    expect(found).toBe(true);
+  });
+
+  it('multi-trait task (trust_building) eventually assigns bonded or resilient', () => {
+    // trust_building influences both bonded and resilient — 60% chance each after 20 reps
+    let found = false;
+    for (let i = 0; i < 200; i++) {
+      const result = evaluateEpigeneticTagsFromFoalTasks({ trust_building: 20 });
+      if (result.includes('bonded') || result.includes('resilient')) {
+        found = true;
+        break;
+      }
+    }
+    expect(found).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// evaluateTraitRevelation — shouldRevealTrait + shouldTraitBeHidden branch coverage
+// ---------------------------------------------------------------------------
+describe('evaluateTraitRevelation — uncovered branch paths', () => {
+  const empty = { positive: [], negative: [], hidden: [] };
+
+  it('negative trait already in existingTraits is skipped (line 287 continue)', () => {
+    // Pass nervous as already known — loop continues without re-adding it
+    const nervousKnown = { positive: [], negative: ['nervous'], hidden: [] };
+    const stressedFoal2 = { id: 50, bondScore: 20, stressLevel: 90, age: 0 };
+    const result = evaluateTraitRevelation(stressedFoal2, nervousKnown, 1);
+    expect(result.negative).not.toContain('nervous');
+  });
+
+  it('minStressLevel branch: low-stress foal suppresses negative trait (line 372)', () => {
+    // nervous: maxBondScore=40, minStressLevel=60
+    // foal: bondScore=20 (≤40 ✓), stressLevel=30 (<60) → shouldRevealTrait returns false at minStressLevel check
+    const lowStressFoal = { id: 51, bondScore: 20, stressLevel: 30, age: 0 };
+    const result = evaluateTraitRevelation(lowStressFoal, empty, 1);
+    expect(result.negative).not.toContain('nervous');
+    expect(result.negative).not.toContain('stubborn');
+  });
+
+  it('maxStressLevel branch: high-stress foal suppresses positive trait (line 375)', () => {
+    // resilient: minBondScore=70, maxStressLevel=30
+    // foal: bondScore=80 (≥70 ✓), stressLevel=50 (>30) → shouldRevealTrait returns false at maxStressLevel check
+    const highStressFoal = { id: 52, bondScore: 80, stressLevel: 50, age: 0 };
+    const result = evaluateTraitRevelation(highStressFoal, empty, 2);
+    expect(result.positive).not.toContain('resilient');
+  });
+
+  it('rare trait already in existingTraits is skipped (line 314 continue)', () => {
+    const legendaryKnown = { positive: [], negative: [], hidden: ['legendary_bloodline'] };
+    const eliteFoal = { id: 53, bondScore: 90, stressLevel: 10, age: 0 };
+    const result = evaluateTraitRevelation(eliteFoal, legendaryKnown, 6);
+    expect(result.hidden).not.toContain('legendary_bloodline');
+  });
+
+  it('legendary rare trait is revealed as hidden (exercises lines 320-324, 402)', () => {
+    // legendary_bloodline: 3% per iter → P(0 in 200) < 0.3%
+    const eliteFoal = { id: 54, bondScore: 90, stressLevel: 10, age: 0 };
+    let found = false;
+    for (let i = 0; i < 200; i++) {
+      const result = evaluateTraitRevelation(eliteFoal, empty, 6);
+      if (result.hidden.includes('legendary_bloodline')) {
+        found = true;
+        break;
+      }
+    }
+    expect(found).toBe(true);
+  });
+
+  it('non-legendary rare trait can appear in positive list (exercises line 326)', () => {
+    // weather_immunity: minBondScore=75, maxStressLevel=20, rarity=rare, baseChance=0.08
+    // shouldTraitBeHidden (rare): Math.random() < 0.7 → 30% chance visible/positive
+    // Combined visible rate ≈ 2.4% per iter → P(0 visible in 500) ≈ 0
+    const rareFoal = { id: 55, bondScore: 80, stressLevel: 15, age: 0 };
+    let found = false;
+    for (let i = 0; i < 500; i++) {
+      const result = evaluateTraitRevelation(rareFoal, empty, 6);
+      if (result.positive.includes('weather_immunity') || result.positive.includes('night_vision')) {
+        found = true;
+        break;
+      }
+    }
+    expect(found).toBe(true);
+  });
+
+  it('normal conditionScore branch in shouldTraitBeHidden (line 422, 200 trials)', () => {
+    // foal: bondScore=70, stressLevel=20 → conditionScore=50 (20 < 50 < 60, neither branch)
+    // calm: minBondScore=60, maxStressLevel=20 (stressLevel=20, 20>20=false → passes), minAge=1
+    // calm baseChance=0.3 → P(0 reveals in 200) = 0.7^200 ≈ 0 → line 422 will be exercised
+    const normalFoal = { id: 56, bondScore: 70, stressLevel: 20, age: 0 };
+    let revealed = false;
+    for (let i = 0; i < 200; i++) {
+      const result = evaluateTraitRevelation(normalFoal, empty, 4);
+      if (result.positive.length > 0 || result.hidden.length > 0) {
+        revealed = true;
+        break;
+      }
+    }
+    expect(revealed).toBe(true);
   });
 });
