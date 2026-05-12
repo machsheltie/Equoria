@@ -74,6 +74,11 @@ export function useClaimPrizes() {
       queryClient.invalidateQueries({
         queryKey: ['profile'],
       });
+
+      // Invalidate notifications (prize-related notifications may now appear)
+      queryClient.invalidateQueries({
+        queryKey: ['game-notifications'],
+      });
     },
     onError: (error) => {
       // Error is already properly structured by the API client

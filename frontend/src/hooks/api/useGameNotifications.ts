@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { gameNotificationsApi, GameNotificationsResponse } from '@/lib/api-client';
 
-const STALE_TIME = 30_000;
+const STALE_TIME = 5_000;
 
 export function useGameNotifications() {
   return useQuery<GameNotificationsResponse>({

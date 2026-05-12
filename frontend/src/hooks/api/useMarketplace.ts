@@ -80,6 +80,7 @@ export function useBuyHorse() {
       qc.invalidateQueries({ queryKey: ['marketplace'] });
       qc.invalidateQueries({ queryKey: ['horses'] });
       qc.invalidateQueries({ queryKey: ['profile'] }); // background sync after instant update
+      qc.invalidateQueries({ queryKey: ['game-notifications'] });
     },
     onError: (err: Error) => {
       toast.error(err.message ?? 'Purchase failed');
