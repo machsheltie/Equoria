@@ -305,7 +305,8 @@ async function getGroomCareHistory(horseId, window) {
  * @param {number} currentBondScore - Current bond score
  * @returns {number} Bond modifier (-2 to +2)
  */
-function calculateBondModifier(groomCareHistory, currentBondScore) {
+// Exported for unit-testing pure branch coverage (Equoria-jkht)
+export function calculateBondModifier(groomCareHistory, currentBondScore) {
   if (currentBondScore >= 80) {
     return 2;
   }
@@ -326,7 +327,8 @@ function calculateBondModifier(groomCareHistory, currentBondScore) {
  * @param {Object} groomCareHistory - Groom care history
  * @returns {number} Task consistency modifier (0 to +3)
  */
-function calculateTaskConsistencyModifier(groomCareHistory) {
+// Exported for unit-testing pure branch coverage (Equoria-jkht)
+export function calculateTaskConsistencyModifier(groomCareHistory) {
   let modifier = 0;
 
   // +1 if ≥3 relevant tasks were completed
@@ -353,7 +355,8 @@ function calculateTaskConsistencyModifier(groomCareHistory) {
  * @param {Object} window - Developmental window
  * @returns {number} Care gaps penalty (0 to +2)
  */
-function calculateCareGapsPenalty(groomCareHistory, _window) {
+// Exported for unit-testing pure branch coverage (Equoria-jkht)
+export function calculateCareGapsPenalty(groomCareHistory, _window) {
   let penalty = 0;
 
   // -1 if no tasks completed
@@ -375,7 +378,8 @@ function calculateCareGapsPenalty(groomCareHistory, _window) {
  * @param {string} milestoneType - Milestone type
  * @returns {Object} Trait outcome
  */
-function determineTraitOutcome(finalScore, milestoneType) {
+// Exported for unit-testing pure branch coverage (Equoria-jkht)
+export function determineTraitOutcome(finalScore, milestoneType) {
   const traitPool = MILESTONE_TRAIT_POOLS[milestoneType];
 
   if (finalScore >= TRAIT_THRESHOLDS.CONFIRM) {
