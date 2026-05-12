@@ -260,3 +260,58 @@ describe('calculateCompetitionScore — extra branch coverage', () => {
     expect(Number.isInteger(score)).toBe(true);
   });
 });
+
+// ─── calculateCompetitionScore — || 0 fallback branches for Dressage/CC (Equoria-jkht)
+
+describe('calculateCompetitionScore — || 0 right-branch for zero-stat disciplines', () => {
+  it('Dressage with precision=0 focus=0 obedience=0 → || 0 right-branches', () => {
+    const horse = makeHorse({ precision: 0, focus: 0, obedience: 0 });
+    const score = calculateCompetitionScore(horse, 'Dressage', 'ridden', () => 0.5);
+    expect(score).toBe(0);
+  });
+
+  it('Cross Country with stamina=0 agility=0 boldness=0 → || 0 right-branches', () => {
+    const horse = makeHorse({ stamina: 0, agility: 0, boldness: 0 });
+    const score = calculateCompetitionScore(horse, 'Cross Country', 'ridden', () => 0.5);
+    expect(score).toBe(0);
+  });
+
+  it('Jumping with focus=0 stamina=0 precision=null agility=0 → all || 0 right-branches', () => {
+    const horse = makeHorse({ precision: null, agility: 0, focus: 0, stamina: 0 });
+    const score = calculateCompetitionScore(horse, 'Jumping', 'ridden', () => 0.5);
+    expect(score).toBe(0);
+  });
+});
+
+// ─── calculateCompetitionScore — horse.id and '(unknown)' logger branches (Equoria-jkht)
+
+describe('calculateCompetitionScore — horse.id || "(unknown)" logger right-branches', () => {
+  it('horse with id but no name covers horse.id branch in logger strings', () => {
+    const horse = { id: 42, speed: 50, stamina: 50, intelligence: 50 };
+    const score = calculateCompetitionScore(horse, 'Racing', 'ridden', () => 0.5);
+    expect(typeof score).toBe('number');
+  });
+
+  it('horse with no name and no id covers "(unknown)" branch in logger strings', () => {
+    const horse = { speed: 50, stamina: 50, intelligence: 50 };
+    const score = calculateCompetitionScore(horse, 'Racing', 'ridden', () => 0.5);
+    expect(typeof score).toBe('number');
+  });
+
+  it('Infinity stat + no name covers "(unknown)" in non-finite logger (lines 68-74)', () => {
+    const horse = { id: undefined, speed: Infinity, stamina: 0, intelligence: 0 };
+    const score = calculateCompetitionScore(horse, 'Racing', 'ridden', () => 0.5);
+    expect(score).toBe(0);
+  });
+
+  it('trait bonus + no name covers "(unknown)" in trait logger (line 88)', () => {
+    const horse = {
+      speed: 0,
+      stamina: 0,
+      intelligence: 0,
+      epigeneticModifiers: { positive: ['discipline_affinity_racing'] },
+    };
+    const score = calculateCompetitionScore(horse, 'Racing', 'ridden', () => 0.5);
+    expect(typeof score).toBe('number');
+  });
+});
