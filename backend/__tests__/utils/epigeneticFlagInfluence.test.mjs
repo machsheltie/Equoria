@@ -219,3 +219,109 @@ describe('getFlagInfluenceSummary', () => {
     expect(summary.flags[0].type).toBe('unknown');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Branch-coverage additions (Equoria-jkht)
+// Targets remaining uncovered branches in epigeneticFlagInfluence.mjs
+// ---------------------------------------------------------------------------
+
+describe('applyFlagInfluencesToTraitWeights — unknown flag warn (lines 37-38)', () => {
+  it('skips and returns weights unchanged for an unrecognised flag name', () => {
+    const base = { resilient: 0.5 };
+    const result = applyFlagInfluencesToTraitWeights(['nonexistent_xyz_flag'], base);
+    expect(result).toEqual({ resilient: 0.5 });
+  });
+});
+
+describe('applyFlagInfluencesToTraitWeights — catch block (lines 62-63)', () => {
+  it('returns original baseTraitWeights when forEach throws', () => {
+    const evilFlags = {
+      length: 1,
+      forEach() {
+        throw new Error('bomb');
+      },
+    };
+    const base = { resilient: 0.5 };
+    const result = applyFlagInfluencesToTraitWeights(evilFlags, base);
+    expect(result).toBe(base);
+  });
+});
+
+describe('calculateBehaviorModifiers — catch block (lines 104-107)', () => {
+  it('returns empty object when forEach throws', () => {
+    const evilFlags = {
+      length: 1,
+      forEach() {
+        throw new Error('bomb');
+      },
+    };
+    const result = calculateBehaviorModifiers(evilFlags);
+    expect(result).toEqual({});
+  });
+});
+
+describe('applyFlagInfluencesToCompetition — catch block (lines 170-173)', () => {
+  it('returns fallback when arithmetic throws (Symbol baseScore)', () => {
+    const bad = Symbol('bad');
+    const result = applyFlagInfluencesToCompetition(bad, [BRAVE], 'Racing');
+    expect(result.appliedModifiers).toEqual({});
+    expect(result.totalModifier).toBe(0);
+  });
+});
+
+describe('applyFlagInfluencesToTraining — bondingRate branch (lines 209-211)', () => {
+  it('applies bondingRate bonus when affectionate flag is present', () => {
+    const result = applyFlagInfluencesToTraining(0.5, [AFFECTIONATE]);
+    expect(result.appliedModifiers).toHaveProperty('bondingBonus');
+    expect(result.modifiedEfficiency).toBeGreaterThan(0.5);
+  });
+});
+
+describe('applyFlagInfluencesToTraining — bondingResistance branch (lines 215-217)', () => {
+  it('applies bondingResistance penalty when aloof flag is present', () => {
+    const result = applyFlagInfluencesToTraining(0.8, ['aloof']);
+    expect(result.appliedModifiers).toHaveProperty('bondingPenalty');
+    expect(result.modifiedEfficiency).toBeLessThan(0.8);
+  });
+});
+
+describe('applyFlagInfluencesToTraining — catch block (lines 232-233)', () => {
+  it('returns fallback when arithmetic throws (Symbol baseEfficiency)', () => {
+    const bad = Symbol('bad');
+    const result = applyFlagInfluencesToTraining(bad, [CONFIDENT]);
+    expect(result.appliedModifiers).toEqual({});
+    expect(result.totalModifier).toBe(0);
+  });
+});
+
+describe('applyFlagInfluencesToBonding — bondingResistance branch (lines 269-271)', () => {
+  it('applies bondingResistance modifier when aloof flag is present', () => {
+    const result = applyFlagInfluencesToBonding(10, ['aloof']);
+    expect(result.appliedModifiers).toHaveProperty('bondingResistance');
+    expect(result.modifiedBondingChange).toBeLessThan(10);
+  });
+});
+
+describe('applyFlagInfluencesToBonding — catch block (lines 292-293)', () => {
+  it('returns fallback when arithmetic throws (Symbol baseBondingChange)', () => {
+    const bad = Symbol('bad');
+    const result = applyFlagInfluencesToBonding(bad, [AFFECTIONATE]);
+    expect(result.appliedModifiers).toEqual({});
+    expect(result.totalModifier).toBe(0);
+  });
+});
+
+describe('getFlagInfluenceSummary — catch block (lines 365-366)', () => {
+  it('returns error summary when map() throws', () => {
+    const evilFlags = {
+      length: 2,
+      map() {
+        throw new Error('bomb');
+      },
+    };
+    const result = getFlagInfluenceSummary(evilFlags);
+    expect(result.summary).toBe('Error generating summary');
+    expect(result.flags).toEqual([]);
+    expect(result.flagCount).toBe(2);
+  });
+});
