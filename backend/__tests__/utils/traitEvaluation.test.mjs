@@ -513,3 +513,57 @@ describe('evaluateEpigeneticTagsFromFoalTasks — traitPoints accumulation left-
     // Both tasks contribute to 'bonded' → higher chance → at least the logic ran
   });
 });
+
+// ---------------------------------------------------------------------------
+// evaluateTraitRevelation — negative trait hidden branch (line 297)
+// ---------------------------------------------------------------------------
+describe('evaluateTraitRevelation — negative trait hidden path (line 297)', () => {
+  it('negative trait with shouldHide=true lands in result.hidden (line 297)', () => {
+    // nervous: maxBondScore=40, minStressLevel=60, baseChance=0.35
+    // conditionScore = 20 - 90 = -70 → <20 → shouldTraitBeHidden 30% chance
+    // Per-run P(hidden negative) ≈ 0.35 × 0.3 = 10.5%; P(0 in 300) ≈ 1.7e-10
+    const negativeKeys = Object.keys(TRAIT_DEFINITIONS.negative);
+    const foal = { id: 99, bondScore: 20, stressLevel: 90, age: 0 };
+    let found = false;
+    for (let i = 0; i < 300; i++) {
+      const result = evaluateTraitRevelation(foal, { positive: [], negative: [], hidden: [] }, 2);
+      if (result.hidden.some(t => negativeKeys.includes(t))) {
+        found = true;
+        break;
+      }
+    }
+    expect(found).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// evaluateTraitRevelation — catch block (lines 341-342)
+// ---------------------------------------------------------------------------
+describe('evaluateTraitRevelation — catch block (lines 341-342)', () => {
+  it('re-throws when foal is null (foal.id access throws TypeError)', () => {
+    expect(() => evaluateTraitRevelation(null, {}, 1)).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// evaluateEpigeneticTagsFromFoalTasks — catch block (lines 531-532)
+// ---------------------------------------------------------------------------
+describe('evaluateEpigeneticTagsFromFoalTasks — catch block (lines 531-532)', () => {
+  it('re-throws when Object.entries(taskLog) throws (Proxy ownKeys trap)', () => {
+    const evil = new Proxy({}, {
+      ownKeys() {
+        throw new Error('proxy bomb');
+      },
+    });
+    expect(() => evaluateEpigeneticTagsFromFoalTasks(evil, 0)).toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// applyGroomTraitInfluence — catch block (lines 620-621)
+// ---------------------------------------------------------------------------
+describe('applyGroomTraitInfluence — catch block (lines 620-621)', () => {
+  it('re-throws when horse is null (horse.age access throws TypeError)', () => {
+    expect(() => applyGroomTraitInfluence(null, 'brushing', {})).toThrow();
+  });
+});

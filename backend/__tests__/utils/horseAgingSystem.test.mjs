@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { calculateAgeFromBirth } from '../../utils/horseAgingSystem.mjs';
+import { calculateAgeFromBirth, processHorseBirthdays } from '../../utils/horseAgingSystem.mjs';
 
 const daysAgo = days => new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
@@ -50,5 +50,32 @@ describe('calculateAgeFromBirth', () => {
     const ancient = new Date('1900-01-01');
     const result = calculateAgeFromBirth(ancient);
     expect(result).toBeGreaterThan(40000); // 100+ years in days
+  });
+
+  it('returns 0 (fail-safe) when dateOfBirth.valueOf() throws (catch branch)', () => {
+    const evil = {
+      valueOf() {
+        throw new Error('valueOf bomb');
+      },
+    };
+    expect(calculateAgeFromBirth(evil)).toBe(0);
+  });
+});
+
+// ── processHorseBirthdays — no-horses early return ────────────────────────────
+
+describe('processHorseBirthdays()', () => {
+  it('returns totalProcessed=0 when specificHorseId does not exist in DB', async () => {
+    const result = await processHorseBirthdays({ specificHorseId: -1 });
+    expect(result.totalProcessed).toBe(0);
+    expect(result.birthdaysFound).toBe(0);
+    expect(result.milestonesTriggered).toBe(0);
+    expect(result.errors).toBe(0);
+    expect(typeof result.duration).toBe('number');
+  });
+
+  it('accepts dryRun option without error when specificHorseId has no match', async () => {
+    const result = await processHorseBirthdays({ specificHorseId: -1, dryRun: true });
+    expect(result.totalProcessed).toBe(0);
   });
 });
