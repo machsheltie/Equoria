@@ -353,4 +353,124 @@ describe('calculatePhenotype — shade selection', () => {
     const shadeBias = { Chestnut: { dark: 0.3, light: 0.4, standard: 0.3 } };
     expect(calculatePhenotype(genotype, shadeBias).shade).toBe(calculatePhenotype(genotype, shadeBias).shade);
   });
+
+  it('returns "standard" when shadeBias entry for colorName is an empty object (line 547)', () => {
+    // expandShadesToArray({}) → [] → shadeArray.length === 0 → 'standard'
+    const result = calculatePhenotype(g({ E_Extension: 'e/e' }), { Chestnut: {} });
+    expect(result.shade).toBe('standard');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// isDunActive falsy-input guard (line 61)
+// ---------------------------------------------------------------------------
+describe('calculatePhenotype — isDunActive falsy guard', () => {
+  it('empty-string D_Dun falls back to no-dun (covers !dunAllele return false branch)', () => {
+    // D_Dun: '' is NOT null/undefined so ?? does not substitute the default.
+    // isDunActive('') → !dunAllele = true → returns false (line 61).
+    // Result: bay (default E/e + A/a) with no dun → 'Bay'.
+    const result = calculatePhenotype({ D_Dun: '' });
+    expect(result.colorName).toBe('Bay');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Combined cream + dun/silver interactions (lines 263, 267, 286-288)
+// ---------------------------------------------------------------------------
+describe('calculatePhenotype — single cream + dun + silver combinations', () => {
+  it('black + cream + dun (no silver) → Grulla (line 263 false arm)', () => {
+    const result = calculatePhenotype(g({ E_Extension: 'E/e', A_Agouti: 'a/a', Cr_Cream: 'Cr/n', D_Dun: 'D/nd2' }));
+    expect(result.colorName).toBe('Grulla');
+  });
+
+  it('black + cream + dun + silver → Silver Grulla (line 263 true arm)', () => {
+    const result = calculatePhenotype(
+      g({ E_Extension: 'E/e', A_Agouti: 'a/a', Cr_Cream: 'Cr/n', D_Dun: 'D/nd2', Z_Silver: 'Z/n' }),
+    );
+    expect(result.colorName).toBe('Silver Grulla');
+  });
+
+  it('black + cream + silver (no dun) → Silver Black (line 267)', () => {
+    // hasCreamSingle=true, hasDun=false, hasSilver=true, black → Silver Black
+    const result = calculatePhenotype(g({ E_Extension: 'E/e', A_Agouti: 'a/a', Cr_Cream: 'Cr/n', Z_Silver: 'Z/n' }));
+    expect(result.colorName).toBe('Silver Black');
+  });
+
+  it('bay + silver + dun (no cream) → Silver Bay (line 286)', () => {
+    // hasSilver=true, hasDun=true, bay → case bay: return Silver Bay
+    const result = calculatePhenotype(g({ E_Extension: 'E/e', A_Agouti: 'A/a', Z_Silver: 'Z/n', D_Dun: 'D/nd2' }));
+    expect(result.colorName).toBe('Silver Bay');
+  });
+
+  it('chestnut + silver + dun → Red Dun (silver has no visible effect on chestnut, lines 287-288)', () => {
+    // silver+dun switch on chestnut: break → falls to dun-only path → Red Dun
+    const result = calculatePhenotype(g({ E_Extension: 'e/e', Z_Silver: 'Z/n', D_Dun: 'D/nd2' }));
+    expect(result.colorName).toBe('Red Dun');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Champagne + silver/dun combinations (lines 354, 359)
+// ---------------------------------------------------------------------------
+describe('calculatePhenotype — champagne + silver + dun combinations', () => {
+  it('bay + silver + dun + champagne (no cream) → Silver Amber Dun Champagne (line 354 false arm)', () => {
+    const result = calculatePhenotype(
+      g({
+        E_Extension: 'E/e',
+        A_Agouti: 'A/a',
+        Z_Silver: 'Z/n',
+        D_Dun: 'D/nd2',
+        Ch_Champagne: 'Ch/n',
+      }),
+    );
+    expect(result.colorName).toBe('Silver Amber Dun Champagne');
+  });
+
+  it('bay + silver + dun + champagne + cream → Silver Amber Cream Dun Champagne (line 354 true arm)', () => {
+    const result = calculatePhenotype(
+      g({
+        E_Extension: 'E/e',
+        A_Agouti: 'A/a',
+        Z_Silver: 'Z/n',
+        D_Dun: 'D/nd2',
+        Ch_Champagne: 'Ch/n',
+        Cr_Cream: 'Cr/n',
+      }),
+    );
+    expect(result.colorName).toBe('Silver Amber Cream Dun Champagne');
+  });
+
+  it('bay + silver + champagne (no dun, no cream) → Silver Amber Champagne (line 359 false arm)', () => {
+    const result = calculatePhenotype(
+      g({ E_Extension: 'E/e', A_Agouti: 'A/a', Z_Silver: 'Z/n', Ch_Champagne: 'Ch/n' }),
+    );
+    expect(result.colorName).toBe('Silver Amber Champagne');
+  });
+
+  it('bay + silver + champagne + cream (no dun) → Silver Amber Cream Champagne (line 359 true arm)', () => {
+    const result = calculatePhenotype(
+      g({ E_Extension: 'E/e', A_Agouti: 'A/a', Z_Silver: 'Z/n', Ch_Champagne: 'Ch/n', Cr_Cream: 'Cr/n' }),
+    );
+    expect(result.colorName).toBe('Silver Amber Cream Champagne');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Roan — Varnish Roan and default fall-through (lines 480-484)
+// ---------------------------------------------------------------------------
+describe('calculatePhenotype — roan Varnish Roan and default', () => {
+  it('silver bay + roan → Varnish Roan (lines 480-481)', () => {
+    // colorAfterDilutions = Silver Bay → case Silver Bay in roan switch → Varnish Roan
+    const result = calculatePhenotype(g({ E_Extension: 'E/e', A_Agouti: 'A/a', Z_Silver: 'Z/n', Rn_Roan: 'Rn/rn' }));
+    expect(result.colorName).toBe('Varnish Roan');
+    expect(result.isRoan).toBe(true);
+  });
+
+  it('champagne color + roan → colorName unchanged, isRoan=true (default break, lines 482-484)', () => {
+    // Gold Champagne is not in the explicit roan switch cases → default: break
+    // colorName stays Gold Champagne but isRoan flag is set
+    const result = calculatePhenotype(g({ E_Extension: 'e/e', Ch_Champagne: 'Ch/n', Rn_Roan: 'Rn/rn' }));
+    expect(result.colorName).toBe('Gold Champagne');
+    expect(result.isRoan).toBe(true);
+  });
 });
