@@ -35,6 +35,22 @@ import { DEVELOPMENTAL_WINDOWS } from '../../../utils/enhancedMilestoneEvaluatio
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import { awardGroomXP } from '../../../services/groomProgressionService.mjs';
+import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
+import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
+
+const GROOM_LIST_SELECT = {
+  id: true,
+  name: true,
+  speciality: true,
+  experience: true,
+  level: true,
+  skillLevel: true,
+  personality: true,
+  sessionRate: true,
+  isActive: true,
+  imageUrl: true,
+  userId: true,
+};
 
 /**
  * Determine the current milestone window for a horse based on age
@@ -512,29 +528,33 @@ export async function recordInteraction(req, res) {
 export async function getUserGrooms(req, res) {
   try {
     const { userId } = req.params;
+    const { limit, skip } = parsePaginationParams(req, { defaultLimit: 20, maxLimit: 100 });
 
     logger.info(`[groomController.getUserGrooms] Getting grooms for user ${userId}`);
 
-    const grooms = await prisma.groom.findMany({
-      where: { userId },
-      include: {
-        groomAssignments: {
-          where: { isActive: true },
-          include: {
-            foal: {
-              select: { id: true, name: true },
+    const where = { userId };
+    const [grooms, totalGrooms] = await Promise.all([
+      prisma.groom.findMany({
+        where,
+        select: {
+          ...GROOM_LIST_SELECT,
+          groomAssignments: {
+            where: { isActive: true },
+            select: { id: true, foal: { select: { id: true, name: true } } },
+          },
+          _count: {
+            select: {
+              groomAssignments: true,
+              groomInteractions: true,
             },
           },
         },
-        _count: {
-          select: {
-            groomAssignments: true,
-            groomInteractions: true,
-          },
-        },
-      },
-      orderBy: [{ isActive: 'desc' }, { skillLevel: 'desc' }, { experience: 'desc' }],
-    });
+        orderBy: [{ isActive: 'desc' }, { skillLevel: 'desc' }, { experience: 'desc' }],
+        take: limit,
+        skip,
+      }),
+      prisma.groom.count({ where }),
+    ]);
 
     res.status(200).json({
       success: true,
@@ -542,7 +562,8 @@ export async function getUserGrooms(req, res) {
       userId,
       grooms,
       activeGrooms: grooms.filter(g => g.isActive),
-      totalGrooms: grooms.length,
+      totalGrooms,
+      pagination: { total: totalGrooms, limit, offset: skip, hasMore: skip + limit < totalGrooms },
     });
   } catch (error) {
     logger.error(`[groomController.getUserGrooms] Error: ${error.message}`);
@@ -734,6 +755,11 @@ export async function hireGroom(req, res) {
       `[groomController.hireGroom] Successfully hired groom ${result.groom.name} (ID: ${result.groom.id}) for ${result.hiringCost} coins`,
     );
 
+    // Invalidate groom list caches so new groom appears on next fetch
+    invalidateCachePattern('grooms:*').catch(() => {
+      /* non-critical */
+    });
+
     res.status(201).json({
       success: true,
       message: `Successfully hired ${result.groom.name}`,
@@ -829,9 +855,8 @@ export async function getGroomProfile(req, res) {
     }
 
     // Calculate personality compatibility with current assignments
-    const { calculatePersonalityCompatibility } = await import(
-      '../../../utils/groomPersonalityTraitBonus.mjs'
-    );
+    const { calculatePersonalityCompatibility } =
+      await import('../../../utils/groomPersonalityTraitBonus.mjs');
     const personalityCompatibility = groom.groomAssignments
       .map(assignment => {
         if (assignment.foal.temperament) {
