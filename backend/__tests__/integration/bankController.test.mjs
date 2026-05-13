@@ -66,6 +66,32 @@ describe('bankController integration', () => {
       expect(res.status).toBe(401);
     });
 
+    it('returns 404 when user is deleted after JWT issued (stateless auth scenario — covers !user branch)', async () => {
+      // JWT is stateless — user can be deleted after token is issued
+      // The controller's findUnique returns null, hitting the !user 404 branch
+      const tempUser = await prisma.user.create({
+        data: {
+          email: uniqueEmail('bankghost'),
+          username: uniqueUsername('bankghost'),
+          password: 'irrelevant-hash',
+          firstName: 'Ghost',
+          lastName: 'Bank',
+          money: 0,
+          settings: {},
+        },
+      });
+      const tempToken = generateTestToken({ id: tempUser.id, email: tempUser.email, role: 'user' });
+      await prisma.user.delete({ where: { id: tempUser.id } });
+
+      const res = await request(app)
+        .get('/api/bank/claim-status')
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${tempToken}`);
+
+      expect(res.status).toBe(404);
+      expect(res.body.success).toBe(false);
+    });
+
     it('returns canClaim=false for a user who claimed this week', async () => {
       // Record a claim date in the current week (today's ISO)
       const thisWeekISO = new Date().toISOString();
@@ -155,6 +181,36 @@ describe('bankController integration', () => {
         .send({});
 
       expect(res.status).toBe(401);
+    });
+
+    it('returns 404 when user is deleted after JWT issued (atomic update returns 0 rows, findUnique returns null)', async () => {
+      // Atomic UPDATE finds no matching rows because user doesn't exist,
+      // then findUnique also returns null — hits the !user 404 branch (line 107)
+      const tempUser = await prisma.user.create({
+        data: {
+          email: uniqueEmail('bankghost2'),
+          username: uniqueUsername('bankghost2'),
+          password: 'irrelevant-hash',
+          firstName: 'Ghost2',
+          lastName: 'Bank',
+          money: 0,
+          settings: {},
+        },
+      });
+      const tempToken = generateTestToken({ id: tempUser.id, email: tempUser.email, role: 'user' });
+      await prisma.user.delete({ where: { id: tempUser.id } });
+
+      const csrf = await fetchCsrf(app);
+      const res = await request(app)
+        .post('/api/bank/claim')
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${tempToken}`)
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken)
+        .send({});
+
+      expect(res.status).toBe(404);
+      expect(res.body.success).toBe(false);
     });
   });
 });
