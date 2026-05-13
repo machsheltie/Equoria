@@ -121,6 +121,13 @@ describe('sampleWeightedFromMap', () => {
     const result = sampleWeightedFromMap(map, alwaysZero);
     expect(result).toBe('a');
   });
+
+  // line 97: floating-point fallback when rng()=1.0 → roll==total (Equoria-rr7)
+  it('floating-point fallback (line 97): rng=1.0 returns last entry (Equoria-rr7)', () => {
+    // roll = 1.0 * total(1.0) = 1.0; cumulative after last entry = 1.0; 1.0 < 1.0 is false → line 97
+    const weights = { a: 0.5, b: 0.5 };
+    expect(sampleWeightedFromMap(weights, () => 1.0)).toBe('b');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -363,5 +370,48 @@ describe('inheritMarkings', () => {
     const rng = seqRng(0.1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5);
     const r = inheritMarkings(sireMarkings, null, null, null, rng);
     expect(r.faceMarking).toBe('blaze');
+  });
+
+  // line 349: single-leg reroll when rng() < generalProb → returns marking (Equoria-rr7)
+  it('leg reroll returns marking type when rng() < generalProb (line 349, Equoria-rr7)', () => {
+    // seqRng(0.1, 0.9, 0.1, 0.0): face roll=0.1→sire; frontLeft roll=0.9≥0.8→reroll;
+    // inside reroll: rng()=0.1<0.25→line349 fires→sampleWeightedFromMap→rng()=0.0→'coronet'
+    const rng = seqRng(0.1, 0.9, 0.1, 0.0);
+    const r = inheritMarkings(sireMarkings, damMarkings, null, null, rng);
+    expect(r.legMarkings.frontLeft).not.toBe('none');
+  });
+
+  // line 397: isFlaxen reroll lambda fires only when colorName is chestnut (Equoria-rr7)
+  it('isFlaxen reroll lambda (line 397) fires when colorName is Chestnut (Equoria-rr7)', () => {
+    // sireMarkings.modifiers is undefined → sireMarkings?.modifiers?.isFlaxen = undefined → hasSire=false
+    // damMarkings.modifiers is undefined → damMarkings?.modifiers?.isFlaxen = undefined → hasDam=false
+    // isBaseChestnut('Chestnut')=true → pickInherited called; !hasSire&&!hasDam → randomFn() fires
+    // alwaysZero → rng()=0 < MODIFIER_DEFAULTS.flaxen(0.1) → isFlaxen=true
+    const r = inheritMarkings(sireMarkings, damMarkings, null, 'Chestnut', alwaysZero);
+    expect(r.modifiers.isFlaxen).toBe(true);
+  });
+
+  // line 314 true arm: !hasSire; roll<0.8 → takes dam value (Equoria-rr7)
+  it('only-dam markings: roll<0.8 inherits dam faceMarking (line 314 true arm, Equoria-rr7)', () => {
+    // sireMarkings=null → !sireMarkings&&!damMarkings=false → proceed
+    // face: pickInherited(undefined,'star',faceLambda) → !hasSire → roll=0.1<0.8 → damVal='star'
+    const rng = seqRng(0.1, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5);
+    const r = inheritMarkings(null, damMarkings, null, null, rng);
+    expect(r.faceMarking).toBe('star');
+  });
+
+  // line 314 false arm + line 318 false arm: reroll when only one parent available (Equoria-rr7)
+  it('only-dam markings: roll>=0.8 triggers reroll (line 314 false arm, Equoria-rr7)', () => {
+    // roll=0.9 >= 0.8 → randomFn() = generateFaceMarking → returns a valid face marking
+    const rng = seqRng(0.9, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5);
+    const r = inheritMarkings(null, damMarkings, null, null, rng);
+    expect(['none', 'star', 'strip', 'blaze', 'snip']).toContain(r.faceMarking);
+  });
+
+  it('only-sire markings: roll>=0.8 triggers reroll (line 318 false arm, Equoria-rr7)', () => {
+    // pickInherited('blaze', undefined, faceLambda); !hasDam; roll=0.9>=0.8 → randomFn()
+    const rng = seqRng(0.9, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5);
+    const r = inheritMarkings(sireMarkings, null, null, null, rng);
+    expect(['none', 'star', 'strip', 'blaze', 'snip']).toContain(r.faceMarking);
   });
 });
