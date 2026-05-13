@@ -156,10 +156,10 @@ describe('calculateConformationShowScore', () => {
     personality: 'gentle',
   };
 
-  it('throws (returns error shape) for invalid class name', () => {
-    const result = calculateConformationShowScore(mockHorse, mockGroom, 'InvalidClass');
-    expect(result.finalScore).toBe(0);
-    expect(typeof result.error).toBe('string');
+  it('throws for invalid class name — error is distinguishable from a legitimate zero score', () => {
+    expect(() => calculateConformationShowScore(mockHorse, mockGroom, 'InvalidClass')).toThrow(
+      /not a valid conformation show class/i,
+    );
   });
 
   it('returns score shape for valid class', () => {
@@ -310,15 +310,14 @@ describe('applyBreedingValueBoost (Equoria-jkht)', () => {
   });
 });
 
-// ── calculateConformationShowScore — null horse path (Equoria-jkht) ──────────
-// Line 223: !horse → throws inside try → caught at 274 → returns error shape.
+// ── calculateConformationShowScore — null horse path (Equoria-vc7v) ──────────
+// Null horse throws directly — error propagates so callers can distinguish it
+// from a legitimate zero score (see Equoria-vc7v fix, 2026-05-13).
 
-describe('calculateConformationShowScore — null horse (Equoria-jkht)', () => {
-  it('returns error shape with finalScore 0 when horse is null (line 223 throw)', () => {
+describe('calculateConformationShowScore — null horse (Equoria-vc7v)', () => {
+  it('throws when horse is null — error is distinguishable from a legitimate zero score', () => {
     const groom = { showHandlingSkill: 'novice', personality: 'gentle' };
-    const result = calculateConformationShowScore(null, groom, 'Mares');
-    expect(result.finalScore).toBe(0);
-    expect(result.error).toBe('horse and groom are required');
+    expect(() => calculateConformationShowScore(null, groom, 'Mares')).toThrow(/horse and groom are required/i);
   });
 });
 

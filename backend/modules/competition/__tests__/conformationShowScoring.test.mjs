@@ -423,22 +423,21 @@ describe('calculateConformationShowScore', () => {
     expect(result.finalScore).toBe(59);
   });
 
-  test('returns finalScore 0 with error field for invalid class name', () => {
-    const result = calculateConformationShowScore(horse, groom, 'InvalidClass');
-    expect(result.finalScore).toBe(0);
-    expect(result.error).toMatch(/not a valid conformation show class/i);
+  // SENTINEL: error paths must throw — distinguishable from a legitimate zero score (Equoria-vc7v).
+  // A horse that genuinely scored 0 returns { finalScore: 0 } with no error property.
+  // A programming error (null inputs, invalid class) must throw, not silently return 0.
+  test('throws for invalid class — error is distinguishable from a legitimate zero score', () => {
+    expect(() => calculateConformationShowScore(horse, groom, 'InvalidClass')).toThrow(
+      /not a valid conformation show class/i,
+    );
   });
 
-  test('returns finalScore 0 with error field for null horse', () => {
-    const result = calculateConformationShowScore(null, groom, validClass);
-    expect(result.finalScore).toBe(0);
-    expect(typeof result.error).toBe('string');
+  test('throws for null horse — error is distinguishable from a legitimate zero score', () => {
+    expect(() => calculateConformationShowScore(null, groom, validClass)).toThrow(/horse and groom are required/i);
   });
 
-  test('returns finalScore 0 with error field for null groom', () => {
-    const result = calculateConformationShowScore(horse, null, validClass);
-    expect(result.finalScore).toBe(0);
-    expect(typeof result.error).toBe('string');
+  test('throws for null groom — error is distinguishable from a legitimate zero score', () => {
+    expect(() => calculateConformationShowScore(horse, null, validClass)).toThrow(/horse and groom are required/i);
   });
 
   test('success path has no error field', () => {

@@ -218,82 +218,58 @@ export function calculateSynergy(temperament, personality) {
  * @returns {Object} Scoring breakdown including finalScore
  */
 export function calculateConformationShowScore(horse, groom, className) {
-  try {
-    if (!horse || !groom) {
-      throw new Error('horse and groom are required');
-    }
-    if (!isValidConformationClass(className)) {
-      throw new Error(`${className} is not a valid conformation show class`);
-    }
-
-    // 1. Conformation component (65%) — arithmetic mean of 8 regions
-    const conformationScore = calculateConformationScore(horse.conformationScores);
-    const conformationComponent = conformationScore * CONFORMATION_SHOW_CONFIG.CONFORMATION_WEIGHT;
-
-    // 2. Handler component (20%) — showHandlingSkill mapped to 0-100
-    const handlerScore = getHandlerScore(groom.showHandlingSkill);
-    const handlerComponent = handlerScore * CONFORMATION_SHOW_CONFIG.HANDLER_WEIGHT;
-
-    // 3. Bond component (8%) — horse.bondScore used directly (0-100), clamped to valid range
-    const bondScore = Math.min(100, Math.max(0, horse.bondScore ?? 0));
-    const bondComponent = bondScore * CONFORMATION_SHOW_CONFIG.BOND_WEIGHT;
-
-    // 4. Temperament synergy component (7%)
-    const temperament = horse.temperament ?? 'calm';
-    const personality = groom.personality ?? 'gentle';
-    const synergyScore = calculateSynergy(temperament, personality);
-    const synergyComponent = synergyScore * CONFORMATION_SHOW_CONFIG.TEMPERAMENT_WEIGHT;
-
-    // 5. Final score — integer clamped to [0, 100], no random factor
-    const rawScore = conformationComponent + handlerComponent + bondComponent + synergyComponent;
-    const finalScore = Math.round(Math.min(100, Math.max(0, rawScore)));
-
-    logger.info(
-      `[conformationShowService] Score: ${finalScore} for horse ${horse.name ?? horse.id} with handler ${groom.name ?? groom.id}`,
-    );
-
-    return {
-      finalScore,
-      breakdown: {
-        conformationScore,
-        conformationComponent: Math.round(conformationComponent * 10) / 10,
-        handlerScore,
-        handlerComponent: Math.round(handlerComponent * 10) / 10,
-        bondScore,
-        bondComponent: Math.round(bondComponent * 10) / 10,
-        synergyScore,
-        synergyComponent: Math.round(synergyComponent * 10) / 10,
-      },
-      weights: {
-        conformation: CONFORMATION_SHOW_CONFIG.CONFORMATION_WEIGHT,
-        handler: CONFORMATION_SHOW_CONFIG.HANDLER_WEIGHT,
-        bond: CONFORMATION_SHOW_CONFIG.BOND_WEIGHT,
-        temperament: CONFORMATION_SHOW_CONFIG.TEMPERAMENT_WEIGHT,
-      },
-    };
-  } catch (error) {
-    logger.error(`[conformationShowService] Error calculating show score: ${error.message}`);
-    return {
-      finalScore: 0,
-      error: error.message,
-      breakdown: {
-        conformationScore: 0,
-        conformationComponent: 0,
-        handlerScore: 0,
-        handlerComponent: 0,
-        bondScore: 0,
-        bondComponent: 0,
-        synergyScore: 0,
-        synergyComponent: 0,
-      },
-      weights: {
-        conformation: CONFORMATION_SHOW_CONFIG.CONFORMATION_WEIGHT,
-        handler: CONFORMATION_SHOW_CONFIG.HANDLER_WEIGHT,
-        bond: CONFORMATION_SHOW_CONFIG.BOND_WEIGHT,
-        temperament: CONFORMATION_SHOW_CONFIG.TEMPERAMENT_WEIGHT,
-      },
-    };
+  if (!horse || !groom) {
+    throw new Error('horse and groom are required');
   }
+  if (!isValidConformationClass(className)) {
+    throw new Error(`${className} is not a valid conformation show class`);
+  }
+
+  // 1. Conformation component (65%) — arithmetic mean of 8 regions
+  const conformationScore = calculateConformationScore(horse.conformationScores);
+  const conformationComponent = conformationScore * CONFORMATION_SHOW_CONFIG.CONFORMATION_WEIGHT;
+
+  // 2. Handler component (20%) — showHandlingSkill mapped to 0-100
+  const handlerScore = getHandlerScore(groom.showHandlingSkill);
+  const handlerComponent = handlerScore * CONFORMATION_SHOW_CONFIG.HANDLER_WEIGHT;
+
+  // 3. Bond component (8%) — horse.bondScore used directly (0-100), clamped to valid range
+  const bondScore = Math.min(100, Math.max(0, horse.bondScore ?? 0));
+  const bondComponent = bondScore * CONFORMATION_SHOW_CONFIG.BOND_WEIGHT;
+
+  // 4. Temperament synergy component (7%)
+  const temperament = horse.temperament ?? 'calm';
+  const personality = groom.personality ?? 'gentle';
+  const synergyScore = calculateSynergy(temperament, personality);
+  const synergyComponent = synergyScore * CONFORMATION_SHOW_CONFIG.TEMPERAMENT_WEIGHT;
+
+  // 5. Final score — integer clamped to [0, 100], no random factor
+  const rawScore = conformationComponent + handlerComponent + bondComponent + synergyComponent;
+  const finalScore = Math.round(Math.min(100, Math.max(0, rawScore)));
+
+  logger.info(
+    `[conformationShowService] Score: ${finalScore} for horse ${horse.name ?? horse.id} with handler ${groom.name ?? groom.id}`,
+  );
+
+  return {
+    finalScore,
+    breakdown: {
+      conformationScore,
+      conformationComponent: Math.round(conformationComponent * 10) / 10,
+      handlerScore,
+      handlerComponent: Math.round(handlerComponent * 10) / 10,
+      bondScore,
+      bondComponent: Math.round(bondComponent * 10) / 10,
+      synergyScore,
+      synergyComponent: Math.round(synergyComponent * 10) / 10,
+    },
+    weights: {
+      conformation: CONFORMATION_SHOW_CONFIG.CONFORMATION_WEIGHT,
+      handler: CONFORMATION_SHOW_CONFIG.HANDLER_WEIGHT,
+      bond: CONFORMATION_SHOW_CONFIG.BOND_WEIGHT,
+      temperament: CONFORMATION_SHOW_CONFIG.TEMPERAMENT_WEIGHT,
+    },
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -574,53 +550,56 @@ export async function executeConformationShow(showId) {
   // Build results and persist via transaction
   const results = [];
 
-  await prisma.$transaction(async tx => {
-    for (let i = 0; i < scored.length; i++) {
-      const { horse, finalScore } = scored[i];
-      const placement = i + 1;
-      const { ribbon, titlePoints: tpAwarded, breedingBoostDelta } = resolveReward(placement);
+  await prisma.$transaction(
+    async tx => {
+      for (let i = 0; i < scored.length; i++) {
+        const { horse, finalScore } = scored[i];
+        const placement = i + 1;
+        const { ribbon, titlePoints: tpAwarded, breedingBoostDelta } = resolveReward(placement);
 
-      // Accumulate title points
-      const newTitlePoints = (horse.titlePoints ?? 0) + tpAwarded;
-      const newTitle = resolveTitle(newTitlePoints);
-      const newBoost = applyBreedingValueBoost(horse.breedingValueBoost ?? 0, breedingBoostDelta);
+        // Accumulate title points
+        const newTitlePoints = (horse.titlePoints ?? 0) + tpAwarded;
+        const newTitle = resolveTitle(newTitlePoints);
+        const newBoost = applyBreedingValueBoost(horse.breedingValueBoost ?? 0, breedingBoostDelta);
 
-      // Update horse title fields
-      await tx.horse.update({
-        where: { id: horse.id },
-        data: {
-          titlePoints: newTitlePoints,
-          currentTitle: newTitle,
-          breedingValueBoost: newBoost,
-        },
-      });
+        // Update horse title fields
+        await tx.horse.update({
+          where: { id: horse.id },
+          data: {
+            titlePoints: newTitlePoints,
+            currentTitle: newTitle,
+            breedingValueBoost: newBoost,
+          },
+        });
 
-      // Create CompetitionResult — no prizeWon (AC4)
-      await tx.competitionResult.create({
-        data: {
+        // Create CompetitionResult — no prizeWon (AC4)
+        await tx.competitionResult.create({
+          data: {
+            horseId: horse.id,
+            showId,
+            score: finalScore,
+            placement: String(placement),
+            discipline: 'conformation',
+            runDate: new Date(),
+            showName: show.name ?? `Show #${showId}`,
+            prizeWon: null,
+            statGains: { ribbon, titlePoints: tpAwarded },
+          },
+        });
+
+        results.push({
           horseId: horse.id,
-          showId,
+          placement,
           score: finalScore,
-          placement: String(placement),
-          discipline: 'conformation',
-          runDate: new Date(),
-          showName: show.name ?? `Show #${showId}`,
-          prizeWon: null,
-          statGains: { ribbon, titlePoints: tpAwarded },
-        },
-      });
-
-      results.push({
-        horseId: horse.id,
-        placement,
-        score: finalScore,
-        ribbon,
-        titlePoints: tpAwarded,
-        newTitle,
-        breedingValueBoost: newBoost,
-      });
-    }
-  }, { timeout: 30000 });
+          ribbon,
+          titlePoints: tpAwarded,
+          newTitle,
+          breedingValueBoost: newBoost,
+        });
+      }
+    },
+    { timeout: 30000 },
+  );
 
   return results;
 }
