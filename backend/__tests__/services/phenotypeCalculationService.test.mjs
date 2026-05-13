@@ -474,3 +474,79 @@ describe('calculatePhenotype — roan Varnish Roan and default', () => {
     expect(result.isRoan).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Branch-coverage additions (Equoria-rr7)
+// ---------------------------------------------------------------------------
+
+describe('calculatePhenotype — nd1/nd2 compound dun line 70 (Equoria-rr7)', () => {
+  it('nd1/nd2 D_Dun compound → isDunActive=true (line 70), bay base → Bay Dun', () => {
+    // parts=['nd1','nd2'] → parts.includes('nd1') && parts.includes('nd2') → line 70 return true
+    const result = calculatePhenotype(g({ D_Dun: 'nd1/nd2' }));
+    expect(result.colorName).toBe('Bay Dun');
+  });
+});
+
+describe('calculatePhenotype — pearl pseudo-dilute (prl/n + Cr/n) lines 234-240 (Equoria-rr7)', () => {
+  it('chestnut + prl/n + Cr/n → Palomino Pearl (line 236)', () => {
+    // hasPseudoDilute=true, !hasCreamDouble=true → switch chestnut → line 236
+    const result = calculatePhenotype(g({ E_Extension: 'e/e', Prl_Pearl: 'prl/n', Cr_Cream: 'Cr/n' }));
+    expect(result.colorName).toBe('Palomino Pearl');
+  });
+
+  it('bay + prl/n + Cr/n → Buckskin Pearl (line 238)', () => {
+    // hasPseudoDilute=true, !hasCreamDouble=true → switch bay → line 238
+    const result = calculatePhenotype(g({ E_Extension: 'E/e', A_Agouti: 'A/a', Prl_Pearl: 'prl/n', Cr_Cream: 'Cr/n' }));
+    expect(result.colorName).toBe('Buckskin Pearl');
+  });
+
+  it('black + prl/n + Cr/n → Smoky Black Pearl (line 240)', () => {
+    // hasPseudoDilute=true, !hasCreamDouble=true → switch black → line 240
+    const result = calculatePhenotype(g({ E_Extension: 'E/e', A_Agouti: 'a/a', Prl_Pearl: 'prl/n', Cr_Cream: 'Cr/n' }));
+    expect(result.colorName).toBe('Smoky Black Pearl');
+  });
+});
+
+describe('calculatePhenotype — cream + dun + silver lines 259 and 284 (Equoria-rr7)', () => {
+  it('chestnut + Cr/n + dun → Palomino (line 259, cream takes priority over dun naming)', () => {
+    // hasCreamSingle=true, hasDun=true, chestnut → case chestnut → line 259 return Palomino
+    const result = calculatePhenotype(g({ E_Extension: 'e/e', Cr_Cream: 'Cr/n', D_Dun: 'D/nd2' }));
+    expect(result.colorName).toBe('Palomino');
+  });
+
+  it('black + silver + dun (no cream) → Silver Grulla (line 284)', () => {
+    // hasSilver=true, hasDun=true, black, !hasCreamSingle → silver section line 284
+    const result = calculatePhenotype(g({ E_Extension: 'E/e', A_Agouti: 'a/a', Z_Silver: 'Z/n', D_Dun: 'D/nd2' }));
+    expect(result.colorName).toBe('Silver Grulla');
+  });
+});
+
+describe('calculatePhenotype — Mushroom Chestnut line 315 (Equoria-rr7)', () => {
+  it('chestnut + MFSD12_Mushroom M/N → Mushroom Chestnut (line 315)', () => {
+    // hasMushroom=true, baseColor=chestnut, no other dilutes → line 315
+    const result = calculatePhenotype(g({ E_Extension: 'e/e', MFSD12_Mushroom: 'M/N' }));
+    expect(result.colorName).toBe('Mushroom Chestnut');
+  });
+});
+
+describe('calculatePhenotype — champagne + dun lines 364 and 370 (Equoria-rr7)', () => {
+  it('chestnut + dun + champagne (no silver, no cream) → Gold Dun Champagne (line 364 false arm)', () => {
+    // resolveChampagneColor: hasSilver=false, hasDun=true, hasAnyCream=false → line 364 false
+    const result = calculatePhenotype(g({ E_Extension: 'e/e', D_Dun: 'D/nd2', Ch_Champagne: 'Ch/n' }));
+    expect(result.colorName).toBe('Gold Dun Champagne');
+  });
+
+  it('chestnut + dun + champagne + cream (no silver) → Gold Cream Dun Champagne (line 364 true arm)', () => {
+    // resolveChampagneColor: hasSilver=false, hasDun=true, hasAnyCream=true → line 364 true
+    const result = calculatePhenotype(
+      g({ E_Extension: 'e/e', D_Dun: 'D/nd2', Ch_Champagne: 'Ch/n', Cr_Cream: 'Cr/n' }),
+    );
+    expect(result.colorName).toBe('Gold Cream Dun Champagne');
+  });
+
+  it('chestnut + champagne + cream (no dun, no silver) → Gold Cream Champagne (line 370)', () => {
+    // resolveChampagneColor: no silver, no dun, hasAnyCream=true → parts.push(Cream) line 370
+    const result = calculatePhenotype(g({ E_Extension: 'e/e', Ch_Champagne: 'Ch/n', Cr_Cream: 'Cr/n' }));
+    expect(result.colorName).toBe('Gold Cream Champagne');
+  });
+});
