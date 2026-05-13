@@ -304,3 +304,217 @@ describe('carePatternAnalyzer — with interactions (Equoria-jkht)', () => {
     expect(Array.isArray(result.recommendations)).toBe(true);
   });
 });
+
+// ── carePatternAnalyzer — single-interaction and specialized branches (Equoria-rr7) ──
+// Covers:
+//   lines 627, 661 (true arm), 687, 723 — length<2 early returns in sub-functions
+//   line 213 — stressSpikes map callback body (stressChange >= 3)
+//   line 822 — projectOutcome 'neutral' (improvingCount<2, decliningCount<2)
+//   lines 883, 898 — generateGroomRecommendations low-effectiveness paths
+
+describe('carePatternAnalyzer — single-interaction and specialized branches (Equoria-rr7)', () => {
+  let cpa2User;
+  let cpa2Groom1;
+  let cpa2GroomMixed;
+  let cpa2GroomPoor;
+  let cpa2Horse1;
+  let cpa2HorseStress;
+  let cpa2HorseMixed;
+  let cpa2HorseLowEff;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    cpa2User = await prisma.user.create({
+      data: {
+        email: `cpa2-${ts}-${rand()}@test.com`,
+        username: `cpa2${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'CPA2',
+        lastName: 'Branch',
+        money: 1000,
+      },
+    });
+
+    cpa2Groom1 = await prisma.groom.create({
+      data: {
+        name: `TestFixture-CPA2-Groom1-${ts}`,
+        speciality: 'foalCare',
+        personality: 'gentle',
+        userId: cpa2User.id,
+        isActive: true,
+      },
+    });
+
+    cpa2GroomMixed = await prisma.groom.create({
+      data: {
+        name: `TestFixture-CPA2-GroomMixed-${ts}`,
+        speciality: 'foalCare',
+        personality: 'gentle',
+        userId: cpa2User.id,
+        isActive: true,
+      },
+    });
+
+    cpa2GroomPoor = await prisma.groom.create({
+      data: {
+        name: `TestFixture-CPA2-GroomPoor-${ts}`,
+        speciality: 'foalCare',
+        personality: 'gentle',
+        userId: cpa2User.id,
+        isActive: true,
+      },
+    });
+
+    cpa2Horse1 = await prisma.horse.create({
+      data: {
+        name: `TestFixture-CPA2-Horse1-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: cpa2User.id,
+      },
+    });
+    await prisma.groomInteraction.create({
+      data: {
+        foalId: cpa2Horse1.id,
+        groomId: cpa2Groom1.id,
+        interactionType: 'daily_care',
+        duration: 30,
+        bondingChange: 2,
+        stressChange: 0,
+        quality: 'good',
+      },
+    });
+
+    cpa2HorseStress = await prisma.horse.create({
+      data: {
+        name: `TestFixture-CPA2-HorseStress-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: cpa2User.id,
+      },
+    });
+    await prisma.groomInteraction.create({
+      data: {
+        foalId: cpa2HorseStress.id,
+        groomId: cpa2Groom1.id,
+        interactionType: 'daily_care',
+        duration: 20,
+        bondingChange: 0,
+        stressChange: 4,
+        quality: 'poor',
+      },
+    });
+
+    cpa2HorseMixed = await prisma.horse.create({
+      data: {
+        name: `TestFixture-CPA2-HorseMixed-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: cpa2User.id,
+      },
+    });
+    const mixedRows = [
+      { bondingChange: 5, stressChange: 0, quality: 'good' },
+      { bondingChange: 2, stressChange: 0, quality: 'good' },
+      { bondingChange: 0, stressChange: 0, quality: 'good' },
+    ];
+    for (let i = 0; i < mixedRows.length; i++) {
+      const r = mixedRows[i];
+      await prisma.groomInteraction.create({
+        data: {
+          foalId: cpa2HorseMixed.id,
+          groomId: cpa2GroomMixed.id,
+          interactionType: 'daily_care',
+          duration: 30,
+          bondingChange: r.bondingChange,
+          stressChange: r.stressChange,
+          quality: r.quality,
+          createdAt: new Date(ts - (mixedRows.length - i) * 60000),
+          timestamp: new Date(ts - (mixedRows.length - i) * 60000),
+        },
+      });
+    }
+
+    cpa2HorseLowEff = await prisma.horse.create({
+      data: {
+        name: `TestFixture-CPA2-HorseLowEff-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: cpa2User.id,
+      },
+    });
+    for (let i = 0; i < 2; i++) {
+      await prisma.groomInteraction.create({
+        data: {
+          foalId: cpa2HorseLowEff.id,
+          groomId: cpa2GroomPoor.id,
+          interactionType: 'daily_care',
+          duration: 15,
+          bondingChange: -3,
+          stressChange: 3,
+          quality: 'poor',
+        },
+      });
+    }
+  }, 60000);
+
+  afterAll(async () => {
+    const horseIds = [cpa2Horse1?.id, cpa2HorseStress?.id, cpa2HorseMixed?.id, cpa2HorseLowEff?.id].filter(Boolean);
+    await prisma.groomInteraction.deleteMany({ where: { foalId: { in: horseIds } } }).catch(() => {});
+    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-CPA2-' } } }).catch(() => {});
+    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-CPA2-' } } }).catch(() => {});
+    await prisma.user.delete({ where: { id: cpa2User?.id } }).catch(() => {});
+  }, 30000);
+
+  it('calculateAdvancedConsistencyScore: single interaction → frequencyConsistency=0 (line 627)', async () => {
+    const result = await calculateAdvancedConsistencyScore(cpa2Horse1.id);
+    expect(result.dataPoints).toBe(1);
+    expect(result.components.frequencyConsistency).toBe(0);
+  });
+
+  it('calculateAdvancedConsistencyScore: single interaction → qualityConsistency=0.75 (line 661)', async () => {
+    const result = await calculateAdvancedConsistencyScore(cpa2Horse1.id);
+    // quality='good' → score=3 → 3/4=0.75
+    expect(result.components.qualityConsistency).toBe(0.75);
+  });
+
+  it('calculateAdvancedConsistencyScore: single interaction → durationConsistency=0.8 (line 687)', async () => {
+    const result = await calculateAdvancedConsistencyScore(cpa2Horse1.id);
+    expect(result.components.durationConsistency).toBe(0.8);
+  });
+
+  it('calculateAdvancedConsistencyScore: single interaction → timingConsistency=0.8 (line 723)', async () => {
+    const result = await calculateAdvancedConsistencyScore(cpa2Horse1.id);
+    expect(result.components.timingConsistency).toBe(0.8);
+  });
+
+  it('analyzeCarePatterns: stressChange=4 → stressSpikes entry present (line 213)', async () => {
+    const result = await analyzeCarePatterns(cpa2HorseStress.id);
+    expect(Array.isArray(result.stressPatterns.stressSpikes)).toBe(true);
+    expect(result.stressPatterns.stressSpikes.length).toBeGreaterThanOrEqual(1);
+    expect(result.stressPatterns.stressSpikes[0].stressIncrease).toBe(4);
+  });
+
+  it('detectCareQualityTrends: quality stable + bond declining → projectedOutcome=neutral (line 822)', async () => {
+    const result = await detectCareQualityTrends(cpa2HorseMixed.id);
+    expect(result.dataPoints).toBe(3);
+    expect(result.bondTrend).toBe('declining');
+    expect(result.qualityTrend).toBe('stable');
+    expect(result.projectedOutcome).toBe('neutral');
+  });
+
+  it('analyzeGroomEffectiveness: poor quality+neg bond+high stress → low-effectiveness recommendations (lines 883, 898)', async () => {
+    const result = await analyzeGroomEffectiveness(cpa2HorseLowEff.id);
+    expect(result.overallEffectiveness).toBe(0);
+    const lowEffRec = result.recommendations.find(r => r.includes('Overall groom effectiveness is low'));
+    expect(lowEffRec).toBeDefined();
+    const poorRec = result.recommendations.find(r => r.includes('shows poor effectiveness'));
+    expect(poorRec).toBeDefined();
+  });
+});
