@@ -118,6 +118,7 @@ import wyagRoutes from './routes/wyagRoutes.mjs';
 import showRoutes from './routes/showRoutes.mjs';
 import bankRoutes from './routes/bankRoutes.mjs';
 import craftingRoutes from './routes/craftingRoutes.mjs';
+import performanceMetricsRouter from './utils/performanceMonitor.mjs';
 
 /**
  * 🔒 SECURITY ROUTER ARCHITECTURE
@@ -624,6 +625,10 @@ app.use('/', publicRouter);
 // Public breed routes (no auth — needed for onboarding before login)
 app.use('/api/v1/breeds', breedRoutes);
 app.use('/api/breeds', breedRoutes);
+
+// Performance monitoring routes (ops/health, no auth required)
+app.use('/api/performance', performanceMetricsRouter);
+app.use('/api/v1/performance', performanceMetricsRouter);
 
 // Admin routes (requires auth + admin role)
 app.use('/api/v1/admin', adminRouter);

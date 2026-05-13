@@ -5,6 +5,11 @@
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
+import {
+  generateDiscoverySlots,
+  readDiscoverySlots,
+  writeDiscoverySlots,
+} from '../services/trainerDiscoveryService.mjs';
 
 /**
  * GET /api/trainers/user/:userId
@@ -156,8 +161,9 @@ export async function deleteTrainerAssignment(req, res) {
 /**
  * GET /api/trainers/:id/discovery
  * Returns discovery slots for a trainer (career affinity discoveries).
- * Mirrors the rider discovery endpoint — 3 categories × 2 slots = 6 total.
- * Discovery unlocks at level thresholds (level 2, 4, 6, 8, 10, 12+).
+ * 3 categories × 2 slots = 6 total.
+ * Trait content is persisted in discovery_slots JSONB; visibility is computed
+ * from trainer level (one slot revealed per 2 levels, max 6).
  */
 export async function getTrainerDiscovery(req, res) {
   try {
@@ -169,27 +175,30 @@ export async function getTrainerDiscovery(req, res) {
       return res.status(404).json({ success: false, message: 'Trainer not found' });
     }
 
-    const discoveredCount = Math.min(Math.floor(trainer.level / 2), 6);
-    const categories = ['discipline_specialization', 'training_method', 'horse_compatibility'];
+    // Read persisted trait pool; auto-seed for legacy trainers with empty slots.
+    let slotPool = await readDiscoverySlots(trainerId);
+    if (slotPool.length === 0) {
+      slotPool = generateDiscoverySlots(trainer.speciality, trainer.personality);
+      await writeDiscoverySlots(trainerId, slotPool);
+    }
 
-    const slots = Array.from({ length: 6 }, (_, i) => {
-      const category = categories[Math.floor(i / 2)];
-      const discovered = i < discoveredCount;
-      return {
-        slotIndex: i,
-        category,
-        discovered,
-        trait: discovered
+    const discoveredCount = Math.min(Math.floor(trainer.level / 2), 6);
+
+    const slots = slotPool.map(slot => ({
+      slotIndex: slot.slotIndex,
+      category: slot.category,
+      discovered: slot.slotIndex < discoveredCount,
+      trait:
+        slot.slotIndex < discoveredCount
           ? {
-              id: `${category}_${i}`,
-              label: `${trainer.speciality} Focus`,
-              description: `Discovered ${trainer.speciality} focus through coaching experience.`,
-              icon: '🎓',
-              strength: i < 2 ? 'mild' : i < 4 ? 'moderate' : 'strong',
+              id: `${slot.category}_${slot.slotIndex}`,
+              label: slot.label,
+              description: slot.description,
+              icon: slot.icon,
+              strength: slot.strength,
             }
           : undefined,
-      };
-    });
+    }));
 
     res.status(200).json({
       success: true,

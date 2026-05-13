@@ -6,10 +6,10 @@ info:
   contact:
     name: 'Equoria Team'
   x-generated:
-    timestamp: '2026-04-15T15:57:52.571Z'
-    endpointCount: 0
+    timestamp: '2026-05-13T00:00:00.000Z'
+    endpointCount: 100
     schemaCount: 2
-    generator: ApiDocumentationService
+    generator: manual
 servers:
   - url: 'http://localhost:3000/api'
     description: 'Development server (legacy base path)'
@@ -22,495 +22,1167 @@ tags:
     description: 'Authentication endpoints'
   - name: Horses
     description: 'Horse management endpoints'
+  - name: Breeds
+    description: 'Horse breed definitions'
   - name: Breeding
-    description: 'Breeding operations'
-  - name: Competitions
+    description: 'Breeding operations and foal management'
+  - name: Training
+    description: 'Training sessions and milestones'
+  - name: Competition
     description: 'Competition endpoints'
-  - name: Health
-    description: 'Health check endpoints'
+  - name: Shows
+    description: 'Player-created show management'
+  - name: Grooms
+    description: 'Groom hiring, assignments, and performance'
+  - name: Riders
+    description: 'Rider system'
+  - name: Trainers
+    description: 'Trainer system'
+  - name: Leaderboards
+    description: 'Rankings and leaderboards'
+  - name: Users
+    description: 'User profile and dashboard'
+  - name: Community
+    description: 'Forum, messages, and clubs'
   - name: Forum
     description: 'Community forum threads and posts'
   - name: Messages
     description: 'Direct messages between users'
   - name: Clubs
     description: 'Clubs, memberships, and elections'
+  - name: Marketplace
+    description: 'Horse marketplace — buy, sell, and list horses'
+  - name: Services
+    description: 'In-game services — bank, vet, tack shop, farrier, feed shop, inventory, crafting'
+  - name: Traits
+    description: 'Horse trait discovery and management'
+  - name: Admin
+    description: 'Administrative operations'
+  - name: Labs
+    description: 'Experimental endpoints (non-SLO, subject to change)'
+  - name: Health
+    description: 'Health check endpoints'
 paths:
+  # ── Health ──────────────────────────────────────────────────────────────────
   /health:
     get:
       tags: [Health]
       summary: 'Health check'
       description: 'Returns API health status'
       responses:
-        {
-          '200':
-            {
-              description: 'API is healthy',
-              content:
-                {
-                  application/json:
-                    {
-                      schema:
-                        {
-                          type: object,
-                          properties:
-                            {
-                              status: { type: string, example: ok },
-                              timestamp: { type: string, format: date-time },
-                            },
-                        },
-                    },
-                },
-            },
-        }
+        '200':
+          description: 'API is healthy'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  timestamp: { type: string, format: date-time }
+
+  # ── Auth (public) ────────────────────────────────────────────────────────────
+  /auth/csrf-token:
+    get:
+      tags: [Auth]
+      summary: 'Get CSRF token'
+      responses:
+        '200': { description: 'CSRF token returned' }
+
   /auth/register:
     post:
       tags: [Auth]
       summary: 'Register a new user'
       requestBody:
-        {
-          required: true,
-          content:
-            { application/json: { schema: { $ref: '#/components/schemas/RegisterRequest' } } },
-        }
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
       responses:
-        {
-          '201': { description: 'User registered successfully' },
-          '400': { description: 'Validation error' },
-        }
+        '201': { description: 'User registered successfully' }
+        '400': { description: 'Validation error' }
+
   /auth/login:
     post:
       tags: [Auth]
       summary: 'Login user'
       requestBody:
-        {
-          required: true,
-          content: { application/json: { schema: { $ref: '#/components/schemas/LoginRequest' } } },
-        }
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
       responses:
-        {
-          '200':
-            {
-              description: 'Login successful',
-              content:
-                { application/json: { schema: { $ref: '#/components/schemas/AuthResponse' } } },
-            },
-          '401': { description: 'Invalid credentials' },
-        }
+        '200':
+          description: 'Login successful'
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '401': { description: 'Invalid credentials' }
+
+  /auth/forgot-password:
+    post:
+      tags: [Auth]
+      summary: 'Request password reset'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: { type: string, format: email }
+      responses:
+        '200': { description: 'Reset email sent if account exists' }
+
+  /auth/reset-password:
+    post:
+      tags: [Auth]
+      summary: 'Reset password with token'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password]
+              properties:
+                token: { type: string }
+                password: { type: string, minLength: 8 }
+      responses:
+        '200': { description: 'Password reset successful' }
+        '400': { description: 'Invalid or expired token' }
+
+  /auth/refresh-token:
+    post:
+      tags: [Auth]
+      summary: 'Refresh access token'
+      responses:
+        '200': { description: 'New access token returned' }
+        '401': { description: 'Invalid refresh token' }
+
+  /auth/verify-email:
+    get:
+      tags: [Auth]
+      summary: 'Verify email address'
+      parameters:
+        - { name: token, in: query, required: true, schema: { type: string } }
+      responses:
+        '200': { description: 'Email verified' }
+        '400': { description: 'Invalid or expired token' }
+
+  # ── Auth (authenticated) ─────────────────────────────────────────────────────
+  /auth/profile:
+    get:
+      tags: [Auth]
+      summary: 'Get user profile'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'User profile returned' }
+        '401': { description: Unauthorized }
+    put:
+      tags: [Auth]
+      summary: 'Update user profile'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username: { type: string }
+                email: { type: string, format: email }
+      responses:
+        '200': { description: 'Profile updated' }
+        '401': { description: Unauthorized }
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: 'Get current user (alias for /auth/profile)'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'User profile returned' }
+
   /auth/logout:
     post:
       tags: [Auth]
       summary: 'Logout user'
       security: [{ bearerAuth: [] }]
       responses: { '200': { description: 'Logout successful' } }
-  '/api/v1/horses/{id}/conformation':
+
+  /auth/change-password:
+    post:
+      tags: [Auth]
+      summary: 'Change password'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword: { type: string }
+                newPassword: { type: string, minLength: 8 }
+      responses:
+        '200': { description: 'Password changed' }
+        '401': { description: Unauthorized }
+
+  /auth/complete-onboarding:
+    post:
+      tags: [Auth]
+      summary: 'Complete user onboarding'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Onboarding completed' }
+
+  /auth/advance-onboarding:
+    post:
+      tags: [Auth]
+      summary: 'Advance to next onboarding step'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Onboarding step advanced' }
+
+  /auth/profile/preferences:
+    patch:
+      tags: [Auth]
+      summary: 'Update user preferences'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
+      responses:
+        '200': { description: 'Preferences updated' }
+
+  # ── Horses ───────────────────────────────────────────────────────────────────
+  /horses:
     get:
       tags: [Horses]
-      summary: 'Get conformation scores for a horse'
-      description: 'Returns all 8 conformation region scores (head, neck, shoulders, back, hindquarters, legs, hooves, topline) plus the overall average. Returns null data for legacy horses without conformation scores. Requires ownership of the horse.'
+      summary: 'Get all horses for authenticated user'
       security: [{ bearerAuth: [] }]
       parameters:
-        [
-          {
-            name: id,
-            in: path,
-            required: true,
-            schema: { type: integer, minimum: 1 },
-            description: 'Horse ID',
-          },
-        ]
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, default: 20, maximum: 100 } }
       responses:
-        {
-          '200':
-            {
-              description: 'Conformation scores retrieved successfully',
-              content:
-                {
-                  application/json:
-                    {
-                      schema:
-                        {
-                          type: object,
-                          properties:
-                            {
-                              success: { type: boolean, example: true },
-                              message: { type: string },
-                              data:
-                                {
-                                  type: object,
-                                  nullable: true,
-                                  properties:
-                                    {
-                                      horseId: { type: integer },
-                                      horseName: { type: string },
-                                      breedId: { type: integer },
-                                      conformationScores:
-                                        {
-                                          type: object,
-                                          properties:
-                                            {
-                                              head:
-                                                {
-                                                  type: integer,
-                                                  minimum: 0,
-                                                  maximum: 100,
-                                                  nullable: true,
-                                                },
-                                              neck:
-                                                {
-                                                  type: integer,
-                                                  minimum: 0,
-                                                  maximum: 100,
-                                                  nullable: true,
-                                                },
-                                              shoulders:
-                                                {
-                                                  type: integer,
-                                                  minimum: 0,
-                                                  maximum: 100,
-                                                  nullable: true,
-                                                },
-                                              back:
-                                                {
-                                                  type: integer,
-                                                  minimum: 0,
-                                                  maximum: 100,
-                                                  nullable: true,
-                                                },
-                                              hindquarters:
-                                                {
-                                                  type: integer,
-                                                  minimum: 0,
-                                                  maximum: 100,
-                                                  nullable: true,
-                                                },
-                                              legs:
-                                                {
-                                                  type: integer,
-                                                  minimum: 0,
-                                                  maximum: 100,
-                                                  nullable: true,
-                                                },
-                                              hooves:
-                                                {
-                                                  type: integer,
-                                                  minimum: 0,
-                                                  maximum: 100,
-                                                  nullable: true,
-                                                },
-                                              topline:
-                                                {
-                                                  type: integer,
-                                                  minimum: 0,
-                                                  maximum: 100,
-                                                  nullable: true,
-                                                },
-                                              overallConformation:
-                                                { type: integer, minimum: 0, maximum: 100 },
-                                            },
-                                        },
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-          '400': { description: 'Invalid horse ID' },
-          '401': { description: Unauthorized },
-          '403': { description: 'Forbidden — horse belongs to another user' },
-          '404': { description: 'Horse not found' },
-          '500': { description: 'Internal server error' },
-        }
-  '/api/v1/horses/{id}/conformation/analysis':
+        '200':
+          description: 'List of horses'
+          content:
+            application/json:
+              schema: { type: array, items: { $ref: '#/components/schemas/Horse' } }
+    post:
+      tags: [Horses]
+      summary: 'Create a new horse'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, breed, age, sex]
+              properties:
+                name: { type: string }
+                breed: { type: string }
+                age: { type: integer }
+                sex: { type: string, enum: [male, female] }
+      responses:
+        '201': { description: 'Horse created' }
+        '400': { description: 'Validation error' }
+
+  '/horses/{id}':
     get:
       tags: [Horses]
-      summary: 'Get conformation analysis with breed percentile rankings'
-      description: 'Returns per-region percentile ranking compared to all same-breed horses in the database. Percentile = percentage of same-breed horses scoring lower. Breed mean comes from genetic profiles, not live database averages. Returns null data for legacy horses or horses without a breed assignment.'
+      summary: 'Get a horse by ID'
       security: [{ bearerAuth: [] }]
       parameters:
-        [
-          {
-            name: id,
-            in: path,
-            required: true,
-            schema: { type: integer, minimum: 1 },
-            description: 'Horse ID',
-          },
-        ]
+        - { name: id, in: path, required: true, schema: { type: integer } }
       responses:
-        {
-          '200':
-            {
-              description: 'Conformation analysis retrieved successfully',
-              content:
-                {
-                  application/json:
-                    {
-                      schema:
-                        {
-                          type: object,
-                          properties:
-                            {
-                              success: { type: boolean, example: true },
-                              message: { type: string },
-                              data:
-                                {
-                                  type: object,
-                                  nullable: true,
-                                  properties:
-                                    {
-                                      horseId: { type: integer },
-                                      horseName: { type: string },
-                                      breedId: { type: integer },
-                                      breedName: { type: string },
-                                      totalHorsesInBreed: { type: integer },
-                                      analysis:
-                                        {
-                                          type: object,
-                                          description: 'Per-region score, breedMean, and percentile',
-                                        },
-                                      overallConformation:
-                                        {
-                                          type: object,
-                                          properties:
-                                            {
-                                              score: { type: integer },
-                                              breedMean: { type: integer },
-                                              percentile:
-                                                { type: integer, minimum: 0, maximum: 100 },
-                                            },
-                                        },
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-          '400': { description: 'Invalid horse ID' },
-          '401': { description: Unauthorized },
-          '403': { description: 'Forbidden — horse belongs to another user' },
-          '404': { description: 'Horse not found' },
-          '500': { description: 'Internal server error' },
-        }
-  '/api/v1/horses/{id}/gaits':
-    get:
+        '200': { description: 'Horse data' }
+        '404': { description: 'Horse not found' }
+    put:
       tags: [Horses]
-      summary: 'Get gait quality scores for a horse'
-      description: 'Returns walk, trot, canter, and gallop quality scores (0–100). For gaited breeds, also returns a gaiting array with named specialty gait entries. Returns null data for legacy horses without gait scores. Requires ownership of the horse.'
+      summary: 'Update a horse'
       security: [{ bearerAuth: [] }]
       parameters:
-        [
-          {
-            name: id,
-            in: path,
-            required: true,
-            schema: { type: integer, minimum: 1 },
-            description: 'Horse ID',
-          },
-        ]
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { type: object }
       responses:
-        {
-          '200':
-            {
-              description: 'Gait scores retrieved successfully',
-              content:
-                {
-                  application/json:
-                    {
-                      schema:
-                        {
-                          type: object,
-                          properties:
-                            {
-                              success: { type: boolean, example: true },
-                              message: { type: string },
-                              data:
-                                {
-                                  type: object,
-                                  nullable: true,
-                                  properties:
-                                    {
-                                      horseId: { type: integer },
-                                      horseName: { type: string },
-                                      breedId: { type: integer },
-                                      gaitScores:
-                                        {
-                                          type: object,
-                                          properties:
-                                            {
-                                              walk: { type: integer, minimum: 0, maximum: 100 },
-                                              trot: { type: integer, minimum: 0, maximum: 100 },
-                                              canter: { type: integer, minimum: 0, maximum: 100 },
-                                              gallop: { type: integer, minimum: 0, maximum: 100 },
-                                              gaiting:
-                                                {
-                                                  type: array,
-                                                  nullable: true,
-                                                  items:
-                                                    {
-                                                      type: object,
-                                                      properties:
-                                                        {
-                                                          name:
-                                                            {
-                                                              type: string,
-                                                              example: 'Running Walk',
-                                                            },
-                                                          score:
-                                                            {
-                                                              type: integer,
-                                                              minimum: 0,
-                                                              maximum: 100,
-                                                            },
-                                                        },
-                                                    },
-                                                },
-                                            },
-                                        },
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-          '400': { description: 'Invalid horse ID' },
-          '401': { description: Unauthorized },
-          '403': { description: 'Forbidden — horse belongs to another user' },
-          '404': { description: 'Horse not found' },
-          '500': { description: 'Internal server error' },
-        }
-  /api/v1/horses/temperament-definitions:
+        '200': { description: 'Horse updated' }
+    delete:
+      tags: [Horses]
+      summary: 'Delete a horse'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: 'Horse deleted' }
+        '403': { description: 'Forbidden' }
+        '404': { description: 'Horse not found' }
+
+  /horses/temperament-definitions:
     get:
       tags: [Horses]
       summary: 'Get all temperament type definitions with game effects'
       description: 'Returns all 11 temperament types with descriptions, training modifiers, competition modifiers, and best groom personality matches. Public endpoint — no authentication required.'
       responses:
-        {
-          '200':
-            {
-              description: 'Temperament definitions retrieved successfully',
-              content:
-                {
-                  application/json:
-                    {
-                      schema:
-                        {
-                          type: object,
-                          properties:
-                            {
-                              success: { type: boolean, example: true },
-                              message:
-                                {
-                                  type: string,
-                                  example: 'Temperament definitions retrieved successfully',
-                                },
-                              data:
-                                {
-                                  type: object,
-                                  properties:
-                                    {
-                                      count: { type: integer, example: 11 },
-                                      definitions:
-                                        {
-                                          type: array,
-                                          items:
-                                            {
-                                              type: object,
-                                              properties:
-                                                {
-                                                  name: { type: string, example: Spirited },
-                                                  description: { type: string },
-                                                  prevalenceNote: { type: string },
-                                                  trainingModifiers:
-                                                    {
-                                                      type: object,
-                                                      properties:
-                                                        {
-                                                          xpModifier:
-                                                            { type: number, example: 0.1 },
-                                                          scoreModifier:
-                                                            { type: number, example: 0.05 },
-                                                        },
-                                                    },
-                                                  competitionModifiers:
-                                                    {
-                                                      type: object,
-                                                      properties:
-                                                        {
-                                                          riddenModifier:
-                                                            { type: number, example: 0.03 },
-                                                          conformationModifier:
-                                                            { type: number, example: -0.02 },
-                                                        },
-                                                    },
-                                                  bestGroomPersonalities:
-                                                    {
-                                                      type: array,
-                                                      items: { type: string },
-                                                      example: [energetic],
-                                                    },
-                                                },
-                                            },
-                                        },
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-            },
-          '500': { description: 'Internal server error' },
-        }
-  /horses:
+        '200':
+          description: 'Temperament definitions retrieved successfully'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean, example: true }
+                  data:
+                    type: object
+                    properties:
+                      count: { type: integer, example: 11 }
+                      definitions: { type: array, items: { type: object } }
+        '500': { description: 'Internal server error' }
+
+  '/horses/{id}/xp':
     get:
       tags: [Horses]
-      summary: 'Get all horses'
+      summary: 'Get XP for a horse'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: 'Horse XP data' }
+    post:
+      tags: [Horses]
+      summary: 'Award XP to a horse'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [amount]
+              properties:
+                amount: { type: integer }
+      responses:
+        '200': { description: 'XP awarded' }
+
+  '/horses/{id}/conformation':
+    get:
+      tags: [Horses]
+      summary: 'Get conformation scores for a horse'
+      description: 'Returns all 8 conformation region scores plus overall average. Requires ownership.'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, minimum: 1 } }
+      responses:
+        '200': { description: 'Conformation scores retrieved successfully' }
+        '400': { description: 'Invalid horse ID' }
+        '401': { description: Unauthorized }
+        '403': { description: 'Forbidden — horse belongs to another user' }
+        '404': { description: 'Horse not found' }
+        '500': { description: 'Internal server error' }
+
+  '/horses/{id}/conformation/analysis':
+    get:
+      tags: [Horses]
+      summary: 'Get conformation analysis with breed percentile rankings'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, minimum: 1 } }
+      responses:
+        '200': { description: 'Conformation analysis retrieved successfully' }
+        '400': { description: 'Invalid horse ID' }
+        '401': { description: Unauthorized }
+        '403': { description: 'Forbidden — horse belongs to another user' }
+        '404': { description: 'Horse not found' }
+        '500': { description: 'Internal server error' }
+
+  '/horses/{id}/gaits':
+    get:
+      tags: [Horses]
+      summary: 'Get gait quality scores for a horse'
+      description: 'Returns walk, trot, canter, gallop scores (0–100). For gaited breeds, includes specialty gaits.'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer, minimum: 1 } }
+      responses:
+        '200': { description: 'Gait scores retrieved successfully' }
+        '400': { description: 'Invalid horse ID' }
+        '401': { description: Unauthorized }
+        '403': { description: 'Forbidden — horse belongs to another user' }
+        '404': { description: 'Horse not found' }
+
+  '/horses/{id}/color-prediction':
+    get:
+      tags: [Horses]
+      summary: 'Get breeding color prediction for a horse pair'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+        - { name: partnerId, in: query, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: 'Color prediction results' }
+        '400': { description: 'Invalid parameters' }
+
+  # ── Breeds ───────────────────────────────────────────────────────────────────
+  /breeds:
+    get:
+      tags: [Breeds]
+      summary: 'Get all horse breeds'
       security: [{ bearerAuth: [] }]
       responses:
-        {
-          '200':
-            {
-              description: 'List of horses',
-              content:
-                {
-                  application/json:
-                    { schema: { type: array, items: { $ref: '#/components/schemas/Horse' } } },
-                },
-            },
-        }
-  /api/users:
+        '200': { description: 'List of breeds' }
+    post:
+      tags: [Breeds]
+      summary: 'Create a new breed'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name]
+              properties:
+                name: { type: string }
+      responses:
+        '201': { description: 'Breed created' }
+
+  '/breeds/{id}':
+    get:
+      tags: [Breeds]
+      summary: 'Get breed by ID'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: 'Breed data' }
+        '404': { description: 'Breed not found' }
+
+  # ── Training ─────────────────────────────────────────────────────────────────
+  /training/train:
+    post:
+      tags: [Training]
+      summary: 'Train a horse in a discipline'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [horseId, discipline]
+              properties:
+                horseId: { type: integer }
+                discipline: { type: string }
+      responses:
+        '200': { description: 'Training successful' }
+        '400': { description: 'Validation error or horse not eligible' }
+        '401': { description: Unauthorized }
+
+  /training/check-eligibility:
+    post:
+      tags: [Training]
+      summary: 'Check if a horse is eligible for training'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [horseId]
+              properties:
+                horseId: { type: integer }
+      responses:
+        '200': { description: 'Eligibility result' }
+
+  '/training/trainable/{horseId}':
+    get:
+      tags: [Training]
+      summary: 'Get trainable disciplines for a horse'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: horseId, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: 'List of trainable disciplines' }
+
+  '/training/status/{horseId}':
+    get:
+      tags: [Training]
+      summary: 'Get training status for a horse'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: horseId, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: 'Training status' }
+
+  /milestones/evaluate:
+    post:
+      tags: [Training]
+      summary: 'Evaluate training milestones for a horse'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [horseId]
+              properties:
+                horseId: { type: integer }
+      responses:
+        '200': { description: 'Milestone evaluation results' }
+
+  '/milestones/{horseId}':
+    get:
+      tags: [Training]
+      summary: 'Get milestones for a horse'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: horseId, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: 'Milestone data' }
+
+  /milestones/milestone-definitions:
+    get:
+      tags: [Training]
+      summary: 'Get all milestone definitions'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Milestone definitions' }
+
+  # ── Competition ───────────────────────────────────────────────────────────────
+  /competition:
+    get:
+      tags: [Competition]
+      summary: 'List competitions'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, default: 20 } }
+      responses:
+        '200': { description: 'Paginated list of competitions' }
+
+  /competition/enter-show:
+    post:
+      tags: [Competition]
+      summary: 'Enter a horse in a competition show'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [horseId, showId]
+              properties:
+                horseId: { type: integer }
+                showId: { type: integer }
+      responses:
+        '201': { description: 'Entry created' }
+        '400': { description: 'Validation error or horse not eligible' }
+        '402': { description: 'Insufficient funds' }
+
+  '/competition/show/{showId}/results':
+    get:
+      tags: [Competition]
+      summary: 'Get results for a competition show'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: showId, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: 'Show results' }
+        '404': { description: 'Show not found' }
+
+  /competition/disciplines:
+    get:
+      tags: [Competition]
+      summary: 'Get all valid competition disciplines'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'List of disciplines' }
+
+  # ── Shows (player-created) ────────────────────────────────────────────────────
+  /shows:
+    get:
+      tags: [Shows]
+      summary: 'Browse open shows (paginated)'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: status, in: query, schema: { type: string, default: open } }
+        - { name: discipline, in: query, schema: { type: string } }
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
+        - { name: limit, in: query, schema: { type: integer, default: 20, maximum: 50 } }
+      responses:
+        '200':
+          description: 'Paginated show list'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      shows: { type: array, items: { type: object } }
+                      pagination: { type: object }
+
+  /shows/create:
+    post:
+      tags: [Shows]
+      summary: 'Create a player-run show'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, discipline]
+              properties:
+                name: { type: string, minLength: 2 }
+                discipline: { type: string }
+                entryFee: { type: integer, minimum: 0, maximum: 100000, default: 0 }
+                maxEntries: { type: integer, nullable: true }
+                description: { type: string, nullable: true }
+      responses:
+        '201': { description: 'Show created' }
+        '400': { description: 'Validation error' }
+        '401': { description: Unauthorized }
+        '409': { description: 'Show name already exists' }
+
+  /shows/execute:
+    post:
+      tags: [Shows]
+      summary: 'Execute overnight show results (admin/cron)'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Shows executed' }
+        '401': { description: Unauthorized }
+
+  '/shows/{id}/enter':
+    post:
+      tags: [Shows]
+      summary: 'Enter a horse in a show'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [horseId]
+              properties:
+                horseId: { type: integer }
+      responses:
+        '201': { description: 'Horse entered in show' }
+        '400': { description: 'Horse not eligible' }
+        '401': { description: Unauthorized }
+        '402': { description: 'Insufficient funds for entry fee' }
+        '404': { description: 'Show or horse not found' }
+        '409': { description: 'Already entered or show full' }
+
+  # ── Foals / Breeding ─────────────────────────────────────────────────────────
+  /foals:
+    get:
+      tags: [Breeding]
+      summary: 'Get all foals for the current user'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'List of foals' }
+
+  /foals/breed:
+    post:
+      tags: [Breeding]
+      summary: 'Breed two horses to produce a foal'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sireId, damId]
+              properties:
+                sireId: { type: integer }
+                damId: { type: integer }
+      responses:
+        '201': { description: 'Foal created' }
+        '400': { description: 'Breeding not eligible' }
+        '401': { description: Unauthorized }
+
+  '/foals/{foalId}/develop':
+    post:
+      tags: [Breeding]
+      summary: 'Trigger foal development step'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: foalId, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: 'Foal development step completed' }
+
+  '/foals/{foalId}/interact':
+    post:
+      tags: [Breeding]
+      summary: 'Record a foal interaction'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: foalId, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [interactionType]
+              properties:
+                interactionType: { type: string }
+      responses:
+        '200': { description: 'Interaction recorded' }
+
+  # ── Grooms ───────────────────────────────────────────────────────────────────
+  /grooms/hire:
+    post:
+      tags: [Grooms]
+      summary: 'Hire a new groom'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, specialty]
+              properties:
+                name: { type: string }
+                specialty: { type: string }
+      responses:
+        '201': { description: 'Groom hired' }
+        '400': { description: 'Validation error' }
+
+  /grooms/assign:
+    post:
+      tags: [Grooms]
+      summary: 'Assign a groom to a foal'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [groomId, foalId]
+              properties:
+                groomId: { type: integer }
+                foalId: { type: integer }
+                priority: { type: integer }
+                notes: { type: string }
+      responses:
+        '200': { description: 'Groom assigned' }
+
+  /grooms/interact:
+    post:
+      tags: [Grooms]
+      summary: 'Record a groom interaction'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [groomId, foalId, interactionType]
+              properties:
+                groomId: { type: integer }
+                foalId: { type: integer }
+                interactionType: { type: string }
+      responses:
+        '200': { description: 'Interaction recorded' }
+
+  /grooms/definitions:
+    get:
+      tags: [Grooms]
+      summary: 'Get groom system definitions and configurations'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Groom definitions' }
+
+  '/grooms/user/{userId}':
+    get:
+      tags: [Grooms]
+      summary: 'Get all grooms for a user'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: userId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: 'List of grooms' }
+
+  '/grooms/assignments/{foalId}':
+    get:
+      tags: [Grooms]
+      summary: 'Get all groom assignments for a foal'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: foalId, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: 'List of assignments' }
+
+  /groom-marketplace:
+    get:
+      tags: [Grooms]
+      summary: 'Browse groom marketplace'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Marketplace grooms' }
+
+  /groom-marketplace/hire:
+    post:
+      tags: [Grooms]
+      summary: 'Hire a groom from the marketplace'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [groomId]
+              properties:
+                groomId: { type: integer }
+      responses:
+        '200': { description: 'Groom hired from marketplace' }
+
+  /groom-assignments:
+    post:
+      tags: [Grooms]
+      summary: 'Create a groom assignment'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '201': { description: 'Assignment created' }
+
+  /groom-assignments/dashboard:
+    get:
+      tags: [Grooms]
+      summary: 'Get assignment dashboard'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Dashboard data' }
+
+  /groom-salaries/summary:
+    get:
+      tags: [Grooms]
+      summary: 'Get salary summary for all grooms'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Salary summary' }
+
+  /groom-salaries/cost:
+    get:
+      tags: [Grooms]
+      summary: 'Get total groom salary cost for current user'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Salary cost' }
+
+  # ── Riders ───────────────────────────────────────────────────────────────────
+  /riders/marketplace:
+    get:
+      tags: [Riders]
+      summary: 'Browse rider marketplace'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Marketplace riders' }
+
+  /riders/assignments:
+    get:
+      tags: [Riders]
+      summary: 'Get all rider assignments'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'List of rider assignments' }
+
+  /riders/hire:
+    post:
+      tags: [Riders]
+      summary: 'Hire a rider'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [riderId]
+              properties:
+                riderId: { type: integer }
+      responses:
+        '200': { description: 'Rider hired' }
+
+  /riders/assign:
+    post:
+      tags: [Riders]
+      summary: 'Assign a rider to a horse'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [riderId, horseId]
+              properties:
+                riderId: { type: integer }
+                horseId: { type: integer }
+      responses:
+        '200': { description: 'Rider assigned' }
+
+  '/riders/unassign/{assignmentId}':
+    delete:
+      tags: [Riders]
+      summary: 'Remove a rider assignment'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: assignmentId, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: 'Assignment removed' }
+
+  # ── Trainers ─────────────────────────────────────────────────────────────────
+  /trainers/marketplace:
+    get:
+      tags: [Trainers]
+      summary: 'Browse trainer marketplace'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Marketplace trainers' }
+
+  /trainers/assignments:
+    get:
+      tags: [Trainers]
+      summary: 'Get all trainer assignments'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'List of trainer assignments' }
+
+  /trainers/hire:
+    post:
+      tags: [Trainers]
+      summary: 'Hire a trainer'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [trainerId]
+              properties:
+                trainerId: { type: integer }
+      responses:
+        '200': { description: 'Trainer hired' }
+
+  /trainers/assign:
+    post:
+      tags: [Trainers]
+      summary: 'Assign a trainer to a horse'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [trainerId, horseId]
+              properties:
+                trainerId: { type: integer }
+                horseId: { type: integer }
+      responses:
+        '200': { description: 'Trainer assigned' }
+
+  '/trainers/unassign/{assignmentId}':
+    delete:
+      tags: [Trainers]
+      summary: 'Remove a trainer assignment'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: assignmentId, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: 'Assignment removed' }
+
+  # ── Leaderboards ──────────────────────────────────────────────────────────────
+  '/leaderboards/user-summary/{userId}':
+    get:
+      tags: [Leaderboards]
+      summary: 'Get rank summary for a user'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: userId, in: path, required: true, schema: { type: string } }
+      responses:
+        '200': { description: 'User rank summary' }
+
+  /leaderboards/level:
+    get:
+      tags: [Leaderboards]
+      summary: 'Top players by level'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Leaderboard by level' }
+
+  /leaderboards/prize-money:
+    get:
+      tags: [Leaderboards]
+      summary: 'Top horses by prize earnings'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Leaderboard by prize money' }
+
+  /leaderboards/win-rate:
+    get:
+      tags: [Leaderboards]
+      summary: 'Top horses/players by win rate'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Leaderboard by win rate' }
+
+  /leaderboards/owner:
+    get:
+      tags: [Leaderboards]
+      summary: 'Top players by horse earnings'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Owner leaderboard' }
+
+  /leaderboards/players/level:
+    get:
+      tags: [Leaderboards]
+      summary: 'Top players by level (alias)'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Player level leaderboard' }
+
+  /leaderboards/players/xp:
+    get:
+      tags: [Leaderboards]
+      summary: 'Top players by XP'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Player XP leaderboard' }
+
+  /leaderboards/horses/earnings:
+    get:
+      tags: [Leaderboards]
+      summary: 'Top horses by total earnings'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Horse earnings leaderboard' }
+
+  /leaderboards/horses/performance:
+    get:
+      tags: [Leaderboards]
+      summary: 'Top horses by performance score'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Horse performance leaderboard' }
+
+  /leaderboards/recent-winners:
+    get:
+      tags: [Leaderboards]
+      summary: 'Recent competition winners'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Recent winners' }
+
+  /leaderboards/stats:
+    get:
+      tags: [Leaderboards]
+      summary: 'Overall leaderboard statistics'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Leaderboard stats' }
+
+  # ── Users ────────────────────────────────────────────────────────────────────
+  /users/community/activity:
     get:
       tags: [Users]
-      summary: 'List users'
-      description: 'Get all users'
-      parameters: []
-      requestBody: null
-      responses: { '200': { description: Success } }
-      security: []
-      deprecated: false
-  /api/test/integration:
-    get:
-      tags: [Testing]
-      summary: 'Integration test endpoint'
-      description: 'Test endpoint for documentation integration'
-      parameters: []
-      requestBody: null
+      summary: 'Get community activity feed'
+      security: [{ bearerAuth: [] }]
       responses:
-        { '200': { description: 'Success response' }, '401': { description: Unauthorized } }
-      security: []
-      deprecated: false
-  /api/test/create:
-    post:
-      tags: [Testing]
-      summary: 'Create test resource'
-      description: ''
-      parameters: []
-      requestBody: null
-      responses: { '201': { description: Created } }
-      security: []
-      deprecated: false
+        '200': { description: 'Activity feed' }
+
+  /users/search:
+    get:
+      tags: [Users]
+      summary: 'Search users'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: q, in: query, required: true, schema: { type: string } }
+      responses:
+        '200': { description: 'Search results' }
+
+  /users/transactions:
+    get:
+      tags: [Users]
+      summary: 'Get transaction history for current user'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Transaction history' }
+
+  /users/me/game-notifications:
+    get:
+      tags: [Users]
+      summary: 'Get in-game notifications for current user'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Game notifications' }
+
+  /while-you-were-gone:
+    get:
+      tags: [Users]
+      summary: 'Get summarized activity since last visit'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: since
+          in: query
+          description: 'ISO timestamp of last visit (defaults to 4 hours ago)'
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: 'Prioritized activity summary'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      items: { type: array, items: { type: object } }
+                      since: { type: string, format: date-time }
+                      hasMore: { type: boolean }
+        '400': { description: 'Invalid since timestamp' }
+        '401': { description: Unauthorized }
+
+  # ── Forum ────────────────────────────────────────────────────────────────────
   /forum/threads:
     get:
       tags: [Forum]
@@ -518,203 +1190,762 @@ paths:
       description: 'Get paginated threads, optionally filtered by section'
       security: [{ bearerAuth: [] }]
       parameters:
-        [
-          {
+        - {
             name: section,
             in: query,
             schema: { type: string, enum: [general, art, sales, services, venting] },
-          },
-          { name: page, in: query, schema: { type: integer, default: 1 } },
-        ]
+          }
+        - { name: page, in: query, schema: { type: integer, default: 1 } }
       responses:
-        {
-          '200': { description: 'Thread list with pagination' },
-          '401': { description: Unauthorized },
-        }
+        '200': { description: 'Thread list with pagination' }
+        '401': { description: Unauthorized }
     post:
       tags: [Forum]
       summary: 'Create a new thread'
       security: [{ bearerAuth: [] }]
       requestBody:
-        {
-          required: true,
-          content:
-            {
-              application/json:
-                {
-                  schema:
-                    {
-                      type: object,
-                      required: [title, content, section],
-                      properties:
-                        {
-                          title: { type: string },
-                          content: { type: string },
-                          section: { type: string },
-                        },
-                    },
-                },
-            },
-        }
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title, content, section]
+              properties:
+                title: { type: string }
+                content: { type: string }
+                section: { type: string }
       responses:
-        {
-          '201': { description: 'Thread created' },
-          '400': { description: 'Validation error' },
-          '401': { description: Unauthorized },
-        }
+        '201': { description: 'Thread created' }
+        '400': { description: 'Validation error' }
+        '401': { description: Unauthorized }
+
   '/forum/threads/{id}':
     get:
       tags: [Forum]
       summary: 'Get thread with posts'
       security: [{ bearerAuth: [] }]
-      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
       responses:
-        { '200': { description: 'Thread detail' }, '404': { description: 'Thread not found' } }
+        '200': { description: 'Thread detail' }
+        '404': { description: 'Thread not found' }
+
+  '/forum/threads/{id}/posts':
+    post:
+      tags: [Forum]
+      summary: 'Add a post to a thread'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content: { type: string }
+      responses:
+        '201': { description: 'Post created' }
+
+  '/forum/threads/{id}/view':
+    post:
+      tags: [Forum]
+      summary: 'Increment thread view count'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: 'View counted' }
+
+  # ── Messages ─────────────────────────────────────────────────────────────────
   /messages/inbox:
     get:
       tags: [Messages]
       summary: 'Get inbox'
       security: [{ bearerAuth: [] }]
       responses:
-        {
-          '200': { description: 'List of received messages' },
-          '401': { description: Unauthorized },
-        }
+        '200': { description: 'List of received messages' }
+        '401': { description: Unauthorized }
+
   /messages/sent:
     get:
       tags: [Messages]
       summary: 'Get sent messages'
       security: [{ bearerAuth: [] }]
       responses:
-        { '200': { description: 'List of sent messages' }, '401': { description: Unauthorized } }
+        '200': { description: 'List of sent messages' }
+        '401': { description: Unauthorized }
+
   /messages/unread-count:
     get:
       tags: [Messages]
       summary: 'Get unread message count'
       security: [{ bearerAuth: [] }]
-      responses: { '200': { description: 'Unread count' }, '401': { description: Unauthorized } }
+      responses:
+        '200': { description: 'Unread count' }
+        '401': { description: Unauthorized }
+
   /messages:
     post:
       tags: [Messages]
       summary: 'Send a message'
       security: [{ bearerAuth: [] }]
       requestBody:
-        {
-          required: true,
-          content:
-            {
-              application/json:
-                {
-                  schema:
-                    {
-                      type: object,
-                      required: [recipientId, content],
-                      properties: { recipientId: { type: string }, content: { type: string } },
-                    },
-                },
-            },
-        }
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [recipientId, content]
+              properties:
+                recipientId: { type: string }
+                content: { type: string }
       responses:
-        {
-          '201': { description: 'Message sent' },
-          '400': { description: 'Validation error' },
-          '401': { description: Unauthorized },
-        }
+        '201': { description: 'Message sent' }
+        '400': { description: 'Validation error' }
+        '401': { description: Unauthorized }
+
+  '/messages/{id}':
+    get:
+      tags: [Messages]
+      summary: 'Get a specific message'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: 'Message data' }
+        '404': { description: 'Message not found' }
+
+  '/messages/{id}/read':
+    patch:
+      tags: [Messages]
+      summary: 'Mark message as read'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: 'Message marked as read' }
+
+  # ── Clubs ────────────────────────────────────────────────────────────────────
   /clubs:
     get:
       tags: [Clubs]
       summary: 'List clubs'
       security: [{ bearerAuth: [] }]
       parameters:
-        [
-          { name: type, in: query, schema: { type: string } },
-          { name: category, in: query, schema: { type: string } },
-        ]
-      responses: { '200': { description: 'List of clubs' }, '401': { description: Unauthorized } }
+        - { name: type, in: query, schema: { type: string } }
+        - { name: category, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 'List of clubs' }
+        '401': { description: Unauthorized }
     post:
       tags: [Clubs]
       summary: 'Create a club'
       security: [{ bearerAuth: [] }]
       requestBody:
-        {
-          required: true,
-          content:
-            {
-              application/json:
-                {
-                  schema:
-                    {
-                      type: object,
-                      required: [name, type],
-                      properties:
-                        {
-                          name: { type: string },
-                          type: { type: string },
-                          category: { type: string },
-                          description: { type: string },
-                        },
-                    },
-                },
-            },
-        }
-      responses: { '201': { description: 'Club created' }, '401': { description: Unauthorized } }
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, type]
+              properties:
+                name: { type: string }
+                type: { type: string }
+                category: { type: string }
+                description: { type: string }
+      responses:
+        '201': { description: 'Club created' }
+        '401': { description: Unauthorized }
+
   /clubs/me:
     get:
       tags: [Clubs]
       summary: 'Get my clubs'
       security: [{ bearerAuth: [] }]
       responses:
-        {
-          '200': { description: 'Clubs the authenticated user belongs to' },
-          '401': { description: Unauthorized },
-        }
+        '200': { description: 'Clubs the authenticated user belongs to' }
+        '401': { description: Unauthorized }
+
+  '/clubs/{id}':
+    get:
+      tags: [Clubs]
+      summary: 'Get club by ID'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: 'Club data' }
+        '404': { description: 'Club not found' }
+
   '/clubs/{id}/join':
     post:
       tags: [Clubs]
       summary: 'Join a club'
       security: [{ bearerAuth: [] }]
-      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
       responses:
-        {
-          '200': { description: 'Joined club' },
-          '400': { description: 'Already a member' },
-          '401': { description: Unauthorized },
-        }
+        '200': { description: 'Joined club' }
+        '400': { description: 'Already a member' }
+        '401': { description: Unauthorized }
+
   '/clubs/{id}/leave':
     delete:
       tags: [Clubs]
       summary: 'Leave a club'
       security: [{ bearerAuth: [] }]
-      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
-      responses: { '200': { description: 'Left club' }, '401': { description: Unauthorized } }
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: 'Left club' }
+        '401': { description: Unauthorized }
+
+  '/clubs/{id}/elections':
+    get:
+      tags: [Clubs]
+      summary: 'Get elections for a club'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: 'Club elections' }
+
   '/clubs/elections/{id}/vote':
     post:
       tags: [Clubs]
       summary: 'Vote in an election'
       security: [{ bearerAuth: [] }]
-      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
       requestBody:
-        {
-          required: true,
-          content:
-            {
-              application/json:
-                {
-                  schema:
-                    {
-                      type: object,
-                      required: [candidateId],
-                      properties: { candidateId: { type: integer } },
-                    },
-                },
-            },
-        }
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [candidateId]
+              properties:
+                candidateId: { type: integer }
       responses:
-        {
-          '200': { description: 'Vote cast' },
-          '400': { description: 'Already voted or election closed' },
-          '401': { description: Unauthorized },
-        }
+        '200': { description: 'Vote cast' }
+        '400': { description: 'Already voted or election closed' }
+        '401': { description: Unauthorized }
+
+  '/clubs/elections/{id}/results':
+    get:
+      tags: [Clubs]
+      summary: 'Get election results'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: 'Election results' }
+
+  # ── Marketplace ───────────────────────────────────────────────────────────────
+  /marketplace:
+    get:
+      tags: [Marketplace]
+      summary: 'Browse horse marketplace listings'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'List of marketplace listings' }
+
+  /marketplace/list:
+    post:
+      tags: [Marketplace]
+      summary: 'List a horse for sale'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [horseId, price]
+              properties:
+                horseId: { type: integer }
+                price: { type: integer }
+      responses:
+        '201': { description: 'Horse listed' }
+        '403': { description: 'Not the owner' }
+
+  '/marketplace/list/{horseId}':
+    delete:
+      tags: [Marketplace]
+      summary: 'Delist a horse from the marketplace'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: horseId, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: 'Horse delisted' }
+        '403': { description: 'Not the owner' }
+
+  /marketplace/my-listings:
+    get:
+      tags: [Marketplace]
+      summary: 'Get my marketplace listings'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'My listings' }
+
+  /marketplace/history:
+    get:
+      tags: [Marketplace]
+      summary: 'Get sale history'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Sale history' }
+
+  /marketplace/store/buy:
+    post:
+      tags: [Marketplace]
+      summary: 'Buy a horse from the system store'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [storeHorseId]
+              properties:
+                storeHorseId: { type: integer }
+      responses:
+        '200': { description: 'Store horse purchased' }
+        '402': { description: 'Insufficient funds' }
+
+  '/marketplace/buy/{horseId}':
+    post:
+      tags: [Marketplace]
+      summary: 'Buy a horse from another player'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: horseId, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: 'Horse purchased' }
+        '402': { description: 'Insufficient funds' }
+        '404': { description: 'Listing not found' }
+
+  # ── Services ──────────────────────────────────────────────────────────────────
+  /bank/claim:
+    post:
+      tags: [Services]
+      summary: 'Claim weekly currency reward'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Reward claimed' }
+        '409': { description: 'Already claimed this week' }
+
+  /bank/claim-status:
+    get:
+      tags: [Services]
+      summary: 'Get weekly claim status'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Claim status' }
+
+  /bank/transactions:
+    get:
+      tags: [Services]
+      summary: 'Get bank transaction history'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Transaction history' }
+
+  /vet/services:
+    get:
+      tags: [Services]
+      summary: 'Get available vet services'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Vet services' }
+
+  /vet/treat:
+    post:
+      tags: [Services]
+      summary: 'Treat a horse at the vet'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [horseId, serviceId]
+              properties:
+                horseId: { type: integer }
+                serviceId: { type: string }
+      responses:
+        '200': { description: 'Horse treated' }
+        '402': { description: 'Insufficient funds' }
+
+  /tack-shop/inventory:
+    get:
+      tags: [Services]
+      summary: 'Get tack shop inventory'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Tack inventory' }
+
+  /tack-shop/buy:
+    post:
+      tags: [Services]
+      summary: 'Buy tack item'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [itemId]
+              properties:
+                itemId: { type: string }
+      responses:
+        '200': { description: 'Item purchased' }
+
+  /farrier/services:
+    get:
+      tags: [Services]
+      summary: 'Get farrier services'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Farrier services' }
+
+  /farrier/treat:
+    post:
+      tags: [Services]
+      summary: 'Apply farrier service to a horse'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [horseId, serviceId]
+              properties:
+                horseId: { type: integer }
+                serviceId: { type: string }
+      responses:
+        '200': { description: 'Service applied' }
+
+  /feed-shop/catalog:
+    get:
+      tags: [Services]
+      summary: 'Get feed shop catalog'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Feed catalog' }
+
+  /feed-shop/buy:
+    post:
+      tags: [Services]
+      summary: 'Buy feed for a horse'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [horseId, feedId]
+              properties:
+                horseId: { type: integer }
+                feedId: { type: string }
+      responses:
+        '200': { description: 'Feed purchased' }
+
+  /inventory:
+    get:
+      tags: [Services]
+      summary: 'Get user inventory'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'User inventory' }
+
+  /inventory/equip:
+    post:
+      tags: [Services]
+      summary: 'Equip an item from inventory'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [itemId, horseId]
+              properties:
+                itemId: { type: string }
+                horseId: { type: integer }
+      responses:
+        '200': { description: 'Item equipped' }
+
+  /inventory/unequip:
+    post:
+      tags: [Services]
+      summary: 'Unequip an item'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [itemId, horseId]
+              properties:
+                itemId: { type: string }
+                horseId: { type: integer }
+      responses:
+        '200': { description: 'Item unequipped' }
+
+  /crafting/materials:
+    get:
+      tags: [Services]
+      summary: 'Get available crafting materials'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Crafting materials' }
+
+  /crafting/recipes:
+    get:
+      tags: [Services]
+      summary: 'Get crafting recipes'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Crafting recipes' }
+
+  /crafting/craft:
+    post:
+      tags: [Services]
+      summary: 'Craft an item'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [recipeId]
+              properties:
+                recipeId: { type: string }
+      responses:
+        '200': { description: 'Item crafted' }
+
+  # ── Traits ───────────────────────────────────────────────────────────────────
+  '/trait-discovery/{horseId}':
+    post:
+      tags: [Traits]
+      summary: 'Trigger trait discovery for a horse'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: horseId, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: 'Traits discovered' }
+
+  '/trait-discovery/{horseId}/status':
+    get:
+      tags: [Traits]
+      summary: 'Get trait discovery status for a horse'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: horseId, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: 'Discovery status' }
+
+  /traits/definitions:
+    get:
+      tags: [Traits]
+      summary: 'Get all trait definitions'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Trait definitions' }
+
+  '/traits/horse/{horseId}':
+    get:
+      tags: [Traits]
+      summary: 'Get all traits for a horse'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: horseId, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: 'Horse traits' }
+
+  '/traits/competition-impact/{horseId}':
+    get:
+      tags: [Traits]
+      summary: 'Analyze trait impact for a specific discipline'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: horseId, in: path, required: true, schema: { type: integer } }
+        - { name: discipline, in: query, schema: { type: string } }
+      responses:
+        '200': { description: 'Trait impact analysis' }
+
+  '/traits/competition-comparison/{horseId}':
+    get:
+      tags: [Traits]
+      summary: 'Compare trait impact across all disciplines'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: horseId, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200': { description: 'Cross-discipline trait comparison' }
+
+  /epigenetic-traits/definitions:
+    get:
+      tags: [Traits]
+      summary: 'Get epigenetic trait definitions'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Epigenetic trait definitions' }
+
+  /ultra-rare-traits/definitions:
+    get:
+      tags: [Traits]
+      summary: 'Get ultra-rare trait definitions'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Ultra-rare trait definitions' }
+
+  # ── Admin ────────────────────────────────────────────────────────────────────
+  /admin/cron/status:
+    get:
+      tags: [Admin]
+      summary: 'Get cron job status'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Cron job status' }
+        '401': { description: Unauthorized }
+        '403': { description: 'Forbidden — admin role required' }
+
+  /admin/cron/start:
+    post:
+      tags: [Admin]
+      summary: 'Start cron jobs'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Cron jobs started' }
+        '403': { description: 'Forbidden' }
+
+  /admin/cron/stop:
+    post:
+      tags: [Admin]
+      summary: 'Stop cron jobs'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Cron jobs stopped' }
+        '403': { description: 'Forbidden' }
+
+  /admin/traits/evaluate:
+    post:
+      tags: [Admin]
+      summary: 'Evaluate traits for horses (admin bulk operation)'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Trait evaluation completed' }
+        '403': { description: 'Forbidden' }
+
+  /admin/foals/development:
+    get:
+      tags: [Admin]
+      summary: 'Get foal development status (admin)'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Foal development data' }
+        '403': { description: 'Forbidden' }
+
+  '/admin/horses/{id}/set-age':
+    post:
+      tags: [Admin]
+      summary: 'Set horse age (admin)'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [age]
+              properties:
+                age: { type: integer }
+      responses:
+        '200': { description: 'Horse age set' }
+        '403': { description: 'Forbidden' }
+
+  /admin/foaling/trigger:
+    post:
+      tags: [Admin]
+      summary: 'Trigger foaling process (admin)'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Foaling process triggered' }
+        '403': { description: 'Forbidden' }
+
+  # ── Labs (experimental) ───────────────────────────────────────────────────────
+  /optimization/metrics:
+    get:
+      tags: [Labs]
+      summary: '[EXPERIMENTAL] Get API optimization metrics'
+      description: 'Non-SLO endpoint. Response shape subject to change without notice.'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Optimization metrics' }
+
+  /memory/status:
+    get:
+      tags: [Labs]
+      summary: '[EXPERIMENTAL] Get memory management status'
+      description: 'Non-SLO endpoint. Response shape subject to change without notice.'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Memory status' }
+
+  /environment:
+    get:
+      tags: [Labs]
+      summary: '[EXPERIMENTAL] Get environmental conditions affecting horses'
+      description: 'Non-SLO endpoint. Response shape subject to change without notice.'
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200': { description: 'Environmental data' }
+
+  /compatibility:
+    post:
+      tags: [Labs]
+      summary: '[EXPERIMENTAL] Calculate dynamic compatibility between horses'
+      description: 'Non-SLO endpoint. Response shape subject to change without notice.'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200': { description: 'Compatibility score' }
+
+  /personality-evolution:
+    post:
+      tags: [Labs]
+      summary: '[EXPERIMENTAL] Trigger personality evolution evaluation'
+      description: 'Non-SLO endpoint. Response shape subject to change without notice.'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        '200': { description: 'Personality evolution result' }
+
 components:
   securitySchemes:
     bearerAuth:
@@ -726,42 +1957,40 @@ components:
       type: object
       required: [email, password, username]
       properties:
-        {
-          email: { type: string, format: email },
-          password: { type: string, minLength: 8 },
-          username: { type: string },
-        }
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8 }
+        username: { type: string }
     LoginRequest:
       type: object
       required: [email, password]
-      properties: { email: { type: string, format: email }, password: { type: string } }
+      properties:
+        email: { type: string, format: email }
+        password: { type: string }
     AuthResponse:
       type: object
       properties:
-        {
-          token: { type: string },
-          refreshToken: { type: string },
-          user: { $ref: '#/components/schemas/User' },
-        }
+        token: { type: string }
+        refreshToken: { type: string }
+        user: { $ref: '#/components/schemas/User' }
     User:
       type: object
-      properties: { id: { type: string } }
-      registeredAt: '2026-04-15T15:57:52.518Z'
+      properties:
+        id: { type: string }
+        username: { type: string }
+        email: { type: string, format: email }
+        level: { type: integer }
+        money: { type: integer }
     Horse:
       type: object
-      properties: { id: { type: string } }
-      registeredAt: '2026-04-15T15:57:52.538Z'
-    TestSchema:
-      type: object
       properties:
-        {
-          id: { type: string, description: 'Unique identifier' },
-          name: { type: string, description: 'Test name' },
-          timestamp: { type: string, format: date-time },
-        }
-      required: [id, name]
-      registeredAt: '2026-04-15T15:54:17.253Z'
-    CreateTestSchema:
-      type: object
-      properties: { name: { type: string } }
-      registeredAt: '2026-04-15T15:54:17.587Z'
+        id: { type: integer }
+        name: { type: string }
+        breed: { type: string }
+        age: { type: integer }
+        sex: { type: string, enum: [male, female] }
+        userId: { type: string }
+        speed: { type: integer }
+        stamina: { type: integer }
+        agility: { type: integer }
+        boldness: { type: integer }
+        precision: { type: integer }

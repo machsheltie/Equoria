@@ -23,6 +23,7 @@ import {
   assignTrainer,
   deleteTrainerAssignment,
   dismissTrainer,
+  getTrainerDiscovery,
 } from '../controllers/trainerController.mjs';
 
 const SUITE_PREFIX = 'tctrl';
@@ -82,9 +83,10 @@ async function createTrainer(userId, overrides = {}) {
     data: {
       firstName: overrides.firstName ?? 'Alice',
       lastName: overrides.lastName ?? 'Smith',
-      personality: 'patient',
+      personality: overrides.personality ?? 'patient',
       skillLevel: 'expert',
-      speciality: 'Dressage',
+      speciality: overrides.speciality ?? 'Dressage',
+      level: overrides.level ?? 1,
       retired: overrides.retired ?? false,
       user: { connect: { id: userId } },
     },
@@ -338,6 +340,111 @@ describe('trainerController (real DB)', () => {
       // Trainer should NOT be retired.
       const trainerAfter = await prisma.trainer.findUnique({ where: { id: trainer.id } });
       expect(trainerAfter.retired).toBe(false);
+    });
+  });
+
+  describe('getTrainerDiscovery', () => {
+    it('returns 404 when trainer does not exist', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id, { params: { id: '999999999' } });
+      await getTrainerDiscovery(h.req, h.res);
+      expect(h.res.statusValue).toBe(404);
+    });
+
+    it('returns 404 when trainer belongs to another user', async () => {
+      const owner = await createUser();
+      const other = await createUser();
+      const trainer = await createTrainer(owner.id);
+
+      const h = makeReqRes(other.id, { params: { id: String(trainer.id) } });
+      await getTrainerDiscovery(h.req, h.res);
+      expect(h.res.statusValue).toBe(404);
+    });
+
+    it('returns 6 slots with unique, non-generic trait labels', async () => {
+      const user = await createUser();
+      const trainer = await createTrainer(user.id, { speciality: 'Dressage', personality: 'patient', level: 4 });
+
+      const h = makeReqRes(user.id, { params: { id: String(trainer.id) } });
+      await getTrainerDiscovery(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(200);
+      const { data } = h.res.jsonValue;
+      expect(data.totalSlots).toBe(6);
+      expect(data.slots).toHaveLength(6);
+
+      // The 2 discovered slots must have meaningful labels (not the old generic "X Focus" pattern)
+      const discovered = data.slots.filter(s => s.discovered);
+      expect(discovered).toHaveLength(2);
+      discovered.forEach(s => {
+        expect(s.trait).toBeDefined();
+        expect(s.trait.label).not.toMatch(/Focus$/);
+        expect(s.trait.icon).not.toBe('🎓');
+        expect(s.trait.description).toBeTruthy();
+      });
+    });
+
+    it('persists slots so repeated calls return identical trait labels', async () => {
+      const user = await createUser();
+      const trainer = await createTrainer(user.id, { speciality: 'Dressage', personality: 'patient', level: 4 });
+
+      const h1 = makeReqRes(user.id, { params: { id: String(trainer.id) } });
+      await getTrainerDiscovery(h1.req, h1.res);
+
+      const h2 = makeReqRes(user.id, { params: { id: String(trainer.id) } });
+      await getTrainerDiscovery(h2.req, h2.res);
+
+      const slots1 = h1.res.jsonValue.data.slots;
+      const slots2 = h2.res.jsonValue.data.slots;
+
+      // Discovered slot labels must be identical across both calls
+      slots1
+        .filter(s => s.discovered)
+        .forEach((s, i) => {
+          expect(s.trait.label).toBe(slots2.filter(x => x.discovered)[i].trait.label);
+          expect(s.trait.icon).toBe(slots2.filter(x => x.discovered)[i].trait.icon);
+        });
+    });
+
+    it('respects level threshold — level 1 yields 0 discovered slots', async () => {
+      const user = await createUser();
+      const trainer = await createTrainer(user.id, { level: 1 });
+
+      const h = makeReqRes(user.id, { params: { id: String(trainer.id) } });
+      await getTrainerDiscovery(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(200);
+      const { data } = h.res.jsonValue;
+      expect(data.discoveredCount).toBe(0);
+      expect(data.slots.every(s => !s.discovered)).toBe(true);
+      expect(data.slots.every(s => s.trait === undefined)).toBe(true);
+    });
+
+    it('uses different discipline trait labels for different specialities', async () => {
+      const user = await createUser();
+      const dressage = await createTrainer(user.id, { speciality: 'Dressage', personality: 'patient', level: 2 });
+      const jumping = await createTrainer(user.id, { speciality: 'Show Jumping', personality: 'patient', level: 2 });
+
+      const hD = makeReqRes(user.id, { params: { id: String(dressage.id) } });
+      await getTrainerDiscovery(hD.req, hD.res);
+
+      const hJ = makeReqRes(user.id, { params: { id: String(jumping.id) } });
+      await getTrainerDiscovery(hJ.req, hJ.res);
+
+      const dSlot0 = hD.res.jsonValue.data.slots[0].trait;
+      const jSlot0 = hJ.res.jsonValue.data.slots[0].trait;
+
+      expect(dSlot0.label).not.toBe(jSlot0.label);
+    });
+
+    it('includes nextDiscoveryAt when slots remain undiscovered', async () => {
+      const user = await createUser();
+      const trainer = await createTrainer(user.id, { level: 2 });
+
+      const h = makeReqRes(user.id, { params: { id: String(trainer.id) } });
+      await getTrainerDiscovery(h.req, h.res);
+
+      expect(h.res.jsonValue.data.nextDiscoveryAt).toBeDefined();
     });
   });
 });
