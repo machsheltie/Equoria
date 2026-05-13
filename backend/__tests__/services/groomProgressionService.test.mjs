@@ -446,3 +446,115 @@ describe('calculateSynergyEffects via getGroomProfile — branch coverage (Equor
     expect(synergy.effects.cosmeticBonus).toBe('nameplate');
   });
 });
+
+// ── groomProgressionService — null-coalesce fallback branches (Equoria-rr7) ──
+
+describe('awardGroomXP — oldLevel fallback branch (line 73, Equoria-rr7)', () => {
+  let l73User;
+  let l73Groom;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    l73User = await prisma.user.create({
+      data: {
+        email: `gp-l73-${ts}-${rand()}@test.com`,
+        username: `gpl73${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'GP',
+        lastName: 'L73',
+        money: 1000,
+      },
+    });
+
+    // level=0 forces the `|| 1` fallback on line 73
+    l73Groom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-GP-L73-Groom-${ts}`,
+        speciality: 'foal_care',
+        personality: 'gentle',
+        userId: l73User.id,
+        level: 0,
+        experience: 0,
+      },
+    });
+  }, 30000);
+
+  afterAll(async () => {
+    await prisma.groom.delete({ where: { id: l73Groom.id } }).catch(() => {});
+    await prisma.user.delete({ where: { id: l73User.id } }).catch(() => {});
+  }, 30000);
+
+  it('uses || 1 fallback when groom.level=0 (line 73)', async () => {
+    const result = await awardGroomXP(l73Groom.id, 'milestone_completion', 10);
+    expect(result.success).toBe(true);
+    // oldLevel=0 → || 1 → 1; newLevel=1 (10 XP < 100) → levelUp=false
+    expect(result.oldLevel).toBe(1);
+    expect(result.xpGained).toBe(10);
+  });
+});
+
+describe('logGroomAssignment — default-param + null-coalesce fallback branches (lines 190+232-234, Equoria-rr7)', () => {
+  let la2User;
+  let la2Groom;
+  let la2Horse;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    la2User = await prisma.user.create({
+      data: {
+        email: `gp-la2-${ts}-${rand()}@test.com`,
+        username: `gpla2${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'GP',
+        lastName: 'LA2',
+        money: 1000,
+      },
+    });
+
+    la2Groom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-GP-LA2-Groom-${ts}`,
+        speciality: 'foal_care',
+        personality: 'gentle',
+        userId: la2User.id,
+      },
+    });
+
+    la2Horse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-GP-LA2-Horse-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: la2User.id,
+      },
+    });
+  }, 30000);
+
+  afterAll(async () => {
+    await prisma.groomAssignmentLog.deleteMany({ where: { groomId: la2Groom.id } }).catch(() => {});
+    await prisma.horse.delete({ where: { id: la2Horse.id } }).catch(() => {});
+    await prisma.groom.delete({ where: { id: la2Groom.id } }).catch(() => {});
+    await prisma.user.delete({ where: { id: la2User.id } }).catch(() => {});
+  }, 30000);
+
+  it('omitting performanceData arg hits default={} on line 190 (assigned action)', async () => {
+    // No 4th arg → hits the `= {}` default parameter branch
+    const result = await logGroomAssignment(la2Groom.id, la2Horse.id, 'assigned');
+    expect(result.success).toBe(true);
+    expect(result.assignmentLog).toBeDefined();
+  });
+
+  it('unassigned with empty performanceData hits || 0 and || [] fallbacks (lines 232-234)', async () => {
+    // performanceData={} → milestonesCompleted=undefined || 0, traitsShaped=undefined || [], xpGained=undefined || 0
+    const result = await logGroomAssignment(la2Groom.id, la2Horse.id, 'unassigned', {});
+    expect(result.success).toBe(true);
+    expect(result.assignmentLog.milestonesCompleted).toBe(0);
+    expect(result.assignmentLog.xpGained).toBe(0);
+    expect(Array.isArray(result.assignmentLog.traitsShaped)).toBe(true);
+  });
+});

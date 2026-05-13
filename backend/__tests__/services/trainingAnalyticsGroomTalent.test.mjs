@@ -73,6 +73,24 @@ describe('trainingAnalyticsService.getTrainingHistory', () => {
     expect(typeof result.trainingFrequency).toBe('object');
     expect(result.trainingFrequency.totalSessions).toBe(0);
   });
+
+  it('returns non-empty analytics when horse has training sessions (lines 51-54, Equoria-rr7)', async () => {
+    // Insert a training log so getTrainingHistory takes the non-empty path (lines 51-54)
+    const log = await prisma.trainingLog.create({
+      data: { horseId: horse.id, discipline: 'Dressage', trainedAt: new Date() },
+    });
+
+    try {
+      const result = await trainingAnalyticsService.getTrainingHistory(horse.id);
+      expect(result.trainingHistory.length).toBeGreaterThan(0);
+      expect(typeof result.disciplineBalance).toBe('object');
+      expect(result.disciplineBalance.Dressage).toBeDefined();
+      expect(typeof result.trainingFrequency.totalSessions).toBe('number');
+      expect(result.trainingFrequency.totalSessions).toBeGreaterThan(0);
+    } finally {
+      await prisma.trainingLog.delete({ where: { id: log.id } }).catch(() => {});
+    }
+  });
 });
 
 describe('trainingAnalyticsService.calculateTrainingFrequency', () => {
