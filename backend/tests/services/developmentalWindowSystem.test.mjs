@@ -735,4 +735,164 @@ describe('Developmental Window System', () => {
       expect(forecast.riskAssessment.risks.some(r => r.risk.includes('Multiple critical'))).toBe(true);
     });
   });
+
+  // ── Branch coverage additions III (Equoria-rr7) ─────────────────────────────
+  describe('branch coverage additions III (Equoria-rr7)', () => {
+    let eighteenDayHorse;
+    let twentyOneDayHorse;
+    let over135DayHorse;
+    let rr7BiiiGroom;
+    let rr7BiiiUser;
+
+    beforeAll(async () => {
+      rr7BiiiUser = await prisma.user.create({
+        data: {
+          username: `TestFixture-DWS-BIII-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          email: `TestFixture-DWS-BIII-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
+          password: 'test_hash',
+          firstName: 'DWSBIII',
+          lastName: 'Branch',
+          money: 0,
+          xp: 0,
+          level: 1,
+        },
+      });
+      rr7BiiiGroom = await prisma.groom.create({
+        data: {
+          name: `TestFixture-DWS-BIII-Groom-${Date.now()}`,
+          personality: 'calm',
+          epigeneticInfluenceType: 'calm',
+          skillLevel: 'expert',
+          speciality: 'foal_care',
+          userId: rr7BiiiUser.id,
+          sessionRate: 40.0,
+          experience: 100,
+          level: 5,
+        },
+      });
+      const now = new Date();
+      eighteenDayHorse = await prisma.horse.create({
+        data: {
+          name: `TestFixture-DWS-18Day-${Date.now()}`,
+          sex: 'Filly',
+          dateOfBirth: new Date(now.getTime() - 18 * 24 * 60 * 60 * 1000),
+          userId: rr7BiiiUser.id,
+          stressLevel: 3,
+          bondScore: 15,
+          epigeneticFlags: [],
+        },
+      });
+      twentyOneDayHorse = await prisma.horse.create({
+        data: {
+          name: `TestFixture-DWS-21Day-${Date.now()}`,
+          sex: 'Colt',
+          dateOfBirth: new Date(now.getTime() - 21 * 24 * 60 * 60 * 1000),
+          userId: rr7BiiiUser.id,
+          stressLevel: 3,
+          bondScore: 20,
+          epigeneticFlags: [],
+        },
+      });
+      over135DayHorse = await prisma.horse.create({
+        data: {
+          name: `TestFixture-DWS-135Day-${Date.now()}`,
+          sex: 'Filly',
+          dateOfBirth: new Date(now.getTime() - 135 * 24 * 60 * 60 * 1000),
+          userId: rr7BiiiUser.id,
+          stressLevel: 3,
+          bondScore: 30,
+          epigeneticFlags: [],
+        },
+      });
+      // Create 2 interactions during early_socialization window (interactionAge=10)
+      // so interactions.length >= 2 is true when environmental_comfort is assessed
+      const birthDate = new Date(now.getTime() - 135 * 24 * 60 * 60 * 1000);
+      const dayTen = new Date(birthDate.getTime() + 10 * 24 * 60 * 60 * 1000);
+      await prisma.groomInteraction.create({
+        data: {
+          groomId: rr7BiiiGroom.id,
+          foalId: over135DayHorse.id,
+          interactionType: 'enrichment',
+          duration: 30,
+          bondingChange: 2,
+          stressChange: 0,
+          quality: 'good',
+          cost: 20.0,
+          createdAt: dayTen,
+        },
+      });
+      await prisma.groomInteraction.create({
+        data: {
+          groomId: rr7BiiiGroom.id,
+          foalId: over135DayHorse.id,
+          interactionType: 'trust_building',
+          duration: 20,
+          bondingChange: 1,
+          stressChange: -1,
+          quality: 'excellent',
+          cost: 15.0,
+          createdAt: dayTen,
+        },
+      });
+    });
+
+    afterAll(async () => {
+      await prisma.groomInteraction.deleteMany({ where: { groomId: rr7BiiiGroom.id } });
+      await prisma.groom.delete({ where: { id: rr7BiiiGroom.id } });
+      await prisma.horse.deleteMany({
+        where: { id: { in: [eighteenDayHorse.id, twentyOneDayHorse.id, over135DayHorse.id] } },
+      });
+      await prisma.user.delete({ where: { id: rr7BiiiUser.id } });
+    });
+
+    // lines 1062, 1071: urgency='high' + daysRemaining<=3 in createPriorityMatrix
+    // 18-day horse: early_socialization daysRemaining=3 → urgency='high', daysRemaining<=3
+    test('createPriorityMatrix: high-urgency and daysRemaining<=3 branches (lines 1062, 1071)', async () => {
+      const coord = await coordinateMultiWindowDevelopment(eighteenDayHorse.id);
+      expect(Object.keys(coord.priorityMatrix).length).toBeGreaterThan(0);
+      const earlySocPriority = coord.priorityMatrix['early_socialization'];
+      expect(earlySocPriority).toBeDefined();
+      // base 0.9 + 0.2 (high urgency) + 0.1 (daysRemaining=3 <=3) = 1.2 → capped at 1.0
+      expect(earlySocPriority).toBeGreaterThanOrEqual(1.0);
+    });
+
+    // lines 1060, 1069, 1113-1116: critical urgency + daysRemaining<=1 + 3-window else branch
+    // 21-day horse: 3 active windows (early_socialization/curiosity_development/fear_period_2)
+    // early_socialization daysRemaining=0 → urgency='critical', daysRemaining<=1
+    // 3rd window hits currentPhase.windows.length>=2 else branch → 2 phases
+    test('createPriorityMatrix + generateCoordinatedPlan: critical urgency and 3-window else branch (lines 1060, 1069, 1113-1116)', async () => {
+      const coord = await coordinateMultiWindowDevelopment(twentyOneDayHorse.id);
+      expect(coord.activeWindows.length).toBe(3);
+      expect(Object.keys(coord.priorityMatrix).length).toBe(3);
+      // 3rd window overflows phase 1 (max 2) → 2 phases total
+      expect(coord.coordinatedPlan.phases.length).toBe(2);
+    });
+
+    // line 919: self_confidence case in assessMilestoneAchievement
+    // 135-day horse: independence_development endDay=120, currentAge=135 > 120 → window passed
+    // bondScore=30 > 25 → self_confidence achieved=true
+    test('trackDevelopmentalMilestones: self_confidence milestone assessed (line 919)', async () => {
+      const milestones = await trackDevelopmentalMilestones(over135DayHorse.id);
+      expect(milestones.milestoneProgress.self_confidence).toBeDefined();
+      expect(milestones.milestoneProgress.self_confidence.achieved).toBe(true);
+    });
+
+    // lines 999-1002: independence_development case in generateCompensatoryMechanisms
+    // 135-day horse: independence_development endDay=120 < 135 → closed window
+    test('assessWindowClosure: independence_development compensatory mechanisms (lines 999-1002)', async () => {
+      const closure = await assessWindowClosure(over135DayHorse.id, 'independence_development');
+      expect(closure.closureStatus).toBe('closed');
+      expect(closure.compensatoryMechanisms.some(m => m.toLowerCase().includes('independence'))).toBe(true);
+    });
+
+    // line 906: interactions.length >= 2 branch in environmental_comfort assessment
+    // 135-day horse has 2 interactions with interactionAge=10 (within early_socialization window 1-21)
+    test('trackDevelopmentalMilestones: environmental_comfort interactions.length>=2 branch (line 906)', async () => {
+      const milestones = await trackDevelopmentalMilestones(over135DayHorse.id);
+      const ec = milestones.milestoneProgress.environmental_comfort;
+      expect(ec).toBeDefined();
+      // 2 window interactions → interactions.length >= 2 is true → achieved=true
+      expect(ec.achieved).toBe(true);
+    });
+  });
 });
