@@ -463,7 +463,36 @@ export async function buyStoreHorse(req, res) {
     // Generate horse name and stats. Stats route through the
     // breed-name-keyed profile in breedStarterStats.json — every breed
     // follows the same system, no hardcoded exceptions.
-    const horseName = `${breed.name} #${String(Math.floor(100000 + Math.random() * 900000))}`;
+    //
+    // Names are generated with a retry loop (up to 5 attempts) to guard
+    // against unlikely but possible collisions as horse population grows.
+    // Each attempt picks a fresh 6-digit random suffix; if all 5 collide,
+    // the purchase is aborted with a 409 so the client can retry.
+    const MAX_NAME_RETRIES = 5;
+    let horseName = null;
+    for (let attempt = 0; attempt < MAX_NAME_RETRIES; attempt++) {
+      const candidate = `${breed.name} #${String(Math.floor(100000 + Math.random() * 900000))}`;
+
+      const existing = await prisma.horse.findFirst({
+        where: { name: candidate },
+        select: { id: true },
+      });
+      if (!existing) {
+        horseName = candidate;
+        break;
+      }
+      logger.warn(
+        `[marketplace.buyStoreHorse] Name collision on attempt ${attempt + 1}: "${candidate}" — retrying`,
+      );
+    }
+    if (!horseName) {
+      throw Object.assign(
+        new Error('Could not generate a unique horse name after multiple attempts'),
+        {
+          statusCode: 409,
+        },
+      );
+    }
     const stats = generateStoreStats(breed.name);
     const dateOfBirth = new Date();
     dateOfBirth.setFullYear(dateOfBirth.getFullYear() - 3);
@@ -514,7 +543,7 @@ export async function buyStoreHorse(req, res) {
     // Log the original error before branching — ensures root cause is always captured
     logger.error('[marketplace] buyStoreHorse unexpected error:', err);
 
-    // F1 fix: createHorse failed after coins were deducted — attempt compensating refund
+    // F1 fix: createHorse (or name generation) failed after coins were deducted — refund first
     if (coinDeducted) {
       try {
         await prisma.user.update({
@@ -524,6 +553,14 @@ export async function buyStoreHorse(req, res) {
         logger.warn(
           `[marketplace] Refunded ${STORE_PRICE} coins to user ${buyerId} after horse creation failure`,
         );
+        // Name-collision errors: refund succeeded, report 409 so client can retry
+        if (err.nameCollision) {
+          return res.status(409).json({
+            success: false,
+            message:
+              'Could not generate a unique horse name. Your coins have been refunded — please try again.',
+          });
+        }
         return res.status(500).json({
           success: false,
           message: 'Horse creation failed. Your coins have been refunded.',
