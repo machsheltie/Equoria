@@ -87,6 +87,19 @@ describe('sampleWeightedAllele', () => {
     const r = () => 0.7;
     expect(sampleWeightedAllele(weights, r)).toBe(sampleWeightedAllele(weights, r));
   });
+
+  it('floating-point fallback (line 85): roll > sum(weights) returns last entry (Equoria-rr7)', () => {
+    // weights sum to 0.6, roll=0.9 → loop never satisfies roll<=cumulative → line 85 fallback
+    const weights = { 'a/a': 0.3, 'b/b': 0.3 };
+    expect(sampleWeightedAllele(weights, () => 0.9)).toBe('b/b');
+  });
+
+  it('default rng branch (line 68): omitting rng uses Math.random and returns a string (Equoria-rr7)', () => {
+    // Covers the default-parameter branch: rng = Math.random
+    const weights = { 'E/E': 0.5, 'E/e': 0.5 };
+    const result = sampleWeightedAllele(weights);
+    expect(typeof result).toBe('string');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -170,5 +183,20 @@ describe('generateGenotype', () => {
       expect(typeof genotype[locus]).toBe('string');
       expect(genotype[locus].length).toBeGreaterThan(0);
     }
+  });
+
+  it('default rng branch (line 101): omitting rng uses Math.random and returns object (Equoria-rr7)', () => {
+    // Covers the default-parameter branch: rng = Math.random
+    const result = generateGenotype(null);
+    expect(typeof result).toBe('object');
+    expect(result).toHaveProperty('E_Extension');
+  });
+
+  it('unknown-locus fallback ?? n/n (line 123): empty allowed_alleles entry returns n/n (Equoria-rr7)', () => {
+    // allowed_alleles: { CustomLocus: [] } → allowed is [], allowed.length=0 → else branch
+    // GENERIC_DEFAULTS['CustomLocus'] = undefined → ?? 'n/n' → 'n/n'
+    const profile = { allowed_alleles: { CustomLocus: [] } };
+    const result = generateGenotype(profile, deterministicRng);
+    expect(result.CustomLocus).toBe('n/n');
   });
 });
