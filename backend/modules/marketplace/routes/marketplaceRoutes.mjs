@@ -26,9 +26,9 @@ router.use(authenticateToken);
 router.get('/', browseListings);
 
 // Seller flow
-router.post('/list', listHorse);
-// CWE-639: requireOwnership('horse') returns 404 for both not-found and
-// not-owned, preventing horse-ID enumeration via 403 vs 404 disclosure.
+// CWE-639: requireOwnership with from:'body' validates horseId from req.body,
+// returning 404 for both not-found and not-owned to prevent enumeration.
+router.post('/list', requireOwnership('horse', { idParam: 'horseId', from: 'body' }), listHorse);
 router.delete('/list/:horseId', requireOwnership('horse', { idParam: 'horseId' }), delistHorse);
 
 // My listings and history (static segments before :horseId)

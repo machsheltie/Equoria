@@ -12,7 +12,7 @@ import logger from '../../../utils/logger.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
 import { createHorse } from '../../../models/horseModel.mjs';
 import { recordTransaction } from '../../../services/financialLedgerService.mjs';
-import { findOwnedResource } from '../../../middleware/ownership.mjs';
+
 // Shared horse starter-stats service. The same module is used by the perf
 // seed so test data has the same distribution as real store-purchased
 // horses. Random-stat seed paths are forbidden — see service module header.
@@ -146,11 +146,13 @@ export async function browseListings(req, res) {
  */
 export async function listHorse(req, res) {
   try {
-    const userId = req.user.id;
-    const { horseId, price } = req.body;
+    const { price } = req.body;
+    // Ownership validated by requireOwnership('horse', { from: 'body', idParam: 'horseId' })
+    // on the route. req.horse is the validated, owned record.
+    const horse = req.horse;
 
-    if (!horseId || price === undefined) {
-      return res.status(400).json({ success: false, message: 'horseId and price are required' });
+    if (price === undefined) {
+      return res.status(400).json({ success: false, message: 'price is required' });
     }
 
     const parsedPrice = parseInt(price, 10);
@@ -161,13 +163,6 @@ export async function listHorse(req, res) {
       });
     }
 
-    // CWE-639: Single 404 for not-found AND not-owned. The route accepts
-    // horseId in req.body (not URL params), so requireOwnership middleware
-    // (which reads req.params) doesn't apply directly — use the helper instead.
-    const horse = await findOwnedResource('horse', parseInt(horseId, 10), userId);
-    if (!horse) {
-      return res.status(404).json({ success: false, message: 'Horse not found' });
-    }
     if (horse.forSale) {
       return res.status(400).json({ success: false, message: 'Horse is already listed for sale' });
     }

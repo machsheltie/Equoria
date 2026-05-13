@@ -45,7 +45,7 @@ function makeReqRes(user) {
   let nextCallCount = 0;
   let nextCalledWith;
   return {
-    req: { user, params: {}, validatedResources: undefined },
+    req: { user, params: {}, body: {}, validatedResources: undefined },
     res: {
       status(code) {
         statusValue = code;
@@ -269,6 +269,83 @@ describe('Ownership Middleware (real DB)', () => {
       // valid horse IDs.
       expect(responseNotFound).toEqual(responseNotOwned);
       expect(responseNotFound.status).toBe(404);
+    });
+  });
+
+  describe('from: body — reads resource ID from req.body instead of req.params', () => {
+    it('should attach req.horse and call next when ID is in body and user owns the resource', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const harness = makeReqRes({ id: user.id });
+      harness.req.body = { horseId: String(horse.id) };
+
+      await requireOwnership('horse', { idParam: 'horseId', from: 'body' })(harness.req, harness.res, harness.next);
+
+      expect(harness.nextArg()).toBeUndefined();
+      expect(harness.req.horse).toMatchObject({ id: horse.id, userId: user.id });
+      expect(harness.nextCallCount()).toBe(1);
+    });
+
+    it('should handle a native integer body value (JSON-parsed number, not string)', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const harness = makeReqRes({ id: user.id });
+      // express.json() parses {"horseId":42} as number, not string — this branch
+      // requires the typeof rawId === 'number' path in isNumericId.
+      harness.req.body = { horseId: horse.id };
+
+      await requireOwnership('horse', { idParam: 'horseId', from: 'body' })(harness.req, harness.res, harness.next);
+
+      expect(harness.nextArg()).toBeUndefined();
+      expect(harness.req.horse).toMatchObject({ id: horse.id, userId: user.id });
+      expect(harness.nextCallCount()).toBe(1);
+    });
+
+    it('should return 400 when the body field is absent', async () => {
+      const user = await createUser();
+      const harness = makeReqRes({ id: user.id });
+      harness.req.body = {};
+
+      await requireOwnership('horse', { idParam: 'horseId', from: 'body' })(harness.req, harness.res, harness.next);
+
+      expect(harness.res.statusValue).toBe(400);
+      expect(harness.nextCallCount()).toBe(0);
+    });
+
+    it('should return 400 when the body field is non-numeric', async () => {
+      const user = await createUser();
+      const harness = makeReqRes({ id: user.id });
+      harness.req.body = { horseId: 'not-a-number' };
+
+      await requireOwnership('horse', { idParam: 'horseId', from: 'body' })(harness.req, harness.res, harness.next);
+
+      expect(harness.res.statusValue).toBe(400);
+      expect(harness.nextCallCount()).toBe(0);
+    });
+
+    it('should return 404 when the resource is not owned by the authenticated user (CWE-639 safe)', async () => {
+      const owner = await createUser();
+      const attacker = await createUser();
+      const horse = await createHorse(owner.id);
+      const harness = makeReqRes({ id: attacker.id });
+      harness.req.body = { horseId: String(horse.id) };
+
+      await requireOwnership('horse', { idParam: 'horseId', from: 'body' })(harness.req, harness.res, harness.next);
+
+      expect(harness.res.statusValue).toBe(404);
+      expect(harness.nextCallCount()).toBe(0);
+    });
+
+    it('should still read from req.params when from is not specified (default unchanged)', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const harness = makeReqRes({ id: user.id });
+      harness.req.params.id = String(horse.id);
+
+      await requireOwnership('horse')(harness.req, harness.res, harness.next);
+
+      expect(harness.nextArg()).toBeUndefined();
+      expect(harness.req.horse).toMatchObject({ id: horse.id, userId: user.id });
     });
   });
 

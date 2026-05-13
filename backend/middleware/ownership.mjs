@@ -77,18 +77,26 @@ function getResourceConfig(resourceType) {
  * @param {string} resourceType - Type of resource (horse, foal, groom, etc.)
  * @param {Object} options - Configuration options
  * @param {string} options.idParam - Parameter name for resource ID (default: 'id')
+ * @param {'params'|'body'} options.from - Where to read the ID from (default: 'params')
  * @param {boolean} options.required - Whether resource must exist (default: true)
  * @param {string[]} options.include - Prisma include relations
  * @returns {Function} Express middleware function
  */
 export const requireOwnership = (resourceType, options = {}) => {
-  const { idParam = 'id', required = true, include = [] } = options;
+  const { idParam = 'id', from = 'params', required = true, include = [] } = options;
 
   return async (req, res, next) => {
     try {
-      const rawId = req.params[idParam];
-      const isNumericId = typeof rawId === 'string' && /^[0-9]+$/.test(rawId);
-      const resourceId = isNumericId ? parseInt(rawId, 10) : NaN;
+      const rawId = from === 'body' ? req.body?.[idParam] : req.params[idParam];
+      // Params are always strings; body values may be JSON-parsed integers.
+      const isNumericId =
+        (typeof rawId === 'string' && /^[0-9]+$/.test(rawId)) ||
+        (typeof rawId === 'number' && Number.isInteger(rawId));
+      const resourceId = isNumericId
+        ? typeof rawId === 'number'
+          ? rawId
+          : parseInt(rawId, 10)
+        : NaN;
 
       // Get resource configuration
       const resourceConfig = getResourceConfig(resourceType);
@@ -100,9 +108,9 @@ export const requireOwnership = (resourceType, options = {}) => {
         throw new AppError('Authentication required', 401);
       }
 
-      // Extract resource ID from params
+      // Extract resource ID from params or body
       if (!isNumericId || isNaN(resourceId) || resourceId < 0) {
-        logger.warn(`[ownership] Invalid ${resourceType} ID: ${req.params[idParam]}`);
+        logger.warn(`[ownership] Invalid ${resourceType} ID: ${rawId}`);
         throw new AppError(`Invalid ${resourceType} ID`, 400);
       }
 

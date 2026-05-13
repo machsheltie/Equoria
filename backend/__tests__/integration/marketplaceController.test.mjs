@@ -165,6 +165,14 @@ describe('marketplaceController integration', () => {
     });
 
     it('returns 400 when price is below 100', async () => {
+      const horse = await prisma.horse.create({
+        data: {
+          name: `TestFixture-MPHorse-${Date.now()}`,
+          sex: 'Mare',
+          dateOfBirth: new Date('2020-01-01'),
+          user: { connect: { id: user.id } },
+        },
+      });
       const csrf = await fetchCsrf(app);
       const res = await request(app)
         .post('/api/marketplace/list')
@@ -172,7 +180,7 @@ describe('marketplaceController integration', () => {
         .set('Authorization', `Bearer ${token}`)
         .set('Cookie', csrf.cookieHeader)
         .set('X-CSRF-Token', csrf.csrfToken)
-        .send({ horseId: 999, price: 50 });
+        .send({ horseId: horse.id, price: 50 });
 
       expect(res.status).toBe(400);
       expect(res.body.success).toBe(false);
