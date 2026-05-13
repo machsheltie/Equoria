@@ -41,6 +41,10 @@ import { createFoalFromPregnancy } from '../services/foalingService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withHealth } from '../../../utils/horseHealth.mjs';
+import { getCachedQuery, generateCacheKey } from '../../../utils/cacheHelper.mjs';
+
+// Horse list cache TTL (seconds)
+const HORSE_LIST_TTL = 120; // 2 minutes
 
 // Validation error handler
 const handleValidationErrors = (req, res, next) => {
@@ -321,18 +325,41 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
       where.breedId = parseInt(breedId);
     }
 
-    const horses = await prisma.horse.findMany({
-      where,
-      take: parseInt(limit),
-      skip: parseInt(offset),
-      include: {
-        breed: true,
-        user: {
-          select: { id: true, username: true },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+    const cacheKey = generateCacheKey(
+      'horses:list',
+      effectiveUserId || 'all',
+      breedId || 'all',
+      limit,
+      offset,
+    );
+
+    const horses = await getCachedQuery(
+      cacheKey,
+      () =>
+        prisma.horse.findMany({
+          where,
+          take: parseInt(limit),
+          skip: parseInt(offset),
+          // Field selection: excludes large JSONB (genotype, epigeneticModifiers, ultraRareTraits)
+          select: {
+            id: true,
+            name: true,
+            age: true,
+            sex: true,
+            healthStatus: true,
+            forSale: true,
+            salePrice: true,
+            breedId: true,
+            userId: true,
+            stats: true,
+            createdAt: true,
+            breed: { select: { id: true, name: true } },
+            user: { select: { id: true, username: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+        }),
+      HORSE_LIST_TTL,
+    );
 
     res.set('Cache-Control', 'no-store');
     res.json({
