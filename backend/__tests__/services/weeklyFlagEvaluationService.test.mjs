@@ -157,6 +157,44 @@ describe('triggerWeeklyFlagEvaluation', () => {
   });
 });
 
+// ── processHorseForFlagEvaluation — in-loop max-flags break (Equoria-rr7) ────
+// Covers weeklyFlagEvaluationService.mjs line 123 (`break`).
+// Horse starts with 4 flags. No-care fresh foal triggers 'aloof' + 'skittish'
+// (generic negative: poorCare=true). Loop iter 1 adds 'aloof' (4+0<5).
+// Loop iter 2: 4+1=5 ≥ 5 → break fires before 'skittish' is assigned.
+
+describe('processHorseForFlagEvaluation — in-loop max-flags break (Equoria-rr7)', () => {
+  let mlHorse;
+
+  beforeAll(async () => {
+    mlHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-WF-MaxLoop-${Date.now()}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: user.id,
+        // 4 flags (not aloof/skittish so both remain eligible to trigger)
+        epigeneticFlags: ['brave', 'confident', 'fearful', 'fragile'],
+      },
+    });
+  }, 30000);
+
+  afterAll(async () => {
+    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-WF-MaxLoop-' } } }).catch(() => {});
+  }, 30000);
+
+  it('line-123 break fires: exactly 1 flag assigned when 4 existing + 2 eligible (aloof/skittish) triggers', async () => {
+    const result = await processHorseForFlagEvaluation(mlHorse.id);
+    expect(result.evaluated).toBe(true);
+    expect(Array.isArray(result.flagsAssigned)).toBe(true);
+    // The break fires on 2nd iteration (4+1=5>=5), so only 1 flag is assigned
+    expect(result.flagsAssigned).toHaveLength(1);
+    // currentFlags in result = original 4 + 1 newly assigned = 5
+    expect(result.currentFlags).toHaveLength(5);
+  });
+});
+
 // ── processHorseForFlagEvaluation — max-flags branch (Equoria-jkht) ───────────
 
 describe('processHorseForFlagEvaluation — max-flags branch (Equoria-jkht)', () => {
