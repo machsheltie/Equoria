@@ -21,7 +21,7 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { User, Bell, Monitor, ChevronRight, Settings } from 'lucide-react';
+import { User, Bell, Monitor, Volume2, ChevronRight, Settings } from 'lucide-react';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import PageHero from '@/components/layout/PageHero';
@@ -30,6 +30,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUpdatePreferences } from '@/hooks/api/useUpdatePreferences';
 import { useUpdateProfile, useChangePassword, useDeleteAccount, useLogout } from '@/hooks/useAuth';
+import { useSound } from '@/hooks/useSound';
 import type { UserPreferences } from '@/lib/api-client';
 
 interface ToggleProps {
@@ -81,6 +82,7 @@ const sections: SettingsSection[] = [
   { id: 'account', title: 'Account', icon: <User className="w-4 h-4" /> },
   { id: 'notifications', title: 'Notifications', icon: <Bell className="w-4 h-4" /> },
   { id: 'display', title: 'Display', icon: <Monitor className="w-4 h-4" /> },
+  { id: 'sound', title: 'Sound', icon: <Volume2 className="w-4 h-4" /> },
 ];
 
 /**
@@ -118,6 +120,7 @@ const SettingsPage: React.FC = () => {
   const deleteAccount = useDeleteAccount();
   const logout = useLogout();
   const queryClient = useQueryClient();
+  const { soundEnabled, setSoundEnabled, playSound } = useSound();
 
   // -------- Account form state (controlled, seeded from user) --------
   const [username, setUsername] = useState<string>(user?.username ?? '');
@@ -649,6 +652,63 @@ const SettingsPage: React.FC = () => {
                   testId="display-compact-cards"
                 />
               </div>
+            </div>
+          )}
+
+          {/* Sound Section */}
+          {activeSection === 'sound' && (
+            <div className="glass-panel space-y-6" data-testid="settings-sound">
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">Sound Settings</h2>
+
+              <p className="text-xs text-white/50">
+                Sound effects are <strong>off by default</strong>. Enable them to hear UI feedback,
+                training completion chimes, and celebration sounds for special events. If your
+                system has <em>Reduce Motion</em> enabled, sounds will remain silent regardless of
+                this setting.
+              </p>
+
+              <div className="space-y-1">
+                <Toggle
+                  label="Sound Effects"
+                  description="Enable UI sounds, cooldown chimes, and celebration audio"
+                  checked={soundEnabled}
+                  onChange={(val) => {
+                    setSoundEnabled(val);
+                    // Play a sample click so the user hears the change take effect
+                    if (val) {
+                      playSound('click');
+                    }
+                  }}
+                  testId="sound-effects-toggle"
+                />
+              </div>
+
+              {soundEnabled && (
+                <div className="border-t border-white/10 pt-4">
+                  <p className="text-xs text-white/40 mb-3">Preview sounds</p>
+                  <div className="flex flex-wrap gap-2">
+                    {(
+                      [
+                        { variant: 'click', label: 'Click' },
+                        { variant: 'success', label: 'Success' },
+                        { variant: 'cooldown', label: 'Cooldown' },
+                        { variant: 'trait-discovery', label: 'Trait Discovery' },
+                        { variant: 'foal-birth', label: 'Foal Birth' },
+                        { variant: 'cup-win', label: 'Cup Win' },
+                      ] as const
+                    ).map(({ variant, label }) => (
+                      <button
+                        key={variant}
+                        onClick={() => playSound(variant)}
+                        className="px-3 py-1.5 rounded-md text-xs font-medium bg-white/5 hover:bg-white/10 border border-white/10 text-white/70 transition-colors"
+                        data-testid={`sound-preview-${variant}`}
+                      >
+                        ▶ {label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
