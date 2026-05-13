@@ -212,6 +212,11 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
     await expect(createAssignment(gasGroom.id, 999999999, gasUser.id)).rejects.toThrow(NotFoundError);
   });
 
+  it('createAssignment: inactive groom + valid horse → throws general Error (line 169, Equoria-rr7)', async () => {
+    // gasGroomInactive.isActive=false → validation.valid=false, validation.horse is set → line 169 throw new Error(...)
+    await expect(createAssignment(gasGroomInactive.id, gasHorse.id, gasUser.id)).rejects.toThrow('Groom is not active');
+  });
+
   it('createAssignment: valid path → returns success with assignment', async () => {
     const result = await createAssignment(gasGroom.id, gasHorse.id, gasUser.id);
     expect(result.success).toBe(true);
