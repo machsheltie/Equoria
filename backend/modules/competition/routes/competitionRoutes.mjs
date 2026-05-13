@@ -15,6 +15,7 @@ import auth from '../../../middleware/auth.mjs';
 import { queryRateLimiter, mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import logger from '../../../utils/logger.mjs';
 import { recordTransaction } from '../../../services/financialLedgerService.mjs';
+import { parsePaginationParams, buildPaginatedResponse } from '../../../utils/paginationHelper.mjs';
 
 const router = express.Router();
 
@@ -31,14 +32,21 @@ const router = express.Router();
  */
 router.get('/', queryRateLimiter, auth, async (req, res) => {
   try {
-    const shows = await prisma.show.findMany({
-      where: {
-        status: 'open',
-      },
-      orderBy: { runDate: 'asc' },
-      take: 100,
-    });
-    res.json({ success: true, data: shows });
+    const { page, limit, skip } = parsePaginationParams(req, { defaultLimit: 20, maxLimit: 100 });
+
+    const where = { status: 'open' };
+
+    const [shows, total] = await Promise.all([
+      prisma.show.findMany({
+        where,
+        orderBy: { runDate: 'asc' },
+        skip,
+        take: limit,
+      }),
+      prisma.show.count({ where }),
+    ]);
+
+    return buildPaginatedResponse(res, shows, { page, limit, total });
   } catch (error) {
     logger.error(`[competitionRoutes.GET /] Error listing competitions: ${error.message}`);
     res.status(500).json({
