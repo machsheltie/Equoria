@@ -117,24 +117,29 @@ function runEnhancedCompetition(horses, show) {
       return {
         horseId: horse.id,
         name: horse.name || 'Unknown',
-        score: 0,
+        score: null,
         placement: null,
         discipline: show.discipline,
         scoringDetails: {
-          finalScore: 0,
+          finalScore: null,
           error: error.message,
         },
       };
     }
   });
 
-  // Sort by score (highest first)
-  results.sort((a, b) => b.score - a.score);
+  // Sort by score (highest first); error-sentinel (null) horses rank last
+  results.sort((a, b) => {
+    if (a.score === null && b.score === null) return 0;
+    if (a.score === null) return 1;
+    if (b.score === null) return -1;
+    return b.score - a.score;
+  });
 
-  // Assign placements to top 3
+  // Assign placements to top 3 (only horses with valid scores)
   const placements = ['1st', '2nd', '3rd'];
   results.forEach((result, index) => {
-    if (index < 3) {
+    if (index < 3 && result.score !== null) {
       result.placement = placements[index];
     }
   });
