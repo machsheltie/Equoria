@@ -130,9 +130,15 @@ function runEnhancedCompetition(horses, show) {
 
   // Sort by score (highest first); error-sentinel (null) horses rank last
   results.sort((a, b) => {
-    if (a.score === null && b.score === null) return 0;
-    if (a.score === null) return 1;
-    if (b.score === null) return -1;
+    if (a.score === null && b.score === null) {
+      return 0;
+    }
+    if (a.score === null) {
+      return 1;
+    }
+    if (b.score === null) {
+      return -1;
+    }
     return b.score - a.score;
   });
 

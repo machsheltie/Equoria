@@ -24,17 +24,16 @@ export function isHorseEligibleForShow(horse, show, previousEntries = []) {
     return false;
   }
 
-  // Check level requirements
-  if (typeof horse.level !== 'number') {
-    return false;
-  }
-
-  if (typeof show.levelMin === 'number' && horse.level < show.levelMin) {
-    return false;
-  }
-
-  if (typeof show.levelMax === 'number' && horse.level > show.levelMax) {
-    return false;
+  // Check level requirements (only enforced when horse has a numeric level field).
+  // Horse model uses horseXp / availableStatPoints rather than a level column;
+  // treat undefined level as level-restriction-exempt so competition entry works.
+  if (typeof horse.level === 'number') {
+    if (typeof show.levelMin === 'number' && horse.level < show.levelMin) {
+      return false;
+    }
+    if (typeof show.levelMax === 'number' && horse.level > show.levelMax) {
+      return false;
+    }
   }
 
   // Check if horse has already entered this show

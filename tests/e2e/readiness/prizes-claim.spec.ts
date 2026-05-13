@@ -40,6 +40,8 @@ test.afterAll(async () => {
     await prisma.horse.deleteMany({
       where: { name: { startsWith: 'PrizesTest Horse' } },
     });
+    // Rider assignments and hired riders are cleaned up automatically when
+    // the horse is deleted (cascade) — no explicit cleanup needed here.
   } finally {
     await prisma.$disconnect();
   }
@@ -69,6 +71,71 @@ test('prizes claim write flow: enter competition and claim result with no bypass
   );
   const show = unwrapData<{ show: { id: number } }>(showJson).show;
   expect(show.id).toBeGreaterThan(0);
+
+  // Step 2b: Feed the starter horse so it passes the critical-health gate.
+  // The competition engine (enterAndRunShow) checks getDisplayedHealth() for each
+  // horse, which is worseOf(feedHealth, vetHealth). A horse with lastFedDate=null
+  // always has feedHealth='critical', blocking competition entry regardless of
+  // healthStatus. We must purchase feed, equip it, and feed the horse before entry.
+  const feedCatalog = unwrapData<Array<{ id: string }>>(
+    await expectOk(
+      await page.request.get('/api/v1/feed-shop/catalog'),
+      'GET /api/v1/feed-shop/catalog'
+    )
+  );
+  const feedTier = feedCatalog[0].id;
+  await expectOk(
+    await csrfRequest(page, 'POST', '/api/v1/feed-shop/purchase', {
+      feedTier,
+      packs: 1,
+    }),
+    'POST /api/v1/feed-shop/purchase'
+  );
+  await expectOk(
+    await csrfRequest(page, 'POST', `/api/v1/horses/${starterHorseId}/equip-feed`, {
+      feedType: feedTier,
+    }),
+    'POST /api/v1/horses/:id/equip-feed'
+  );
+  await expectOk(
+    await csrfRequest(page, 'POST', `/api/v1/horses/${starterHorseId}/feed`, {}),
+    'POST /api/v1/horses/:id/feed'
+  );
+
+  // Step 2c: Hire a rider and assign to the starter horse.
+  // The competition engine (enterAndRunShow) requires each competing horse to
+  // have a non-null rider object (hasValidRider check). A freshly created horse
+  // has no rider, so we must hire one from the marketplace and assign it before
+  // entering the show.
+  const riderMarket = unwrapData<{ riders: Array<{ marketplaceId: string; weeklyRate: number }> }>(
+    await expectOk(
+      await page.request.get('/api/v1/riders/marketplace'),
+      'GET /api/v1/riders/marketplace'
+    )
+  );
+  expect(
+    riderMarket.riders.length,
+    'Rider marketplace must have at least one rider'
+  ).toBeGreaterThan(0);
+  const cheapestRider = riderMarket.riders.reduce((cheapest, rider) =>
+    rider.weeklyRate < cheapest.weeklyRate ? rider : cheapest
+  );
+  const riderHireResult = unwrapData<{ rider: { id: number } }>(
+    await expectOk(
+      await csrfRequest(page, 'POST', '/api/v1/riders/marketplace/hire', {
+        marketplaceId: cheapestRider.marketplaceId,
+      }),
+      'POST /api/v1/riders/marketplace/hire'
+    )
+  );
+  await expectOk(
+    await csrfRequest(page, 'POST', '/api/v1/riders/assignments', {
+      riderId: riderHireResult.rider.id,
+      horseId: starterHorseId,
+      notes: 'Prizes readiness smoke test',
+    }),
+    'POST /api/v1/riders/assignments'
+  );
 
   // Step 3: Enter and immediately run the show
   // enter-show both enters AND runs the competition in one request, returning savedResults

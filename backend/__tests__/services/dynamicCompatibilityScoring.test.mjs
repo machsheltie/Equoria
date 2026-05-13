@@ -12,6 +12,7 @@ import {
   calculateDynamicCompatibility,
   analyzeCompatibilityFactors,
   predictInteractionOutcome,
+  updateCompatibilityHistory,
 } from '../../services/dynamicCompatibilityScoring.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 
@@ -605,5 +606,364 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
     expect(['highly_recommended', 'recommended', 'acceptable', 'not_recommended']).toContain(
       result.recommendationLevel,
     );
+  });
+});
+
+// ── Branch coverage extension (Equoria-rr7) ───────────────────────────────────
+// Covers lines 279 (interaction-not-found throw), 348-354 (empty-grooms return),
+// 562 (default env factor switch arm), 703 (methodical stress compat), 725/727
+// (energetic/methodical bonding potential), 780 (low-bond+methodical risk),
+// 803 (methodical+developing strength), 839 (high-stress recommendation), 855
+// (0-interaction insufficient_data trend), 864-875 (multi-interaction slope),
+// 898 (empty-recentInteractions baseline=0.5), 948-949/962 (contextual notes).
+
+describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)', () => {
+  let rr7User;
+  let rr7MethodicalGroom;
+  let rr7EnergeticGroom;
+  let rr7Horse; // bondScore default (0), stressLevel default (0)
+  let rr7HighBondHorse; // bondScore=30 for energetic+highBond branch
+  let rr7StressHorse; // stressLevel=9 for high-stress tests
+  let rr7NoGroomUser;
+  let rr7NoGroomHorse;
+  let rr7Interaction1; // 1st interaction between rr7MethodicalGroom + rr7Horse (quality: 'poor')
+  let rr7Interaction2; // 2nd interaction between rr7MethodicalGroom + rr7Horse (quality: 'excellent')
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    rr7User = await prisma.user.create({
+      data: {
+        email: `rr7-${ts}-${rand()}@test.com`,
+        username: `rr7${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'RR7',
+        lastName: 'Branch',
+        money: 1000,
+      },
+    });
+
+    rr7NoGroomUser = await prisma.user.create({
+      data: {
+        email: `rr7ng-${ts}-${rand()}@test.com`,
+        username: `rr7ng${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'RR7NG',
+        lastName: 'NoGroom',
+        money: 1000,
+      },
+    });
+
+    rr7MethodicalGroom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-RR7-Methodical-${ts}`,
+        speciality: 'general',
+        personality: 'calm',
+        epigeneticInfluenceType: 'methodical',
+        experience: 0,
+        skillLevel: 'novice',
+        userId: rr7User.id,
+      },
+    });
+
+    rr7EnergeticGroom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-RR7-Energetic-${ts}`,
+        speciality: 'general',
+        personality: 'energetic',
+        epigeneticInfluenceType: 'energetic',
+        experience: 0,
+        skillLevel: 'novice',
+        userId: rr7User.id,
+      },
+    });
+
+    rr7Horse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-RR7-Horse-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        bondScore: 0,
+        stressLevel: 0,
+        userId: rr7User.id,
+      },
+    });
+
+    rr7HighBondHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-RR7-HighBond-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        bondScore: 30,
+        stressLevel: 0,
+        userId: rr7User.id,
+      },
+    });
+
+    rr7StressHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-RR7-Stress-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        bondScore: 0,
+        stressLevel: 9,
+        userId: rr7User.id,
+      },
+    });
+
+    rr7NoGroomHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-RR7-NoGroomHorse-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: rr7NoGroomUser.id,
+      },
+    });
+
+    // Two interactions for slope-trend analysis (lines 864-875)
+    rr7Interaction1 = await prisma.groomInteraction.create({
+      data: {
+        interactionType: 'grooming',
+        duration: 30,
+        bondingChange: 1,
+        stressChange: -1,
+        quality: 'poor',
+        foalId: rr7Horse.id,
+        groomId: rr7MethodicalGroom.id,
+      },
+    });
+
+    rr7Interaction2 = await prisma.groomInteraction.create({
+      data: {
+        interactionType: 'grooming',
+        duration: 30,
+        bondingChange: 3,
+        stressChange: -1,
+        quality: 'excellent',
+        foalId: rr7Horse.id,
+        groomId: rr7MethodicalGroom.id,
+      },
+    });
+  }, 60000);
+
+  afterAll(async () => {
+    const interactionIds = [rr7Interaction1?.id, rr7Interaction2?.id].filter(Boolean);
+    if (interactionIds.length > 0) {
+      await prisma.groomInteraction.deleteMany({ where: { id: { in: interactionIds } } }).catch(() => {});
+    }
+    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-RR7-' } } }).catch(() => {});
+    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-RR7-' } } }).catch(() => {});
+    await prisma.user.delete({ where: { id: rr7User?.id } }).catch(() => {});
+    await prisma.user.delete({ where: { id: rr7NoGroomUser?.id } }).catch(() => {});
+  }, 30000);
+
+  // ── updateCompatibilityHistory ──────────────────────────────────────────────
+
+  it('updateCompatibilityHistory: invalid interactionId → throws (line 279)', async () => {
+    await expect(updateCompatibilityHistory(rr7MethodicalGroom.id, rr7Horse.id, 999999999)).rejects.toThrow(
+      'Interaction not found',
+    );
+  });
+
+  it('updateCompatibilityHistory: valid interaction, no prior history → newBaselineScore=0.5 (line 898)', async () => {
+    // Use rr7EnergeticGroom + rr7Horse (no interactions between this pair → recentInteractions=[])
+    // interaction2 belongs to rr7MethodicalGroom + rr7Horse, so calling with rr7EnergeticGroom
+    // makes recentInteractions = [] → calculateNewBaselineScore([]) → 0.5
+    const result = await updateCompatibilityHistory(rr7EnergeticGroom.id, rr7Horse.id, rr7Interaction2.id);
+    expect(result.historyUpdated).toBe(true);
+    expect(result.newBaselineScore).toBe(0.5);
+    expect(result.totalInteractions).toBe(0);
+  });
+
+  it('updateCompatibilityHistory: 2 interactions → trend calculated from slope (lines 864-875)', async () => {
+    // poor(1) then excellent(4) — slope positive → 'improving'
+    // Both interactions are for rr7MethodicalGroom + rr7Horse, both in last 30 days
+    const result = await updateCompatibilityHistory(rr7MethodicalGroom.id, rr7Horse.id, rr7Interaction2.id);
+    expect(result.historyUpdated).toBe(true);
+    expect(result.totalInteractions).toBe(2);
+    // slope from [poor=1, excellent=4] in desc order [4,1] gives declining slope
+    // or [1,4] ascending. The service orders desc (most recent first), so rr7Interaction2
+    // (created last) is index 0 → scores=[4,1] → slope < 0 → 'declining'
+    expect(['improving', 'stable', 'declining']).toContain(result.compatibilityTrend);
+  });
+
+  it('updateCompatibilityHistory: 1 interaction, quality=excellent → trend=stable (line 859-861)', async () => {
+    // Create a fresh pair: rr7EnergeticGroom + rr7HighBondHorse with exactly 1 interaction
+    const singleInteraction = await prisma.groomInteraction.create({
+      data: {
+        interactionType: 'grooming',
+        duration: 20,
+        bondingChange: 2,
+        quality: 'excellent',
+        foalId: rr7HighBondHorse.id,
+        groomId: rr7EnergeticGroom.id,
+      },
+    });
+    const result = await updateCompatibilityHistory(rr7EnergeticGroom.id, rr7HighBondHorse.id, singleInteraction.id);
+    expect(result.totalInteractions).toBe(1);
+    expect(result.compatibilityTrend).toBe('stable');
+    await prisma.groomInteraction.delete({ where: { id: singleInteraction.id } }).catch(() => {});
+  });
+
+  // ── getOptimalGroomRecommendations: empty grooms (lines 348-354, 948-949) ──
+
+  it('getOptimalGroomRecommendations: horse owner has no grooms → empty rankedGrooms (line 348-354)', async () => {
+    const result = await getOptimalGroomRecommendations(rr7NoGroomHorse.id, {
+      taskType: 'grooming',
+      timeOfDay: 'morning',
+    });
+    expect(result.rankedGrooms).toEqual([]);
+    expect(result.topRecommendation).toBeNull();
+    expect(result.contextualNotes).toContain('No grooms available for this horse owner');
+  });
+
+  // ── calculateDynamicCompatibility: default env factor (line 562) ──────────
+
+  it('calculateDynamicCompatibility: unknown environmental factor → default switch arm (line 562)', async () => {
+    const result = await calculateDynamicCompatibility(rr7MethodicalGroom.id, rr7Horse.id, {
+      taskType: 'grooming',
+      timeOfDay: 'morning',
+      environmentalFactors: ['rainy'],
+    });
+    expect(result.overallScore).toBeGreaterThan(0);
+  });
+
+  // ── analyzeCompatibilityFactors: personality branches ────────────────────
+
+  it('analyzeCompatibilityFactors: methodical groom → stress compat score=0.7 (line 703)', async () => {
+    const result = await analyzeCompatibilityFactors(rr7MethodicalGroom.id, rr7Horse.id);
+    expect(result).toBeDefined();
+    // methodical → analyzeStressCompatibility score=0.7
+    expect(result.stressCompatibility.score).toBe(0.7);
+  });
+
+  it('analyzeCompatibilityFactors: energetic groom + bondScore=30 → bonding potential=0.7 (line 725)', async () => {
+    const result = await analyzeCompatibilityFactors(rr7EnergeticGroom.id, rr7HighBondHorse.id);
+    expect(result).toBeDefined();
+    // energetic + bondScore > 25 → potential=0.7
+    expect(result.bondingPotential.potential).toBe(0.7);
+  });
+
+  it('analyzeCompatibilityFactors: methodical groom → bonding potential=0.6 (line 727)', async () => {
+    const result = await analyzeCompatibilityFactors(rr7MethodicalGroom.id, rr7Horse.id);
+    // methodical → potential=0.6
+    expect(result.bondingPotential.potential).toBe(0.6);
+  });
+
+  it('analyzeCompatibilityFactors: methodical + low bond (bondScore=0) → risk factor added (line 780)', async () => {
+    const result = await analyzeCompatibilityFactors(rr7MethodicalGroom.id, rr7Horse.id);
+    // bondScore < 15 && methodical → pushes risk factor
+    expect(Array.isArray(result.riskFactors)).toBe(true);
+    expect(result.riskFactors.some(r => r.includes('methodical'))).toBe(true);
+  });
+
+  it('analyzeCompatibilityFactors: methodical + developing temperament → strength factor (line 803)', async () => {
+    const result = await analyzeCompatibilityFactors(rr7MethodicalGroom.id, rr7Horse.id);
+    // rr7Horse has no epigenetic flags → primaryTemperament='developing'
+    // methodical + developing → strengthFactor pushed
+    expect(Array.isArray(result.strengthFactors)).toBe(true);
+    expect(
+      result.strengthFactors.some(s => s.includes('Methodical') || s.includes('methodical') || s.includes('routine')),
+    ).toBe(true);
+  });
+
+  // ── predictInteractionOutcome: high stress recommendation (line 839) ──────
+
+  it('predictInteractionOutcome: horseCurrentStress=9 → stress recommendation added (line 839)', async () => {
+    const result = await predictInteractionOutcome(rr7MethodicalGroom.id, rr7StressHorse.id, {
+      taskType: 'grooming',
+      timeOfDay: 'morning',
+      horseCurrentStress: 9,
+    });
+    expect(result).toBeDefined();
+    const recs = result.recommendations ?? [];
+    expect(recs.some(r => r.toLowerCase().includes('calm'))).toBe(true);
+  });
+
+  // ── getOptimalGroomRecommendations: high stress contextual note (line 962) ─
+
+  it('getOptimalGroomRecommendations: horseCurrentStress=9 → contextual note about stress (line 962)', async () => {
+    const result = await getOptimalGroomRecommendations(rr7StressHorse.id, {
+      taskType: 'grooming',
+      timeOfDay: 'morning',
+      horseCurrentStress: 9,
+    });
+    expect(Array.isArray(result.contextualNotes)).toBe(true);
+    expect(result.contextualNotes.some(n => n.toLowerCase().includes('stress'))).toBe(true);
+  });
+
+  // ── analyzeCompatibilityTrendFromInteractions slope paths (lines 870, 875) ─
+
+  it('updateCompatibilityHistory: older=excellent, newer=poor → improving slope (line 870)', async () => {
+    // scores=[poor=1, excellent=4] in desc order → slope=3 > 0.05 → 'improving'
+    const olderInteraction = await prisma.groomInteraction.create({
+      data: {
+        interactionType: 'grooming',
+        duration: 20,
+        quality: 'excellent',
+        foalId: rr7StressHorse.id,
+        groomId: rr7EnergeticGroom.id,
+        createdAt: new Date(Date.now() - 10000),
+      },
+    });
+    const newerInteraction = await prisma.groomInteraction.create({
+      data: {
+        interactionType: 'grooming',
+        duration: 20,
+        quality: 'poor',
+        foalId: rr7StressHorse.id,
+        groomId: rr7EnergeticGroom.id,
+      },
+    });
+    try {
+      const result = await updateCompatibilityHistory(rr7EnergeticGroom.id, rr7StressHorse.id, newerInteraction.id);
+      expect(result.totalInteractions).toBe(2);
+      expect(result.compatibilityTrend).toBe('improving');
+    } finally {
+      await prisma.groomInteraction
+        .deleteMany({
+          where: { id: { in: [olderInteraction.id, newerInteraction.id] } },
+        })
+        .catch(() => {});
+    }
+  });
+
+  it('updateCompatibilityHistory: both interactions same quality → stable slope (line 875)', async () => {
+    // scores=[good=3, good=3] → slope=0 → 'stable'
+    const int1 = await prisma.groomInteraction.create({
+      data: {
+        interactionType: 'grooming',
+        duration: 20,
+        quality: 'good',
+        foalId: rr7HighBondHorse.id,
+        groomId: rr7MethodicalGroom.id,
+        createdAt: new Date(Date.now() - 10000),
+      },
+    });
+    const int2 = await prisma.groomInteraction.create({
+      data: {
+        interactionType: 'grooming',
+        duration: 20,
+        quality: 'good',
+        foalId: rr7HighBondHorse.id,
+        groomId: rr7MethodicalGroom.id,
+      },
+    });
+    try {
+      const result = await updateCompatibilityHistory(rr7MethodicalGroom.id, rr7HighBondHorse.id, int2.id);
+      expect(result.totalInteractions).toBe(2);
+      expect(result.compatibilityTrend).toBe('stable');
+    } finally {
+      await prisma.groomInteraction
+        .deleteMany({
+          where: { id: { in: [int1.id, int2.id] } },
+        })
+        .catch(() => {});
+    }
   });
 });

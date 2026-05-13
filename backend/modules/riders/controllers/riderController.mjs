@@ -127,6 +127,20 @@ export async function assignRider(req, res) {
       data: { riderId, horseId, userId, notes, isActive: true },
     });
 
+    // Sync the horse.rider JSONB field so hasValidRider() returns true for competition entry.
+    // horse.rider is checked by the competition engine; RiderAssignment alone is not sufficient.
+    await prisma.horse.update({
+      where: { id: horseId },
+      data: {
+        rider: {
+          id: rider.id,
+          name: rider.name,
+          level: rider.level,
+          speciality: rider.speciality,
+        },
+      },
+    });
+
     logger.info(
       `[riderController] Rider ${riderId} assigned to horse ${horseId} by user ${userId}`,
     );
@@ -159,6 +173,12 @@ export async function deleteRiderAssignment(req, res) {
     }
 
     await prisma.riderAssignment.update({ where: { id: assignmentId }, data: { isActive: false } });
+
+    // Clear horse.rider JSONB so competition engine sees the horse as riderless after unassignment.
+    await prisma.horse.update({
+      where: { id: assignment.horseId },
+      data: { rider: null },
+    });
 
     logger.info(`[riderController] Assignment ${assignmentId} deactivated by user ${userId}`);
 

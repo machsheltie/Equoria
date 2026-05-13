@@ -80,7 +80,9 @@ describe('calculateWeeklySalary — catch-block branch', () => {
       { id: 'test-groom-id' },
       {
         get(target, prop) {
-          if (prop === 'skillLevel') throw new Error('skillLevel access bomb');
+          if (prop === 'skillLevel') {
+            throw new Error('skillLevel access bomb');
+          }
           return target[prop];
         },
       },

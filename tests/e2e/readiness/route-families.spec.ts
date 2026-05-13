@@ -107,6 +107,52 @@ test('all beta route families execute real read and write flows', async ({ page,
   const stallion = unwrapData<Record<string, unknown>>(stallionJson);
   expect(Number(stallion.id)).toBeGreaterThan(0);
 
+  // Feed the stallion and dam so both horses pass the critical-health gate in
+  // POST /api/v1/horses/foals. The breeding endpoint uses getDisplayedHealth(),
+  // which is worseOf(feedHealth, vetHealth). A horse with lastFedDate=null has
+  // feedHealth='critical', blocking breeding regardless of healthStatus.
+  //
+  // Steps: buy feed → equip feed on each horse → feed each horse → proceed to breed.
+  // We do this here (before listing/training/breeding) so the horses are healthy
+  // by the time we reach the foal creation call.
+  const feedCatalogForBreeding = unwrapData<Array<{ id: string }>>(
+    await expectOk(
+      await page.request.get('/api/v1/feed-shop/catalog'),
+      'GET /api/v1/feed-shop/catalog (pre-breed)'
+    )
+  );
+  const feedTier = feedCatalogForBreeding[0].id;
+  // Purchase enough packs to feed both the stallion and the dam (2 horses, 1 pack each).
+  await expectOk(
+    await csrfRequest(page, 'POST', '/api/v1/feed-shop/purchase', {
+      feedTier,
+      packs: 2,
+    }),
+    'POST /api/v1/feed-shop/purchase (pre-breed)'
+  );
+  // Equip feed to stallion then feed it
+  await expectOk(
+    await csrfRequest(page, 'POST', `/api/v1/horses/${Number(stallion.id)}/equip-feed`, {
+      feedType: feedTier,
+    }),
+    'POST /api/v1/horses/stallion/equip-feed'
+  );
+  await expectOk(
+    await csrfRequest(page, 'POST', `/api/v1/horses/${Number(stallion.id)}/feed`, {}),
+    'POST /api/v1/horses/stallion/feed'
+  );
+  // Equip feed to starter mare (dam) then feed it
+  await expectOk(
+    await csrfRequest(page, 'POST', `/api/v1/horses/${starterHorseId}/equip-feed`, {
+      feedType: feedTier,
+    }),
+    'POST /api/v1/horses/dam/equip-feed'
+  );
+  await expectOk(
+    await csrfRequest(page, 'POST', `/api/v1/horses/${starterHorseId}/feed`, {}),
+    'POST /api/v1/horses/dam/feed'
+  );
+
   const listJson = await expectOk(
     await csrfRequest(page, 'POST', '/api/v1/marketplace/list', {
       horseId: starterHorseId,

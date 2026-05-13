@@ -251,7 +251,7 @@ describe('logger robustness (21R-OBS-3)', () => {
       // returns the sentinel string "[meta-too-deep]" rather than recursing
       // further.  Build an object 33 levels deep so that branch is reached.
       function buildDeep(n) {
-        let obj = {};
+        const obj = {};
         let cur = obj;
         for (let i = 0; i < n; i++) {
           cur.child = {};

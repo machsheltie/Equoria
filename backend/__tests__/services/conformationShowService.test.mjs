@@ -377,7 +377,9 @@ describe('validateConformationEntry — pure-input branches (Equoria-jkht)', () 
       {},
       {
         get(target, prop) {
-          if (prop === 'id') throw new Error('id access bomb');
+          if (prop === 'id') {
+            throw new Error('id access bomb');
+          }
           return undefined;
         },
       },

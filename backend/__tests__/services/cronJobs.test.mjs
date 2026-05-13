@@ -178,7 +178,9 @@ async function cleanupCronElecSuite() {
     where: { id: { startsWith: CRON_PREFIX } },
     select: { id: true },
   });
-  if (users.length === 0) return;
+  if (users.length === 0) {
+    return;
+  }
   const userIds = users.map(u => u.id);
   await prisma.clubBallot.deleteMany({ where: { voterId: { in: userIds } } });
   await prisma.clubCandidate.deleteMany({ where: { userId: { in: userIds } } });
