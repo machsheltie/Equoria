@@ -1,6 +1,11 @@
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import { ValidationError, NotFoundError, DatabaseError } from '../../../errors/index.mjs';
+import { getCachedQuery } from '../../../utils/cacheHelper.mjs';
+
+// Cache TTL constants (seconds)
+const BREED_LIST_TTL = 600; // 10 minutes — breed list rarely changes
+const BREED_DETAIL_TTL = 600; // 10 minutes — breed detail rarely changes
 
 /**
  * Breed Controller
@@ -59,11 +64,14 @@ export async function createBreed(req, res, next) {
 // Get all breeds
 export async function getAllBreeds(req, res, next) {
   try {
-    const breeds = await prisma.breed.findMany({
-      orderBy: {
-        name: 'asc',
-      },
-    });
+    const breeds = await getCachedQuery(
+      'breeds:list:all',
+      () =>
+        prisma.breed.findMany({
+          orderBy: { name: 'asc' },
+        }),
+      BREED_LIST_TTL,
+    );
 
     logger.info(`Retrieved ${breeds.length} breeds`);
 
@@ -178,9 +186,11 @@ export async function getBreedById(req, res, next) {
       throw new ValidationError('Invalid breed ID', 'id', id);
     }
 
-    const breed = await prisma.breed.findUnique({
-      where: { id: breedId },
-    });
+    const breed = await getCachedQuery(
+      `breeds:detail:${breedId}`,
+      () => prisma.breed.findUnique({ where: { id: breedId } }),
+      BREED_DETAIL_TTL,
+    );
 
     if (!breed) {
       throw new NotFoundError('Breed', breedId);
