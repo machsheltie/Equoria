@@ -314,7 +314,7 @@ describe('logger robustness (21R-OBS-3)', () => {
       // toJSON(), the throw propagates to buildMetaSuffix's catch, and err=null
       // makes both optional-chain lookups return undefined → ?? fallbacks fire.
       const triggerObj = {
-        toJSON: () => {
+        toJSON() {
           throw null;
         },
       };
