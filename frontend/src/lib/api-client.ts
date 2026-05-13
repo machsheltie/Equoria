@@ -1,4 +1,4 @@
-﻿/**
+/**
  * API Client for Equoria Frontend
  *
  * Handles all HTTP requests with httpOnly cookie authentication.
@@ -796,7 +796,7 @@ export const trainingApi = {
    * @param userId - UUID of the user (must be authenticated user's UUID)
    */
   getTrainableHorses: (userId: string) => {
-    return apiClient.get<TrainableHorse[]>(`/api/training/trainable/${userId}`);
+    return apiClient.get<TrainableHorse[]>(`/api/v1/training/trainable/${userId}`);
   },
   checkEligibility: (payload: TrainingRequest) => {
     return apiClient.post<TrainingEligibility>('/api/v1/training/check-eligibility', payload);
@@ -827,12 +827,12 @@ export const trainingApi = {
   },
   getDisciplineStatus: (horseId: number, discipline: string) => {
     return apiClient.get<DisciplineStatus>(
-      `/api/training/status/${horseId}/${encodeURIComponent(discipline)}`
+      `/api/v1/training/status/${horseId}/${encodeURIComponent(discipline)}`
     );
   },
   getHorseStatus: (horseId: number) => {
     return apiClient.get<DisciplineStatus[] | Record<string, Omit<DisciplineStatus, 'discipline'>>>(
-      `/api/training/status/${horseId}`
+      `/api/v1/training/status/${horseId}`
     );
   },
 };
@@ -845,25 +845,25 @@ export const breedingApi = {
     return apiClient.post<BreedResponse>('/api/v1/horses/foals', payload);
   },
   getFoal: (foalId: number) => {
-    return apiClient.get<Foal>(`/api/foals/${foalId}`);
+    return apiClient.get<Foal>(`/api/v1/foals/${foalId}`);
   },
   getFoalDevelopment: (foalId: number) => {
-    return apiClient.get<FoalDevelopment>(`/api/foals/${foalId}/development`);
+    return apiClient.get<FoalDevelopment>(`/api/v1/foals/${foalId}/development`);
   },
   getFoalActivities: (foalId: number) => {
-    return apiClient.get<FoalActivity[]>(`/api/foals/${foalId}/activities`);
+    return apiClient.get<FoalActivity[]>(`/api/v1/foals/${foalId}/activities`);
   },
   logFoalActivity: (foalId: number, activity: FoalActivity) => {
-    return apiClient.post<FoalActivity>(`/api/foals/${foalId}/activity`, activity);
+    return apiClient.post<FoalActivity>(`/api/v1/foals/${foalId}/activity`, activity);
   },
   enrichFoal: (foalId: number, activity: FoalActivity) => {
-    return apiClient.post<FoalActivity>(`/api/foals/${foalId}/enrich`, activity);
+    return apiClient.post<FoalActivity>(`/api/v1/foals/${foalId}/enrich`, activity);
   },
   revealTraits: (foalId: number) => {
-    return apiClient.post<{ traits: string[] }>(`/api/foals/${foalId}/reveal-traits`);
+    return apiClient.post<{ traits: string[] }>(`/api/v1/foals/${foalId}/reveal-traits`);
   },
   developFoal: (foalId: number, updates: Partial<FoalDevelopment>) => {
-    return apiClient.put<FoalDevelopment>(`/api/foals/${foalId}/develop`, updates);
+    return apiClient.put<FoalDevelopment>(`/api/v1/foals/${foalId}/develop`, updates);
   },
   graduateFoal: (foalId: number) => {
     return apiClient.post<{
@@ -873,7 +873,7 @@ export const breedingApi = {
         bondScore: number;
         isFirstGraduation: boolean;
       };
-    }>(`/api/foals/${foalId}/graduate`);
+    }>(`/api/v1/foals/${foalId}/graduate`);
   },
 };
 
@@ -887,29 +887,29 @@ export const horsesApi = {
     sex?: 'Stallion' | 'Mare' | 'Colt' | 'Filly' | 'Rig';
     gender?: 'Stallion' | 'Mare' | 'Colt' | 'Filly' | 'Rig';
     age?: number;
-  }) => apiClient.post<HorseSummary>('/api/horses', data),
-  list: () => apiClient.get<HorseSummary[]>(`/api/horses?t=${Date.now()}`),
-  get: (horseId: number) => apiClient.get<HorseSummary>(`/api/horses/${horseId}?t=${Date.now()}`),
+  }) => apiClient.post<HorseSummary>('/api/v1/horses', data),
+  list: () => apiClient.get<HorseSummary[]>(`/api/v1/horses?t=${Date.now()}`),
+  get: (horseId: number) => apiClient.get<HorseSummary>(`/api/v1/horses/${horseId}?t=${Date.now()}`),
   getTrainingHistory: (horseId: number) =>
-    apiClient.get<HorseTrainingAnalytics>(`/api/horses/${horseId}/training-history`),
+    apiClient.get<HorseTrainingAnalytics>(`/api/v1/horses/${horseId}/training-history`),
   getBreedingData: (horseId: number) =>
-    apiClient.get<unknown>(`/api/horses/${horseId}/breeding-data`),
-  getXP: (horseId: number) => apiClient.get<HorseXP>(`/api/horses/${horseId}/xp`),
+    apiClient.get<unknown>(`/api/v1/horses/${horseId}/breeding-data`),
+  getXP: (horseId: number) => apiClient.get<HorseXP>(`/api/v1/horses/${horseId}/xp`),
   getXPHistory: (horseId: number, options?: { limit?: number; offset?: number }) => {
     const params = new URLSearchParams();
     if (options?.limit) params.append('limit', options.limit.toString());
     if (options?.offset) params.append('offset', options.offset.toString());
     const queryString = params.toString() ? `?${params.toString()}` : '';
-    return apiClient.get<HorseXPHistory>(`/api/horses/${horseId}/xp-history${queryString}`);
+    return apiClient.get<HorseXPHistory>(`/api/v1/horses/${horseId}/xp-history${queryString}`);
   },
-  getAge: (horseId: number) => apiClient.get<HorseAge>(`/api/horses/${horseId}/age`),
-  getStats: (horseId: number) => apiClient.get<HorseStats>(`/api/horses/${horseId}/stats`),
+  getAge: (horseId: number) => apiClient.get<HorseAge>(`/api/v1/horses/${horseId}/age`),
+  getStats: (horseId: number) => apiClient.get<HorseStats>(`/api/v1/horses/${horseId}/stats`),
   getProgression: (horseId: number) =>
-    apiClient.get<HorseProgression>(`/api/horses/${horseId}/progression`),
+    apiClient.get<HorseProgression>(`/api/v1/horses/${horseId}/progression`),
   getStatHistory: (horseId: number, timeRange = '30d') =>
-    apiClient.get<StatHistory>(`/api/horses/${horseId}/stats/history?range=${timeRange}`),
+    apiClient.get<StatHistory>(`/api/v1/horses/${horseId}/stats/history?range=${timeRange}`),
   getRecentGains: (horseId: number, days = 30) =>
-    apiClient.get<RecentGains>(`/api/horses/${horseId}/gains/recent?days=${days}`),
+    apiClient.get<RecentGains>(`/api/v1/horses/${horseId}/gains/recent?days=${days}`),
   update: (horseId: number, data: { name?: string }) =>
     apiClient.put<HorseSummary>(`/api/v1/horses/${horseId}`, data),
   getConformation: (horseId: number | string) =>
@@ -1027,7 +1027,7 @@ interface RiderDiscoveryData {
  * Groom API surface
  */
 export const groomsApi = {
-  getUserGrooms: (userId: string | number) => apiClient.get<Groom[]>(`/api/grooms/user/${userId}`),
+  getUserGrooms: (userId: string | number) => apiClient.get<Groom[]>(`/api/v1/grooms/user/${userId}`),
   getAssignments: () => apiClient.get<GroomAssignment[]>('/api/v1/groom-assignments'),
   getSalarySummary: () => apiClient.get<SalarySummary>('/api/v1/groom-salaries/summary'),
   getMarketplace: () => apiClient.get<MarketplaceData>('/api/v1/groom-marketplace'),
@@ -1047,24 +1047,24 @@ export const groomsApi = {
     replacePrimary?: boolean;
   }) => apiClient.post<{ success: boolean }>('/api/v1/groom-assignments', data),
   deleteAssignment: (assignmentId: number) =>
-    apiClient.delete<{ success: boolean }>(`/api/groom-assignments/${assignmentId}`),
+    apiClient.delete<{ success: boolean }>(`/api/v1/groom-assignments/${assignmentId}`),
 };
 
 /**
  * Rider API surface (Epic 9C)
  *
  * Path registry:
- *   GET  /api/riders/user/:userId       → Rider[]
- *   GET  /api/riders/assignments        → RiderAssignment[]
- *   GET  /api/riders/marketplace        → RiderMarketplaceData
- *   POST /api/riders/marketplace/hire   → { success, data: { rider, cost } }
- *   POST /api/riders/marketplace/refresh → RiderMarketplaceData
- *   POST /api/riders/assignments        → { success }
- *   DELETE /api/riders/assignments/:id  → { success }
- *   GET  /api/riders/:id/discovery      → RiderDiscoveryData
+ *   GET  /api/v1/riders/user/:userId       → Rider[]
+ *   GET  /api/v1/riders/assignments        → RiderAssignment[]
+ *   GET  /api/v1/riders/marketplace        → RiderMarketplaceData
+ *   POST /api/v1/riders/marketplace/hire   → { success, data: { rider, cost } }
+ *   POST /api/v1/riders/marketplace/refresh → RiderMarketplaceData
+ *   POST /api/v1/riders/assignments        → { success }
+ *   DELETE /api/v1/riders/assignments/:id  → { success }
+ *   GET  /api/v1/riders/:id/discovery      → RiderDiscoveryData
  */
 export const ridersApi = {
-  getUserRiders: (userId: string | number) => apiClient.get<Rider[]>(`/api/riders/user/${userId}`),
+  getUserRiders: (userId: string | number) => apiClient.get<Rider[]>(`/api/v1/riders/user/${userId}`),
   getAssignments: () => apiClient.get<RiderAssignment[]>('/api/v1/riders/assignments'),
   getMarketplace: () => apiClient.get<RiderMarketplaceData>('/api/v1/riders/marketplace'),
   hireRider: (marketplaceId: string) =>
@@ -1077,23 +1077,23 @@ export const ridersApi = {
   assignRider: (data: { riderId: number; horseId: number; notes?: string }) =>
     apiClient.post<{ success: boolean }>('/api/v1/riders/assignments', data),
   deleteAssignment: (assignmentId: number) =>
-    apiClient.delete<{ success: boolean }>(`/api/riders/assignments/${assignmentId}`),
+    apiClient.delete<{ success: boolean }>(`/api/v1/riders/assignments/${assignmentId}`),
   getDiscovery: (riderId: number) =>
-    apiClient.get<RiderDiscoveryData>(`/api/riders/${riderId}/discovery`),
+    apiClient.get<RiderDiscoveryData>(`/api/v1/riders/${riderId}/discovery`),
 };
 
 /**
  * Trainer API surface (Epic 13-5)
  *
  * Path registry:
- *   GET  /api/trainers/user/:userId        → Trainer[]
- *   GET  /api/trainers/assignments         → TrainerAssignment[]
- *   GET  /api/trainers/marketplace         → TrainerMarketplaceData
- *   POST /api/trainers/marketplace/hire    → { success, data: { trainer, cost } }
- *   POST /api/trainers/marketplace/refresh → TrainerMarketplaceData
- *   POST /api/trainers/assignments         → { success }
- *   DELETE /api/trainers/assignments/:id   → { success }
- *   DELETE /api/trainers/:id/dismiss       → { success }
+ *   GET  /api/v1/trainers/user/:userId        → Trainer[]
+ *   GET  /api/v1/trainers/assignments         → TrainerAssignment[]
+ *   GET  /api/v1/trainers/marketplace         → TrainerMarketplaceData
+ *   POST /api/v1/trainers/marketplace/hire    → { success, data: { trainer, cost } }
+ *   POST /api/v1/trainers/marketplace/refresh → TrainerMarketplaceData
+ *   POST /api/v1/trainers/assignments         → { success }
+ *   DELETE /api/v1/trainers/assignments/:id   → { success }
+ *   DELETE /api/v1/trainers/:id/dismiss       → { success }
  */
 
 export interface TrainerEntry {
@@ -1173,7 +1173,7 @@ export interface TrainerDiscoveryData {
 
 export const trainersApi = {
   getUserTrainers: (userId: string | number) =>
-    apiClient.get<TrainerEntry[]>(`/api/trainers/user/${userId}`),
+    apiClient.get<TrainerEntry[]>(`/api/v1/trainers/user/${userId}`),
   getAssignments: () => apiClient.get<TrainerAssignmentEntry[]>('/api/v1/trainers/assignments'),
   getMarketplace: () => apiClient.get<TrainerMarketplaceData>('/api/v1/trainers/marketplace'),
   hireTrainer: (marketplaceId: string) =>
@@ -1186,11 +1186,11 @@ export const trainersApi = {
   assignTrainer: (data: { trainerId: number; horseId: number; notes?: string }) =>
     apiClient.post<{ success: boolean }>('/api/v1/trainers/assignments', data),
   deleteAssignment: (assignmentId: number) =>
-    apiClient.delete<{ success: boolean }>(`/api/trainers/assignments/${assignmentId}`),
+    apiClient.delete<{ success: boolean }>(`/api/v1/trainers/assignments/${assignmentId}`),
   dismissTrainer: (trainerId: number) =>
-    apiClient.delete<{ success: boolean }>(`/api/trainers/${trainerId}/dismiss`),
+    apiClient.delete<{ success: boolean }>(`/api/v1/trainers/${trainerId}/dismiss`),
   getDiscovery: (trainerId: number) =>
-    apiClient.get<TrainerDiscoveryData>(`/api/trainers/${trainerId}/discovery`),
+    apiClient.get<TrainerDiscoveryData>(`/api/v1/trainers/${trainerId}/discovery`),
 };
 
 // ── Vet Clinic types ──────────────────────────────────────────────────────────
@@ -1213,8 +1213,8 @@ export interface VetAppointmentResult {
 
 /**
  * Vet Clinic API surface
- *   GET  /api/vet/services          → VetService[]
- *   POST /api/vet/book-appointment  → VetAppointmentResult
+ *   GET  /api/v1/vet/services          → VetService[]
+ *   POST /api/v1/vet/book-appointment  → VetAppointmentResult
  */
 export const vetApi = {
   getServices: () => apiClient.get<VetService[]>('/api/v1/vet/services'),
@@ -1318,7 +1318,7 @@ export interface Breed {
 
 /**
  * Breeds API surface
- *   GET /api/breeds → Breed[]  (all 320 breeds, sorted A–Z)
+ *   GET /api/v1/breeds → Breed[]  (all 320 breeds, sorted A–Z)
  */
 export const breedsApi = {
   list: () => apiClient.get<Breed[]>('/api/v1/breeds'),
@@ -1408,9 +1408,9 @@ export interface TackUnequipDecorationResult {
 
 /**
  * Tack Shop API surface
- *   GET  /api/tack-shop/inventory              → TackInventoryData
- *   POST /api/tack-shop/purchase               → TackPurchaseResult
- *   POST /api/tack-shop/unequip-decoration     → TackUnequipDecorationResult
+ *   GET  /api/v1/tack-shop/inventory              → TackInventoryData
+ *   POST /api/v1/tack-shop/purchase               → TackPurchaseResult
+ *   POST /api/v1/tack-shop/unequip-decoration     → TackUnequipDecorationResult
  */
 export const tackShopApi = {
   getInventory: () => apiClient.get<TackInventoryData>('/api/v1/tack-shop/inventory'),
@@ -1448,8 +1448,8 @@ export interface FarrierBookingResult {
 
 /**
  * Farrier API surface
- *   GET  /api/farrier/services     → FarrierService[]
- *   POST /api/farrier/book-service → FarrierBookingResult
+ *   GET  /api/v1/farrier/services     → FarrierService[]
+ *   POST /api/v1/farrier/book-service → FarrierBookingResult
  */
 export const farrierApi = {
   getServices: () => apiClient.get<FarrierService[]>('/api/v1/farrier/services'),
@@ -1492,7 +1492,7 @@ export interface FeedPurchaseResult {
 }
 
 /**
- * Per-horse feed action result (POST /api/horses/:id/feed).
+ * Per-horse feed action result (POST /api/v1/horses/:id/feed).
  * `skipped: 'retired'` means the horse is age >= 21 — no inventory mutation,
  * no stat boost. `equippedFeedClearedDueToEmpty` signals to the UI that the
  * horse's equipped tier was auto-cleared because inventory hit 0.
@@ -1512,7 +1512,7 @@ export interface FeedHorseResponse {
 }
 
 /**
- * Equippable items for a horse (GET /api/horses/:id/equippable).
+ * Equippable items for a horse (GET /api/v1/horses/:id/equippable).
  * Tack equipped to a different horse is excluded; feed of all 5 tiers in
  * the user's inventory with quantity > 0 is returned, each tagged with
  * `isCurrentlyEquippedToThisHorse`.
@@ -1529,8 +1529,8 @@ export interface EquippableResponse {
 
 /**
  * Feed Shop API surface
- *   GET  /api/feed-shop/catalog  → FeedItem[]   (5 tiers)
- *   POST /api/feed-shop/purchase → FeedPurchaseResult   (bulk pack purchase)
+ *   GET  /api/v1/feed-shop/catalog  → FeedItem[]   (5 tiers)
+ *   POST /api/v1/feed-shop/purchase → FeedPurchaseResult   (bulk pack purchase)
  */
 export const feedShopApi = {
   getCatalog: () => apiClient.get<FeedItem[]>('/api/v1/feed-shop/catalog'),
@@ -1540,10 +1540,10 @@ export const feedShopApi = {
 
 /**
  * Per-horse feed actions (feed-system redesign 2026-04-29).
- *   POST /api/horses/:id/feed             — daily feed action with stat-boost roll
- *   POST /api/horses/:id/equip-feed       — set equippedFeedType
- *   POST /api/horses/:id/unequip-feed     — clear equippedFeedType
- *   GET  /api/horses/:id/equippable       — combined tack + feed list
+ *   POST /api/v1/horses/:id/feed             — daily feed action with stat-boost roll
+ *   POST /api/v1/horses/:id/equip-feed       — set equippedFeedType
+ *   POST /api/v1/horses/:id/unequip-feed     — clear equippedFeedType
+ *   GET  /api/v1/horses/:id/equippable       — combined tack + feed list
  */
 export const horseFeedApi = {
   feed: (horseId: number) => apiClient.post<FeedHorseResponse>(`/api/v1/horses/${horseId}/feed`),
@@ -1590,9 +1590,9 @@ export interface UnequipResult {
 
 /**
  * Inventory API surface
- *   GET  /api/inventory         → InventoryData   (fetchWithAuth unwraps data.data)
- *   POST /api/inventory/equip   → EquipResult
- *   POST /api/inventory/unequip → UnequipResult
+ *   GET  /api/v1/inventory         → InventoryData   (fetchWithAuth unwraps data.data)
+ *   POST /api/v1/inventory/equip   → EquipResult
+ *   POST /api/v1/inventory/unequip → UnequipResult
  */
 export const inventoryApi = {
   getInventory: () => apiClient.get<InventoryData>('/api/v1/inventory'),
@@ -1749,12 +1749,12 @@ export const bankApi = {
 
 /**
  * Messages API surface (Epic 19B-2)
- *   GET   /api/messages/inbox         → InboxResponse
- *   GET   /api/messages/sent          → InboxResponse
- *   GET   /api/messages/unread-count  → { count: number }
- *   GET   /api/messages/:id           → { message: DirectMessage }
- *   POST  /api/messages               → { message: DirectMessage }
- *   PATCH /api/messages/:id/read      → { success: boolean }
+ *   GET   /api/v1/messages/inbox         → InboxResponse
+ *   GET   /api/v1/messages/sent          → InboxResponse
+ *   GET   /api/v1/messages/unread-count  → { count: number }
+ *   GET   /api/v1/messages/:id           → { message: DirectMessage }
+ *   POST  /api/v1/messages               → { message: DirectMessage }
+ *   PATCH /api/v1/messages/:id/read      → { success: boolean }
  */
 export const messagesApi = {
   getInbox: () => apiClient.get<InboxResponse>('/api/v1/messages/inbox'),
@@ -1791,7 +1791,7 @@ export interface ClubMembership {
   joinedAt: string;
 }
 
-/** Shape of a single member entry inside a club's member list (GET /api/clubs/:id). */
+/** Shape of a single member entry inside a club's member list (GET /api/v1/clubs/:id). */
 export interface ClubMember {
   id: number;
   user: { id: string; username: string };
@@ -1817,17 +1817,17 @@ export interface ElectionCandidate {
 
 /**
  * Clubs API surface
- *   GET    /api/clubs                               → { clubs: Club[] }
- *   GET    /api/clubs/mine                          → { memberships: ClubMembership[] }
- *   GET    /api/clubs/:id                           → { club: Club }
- *   POST   /api/clubs                               → { club: Club }
- *   POST   /api/clubs/:id/join                      → { membership: ClubMembership }
- *   DELETE /api/clubs/:id/leave                     → { success: true }
- *   GET    /api/clubs/:id/elections                 → { elections: ClubElection[] }
- *   POST   /api/clubs/:id/elections                 → { election: ClubElection }
- *   POST   /api/clubs/elections/:id/nominate        → { candidate }
- *   POST   /api/clubs/elections/:id/vote            → { ballot }
- *   GET    /api/clubs/elections/:id/results         → { election, candidates: ElectionCandidate[] }
+ *   GET    /api/v1/clubs                               → { clubs: Club[] }
+ *   GET    /api/v1/clubs/mine                          → { memberships: ClubMembership[] }
+ *   GET    /api/v1/clubs/:id                           → { club: Club }
+ *   POST   /api/v1/clubs                               → { club: Club }
+ *   POST   /api/v1/clubs/:id/join                      → { membership: ClubMembership }
+ *   DELETE /api/v1/clubs/:id/leave                     → { success: true }
+ *   GET    /api/v1/clubs/:id/elections                 → { elections: ClubElection[] }
+ *   POST   /api/v1/clubs/:id/elections                 → { election: ClubElection }
+ *   POST   /api/v1/clubs/elections/:id/nominate        → { candidate }
+ *   POST   /api/v1/clubs/elections/:id/vote            → { ballot }
+ *   GET    /api/v1/clubs/elections/:id/results         → { election, candidates: ElectionCandidate[] }
  */
 export const clubsApi = {
   getClubs: (type?: ClubType, category?: string) => {
@@ -1870,14 +1870,14 @@ export const clubsApi = {
  */
 export const userProgressApi = {
   getProgress: (userId: string | number) =>
-    apiClient.get<UserProgress>(`/api/users/${userId}/progress`),
+    apiClient.get<UserProgress>(`/api/v1/users/${userId}/progress`),
   getDashboard: (userId: string | number) =>
-    apiClient.get<DashboardData>(`/api/users/dashboard/${userId}`),
+    apiClient.get<DashboardData>(`/api/v1/users/dashboard/${userId}`),
   getActivity: (userId: string | number) =>
-    apiClient.get<ActivityFeedItem[]>(`/api/users/${userId}/activity`),
+    apiClient.get<ActivityFeedItem[]>(`/api/v1/users/${userId}/activity`),
 
   /** Get global community activity feed */
-  getCommunityActivity: () => apiClient.get<ActivityFeedItem[]>('/api/users/community/activity'),
+  getCommunityActivity: () => apiClient.get<ActivityFeedItem[]>('/api/v1/users/community/activity'),
 
   /** Get user details */
   getUser: (userId: string | number) =>
@@ -1888,7 +1888,7 @@ export const userProgressApi = {
       level: number;
       currentHorses: number;
       stableLimit: number;
-    }>(`/api/users/${userId}`),
+    }>(`/api/v1/users/${userId}`),
 };
 
 /**
@@ -1906,7 +1906,7 @@ export const competitionsApi = {
       horseName: string;
       discipline: string;
       eligibility: EligibilityResult;
-    }>(`/api/competition/eligibility/${horseId}/${encodeURIComponent(discipline)}`),
+    }>(`/api/v1/competition/eligibility/${horseId}/${encodeURIComponent(discipline)}`),
   enter: (data: { horseId: number; competitionId: number }) =>
     apiClient.post<{ entryId: number; horseId: number; showId: number; entryFee: number }>(
       '/api/v1/competition/enter',
@@ -1954,7 +1954,7 @@ export const breedingPredictionApi = {
    * Get lineage analysis for a breeding pair
    */
   getLineageAnalysis: (stallionId: number, mareId: number) =>
-    apiClient.get<LineageAnalysis>(`/api/breeding/lineage-analysis/${stallionId}/${mareId}`),
+    apiClient.get<LineageAnalysis>(`/api/v1/breeding/lineage-analysis/${stallionId}/${mareId}`),
 
   /**
    * Calculate genetic probability for offspring
@@ -2262,7 +2262,7 @@ export const authApi = {
    * Requires user ID. Permanently removes all user data.
    */
   deleteAccount: (userId: number) => {
-    return apiClient.delete<{ message: string }>(`/api/users/${userId}`);
+    return apiClient.delete<{ message: string }>(`/api/v1/users/${userId}`);
   },
 };
 

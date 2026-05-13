@@ -5,6 +5,10 @@
 
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
+import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
+import { getCachedQuery } from '../../../utils/cacheHelper.mjs';
+
+const CACHE_TTL = 300; // 5 minutes
 
 // Utility Functions
 const calculateXpToNextLevel = currentLevelXp => {
@@ -19,29 +23,34 @@ const calculateTotalXpForLevel = level => {
 
 // Controllers
 export const getTopUsersByLevel = async (req, res) => {
-  const { limit = 10, offset = 0 } = req.query;
-  const numericLimit = parseInt(limit, 10);
-  const numericOffset = parseInt(offset, 10);
+  const { limit, skip } = parsePaginationParams(req, { defaultLimit: 10, maxLimit: 100 });
 
   try {
-    const users = await prisma.user.findMany({
-      take: numericLimit,
-      skip: numericOffset,
-      orderBy: [{ level: 'desc' }, { xp: 'desc' }],
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        level: true,
-        xp: true,
-        money: true,
-      },
-    });
-
-    const totalUsers = await prisma.user.count();
+    const cacheKey = `leaderboard:top-users:level:${limit}:${skip}`;
+    const [users, totalUsers] = await getCachedQuery(
+      cacheKey,
+      () =>
+        Promise.all([
+          prisma.user.findMany({
+            take: limit,
+            skip,
+            orderBy: [{ level: 'desc' }, { xp: 'desc' }],
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              level: true,
+              xp: true,
+              money: true,
+            },
+          }),
+          prisma.user.count(),
+        ]),
+      CACHE_TTL,
+    );
 
     const rankedUsers = users.map((user, index) => {
-      const rank = numericOffset + index + 1;
+      const rank = skip + index + 1;
       const xpToNext = calculateXpToNextLevel(user.xp);
       const totalXp = calculateTotalXpForLevel(user.level) + user.xp;
       return {
@@ -62,10 +71,10 @@ export const getTopUsersByLevel = async (req, res) => {
       data: {
         users: rankedUsers,
         pagination: {
-          limit: numericLimit,
-          offset: numericOffset,
+          limit,
+          offset: skip,
           total: totalUsers,
-          hasMore: numericOffset + numericLimit < totalUsers,
+          hasMore: skip + limit < totalUsers,
         },
       },
     });
@@ -80,9 +89,8 @@ export const getTopUsersByLevel = async (req, res) => {
 };
 
 export const getTopUsersByXP = async (req, res) => {
-  const { period = 'all', limit = 10, offset = 0 } = req.query;
-  const numericLimit = parseInt(limit, 10);
-  const numericOffset = parseInt(offset, 10);
+  const { period = 'all' } = req.query;
+  const { limit, skip } = parsePaginationParams(req, { defaultLimit: 10, maxLimit: 100 });
 
   try {
     const whereClause = {};
@@ -99,19 +107,26 @@ export const getTopUsersByXP = async (req, res) => {
       }
     }
 
-    const xpData = await prisma.xpEvent.groupBy({
-      by: ['userId'],
-      _sum: { amount: true },
-      where: whereClause,
-      orderBy: { _sum: { amount: 'desc' } },
-      take: numericLimit,
-      skip: numericOffset,
-    });
-
-    const totalRecords = await prisma.xpEvent.groupBy({
-      by: ['userId'],
-      where: whereClause,
-    });
+    const cacheKey = `leaderboard:top-users:xp:${period}:${limit}:${skip}`;
+    const [xpData, totalRecords] = await getCachedQuery(
+      cacheKey,
+      async () => {
+        const data = await prisma.xpEvent.groupBy({
+          by: ['userId'],
+          _sum: { amount: true },
+          where: whereClause,
+          orderBy: { _sum: { amount: 'desc' } },
+          take: limit,
+          skip,
+        });
+        const all = await prisma.xpEvent.groupBy({
+          by: ['userId'],
+          where: whereClause,
+        });
+        return [data, all];
+      },
+      CACHE_TTL,
+    );
 
     const userIds = xpData.map(item => item.userId);
     const users = await prisma.user.findMany({
@@ -124,7 +139,7 @@ export const getTopUsersByXP = async (req, res) => {
     );
 
     const rankedUsers = xpData.map((item, index) => ({
-      rank: numericOffset + index + 1,
+      rank: skip + index + 1,
       userId: item.userId,
       name: userMap[item.userId] || 'Unknown',
       totalXp: item._sum.amount,
@@ -136,10 +151,10 @@ export const getTopUsersByXP = async (req, res) => {
       data: {
         users: rankedUsers,
         pagination: {
-          limit: numericLimit,
-          offset: numericOffset,
+          limit,
+          offset: skip,
           total: totalRecords.length,
-          hasMore: numericOffset + numericLimit < totalRecords.length,
+          hasMore: skip + limit < totalRecords.length,
         },
       },
     });
@@ -155,17 +170,23 @@ export const getTopUsersByXP = async (req, res) => {
 
 export const getTopHorsesByPerformance = async (req, res) => {
   try {
-    const horses = await prisma.horse.findMany({
-      orderBy: { performanceScore: 'desc' },
-      take: 10,
-      select: {
-        id: true,
-        name: true,
-        breed: { select: { name: true } },
-        user: { select: { firstName: true, lastName: true } },
-        performanceScore: true,
-      },
-    });
+    const cacheKey = 'leaderboard:top-horses:performance';
+    const horses = await getCachedQuery(
+      cacheKey,
+      () =>
+        prisma.horse.findMany({
+          orderBy: { performanceScore: 'desc' },
+          take: 10,
+          select: {
+            id: true,
+            name: true,
+            breed: { select: { name: true } },
+            user: { select: { firstName: true, lastName: true } },
+            performanceScore: true,
+          },
+        }),
+      CACHE_TTL,
+    );
 
     const rankings = horses.map((horse, index) => ({
       rank: index + 1,
@@ -190,9 +211,8 @@ export const getTopHorsesByPerformance = async (req, res) => {
 };
 
 export const getTopHorsesByEarnings = async (req, res) => {
-  const { limit = 10, offset = 0, breed } = req.query;
-  const numericLimit = parseInt(limit, 10);
-  const numericOffset = parseInt(offset, 10);
+  const { breed } = req.query;
+  const { limit, skip } = parsePaginationParams(req, { defaultLimit: 10, maxLimit: 100 });
 
   try {
     const whereClause = {
@@ -203,31 +223,36 @@ export const getTopHorsesByEarnings = async (req, res) => {
       whereClause.breed = { name: breed };
     }
 
-    const horses = await prisma.horse.findMany({
-      select: {
-        id: true,
-        name: true,
-        totalEarnings: true,
-        userId: true,
-        user: {
-          select: { firstName: true, lastName: true },
-        },
-        breed: {
-          select: { name: true },
-        },
-      },
-      where: whereClause,
-      orderBy: { totalEarnings: 'desc' },
-      take: numericLimit,
-      skip: numericOffset,
-    });
-
-    const totalHorses = await prisma.horse.count({
-      where: whereClause,
-    });
+    const cacheKey = `leaderboard:top-horses:earnings:${breed ?? 'all'}:${limit}:${skip}`;
+    const [horses, totalHorses] = await getCachedQuery(
+      cacheKey,
+      () =>
+        Promise.all([
+          prisma.horse.findMany({
+            select: {
+              id: true,
+              name: true,
+              totalEarnings: true,
+              userId: true,
+              user: {
+                select: { firstName: true, lastName: true },
+              },
+              breed: {
+                select: { name: true },
+              },
+            },
+            where: whereClause,
+            orderBy: { totalEarnings: 'desc' },
+            take: limit,
+            skip,
+          }),
+          prisma.horse.count({ where: whereClause }),
+        ]),
+      CACHE_TTL,
+    );
 
     const rankedHorses = horses.map((horse, index) => ({
-      rank: numericOffset + index + 1,
+      rank: skip + index + 1,
       horseId: horse.id,
       name: horse.name,
       earnings: horse.totalEarnings,
@@ -241,10 +266,10 @@ export const getTopHorsesByEarnings = async (req, res) => {
       data: {
         horses: rankedHorses,
         pagination: {
-          limit: numericLimit,
-          offset: numericOffset,
+          limit,
+          offset: skip,
           total: totalHorses,
-          hasMore: numericOffset + numericLimit < totalHorses,
+          hasMore: skip + limit < totalHorses,
         },
       },
     });
@@ -258,12 +283,18 @@ export const getTopHorsesByEarnings = async (req, res) => {
 
 export const getTopUsersByHorseEarnings = async (req, res) => {
   try {
-    const result = await prisma.horse.groupBy({
-      by: ['userId'],
-      _sum: { totalEarnings: true },
-      orderBy: { _sum: { totalEarnings: 'desc' } },
-      take: 10,
-    });
+    const cacheKey = 'leaderboard:top-users:horse-earnings';
+    const result = await getCachedQuery(
+      cacheKey,
+      () =>
+        prisma.horse.groupBy({
+          by: ['userId'],
+          _sum: { totalEarnings: true },
+          orderBy: { _sum: { totalEarnings: 'desc' } },
+          take: 10,
+        }),
+      CACHE_TTL,
+    );
 
     const userIds = result.map(r => r.userId);
     const users = await prisma.user.findMany({
@@ -304,23 +335,29 @@ export const getRecentWinners = async (req, res) => {
       whereClause.discipline = discipline;
     }
 
-    const results = await prisma.competitionResult.findMany({
-      where: whereClause,
-      orderBy: { runDate: 'desc' },
-      take: 10,
-      select: {
-        id: true,
-        runDate: true,
-        showName: true,
-        discipline: true,
-        horse: {
+    const cacheKey = `leaderboard:recent-winners:${discipline ?? 'all'}`;
+    const results = await getCachedQuery(
+      cacheKey,
+      () =>
+        prisma.competitionResult.findMany({
+          where: whereClause,
+          orderBy: { runDate: 'desc' },
+          take: 10,
           select: {
-            name: true,
-            user: { select: { firstName: true, lastName: true } },
+            id: true,
+            runDate: true,
+            showName: true,
+            discipline: true,
+            horse: {
+              select: {
+                name: true,
+                user: { select: { firstName: true, lastName: true } },
+              },
+            },
           },
-        },
-      },
-    });
+        }),
+      CACHE_TTL,
+    );
 
     const winners = results.map(entry => ({
       id: entry.id,
@@ -351,28 +388,32 @@ export const getRecentWinners = async (req, res) => {
 
 export const getLeaderboardStats = async (req, res) => {
   try {
-    const userCount = await prisma.user.count();
-    const horseCount = await prisma.horse.count();
-    const showCount = await prisma.competitionResult.count();
-
-    const { _sum: earningsSum } = await prisma.horse.aggregate({
-      _sum: { totalEarnings: true },
-    });
-
-    const { _sum: xpSum } = await prisma.xpEvent.aggregate({
-      _sum: { amount: true },
-    });
+    const cacheKey = 'leaderboard:stats';
+    const stats = await getCachedQuery(
+      cacheKey,
+      async () => {
+        const [userCount, horseCount, showCount, earningsAgg, xpAgg] = await Promise.all([
+          prisma.user.count(),
+          prisma.horse.count(),
+          prisma.competitionResult.count(),
+          prisma.horse.aggregate({ _sum: { totalEarnings: true } }),
+          prisma.xpEvent.aggregate({ _sum: { amount: true } }),
+        ]);
+        return {
+          userCount,
+          horseCount,
+          showCount,
+          totalEarnings: earningsAgg._sum.totalEarnings || 0,
+          totalXp: xpAgg._sum.amount || 0,
+        };
+      },
+      CACHE_TTL,
+    );
 
     res.json({
       success: true,
       message: 'Leaderboard stats retrieved',
-      data: {
-        userCount,
-        horseCount,
-        showCount,
-        totalEarnings: earningsSum.totalEarnings || 0,
-        totalXp: xpSum.amount || 0,
-      },
+      data: stats,
     });
   } catch (error) {
     logger.error(`[leaderboardController.getLeaderboardStats] Error: ${error.message}`);
@@ -389,6 +430,8 @@ export const getLeaderboardStats = async (req, res) => {
  *
  * Story 21S-1: closes the missing backend endpoint that
  * /leaderboards (classified beta-live) depends on.
+ *
+ * Not cached: user-specific, high cardinality.
  */
 export const getUserRankSummary = async (req, res) => {
   const { userId } = req.params;
