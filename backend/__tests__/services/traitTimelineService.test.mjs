@@ -253,3 +253,241 @@ describe('traitTimelineService — DB fixture branch coverage (Equoria-jkht)', (
     expect(summary.stressTrend).toBe('decreasing');
   });
 });
+
+// ── Remaining branch coverage (Equoria-rr7) ───────────────────────────────────
+// Lines 113-115: milestoneMap forEach callback (matching milestone context)
+// Line 176: excludedTraits.map callback (trait with ageInDays >= 1460)
+// Lines 409, 418, 432, 453: totalTraits>=3, sourceTypeCount>=2, stable bond, 'good' quality
+// Lines 425, 450: rareTraits>=1, 'excellent' quality
+// Line 456: 'fair' quality (score 2-3)
+
+describe('traitTimelineService — remaining branch coverage (Equoria-rr7)', () => {
+  let rbrUser;
+  let horseGood; // 3 traits, 2 sources, stable bond → 'good' + milestone context + excluded trait
+  let horseExcellent; // 3 traits incl. 1 rare, 2 sources, improving bond → 'excellent'
+  let horseFair; // 3 traits, 1 source, stable bond → 'fair'
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    rbrUser = await prisma.user.create({
+      data: {
+        email: `tts-rbr-${ts}-${rand()}@test.com`,
+        username: `ttsrbr${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'TTS',
+        lastName: 'RBR',
+        money: 1000,
+      },
+    });
+
+    // ── horseGood ───────────────────────────────────────────────────────────────
+    // 3 traits (before age 4) + 1 excluded trait (ageInDays=1500) + 1 MilestoneTraitLog
+    // Bond: first=50, last=51 → delta=1 ≤ 5 → 'stable' (covers line 432)
+    // Score: totalTraits=3→+2 (line 409), sourceTypeCount=2→+1 (line 418),
+    //        rareTraits=0, stable→+1 (line 432) = 4 → 'good' (line 453)
+    horseGood = await prisma.horse.create({
+      data: {
+        name: `TestFixture-TTS-RBR-Good-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: rbrUser.id,
+      },
+    });
+
+    // 3 pre-cutoff traits
+    await prisma.traitHistoryLog.create({
+      data: {
+        horseId: horseGood.id,
+        traitName: 'curious',
+        sourceType: 'groom',
+        influenceScore: 5,
+        isEpigenetic: false,
+        ageInDays: 15,
+        bondScore: 50,
+        stressLevel: 50,
+      },
+    });
+    await prisma.traitHistoryLog.create({
+      data: {
+        horseId: horseGood.id,
+        traitName: 'brave',
+        sourceType: 'milestone',
+        influenceScore: 5,
+        isEpigenetic: false,
+        ageInDays: 30,
+        bondScore: 51,
+        stressLevel: 49,
+      },
+    });
+    await prisma.traitHistoryLog.create({
+      data: {
+        horseId: horseGood.id,
+        traitName: 'confident',
+        sourceType: 'groom',
+        influenceScore: 5,
+        isEpigenetic: false,
+        ageInDays: 45,
+        bondScore: 51,
+        stressLevel: 49,
+      },
+    });
+
+    // 1 excluded trait (ageInDays >= 1460) — covers line 176
+    await prisma.traitHistoryLog.create({
+      data: {
+        horseId: horseGood.id,
+        traitName: 'noble',
+        sourceType: 'groom',
+        influenceScore: 3,
+        isEpigenetic: false,
+        ageInDays: 1500,
+        bondScore: 55,
+        stressLevel: 45,
+      },
+    });
+
+    // 1 MilestoneTraitLog with finalTrait='brave' + ageInDays=30
+    // key='brave_30' matches TraitHistoryLog key='brave_30' → milestoneContext populated (lines 114-115)
+    await prisma.milestoneTraitLog.create({
+      data: {
+        horseId: horseGood.id,
+        milestoneType: 'trust_handling',
+        score: 7,
+        finalTrait: 'brave',
+        ageInDays: 30,
+        bondScore: 51,
+      },
+    });
+
+    // ── horseExcellent ──────────────────────────────────────────────────────────
+    // 3 traits: 1 rare ('sensitive'), 2 source types, improving bond
+    // Bond: first=50, last=70 → delta=20 > 5 → 'improving'
+    // Score: totalTraits=3→+2, sourceTypeCount=2→+1, rareTraits=1→+1 (line 425),
+    //        improving→+2 = 6 → 'excellent' (line 450)
+    horseExcellent = await prisma.horse.create({
+      data: {
+        name: `TestFixture-TTS-RBR-Excellent-${ts}`,
+        sex: 'Colt',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: rbrUser.id,
+      },
+    });
+
+    await prisma.traitHistoryLog.create({
+      data: {
+        horseId: horseExcellent.id,
+        traitName: 'sensitive',
+        sourceType: 'groom',
+        influenceScore: 5,
+        isEpigenetic: false,
+        ageInDays: 10,
+        bondScore: 50,
+        stressLevel: 50,
+      },
+    });
+    await prisma.traitHistoryLog.create({
+      data: {
+        horseId: horseExcellent.id,
+        traitName: 'curious',
+        sourceType: 'milestone',
+        influenceScore: 5,
+        isEpigenetic: false,
+        ageInDays: 20,
+        bondScore: 60,
+        stressLevel: 40,
+      },
+    });
+    await prisma.traitHistoryLog.create({
+      data: {
+        horseId: horseExcellent.id,
+        traitName: 'brave',
+        sourceType: 'groom',
+        influenceScore: 5,
+        isEpigenetic: false,
+        ageInDays: 30,
+        bondScore: 70,
+        stressLevel: 30,
+      },
+    });
+
+    // ── horseFair ───────────────────────────────────────────────────────────────
+    // 3 traits, 1 source type only, stable bond → score=2+0+0+1=3 → 'fair' (line 456)
+    horseFair = await prisma.horse.create({
+      data: {
+        name: `TestFixture-TTS-RBR-Fair-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: rbrUser.id,
+      },
+    });
+
+    for (const [traitName, ageInDays, bondScore] of [
+      ['curious', 10, 50],
+      ['brave', 20, 51],
+      ['bold', 30, 52],
+    ]) {
+      await prisma.traitHistoryLog.create({
+        data: {
+          horseId: horseFair.id,
+          traitName,
+          sourceType: 'groom',
+          influenceScore: 5,
+          isEpigenetic: false,
+          ageInDays,
+          bondScore,
+          stressLevel: 50,
+        },
+      });
+    }
+  }, 120000);
+
+  afterAll(async () => {
+    const horseIds = [horseGood?.id, horseExcellent?.id, horseFair?.id].filter(Boolean);
+    if (horseIds.length) {
+      await prisma.milestoneTraitLog.deleteMany({ where: { horseId: { in: horseIds } } }).catch(() => {});
+      await prisma.traitHistoryLog.deleteMany({ where: { horseId: { in: horseIds } } }).catch(() => {});
+      await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-TTS-RBR-' } } }).catch(() => {});
+    }
+    if (rbrUser?.id) {
+      await prisma.user.delete({ where: { id: rbrUser.id } }).catch(() => {});
+    }
+  }, 30000);
+
+  it('milestoneMap forEach callback fires when MilestoneTraitLog present (lines 113-115)', async () => {
+    const result = await generateTraitTimeline(horseGood.id);
+    // The milestone 'brave'@30 matches TraitHistoryLog 'brave'@30 → milestoneContext populated
+    const braveEvent = result.timelineEvents.find(e => e.traitName === 'brave');
+    expect(braveEvent).toBeDefined();
+    expect(braveEvent.milestoneContext).not.toBeNull();
+    expect(braveEvent.milestoneContext.milestoneType).toBe('trust_handling');
+  });
+
+  it('excludedTraits.map callback fires for trait with ageInDays >= 1460 (line 176)', async () => {
+    const result = await generateTraitTimeline(horseGood.id);
+    expect(result.excludedTraits).toHaveLength(1);
+    expect(result.excludedTraits[0].name).toBe('noble');
+    expect(result.excludedTraits[0].reason).toBe('Too old (after age 4)');
+  });
+
+  it('calculateDevelopmentQuality: totalTraits=3→+2 (line 409), sourceTypeCount=2→+1 (line 418), stable→+1 (line 432) = good (line 453)', async () => {
+    const summary = await getTraitTimelineSummary(horseGood.id);
+    expect(summary.developmentQuality).toBe('good');
+    expect(summary.bondTrend).toBe('stable');
+  });
+
+  it('calculateDevelopmentQuality: rareTraits=1→+1 (line 425) contributes to excellent score (line 450)', async () => {
+    const summary = await getTraitTimelineSummary(horseExcellent.id);
+    expect(summary.developmentQuality).toBe('excellent');
+    expect(summary.bondTrend).toBe('improving');
+  });
+
+  it('calculateDevelopmentQuality: score=3 → fair (line 456)', async () => {
+    const summary = await getTraitTimelineSummary(horseFair.id);
+    expect(summary.developmentQuality).toBe('fair');
+  });
+});
