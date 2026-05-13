@@ -598,7 +598,7 @@ router.get(
     try {
       // Horse already validated and attached to req.horse by ownership middleware
       // No need for additional database query!
-      const horse = req.horse;
+      const horse = withHealth(req.horse);
 
       res.json({
         success: true,
@@ -1558,9 +1558,8 @@ router.get(
     try {
       const horseId = parseInt(req.params.id, 10);
 
-      const { generateBreedingData } = await import(
-        '../../../services/breedingPredictionService.mjs'
-      );
+      const { generateBreedingData } =
+        await import('../../../services/breedingPredictionService.mjs');
       const breedingData = await generateBreedingData(horseId);
 
       res.json({

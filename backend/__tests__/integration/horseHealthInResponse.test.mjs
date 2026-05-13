@@ -158,4 +158,34 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
       expect(res.body.data.displayedHealth).toBe('retired');
     });
   });
+
+  describe('GET /api/horses/:id (single-horse endpoint)', () => {
+    it('includes all three derived bands (Equoria-hor4)', async () => {
+      const res = await request(app)
+        .get(`/api/horses/${horseId}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.feedHealth).toBe('excellent');
+      expect(res.body.data.vetHealth).toBe('excellent');
+      expect(res.body.data.displayedHealth).toBe('excellent');
+    });
+
+    it('reflects stale lastFedDate (10 days = critical)', async () => {
+      await prisma.horse.update({
+        where: { id: horseId },
+        data: { lastFedDate: new Date(Date.now() - 10 * 86_400_000) },
+      });
+
+      const res = await request(app)
+        .get(`/api/horses/${horseId}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.feedHealth).toBe('critical');
+      expect(res.body.data.displayedHealth).toBe('critical');
+    });
+  });
 });
