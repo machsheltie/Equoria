@@ -421,3 +421,136 @@ describe('personalityEvolutionSystem — evolve path branch coverage (Equoria-jk
     expect(result.stabilityFactors.groomInfluence).toBe(0.6);
   });
 });
+
+// ── personalityEvolutionSystem — line 136 + line 559 branch coverage ────────────
+
+describe('personalityEvolutionSystem — evolution_criteria_not_met + determineNewTemperament fallback (Equoria-rr7)', () => {
+  let rr7User;
+  let rr7GroomMixed;
+  let rr7HorseSpirited;
+  let rr7HorseDummy;
+  let rr7GroomForHorses;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    rr7User = await prisma.user.create({
+      data: {
+        email: `pes-rr7-${ts}-${rand()}@test.com`,
+        username: `pesrr7${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'PES',
+        lastName: 'RR7',
+        money: 1000,
+      },
+    });
+
+    // Groom with experience=100 but 15 alternating poor/good interactions → consistency < 0.7
+    // → shouldEvolve=false → hits line 136 (evolution_criteria_not_met)
+    rr7GroomMixed = await prisma.groom.create({
+      data: {
+        name: `TestFixture-PES-RR7-GroomMixed-${ts}`,
+        speciality: 'foal_care',
+        personality: 'calm',
+        userId: rr7User.id,
+        experience: 100,
+      },
+    });
+
+    rr7GroomForHorses = await prisma.groom.create({
+      data: {
+        name: `TestFixture-PES-RR7-GroomForHorses-${ts}`,
+        speciality: 'foal_care',
+        personality: 'gentle',
+        userId: rr7User.id,
+      },
+    });
+
+    // Dummy horse used ONLY as the foalId target for rr7GroomMixed's 15 mixed interactions
+    rr7HorseDummy = await prisma.horse.create({
+      data: {
+        name: `TestFixture-PES-RR7-HorseDummy-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(ts - 365.25 * 24 * 60 * 60 * 1000),
+        age: 1,
+        userId: rr7User.id,
+      },
+    });
+
+    // Horse with temperament='spirited' (not 'nervous'/'developing') + age=2 + ONLY 10 excellent interactions
+    // → shouldEvolve=true (consistency=1.0 ≥ 0.6), determineNewTemperament returns currentTemperament (line 559)
+    rr7HorseSpirited = await prisma.horse.create({
+      data: {
+        name: `TestFixture-PES-RR7-HorseSpirited-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(ts - 2 * 365.25 * 24 * 60 * 60 * 1000),
+        age: 2,
+        userId: rr7User.id,
+        temperament: 'spirited',
+      },
+    });
+
+    // 15 alternating poor/good interactions for rr7GroomMixed attached to rr7HorseDummy
+    // makes consistency ≈ 0.48 < 0.7 → shouldEvolve=false → hits line 136
+    for (let i = 0; i < 15; i++) {
+      await prisma.groomInteraction.create({
+        data: {
+          foalId: rr7HorseDummy.id,
+          groomId: rr7GroomMixed.id,
+          interactionType: 'daily_care',
+          duration: 30,
+          bondingChange: 1,
+          stressChange: 0,
+          quality: i % 2 === 0 ? 'poor' : 'good',
+          taskType: 'grooming',
+          createdAt: new Date(ts - (15 - i) * 60000),
+          timestamp: new Date(ts - (15 - i) * 60000),
+        },
+      });
+    }
+
+    // 10 excellent interactions for rr7HorseSpirited only — no mixed interactions on this horse
+    for (let i = 0; i < 10; i++) {
+      await prisma.groomInteraction.create({
+        data: {
+          foalId: rr7HorseSpirited.id,
+          groomId: rr7GroomForHorses.id,
+          interactionType: 'daily_care',
+          duration: 30,
+          bondingChange: 2,
+          stressChange: 0,
+          quality: 'excellent',
+          taskType: 'grooming',
+          createdAt: new Date(ts - (10 - i) * 60000),
+          timestamp: new Date(ts - (10 - i) * 60000),
+        },
+      });
+    }
+  }, 60000);
+
+  afterAll(async () => {
+    await prisma.groomInteraction
+      .deleteMany({ where: { groomId: { in: [rr7GroomMixed.id, rr7GroomForHorses.id] } } })
+      .catch(() => {});
+    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-PES-RR7-' } } }).catch(() => {});
+    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-PES-RR7-' } } }).catch(() => {});
+    await prisma.user.delete({ where: { id: rr7User?.id } }).catch(() => {});
+  }, 30000);
+
+  it('evolveGroomPersonality returns reason=evolution_criteria_not_met when groom has 15 mixed-quality interactions (line 136)', async () => {
+    const result = await evolveGroomPersonality(rr7GroomMixed.id);
+    expect(result.success).toBe(true);
+    expect(result.personalityEvolved).toBe(false);
+    expect(result.reason).toBe('evolution_criteria_not_met');
+    expect(result.patterns).toBeDefined();
+    expect(typeof result.stabilityScore).toBe('number');
+  });
+
+  it('evolveHorseTemperament with spirited temperament + 10 excellent interactions → determineNewTemperament returns currentTemperament (line 559)', async () => {
+    const result = await evolveHorseTemperament(rr7HorseSpirited.id);
+    expect(result.success).toBe(true);
+    // determineNewTemperament('spirited', ...) hits the fallback return (line 559)
+    expect(result.newTemperament).toBe('spirited');
+  });
+});
