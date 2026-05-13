@@ -85,14 +85,9 @@ describe('GET /api/users/me/game-notifications', () => {
 
 describe('PATCH /api/users/me/game-notifications/read-all', () => {
   it('returns 200 and marks notifications as read', async () => {
-    // Seed a notification
-    await prisma.user.update({
-      where: { id: user.id },
-      data: {
-        settings: {
-          gameNotifications: [{ id: 'n1', message: 'Test', isRead: false, createdAt: new Date().toISOString() }],
-        },
-      },
+    // Seed a real Notification row (not JSONB) so the handler has something to mark
+    const seeded = await prisma.notification.create({
+      data: { userId: user.id, type: 'stat_gain', payload: { message: 'test' }, isRead: false },
     });
 
     const csrf = await fetchCsrf(app);
@@ -106,6 +101,12 @@ describe('PATCH /api/users/me/game-notifications/read-all', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
+
+    // Verify the row was actually marked read in the DB
+    const updated = await prisma.notification.findUnique({ where: { id: seeded.id } });
+    expect(updated.isRead).toBe(true);
+
+    await prisma.notification.delete({ where: { id: seeded.id } }).catch(() => {});
   });
 
   it('returns 401 without auth', async () => {

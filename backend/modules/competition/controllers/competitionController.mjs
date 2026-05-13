@@ -410,7 +410,7 @@ async function enterAndRunShow(horseIds, show) {
               }
 
               if (statGains) {
-                await createNotification(horse.userId, 'stat_gain', {
+                await createNotification(horse.userId, 'competition_stat_gain', {
                   horseName: horse.name,
                   stat: statGains.stat,
                   amount: statGains.gain,

@@ -1,5 +1,5 @@
 /**
- * Sentinel test: competition placement creates a stat_gain Notification row
+ * Sentinel test: competition placement creates a competition_stat_gain Notification row
  * when calculateStatGain fires (10% chance for 1st place).
  *
  * Flow: POST /enter (enters horse) → POST /execute (host runs competition) →
@@ -18,7 +18,7 @@ import { fetchCsrf, attachCsrf } from '../../tests/helpers/csrfHelper.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
-describe('SENTINEL: competition placement → stat_gain Notification', () => {
+describe('SENTINEL: competition placement → competition_stat_gain Notification', () => {
   let user;
   let horse;
   let show;
@@ -75,7 +75,7 @@ describe('SENTINEL: competition placement → stat_gain Notification', () => {
     await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
   }, 30000);
 
-  it('creates a stat_gain Notification row when a stat boost fires', async () => {
+  it('creates a competition_stat_gain Notification row when a stat boost fires', async () => {
     let boostFound = false;
 
     for (let i = 0; i < 50; i++) {
@@ -111,7 +111,7 @@ describe('SENTINEL: competition placement → stat_gain Notification', () => {
       }
 
       const rows = await prisma.notification.findMany({
-        where: { userId: user.id, type: 'stat_gain' },
+        where: { userId: user.id, type: 'competition_stat_gain' },
       });
 
       if (rows.length > 0) {

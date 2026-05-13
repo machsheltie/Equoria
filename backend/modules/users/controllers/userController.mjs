@@ -732,8 +732,8 @@ export async function searchUsers(q) {
 /**
  * GET /api/v1/users/me/game-notifications
  *
- * Returns the authenticated user's game notification array
- * (stored in User.settings.gameNotifications) plus an unreadCount.
+ * Returns the authenticated user's game notification array from the
+ * Notification table plus an unreadCount.
  */
 export async function getGameNotifications(req, res) {
   try {
@@ -754,7 +754,7 @@ export async function getGameNotifications(req, res) {
 /**
  * PATCH /api/v1/users/me/game-notifications/read-all
  *
- * Marks every game notification in User.settings.gameNotifications as read.
+ * Marks every unread Notification row for the user as read.
  */
 export async function markGameNotificationsRead(req, res) {
   try {
