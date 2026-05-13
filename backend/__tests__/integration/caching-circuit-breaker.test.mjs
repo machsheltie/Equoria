@@ -95,13 +95,13 @@ describe('Caching Circuit Breaker Integration Tests', () => {
       };
       queryFn.mock = { calls: ttlCalls };
 
-      // Cache with 0 second TTL (expires immediately)
+      // Cache with 0 second TTL (expires immediately: stored expires === Date.now(),
+      // check is expires > now, so already stale on next synchronous tick)
       const result1 = await getCachedQuery(cacheKey, queryFn, 0);
       expect(result1.count).toBe(1);
 
-      // Wait a tiny bit to ensure expiration
-      await new Promise(resolve => setTimeout(resolve, 10));
-
+      // No real-time sleep needed: TTL=0 means the entry is expired on the very
+      // next call because Date.now() >= expires (expires = Date.now() at store time).
       // Should execute query again since cache expired
       const result2 = await getCachedQuery(cacheKey, queryFn, 60);
       expect(result2.count).toBe(2);
@@ -345,15 +345,14 @@ describe('Caching Circuit Breaker Integration Tests', () => {
 
       const statsBefore = await getCacheStatistics();
 
-      // Wait a bit to ensure timestamp difference
-      await new Promise(resolve => setTimeout(resolve, 10));
-
+      // No real-time sleep needed: the test only asserts property existence,
+      // not a numeric ordering between the two timestamps.
       await getCachedQuery(cacheKey, queryFn, 60);
 
       const statsAfter = await getCacheStatistics();
 
-      // Timestamp should be updated after cache operation
-      // Note: This might not always update depending on cache hit/miss
+      // Timestamp should be present after cache operation
+      // Note: lastUpdate only changes on a cache hit (local or Redis)
       expect(statsAfter).toHaveProperty('lastUpdate');
       expect(statsBefore).toHaveProperty('lastUpdate');
     });
