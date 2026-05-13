@@ -29,7 +29,13 @@ import {
 } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
 import { Button } from '@/components/ui/button';
-import { useInbox, useSentMessages, useUnreadCount, useSendMessage } from '@/hooks/api/useMessages';
+import {
+  useInbox,
+  useSentMessages,
+  useUnreadCount,
+  useSendMessage,
+  useMessage,
+} from '@/hooks/api/useMessages';
 import {
   useGameNotifications,
   useMarkGameNotificationsRead,
@@ -63,6 +69,7 @@ function relativeTime(iso: string): string {
 const MessagesPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<MessageTab>('inbox');
   const [composeOpen, setComposeOpen] = useState(false);
+  const [selectedMessageId, setSelectedMessageId] = useState<number | null>(null);
 
   const { data: inboxData, isLoading: inboxLoading } = useInbox();
   const { data: sentData, isLoading: sentLoading } = useSentMessages();
@@ -79,6 +86,12 @@ const MessagesPage: React.FC = () => {
 
   const messages = activeTab === 'inbox' ? inboxMessages : sentMessages;
   const isLoading = activeTab === 'inbox' ? inboxLoading : sentLoading;
+
+  const handleSelectMessage = (id: number) => {
+    setSelectedMessageId((prev) => (prev === id ? null : id));
+  };
+
+  const handleCloseDetail = () => setSelectedMessageId(null);
 
   useEffect(() => {
     if (activeTab === 'notifications' && gameUnreadCount > 0) {
@@ -137,7 +150,10 @@ const MessagesPage: React.FC = () => {
           <button
             role="tab"
             aria-selected={activeTab === 'inbox'}
-            onClick={() => setActiveTab('inbox')}
+            onClick={() => {
+              setActiveTab('inbox');
+              handleCloseDetail();
+            }}
             className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'inbox'
                 ? 'bg-white/10 text-white/90 shadow-sm'
@@ -156,7 +172,10 @@ const MessagesPage: React.FC = () => {
           <button
             role="tab"
             aria-selected={activeTab === 'sent'}
-            onClick={() => setActiveTab('sent')}
+            onClick={() => {
+              setActiveTab('sent');
+              handleCloseDetail();
+            }}
             className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'sent'
                 ? 'bg-white/10 text-white/90 shadow-sm'
@@ -170,7 +189,10 @@ const MessagesPage: React.FC = () => {
           <button
             role="tab"
             aria-selected={activeTab === 'notifications'}
-            onClick={() => setActiveTab('notifications')}
+            onClick={() => {
+              setActiveTab('notifications');
+              handleCloseDetail();
+            }}
             className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'notifications'
                 ? 'bg-white/10 text-white/90 shadow-sm'
@@ -251,7 +273,13 @@ const MessagesPage: React.FC = () => {
           ) : (
             <div className="space-y-2">
               {messages.map((message) => (
-                <MessageRow key={message.id} message={message} isInbox={activeTab === 'inbox'} />
+                <MessageRow
+                  key={message.id}
+                  message={message}
+                  isInbox={activeTab === 'inbox'}
+                  isSelected={selectedMessageId === message.id}
+                  onSelect={handleSelectMessage}
+                />
               ))}
             </div>
           )}
@@ -479,68 +507,157 @@ const ComposeModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   );
 };
 
-const MessageRow: React.FC<{ message: DirectMessage; isInbox: boolean }> = ({
-  message,
-  isInbox,
+/* ── MessageDetailPanel ───────────────────────────────────────────────── */
+const MessageDetailPanel: React.FC<{ messageId: number; onClose: () => void }> = ({
+  messageId,
+  onClose,
 }) => {
+  const { data, isLoading, error } = useMessage(messageId);
+  const message = data?.message;
+
+  return (
+    <div
+      className="mt-2 glass-panel border border-[rgba(200,168,78,0.2)] rounded-xl p-5 space-y-3"
+      data-testid={`message-detail-${messageId}`}
+    >
+      {/* Header */}
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          {isLoading && (
+            <div className="space-y-2">
+              <div className="h-4 bg-white/10 rounded animate-pulse w-2/3" />
+              <div className="h-3 bg-white/10 rounded animate-pulse w-1/3" />
+            </div>
+          )}
+          {error && (
+            <p className="text-xs text-[var(--status-error)]">Failed to load message content.</p>
+          )}
+          {message && (
+            <>
+              <h3
+                className="text-base font-semibold text-[var(--cream)] leading-tight"
+                style={{ fontFamily: 'var(--font-heading)' }}
+              >
+                {message.subject}
+              </h3>
+              <div className="flex items-center gap-2 mt-1 flex-wrap text-xs text-white/40">
+                <span>
+                  From: <span className="text-white/60 font-medium">{message.sender.username}</span>
+                </span>
+                <span>·</span>
+                <span>
+                  To:{' '}
+                  <span className="text-white/60 font-medium">{message.recipient.username}</span>
+                </span>
+                <span>·</span>
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3 h-3" />
+                  {relativeTime(message.createdAt)}
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex-shrink-0 p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--cream)] hover:bg-white/10 transition-colors"
+          aria-label="Close message"
+        >
+          <X className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Body */}
+      {message && (
+        <div className="border-t border-white/10 pt-3">
+          <p className="text-sm text-white/75 leading-relaxed whitespace-pre-wrap">
+            {message.content}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const MessageRow: React.FC<{
+  message: DirectMessage;
+  isInbox: boolean;
+  isSelected: boolean;
+  onSelect: (id: number) => void;
+}> = ({ message, isInbox, isSelected, onSelect }) => {
   const contactName = isInbox ? message.sender.username : `To: ${message.recipient.username}`;
   const preview =
     message.content.length > 120 ? `${message.content.slice(0, 120)}…` : message.content;
   const isUnread = isInbox && !message.isRead;
 
   return (
-    <div
-      className={`group glass-panel hover:bg-white/8 ${
-        isUnread ? 'border-emerald-500/20' : 'hover:border-white/20'
-      }`}
-      data-testid={`message-${message.id}`}
-    >
-      <div className="flex items-start gap-3">
-        {/* Read indicator */}
-        <div className="flex-shrink-0 mt-1">
-          {isUnread ? (
-            <Circle className="w-2 h-2 fill-emerald-400 text-emerald-400" />
-          ) : (
-            <CheckCircle2 className="w-4 h-4 text-white/15" />
-          )}
-        </div>
+    <div data-testid={`message-${message.id}`}>
+      <button
+        type="button"
+        className={`w-full text-left group glass-panel hover:bg-white/8 ${
+          isSelected
+            ? 'border-[rgba(200,168,78,0.35)] bg-white/5'
+            : isUnread
+              ? 'border-emerald-500/20'
+              : 'hover:border-white/20'
+        }`}
+        onClick={() => onSelect(message.id)}
+        aria-expanded={isSelected}
+        aria-controls={`message-detail-${message.id}`}
+      >
+        <div className="flex items-start gap-3">
+          {/* Read indicator */}
+          <div className="flex-shrink-0 mt-1">
+            {isUnread ? (
+              <Circle className="w-2 h-2 fill-emerald-400 text-emerald-400" />
+            ) : (
+              <CheckCircle2 className="w-4 h-4 text-white/15" />
+            )}
+          </div>
 
-        {/* Sender avatar */}
-        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center border border-white/10">
-          <User className="w-4 h-4 text-white/70" />
-        </div>
+          {/* Sender avatar */}
+          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-violet-600 to-indigo-700 flex items-center justify-center border border-white/10">
+            <User className="w-4 h-4 text-white/70" />
+          </div>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2 mb-0.5">
-            <div className="min-w-0 flex items-center gap-2 flex-wrap">
-              <span
-                className={`text-sm font-semibold ${isUnread ? 'text-white/90' : 'text-white/70'}`}
-              >
-                {contactName}
-              </span>
-              {message.tag && (
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-2 mb-0.5">
+              <div className="min-w-0 flex items-center gap-2 flex-wrap">
                 <span
-                  className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
-                    tagColors[message.tag] ?? 'bg-white/10 text-white/50'
-                  }`}
+                  className={`text-sm font-semibold ${isUnread ? 'text-white/90' : 'text-white/70'}`}
                 >
-                  {message.tag}
+                  {contactName}
                 </span>
-              )}
+                {message.tag && (
+                  <span
+                    className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                      tagColors[message.tag] ?? 'bg-white/10 text-white/50'
+                    }`}
+                  >
+                    {message.tag}
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center gap-1 text-[11px] text-white/30 flex-shrink-0">
+                <Clock className="w-3 h-3" />
+                {relativeTime(message.createdAt)}
+              </div>
             </div>
-            <div className="flex items-center gap-1 text-[11px] text-white/30 flex-shrink-0">
-              <Clock className="w-3 h-3" />
-              {relativeTime(message.createdAt)}
+            <div
+              className={`text-sm mb-1 ${isUnread ? 'font-semibold text-white/80' : 'text-white/60'}`}
+            >
+              {message.subject}
             </div>
+            <p className="text-xs text-white/40 line-clamp-1">{preview}</p>
           </div>
-          <div
-            className={`text-sm mb-1 ${isUnread ? 'font-semibold text-white/80' : 'text-white/60'}`}
-          >
-            {message.subject}
-          </div>
-          <p className="text-xs text-white/40 line-clamp-1">{preview}</p>
         </div>
-      </div>
+      </button>
+
+      {/* Inline detail panel — shown when selected */}
+      {isSelected && (
+        <MessageDetailPanel messageId={message.id} onClose={() => onSelect(message.id)} />
+      )}
     </div>
   );
 };
