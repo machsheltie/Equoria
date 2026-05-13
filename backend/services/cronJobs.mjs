@@ -49,8 +49,21 @@ class CronJobService {
       },
     );
 
+    // Election status transition — runs every 15 minutes (upcoming→open, open→closed)
+    const electionTransitionJob = cron.schedule(
+      '*/15 * * * *',
+      async () => {
+        await this.transitionElectionStatuses();
+      },
+      {
+        scheduled: false,
+        timezone: 'UTC',
+      },
+    );
+
     this.jobs.set('dailyTraitEvaluation', dailyTraitJob);
     this.jobs.set('dailyHorseAging', dailyAgingJob);
+    this.jobs.set('electionStatusTransition', electionTransitionJob);
 
     // Start all jobs
     this.jobs.forEach((job, name) => {
@@ -343,6 +356,42 @@ class CronJobService {
       logger.error(
         `[CronJobService.logAgingSummary] Error logging aging summary: ${error.message}`,
       );
+    }
+  }
+
+  /**
+   * Transitions ClubElection status fields to match the current time:
+   *   upcoming → open  when startsAt <= now
+   *   open     → closed when endsAt  <= now
+   * Returns counts of each transition type.
+   */
+  async transitionElectionStatuses() {
+    const startTime = Date.now();
+    logger.info('[CronJobService.transitionElectionStatuses] Starting election status transition');
+
+    try {
+      const now = new Date();
+
+      const [openedResult, closedResult] = await Promise.all([
+        prisma.clubElection.updateMany({
+          where: { status: 'upcoming', startsAt: { lte: now } },
+          data: { status: 'open' },
+        }),
+        prisma.clubElection.updateMany({
+          where: { status: { not: 'closed' }, endsAt: { lte: now } },
+          data: { status: 'closed' },
+        }),
+      ]);
+
+      const duration = Date.now() - startTime;
+      logger.info(
+        `[CronJobService.transitionElectionStatuses] Completed in ${duration}ms: opened=${openedResult.count}, closed=${closedResult.count}`,
+      );
+
+      return { opened: openedResult.count, closed: closedResult.count };
+    } catch (error) {
+      logger.error(`[CronJobService.transitionElectionStatuses] Error: ${error.message}`);
+      throw error;
     }
   }
 
