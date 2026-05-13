@@ -9,6 +9,10 @@ import { isFoalAge, FOAL_LIMITS } from '../../../constants/schema.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
+import { getCachedQuery, generateCacheKey } from '../../../utils/cacheHelper.mjs';
+
+// TTL constants (in seconds)
+const TRAIT_DEFINITIONS_TTL = 600; // 10 minutes — static reference data
 
 /**
  * POST /api/traits/discover/:horseId
@@ -210,42 +214,64 @@ export async function getHorseTraits(req, res) {
 /**
  * GET /api/traits/definitions
  * Get all available trait definitions
+ * Cached for 10 minutes — trait definitions are static reference data
  */
 export async function getTraitDefinitions(req, res) {
   try {
-    const { type } = req.query;
+    const { type, fields } = req.query;
 
     logger.info(
       `[traitController.getTraitDefinitions] Getting trait definitions${type ? ` for type: ${type}` : ''}`,
     );
 
-    let traits;
-    if (type && ['positive', 'negative'].includes(type)) {
-      traits = getTraitsByType(type);
-    } else {
-      traits = getTraitsByType('all');
-    }
+    // Determine field selection (comma-separated: e.g. ?fields=name,description,effects)
+    const selectedFields = fields ? fields.split(',').map(f => f.trim()) : null;
 
-    // Enhance with full definitions
-    const definitions = traits.reduce((acc, trait) => {
-      const definition = getTraitDefinition(trait);
-      if (definition) {
-        acc[trait] = {
-          name: trait,
-          ...definition,
+    const cacheKey = generateCacheKey('traits:definitions', type || 'all', fields || 'all-fields');
+
+    const data = await getCachedQuery(
+      cacheKey,
+      async () => {
+        let traits;
+        if (type && ['positive', 'negative'].includes(type)) {
+          traits = getTraitsByType(type);
+        } else {
+          traits = getTraitsByType('all');
+        }
+
+        // Enhance with full definitions
+        const definitions = traits.reduce((acc, trait) => {
+          const definition = getTraitDefinition(trait);
+          if (definition) {
+            const fullDef = { name: trait, ...definition };
+            // Apply field selection if requested
+            if (selectedFields) {
+              acc[trait] = selectedFields.reduce((selected, field) => {
+                if (field in fullDef) {
+                  selected[field] = fullDef[field];
+                }
+                return selected;
+              }, {});
+            } else {
+              acc[trait] = fullDef;
+            }
+          }
+          return acc;
+        }, {});
+
+        return {
+          traits: definitions,
+          count: Object.keys(definitions).length,
+          filter: type || 'all',
         };
-      }
-      return acc;
-    }, {});
+      },
+      TRAIT_DEFINITIONS_TTL,
+    );
 
     res.status(200).json({
       success: true,
-      message: `Retrieved ${Object.keys(definitions).length} trait definitions`,
-      data: {
-        traits: definitions,
-        count: Object.keys(definitions).length,
-        filter: type || 'all',
-      },
+      message: `Retrieved ${data.count} trait definitions`,
+      data,
     });
   } catch (error) {
     logger.error(`[traitController.getTraitDefinitions] Error: ${error.message}`);
