@@ -607,6 +607,17 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
       result.recommendationLevel,
     );
   });
+
+  // ── predictInteractionOutcome: excellent quality branch (Equoria-rr7) ───────
+  it('predictInteractionOutcome: predictedQuality=excellent when overallScore >= 0.8 (line 215)', async () => {
+    // highExpGroom (level=10, exp=200) + branchHorse + morning + stress=1 → overallScore >= 0.8
+    const result = await predictInteractionOutcome(highExpGroom.id, branchHorse.id, {
+      taskType: 'grooming',
+      timeOfDay: 'morning',
+      horseCurrentStress: 1,
+    });
+    expect(result.predictedQuality).toBe('excellent');
+  });
 });
 
 // ── Branch coverage extension (Equoria-rr7) ───────────────────────────────────
@@ -965,5 +976,33 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
         })
         .catch(() => {});
     }
+  });
+
+  // ── predictInteractionOutcome: energetic groom + high-stress horse (Equoria-rr7) ─
+  it('predictInteractionOutcome: energetic groom + stressLevel=9 horse → potentialIssues populated (line 236)', async () => {
+    // rr7EnergeticGroom.epigeneticInfluenceType='energetic' → primaryPersonality='energetic'
+    // rr7StressHorse.stressLevel=9 (in DB, > 7) → line 236 fires
+    const result = await predictInteractionOutcome(rr7EnergeticGroom.id, rr7StressHorse.id, {
+      taskType: 'grooming',
+      timeOfDay: 'morning',
+    });
+    expect(result.potentialIssues.some(i => i.toLowerCase().includes('energetic'))).toBe(true);
+  });
+});
+
+// ── predictInteractionOutcome — poor quality branch (Equoria-rr7) ─────────────
+// Covers line 221: predictedQuality='poor' when overallScore < 0.4.
+// outer groom (balanced, no exp) + outer horse + evening + stress=9 + chaotic env.
+
+describe('predictInteractionOutcome — poor quality branch (Equoria-rr7)', () => {
+  it('predictedQuality=poor when overallScore < 0.4: evening + stress=9 + chaotic (line 221)', async () => {
+    const result = await predictInteractionOutcome(groom.id, horse.id, {
+      taskType: 'grooming',
+      timeOfDay: 'evening',
+      horseCurrentStress: 9,
+      environmentalFactors: ['chaotic'],
+    });
+    expect(result.predictedQuality).toBe('poor');
+    expect(result.compatibilityScore).toBeLessThan(0.4);
   });
 });
