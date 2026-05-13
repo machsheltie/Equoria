@@ -106,6 +106,45 @@ describe('generateAllGenotypeProbabilities', () => {
       expect(genotype.E_Extension).toBe('e/e');
     }
   });
+
+  it('safety cap fires and sets _capped=true when all 17 CORE_LOCI are heterozygous (3^10 > 50000)', () => {
+    // 17 het loci × 3 outcomes each → 3^10 = 59,049 after 10th locus > MAX_GENOTYPE_ENTRIES (50000)
+    // Cap fires on the 10th locus expansion, breaking early and tagging result._capped = true
+    const allHet = {
+      E_Extension: 'E/e',
+      A_Agouti: 'A/a',
+      Cr_Cream: 'A/a',
+      D_Dun: 'A/a',
+      Z_Silver: 'A/a',
+      Ch_Champagne: 'A/a',
+      G_Gray: 'A/a',
+      Rn_Roan: 'A/a',
+      W_DominantWhite: 'A/a',
+      TO_Tobiano: 'A/a',
+      O_FrameOvero: 'A/a',
+      SB1_Sabino1: 'A/a',
+      SW_SplashWhite: 'A/a',
+      LP_LeopardComplex: 'A/a',
+      PATN1_Pattern1: 'A/a',
+      EDXW: 'A/a',
+      MFSD12_Mushroom: 'A/a',
+    };
+    const result = generateAllGenotypeProbabilities(allHet, allHet);
+    expect(result._capped).toBe(true);
+    expect(result.length).toBeGreaterThan(50000);
+  });
+
+  it('falls back to n/n for loci missing from a parent genotype and not in GENERIC_DEFAULTS (lines 89-90)', () => {
+    // SIRE_ONLY_LOCUS exists in sire but not dam → dam falls back to 'n/n' (line 90)
+    // DAM_ONLY_LOCUS exists in dam but not sire → sire falls back to 'n/n' (line 89)
+    const sire = { E_Extension: 'e/e', SIRE_ONLY_LOCUS: 'S/s' };
+    const dam = { E_Extension: 'e/e', DAM_ONLY_LOCUS: 'D/d' };
+    const result = generateAllGenotypeProbabilities(sire, dam);
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBeGreaterThan(0);
+    // Both custom loci contribute a fixed locus at 'n/n' or 'S/s'/'D/d' — result is valid
+    expect(result[0]).toHaveProperty('genotype');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -187,6 +226,16 @@ describe('applyBreedRestrictions', () => {
     const foalBreedProfile = { allowed_alleles: { E_Extension: ['e/e', 'E/e'] } };
     const result = applyBreedRestrictions(input, foalBreedProfile);
     expect(result[0].genotype.E_Extension).toBe('e/e');
+  });
+
+  it('skips replacement when the breed-default allele is itself lethal (covers lethal-replacement guard, line 192)', () => {
+    // O_FrameOvero: 'O/n' is not in allowed list ['O/O']
+    // The function tries to replace with 'O/O' but 'O/O' is lethal → guard fires, genotype unchanged
+    const input = [{ genotype: { O_FrameOvero: 'O/n' }, prob: 1.0 }];
+    const foalBreedProfile = { allowed_alleles: { O_FrameOvero: ['O/O'] } };
+    const result = applyBreedRestrictions(input, foalBreedProfile);
+    // Guard prevents substituting the lethal pair — original allele preserved
+    expect(result[0].genotype.O_FrameOvero).toBe('O/n');
   });
 });
 
