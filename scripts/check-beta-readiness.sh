@@ -34,6 +34,19 @@ if [[ $# -gt 0 ]]; then
   exit 2
 fi
 
+# Detect Claude Code worktrees: Jest testMatch globs break when the CWD path
+# contains \.claude because Node/Jest path normalization corrupts the segment
+# (backslash-dot is treated as a regex escape), producing mixed-slash globs
+# that micromatch cannot match. Zero test files are discovered.
+TOPLEVEL="$(git rev-parse --show-toplevel 2>/dev/null || echo '')"
+if [[ "$TOPLEVEL" == */.claude/worktrees/* ]]; then
+  echo "ERROR: check-beta-readiness.sh must be run from the main project checkout." >&2
+  echo "  Current worktree: $TOPLEVEL" >&2
+  echo "  Switch to the main checkout and run:" >&2
+  echo "    bash scripts/check-beta-readiness.sh" >&2
+  exit 2
+fi
+
 PASS=0
 FAIL=0
 REPORT_LINES=()
