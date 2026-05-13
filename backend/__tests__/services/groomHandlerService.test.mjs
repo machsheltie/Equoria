@@ -1,12 +1,15 @@
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import {
   HANDLER_SKILL_BONUSES,
   PERSONALITY_DISCIPLINE_SYNERGY,
   SPECIALTY_DISCIPLINE_BONUSES,
   calculateHandlerBonus,
+  getAssignedHandler,
+  validateHandlerEligibility,
   recordHandlerPerformance,
   calculateGroomExperienceGain,
 } from '../../services/groomHandlerService.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 
 // ── HANDLER_SKILL_BONUSES ────────────────────────────────────────────────────
 
@@ -166,5 +169,134 @@ describe('recordHandlerPerformance', () => {
     const result = { placement: 1, score: 95 };
     const returned = await recordHandlerPerformance(result, { hasHandler: false });
     expect(returned).toBe(result);
+  });
+});
+
+// ── DB-fixture branch coverage (Equoria-rr7) ─────────────────────────────────
+// Covers getAssignedHandler (170-225), validateHandlerEligibility (234-292),
+// and recordHandlerPerformance hasHandler=true path (307-344).
+
+describe('groomHandlerService — DB fixture branch coverage (Equoria-rr7)', () => {
+  let ghsUser;
+  let ghsGroom;
+  let ghsHorse;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    ghsUser = await prisma.user.create({
+      data: {
+        email: `ghs-${ts}-${rand()}@test.com`,
+        username: `ghs${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'GHS',
+        lastName: 'Branch',
+        money: 1000,
+      },
+    });
+
+    ghsGroom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-GHS-Groom-${ts}`,
+        speciality: 'showHandling',
+        personality: 'gentle',
+        skillLevel: 'novice',
+        isActive: true,
+        userId: ghsUser.id,
+      },
+    });
+
+    ghsHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-GHS-Horse-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: ghsUser.id,
+      },
+    });
+
+    await prisma.groomAssignment.create({
+      data: {
+        groomId: ghsGroom.id,
+        foalId: ghsHorse.id,
+        userId: ghsUser.id,
+        isActive: true,
+        priority: 1,
+      },
+    });
+  }, 30000);
+
+  afterAll(async () => {
+    await prisma.groomAssignment.deleteMany({ where: { userId: ghsUser?.id } }).catch(() => {});
+    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GHS-' } } }).catch(() => {});
+    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-GHS-' } } }).catch(() => {});
+    await prisma.user.delete({ where: { id: ghsUser?.id } }).catch(() => {});
+  }, 30000);
+
+  it('getAssignedHandler: no assignment → hasHandler:false (lines 201-208)', async () => {
+    const result = await getAssignedHandler(999999999, ghsUser.id);
+    expect(result.hasHandler).toBe(false);
+    expect(result.assignment).toBeNull();
+    expect(result.groom).toBeNull();
+  });
+
+  it('getAssignedHandler: assignment found → hasHandler:true with groom (lines 210-215)', async () => {
+    const result = await getAssignedHandler(ghsHorse.id, ghsUser.id);
+    expect(result.hasHandler).toBe(true);
+    expect(result.groom.name).toBe(ghsGroom.name);
+    expect(result.horse).toBeDefined();
+  });
+
+  it('validateHandlerEligibility: non-conformation class → eligible:true, isConformationShow:false (lines 238-245)', async () => {
+    const result = await validateHandlerEligibility(ghsHorse.id, ghsUser.id, 'Racing');
+    expect(result.eligible).toBe(true);
+    expect(result.isConformationShow).toBe(false);
+    expect(result.handlerBonus).toBe(0);
+  });
+
+  it('validateHandlerEligibility: conformation class + no handler → eligible:false (lines 249-256)', async () => {
+    const result = await validateHandlerEligibility(999999999, ghsUser.id, 'Mares');
+    expect(result.eligible).toBe(false);
+    expect(result.reason).toBe('No handler assigned');
+    expect(result.isConformationShow).toBe(true);
+  });
+
+  it('validateHandlerEligibility: conformation class + handler assigned → eligible:true (lines 274-282)', async () => {
+    const result = await validateHandlerEligibility(ghsHorse.id, ghsUser.id, 'Mares');
+    expect(result.eligible).toBe(true);
+    expect(result.groom).toBeDefined();
+    expect(typeof result.handlerBonus).toBe('number');
+  });
+
+  it('recordHandlerPerformance: hasHandler=true, experienceGain>0 → updates groom XP (lines 307-341)', async () => {
+    const competitionResult = { placement: 1, totalEntries: 5, score: 95 };
+    const handlerData = {
+      hasHandler: true,
+      groom: { id: ghsGroom.id, name: ghsGroom.name, skillLevel: 'novice' },
+      handlerBonus: 0.1,
+      bonusBreakdown: { skillBonus: 0.1 },
+    };
+    const result = await recordHandlerPerformance(competitionResult, handlerData);
+    expect(result).toHaveProperty('handlerInfo');
+    expect(result.handlerInfo.groomId).toBe(ghsGroom.id);
+    expect(result.handlerInfo.experienceGained).toBeGreaterThan(0);
+    const updatedGroom = await prisma.groom.findUnique({ where: { id: ghsGroom.id } });
+    expect(updatedGroom.experience).toBeGreaterThan(0);
+  });
+
+  it('recordHandlerPerformance: hasHandler=true, experienceGain=0 → skips XP update (line 324 false arm)', async () => {
+    // master + 4th place + 1 entry: (1+0)*0.4 = 0.4 → Math.round(0.4) = 0
+    const competitionResult = { placement: 4, totalEntries: 1, score: 75 };
+    const handlerData = {
+      hasHandler: true,
+      groom: { id: ghsGroom.id, name: ghsGroom.name, skillLevel: 'master' },
+      handlerBonus: 0.05,
+      bonusBreakdown: {},
+    };
+    const result = await recordHandlerPerformance(competitionResult, handlerData);
+    expect(result).toHaveProperty('handlerInfo');
+    expect(result.handlerInfo).not.toHaveProperty('experienceGained');
   });
 });
