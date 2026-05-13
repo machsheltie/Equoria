@@ -7,12 +7,18 @@ import { navItems } from './nav-items';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from '@/components/auth';
 import OnboardingGuard from '@/components/auth/OnboardingGuard';
-import OnboardingSpotlight from '@/components/onboarding/OnboardingSpotlight';
 import { initSentry, SentryErrorBoundary } from '@/lib/sentry';
 import GallopingLoader from '@/components/ui/GallopingLoader';
 import { CelestialThemeProvider } from '@/components/theme/CelestialThemeProvider';
-import { WhileYouWereGone } from '@/components/hub/WhileYouWereGone';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+
+// Overlay components — lazy loaded (never visible on initial render)
+// WhileYouWereGone: shown only after 4+ hour authenticated absence
+const WhileYouWereGone = lazy(() =>
+  import('@/components/hub/WhileYouWereGone').then((m) => ({ default: m.WhileYouWereGone }))
+);
+// OnboardingSpotlight: shown only when completedOnboarding === false && onboardingStep >= 1
+const OnboardingSpotlight = lazy(() => import('@/components/onboarding/OnboardingSpotlight'));
 
 // Auth pages — lazy loaded
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
@@ -46,11 +52,15 @@ const App = () => (
             {/* Applies body.celestial class — reads ?theme= URL param + localStorage */}
             <CelestialThemeProvider />
             {/* Return overlay — shown after 4+ hour absence (authenticated users only) */}
-            <WhileYouWereGone />
+            <Suspense fallback={null}>
+              <WhileYouWereGone />
+            </Suspense>
             {/* Redirects new users to /onboarding when completedOnboarding === false */}
             <OnboardingGuard />
             {/* Guided 10-step spotlight tour — active when completedOnboarding === false && onboardingStep >= 1 */}
-            <OnboardingSpotlight />
+            <Suspense fallback={null}>
+              <OnboardingSpotlight />
+            </Suspense>
             <Suspense fallback={<GallopingLoader />}>
               <Routes>
                 {/* Public routes — no nav shell */}
