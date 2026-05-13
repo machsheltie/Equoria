@@ -509,3 +509,103 @@ describe('calculateGeneticCompatibilityScore() — empty stats balanceScore=50 b
     expect(result.statCompatibility.balanceScore).toBe(50);
   });
 });
+
+// ── catch-block coverage via Proxy (Equoria-jkht) ─────────────────────────────
+// Each function has a try/catch that re-throws. Passing a Proxy that throws on
+// property access causes the catch to fire and then re-throw.
+
+describe('catch blocks — Proxy-triggered error paths (Equoria-jkht)', () => {
+  const makeBomb = () =>
+    new Proxy(
+      {},
+      {
+        get(_t, _prop) {
+          throw new Error('property access bomb');
+        },
+      },
+    );
+
+  it('calculateEnhancedGeneticProbabilities catch (lines 59-60)', () => {
+    expect(() => calculateEnhancedGeneticProbabilities(makeBomb(), {})).toThrow('property access bomb');
+  });
+
+  it('calculateGeneticCompatibilityScore catch (lines 275-276)', () => {
+    expect(() => calculateGeneticCompatibilityScore(makeBomb(), {})).toThrow('property access bomb');
+  });
+
+  it('simulateBreedingOutcomes catch (lines 1212-1213)', () => {
+    expect(() => simulateBreedingOutcomes(makeBomb(), {}, { iterations: 1 })).toThrow('property access bomb');
+  });
+
+  it('calculateMultiGenerationalPredictions catch (lines 1302-1303)', () => {
+    expect(() => calculateMultiGenerationalPredictions(makeBomb(), {}, [])).toThrow('property access bomb');
+  });
+
+  it('calculateGeneticDiversityImpact catch (lines 1338-1339)', () => {
+    expect(() => calculateGeneticDiversityImpact(makeBomb(), {}, [])).toThrow('property access bomb');
+  });
+
+  it('calculateTraitInteractions catch (lines 1423-1424)', () => {
+    expect(() => calculateTraitInteractions(makeBomb(), {})).toThrow('property access bomb');
+  });
+
+  it('generateBreedingRecommendations catch (lines 1496-1497)', () => {
+    expect(() => generateBreedingRecommendations(makeBomb(), {})).toThrow('property access bomb');
+  });
+
+  it('predictOffspringPerformance catch (lines 1536-1537)', () => {
+    expect(() => predictOffspringPerformance(makeBomb(), {})).toThrow('property access bomb');
+  });
+});
+
+// ── identifyStrengthAreas — predictedScore > 75 (Equoria-jkht) ───────────────
+// predictOffspringPerformance → identifyStrengthAreas: line 1100 strengths.push
+// fires when predictedScore > 75. Achieved by giving both parents speed=90,
+// stamina=90, agility=90 (racing relevant stats) → expectedValue=90 each →
+// baseScore = 50 + (40+40+40)*0.3 = 86 > 75.
+
+describe('predictOffspringPerformance — identifyStrengthAreas strengths push (Equoria-jkht)', () => {
+  it('strengthAreas is non-empty when both parents have high racing stats (line 1100)', () => {
+    const s = {
+      id: 1,
+      traits: { positive: [], negative: [], hidden: [] },
+      speed: 90,
+      stamina: 90,
+      agility: 90,
+    };
+    const m = {
+      id: 2,
+      traits: { positive: [], negative: [], hidden: [] },
+      speed: 90,
+      stamina: 90,
+      agility: 90,
+    };
+    const result = predictOffspringPerformance(s, m);
+    expect(Array.isArray(result.strengthAreas)).toBe(true);
+    expect(result.strengthAreas.length).toBeGreaterThan(0);
+    expect(result.strengthAreas[0]).toHaveProperty('area');
+    expect(result.strengthAreas[0]).toHaveProperty('score');
+    expect(result.strengthAreas[0].score).toBeGreaterThan(75);
+  });
+});
+
+// ── generateBreedingRecommendations — 'Acceptable' tier (Equoria-jkht) ────────
+// overallRecommendation = 'Acceptable' fires when 45 ≤ overallScore < 65 (line 1441).
+// 3 shared positive traits → traitScore = 74, no stats/disciplines → statScore=50,
+// disciplineScore=50, diversityScore=0 (all traits shared).
+// overallScore = round(74*0.3 + 50*0.25 + 50*0.25 + 0*0.2) = round(47.2) = 47 ∈ [45,65).
+
+describe('generateBreedingRecommendations — Acceptable tier (Equoria-jkht)', () => {
+  it('returns Acceptable for moderate pair with 3 shared positive traits (line 1441)', () => {
+    const s = {
+      id: 1,
+      traits: { positive: ['calm', 'brave', 'athletic'], negative: [], hidden: [] },
+    };
+    const m = {
+      id: 2,
+      traits: { positive: ['calm', 'brave', 'athletic'], negative: [], hidden: [] },
+    };
+    const result = generateBreedingRecommendations(s, m);
+    expect(result.overallRecommendation).toBe('Acceptable');
+  });
+});
