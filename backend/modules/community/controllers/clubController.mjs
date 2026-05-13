@@ -174,11 +174,30 @@ export async function getElections(req, res) {
       orderBy: { startsAt: 'desc' },
       include: { _count: { select: { candidates: true } } },
     });
-    return res.json({ success: true, data: { elections } });
+    const shaped = elections.map(e => ({ ...e, status: resolveElectionStatus(e) }));
+    return res.json({ success: true, data: { elections: shaped } });
   } catch (error) {
     logger.error(`[clubController.getElections] ${error.message}`);
     return res.status(500).json({ success: false, message: 'Failed to fetch elections' });
   }
+}
+
+/**
+ * Derives effective election status from startsAt/endsAt at read-time without writing to the DB.
+ * A manually-closed election is always closed regardless of dates.
+ */
+function resolveElectionStatus(election) {
+  if (election.status === 'closed') {
+    return 'closed';
+  }
+  const now = new Date();
+  if (election.endsAt <= now) {
+    return 'closed';
+  }
+  if (election.startsAt <= now) {
+    return 'open';
+  }
+  return 'upcoming';
 }
 
 /** POST /api/clubs/:id/elections — officer/president only */
@@ -232,7 +251,7 @@ export async function nominate(req, res) {
     if (!election) {
       return res.status(404).json({ success: false, message: 'Election not found' });
     }
-    if (election.status === 'closed') {
+    if (resolveElectionStatus(election) === 'closed') {
       return res.status(400).json({ success: false, message: 'Election is closed' });
     }
 
@@ -275,7 +294,7 @@ export async function vote(req, res) {
     if (!election) {
       return res.status(404).json({ success: false, message: 'Election not found' });
     }
-    if (election.status !== 'open') {
+    if (resolveElectionStatus(election) !== 'open') {
       return res.status(400).json({ success: false, message: 'Election is not open' });
     }
 
@@ -332,7 +351,13 @@ export async function getElectionResults(req, res) {
       voteCount: c._count.ballots,
     }));
 
-    return res.json({ success: true, data: { election, candidates: shaped } });
+    return res.json({
+      success: true,
+      data: {
+        election: { ...election, status: resolveElectionStatus(election) },
+        candidates: shaped,
+      },
+    });
   } catch (error) {
     logger.error(`[clubController.getElectionResults] ${error.message}`);
     return res.status(500).json({ success: false, message: 'Failed to fetch results' });

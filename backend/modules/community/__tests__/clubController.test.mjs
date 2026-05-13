@@ -387,6 +387,40 @@ describe('clubController (real DB)', () => {
 
       expect(h.res.statusValue).toBe(400);
     });
+
+    it('resolves status to closed for election past endsAt (DB status = open)', async () => {
+      const user = await createUser();
+      const club = await createClubInDb(user.id);
+      const election = await createElectionInDb(club.id, {
+        status: 'open',
+        startsAt: new Date(Date.now() - 7200000), // 2 h ago
+        endsAt: new Date(Date.now() - 3600000), // 1 h ago
+      });
+
+      const h = makeReqRes(user.id, { params: { id: String(club.id) } });
+      await getElections(h.req, h.res);
+
+      const found = h.res.jsonValue.data.elections.find(e => e.id === election.id);
+      expect(found).toBeDefined();
+      expect(found.status).toBe('closed');
+    });
+
+    it('resolves status to open for upcoming election whose startsAt has passed', async () => {
+      const user = await createUser();
+      const club = await createClubInDb(user.id);
+      const election = await createElectionInDb(club.id, {
+        status: 'upcoming',
+        startsAt: new Date(Date.now() - 3600000), // 1 h ago
+        endsAt: new Date(Date.now() + 86400000), // 1 day from now
+      });
+
+      const h = makeReqRes(user.id, { params: { id: String(club.id) } });
+      await getElections(h.req, h.res);
+
+      const found = h.res.jsonValue.data.elections.find(e => e.id === election.id);
+      expect(found).toBeDefined();
+      expect(found.status).toBe('open');
+    });
   });
 
   describe('createElection', () => {
@@ -508,6 +542,22 @@ describe('clubController (real DB)', () => {
       expect(h.res.jsonValue.message).toBe('Election is closed');
     });
 
+    it('returns 400 when election endsAt has passed even though DB status is open', async () => {
+      const user = await createUser();
+      const club = await createClubInDb(user.id);
+      const election = await createElectionInDb(club.id, {
+        status: 'open',
+        startsAt: new Date(Date.now() - 7200000), // 2 h ago
+        endsAt: new Date(Date.now() - 3600000), // 1 h ago
+      });
+
+      const h = makeReqRes(user.id, { params: { id: String(election.id) }, body: { statement: 'Late entry' } });
+      await nominate(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(400);
+      expect(h.res.jsonValue.message).toBe('Election is closed');
+    });
+
     it('returns 404 when user is not a club member (CWE-639 Equoria-w386)', async () => {
       const president = await createUser();
       const stranger = await createUser();
@@ -556,16 +606,55 @@ describe('clubController (real DB)', () => {
       expect(ballot.candidateId).toBe(candidate.id);
     });
 
-    it('returns 400 when election is not open', async () => {
+    it('returns 400 when election is not open (upcoming, startsAt in the future)', async () => {
       const user = await createUser();
       const club = await createClubInDb(user.id);
-      const election = await createElectionInDb(club.id, { status: 'upcoming' });
+      const election = await createElectionInDb(club.id, {
+        status: 'upcoming',
+        startsAt: new Date(Date.now() + 86400000), // 1 day from now — not yet open
+        endsAt: new Date(Date.now() + 172800000),
+      });
 
       const h = makeReqRes(user.id, { params: { id: String(election.id) }, body: { candidateId: 1 } });
       await vote(h.req, h.res);
 
       expect(h.res.statusValue).toBe(400);
       expect(h.res.jsonValue.message).toBe('Election is not open');
+    });
+
+    it('returns 400 when election endsAt has passed even though DB status is open', async () => {
+      const user = await createUser();
+      const club = await createClubInDb(user.id);
+      const election = await createElectionInDb(club.id, {
+        status: 'open',
+        startsAt: new Date(Date.now() - 7200000), // 2 h ago
+        endsAt: new Date(Date.now() - 3600000), // 1 h ago
+      });
+      const candidate = await createCandidateInDb(election.id, user.id);
+
+      const h = makeReqRes(user.id, { params: { id: String(election.id) }, body: { candidateId: candidate.id } });
+      await vote(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(400);
+      expect(h.res.jsonValue.message).toBe('Election is not open');
+    });
+
+    it('accepts vote on election with startsAt past and status upcoming (auto-opens)', async () => {
+      const president = await createUser();
+      const voter = await createUser();
+      const club = await createClubInDb(president.id);
+      await joinClubInDb(club.id, voter.id);
+      const election = await createElectionInDb(club.id, {
+        status: 'upcoming',
+        startsAt: new Date(Date.now() - 3600000), // 1 h ago — should resolve to open
+        endsAt: new Date(Date.now() + 86400000), // 1 day from now
+      });
+      const candidate = await createCandidateInDb(election.id, president.id);
+
+      const h = makeReqRes(voter.id, { params: { id: String(election.id) }, body: { candidateId: candidate.id } });
+      await vote(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(201);
     });
 
     it('returns 404 when voter is not a club member (CWE-639 Equoria-c1cv)', async () => {
@@ -674,6 +763,22 @@ describe('clubController (real DB)', () => {
       expect(found2.voteCount).toBe(1);
       // _count stripped
       body.data.candidates.forEach(c => expect(c._count).toBeUndefined());
+    });
+
+    it('returns resolved status closed for expired election', async () => {
+      const user = await createUser();
+      const club = await createClubInDb(user.id);
+      const election = await createElectionInDb(club.id, {
+        status: 'open',
+        startsAt: new Date(Date.now() - 7200000), // 2 h ago
+        endsAt: new Date(Date.now() - 3600000), // 1 h ago
+      });
+
+      const h = makeReqRes(user.id, { params: { id: String(election.id) } });
+      await getElectionResults(h.req, h.res);
+
+      expect(h.res.jsonValue.success).toBe(true);
+      expect(h.res.jsonValue.data.election.status).toBe('closed');
     });
 
     it('returns 404 when election does not exist', async () => {
