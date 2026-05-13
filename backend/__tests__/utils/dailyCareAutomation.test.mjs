@@ -264,3 +264,273 @@ describe('runDailyCareAutomation() — main loop body, dryRun path (lines 108-17
     expect(typeof result.processed).toBe('number');
   });
 });
+
+// ── runDailyCareAutomation — groom not available today (lines 112-113) ───────
+// Creates a groom with today's day set to false in availability JSON.
+// isGroomAvailableToday returns false → continue branch taken → no interactions.
+
+describe('runDailyCareAutomation() — groom unavailable today (lines 112-113)', () => {
+  let unavailUser;
+  let unavailGroom;
+  let unavailHorse;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+    const todayName = dayNames[new Date().getDay()];
+
+    unavailUser = await prisma.user.create({
+      data: {
+        email: `dca-unavail-${ts}-${rand()}@test.com`,
+        username: `dcaunavail${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'Unavail',
+        lastName: 'Fixture',
+        money: 1000,
+      },
+    });
+
+    // Groom has today explicitly set to false in availability
+    unavailGroom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-DCA-Unavail-${ts}`,
+        speciality: 'foalCare',
+        personality: 'gentle',
+        userId: unavailUser.id,
+        isActive: true,
+        availability: { [todayName]: false },
+      },
+    });
+
+    unavailHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-DCA-Unavail-Foal-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: unavailUser.id,
+      },
+    });
+
+    await prisma.groomAssignment.create({
+      data: {
+        foalId: unavailHorse.id,
+        groomId: unavailGroom.id,
+        userId: unavailUser.id,
+        priority: 1,
+        isActive: true,
+      },
+    });
+  }, 30000);
+
+  afterAll(async () => {
+    await prisma.groomInteraction.deleteMany({ where: { foalId: unavailHorse.id } }).catch(() => {});
+    await prisma.groomAssignment.deleteMany({ where: { foalId: unavailHorse.id } }).catch(() => {});
+    await prisma.horse.delete({ where: { id: unavailHorse.id } }).catch(() => {});
+    await prisma.groom.delete({ where: { id: unavailGroom.id } }).catch(() => {});
+    await prisma.user.delete({ where: { id: unavailUser.id } }).catch(() => {});
+  }, 30000);
+
+  it('skips groom when unavailable today — no interactions performed (lines 112-113)', async () => {
+    const result = await runDailyCareAutomation({
+      specificFoalId: unavailHorse.id,
+      dryRun: true,
+    });
+    expect(result.success).toBe(true);
+    // Assignment is found (processed >= 1) but groom is unavailable so no interactions
+    expect(result.processed).toBeGreaterThanOrEqual(1);
+    expect(result.interactions).toHaveLength(0);
+  });
+});
+
+// ── runDailyCareAutomation — hasCompleteCare + routinesToPerform empty ────────
+// Lines 122-125 (hasCompleteCare) and 135-136 (routinesToPerform empty) are
+// covered by injecting existing 'daily_care' + 'feeding' interactions today.
+
+describe('runDailyCareAutomation() — hasCompleteCare=true (lines 122-125)', () => {
+  let completeUser;
+  let completeGroom;
+  let completeHorse;
+  let completeAssignment;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    completeUser = await prisma.user.create({
+      data: {
+        email: `dca-complete-${ts}-${rand()}@test.com`,
+        username: `dcacomplete${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'Complete',
+        lastName: 'Fixture',
+        money: 1000,
+      },
+    });
+
+    completeGroom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-DCA-Complete-Groom-${ts}`,
+        speciality: 'foalCare',
+        personality: 'gentle',
+        userId: completeUser.id,
+        isActive: true,
+      },
+    });
+
+    completeHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-DCA-Complete-Foal-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: completeUser.id,
+      },
+    });
+
+    completeAssignment = await prisma.groomAssignment.create({
+      data: {
+        foalId: completeHorse.id,
+        groomId: completeGroom.id,
+        userId: completeUser.id,
+        priority: 1,
+        isActive: true,
+      },
+    });
+
+    // Pre-seed both essential routines (daily_care + feeding) with today's timestamp
+    // so checkExistingCareToday returns hasCompleteCare=true.
+    await prisma.groomInteraction.create({
+      data: {
+        foalId: completeHorse.id,
+        groomId: completeGroom.id,
+        assignmentId: completeAssignment.id,
+        interactionType: 'daily_care',
+        duration: 30,
+        timestamp: new Date(),
+      },
+    });
+    await prisma.groomInteraction.create({
+      data: {
+        foalId: completeHorse.id,
+        groomId: completeGroom.id,
+        assignmentId: completeAssignment.id,
+        interactionType: 'feeding',
+        duration: 20,
+        timestamp: new Date(),
+      },
+    });
+  }, 30000);
+
+  afterAll(async () => {
+    await prisma.groomInteraction.deleteMany({ where: { foalId: completeHorse.id } }).catch(() => {});
+    await prisma.groomAssignment.deleteMany({ where: { foalId: completeHorse.id } }).catch(() => {});
+    await prisma.horse.delete({ where: { id: completeHorse.id } }).catch(() => {});
+    await prisma.groom.delete({ where: { id: completeGroom.id } }).catch(() => {});
+    await prisma.user.delete({ where: { id: completeUser.id } }).catch(() => {});
+  }, 30000);
+
+  it('skips foal when daily care is already complete today (lines 122-125)', async () => {
+    const result = await runDailyCareAutomation({
+      specificFoalId: completeHorse.id,
+      dryRun: true,
+    });
+    expect(result.success).toBe(true);
+    // Assignment found, but care already complete — no new interactions
+    expect(result.processed).toBeGreaterThanOrEqual(1);
+    expect(result.interactions).toHaveLength(0);
+  });
+});
+
+// ── runDailyCareAutomation — routinesToPerform empty (lines 135-136) ─────────
+// When routineTypes is explicitly set to types whose interactionTypes are all
+// already in completedRoutines, determineRoutinesToPerform returns [].
+
+describe('runDailyCareAutomation() — routinesToPerform empty (lines 135-136)', () => {
+  let emptyUser;
+  let emptyGroom;
+  let emptyHorse;
+  let emptyAssignment;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    emptyUser = await prisma.user.create({
+      data: {
+        email: `dca-empty-${ts}-${rand()}@test.com`,
+        username: `dcaempty${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'Empty',
+        lastName: 'Fixture',
+        money: 1000,
+      },
+    });
+
+    emptyGroom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-DCA-Empty-Groom-${ts}`,
+        speciality: 'foalCare',
+        personality: 'gentle',
+        userId: emptyUser.id,
+        isActive: true,
+      },
+    });
+
+    emptyHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-DCA-Empty-Foal-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: emptyUser.id,
+      },
+    });
+
+    emptyAssignment = await prisma.groomAssignment.create({
+      data: {
+        foalId: emptyHorse.id,
+        groomId: emptyGroom.id,
+        userId: emptyUser.id,
+        priority: 1,
+        isActive: true,
+      },
+    });
+
+    // Seed only morning_care (interactionType='daily_care') — not feeding, so
+    // hasCompleteCare=false. But we request only 'morning_care' and 'evening_care'
+    // which both map to 'daily_care', and that's already completed.
+    await prisma.groomInteraction.create({
+      data: {
+        foalId: emptyHorse.id,
+        groomId: emptyGroom.id,
+        assignmentId: emptyAssignment.id,
+        interactionType: 'daily_care',
+        duration: 45,
+        timestamp: new Date(),
+      },
+    });
+  }, 30000);
+
+  afterAll(async () => {
+    await prisma.groomInteraction.deleteMany({ where: { foalId: emptyHorse.id } }).catch(() => {});
+    await prisma.groomAssignment.deleteMany({ where: { foalId: emptyHorse.id } }).catch(() => {});
+    await prisma.horse.delete({ where: { id: emptyHorse.id } }).catch(() => {});
+    await prisma.groom.delete({ where: { id: emptyGroom.id } }).catch(() => {});
+    await prisma.user.delete({ where: { id: emptyUser.id } }).catch(() => {});
+  }, 30000);
+
+  it('skips foal when routinesToPerform is empty (lines 135-136)', async () => {
+    // morning_care and evening_care both have interactionType='daily_care',
+    // which is already in completedRoutines → determineRoutinesToPerform returns [].
+    // hasCompleteCare=false (feeding not done) but routines list is empty.
+    const result = await runDailyCareAutomation({
+      specificFoalId: emptyHorse.id,
+      routineTypes: ['morning_care', 'evening_care'],
+      dryRun: true,
+    });
+    expect(result.success).toBe(true);
+    expect(result.interactions).toHaveLength(0);
+  });
+});
