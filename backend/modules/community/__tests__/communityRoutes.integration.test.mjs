@@ -189,6 +189,21 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
     });
   });
 
+  // ─── PATCH /api/forum/threads/:id/pin ────────────────────────────────────────
+
+  describe('PATCH /api/forum/threads/:id/pin', () => {
+    it('[P1] auth guard — returns 403 for non-admin user', async () => {
+      const res = await request(app)
+        .patch('/api/forum/threads/999999/pin')
+        .set('Authorization', `Bearer ${userToken}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken);
+
+      expect(res.status).toBe(403);
+    });
+  });
+
   // ─── POST /api/messages ───────────────────────────────────────────────────────
 
   describe('POST /api/messages', () => {

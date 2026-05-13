@@ -16,7 +16,14 @@
 import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../db/index.mjs';
-import { getThreads, getThread, createThread, createPost, incrementView } from '../controllers/forumController.mjs';
+import {
+  getThreads,
+  getThread,
+  createThread,
+  createPost,
+  incrementView,
+  pinThread,
+} from '../controllers/forumController.mjs';
 
 const SUITE_PREFIX = 'forum';
 
@@ -290,6 +297,43 @@ describe('forumController (real DB)', () => {
       await incrementView(h.req, h.res);
 
       expect(h.res.statusValue).toBe(400);
+    });
+  });
+
+  describe('pinThread', () => {
+    it('toggles isPinned from false to true and persists to DB', async () => {
+      const user = await createUser();
+      const thread = await createThreadInDb(user.id); // isPinned defaults to false
+
+      const h = makeReqRes(user.id, { params: { id: String(thread.id) } });
+      await pinThread(h.req, h.res);
+
+      expect(h.res.jsonValue.success).toBe(true);
+      expect(h.res.jsonValue.data.isPinned).toBe(true);
+      const persisted = await prisma.forumThread.findUnique({ where: { id: thread.id } });
+      expect(persisted.isPinned).toBe(true);
+    });
+
+    it('toggles isPinned from true to false', async () => {
+      const user = await createUser();
+      const thread = await createThreadInDb(user.id, { extra: { isPinned: true } });
+
+      const h = makeReqRes(user.id, { params: { id: String(thread.id) } });
+      await pinThread(h.req, h.res);
+
+      expect(h.res.jsonValue.success).toBe(true);
+      expect(h.res.jsonValue.data.isPinned).toBe(false);
+      const persisted = await prisma.forumThread.findUnique({ where: { id: thread.id } });
+      expect(persisted.isPinned).toBe(false);
+    });
+
+    it('returns 404 when thread does not exist', async () => {
+      const user = await createUser();
+      const h = makeReqRes(user.id, { params: { id: '999999999' } });
+      await pinThread(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(404);
+      expect(h.res.jsonValue).toMatchObject({ success: false, message: 'Thread not found' });
     });
   });
 });
