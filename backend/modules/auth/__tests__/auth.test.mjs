@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 🧪 INTEGRATION TEST: Authentication System - User Registration & Session Management
  *
  * This test validates the complete authentication system including user registration,
@@ -37,12 +37,12 @@
 import { describe, it, expect, beforeEach, afterAll } from '@jest/globals';
 // Jest globals are available in test environment
 import request from 'supertest';
-import app from '../app.mjs';
-import { createTestUser } from './helpers/authHelper.mjs';
-import prisma from '../db/index.mjs';
-import { resetAllAuthRateLimits } from '../middleware/authRateLimiter.mjs';
+import app from '../../../app.mjs';
+import { createTestUser } from '../../../tests/helpers/authHelper.mjs';
+import prisma from '../../../db/index.mjs';
+import { resetAllAuthRateLimits } from '../../../middleware/authRateLimiter.mjs';
 
-import { fetchCsrf } from './helpers/csrfHelper.mjs';
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 /**
  * Extract cookie value from Set-Cookie header
  * @param {Array} cookies - Array of cookie strings from response headers

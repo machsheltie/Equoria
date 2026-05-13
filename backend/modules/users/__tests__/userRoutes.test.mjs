@@ -41,11 +41,11 @@
 import { randomUUID } from 'crypto';
 import { describe, beforeAll, afterAll, expect, it } from '@jest/globals';
 import request from 'supertest';
-import { createTestUser, cleanupTestData } from '../helpers/testAuth.mjs';
+import { createTestUser, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 
-import { fetchCsrf } from '../helpers/csrfHelper.mjs';
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Import app directly - no mocking for full integration testing
-const app = (await import('../../app.mjs')).default;
+const app = (await import('../../../app.mjs')).default;
 
 describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
   let __csrf__;

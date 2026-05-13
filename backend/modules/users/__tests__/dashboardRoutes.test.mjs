@@ -32,13 +32,13 @@
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
-import app from '../../app.mjs';
-import prisma from '../../db/index.mjs';
-import config from '../../config/config.mjs';
+import app from '../../../app.mjs';
+import prisma from '../../../db/index.mjs';
+import config from '../../../config/config.mjs';
 
-import { fetchCsrf } from '../helpers/csrfHelper.mjs';
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Strategic mocking: Only mock external dependencies
-jest.mock('../../utils/logger.mjs', () => ({
+jest.mock('../../../utils/logger.mjs', () => ({
   info: jest.fn(),
   error: jest.fn(),
   warn: jest.fn(),

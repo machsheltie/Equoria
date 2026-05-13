@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 🧪 INTEGRATION TEST: User Progress API - Comprehensive Progress Tracking
  *
  * This test validates the complete user progress API system including XP tracking,
@@ -34,11 +34,11 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
-import app from '../../app.mjs';
-import prisma from '../../db/index.mjs';
-import { invalidateCache } from '../../utils/cacheHelper.mjs';
+import app from '../../../app.mjs';
+import prisma from '../../../db/index.mjs';
+import { invalidateCache } from '../../../utils/cacheHelper.mjs';
 
-import { fetchCsrf } from '../helpers/csrfHelper.mjs';
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 /**
  * Extract cookie value from Set-Cookie header array
  */

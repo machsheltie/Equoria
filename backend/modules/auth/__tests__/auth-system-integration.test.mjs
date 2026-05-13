@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 🧪 SYSTEM INTEGRATION TEST: Authentication System Cross-Platform Validation
  *
  * This test validates authentication system integration across all protected endpoints
@@ -38,10 +38,10 @@
 import request from 'supertest';
 import express from 'express';
 import { body } from 'express-validator';
-import { register, login, refreshToken } from '../../controllers/authController.mjs';
-import { authenticateToken } from '../../middleware/auth.mjs';
-import { handleValidationErrors } from '../../middleware/validationErrorHandler.mjs';
-import prisma from '../../db/index.mjs';
+import { register, login, refreshToken } from '../../../controllers/authController.mjs';
+import { authenticateToken } from '../../../middleware/auth.mjs';
+import { handleValidationErrors } from '../../../middleware/validationErrorHandler.mjs';
+import prisma from '../../../db/index.mjs';
 
 /**
  * Extract cookie value from Set-Cookie header
