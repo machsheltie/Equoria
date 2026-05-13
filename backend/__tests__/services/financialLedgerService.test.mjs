@@ -146,3 +146,35 @@ describe('getTransactionsForUser — clamp branches (Equoria-jkht)', () => {
     expect(result.page).toBe(1);
   });
 });
+
+// ── financialLedgerService — null-coalescing fallback branches ────────────────
+
+describe('recordTransaction — metadata null branch (line 48 ?? fallback)', () => {
+  it('records transaction when metadata is explicitly null (hits null ?? {} branch)', async () => {
+    const result = await recordTransaction({
+      userId: user.id,
+      type: 'credit',
+      amount: 25,
+      category: 'test',
+      description: 'metadata null branch test',
+      metadata: null,
+    });
+    expect(typeof result.id).toBe('number');
+    expect(result.type).toBe('credit');
+    expect(result.amount).toBe(25);
+  });
+});
+
+describe('getTransactionsForUser — parseInt NaN fallback branches (lines 56-57)', () => {
+  it('falls back to page=1 when page is a non-numeric string (parseInt NaN || 1)', async () => {
+    const result = await getTransactionsForUser(user.id, { page: 'foo', pageSize: 5 });
+    expect(result.page).toBe(1);
+    expect(Array.isArray(result.transactions)).toBe(true);
+  });
+
+  it('falls back to pageSize=20 when pageSize is a non-numeric string (parseInt NaN || 20)', async () => {
+    const result = await getTransactionsForUser(user.id, { page: 1, pageSize: 'bar' });
+    expect(result.pageSize).toBe(20);
+    expect(Array.isArray(result.transactions)).toBe(true);
+  });
+});
