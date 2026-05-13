@@ -338,26 +338,16 @@ describe('getCarePatterns — missing validated resources', () => {
 // ─── evaluateFlags — validation errors + missing horse ────────────────────────
 
 describe('evaluateFlags guard clauses', () => {
-  it('returns 400 when express-validator reports errors (no horseId)', async () => {
-    // Simulate express-validator having caught an error
-    const { validationResult } = await import('express-validator');
-
-    const req = {
-      user: { id: 'user-1' },
-      body: {},
-      // express-validator stores errors internally; mock the result
-    };
-    // We can't trivially inject validation errors without running express-validator
-    // chains, so instead test the ownership 404 path with a non-existent horse.
-    // This covers the findOwnedResource → null → 404 branch.
+  it('returns 404 when horse not found (ownership 404 branch via evaluateFlags)', async () => {
+    // We can't trivially inject express-validator errors without running chains.
+    // Instead test the ownership 404 path with a non-existent horse — this
+    // covers the findOwnedResource → null → 404 branch.
     const reqWithHorse = {
       user: { id: 'user-1' },
       body: { horseId: 999999999 },
-      // Inject empty validation result by making validationResult return no errors
     };
     const res = makeRes();
 
-    // Without running express-validator chain, validationResult(req) returns no errors
     await evaluateFlags(reqWithHorse, res);
 
     // 404: horse not found or not owned
