@@ -468,4 +468,40 @@ describe('runFoalingJob (B5)', () => {
     const refreshedDam = await prisma.horse.findUnique({ where: { id: dam.id } });
     expect(refreshedDam.pendingFoalBreedId).toBeNull();
   });
+
+  it('createFoalFromPregnancy direct call: reads pendingFoalName/pendingFoalBreedId from dam when options omit them', async () => {
+    const user = await createUser('directpend');
+    createdUserIds.push(user.id);
+
+    const pendingBreed = await prisma.breed.upsert({
+      where: { name: 'Arabian' },
+      update: {},
+      create: { name: 'Arabian', description: 'B5 wjxw direct-call sentinel' },
+    });
+
+    const { dam } = await createMareSirePair({
+      userId: user.id,
+      breedId,
+      inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+      pregnancyFeedingsByTier: {},
+    });
+
+    await prisma.horse.update({
+      where: { id: dam.id },
+      data: {
+        pendingFoalName: 'DirectCallFoalSentinel',
+        pendingFoalBreedId: pendingBreed.id,
+      },
+    });
+
+    const result = await createFoalFromPregnancy({ damId: dam.id, options: {} });
+
+    expect(result.foal.name).toBe('DirectCallFoalSentinel');
+    expect(result.foal.breedId).toBe(pendingBreed.id);
+
+    // dam reset must clear pendingFoal fields.
+    const refreshedDam = await prisma.horse.findUnique({ where: { id: dam.id } });
+    expect(refreshedDam.pendingFoalName).toBeNull();
+    expect(refreshedDam.pendingFoalBreedId).toBeNull();
+  });
 });

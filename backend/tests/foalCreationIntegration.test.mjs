@@ -31,6 +31,7 @@ import { generateTestToken } from './helpers/authHelper.mjs';
 import bcrypt from 'bcryptjs';
 
 import { fetchCsrf } from './helpers/csrfHelper.mjs';
+import { createFoalFromPregnancy } from '../modules/horses/services/foalingService.mjs';
 // Import the real app — no mocks
 const app = (await import('../app.mjs')).default;
 
@@ -254,26 +255,8 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     expect(foalCount).toBe(0);
   });
 
-  it('should reject foal creation with missing required fields', async () => {
-    // Missing name
-    await request(app)
-      .post('/api/horses/foals')
-      .set('Authorization', `Bearer ${authToken}`)
-      .set('Origin', 'http://localhost:3000')
-      .set('Cookie', __csrf__.cookieHeader)
-      .set('X-CSRF-Token', __csrf__.csrfToken)
-      .send({ breedId: testBreed.id, sireId: testSire.id, damId: testDam.id })
-      .expect(400);
-
-    // Missing breedId
-    await request(app)
-      .post('/api/horses/foals')
-      .set('Authorization', `Bearer ${authToken}`)
-      .set('Origin', 'http://localhost:3000')
-      .set('Cookie', __csrf__.cookieHeader)
-      .set('X-CSRF-Token', __csrf__.csrfToken)
-      .send({ name: 'TestFoal', sireId: testSire.id, damId: testDam.id })
-      .expect(400);
+  it('should reject foal creation when sireId or damId is missing', async () => {
+    await resetDamPregnancy();
 
     // Missing sireId
     await request(app)
@@ -433,5 +416,95 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
       where: { id: testDam.id },
       data: { lastFedDate: new Date(), inFoalSinceDate: null, pregnancySireId: null },
     });
+  });
+
+  // ── Equoria-wjxw: pendingFoalName / pendingFoalBreedId persistence ───────────
+
+  it('should persist pendingFoalName and pendingFoalBreedId on the dam after createFoal', async () => {
+    await resetDamPregnancy();
+
+    const pendingName = `TestFixture-PendingFoal_${ts}`;
+    const response = await request(app)
+      .post('/api/horses/foals')
+      .set('Authorization', `Bearer ${authToken}`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
+      .send({ name: pendingName, breedId: testBreed.id, sireId: testSire.id, damId: testDam.id })
+      .expect(200);
+
+    expect(response.body.success).toBe(true);
+
+    const dbDam = await prisma.horse.findUnique({ where: { id: testDam.id } });
+    expect(dbDam.pendingFoalName).toBe(pendingName);
+    expect(dbDam.pendingFoalBreedId).toBe(testBreed.id);
+  });
+
+  it('should create foal with name and breedId from pending fields when foaling job runs', async () => {
+    await resetDamPregnancy();
+
+    const pendingName = `TestFixture-StarfireFoal_${ts}`;
+
+    // Set dam in foal state with pending intent fields (simulates createFoal having been called)
+    await prisma.horse.update({
+      where: { id: testDam.id },
+      data: {
+        inFoalSinceDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+        pregnancySireId: testSire.id,
+        pregnancyFeedingsByTier: {},
+        pendingFoalName: pendingName,
+        pendingFoalBreedId: testBreed.id,
+      },
+    });
+
+    // Call createFoalFromPregnancy directly, passing the pending values as the job would
+    const snapshot = await prisma.horse.findUnique({ where: { id: testDam.id } });
+    const { foal } = await createFoalFromPregnancy({
+      damId: testDam.id,
+      options: {
+        damSnapshot: snapshot,
+        name: snapshot.pendingFoalName ?? undefined,
+        breedId: snapshot.pendingFoalBreedId ?? undefined,
+        userId: testUser.id,
+        skipDamReset: true,
+      },
+    });
+    createdFoalIds.push(foal.id);
+
+    expect(foal.name).toBe(pendingName);
+    expect(foal.breedId).toBe(testBreed.id);
+  });
+
+  it('should create foal with default name and dam breed when pending fields are null', async () => {
+    await resetDamPregnancy();
+
+    // Set dam in foal state with no pending intent (nulls)
+    await prisma.horse.update({
+      where: { id: testDam.id },
+      data: {
+        inFoalSinceDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+        pregnancySireId: testSire.id,
+        pregnancyFeedingsByTier: {},
+        pendingFoalName: null,
+        pendingFoalBreedId: null,
+      },
+    });
+
+    // Call createFoalFromPregnancy directly — undefined options fall back to defaults
+    const snapshot = await prisma.horse.findUnique({ where: { id: testDam.id } });
+    const { foal } = await createFoalFromPregnancy({
+      damId: testDam.id,
+      options: {
+        damSnapshot: snapshot,
+        name: snapshot.pendingFoalName ?? undefined,
+        breedId: snapshot.pendingFoalBreedId ?? undefined,
+        userId: testUser.id,
+        skipDamReset: true,
+      },
+    });
+    createdFoalIds.push(foal.id);
+
+    expect(foal.name).toBe(`${testDam.name} Foal`);
+    expect(foal.breedId).toBe(testDam.breedId);
   });
 });

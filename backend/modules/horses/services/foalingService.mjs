@@ -292,10 +292,11 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     }
   }
 
-  // Resolve breed name. B3 uses the dam's breed by default; B5 can pass a
-  // different breed via options when the original breed payload is stored.
+  // Resolve breed: caller option > pendingFoalBreedId on dam > dam's own breed.
   const requestedBreedId =
-    options.breedId !== undefined ? Number.parseInt(options.breedId, 10) : dam.breedId;
+    options.breedId !== undefined
+      ? Number.parseInt(options.breedId, 10)
+      : (dam.pendingFoalBreedId ?? dam.breedId);
   if (!Number.isInteger(requestedBreedId) || requestedBreedId <= 0) {
     throw new Error(`createFoalFromPregnancy: invalid breedId ${requestedBreedId}`);
   }
@@ -329,7 +330,7 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   const resolvedSex = options.sex ? options.sex : rng() < 0.5 ? 'Filly' : 'Colt';
 
   const horseData = {
-    name: options.name || `${dam.name} Foal`,
+    name: options.name || dam.pendingFoalName || `${dam.name} Foal`,
     age: 0,
     breedId: requestedBreedId,
     sireId,
@@ -374,6 +375,8 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
         inFoalSinceDate: null,
         pregnancySireId: null,
         pregnancyFeedingsByTier: {},
+        pendingFoalName: null,
+        pendingFoalBreedId: null,
       },
     });
   }
