@@ -114,3 +114,14 @@ export function useElectionResults(electionId: number) {
     staleTime: 60_000,
   });
 }
+
+export function useTransferLeadership() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ clubId, newPresidentId }: { clubId: number; newPresidentId: string }) =>
+      clubsApi.transferLeadership(clubId, newPresidentId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clubs'] });
+    },
+  });
+}

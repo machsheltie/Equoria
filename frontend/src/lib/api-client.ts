@@ -1791,6 +1791,14 @@ export interface ClubMembership {
   joinedAt: string;
 }
 
+/** Shape of a single member entry inside a club's member list (GET /api/clubs/:id). */
+export interface ClubMember {
+  id: number;
+  user: { id: string; username: string };
+  role: ClubRole;
+  joinedAt: string;
+}
+
 export interface ClubElection {
   id: number;
   clubId: number;
@@ -1831,7 +1839,7 @@ export const clubsApi = {
   },
   getMyClubs: () => apiClient.get<{ memberships: ClubMembership[] }>('/api/v1/clubs/mine'),
   getClub: (id: number) =>
-    apiClient.get<{ club: Club & { members: ClubMembership[] } }>(`/api/v1/clubs/${id}`),
+    apiClient.get<{ club: Club & { members: ClubMember[] } }>(`/api/v1/clubs/${id}`),
   createClub: (payload: { name: string; type: ClubType; category: string; description: string }) =>
     apiClient.post<{ club: Club }>('/api/v1/clubs', payload),
   joinClub: (id: number) =>
@@ -1851,6 +1859,10 @@ export const clubsApi = {
     apiClient.get<{ election: ClubElection; candidates: ElectionCandidate[] }>(
       `/api/v1/clubs/elections/${electionId}/results`
     ),
+  transferLeadership: (clubId: number, newPresidentId: string) =>
+    apiClient.patch<{ success: true }>(`/api/v1/clubs/${clubId}/transfer-leadership`, {
+      newPresidentId,
+    }),
 };
 
 /**
