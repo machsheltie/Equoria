@@ -1,11 +1,13 @@
 /**
- * conformationShowService pure-sync unit tests (Equoria-rr7 coverage sprint).
+ * conformationShowService unit tests (Equoria-rr7 coverage sprint).
  *
- * All tested exports are pure sync — no DB fixture required.
- * Covers the scoring and validation functions.
+ * Pure-sync tests cover scoring and validation with in-memory objects.
+ * DB-fixture tests cover validateConformationEntry DB-query branches (lines 337, 350-358)
+ * and executeConformationShow full execution branches (lines 502-604).
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import prisma from '../../../packages/database/prismaClient.mjs';
 import {
   CONFORMATION_SHOW_CONFIG,
   SHOW_HANDLING_SKILL_SCORES,
@@ -396,5 +398,232 @@ describe('validateConformationEntry — pure-input branches (Equoria-jkht)', () 
 describe('executeConformationShow — show-not-found (Equoria-jkht)', () => {
   it('throws "Show not found" for a non-existent showId', async () => {
     await expect(executeConformationShow(-9999)).rejects.toThrow('Show not found');
+  });
+});
+
+// ── DB-fixture tests — validateConformationEntry + executeConformationShow (Equoria-rr7) ──
+// Covers:
+//   line 337 — DB query when horse.id and groom.id are non-null
+//   lines 350-358 — createdAt timestamp validation (fresh <2d vs old >=2d assignment)
+//   lines 502-506 — show.showType !== 'conformation' branch
+//   line 517 — entries.length === 0 early return
+//   lines 520-604 — full scoring/ranking/reward/persist run with one entry
+
+describe('conformationShowService — DB fixture branch coverage (Equoria-rr7)', () => {
+  let cssUser;
+  let cssHorse;
+  let cssFreshGroom;
+  let cssOldGroom;
+  let cssRiddenShow;
+  let cssEmptyConformShow;
+  let cssFullConformShow;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    cssUser = await prisma.user.create({
+      data: {
+        email: `css-${ts}-${rand()}@test.com`,
+        username: `css${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'CSS',
+        lastName: 'Tester',
+        money: 1000,
+      },
+    });
+
+    cssHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-CSS-Horse-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 2,
+        userId: cssUser.id,
+        healthStatus: 'Good',
+      },
+    });
+
+    cssFreshGroom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-CSS-FreshGroom-${ts}`,
+        speciality: 'general',
+        personality: 'gentle',
+        userId: cssUser.id,
+      },
+    });
+
+    cssOldGroom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-CSS-OldGroom-${ts}`,
+        speciality: 'general',
+        personality: 'gentle',
+        userId: cssUser.id,
+      },
+    });
+
+    // Fresh assignment — createdAt = now (< MIN_GROOM_ASSIGNMENT_DAYS = 2 days)
+    await prisma.groomAssignment.create({
+      data: {
+        groomId: cssFreshGroom.id,
+        foalId: cssHorse.id,
+        userId: cssUser.id,
+        isActive: true,
+        priority: 1,
+      },
+    });
+
+    // Old assignment — createdAt = 10 days ago (> 2 days → passes date check)
+    await prisma.groomAssignment.create({
+      data: {
+        groomId: cssOldGroom.id,
+        foalId: cssHorse.id,
+        userId: cssUser.id,
+        isActive: true,
+        priority: 1,
+        createdAt: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
+      },
+    });
+
+    // Show with showType != 'conformation' (lines 502-506)
+    cssRiddenShow = await prisma.show.create({
+      data: {
+        name: `TestFixture-CSS-RiddenShow-${ts}`,
+        discipline: 'Dressage',
+        levelMin: 0,
+        levelMax: 10,
+        entryFee: 0,
+        prize: 0,
+        runDate: new Date(),
+        showType: 'ridden',
+      },
+    });
+
+    // Conformation show with no entries (line 517)
+    cssEmptyConformShow = await prisma.show.create({
+      data: {
+        name: `TestFixture-CSS-EmptyConform-${ts}`,
+        discipline: 'conformation',
+        levelMin: 0,
+        levelMax: 10,
+        entryFee: 0,
+        prize: 0,
+        runDate: new Date(),
+        showType: 'conformation',
+      },
+    });
+
+    // Conformation show with one entry for full run (lines 520-604)
+    cssFullConformShow = await prisma.show.create({
+      data: {
+        name: `TestFixture-CSS-FullConform-${ts}`,
+        discipline: 'conformation',
+        levelMin: 0,
+        levelMax: 10,
+        entryFee: 0,
+        prize: 0,
+        runDate: new Date(),
+        showType: 'conformation',
+      },
+    });
+    await prisma.showEntry.create({
+      data: {
+        showId: cssFullConformShow.id,
+        horseId: cssHorse.id,
+        userId: cssUser.id,
+      },
+    });
+  }, 60000);
+
+  afterAll(async () => {
+    // Shows cascade to ShowEntry + CompetitionResult
+    await prisma.show.deleteMany({ where: { name: { startsWith: 'TestFixture-CSS-' } } }).catch(() => {});
+    // Grooms cascade to GroomAssignment
+    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-CSS-' } } }).catch(() => {});
+    // Horses cascade to remaining relations
+    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-CSS-' } } }).catch(() => {});
+    await prisma.user.delete({ where: { id: cssUser?.id } }).catch(() => {});
+  }, 30000);
+
+  // ── line 337: DB query path with non-null IDs ──────────────────────────────────
+
+  describe('validateConformationEntry — line 337: DB query with non-null IDs (Equoria-rr7)', () => {
+    it('executes DB query when horse.id and groom.id are non-null; returns groom-not-assigned when no assignment exists', async () => {
+      // IDs are non-null integers but no groomAssignment exists for them → query fires (line 337), returns null
+      const horse = { id: 999999997, age: 2, healthStatus: 'Good', stressLevel: 0, conformationScores: null };
+      const groom = { id: 999999997 };
+      const result = await validateConformationEntry(horse, groom, 'Mares', cssUser.id);
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('Groom must be assigned'))).toBe(true);
+    });
+  });
+
+  // ── lines 350-358: assignment createdAt date validation ───────────────────────
+
+  describe('validateConformationEntry — lines 350-358: assignment date check (Equoria-rr7)', () => {
+    it('line 355 true arm: pushes "at least N days" error when groom assignment is < MIN_GROOM_ASSIGNMENT_DAYS old', async () => {
+      const horse = { id: cssHorse.id, age: 2, healthStatus: 'Good', stressLevel: 0, conformationScores: null };
+      const groom = { id: cssFreshGroom.id };
+      const result = await validateConformationEntry(horse, groom, 'Mares', cssUser.id);
+      expect(result.errors.some(e => e.includes('at least'))).toBe(true);
+    });
+
+    it('line 355 false arm: no assignment-days error when assignment is >= MIN_GROOM_ASSIGNMENT_DAYS old', async () => {
+      // cssOldGroom assignment was created 10 days ago → daysSinceAssignment >= 2 → no error
+      const horse = { id: cssHorse.id, age: 2, healthStatus: 'Good', stressLevel: 0, conformationScores: null };
+      const groom = { id: cssOldGroom.id };
+      const result = await validateConformationEntry(horse, groom, 'Mares', cssUser.id);
+      expect(result.errors.every(e => !e.includes('at least'))).toBe(true);
+      expect(result.valid).toBe(true);
+      expect(result.assignment).not.toBeNull();
+      expect(result.ageClass).toBe('Youngstock');
+    });
+  });
+
+  // ── lines 502-506: showType !== 'conformation' ────────────────────────────────
+
+  describe('executeConformationShow — lines 502-506: wrong show type (Equoria-rr7)', () => {
+    it('throws "Show is not a conformation show" for a ridden show', async () => {
+      await expect(executeConformationShow(cssRiddenShow.id)).rejects.toThrow('Show is not a conformation show');
+    });
+  });
+
+  // ── line 517: conformation show with no entries ────────────────────────────────
+
+  describe('executeConformationShow — line 517: no entries (Equoria-rr7)', () => {
+    it('returns empty array when show has no ShowEntry records', async () => {
+      const result = await executeConformationShow(cssEmptyConformShow.id);
+      expect(Array.isArray(result)).toBe(true);
+      expect(result).toHaveLength(0);
+    });
+  });
+
+  // ── lines 520-604: full scoring + ranking + reward + persist ──────────────────
+
+  describe('executeConformationShow — lines 520-604: full run with one entry (Equoria-rr7)', () => {
+    it('scores entry, assigns 1st-place Blue ribbon, persists CompetitionResult, returns results array', async () => {
+      const results = await executeConformationShow(cssFullConformShow.id);
+      expect(Array.isArray(results)).toBe(true);
+      expect(results).toHaveLength(1);
+
+      const entry = results[0];
+      expect(entry.horseId).toBe(cssHorse.id);
+      expect(entry.placement).toBe(1);
+      expect(typeof entry.score).toBe('number');
+      expect(entry.score).toBeGreaterThanOrEqual(0);
+      expect(entry.score).toBeLessThanOrEqual(100);
+      expect(entry.ribbon).toBe('Blue');
+      expect(entry.titlePoints).toBe(10);
+      expect(typeof entry.breedingValueBoost).toBe('number');
+
+      // Verify CompetitionResult was persisted
+      const cr = await prisma.competitionResult.findFirst({
+        where: { horseId: cssHorse.id, showId: cssFullConformShow.id },
+      });
+      expect(cr).not.toBeNull();
+      expect(Number(cr.score)).toBe(entry.score);
+      expect(cr.discipline).toBe('conformation');
+      expect(cr.placement).toBe('1');
+    });
   });
 });
