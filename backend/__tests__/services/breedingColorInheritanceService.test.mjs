@@ -276,3 +276,59 @@ describe('inheritColorGenotype — breed restrictions (enforceBreedRestrictions)
     expect(result.E_Extension).toBe('E/E');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Branch-coverage additions (Equoria-rr7)
+// ---------------------------------------------------------------------------
+
+describe('isLethalCombination — line 109: no-slash allele pair returns false (Equoria-rr7)', () => {
+  it('returns false when locus is in LETHAL_COMBINATIONS but allele pair has no slash', () => {
+    // lethalSet exists for 'O_FrameOvero'; 'OO'.split('/') has length 1 ≠ 2 → line 109 return false
+    expect(isLethalCombination('O_FrameOvero', 'OO')).toBe(false);
+  });
+});
+
+describe('inheritLocus — line 147: heterozygous fallback when sireAllele ≠ damAllele (Equoria-rr7)', () => {
+  it('exhausts rerolls with O/n × O/n and rng=0 → buildHeterozygousFallback sire≠dam arm', () => {
+    // rng=0 always draws alleles[0]='O' from both O/n parents → pair is always 'O/O' (lethal)
+    // After 100 exhausted attempts: buildHeterozygousFallback('O', 'n') → 'O' ≠ 'n' → line 147
+    const result = inheritLocus('O_FrameOvero', 'O/n', 'O/n', () => 0);
+    expect(result).toBe('O/n');
+    expect(isLethalCombination('O_FrameOvero', result)).toBe(false);
+  });
+});
+
+describe('inheritColorGenotype — enforceBreedRestrictions line 212 + 219-222 (Equoria-rr7)', () => {
+  it('line 212 continue: non-array allowed_alleles entry is skipped, locus value unchanged', () => {
+    // allowed is null → !Array.isArray(null) = true → continue (line 212)
+    // E_Extension not overridden; inherited as E/E with rng=0.3
+    const s = { E_Extension: 'E/e' };
+    const d = { E_Extension: 'E/e' };
+    const bp = { allowed_alleles: { E_Extension: null } };
+    const result = inheritColorGenotype(s, d, bp, () => 0.3);
+    expect(result.E_Extension).toBe('E/E');
+  });
+
+  it('line 212 continue: empty-array allowed_alleles entry is skipped, locus value unchanged', () => {
+    // allowed.length === 0 → continue (line 212)
+    const s = { E_Extension: 'E/e' };
+    const d = { E_Extension: 'E/e' };
+    const bp = { allowed_alleles: { E_Extension: [] } };
+    const result = inheritColorGenotype(s, d, bp, () => 0.3);
+    expect(result.E_Extension).toBe('E/E');
+  });
+
+  it('lines 219-222: lethal replacement skipped — breed requires lethal allele, non-lethal value preserved', () => {
+    // sire=O/n, dam=n/n; rng=0 draws first allele each time: sire→'O', dam→'n' → pair='O/n'
+    // 'O/n' not lethal → first iteration succeeds; foal.O_FrameOvero = 'O/n'
+    // enforceBreedRestrictions: 'O/n' not in ['O/O'] → replacement = 'O/O'
+    // isLethalCombination('O_FrameOvero', 'O/O') = true → logger.warn + continue (lines 219-222)
+    // O_FrameOvero stays 'O/n'
+    const s = { O_FrameOvero: 'O/n' };
+    const d = { O_FrameOvero: 'n/n' };
+    const bp = { allowed_alleles: { O_FrameOvero: ['O/O'] } };
+    const result = inheritColorGenotype(s, d, bp, () => 0);
+    expect(result.O_FrameOvero).toBe('O/n');
+    expect(isLethalCombination('O_FrameOvero', result.O_FrameOvero)).toBe(false);
+  });
+});
