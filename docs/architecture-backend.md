@@ -1,6 +1,7 @@
 # Equoria Backend Architecture
 
 **Generated:** 2026-03-19
+**Updated:** 2026-05-13 (Epic 20 post-migration state)
 **Framework:** Express.js 4.18
 **Runtime:** Node.js 18.x
 **ORM:** Prisma 6.8.2
@@ -92,16 +93,16 @@
 
 | Metric           | Count |
 | ---------------- | ----- |
-| Total .mjs files | 721   |
+| Total .mjs files | 1071  |
 | Domain modules   | 18    |
-| Route files      | 43    |
-| Controller files | 36    |
-| Middleware files | 20    |
-| Utility files    | 65    |
+| Route files      | 97    |
+| Controller files | 83    |
+| Middleware files | 22    |
+| Utility files    | 70    |
 | HTTP endpoints   | 130+  |
 | Prisma models    | 43    |
 | Prisma enums     | 6     |
-| Test suites      | 226   |
+| Test suites      | 226+  |
 | Total tests      | 3651+ |
 
 ## Entry Point
@@ -136,8 +137,11 @@ backend/modules/<domain>/
 ├── routes/         # Express route definitions
 ├── controllers/    # Request handlers and business logic
 ├── models/         # Data models (optional)
-└── middleware/     # Domain-specific middleware (optional)
+├── middleware/     # Domain-specific middleware (optional)
+└── __tests__/      # Module-scoped test suites (optional)
 ```
+
+Note: the `competition` module hosts show-related files in `backend/modules/competition/shows/` (a sub-directory of the module, not a separate module).
 
 ### Backward Compatibility Shims
 
@@ -153,26 +157,26 @@ export * from '../modules/horses/controllers/horseController.mjs';
 
 ### Module Inventory
 
-| Module           | Purpose                                                  | Key Routes                                                                                                    |
-| ---------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| **admin**        | System administration                                    | `/admin/*`                                                                                                    |
-| **auth**         | JWT login, register, refresh, password reset, onboarding | `/auth/*`                                                                                                     |
-| **breeding**     | Breeding operations, foal management, genetics           | `/foals`, `/breeds`, advanced genetics                                                                        |
-| **community**    | Forums, direct messages, clubs, elections                | `/forum`, `/messages`, `/clubs`                                                                               |
-| **competition**  | Show entry, scoring, results, prize distribution         | `/competition`, `/shows`                                                                                      |
-| **docs**         | API documentation, Swagger, user docs                    | `/docs`, `/user-docs`                                                                                         |
-| **grooms**       | Groom hire, assign, interact, performance, salary        | `/grooms/*`, `/groom-*`                                                                                       |
-| **health**       | Server health checks                                     | `/health`, `/ping`                                                                                            |
-| **horses**       | Horse CRUD, stats, pedigree, care                        | `/horses`                                                                                                     |
-| **labs**         | Experimental features (non-SLO)                          | `/optimization`, `/memory`, `/environment`, `/compatibility`, `/personality-evolution`, `/enhanced-reporting` |
-| **leaderboards** | Rankings and statistics                                  | `/leaderboards`                                                                                               |
-| **marketplace**  | Horse buying/selling                                     | `/marketplace`                                                                                                |
-| **riders**       | Rider management and assignment                          | `/riders`                                                                                                     |
-| **services**     | Veterinarian, tack shop, farrier, feed shop              | `/vet`, `/tack-shop`, `/farrier`, `/feed-shop`                                                                |
-| **trainers**     | Trainer management                                       | `/trainers`                                                                                                   |
-| **training**     | Training sessions, cooldowns, progression                | `/training`                                                                                                   |
-| **traits**       | Trait discovery, epigenetics, ultra-rare traits          | `/traits`, `/trait-discovery`, `/epigenetic-traits`, `/ultra-rare-traits`                                     |
-| **users**        | User profiles, dashboards, progress, inventory           | `/users`, `/inventory`, `/next-actions`, `/while-you-were-gone`                                               |
+| Module           | Purpose                                                                     | Key Routes                                                                                                    | Has Controller                                                                                          |
+| ---------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **admin**        | System administration — cron, traits, horse aging, foaling                  | `/admin/*`                                                                                                    | ✅ `adminController.mjs`                                                                                |
+| **auth**         | JWT login, register, refresh, password reset, onboarding                    | `/auth/*`                                                                                                     | ✅                                                                                                      |
+| **breeding**     | Breeding operations, foal management, genetics                              | `/foals`, `/breeds`, advanced genetics                                                                        | ✅ `foalController.mjs`                                                                                 |
+| **community**    | Forums, direct messages, clubs, elections                                   | `/forum`, `/messages`, `/clubs`                                                                               | ✅                                                                                                      |
+| **competition**  | Show entry, scoring, results, prize distribution; shows in `shows/` sub-dir | `/competition`, `/shows`                                                                                      | ✅ `showController.mjs` (in `shows/`)                                                                   |
+| **docs**         | API documentation, Swagger, user docs                                       | `/docs`, `/user-docs`                                                                                         | —                                                                                                       |
+| **grooms**       | Groom hire, assign, interact, performance, salary                           | `/grooms/*`, `/groom-*`                                                                                       | ✅                                                                                                      |
+| **health**       | Server health checks                                                        | `/health`, `/ping`                                                                                            | —                                                                                                       |
+| **horses**       | Horse CRUD, stats, pedigree, care                                           | `/horses`                                                                                                     | ✅                                                                                                      |
+| **labs**         | Experimental features (non-SLO)                                             | `/optimization`, `/memory`, `/environment`, `/compatibility`, `/personality-evolution`, `/enhanced-reporting` | ✅                                                                                                      |
+| **leaderboards** | Rankings and statistics                                                     | `/leaderboards`                                                                                               | ✅                                                                                                      |
+| **marketplace**  | Horse buying/selling                                                        | `/marketplace`                                                                                                | ✅                                                                                                      |
+| **riders**       | Rider management and assignment                                             | `/riders`                                                                                                     | ✅                                                                                                      |
+| **services**     | Veterinarian, tack shop, farrier, feed shop                                 | `/vet`, `/tack-shop`, `/farrier`, `/feed-shop`                                                                | ✅                                                                                                      |
+| **trainers**     | Trainer management                                                          | `/trainers`                                                                                                   | ✅                                                                                                      |
+| **training**     | Training sessions, cooldowns, progression                                   | `/training`                                                                                                   | ✅                                                                                                      |
+| **traits**       | Trait discovery, epigenetics, ultra-rare traits                             | `/traits`, `/trait-discovery`, `/epigenetic-traits`, `/ultra-rare-traits`                                     | ✅                                                                                                      |
+| **users**        | User profiles, dashboards, progress, inventory, next-actions, WYAG          | `/users`, `/inventory`, `/next-actions`, `/while-you-were-gone`                                               | ✅ `userController.mjs`, `nextActionsController.mjs`, `wyagController.mjs`, `progressionController.mjs` |
 
 ## Middleware Stack
 
@@ -215,6 +219,8 @@ export * from '../modules/horses/controllers/horseController.mjs';
 
 ## Route Organization
 
+Routes are defined in module files under `backend/modules/<domain>/routes/` and re-exported via backward-compat shims at `backend/routes/`. All module route files are the source of truth.
+
 ### Public Routes (No Authentication)
 
 | Route        | Controller              | Purpose                                     |
@@ -225,42 +231,42 @@ export * from '../modules/horses/controllers/horseController.mjs';
 
 ### Authenticated Routes (JWT Required + CSRF)
 
-| Route                  | Controller                 | Purpose                                    |
-| ---------------------- | -------------------------- | ------------------------------------------ |
-| `/horses`              | horseController            | Horse CRUD, stats, care                    |
-| `/users`               | userController             | User profiles, dashboard, progress         |
-| `/training`            | trainingController         | Training sessions (7-day cooldown, age 3+) |
-| `/competition`         | competitionController      | Show entry, scoring, results               |
-| `/breeds`              | breedController            | Breed definitions                          |
-| `/foals`               | foalController             | Foal management                            |
-| `/traits`              | traitController            | Trait management                           |
-| `/trait-discovery`     | traitDiscoveryController   | Progressive trait revelation               |
-| `/riders`              | riderController            | Rider management                           |
-| `/trainers`            | trainerController          | Trainer management                         |
-| `/grooms`              | groomController            | Groom hire, assign, interact               |
-| `/grooms/enhanced`     | enhancedGroomController    | Extended groom features                    |
-| `/groom-assignments`   | groomAssignmentController  | Horse-groom links                          |
-| `/groom-handlers`      | groomHandlerController     | Handler operations                         |
-| `/groom-salaries`      | groomSalaryController      | Payment processing                         |
-| `/groom-performance`   | groomPerformanceController | Groom metrics                              |
-| `/groom-marketplace`   | groomMarketplaceController | Groom hiring market                        |
-| `/vet`                 | vetController              | Veterinarian services                      |
-| `/tack-shop`           | tackShopController         | Equipment purchasing                       |
-| `/farrier`             | farrierController          | Farrier services                           |
-| `/feed-shop`           | feedShopController         | Feed purchasing                            |
-| `/inventory`           | inventoryController        | Item equip/unequip (JSONB-based)           |
-| `/forum`               | forumController            | Message board threads/posts                |
-| `/messages`            | messageController          | Direct messaging (inbox/sent/unread)       |
-| `/clubs`               | clubController             | Clubs, elections, governance               |
-| `/marketplace`         | marketplaceController      | Horse buying/selling                       |
-| `/shows`               | showController             | Show management                            |
-| `/leaderboards`        | leaderboardController      | Rankings                                   |
-| `/milestones`          | milestoneController        | Milestone evaluation                       |
-| `/next-actions`        | nextActionsController      | Suggested player actions                   |
-| `/while-you-were-gone` | wyagController             | Return-to-game summary                     |
-| `/epigenetic-traits`   | epigeneticTraitController  | Epigenetic trait system                    |
-| `/flags`               | epigeneticFlagController   | Epigenetic flags                           |
-| `/ultra-rare-traits`   | ultraRareTraitController   | Ultra-rare trait management                |
+| Route                  | Controller                                    | Purpose                                    |
+| ---------------------- | --------------------------------------------- | ------------------------------------------ |
+| `/horses`              | horseController                               | Horse CRUD, stats, care                    |
+| `/users`               | userController                                | User profiles, dashboard, progress         |
+| `/training`            | trainingController                            | Training sessions (7-day cooldown, age 3+) |
+| `/competition`         | competitionController                         | Show entry, scoring, results               |
+| `/breeds`              | breedController                               | Breed definitions                          |
+| `/foals`               | foalController                                | Foal management                            |
+| `/traits`              | traitController                               | Trait management                           |
+| `/trait-discovery`     | traitDiscoveryController                      | Progressive trait revelation               |
+| `/riders`              | riderController                               | Rider management                           |
+| `/trainers`            | trainerController                             | Trainer management                         |
+| `/grooms`              | groomController                               | Groom hire, assign, interact               |
+| `/grooms/enhanced`     | enhancedGroomController                       | Extended groom features                    |
+| `/groom-assignments`   | groomAssignmentController                     | Horse-groom links                          |
+| `/groom-handlers`      | groomHandlerController                        | Handler operations                         |
+| `/groom-salaries`      | groomSalaryController                         | Payment processing                         |
+| `/groom-performance`   | groomPerformanceController                    | Groom metrics                              |
+| `/groom-marketplace`   | groomMarketplaceController                    | Groom hiring market                        |
+| `/vet`                 | vetController                                 | Veterinarian services                      |
+| `/tack-shop`           | tackShopController                            | Equipment purchasing                       |
+| `/farrier`             | farrierController                             | Farrier services                           |
+| `/feed-shop`           | feedShopController                            | Feed purchasing                            |
+| `/inventory`           | inventoryController                           | Item equip/unequip (JSONB-based)           |
+| `/forum`               | forumController                               | Message board threads/posts                |
+| `/messages`            | messageController                             | Direct messaging (inbox/sent/unread)       |
+| `/clubs`               | clubController                                | Clubs, elections, governance               |
+| `/marketplace`         | marketplaceController                         | Horse buying/selling                       |
+| `/shows`               | showController (`modules/competition/shows/`) | Show management                            |
+| `/leaderboards`        | leaderboardController                         | Rankings                                   |
+| `/milestones`          | milestoneController                           | Milestone evaluation                       |
+| `/next-actions`        | nextActionsController (`modules/users/`)      | Suggested player actions                   |
+| `/while-you-were-gone` | wyagController (`modules/users/`)             | Return-to-game summary                     |
+| `/epigenetic-traits`   | epigeneticTraitController                     | Epigenetic trait system                    |
+| `/flags`               | epigeneticFlagController                      | Epigenetic flags                           |
+| `/ultra-rare-traits`   | ultraRareTraitController                      | Ultra-rare trait management                |
 
 ### Labs Routes (Experimental, Non-SLO)
 
@@ -275,11 +281,25 @@ export * from '../modules/horses/controllers/horseController.mjs';
 | Enhanced reporting routes  | Mounted at root `/` for cross-domain reporting |
 | Advanced breeding genetics | Mounted at root `/` for breeding mechanics     |
 
-### Admin Routes (Admin Role Required)
+### Admin Routes (JWT + Admin Role + CSRF Required)
 
-| Route      | Purpose                                |
-| ---------- | -------------------------------------- |
-| `/admin/*` | System administration, user management |
+All admin routes are mounted under `adminRouter` in `app.mjs`, which applies `authenticateToken`, `requireRole('admin')`, and CSRF protection before any handler runs.
+
+| Route                            | Handler               | Purpose                                     |
+| -------------------------------- | --------------------- | ------------------------------------------- |
+| `GET /admin/cron/status`         | `getCronStatus`       | Get cron job status                         |
+| `POST /admin/cron/start`         | `startCron`           | Start cron job service                      |
+| `POST /admin/cron/stop`          | `stopCron`            | Stop cron job service                       |
+| `POST /admin/traits/evaluate`    | `evaluateTraits`      | Manually trigger daily trait evaluation     |
+| `GET /admin/traits/definitions`  | `getTraitDefinitions` | Get all trait definitions                   |
+| `GET /admin/foals/development`   | `getFoalDevelopment`  | Get all foals in development for monitoring |
+| `POST /admin/horses/age`         | `manualHorseAging`    | Manually trigger aging for all horses       |
+| `POST /admin/horses/:id/set-age` | `setHorseAge`         | Set a specific horse's game age             |
+| `POST /admin/foaling/trigger`    | `triggerFoaling`      | Force-run foaling job with advanced clock   |
+
+**Controller:** `backend/modules/admin/controllers/adminController.mjs`
+**Routes:** `backend/modules/admin/routes/adminRoutes.mjs`
+**Legacy shim:** `backend/routes/adminRoutes.mjs` → re-exports from module
 
 ## Game Mechanics (Backend Implementations)
 
@@ -440,7 +460,7 @@ Shutdown sequence:
 
 **Framework:** Jest with `--experimental-vm-modules` (ES module support)
 
-- **226 test suites**, **3651+ tests** passing
+- **226+ test suites**, **3651+ tests** passing
 - Balanced mocking strategy: external dependencies only (DB, HTTP, logger)
 - Real business logic tested with actual implementations
 - Integration tests with Prisma for database operations
