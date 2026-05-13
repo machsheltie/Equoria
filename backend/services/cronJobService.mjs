@@ -9,6 +9,7 @@ import logger from '../utils/logger.mjs';
 import { processWeeklySalaries } from './groomSalaryService.mjs';
 import { cleanupExpiredTokens } from '../utils/tokenRotationService.mjs';
 import { runFoalingJob } from '../modules/horses/services/foalingService.mjs';
+import legacyCronJobs from './cronJobs.mjs';
 // Track running jobs
 const runningJobs = new Map();
 
@@ -68,6 +69,9 @@ export function initializeCronJobs() {
     tokenCleanupJob.start();
     foalingJob.start();
 
+    // Start trait evaluation + horse aging jobs (defined in cronJobs.mjs)
+    legacyCronJobs.start();
+
     logger.info('[cronJobService] All cron jobs initialized and started');
   } catch (error) {
     logger.error(`[cronJobService] Error initializing cron jobs: ${error.message}`);
@@ -118,6 +122,10 @@ export function stopCronJobs() {
     }
 
     runningJobs.clear();
+
+    // Stop trait evaluation + horse aging jobs (defined in cronJobs.mjs)
+    legacyCronJobs.stop();
+
     logger.info('[cronJobService] All cron jobs stopped');
   } catch (error) {
     logger.error(`[cronJobService] Error stopping cron jobs: ${error.message}`);

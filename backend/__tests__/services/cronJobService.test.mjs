@@ -42,6 +42,7 @@ import {
   getCronJobStatus,
   triggerTokenCleanup,
 } from '../../services/cronJobService.mjs';
+import legacyCronJobs from '../../services/cronJobs.mjs';
 
 const SUITE_PREFIX = 'cron';
 
@@ -122,6 +123,21 @@ describe('Cron Job Service (real node-cron + real DB)', () => {
 
     it('should not throw when stopping with no jobs initialized', () => {
       expect(() => stopCronJobs()).not.toThrow();
+    });
+
+    it('should start legacyCronJobs (trait eval + aging) when initializeCronJobs() is called', () => {
+      // Sentinel for Equoria-yzz5: verifies the CronJobService singleton from
+      // cronJobs.mjs is started as part of the unified init path. If this
+      // test fails, the legacy jobs are not wired into production startup.
+      initializeCronJobs();
+      expect(legacyCronJobs.getStatus().serviceRunning).toBe(true);
+    });
+
+    it('should stop legacyCronJobs when stopCronJobs() is called', () => {
+      // Companion sentinel: verifies the legacy jobs stop cleanly on shutdown.
+      initializeCronJobs();
+      stopCronJobs();
+      expect(legacyCronJobs.getStatus().serviceRunning).toBe(false);
     });
   });
 
