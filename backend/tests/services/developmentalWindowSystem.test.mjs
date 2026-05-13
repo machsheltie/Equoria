@@ -624,4 +624,115 @@ describe('Developmental Window System', () => {
       expect(analysis.riskFactors).toContain('Stress during critical early development');
     });
   });
+
+  // ── Branch coverage additions II (Equoria-rr7) ──────────────────────────────
+  describe('branch coverage additions II (Equoria-rr7)', () => {
+    let fortyDayHorse;
+    let newbornHighStressHorse;
+    let rr7BiiUser;
+
+    beforeAll(async () => {
+      rr7BiiUser = await prisma.user.create({
+        data: {
+          username: `TestFixture-DWS-BII-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          email: `TestFixture-DWS-BII-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
+          password: 'test_hash',
+          firstName: 'DWSBII',
+          lastName: 'Branch',
+          money: 0,
+          xp: 0,
+          level: 1,
+        },
+      });
+      const now = new Date();
+      fortyDayHorse = await prisma.horse.create({
+        data: {
+          name: `TestFixture-DWS-40Day-${Date.now()}`,
+          sex: 'Colt',
+          dateOfBirth: new Date(now.getTime() - 40 * 24 * 60 * 60 * 1000),
+          userId: rr7BiiUser.id,
+          stressLevel: 8,
+          bondScore: 10,
+          epigeneticFlags: [],
+        },
+      });
+      newbornHighStressHorse = await prisma.horse.create({
+        data: {
+          name: `TestFixture-DWS-NBHighStress-${Date.now()}`,
+          sex: 'Filly',
+          dateOfBirth: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
+          userId: rr7BiiUser.id,
+          stressLevel: 8,
+          bondScore: 5,
+          epigeneticFlags: [],
+        },
+      });
+    });
+
+    afterAll(async () => {
+      await prisma.horse.deleteMany({
+        where: { id: { in: [fortyDayHorse.id, newbornHighStressHorse.id] } },
+      });
+      await prisma.user.delete({ where: { id: rr7BiiUser.id } });
+    });
+
+    // line 539: futureImpact='significant' — 30 < daysSinceClosure <= 60
+    // 40-day horse + imprinting (endDay=3): daysSinceClosure=37 ∈ (30,60]
+    test('assessWindowClosure: futureImpact=significant when 30 < daysSinceClosure <= 60 (line 539)', async () => {
+      const closure = await assessWindowClosure(fortyDayHorse.id, 'imprinting');
+      expect(closure.closureStatus).toBe('closed');
+      expect(closure.futureImpact).toBe('significant');
+    });
+
+    // line 574: coordinateMultiWindowDevelopment early return when activeWindows.length <= 1
+    // testHorses[4] at ~90 days has exactly 1 active window (independence_development)
+    test('coordinateMultiWindowDevelopment: empty coord when <= 1 active windows (line 574)', async () => {
+      const coord = await coordinateMultiWindowDevelopment(testHorses[4].id);
+      expect(coord.windowInteractions).toEqual([]);
+      expect(coord.priorityMatrix).toEqual({});
+      expect(coord.coordinatedPlan.phases).toEqual([]);
+    });
+
+    // line 832: 'social' trait-specific recommendation
+    // social IS in early_socialization.targetTraits → high opportunity → social recommendation
+    test('evaluateTraitDevelopmentOpportunity: social-specific recommendation (line 832)', async () => {
+      const opp = await evaluateTraitDevelopmentOpportunity(testHorses[0].id, 'social', 'early_socialization');
+      expect(opp.recommendedActions.some(a => a.toLowerCase().includes('interaction'))).toBe(true);
+    });
+
+    // lines 978-981: 'early_socialization' compensatory mechanisms
+    test('assessWindowClosure: early_socialization compensatory mechanisms (lines 978-981)', async () => {
+      const closure = await assessWindowClosure(testHorses[4].id, 'early_socialization');
+      expect(closure.closureStatus).toBe('closed');
+      expect(closure.compensatoryMechanisms.some(m => m.toLowerCase().includes('socialization'))).toBe(true);
+    });
+
+    // lines 989-992: 'curiosity_development' compensatory mechanisms
+    test('assessWindowClosure: curiosity_development compensatory mechanisms (lines 989-992)', async () => {
+      const closure = await assessWindowClosure(testHorses[4].id, 'curiosity_development');
+      expect(closure.closureStatus).toBe('closed');
+      expect(closure.compensatoryMechanisms.some(m => m.toLowerCase().includes('enrichment'))).toBe(true);
+    });
+
+    // lines 993-997: 'social_hierarchy' compensatory mechanisms
+    test('assessWindowClosure: social_hierarchy compensatory mechanisms (lines 993-997)', async () => {
+      const closure = await assessWindowClosure(testHorses[4].id, 'social_hierarchy');
+      expect(closure.closureStatus).toBe('closed');
+      expect(closure.compensatoryMechanisms.some(m => m.toLowerCase().includes('social'))).toBe(true);
+    });
+
+    // line 1294: assessDevelopmentalRisks — high stress risk pushed
+    // fortyDayHorse stressLevel=8 > 6
+    test('generateDevelopmentalForecast: high stress risk in riskAssessment (line 1294)', async () => {
+      const forecast = await generateDevelopmentalForecast(fortyDayHorse.id, 30);
+      expect(forecast.riskAssessment.risks.some(r => r.risk.includes('High stress'))).toBe(true);
+    });
+
+    // line 1311: assessDevelopmentalRisks — multiple critical periods overlap
+    // newbornHighStressHorse (1-day, forecast 30): imprinting (sens=1.0) + early_socialization (sens=0.9) → 2 > 1
+    test('generateDevelopmentalForecast: multiple critical windows overlap risk (line 1311)', async () => {
+      const forecast = await generateDevelopmentalForecast(newbornHighStressHorse.id, 30);
+      expect(forecast.riskAssessment.risks.some(r => r.risk.includes('Multiple critical'))).toBe(true);
+    });
+  });
 });
