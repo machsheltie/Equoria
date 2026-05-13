@@ -10,8 +10,7 @@
  * Lines 37, 38, and 28 are covered by this test.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { startShowScheduler, stopShowScheduler } from '../../utils/showScheduler.mjs';
 
 describe('showScheduler — runCycle initial-delay callback (fake timers)', () => {
