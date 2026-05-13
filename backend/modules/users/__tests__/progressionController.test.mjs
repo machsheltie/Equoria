@@ -50,7 +50,7 @@ function makeRes() {
 }
 
 function makeNext() {
-  let _err = undefined;
+  let _err;
   const fn = err => {
     _err = err;
   };

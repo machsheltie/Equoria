@@ -487,4 +487,141 @@ describe('Developmental Window System', () => {
       });
     });
   });
+
+  // ── Branch coverage additions (Equoria-rr7) ─────────────────────────────────
+  describe('branch coverage additions (Equoria-rr7)', () => {
+    let sixtyDayHorse;
+    let youngFearfulHorse;
+    let rr7BranchUser;
+
+    beforeAll(async () => {
+      rr7BranchUser = await prisma.user.create({
+        data: {
+          username: `TestFixture-DWS-rr7-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          email: `TestFixture-DWS-rr7-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
+          password: 'test_hash',
+          firstName: 'DWS',
+          lastName: 'Branch',
+          money: 0,
+          xp: 0,
+          level: 1,
+        },
+      });
+      const now = new Date();
+      sixtyDayHorse = await prisma.horse.create({
+        data: {
+          name: `TestFixture-DWS-60Day-${Date.now()}`,
+          sex: 'Filly',
+          dateOfBirth: new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000),
+          userId: rr7BranchUser.id,
+          stressLevel: 3,
+          bondScore: 20,
+          epigeneticFlags: [],
+        },
+      });
+      youngFearfulHorse = await prisma.horse.create({
+        data: {
+          name: `TestFixture-DWS-YngFear-${Date.now()}`,
+          sex: 'Colt',
+          dateOfBirth: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
+          userId: rr7BranchUser.id,
+          stressLevel: 6,
+          bondScore: 10,
+          epigeneticFlags: ['fearful'],
+        },
+      });
+    });
+
+    afterAll(async () => {
+      await prisma.horse.deleteMany({
+        where: { id: { in: [sixtyDayHorse.id, youngFearfulHorse.id] } },
+      });
+      await prisma.user.delete({ where: { id: rr7BranchUser.id } });
+    });
+
+    // line 139: identifyDevelopmentalWindows throws when horse not found
+    test('identifyDevelopmentalWindows: throws for non-existent horse (line 139)', async () => {
+      await expect(identifyDevelopmentalWindows(999999999)).rejects.toThrow('Horse not found');
+    });
+
+    // line 221: calculateWindowSensitivity throws for unknown window
+    test('calculateWindowSensitivity: throws for unknown window name (line 221)', async () => {
+      await expect(calculateWindowSensitivity(sixtyDayHorse.id, 'invalid_window')).rejects.toThrow(
+        'Unknown developmental window',
+      );
+    });
+
+    // line 278: sensitivityLevel='low' — 60-day horse at start of independence_development
+    // baseSensitivity=0.5, ageModifier=0.7 (at edge), envMod≈1.04 → finalSensitivity≈0.364 ∈ [0.2,0.4)
+    test('calculateWindowSensitivity: sensitivityLevel=low for 60-day horse at independence_development edge (line 278)', async () => {
+      const sensitivity = await calculateWindowSensitivity(sixtyDayHorse.id, 'independence_development');
+      expect(sensitivity.sensitivityLevel).toBe('low');
+    });
+
+    // line 313: evaluateTraitDevelopmentOpportunity throws for unknown window
+    test('evaluateTraitDevelopmentOpportunity: throws for unknown window name (line 313)', async () => {
+      await expect(evaluateTraitDevelopmentOpportunity(sixtyDayHorse.id, 'brave', 'invalid_window')).rejects.toThrow(
+        'Unknown developmental window',
+      );
+    });
+
+    // line 328: windowAlignment=0.2 — riskTrait in a non-fear-period window
+    // fearful is in early_socialization.riskTraits, but 'early_socialization'.includes('fear_period')=false
+    test('evaluateTraitDevelopmentOpportunity: windowAlignment=0.2 for riskTrait in non-fear window (line 328)', async () => {
+      const opp = await evaluateTraitDevelopmentOpportunity(testHorses[0].id, 'fearful', 'early_socialization');
+      expect(opp.windowAlignment).toBeCloseTo(0.2, 5);
+    });
+
+    // line 340: windowAlignment=0.7 — related trait overlaps targetTraits
+    // brave not in early_socialization target/risk; relatedTrait 'confident' IS in targetTraits
+    test('evaluateTraitDevelopmentOpportunity: windowAlignment=0.7 when relatedTrait in targetTraits (line 340)', async () => {
+      const opp = await evaluateTraitDevelopmentOpportunity(testHorses[0].id, 'brave', 'early_socialization');
+      expect(opp.windowAlignment).toBeCloseTo(0.7, 5);
+    });
+
+    // line 342: windowAlignment=0.3 — related trait overlaps riskTraits
+    // fearful not in independence_development target/risk; relatedTrait 'insecure' IS in riskTraits
+    test('evaluateTraitDevelopmentOpportunity: windowAlignment=0.3 when relatedTrait in riskTraits (line 342)', async () => {
+      const opp = await evaluateTraitDevelopmentOpportunity(testHorses[0].id, 'fearful', 'independence_development');
+      expect(opp.windowAlignment).toBeCloseTo(0.3, 5);
+    });
+
+    // line 485: assessWindowClosure throws for unknown window
+    test('assessWindowClosure: throws for unknown window name (line 485)', async () => {
+      await expect(assessWindowClosure(sixtyDayHorse.id, 'invalid_window')).rejects.toThrow(
+        'Unknown developmental window',
+      );
+    });
+
+    // line 501: closureStatus='upcoming' — horse younger than window.startDay
+    // testHorses[0] is 1 day old; social_hierarchy startDay=30 → upcoming
+    test('assessWindowClosure: closureStatus=upcoming when horse age < window startDay (line 501)', async () => {
+      const closure = await assessWindowClosure(testHorses[0].id, 'social_hierarchy');
+      expect(closure.closureStatus).toBe('upcoming');
+    });
+
+    // lines 540-541: futureImpact='moderate' — daysSinceClosure <= 30
+    // testHorses[1] is 7 days old; imprinting endDay=3 → daysSinceClosure=4 ≤ 30
+    test('assessWindowClosure: futureImpact=moderate when daysSinceClosure <= 30 (line 541)', async () => {
+      const closure = await assessWindowClosure(testHorses[1].id, 'imprinting');
+      expect(closure.closureStatus).toBe('closed');
+      expect(closure.futureImpact).toBe('moderate');
+    });
+
+    // lines 687 + 690: protectiveFactors — strong bond and confident flag
+    // testHorses[4]: bondScore=35 > 25, epigeneticFlags=['confident','independent']
+    test('analyzeCriticalPeriodSensitivity: strong bond (687) and confidence (690) protective factors', async () => {
+      const analysis = await analyzeCriticalPeriodSensitivity(testHorses[4].id);
+      expect(analysis.protectiveFactors).toContain('Strong bonding relationship');
+      expect(analysis.protectiveFactors).toContain('Confidence trait present');
+    });
+
+    // lines 675 + 678: riskFactors — fearful flag in young horse + stress in early development
+    // youngFearfulHorse: age=7, stressLevel=6 > 4, flags=['fearful']
+    test('analyzeCriticalPeriodSensitivity: early-fear (675) and early-stress (678) risk factors', async () => {
+      const analysis = await analyzeCriticalPeriodSensitivity(youngFearfulHorse.id);
+      expect(analysis.riskFactors).toContain('Early fear trait development');
+      expect(analysis.riskFactors).toContain('Stress during critical early development');
+    });
+  });
 });
