@@ -91,9 +91,10 @@ describe('Rate Limiting Circuit Breaker Integration Tests', () => {
       const res = createMockResponse();
       const next = makeTracked(undefined);
 
-      // First request should pass (in-memory tracking)
-      limiter(req, res, next);
-      await new Promise(resolve => setTimeout(resolve, 50));
+      // express-rate-limit v7 middleware is async and returns a Promise.
+      // Awaiting it is deterministic; the old setTimeout(50) was a non-
+      // deterministic sleep that could fail under heavy CI load.
+      await limiter(req, res, next);
 
       expect(next.mock.calls.length).toBeGreaterThan(0);
     });
@@ -126,8 +127,7 @@ describe('Rate Limiting Circuit Breaker Integration Tests', () => {
         const res = createMockResponse();
         const next = makeTracked(undefined);
 
-        limiter(req, res, next);
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await limiter(req, res, next);
 
         expect(next.mock.calls.length).toBeGreaterThan(0);
       }
@@ -171,8 +171,7 @@ describe('Rate Limiting Circuit Breaker Integration Tests', () => {
       const res = createMockResponse();
       const next = makeTracked(undefined);
 
-      limiter(req, res, next);
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await limiter(req, res, next);
 
       // Should use user:12345 as key
       expect(next.mock.calls.length).toBeGreaterThan(0);
@@ -191,8 +190,7 @@ describe('Rate Limiting Circuit Breaker Integration Tests', () => {
       const res = createMockResponse();
       const next = makeTracked(undefined);
 
-      limiter(req, res, next);
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await limiter(req, res, next);
 
       // Should use ip:192.168.1.100 as key
       expect(next.mock.calls.length).toBeGreaterThan(0);
@@ -357,14 +355,12 @@ describe('Rate Limiting Circuit Breaker Integration Tests', () => {
       // First request should pass
       let res = createMockResponse();
       let next = makeTracked(undefined);
-      limiter(req, res, next);
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await limiter(req, res, next);
 
       // Second request should be rate limited
       res = createMockResponse();
       next = makeTracked(undefined);
-      limiter(req, res, next);
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await limiter(req, res, next);
 
       // Should have proper rate limit response
       if (res.status.mock.calls.length > 0) {
@@ -391,8 +387,7 @@ describe('Rate Limiting Circuit Breaker Integration Tests', () => {
       for (let i = 0; i < 2; i++) {
         const res = createMockResponse();
         const next = makeTracked(undefined);
-        limiter(req, res, next);
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await limiter(req, res, next);
       }
 
       // Check for retry-after in response
@@ -428,8 +423,7 @@ describe('Rate Limiting Circuit Breaker Integration Tests', () => {
         const req = createMockRequest({ user: { id: 'shared-user' } });
         const res = createMockResponse();
         const next = makeTracked(undefined);
-        limiter(req, res, next);
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await limiter(req, res, next);
       }
 
       // With Redis, all processes would see same counter
