@@ -17,6 +17,10 @@ import { getAllDisciplines } from '../../../utils/statMap.mjs';
 import { getTemperamentTrainingModifiers } from '../../horses/services/temperamentService.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../db/index.mjs';
+import { getCachedQuery, invalidateCache } from '../../../utils/cacheHelper.mjs';
+
+// TTL for training eligibility cache entries (60 seconds)
+const ELIGIBILITY_CACHE_TTL = 60;
 
 /**
  * Check if a horse is eligible to train in a specific discipline
@@ -46,83 +50,99 @@ async function canTrain(horseId, discipline) {
       `[trainingController.canTrain] Checking training eligibility for horse ${parsedHorseId} in ${discipline}`,
     );
 
-    // Fetch horse upfront — needed for age check and trait requirements
-    const horse = await getHorseById(parsedHorseId);
-    if (!horse) {
-      logger.warn(`[trainingController.canTrain] Horse ${parsedHorseId} not found`);
-      return {
-        eligible: false,
-        reason: 'Horse not found',
-      };
-    }
-
-    // Compute effective age: prefer stored game-year field over calendar-based fallback.
-    // Consistent with getTrainableHorses() — handles the case where dateOfBirth is set
-    // to the creation date while horse.age holds the correct game age (e.g. adult horses
-    // whose dateOfBirth was not back-dated, or horses aged via the horseAgingSystem cron).
-    const computedAge = await getHorseAge(parsedHorseId);
-    const effectiveAge =
-      horse.age !== null && horse.age !== undefined ? horse.age : (computedAge ?? 0);
-
-    if (effectiveAge < 3) {
-      logger.info(
-        `[trainingController.canTrain] Horse ${parsedHorseId} is too young (effectiveAge=${effectiveAge})`,
-      );
-      return {
-        eligible: false,
-        reason: 'Horse is under age',
-      };
-    }
-
-    // Check trait requirements for specific disciplines (e.g., Gaited)
-    if (discipline === 'Gaited') {
-      if (!checkTraitRequirements(horse, discipline)) {
-        logger.info(
-          `[trainingController.canTrain] Horse ${parsedHorseId} lacks required trait for ${discipline} training`,
-        );
-        return {
-          eligible: false,
-          reason: 'Horse must have the Gaited trait to train in Gaited discipline',
-        };
-      }
-    }
-
-    // Check cooldown period (7 days since last training in ANY discipline)
-    const lastTrainingDate = await getAnyRecentTraining(parsedHorseId);
-
-    if (lastTrainingDate) {
-      const now = new Date();
-      const diff = now - new Date(lastTrainingDate);
-      const sevenDays = 1000 * 60 * 60 * 24 * 7; // 7 days in milliseconds
-
-      if (diff < sevenDays) {
-        const remainingTime = sevenDays - diff;
-        const remainingDays = Math.ceil(remainingTime / (1000 * 60 * 60 * 24));
-
-        logger.info(
-          `[trainingController.canTrain] Horse ${parsedHorseId} still in cooldown for any training (${remainingDays} days remaining)`,
-        );
-        return {
-          eligible: false,
-          reason: 'Training cooldown active for this horse',
-        };
-      }
-    }
-
-    // Horse is eligible to train
-    logger.info(
-      `[trainingController.canTrain] Horse ${parsedHorseId} is eligible to train in ${discipline}`,
+    // Cache eligibility results for 60 seconds to avoid hammering the DB on
+    // repeated check-eligibility calls (e.g. frontend polling).
+    // Key is per-horse + per-discipline so cooldown state is not conflated.
+    const cacheKey = `training:eligibility:${parsedHorseId}:${discipline}`;
+    return await getCachedQuery(
+      cacheKey,
+      () => computeCanTrain(parsedHorseId, discipline),
+      ELIGIBILITY_CACHE_TTL,
     );
-    return {
-      eligible: true,
-      reason: null,
-    };
   } catch (error) {
     logger.error(
       `[trainingController.canTrain] Error checking training eligibility: ${error.message}`,
     );
     throw new Error(`Training eligibility check failed: ${error.message}`);
   }
+}
+
+/**
+ * Internal implementation of training eligibility computation (uncached).
+ * Called by canTrain() which wraps it in a getCachedQuery layer.
+ */
+async function computeCanTrain(parsedHorseId, discipline) {
+  // Fetch horse upfront — needed for age check and trait requirements
+  const horse = await getHorseById(parsedHorseId);
+  if (!horse) {
+    logger.warn(`[trainingController.canTrain] Horse ${parsedHorseId} not found`);
+    return {
+      eligible: false,
+      reason: 'Horse not found',
+    };
+  }
+
+  // Compute effective age: prefer stored game-year field over calendar-based fallback.
+  // Consistent with getTrainableHorses() — handles the case where dateOfBirth is set
+  // to the creation date while horse.age holds the correct game age (e.g. adult horses
+  // whose dateOfBirth was not back-dated, or horses aged via the horseAgingSystem cron).
+  const computedAge = await getHorseAge(parsedHorseId);
+  const effectiveAge =
+    horse.age !== null && horse.age !== undefined ? horse.age : (computedAge ?? 0);
+
+  if (effectiveAge < 3) {
+    logger.info(
+      `[trainingController.canTrain] Horse ${parsedHorseId} is too young (effectiveAge=${effectiveAge})`,
+    );
+    return {
+      eligible: false,
+      reason: 'Horse is under age',
+    };
+  }
+
+  // Check trait requirements for specific disciplines (e.g., Gaited)
+  if (discipline === 'Gaited') {
+    if (!checkTraitRequirements(horse, discipline)) {
+      logger.info(
+        `[trainingController.canTrain] Horse ${parsedHorseId} lacks required trait for ${discipline} training`,
+      );
+      return {
+        eligible: false,
+        reason: 'Horse must have the Gaited trait to train in Gaited discipline',
+      };
+    }
+  }
+
+  // Check cooldown period (7 days since last training in ANY discipline)
+  const lastTrainingDate = await getAnyRecentTraining(parsedHorseId);
+
+  if (lastTrainingDate) {
+    const now = new Date();
+    const diff = now - new Date(lastTrainingDate);
+    const sevenDays = 1000 * 60 * 60 * 24 * 7; // 7 days in milliseconds
+
+    if (diff < sevenDays) {
+      const remainingTime = sevenDays - diff;
+      const remainingDays = Math.ceil(remainingTime / (1000 * 60 * 60 * 24));
+
+      logger.info(
+        `[trainingController.canTrain] Horse ${parsedHorseId} still in cooldown for any training (${remainingDays} days remaining)`,
+      );
+      return {
+        eligible: false,
+        reason: 'Training cooldown active for this horse',
+      };
+    }
+  }
+
+  // Horse is eligible to train
+  logger.info(
+    `[trainingController.canTrain] Horse ${parsedHorseId} is eligible to train in ${discipline}`,
+  );
+  return {
+    eligible: true,
+    reason: null,
+  };
 }
 
 /**
@@ -388,6 +408,14 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
     logger.info(
       `[trainingController.trainHorse] Successfully trained horse ${horseId} in ${discipline} (Log ID: ${trainingLog.id}, Score +${disciplineScoreIncrease})`,
     );
+
+    // Bust the eligibility cache for this horse+discipline so the next
+    // check-eligibility call sees the new cooldown state immediately.
+    invalidateCache(`training:eligibility:${parseInt(horseId, 10)}:${discipline}`).catch(err => {
+      logger.warn(
+        `[trainingController.trainHorse] Failed to invalidate eligibility cache: ${err.message}`,
+      );
+    });
 
     return {
       success: true,
