@@ -39,7 +39,7 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { Writable } from 'stream';
 import winston from 'winston';
-import logger from '../../utils/logger.mjs';
+import logger from '../../../utils/logger.mjs';
 
 describe('logger robustness (21R-OBS-3)', () => {
   let capturedLines;

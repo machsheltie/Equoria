@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { createNotification } from '../../utils/notificationService.mjs';
-import { createTestUser, cleanupTestData } from '../../tests/helpers/testAuth.mjs';
+import { createNotification } from '../../../utils/notificationService.mjs';
+import { createTestUser, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 
 describe('notificationService', () => {
   let user;

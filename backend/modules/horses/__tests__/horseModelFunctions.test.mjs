@@ -35,7 +35,7 @@ import {
   getPositiveTraitsArray,
   getNegativeTraitsArray,
   addTrait,
-} from '../../models/horseModel.mjs';
+} from '../../../models/horseModel.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 let hmUser;

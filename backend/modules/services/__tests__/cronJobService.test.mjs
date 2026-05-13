@@ -34,15 +34,15 @@
 
 import { describe, it, expect, beforeAll, afterEach, afterAll, beforeEach } from '@jest/globals';
 import { createTestRefreshToken } from '../setup.mjs';
-import prisma from '../../db/index.mjs';
+import prisma from '../../../db/index.mjs';
 import { randomBytes } from 'node:crypto';
 import {
   initializeCronJobs,
   stopCronJobs,
   getCronJobStatus,
   triggerTokenCleanup,
-} from '../../services/cronJobService.mjs';
-import legacyCronJobs from '../../services/cronJobs.mjs';
+} from '../../../services/cronJobService.mjs';
+import legacyCronJobs from '../../../services/cronJobs.mjs';
 
 const SUITE_PREFIX = 'cron';
 

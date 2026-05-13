@@ -22,7 +22,7 @@ import {
   resetCacheStatistics,
   cacheInvalidation,
   cacheStats,
-} from '../../utils/cacheHelper.mjs';
+} from '../../../utils/cacheHelper.mjs';
 
 function uid() {
   return randomBytes(6).toString('hex');

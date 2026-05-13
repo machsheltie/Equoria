@@ -16,7 +16,7 @@ import {
   coordinateMultiWindowDevelopment,
   analyzeCriticalPeriodSensitivity,
   generateDevelopmentalForecast,
-} from '../../services/developmentalWindowSystem.mjs';
+} from '../../../services/developmentalWindowSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 let user;

@@ -7,20 +7,20 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { HealthCheck } from '../../utils/healthCheck.mjs';
+import { HealthCheck } from '../../../utils/healthCheck.mjs';
 import {
   AT_BIRTH_TRAITS,
   evaluateTraitConditions,
   checkLineageForDisciplineAffinity,
   getMostCommonDisciplineFromHistory,
-} from '../../utils/atBirthTraits.mjs';
+} from '../../../utils/atBirthTraits.mjs';
 import {
   MILESTONE_TYPES,
   DEVELOPMENTAL_WINDOWS,
   TRAIT_THRESHOLDS,
   MILESTONE_TRAIT_POOLS,
-} from '../../utils/enhancedMilestoneEvaluationSystem.mjs';
-import { generateVerificationToken, hashVerificationToken } from '../../utils/emailVerificationService.mjs';
+} from '../../../utils/enhancedMilestoneEvaluationSystem.mjs';
+import { generateVerificationToken, hashVerificationToken } from '../../../utils/emailVerificationService.mjs';
 
 // ── HealthCheck ───────────────────────────────────────────────────────────────
 

@@ -11,7 +11,7 @@ import {
   COOKIE_OPTIONS,
   CLEAR_COOKIE_OPTIONS,
   getCookieConfigSummary,
-} from '../../utils/cookieConfig.mjs';
+} from '../../../utils/cookieConfig.mjs';
 
 afterEach(() => {
   _setNowFn(null);

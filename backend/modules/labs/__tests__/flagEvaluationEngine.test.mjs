@@ -13,7 +13,7 @@ import flagEvalDefault, {
   evaluateHorseFlags,
   batchEvaluateFlags,
   getEligibleHorses,
-} from '../../utils/flagEvaluationEngine.mjs';
+} from '../../../utils/flagEvaluationEngine.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 let user;

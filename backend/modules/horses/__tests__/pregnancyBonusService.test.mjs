@@ -12,10 +12,10 @@ import {
   NEG_PER_MISSED_DAY,
   GESTATION_DAYS,
   calculatePregnancyEpigeneticChances,
-} from '../../utils/pregnancyBonus.mjs';
+} from '../../../utils/pregnancyBonus.mjs';
 
 // riderBonus
-import { applyRiderModifiers } from '../../utils/riderBonus.mjs';
+import { applyRiderModifiers } from '../../../utils/riderBonus.mjs';
 
 // statMap
 import {
@@ -24,10 +24,10 @@ import {
   getAllDisciplines,
   getAllStatCategories,
   isDisciplineValid,
-} from '../../utils/statMap.mjs';
+} from '../../../utils/statMap.mjs';
 
 // getStatScore
-import { getStatScore } from '../../utils/getStatScore.mjs';
+import { getStatScore } from '../../../utils/getStatScore.mjs';
 
 // ---------------------------------------------------------------------------
 // pregnancyBonus — constants

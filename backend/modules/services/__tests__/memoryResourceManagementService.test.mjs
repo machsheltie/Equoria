@@ -5,7 +5,7 @@ import {
   trackResource,
   untrackResource,
   getMemoryReport,
-} from '../../services/memoryResourceManagementService.mjs';
+} from '../../../services/memoryResourceManagementService.mjs';
 
 // Reset the singleton before and after each test
 beforeEach(() => {

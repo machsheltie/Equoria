@@ -10,7 +10,7 @@ import {
   applyBondingChange,
   getBondingEfficiency,
   simulateBondingProgression,
-} from '../../utils/bondingModifiers.mjs';
+} from '../../../utils/bondingModifiers.mjs';
 
 // ---------------------------------------------------------------------------
 // Helpers

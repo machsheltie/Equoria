@@ -17,7 +17,7 @@ import {
   validateTaskLog,
   getFoalCareSummary,
   resetFoalCareStreak,
-} from '../../utils/foalTaskLogManager.mjs';
+} from '../../../utils/foalTaskLogManager.mjs';
 
 const daysAgo = days => new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 

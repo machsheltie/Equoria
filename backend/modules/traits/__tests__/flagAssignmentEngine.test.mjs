@@ -12,7 +12,7 @@ import {
   evaluatePersonalityModifiedTriggers,
   calculateFlagAssignmentScore,
   analyzeTemporalPatterns,
-} from '../../services/flagAssignmentEngine.mjs';
+} from '../../../services/flagAssignmentEngine.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 let user;

@@ -21,7 +21,7 @@ import {
   MILESTONE_TRAIT_POOLS,
   TRAIT_THRESHOLDS,
   DEVELOPMENTAL_WINDOWS,
-} from '../../utils/enhancedMilestoneEvaluationSystem.mjs';
+} from '../../../utils/enhancedMilestoneEvaluationSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 // Minimal groomCareHistory stub used by functions that accept it but don't branch on it

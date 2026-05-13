@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { getHealthModifier } from '../../utils/healthBonus.mjs';
+import { getHealthModifier } from '../../../utils/healthBonus.mjs';
 
 describe('getHealthModifier', () => {
   it('returns 0.05 for Excellent', () => {

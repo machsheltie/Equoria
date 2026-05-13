@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import { startShowScheduler, stopShowScheduler } from '../../utils/showScheduler.mjs';
+import { startShowScheduler, stopShowScheduler } from '../../../utils/showScheduler.mjs';
 
 describe('showScheduler — runCycle initial-delay callback (fake timers)', () => {
   beforeEach(() => {

@@ -30,7 +30,7 @@
 // suite never asserted on logger calls. Real logger fires; output is suppressed
 // at the transport layer via NODE_ENV=test rather than module replacement.
 import { jest, describe, beforeEach, afterEach, it, expect } from '@jest/globals';
-import { createRedisCircuitBreaker, DEFAULT_CIRCUIT_OPTIONS } from '../../utils/redisCircuitBreaker.mjs';
+import { createRedisCircuitBreaker, DEFAULT_CIRCUIT_OPTIONS } from '../../../utils/redisCircuitBreaker.mjs';
 
 // ── Module-scope helpers ───────────────────────────────────────────────────────
 

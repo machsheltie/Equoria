@@ -10,7 +10,7 @@ import {
   applyTemperamentDrift,
   getTemperamentCharacteristics,
   isTemperamentStable,
-} from '../../utils/temperamentDrift.mjs';
+} from '../../../utils/temperamentDrift.mjs';
 
 // ---------------------------------------------------------------------------
 // Helpers

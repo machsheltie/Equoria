@@ -23,7 +23,7 @@ import {
   applyBreedingValueBoost,
   validateConformationEntry,
   executeConformationShow,
-} from '../../services/conformationShowService.mjs';
+} from '../../../services/conformationShowService.mjs';
 
 // ── isValidConformationClass ──────────────────────────────────────────────────
 

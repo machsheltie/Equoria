@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { applyRiderModifiers } from '../../utils/riderBonus.mjs';
+import { applyRiderModifiers } from '../../../utils/riderBonus.mjs';
 
 describe('applyRiderModifiers', () => {
   it('returns score unchanged when both bonus and penalty are 0', () => {

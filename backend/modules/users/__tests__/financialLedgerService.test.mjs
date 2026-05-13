@@ -10,7 +10,7 @@ import {
   ensureLedgerTable,
   recordTransaction,
   getTransactionsForUser,
-} from '../../services/financialLedgerService.mjs';
+} from '../../../services/financialLedgerService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 let user;

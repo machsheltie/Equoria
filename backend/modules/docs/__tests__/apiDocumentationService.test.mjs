@@ -5,7 +5,7 @@ import {
   registerSchema,
   getDocumentationMetrics,
   getDocumentationHealth,
-} from '../../services/apiDocumentationService.mjs';
+} from '../../../services/apiDocumentationService.mjs';
 
 // ─── Singleton ────────────────────────────────────────────────────────────────
 

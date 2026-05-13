@@ -14,7 +14,7 @@ import {
   calculateTraitInteractions,
   generateBreedingRecommendations,
   predictOffspringPerformance,
-} from '../../services/enhancedGeneticProbabilityService.mjs';
+} from '../../../services/enhancedGeneticProbabilityService.mjs';
 
 const stallion = {
   id: 1,

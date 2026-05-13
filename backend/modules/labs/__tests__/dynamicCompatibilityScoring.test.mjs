@@ -13,7 +13,7 @@ import {
   analyzeCompatibilityFactors,
   predictInteractionOutcome,
   updateCompatibilityHistory,
-} from '../../services/dynamicCompatibilityScoring.mjs';
+} from '../../../services/dynamicCompatibilityScoring.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 let user;

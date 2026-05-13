@@ -29,7 +29,7 @@ import {
   analyzeStableEnvironmentalFactors,
   generateHorseComparison,
   generateComprehensiveReport,
-} from '../../services/enhancedReportingService.mjs';
+} from '../../../services/enhancedReportingService.mjs';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 

@@ -16,7 +16,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { validateDatabaseSchema, validateDatabaseSchemaOrExit } from '../../utils/schemaValidator.mjs';
+import { validateDatabaseSchema, validateDatabaseSchemaOrExit } from '../../../utils/schemaValidator.mjs';
 
 describe('validateDatabaseSchema()', () => {
   it('returns false (schema validation fails due to Prisma take:0 constraint)', async () => {

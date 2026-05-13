@@ -21,7 +21,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { getWorkerCount, shouldUseCluster } from '../../utils/clusterManager.mjs';
+import { getWorkerCount, shouldUseCluster } from '../../../utils/clusterManager.mjs';
 
 // ── getWorkerCount ────────────────────────────────────────────────────────────
 

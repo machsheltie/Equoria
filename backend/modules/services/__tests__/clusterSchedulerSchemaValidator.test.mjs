@@ -8,10 +8,10 @@
  */
 
 import { describe, it, expect, afterEach } from '@jest/globals';
-import { getWorkerCount, shouldUseCluster } from '../../utils/clusterManager.mjs';
-import { startShowScheduler, stopShowScheduler } from '../../utils/showScheduler.mjs';
-import { validateDatabaseSchema } from '../../utils/schemaValidator.mjs';
-import { DAILY_CARE_ROUTINES } from '../../utils/dailyCareAutomation.mjs';
+import { getWorkerCount, shouldUseCluster } from '../../../utils/clusterManager.mjs';
+import { startShowScheduler, stopShowScheduler } from '../../../utils/showScheduler.mjs';
+import { validateDatabaseSchema } from '../../../utils/schemaValidator.mjs';
+import { DAILY_CARE_ROUTINES } from '../../../utils/dailyCareAutomation.mjs';
 
 afterEach(() => {
   // Ensure scheduler is always stopped after each test to avoid open handles

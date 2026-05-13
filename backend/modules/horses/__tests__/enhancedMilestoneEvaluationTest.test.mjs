@@ -13,8 +13,8 @@
  */
 
 import { describe, it, expect, afterAll, beforeAll } from '@jest/globals';
-import { evaluateEnhancedMilestone } from '../../utils/enhancedMilestoneEvaluation.mjs';
-import cronJobService from '../../services/cronJobs.mjs';
+import { evaluateEnhancedMilestone } from '../../../utils/enhancedMilestoneEvaluation.mjs';
+import cronJobService from '../../../services/cronJobs.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 afterAll(() => {

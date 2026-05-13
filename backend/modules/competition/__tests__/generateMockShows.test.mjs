@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { generateMockShows, generateSingleMockShow } from '../../utils/generateMockShows.mjs';
+import { generateMockShows, generateSingleMockShow } from '../../../utils/generateMockShows.mjs';
 
 // ---------------------------------------------------------------------------
 // generateMockShows

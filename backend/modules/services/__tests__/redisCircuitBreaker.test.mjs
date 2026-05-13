@@ -1,9 +1,9 @@
 import { describe, it, expect } from '@jest/globals';
-import { createRedisCircuitBreaker } from '../../utils/redisCircuitBreaker.mjs';
+import { createRedisCircuitBreaker } from '../../../utils/redisCircuitBreaker.mjs';
 
 // Import DEFAULT_CIRCUIT_OPTIONS by importing the module directly
 // redisCircuitBreaker.mjs exports it as a named export
-import * as circuitBreakerModule from '../../utils/redisCircuitBreaker.mjs';
+import * as circuitBreakerModule from '../../../utils/redisCircuitBreaker.mjs';
 
 const DEFAULT_CIRCUIT_OPTIONS = circuitBreakerModule.DEFAULT_CIRCUIT_OPTIONS;
 

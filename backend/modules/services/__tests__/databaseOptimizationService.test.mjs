@@ -46,7 +46,7 @@ import {
   setupQueryCaching,
   optimizeEpigeneticQueries,
   benchmarkDatabaseOperations,
-} from '../../services/databaseOptimizationService.mjs';
+} from '../../../services/databaseOptimizationService.mjs';
 
 // ── analyzeQueryPerformance ───────────────────────────────────────────────────
 

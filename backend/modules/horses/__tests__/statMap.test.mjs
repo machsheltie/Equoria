@@ -5,7 +5,7 @@ import {
   getAllDisciplines,
   getAllStatCategories,
   isDisciplineValid,
-} from '../../utils/statMap.mjs';
+} from '../../../utils/statMap.mjs';
 
 describe('statMap', () => {
   it('contains at least 20 disciplines', () => {

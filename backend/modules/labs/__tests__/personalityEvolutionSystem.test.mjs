@@ -15,7 +15,7 @@ import {
   predictPersonalityEvolution,
   getPersonalityEvolutionHistory,
   applyPersonalityEvolutionEffects,
-} from '../../services/personalityEvolutionSystem.mjs';
+} from '../../../services/personalityEvolutionSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 let user;

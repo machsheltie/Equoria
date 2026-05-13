@@ -14,7 +14,7 @@ import {
   applyUltraRareBurnoutEffects,
   applyUltraRareStatEffects,
   hasUltraRareAbility,
-} from '../../utils/ultraRareMechanicalEffects.mjs';
+} from '../../../utils/ultraRareMechanicalEffects.mjs';
 
 // ---------------------------------------------------------------------------
 // Helpers

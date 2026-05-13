@@ -12,7 +12,7 @@ import {
   detectCareQualityTrends,
   analyzeGroomEffectiveness,
   calculateCareRiskScore,
-} from '../../services/carePatternAnalyzer.mjs';
+} from '../../../services/carePatternAnalyzer.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 let user;

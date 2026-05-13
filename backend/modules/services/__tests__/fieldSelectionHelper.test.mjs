@@ -13,7 +13,7 @@ import {
   buildQueryParams,
   getPresetSizeEstimate,
   calculateBandwidthSavings,
-} from '../../utils/fieldSelectionHelper.mjs';
+} from '../../../utils/fieldSelectionHelper.mjs';
 
 // ---------------------------------------------------------------------------
 // FIELD_PRESETS

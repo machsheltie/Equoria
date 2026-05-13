@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
-import helpers, { analyzeCarePatterns } from '../../utils/carePatternAnalysis.mjs';
+import helpers, { analyzeCarePatterns } from '../../../utils/carePatternAnalysis.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 let user;

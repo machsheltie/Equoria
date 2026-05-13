@@ -47,7 +47,7 @@
 // suite never asserted on logger calls. Real logger fires; output is suppressed
 // at the transport layer via NODE_ENV=test rather than module replacement.
 import { jest, describe, beforeEach, afterEach, it, expect } from '@jest/globals';
-import { createRedisCircuitBreaker } from '../../utils/redisCircuitBreaker.mjs';
+import { createRedisCircuitBreaker } from '../../../utils/redisCircuitBreaker.mjs';
 
 /**
  * Configurable async stub — replaces jest.fn() for Redis client methods.

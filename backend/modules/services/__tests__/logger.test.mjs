@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import logger from '../../utils/logger.mjs';
+import logger from '../../../utils/logger.mjs';
 
 // ─── logger instance ──────────────────────────────────────────────────────────
 

@@ -12,7 +12,7 @@ import {
   PREGNANCY_BONUS_PCT,
   GESTATION_DAYS,
   NEG_PER_MISSED_DAY,
-} from '../../utils/pregnancyBonus.mjs';
+} from '../../../utils/pregnancyBonus.mjs';
 
 describe('calculatePregnancyEpigeneticChances', () => {
   // ---------------------------------------------------------------

@@ -18,8 +18,8 @@ import {
   calculateBreedingValueScore,
   calculateLegacyGrade,
   getLegacyScoreDefinitions,
-} from '../../services/legacyScoreCalculator.mjs';
-import { calculateGroomCareConsistency } from '../../services/legacyScoreTraitCalculator.mjs';
+} from '../../../services/legacyScoreCalculator.mjs';
+import { calculateGroomCareConsistency } from '../../../services/legacyScoreTraitCalculator.mjs';
 
 // ─── calculateLegacyGrade ──────────────────────────────────────────────────────
 

@@ -9,7 +9,7 @@
 
 import express from 'express';
 import request from 'supertest';
-import { createRateLimiter, getRateLimitingHealth, isRedisConnected } from '../../middleware/rateLimiting.mjs';
+import { createRateLimiter, getRateLimitingHealth, isRedisConnected } from '../../../middleware/rateLimiting.mjs';
 
 function makeTracked(returnValue) {
   const calls = [];

@@ -14,7 +14,7 @@ import {
   getAllInfluencedTraits,
   calculateTraitPoints,
   validateTaskInfluenceMap,
-} from '../../config/taskInfluenceConfig.mjs';
+} from '../../../config/taskInfluenceConfig.mjs';
 
 // ---------------------------------------------------------------------------
 // TASK_TRAIT_INFLUENCE_MAP

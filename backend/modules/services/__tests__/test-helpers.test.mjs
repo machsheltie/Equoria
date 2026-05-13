@@ -33,7 +33,7 @@
 
 import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
 
-import prisma from '../../db/index.mjs';
+import prisma from '../../../db/index.mjs';
 import { createTestUser, createTestRefreshToken } from '../setup.mjs';
 import { verifyTokenFamilyState, assertFamilyInvalidation } from './test-helpers.mjs';
 

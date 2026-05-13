@@ -33,7 +33,7 @@ import {
   trackCumulativeExposure,
   assessCriticalPeriodSensitivity,
   generateEnvironmentalReport,
-} from '../../services/environmentalTriggerSystem.mjs';
+} from '../../../services/environmentalTriggerSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 // ── No-fixture pure paths ─────────────────────────────────────────────────────

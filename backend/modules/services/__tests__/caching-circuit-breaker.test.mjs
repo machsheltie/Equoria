@@ -20,7 +20,7 @@ import {
   getCacheStatistics,
   resetCacheStatistics,
   generateCacheKey,
-} from '../../utils/cacheHelper.mjs';
+} from '../../../utils/cacheHelper.mjs';
 import { randomBytes } from 'node:crypto';
 
 function makeAsyncTracked(returnValue) {

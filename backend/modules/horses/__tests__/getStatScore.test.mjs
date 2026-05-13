@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { getStatScore } from '../../utils/getStatScore.mjs';
+import { getStatScore } from '../../../utils/getStatScore.mjs';
 
 const makeHorse = (overrides = {}) => ({
   speed: 80,

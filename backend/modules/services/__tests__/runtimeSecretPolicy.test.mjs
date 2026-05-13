@@ -9,7 +9,7 @@ import {
   DEPLOYABLE_ENVS,
   isDeployableEnvironment,
   getSecretValidationError,
-} from '../../utils/runtimeSecretPolicy.mjs';
+} from '../../../utils/runtimeSecretPolicy.mjs';
 
 // ---------------------------------------------------------------------------
 // DEPLOYABLE_ENVS constant

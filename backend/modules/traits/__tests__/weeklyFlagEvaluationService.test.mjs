@@ -12,7 +12,7 @@ import {
   processHorseForFlagEvaluation,
   evaluateWeeklyFlags,
   triggerWeeklyFlagEvaluation,
-} from '../../services/weeklyFlagEvaluationService.mjs';
+} from '../../../services/weeklyFlagEvaluationService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 let user;

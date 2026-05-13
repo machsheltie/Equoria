@@ -10,7 +10,7 @@ import {
   applyPersonalityEffectsToMilestone,
   calculateTraitDevelopmentBonus,
   getPersonalityEffectPreview,
-} from '../../utils/personalityModifierEngine.mjs';
+} from '../../../utils/personalityModifierEngine.mjs';
 
 // Valid types from groomPersonalityTraitBonus — Calm groom is ideal for Nervous/Spirited foals
 const MATCH_GROOM = 'Calm';

@@ -12,7 +12,7 @@ import {
   getActivitiesForStage,
   checkBondMilestones,
   hasGraduated,
-} from '../../utils/foalAgeUtils.mjs';
+} from '../../../utils/foalAgeUtils.mjs';
 
 // Helper: date N weeks before now
 const weeksAgo = weeks => new Date(Date.now() - weeks * 7 * 24 * 60 * 60 * 1000);

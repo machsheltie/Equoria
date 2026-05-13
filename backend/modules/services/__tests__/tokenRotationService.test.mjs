@@ -24,7 +24,7 @@ import {
   detectTokenReuse,
   invalidateTokenFamily,
   rotateRefreshToken,
-} from '../../utils/tokenRotationService.mjs';
+} from '../../../utils/tokenRotationService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 // Synthetic UUID — never created in the real DB; all refreshToken.count queries

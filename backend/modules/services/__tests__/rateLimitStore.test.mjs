@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect, afterEach } from '@jest/globals';
-import { RateLimitStore } from '../../utils/rateLimitStore.mjs';
+import { RateLimitStore } from '../../../utils/rateLimitStore.mjs';
 
 // Each test creates its own store with no cleanup timer to avoid leaks.
 const makeStore = (opts = {}) => new RateLimitStore({ cleanupInterval: 0, ...opts });

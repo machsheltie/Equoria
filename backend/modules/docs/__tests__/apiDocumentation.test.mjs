@@ -26,7 +26,7 @@ import {
   generateDocumentation as _generateDocumentation,
   getDocumentationMetrics,
   getDocumentationHealth,
-} from '../../services/apiDocumentationService.mjs';
+} from '../../../services/apiDocumentationService.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

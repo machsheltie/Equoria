@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { validateRequiredEnvVars, validateTestEnvironment, getEnvironmentSummary } from '../../utils/envValidator.mjs';
+import {
+  validateRequiredEnvVars,
+  validateTestEnvironment,
+  getEnvironmentSummary,
+} from '../../../utils/envValidator.mjs';
 
 const REQUIRED = ['NODE_ENV', 'DATABASE_URL', 'JWT_SECRET', 'JWT_REFRESH_SECRET', 'PORT'];
 

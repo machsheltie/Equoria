@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Integration Tests: Rate Limiting System
  *
  * Tests comprehensive rate limiting for authentication endpoints
@@ -31,7 +31,7 @@ import { randomBytes } from 'node:crypto';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
-import { snapshotEnv, restoreEnv } from '../../tests/helpers/envSnapshot.mjs';
+import { snapshotEnv, restoreEnv } from '../../../tests/helpers/envSnapshot.mjs';
 
 // NOTE: TEST_RATE_LIMIT_MAX_REQUESTS and TEST_RATE_LIMIT_WINDOW_MS are read
 // when the rate-limiting middleware builds its limiter, which happens on
