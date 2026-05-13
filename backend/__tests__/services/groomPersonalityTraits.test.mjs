@@ -540,3 +540,137 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
     expect(result.compatibilityLevel).toBe('excellent');
   });
 });
+
+// ── groomPersonalityTraits — remaining branches (Equoria-rr7) ─────────────────
+// Line 247: unknown epigeneticInfluenceType → throws
+// Line 392: analyzePersonalityCompatibility non-existent horse → throws
+// Lines 493-518 + 687-691: updatePersonalityTraits with real GroomInteraction records
+//   excellent quality + bondingChange=2 → 'Enhanced trait effectiveness' (line 512-513)
+//   good quality + bondingChange=0 → 'Steady trait development' (line 514-515)
+
+describe('groomPersonalityTraits — remaining branches (Equoria-rr7)', () => {
+  let rbrUser;
+  let rbrHorse;
+  let rbrGroomBadType;
+  let rbrGroomExcellent;
+  let rbrGroomGood;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    rbrUser = await prisma.user.create({
+      data: {
+        email: `rbr-${ts}-${rand()}@test.com`,
+        username: `rbr${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'RBR',
+        lastName: 'Branch',
+        money: 1000,
+      },
+    });
+
+    rbrHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-RBR-Horse-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: rbrUser.id,
+      },
+    });
+
+    rbrGroomBadType = await prisma.groom.create({
+      data: {
+        name: `TestFixture-RBR-BadType-${ts}`,
+        speciality: 'foal_care',
+        personality: 'gentle',
+        epigeneticInfluenceType: 'invalid_type_xyz',
+        userId: rbrUser.id,
+      },
+    });
+
+    rbrGroomExcellent = await prisma.groom.create({
+      data: {
+        name: `TestFixture-RBR-Excellent-${ts}`,
+        speciality: 'foal_care',
+        personality: 'gentle',
+        epigeneticInfluenceType: 'calm',
+        userId: rbrUser.id,
+      },
+    });
+
+    rbrGroomGood = await prisma.groom.create({
+      data: {
+        name: `TestFixture-RBR-Good-${ts}`,
+        speciality: 'foal_care',
+        personality: 'gentle',
+        epigeneticInfluenceType: 'calm',
+        userId: rbrUser.id,
+      },
+    });
+
+    // 2 excellent interactions for rbrGroomExcellent: avgQuality=4.0≥3.5, avgBondChange=2.0>1
+    for (let i = 0; i < 2; i++) {
+      await prisma.groomInteraction.create({
+        data: {
+          groomId: rbrGroomExcellent.id,
+          foalId: rbrHorse.id,
+          interactionType: 'grooming',
+          duration: 30,
+          quality: 'excellent',
+          bondingChange: 2,
+        },
+      });
+    }
+
+    // 2 good interactions for rbrGroomGood: avgQuality=3.0 (≥2.5 but <3.5), avgBondChange=0≤1
+    for (let i = 0; i < 2; i++) {
+      await prisma.groomInteraction.create({
+        data: {
+          groomId: rbrGroomGood.id,
+          foalId: rbrHorse.id,
+          interactionType: 'grooming',
+          duration: 30,
+          quality: 'good',
+          bondingChange: 0,
+        },
+      });
+    }
+  }, 60000);
+
+  afterAll(async () => {
+    const groomIds = [rbrGroomExcellent?.id, rbrGroomGood?.id].filter(Boolean);
+    await prisma.groomInteraction.deleteMany({ where: { groomId: { in: groomIds } } }).catch(() => {});
+    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-RBR-' } } }).catch(() => {});
+    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-RBR-' } } }).catch(() => {});
+    await prisma.user.delete({ where: { id: rbrUser?.id } }).catch(() => {});
+  }, 30000);
+
+  it('getGroomPersonalityTraits: unknown epigeneticInfluenceType → throws (line 247)', async () => {
+    await expect(getGroomPersonalityTraits(rbrGroomBadType.id)).rejects.toThrow('Unknown personality type');
+  });
+
+  it('analyzePersonalityCompatibility: non-existent horse → throws (line 392)', async () => {
+    // outer `groom` has valid epigeneticInfluenceType='calm'; horseId 999999999 does not exist
+    await expect(analyzePersonalityCompatibility(groom.id, 999999999)).rejects.toThrow('Horse not found');
+  });
+
+  it('updatePersonalityTraits: excellent quality + bondingChange=2 → Enhanced trait effectiveness (lines 512-513)', async () => {
+    // avgQuality=4.0 (excellent=4) ≥3.5, avgBondChange=2.0 >1 → line 512 fires
+    const result = await updatePersonalityTraits(rbrGroomExcellent.id);
+    expect(result.traitsUpdated).toContain('Enhanced trait effectiveness due to excellent performance');
+    expect(result.experienceGained).toBeGreaterThan(0);
+    expect(typeof result.performanceMetrics.avgQuality).toBe('number');
+    expect(result.performanceMetrics.avgQuality).toBeGreaterThanOrEqual(3.5);
+  });
+
+  it('updatePersonalityTraits: good quality + bondingChange=0 → Steady trait development (lines 514-515)', async () => {
+    // avgQuality=3.0 (good=3) ≥2.5 but <3.5; avgBondChange=0 ≤1 → line 514 fires
+    const result = await updatePersonalityTraits(rbrGroomGood.id);
+    expect(result.traitsUpdated).toContain('Steady trait development from consistent performance');
+    expect(result.experienceGained).toBeGreaterThan(0);
+    expect(result.performanceMetrics.avgQuality).toBeGreaterThanOrEqual(2.5);
+    expect(result.performanceMetrics.avgQuality).toBeLessThan(3.5);
+  });
+});
