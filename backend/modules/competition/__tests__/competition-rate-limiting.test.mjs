@@ -20,11 +20,11 @@
  */
 
 import request from 'supertest';
-import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
+import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 
-import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 
-const { default: app } = await import('../../app.mjs');
+const { default: app } = await import('../../../app.mjs');
 
 describe('Competition Routes Rate Limiting Integration Tests', () => {
   let __csrf__;

@@ -5,7 +5,7 @@ import {
   calculateStatGains,
   calculateEntryFees,
   hasValidRider,
-} from '../../utils/competitionRewards.mjs';
+} from '../../../utils/competitionRewards.mjs';
 
 describe('calculatePrizeDistribution', () => {
   it('distributes 50/30/20 correctly for a round prize', () => {

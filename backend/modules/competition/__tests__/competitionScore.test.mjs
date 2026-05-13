@@ -3,7 +3,7 @@ import {
   calculateCompetitionScore,
   getDisciplineStatWeights,
   validateHorseForCompetition,
-} from '../../utils/competitionScore.mjs';
+} from '../../../utils/competitionScore.mjs';
 
 const makeHorse = (overrides = {}) => ({
   name: 'TestHorse',

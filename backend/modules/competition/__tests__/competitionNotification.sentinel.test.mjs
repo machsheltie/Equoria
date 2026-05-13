@@ -11,10 +11,10 @@
  */
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
-import app from '../../app.mjs';
-import prisma from '../../../packages/database/prismaClient.mjs';
-import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
-import { fetchCsrf, attachCsrf } from '../../tests/helpers/csrfHelper.mjs';
+import app from '../../../app.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
+import { fetchCsrf, attachCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 

@@ -10,7 +10,7 @@ import {
   calculateHorseLevel,
   checkTraitRequirements,
   calculateStatGain,
-} from '../../utils/competitionLogic.mjs';
+} from '../../../utils/competitionLogic.mjs';
 
 describe('calculatePrizeAmount', () => {
   it('gives 50% to 1st place', () => {

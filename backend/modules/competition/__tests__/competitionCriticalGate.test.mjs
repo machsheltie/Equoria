@@ -15,8 +15,8 @@
 
 import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import prisma from '../../db/index.mjs';
-import { enterConformationShow } from '../../modules/competition/controllers/conformationShowController.mjs';
+import prisma from '../../../db/index.mjs';
+import { enterConformationShow } from '../controllers/conformationShowController.mjs';
 
 const SUITE_PREFIX = 'a12';
 
