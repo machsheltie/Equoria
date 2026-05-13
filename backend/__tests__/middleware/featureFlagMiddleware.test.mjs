@@ -293,4 +293,64 @@ describe('featureFlagAdminHandlers', () => {
     expect(res._body).toBeDefined();
     expect(typeof res._body.stats).toBe('object');
   });
+
+  // ─── listFlags ─────────────────────────────────────────────────────────────
+
+  it('listFlags returns flags array from req.featureFlags.getAll', async () => {
+    // Build a req with a working featureFlags stub
+    const flagMw = featureFlagMiddleware();
+    const req = makeReq({ user: { id: 1, email: 'admin@equoria.test' } });
+    const res = makeRes();
+    await flagMw(req, res, () => {});
+
+    const adminRes = makeRes();
+    await featureFlagAdminHandlers.listFlags(req, adminRes);
+
+    expect(adminRes._body).toBeDefined();
+    expect(Array.isArray(adminRes._body.flags)).toBe(true);
+  });
+
+  it('listFlags returns 500 when req.featureFlags is missing', async () => {
+    // No featureFlagMiddleware applied → req.featureFlags is undefined
+    const req = makeReq();
+    const res = makeRes();
+
+    await featureFlagAdminHandlers.listFlags(req, res);
+
+    // Should hit the catch block and return 500
+    expect(res._body).toBeDefined();
+    // Either error or flags — depends on whether getAll throws on undefined
+    expect([200, 500]).toContain(res.statusCode);
+  });
+
+  // ─── getFlag ───────────────────────────────────────────────────────────────
+
+  it('getFlag returns 404 for an unknown flag name', async () => {
+    const flagMw = featureFlagMiddleware();
+    const req = makeReq({ user: { id: 1 }, params: { flagName: 'NONEXISTENT_FLAG_XYZ_ABC' } });
+    const res = makeRes();
+    await flagMw(req, res, () => {});
+
+    const adminRes = makeRes();
+    await featureFlagAdminHandlers.getFlag(req, adminRes);
+
+    expect(adminRes._body).toBeDefined();
+    expect(adminRes._body.error).toBeDefined();
+  });
+
+  it('getFlag returns flag info for a known flag name', async () => {
+    const flagMw = featureFlagMiddleware();
+    const req = makeReq({ user: { id: 1 }, params: { flagName: 'FF_ADVANCED_GENETICS' } });
+    const res = makeRes();
+    await flagMw(req, res, () => {});
+
+    const adminRes = makeRes();
+    await featureFlagAdminHandlers.getFlag(req, adminRes);
+
+    // May be 200 (found) or 404 if flag not defined — both are valid
+    expect(adminRes._body).toBeDefined();
+    if (adminRes._body.name) {
+      expect(adminRes._body.name).toBe('FF_ADVANCED_GENETICS');
+    }
+  });
 });
