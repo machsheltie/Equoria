@@ -45,6 +45,9 @@ import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import AppError from '../../../errors/AppError.mjs';
 
+// Safe field selection for user search results — only expose public, non-sensitive fields
+const USER_SEARCH_SELECT = { id: true, username: true, firstName: true, lastName: true };
+
 /**
  * Get comprehensive user progress information
  * Returns detailed progress data including level, XP, progress percentage, and thresholds
@@ -717,16 +720,33 @@ export const addXpController = async (req, res, next) => {
 };
 
 /**
- * Search users by username prefix (case-insensitive, max 10 results)
- * Used by direct message compose to find recipients.
+ * Search users by username prefix (case-insensitive).
+ * Accepts optional pagination params for route handlers to control result size.
+ *
+ * @param {string} q - Search query (username prefix)
+ * @param {Object} options - Pagination options
+ * @param {number} options.limit - Max results to return (default 10, max 50)
+ * @param {number} options.skip - Number of results to skip (default 0)
+ * @returns {Promise<{users: Array, total: number}>} Matching users with total count
  */
-export async function searchUsers(q) {
-  return prisma.user.findMany({
-    where: { username: { contains: q, mode: 'insensitive' } },
-    take: 10,
-    select: { id: true, username: true },
-    orderBy: { username: 'asc' },
-  });
+export async function searchUsers(q, { limit = 10, skip = 0 } = {}) {
+  const safeLimit = Math.min(Math.max(1, limit), 50);
+  const safeSkip = Math.max(0, skip);
+
+  const where = { username: { contains: q, mode: 'insensitive' } };
+
+  const [users, total] = await Promise.all([
+    prisma.user.findMany({
+      where,
+      take: safeLimit,
+      skip: safeSkip,
+      select: USER_SEARCH_SELECT,
+      orderBy: { username: 'asc' },
+    }),
+    prisma.user.count({ where }),
+  ]);
+
+  return { users, total };
 }
 
 /**

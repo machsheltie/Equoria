@@ -22,6 +22,7 @@ import {
 } from '../controllers/userController.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { queryRateLimiter, mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
+import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getTransactionHistory } from '../../services/controllers/bankController.mjs';
 
@@ -118,7 +119,7 @@ const requireSelfAccess = (idParam = 'id') => {
   };
 };
 
-/** GET /api/users/search?username= — find users by username prefix (max 10) */
+/** GET /api/users/search?username=&limit=&page= — find users by username prefix (paginated) */
 router.get('/search', queryRateLimiter, authenticateToken, async (req, res) => {
   const q = (req.query.username ?? '').trim();
   if (!q || q.length < 2) {
@@ -127,9 +128,17 @@ router.get('/search', queryRateLimiter, authenticateToken, async (req, res) => {
       .json({ success: false, message: 'username query must be at least 2 chars' });
   }
   try {
-    const users = await searchUsers(q);
-    return res.json({ success: true, data: { users } });
-  } catch {
+    const { limit, skip } = parsePaginationParams(req, { defaultLimit: 10, maxLimit: 50 });
+    const { users, total } = await searchUsers(q, { limit, skip });
+    return res.json({
+      success: true,
+      data: {
+        users,
+        pagination: { total, limit, offset: skip, hasMore: skip + limit < total },
+      },
+    });
+  } catch (err) {
+    logger.error(`[userRoutes.search] Error: ${err.message}`);
     return res.status(500).json({ success: false, message: 'Search failed' });
   }
 });
