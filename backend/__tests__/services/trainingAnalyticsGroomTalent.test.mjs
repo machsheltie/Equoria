@@ -13,6 +13,7 @@ import {
   getGroomTalentSelections,
   validateTalentSelection,
   applyTalentEffects,
+  selectTalent,
 } from '../../services/groomTalentService.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 
@@ -334,5 +335,134 @@ describe('groomTalentService — branch coverage (Equoria-jkht)', () => {
     const result = await applyTalentEffects(ttGroomCalmL5.id, baseInteraction);
     expect(result.talentBonuses.length).toBeGreaterThan(0);
     expect(result.bondingChange).toBeGreaterThan(5);
+  });
+});
+
+// ── groomTalentService — selectTalent + stressReduction/qualityBonus branches (Equoria-rr7) ──
+// Covers: selectTalent valid path (lines 279-309), validation-fail throw (lines 283-284),
+//         tier3 prerequisite 'tier1' fallback (line 256 false arm),
+//         applyTalentEffects stressReduction (lines 357-361),
+//         applyTalentEffects qualityBonus (lines 365-368)
+
+describe('groomTalentService — selectTalent and effect branches (Equoria-rr7)', () => {
+  let st2User;
+  let st2GroomCalmL3; // calm, level=3 — selectTalent valid path
+  let st2GroomCalmL8; // calm, level=8, no selections — tier3 prerequisite 'tier1' branch
+  let st2GroomStress; // calm, tier1+tier2='stress_whisperer' seeded — stressReduction path
+  let st2GroomQuality; // energetic, tier1='enthusiasm_boost' seeded — qualityBonus path
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    st2User = await prisma.user.create({
+      data: {
+        email: `st2-${ts}-${rand()}@test.com`,
+        username: `st2${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'ST2',
+        lastName: 'Branch',
+        money: 1000,
+      },
+    });
+
+    [st2GroomCalmL3, st2GroomCalmL8, st2GroomStress, st2GroomQuality] = await Promise.all([
+      prisma.groom.create({
+        data: {
+          name: `TestFixture-ST2-CalmL3-${ts}`,
+          speciality: 'foal_care',
+          personality: 'calm',
+          level: 3,
+          userId: st2User.id,
+        },
+      }),
+      prisma.groom.create({
+        data: {
+          name: `TestFixture-ST2-CalmL8-${ts}`,
+          speciality: 'foal_care',
+          personality: 'calm',
+          level: 8,
+          userId: st2User.id,
+        },
+      }),
+      prisma.groom.create({
+        data: {
+          name: `TestFixture-ST2-Stress-${ts}`,
+          speciality: 'foal_care',
+          personality: 'calm',
+          level: 8,
+          userId: st2User.id,
+        },
+      }),
+      prisma.groom.create({
+        data: {
+          name: `TestFixture-ST2-Quality-${ts}`,
+          speciality: 'foal_care',
+          personality: 'energetic',
+          level: 3,
+          userId: st2User.id,
+        },
+      }),
+    ]);
+
+    // Seed talent selections directly for applyTalentEffects branch tests
+    await Promise.all([
+      prisma.groomTalentSelections.create({
+        data: { groomId: st2GroomStress.id, tier1: 'gentle_hands', tier2: 'stress_whisperer' },
+      }),
+      prisma.groomTalentSelections.create({
+        data: { groomId: st2GroomQuality.id, tier1: 'enthusiasm_boost' },
+      }),
+    ]);
+  }, 30000);
+
+  afterAll(async () => {
+    await prisma.groomTalentSelections
+      .deleteMany({
+        where: {
+          groomId: { in: [st2GroomCalmL3.id, st2GroomCalmL8.id, st2GroomStress.id, st2GroomQuality.id] },
+        },
+      })
+      .catch(() => {});
+    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-ST2-' } } }).catch(() => {});
+    await prisma.user.delete({ where: { id: st2User.id } }).catch(() => {});
+  }, 30000);
+
+  it('selectTalent: valid path returns { success: true, selection, talent } (lines 279-309)', async () => {
+    const result = await selectTalent(st2GroomCalmL3.id, 'tier1', 'gentle_hands');
+    expect(result.success).toBe(true);
+    expect(result.selection).toBeDefined();
+    expect(result.talent.id).toBe('gentle_hands');
+  });
+
+  it('selectTalent: validation-fail throws "Invalid talent selection" (lines 283-284)', async () => {
+    // level=3 groom requesting tier2 → insufficient_level (level 3 < required 5)
+    await expect(selectTalent(st2GroomCalmL3.id, 'tier2', 'empathic_sync')).rejects.toThrow('Invalid talent selection');
+  });
+
+  it('tier3 prerequisite: no selections → prerequisite="tier1" (line 256 false arm)', async () => {
+    // st2GroomCalmL8 has level=8 but no selections; requesting tier3 hits the condition
+    // selections?.tier1 is undefined (falsy) → 'tier1' branch
+    const result = await validateTalentSelection(st2GroomCalmL8.id, 'tier3', 'master_bonding');
+    expect(result.valid).toBe(false);
+    expect(result.reason).toBe('prerequisite_required');
+    expect(result.prerequisite).toBe('tier1');
+  });
+
+  it('applyTalentEffects: stressReduction from stress_whisperer makes stressChange more negative (lines 357-361)', async () => {
+    const baseInteraction = { bondingChange: 5, stressChange: -4 };
+    const result = await applyTalentEffects(st2GroomStress.id, baseInteraction);
+    // stress_whisperer has stressReduction=0.2 → reduction applied to stressChange
+    expect(result.stressChange).toBeLessThan(-4);
+    expect(result.talentBonuses.some(b => b.talentId === 'stress_whisperer')).toBe(true);
+  });
+
+  it('applyTalentEffects: qualityBonus from enthusiasm_boost sets qualityModifier (lines 365-368)', async () => {
+    const baseInteraction = { bondingChange: 5, stressChange: -2 };
+    const result = await applyTalentEffects(st2GroomQuality.id, baseInteraction);
+    // enthusiasm_boost has qualityBonus=0.15 → qualityModifier = 1 + 0.15 = 1.15
+    expect(typeof result.qualityModifier).toBe('number');
+    expect(result.qualityModifier).toBeGreaterThan(1);
+    expect(result.talentBonuses.some(b => b.talentId === 'enthusiasm_boost')).toBe(true);
   });
 });
