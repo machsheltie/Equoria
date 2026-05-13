@@ -206,4 +206,13 @@ describe('featureFlagService — USER_LIST and default truthy branches (Equoria-
     expect(stats.FF_AUTH_PASSWORDLESS_LOGIN.enabled).toBe(0);
     expect(stats.FF_AUTH_PASSWORDLESS_LOGIN.enabledRate).toBe(0);
   });
+
+  it('PERCENTAGE path with real userId covers context.userId || "anonymous" left side (Equoria-rr7)', async () => {
+    // FF_BREEDING_NEW_UI is PERCENTAGE type — calling with real userId triggers line 114 left branch
+    process.env.FF_BREEDING_NEW_UI = '100';
+    const result = await isFeatureEnabled('FF_BREEDING_NEW_UI', { userId: 'user-real-id-rr7' });
+    expect(typeof result).toBe('boolean');
+    // bucket for this user must be < 100 → true
+    expect(result).toBe(true);
+  });
 });
