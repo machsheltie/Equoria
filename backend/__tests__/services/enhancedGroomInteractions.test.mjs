@@ -11,6 +11,7 @@ import {
   checkForSpecialEvent,
   calculateEnhancedEffects,
   getAvailableInteractions,
+  processInteractionWithPerformance,
   RELATIONSHIP_LEVELS,
   ENHANCED_INTERACTIONS,
   SPECIAL_EVENTS,
@@ -315,5 +316,50 @@ describe('getAvailableInteractions', () => {
         expect(typeof variation.estimatedCost).toBe('number');
       }
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// calculateRelationshipLevel — fallback branch (line 180)
+// ---------------------------------------------------------------------------
+describe('calculateRelationshipLevel — negative-points fallback (line 180)', () => {
+  it('returns STRANGER object when totalBondingPoints is negative (exhausts loop, hits fallback)', () => {
+    const result = calculateRelationshipLevel(-1);
+    expect(result).toBe(RELATIONSHIP_LEVELS.STRANGER);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// processInteractionWithPerformance — full function body (lines 426-457)
+// ---------------------------------------------------------------------------
+describe('processInteractionWithPerformance — full function body coverage', () => {
+  it('returns shape with performanceTracked:true (recordGroomPerformance is fire-and-forget)', async () => {
+    const result = await processInteractionWithPerformance(
+      { id: 999999, personality: 'gentle', skillLevel: 'expert', speciality: 'medical', sessionRate: 20 },
+      { id: 999999, age: 365, bondScore: 0, stressLevel: 20 },
+      '00000000-0000-0000-0000-000000000000',
+      'daily_care',
+      'Morning Routine',
+      30,
+    );
+    expect(result.performanceTracked).toBe(true);
+    expect(result).toHaveProperty('bondingChange');
+    expect(result).toHaveProperty('stressChange');
+    expect(result).toHaveProperty('quality');
+    expect(typeof result.wellbeingImpact).toBe('number');
+    expect(typeof result.taskSuccess).toBe('boolean');
+  });
+
+  it('throws when calculateEnhancedEffects throws (covers catch block lines 459-462)', async () => {
+    await expect(
+      processInteractionWithPerformance(
+        { id: 999999, personality: 'gentle', skillLevel: 'expert', speciality: 'medical', sessionRate: 20 },
+        { id: 999999, age: 365, bondScore: 0, stressLevel: 20 },
+        '00000000-0000-0000-0000-000000000000',
+        'UNKNOWN_TYPE_XYZ',
+        'Morning Routine',
+        30,
+      ),
+    ).rejects.toThrow();
   });
 });
