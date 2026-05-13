@@ -31,7 +31,10 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
 
   let user;
   let userToken;
+  let recipientUser;
   let createdClubId;
+  let createdThreadId;
+  let createdMessageId;
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -41,10 +44,27 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
     });
     user = created.user;
     userToken = created.token;
+
+    // Create a second user to act as message recipient
+    const ts2 = Date.now() + 1;
+    const created2 = await createTestUser({
+      username: `community_rcpt_${ts2}`,
+      email: `community_rcpt_${ts2}@test.com`,
+    });
+    recipientUser = created2.user;
   }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   afterAll(async () => {
     try {
+      // Clean up created thread (posts cascade-delete with thread)
+      if (createdThreadId) {
+        await prisma.forumPost.deleteMany({ where: { threadId: createdThreadId } });
+        await prisma.forumThread.deleteMany({ where: { id: createdThreadId } });
+      }
+      // Clean up created message
+      if (createdMessageId) {
+        await prisma.directMessage.deleteMany({ where: { id: createdMessageId } });
+      }
       if (createdClubId) {
         await prisma.clubMembership.deleteMany({ where: { clubId: createdClubId } });
         await prisma.club.deleteMany({ where: { id: createdClubId } });
@@ -161,6 +181,29 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
   // ─── POST /api/forum/threads ──────────────────────────────────────────────────
 
   describe('POST /api/forum/threads', () => {
+    it('[P0] happy path — creates thread and returns 201 with thread and firstPost (Equoria-wfmq)', async () => {
+      const res = await request(app)
+        .post('/api/forum/threads')
+        .set('Authorization', `Bearer ${userToken}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({
+          section: 'general',
+          title: `TestFixture-Thread-${Date.now()}`,
+          content: 'Integration test thread content',
+          tags: ['test'],
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data).toBeDefined();
+      expect(res.body.data.thread).toBeDefined();
+      expect(res.body.data.thread.authorId).toBe(user.id);
+      expect(res.body.data.firstPost).toBeDefined();
+      createdThreadId = res.body.data.thread.id;
+    });
+
     it('[P1] auth guard — returns 401 when no token provided', async () => {
       const res = await request(app)
         .post('/api/forum/threads')
@@ -207,6 +250,28 @@ describe('INTEGRATION: Community Routes (21-3)', () => {
   // ─── POST /api/messages ───────────────────────────────────────────────────────
 
   describe('POST /api/messages', () => {
+    it('[P0] happy path — sends message and returns 201 with message data (Equoria-q6t9)', async () => {
+      const res = await request(app)
+        .post('/api/messages')
+        .set('Authorization', `Bearer ${userToken}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({
+          recipientId: recipientUser.id,
+          subject: `TestFixture-Subject-${Date.now()}`,
+          content: 'Integration test message content',
+        });
+
+      expect(res.status).toBe(201);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data).toBeDefined();
+      expect(res.body.data.message).toBeDefined();
+      expect(res.body.data.message.senderId).toBe(user.id);
+      expect(res.body.data.message.recipientId).toBe(recipientUser.id);
+      createdMessageId = res.body.data.message.id;
+    });
+
     it('[P1] auth guard — returns 401 when no token provided', async () => {
       const res = await request(app)
         .post('/api/messages')
