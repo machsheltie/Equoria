@@ -16,6 +16,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import {
   PERFORMANCE_CONFIG,
+  recordGroomPerformance,
   getGroomPerformanceSummary,
   getTopPerformingGrooms,
 } from '../../services/groomPerformanceService.mjs';
@@ -218,5 +219,102 @@ describe('groomPerformanceService — DB fixture branch coverage (Equoria-jkht)'
     expect(PERFORMANCE_CONFIG.REPUTATION_RANGES.EXCELLENT.min).toBe(81);
     expect(PERFORMANCE_CONFIG.REPUTATION_RANGES.TERRIBLE.max).toBe(20);
     expect(typeof PERFORMANCE_CONFIG.METRIC_WEIGHTS.bondingEffectiveness).toBe('number');
+  });
+});
+
+// ── recordGroomPerformance branch coverage (Equoria-rr7) ─────────────────────
+// Covers lines 52-90 (recordGroomPerformance body), 96-130 (updateGroomMetrics),
+// 137-187 (calculatePerformanceMetrics), 194-201 (calculateVariance).
+// Branch at line 162: ratingsRecords.length > 0 (TRUE with playerRating, FALSE without).
+
+describe('groomPerformanceService — recordGroomPerformance branch coverage (Equoria-rr7)', () => {
+  let rgrUser;
+  let rgrGroom;
+  let rgrHorse;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    rgrUser = await prisma.user.create({
+      data: {
+        email: `rgr-${ts}-${rand()}@test.com`,
+        username: `rgr${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'RGR',
+        lastName: 'Tester',
+        money: 1000,
+      },
+    });
+
+    rgrGroom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-RGR-Groom-${ts}`,
+        speciality: 'general',
+        personality: 'gentle',
+        skillLevel: 'novice',
+        userId: rgrUser.id,
+      },
+    });
+
+    rgrHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-RGR-Horse-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: rgrUser.id,
+      },
+    });
+  }, 60000);
+
+  afterAll(async () => {
+    if (rgrGroom?.id) {
+      await prisma.groomPerformanceRecord.deleteMany({ where: { groomId: rgrGroom.id } }).catch(() => {});
+      await prisma.groomMetrics.deleteMany({ where: { groomId: rgrGroom.id } }).catch(() => {});
+    }
+    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-RGR-' } } }).catch(() => {});
+    await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-RGR-' } } }).catch(() => {});
+    await prisma.user.delete({ where: { id: rgrUser?.id } }).catch(() => {});
+  }, 30000);
+
+  it('recordGroomPerformance: no playerRating → creates record, triggers metrics update (lines 52-201, line 162 FALSE)', async () => {
+    const record = await recordGroomPerformance(rgrGroom.id, rgrUser.id, 'grooming', {
+      horseId: rgrHorse.id,
+      bondGain: 3,
+      taskSuccess: true,
+      wellbeingImpact: 1,
+      duration: 30,
+    });
+    expect(record.id).toBeDefined();
+    expect(record.groomId).toBe(rgrGroom.id);
+    expect(record.interactionType).toBe('grooming');
+    expect(record.bondGain).toBe(3);
+    expect(record.playerRating).toBeNull();
+
+    // Verify updateGroomMetrics ran — GroomMetrics record created
+    const metrics = await prisma.groomMetrics.findUnique({ where: { groomId: rgrGroom.id } });
+    expect(metrics).not.toBeNull();
+    expect(metrics.totalInteractions).toBe(1);
+    // null playerRating → ratingsRecords.length=0 → playerSatisfaction default=75
+    expect(metrics.playerSatisfaction).toBe(75);
+  });
+
+  it('recordGroomPerformance: with playerRating=4 → line 162 TRUE (ratingsRecords.length > 0)', async () => {
+    const record = await recordGroomPerformance(rgrGroom.id, rgrUser.id, 'grooming', {
+      horseId: rgrHorse.id,
+      bondGain: 5,
+      taskSuccess: true,
+      wellbeingImpact: 2,
+      duration: 45,
+      playerRating: 4,
+    });
+    expect(record.playerRating).toBe(4);
+
+    // updateGroomMetrics runs again — now 2 records, one with rating
+    const metrics = await prisma.groomMetrics.findUnique({ where: { groomId: rgrGroom.id } });
+    expect(metrics.totalInteractions).toBe(2);
+    // ratingsRecords has 1 entry with playerRating=4 → playerSatisfaction = (4/1)*20 = 80
+    expect(metrics.playerSatisfaction).toBe(80);
   });
 });
