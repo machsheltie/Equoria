@@ -5,8 +5,9 @@
  * AsidePanel is rendered by DashboardLayout on hub routes.
  */
 
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Sparkles, Star } from 'lucide-react';
+import { Sparkles, Star, Dumbbell, Trophy, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { NextActionsBar } from '@/components/hub/NextActionsBar';
 import { useHorses } from '@/hooks/api/useHorses';
@@ -180,12 +181,91 @@ function GettingStartedCard() {
   );
 }
 
+/* ─── Day-One Getting Started (first hub visit after wizard completion) ── */
+const STARTER_ACTIONS = [
+  {
+    icon: <Dumbbell className="w-5 h-5" />,
+    title: 'Train Your Horse',
+    description: 'Improve stats in a discipline of your choice',
+    href: '/training',
+  },
+  {
+    icon: <Trophy className="w-5 h-5" />,
+    title: 'Enter a Competition',
+    description: 'Test your horse against other riders',
+    href: '/competitions',
+  },
+  {
+    icon: <Star className="w-5 h-5" />,
+    title: 'Groom Your Foal',
+    description: "Care for a young horse's early development",
+    href: '/grooms',
+  },
+] as const;
+
+interface DayOneGettingStartedProps {
+  onDismiss: () => void;
+}
+
+function DayOneGettingStarted({ onDismiss }: DayOneGettingStartedProps) {
+  return (
+    <section aria-label="Getting started">
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-xs font-semibold uppercase tracking-widest text-[var(--text-muted)] font-[var(--font-body)]">
+          Getting Started
+        </h2>
+        <button
+          onClick={onDismiss}
+          className="flex items-center gap-1 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+          aria-label="Dismiss getting started"
+        >
+          <X className="w-3 h-3" />
+          Dismiss
+        </button>
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        {STARTER_ACTIONS.map((action) => (
+          <Link
+            key={action.href}
+            to={action.href}
+            onClick={onDismiss}
+            className="flex items-start gap-3 p-4 rounded-xl border border-[rgba(200,168,78,0.2)] bg-[var(--glass-bg)] hover:border-[var(--gold-primary)] hover:bg-[rgba(201,162,39,0.1)] transition-all duration-150 [backdrop-filter:blur(10px)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--status-info)]"
+          >
+            <span className="rounded-lg p-2 text-[var(--gold-primary)] bg-[rgba(201,162,39,0.15)] flex-shrink-0">
+              {action.icon}
+            </span>
+            <div>
+              <p className="text-sm font-medium text-[var(--gold-light)] leading-snug">
+                {action.title}
+              </p>
+              <p className="text-xs text-[var(--text-muted)] mt-0.5 leading-relaxed">
+                {action.description}
+              </p>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 /* ─── Main Hub ───────────────────────────────────────────────────────── */
 const Index = () => {
   const { user } = useAuth();
   const { data: horses, isLoading: horsesLoading, isError, error, refetch } = useHorses();
   const isNewPlayer = !user?.completedOnboarding;
   const horseList = Array.isArray(horses) ? horses : [];
+
+  const [isDayOne, setIsDayOne] = useState(() => sessionStorage.getItem('equoria-day1') === '1');
+
+  function dismissDayOne() {
+    try {
+      sessionStorage.removeItem('equoria-day1');
+    } catch {
+      /* noop */
+    }
+    setIsDayOne(false);
+  }
 
   // Compute summary stats from horse data using shared helpers
   const readyCount = horseList.filter((h) =>
@@ -237,8 +317,14 @@ const Index = () => {
         </div>
       </header>
 
-      {/* Next actions or getting started */}
-      {isNewPlayer ? <GettingStartedCard /> : <NextActionsBar />}
+      {/* Next actions — pre-onboarding welcome, Day-1 guided mode, or live actions */}
+      {isNewPlayer ? (
+        <GettingStartedCard />
+      ) : isDayOne ? (
+        <DayOneGettingStarted onDismiss={dismissDayOne} />
+      ) : (
+        <NextActionsBar />
+      )}
 
       {/* Horse grid — 250px min-width per card, auto-fill for responsive 3-col on laptop */}
       <section aria-label="Your horses">

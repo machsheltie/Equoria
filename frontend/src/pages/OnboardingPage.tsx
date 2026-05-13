@@ -369,6 +369,12 @@ const OnboardingPage: React.FC = () => {
       }
       queryClient.invalidateQueries({ queryKey: ['horses'] });
       clearOnboardingStorage();
+      // Signal hub dashboard to show Day-1 guided mode on first visit
+      try {
+        sessionStorage.setItem('equoria-day1', '1');
+      } catch {
+        /* noop */
+      }
       toast.success('Welcome to Equoria!');
       navigate('/stable', { replace: true });
     },
