@@ -26,6 +26,7 @@ import {
   processRetirement,
   getGroomsApproachingRetirement,
   getRetirementStatistics,
+  processWeeklyCareerProgression,
 } from '../../services/groomRetirementService.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 
@@ -228,6 +229,27 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
     await expect(processRetirement(grsGroomNormal.id, null, false)).rejects.toThrow('not eligible for retirement');
   });
 
+  it('processRetirement: voluntary=true retires groom successfully (lines 167-198)', async () => {
+    const ts = Date.now();
+    const tempGroom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-GRS-VolRetire-${ts}`,
+        speciality: 'general',
+        personality: 'gentle',
+        careerWeeks: 0,
+        level: 1,
+        userId: grsUser.id,
+      },
+    });
+    const result = await processRetirement(tempGroom.id, RETIREMENT_REASONS.VOLUNTARY, true);
+    expect(result.groom.retired).toBe(true);
+    expect(result.retirementReason).toBe(RETIREMENT_REASONS.VOLUNTARY);
+    expect(result.retirementTimestamp).toBeInstanceOf(Date);
+    expect(typeof result.assignmentCount).toBe('number');
+    expect(typeof result.synergyRecords).toBe('number');
+    // cleanup handled by afterAll groom.deleteMany startsWith 'TestFixture-GRS-'
+  });
+
   it('CAREER_CONSTANTS and RETIREMENT_REASONS exports are correctly shaped', () => {
     expect(CAREER_CONSTANTS.MANDATORY_RETIREMENT_WEEKS).toBe(104);
     expect(CAREER_CONSTANTS.EARLY_RETIREMENT_LEVEL).toBe(10);
@@ -255,5 +277,75 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
     expect(typeof result.retirementRate).toBe('number');
     expect(typeof result.averageCareerLength).toBe('number');
     expect(result.totalGrooms).toBe(result.activeGrooms + result.retiredGrooms);
+  });
+});
+
+// ── processWeeklyCareerProgression branch coverage ────────────────────────────
+
+describe('groomRetirementService — processWeeklyCareerProgression branch coverage (Equoria-rr7)', () => {
+  let wcpUser;
+  let wcpGroomNormal;
+  let wcpGroomMandatory;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    wcpUser = await prisma.user.create({
+      data: {
+        email: `wcp-${ts}-${rand()}@test.com`,
+        username: `wcp${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'WCP',
+        lastName: 'Tester',
+        money: 1000,
+      },
+    });
+
+    wcpGroomNormal = await prisma.groom.create({
+      data: {
+        name: `TestFixture-GRS-WCP-Normal-${ts}`,
+        speciality: 'general',
+        personality: 'gentle',
+        careerWeeks: 0,
+        level: 1,
+        isActive: true,
+        userId: wcpUser.id,
+      },
+    });
+
+    wcpGroomMandatory = await prisma.groom.create({
+      data: {
+        name: `TestFixture-GRS-WCP-Mandatory-${ts}`,
+        speciality: 'general',
+        personality: 'gentle',
+        careerWeeks: CAREER_CONSTANTS.MANDATORY_RETIREMENT_WEEKS,
+        level: 1,
+        isActive: true,
+        userId: wcpUser.id,
+      },
+    });
+  }, 30000);
+
+  afterAll(async () => {
+    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GRS-WCP-' } } }).catch(() => {});
+    await prisma.user.delete({ where: { id: wcpUser?.id } }).catch(() => {});
+  }, 30000);
+
+  it('processWeeklyCareerProgression: userId scoped — increments normal groom + auto-retires mandatory groom (lines 311-377)', async () => {
+    const result = await processWeeklyCareerProgression(wcpUser.id);
+    // Both grooms processed (incremented)
+    expect(result.processed).toBeGreaterThanOrEqual(2);
+    // Mandatory groom auto-retired
+    expect(result.retired).toBeGreaterThanOrEqual(1);
+    expect(Array.isArray(result.errors)).toBe(true);
+    expect(result.errors).toHaveLength(0);
+    expect(Array.isArray(result.retirements)).toBe(true);
+    const mandatoryEntry = result.retirements.find(r => r.groomId === wcpGroomMandatory.id);
+    expect(mandatoryEntry).toBeDefined();
+    expect(mandatoryEntry.reason).toBe(RETIREMENT_REASONS.MANDATORY_CAREER_LIMIT);
+    // Normal groom incremented to careerWeeks=1
+    const updated = await prisma.groom.findUnique({ where: { id: wcpGroomNormal.id } });
+    expect(updated.careerWeeks).toBe(1);
   });
 });
