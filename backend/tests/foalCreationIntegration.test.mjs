@@ -92,6 +92,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
         stressLevel: 10,
         bondScore: 80,
         healthStatus: 'Good',
+        lastFedDate: new Date(), // healthy by default so happy-path tests pass
         epigeneticModifiers: { positive: ['resilient'], negative: [], hidden: [] },
       },
     });
@@ -109,6 +110,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
         stressLevel: 15,
         bondScore: 70,
         healthStatus: 'Good',
+        lastFedDate: new Date(), // healthy by default so happy-path tests pass
         epigeneticModifiers: { positive: ['calm'], negative: [], hidden: [] },
       },
     });
@@ -367,5 +369,62 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
         sex: 'Filly',
       })
       .expect(401);
+  });
+
+  // ── Critical-health gate (Equoria-2e7e) ─────────────────────────────────────
+
+  it('should return 400 when sire is in critical health (lastFedDate null)', async () => {
+    await resetDamPregnancy();
+    await prisma.horse.update({ where: { id: testSire.id }, data: { lastFedDate: null } });
+
+    const response = await request(app)
+      .post('/api/horses/foals')
+      .set('Authorization', `Bearer ${authToken}`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
+      .send({
+        name: `HealthGateFoal_${ts}`,
+        breedId: testBreed.id,
+        sireId: testSire.id,
+        damId: testDam.id,
+        sex: 'Filly',
+      })
+      .expect(400);
+
+    expect(response.body.success).toBe(false);
+    expect(response.body.message).toMatch(/critical health/i);
+
+    // Restore sire for subsequent tests
+    await prisma.horse.update({ where: { id: testSire.id }, data: { lastFedDate: new Date() } });
+  });
+
+  it('should return 400 when dam is in critical health (lastFedDate null)', async () => {
+    await resetDamPregnancy();
+    await prisma.horse.update({ where: { id: testDam.id }, data: { lastFedDate: null } });
+
+    const response = await request(app)
+      .post('/api/horses/foals')
+      .set('Authorization', `Bearer ${authToken}`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', __csrf__.cookieHeader)
+      .set('X-CSRF-Token', __csrf__.csrfToken)
+      .send({
+        name: `HealthGateFoal_${ts}`,
+        breedId: testBreed.id,
+        sireId: testSire.id,
+        damId: testDam.id,
+        sex: 'Filly',
+      })
+      .expect(400);
+
+    expect(response.body.success).toBe(false);
+    expect(response.body.message).toMatch(/critical health/i);
+
+    // Restore dam health and pregnancy state for subsequent tests
+    await prisma.horse.update({
+      where: { id: testDam.id },
+      data: { lastFedDate: new Date(), inFoalSinceDate: null, pregnancySireId: null },
+    });
   });
 });

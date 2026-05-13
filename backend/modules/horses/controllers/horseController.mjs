@@ -270,6 +270,19 @@ export async function createFoal(req, res) {
       });
     }
 
+    // Critical-health gate (Equoria-2e7e): mirrors conformationShowController's A12 check.
+    // Both sire and dam must have displayedHealth !== 'critical' before pregnancy can begin.
+    if (getDisplayedHealth(sire) === 'critical') {
+      const msg = `${sire.name} is in critical health and cannot breed. Feed and vet to restore health.`;
+      logger.info(`[horseController.createFoal] Rejected: sire ${sireId} is in critical health`);
+      return res.status(400).json({ success: false, message: msg, data: null });
+    }
+    if (getDisplayedHealth(dam) === 'critical') {
+      const msg = `${dam.name} is in critical health and cannot breed. Feed and vet to restore health.`;
+      logger.info(`[horseController.createFoal] Rejected: dam ${damId} is in critical health`);
+      return res.status(400).json({ success: false, message: msg, data: null });
+    }
+
     // Validate breedId early so a malformed payload doesn't put the mare
     // into an in-foal state with bad data.
     const normalizedBreedId = Number.parseInt(breedId, 10);
@@ -550,9 +563,8 @@ export async function getHorsePersonalityImpact(req, res) {
     });
 
     // Calculate compatibility for each groom
-    const { getCompatibleGroomsForTemperament, calculatePersonalityCompatibility } = await import(
-      '../../../utils/groomPersonalityTraitBonus.mjs'
-    );
+    const { getCompatibleGroomsForTemperament, calculatePersonalityCompatibility } =
+      await import('../../../utils/groomPersonalityTraitBonus.mjs');
 
     const groomCompatibility = grooms.map(groom => {
       const compatibility = calculatePersonalityCompatibility(
@@ -1232,9 +1244,8 @@ export async function getBreedingColorPrediction(req, res) {
     }
 
     // Import and call the pure prediction service
-    const { predictBreedingColors } = await import(
-      '../services/breedingColorPredictionService.mjs'
-    );
+    const { predictBreedingColors } =
+      await import('../services/breedingColorPredictionService.mjs');
 
     const prediction = predictBreedingColors(
       sire.colorGenotype,

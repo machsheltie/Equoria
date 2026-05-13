@@ -182,3 +182,38 @@ describe('enterAndRunShow — multiple horses, all invalid', () => {
     expect(result.failedFetches.length).toBeGreaterThanOrEqual(1);
   });
 });
+
+// ─── Critical-health gate (Equoria-p1fq) ─────────────────────────────────────
+
+describe('enterAndRunShow — critical-health gate', () => {
+  let criticalHorse;
+
+  beforeAll(async () => {
+    criticalHorse = await prisma.horse.create({
+      data: {
+        name: `${PREFIX}CriticalHealth-${uid()}`,
+        sex: 'Mare',
+        dateOfBirth: new Date('2020-01-01'),
+        age: 5,
+        userId: user.id,
+        rider: { id: 1, name: 'Test Rider' }, // passes hasValidRider
+        lastFedDate: null, // triggers critical feedHealth
+      },
+    });
+  }, 30000);
+
+  afterAll(async () => {
+    if (criticalHorse) {
+      await prisma.horse.delete({ where: { id: criticalHorse.id } }).catch(() => {});
+    }
+  }, 30000);
+
+  it('puts horse in failedFetches with critical-health reason when lastFedDate is null', async () => {
+    const result = await enterAndRunShow([criticalHorse.id], show);
+
+    expect(result.success).toBe(false);
+    expect(result.failedFetches).toHaveLength(1);
+    expect(result.failedFetches[0].horseId).toBe(criticalHorse.id);
+    expect(result.failedFetches[0].reason).toMatch(/critical health/i);
+  });
+});

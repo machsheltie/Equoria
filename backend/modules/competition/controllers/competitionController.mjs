@@ -15,6 +15,7 @@ import { updateHorseRewards } from '../../../utils/horseUpdates.mjs';
 import { transferEntryFees } from '../../../utils/userUpdates.mjs';
 import { resolveTackBonus } from '../../services/controllers/tackShopController.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
+import { getDisplayedHealth } from '../../../utils/horseHealth.mjs';
 import logger from '../../../utils/logger.mjs';
 
 /**
@@ -182,6 +183,17 @@ async function enterAndRunShow(horseIds, show) {
           // NEW: Check if horse has a valid rider (required for competition)
           if (!hasValidRider(horse)) {
             failedFetches.push({ horseId, reason: 'Horse must have a rider to compete' });
+            continue;
+          }
+          // Critical-health gate (Equoria-p1fq): mirrors conformationShowController's A12 check.
+          if (getDisplayedHealth(horse) === 'critical') {
+            logger.info(
+              `[competitionController.enterAndRunShow] Rejected entry: horse ${horseId} is in critical health`,
+            );
+            failedFetches.push({
+              horseId,
+              reason: `${horse.name} is in critical health and cannot compete. Feed and vet to restore health.`,
+            });
             continue;
           }
           horses.push(horse);
