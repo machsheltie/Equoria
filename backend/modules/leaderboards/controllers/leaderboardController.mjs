@@ -473,77 +473,72 @@ export const getUserRankSummary = async (req, res) => {
 
     // ─── XP rank ────────────────────────────────────────────────────────────
     // Rank by total XP earned across all xpEvents. Sum for target user first,
-    // then count users with strictly greater sum.
-    // TODO(perf, post-beta): replace full `groupBy` scan with a SQL
-    // aggregation/materialized view once the xp_events table grows large.
+    // then use a raw SQL COUNT to avoid loading every user's xp into memory.
     const targetXpAgg = await prisma.xpEvent.aggregate({
       where: { userId: targetUser.id },
       _sum: { amount: true },
     });
     const targetXpTotal = targetXpAgg._sum.amount ?? 0;
 
-    const xpGrouped = await prisma.xpEvent.groupBy({
-      by: ['userId'],
-      _sum: { amount: true },
-    });
-    const usersAheadByXp = xpGrouped.filter(g => (g._sum.amount ?? 0) > targetXpTotal).length;
-    const xpRank = usersAheadByXp + 1;
+    // Count users whose xp total strictly exceeds the target user's total via
+    // a single indexed GROUP BY + HAVING query — no full table materialisation.
+    const xpAheadResult = await prisma.$queryRaw`
+      SELECT COUNT(*)::int AS cnt
+      FROM (
+        SELECT "userId", COALESCE(SUM(amount), 0) AS total_xp
+        FROM "xp_events"
+        GROUP BY "userId"
+        HAVING COALESCE(SUM(amount), 0) > ${targetXpTotal}
+      ) sub
+    `;
+    const usersAheadByXp = xpAheadResult[0]?.cnt ?? 0;
+    const xpRank = Number(usersAheadByXp) + 1;
 
     // ─── Horse-earnings rank ────────────────────────────────────────────────
-    // TODO(perf, post-beta): `horse.groupBy` scans all rows; move to a
-    // materialized `user_earnings_totals` view if latency climbs.
+    // Aggregate per-user horse earnings using a scoped SQL query — avoids
+    // loading every horse row into Node memory for a simple rank computation.
     const targetEarningsAgg = await prisma.horse.aggregate({
       where: { userId: targetUser.id },
       _sum: { totalEarnings: true },
     });
     const targetEarningsTotal = targetEarningsAgg._sum.totalEarnings ?? 0;
 
-    const earningsGrouped = await prisma.horse.groupBy({
-      by: ['userId'],
-      _sum: { totalEarnings: true },
-      where: { userId: { not: null } },
-    });
-    const usersAheadByEarnings = earningsGrouped.filter(
-      g => (g._sum.totalEarnings ?? 0) > targetEarningsTotal,
-    ).length;
-    const earningsRank = usersAheadByEarnings + 1;
+    const earningsAheadResult = await prisma.$queryRaw`
+      SELECT COUNT(*)::int AS cnt
+      FROM (
+        SELECT "userId", COALESCE(SUM("totalEarnings"), 0) AS total_earnings
+        FROM "horses"
+        WHERE "userId" IS NOT NULL
+        GROUP BY "userId"
+        HAVING COALESCE(SUM("totalEarnings"), 0) > ${targetEarningsTotal}
+      ) sub
+    `;
+    const usersAheadByEarnings = earningsAheadResult[0]?.cnt ?? 0;
+    const earningsRank = Number(usersAheadByEarnings) + 1;
 
     // ─── Horse-performance rank ────────────────────────────────────────────
     // primaryStat = MAX(competitionResult.score) across horses owned by user.
-    // Rank by counting users whose best-horse max-score exceeds target's.
-    // TODO(perf, post-beta): this pulls every competition result into memory
-    // to reduce to per-owner max. Acceptable at beta scale (~10K rows);
-    // replace with a raw SQL aggregate
-    //   SELECT h.user_id, MAX(cr.score) FROM competition_results cr
-    //   JOIN horses h ON cr.horse_id = h.id GROUP BY h.user_id
-    // once beta stabilizes.
+    // Use a raw SQL JOIN + GROUP BY to count users with a better max score —
+    // avoids pulling every competition result into Node memory.
     const targetPerfAgg = await prisma.competitionResult.aggregate({
       where: { horse: { userId: targetUser.id } },
       _max: { score: true },
     });
     const targetPerfMax = targetPerfAgg._max.score ? Number(targetPerfAgg._max.score) : 0;
 
-    // Per-user best horse score. Pull all competition results, reduce to max per owner.
-    const allResults = await prisma.competitionResult.findMany({
-      select: {
-        score: true,
-        horse: { select: { userId: true } },
-      },
-    });
-    const perUserBest = new Map();
-    for (const r of allResults) {
-      const ownerId = r.horse?.userId;
-      if (!ownerId) {
-        continue;
-      }
-      const s = Number(r.score);
-      const current = perUserBest.get(ownerId) ?? 0;
-      if (s > current) {
-        perUserBest.set(ownerId, s);
-      }
-    }
-    const usersAheadByPerformance = [...perUserBest.values()].filter(v => v > targetPerfMax).length;
-    const performanceRank = usersAheadByPerformance + 1;
+    const perfAheadResult = await prisma.$queryRaw`
+      SELECT COUNT(*)::int AS cnt
+      FROM (
+        SELECT h."userId", MAX(cr.score) AS best_score
+        FROM "competition_results" cr
+        JOIN "horses" h ON cr."horseId" = h.id
+        WHERE h."userId" IS NOT NULL
+        GROUP BY h."userId"
+        HAVING MAX(cr.score) > ${targetPerfMax}
+      ) sub
+    `;
+    const usersAheadByPerformance = perfAheadResult[0]?.cnt ?? 0;
+    const performanceRank = Number(usersAheadByPerformance) + 1;
 
     // totalEntries denominator for horse-* categories — prefer distinct owner
     // count so the display matches "rank 3 of N owners", not "of all users".
