@@ -413,8 +413,8 @@ describe('flagAssignmentEngine — error-path catch blocks (Equoria-jkht)', () =
   });
 
   it('calculateFlagAssignmentScore: non-existent horse id returns numeric totalScore (fallback 1.0 personality+temporal)', async () => {
-    // Prisma coerces string id to empty-result query; both inner modifiers return fallback 1.0.
-    const h = { id: 'not-an-int', dateOfBirth: new Date(), epigeneticFlags: [], stressLevel: 3, bondScore: 30 };
+    // Use a valid integer id that does not exist in the DB; both inner modifiers return fallback 1.0.
+    const h = { id: 999999998, dateOfBirth: new Date(), epigeneticFlags: [], stressLevel: 3, bondScore: 30 };
     const result = await calculateFlagAssignmentScore(h, 'brave', makeCarePatterns());
     expect(typeof result.totalScore).toBe('number');
     expect(result.components.personalityModifier).toBe(1.0);
