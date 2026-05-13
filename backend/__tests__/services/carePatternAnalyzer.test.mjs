@@ -517,4 +517,12 @@ describe('carePatternAnalyzer — single-interaction and specialized branches (E
     const poorRec = result.recommendations.find(r => r.includes('shows poor effectiveness'));
     expect(poorRec).toBeDefined();
   });
+
+  it('calculateCareRiskScore: poor quality + stressChange=4 → riskLevel=high (line 586)', async () => {
+    // cpa2HorseStress: quality='poor', stressChange=4, 1 interaction → overallRisk ≈ 0.787 → [0.6,0.8) → 'high'
+    const result = await calculateCareRiskScore(cpa2HorseStress.id);
+    expect(result.riskLevel).toBe('high');
+    expect(result.overallRisk).toBeGreaterThanOrEqual(0.6);
+    expect(result.overallRisk).toBeLessThan(0.8);
+  });
 });
