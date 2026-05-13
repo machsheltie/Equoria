@@ -30,7 +30,13 @@ export async function getThreads(req, res) {
   const pageNum = Math.max(1, parseInt(page, 10) || 1);
   const skip = (pageNum - 1) * THREADS_PER_PAGE;
 
-  const where = section && VALID_SECTIONS.includes(section) ? { section } : {};
+  if (section && !VALID_SECTIONS.includes(section)) {
+    return res.status(400).json({
+      success: false,
+      message: `Invalid section. Valid sections: ${VALID_SECTIONS.join(', ')}`,
+    });
+  }
+  const where = section ? { section } : {};
 
   try {
     const [threads, total] = await Promise.all([

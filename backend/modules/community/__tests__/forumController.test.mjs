@@ -142,18 +142,15 @@ describe('forumController (real DB)', () => {
       expect(ids).not.toContain(general.id);
     });
 
-    it('ignores invalid section values (returns all threads)', async () => {
+    it('returns 400 for invalid section values', async () => {
       const user = await createUser();
-      const general = await createThreadInDb(user.id, { section: 'general' });
-      const art = await createThreadInDb(user.id, { section: 'art' });
 
       const h = makeReqRes(user.id, { query: { section: 'INVALID_SECTION' } });
       await getThreads(h.req, h.res);
 
-      const ids = h.res.jsonValue.data.threads.map(t => t.id);
-      // No section filter applied, so both should appear.
-      expect(ids).toContain(general.id);
-      expect(ids).toContain(art.id);
+      expect(h.res.statusValue).toBe(400);
+      expect(h.res.jsonValue.success).toBe(false);
+      expect(h.res.jsonValue.message).toMatch(/Invalid section/);
     });
   });
 
