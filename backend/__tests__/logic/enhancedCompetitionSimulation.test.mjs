@@ -8,11 +8,13 @@
  * executeEnhancedCompetition is DB-heavy and is covered by competition integration tests.
  */
 
-import { describe, it, expect } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import {
   validateCompetitionEntry,
   getCompetitionEligibilitySummary,
+  executeEnhancedCompetition,
 } from '../../logic/enhancedCompetitionSimulation.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -291,5 +293,156 @@ describe('validateCompetitionEntry — trait-failure branch', () => {
     };
     const result = await validateCompetitionEntry(horseGaited, gaitedShow, validUser);
     expect(result.errors.every(e => !/gaited/i.test(e))).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// executeEnhancedCompetition — DB fixture integration (Equoria-rr7)
+// Covers lines 113-296: score calc, placements (1-4), ordinal strings,
+// prize/XP distribution, statGain null arm, horseXpResult.success arm.
+// ---------------------------------------------------------------------------
+
+describe('executeEnhancedCompetition — DB fixture integration (Equoria-rr7)', () => {
+  let ecsUser, ecsShow, ecsHorse1, ecsHorse2, ecsHorse3, ecsHorse4;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    ecsUser = await prisma.user.create({
+      data: {
+        email: `ecs-${ts}-${rand()}@test.com`,
+        username: `ecs${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'ECS',
+        lastName: 'Tester',
+        money: 10000,
+      },
+    });
+
+    // 4 horses with tiered Racing stats (speed+stamina+intelligence).
+    // Tier gaps are large enough that ±9% luck cannot cause crossover.
+    // Tier1≈240, Tier2≈180, Tier3≈120, Tier4≈60 — min gap 49 > max luck (24).
+    ecsHorse1 = await prisma.horse.create({
+      data: {
+        name: `TestFixture-ECS-Horse1-${ts}`,
+        sex: 'Colt',
+        dateOfBirth: new Date('2019-01-01'),
+        age: 35,
+        userId: ecsUser.id,
+        speed: 80,
+        stamina: 80,
+        intelligence: 80,
+      },
+    });
+    ecsHorse2 = await prisma.horse.create({
+      data: {
+        name: `TestFixture-ECS-Horse2-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date('2019-01-01'),
+        age: 35,
+        userId: ecsUser.id,
+        speed: 60,
+        stamina: 60,
+        intelligence: 60,
+      },
+    });
+    ecsHorse3 = await prisma.horse.create({
+      data: {
+        name: `TestFixture-ECS-Horse3-${ts}`,
+        sex: 'Colt',
+        dateOfBirth: new Date('2019-01-01'),
+        age: 35,
+        userId: ecsUser.id,
+        speed: 40,
+        stamina: 40,
+        intelligence: 40,
+      },
+    });
+    ecsHorse4 = await prisma.horse.create({
+      data: {
+        name: `TestFixture-ECS-Horse4-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date('2019-01-01'),
+        age: 35,
+        userId: ecsUser.id,
+        speed: 20,
+        stamina: 20,
+        intelligence: 20,
+      },
+    });
+
+    ecsShow = await prisma.show.create({
+      data: {
+        name: `TestFixture-ECS-Show-${ts}`,
+        discipline: 'Racing',
+        levelMin: 1,
+        levelMax: 15,
+        entryFee: 50,
+        prize: 500,
+        runDate: new Date(),
+        showType: 'ridden',
+      },
+    });
+  }, 60000);
+
+  afterAll(async () => {
+    if (ecsShow?.id) {
+      await prisma.competitionResult.deleteMany({ where: { showId: ecsShow.id } }).catch(() => {});
+      await prisma.show.delete({ where: { id: ecsShow.id } }).catch(() => {});
+    }
+    const horseIds = [ecsHorse1?.id, ecsHorse2?.id, ecsHorse3?.id, ecsHorse4?.id].filter(Boolean);
+    if (horseIds.length) {
+      await prisma.horseXpEvent.deleteMany({ where: { horseId: { in: horseIds } } }).catch(() => {});
+      await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-ECS-' } } }).catch(() => {});
+    }
+    if (ecsUser?.id) {
+      await prisma.xpEvent.deleteMany({ where: { userId: ecsUser.id } }).catch(() => {});
+      await prisma.notification.deleteMany({ where: { userId: ecsUser.id } }).catch(() => {});
+      await prisma.user.delete({ where: { id: ecsUser.id } }).catch(() => {});
+    }
+  }, 30000);
+
+  it('returns success:true with 4 results covering all placement branches (lines 113-296)', async () => {
+    const entries = [
+      { horse: ecsHorse1, user: ecsUser },
+      { horse: ecsHorse2, user: ecsUser },
+      { horse: ecsHorse3, user: ecsUser },
+      { horse: ecsHorse4, user: ecsUser },
+    ];
+
+    const result = await executeEnhancedCompetition(ecsShow, entries);
+
+    expect(result.success).toBe(true);
+    expect(result.results).toHaveLength(4);
+    expect(result.showName).toBe(ecsShow.name);
+    expect(result.discipline).toBe('Racing');
+    expect(typeof result.totalPrizeDistributed).toBe('number');
+    expect(typeof result.totalXPAwarded).toBe('number');
+    expect(Array.isArray(result.statGains)).toBe(true);
+
+    // All four ordinal strings exercised
+    const placements = result.results.map(r => r.placement).sort((a, b) => a - b);
+    expect(placements).toEqual([1, 2, 3, 4]);
+
+    // 4th place always gets 0 prize (covers placement > 3 branch)
+    const fourthPlace = result.results.find(r => r.placement === 4);
+    expect(fourthPlace.prizeWon).toBe(0);
+
+    // 1st place gets XP bonus
+    const firstPlace = result.results.find(r => r.placement === 1);
+    expect(firstPlace.xpGained).toBeGreaterThan(0);
+
+    // Prizes distributed only to top-3
+    expect(result.totalPrizeDistributed).toBe(500); // 50%+30%+20% of 500
+  });
+
+  it('returns success:false for executeEnhancedCompetition outer catch (lines 297-305)', async () => {
+    // horse:null causes calculateCompetitionScore to throw inside entries.map(),
+    // which is caught by the outer catch; show is real so showId access succeeds.
+    const result = await executeEnhancedCompetition(ecsShow, [{ horse: null, user: ecsUser }]);
+    expect(result.success).toBe(false);
+    expect(typeof result.error).toBe('string');
+    expect(result.showId).toBe(ecsShow.id);
   });
 });
