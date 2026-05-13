@@ -16,6 +16,7 @@ import { queryRateLimiter, mutationRateLimiter } from '../../../middleware/rateL
 import logger from '../../../utils/logger.mjs';
 import { recordTransaction } from '../../../services/financialLedgerService.mjs';
 import { parsePaginationParams, buildPaginatedResponse } from '../../../utils/paginationHelper.mjs';
+import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
 
 const router = express.Router();
 
@@ -146,6 +147,16 @@ router.post('/enter-show', mutationRateLimiter, auth, validateEnterShow, async (
       );
     } else {
       logger.warn(`[competitionRoutes.POST /enter-show] Competition failed: ${result.message}`);
+    }
+
+    // Invalidate competition and leaderboard caches after a successful run
+    if (result.success) {
+      invalidateCachePattern('competition:*').catch(() => {
+        /* non-critical */
+      });
+      invalidateCachePattern('leaderboard:*').catch(() => {
+        /* non-critical */
+      });
     }
 
     // Return appropriate status code based on success

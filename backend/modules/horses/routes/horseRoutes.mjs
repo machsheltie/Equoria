@@ -41,7 +41,11 @@ import { createFoalFromPregnancy } from '../services/foalingService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withHealth } from '../../../utils/horseHealth.mjs';
-import { getCachedQuery, generateCacheKey } from '../../../utils/cacheHelper.mjs';
+import {
+  getCachedQuery,
+  generateCacheKey,
+  invalidateCachePattern,
+} from '../../../utils/cacheHelper.mjs';
 
 // Horse list cache TTL (seconds)
 const HORSE_LIST_TTL = 120; // 2 minutes
@@ -340,7 +344,7 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
           where,
           take: parseInt(limit),
           skip: parseInt(offset),
-          // Field selection: excludes large JSONB (genotype, epigeneticModifiers, ultraRareTraits)
+          // Field selection: excludes large JSONB (genotype, colorGenotype, epigeneticFlags, etc.)
           select: {
             id: true,
             name: true,
@@ -351,8 +355,23 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
             salePrice: true,
             breedId: true,
             userId: true,
-            stats: true,
             createdAt: true,
+            // Core competition stats
+            speed: true,
+            stamina: true,
+            agility: true,
+            balance: true,
+            precision: true,
+            intelligence: true,
+            boldness: true,
+            flexibility: true,
+            obedience: true,
+            focus: true,
+            strength: true,
+            endurance: true,
+            totalEarnings: true,
+            trait: true,
+            temperament: true,
             breed: { select: { id: true, name: true } },
             user: { select: { id: true, username: true } },
           },
@@ -818,6 +837,11 @@ router.post(
 
       logger.info(`[horseRoutes] Created new horse: ${newHorse.name} (ID: ${newHorse.id})`);
 
+      // Invalidate horse list caches so the new horse appears on next fetch
+      invalidateCachePattern('horses:list:*').catch(() => {
+        /* non-critical */
+      });
+
       res.status(201).json({
         success: true,
         message: 'Horse created successfully',
@@ -919,6 +943,11 @@ router.put(
         `[horseRoutes] User ${req.user.id} updated horse: ${updatedHorse.name} (ID: ${horseId})`,
       );
 
+      // Invalidate horse list caches so updated data appears on next fetch
+      invalidateCachePattern('horses:list:*').catch(() => {
+        /* non-critical */
+      });
+
       res.json({
         success: true,
         message: 'Horse updated successfully',
@@ -975,6 +1004,11 @@ router.delete(
       });
 
       logger.info(`[horseRoutes] User ${req.user.id} deleted horse ID: ${horseId}`);
+
+      // Invalidate horse list caches so deleted horse disappears on next fetch
+      invalidateCachePattern('horses:list:*').catch(() => {
+        /* non-critical */
+      });
 
       res.json({
         success: true,
