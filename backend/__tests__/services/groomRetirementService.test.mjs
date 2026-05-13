@@ -1,0 +1,236 @@
+/**
+ * groomRetirementService branch-coverage tests (Equoria-jkht coverage sprint).
+ *
+ * Pure-path tests (non-existent groomId → throws):
+ *   incrementCareerWeeks — throws for non-existent groom
+ *   checkRetirementEligibility — throws for non-existent groom
+ *
+ * DB-fixture branch coverage (checkRetirementEligibility):
+ *   retired=true → 'already_retired'
+ *   careerWeeks >= 104 → MANDATORY_CAREER_LIMIT (mandatory=true)
+ *   level >= 10 → EARLY_LEVEL_CAP
+ *   assignmentLogs.length >= 12 → EARLY_ASSIGNMENT_LIMIT
+ *   careerWeeks=103 → noticeRequired=true, not_eligible (1 week left)
+ *   careerWeeks=0, level=1 → not_eligible (noticeRequired=false)
+ *
+ * incrementCareerWeeks with real groom → careerWeeks+1
+ * processRetirement non-eligible + !voluntary → throws
+ */
+
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import {
+  RETIREMENT_REASONS,
+  CAREER_CONSTANTS,
+  incrementCareerWeeks,
+  checkRetirementEligibility,
+  processRetirement,
+} from '../../services/groomRetirementService.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
+
+// ── Pure-path tests — non-existent groom ─────────────────────────────────────
+
+describe('incrementCareerWeeks — non-existent groom', () => {
+  it('throws when groomId does not exist', async () => {
+    await expect(incrementCareerWeeks(999999999)).rejects.toThrow('not found');
+  });
+});
+
+describe('checkRetirementEligibility — non-existent groom', () => {
+  it('throws when groomId does not exist', async () => {
+    await expect(checkRetirementEligibility(999999999)).rejects.toThrow('not found');
+  });
+});
+
+// ── DB fixture branch coverage ────────────────────────────────────────────────
+
+describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)', () => {
+  let grsUser;
+  let grsHorse; // needed for GroomAssignmentLog (horseId required)
+  let grsGroomRetired; // retired=true → already_retired
+  let grsGroomMandatory; // careerWeeks=104 → MANDATORY_CAREER_LIMIT
+  let grsGroomLevelCap; // level=10, careerWeeks=5 → EARLY_LEVEL_CAP
+  let grsGroomAssignmentLimit; // 12 assignment logs → EARLY_ASSIGNMENT_LIMIT
+  let grsGroomNotice; // careerWeeks=103 → noticeRequired=true, not_eligible
+  let grsGroomNormal; // careerWeeks=0, level=1 → not_eligible, noticeRequired=false
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    grsUser = await prisma.user.create({
+      data: {
+        email: `grs-${ts}-${rand()}@test.com`,
+        username: `grs${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'GRS',
+        lastName: 'Tester',
+        money: 1000,
+      },
+    });
+
+    grsHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-GRS-Horse-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: grsUser.id,
+      },
+    });
+
+    grsGroomRetired = await prisma.groom.create({
+      data: {
+        name: `TestFixture-GRS-Retired-${ts}`,
+        speciality: 'general',
+        personality: 'gentle',
+        retired: true,
+        userId: grsUser.id,
+      },
+    });
+
+    grsGroomMandatory = await prisma.groom.create({
+      data: {
+        name: `TestFixture-GRS-Mandatory-${ts}`,
+        speciality: 'general',
+        personality: 'gentle',
+        careerWeeks: CAREER_CONSTANTS.MANDATORY_RETIREMENT_WEEKS, // 104
+        userId: grsUser.id,
+      },
+    });
+
+    grsGroomLevelCap = await prisma.groom.create({
+      data: {
+        name: `TestFixture-GRS-LevelCap-${ts}`,
+        speciality: 'general',
+        personality: 'gentle',
+        level: CAREER_CONSTANTS.EARLY_RETIREMENT_LEVEL, // 10
+        careerWeeks: 5, // not at mandatory limit
+        userId: grsUser.id,
+      },
+    });
+
+    grsGroomAssignmentLimit = await prisma.groom.create({
+      data: {
+        name: `TestFixture-GRS-AssignLimit-${ts}`,
+        speciality: 'general',
+        personality: 'gentle',
+        level: 1,
+        careerWeeks: 10, // below mandatory and level cap
+        userId: grsUser.id,
+      },
+    });
+
+    // Create 12 GroomAssignmentLogs for the EARLY_ASSIGNMENT_LIMIT branch
+    for (let i = 0; i < CAREER_CONSTANTS.EARLY_RETIREMENT_ASSIGNMENTS; i++) {
+      await prisma.groomAssignmentLog.create({
+        data: {
+          groomId: grsGroomAssignmentLimit.id,
+          horseId: grsHorse.id,
+        },
+      });
+    }
+
+    grsGroomNotice = await prisma.groom.create({
+      data: {
+        name: `TestFixture-GRS-Notice-${ts}`,
+        speciality: 'general',
+        personality: 'gentle',
+        level: 1,
+        careerWeeks: CAREER_CONSTANTS.MANDATORY_RETIREMENT_WEEKS - CAREER_CONSTANTS.RETIREMENT_NOTICE_WEEKS, // 103
+        userId: grsUser.id,
+      },
+    });
+
+    grsGroomNormal = await prisma.groom.create({
+      data: {
+        name: `TestFixture-GRS-Normal-${ts}`,
+        speciality: 'general',
+        personality: 'gentle',
+        level: 1,
+        careerWeeks: 0,
+        userId: grsUser.id,
+      },
+    });
+  }, 60000);
+
+  afterAll(async () => {
+    const groomIds = [
+      grsGroomRetired?.id,
+      grsGroomMandatory?.id,
+      grsGroomLevelCap?.id,
+      grsGroomAssignmentLimit?.id,
+      grsGroomNotice?.id,
+      grsGroomNormal?.id,
+    ].filter(Boolean);
+    await prisma.groomAssignmentLog.deleteMany({ where: { groomId: { in: groomIds } } }).catch(() => {});
+    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-GRS-' } } }).catch(() => {});
+    await prisma.horse.delete({ where: { id: grsHorse?.id } }).catch(() => {});
+    await prisma.user.delete({ where: { id: grsUser?.id } }).catch(() => {});
+  }, 30000);
+
+  it('checkRetirementEligibility: retired=true → already_retired', async () => {
+    const result = await checkRetirementEligibility(grsGroomRetired.id);
+    expect(result.eligible).toBe(false);
+    expect(result.reason).toBe('already_retired');
+    expect(result.weeksUntilRetirement).toBe(0);
+    expect(result.noticeRequired).toBe(false);
+  });
+
+  it('checkRetirementEligibility: careerWeeks=104 → MANDATORY_CAREER_LIMIT', async () => {
+    const result = await checkRetirementEligibility(grsGroomMandatory.id);
+    expect(result.eligible).toBe(true);
+    expect(result.reason).toBe(RETIREMENT_REASONS.MANDATORY_CAREER_LIMIT);
+    expect(result.mandatory).toBe(true);
+    expect(result.weeksUntilRetirement).toBe(0);
+  });
+
+  it('checkRetirementEligibility: level=10 → EARLY_LEVEL_CAP', async () => {
+    const result = await checkRetirementEligibility(grsGroomLevelCap.id);
+    expect(result.eligible).toBe(true);
+    expect(result.reason).toBe(RETIREMENT_REASONS.EARLY_LEVEL_CAP);
+    expect(result.mandatory).toBe(false);
+  });
+
+  it('checkRetirementEligibility: 12 assignment logs → EARLY_ASSIGNMENT_LIMIT', async () => {
+    const result = await checkRetirementEligibility(grsGroomAssignmentLimit.id);
+    expect(result.eligible).toBe(true);
+    expect(result.reason).toBe(RETIREMENT_REASONS.EARLY_ASSIGNMENT_LIMIT);
+    expect(result.mandatory).toBe(false);
+  });
+
+  it('checkRetirementEligibility: careerWeeks=103 → noticeRequired=true, not_eligible', async () => {
+    // weeksUntilMandatory = 104-103 = 1 ≤ RETIREMENT_NOTICE_WEEKS (1) → noticeRequired=true
+    const result = await checkRetirementEligibility(grsGroomNotice.id);
+    expect(result.eligible).toBe(false);
+    expect(result.reason).toBe('not_eligible');
+    expect(result.noticeRequired).toBe(true);
+    expect(result.weeksUntilRetirement).toBe(1);
+  });
+
+  it('checkRetirementEligibility: normal groom → not_eligible, noticeRequired=false', async () => {
+    const result = await checkRetirementEligibility(grsGroomNormal.id);
+    expect(result.eligible).toBe(false);
+    expect(result.reason).toBe('not_eligible');
+    expect(result.noticeRequired).toBe(false);
+    expect(result.weeksUntilRetirement).toBe(CAREER_CONSTANTS.MANDATORY_RETIREMENT_WEEKS);
+  });
+
+  it('incrementCareerWeeks: increments careerWeeks by 1', async () => {
+    const updated = await incrementCareerWeeks(grsGroomNormal.id);
+    expect(updated.careerWeeks).toBe(1);
+  });
+
+  it('processRetirement: throws when groom not eligible and !voluntary', async () => {
+    // grsGroomNormal is not eligible for retirement and voluntary=false (default)
+    // After incrementCareerWeeks above, careerWeeks=1 — still not eligible
+    await expect(processRetirement(grsGroomNormal.id, null, false)).rejects.toThrow('not eligible for retirement');
+  });
+
+  it('CAREER_CONSTANTS and RETIREMENT_REASONS exports are correctly shaped', () => {
+    expect(CAREER_CONSTANTS.MANDATORY_RETIREMENT_WEEKS).toBe(104);
+    expect(CAREER_CONSTANTS.EARLY_RETIREMENT_LEVEL).toBe(10);
+    expect(CAREER_CONSTANTS.EARLY_RETIREMENT_ASSIGNMENTS).toBe(12);
+    expect(RETIREMENT_REASONS.MANDATORY_CAREER_LIMIT).toBe('mandatory_career_limit');
+    expect(RETIREMENT_REASONS.VOLUNTARY).toBe('voluntary');
+  });
+});
