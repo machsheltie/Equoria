@@ -65,7 +65,7 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
   let gasGroom; // active novice groom (max 2 assignments)
   let gasGroomInactive; // isActive=false → validateAssignmentEligibility 'Groom is not active'
   let gasHorse;
-  let gasHorse2; // second horse for additional assignments
+  let _gasHorse2; // second horse for additional assignments
   let gasHorse3; // third horse for notes ternary test
 
   beforeAll(async () => {
@@ -126,7 +126,7 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
       },
     });
 
-    gasHorse2 = await prisma.horse.create({
+    _gasHorse2 = await prisma.horse.create({
       data: {
         name: `TestFixture-GAS-Horse2-${ts}`,
         sex: 'Colt',

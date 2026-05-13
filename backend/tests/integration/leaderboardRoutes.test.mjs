@@ -388,16 +388,32 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       expect(response.body.message).toBe('Top users by level retrieved successfully');
       expect(response.body.data.users.length).toBeGreaterThanOrEqual(3); // At least our 3 test users
 
-      // Verify proper sorting (level desc, then xp desc) - check top 3 are our test users
+      // Filter to find our test fixtures by name — real-DB may have other high-level users
+      // that precede our test fixtures, so never assert on absolute position.
       const { users: rankings } = response.body.data;
-      expect(rankings[0].name).toBe('Top Player1');
-      expect(rankings[0].level).toBe(15);
-      expect(rankings[1].name).toBe('Top Player2');
-      expect(rankings[1].level).toBe(14);
-      expect(rankings[1].xp).toBe(90); // Higher XP than Player 3
-      expect(rankings[2].name).toBe('Top Player3');
-      expect(rankings[2].level).toBe(14);
-      expect(rankings[2].xp).toBe(30); // Lower XP than Player 2
+      const p1 = rankings.find(u => u.name === 'Top Player1');
+      const p2 = rankings.find(u => u.name === 'Top Player2');
+      const p3 = rankings.find(u => u.name === 'Top Player3');
+      if (!p1) {
+        throw new Error('Top Player1 must appear in rankings');
+      }
+      expect(p1.level).toBe(15);
+      if (!p2) {
+        throw new Error('Top Player2 must appear in rankings');
+      }
+      expect(p2.level).toBe(14);
+      expect(p2.xp).toBe(90); // Higher XP than Player 3
+      if (!p3) {
+        throw new Error('Top Player3 must appear in rankings');
+      }
+      expect(p3.level).toBe(14);
+      expect(p3.xp).toBe(30); // Lower XP than Player 2
+      // Relative order within test fixtures must be correct (p1 > p2 > p3)
+      const p1idx = rankings.indexOf(p1);
+      const p2idx = rankings.indexOf(p2);
+      const p3idx = rankings.indexOf(p3);
+      expect(p1idx).toBeLessThan(p2idx);
+      expect(p2idx).toBeLessThan(p3idx);
     });
 
     it('should handle unauthorized access', async () => {

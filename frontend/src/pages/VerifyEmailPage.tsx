@@ -51,8 +51,15 @@ const VerifyEmailPage: React.FC = () => {
           setState('success');
           setVerifiedEmail(data.user.email);
         },
-        onError: () => {
-          setState('error');
+        onError: (error) => {
+          // "already been used" means the email IS verified — map to already-verified
+          // rather than error. Handles both legitimate re-visits of old verify links
+          // and React StrictMode's double-invocation of effects in development mode.
+          if (error?.message?.includes('already been used')) {
+            setState('already-verified');
+          } else {
+            setState('error');
+          }
         },
       });
     }

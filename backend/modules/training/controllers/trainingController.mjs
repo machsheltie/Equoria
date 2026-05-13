@@ -17,10 +17,7 @@ import { getAllDisciplines } from '../../../utils/statMap.mjs';
 import { getTemperamentTrainingModifiers } from '../../horses/services/temperamentService.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../db/index.mjs';
-import { getCachedQuery, invalidateCache } from '../../../utils/cacheHelper.mjs';
-
-// TTL for training eligibility cache entries (60 seconds)
-const ELIGIBILITY_CACHE_TTL = 60;
+import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
 
 /**
  * Check if a horse is eligible to train in a specific discipline
@@ -50,15 +47,12 @@ async function canTrain(horseId, discipline) {
       `[trainingController.canTrain] Checking training eligibility for horse ${parsedHorseId} in ${discipline}`,
     );
 
-    // Cache eligibility results for 60 seconds to avoid hammering the DB on
-    // repeated check-eligibility calls (e.g. frontend polling).
-    // Key is per-horse + per-discipline so cooldown state is not conflated.
-    const cacheKey = `training:eligibility:${parsedHorseId}:${discipline}`;
-    return await getCachedQuery(
-      cacheKey,
-      () => computeCanTrain(parsedHorseId, discipline),
-      ELIGIBILITY_CACHE_TTL,
-    );
+    // Compute eligibility fresh from DB on every call. The underlying query
+    // (get horse + get most recent training log) is a fast indexed lookup.
+    // Caching eligibility results is unsafe: negative results ("cooldown active")
+    // become stale as the cooldown expires, and the test infrastructure
+    // manipulates trainingLog timestamps directly, bypassing cache invalidation.
+    return computeCanTrain(parsedHorseId, discipline);
   } catch (error) {
     logger.error(
       `[trainingController.canTrain] Error checking training eligibility: ${error.message}`,
@@ -68,8 +62,8 @@ async function canTrain(horseId, discipline) {
 }
 
 /**
- * Internal implementation of training eligibility computation (uncached).
- * Called by canTrain() which wraps it in a getCachedQuery layer.
+ * Compute training eligibility from the DB.
+ * Always called fresh — eligibility results are not cached.
  */
 async function computeCanTrain(parsedHorseId, discipline) {
   // Fetch horse upfront — needed for age check and trait requirements
@@ -409,9 +403,11 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
       `[trainingController.trainHorse] Successfully trained horse ${horseId} in ${discipline} (Log ID: ${trainingLog.id}, Score +${disciplineScoreIncrease})`,
     );
 
-    // Bust the eligibility cache for this horse+discipline so the next
-    // check-eligibility call sees the new cooldown state immediately.
-    invalidateCache(`training:eligibility:${parseInt(horseId, 10)}:${discipline}`).catch(err => {
+    // Bust ALL eligibility cache entries for this horse so the next check
+    // for any discipline sees the new cooldown state immediately.
+    // Invalidating by prefix covers the trained discipline AND all others
+    // (which are now blocked by the global cooldown).
+    invalidateCachePattern(`training:eligibility:${parseInt(horseId, 10)}:*`).catch(err => {
       logger.warn(
         `[trainingController.trainHorse] Failed to invalidate eligibility cache: ${err.message}`,
       );
