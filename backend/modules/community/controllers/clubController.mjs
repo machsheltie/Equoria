@@ -165,16 +165,28 @@ export async function leaveClub(req, res) {
 /** GET /api/clubs/:id/elections */
 export async function getElections(req, res) {
   const clubId = parseInt(req.params.id, 10);
+  const userId = req.user.id;
   if (!clubId || clubId <= 0) {
     return res.status(400).json({ success: false, message: 'Invalid club ID' });
   }
   try {
+    const membership = await prisma.clubMembership.findUnique({
+      where: { clubId_userId: { clubId, userId } },
+    });
+    if (!membership) {
+      return res.status(403).json({ success: false, message: 'Not a club member' });
+    }
     const elections = await prisma.clubElection.findMany({
       where: { clubId },
       orderBy: { startsAt: 'desc' },
       include: { _count: { select: { candidates: true } } },
     });
-    const shaped = elections.map(e => ({ ...e, status: resolveElectionStatus(e) }));
+    const shaped = elections.map(e => ({
+      ...e,
+      candidateCount: e._count.candidates,
+      _count: undefined,
+      status: resolveElectionStatus(e),
+    }));
     return res.json({ success: true, data: { elections: shaped } });
   } catch (error) {
     logger.error(`[clubController.getElections] ${error.message}`);
@@ -251,8 +263,10 @@ export async function nominate(req, res) {
     if (!election) {
       return res.status(404).json({ success: false, message: 'Election not found' });
     }
-    if (resolveElectionStatus(election) === 'closed') {
-      return res.status(400).json({ success: false, message: 'Election is closed' });
+    if (resolveElectionStatus(election) !== 'open') {
+      return res
+        .status(400)
+        .json({ success: false, message: 'Election is not open for nominations' });
     }
 
     const existing = await prisma.clubCandidate.findUnique({
@@ -326,11 +340,18 @@ export async function vote(req, res) {
 /** GET /api/clubs/elections/:id/results */
 export async function getElectionResults(req, res) {
   const electionId = parseInt(req.params.id, 10);
+  const userId = req.user.id;
   if (!electionId || electionId <= 0) {
     return res.status(400).json({ success: false, message: 'Invalid election ID' });
   }
   try {
-    const election = await prisma.clubElection.findUnique({ where: { id: electionId } });
+    // CWE-639: scope by club membership so non-members get 404, not full results.
+    const election = await prisma.clubElection.findFirst({
+      where: {
+        id: electionId,
+        club: { members: { some: { userId } } },
+      },
+    });
     if (!election) {
       return res.status(404).json({ success: false, message: 'Election not found' });
     }

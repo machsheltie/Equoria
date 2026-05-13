@@ -421,6 +421,35 @@ describe('clubController (real DB)', () => {
       expect(found).toBeDefined();
       expect(found.status).toBe('open');
     });
+
+    it('returns 403 for non-member — Equoria-9a3t', async () => {
+      const president = await createUser();
+      const stranger = await createUser();
+      const club = await createClubInDb(president.id);
+
+      const h = makeReqRes(stranger.id, { params: { id: String(club.id) } });
+      await getElections(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(403);
+      expect(h.res.jsonValue).toMatchObject({ success: false, message: 'Not a club member' });
+    });
+
+    it('response strips _count and exposes candidateCount — Equoria-fpsy', async () => {
+      const user = await createUser();
+      const club = await createClubInDb(user.id);
+      await createElectionInDb(club.id);
+
+      const h = makeReqRes(user.id, { params: { id: String(club.id) } });
+      await getElections(h.req, h.res);
+
+      const body = h.res.jsonValue;
+      expect(body.success).toBe(true);
+      expect(body.data.elections.length).toBeGreaterThanOrEqual(1);
+      body.data.elections.forEach(e => {
+        expect(e._count).toBeUndefined();
+        expect(typeof e.candidateCount).toBe('number');
+      });
+    });
   });
 
   describe('createElection', () => {
@@ -530,7 +559,7 @@ describe('clubController (real DB)', () => {
       expect(h.res.statusValue).toBe(404);
     });
 
-    it('returns 400 when election is closed', async () => {
+    it('returns 400 when election is closed (manually closed DB status)', async () => {
       const user = await createUser();
       const club = await createClubInDb(user.id);
       const election = await createElectionInDb(club.id, { status: 'closed' });
@@ -539,7 +568,7 @@ describe('clubController (real DB)', () => {
       await nominate(h.req, h.res);
 
       expect(h.res.statusValue).toBe(400);
-      expect(h.res.jsonValue.message).toBe('Election is closed');
+      expect(h.res.jsonValue.message).toBe('Election is not open for nominations');
     });
 
     it('returns 400 when election endsAt has passed even though DB status is open', async () => {
@@ -555,7 +584,23 @@ describe('clubController (real DB)', () => {
       await nominate(h.req, h.res);
 
       expect(h.res.statusValue).toBe(400);
-      expect(h.res.jsonValue.message).toBe('Election is closed');
+      expect(h.res.jsonValue.message).toBe('Election is not open for nominations');
+    });
+
+    it('returns 400 when election is upcoming (startsAt in the future) — Equoria-y9n1', async () => {
+      const user = await createUser();
+      const club = await createClubInDb(user.id);
+      const election = await createElectionInDb(club.id, {
+        status: 'upcoming',
+        startsAt: new Date(Date.now() + 86400000), // 1 day from now
+        endsAt: new Date(Date.now() + 172800000),
+      });
+
+      const h = makeReqRes(user.id, { params: { id: String(election.id) }, body: { statement: 'Early entry' } });
+      await nominate(h.req, h.res);
+
+      expect(h.res.statusValue).toBe(400);
+      expect(h.res.jsonValue.message).toBe('Election is not open for nominations');
     });
 
     it('returns 404 when user is not a club member (CWE-639 Equoria-w386)', async () => {
@@ -795,6 +840,20 @@ describe('clubController (real DB)', () => {
       await getElectionResults(h.req, h.res);
 
       expect(h.res.statusValue).toBe(400);
+    });
+
+    it('returns 404 for non-member of the election club (CWE-639) — Equoria-px7v', async () => {
+      const president = await createUser();
+      const stranger = await createUser();
+      const club = await createClubInDb(president.id);
+      const election = await createElectionInDb(club.id, { status: 'closed' });
+
+      const h = makeReqRes(stranger.id, { params: { id: String(election.id) } });
+      await getElectionResults(h.req, h.res);
+
+      // CWE-639: non-member must be indistinguishable from not-found — never sees results.
+      expect(h.res.statusValue).toBe(404);
+      expect(h.res.jsonValue).toMatchObject({ success: false, message: 'Election not found' });
     });
   });
 
