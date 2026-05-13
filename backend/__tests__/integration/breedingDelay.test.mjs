@@ -65,6 +65,7 @@ describe('createFoal — delayed pregnancy (B3)', () => {
         breedId: breed.id,
         userId: user.id,
         healthStatus: 'Good',
+        lastFedDate: new Date(), // healthy so critical-health gate passes
       },
     });
     const dam = await prisma.horse.create({
@@ -76,6 +77,7 @@ describe('createFoal — delayed pregnancy (B3)', () => {
         breedId: breed.id,
         userId: user.id,
         healthStatus: 'Good',
+        lastFedDate: new Date(), // healthy so critical-health gate passes
       },
     });
     sireId = sire.id;

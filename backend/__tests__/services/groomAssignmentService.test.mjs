@@ -363,6 +363,80 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
     });
   });
 
+  // ── validateAssignmentEligibility — at-limit branch (line 117, Equoria-rr7) ─
+
+  it('validateAssignmentEligibility: canTakeMore=false when groom is at max assignments (line 117)', async () => {
+    // Create a fresh novice groom (max=2) and fill both slots, then validate a 3rd horse
+    const ts = Date.now();
+    const limitGroom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-GAS-LimitGroom-${ts}`,
+        speciality: 'general',
+        personality: 'gentle',
+        skillLevel: 'novice',
+        isActive: true,
+        userId: gasUser.id,
+      },
+    });
+    const lh1 = await prisma.horse.create({
+      data: { name: `TestFixture-GAS-LH1-${ts}`, sex: 'Filly', dateOfBirth: new Date(), age: 0, userId: gasUser.id },
+    });
+    const lh2 = await prisma.horse.create({
+      data: { name: `TestFixture-GAS-LH2-${ts}`, sex: 'Filly', dateOfBirth: new Date(), age: 0, userId: gasUser.id },
+    });
+    const lh3 = await prisma.horse.create({
+      data: { name: `TestFixture-GAS-LH3-${ts}`, sex: 'Filly', dateOfBirth: new Date(), age: 0, userId: gasUser.id },
+    });
+
+    // Fill both slots
+    await createAssignment(limitGroom.id, lh1.id, gasUser.id);
+    await createAssignment(limitGroom.id, lh2.id, gasUser.id);
+
+    // Now validate 3rd assignment — should fail with canTakeMore=false (line 117)
+    const result = await validateAssignmentEligibility(limitGroom.id, lh3.id, gasUser.id);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some(e => e.includes('reached maximum'))).toBe(true);
+  });
+
+  // ── removeAssignment — ownership mismatch branch (line 271, Equoria-rr7) ────
+
+  it('removeAssignment: ownership mismatch → throws Assignment not found (line 271)', async () => {
+    // Find any active assignment belonging to gasUser; try to remove with gasUser2.id
+    const activeAssignment = await prisma.groomAssignment.findFirst({
+      where: { userId: gasUser.id, isActive: true },
+    });
+    if (activeAssignment) {
+      // gasUser2 owns neither the groom nor the horse → ownership mismatch branch
+      await expect(removeAssignment(activeAssignment.id, gasUser2.id)).rejects.toThrow('Assignment not found');
+    } else {
+      // Skip if no active assignments left — create a fresh one
+      const ts = Date.now();
+      const omGroom = await prisma.groom.create({
+        data: {
+          name: `TestFixture-GAS-OMGroom-${ts}`,
+          speciality: 'general',
+          personality: 'gentle',
+          skillLevel: 'novice',
+          isActive: true,
+          userId: gasUser.id,
+        },
+      });
+      const omHorse = await prisma.horse.create({
+        data: {
+          name: `TestFixture-GAS-OMHorse-${ts}`,
+          sex: 'Filly',
+          dateOfBirth: new Date(),
+          age: 0,
+          userId: gasUser.id,
+        },
+      });
+      const newAssignment = await prisma.groomAssignment.create({
+        data: { groomId: omGroom.id, foalId: omHorse.id, userId: gasUser.id, isActive: true },
+      });
+      await expect(removeAssignment(newAssignment.id, gasUser2.id)).rejects.toThrow('Assignment not found');
+    }
+  });
+
   // ── calculateWeeklySalaryCosts ────────────────────────────────────────────
 
   it('calculateWeeklySalaryCosts: returns cost for user with active assignments', async () => {
