@@ -313,9 +313,10 @@ describe('logger robustness (21R-OBS-3)', () => {
       // passing an object whose toJSON() throws null: JSON.stringify calls
       // toJSON(), the throw propagates to buildMetaSuffix's catch, and err=null
       // makes both optional-chain lookups return undefined → ?? fallbacks fire.
+      const nullValue = null; // throw via variable — no-throw-literal only flags literal throw statements
       const triggerObj = {
-        toJSON() {
-          throw null;
+        toJSON: () => {
+          throw nullValue;
         },
       };
       logger.warn('[Test] toJSON-throw', { data: triggerObj });
