@@ -97,6 +97,23 @@ describe('analyzeQueryPerformance — unknown queryType', () => {
   });
 });
 
+// ── analyzeQueryPerformance — calculateAverageTime existing-entry branch (line 513) ──
+
+describe('analyzeQueryPerformance — calculateAverageTime existing-entry branch', () => {
+  it('returns valid result on second call for same queryType (hits averaged-time path)', async () => {
+    // Second call for 'epigenetic_trait_search' — performanceMetrics already has an entry
+    // from the earlier describe block, so calculateAverageTime hits the else branch (line 513)
+    const result = await analyzeQueryPerformance({
+      queryType: 'epigenetic_trait_search',
+      userId: '00000000-0000-0000-0000-000000000000',
+      filters: { minAge: 0 },
+    });
+    expect(result.queryType).toBe('epigenetic_trait_search');
+    expect(typeof result.executionTime).toBe('number');
+    expect(Array.isArray(result.recommendations)).toBe(true);
+  });
+});
+
 // ── createOptimizedIndexes ────────────────────────────────────────────────────
 
 describe('createOptimizedIndexes — queryPatterns branch', () => {
