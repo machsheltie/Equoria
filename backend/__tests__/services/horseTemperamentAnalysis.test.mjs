@@ -379,3 +379,391 @@ describe('horseTemperamentAnalysis — interactions-based paths (Equoria-jkht)',
     expect(result.contributingFactors).toContain('improved_bonding');
   });
 });
+
+// ── Remaining branch coverage (Equoria-rr7) ──────────────────────────────────
+// Targets:
+//   Lines 671, 673, 676-677: confident/nervous/calm in analyzeFromInteractions
+//   Lines 678: outgoing condition evaluated (unreachable true, but line executed)
+//   Lines 310-311, 313: negative/stable overallDirection in analyzeBehavioralTrends
+//   Line 714: declining direction in calculateTrend
+//   Lines 549-552, 563: negative/neutral changeDirection + increased_stress_sensitivity
+//   Lines 770, 772: high_sensitivity/resilient in determineStressResponseType
+//   Lines 770+else: moderate (else arm of determineStressResponseType)
+
+describe('horseTemperamentAnalysis — remaining branch coverage (Equoria-rr7)', () => {
+  let rbrUser, rbrGroom;
+  let confidentHorse, nervousHorse, calmHorse, negTrendHorse;
+  let highSensHorse, resilientHorse, moderateHorse;
+  let neutralChangeHorse, worseningHorse;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    rbrUser = await prisma.user.create({
+      data: {
+        email: `hta-rbr-${ts}-${rand()}@test.com`,
+        username: `htarbr${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'HTA',
+        lastName: 'RBR',
+        money: 1000,
+      },
+    });
+
+    rbrGroom = await prisma.groom.create({
+      data: {
+        name: `TestFixture-HTA-RBR-Groom-${ts}`,
+        speciality: 'foalCare',
+        personality: 'gentle',
+        userId: rbrUser.id,
+        isActive: true,
+      },
+    });
+
+    // ── Horse fixtures ─────────────────────────────────────────────────────────
+    // confidentHorse: high bondingChange (+3), negative stressChange (-2) →
+    //   analyzeFromInteractions: confidenceLevel=0.9>0.7, stressResilience=0.83>0.6 → 'confident'
+    //   analyzeBehavioralTrends: all slopes=0 → 'stable' overallDirection
+    confidentHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-HTA-RBR-Confident-${ts}`,
+        sex: 'Colt',
+        dateOfBirth: new Date('2019-01-01'),
+        age: 30,
+        userId: rbrUser.id,
+        epigeneticFlags: [],
+      },
+    });
+    for (let i = 0; i < 5; i++) {
+      await prisma.groomInteraction.create({
+        data: {
+          foalId: confidentHorse.id,
+          groomId: rbrGroom.id,
+          interactionType: 'grooming',
+          duration: 30,
+          bondingChange: 3,
+          stressChange: -2,
+          quality: 'good',
+        },
+      });
+    }
+
+    // nervousHorse: negative bondingChange (-1), high stressChange (+3) →
+    //   confidenceLevel=0.25<0.4, stressResilience=0.1<0.4 → 'nervous'
+    nervousHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-HTA-RBR-Nervous-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date('2019-01-01'),
+        age: 30,
+        userId: rbrUser.id,
+        epigeneticFlags: [],
+      },
+    });
+    for (let i = 0; i < 5; i++) {
+      await prisma.groomInteraction.create({
+        data: {
+          foalId: nervousHorse.id,
+          groomId: rbrGroom.id,
+          interactionType: 'grooming',
+          duration: 30,
+          bondingChange: -1,
+          stressChange: 3,
+          quality: 'good',
+        },
+      });
+    }
+
+    // calmHorse: low bondingChange (avg≈0.33), very negative stressChange (-2) →
+    //   confidenceLevel≈0.58 (<0.7), stressResilience≈0.83 (>0.7), avgBonding>0 → 'calm'
+    calmHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-HTA-RBR-Calm-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date('2019-01-01'),
+        age: 30,
+        userId: rbrUser.id,
+        epigeneticFlags: [],
+      },
+    });
+    for (const bc of [0, 0, 1, 0, 0, 1]) {
+      await prisma.groomInteraction.create({
+        data: {
+          foalId: calmHorse.id,
+          groomId: rbrGroom.id,
+          interactionType: 'grooming',
+          duration: 30,
+          bondingChange: bc,
+          stressChange: -2,
+          quality: 'good',
+        },
+      });
+    }
+
+    // negTrendHorse: bondingChange decreasing [5,4,3,2,1,0,-1], stressChange=0 →
+    //   calculateTrend slope=-1 → 'declining' (line 714)
+    //   avgTrendScore=-1/3≈-0.333<-0.3 → 'negative' overallDirection (line 311)
+    //   analyzeHorseTemperament: confidenceLevel=0.9 but stressResilience=0.5 →
+    //     NOT confident, NOT calm, reaches outgoing check (line 678) → 'developing'
+    negTrendHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-HTA-RBR-NegTrend-${ts}`,
+        sex: 'Colt',
+        dateOfBirth: new Date('2019-01-01'),
+        age: 30,
+        userId: rbrUser.id,
+        epigeneticFlags: [],
+      },
+    });
+    for (let i = 0; i < 7; i++) {
+      await prisma.groomInteraction.create({
+        data: {
+          foalId: negTrendHorse.id,
+          groomId: rbrGroom.id,
+          interactionType: 'grooming',
+          duration: 30,
+          bondingChange: 5 - i, // [5,4,3,2,1,0,-1]
+          stressChange: 0,
+          quality: 'good',
+          createdAt: new Date(ts - (7 - i) * 60000),
+        },
+      });
+    }
+
+    // highSensHorse: fearful flag, stressChange=1 (avgStressChange=1, NOT >1) →
+    //   NOT reactive, fearful flag present → 'high_sensitivity' (line 770)
+    highSensHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-HTA-RBR-HighSens-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date('2019-01-01'),
+        age: 30,
+        userId: rbrUser.id,
+        epigeneticFlags: ['fearful'],
+      },
+    });
+    for (let i = 0; i < 5; i++) {
+      await prisma.groomInteraction.create({
+        data: {
+          foalId: highSensHorse.id,
+          groomId: rbrGroom.id,
+          interactionType: 'grooming',
+          duration: 30,
+          bondingChange: 1,
+          stressChange: 1,
+          quality: 'good',
+        },
+      });
+    }
+
+    // resilientHorse: no flags, stressChange=-3 → stressReductions=5>stressSpikes=0 →
+    //   NOT reactive, NOT fearful → 'resilient' (line 772)
+    resilientHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-HTA-RBR-Resilient-${ts}`,
+        sex: 'Colt',
+        dateOfBirth: new Date('2019-01-01'),
+        age: 30,
+        userId: rbrUser.id,
+        epigeneticFlags: [],
+      },
+    });
+    for (let i = 0; i < 5; i++) {
+      await prisma.groomInteraction.create({
+        data: {
+          foalId: resilientHorse.id,
+          groomId: rbrGroom.id,
+          interactionType: 'grooming',
+          duration: 30,
+          bondingChange: 1,
+          stressChange: -3,
+          quality: 'good',
+        },
+      });
+    }
+
+    // moderateHorse: no flags, stressChange=0 → stressSpikes=0, stressReductions=0
+    //   NOT reactive, NOT fearful, NOT resilient (0 not > 0) → else → 'moderate'
+    moderateHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-HTA-RBR-Moderate-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date('2019-01-01'),
+        age: 30,
+        userId: rbrUser.id,
+        epigeneticFlags: [],
+      },
+    });
+    for (let i = 0; i < 5; i++) {
+      await prisma.groomInteraction.create({
+        data: {
+          foalId: moderateHorse.id,
+          groomId: rbrGroom.id,
+          interactionType: 'grooming',
+          duration: 30,
+          bondingChange: 1,
+          stressChange: 0,
+          quality: 'good',
+        },
+      });
+    }
+
+    // neutralChangeHorse: 6 identical interactions →
+    //   earlyPeriod == recentPeriod → all changes=0 → 'neutral' changeDirection (line 552)
+    neutralChangeHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-HTA-RBR-Neutral-${ts}`,
+        sex: 'Colt',
+        dateOfBirth: new Date('2019-01-01'),
+        age: 30,
+        userId: rbrUser.id,
+        epigeneticFlags: [],
+      },
+    });
+    for (let i = 0; i < 6; i++) {
+      await prisma.groomInteraction.create({
+        data: {
+          foalId: neutralChangeHorse.id,
+          groomId: rbrGroom.id,
+          interactionType: 'grooming',
+          duration: 30,
+          bondingChange: 2,
+          stressChange: 2,
+          quality: 'good',
+          createdAt: new Date(ts - (6 - i) * 60000),
+        },
+      });
+    }
+
+    // worseningHorse: early 3 excellent with bondingChange=5,stressChange=0;
+    //   recent 3 poor with bondingChange=1,stressChange=4 →
+    //   bondingChange metric=-4 (<-0.5) → 'declining_bonding'
+    //   stressChange metric=0-4=-4 (<-0.5) → 'increased_stress_sensitivity' (line 563)
+    //   overallChange=(-4-4-3)/3≈-3.67<-0.5 → 'negative' changeDirection (line 550)
+    worseningHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-HTA-RBR-Worsening-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date('2019-01-01'),
+        age: 30,
+        userId: rbrUser.id,
+        epigeneticFlags: [],
+      },
+    });
+    for (let i = 0; i < 6; i++) {
+      const isEarly = i < 3;
+      await prisma.groomInteraction.create({
+        data: {
+          foalId: worseningHorse.id,
+          groomId: rbrGroom.id,
+          interactionType: 'grooming',
+          duration: 30,
+          bondingChange: isEarly ? 5 : 1,
+          stressChange: isEarly ? 0 : 4,
+          quality: isEarly ? 'excellent' : 'poor',
+          createdAt: new Date(ts - (6 - i) * 60000),
+        },
+      });
+    }
+  }, 180000);
+
+  afterAll(async () => {
+    const horseIds = [
+      confidentHorse?.id,
+      nervousHorse?.id,
+      calmHorse?.id,
+      negTrendHorse?.id,
+      highSensHorse?.id,
+      resilientHorse?.id,
+      moderateHorse?.id,
+      neutralChangeHorse?.id,
+      worseningHorse?.id,
+    ].filter(Boolean);
+    if (horseIds.length) {
+      await prisma.groomInteraction.deleteMany({ where: { foalId: { in: horseIds } } }).catch(() => {});
+      await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-HTA-RBR-' } } }).catch(() => {});
+    }
+    if (rbrGroom?.id) {
+      await prisma.groom.delete({ where: { id: rbrGroom.id } }).catch(() => {});
+    }
+    if (rbrUser?.id) {
+      await prisma.user.delete({ where: { id: rbrUser.id } }).catch(() => {});
+    }
+  }, 60000);
+
+  // ── analyzeFromInteractions branch paths ──────────────────────────────────────
+
+  it('analyzeFromInteractions: confident temperament (line 671)', async () => {
+    const result = await analyzeHorseTemperament(confidentHorse.id);
+    expect(result.dataSource).toBe('interactions');
+    expect(result.primaryTemperament).toBe('confident');
+  });
+
+  it('analyzeFromInteractions: nervous temperament (line 673)', async () => {
+    const result = await analyzeHorseTemperament(nervousHorse.id);
+    expect(result.dataSource).toBe('interactions');
+    expect(result.primaryTemperament).toBe('nervous');
+  });
+
+  it('analyzeFromInteractions: calm temperament (lines 676-677)', async () => {
+    const result = await analyzeHorseTemperament(calmHorse.id);
+    expect(result.dataSource).toBe('interactions');
+    expect(result.primaryTemperament).toBe('calm');
+  });
+
+  it('analyzeFromInteractions: reaches outgoing condition (line 678) + falls to developing', async () => {
+    // confidenceLevel=0.9 (>0.7) but stressResilience=0.5 (≤0.6) → NOT confident.
+    // stressResilience=0.5 NOT >0.7 → NOT calm. socialTendency=0.7 NOT >0.7 → NOT outgoing.
+    // Line 678 is executed (condition evaluated false) → 'developing'.
+    const result = await analyzeHorseTemperament(negTrendHorse.id);
+    expect(result.dataSource).toBe('interactions');
+    expect(result.primaryTemperament).toBe('developing');
+  });
+
+  // ── analyzeBehavioralTrends remaining directions ──────────────────────────────
+
+  it('analyzeBehavioralTrends: stable overallDirection with constant values (line 313)', async () => {
+    const result = await analyzeBehavioralTrends(confidentHorse.id);
+    expect(result.overallDirection).toBe('stable');
+  });
+
+  it('analyzeBehavioralTrends: negative overallDirection + declining bondingTrend (lines 311, 714)', async () => {
+    const result = await analyzeBehavioralTrends(negTrendHorse.id);
+    expect(result.overallDirection).toBe('negative');
+    expect(result.bondingTrend).toBe('declining');
+  });
+
+  // ── determineStressResponseType remaining paths ───────────────────────────────
+
+  it('identifyStressResponsePatterns: high_sensitivity for fearful horse (line 770)', async () => {
+    const result = await identifyStressResponsePatterns(highSensHorse.id);
+    expect(result.responseType).toBe('high_sensitivity');
+  });
+
+  it('identifyStressResponsePatterns: resilient for horse with consistent stress reductions (line 772)', async () => {
+    const result = await identifyStressResponsePatterns(resilientHorse.id);
+    expect(result.responseType).toBe('resilient');
+  });
+
+  it('identifyStressResponsePatterns: moderate for horse with no spikes or reductions (else arm)', async () => {
+    const result = await identifyStressResponsePatterns(moderateHorse.id);
+    expect(result.responseType).toBe('moderate');
+  });
+
+  // ── detectTemperamentChanges remaining directions ─────────────────────────────
+
+  it('detectTemperamentChanges: neutral direction with stable interactions (line 552)', async () => {
+    const result = await detectTemperamentChanges(neutralChangeHorse.id);
+    expect(result.changeDirection).toBe('neutral');
+    expect(result.changeDetected).toBe(false);
+  });
+
+  it('detectTemperamentChanges: negative direction + increased_stress_sensitivity (lines 550, 563)', async () => {
+    const result = await detectTemperamentChanges(worseningHorse.id);
+    expect(result.changeDirection).toBe('negative');
+    expect(result.changeDetected).toBe(true);
+    expect(result.contributingFactors).toContain('declining_bonding');
+    expect(result.contributingFactors).toContain('increased_stress_sensitivity');
+  });
+});
