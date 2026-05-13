@@ -401,4 +401,71 @@ describe('runFoalingJob (B5)', () => {
     expect(epi.positive.length).toBeGreaterThanOrEqual(1);
     expect(epi.negative.length).toBeGreaterThanOrEqual(1);
   });
+
+  it('pendingFoalName: foaling job uses caller-specified foal name from dam record', async () => {
+    const user = await createUser('pfname');
+    createdUserIds.push(user.id);
+
+    const { dam } = await createMareSirePair({
+      userId: user.id,
+      breedId,
+      inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+      pregnancyFeedingsByTier: {},
+    });
+
+    // Simulate what createFoal() should have persisted at pregnancy start.
+    const desiredFoalName = `WjxwTestFoal_${Math.random().toString(36).slice(2, 8)}`;
+    await prisma.horse.update({
+      where: { id: dam.id },
+      data: { pendingFoalName: desiredFoalName },
+    });
+
+    const result = await runFoalingJob();
+    expect(result.foalsBorn).toBeGreaterThanOrEqual(1);
+
+    const foals = await prisma.horse.findMany({ where: { damId: dam.id } });
+    expect(foals.length).toBe(1);
+    expect(foals[0].name).toBe(desiredFoalName);
+
+    // pendingFoalName should be cleared after foaling.
+    const refreshedDam = await prisma.horse.findUnique({ where: { id: dam.id } });
+    expect(refreshedDam.pendingFoalName).toBeNull();
+  });
+
+  it('pendingFoalBreedId: foaling job uses caller-specified breed for the foal, not dam breed', async () => {
+    const user = await createUser('pfbreed');
+    createdUserIds.push(user.id);
+
+    // Upsert a second breed to use as the foal's intended breed.
+    const foalBreed = await prisma.breed.upsert({
+      where: { name: 'American Quarter Horse' },
+      update: {},
+      create: { name: 'American Quarter Horse', description: 'B5 wjxw test breed' },
+    });
+
+    const { dam } = await createMareSirePair({
+      userId: user.id,
+      breedId, // dam's own breed = Thoroughbred
+      inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+      pregnancyFeedingsByTier: {},
+    });
+
+    // Foal should be born as the caller-specified breed, not the dam's breed.
+    await prisma.horse.update({
+      where: { id: dam.id },
+      data: { pendingFoalBreedId: foalBreed.id },
+    });
+
+    const result = await runFoalingJob();
+    expect(result.foalsBorn).toBeGreaterThanOrEqual(1);
+
+    const foals = await prisma.horse.findMany({ where: { damId: dam.id } });
+    expect(foals.length).toBe(1);
+    expect(foals[0].breedId).toBe(foalBreed.id);
+    expect(foals[0].breedId).not.toBe(breedId);
+
+    // pendingFoalBreedId should be cleared after foaling.
+    const refreshedDam = await prisma.horse.findUnique({ where: { id: dam.id } });
+    expect(refreshedDam.pendingFoalBreedId).toBeNull();
+  });
 });

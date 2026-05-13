@@ -133,6 +133,8 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
         pregnancySireId: null,
         pregnancyFeedingsByTier: {},
         lastBredDate: null,
+        pendingFoalName: null,
+        pendingFoalBreedId: null,
       },
     });
   }
@@ -205,6 +207,11 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     expect(dbDam.pregnancySireId).toBe(testSire.id);
     expect(dbDam.pregnancyFeedingsByTier).toEqual({});
     expect(dbDam.lastBredDate).toBeTruthy();
+
+    // Wjxw: pendingFoalName and pendingFoalBreedId must be persisted so the
+    // foaling job can honour caller intent at delivery time.
+    expect(dbDam.pendingFoalName).toBe(foalData.name);
+    expect(dbDam.pendingFoalBreedId).toBe(testBreed.id);
   });
 
   it('should reject a second pregnancy while the mare is already in foal', async () => {

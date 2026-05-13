@@ -433,6 +433,8 @@ export async function runFoalingJob({ now = new Date(), rng = Math.random } = {}
       inFoalSinceDate: true,
       pregnancySireId: true,
       pregnancyFeedingsByTier: true,
+      pendingFoalName: true,
+      pendingFoalBreedId: true,
     },
   });
 
@@ -459,6 +461,8 @@ export async function runFoalingJob({ now = new Date(), rng = Math.random } = {}
           inFoalSinceDate: null,
           pregnancySireId: null,
           pregnancyFeedingsByTier: {},
+          pendingFoalName: null,
+          pendingFoalBreedId: null,
         },
       });
       claimed = claim.count;
@@ -486,7 +490,8 @@ export async function runFoalingJob({ now = new Date(), rng = Math.random } = {}
           rng,
           skipDamReset: true,
           userId: snapshot.userId,
-          breedId: snapshot.breedId,
+          name: snapshot.pendingFoalName ?? undefined,
+          breedId: snapshot.pendingFoalBreedId ?? undefined,
         },
       });
       foalsBorn += 1;
@@ -505,6 +510,8 @@ export async function runFoalingJob({ now = new Date(), rng = Math.random } = {}
             inFoalSinceDate: snapshot.inFoalSinceDate,
             pregnancySireId: snapshot.pregnancySireId,
             pregnancyFeedingsByTier: snapshot.pregnancyFeedingsByTier ?? {},
+            pendingFoalName: snapshot.pendingFoalName ?? null,
+            pendingFoalBreedId: snapshot.pendingFoalBreedId ?? null,
           },
         });
       } catch (rollbackErr) {

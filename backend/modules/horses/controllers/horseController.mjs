@@ -240,13 +240,12 @@ export async function createFoal(req, res) {
       `[horseController.createFoal] Beginning pregnancy: sire ${sireId}, dam ${damId} (foal name "${name}")`,
     );
 
-    // Validate required fields. `name` and `breedId` remain required so the
-    // foaling job can later materialise the foal with the caller's intent;
-    // they will be persisted alongside pregnancy state once B5 lands.
-    if (!name || !breedId || !sireId || !damId) {
+    // sireId and damId are required; name and breedId are optional and stored as
+    // pending intent on the dam for the foaling job to honour when the foal is born.
+    if (!sireId || !damId) {
       return res.status(400).json({
         success: false,
-        message: 'Name, breedId, sireId, and damId are required for foal creation',
+        message: 'sireId and damId are required for foal creation',
         data: null,
       });
     }
@@ -283,26 +282,29 @@ export async function createFoal(req, res) {
       return res.status(400).json({ success: false, message: msg, data: null });
     }
 
-    // Validate breedId early so a malformed payload doesn't put the mare
+    // Validate breedId if provided — malformed values must not put the mare
     // into an in-foal state with bad data.
-    const normalizedBreedId = Number.parseInt(breedId, 10);
-    if (!Number.isInteger(normalizedBreedId) || normalizedBreedId <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'breedId must be a positive integer',
-        data: null,
+    let normalizedBreedId = null;
+    if (breedId !== undefined && breedId !== null && breedId !== '') {
+      normalizedBreedId = Number.parseInt(breedId, 10);
+      if (!Number.isInteger(normalizedBreedId) || normalizedBreedId <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'breedId must be a positive integer',
+          data: null,
+        });
+      }
+      const breedRecord = await prisma.breed.findUnique({
+        where: { id: normalizedBreedId },
+        select: { name: true },
       });
-    }
-    const breedRecord = await prisma.breed.findUnique({
-      where: { id: normalizedBreedId },
-      select: { name: true },
-    });
-    if (!breedRecord?.name) {
-      return res.status(400).json({
-        success: false,
-        message: `No breed found for id ${normalizedBreedId}`,
-        data: null,
-      });
+      if (!breedRecord?.name) {
+        return res.status(400).json({
+          success: false,
+          message: `No breed found for id ${normalizedBreedId}`,
+          data: null,
+        });
+      }
     }
 
     // The mare must not already be in foal.
@@ -322,6 +324,8 @@ export async function createFoal(req, res) {
         pregnancySireId: sireId,
         pregnancyFeedingsByTier: {},
         lastBredDate: now,
+        pendingFoalName: name ?? null,
+        pendingFoalBreedId: normalizedBreedId || null,
       },
     });
 

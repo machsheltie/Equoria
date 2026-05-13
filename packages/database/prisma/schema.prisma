@@ -170,6 +170,8 @@ model Horse {
   inFoalSinceDate         DateTime?
   pregnancySireId         Int?
   pregnancyFeedingsByTier Json                  @default("{}")
+  pendingFoalName         String?
+  pendingFoalBreedId      Int?
   forSale                 Boolean?              @default(false)
   salePrice               Int?                  @default(0)
   /// Health and care
