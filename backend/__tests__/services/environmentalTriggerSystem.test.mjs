@@ -77,6 +77,9 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
   let etsHorseDeveloping; // 45 days old → ageInDays ≤90 (ageModifier=0.8)
   let etsHorseMature; // 200 days old → ageInDays >90 (ageModifier=1.0) + past critical periods
   let etsHorseRecent; // 130 days old → past critical periods, daysSinceLastPeriod < 30 (residual=0.3)
+  let etsGroom1; // epigeneticInfluenceType='calm' → routine_stability branch coverage
+  let etsGroom2; // second groom for multiple-groom fixture interactions
+  let etsHorseStressedFoal; // 1 day, stressLevel=8 → sensitivity=0.82>0.7 for generateEnvironmentalReport line 931
 
   beforeAll(async () => {
     const ts = Date.now();
@@ -145,10 +148,114 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
         userId: etsUser.id,
       },
     });
+
+    etsGroom1 = await prisma.groom.create({
+      data: {
+        name: `TestFixture-ETS-Groom1-${ts}`,
+        speciality: 'general',
+        personality: 'calm',
+        epigeneticInfluenceType: 'calm',
+        userId: etsUser.id,
+      },
+    });
+
+    etsGroom2 = await prisma.groom.create({
+      data: {
+        name: `TestFixture-ETS-Groom2-${ts}`,
+        speciality: 'general',
+        personality: 'energetic',
+        userId: etsUser.id,
+      },
+    });
+
+    // 1 day old, stressLevel=8 → ageModifier=0.6, stressModifier=0.6 → finalThreshold=0.18 → sensitivity=0.82>0.7
+    etsHorseStressedFoal = await prisma.horse.create({
+      data: {
+        name: `TestFixture-ETS-StressedFoal-${ts}`,
+        sex: 'Colt',
+        dateOfBirth: daysAgo(1),
+        age: 0,
+        stressLevel: 8,
+        userId: etsUser.id,
+      },
+    });
+
+    // 6 groomInteractions for etsHorseMature (all within last 30 days via default createdAt)
+    // Exercises calculateTriggerScore, identifyActiveTriggerFactors, calculateInteractionExposure,
+    // analyzeCumulativeEffects (fires at index 4), and analyzeStressEnvironmentTriggers branches
+    await prisma.groomInteraction.createMany({
+      data: [
+        // stress_inducing: stressChange>2✓, quality=poor✓, bondingChange<0✓ → interactionScore=0.7 → fires (avg=0.7>0.3)
+        {
+          foalId: etsHorseMature.id,
+          groomId: etsGroom1.id,
+          interactionType: 'handling',
+          duration: 20,
+          stressChange: 4,
+          quality: 'poor',
+          bondingChange: -1,
+        },
+        // confidence_building: bondingChange>1✓, quality=excellent✓, stressChange<=0✓ → fires (avg=0.7>0.3)
+        // calculateInteractionExposure: bondingChange=3>2✓ (*1.3), quality=excellent✓ (*1.2)
+        {
+          foalId: etsHorseMature.id,
+          groomId: etsGroom1.id,
+          interactionType: 'enrichment',
+          duration: 45,
+          stressChange: 0,
+          quality: 'excellent',
+          bondingChange: 3,
+        },
+        // isolation_stress: bondingChange<-1✓, duration<15✓ → fires (avg=0.5>0.3)
+        {
+          foalId: etsHorseMature.id,
+          groomId: etsGroom2.id,
+          interactionType: 'grooming',
+          duration: 10,
+          stressChange: 1,
+          quality: 'good',
+          bondingChange: -2,
+        },
+        // sensory_enrichment taskType=desensitization branch; routine_stability groom.calm✓ branch
+        {
+          foalId: etsHorseMature.id,
+          groomId: etsGroom1.id,
+          interactionType: 'training',
+          duration: 30,
+          stressChange: 0,
+          quality: 'good',
+          bondingChange: 0,
+          taskType: 'desensitization',
+        },
+        // routine_stability quality=excellent✓; analyzeCumulativeEffects fires at index=4 (5th interaction)
+        {
+          foalId: etsHorseMature.id,
+          groomId: etsGroom1.id,
+          interactionType: 'grooming',
+          duration: 35,
+          stressChange: 0,
+          quality: 'excellent',
+          bondingChange: 1,
+        },
+        // sensory_enrichment taskType=showground_exposure branch; stressChange=4 → analyzeStressEnv severity=high
+        {
+          foalId: etsHorseMature.id,
+          groomId: etsGroom2.id,
+          interactionType: 'training',
+          duration: 8,
+          stressChange: 4,
+          quality: 'poor',
+          bondingChange: -2,
+          taskType: 'showground_exposure',
+        },
+      ],
+    });
   }, 60000);
 
   afterAll(async () => {
+    // groomInteractions cascade via horse onDelete: Cascade (foalId FK)
     await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestFixture-ETS-' } } }).catch(() => {});
+    await prisma.groom.deleteMany({ where: { name: { startsWith: 'TestFixture-ETS-' } } }).catch(() => {});
     await prisma.user.delete({ where: { id: etsUser?.id } }).catch(() => {});
   }, 30000);
 
@@ -195,8 +302,8 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
   // ── analyzeStressEnvironmentTriggers ─────────────────────────────────────
 
   it('analyzeStressEnvironmentTriggers: no stress interactions → stressTriggers=[]', async () => {
-    const result = await analyzeStressEnvironmentTriggers(etsHorseMature.id);
-    expect(result.horseId).toBe(etsHorseMature.id);
+    const result = await analyzeStressEnvironmentTriggers(etsHorseRecent.id);
+    expect(result.horseId).toBe(etsHorseRecent.id);
     expect(Array.isArray(result.stressTriggers)).toBe(true);
     expect(result.stressfulInteractionCount).toBe(0);
     expect(typeof result.recommendedInterventions).toBe('object');
@@ -283,5 +390,100 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
     expect(result.cumulativeExposure).toBeDefined();
     expect(result.criticalPeriodSensitivity).toBeDefined();
     expect(result.reportTimestamp).toBeDefined();
+  });
+
+  // ── detectEnvironmentalTriggers — horse with interactions ─────────────────
+
+  it('detectEnvironmentalTriggers: stress_inducing + confidence_building + isolation_stress detected', async () => {
+    const result = await detectEnvironmentalTriggers(etsHorseMature.id);
+    expect(result.horseId).toBe(etsHorseMature.id);
+    expect(result.detectedTriggers.length).toBeGreaterThan(0);
+    expect(result.interactionCount).toBe(6);
+    const types = result.detectedTriggers.map(t => t.type);
+    expect(types).toContain('stress_inducing');
+    expect(types).toContain('confidence_building');
+    expect(Array.isArray(result.environmentalFactors)).toBe(true);
+    // identifyActiveTriggerFactors: loud_noises/unfamiliar_surroundings cases (stressChange>2✓)
+    const stressTrigger = result.detectedTriggers.find(t => t.type === 'stress_inducing');
+    expect(Array.isArray(stressTrigger.factors)).toBe(true);
+  });
+
+  // ── trackCumulativeExposure — horse with interactions ─────────────────────
+
+  it('trackCumulativeExposure: totalExposure>0, timeline populated, analyzeCumulativeEffects fired', async () => {
+    const result = await trackCumulativeExposure(etsHorseMature.id);
+    expect(result.horseId).toBe(etsHorseMature.id);
+    expect(result.totalExposure).toBeGreaterThan(0);
+    expect(result.exposureTimeline).toHaveLength(6);
+    expect(typeof result.exposureByType).toBe('object');
+    // analyzeCumulativeEffects fires at index 4 (5th interaction): (4+1)%5===0
+    expect(result.cumulativeEffects['interaction_5']).toBeDefined();
+    expect(['positive', 'negative', 'neutral']).toContain(result.cumulativeEffects['interaction_5'].bondingTrend);
+  });
+
+  // ── analyzeStressEnvironmentTriggers — with stress interactions ───────────
+
+  it('analyzeStressEnvironmentTriggers: stress interactions → stressTriggers with severity branches', async () => {
+    const result = await analyzeStressEnvironmentTriggers(etsHorseMature.id);
+    expect(result.stressTriggers.length).toBeGreaterThan(0);
+    expect(result.stressfulInteractionCount).toBeGreaterThan(0);
+    const severities = result.stressTriggers.map(t => t.severity);
+    // showground_exposure taskType: avgStress=4>3 → severity='high' (line 820)
+    expect(severities).toContain('high');
+    // null taskType: avgStress=2.5, not >3 → severity='moderate' (line 822)
+    expect(severities).toContain('moderate');
+  });
+
+  it('analyzeStressEnvironmentTriggers: stressLevel=8>7 → stress reduction recommendation (line 813)', async () => {
+    const result = await analyzeStressEnvironmentTriggers(etsHorseStressedFoal.id);
+    expect(result.recommendedInterventions).toContain(
+      'Immediate stress reduction required - use calm, experienced grooms only',
+    );
+  });
+
+  // ── processSeasonalTriggers — with detected triggers (calculateSeasonalModifier) ──
+
+  it('processSeasonalTriggers: spring with interactions → modifiedTriggers non-empty, seasonalModifier present', async () => {
+    const result = await processSeasonalTriggers(etsHorseMature.id, 'spring');
+    // detectEnvironmentalTriggers returns non-empty detectedTriggers → .map() invokes calculateSeasonalModifier
+    expect(result.modifiedTriggers.length).toBeGreaterThan(0);
+    expect(typeof result.modifiedTriggers[0].seasonalModifier).toBe('number');
+    expect(typeof result.modifiedTriggers[0].adjustedStrength).toBe('number');
+  });
+
+  // ── evaluateTraitExpressionProbability — with detected triggers ───────────
+
+  it('evaluateTraitExpressionProbability: fearful with stress_inducing → relevantTriggers populated (line 288)', async () => {
+    const result = await evaluateTraitExpressionProbability(etsHorseMature.id, 'fearful');
+    // stress_inducing.traits_affected includes 'fearful' → environmentalModifier increases
+    expect(result.relevantTriggers.length).toBeGreaterThan(0);
+    expect(result.relevantTriggers[0].type).toBe('stress_inducing');
+    expect(result.environmentalModifier).toBeGreaterThan(1.0);
+  });
+
+  // ── assessCriticalPeriodSensitivity — additional critical period cases ────
+
+  it('assessCriticalPeriodSensitivity: young horse (15d) → curiosity_development window active', async () => {
+    const result = await assessCriticalPeriodSensitivity(etsHorseYoung.id);
+    const windowNames = result.activeWindows.map(w => w.name);
+    expect(windowNames).toContain('curiosity_development');
+    expect(result.recommendations.some(r => r.includes('exploration'))).toBe(true);
+  });
+
+  it('assessCriticalPeriodSensitivity: developing horse (45d) → social_hierarchy window active', async () => {
+    const result = await assessCriticalPeriodSensitivity(etsHorseDeveloping.id);
+    const windowNames = result.activeWindows.map(w => w.name);
+    expect(windowNames).toContain('social_hierarchy');
+    expect(result.recommendations.some(r => r.includes('social'))).toBe(true);
+  });
+
+  // ── generateEnvironmentalReport — highly sensitive horse ─────────────────
+
+  it('generateEnvironmentalReport: stressedFoal sensitivity=0.82>0.7 and sensitivityLevel=1.0>0.7', async () => {
+    const result = await generateEnvironmentalReport(etsHorseStressedFoal.id);
+    // thresholds.sensitivity=0.82>0.7 → line 931: 'highly sensitive' recommendation added
+    expect(result.recommendations.some(r => r.includes('highly sensitive'))).toBe(true);
+    // criticalPeriodSensitivity.sensitivityLevel=1.0>0.7 → line 947: 'critical developmental' recommendation added
+    expect(result.recommendations.some(r => r.includes('critical developmental period'))).toBe(true);
   });
 });
