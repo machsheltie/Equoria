@@ -24,6 +24,8 @@ import {
   incrementCareerWeeks,
   checkRetirementEligibility,
   processRetirement,
+  getGroomsApproachingRetirement,
+  getRetirementStatistics,
 } from '../../services/groomRetirementService.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 
@@ -232,5 +234,26 @@ describe('groomRetirementService — DB fixture branch coverage (Equoria-jkht)',
     expect(CAREER_CONSTANTS.EARLY_RETIREMENT_ASSIGNMENTS).toBe(12);
     expect(RETIREMENT_REASONS.MANDATORY_CAREER_LIMIT).toBe('mandatory_career_limit');
     expect(RETIREMENT_REASONS.VOLUNTARY).toBe('voluntary');
+  });
+
+  it('getGroomsApproachingRetirement: grsGroomNotice (careerWeeks=103) triggers map callback (lines 230-231)', async () => {
+    // noticeThreshold = 104 - 1 = 103, grsGroomNotice.careerWeeks = 103 → appears in result
+    const result = await getGroomsApproachingRetirement(grsUser.id);
+    expect(Array.isArray(result)).toBe(true);
+    const notice = result.find(g => g.id === grsGroomNotice.id);
+    expect(notice).toBeDefined();
+    expect(notice.eligibility).toBeDefined();
+    expect(notice.eligibility.noticeRequired).toBe(true);
+  });
+
+  it('getRetirementStatistics: returns object with required numeric keys', async () => {
+    const result = await getRetirementStatistics(grsUser.id);
+    expect(typeof result.activeGrooms).toBe('number');
+    expect(typeof result.retiredGrooms).toBe('number');
+    expect(typeof result.totalGrooms).toBe('number');
+    expect(typeof result.approachingRetirement).toBe('number');
+    expect(typeof result.retirementRate).toBe('number');
+    expect(typeof result.averageCareerLength).toBe('number');
+    expect(result.totalGrooms).toBe(result.activeGrooms + result.retiredGrooms);
   });
 });
