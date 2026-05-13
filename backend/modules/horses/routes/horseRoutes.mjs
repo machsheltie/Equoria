@@ -37,6 +37,7 @@ import { inheritColorGenotype } from '../services/breedingColorInheritanceServic
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
 import { generateMarkings, inheritMarkings } from '../services/markingGenerationService.mjs';
+import { createFoalFromPregnancy } from '../services/foalingService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withHealth } from '../../../utils/horseHealth.mjs';
@@ -1659,6 +1660,46 @@ router.get(
         message: 'Internal server error',
         error: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',
       });
+    }
+  },
+);
+
+/**
+ * POST /api/v1/horses/:id/foal-now
+ * Immediately materialise a foal for an in-foal mare, bypassing the 7-day
+ * gestation wait.  Requires the caller to own the mare.
+ *
+ * Used by E2E tests (Phase B pregnancy spec) and admin tooling.
+ */
+router.post(
+  '/:id/foal-now',
+  mutationRateLimiter,
+  authenticateToken,
+  param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
+  handleValidationErrors,
+  requireOwnership('horse'),
+  async (req, res) => {
+    try {
+      const damId = req.horse.id;
+      if (!req.horse.inFoalSinceDate) {
+        return res.status(400).json({
+          success: false,
+          message: 'Horse is not currently in foal',
+        });
+      }
+      const { foal } = await createFoalFromPregnancy({ damId });
+      logger.info(
+        `[horseRoutes POST /:id/foal-now] Foal ${foal.id} (${foal.name}) materialised from dam ${damId}`,
+      );
+      return res.status(201).json({
+        success: true,
+        message: `${req.horse.name} has foaled!`,
+        data: { foalId: foal.id, foalName: foal.name },
+      });
+    } catch (error) {
+      const status = error.message?.includes('not in foal') ? 400 : 500;
+      logger.error(`[horseRoutes POST /:id/foal-now] Error: ${error.message}`);
+      return res.status(status).json({ success: false, message: error.message });
     }
   },
 );

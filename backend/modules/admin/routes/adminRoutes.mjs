@@ -1,5 +1,6 @@
 import express from 'express';
 import cronJobService from '../../../services/cronJobs.mjs';
+import { runFoalingJob } from '../../horses/services/foalingService.mjs';
 import { updateHorseAge } from '../../../utils/horseAgingSystem.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -254,6 +255,41 @@ router.post('/horses/:id/set-age', async (req, res) => {
     res
       .status(500)
       .json({ success: false, message: 'Failed to set horse age', error: error.message });
+  }
+});
+
+/**
+ * POST /api/v1/admin/foaling/trigger
+ * Force-run the foaling job with a time-advanced clock so recently-started
+ * pregnancies (gestation = 7 days) are treated as due.
+ *
+ * Body: { advanceDays?: number }  — days to add to "now" (default 8)
+ *
+ * Returns: { success, data: { foalsBorn, errors } }
+ *
+ * Useful for E2E tests and manual admin testing; not wired to a cron trigger.
+ */
+router.post('/foaling/trigger', async (req, res) => {
+  try {
+    const advanceDays = Number(req.body?.advanceDays ?? 8);
+    if (!Number.isFinite(advanceDays) || advanceDays < 0 || advanceDays > 365) {
+      return res.status(400).json({ success: false, message: 'advanceDays must be 0–365' });
+    }
+    logger.info(`[adminRoutes] POST /api/v1/admin/foaling/trigger — advanceDays=${advanceDays}`);
+    const now = new Date(Date.now() + advanceDays * 24 * 60 * 60 * 1000);
+    const result = await runFoalingJob({ now });
+    res.json({
+      success: true,
+      message: `Foaling job ran with clock advanced by ${advanceDays} day(s). Foals born: ${result.foalsBorn}.`,
+      data: result,
+    });
+  } catch (error) {
+    logger.error(`[adminRoutes] POST /api/v1/admin/foaling/trigger error: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to run foaling job',
+      error: error.message,
+    });
   }
 });
 
