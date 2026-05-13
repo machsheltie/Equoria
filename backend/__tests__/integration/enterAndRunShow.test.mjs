@@ -51,7 +51,9 @@ beforeAll(async () => {
     },
   });
 
-  // Horse WITH rider JSON — passes hasValidRider, but no `level` so fails isHorseEligibleForShow
+  // Horse WITH rider JSON and healthy lastFedDate — passes hasValidRider and
+  // the critical-health gate, but fails isHorseEligibleForShow (Horse schema
+  // has no `level` field so typeof horse.level !== 'number' is always true).
   horseWithRider = await prisma.horse.create({
     data: {
       name: `${PREFIX}WithRider-${uid()}`,
@@ -60,6 +62,7 @@ beforeAll(async () => {
       age: 5,
       userId: user.id,
       rider: { id: 1, name: 'Test Rider' },
+      lastFedDate: new Date(), // healthy — so rejection comes from eligibility, not health
     },
   });
 
