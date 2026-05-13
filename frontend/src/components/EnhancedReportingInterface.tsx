@@ -594,7 +594,9 @@ const ReportBuilderTab: React.FC<ReportBuilderTabProps> = ({
                 >
                   <span>{metric?.label || sectionId}</span>
                   <button
+                    type="button"
                     onClick={() => onSectionToggle(sectionId)}
+                    aria-label={`Remove ${metric?.label || sectionId}`}
                     className="text-blue-400 hover:text-blue-200"
                   >
                     ×

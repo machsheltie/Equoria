@@ -147,6 +147,7 @@ const DetailModal: React.FC<DetailModalProps> = ({
           <button
             type="button"
             onClick={onClose}
+            aria-label="Close"
             className="p-1 rounded hover:bg-white/10 text-white/50 hover:text-white"
           >
             <X className="w-4 h-4" />
@@ -286,15 +287,17 @@ const BrowseTab: React.FC<BrowseTabProps> = ({ userBalance, onPurchased }) => {
           <input
             type="text"
             placeholder="Filter by breed…"
+            aria-label="Filter by breed"
             value={filters.breed ?? ''}
             onChange={(e) => updateFilter('breed', e.target.value || undefined)}
-            className="w-full pl-9 pr-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white/80 placeholder:text-white/30 focus:outline-none focus:border-white/30"
+            className="w-full pl-9 pr-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white/80 placeholder:text-white/30 focus:outline-none focus:border-white/50 focus:ring-1 focus:ring-white/20"
           />
         </div>
         <select
           value={filters.sort ?? 'newest'}
+          aria-label="Sort listings"
           onChange={(e) => updateFilter('sort', e.target.value as MarketplaceBrowseFilters['sort'])}
-          className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white/70 focus:outline-none"
+          className="px-3 py-2 rounded-lg bg-white/5 border border-white/10 text-sm text-white/70 focus:outline-none focus:ring-1 focus:ring-white/40"
         >
           {SORT_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>
@@ -310,7 +313,7 @@ const BrowseTab: React.FC<BrowseTabProps> = ({ userBalance, onPurchased }) => {
               ? 'bg-white/15 border-white/30 text-white'
               : 'bg-white/5 border-white/10 text-white/50 hover:text-white'
           }`}
-          title="Advanced filters"
+          aria-label="Advanced filters"
         >
           <SlidersHorizontal className="w-4 h-4" />
         </button>
@@ -326,15 +329,18 @@ const BrowseTab: React.FC<BrowseTabProps> = ({ userBalance, onPurchased }) => {
             { key: 'maxPrice' as const, label: 'Max Price' },
           ].map(({ key, label }) => (
             <div key={key}>
-              <label className="block text-xs text-white/40 mb-1">{label}</label>
+              <label htmlFor={`filter-${key}`} className="block text-xs text-white/40 mb-1">
+                {label}
+              </label>
               <input
+                id={`filter-${key}`}
                 type="number"
                 min={0}
                 value={filters[key] ?? ''}
                 onChange={(e) =>
                   updateFilter(key, e.target.value ? Number(e.target.value) : undefined)
                 }
-                className="w-full px-2 py-1.5 rounded bg-white/5 border border-white/10 text-sm text-white/80 focus:outline-none"
+                className="w-full px-2 py-1.5 rounded bg-white/5 border border-white/10 text-sm text-white/80 focus:outline-none focus:ring-1 focus:ring-white/40"
               />
             </div>
           ))}
