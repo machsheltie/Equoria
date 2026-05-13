@@ -1,0 +1,288 @@
+/**
+ * databaseOptimizationService branch-coverage tests (Equoria-jkht coverage sprint).
+ *
+ * All tests are pure-path: real DB, non-existent IDs (queries return empty, not throw).
+ * No DB fixture required — Redis is always disabled in test environment
+ * (NODE_ENV=test bypasses initializeRedis).
+ *
+ * analyzeQueryPerformance:
+ *   'epigenetic_trait_search' → analyzeEpigeneticTraitQuery path
+ *   'jsonb_discipline_scores' → analyzeJsonbQuery path
+ *   'user_horses_with_results' → analyzeComplexJoinQuery path
+ *   unknown queryType → throws 'Unknown query type'
+ *
+ * createOptimizedIndexes:
+ *   queryPatterns only → creates B-tree indexes per pattern
+ *   jsonbFields only → creates GIN indexes via fieldMapping
+ *   compositePatterns only → creates composite indexes
+ *   all three options → all three index types created
+ *   empty options → returns empty created array
+ *
+ * implementConnectionPooling:
+ *   action='status' → returns active/idle connection counts
+ *   action='lifecycle_test' → returns lifecycle stats
+ *   default (configure) → returns status='configured'
+ *
+ * setupQueryCaching:
+ *   in test env → Redis always disabled → status='disabled', redisAvailable=false
+ *
+ * optimizeEpigeneticQueries:
+ *   userId branch → calls executeUserEpigeneticAnalysis
+ *   horseId branch → calls executeHorseEpigeneticAnalysis
+ *   useCache=true with no redisClient → skips cache, executes query
+ *
+ * benchmarkDatabaseOperations:
+ *   operations array → benchmarks each operation
+ *   concurrentUsers → benchmarkConcurrentLoad
+ *   scenario='production_simulation' → benchmarkProductionScenario
+ *   default (no options) → default benchmark stats
+ */
+
+import { describe, it, expect } from '@jest/globals';
+import {
+  analyzeQueryPerformance,
+  createOptimizedIndexes,
+  implementConnectionPooling,
+  setupQueryCaching,
+  optimizeEpigeneticQueries,
+  benchmarkDatabaseOperations,
+} from '../../services/databaseOptimizationService.mjs';
+
+// ── analyzeQueryPerformance ───────────────────────────────────────────────────
+
+describe('analyzeQueryPerformance — epigenetic_trait_search branch', () => {
+  it('returns result without throwing for non-existent userId', async () => {
+    const result = await analyzeQueryPerformance({
+      queryType: 'epigenetic_trait_search',
+      userId: '00000000-0000-0000-0000-000000000000',
+      filters: { minAge: 3, traits: ['BRAVE'] },
+    });
+    expect(result.queryType).toBe('epigenetic_trait_search');
+    expect(typeof result.executionTime).toBe('number');
+    expect(Array.isArray(result.recommendations)).toBe(true);
+    expect(result.indexUsage).toBeDefined();
+  });
+});
+
+describe('analyzeQueryPerformance — jsonb_discipline_scores branch', () => {
+  it('returns result with JSONB optimization info', async () => {
+    const result = await analyzeQueryPerformance({
+      queryType: 'jsonb_discipline_scores',
+      userId: '00000000-0000-0000-0000-000000000000',
+      filters: { minScore: 50 },
+    });
+    expect(result.queryType).toBe('jsonb_discipline_scores');
+    expect(Array.isArray(result.jsonbOptimizations)).toBe(true);
+    expect(Array.isArray(result.indexRecommendations)).toBe(true);
+    expect(typeof result.queryComplexity).toBe('number');
+  });
+});
+
+describe('analyzeQueryPerformance — user_horses_with_results branch', () => {
+  it('returns result with join optimization info', async () => {
+    const result = await analyzeQueryPerformance({
+      queryType: 'user_horses_with_results',
+      userId: '00000000-0000-0000-0000-000000000000',
+      includeRelations: ['breed'],
+    });
+    expect(result.queryType).toBe('user_horses_with_results');
+    expect(Array.isArray(result.joinOptimizations)).toBe(true);
+    expect(Array.isArray(result.nPlusOneRisks)).toBe(true);
+  });
+});
+
+describe('analyzeQueryPerformance — unknown queryType', () => {
+  it('throws for unknown queryType', async () => {
+    await expect(analyzeQueryPerformance({ queryType: 'unknown_type' })).rejects.toThrow('Unknown query type');
+  });
+});
+
+// ── createOptimizedIndexes ────────────────────────────────────────────────────
+
+describe('createOptimizedIndexes — queryPatterns branch', () => {
+  it('creates B-tree indexes from queryPatterns', async () => {
+    const result = await createOptimizedIndexes({
+      queryPatterns: ['name'],
+    });
+    expect(Array.isArray(result.created)).toBe(true);
+    expect(result.created.length).toBeGreaterThanOrEqual(1);
+    const statuses = result.created.map(i => i.status);
+    expect(statuses.every(s => s === 'created' || s === 'failed')).toBe(true);
+    expect(result.queryPatternsCovered).toBe(1);
+  });
+});
+
+describe('createOptimizedIndexes — jsonbFields branch', () => {
+  it('creates GIN indexes from jsonbFields (fieldMapping applied)', async () => {
+    const result = await createOptimizedIndexes({
+      jsonbFields: ['epigenetic_flags', 'discipline_scores'],
+    });
+    const ginIndexes = result.ginIndexes;
+    expect(Array.isArray(ginIndexes)).toBe(true);
+    expect(ginIndexes.length).toBeGreaterThanOrEqual(1);
+    expect(ginIndexes[0].query).toContain('GIN');
+  });
+});
+
+describe('createOptimizedIndexes — compositePatterns branch', () => {
+  it('creates composite indexes from compositePatterns', async () => {
+    const result = await createOptimizedIndexes({
+      compositePatterns: [['userId', 'age']],
+    });
+    const btreeIndexes = result.btreeIndexes;
+    expect(Array.isArray(btreeIndexes)).toBe(true);
+    // composite indexes contain ownerId (mapped from userId) not GIN
+    const hasComposite = btreeIndexes.some(i => i.query.includes('ownerId'));
+    expect(hasComposite).toBe(true);
+  });
+});
+
+describe('createOptimizedIndexes — empty options', () => {
+  it('returns empty created array when no options provided', async () => {
+    const result = await createOptimizedIndexes({});
+    expect(result.created).toHaveLength(0);
+    expect(result.queryPatternsCovered).toBe(0);
+  });
+});
+
+describe('createOptimizedIndexes — all three options', () => {
+  it('creates all index types and returns performanceGains', async () => {
+    const result = await createOptimizedIndexes({
+      queryPatterns: ['name'],
+      jsonbFields: ['epigenetic_flags'],
+      compositePatterns: [['userId', 'age']],
+    });
+    expect(result.created.length).toBeGreaterThanOrEqual(3);
+    expect(result.performanceImpact).toBeDefined();
+    expect(result.performanceGains).toBeDefined();
+    expect(typeof result.performanceGains.querySpeedup).toBe('string');
+  });
+});
+
+// ── implementConnectionPooling ────────────────────────────────────────────────
+
+describe('implementConnectionPooling — status branch', () => {
+  it('returns connection counts for action="status"', async () => {
+    const result = await implementConnectionPooling({ action: 'status' });
+    expect(result.activeConnections).toBe(5);
+    expect(result.idleConnections).toBe(3);
+    expect(Array.isArray(result.errors)).toBe(true);
+  });
+});
+
+describe('implementConnectionPooling — lifecycle_test branch', () => {
+  it('returns lifecycle stats for action="lifecycle_test"', async () => {
+    const result = await implementConnectionPooling({ action: 'lifecycle_test' });
+    expect(result.connectionsCreated).toBe(10);
+    expect(result.connectionsDestroyed).toBe(8);
+    expect(result.leakedConnections).toBe(0);
+    expect(typeof result.averageConnectionTime).toBe('number');
+  });
+});
+
+describe('implementConnectionPooling — default configure branch', () => {
+  it('returns status="configured" with pool metrics', async () => {
+    const result = await implementConnectionPooling({ maxConnections: 15, minConnections: 3 });
+    expect(result.status).toBe('configured');
+    expect(result.activeConnections).toBe(5);
+    expect(typeof result.performanceMetrics.poolEfficiency).toBe('number');
+  });
+});
+
+// ── setupQueryCaching ─────────────────────────────────────────────────────────
+
+describe('setupQueryCaching — Redis disabled in test environment', () => {
+  it('returns status="disabled" when Redis is unavailable (NODE_ENV=test)', async () => {
+    const result = await setupQueryCaching({ ttl: 300 });
+    expect(result.status).toBe('disabled');
+    expect(result.redisAvailable).toBe(false);
+    expect(result.hitRate).toBe(0);
+    expect(result.memoryUsage).toBe(0);
+  });
+
+  it('uses provided ttl when Redis disabled', async () => {
+    const result = await setupQueryCaching({ ttl: 600 });
+    expect(result.ttl).toBe(600);
+  });
+});
+
+// ── optimizeEpigeneticQueries ─────────────────────────────────────────────────
+
+describe('optimizeEpigeneticQueries — userId branch', () => {
+  it('calls executeUserEpigeneticAnalysis for userId option', async () => {
+    const result = await optimizeEpigeneticQueries({ userId: '00000000-0000-0000-0000-000000000000' });
+    expect(result.fromCache).toBe(false);
+    expect(typeof result.executionTime).toBe('number');
+    expect(result.data).toBeDefined();
+    expect(result.data.analysisType).toBe('user_epigenetic');
+    expect(Array.isArray(result.data.horses)).toBe(true);
+  });
+});
+
+describe('optimizeEpigeneticQueries — horseId branch', () => {
+  it('calls executeHorseEpigeneticAnalysis for horseId option', async () => {
+    const result = await optimizeEpigeneticQueries({ horseId: 999999999 });
+    expect(result.fromCache).toBe(false);
+    expect(result.data.analysisType).toBe('horse_epigenetic');
+    // horse=null for non-existent ID; structure still returned
+    expect(Object.prototype.hasOwnProperty.call(result.data, 'horse')).toBe(true);
+  });
+});
+
+describe('optimizeEpigeneticQueries — useCache=true with no redisClient', () => {
+  it('skips cache path and executes query normally (redisClient=null in test env)', async () => {
+    const result = await optimizeEpigeneticQueries({ userId: '00000000-0000-0000-0000-000000000000', useCache: true });
+    // No Redis in test env → fromCache=false, still executes query
+    expect(result.fromCache).toBe(false);
+    expect(result.data.analysisType).toBe('user_epigenetic');
+  });
+});
+
+// ── benchmarkDatabaseOperations ───────────────────────────────────────────────
+
+describe('benchmarkDatabaseOperations — operations array branch', () => {
+  it('benchmarks each operation and returns results map', async () => {
+    const result = await benchmarkDatabaseOperations({
+      operations: ['count'],
+      iterations: 2,
+    });
+    expect(result.count).toBeDefined();
+    expect(result.count.operation).toBe('count');
+    expect(typeof result.count.averageTime).toBe('number');
+    expect(result.count.errorRate).toBe(0);
+  });
+});
+
+describe('benchmarkDatabaseOperations — concurrentUsers branch', () => {
+  it('returns concurrent load stats for concurrentUsers option', async () => {
+    const result = await benchmarkDatabaseOperations({
+      concurrentUsers: 5,
+      requestsPerUser: 4,
+    });
+    expect(result.totalRequests).toBe(20); // 5 * 4
+    expect(result.successRate).toBeCloseTo(0.999);
+    expect(typeof result.averageResponseTime).toBe('number');
+  });
+});
+
+describe('benchmarkDatabaseOperations — production_simulation branch', () => {
+  it('returns production scenario stats', async () => {
+    const result = await benchmarkDatabaseOperations({
+      scenario: 'production_simulation',
+    });
+    expect(result.scenario).toBe('production_simulation');
+    expect(result.uptime).toBeGreaterThan(0.99);
+    expect(result.responseTime.p99).toBeDefined();
+    expect(result.resourceUtilization.cpu.average).toBeDefined();
+  });
+});
+
+describe('benchmarkDatabaseOperations — default (no options)', () => {
+  it('returns default benchmark stats when called with no options', async () => {
+    const result = await benchmarkDatabaseOperations();
+    expect(typeof result.averageQueryTime).toBe('number');
+    expect(typeof result.p95QueryTime).toBe('number');
+    expect(typeof result.p99QueryTime).toBe('number');
+    expect(result.errorRate).toBe(0);
+  });
+});
