@@ -93,6 +93,36 @@
  * GET    /api/leaderboards/:category              leaderboard by category
  * GET    /api/leaderboards/user-summary/:userId   user rank summary
  *
+ * ── Forum (19B-1) ────────────────────────────────────────────────────────
+ * GET    /api/v1/forum/threads                    paginated thread list
+ * GET    /api/v1/forum/threads/:id                thread detail with posts
+ * POST   /api/v1/forum/threads                    create thread
+ * POST   /api/v1/forum/threads/:id/posts          add post to thread
+ * POST   /api/v1/forum/threads/:id/view           increment view count
+ * PATCH  /api/v1/forum/threads/:id/pin            pin/unpin thread (admin)
+ *
+ * ── Messages (19B-2) ─────────────────────────────────────────────────────
+ * GET    /api/v1/messages/inbox                   inbox messages
+ * GET    /api/v1/messages/sent                    sent messages
+ * GET    /api/v1/messages/unread-count            unread count
+ * GET    /api/v1/messages/:id                     message detail
+ * POST   /api/v1/messages                         send message
+ * PATCH  /api/v1/messages/:id/read                mark as read
+ *
+ * ── Clubs (19B-3) ────────────────────────────────────────────────────────
+ * GET    /api/v1/clubs                            club list (filterable)
+ * GET    /api/v1/clubs/mine                       my memberships
+ * GET    /api/v1/clubs/:id                        club detail with members
+ * POST   /api/v1/clubs                            create club
+ * POST   /api/v1/clubs/:id/join                   join club
+ * DELETE /api/v1/clubs/:id/leave                  leave club
+ * PATCH  /api/v1/clubs/:id/transfer-leadership    transfer presidency
+ * GET    /api/v1/clubs/:id/elections              club elections
+ * POST   /api/v1/clubs/:id/elections              create election
+ * GET    /api/v1/clubs/elections/:id/results      election results
+ * POST   /api/v1/clubs/elections/:id/nominate     nominate self
+ * POST   /api/v1/clubs/elections/:id/vote         cast vote
+ *
  * ─────────────────────────────────────────────────────────────────────────
  * To add a new handler: add the path above, then add http.verb() below.
  * Keep in sync with: frontend/src/lib/api-client.ts
@@ -2043,4 +2073,488 @@ export const handlers = [
       },
     })
   ),
+
+  // ── Forum (19B-1) ──────────────────────────────────────────────────────────
+
+  http.get(`${base}/api/v1/forum/threads`, ({ request }) => {
+    const url = new URL(request.url);
+    const section = url.searchParams.get('section');
+    const page = parseInt(url.searchParams.get('page') || '1', 10);
+
+    const allThreads = [
+      {
+        id: 1,
+        section: 'general',
+        title: 'Welcome to Equoria Forums',
+        author: { id: 'user-1', username: 'testuser' },
+        tags: ['welcome', 'pinned'],
+        isPinned: true,
+        viewCount: 250,
+        replyCount: 12,
+        lastActivityAt: '2026-05-10T10:00:00Z',
+        createdAt: '2026-01-01T00:00:00Z',
+      },
+      {
+        id: 2,
+        section: 'sales',
+        title: 'Thoroughbred stallion for stud — excellent stats',
+        author: { id: 'user-2', username: 'breeder99' },
+        tags: ['stallion', 'stud'],
+        isPinned: false,
+        viewCount: 88,
+        replyCount: 5,
+        lastActivityAt: '2026-05-12T14:30:00Z',
+        createdAt: '2026-05-11T09:00:00Z',
+      },
+      {
+        id: 3,
+        section: 'general',
+        title: 'Tips for training young foals',
+        author: { id: 'user-3', username: 'horsepro' },
+        tags: ['training', 'foals'],
+        isPinned: false,
+        viewCount: 42,
+        replyCount: 3,
+        lastActivityAt: '2026-05-13T08:00:00Z',
+        createdAt: '2026-05-12T16:00:00Z',
+      },
+    ];
+
+    const filtered = section ? allThreads.filter((t) => t.section === section) : allThreads;
+    const limit = 10;
+    const start = (page - 1) * limit;
+    const threads = filtered.slice(start, start + limit);
+
+    return HttpResponse.json({ threads, total: filtered.length, page });
+  }),
+
+  http.get(`${base}/api/v1/forum/threads/:id`, ({ params }) => {
+    const id = Number(params.id);
+    if (id === 999) {
+      return HttpResponse.json({ success: false, message: 'Thread not found' }, { status: 404 });
+    }
+    return HttpResponse.json({
+      thread: {
+        id,
+        section: 'general',
+        title: 'Welcome to Equoria Forums',
+        author: { id: 'user-1', username: 'testuser' },
+        tags: ['welcome'],
+        isPinned: false,
+        viewCount: 251,
+        replyCount: 2,
+        lastActivityAt: '2026-05-13T09:00:00Z',
+        createdAt: '2026-01-01T00:00:00Z',
+      },
+      posts: [
+        {
+          id: 1,
+          threadId: id,
+          author: { id: 'user-1', username: 'testuser' },
+          content: 'Welcome everyone! Glad to have you here.',
+          createdAt: '2026-01-01T00:00:00Z',
+        },
+        {
+          id: 2,
+          threadId: id,
+          author: { id: 'user-2', username: 'breeder99' },
+          content: 'Thanks for setting this up!',
+          createdAt: '2026-01-02T10:00:00Z',
+        },
+      ],
+    });
+  }),
+
+  http.post(`${base}/api/v1/forum/threads`, async ({ request }) => {
+    const body = (await request.json()) as {
+      section: string;
+      title: string;
+      content: string;
+      tags?: string[];
+    };
+    const now = new Date().toISOString();
+    return HttpResponse.json(
+      {
+        thread: {
+          id: 100,
+          section: body.section,
+          title: body.title,
+          author: { id: 'user-1', username: 'testuser' },
+          tags: body.tags ?? [],
+          isPinned: false,
+          viewCount: 1,
+          replyCount: 1,
+          lastActivityAt: now,
+          createdAt: now,
+        },
+        firstPost: {
+          id: 200,
+          threadId: 100,
+          author: { id: 'user-1', username: 'testuser' },
+          content: body.content,
+          createdAt: now,
+        },
+      },
+      { status: 201 }
+    );
+  }),
+
+  http.post(`${base}/api/v1/forum/threads/:id/posts`, async ({ request, params }) => {
+    const body = (await request.json()) as { content: string };
+    const now = new Date().toISOString();
+    return HttpResponse.json(
+      {
+        post: {
+          id: 300,
+          threadId: Number(params.id),
+          author: { id: 'user-1', username: 'testuser' },
+          content: body.content,
+          createdAt: now,
+        },
+      },
+      { status: 201 }
+    );
+  }),
+
+  http.post(`${base}/api/v1/forum/threads/:id/view`, () => HttpResponse.json({})),
+
+  http.patch(`${base}/api/v1/forum/threads/:id/pin`, async ({ request, params }) => {
+    const body = (await request.json()) as { isPinned?: boolean };
+    return HttpResponse.json({
+      thread: {
+        id: Number(params.id),
+        isPinned: body.isPinned ?? true,
+      },
+    });
+  }),
+
+  // ── Messages (19B-2) ──────────────────────────────────────────────────────
+
+  http.get(`${base}/api/v1/messages/inbox`, () =>
+    HttpResponse.json({
+      messages: [
+        {
+          id: 1,
+          senderId: 'user-2',
+          sender: { id: 'user-2', username: 'breeder99' },
+          recipientId: 'user-1',
+          recipient: { id: 'user-1', username: 'testuser' },
+          subject: 'Interested in your mare',
+          content: 'Hi! I saw your mare is listed for stud. Is she still available?',
+          tag: 'breeding',
+          isRead: false,
+          createdAt: '2026-05-12T14:00:00Z',
+        },
+        {
+          id: 2,
+          senderId: 'user-3',
+          sender: { id: 'user-3', username: 'horsepro' },
+          recipientId: 'user-1',
+          recipient: { id: 'user-1', username: 'testuser' },
+          subject: 'Club invitation',
+          content: 'Would you like to join the Dressage Enthusiasts club?',
+          tag: undefined,
+          isRead: true,
+          createdAt: '2026-05-10T09:00:00Z',
+        },
+      ],
+    })
+  ),
+
+  http.get(`${base}/api/v1/messages/sent`, () =>
+    HttpResponse.json({
+      messages: [
+        {
+          id: 3,
+          senderId: 'user-1',
+          sender: { id: 'user-1', username: 'testuser' },
+          recipientId: 'user-4',
+          recipient: { id: 'user-4', username: 'newrider' },
+          subject: 'Welcome to the stable',
+          content: 'Great to have you here! Let me know if you need tips.',
+          tag: undefined,
+          isRead: true,
+          createdAt: '2026-05-11T11:00:00Z',
+        },
+      ],
+    })
+  ),
+
+  http.get(`${base}/api/v1/messages/unread-count`, () => HttpResponse.json({ count: 1 })),
+
+  http.get(`${base}/api/v1/messages/:id`, ({ params }) => {
+    const id = Number(params.id);
+    if (id === 999) {
+      return HttpResponse.json({ success: false, message: 'Message not found' }, { status: 404 });
+    }
+    return HttpResponse.json({
+      message: {
+        id,
+        senderId: 'user-2',
+        sender: { id: 'user-2', username: 'breeder99' },
+        recipientId: 'user-1',
+        recipient: { id: 'user-1', username: 'testuser' },
+        subject: 'Interested in your mare',
+        content: 'Hi! I saw your mare is listed for stud. Is she still available?',
+        tag: 'breeding',
+        isRead: false,
+        createdAt: '2026-05-12T14:00:00Z',
+      },
+    });
+  }),
+
+  http.post(`${base}/api/v1/messages`, async ({ request }) => {
+    const body = (await request.json()) as {
+      recipientId: string;
+      subject: string;
+      content: string;
+      tag?: string;
+    };
+    const now = new Date().toISOString();
+    return HttpResponse.json(
+      {
+        message: {
+          id: 400,
+          senderId: 'user-1',
+          sender: { id: 'user-1', username: 'testuser' },
+          recipientId: body.recipientId,
+          recipient: { id: body.recipientId, username: 'recipient' },
+          subject: body.subject,
+          content: body.content,
+          tag: body.tag,
+          isRead: false,
+          createdAt: now,
+        },
+      },
+      { status: 201 }
+    );
+  }),
+
+  http.patch(`${base}/api/v1/messages/:id/read`, () => HttpResponse.json({ success: true })),
+
+  // ── Clubs (19B-3) ─────────────────────────────────────────────────────────
+  // NOTE: /clubs/mine and /clubs/elections/:id/* MUST be registered before
+  // /clubs/:id to prevent MSW from matching "mine" or "elections" as :id.
+
+  http.get(`${base}/api/v1/clubs/mine`, () =>
+    HttpResponse.json({
+      memberships: [
+        {
+          id: 1,
+          club: {
+            id: 10,
+            name: 'Dressage Enthusiasts',
+            type: 'discipline',
+            category: 'Dressage',
+            description: 'For lovers of classical dressage.',
+            leader: { id: 'user-3', username: 'horsepro' },
+            memberCount: 42,
+            createdAt: '2025-06-01T00:00:00Z',
+          },
+          role: 'member',
+          joinedAt: '2026-01-15T00:00:00Z',
+        },
+      ],
+    })
+  ),
+
+  http.get(`${base}/api/v1/clubs/elections/:id/results`, ({ params }) => {
+    const id = Number(params.id);
+    return HttpResponse.json({
+      election: {
+        id,
+        clubId: 10,
+        position: 'President',
+        status: 'closed',
+        startsAt: '2026-04-01T00:00:00Z',
+        endsAt: '2026-04-07T00:00:00Z',
+      },
+      candidates: [
+        {
+          id: 1,
+          user: { id: 'user-3', username: 'horsepro' },
+          statement: 'I will grow this club!',
+          voteCount: 15,
+        },
+        {
+          id: 2,
+          user: { id: 'user-2', username: 'breeder99' },
+          statement: 'Experience matters.',
+          voteCount: 8,
+        },
+      ],
+    });
+  }),
+
+  http.post(`${base}/api/v1/clubs/elections/:id/nominate`, () =>
+    HttpResponse.json({}, { status: 201 })
+  ),
+
+  http.post(`${base}/api/v1/clubs/elections/:id/vote`, () =>
+    HttpResponse.json({}, { status: 201 })
+  ),
+
+  http.get(`${base}/api/v1/clubs`, ({ request }) => {
+    const url = new URL(request.url);
+    const type = url.searchParams.get('type');
+
+    const allClubs = [
+      {
+        id: 10,
+        name: 'Dressage Enthusiasts',
+        type: 'discipline',
+        category: 'Dressage',
+        description: 'For lovers of classical dressage.',
+        leader: { id: 'user-3', username: 'horsepro' },
+        memberCount: 42,
+        createdAt: '2025-06-01T00:00:00Z',
+      },
+      {
+        id: 11,
+        name: 'Arabian Breed Society',
+        type: 'breed',
+        category: 'Arabian',
+        description: 'Dedicated to preserving and celebrating the Arabian breed.',
+        leader: { id: 'user-5', username: 'arabianfan' },
+        memberCount: 28,
+        createdAt: '2025-08-15T00:00:00Z',
+      },
+      {
+        id: 12,
+        name: 'Show Jumping League',
+        type: 'discipline',
+        category: 'Show Jumping',
+        description: 'Competitive show jumping community.',
+        leader: { id: 'user-6', username: 'jumpmaster' },
+        memberCount: 67,
+        createdAt: '2025-03-20T00:00:00Z',
+      },
+    ];
+
+    const clubs = type ? allClubs.filter((c) => c.type === type) : allClubs;
+    return HttpResponse.json({ clubs });
+  }),
+
+  http.post(`${base}/api/v1/clubs`, async ({ request }) => {
+    const body = (await request.json()) as {
+      name: string;
+      type: string;
+      category: string;
+      description: string;
+    };
+    const now = new Date().toISOString();
+    return HttpResponse.json(
+      {
+        club: {
+          id: 200,
+          name: body.name,
+          type: body.type,
+          category: body.category,
+          description: body.description,
+          leader: { id: 'user-1', username: 'testuser' },
+          memberCount: 1,
+          createdAt: now,
+        },
+      },
+      { status: 201 }
+    );
+  }),
+
+  http.get(`${base}/api/v1/clubs/:id`, ({ params }) => {
+    const id = Number(params.id);
+    if (id === 999) {
+      return HttpResponse.json({ success: false, message: 'Club not found' }, { status: 404 });
+    }
+    return HttpResponse.json({
+      club: {
+        id,
+        name: 'Dressage Enthusiasts',
+        type: 'discipline',
+        category: 'Dressage',
+        description: 'For lovers of classical dressage.',
+        leader: { id: 'user-3', username: 'horsepro' },
+        memberCount: 42,
+        createdAt: '2025-06-01T00:00:00Z',
+        members: [
+          {
+            id: 1,
+            user: { id: 'user-3', username: 'horsepro' },
+            role: 'president',
+            joinedAt: '2025-06-01T00:00:00Z',
+          },
+          {
+            id: 2,
+            user: { id: 'user-1', username: 'testuser' },
+            role: 'member',
+            joinedAt: '2026-01-15T00:00:00Z',
+          },
+        ],
+      },
+    });
+  }),
+
+  http.post(`${base}/api/v1/clubs/:id/join`, ({ params }) =>
+    HttpResponse.json(
+      {
+        membership: {
+          id: 500,
+          club: {
+            id: Number(params.id),
+            name: 'Dressage Enthusiasts',
+            type: 'discipline',
+            category: 'Dressage',
+            description: 'For lovers of classical dressage.',
+            leader: { id: 'user-3', username: 'horsepro' },
+            memberCount: 43,
+            createdAt: '2025-06-01T00:00:00Z',
+          },
+          role: 'member',
+          joinedAt: new Date().toISOString(),
+        },
+      },
+      { status: 201 }
+    )
+  ),
+
+  http.delete(`${base}/api/v1/clubs/:id/leave`, () => HttpResponse.json({ success: true })),
+
+  http.patch(`${base}/api/v1/clubs/:id/transfer-leadership`, () =>
+    HttpResponse.json({ success: true })
+  ),
+
+  http.get(`${base}/api/v1/clubs/:id/elections`, ({ params }) =>
+    HttpResponse.json({
+      elections: [
+        {
+          id: 1,
+          clubId: Number(params.id),
+          position: 'President',
+          status: 'open',
+          startsAt: '2026-05-10T00:00:00Z',
+          endsAt: '2026-05-17T00:00:00Z',
+        },
+      ],
+    })
+  ),
+
+  http.post(`${base}/api/v1/clubs/:id/elections`, async ({ request, params }) => {
+    const body = (await request.json()) as {
+      position: string;
+      startsAt: string;
+      endsAt: string;
+    };
+    return HttpResponse.json(
+      {
+        election: {
+          id: 600,
+          clubId: Number(params.id),
+          position: body.position,
+          status: 'upcoming',
+          startsAt: body.startsAt,
+          endsAt: body.endsAt,
+        },
+      },
+      { status: 201 }
+    );
+  }),
 ];
