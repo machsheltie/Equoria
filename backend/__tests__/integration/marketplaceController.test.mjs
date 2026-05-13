@@ -15,6 +15,7 @@ import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
+import { listHorse } from '../../modules/marketplace/controllers/marketplaceController.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -239,6 +240,30 @@ describe('marketplaceController integration', () => {
         .send({ horseId: 1, price: 1000 });
 
       expect(res.status).toBe(401);
+    });
+
+    it('returns 500 when req.horse is absent (requireOwnership middleware not applied)', async () => {
+      // Exercises the defensive null-guard in listHorse. The HTTP route always
+      // has the middleware, so we call the controller function directly to
+      // reach this branch without mocking Prisma.
+      let statusCode;
+      let jsonBody;
+      const req = { body: { price: 1000 }, user: { id: user.id } };
+      const res = {
+        status(code) {
+          statusCode = code;
+          return this;
+        },
+        json(body) {
+          jsonBody = body;
+          return this;
+        },
+      };
+
+      await listHorse(req, res, () => {});
+
+      expect(statusCode).toBe(500);
+      expect(jsonBody.success).toBe(false);
     });
   });
 

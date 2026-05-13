@@ -108,8 +108,11 @@ export const requireOwnership = (resourceType, options = {}) => {
         throw new AppError('Authentication required', 401);
       }
 
-      // Extract resource ID from params or body
-      if (!isNumericId || isNaN(resourceId) || resourceId < 0) {
+      // Extract resource ID from params or body.
+      // Upper bound: PostgreSQL int4 max (2,147,483,647) — values above this
+      // cause a Prisma runtime error rather than a graceful null result.
+      const INT4_MAX = 2_147_483_647;
+      if (!isNumericId || isNaN(resourceId) || resourceId < 0 || resourceId > INT4_MAX) {
         logger.warn(`[ownership] Invalid ${resourceType} ID: ${rawId}`);
         throw new AppError(`Invalid ${resourceType} ID`, 400);
       }

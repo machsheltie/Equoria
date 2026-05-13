@@ -147,9 +147,11 @@ export async function browseListings(req, res) {
 export async function listHorse(req, res) {
   try {
     const { price } = req.body;
-    // Ownership validated by requireOwnership('horse', { from: 'body', idParam: 'horseId' })
-    // on the route. req.horse is the validated, owned record.
     const horse = req.horse;
+
+    if (!horse) {
+      return res.status(500).json({ success: false, message: 'Ownership middleware not applied' });
+    }
 
     if (price === undefined) {
       return res.status(400).json({ success: false, message: 'price is required' });

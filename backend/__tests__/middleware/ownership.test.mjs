@@ -273,7 +273,7 @@ describe('Ownership Middleware (real DB)', () => {
   });
 
   describe('from: body — reads resource ID from req.body instead of req.params', () => {
-    it('should attach req.horse and call next when ID is in body and user owns the resource', async () => {
+    it('should attach req.horse and req.validatedResources.horse and call next when ID is in body and user owns the resource', async () => {
       const user = await createUser();
       const horse = await createHorse(user.id);
       const harness = makeReqRes({ id: user.id });
@@ -283,6 +283,7 @@ describe('Ownership Middleware (real DB)', () => {
 
       expect(harness.nextArg()).toBeUndefined();
       expect(harness.req.horse).toMatchObject({ id: horse.id, userId: user.id });
+      expect(harness.req.validatedResources).toMatchObject({ horse: { id: horse.id, userId: user.id } });
       expect(harness.nextCallCount()).toBe(1);
     });
 
@@ -346,6 +347,29 @@ describe('Ownership Middleware (real DB)', () => {
 
       expect(harness.nextArg()).toBeUndefined();
       expect(harness.req.horse).toMatchObject({ id: horse.id, userId: user.id });
+    });
+
+    it('should return 400 for oversized integer body value (> PostgreSQL int4 max) without reaching Prisma', async () => {
+      const user = await createUser();
+      const harness = makeReqRes({ id: user.id });
+      // 2,147,483,648 = int4 max + 1 — would cause Prisma runtime error if it reached the DB
+      harness.req.body = { horseId: 2_147_483_648 };
+
+      await requireOwnership('horse', { idParam: 'horseId', from: 'body' })(harness.req, harness.res, harness.next);
+
+      expect(harness.res.statusValue).toBe(400);
+      expect(harness.nextCallCount()).toBe(0);
+    });
+
+    it('should return 400 for oversized integer string param value (> PostgreSQL int4 max) without reaching Prisma', async () => {
+      const user = await createUser();
+      const harness = makeReqRes({ id: user.id });
+      harness.req.params.id = '2147483648';
+
+      await requireOwnership('horse')(harness.req, harness.res, harness.next);
+
+      expect(harness.res.statusValue).toBe(400);
+      expect(harness.nextCallCount()).toBe(0);
     });
   });
 
