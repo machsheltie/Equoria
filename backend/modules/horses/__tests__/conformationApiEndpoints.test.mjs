@@ -5,7 +5,7 @@
 // Real database — no mocked Prisma calls per project policy.
 
 import { describe, beforeAll, afterAll, beforeEach, expect, test } from '@jest/globals';
-import prisma from '../../packages/database/prismaClient.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'node:crypto';
 
@@ -14,9 +14,9 @@ import { randomBytes } from 'node:crypto';
 // noise suppression — no logger assertions besides .mockClear() in
 // beforeEach. The real logger fires at LOG_LEVEL=error per setup.mjs.
 
-import { getConformation, getConformationAnalysis } from '../modules/horses/controllers/horseController.mjs';
-import { CONFORMATION_REGIONS } from '../modules/horses/services/conformationService.mjs';
-import { getBreedProfile } from '../modules/horses/data/breedProfileLoader.mjs';
+import { getConformation, getConformationAnalysis } from '../controllers/horseController.mjs';
+import { CONFORMATION_REGIONS } from '../services/conformationService.mjs';
+import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 
 // ── Test data setup ────────────────────────────────────────────────────────
 const ts = `${randomBytes(8).toString('hex')}_${Math.random().toString(36).slice(2, 7)}`;

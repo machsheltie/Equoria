@@ -18,12 +18,12 @@
  */
 
 import { describe, it, expect, afterAll, afterEach } from '@jest/globals';
-import prisma from '../../packages/database/prismaClient.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 import {
   canonicalizeHorseSex,
   canonicalizeHorseSexOrNull,
   CANONICAL_HORSE_SEX_VALUES,
-} from '../../packages/database/horseSexCanonical.mjs';
+} from '../../../../packages/database/horseSexCanonical.mjs';
 
 const FIXTURE_NAME_PREFIX = 'TestFixture-CanonicalSex-';
 

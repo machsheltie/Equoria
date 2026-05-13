@@ -3,7 +3,7 @@
 // gaited vs non-gaited breed responses, and error cases.
 
 import { describe, test, expect, beforeEach } from '@jest/globals';
-import { getGaits } from '../modules/horses/controllers/horseController.mjs';
+import { getGaits } from '../controllers/horseController.mjs';
 
 function createMockRes() {
   const res = {

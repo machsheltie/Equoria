@@ -7,7 +7,7 @@ import {
   getDisplayedHealth,
   worseOf,
   withHealth,
-} from '../../utils/horseHealth.mjs';
+} from '../../../utils/horseHealth.mjs';
 
 describe('getFeedHealth', () => {
   const NOW = new Date('2026-04-29T15:30:00Z');

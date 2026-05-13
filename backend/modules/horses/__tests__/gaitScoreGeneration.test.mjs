@@ -8,7 +8,7 @@ import {
   calculateConformationBonus,
   STANDARD_GAITS,
   CONFORMATION_GAIT_MAPPING,
-} from '../modules/horses/services/gaitService.mjs';
+} from '../services/gaitService.mjs';
 
 describe('Gait Score Generation Service', () => {
   // Sample conformation scores for testing (above-average horse)

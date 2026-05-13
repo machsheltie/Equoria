@@ -17,15 +17,15 @@
  *   - Integration test: real DB (prisma) + real HTTP (supertest)
  */
 
-import { calculatePhenotype } from '../modules/horses/services/phenotypeCalculationService.mjs';
-import prisma from '../db/index.mjs';
+import { calculatePhenotype } from '../services/phenotypeCalculationService.mjs';
+import prisma from '../../../db/index.mjs';
 import bcrypt from 'bcryptjs';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
-import config from '../config/config.mjs';
-import app from '../app.mjs';
+import config from '../../../config/config.mjs';
+import app from '../../../app.mjs';
 
-import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // ---------------------------------------------------------------------------
 // Helpers: minimal genotype builders
 // ---------------------------------------------------------------------------

@@ -18,10 +18,10 @@
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
-import app from '../../app.mjs';
-import prisma from '../../../packages/database/prismaClient.mjs';
-import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
-import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
+import app from '../../../app.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 
 describe('POST /api/horses/:id/feed', () => {
   let user;

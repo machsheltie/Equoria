@@ -22,8 +22,8 @@ import {
   getHorseXpHistory,
   awardCompetitionXp,
   getHorseXpStatus,
-} from '../../models/horseXpModel.mjs';
-import prisma from '../../../packages/database/prismaClient.mjs';
+} from '../../../models/horseXpModel.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 
 let xpUser;
 let xpHorse;

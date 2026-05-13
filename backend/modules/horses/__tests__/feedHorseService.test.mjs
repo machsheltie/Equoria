@@ -17,12 +17,12 @@ import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import prisma from '../../../packages/database/prismaClient.mjs';
-import { feedHorse, rollStatBoost } from '../../modules/horses/services/horseFeedService.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
+import { feedHorse, rollStatBoost } from '../services/horseFeedService.mjs';
 
 // Resolved once at module load — used by the SELECT FOR UPDATE sentinel describe block.
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const FEED_SERVICE_SRC = readFileSync(resolve(__dirname, '../../modules/horses/services/horseFeedService.mjs'), 'utf8');
+const FEED_SERVICE_SRC = readFileSync(resolve(__dirname, '../services/horseFeedService.mjs'), 'utf8');
 
 // 12 stats matching backend/modules/horses/services/horseFeedService.mjs STATS array.
 const EXPECTED_STATS = [

@@ -13,9 +13,9 @@ import {
   applyBreedRestrictions,
   aggregateByPhenotype,
   predictBreedingColors,
-} from '../modules/horses/services/breedingColorPredictionService.mjs';
-import { calculatePhenotype } from '../modules/horses/services/phenotypeCalculationService.mjs';
-import { GENERIC_DEFAULTS } from '../modules/horses/services/genotypeGenerationService.mjs';
+} from '../services/breedingColorPredictionService.mjs';
+import { calculatePhenotype } from '../services/phenotypeCalculationService.mjs';
+import { GENERIC_DEFAULTS } from '../services/genotypeGenerationService.mjs';
 
 // ---------------------------------------------------------------------------
 // T4.1: generateLocusProbabilities

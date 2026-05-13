@@ -5,7 +5,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { isHorseEligibleForShow } from '../../utils/isHorseEligible.mjs';
+import { isHorseEligibleForShow } from '../../../utils/isHorseEligible.mjs';
 
 const makeHorse = (age = 5, level = 3) => ({ age, level });
 const makeShow = (overrides = {}) => ({ id: 42, levelMin: 1, levelMax: 10, ...overrides });

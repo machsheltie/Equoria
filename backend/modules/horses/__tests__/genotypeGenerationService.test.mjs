@@ -15,19 +15,15 @@
  *   - Integration test: real DB (prisma) + real HTTP (supertest)
  */
 
-import {
-  sampleWeightedAllele,
-  generateGenotype,
-  CORE_LOCI,
-} from '../modules/horses/services/genotypeGenerationService.mjs';
-import prisma from '../db/index.mjs';
+import { sampleWeightedAllele, generateGenotype, CORE_LOCI } from '../services/genotypeGenerationService.mjs';
+import prisma from '../../../db/index.mjs';
 import bcrypt from 'bcryptjs';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
-import config from '../config/config.mjs';
-import app from '../app.mjs';
+import config from '../../../config/config.mjs';
+import app from '../../../app.mjs';
 
-import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // ---------------------------------------------------------------------------
 // sampleWeightedAllele — pure function, no mocks needed
 // ---------------------------------------------------------------------------

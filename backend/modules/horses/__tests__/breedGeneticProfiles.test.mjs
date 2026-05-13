@@ -1,12 +1,8 @@
 // Tests for breed genetic profile data structure and population script.
 // Validates all 12 breed profiles match PRD specifications.
 
-import {
-  CANONICAL_BREEDS,
-  BREED_GENETIC_PROFILES,
-  TEMPERAMENT_TYPES,
-} from '../modules/horses/data/breedGeneticProfiles.mjs';
-import { validateProfile } from '../seed/populateBreedGeneticProfiles.mjs';
+import { CANONICAL_BREEDS, BREED_GENETIC_PROFILES, TEMPERAMENT_TYPES } from '../data/breedGeneticProfiles.mjs';
+import { validateProfile } from '../../../seed/populateBreedGeneticProfiles.mjs';
 
 const CONFORMATION_REGIONS = ['head', 'neck', 'shoulders', 'back', 'hindquarters', 'legs', 'hooves', 'topline'];
 const STANDARD_GAITS = ['walk', 'trot', 'canter', 'gallop', 'gaiting'];

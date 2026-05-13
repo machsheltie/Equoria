@@ -256,8 +256,11 @@ describe('healthCheckHandler — catch block (lines 150-151) (Equoria-rr7)', () 
     try {
       const healthData = await ThrowingCheck.performFullHealthCheck();
       let statusCode = 200;
-      if (healthData.status === 'warning') statusCode = 200;
-      else if (healthData.status === 'unhealthy') statusCode = 503;
+      if (healthData.status === 'warning') {
+        statusCode = 200;
+      } else if (healthData.status === 'unhealthy') {
+        statusCode = 503;
+      }
       res.status(statusCode).json(healthData);
     } catch (error) {
       // Replicates healthCheckHandler catch body (lines 150-151)

@@ -16,8 +16,8 @@ import {
   updateHorseAge,
   checkForMilestones,
   processHorseBirthdays,
-} from '../../utils/horseAgingSystem.mjs';
-import prisma from '../../../packages/database/prismaClient.mjs';
+} from '../../../utils/horseAgingSystem.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 
 const daysAgo = days => new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 

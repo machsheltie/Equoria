@@ -14,8 +14,8 @@ import {
   identifyStressResponsePatterns,
   analyzeBondingPreferences,
   detectTemperamentChanges,
-} from '../../services/horseTemperamentAnalysis.mjs';
-import prisma from '../../../packages/database/prismaClient.mjs';
+} from '../../../services/horseTemperamentAnalysis.mjs';
+import prisma from '../../../../packages/database/prismaClient.mjs';
 
 let user;
 let horse;

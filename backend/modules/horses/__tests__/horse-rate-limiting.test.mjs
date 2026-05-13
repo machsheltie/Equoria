@@ -1,8 +1,8 @@
 import request from 'supertest';
-import { generateTestToken, authHeader as _authHeader } from '../../tests/helpers/authHelper.mjs';
+import { generateTestToken, authHeader as _authHeader } from '../../../tests/helpers/authHelper.mjs';
 
-import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
-import { snapshotEnv, restoreEnv } from '../../tests/helpers/envSnapshot.mjs';
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+import { snapshotEnv, restoreEnv } from '../../../tests/helpers/envSnapshot.mjs';
 
 // TEST_RATE_LIMIT_MAX_REQUESTS must be set before app.mjs imports the
 // rate-limiting middleware (which reads it at factory time). Snapshot
@@ -10,7 +10,7 @@ import { snapshotEnv, restoreEnv } from '../../tests/helpers/envSnapshot.mjs';
 const __envSnap__ = snapshotEnv();
 process.env.TEST_RATE_LIMIT_MAX_REQUESTS = '100';
 
-const { default: app } = await import('../../app.mjs');
+const { default: app } = await import('../../../app.mjs');
 
 describe('Horse routes rate limiting', () => {
   afterAll(() => {

@@ -1,5 +1,5 @@
 import { describe, it, expect } from '@jest/globals';
-import { rollStatBoost } from '../../modules/horses/services/horseFeedService.mjs';
+import { rollStatBoost } from '../services/horseFeedService.mjs';
 
 // Valid stat fields (must match what horseFeedService exports internally)
 const VALID_STATS = [

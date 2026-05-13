@@ -15,7 +15,7 @@ import {
   countTraits,
   countTraitsByCategory,
   validateTraitStructure,
-} from '../../utils/horseModelTraitHelpers.mjs';
+} from '../../../utils/horseModelTraitHelpers.mjs';
 
 const emptyTraits = () => ({ positive: [], negative: [], hidden: [] });
 

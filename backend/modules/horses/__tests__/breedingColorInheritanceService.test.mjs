@@ -25,16 +25,16 @@ import {
   assembleAllelePair,
   drawAllele,
   LETHAL_COMBINATIONS,
-} from '../modules/horses/services/breedingColorInheritanceService.mjs';
-import { CORE_LOCI } from '../modules/horses/services/genotypeGenerationService.mjs';
-import prisma from '../db/index.mjs';
+} from '../services/breedingColorInheritanceService.mjs';
+import { CORE_LOCI } from '../services/genotypeGenerationService.mjs';
+import prisma from '../../../db/index.mjs';
 import bcrypt from 'bcryptjs';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
-import config from '../config/config.mjs';
-import app from '../app.mjs';
+import config from '../../../config/config.mjs';
+import app from '../../../app.mjs';
 
-import { fetchCsrf } from '../tests/helpers/csrfHelper.mjs';
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------

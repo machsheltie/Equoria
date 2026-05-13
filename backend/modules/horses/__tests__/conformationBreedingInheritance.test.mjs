@@ -7,8 +7,8 @@ import {
   hasValidConformationScores,
   validateConformationScores,
   CONFORMATION_REGIONS,
-} from '../modules/horses/services/conformationService.mjs';
-import { BREED_GENETIC_PROFILES } from '../modules/horses/data/breedGeneticProfiles.mjs';
+} from '../services/conformationService.mjs';
+import { BREED_GENETIC_PROFILES } from '../data/breedGeneticProfiles.mjs';
 
 // Helper: create a scores object with a uniform value for all regions
 function uniformScores(value) {

@@ -3,7 +3,7 @@
 // legacy horse handling, partial phenotype, JSONB type guards, and null guard behavior.
 
 import { describe, test, expect } from '@jest/globals';
-import { getGenetics, getColor } from '../modules/horses/controllers/horseController.mjs';
+import { getGenetics, getColor } from '../controllers/horseController.mjs';
 
 function createMockRes() {
   const res = {

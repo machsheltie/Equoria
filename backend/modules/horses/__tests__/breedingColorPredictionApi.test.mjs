@@ -7,8 +7,8 @@
 
 import { describe, test, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import prisma from '../db/index.mjs';
-import { getBreedingColorPrediction } from '../modules/horses/controllers/horseController.mjs';
+import prisma from '../../../db/index.mjs';
+import { getBreedingColorPrediction } from '../controllers/horseController.mjs';
 
 const SUITE_PREFIX = 'bcpa';
 

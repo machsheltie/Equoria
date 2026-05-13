@@ -8,8 +8,8 @@ import {
   hasValidGaitScores,
   validateGaitScores,
   STANDARD_GAITS,
-} from '../modules/horses/services/gaitService.mjs';
-import { BREED_GENETIC_PROFILES } from '../modules/horses/data/breedGeneticProfiles.mjs';
+} from '../services/gaitService.mjs';
+import { BREED_GENETIC_PROFILES } from '../data/breedGeneticProfiles.mjs';
 
 // Helper: average conformation (bonus = 0)
 const avgConformation = {

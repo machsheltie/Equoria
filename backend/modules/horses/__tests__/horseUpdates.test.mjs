@@ -5,8 +5,8 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
-import prisma from '../../db/index.mjs';
-import { updateHorseEarnings, updateHorseStat, updateHorseRewards } from '../../utils/horseUpdates.mjs';
+import prisma from '../../../db/index.mjs';
+import { updateHorseEarnings, updateHorseStat, updateHorseRewards } from '../../../utils/horseUpdates.mjs';
 
 const RUN_ID = `${Date.now()}_${Math.floor(Math.random() * 100000)}`;
 const PREFIX = `HORSUPD_TEST_${RUN_ID}`;

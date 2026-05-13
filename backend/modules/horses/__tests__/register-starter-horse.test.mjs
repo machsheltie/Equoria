@@ -14,10 +14,10 @@
  */
 
 import request from 'supertest';
-import app from '../../app.mjs';
-import prisma from '../../db/index.mjs';
+import app from '../../../app.mjs';
+import prisma from '../../../db/index.mjs';
 
-import { fetchCsrf } from '../../tests/helpers/csrfHelper.mjs';
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 // Test-bypass headers were purged from production middleware in commits
 // 5a158681 / 3590916e. Empty object preserves `.set(rateLimitBypass)`
 // call-site signatures with no behavior. Rate pressure in test env is

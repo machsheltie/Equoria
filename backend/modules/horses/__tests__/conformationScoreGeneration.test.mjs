@@ -8,8 +8,8 @@ import {
   calculateOverallConformation,
   generateConformationScores,
   CONFORMATION_REGIONS,
-} from '../modules/horses/services/conformationService.mjs';
-import { BREED_GENETIC_PROFILES } from '../modules/horses/data/breedGeneticProfiles.mjs';
+} from '../services/conformationService.mjs';
+import { BREED_GENETIC_PROFILES } from '../data/breedGeneticProfiles.mjs';
 
 // === Task 3.1: Score generation produces all 8 regions ===
 

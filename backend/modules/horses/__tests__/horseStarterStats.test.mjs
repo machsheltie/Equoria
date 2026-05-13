@@ -30,7 +30,7 @@ import {
   sampleStat,
   clampStatsToTotalCap,
   generateStoreStats,
-} from '../../services/horseStarterStats.mjs';
+} from '../../../services/horseStarterStats.mjs';
 
 // Read the breed JSON the same way the service does, so the data-contract
 // test exercises the actual file the runtime reads — not a fixture that
