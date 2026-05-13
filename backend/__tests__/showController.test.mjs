@@ -150,8 +150,45 @@ async function cleanupSuite() {
   if (showIds.length > 0) {
     await prisma.show.deleteMany({ where: { id: { in: showIds } } });
   }
+
+  // Clean up riders and assignments owned by suite users
+  const riders = await prisma.rider.findMany({
+    where: { userId: { in: userIds } },
+    select: { id: true },
+  });
+  const riderIds = riders.map(r => r.id);
+  if (riderIds.length > 0) {
+    await prisma.riderAssignment.deleteMany({ where: { riderId: { in: riderIds } } });
+    await prisma.rider.deleteMany({ where: { id: { in: riderIds } } });
+  }
+
   await prisma.horse.deleteMany({ where: { userId: { in: userIds } } });
   await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+}
+
+async function createRider(userId, overrides = {}) {
+  return prisma.rider.create({
+    data: {
+      firstName: overrides.firstName ?? 'Ana',
+      lastName: overrides.lastName ?? 'Lopez',
+      personality: 'methodical',
+      skillLevel: 'experienced',
+      speciality: 'Dressage',
+      retired: false,
+      user: { connect: { id: userId } },
+    },
+  });
+}
+
+async function createRiderAssignment(riderId, horseId, userId) {
+  return prisma.riderAssignment.create({
+    data: {
+      rider: { connect: { id: riderId } },
+      horse: { connect: { id: horseId } },
+      user: { connect: { id: userId } },
+      isActive: true,
+    },
+  });
 }
 
 describe('showController (real DB)', () => {
@@ -870,6 +907,70 @@ describe('showController (real DB)', () => {
     it('does not return a value when res is null (scheduler mode)', async () => {
       const result = await executeClosedShows(null, null);
       expect(result).toBeUndefined();
+    });
+
+    it('increments rider totalCompetitions when horse with active assignment runs a show', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const rider = await createRider(user.id);
+      await createRiderAssignment(rider.id, horse.id, user.id);
+
+      // status: 'open' (default) + past closeDate → executeClosedShows will pick it up
+      const show = await createShowDirect(user.id, {
+        closeDate: new Date(Date.now() - 1000),
+      });
+      await prisma.showEntry.create({
+        data: { showId: show.id, horseId: horse.id, userId: user.id, feePaid: 0 },
+      });
+
+      const h = makeReqRes(undefined);
+      await executeClosedShows(h.req, h.res);
+
+      const riderAfter = await prisma.rider.findUnique({ where: { id: rider.id } });
+      expect(riderAfter.totalCompetitions).toBe(1);
+    });
+
+    it('increments rider totalWins when horse wins (only entry in show)', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const rider = await createRider(user.id);
+      await createRiderAssignment(rider.id, horse.id, user.id);
+
+      const show = await createShowDirect(user.id, {
+        closeDate: new Date(Date.now() - 1000),
+      });
+      await prisma.showEntry.create({
+        data: { showId: show.id, horseId: horse.id, userId: user.id, feePaid: 0 },
+      });
+
+      const h = makeReqRes(undefined);
+      await executeClosedShows(h.req, h.res);
+
+      // Single entry means placement=1 guaranteed
+      const riderAfter = await prisma.rider.findUnique({ where: { id: rider.id } });
+      expect(riderAfter.totalWins).toBe(1);
+      expect(riderAfter.totalCompetitions).toBe(1);
+    });
+
+    it('does not update rider stats when horse has no active rider assignment', async () => {
+      const user = await createUser();
+      const horse = await createHorse(user.id);
+      const rider = await createRider(user.id);
+      // No active assignment — rider is created but not linked to this horse
+
+      const show = await createShowDirect(user.id, {
+        closeDate: new Date(Date.now() - 1000),
+      });
+      await prisma.showEntry.create({
+        data: { showId: show.id, horseId: horse.id, userId: user.id, feePaid: 0 },
+      });
+
+      const h = makeReqRes(undefined);
+      await executeClosedShows(h.req, h.res);
+
+      const riderAfter = await prisma.rider.findUnique({ where: { id: rider.id } });
+      expect(riderAfter.totalCompetitions).toBe(0);
+      expect(riderAfter.totalWins).toBe(0);
     });
 
     it('sets firstEverWin milestone for 1st place winner', async () => {

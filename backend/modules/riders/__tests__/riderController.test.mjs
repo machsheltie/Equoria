@@ -171,6 +171,35 @@ describe('riderController (real DB)', () => {
       expect(data).toHaveLength(1);
       expect(data[0].name).toBe('Mine Garcia');
     });
+
+    it('returns real totalCompetitions and totalWins from the DB', async () => {
+      const user = await createUser();
+      const rider = await createRider(user.id);
+      // Directly set counters to non-zero values to confirm real DB read
+      await prisma.rider.update({
+        where: { id: rider.id },
+        data: { totalCompetitions: 7, totalWins: 3 },
+      });
+
+      const h = makeReqRes(user.id);
+      await getUserRiders(h.req, h.res);
+
+      const data = h.res.jsonValue.data;
+      expect(data[0].totalCompetitions).toBe(7);
+      expect(data[0].totalWins).toBe(3);
+    });
+
+    it('returns totalCompetitions:0 and totalWins:0 for a newly created rider', async () => {
+      const user = await createUser();
+      await createRider(user.id);
+
+      const h = makeReqRes(user.id);
+      await getUserRiders(h.req, h.res);
+
+      const data = h.res.jsonValue.data;
+      expect(data[0].totalCompetitions).toBe(0);
+      expect(data[0].totalWins).toBe(0);
+    });
   });
 
   describe('getRiderAssignments', () => {

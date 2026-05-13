@@ -354,6 +354,20 @@ export async function executeClosedShows(req, res) {
             });
           }
         }
+
+        // Increment rider competition stats if an active rider is assigned
+        const riderAssignment = await prisma.riderAssignment.findFirst({
+          where: { horseId: entry.horseId, isActive: true },
+        });
+        if (riderAssignment) {
+          await prisma.rider.update({
+            where: { id: riderAssignment.riderId },
+            data: {
+              totalCompetitions: { increment: 1 },
+              ...(placement === 1 ? { totalWins: { increment: 1 } } : {}),
+            },
+          });
+        }
       });
 
       await Promise.all(resultOps);

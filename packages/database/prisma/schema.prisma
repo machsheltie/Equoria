@@ -1041,7 +1041,9 @@ model Rider {
   /// Career weeks accumulated
   careerWeeks  Int               @default(0)
   /// Total competition wins
-  totalWins    Int               @default(0)
+  totalWins         Int               @default(0)
+  /// Total competition entries (incremented at show execution)
+  totalCompetitions Int               @default(0)
   /// Prestige score (0–100)
   prestige     Int               @default(0)
   /// Retirement status

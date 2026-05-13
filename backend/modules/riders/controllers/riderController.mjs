@@ -31,10 +31,8 @@ export async function getUserRiders(req, res) {
       name: `${r.firstName} ${r.lastName}`,
       assignedHorseId: r.assignments[0]?.horseId ?? null,
       hiredDate: r.createdAt?.toISOString?.() ?? r.createdAt,
-      // totalCompetitions is not yet tracked at the rider level — return 0
-      // so the UI shows an honest "—" win rate instead of a fabricated estimate.
-      // When rider-level competition tracking lands, this will return the real count.
-      totalCompetitions: 0,
+      totalCompetitions: r.totalCompetitions,
+      totalWins: r.totalWins,
     }));
 
     res.status(200).json({
