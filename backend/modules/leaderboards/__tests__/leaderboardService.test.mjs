@@ -18,6 +18,10 @@ import {
   getTopUsersByMoney,
   getUserXpRank,
   getLeaderboardStats,
+  getTopPlayersByXP,
+  getTopPlayersByLevel,
+  getTopPlayersByMoney,
+  getPlayerXpRank,
 } from '../../../services/leaderboardService.mjs';
 
 const RUN_ID = `${Date.now()}_${Math.floor(Math.random() * 100000)}`;
@@ -262,6 +266,111 @@ describe('leaderboardService — negative offset clamp (Equoria-jkht)', () => {
 
   it('clamps negative offset to 0 for DB skip — getTopUsersByMoney returns array', async () => {
     const results = await getTopUsersByMoney({ limit: 3, offset: -1 });
+    expect(Array.isArray(results)).toBe(true);
+  });
+});
+
+// ── backward-compat alias exports (Equoria-rr7) ──────────────────────────────
+// getTopPlayersByXP, getTopPlayersByLevel, getTopPlayersByMoney, getPlayerXpRank
+// are re-exports of the primary functions. Exercising them covers lines 243-246.
+
+describe('backward-compat alias exports — (Equoria-rr7)', () => {
+  it('getTopPlayersByXP returns same shape as getTopUsersByXp', async () => {
+    const aliasResult = await getTopPlayersByXP({ limit: 2 });
+    const primaryResult = await getTopUsersByXp({ limit: 2 });
+    expect(Array.isArray(aliasResult)).toBe(true);
+    expect(aliasResult.length).toBe(primaryResult.length);
+    if (aliasResult.length > 0) {
+      expect(aliasResult[0]).toHaveProperty('rank');
+      expect(aliasResult[0]).toHaveProperty('xp');
+    }
+  });
+
+  it('getTopPlayersByLevel returns same shape as getTopUsersByLevel', async () => {
+    const aliasResult = await getTopPlayersByLevel({ limit: 2 });
+    expect(Array.isArray(aliasResult)).toBe(true);
+    if (aliasResult.length > 0) {
+      expect(aliasResult[0]).toHaveProperty('level');
+    }
+  });
+
+  it('getTopPlayersByMoney returns same shape as getTopUsersByMoney', async () => {
+    const aliasResult = await getTopPlayersByMoney({ limit: 2 });
+    expect(Array.isArray(aliasResult)).toBe(true);
+    if (aliasResult.length > 0) {
+      expect(aliasResult[0]).toHaveProperty('money');
+    }
+  });
+
+  it('getPlayerXpRank returns rank object for valid user', async () => {
+    const result = await getPlayerXpRank(userMid.id);
+    expect(result).toHaveProperty('rank');
+    expect(result).toHaveProperty('totalUsers');
+    expect(result.id).toBe(userMid.id);
+  });
+
+  it('getLeaderboardStats || 0 branch: stats fields are non-negative numbers', async () => {
+    // This test exercises the aggregation. With real users in DB, avg/max/min
+    // return non-null values; the || 0 branches for null cases are only
+    // reachable on an empty DB (not possible here without wiping prod data).
+    // This test improves statement coverage by ensuring all fields are visited.
+    const stats = await getLeaderboardStats();
+    const fields = [
+      'averageLevel',
+      'averageXp',
+      'averageMoney',
+      'maxLevel',
+      'maxXp',
+      'maxMoney',
+      'minLevel',
+      'minXp',
+      'minMoney',
+    ];
+    for (const field of fields) {
+      expect(typeof stats[field]).toBe('number');
+      expect(stats[field]).toBeGreaterThanOrEqual(0);
+    }
+  });
+});
+
+// ── default-arg branch coverage (Equoria-rr7) ────────────────────────────────
+// Istanbul counts `options = {}` default parameter as a branch. Calling the
+// functions with no arguments exercises the default-arg branch path.
+
+describe('leaderboardService — no-arg default parameter branches (Equoria-rr7)', () => {
+  it('getTopUsersByXp() with no args uses default limit=10, offset=0', async () => {
+    const results = await getTopUsersByXp();
+    expect(Array.isArray(results)).toBe(true);
+    expect(results.length).toBeLessThanOrEqual(10);
+    if (results.length > 0) {
+      expect(results[0].rank).toBe(1);
+    }
+  });
+
+  it('getTopUsersByLevel() with no args uses default limit=10, offset=0', async () => {
+    const results = await getTopUsersByLevel();
+    expect(Array.isArray(results)).toBe(true);
+    expect(results.length).toBeLessThanOrEqual(10);
+  });
+
+  it('getTopUsersByMoney() with no args uses default limit=10, offset=0', async () => {
+    const results = await getTopUsersByMoney();
+    expect(Array.isArray(results)).toBe(true);
+    expect(results.length).toBeLessThanOrEqual(10);
+  });
+
+  it('getTopPlayersByXP() alias with no args returns array', async () => {
+    const results = await getTopPlayersByXP();
+    expect(Array.isArray(results)).toBe(true);
+  });
+
+  it('getTopPlayersByLevel() alias with no args returns array', async () => {
+    const results = await getTopPlayersByLevel();
+    expect(Array.isArray(results)).toBe(true);
+  });
+
+  it('getTopPlayersByMoney() alias with no args returns array', async () => {
+    const results = await getTopPlayersByMoney();
     expect(Array.isArray(results)).toBe(true);
   });
 });
