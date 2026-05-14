@@ -642,7 +642,7 @@ router.get(
   rejectPollutedRequest,
   validateHorseId,
   requireOwnership('horse', {
-    include: ['breed', 'user'],
+    include: ['breed'],
   }),
   async (req, res) => {
     try {
