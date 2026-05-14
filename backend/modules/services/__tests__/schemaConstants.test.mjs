@@ -29,7 +29,7 @@ import {
   USER_PROGRESSION,
   SCORE_RANGES,
   isValidHorseSex,
-} from '../../constants/schema.mjs';
+} from '../../../constants/schema.mjs';
 
 // ─── HORSE_SEX ────────────────────────────────────────────────────────────────
 

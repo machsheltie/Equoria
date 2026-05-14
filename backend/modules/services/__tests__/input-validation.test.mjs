@@ -19,7 +19,7 @@
 
 import request from 'supertest';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
-import { resetRateLimitStore } from '../config/test-helpers.mjs';
+import { resetRateLimitStore } from '../../../__tests__/config/test-helpers.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { randomBytes } from 'node:crypto';
 

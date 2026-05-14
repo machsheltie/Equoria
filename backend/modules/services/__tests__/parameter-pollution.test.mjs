@@ -21,7 +21,7 @@ import {
   createMockUser as _createMockUser,
   createMockToken,
   createMockHorse as _createMockHorse,
-} from '../../factories/index.mjs';
+} from '../../../__tests__/factories/index.mjs';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';

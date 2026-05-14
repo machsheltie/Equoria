@@ -1,5 +1,5 @@
-﻿/**
- * 🔒 INTEGRATION TESTS: Authentication Bypass Attempts
+/**
+ * ?? INTEGRATION TESTS: Authentication Bypass Attempts
  *
  * Tests for preventing authentication bypass attacks including:
  * - Direct endpoint access without authentication
@@ -20,7 +20,7 @@ import {
   createMockUser as _createMockUser,
   createMockToken,
   createMalformedToken as _createMalformedToken,
-} from '../../factories/index.mjs';
+} from '../../../__tests__/factories/index.mjs';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import jwt from 'jsonwebtoken';

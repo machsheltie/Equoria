@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Comprehensive OWASP Top 10 Security Test Suite
  *
  * Tests security controls for OWASP categories:
@@ -14,7 +14,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.mjs';
-import { createMockToken } from '../../factories/index.mjs';
+import { createMockToken } from '../../../__tests__/factories/index.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import bcrypt from 'bcryptjs';
 import fs from 'fs';
@@ -26,7 +26,7 @@ import { randomBytes } from 'node:crypto';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
+describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
   let __csrf__;
   beforeAll(async () => {
     __csrf__ = await fetchCsrf(app);
@@ -50,7 +50,7 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
   const SUITE_BREED_PREFIX = `OWASPSuite_${randomBytes(6).toString('hex')}_Breed`;
 
   beforeAll(async () => {
-    // Always create our own breed — never findFirst against a shared name.
+    // Always create our own breed � never findFirst against a shared name.
     testBreed = await prisma.breed.create({
       data: {
         name: SUITE_BREED_PREFIX,
@@ -105,12 +105,12 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
       await prisma.user.deleteMany({ where: { id: testUser.id } });
     }
     if (testBreed) {
-      // Own the breed end-to-end — tracked by id, not by shared name.
+      // Own the breed end-to-end � tracked by id, not by shared name.
       await prisma.breed.deleteMany({ where: { id: testBreed.id } });
     }
   });
 
-  describe('🛡️ A06:2021 - Security Misconfiguration', () => {
+  describe('??? A06:2021 - Security Misconfiguration', () => {
     describe('Default Credentials Prevention', () => {
       it('should reject common default passwords', async () => {
         const commonPasswords = ['admin', 'password', '123456', 'admin123'];
@@ -275,7 +275,7 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
     });
   });
 
-  describe('🔐 A08:2021 - Software and Data Integrity Failures', () => {
+  describe('?? A08:2021 - Software and Data Integrity Failures', () => {
     describe('Dependency Integrity', () => {
       it('should have package-lock.json for dependency pinning', () => {
         const packageLockPath = path.join(__dirname, '../../../package-lock.json');
@@ -406,7 +406,7 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
     });
   });
 
-  describe('📊 A09:2021 - Security Logging and Monitoring Failures', () => {
+  describe('?? A09:2021 - Security Logging and Monitoring Failures', () => {
     describe('Authentication Event Logging', () => {
       it('should log successful authentication attempts', async () => {
         const response = await request(app)
@@ -550,7 +550,7 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
     });
   });
 
-  describe('🌐 A10:2021 - Server-Side Request Forgery (SSRF)', () => {
+  describe('?? A10:2021 - Server-Side Request Forgery (SSRF)', () => {
     describe('URL Validation', () => {
       it('should reject internal IP addresses in URLs', async () => {
         // Future test: When URL input features are implemented, validate these are blocked:
@@ -606,7 +606,7 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
     });
   });
 
-  describe('🔄 Cross-Category Security Validation', () => {
+  describe('?? Cross-Category Security Validation', () => {
     describe('Defense in Depth', () => {
       it('should enforce multiple security layers', async () => {
         // Attempt to bypass authentication, authorization, and input validation simultaneously

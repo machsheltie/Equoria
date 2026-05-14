@@ -26,7 +26,7 @@ import {
   expectRateLimitHeaders,
   expectRateLimitExceeded,
   resetRateLimitStore,
-} from '../config/test-helpers.mjs';
+} from '../../../__tests__/config/test-helpers.mjs';
 import { randomBytes } from 'node:crypto';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Integration Tests: Rate Limit Enforcement (Security)
  *
  * Validates that rate limiting infrastructure is active and properly
@@ -11,7 +11,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.mjs';
-import { createMockToken } from '../../factories/index.mjs';
+import { createMockToken } from '../../../__tests__/factories/index.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';

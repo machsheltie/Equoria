@@ -1,5 +1,5 @@
-﻿/**
- * 🔒 INTEGRATION TESTS: SQL Injection Attempts
+/**
+ * ?? INTEGRATION TESTS: SQL Injection Attempts
  *
  * Tests for preventing SQL injection attacks including:
  * - Classic SQL injection in ownership checks
@@ -23,7 +23,7 @@ import {
   createMockToken,
   createMockHorse as _createMockHorse,
   createMockGroom as _createMockGroom,
-} from '../../factories/index.mjs';
+} from '../../../__tests__/factories/index.mjs';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
@@ -52,7 +52,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
   };
 
   afterEach(async () => {
-    // Per-test cleanup — prevents user accumulation causing same-millisecond email collisions
+    // Per-test cleanup � prevents user accumulation causing same-millisecond email collisions
     if (testUser) {
       await prisma.groom.deleteMany({ where: { userId: testUser.id } });
       await prisma.horse.deleteMany({ where: { userId: testUser.id } });

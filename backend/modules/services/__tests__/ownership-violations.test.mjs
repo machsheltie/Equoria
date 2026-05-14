@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.mjs';
-import { createMockToken } from '../../factories/index.mjs';
+import { createMockToken } from '../../../__tests__/factories/index.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';

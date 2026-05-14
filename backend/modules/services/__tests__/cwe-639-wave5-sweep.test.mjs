@@ -20,7 +20,7 @@ import request from 'supertest';
 import { randomBytes } from 'node:crypto';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { createMockToken } from '../../factories/index.mjs';
+import { createMockToken } from '../../../__tests__/factories/index.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 
 describe('CWE-639 wave-5 sweep (Equoria-9ov8 follow-up triplet)', () => {

@@ -1,5 +1,5 @@
-﻿/**
- * 🔒 UNIT TESTS: Rate Limit Key Generation
+/**
+ * ?? UNIT TESTS: Rate Limit Key Generation
  *
  * Tests for rate limiting key generation including:
  * - IP-based keys
@@ -13,7 +13,7 @@
 
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import { authRateLimiter as _authRateLimiter } from '../../../middleware/authRateLimiter.mjs';
-import { createMockUser } from '../../factories/index.mjs';
+import { createMockUser } from '../../../__tests__/factories/index.mjs';
 
 describe('Rate Limit Key Generation Unit Tests', () => {
   let req;
