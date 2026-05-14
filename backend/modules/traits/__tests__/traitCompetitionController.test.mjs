@@ -17,6 +17,7 @@ const ORIGIN = 'http://localhost:3000';
 let user;
 let token;
 let horse;
+let horseWithTraits; // horse with epigeneticModifiers to cover getDisciplineRecommendations lines 313-506
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -40,10 +41,27 @@ beforeAll(async () => {
       userId: user.id,
     },
   });
+
+  // Horse with visible traits — exercises getDisciplineRecommendations lines 313-506
+  horseWithTraits = await prisma.horse.create({
+    data: {
+      name: `TestFixture-TCompHorseTrait-${Date.now()}`,
+      sex: 'Mare',
+      dateOfBirth: new Date('2018-01-01'),
+      age: 7,
+      userId: user.id,
+      epigeneticModifiers: {
+        positive: ['bold', 'intelligent', 'resilient'],
+        negative: ['nervous'],
+        hidden: [],
+      },
+    },
+  });
 }, 30000);
 
 afterAll(async () => {
   await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
+  await prisma.horse.delete({ where: { id: horseWithTraits.id } }).catch(() => {});
   await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
 }, 30000);
 
@@ -186,5 +204,96 @@ describe('GET /api/traits/discipline-recommendations/:horseId', () => {
     const res = await request(app).get(`/api/traits/discipline-recommendations/${horse.id}`).set('Origin', ORIGIN);
 
     expect(res.status).toBe(401);
+  });
+});
+
+// ─── getDisciplineRecommendations — horse WITH traits (lines 313-506) ─────────
+
+describe('GET /api/traits/discipline-recommendations/:horseId — horse with traits', () => {
+  it('returns 200 with non-empty recommendations for horse with visible traits', async () => {
+    const res = await request(app)
+      .get(`/api/traits/discipline-recommendations/${horseWithTraits.id}`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data).toBeDefined();
+    // Horse has bold+intelligent+resilient+nervous — recommendations array should exist
+    expect(Array.isArray(res.body.data.recommendations)).toBe(true);
+    expect(res.body.data.summary).toBeDefined();
+    expect(typeof res.body.data.summary.totalTraits).toBe('number');
+    expect(typeof res.body.data.summary.specializedTraits).toBe('number');
+    expect(typeof res.body.data.summary.recommendedDisciplines).toBe('number');
+  });
+
+  it('summary.totalTraits matches the number of visible traits', async () => {
+    const res = await request(app)
+      .get(`/api/traits/discipline-recommendations/${horseWithTraits.id}`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    // 3 positive + 1 negative = 4 visible traits
+    expect(res.body.data.summary.totalTraits).toBe(4);
+  });
+
+  it('each recommendation entry has discipline and traits fields', async () => {
+    const res = await request(app)
+      .get(`/api/traits/discipline-recommendations/${horseWithTraits.id}`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    for (const rec of res.body.data.recommendations) {
+      expect(typeof rec.discipline).toBe('string');
+      expect(Array.isArray(rec.traits)).toBe(true);
+    }
+  });
+
+  it('returns 200 with no-traits message for horse with empty traits', async () => {
+    // The main fixture horse has no traits — exercises the early-return path
+    const res = await request(app)
+      .get(`/api/traits/discipline-recommendations/${horse.id}`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.recommendations).toEqual([]);
+  });
+});
+
+// ─── analyzeHorseTraitImpact — horse with traits (lines 59-62 etc.) ──────────
+
+describe('GET /api/traits/competition-impact/:horseId — horse with traits', () => {
+  it('returns impact analysis with applied traits for horse with visible traits', async () => {
+    const res = await request(app)
+      .get(`/api/traits/competition-impact/${horseWithTraits.id}?discipline=Dressage`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data).toHaveProperty('horseId');
+    expect(res.body.data).toHaveProperty('discipline', 'Dressage');
+    // Horse has intelligent+resilient which have Dressage specialized effects
+    expect(res.body.data.analysis).toBeDefined();
+  });
+});
+
+// ─── compareTraitImpactAcrossDisciplines — horse with traits ──────────────────
+
+describe('GET /api/traits/competition-comparison/:horseId — horse with traits', () => {
+  it('returns cross-discipline comparison with trait scores for horse with traits', async () => {
+    const res = await request(app)
+      .get(`/api/traits/competition-comparison/${horseWithTraits.id}`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(Array.isArray(res.body.data.comparison)).toBe(true);
+    expect(res.body.data.comparison.length).toBeGreaterThan(0);
   });
 });

@@ -760,6 +760,69 @@ export const handlers = [
       data: [],
     })
   ),
+  // v1 mirrors for user endpoints (userProgressApi calls /api/v1/users/...)
+  http.get(`${base}/api/v1/users/:id/progress`, ({ params }) => {
+    if (params.id === '999999') {
+      return new HttpResponse(null, { status: 404 });
+    }
+    return HttpResponse.json({
+      success: true,
+      data: {
+        userId: params.id,
+        username: 'testuser',
+        level: 1,
+        xp: 50,
+        xpToNextLevel: 50,
+        xpForNextLevel: 100,
+        xpForCurrentLevel: 0,
+        progressPercentage: 50,
+        totalEarnings: 1000,
+      },
+    });
+  }),
+  http.get(`${base}/api/v1/users/dashboard/:id`, ({ params }) => {
+    if (params.id === '999999') {
+      return new HttpResponse(null, { status: 404 });
+    }
+    return HttpResponse.json({
+      success: true,
+      data: {
+        user: {
+          id: params.id,
+          username: 'testuser',
+          level: 1,
+          xp: 50,
+          money: 1000,
+        },
+        horses: { total: 2, trainable: 1 },
+        shows: { upcomingEntries: 0, nextShowRuns: [] },
+        activity: { lastTrained: 'never', lastShowPlaced: 'never' },
+      },
+    });
+  }),
+  http.get(`${base}/api/v1/users/:id/activity`, () =>
+    HttpResponse.json({
+      success: true,
+      data: [],
+    })
+  ),
+  http.get(`${base}/api/v1/users/:id`, ({ params }) => {
+    if (params.id === '999999') {
+      return new HttpResponse(null, { status: 404 });
+    }
+    return HttpResponse.json({
+      success: true,
+      data: {
+        id: params.id,
+        username: 'testuser',
+        money: 1000,
+        level: 1,
+        currentHorses: 2,
+        stableLimit: 10,
+      },
+    });
+  }),
+
   // User profile (used by useUser hook) — MUST be after all /users/:id/* sub-routes
   http.get(`${base}/api/users/:id`, ({ params }) => {
     if (params.id === '999999') {

@@ -10,35 +10,39 @@ import { StatBar } from '../StatBar';
 describe('StatBar', () => {
   it('(a) AC1: fill indicator has gold gradient classes', () => {
     render(<StatBar label="Speed" value={75} />);
-    const indicator = document.querySelector('[class*="from-[var(--gold-primary)]"]');
+    const track = screen.getByRole('progressbar');
+    const indicator = track.firstElementChild as HTMLElement;
     expect(indicator).not.toBeNull();
-    expect(indicator!.className).toContain('from-[var(--gold-primary)]');
-    expect(indicator!.className).toContain('to-[var(--gold-light)]');
+    expect(indicator.className).toContain('from-[var(--gold-primary)]');
+    expect(indicator.className).toContain('to-[var(--gold-light)]');
   });
 
   it('(a) AC2: track uses --bg-midnight token', () => {
     render(<StatBar label="Stamina" value={50} />);
-    const track = document.querySelector('[class*="bg-[var(--bg-midnight)]"]');
-    expect(track).not.toBeNull();
-    expect(track!.className).toContain('bg-[var(--bg-midnight)]');
+    const track = screen.getByRole('progressbar');
+    expect(track.className).toContain('bg-[var(--bg-midnight)]');
   });
 
   it('(a) AC3: glow token class appears when value equals max', () => {
     render(<StatBar label="Agility" value={100} max={100} />);
-    const indicator = document.querySelector('[class*="shadow-[var(--glow-stat-max)]"]');
+    const track = screen.getByRole('progressbar');
+    const indicator = track.firstElementChild as HTMLElement;
     expect(indicator).not.toBeNull();
+    expect(indicator.className).toContain('shadow-[var(--glow-stat-max)]');
   });
 
   it('(a) AC3: no glow class when value is below max', () => {
     render(<StatBar label="Agility" value={99} max={100} />);
-    const indicator = document.querySelector('[class*="shadow-[var(--glow-stat-max)]"]');
-    expect(indicator).toBeNull();
+    const track = screen.getByRole('progressbar');
+    const indicator = track.firstElementChild as HTMLElement;
+    expect(indicator).not.toBeNull();
+    expect(indicator.className).not.toContain('shadow-[var(--glow-stat-max)]');
   });
 
   it('(a) track uses --stat-bar-track-border token', () => {
     render(<StatBar label="Speed" value={50} />);
-    const track = document.querySelector('[class*="stat-bar-track-border"]');
-    expect(track).not.toBeNull();
+    const track = screen.getByRole('progressbar');
+    expect(track.className).toContain('stat-bar-track-border');
   });
 
   it('(a) label text is rendered', () => {
@@ -73,12 +77,14 @@ describe('StatBar', () => {
 
   it('(a) size=sm applies h-2 track class', () => {
     render(<StatBar label="Stat" value={50} size="sm" />);
-    expect(document.querySelector('[class*="h-2"]')).not.toBeNull();
+    const track = screen.getByRole('progressbar');
+    expect(track.className).toContain('h-2');
   });
 
   it('(a) size=lg applies h-4 track class', () => {
     render(<StatBar label="Stat" value={50} size="lg" />);
-    expect(document.querySelector('[class*="h-4"]')).not.toBeNull();
+    const track = screen.getByRole('progressbar');
+    expect(track.className).toContain('h-4');
   });
 
   it('(b) has accessible aria-label on progress root', () => {

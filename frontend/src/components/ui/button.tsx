@@ -39,8 +39,8 @@ const buttonVariants = cva(
           'bg-gradient-to-r from-[var(--gold-primary)] to-[var(--gold-light)]',
           'text-[var(--bg-deep-space)] font-semibold tracking-wide',
           'font-[var(--font-heading)]',
-          'shadow-[0_4px_20px_rgba(201,162,39,0.4)]',
-          'hover:brightness-110 hover:shadow-[0_6px_28px_rgba(201,162,39,0.55)]',
+          'shadow-[var(--btn-default-shadow)]',
+          'hover:brightness-110 hover:shadow-[var(--btn-default-shadow-hover)]',
           'active:scale-[0.98]',
         ].join(' '),
 
@@ -79,9 +79,9 @@ const buttonVariants = cva(
 
         /** Destructive — red bg; for irreversible actions */
         destructive: [
-          'bg-[rgba(224,90,90,0.15)] border border-[var(--status-error)]',
+          'bg-[var(--btn-destructive-bg)] border border-[var(--status-error)]',
           'text-[var(--status-error)] font-semibold',
-          'hover:bg-[rgba(224,90,90,0.25)]',
+          'hover:bg-[var(--btn-destructive-bg-hover)]',
           'active:scale-[0.98]',
         ].join(' '),
 

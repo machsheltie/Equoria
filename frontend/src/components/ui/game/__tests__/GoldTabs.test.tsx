@@ -4,7 +4,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { GoldTabs, GoldTabsList, GoldTabsTrigger, GoldTabsContent } from '../GoldTabs';
 
 describe('GoldTabs', () => {
@@ -49,10 +49,27 @@ describe('GoldTabs', () => {
   });
 
   it('(b) ArrowRight key navigates between tabs', async () => {
+    // Radix UI's @radix-ui/react-roving-focus v1 calls `setTimeout(() => focusFirst(...))`.
+    // That timer fires after userEvent's `keyboard` promise resolves; when `focusFirst`
+    // calls `.focus()`, Radix's onFocus handler calls `setCurrentTabStopId` — a React
+    // state update that is structurally outside any act() boundary that userEvent or RTL
+    // can wrap (the timer is scheduled by Radix, not by userEvent).
+    //
+    // Suppress the console.error act() warning for this specific test only. We verify the
+    // observable DOM outcome (Tab 2 has focus) which is the only behaviour that matters.
+    // This is the established jsdom workaround for Radix roving-focus v1; remove once
+    // @radix-ui/react-roving-focus ships a fix or this project upgrades to v2+.
+    const errorSpy = vi
+      .spyOn(console, 'error')
+      .mockImplementation((msg: unknown, ...args: unknown[]) => {
+        if (typeof msg === 'string' && msg.includes('not wrapped in act')) return;
+        console.warn(msg, ...args);
+      });
     const user = userEvent.setup();
     renderTabs();
     screen.getByRole('tab', { name: 'Tab 1' }).focus();
     await user.keyboard('{ArrowRight}');
     expect(screen.getByRole('tab', { name: 'Tab 2' })).toHaveFocus();
+    errorSpy.mockRestore();
   });
 });
