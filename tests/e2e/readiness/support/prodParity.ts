@@ -101,6 +101,15 @@ export async function registerAndCompleteOnboarding(
   await expect(page.locator('h1')).toContainText('Choose Your Horse');
   const breedSelect = page.locator('[data-testid="breed-select"]');
   await breedSelect.waitFor({ state: 'visible' });
+  // Capture the first real breed option value (index 0 is a disabled placeholder)
+  const breedOptions = await breedSelect.locator('option').evaluateAll((nodes) =>
+    nodes.map((node) => ({
+      value: (node as HTMLOptionElement).value,
+      label: (node.textContent ?? '').trim(),
+    }))
+  );
+  const selectedBreed = breedOptions[1];
+  const expectedBreedId = Number(selectedBreed.value);
   await breedSelect.selectOption({ index: 1 });
   await page.getByRole('button', { name: /Mare/i }).click();
   await page.locator('[data-testid="horse-name-input"]').fill(horseName);
@@ -123,6 +132,18 @@ export async function registerAndCompleteOnboarding(
   const horses = unwrapData<Record<string, unknown>[]>(horsesJson);
   const horse = horses.find((item) => item.name === horseName);
   expect(horse, `Starter horse ${horseName} must persist in backend`).toBeTruthy();
+
+  // Assert breedId and sex/gender were persisted correctly by advance-onboarding (Equoria-fse0)
+  const persistedBreedId = horse!.breedId as number | undefined;
+  expect(
+    persistedBreedId,
+    `Starter horse breedId must be persisted: expected ${expectedBreedId}, got ${persistedBreedId}`
+  ).toBe(expectedBreedId);
+
+  const persistedSex = (horse!.sex ?? horse!.gender) as string | undefined;
+  expect(persistedSex, `Starter horse sex must be persisted as 'Mare', got '${persistedSex}'`).toBe(
+    'Mare'
+  );
 
   return { email, password, username, horse: horse! };
 }

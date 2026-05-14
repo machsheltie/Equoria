@@ -38,6 +38,11 @@ describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () =
   let _seededCompetitionResultId;
   const createdHorseIds = [];
 
+  // Equoria-avmf: user who owns horses but has zero CompetitionResult rows
+  let noResultsUser;
+  let noResultsToken;
+  const noResultsHorseIds = [];
+
   beforeAll(async () => {
     const ts = Date.now();
 
@@ -106,6 +111,26 @@ describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () =
     });
     emptyUser = empty.user;
     emptyToken = empty.token;
+
+    // Equoria-avmf: User who owns a horse but has ZERO CompetitionResult rows.
+    // This exercises the code path where targetPerfMax = 0 (no results found)
+    // and horseOwnerCount includes this user (they have a horse), so
+    // totalEntries for horse-performance must still be >= rank.
+    const noResults = await createTestUser({
+      username: `rank_no_results_${ts}`,
+      email: `rank_no_results_${ts}@test.com`,
+      level: 2,
+      xp: 10,
+    });
+    noResultsUser = noResults.user;
+    noResultsToken = noResults.token;
+
+    const noResultsHorse = await createTestHorse({
+      name: `TestFixture-NoResultsHorse_${ts}`,
+      userId: noResultsUser.id,
+      totalEarnings: 0,
+    });
+    noResultsHorseIds.push(noResultsHorse.id);
   }, 120000); // 120s — DB operations can be slow under full-suite --runInBand load
 
   afterAll(async () => {
@@ -123,12 +148,16 @@ describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () =
         await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } });
       }
       await prisma.xpEvent.deleteMany({
-        where: { userId: { in: [activeUser?.id, emptyUser?.id].filter(Boolean) } },
+        where: { userId: { in: [activeUser?.id, emptyUser?.id, noResultsUser?.id].filter(Boolean) } },
       });
+      // Equoria-avmf: clean up noResults horse (no competition results to delete first)
+      if (noResultsHorseIds.length) {
+        await prisma.horse.deleteMany({ where: { id: { in: noResultsHorseIds } } });
+      }
       // CodeRabbit (2026-04-20): cleanupTestData() only removes users whose
       // username starts with testuser_. Scope-delete this suite's seeded
-      // rank_active_/rank_empty_ users explicitly to prevent leaks.
-      const seededUserIds = [activeUser?.id, emptyUser?.id].filter(Boolean);
+      // rank_active_/rank_empty_/rank_no_results_ users explicitly to prevent leaks.
+      const seededUserIds = [activeUser?.id, emptyUser?.id, noResultsUser?.id].filter(Boolean);
       if (seededUserIds.length) {
         await prisma.user.deleteMany({ where: { id: { in: seededUserIds } } });
       }
@@ -240,6 +269,41 @@ describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () =
         expect(['Top 10', 'Top 100']).toContain(best.achievement);
         expect(best.rank).toBeLessThanOrEqual(100);
       }
+    });
+  });
+
+  // Equoria-avmf: user owns horses but has ZERO CompetitionResult rows.
+  // This exercises the distinct code path where targetPerfMax = 0 (the
+  // prisma.competitionResult.aggregate returns null._max.score), but
+  // horseOwnerCount includes this user (they own at least one horse).
+  // The denominator guard `Math.max(horseOwnerCount, performanceRank)`
+  // must ensure totalEntries >= rank even in this case.
+  describe('Real user — owns horses, zero competition results (Equoria-avmf)', () => {
+    it('returns horse-performance.primaryStat = 0, rank = 1, and totalEntries >= rank', async () => {
+      const res = await request(app)
+        .get(`/api/leaderboards/user-summary/${noResultsUser.id}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Authorization', `Bearer ${noResultsToken}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.userId).toBe(noResultsUser.id);
+
+      const rankings = res.body.rankings;
+      expect(Array.isArray(rankings)).toBe(true);
+      expect(rankings).toHaveLength(4);
+
+      const perf = rankings.find(r => r.category === 'horse-performance');
+      expect(perf).toBeDefined();
+
+      // primaryStat is 0 — no competition results, so MAX score = null → 0
+      expect(Number(perf.primaryStat)).toBe(0);
+
+      // rank is at least 1
+      expect(perf.rank).toBeGreaterThanOrEqual(1);
+
+      // Denominator guard: totalEntries must always be >= rank
+      // (prevents "#N of M<N" display bug)
+      expect(perf.totalEntries).toBeGreaterThanOrEqual(perf.rank);
     });
   });
 });
