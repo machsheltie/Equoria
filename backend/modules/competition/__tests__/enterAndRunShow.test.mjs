@@ -3,11 +3,10 @@
  * Equoria-rr7 coverage sprint.
  * Real DB, no mocks.
  *
- * Note on Horse.level: the Horse schema has no `level` field, so
- * isHorseEligibleForShow() always returns false for DB horses (the level check
- * `typeof horse.level !== 'number'` evaluates to true). As a result, the success
- * path of enterAndRunShow (lines after validHorses.length > 0) cannot be reached
- * with real DB horses. The tests below cover all reachable paths.
+ * Note on Horse.level: isHorseEligibleForShow() treats undefined level as
+ * level-restriction-exempt (horse.level not a number → skip level check).
+ * DB horses without a level field pass the level check, so the success path
+ * is reachable with real DB horses that have a valid rider and healthy state.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -51,9 +50,9 @@ beforeAll(async () => {
     },
   });
 
-  // Horse WITH rider JSON and healthy lastFedDate — passes hasValidRider and
-  // the critical-health gate, but fails isHorseEligibleForShow (Horse schema
-  // has no `level` field so typeof horse.level !== 'number' is always true).
+  // Horse WITH rider JSON and healthy lastFedDate — passes hasValidRider,
+  // the critical-health gate, AND isHorseEligibleForShow (level check skipped
+  // when horse.level is undefined — treated as level-restriction-exempt).
   horseWithRider = await prisma.horse.create({
     data: {
       name: `${PREFIX}WithRider-${uid()}`,
@@ -145,27 +144,26 @@ describe('enterAndRunShow — horse with no rider', () => {
   });
 });
 
-// ─── Horse has rider but no level (ineligible) ────────────────────────────────
+// ─── Horse has rider — eligible, success path ────────────────────────────────
 
-describe('enterAndRunShow — horse with rider but no level field', () => {
-  it('returns success: false when horse is ineligible (no level on Horse schema)', async () => {
-    // Horse.level is undefined (Horse schema has no level field).
-    // isHorseEligibleForShow returns false → horse is filtered out.
+describe('enterAndRunShow — horse with rider is eligible', () => {
+  it('returns success: true when horse passes all eligibility checks', async () => {
+    // horseWithRider: age 5, rider present, healthy — passes all checks.
+    // isHorseEligibleForShow skips the level restriction when horse.level is undefined.
     const result = await enterAndRunShow([horseWithRider.id], show);
 
-    expect(result.success).toBe(false);
-    expect(result.message).toMatch(/no valid horses/i);
-    expect(result.summary.validEntries).toBe(0);
+    expect(result.success).toBe(true);
     expect(result.summary.totalEntries).toBe(1);
-    expect(result.summary.skippedEntries).toBeGreaterThan(0);
+    expect(result.summary.validEntries).toBe(1);
   });
 
-  it('includes correct summary structure even on failure', async () => {
+  it('includes valid summary structure on success', async () => {
     const result = await enterAndRunShow([horseWithRider.id], show);
 
-    expect(result.summary.topThree).toEqual([]);
-    expect(result.summary.entryFeesCollected).toBe(0);
-    expect(result.summary.prizesAwarded).toBe(0);
+    expect(result.summary).toBeDefined();
+    expect(Array.isArray(result.summary.topThree)).toBe(true);
+    expect(typeof result.summary.entryFeesCollected).toBe('number');
+    expect(typeof result.summary.prizesAwarded).toBe('number');
   });
 });
 

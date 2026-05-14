@@ -15,7 +15,7 @@ import {
   generateConformationScores,
   generateInheritedConformationScores,
   CONFORMATION_REGIONS,
-} from '../../modules/horses/services/conformationService.mjs';
+} from '../../../modules/horses/services/conformationService.mjs';
 
 // ---------------------------------------------------------------------------
 // CONFORMATION_REGIONS

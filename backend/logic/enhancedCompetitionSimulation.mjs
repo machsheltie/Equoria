@@ -212,7 +212,7 @@ export async function executeEnhancedCompetition(show, entries) {
           placement,
         });
 
-        await createNotification(user.id, 'stat_gain', {
+        await createNotification(user.id, 'competition_stat_gain', {
           horseName: horse.name,
           stat: statGain.stat,
           amount: statGain.amount,
