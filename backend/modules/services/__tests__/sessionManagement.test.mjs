@@ -486,6 +486,43 @@ describe('Session Management Middleware', () => {
       expect(session.createdAt).toBeDefined();
       expect(session.lastActivity).toBeDefined();
     });
+
+    it('should mark isCurrent:true when refreshToken cookie matches an active session', async () => {
+      // This test covers the isCurrent: incomingHash !== null && incomingHash === tokenHash
+      // branch in sessions.map() (lines 284-290 of sessionManagement.mjs).
+      // Without a refreshToken cookie all sessions get isCurrent:false.
+      // With the matching cookie, the session whose tokenHash matches gets isCurrent:true.
+      const user = await createTestUser();
+      const token = await createTestRefreshToken(user.id);
+
+      req.user = { id: user.id };
+      // Set the cookie to the rawToken so hashRefreshToken(rawToken) === tokenHash in DB
+      req.cookies = { refreshToken: token.rawToken };
+
+      await getActiveSessions(req, res, next);
+
+      expect(res.statusCode).toBe(200);
+      const sessions = res.body.data.sessions;
+      expect(sessions).toHaveLength(1);
+      // The session whose hash matches the cookie must be marked as current
+      expect(sessions[0].isCurrent).toBe(true);
+    });
+
+    it('should mark isCurrent:false when no refreshToken cookie is present', async () => {
+      // Covers the incomingHash === null path (false branch) of the isCurrent expression.
+      const user = await createTestUser();
+      await createTestRefreshToken(user.id);
+
+      req.user = { id: user.id };
+      req.cookies = {}; // Explicitly no refreshToken cookie
+
+      await getActiveSessions(req, res, next);
+
+      expect(res.statusCode).toBe(200);
+      const sessions = res.body.data.sessions;
+      expect(sessions).toHaveLength(1);
+      expect(sessions[0].isCurrent).toBe(false);
+    });
   });
 
   describe('revokeSession()', () => {

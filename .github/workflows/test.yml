@@ -367,6 +367,10 @@ jobs:
         working-directory: ./frontend
         run: npm ci
 
+      - name: Install Playwright Chromium (required by storybook vitest project)
+        working-directory: ./frontend
+        run: npx playwright install --with-deps chromium
+
       - name: Run Vitest with coverage
         working-directory: ./frontend
         # Equoria-zzlh (2026-05-04): removed continue-on-error: true. The

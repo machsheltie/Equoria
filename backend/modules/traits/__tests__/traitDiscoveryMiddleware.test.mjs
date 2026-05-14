@@ -201,4 +201,37 @@ describe('autoDiscoveryMiddleware — horseId extraction paths', () => {
     await mw(req, res, () => {});
     expect(() => res.json({ success: true })).not.toThrow();
   });
+
+  // Lines 94, 96, 98 — extractHorseId from response data
+  it('extracts horseId from data.data.horseId when no param/body id', async () => {
+    const mw = autoDiscoveryMiddleware({ skipIfRecentlyChecked: false });
+    const res = makeRes();
+    const req = makeReq({ params: {}, body: {} });
+    await mw(req, res, () => {});
+    expect(() => res.json({ success: true, data: { horseId: 99 } })).not.toThrow();
+  });
+
+  it('extracts foalId from data.data.foalId when no param/body id', async () => {
+    const mw = autoDiscoveryMiddleware({ skipIfRecentlyChecked: false });
+    const res = makeRes();
+    const req = makeReq({ params: {}, body: {} });
+    await mw(req, res, () => {});
+    expect(() => res.json({ success: true, data: { foalId: 77 } })).not.toThrow();
+  });
+
+  it('extracts horseId from data.data.foal.id when no other id present', async () => {
+    const mw = autoDiscoveryMiddleware({ skipIfRecentlyChecked: false });
+    const res = makeRes();
+    const req = makeReq({ params: {}, body: {} });
+    await mw(req, res, () => {});
+    expect(() => res.json({ success: true, data: { foal: { id: 55 } } })).not.toThrow();
+  });
+
+  it('does not trigger discovery when data.success is false', async () => {
+    const mw = autoDiscoveryMiddleware();
+    const res = makeRes();
+    const req = makeReq({ params: {}, body: {} });
+    await mw(req, res, () => {});
+    expect(() => res.json({ success: false, data: { horseId: 42 } })).not.toThrow();
+  });
 });

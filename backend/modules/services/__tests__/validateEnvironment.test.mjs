@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { checkEnvironment } from '../../../utils/validateEnvironment.mjs';
+import { checkEnvironment, validateEnvironment } from '../../../utils/validateEnvironment.mjs';
 
 describe('validateEnvironment()', () => {
   let originalEnv;
@@ -397,6 +397,36 @@ describe('validateEnvironment()', () => {
       expect(allErrors).toContain('JWT_REFRESH_SECRET must be at least 32 characters');
       expect(allErrors).toContain('NODE_ENV must be one of');
       expect(allErrors).toContain('PORT must be a number');
+    });
+  });
+
+  describe('validateEnvironment() wrapper — coverage sentinel', () => {
+    // This describe block exists solely to cover the validateEnvironment() wrapper
+    // function (lines 113-128 of validateEnvironment.mjs). The pure checkEnvironment()
+    // function is tested everywhere else; the wrapper was not called from any test,
+    // leaving it at 0% function coverage and blocking the Security Gate 100% threshold.
+    //
+    // Strategy: in NODE_ENV=test the current process.env has valid env vars (DATABASE_URL,
+    // JWT_SECRET, JWT_REFRESH_SECRET, PORT). Calling validateEnvironment() with a valid
+    // env runs the logger.info branch and the empty-warnings loop without calling
+    // process.exit. We spy on process.exit to prove it was NOT called.
+
+    it('succeeds without calling process.exit when environment is valid (covers success path)', () => {
+      // Capture and restore process.exit to prevent accidental termination
+      const originalExit = process.exit;
+      const exitCalls = [];
+      process.exit = code => {
+        exitCalls.push(code);
+      };
+
+      try {
+        validateEnvironment();
+      } finally {
+        process.exit = originalExit;
+      }
+
+      // The test environment has valid vars — exit should NOT have been called
+      expect(exitCalls).toHaveLength(0);
     });
   });
 

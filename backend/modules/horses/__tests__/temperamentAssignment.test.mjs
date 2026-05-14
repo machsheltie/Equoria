@@ -135,10 +135,32 @@ describe('Temperament Assignment Service', () => {
   // ── Statistical distribution validation (NFR-04) ───────────────────────
 
   describe('Statistical distribution (chi-squared, NFR-04)', () => {
-    // Chi-squared critical value for df=10, p=0.001 is 29.588 (reduces false-positive rate
-    // from ~5% to ~0.1% per test; with 4 breeds tested the suite-level false-positive rate
-    // drops from ~19% to ~0.4%, preventing intermittent CI failures on a correct implementation)
-    const CHI_SQUARED_CRITICAL = 29.588;
+    // Chi-squared critical values at p=0.001 keyed by df (df 1–20).
+    // Using the actual computed df prevents false failures when a breed has more
+    // (or fewer) qualifying categories than the hardcoded df=10 assumption.
+    const CHI2_CRITICAL_P001 = {
+      1: 10.828,
+      2: 13.816,
+      3: 16.266,
+      4: 18.467,
+      5: 20.515,
+      6: 22.458,
+      7: 24.322,
+      8: 26.125,
+      9: 27.877,
+      10: 29.588,
+      11: 31.264,
+      12: 32.909,
+      13: 34.528,
+      14: 36.123,
+      15: 37.697,
+      16: 39.252,
+      17: 40.79,
+      18: 42.312,
+      19: 43.82,
+      20: 45.315,
+    };
+
     const SAMPLE_SIZE = 10000;
 
     /**
@@ -186,11 +208,11 @@ describe('Temperament Assignment Service', () => {
           expected[type] = (weight / totalWeight) * SAMPLE_SIZE;
         }
 
-        // Compute chi-squared
-        const { stat, df: _df } = chiSquared(observed, expected);
+        // Compute chi-squared with actual degrees of freedom
+        const { stat, df } = chiSquared(observed, expected);
 
-        // For variable df, use df=10 critical value as conservative bound
-        const criticalValue = CHI_SQUARED_CRITICAL;
+        // Look up the correct critical value for this df; fall back to df=20 for very wide dists
+        const criticalValue = CHI2_CRITICAL_P001[df] ?? CHI2_CRITICAL_P001[20];
 
         // Chi-squared stat should be below critical value for p > 0.001
         expect(stat).toBeLessThan(criticalValue);
