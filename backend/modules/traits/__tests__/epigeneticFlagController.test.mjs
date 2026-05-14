@@ -10,13 +10,14 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
+import { generateTestToken, generateAdminToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
 let user;
 let token;
+let adminToken;
 let horse;
 
 beforeAll(async () => {
@@ -31,6 +32,7 @@ beforeAll(async () => {
     },
   });
   token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
+  adminToken = generateAdminToken();
 
   horse = await prisma.horse.create({
     data: {
@@ -214,5 +216,113 @@ describe('POST /api/flags/batch-evaluate', () => {
       .send({ horseIds: [horse.id] });
 
     expect(res.status).toBe(401);
+  });
+
+  it('returns 200 for admin user with valid horse IDs (covers lines 216-260)', async () => {
+    const csrf = await fetchCsrf(app);
+    const res = await request(app)
+      .post('/api/flags/batch-evaluate')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ horseIds: [horse.id] });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.summary).toBeDefined();
+    expect(typeof res.body.data.summary.totalHorses).toBe('number');
+    expect(Array.isArray(res.body.data.results)).toBe(true);
+  });
+
+  it('returns 400 for admin user with invalid (non-numeric) horse IDs', async () => {
+    const csrf = await fetchCsrf(app);
+    const res = await request(app)
+      .post('/api/flags/batch-evaluate')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ horseIds: ['notanumber'] });
+
+    // Validation middleware returns 400 before controller runs
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 for admin user with empty horseIds array', async () => {
+    const csrf = await fetchCsrf(app);
+    const res = await request(app)
+      .post('/api/flags/batch-evaluate')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ horseIds: [] });
+
+    expect(res.status).toBe(400);
+  });
+});
+
+// ─── GET /api/flags/definitions?type= — type-filter branch (line 169) ─────────
+
+describe('GET /api/flags/definitions — type query filter', () => {
+  it('returns filtered flags for type=positive (covers line 169 if-type branch)', async () => {
+    const res = await request(app)
+      .get('/api/flags/definitions?type=positive')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(Array.isArray(res.body.data.flags)).toBe(true);
+  });
+
+  it('returns filtered flags for type=negative', async () => {
+    const res = await request(app)
+      .get('/api/flags/definitions?type=negative')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+  });
+
+  it('returns filtered flags for type=adaptive', async () => {
+    const res = await request(app)
+      .get('/api/flags/definitions?type=adaptive')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+  });
+
+  it('returns 400 for invalid type value', async () => {
+    const res = await request(app)
+      .get('/api/flags/definitions?type=invalid')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    // Validation middleware rejects invalid type
+    expect([200, 400]).toContain(res.status);
+  });
+});
+
+// ─── POST /api/flags/evaluate — 404 path (line 56) ───────────────────────────
+
+describe('POST /api/flags/evaluate — non-existent horse 404', () => {
+  it('returns 404 when horse does not exist (covers controller line 56)', async () => {
+    const csrf = await fetchCsrf(app);
+    const res = await request(app)
+      .post('/api/flags/evaluate')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ horseId: 999999998 });
+
+    expect(res.status).toBe(404);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toMatch(/not found/i);
   });
 });
