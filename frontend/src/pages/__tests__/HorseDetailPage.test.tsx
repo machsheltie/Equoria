@@ -737,8 +737,8 @@ describe('HorseDetailPage Component', () => {
       await waitFor(() => {
         expect(fetchSpy).toHaveBeenCalledWith(
           // API_BASE_URL is now '' (relative URL) — see src/lib/api-client.ts.
-          // Earlier this test asserted http://localhost:3001 which never matched.
-          expect.stringMatching(/^\/api\/horses\/1(\?t=\d+)?$/),
+          // horsesApi.get() calls /api/v1/horses/:id?t=<timestamp> (v1 path with cache-buster).
+          expect.stringMatching(/^\/api\/v1\/horses\/1(\?t=\d+)?$/),
           expect.objectContaining({
             headers: expect.objectContaining({
               'Content-Type': 'application/json',
@@ -771,8 +771,8 @@ describe('HorseDetailPage Component', () => {
       await waitFor(() => {
         expect(fetchSpy).toHaveBeenCalledWith(
           // API_BASE_URL is now '' (relative URL) — see src/lib/api-client.ts.
-          // Earlier this test asserted http://localhost:3001 which never matched.
-          expect.stringMatching(/^\/api\/horses\/1(\?t=\d+)?$/),
+          // horsesApi.get() calls /api/v1/horses/:id?t=<timestamp> (v1 path with cache-buster).
+          expect.stringMatching(/^\/api\/v1\/horses\/1(\?t=\d+)?$/),
           expect.objectContaining({
             credentials: 'include',
           })
