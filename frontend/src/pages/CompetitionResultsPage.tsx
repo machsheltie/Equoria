@@ -46,6 +46,7 @@ import { useUserCompetitionStats } from '@/hooks/api/useUserCompetitionStats';
 import CompetitionResultsList from '@/components/competition/CompetitionResultsList';
 import CompetitionResultsModal from '@/components/competition/CompetitionResultsModal';
 import BalanceUpdateIndicator from '@/components/feedback/BalanceUpdateIndicator';
+import { GoldTabs, GoldTabsList, GoldTabsTrigger, GoldTabsContent } from '@/components/ui/game';
 
 /**
  * Performance view state for tracking selected horse performance breakdown
@@ -74,10 +75,10 @@ const StatCardSkeleton = memo(() => (
   <div className="glass-panel rounded-lg p-6 animate-pulse" data-testid="stat-card-skeleton">
     <div className="flex items-center justify-between">
       <div className="space-y-3 flex-1">
-        <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-24" />
-        <div className="h-8 bg-[rgba(37,99,235,0.2)] rounded w-16" />
+        <div className="h-4 bg-[var(--bg-twilight)] rounded w-24" />
+        <div className="h-8 bg-[var(--bg-twilight)] rounded w-16" />
       </div>
-      <div className="h-12 w-12 bg-[rgba(37,99,235,0.2)] rounded-full" />
+      <div className="h-12 w-12 bg-[var(--bg-twilight)] rounded-full" />
     </div>
   </div>
 ));
@@ -106,8 +107,8 @@ const StatCard = memo(
     <div className="glass-panel rounded-lg p-6" data-testid={testId}>
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-[rgb(148,163,184)]">{title}</p>
-          <p className="text-2xl font-bold text-[rgb(220,235,255)] mt-1">{value}</p>
+          <p className="text-sm font-medium text-[var(--text-secondary)]">{title}</p>
+          <p className="text-2xl font-bold text-[var(--text-primary)] mt-1">{value}</p>
         </div>
         <div className={`p-3 rounded-full ${iconBgColor}`}>
           <Icon className={`h-6 w-6 ${iconColor}`} aria-hidden="true" />
@@ -124,14 +125,14 @@ StatCard.displayName = 'StatCard';
  */
 const EmptyStateBanner = memo(() => (
   <div
-    className="bg-[rgba(37,99,235,0.08)] border border-[rgba(37,99,235,0.3)] rounded-lg p-8 text-center mb-8"
+    className="glass-panel-subtle rounded-lg p-8 text-center mb-8"
     data-testid="empty-state-banner"
   >
     <Trophy className="mx-auto h-16 w-16 text-blue-400 mb-4" aria-hidden="true" />
-    <h2 className="text-xl font-semibold text-[rgb(220,235,255)] mb-2">
+    <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-2">
       You haven't entered any competitions yet
     </h2>
-    <p className="text-[rgb(148,163,184)] mb-6 max-w-md mx-auto">
+    <p className="text-[var(--text-secondary)] mb-6 max-w-md mx-auto">
       Enter competitions with your horses to earn prizes, XP, and climb the leaderboards.
     </p>
     <Link
@@ -151,7 +152,7 @@ EmptyStateBanner.displayName = 'EmptyStateBanner';
  */
 const StatsError = memo(({ message, onRetry }: { message: string; onRetry: () => void }) => (
   <div
-    className="bg-[rgba(239,68,68,0.1)] border border-red-500/30 rounded-lg p-4 mb-8"
+    className="bg-[var(--badge-danger-bg)] border border-[var(--status-danger)]/30 rounded-lg p-4 mb-8"
     data-testid="stats-error"
   >
     <div className="flex items-center justify-between">
@@ -177,17 +178,20 @@ StatsError.displayName = 'StatsError';
  * Breadcrumb navigation component
  */
 const Breadcrumbs = memo(() => (
-  <nav className="flex items-center text-sm text-[rgb(148,163,184)] mb-4" aria-label="Breadcrumb">
-    <Link to="/" className="flex items-center hover:text-[rgb(220,235,255)] transition-colors">
+  <nav
+    className="flex items-center text-sm text-[var(--text-secondary)] mb-4"
+    aria-label="Breadcrumb"
+  >
+    <Link to="/" className="flex items-center hover:text-[var(--text-primary)] transition-colors">
       <Home className="h-4 w-4 mr-1" aria-hidden="true" />
       Home
     </Link>
     <ChevronRight className="h-4 w-4 mx-2" aria-hidden="true" />
-    <Link to="/competitions" className="hover:text-[rgb(220,235,255)] transition-colors">
+    <Link to="/competitions" className="hover:text-[var(--text-primary)] transition-colors">
       Competitions
     </Link>
     <ChevronRight className="h-4 w-4 mx-2" aria-hidden="true" />
-    <span className="text-[rgb(220,235,255)] font-medium">Results</span>
+    <span className="text-[var(--text-primary)] font-medium">Results</span>
   </nav>
 ));
 
@@ -396,35 +400,26 @@ const CompetitionResultsPage = (): JSX.Element => {
         {/* Empty State Banner */}
         {!statsLoading && !statsError && !hasCompetitions && <EmptyStateBanner />}
 
-        {/* Tab Navigation */}
-        <div className="border-b border-[rgba(37,99,235,0.3)] mb-6">
-          <nav className="-mb-px flex space-x-8" role="tablist" aria-label="Results tabs">
-            <button
-              role="tab"
-              aria-selected={activeTab === 'my-results'}
-              aria-controls="my-results-panel"
-              onClick={() => setActiveTab('my-results')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === 'my-results'
-                  ? 'border-[var(--gold-light)] text-blue-400'
-                  : 'border-transparent text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] hover:border-[rgba(37,99,235,0.3)]'
-              }`}
-            >
+        {/* Tab Navigation + Content */}
+        <GoldTabs
+          value={activeTab}
+          onValueChange={(v) => setActiveTab(v as 'my-results' | 'browse')}
+        >
+          <GoldTabsList aria-label="Results tabs">
+            <GoldTabsTrigger value="my-results">
               <Medal className="h-4 w-4 inline-block mr-2" aria-hidden="true" />
               My Results
-            </button>
-          </nav>
-        </div>
-
-        {/* Main Content - Results List */}
-        <div id="my-results-panel" role="tabpanel" aria-labelledby="my-results-tab">
-          <CompetitionResultsList
-            userId={userId || ''}
-            onResultClick={handleResultClick}
-            isLoading={false}
-            error={null}
-          />
-        </div>
+            </GoldTabsTrigger>
+          </GoldTabsList>
+          <GoldTabsContent value="my-results">
+            <CompetitionResultsList
+              userId={userId || ''}
+              onResultClick={handleResultClick}
+              isLoading={false}
+              error={null}
+            />
+          </GoldTabsContent>
+        </GoldTabs>
 
         {/* Competition Results Modal (with Prize Integration - Story 5-3) */}
         <CompetitionResultsModal
