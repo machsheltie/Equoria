@@ -222,3 +222,489 @@ describe('GET /api/users/:userId/competition-stats', () => {
     expect(res.status).toBe(401);
   });
 });
+
+// ─── GET /api/users/:userId/competition-stats — with real results ─────────────
+// (covers lines 580-660: aggregation logic, placementToNumber, recentCompetitions)
+
+describe('GET /api/users/:userId/competition-stats — with results', () => {
+  let statsUser;
+  let statsToken;
+  let statsHorse;
+  let show;
+  const createdResultIds = [];
+
+  beforeAll(async () => {
+    statsUser = await prisma.user.create({
+      data: {
+        email: `stats-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@test.com`,
+        username: `stats${Date.now()}${Math.random().toString(36).slice(2, 4)}`,
+        password: 'hash',
+        firstName: 'Stats',
+        lastName: 'Tester',
+        money: 0,
+      },
+    });
+    statsToken = generateTestToken({ id: statsUser.id, email: statsUser.email, role: 'user' });
+
+    statsHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-StatsHorse-${Date.now()}`,
+        sex: 'Stallion',
+        dateOfBirth: new Date('2018-01-01'),
+        age: 7,
+        userId: statsUser.id,
+      },
+    });
+
+    show = await prisma.show.create({
+      data: {
+        name: `TestFixture-StatsShow-${Date.now()}`,
+        discipline: 'Dressage',
+        levelMin: 1,
+        levelMax: 10,
+        entryFee: 100,
+        prize: 1000,
+        runDate: new Date('2024-01-01'),
+        hostUserId: statsUser.id,
+      },
+    });
+
+    // Seed varied competition results to exercise placement branches
+    for (const [placement, score] of [
+      ['1st', 95],
+      ['2nd', 90],
+      ['3rd', 85],
+      ['4th', 80],
+      [null, 75], // null placement → placementToNumber → 0 branch
+    ]) {
+      const r = await prisma.competitionResult.create({
+        data: {
+          horseId: statsHorse.id,
+          showId: show.id,
+          showName: show.name,
+          discipline: 'Dressage',
+          placement,
+          score: String(score),
+          prizeWon: placement === '1st' ? 500 : placement === '2nd' ? 300 : 100,
+          runDate: new Date('2024-01-01'),
+        },
+      });
+      createdResultIds.push(r.id);
+    }
+  }, 60000);
+
+  afterAll(async () => {
+    for (const id of createdResultIds) {
+      await prisma.competitionResult.delete({ where: { id } }).catch(() => {});
+    }
+    await prisma.show.delete({ where: { id: show.id } }).catch(() => {});
+    await prisma.horse.delete({ where: { id: statsHorse.id } }).catch(() => {});
+    await prisma.user.delete({ where: { id: statsUser.id } }).catch(() => {});
+  }, 30000);
+
+  it('returns aggregated stats with real competition results', async () => {
+    const res = await request(app)
+      .get(`/api/users/${statsUser.id}/competition-stats`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${statsToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.totalCompetitions).toBeGreaterThanOrEqual(5);
+    expect(res.body.totalWins).toBeGreaterThanOrEqual(1);
+    expect(res.body.totalTop3).toBeGreaterThanOrEqual(3);
+    expect(res.body.bestPlacement).toBe(1);
+    expect(res.body.mostSuccessfulDiscipline).toBe('Dressage');
+    expect(Array.isArray(res.body.recentCompetitions)).toBe(true);
+    expect(res.body.recentCompetitions.length).toBeLessThanOrEqual(5);
+    expect(typeof res.body.winRate).toBe('number');
+    expect(res.body.totalPrizeMoney).toBeGreaterThan(0);
+  });
+
+  it('recentCompetitions entries have expected shape', async () => {
+    const res = await request(app)
+      .get(`/api/users/${statsUser.id}/competition-stats`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${statsToken}`);
+
+    expect(res.status).toBe(200);
+    for (const r of res.body.recentCompetitions) {
+      expect(r).toHaveProperty('competitionId');
+      expect(r).toHaveProperty('discipline');
+      expect(r).toHaveProperty('placement');
+      expect(r).toHaveProperty('finalScore');
+      expect(r).toHaveProperty('prizeMoney');
+    }
+  });
+});
+
+// ─── GET /api/users/dashboard/:userId ─────────────────────────────────────────
+// (covers getDashboardData lines 141-310, the largest uncovered chunk)
+
+describe('GET /api/users/dashboard/:userId', () => {
+  it('returns 200 with dashboard data for self', async () => {
+    const res = await request(app)
+      .get(`/api/users/dashboard/${user.id}`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data).toHaveProperty('user');
+    expect(res.body.data).toHaveProperty('horses');
+    expect(res.body.data).toHaveProperty('shows');
+    expect(res.body.data).toHaveProperty('activity');
+    expect(res.body.data.user.id).toBe(user.id);
+    expect(typeof res.body.data.horses.total).toBe('number');
+  });
+
+  it('caches dashboard data — second call returns same shape', async () => {
+    // First call populates cache, second hits cache (covers cache HIT branch)
+    const first = await request(app)
+      .get(`/api/users/dashboard/${user.id}`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+    expect(first.status).toBe(200);
+
+    const second = await request(app)
+      .get(`/api/users/dashboard/${user.id}`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+    expect(second.status).toBe(200);
+    expect(second.body.data.user.id).toBe(first.body.data.user.id);
+  });
+
+  it('returns 401 without auth', async () => {
+    const res = await request(app).get(`/api/users/dashboard/${user.id}`).set('Origin', ORIGIN);
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 403 when accessing another user dashboard', async () => {
+    const other = await prisma.user.create({
+      data: {
+        email: `dash-other-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@test.com`,
+        username: `dashother${Date.now()}${Math.random().toString(36).slice(2, 4)}`,
+        password: 'hash',
+        firstName: 'Dash',
+        lastName: 'Other',
+        money: 0,
+      },
+    });
+
+    try {
+      const res = await request(app)
+        .get(`/api/users/dashboard/${other.id}`)
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${token}`);
+      expect(res.status).toBe(403);
+    } finally {
+      await prisma.user.delete({ where: { id: other.id } }).catch(() => {});
+    }
+  });
+});
+
+// ─── GET /api/users/dashboard/:userId — with horse data ───────────────────────
+// Exercises horse-counts, shows, training-log branches in getDashboardData
+
+describe('GET /api/users/dashboard/:userId — with horses and activity', () => {
+  let dashUser;
+  let dashToken;
+  let dashHorse;
+
+  beforeAll(async () => {
+    dashUser = await prisma.user.create({
+      data: {
+        email: `dash-rich-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@test.com`,
+        username: `dashrich${Date.now()}${Math.random().toString(36).slice(2, 4)}`,
+        password: 'hash',
+        firstName: 'Dash',
+        lastName: 'Rich',
+        money: 1000,
+      },
+    });
+    dashToken = generateTestToken({ id: dashUser.id, email: dashUser.email, role: 'user' });
+
+    dashHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-DashHorse-${Date.now()}`,
+        sex: 'Mare',
+        dateOfBirth: new Date('2018-01-01'),
+        age: 7,
+        userId: dashUser.id,
+      },
+    });
+  }, 30000);
+
+  afterAll(async () => {
+    await prisma.horse.delete({ where: { id: dashHorse.id } }).catch(() => {});
+    await prisma.user.delete({ where: { id: dashUser.id } }).catch(() => {});
+  }, 30000);
+
+  it('returns horses.total > 0 when user has horses', async () => {
+    const res = await request(app)
+      .get(`/api/users/dashboard/${dashUser.id}`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${dashToken}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.horses.total).toBeGreaterThan(0);
+  });
+});
+
+// ─── GET /api/users/:id/activity ──────────────────────────────────────────────
+// (covers getUserActivity lines 320-352)
+
+describe('GET /api/users/:id/activity', () => {
+  it('returns 200 with empty activity array for new user', async () => {
+    const res = await request(app)
+      .get(`/api/users/${user.id}/activity`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(Array.isArray(res.body.data)).toBe(true);
+  });
+
+  it('includes XP_GAIN events when xpEvents exist', async () => {
+    // Seed an xpEvent row directly
+    const event = await prisma.xpEvent.create({
+      data: {
+        userId: user.id,
+        amount: 100,
+        reason: 'Test XP event for activity feed',
+      },
+    });
+
+    try {
+      const res = await request(app)
+        .get(`/api/users/${user.id}/activity`)
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data.length).toBeGreaterThan(0);
+      const xpEvent = res.body.data.find(e => e.type === 'XP_GAIN');
+      expect(xpEvent).toBeDefined();
+      expect(xpEvent.metadata).toHaveProperty('amount');
+    } finally {
+      await prisma.xpEvent.delete({ where: { id: event.id } }).catch(() => {});
+    }
+  });
+
+  it('returns 401 without auth', async () => {
+    const res = await request(app).get(`/api/users/${user.id}/activity`).set('Origin', ORIGIN);
+    expect(res.status).toBe(401);
+  });
+});
+
+// ─── PUT /api/users/:id — updateUserController ────────────────────────────────
+// (covers updateUserController lines 494-521)
+
+describe('PUT /api/users/:id', () => {
+  it('returns 200 when updating self', async () => {
+    const csrf = await fetchCsrf(app);
+    const res = await request(app)
+      .put(`/api/users/${user.id}`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ firstName: 'Updated' });
+
+    expect([200, 204]).toContain(res.status);
+  });
+
+  it('returns 401 without auth', async () => {
+    const csrf = await fetchCsrf(app);
+    const res = await request(app)
+      .put(`/api/users/${user.id}`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ firstName: 'Updated' });
+
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 403 when updating another user', async () => {
+    const other = await prisma.user.create({
+      data: {
+        email: `put-other-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@test.com`,
+        username: `putother${Date.now()}${Math.random().toString(36).slice(2, 4)}`,
+        password: 'hash',
+        firstName: 'Put',
+        lastName: 'Other',
+        money: 0,
+      },
+    });
+
+    try {
+      const csrf = await fetchCsrf(app);
+      const res = await request(app)
+        .put(`/api/users/${other.id}`)
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${token}`)
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken)
+        .send({ firstName: 'Hacked' });
+
+      expect(res.status).toBe(403);
+    } finally {
+      await prisma.user.delete({ where: { id: other.id } }).catch(() => {});
+    }
+  });
+});
+
+// ─── POST /api/users/:id/add-xp — addXpController ─────────────────────────────
+// (covers addXpController lines 700-728)
+
+describe('POST /api/users/:id/add-xp', () => {
+  it('returns 200 and adds XP for self', async () => {
+    const csrf = await fetchCsrf(app);
+    const res = await request(app)
+      .post(`/api/users/${user.id}/add-xp`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ amount: 50 });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    // Response shape includes either currentXP or xp depending on the addXp path taken
+    expect(res.body.data).toBeDefined();
+  });
+
+  it('returns 401 without auth', async () => {
+    const csrf = await fetchCsrf(app);
+    const res = await request(app)
+      .post(`/api/users/${user.id}/add-xp`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ amount: 50 });
+
+    expect(res.status).toBe(401);
+  });
+});
+
+// ─── GET /api/users/search — searchUsers ──────────────────────────────────────
+// (covers searchUsers lines 741-758)
+
+describe('GET /api/users/search', () => {
+  it('returns 200 with matched users for prefix query', async () => {
+    // user fixture has username starting with "uc<timestamp>" — use a 2-char prefix
+    const prefix = user.username.slice(0, 2);
+    const res = await request(app)
+      .get(`/api/users/search?username=${encodeURIComponent(prefix)}`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(Array.isArray(res.body.data.users)).toBe(true);
+    expect(res.body.data).toHaveProperty('pagination');
+    expect(typeof res.body.data.pagination.total).toBe('number');
+  });
+
+  it('returns 400 for query shorter than 2 chars', async () => {
+    const res = await request(app)
+      .get('/api/users/search?username=a')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(400);
+  });
+
+  it('respects limit param', async () => {
+    const prefix = user.username.slice(0, 2);
+    const res = await request(app)
+      .get(`/api/users/search?username=${encodeURIComponent(prefix)}&limit=1`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.users.length).toBeLessThanOrEqual(1);
+  });
+
+  it('returns 401 without auth', async () => {
+    const res = await request(app).get('/api/users/search?username=foo').set('Origin', ORIGIN);
+    expect(res.status).toBe(401);
+  });
+});
+
+// ─── DELETE /api/users/:id — deleteUserController ─────────────────────────────
+// (covers deleteUserController lines 667-693)
+
+describe('DELETE /api/users/:id', () => {
+  it('returns 200 when deleting self', async () => {
+    // Create a throwaway user since we'll delete them
+    const throwaway = await prisma.user.create({
+      data: {
+        email: `del-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@test.com`,
+        username: `del${Date.now()}${Math.random().toString(36).slice(2, 4)}`,
+        password: 'hash',
+        firstName: 'Del',
+        lastName: 'Throwaway',
+        money: 0,
+      },
+    });
+    const throwawayToken = generateTestToken({
+      id: throwaway.id,
+      email: throwaway.email,
+      role: 'user',
+    });
+
+    try {
+      const csrf = await fetchCsrf(app);
+      const res = await request(app)
+        .delete(`/api/users/${throwaway.id}`)
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${throwawayToken}`)
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken);
+
+      expect([200, 204]).toContain(res.status);
+    } finally {
+      // If delete failed, clean up
+      await prisma.user.delete({ where: { id: throwaway.id } }).catch(() => {});
+    }
+  });
+
+  it('returns 403 when deleting another user', async () => {
+    const other = await prisma.user.create({
+      data: {
+        email: `del-other-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@test.com`,
+        username: `delother${Date.now()}${Math.random().toString(36).slice(2, 4)}`,
+        password: 'hash',
+        firstName: 'Del',
+        lastName: 'Other',
+        money: 0,
+      },
+    });
+
+    try {
+      const csrf = await fetchCsrf(app);
+      const res = await request(app)
+        .delete(`/api/users/${other.id}`)
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${token}`)
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken);
+
+      expect(res.status).toBe(403);
+    } finally {
+      await prisma.user.delete({ where: { id: other.id } }).catch(() => {});
+    }
+  });
+
+  it('returns 401 without auth', async () => {
+    const csrf = await fetchCsrf(app);
+    const res = await request(app)
+      .delete(`/api/users/${user.id}`)
+      .set('Origin', ORIGIN)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken);
+
+    expect(res.status).toBe(401);
+  });
+});
