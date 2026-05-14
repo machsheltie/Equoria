@@ -26,6 +26,8 @@
  * GET    /api/users/:id/competition-stats         competition statistics
  * GET    /api/users/:id/prize-history             prize history (paginated)
  * GET    /api/users/dashboard/:id                 dashboard summary
+ * GET    /api/v1/users/me/game-notifications      in-game stat-gain notifications (Equoria-sqyb)
+ * PATCH  /api/v1/users/me/game-notifications/read-all  mark all notifications read
  *
  * ── Horses ───────────────────────────────────────────────────────────────
  * GET    /api/horses                              list all user horses
@@ -823,6 +825,25 @@ export const handlers = [
     });
   }),
 
+  // Game notifications (Equoria-sqyb) — called by useGameNotifications hook
+  // used in MainNavigation.tsx and MessagesPage.tsx. Returns empty list by default;
+  // tests needing populated data should server.use(...) a local override.
+  http.get(`${base}/api/v1/users/me/game-notifications`, () =>
+    HttpResponse.json({
+      success: true,
+      data: {
+        notifications: [],
+        unreadCount: 0,
+      },
+    })
+  ),
+  http.patch(`${base}/api/v1/users/me/game-notifications/read-all`, () =>
+    HttpResponse.json({
+      success: true,
+      data: null,
+    })
+  ),
+
   // User profile (used by useUser hook) — MUST be after all /users/:id/* sub-routes
   http.get(`${base}/api/users/:id`, ({ params }) => {
     if (params.id === '999999') {
@@ -1176,6 +1197,24 @@ export const handlers = [
     })
   ),
   http.get(`${base}/api/horses/user/eligible`, () =>
+    HttpResponse.json({
+      success: true,
+      data: [],
+    })
+  ),
+
+  // Hardcoded port 3001 fallbacks (Equoria-sqyb) — competition HorseSelector.tsx
+  // bypasses apiClient and hits http://localhost:3001 directly. Local test files
+  // (HorseSelector.test.tsx) override these via server.use(...) with populated data;
+  // these are safety-net handlers so any other test that renders the component
+  // does not trigger MSW unhandled-request errors in CI.
+  http.get('http://localhost:3001/api/competitions/:id/entries', () =>
+    HttpResponse.json({
+      success: true,
+      data: [],
+    })
+  ),
+  http.get('http://localhost:3001/api/horses/user/eligible', () =>
     HttpResponse.json({
       success: true,
       data: [],
