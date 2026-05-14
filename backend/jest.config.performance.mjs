@@ -12,8 +12,11 @@ export default {
   // Setup files
   setupFilesAfterEnv: ['<rootDir>/tests/setup.mjs'],
 
-  // Test file patterns - only performance tests
-  testMatch: ['**/__tests__/performance/**/*.test.mjs'],
+  // Test file patterns - performance tests (module-colocated after 0d4c313a migration)
+  testMatch: [
+    '**/__tests__/**/*[Pp]erformance*.test.mjs',
+    '**/tests/integration/*[Pp]erformance*.test.mjs',
+  ],
 
   // ES modules support
   preset: null,
