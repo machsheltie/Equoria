@@ -29,7 +29,7 @@ import {
   type CompatibilityData,
 } from '@/components/breeding/CompatibilityPreview';
 import CinematicMoment from '@/components/feedback/CinematicMoment';
-import type { Horse, CompatibilityAnalysis, BreedingResponse } from '@/types/breeding';
+import type { Horse, CompatibilityAnalysis } from '@/types/breeding';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -205,7 +205,16 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
   const isFirstBreed = !milestonesRecord?.firstBreed;
 
   // Breeding mutation
-  const breedingMutation = useMutation<BreedingResponse, Error, void>({
+  //
+  // Equoria-q7no: backend POST /horses/foals returns a pregnancy initiation
+  // payload — { pregnancyStarted, damId, sireId, foalDueDate } — NOT a foal.
+  // The foal is created 7 days later by the foaling job. We track both response
+  // shapes here so older deployments that return `foal` still work.
+  type BreedingMutationResult =
+    | { kind: 'pregnancy'; message: string; foalDueDate?: string }
+    | { kind: 'foal'; message: string; foalId: number };
+
+  const breedingMutation = useMutation<BreedingMutationResult, Error, void>({
     mutationFn: async () => {
       if (!selectedSire || !selectedDam || !userId) {
         throw new Error('Missing required data for breeding');
@@ -215,16 +224,44 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
         damId: selectedDam.id,
         userId: userId != null ? String(userId) : undefined,
       });
-      return {
-        foal: response.foal!,
-        message: response.message || 'Breeding successful!',
-      } as unknown as BreedingResponse;
+
+      // Pregnancy-flow response (current contract): backend started an in-foal
+      // pregnancy on the dam. No foal exists yet.
+      if (response.pregnancyStarted) {
+        return {
+          kind: 'pregnancy',
+          message: response.message || 'Breeding successful! Your mare is now in foal.',
+          foalDueDate: response.foalDueDate,
+        };
+      }
+
+      // Legacy / future direct-foal response.
+      if (response.foal?.id || response.foalId) {
+        return {
+          kind: 'foal',
+          message: response.message || 'Breeding successful!',
+          foalId: response.foal?.id ?? response.foalId!,
+        };
+      }
+
+      throw new Error(
+        response.message ||
+          'Breeding response did not include pregnancy or foal data. Please try again.'
+      );
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['horses', userId] });
       queryClient.invalidateQueries({ queryKey: ['foals'] });
 
-      setSuccessMessage(data.message);
+      // Build the success message — include foal due date when available.
+      let message = data.message;
+      if (data.kind === 'pregnancy' && data.foalDueDate) {
+        const due = new Date(data.foalDueDate);
+        if (!Number.isNaN(due.getTime())) {
+          message = `${data.message} Foal due ${due.toLocaleDateString()}.`;
+        }
+      }
+      setSuccessMessage(message);
       setShowConfirmation(false);
 
       if (isFirstBreed) {
@@ -232,12 +269,18 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
         setShowFoalCinematic(true);
       }
 
-      setTimeout(
-        () => {
-          navigate(`/foals/${data.foal.id}`);
-        },
-        isFirstBreed ? 3500 : 2000
-      );
+      // Only navigate to /foals/:id when we actually have a foal (legacy
+      // direct-foal response). Pregnancy responses stay on this page so the
+      // user can see the success banner; the foal will appear in their stable
+      // after the foaling job runs.
+      if (data.kind === 'foal') {
+        setTimeout(
+          () => {
+            navigate(`/foals/${data.foalId}`);
+          },
+          isFirstBreed ? 3500 : 2000
+        );
+      }
     },
     onError: (error) => {
       setErrorMessage(error.message || 'Failed to initiate breeding. Please try again.');
@@ -467,14 +510,18 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
         />
       )}
 
-      {/* Cinematic foal birth — lifetime-first only (Epic 28-2/28-3) */}
+      {/* Cinematic foal birth — lifetime-first only (Epic 28-2/28-3).
+          Backend now returns a pregnancy-started payload (no foal yet), so the
+          subtitle is anchored to the dam name instead of a foal name. */}
       {showFoalCinematic && (
         <CinematicMoment
           variant="foal-birth"
-          title="A Foal is Born!"
-          subtitle={
-            breedingMutation.data?.foal?.name ? String(breedingMutation.data.foal.name) : undefined
+          title={
+            breedingMutation.data?.kind === 'pregnancy'
+              ? 'Your Mare is in Foal!'
+              : 'A Foal is Born!'
           }
+          subtitle={selectedDam?.name ? `Dam: ${selectedDam.name}` : undefined}
           onDismiss={() => setShowFoalCinematic(false)}
         />
       )}

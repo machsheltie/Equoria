@@ -139,6 +139,14 @@ interface Foal {
 interface BreedResponse {
   success?: boolean;
   message?: string;
+  // Pregnancy-flow response (current backend contract — POST /horses/foals starts an
+  // in-foal pregnancy; the actual foal is created later by the foaling job).
+  pregnancyStarted?: boolean;
+  damId?: number;
+  sireId?: number;
+  /** ISO string — when the foal is expected to be born (7 days from breeding). */
+  foalDueDate?: string;
+  // Legacy / future contract — when the backend returns a freshly-born foal directly.
   foalId?: number;
   foal?: Foal;
 }
