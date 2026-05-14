@@ -9,55 +9,64 @@ import {
 } from '../modules/horses/data/breedGeneticProfiles.mjs';
 
 /**
- * Ensures all 12 canonical breeds exist in the database.
- * Creates any missing breeds with the correct ID, name, and description.
+ * Ensures all 12 canonical breeds exist in the database by NAME.
+ * The canonical breed name (unique constraint) is the source of truth.
+ * IDs are preferred but not required — on a shared DB the target ID may be
+ * occupied by a test fixture; in that case we create the breed with an
+ * auto-increment ID so the name-keyed lookup still works.
  *
- * Resilience strategy: checks by BOTH id and name before attempting create.
- * If the canonical name already exists at any ID (e.g. from a prior seed or
- * a DB that pre-existed migrations), we count it as existing and skip — the
- * genetic profile population step uses the ID from BREED_GENETIC_PROFILES and
- * will succeed if the name-keyed row is present. If the target ID is occupied
- * by a non-canonical name (test fixture) we log a warning but still skip to
- * avoid destroying game data.
+ * Priority order:
+ *   1. Canonical name exists at canonical ID → already correct, skip.
+ *   2. Canonical name exists at any other ID → treat as existing (name is unique).
+ *   3. Canonical ID occupied by a different name → try canonical name-only create.
+ *   4. Neither name nor ID exists → create with canonical ID (preferred).
+ *   5. Create with canonical ID fails (ID taken) → create without ID (auto-increment).
  */
 export async function ensureCanonicalBreeds() {
   const results = { created: 0, existing: 0, errors: [] };
 
   for (const breed of CANONICAL_BREEDS) {
     try {
-      // Check by canonical ID first
-      const existingById = await prisma.breed.findUnique({ where: { id: breed.id } });
-      if (existingById) {
+      // --- Priority 1 & 2: check by canonical name first (unique, always correct) ---
+      const existingByName = await prisma.breed.findUnique({ where: { name: breed.name } });
+      if (existingByName) {
         results.existing++;
-        if (existingById.name !== breed.name) {
-          console.log(
-            `  [WARN] Breed ID ${breed.id} exists but has name "${existingById.name}" instead of "${breed.name}" — skipping`,
-          );
+        if (existingByName.id === breed.id) {
+          console.log(`  [SKIP] Breed "${breed.name}" exists at canonical ID ${breed.id}`);
         } else {
-          console.log(`  [SKIP] Breed ID ${breed.id} "${existingById.name}" already exists`);
+          console.log(
+            `  [SKIP-DRIFT] Breed "${breed.name}" exists at ID ${existingByName.id} (canonical ${breed.id}) — treating as existing`,
+          );
         }
         continue;
       }
 
-      // Check by canonical name (unique constraint) — may exist at a different ID
-      const existingByName = await prisma.breed.findUnique({ where: { name: breed.name } });
-      if (existingByName) {
-        results.existing++;
-        console.log(
-          `  [SKIP-NAME] Breed "${breed.name}" exists at ID ${existingByName.id} (expected ${breed.id}) — treating as existing`,
-        );
-        continue;
-      }
+      // --- Canonical name does NOT exist — check if canonical ID is free ---
+      const existingById = await prisma.breed.findUnique({ where: { id: breed.id } });
 
-      // Neither ID nor name exists — safe to create
-      await prisma.breed.create({
-        data: { id: breed.id, name: breed.name, description: breed.description },
-      });
-      results.created++;
-      console.log(`  [CREATE] Breed ID ${breed.id} "${breed.name}"`);
+      if (!existingById) {
+        // --- Priority 4: both name and ID are free — create with canonical ID ---
+        await prisma.breed.create({
+          data: { id: breed.id, name: breed.name, description: breed.description },
+        });
+        results.created++;
+        console.log(`  [CREATE] Breed ID ${breed.id} "${breed.name}"`);
+      } else {
+        // --- Priority 3 & 5: canonical ID occupied by different name — auto-increment ---
+        console.log(
+          `  [WARN] Canonical ID ${breed.id} is occupied by "${existingById.name}" — creating "${breed.name}" with auto-increment ID`,
+        );
+        await prisma.breed.create({
+          data: { name: breed.name, description: breed.description },
+        });
+        results.created++;
+        console.log(
+          `  [CREATE-AUTOINCREMENT] Breed "${breed.name}" (canonical ID ${breed.id} was occupied)`,
+        );
+      }
     } catch (error) {
       results.errors.push({ breedId: breed.id, error: error.message });
-      console.log(`  [ERROR] Breed ID ${breed.id}: ${error.message}`);
+      console.log(`  [ERROR] Breed "${breed.name}" (canonical ID ${breed.id}): ${error.message}`);
     }
   }
 

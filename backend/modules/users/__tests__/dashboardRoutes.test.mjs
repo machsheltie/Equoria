@@ -20,16 +20,16 @@
  * 5. Error scenarios - Missing users, authentication failures
  * 6. Performance metrics - Response times and data efficiency
  *
- * 🔄 BALANCED MOCKING APPROACH:
+ * 🔄 NO MOCKING APPROACH:
  * ✅ REAL: Database operations, business logic, API responses, data aggregation
  * ✅ REAL: Authentication, statistics calculations, progress tracking
- * 🔧 MOCK: Logger only (external dependency)
+ * ✅ REAL: Logger (no mocking — allows both main and security jest configs to run this file)
  *
  * 💡 TEST STRATEGY: Integration testing with real database to validate
  *    complete dashboard functionality and user experience
  */
 
-import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import app from '../../../app.mjs';
@@ -37,13 +37,6 @@ import prisma from '../../../db/index.mjs';
 import config from '../../../config/config.mjs';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
-// Strategic mocking: Only mock external dependencies
-jest.mock('../../../utils/logger.mjs', () => ({
-  info: jest.fn(),
-  error: jest.fn(),
-  warn: jest.fn(),
-  debug: jest.fn(),
-}));
 
 describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
   let __csrf__;
