@@ -28,7 +28,6 @@ import request from 'supertest';
 import { randomBytes } from 'node:crypto';
 
 import app from '../../../app.mjs';
-import prisma from '../../../db/index.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 import { CONFORMATION_REGIONS } from '../services/conformationService.mjs';
 
@@ -36,7 +35,6 @@ import { CONFORMATION_REGIONS } from '../services/conformationService.mjs';
 let ownerA;
 let tokenA;
 let ownerB;
-let tokenB;
 let horseWithConformation;
 let legacyHorse;
 let horseOwnedByB;
@@ -66,7 +64,8 @@ beforeAll(async () => {
     email: `${FIXTURE_PREFIX}-B-${tag}@example.com`,
   });
   ownerB = b.user;
-  tokenB = b.token;
+  // tokenB intentionally not captured — IDOR test exercises A's token against
+  // a horse owned by B; we never authenticate as B in this suite.
 
   // Horse with real conformation scores, owned by A.
   horseWithConformation = await createTestHorse({
