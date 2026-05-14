@@ -13,6 +13,24 @@ export default {
   // Module resolution
   moduleFileExtensions: ['mjs', 'js', 'json'],
 
+  // Module name aliases — kept in sync with jest.config.mjs so that tests
+  // using @logger, @db, etc. resolve identically regardless of which config
+  // is active. Also required so that relative jest.mock() paths in module-level
+  // __tests__ (e.g. modules/users/__tests__) resolve from the test file, not
+  // from the setupFilesAfterEnv context.
+  moduleNameMapper: {
+    '^@db$': '<rootDir>/db/index.mjs',
+    '^@db/(.*)$': '<rootDir>/db/$1',
+    '^@prisma-client$': '<rootDir>/../packages/database/prismaClient.mjs',
+    '^@logger$': '<rootDir>/utils/logger.mjs',
+    '^@middleware/(.*)$': '<rootDir>/middleware/$1',
+    '^@utils/(.*)$': '<rootDir>/utils/$1',
+    '^@models/(.*)$': '<rootDir>/models/$1',
+    '^@services/(.*)$': '<rootDir>/services/$1',
+    '^@errors/(.*)$': '<rootDir>/errors/$1',
+    '^(\\.{1,2}/.*)\\.js$': '$1',
+  },
+
   // Test patterns
   testMatch: ['**/__tests__/**/*.test.mjs', '**/__tests__/**/*.spec.mjs'],
 
@@ -82,6 +100,14 @@ export default {
     '!**/node_modules/**',
     '!**/coverage*/**',
   ],
+
+  // Globals for ES modules — mirrors jest.config.mjs to ensure jest.mock()
+  // hoisting works consistently across both configs when tests use ESM imports.
+  globals: {
+    jest: {
+      useESM: true,
+    },
+  },
 
   // Timeouts
   testTimeout: 30000, // 30 seconds for database operations

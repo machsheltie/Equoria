@@ -11,23 +11,50 @@ import {
 /**
  * Ensures all 12 canonical breeds exist in the database.
  * Creates any missing breeds with the correct ID, name, and description.
+ *
+ * Resilience strategy: checks by BOTH id and name before attempting create.
+ * If the canonical name already exists at any ID (e.g. from a prior seed or
+ * a DB that pre-existed migrations), we count it as existing and skip — the
+ * genetic profile population step uses the ID from BREED_GENETIC_PROFILES and
+ * will succeed if the name-keyed row is present. If the target ID is occupied
+ * by a non-canonical name (test fixture) we log a warning but still skip to
+ * avoid destroying game data.
  */
 export async function ensureCanonicalBreeds() {
   const results = { created: 0, existing: 0, errors: [] };
 
   for (const breed of CANONICAL_BREEDS) {
     try {
-      const existing = await prisma.breed.findUnique({ where: { id: breed.id } });
-      if (existing) {
+      // Check by canonical ID first
+      const existingById = await prisma.breed.findUnique({ where: { id: breed.id } });
+      if (existingById) {
         results.existing++;
-        console.log(`  [SKIP] Breed ID ${breed.id} "${existing.name}" already exists`);
-      } else {
-        await prisma.breed.create({
-          data: { id: breed.id, name: breed.name, description: breed.description },
-        });
-        results.created++;
-        console.log(`  [CREATE] Breed ID ${breed.id} "${breed.name}"`);
+        if (existingById.name !== breed.name) {
+          console.log(
+            `  [WARN] Breed ID ${breed.id} exists but has name "${existingById.name}" instead of "${breed.name}" — skipping`,
+          );
+        } else {
+          console.log(`  [SKIP] Breed ID ${breed.id} "${existingById.name}" already exists`);
+        }
+        continue;
       }
+
+      // Check by canonical name (unique constraint) — may exist at a different ID
+      const existingByName = await prisma.breed.findUnique({ where: { name: breed.name } });
+      if (existingByName) {
+        results.existing++;
+        console.log(
+          `  [SKIP-NAME] Breed "${breed.name}" exists at ID ${existingByName.id} (expected ${breed.id}) — treating as existing`,
+        );
+        continue;
+      }
+
+      // Neither ID nor name exists — safe to create
+      await prisma.breed.create({
+        data: { id: breed.id, name: breed.name, description: breed.description },
+      });
+      results.created++;
+      console.log(`  [CREATE] Breed ID ${breed.id} "${breed.name}"`);
     } catch (error) {
       results.errors.push({ breedId: breed.id, error: error.message });
       console.log(`  [ERROR] Breed ID ${breed.id}: ${error.message}`);
@@ -40,21 +67,52 @@ export async function ensureCanonicalBreeds() {
 /**
  * Populates breedGeneticProfile JSONB on all 12 breeds.
  * Overwrites existing profile data (idempotent).
+ *
+ * Looks up breeds by canonical name (not by ID) so it is resilient to
+ * auto-increment drift on shared/production databases where the canonical
+ * seed IDs may differ from the actual row IDs.
  */
 async function populateGeneticProfiles() {
   const results = { updated: 0, errors: [] };
 
-  for (const [breedId, profile] of Object.entries(BREED_GENETIC_PROFILES)) {
+  // Build a canonical ID → name lookup from CANONICAL_BREEDS
+  const idToName = Object.fromEntries(CANONICAL_BREEDS.map(b => [b.id, b.name]));
+
+  for (const [canonicalId, profile] of Object.entries(BREED_GENETIC_PROFILES)) {
+    const breedName = idToName[Number(canonicalId)];
+    if (!breedName) {
+      results.errors.push({
+        breedId: canonicalId,
+        error: `No canonical name for breed ID ${canonicalId}`,
+      });
+      continue;
+    }
+
     try {
+      // Find the actual DB row by name (resilient to ID drift)
+      const dbBreed = await prisma.breed.findUnique({ where: { name: breedName } });
+      if (!dbBreed) {
+        results.errors.push({
+          breedId: canonicalId,
+          error: `Breed "${breedName}" not found in database`,
+        });
+        console.log(
+          `  [ERROR] Breed "${breedName}" (canonical ID ${canonicalId}) not found — run ensureCanonicalBreeds first`,
+        );
+        continue;
+      }
+
       await prisma.breed.update({
-        where: { id: Number(breedId) },
+        where: { id: dbBreed.id },
         data: { breedGeneticProfile: profile },
       });
       results.updated++;
-      console.log(`  [UPDATE] Breed ID ${breedId} — genetic profile populated`);
+      console.log(
+        `  [UPDATE] Breed "${breedName}" (DB ID ${dbBreed.id}, canonical ID ${canonicalId}) — genetic profile populated`,
+      );
     } catch (error) {
-      results.errors.push({ breedId, error: error.message });
-      console.log(`  [ERROR] Breed ID ${breedId}: ${error.message}`);
+      results.errors.push({ breedId: canonicalId, error: error.message });
+      console.log(`  [ERROR] Breed "${breedName}" (canonical ID ${canonicalId}): ${error.message}`);
     }
   }
 
