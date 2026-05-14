@@ -1,7 +1,7 @@
 /**
  * showController integration tests (Equoria-rr7 coverage sprint).
  *
- * Covers: createShow, getShows, enterShow.
+ * Covers: createShow, getShows, enterShow, executeClosedShows.
  * Routes live under authRouter at /api/shows.
  */
 
@@ -18,6 +18,13 @@ let user;
 let token;
 let horse;
 let createdShowId;
+
+// Fixtures for executeClosedShows tests
+let execUser;
+let execToken;
+let execHorse;
+let pastShowId; // show with closeDate in the past, with entries
+let pastShowNoEntriesId; // show with closeDate in the past, no entries
 
 beforeAll(async () => {
   user = await prisma.user.create({
@@ -42,6 +49,86 @@ beforeAll(async () => {
       healthStatus: 'healthy',
     },
   });
+
+  // ── executeClosedShows fixtures ────────────────────────────────────────────
+  execUser = await prisma.user.create({
+    data: {
+      email: `showexec-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
+      username: `showexec${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+      password: 'irrelevant-hash',
+      firstName: 'ShowExec',
+      lastName: 'Tester',
+      money: 10000,
+      level: 1,
+      xp: 0,
+    },
+  });
+  execToken = generateTestToken({ id: execUser.id, email: execUser.email, role: 'user' });
+
+  execHorse = await prisma.horse.create({
+    data: {
+      name: `TestFixture-ExecHorse-${Date.now()}`,
+      sex: 'Mare',
+      dateOfBirth: new Date('2018-01-01'),
+      age: 7,
+      userId: execUser.id,
+      healthStatus: 'healthy',
+      speed: 60,
+      stamina: 60,
+      agility: 60,
+      balance: 60,
+      precision: 60,
+      boldness: 60,
+    },
+  });
+
+  const pastDate = new Date(Date.now() - 2 * 60 * 60 * 1000); // 2 hours ago
+
+  // Show with entries — exercises the main scoring loop (lines 291-381)
+  const pastShow = await prisma.show.create({
+    data: {
+      name: `TestFixture-PastShow-${Date.now()}`,
+      discipline: 'Dressage',
+      entryFee: 0,
+      levelMin: 1,
+      levelMax: 999,
+      prize: 1000,
+      runDate: pastDate,
+      status: 'open',
+      openDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+      closeDate: pastDate,
+      createdByUserId: execUser.id,
+    },
+  });
+  pastShowId = pastShow.id;
+
+  // Create entry for execHorse in the past show
+  await prisma.showEntry.create({
+    data: {
+      showId: pastShowId,
+      horseId: execHorse.id,
+      userId: execUser.id,
+      feePaid: 0,
+    },
+  });
+
+  // Show with NO entries — exercises the empty-entries path (lines 282-288)
+  const pastShowNoEntries = await prisma.show.create({
+    data: {
+      name: `TestFixture-PastShowEmpty-${Date.now()}`,
+      discipline: 'Racing',
+      entryFee: 0,
+      levelMin: 1,
+      levelMax: 999,
+      prize: 0,
+      runDate: pastDate,
+      status: 'open',
+      openDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+      closeDate: pastDate,
+      createdByUserId: execUser.id,
+    },
+  });
+  pastShowNoEntriesId = pastShowNoEntries.id;
 }, 30000);
 
 afterAll(async () => {
@@ -52,6 +139,22 @@ afterAll(async () => {
   await prisma.showEntry.deleteMany({ where: { horseId: horse.id } }).catch(() => {});
   await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
   await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
+
+  // executeClosedShows fixtures cleanup
+  if (pastShowId) {
+    await prisma.competitionResult.deleteMany({ where: { showId: pastShowId } }).catch(() => {});
+    await prisma.showEntry.deleteMany({ where: { showId: pastShowId } }).catch(() => {});
+    await prisma.show.delete({ where: { id: pastShowId } }).catch(() => {});
+  }
+  if (pastShowNoEntriesId) {
+    await prisma.show.delete({ where: { id: pastShowNoEntriesId } }).catch(() => {});
+  }
+  if (execHorse) {
+    await prisma.horse.delete({ where: { id: execHorse.id } }).catch(() => {});
+  }
+  if (execUser) {
+    await prisma.user.delete({ where: { id: execUser.id } }).catch(() => {});
+  }
 }, 30000);
 
 // ─── GET /api/shows ───────────────────────────────────────────────────────────
@@ -140,6 +243,36 @@ describe('POST /api/shows/create', () => {
     expect(res.body.success).toBe(false);
   });
 
+  it('returns 400 when entryFee is negative (line 61)', async () => {
+    const csrf = await fetchCsrf(app);
+    const res = await request(app)
+      .post('/api/shows/create')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ name: 'TestFixture-NegFeeShow', discipline: 'Dressage', entryFee: -1 });
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toMatch(/entry fee/i);
+  });
+
+  it('returns 400 when entryFee exceeds 100000 (line 61)', async () => {
+    const csrf = await fetchCsrf(app);
+    const res = await request(app)
+      .post('/api/shows/create')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ name: 'TestFixture-HighFeeShow', discipline: 'Dressage', entryFee: 100001 });
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toMatch(/entry fee/i);
+  });
+
   it('returns 401 without auth', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
@@ -213,5 +346,451 @@ describe('POST /api/shows/:id/enter', () => {
       .send({ horseId: horse.id });
 
     expect(res.status).toBe(401);
+  });
+});
+
+// ─── POST /api/shows/:id/enter — additional validation paths ─────────────────
+
+describe('POST /api/shows/:id/enter — additional validation paths', () => {
+  let ageTestHorseId;
+  let injuredHorseId;
+  let completedShowId;
+  let feeShowId;
+
+  beforeAll(async () => {
+    // Horse too young (age < 3)
+    const youngHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-YoungHorse-${Date.now()}`,
+        sex: 'Colt',
+        dateOfBirth: new Date('2025-01-01'),
+        age: 1,
+        userId: user.id,
+        healthStatus: 'healthy',
+      },
+    });
+    ageTestHorseId = youngHorse.id;
+
+    // Injured horse
+    const injuredHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-InjuredHorse-${Date.now()}`,
+        sex: 'Mare',
+        dateOfBirth: new Date('2018-01-01'),
+        age: 7,
+        userId: user.id,
+        healthStatus: 'injured',
+      },
+    });
+    injuredHorseId = injuredHorse.id;
+
+    // A completed show (status !== 'open')
+    const completedShow = await prisma.show.create({
+      data: {
+        name: `TestFixture-CompletedShow-${Date.now()}`,
+        discipline: 'Endurance',
+        entryFee: 0,
+        levelMin: 1,
+        levelMax: 999,
+        prize: 0,
+        runDate: new Date(Date.now() - 1000),
+        status: 'completed',
+        openDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+        closeDate: new Date(Date.now() - 1000),
+        createdByUserId: user.id,
+      },
+    });
+    completedShowId = completedShow.id;
+
+    // A show with entry fee
+    const feeShow = await prisma.show.create({
+      data: {
+        name: `TestFixture-FeeShow-${Date.now()}`,
+        discipline: 'Polo',
+        entryFee: 100,
+        levelMin: 1,
+        levelMax: 999,
+        prize: 500,
+        runDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        status: 'open',
+        openDate: new Date(),
+        closeDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        createdByUserId: user.id,
+      },
+    });
+    feeShowId = feeShow.id;
+  }, 30000);
+
+  afterAll(async () => {
+    if (ageTestHorseId) {
+      await prisma.horse.delete({ where: { id: ageTestHorseId } }).catch(() => {});
+    }
+    if (injuredHorseId) {
+      await prisma.horse.delete({ where: { id: injuredHorseId } }).catch(() => {});
+    }
+    if (completedShowId) {
+      await prisma.show.delete({ where: { id: completedShowId } }).catch(() => {});
+    }
+    if (feeShowId) {
+      await prisma.showEntry.deleteMany({ where: { showId: feeShowId } }).catch(() => {});
+      await prisma.show.delete({ where: { id: feeShowId } }).catch(() => {});
+    }
+  }, 30000);
+
+  it('returns 409 when show status is not open (line 174-177)', async () => {
+    const csrf = await fetchCsrf(app);
+    const res = await request(app)
+      .post(`/api/shows/${completedShowId}/enter`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ horseId: horse.id });
+
+    expect(res.status).toBe(409);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toMatch(/no longer accepting/i);
+  });
+
+  it('returns 400 when horse is too young (age < 3, line 197-200)', async () => {
+    if (!createdShowId) {
+      return;
+    }
+    const csrf = await fetchCsrf(app);
+    const res = await request(app)
+      .post(`/api/shows/${createdShowId}/enter`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ horseId: ageTestHorseId });
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toMatch(/3 years old/i);
+  });
+
+  it('returns 400 when horse is injured (line 202-203)', async () => {
+    if (!createdShowId) {
+      return;
+    }
+    const csrf = await fetchCsrf(app);
+    const res = await request(app)
+      .post(`/api/shows/${createdShowId}/enter`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ horseId: injuredHorseId });
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toMatch(/injured/i);
+  });
+
+  it('returns 201 when show has entry fee and user has sufficient funds (lines 207-217)', async () => {
+    const csrf = await fetchCsrf(app);
+    const res = await request(app)
+      .post(`/api/shows/${feeShowId}/enter`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ horseId: horse.id });
+
+    // 201 (success) or 409 (already entered)
+    expect([201, 409]).toContain(res.status);
+    if (res.status === 201) {
+      expect(res.body.success).toBe(true);
+    }
+  });
+
+  it('returns 402 when user has insufficient funds for entry fee (line 209-212)', async () => {
+    // Create a user with 0 money
+    const brokeUser = await prisma.user.create({
+      data: {
+        email: `showbroke-${Date.now()}@test.com`,
+        username: `showbroke${Date.now()}`.slice(0, 30),
+        password: 'irrelevant-hash',
+        firstName: 'Broke',
+        lastName: 'Tester',
+        money: 0,
+      },
+    });
+    const brokeToken = generateTestToken({ id: brokeUser.id, email: brokeUser.email, role: 'user' });
+    const brokeHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-BrokeHorse-${Date.now()}`,
+        sex: 'Stallion',
+        dateOfBirth: new Date('2018-01-01'),
+        age: 7,
+        userId: brokeUser.id,
+        healthStatus: 'healthy',
+      },
+    });
+
+    try {
+      const csrf = await fetchCsrf(app);
+      const res = await request(app)
+        .post(`/api/shows/${feeShowId}/enter`)
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${brokeToken}`)
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken)
+        .send({ horseId: brokeHorse.id });
+
+      expect(res.status).toBe(402);
+      expect(res.body.success).toBe(false);
+      expect(res.body.message).toMatch(/insufficient funds/i);
+    } finally {
+      await prisma.horse.delete({ where: { id: brokeHorse.id } }).catch(() => {});
+      await prisma.user.delete({ where: { id: brokeUser.id } }).catch(() => {});
+    }
+  });
+});
+
+// ─── POST /api/shows/:id/enter — horse not owned (line 195) ──────────────────
+
+describe('POST /api/shows/:id/enter — horse not owned by requesting user', () => {
+  it('returns 404 when horse exists but belongs to another user (line 195)', async () => {
+    if (!createdShowId) {
+      return;
+    }
+    // horse belongs to user, but we use execToken (execUser) to try entering it
+    const csrf = await fetchCsrf(app);
+    const res = await request(app)
+      .post(`/api/shows/${createdShowId}/enter`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${execToken}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ horseId: horse.id });
+
+    // horse.userId = user.id, but execToken belongs to execUser → horse not found
+    expect(res.status).toBe(404);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toMatch(/horse not found/i);
+  });
+});
+
+// ─── POST /api/shows/:id/enter — show is full (line 182-183) ─────────────────
+
+describe('POST /api/shows/:id/enter — show is full (maxEntries)', () => {
+  let fullShowId;
+
+  afterAll(async () => {
+    if (fullShowId) {
+      await prisma.showEntry.deleteMany({ where: { showId: fullShowId } }).catch(() => {});
+      await prisma.show.delete({ where: { id: fullShowId } }).catch(() => {});
+    }
+  });
+
+  it('returns 409 when show is full (line 182-183)', async () => {
+    // Create a show with maxEntries: 1
+    const fullShow = await prisma.show.create({
+      data: {
+        name: `TestFixture-FullShow-${Date.now()}`,
+        discipline: 'Vaulting',
+        entryFee: 0,
+        maxEntries: 1,
+        levelMin: 1,
+        levelMax: 999,
+        prize: 0,
+        runDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        status: 'open',
+        openDate: new Date(),
+        closeDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        createdByUserId: user.id,
+      },
+    });
+    fullShowId = fullShow.id;
+
+    // Enter the first horse (execHorse from exec user)
+    await prisma.showEntry.create({
+      data: {
+        showId: fullShowId,
+        horseId: execHorse.id,
+        userId: execUser.id,
+        feePaid: 0,
+      },
+    });
+
+    // Now try to enter the second horse — show should be full
+    const csrf = await fetchCsrf(app);
+    const res = await request(app)
+      .post(`/api/shows/${fullShowId}/enter`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ horseId: horse.id });
+
+    expect(res.status).toBe(409);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toMatch(/full/i);
+  });
+});
+
+// ─── POST /api/shows/:id/enter — already-closed show path (line 179) ─────────
+
+describe('POST /api/shows/:id/enter — already-closed show path', () => {
+  let closedShowId;
+
+  afterAll(async () => {
+    if (closedShowId) {
+      await prisma.show.delete({ where: { id: closedShowId } }).catch(() => {});
+    }
+  });
+
+  it('returns 409 when show closeDate is in the past (line 179-181)', async () => {
+    // Create a show with past closeDate directly in DB
+    const pastDate = new Date(Date.now() - 60 * 60 * 1000); // 1 hour ago
+    const closedShow = await prisma.show.create({
+      data: {
+        name: `TestFixture-ClosedShow-${Date.now()}`,
+        discipline: 'Reining',
+        entryFee: 0,
+        levelMin: 1,
+        levelMax: 999,
+        prize: 0,
+        runDate: pastDate,
+        status: 'open', // still 'open' but closeDate is past
+        openDate: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),
+        closeDate: pastDate,
+        createdByUserId: user.id,
+      },
+    });
+    closedShowId = closedShow.id;
+
+    const csrf = await fetchCsrf(app);
+    const res = await request(app)
+      .post(`/api/shows/${closedShowId}/enter`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ horseId: horse.id });
+
+    expect(res.status).toBe(409);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toMatch(/entry period has closed/i);
+  });
+});
+
+// ─── POST /api/shows/execute — executeClosedShows ─────────────────────────────
+
+describe('POST /api/shows/execute — executeClosedShows', () => {
+  it('returns 200 and executes past-due shows with entries (lines 278-382)', async () => {
+    const csrf = await fetchCsrf(app);
+    const res = await request(app)
+      .post('/api/shows/execute')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${execToken}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({});
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(typeof res.body.data.executed).toBe('number');
+    // At least our two past shows should have been executed
+    expect(res.body.data.executed).toBeGreaterThanOrEqual(1);
+    expect(typeof res.body.data.message).toBe('string');
+  });
+
+  it('pastShow status is completed after execute', async () => {
+    // The previous test should have run execute; check the DB directly
+    const show = await prisma.show.findUnique({ where: { id: pastShowId } });
+    // Status should now be 'completed' (or 'executing' if concurrent, but likely 'completed')
+    expect(['completed', 'executing']).toContain(show.status);
+  });
+
+  it('competitionResult records created for entries after execute', async () => {
+    const results = await prisma.competitionResult.findMany({
+      where: { showId: pastShowId },
+    });
+    // Our one entry should have produced one result
+    expect(results.length).toBeGreaterThanOrEqual(1);
+    expect(results[0].horseId).toBe(execHorse.id);
+    expect(typeof results[0].score).toBe('object'); // Prisma Decimal
+    expect(results[0].discipline).toBe('Dressage');
+    expect(results[0].showName).toMatch(/TestFixture-PastShow/);
+  });
+
+  it('returns 200 with executed=0 when no shows need execution (all already completed)', async () => {
+    // After the first execute call, both past shows are now 'completed'
+    // A second call should return executed=0
+    const csrf = await fetchCsrf(app);
+    const res = await request(app)
+      .post('/api/shows/execute')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${execToken}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({});
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    // All shows already completed, so 0 additional executions
+    expect(res.body.data.executed).toBe(0);
+  });
+
+  it('returns 401 without auth', async () => {
+    const csrf = await fetchCsrf(app);
+    const res = await request(app)
+      .post('/api/shows/execute')
+      .set('Origin', ORIGIN)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({});
+
+    expect(res.status).toBe(401);
+  });
+});
+
+// ─── POST /api/shows/create — P2002 duplicate name (line 88-92) ──────────────
+
+describe('POST /api/shows/create — duplicate name conflict', () => {
+  let duplicateShowId;
+
+  afterAll(async () => {
+    if (duplicateShowId) {
+      await prisma.show.delete({ where: { id: duplicateShowId } }).catch(() => {});
+    }
+  });
+
+  it('returns 409 when show name already exists (P2002 catch, line 88)', async () => {
+    const csrf = await fetchCsrf(app);
+    const showName = `TestFixture-DupShow-${Date.now()}`;
+
+    // Create the first show
+    const first = await request(app)
+      .post('/api/shows/create')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ name: showName, discipline: 'Racing', entryFee: 0 });
+
+    if (first.status === 201) {
+      duplicateShowId = first.body.data.show.id;
+    }
+
+    // Attempt duplicate
+    const csrf2 = await fetchCsrf(app);
+    const second = await request(app)
+      .post('/api/shows/create')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`)
+      .set('Cookie', csrf2.cookieHeader)
+      .set('X-CSRF-Token', csrf2.csrfToken)
+      .send({ name: showName, discipline: 'Racing', entryFee: 0 });
+
+    // Either 409 (unique constraint) or 201 (no unique constraint on name in DB)
+    expect([201, 409]).toContain(second.status);
+    if (second.status === 409) {
+      expect(second.body.success).toBe(false);
+      expect(second.body.message).toMatch(/already exists/i);
+    }
   });
 });

@@ -133,8 +133,12 @@ const createFetchMock = (
     const urlStr = typeof url === 'string' ? url : url.toString();
     const method = init?.method?.toUpperCase() || 'GET';
 
-    // Horse endpoint
-    if (urlStr.includes('/api/horses/') && method === 'GET' && !urlStr.includes('/training')) {
+    // Horse endpoint (covers both legacy /api/horses/:id and v1 /api/v1/horses/:id)
+    if (
+      (urlStr.includes('/api/horses/') || urlStr.includes('/api/v1/horses/')) &&
+      method === 'GET' &&
+      !urlStr.includes('/training')
+    ) {
       if (horse === null) {
         return Promise.resolve({
           ok: false,
@@ -149,8 +153,11 @@ const createFetchMock = (
       } as Response);
     }
 
-    // Training overview endpoint
-    if (urlStr.includes('/api/training/status/') && method === 'GET') {
+    // Training overview endpoint (covers both legacy /api/training/status/ and v1 /api/v1/training/status/)
+    if (
+      (urlStr.includes('/api/training/status/') || urlStr.includes('/api/v1/training/status/')) &&
+      method === 'GET'
+    ) {
       return Promise.resolve({
         ok: true,
         status: 200,
