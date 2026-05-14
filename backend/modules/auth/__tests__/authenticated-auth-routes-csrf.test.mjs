@@ -45,11 +45,15 @@ describe('authenticated auth routes — CSRF enforcement canary', () => {
   let testUser;
   let accessCookie;
 
+  // Hoisted to beforeAll: this suite ONLY verifies the CSRF middleware rejects
+  // unauthorized requests with INVALID_CSRF_TOKEN. The user identity is not
+  // mutated by any test (all asserts are pre-mutation 403s). Re-creating a
+  // user before each of 7 routes (= 7 register+bcrypt+DB+refreshToken ops)
+  // was the root cause of CI Shard 2 worker SIGTERM (Equoria-jq9l): teardown
+  // contention prevented worker exit even after all assertions passed.
   beforeAll(async () => {
     await prisma.user.deleteMany({ where: { email: { startsWith: PREFIX } } });
-  });
 
-  beforeEach(async () => {
     const unique = `${randomBytes(8).toString('hex')}${Math.floor(Math.random() * 10000)}`;
     const email = `${PREFIX}${unique}@test.com`;
     const username = `${PREFIX}${unique}`;
@@ -69,16 +73,16 @@ describe('authenticated auth routes — CSRF enforcement canary', () => {
     testUser = await prisma.user.findUnique({ where: { email } });
   });
 
-  afterEach(async () => {
+  afterAll(async () => {
     if (testUser) {
       await prisma.refreshToken.deleteMany({ where: { userId: testUser.id } });
       await prisma.user.delete({ where: { id: testUser.id } }).catch(() => {});
       testUser = null;
     }
-  });
-
-  afterAll(async () => {
     await prisma.user.deleteMany({ where: { email: { startsWith: PREFIX } } });
+    // Do NOT call prisma.$disconnect() — global teardown handles it. A local
+    // disconnect runs before subsequent suites in the same worker can finish,
+    // forcing Prisma to lazy-reconnect and leaking pool churn (Equoria-jq9l).
   });
 
   const authenticatedMutations = [

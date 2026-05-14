@@ -22,6 +22,15 @@ export class RateLimitStore {
       this.cleanupTimer = setInterval(() => {
         this.cleanup();
       }, this.cleanupInterval);
+      // Don't block Jest worker exit on this background cleanup timer.
+      // Without .unref(), CI Shard 2 workers were force-killed by SIGTERM
+      // after all tests passed but before the keep-alive timer drained
+      // (Equoria-6ksu second iteration, Equoria-jq9l). The timer is purely
+      // a memory-pressure hygiene loop — it's safe to let the event loop
+      // exit while it's pending.
+      if (typeof this.cleanupTimer.unref === 'function') {
+        this.cleanupTimer.unref();
+      }
     }
   }
 

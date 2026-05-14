@@ -68,7 +68,13 @@ describe('Inventory Equip — same-category swap', () => {
     if (testUser) {
       await prisma.user.deleteMany({ where: { id: testUser.id } });
     }
-    await prisma.$disconnect();
+    // Do NOT call prisma.$disconnect() here — the global teardown in
+    // tests/setup.mjs afterAll already calls cleanupPrismaInstances() which
+    // disconnects the shared global.__prisma. A local disconnect runs first
+    // (file afterAll before suite afterAll), so the shared client gets killed
+    // while subsequent suites in the same worker may still need it — forcing
+    // Prisma to lazy-reconnect, leaking pool churn that CI Shard 2 force-kills
+    // on (Equoria-6ksu, second iteration).
   });
 
   it('equips saddleA to the horse correctly', async () => {
