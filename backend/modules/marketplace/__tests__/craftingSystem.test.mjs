@@ -23,9 +23,9 @@
 
 import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
-import prisma from '../db/index.mjs';
-import { CRAFTING_RECIPES, findRecipe } from '../modules/services/data/craftingRecipes.mjs';
-import { getMaterials_endpoint, getRecipes, craftItem } from '../modules/services/controllers/craftingController.mjs';
+import prisma from '../../../db/index.mjs';
+import { CRAFTING_RECIPES, findRecipe } from '../../services/data/craftingRecipes.mjs';
+import { getMaterials_endpoint, getRecipes, craftItem } from '../../services/controllers/craftingController.mjs';
 
 const SUITE_PREFIX = 'craft';
 

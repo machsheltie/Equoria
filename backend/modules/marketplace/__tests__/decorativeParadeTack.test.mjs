@@ -13,8 +13,8 @@
 // runs at LOG_LEVEL=error per setup.mjs which keeps test output clean.
 
 import { describe, it, expect } from '@jest/globals';
-import { TACK_INVENTORY, resolveTackBonus } from '../modules/services/controllers/tackShopController.mjs';
-import { simulateCompetition } from '../logic/simulateCompetition.mjs';
+import { TACK_INVENTORY, resolveTackBonus } from '../../services/controllers/tackShopController.mjs';
+import { simulateCompetition } from '../../../logic/simulateCompetition.mjs';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
