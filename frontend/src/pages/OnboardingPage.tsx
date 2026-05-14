@@ -2,7 +2,7 @@
  * OnboardingPage — Celestial Night Rebuild (Epic 25-2)
  *
  * 3-step new-player wizard, fully restyled to Celestial Night.
- * StarfieldBackground visible behind the wizard panel.
+ * PageBackground visible behind the wizard panel.
  *
  * Steps:
  *   0. Welcome     — atmospheric intro

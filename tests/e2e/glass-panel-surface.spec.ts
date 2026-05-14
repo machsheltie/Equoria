@@ -22,10 +22,11 @@ test.describe('Glass Panel Surface — Story 22-4', () => {
     // Wait for CelestialThemeProvider's useLayoutEffect to apply
     // body.celestial. Without this, the test races against React mount
     // and fails on firefox/webkit before the class is set.
-    await expect.poll(
-      () => page.evaluate(() => document.body.classList.contains('celestial')),
-      { timeout: 10_000 }
-    ).toBe(true);
+    await expect
+      .poll(() => page.evaluate(() => document.body.classList.contains('celestial')), {
+        timeout: 10_000,
+      })
+      .toBe(true);
 
     // Inject a test fixture with all three glass panel variants into the DOM
     await page.evaluate(() => {
@@ -54,28 +55,27 @@ test.describe('Glass Panel Surface — Story 22-4', () => {
     expect(subtleBlur === 'none' || subtleBlur === '').toBe(true);
   });
 
-  // Screenshot variant of the above — quarantined until a CI-stable
-  // baseline is generated and committed (see follow-up issue).
-  test(
-    'glass-panel-subtle screenshot — all three variants visible simultaneously',
-    async ({ page }) => {
-      await page.goto('/', { waitUntil: 'domcontentloaded' });
-      await page.evaluate(() => {
-        const fixture = document.createElement('div');
-        fixture.id = 'glass-test-fixture';
-        fixture.style.cssText = 'position:fixed;top:0;left:0;width:400px;z-index:9999;padding:16px;';
-        fixture.innerHTML = `
+  // Screenshot test — all three glass-panel variants simultaneously.
+  // Baseline committed for Linux/chromium CI in commit 5d662c3b (2026-05-08).
+  test('glass-panel-subtle screenshot — all three variants visible simultaneously', async ({
+    page,
+  }) => {
+    await page.goto('/', { waitUntil: 'domcontentloaded' });
+    await page.evaluate(() => {
+      const fixture = document.createElement('div');
+      fixture.id = 'glass-test-fixture';
+      fixture.style.cssText = 'position:fixed;top:0;left:0;width:400px;z-index:9999;padding:16px;';
+      fixture.innerHTML = `
         <div class="glass-panel"        data-testid="gp-standard">Standard</div>
         <div class="glass-panel-heavy"  data-testid="gp-heavy">Heavy</div>
         <div class="glass-panel-subtle" data-testid="gp-subtle">Subtle</div>
       `;
-        document.body.appendChild(fixture);
-      });
-      await expect(page).toHaveScreenshot('glass-panels-all-variants.png', {
-        maxDiffPixelRatio: 0.005,
-      });
-    }
-  );
+      document.body.appendChild(fixture);
+    });
+    await expect(page).toHaveScreenshot('glass-panels-all-variants.png', {
+      maxDiffPixelRatio: 0.005,
+    });
+  });
 
   /**
    * Verify .glass-panel applies blur (has backdrop-filter set to non-none).
@@ -106,11 +106,8 @@ test.describe('Glass Panel Surface — Story 22-4', () => {
    * Screenshot test — all three variants visible simultaneously.
    * Covers: login page at 1440px (glass panel centered over PageBackground).
    */
-  // Quarantined: no committed snapshot baseline. toHaveScreenshot() on first
-  // run generates the baseline and fails until one is committed. Generating
-  // CI-stable baselines requires running playwright on the CI runner image
-  // (Linux + chromium) and committing the resulting .png. Tracked as a
-  // follow-up issue alongside Equoria-nj0y.
+  // Screenshot test — login page at 1440px (glass panel over PageBackground).
+  // Baseline committed for Linux/chromium CI in commit 5d662c3b (2026-05-08).
   test('login page at 1440px — glass panel over background (screenshot)', async ({ page }) => {
     await page.setViewportSize({ width: 1440, height: 900 });
     // Go to login (unauthenticated) — uses scene="auth" PageBackground + centered glass panel
@@ -127,7 +124,8 @@ test.describe('Glass Panel Surface — Story 22-4', () => {
   /**
    * Screenshot test — mobile viewport (375px).
    */
-  // Quarantined: same baseline-missing issue as the 1440px screenshot test.
+  // Screenshot test — login page at 375px (glass panel responsive).
+  // Baseline committed for Linux/chromium CI in commit 5d662c3b (2026-05-08).
   test('login page at 375px — glass panel responsive (screenshot)', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto('/login', { waitUntil: 'domcontentloaded' });
