@@ -20,11 +20,7 @@ const FoalDetailPage: React.FC = () => {
   const foalId = rawId ? Number.parseInt(rawId, 10) : NaN;
   const isValidId = Number.isFinite(foalId) && foalId > 0;
 
-  const {
-    data: foal,
-    isLoading: loadingFoal,
-    error: foalError,
-  } = useFoal(isValidId ? foalId : 0);
+  const { data: foal, isLoading: loadingFoal, error: foalError } = useFoal(isValidId ? foalId : 0);
 
   const {
     data: development,
@@ -54,9 +50,7 @@ const FoalDetailPage: React.FC = () => {
       <div className="flex items-center justify-center py-20">
         <div className="text-center space-y-3">
           <Loader2 className="mx-auto h-8 w-8 animate-spin text-[var(--gold-400)]" />
-          <p className="text-sm text-[var(--text-muted)] font-[var(--font-body)]">
-            Loading foal…
-          </p>
+          <p className="text-sm text-[var(--text-muted)] font-[var(--font-body)]">Loading foal…</p>
         </div>
       </div>
     );
@@ -114,9 +108,7 @@ const FoalDetailPage: React.FC = () => {
 
       {/* Development panel */}
       <div className="glass-panel rounded-2xl border border-[rgba(201,162,39,0.15)] p-6">
-        <h2 className="text-lg font-[var(--font-display)] text-[var(--cream)] mb-4">
-          Development
-        </h2>
+        <h2 className="text-lg font-[var(--font-display)] text-[var(--cream)] mb-4">Development</h2>
         {devError || !development ? (
           <p className="text-sm text-[var(--text-muted)]">No development data available yet.</p>
         ) : (
@@ -129,8 +121,8 @@ const FoalDetailPage: React.FC = () => {
               value={String(
                 Object.values(development.completedActivities ?? {}).reduce(
                   (sum, list) => sum + (Array.isArray(list) ? list.length : 0),
-                  0,
-                ),
+                  0
+                )
               )}
             />
           </div>
