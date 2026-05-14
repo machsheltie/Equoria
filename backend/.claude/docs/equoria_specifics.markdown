@@ -110,7 +110,6 @@
 ### Current Components
 
 - **TraitDisplay**: Advanced trait visualization with modal details
-
   - Color-coded trait categories (positive/negative/hidden)
   - Interactive modals with gameplay effect descriptions
   - Full accessibility support with screen reader compatibility

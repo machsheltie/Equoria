@@ -29,7 +29,6 @@ All API responses follow a consistent format:
 ### Horse Management
 
 - **GET /api/horses/:id**: Retrieve horse by ID with relationships
-
   - Response: Horse object with breed, owner, stable, user relations
   - Status: 200 (success), 404 (not found), 500 (server error)
 
@@ -41,17 +40,14 @@ All API responses follow a consistent format:
 ### User Management
 
 - **GET /api/users/:id**: Retrieve user by UUID
-
   - Response: User object with basic information
   - Status: 200 (success), 404 (not found), 500 (server error)
 
 - **GET /api/users/:id/horses**: Get user with all horses
-
   - Response: User object with horses array including relations
   - Status: 200 (success), 404 (not found), 500 (server error)
 
 - **POST /api/users**: Create new user
-
   - Body: `{ name, email, money, level, xp, settings }`
   - Response: Created user object with UUID
   - Status: 201 (created), 400 (validation error), 500 (server error)
@@ -64,13 +60,11 @@ All API responses follow a consistent format:
 ### Milestone System
 
 - **POST /api/milestones/evaluate-milestone**: Evaluate milestone for a horse
-
   - Body: `{ horseId, milestoneType, groomId?, bondScore?, taskLog?, forceReevaluate? }`
   - Response: Milestone evaluation result with trait determination
   - Status: 200 (success), 400 (validation error), 404 (horse not found)
 
 - **GET /api/milestones/milestone-status/:horseId**: Get milestone evaluation status
-
   - Response: Horse milestone status, available milestones, completed evaluations
   - Status: 200 (success), 404 (horse not found)
 
@@ -81,24 +75,20 @@ All API responses follow a consistent format:
 ### Training System
 
 - **POST /api/training/check-eligibility**: Check training eligibility
-
   - Body: `{ horseId, discipline }`
   - Response: `{ eligible: boolean, reason?: string }`
   - Status: 200 (success), 400 (validation error)
 
 - **POST /api/training/train**: Execute training session
-
   - Body: `{ horseId, discipline }`
   - Response: `{ success: true, message: "...", updatedScore: number, nextEligibleDate: string }`
   - Status: 200 (success), 400 (training not allowed), 500 (server error)
 
 - **GET /api/training/status/:horseId/:discipline**: Get training status
-
   - Response: Detailed training status with cooldown information
   - Status: 200 (success), 404 (horse not found)
 
 - **GET /api/training/horse/:horseId/all-status**: Get multi-discipline status
-
   - Response: Training status for all disciplines
   - Status: 200 (success), 404 (horse not found)
 
@@ -109,13 +99,11 @@ All API responses follow a consistent format:
 ### Competition System
 
 - **POST /api/competition/enter-show**: Enter horses in competition
-
   - Body: `{ showId, horseIds: [number] }`
   - Response: Competition results with placements and scores
   - Status: 200 (success), 400 (validation error), 500 (server error)
 
 - **GET /api/competition/show/:showId/results**: Get show results
-
   - Response: Array of results with horse and show details
   - Status: 200 (success), 404 (show not found)
 
@@ -126,19 +114,16 @@ All API responses follow a consistent format:
 ### Authentication
 
 - **POST /api/auth/register**: Register new user
-
   - Body: `{ email, password, name }`
   - Response: User object with JWT token
   - Status: 201 (created), 400 (validation error), 409 (user exists)
 
 - **POST /api/auth/login**: User login
-
   - Body: `{ email, password }`
   - Response: User object with JWT token
   - Status: 200 (success), 401 (invalid credentials), 400 (validation error)
 
 - **POST /api/auth/refresh**: Refresh JWT token
-
   - Body: `{ refreshToken }`
   - Response: New access token
   - Status: 200 (success), 401 (invalid token)
@@ -151,13 +136,11 @@ All API responses follow a consistent format:
 ### Breeding System
 
 - **POST /api/breeding/breed**: Create foal from breeding pair
-
   - Body: `{ sireId, damId, userId }`
   - Response: Created foal with genetics and traits
   - Status: 201 (created), 400 (validation error), 500 (server error)
 
 - **GET /api/foals/:id/development**: Get foal development status
-
   - Response: Development progress with bonding and stress metrics
   - Status: 200 (success), 404 (foal not found)
 
