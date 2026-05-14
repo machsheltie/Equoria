@@ -190,15 +190,15 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
         .expect(201);
       trackUser(response1);
 
-      // Second registration with same email
+      // Second registration with same email — expect 409 Conflict (Equoria-t0wk)
       const response = await request(app)
         .post('/api/v1/auth/register')
         .set('Origin', 'http://localhost:3000')
         .send(userData)
-        .expect(400);
+        .expect(409);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('User with this email or username already exists');
+      expect(response.body.message).toContain('already exists');
     });
   });
 

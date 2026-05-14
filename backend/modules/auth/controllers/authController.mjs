@@ -81,7 +81,8 @@ export const register = async (req, res, next) => {
       throw new ValidationError('Username, email, and password are required');
     }
 
-    // Check if user already exists
+    // Check if user already exists (fast-path check; P2002 catch below handles the
+    // race-condition window where two concurrent requests both pass this check)
     const existingUser = await prisma.user.findFirst({
       where: {
         OR: [{ email }, { username }],
@@ -89,7 +90,12 @@ export const register = async (req, res, next) => {
     });
 
     if (existingUser) {
-      throw new AppError('User with this email or username already exists', 400);
+      // Indicate which identifier conflicts so the frontend can route to the right field
+      const emailConflict = existingUser.email === email;
+      const conflictMsg = emailConflict
+        ? 'User with this email already exists'
+        : 'User with this username already exists';
+      throw new AppError(conflictMsg, 409);
     }
 
     // Hash password with configurable salt rounds (default: 12 for 2025 security standards)
@@ -100,27 +106,42 @@ export const register = async (req, res, next) => {
 
     // Create user with starter kit in inventory and starter bonus coins
     const startingMoney = (money === undefined ? 1000 : money) + STARTER_BONUS_COINS;
-    const user = await prisma.user.create({
-      data: {
-        username,
-        email,
-        password: hashedPassword,
-        firstName: firstName || null,
-        lastName: lastName || null,
-        money: startingMoney,
-        level: level === undefined ? 1 : level,
-        xp: xp === undefined ? 0 : xp,
-        settings: settings || {
-          completedOnboarding: false,
-          inventory: STARTER_KIT_INVENTORY,
-          // Starter crafting materials — enough to craft at least one Tier 0 recipe (4.3 fix)
-          // Tier 0 recipes: simple-bridle (leather:1, dye:1, cost:100),
-          //                 basic-halter (leather:1, cost:75),
-          //                 cloth-blanket (cloth:2, dye:2, thread:1, cost:120)
-          craftingMaterials: { leather: 2, cloth: 2, dye: 2, metal: 0, thread: 1 },
+    let user;
+    try {
+      user = await prisma.user.create({
+        data: {
+          username,
+          email,
+          password: hashedPassword,
+          firstName: firstName || null,
+          lastName: lastName || null,
+          money: startingMoney,
+          level: level === undefined ? 1 : level,
+          xp: xp === undefined ? 0 : xp,
+          settings: settings || {
+            completedOnboarding: false,
+            inventory: STARTER_KIT_INVENTORY,
+            // Starter crafting materials — enough to craft at least one Tier 0 recipe (4.3 fix)
+            // Tier 0 recipes: simple-bridle (leather:1, dye:1, cost:100),
+            //                 basic-halter (leather:1, cost:75),
+            //                 cloth-blanket (cloth:2, dye:2, thread:1, cost:120)
+            craftingMaterials: { leather: 2, cloth: 2, dye: 2, metal: 0, thread: 1 },
+          },
         },
-      },
-    });
+      });
+    } catch (createError) {
+      // P2002 = unique constraint violation — race condition where two concurrent
+      // registrations both passed the findFirst check above. Return the same
+      // 409 + canonical message format so the frontend isDuplicate check fires.
+      if (createError.code === 'P2002') {
+        const target = Array.isArray(createError.meta?.target) ? createError.meta.target : [];
+        const conflictMsg = target.includes('email')
+          ? 'User with this email already exists'
+          : 'User with this username already exists';
+        throw new AppError(conflictMsg, 409);
+      }
+      throw createError;
+    }
 
     // Create starter horse for the new user (age 3, basic balanced stats — Story 15-2)
     try {
@@ -514,7 +535,15 @@ export const updateProfile = async (req, res, next) => {
       });
 
       if (existingUser) {
-        throw new AppError('Username or email already in use', 400);
+        // Indicate which identifier conflicts. Use canonical phrasing so the
+        // frontend isDuplicate check ("already exists" | "already in use" | "taken")
+        // fires reliably. 409 Conflict matches the resource-conflict semantics and
+        // aligns with other duplicate-resource errors in the app.
+        const emailConflict = email && existingUser.email === email;
+        const conflictMsg = emailConflict
+          ? 'User with this email already exists'
+          : 'User with this username already exists';
+        throw new AppError(conflictMsg, 409);
       }
     }
 

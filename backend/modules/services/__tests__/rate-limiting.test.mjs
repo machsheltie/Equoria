@@ -271,23 +271,23 @@ describe('Rate Limiting System', () => {
         .set('Origin', 'http://localhost:3000')
         .set('X-Forwarded-For', ip)
         .send(baseData);
-      // Seed may succeed (201) or already be rate-limited (429)
-      expect([201, 400, 429]).toContain(seedResponse.status);
+      // Seed may succeed (201), be a duplicate (409), or already be rate-limited (429)
+      expect([201, 409, 429]).toContain(seedResponse.status);
       if (seedResponse.status === 429) {
         return;
       }
 
       // Make 5 failed registrations using the duplicate email — failures count toward rate limit
       // because authRateLimiter uses skipSuccessfulRequests:true (only failures are counted).
-      // Duplicate registration returns 400 (AppError: 'User with this email or username already exists')
+      // Duplicate registration returns 409 Conflict (Equoria-t0wk: changed from 400)
       for (let i = 0; i < 5; i++) {
         const response = await request(app)
           .post('/api/v1/auth/register')
           .set('Origin', 'http://localhost:3000')
           .set('X-Forwarded-For', ip)
-          .send(baseData); // same data → duplicate → 400 failure → counts
+          .send(baseData); // same data → duplicate → 409 failure → counts
 
-        expect([400, 429]).toContain(response.status);
+        expect([409, 429]).toContain(response.status);
         if (response.status === 429) {
           // Rate limit triggered early — test still valid
           return;

@@ -189,10 +189,10 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
       const response1 = await authPost('/api/v1/auth/register').send(userData).expect(201);
       trackUser(response1);
 
-      // Second registration with same email
+      // Second registration with same email — expect 409 Conflict (Equoria-t0wk)
       const response = await authPost('/api/v1/auth/register')
         .send({ ...userData, username: `other_${Date.now()}_${Math.random().toString(36).slice(2, 6)}` }) // Use a different username
-        .expect(400);
+        .expect(409);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('already exists');

@@ -13,6 +13,7 @@ import {
   getBreedingColorPrediction,
   getHorseCompetitionHistory,
 } from '../controllers/horseController.mjs';
+import { trainingAnalyticsService } from '../../../services/trainingAnalyticsService.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership, findOwnedResource } from '../../../middleware/ownership.mjs';
 import {
@@ -1620,9 +1621,8 @@ router.get(
     try {
       const horseId = parseInt(req.params.id, 10);
 
-      const { generateBreedingData } = await import(
-        '../../../services/breedingPredictionService.mjs'
-      );
+      const { generateBreedingData } =
+        await import('../../../services/breedingPredictionService.mjs');
       const breedingData = await generateBreedingData(horseId);
 
       res.json({
@@ -1720,6 +1720,57 @@ router.get(
       return res.status(500).json({
         success: false,
         message: 'Internal server error',
+        error: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',
+      });
+    }
+  },
+);
+
+/**
+ * GET /horses/:id/training-history
+ *
+ * Returns training history and discipline analytics for a specific horse.
+ * Delegates to trainingAnalyticsService.getTrainingHistory() which queries
+ * TrainingLog records for the horse.
+ *
+ * Wired in Equoria-kbr0: the service existed but had no HTTP route.
+ *
+ * Security: Validates horse ownership before returning training data.
+ */
+router.get(
+  '/:id/training-history',
+  queryRateLimiter,
+  authenticateToken,
+  [
+    param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
+    (req, res, next) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res
+          .status(400)
+          .json({ success: false, message: 'Validation failed', errors: errors.array() });
+      }
+      return next();
+    },
+  ],
+  requireOwnership('horse'),
+  async (req, res) => {
+    try {
+      const horseId = parseInt(req.params.id, 10);
+      const data = await trainingAnalyticsService.getTrainingHistory(horseId);
+      return res.json({
+        success: true,
+        message: 'Training history retrieved successfully',
+        data,
+      });
+    } catch (error) {
+      if (error.message && error.message.includes('not found')) {
+        return res.status(404).json({ success: false, message: error.message });
+      }
+      logger.error(`[horseRoutes GET /:id/training-history] Error: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve training history',
         error: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',
       });
     }
