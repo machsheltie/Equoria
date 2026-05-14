@@ -9,7 +9,7 @@
  * Real DB, real auth, real CSRF — no bypass headers, no API mocks.
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll } from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -20,6 +20,13 @@ describe('POST /api/feed-shop/purchase (bulk pack purchase)', () => {
   let user;
   let token;
   let csrf;
+
+  // Fetch CSRF once per suite — token is session-scoped, not user-scoped.
+  // Fetching in beforeEach created 7 extra HTTP server instances that lingered
+  // at teardown, causing workers to be force-killed in CI (Equoria-6ksu).
+  beforeAll(async () => {
+    csrf = await fetchCsrf(app);
+  }, 30000);
 
   beforeEach(async () => {
     user = await prisma.user.create({
@@ -34,11 +41,14 @@ describe('POST /api/feed-shop/purchase (bulk pack purchase)', () => {
       },
     });
     token = generateTestToken({ id: user.id, email: user.email, role: 'user' });
-    csrf = await fetchCsrf(app);
   });
 
   afterEach(async () => {
     await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
+  });
+
+  afterAll(async () => {
+    await prisma.$disconnect();
   });
 
   const post = body =>

@@ -68,6 +68,7 @@ describe('Inventory Equip — same-category swap', () => {
     if (testUser) {
       await prisma.user.deleteMany({ where: { id: testUser.id } });
     }
+    await prisma.$disconnect();
   });
 
   it('equips saddleA to the horse correctly', async () => {

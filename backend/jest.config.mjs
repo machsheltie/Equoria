@@ -117,6 +117,8 @@ export default {
   // --runInBand. Enable via `DETECT_OPEN_HANDLES=true npm test` when needed.)
   detectOpenHandles: process.env.DETECT_OPEN_HANDLES === 'true',
 
-  // Force close after tests
-  openHandlesTimeout: 1000,
+  // Force close after tests. 10 s gives CI (remote DB, higher latency) enough
+  // time for Prisma $disconnect and HTTP keep-alive connections to drain before
+  // Jest force-kills the worker (Equoria-6ksu).
+  openHandlesTimeout: 10000,
 };

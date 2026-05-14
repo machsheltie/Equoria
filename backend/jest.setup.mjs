@@ -336,7 +336,8 @@ export const auditAuth = auditLog('authentication', 'high');
 export const auditAdmin = auditLog('admin_operation', 'high');
 
 /**
- * Clean up old cache entries periodically
+ * Clean up old cache entries periodically.
+ * .unref() prevents this timer from blocking worker process exit in Jest.
  */
 setInterval(
   () => {
@@ -354,7 +355,7 @@ setInterval(
     }
   },
   5 * 60 * 1000,
-); // Clean every 5 minutes
+).unref(); // Clean every 5 minutes; .unref() lets workers exit without waiting
 
 export default {
   auditLog,
