@@ -352,6 +352,8 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
             age: true,
             sex: true,
             healthStatus: true,
+            lastFedDate: true,
+            lastVettedDate: true,
             forSale: true,
             salePrice: true,
             breedId: true,
