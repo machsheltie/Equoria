@@ -9,7 +9,7 @@ on:
       - 'backend/app.mjs'
       - 'frontend/src/lib/api-client.ts'
       - 'frontend/src/hooks/useAuth.ts'
-      - 'backend/__tests__/integration/auth-cookies.test.mjs'
+      - 'backend/modules/auth/__tests__/auth-cookies.test.mjs'
       - 'frontend/src/**/__tests__/**'
       - '.github/workflows/test-auth-cookies.yml'
   pull_request:
@@ -72,7 +72,7 @@ jobs:
         # --forceExit prevents jest from waiting on lingering handles (scheduler,
         # rate-limit cleanup intervals, Prisma pool) which was hanging this job
         # for 2h+. --runInBand avoids parallel-worker DB contention in CI.
-        run: npm test -- __tests__/integration/auth-cookies.test.mjs --verbose --runInBand --forceExit
+        run: npm test -- modules/auth/__tests__/auth-cookies.test.mjs --verbose --runInBand --forceExit
 
       - name: Upload backend test results
         if: always()

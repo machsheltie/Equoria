@@ -108,9 +108,8 @@ router.post(
       const probabilities = calculateEnhancedGeneticProbabilities(stallion, mare);
 
       // Calculate compatibility analysis
-      const { calculateGeneticCompatibilityScore } = await import(
-        '../../../services/enhancedGeneticProbabilityService.mjs'
-      );
+      const { calculateGeneticCompatibilityScore } =
+        await import('../../../services/enhancedGeneticProbabilityService.mjs');
       const compatibilityAnalysis = calculateGeneticCompatibilityScore(stallion, mare);
 
       // Add lineage analysis if requested
@@ -545,9 +544,8 @@ router.post(
       }
 
       // Import the compatibility assessment function
-      const { assessBreedingPairCompatibility } = await import(
-        '../../../services/geneticDiversityTrackingService.mjs'
-      );
+      const { assessBreedingPairCompatibility } =
+        await import('../../../services/geneticDiversityTrackingService.mjs');
 
       const compatibility = await assessBreedingPairCompatibility(
         parseInt(stallionId),

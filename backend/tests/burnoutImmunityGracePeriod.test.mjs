@@ -42,9 +42,8 @@ jest.unstable_mockModule('../utils/logger.mjs', () => ({
 }));
 
 // Import the functions after mocking
-const { updateConsecutiveDays, checkBurnoutImmunity, updateStreakTracking } = await import(
-  '../utils/groomBondingSystem.mjs'
-);
+const { updateConsecutiveDays, checkBurnoutImmunity, updateStreakTracking } =
+  await import('../utils/groomBondingSystem.mjs');
 
 const { GROOM_CONFIG } = await import('../config/groomConfig.mjs');
 

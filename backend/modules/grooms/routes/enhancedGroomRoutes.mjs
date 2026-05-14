@@ -109,9 +109,8 @@ router.get(
  */
 router.get('/interactions/types', async (req, res) => {
   try {
-    const { ENHANCED_INTERACTIONS } = await import(
-      '../../../services/enhancedGroomInteractions.mjs'
-    );
+    const { ENHANCED_INTERACTIONS } =
+      await import('../../../services/enhancedGroomInteractions.mjs');
 
     const interactionTypes = Object.entries(ENHANCED_INTERACTIONS).map(([_key, interaction]) => ({
       id: interaction.id,
