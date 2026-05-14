@@ -329,8 +329,9 @@ export async function getDiscoveryStatus(req, res) {
     }
 
     // Import discovery functions
-    const { checkDiscoveryConditions, checkEnrichmentDiscoveries } =
-      await import('../../../utils/traitDiscovery.mjs');
+    const { checkDiscoveryConditions, checkEnrichmentDiscoveries } = await import(
+      '../../../utils/traitDiscovery.mjs'
+    );
 
     // Check current conditions
     const metConditions = await checkDiscoveryConditions(horse);

@@ -855,8 +855,9 @@ export async function getGroomProfile(req, res) {
     }
 
     // Calculate personality compatibility with current assignments
-    const { calculatePersonalityCompatibility } =
-      await import('../../../utils/groomPersonalityTraitBonus.mjs');
+    const { calculatePersonalityCompatibility } = await import(
+      '../../../utils/groomPersonalityTraitBonus.mjs'
+    );
     const personalityCompatibility = groom.groomAssignments
       .map(assignment => {
         if (assignment.foal.temperament) {

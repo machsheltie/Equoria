@@ -577,8 +577,9 @@ export async function getHorsePersonalityImpact(req, res) {
     });
 
     // Calculate compatibility for each groom
-    const { getCompatibleGroomsForTemperament, calculatePersonalityCompatibility } =
-      await import('../../../utils/groomPersonalityTraitBonus.mjs');
+    const { getCompatibleGroomsForTemperament, calculatePersonalityCompatibility } = await import(
+      '../../../utils/groomPersonalityTraitBonus.mjs'
+    );
 
     const groomCompatibility = grooms.map(groom => {
       const compatibility = calculatePersonalityCompatibility(
@@ -1258,8 +1259,9 @@ export async function getBreedingColorPrediction(req, res) {
     }
 
     // Import and call the pure prediction service
-    const { predictBreedingColors } =
-      await import('../services/breedingColorPredictionService.mjs');
+    const { predictBreedingColors } = await import(
+      '../services/breedingColorPredictionService.mjs'
+    );
 
     const prediction = predictBreedingColors(
       sire.colorGenotype,
