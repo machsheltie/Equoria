@@ -180,6 +180,59 @@ test.describe('NavPanel active item — gold border indicator', () => {
 });
 
 // ────────────────────────────────────────────────────────────────────────────
+// Equoria-ixb7: Viewport tests for remaining 4 auth pages (Register/ForgotPw/ResetPw/VerifyEmail)
+// Same pattern as E2E-001–006 for LoginPage. No auth required.
+// ────────────────────────────────────────────────────────────────────────────
+
+const AUTH_PAGES = [
+  { name: 'Register', path: '/register' },
+  { name: 'ForgotPassword', path: '/forgot-password' },
+  { name: 'ResetPassword', path: '/reset-password' },
+  { name: 'VerifyEmail', path: '/verify-email' },
+] as const;
+
+let eid = 11;
+for (const { name, path } of AUTH_PAGES) {
+  const e375_attached = eid++;
+  const e375_panel = eid++;
+  const e1440_attached = eid++;
+
+  test.describe(`${name} page chrome — 375px mobile`, () => {
+    test.use({ viewport: { width: 375, height: 812 } });
+
+    test(`22-7-E2E-${String(e375_attached).padStart(3, '0')}: ${name} — PageBackground attached at 375px`, async ({
+      page,
+    }) => {
+      await page.goto(path, { waitUntil: 'domcontentloaded' });
+      await expect(page.locator('[data-testid="page-background"]')).toBeAttached();
+    });
+
+    test(`22-7-E2E-${String(e375_panel).padStart(3, '0')}: ${name} — glass panel visible within 375px viewport`, async ({
+      page,
+    }) => {
+      await page.goto(path, { waitUntil: 'domcontentloaded' });
+      const panel = page.locator('.glass-panel').first();
+      await expect(panel).toBeVisible();
+      const box = await panel.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.x).toBeGreaterThanOrEqual(0);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(375 + 1);
+    });
+  });
+
+  test.describe(`${name} page chrome — 1440px desktop`, () => {
+    test.use({ viewport: { width: 1440, height: 900 } });
+
+    test(`22-7-E2E-${String(e1440_attached).padStart(3, '0')}: ${name} — PageBackground attached at 1440px`, async ({
+      page,
+    }) => {
+      await page.goto(path, { waitUntil: 'domcontentloaded' });
+      await expect(page.locator('[data-testid="page-background"]')).toBeAttached();
+    });
+  });
+}
+
+// ────────────────────────────────────────────────────────────────────────────
 // AC5: AuthLayout logo uses Cinzel font (not a fallback serif/sans)
 // ────────────────────────────────────────────────────────────────────────────
 test.describe('AuthLayout Celestial Night styling', () => {

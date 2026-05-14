@@ -12,7 +12,7 @@ import {
  * Ensures all 12 canonical breeds exist in the database.
  * Creates any missing breeds with the correct ID, name, and description.
  */
-async function ensureCanonicalBreeds() {
+export async function ensureCanonicalBreeds() {
   const results = { created: 0, existing: 0, errors: [] };
 
   for (const breed of CANONICAL_BREEDS) {

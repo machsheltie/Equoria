@@ -1,5 +1,6 @@
 // Canonical breed genetic profile data for all 12 Equoria breeds.
-// Contains rating_profiles (conformation, gaits, gaited config), starter_stats, and temperament_weights.
+// Contains rating_profiles (conformation, gaits, gaited config), starter_stats, temperament_weights,
+// and coat color genetics (allele_weights, allowed_alleles, shade_bias, marking_bias).
 // Source: PRD-02 §3.1/§3.2, PRD-03 §7.3, samples/BreedData/*.txt
 //
 // DATA VERSION: 4 (2026-03-27) — Pre-31D cleanup sprint:
@@ -97,6 +98,8 @@ export const CANONICAL_BREEDS = [
   },
 ];
 
+import { BREED_COAT_COLOR_GENETICS } from './breedCoatColorGenetics.mjs';
+
 /**
  * 11 temperament types used across all breeds.
  * Weights per breed sum to 100.
@@ -116,7 +119,8 @@ export const TEMPERAMENT_TYPES = [
 ];
 
 /**
- * Complete breed genetic profiles keyed by breed ID.
+ * Base breed profiles (conformation, gaits, starter stats, temperament).
+ * Merged with BREED_COAT_COLOR_GENETICS below before export.
  * Each entry contains:
  *   - rating_profiles.conformation: 8 body regions with { mean, std_dev }
  *   - rating_profiles.gaits: 5 gait scores (gaiting null for non-gaited)
@@ -125,7 +129,7 @@ export const TEMPERAMENT_TYPES = [
  *   - starter_stats: 12 horse stats with { mean, std_dev } for store purchases
  *   - temperament_weights: 11 types summing to 100
  */
-export const BREED_GENETIC_PROFILES = {
+const BASE_BREED_PROFILES = {
   // Thoroughbred (ID 1) — High-energy racing breed
   // Conformation/gait std_dev: uniform defaults (no BreedData file)
   // Starter stats: defaults emphasizing speed/stamina
@@ -767,3 +771,16 @@ export const BREED_GENETIC_PROFILES = {
     },
   },
 };
+
+/**
+ * Complete breed genetic profiles keyed by breed ID.
+ * Merges BASE_BREED_PROFILES with BREED_COAT_COLOR_GENETICS so the population
+ * script writes allele_weights, allowed_alleles, shade_bias, and marking_bias
+ * into the breedGeneticProfile JSONB alongside conformation/gait/stats data.
+ */
+export const BREED_GENETIC_PROFILES = Object.fromEntries(
+  Object.entries(BASE_BREED_PROFILES).map(([id, profile]) => [
+    id,
+    { ...profile, ...(BREED_COAT_COLOR_GENETICS[Number(id)] ?? {}) },
+  ]),
+);
