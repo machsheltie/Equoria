@@ -11,10 +11,7 @@
 
 import { describe, it, expect, beforeAll } from '@jest/globals';
 import prisma from '../../../db/index.mjs';
-import {
-  ensureCanonicalBreeds,
-  populateBreedGeneticProfiles,
-} from '../../../seed/populateBreedGeneticProfiles.mjs';
+import { ensureCanonicalBreeds, populateBreedGeneticProfiles } from '../../../seed/populateBreedGeneticProfiles.mjs';
 import { CANONICAL_BREEDS, BREED_GENETIC_PROFILES } from '../data/breedGeneticProfiles.mjs';
 
 const ALL_BREED_IDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];

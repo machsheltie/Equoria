@@ -44,10 +44,7 @@ import { describe, it, expect } from '@jest/globals';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
-import {
-  CANONICAL_BREEDS,
-  BREED_GENETIC_PROFILES,
-} from '../data/breedGeneticProfiles.mjs';
+import { CANONICAL_BREEDS, BREED_GENETIC_PROFILES } from '../data/breedGeneticProfiles.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -57,12 +54,28 @@ const PROFILES_PATH = resolve(__dirname, '../../../data/breedProfiles.json');
 const JSON_PROFILES = JSON.parse(readFileSync(PROFILES_PATH, 'utf8'));
 
 const EXPECTED_CONFORMATION_REGIONS = [
-  'head', 'neck', 'shoulders', 'back', 'hindquarters', 'legs', 'hooves', 'topline',
+  'head',
+  'neck',
+  'shoulders',
+  'back',
+  'hindquarters',
+  'legs',
+  'hooves',
+  'topline',
 ];
 const EXPECTED_GAITS = ['walk', 'trot', 'canter', 'gallop', 'gaiting'];
 const EXPECTED_TEMPERAMENT_KEYS = [
-  'Spirited', 'Nervous', 'Calm', 'Bold', 'Steady',
-  'Independent', 'Reactive', 'Stubborn', 'Playful', 'Lazy', 'Aggressive',
+  'Spirited',
+  'Nervous',
+  'Calm',
+  'Bold',
+  'Steady',
+  'Independent',
+  'Reactive',
+  'Stubborn',
+  'Playful',
+  'Lazy',
+  'Aggressive',
 ];
 
 // ---------------------------------------------------------------------------
@@ -163,7 +176,7 @@ describe('Known divergence documentation — Arabian (ID 2) conformation means',
     const jsonMean = JSON_PROFILES['Arabian'].rating_profiles.conformation.head.mean;
 
     // Document the known state: .mjs has enriched BreedData value, JSON has old value
-    expect(mjsMean).toBe(95);  // BreedData/Arabian.txt value
+    expect(mjsMean).toBe(95); // BreedData/Arabian.txt value
     expect(jsonMean).toBe(76); // Old generic value — not updated when .mjs was enriched
 
     // Assert the values differ so CI catches if someone accidentally "fixes" one side

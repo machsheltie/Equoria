@@ -41,10 +41,7 @@ import { describe, it, expect } from '@jest/globals';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
-import {
-  CANONICAL_BREEDS,
-  BREED_GENETIC_PROFILES,
-} from '../data/breedGeneticProfiles.mjs';
+import { CANONICAL_BREEDS, BREED_GENETIC_PROFILES } from '../data/breedGeneticProfiles.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -54,8 +51,18 @@ const STARTER_STATS_PATH = resolve(__dirname, '../../../data/breedStarterStats.j
 const JSON_STARTER_STATS = JSON.parse(readFileSync(STARTER_STATS_PATH, 'utf8'));
 
 const EXPECTED_STAT_NAMES = [
-  'agility', 'balance', 'boldness', 'endurance', 'flexibility',
-  'focus', 'intelligence', 'obedience', 'precision', 'speed', 'stamina', 'strength',
+  'agility',
+  'balance',
+  'boldness',
+  'endurance',
+  'flexibility',
+  'focus',
+  'intelligence',
+  'obedience',
+  'precision',
+  'speed',
+  'stamina',
+  'strength',
 ];
 
 // ---------------------------------------------------------------------------
