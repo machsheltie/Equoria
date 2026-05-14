@@ -275,9 +275,7 @@ test.describe('Path 3: Horse detail smoke', () => {
     // Core detail section does NOT render BetaExcludedNotice for the main section
     // (Vet history IS intentionally beta-excluded, but the overview should not be)
     const coreSection = page.locator('[data-testid="horse-detail-overview"]');
-    const coreExists = await coreSection.count();
-    if (coreExists > 0) {
-      await expect(coreSection).not.toContainText('Not available in this beta');
-    }
+    await expect(coreSection).toBeVisible({ timeout: 5000 });
+    await expect(coreSection).not.toContainText('Not available in this beta');
   });
 });

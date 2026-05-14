@@ -878,7 +878,7 @@ const HorseDetailPage: React.FC = () => {
 
 // Overview Tab Component
 const OverviewTab: React.FC<{ horse: Horse }> = ({ horse }) => (
-  <div className="space-y-6">
+  <div className="space-y-6" data-testid="horse-detail-overview">
     <div>
       <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-3">Current Status</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
