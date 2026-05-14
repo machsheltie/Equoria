@@ -155,7 +155,7 @@ const CompetitionBrowserPage = (): JSX.Element => {
             className="glass-panel rounded-2xl p-12 flex flex-col items-center justify-center"
             data-testid="loading-spinner"
           >
-            <div className="h-10 w-10 animate-spin rounded-full border-3 border-[rgba(201,162,39,0.3)] border-t-[var(--gold-400)] mb-4" />
+            <div className="h-10 w-10 animate-spin rounded-full border-3 border-[var(--gold-dim)]/30 border-t-[var(--gold-400)] mb-4" />
             <p className="text-sm text-[var(--text-muted)]">Loading competitions...</p>
           </div>
         </main>
@@ -175,7 +175,7 @@ const CompetitionBrowserPage = (): JSX.Element => {
         />
         <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
           <div
-            className="glass-panel rounded-2xl border-[rgba(224,90,90,0.3)] p-8 text-center"
+            className="glass-panel rounded-2xl border-[var(--status-danger)]/30 p-8 text-center"
             data-testid="error-state"
             role="alert"
           >
