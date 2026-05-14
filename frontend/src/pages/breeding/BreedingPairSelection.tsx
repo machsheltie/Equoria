@@ -334,7 +334,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
     <div className="space-y-5">
       {/* Success banner (repeat breeders — no cinematic) */}
       {successMessage && !showFoalCinematic && (
-        <div className="glass-panel rounded-2xl border border-[rgba(16,185,129,0.25)] px-5 py-4">
+        <div className="glass-panel rounded-2xl border border-[var(--status-success)]/25 px-5 py-4">
           <div className="flex items-center gap-3">
             <CheckCircle className="h-5 w-5 text-emerald-400 flex-shrink-0" />
             <p className="text-sm text-[var(--cream)] font-[var(--font-body)]">{successMessage}</p>
@@ -354,7 +354,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
 
       {/* Compatibility API warning */}
       {compatibilityError && selectedSire && selectedDam && (
-        <div className="glass-panel rounded-2xl border border-[rgba(201,162,39,0.2)] px-5 py-3">
+        <div className="glass-panel rounded-2xl border border-[var(--dialog-header-border)] px-5 py-3">
           <div className="flex items-center gap-2">
             <AlertCircle className="h-4 w-4 text-[var(--gold-400)]" />
             <p className="text-xs text-[var(--gold-400)] font-[var(--font-body)]">
@@ -366,7 +366,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
 
       {/* Horse selectors */}
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="glass-panel rounded-2xl border border-[rgba(201,162,39,0.12)] p-4">
+        <div className="glass-panel rounded-2xl border border-[var(--btn-glass-border)] p-4">
           <p className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-[var(--font-body)] mb-3">
             Sire (Stallion)
           </p>
@@ -378,7 +378,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
             title="Select Sire"
           />
         </div>
-        <div className="glass-panel rounded-2xl border border-[rgba(201,162,39,0.12)] p-4">
+        <div className="glass-panel rounded-2xl border border-[var(--btn-glass-border)] p-4">
           <p className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-[var(--font-body)] mb-3">
             Dam (Mare)
           </p>
@@ -404,7 +404,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
 
       {/* Legacy compatibility display (fallback for numeric scores) */}
       {compatibilityData && (
-        <div className="glass-panel rounded-2xl border border-[rgba(201,162,39,0.1)] p-4">
+        <div className="glass-panel rounded-2xl border border-[var(--btn-glass-border)] p-4">
           <CompatibilityDisplay
             compatibility={compatibilityData}
             isLoading={loadingCompatibility}
@@ -414,11 +414,11 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
 
       {/* Breeding Predictions — collapsible */}
       {selectedSire && selectedDam && (
-        <div className="glass-panel rounded-2xl border border-[rgba(201,162,39,0.1)] overflow-hidden">
+        <div className="glass-panel rounded-2xl border border-[var(--btn-glass-border)] overflow-hidden">
           <button
             type="button"
             onClick={() => setShowPredictions((v) => !v)}
-            className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-[rgba(201,162,39,0.04)] transition-colors"
+            className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-[var(--dialog-close-hover-bg)] transition-colors"
           >
             <div className="flex items-center gap-2">
               <Dna className="h-4 w-4 text-[var(--gold-400)]" aria-hidden="true" />
@@ -433,7 +433,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
             )}
           </button>
           {showPredictions && (
-            <div className="px-4 pb-4 border-t border-[rgba(201,162,39,0.1)]">
+            <div className="px-4 pb-4 border-t border-[var(--btn-glass-border)]">
               <BreedingPredictionsPanel sireId={selectedSire.id} damId={selectedDam.id} />
             </div>
           )}
@@ -441,7 +441,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
       )}
 
       {/* Cost breakdown + action row */}
-      <div className="glass-panel rounded-2xl border border-[rgba(201,162,39,0.15)] px-5 py-4">
+      <div className="glass-panel rounded-2xl border border-[var(--glass-border)] px-5 py-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           {/* Cost breakdown */}
           <div className="space-y-1">
@@ -486,7 +486,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
             className={[
               'flex-shrink-0 rounded-full px-8 py-3 text-sm font-bold transition-all',
               'bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)] text-[var(--celestial-navy-900)]',
-              'hover:brightness-110 hover:shadow-[0_0_20px_rgba(201,162,39,0.35)]',
+              'hover:brightness-110 hover:shadow-[var(--glow-gold-strong)]',
               'disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:brightness-100 disabled:hover:shadow-none',
               'font-[var(--font-heading)]',
             ].join(' ')}
