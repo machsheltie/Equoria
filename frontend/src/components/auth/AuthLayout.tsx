@@ -59,7 +59,7 @@ export const AuthHeader: React.FC = () => (
     style={{ background: 'var(--glass-surface-heavy-bg)', borderColor: 'var(--border-default)' }}
   >
     <div className="flex items-center justify-center p-4">
-      <h1 className="fantasy-title text-3xl" style={{ fontFamily: 'var(--font-heading)' }}>
+      <h1 className="fantasy-title text-3xl" style={{ fontFamily: 'var(--font-display)' }}>
         Equoria
       </h1>
     </div>
