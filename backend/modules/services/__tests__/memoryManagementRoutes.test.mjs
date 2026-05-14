@@ -263,6 +263,19 @@ describe('Memory Management Routes', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
+      expect(response.body.data.resourcesAfterCleanup).toBeDefined();
+      expect(response.body.data.timestamp).toBeDefined();
+    });
+
+    test('rejects selective cleanup with no valid resource types', async () => {
+      const response = await request(testApp)
+        .post('/api/memory/cleanup')
+        .set('Authorization', `Bearer ${authToken}`)
+        .send({ resourceTypes: ['unknown-type'] })
+        .expect(400);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('valid resource types');
     });
 
     test('validates resource types parameter', async () => {

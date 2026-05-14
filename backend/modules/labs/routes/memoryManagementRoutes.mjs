@@ -276,8 +276,15 @@ router.post(
       if (resourceTypes.includes('all')) {
         memoryManager.cleanupAllResources();
       } else {
-        // Selective cleanup would be implemented here
-        logger.warn('[MemoryManagement] Selective cleanup not yet implemented');
+        const validTypes = ['timers', 'intervals', 'eventListeners', 'streams', 'connections'];
+        const requested = resourceTypes.filter(t => validTypes.includes(t));
+        if (requested.length === 0) {
+          return res.status(400).json({
+            success: false,
+            message: `No valid resource types specified. Valid types: ${validTypes.join(', ')}`,
+          });
+        }
+        memoryManager.cleanupResourcesByTypes(requested);
       }
 
       const report = memoryManager.getReport();

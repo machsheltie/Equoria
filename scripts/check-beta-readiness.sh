@@ -13,26 +13,46 @@
 #
 # Usage:
 #   bash scripts/check-beta-readiness.sh                  # all gates (required for signoff)
+#   bash scripts/check-beta-readiness.sh --no-signoff-write  # dry-run: full report, no YAML write
 #
-# This script has NO skip options. Beta readiness is not valid unless every
-# gate — including full E2E — passes. If an environment cannot run the full
-# gate (e.g., a CI runner without Playwright browsers or a database), that
-# environment cannot produce beta-readiness signoff and must run a different,
-# clearly-labelled static check job instead.
+# The only supported flag is --no-signoff-write, which suppresses the automatic
+# rewrite of the last_gate_run block in docs/beta-signoff.yaml. Use this in CI
+# jobs or local test runs where you want the full pass/fail report without
+# touching the signoff record.
+#
+# Gate skips are NOT supported. Beta readiness is not valid unless every gate
+# passes. If an environment cannot run the full gate (e.g., a CI runner without
+# Playwright browsers or a database), that environment cannot produce
+# beta-readiness signoff and must run a different, clearly-labelled static
+# check job instead.
 #
 # Signoff process (after all gates pass):
-#   1. Record the commit hash and gate run date in docs/beta-signoff.yaml
+#   1. docs/beta-signoff.yaml last_gate_run block is auto-updated by this script
+#      (unless --no-signoff-write was passed).
 #   2. Get explicit human approval (project lead) to mark beta-deployment-readiness
+#      by filling in signoff.signed_off_by and signoff.signed_off_date.
 #   3. Update _bmad-output/implementation-artifacts/sprint-status.yaml as appropriate
 # =============================================================================
 
 set -euo pipefail
 
-if [[ $# -gt 0 ]]; then
-  echo "ERROR: check-beta-readiness.sh does not accept any arguments." >&2
-  echo "All gates are required for beta signoff. No skip flags are supported." >&2
-  exit 2
-fi
+# ---------------------------------------------------------------------------
+# Flag parsing — only --no-signoff-write is accepted
+# ---------------------------------------------------------------------------
+NO_SIGNOFF_WRITE=0
+for arg in "$@"; do
+  case "$arg" in
+    --no-signoff-write)
+      NO_SIGNOFF_WRITE=1
+      ;;
+    *)
+      echo "ERROR: Unknown argument: $arg" >&2
+      echo "Usage: bash scripts/check-beta-readiness.sh [--no-signoff-write]" >&2
+      echo "  --no-signoff-write  Suppress auto-write of docs/beta-signoff.yaml (dry-run/CI mode)" >&2
+      exit 2
+      ;;
+  esac
+done
 
 # Detect Claude Code worktrees: Jest testMatch globs break when the CWD path
 # contains \.claude because Node/Jest path normalization corrupts the segment
@@ -49,6 +69,7 @@ fi
 
 PASS=0
 FAIL=0
+SKIPPED=0
 REPORT_LINES=()
 
 # Colour codes (disabled if not a tty)
@@ -201,18 +222,34 @@ fi
 # ---------------------------------------------------------------------------
 # GATE 9 — Skip scan: no test.skip on beta-critical E2E path
 # ---------------------------------------------------------------------------
-echo "${BOLD}[9/10] Skip Scan — Beta Critical E2E Path${RESET}"
+# NOTE (Equoria-o8z2): beta-critical-path.spec.ts lives in tests/e2e/ and is
+# executed by the general playwright.config.ts (npm run test:e2e), NOT by the
+# beta-readiness config (playwright.beta-readiness.config.ts whose testDir is
+# tests/e2e/readiness/).  The beta-readiness suite (Gate 5) covers the same
+# critical-path scenarios in tests/e2e/readiness/route-families.spec.ts and
+# tests/e2e/readiness/auth-onboarding.spec.ts.
+#
+# This gate is therefore a static structural check: it verifies that no
+# permanent/unconditional skip annotations have been added to
+# beta-critical-path.spec.ts.  A skip in that file, even though the file is
+# not run by Gate 5, would indicate a deliberate suppression of general E2E
+# coverage for beta-relevant paths and must be flagged.
+#
+# The check does NOT execute the file; it scans for forbidden annotations only.
+# Allow test.skip(true, ...) inside credential-guard if-blocks (infrastructure
+# guards, not permanent skips).  Exclude JSDoc/comment lines.  Flag only
+# permanent/unconditional skips: test.skip('name', fn) or test.fixme('name', fn).
+echo "${BOLD}[9/10] Skip Scan — Beta Critical E2E Path (structural check)${RESET}"
 printf "  Running: Check beta-critical-path.spec.ts for unconditional test.skip / test.fixme ...\n"
-# Allow test.skip(true, ...) inside credential-guard if-blocks (infrastructure guards, not permanent skips).
-# Exclude comment lines (JSDoc * and // comments) and credential-guard in-body skips.
-# Flag only permanent/unconditional skips: test.skip('name', fn) or test.fixme('name', fn).
-if grep -n "test\.skip\|test\.fixme" tests/e2e/beta-critical-path.spec.ts 2>/dev/null \
+if [ ! -f tests/e2e/beta-critical-path.spec.ts ]; then
+  gate_fail "No test.skip on beta-critical paths" "tests/e2e/beta-critical-path.spec.ts missing — file must exist"
+elif grep -n "test\.skip\|test\.fixme" tests/e2e/beta-critical-path.spec.ts 2>/dev/null \
     | grep -v "^\s*[0-9]*:\s*\*\|^\s*[0-9]*:\s*//" \
     | grep -v "test\.skip(true," \
     | grep -q .; then
   gate_fail "No test.skip on beta-critical paths" "found unconditional skip annotation in beta-critical-path.spec.ts"
 else
-  gate_pass "No test.skip on beta-critical paths"
+  gate_pass "No test.skip on beta-critical paths (structural check: file exists, no unconditional skips)"
 fi
 
 # ---------------------------------------------------------------------------
@@ -229,22 +266,117 @@ for line in "${REPORT_LINES[@]}"; do
   echo -e "$line"
 done
 echo ""
-echo "  Passed : $PASS"
-echo "  Failed : $FAIL"
-echo "  Time   : ${ELAPSED}s"
+echo "  Passed  : $PASS"
+echo "  Failed  : $FAIL"
+echo "  Skipped : $SKIPPED"
+echo "  Time    : ${ELAPSED}s"
 echo ""
 
-if [ "$FAIL" -eq 0 ]; then
+if [ "$FAIL" -eq 0 ] && [ "$SKIPPED" -eq 0 ]; then
   echo "${GREEN}${BOLD}ALL GATES PASSED${RESET}"
   echo ""
+
+  # -------------------------------------------------------------------------
+  # Auto-rewrite last_gate_run block in docs/beta-signoff.yaml
+  # (Equoria-r1kl / Story 21S-6 AC-7)
+  #
+  # Rewrites only the last_gate_run: block (from that key up to the blank line
+  # before previous_gate_run:) while preserving the file header comment and
+  # the signoff: trailer verbatim.  Uses awk so no temp-file race conditions
+  # and no reliance on GNU sed -i portability.
+  #
+  # Skipped when --no-signoff-write was passed (Equoria-mdoz dry-run flag).
+  # Refused when gates_skipped > 0 (AC-6: a partial run must not overwrite a
+  # clean record — enforced above by the SKIPPED==0 check on this branch).
+  # -------------------------------------------------------------------------
+  SIGNOFF_YAML="docs/beta-signoff.yaml"
+
+  # Build the gate_detail table from REPORT_LINES.  Each entry is mapped to a
+  # canonical YAML key using a simple slug: lower-case, spaces→underscores,
+  # parens/brackets stripped, trailing punctuation removed.
+  DETAIL_LINES=()
+  for entry in "${REPORT_LINES[@]}"; do
+    # Strip ANSI colour codes
+    clean=$(printf '%b' "$entry" | sed 's/\x1b\[[0-9;]*m//g')
+    # Extract pass/fail marker and gate name
+    if [[ "$clean" =~ ^[[:space:]]*(PASS|FAIL)[[:space:]]+(.*) ]]; then
+      marker="${BASH_REMATCH[1]}"
+      gate_label="${BASH_REMATCH[2]}"
+      # Slug: lower, spaces→_, strip parens/brackets/slashes/dots, collapse __
+      slug=$(printf '%s' "$gate_label" \
+        | tr '[:upper:]' '[:lower:]' \
+        | sed 's/[()\/\.]/_/g; s/[^a-z0-9_]/_/g; s/__*/_/g; s/^_//; s/_$//')
+      DETAIL_LINES+=("    ${slug}: ${marker}")
+    fi
+  done
+
+  if [ "$NO_SIGNOFF_WRITE" -eq 1 ]; then
+    echo "  ${YELLOW}(--no-signoff-write: skipping auto-update of $SIGNOFF_YAML)${RESET}"
+  elif [ ! -f "$SIGNOFF_YAML" ]; then
+    echo "  ${YELLOW}WARNING: $SIGNOFF_YAML not found — skipping auto-update.${RESET}"
+  else
+    # Build the replacement last_gate_run block as a shell variable
+    NEW_BLOCK="last_gate_run:
+  commit: $GIT_COMMIT
+  date: '$RUN_DATE'
+  gates_passed: $PASS
+  gates_failed: $FAIL
+  duration_seconds: $ELAPSED
+  gate_detail:"
+    for dl in "${DETAIL_LINES[@]}"; do
+      NEW_BLOCK="${NEW_BLOCK}
+${dl}"
+    done
+
+    # Use awk to replace the last_gate_run: block.
+    # State machine:
+    #   0 = before last_gate_run block  → print as-is
+    #   1 = inside last_gate_run block  → suppress until next top-level key
+    #   2 = after block injected        → print as-is
+    # A "top-level key" line is one that starts with a non-space, non-#
+    # character followed by a colon (YAML mapping key at column 0).
+    # A blank line between the old block and the next top-level key is also
+    # suppressed (state==1) and replaced by a single blank line emitted
+    # just before the next key is printed.
+    awk -v new_block="$NEW_BLOCK" '
+      BEGIN { state=0; injected=0 }
+      /^last_gate_run:/ {
+        if (!injected) {
+          print new_block
+          injected=1
+          state=1
+          next
+        }
+      }
+      state==1 {
+        # Detect next top-level key (col-0, non-comment, has colon)
+        if (/^[^[:space:]#].*:/) {
+          print ""
+          state=2
+          print
+        }
+        # else suppress lines belonging to the old block (including blank lines)
+        next
+      }
+      { print }
+    ' "$SIGNOFF_YAML" > "${SIGNOFF_YAML}.tmp" && mv "${SIGNOFF_YAML}.tmp" "$SIGNOFF_YAML"
+
+    echo "  ${GREEN}docs/beta-signoff.yaml last_gate_run updated.${RESET}"
+    echo "  Next step: fill in signoff.signed_off_by + signoff.signed_off_date for human approval."
+  fi
+
+  echo ""
   echo "  To complete beta readiness signoff:"
-  echo "  1. Record this run in docs/beta-signoff.yaml:"
-  echo "     commit: $GIT_COMMIT"
-  echo "     date:   $RUN_DATE"
-  echo "     gates:  $PASS passed"
+  echo "  1. Edit docs/beta-signoff.yaml — set signoff.signed_off_by and signoff.signed_off_date."
   echo "  2. Get explicit approval from project lead."
   echo "  3. Deploy to beta testers."
   exit 0
+elif [ "$FAIL" -eq 0 ] && [ "$SKIPPED" -gt 0 ]; then
+  echo "${YELLOW}${BOLD}ALL GATES PASSED BUT $SKIPPED GATE(S) WERE SKIPPED${RESET}"
+  echo ""
+  echo "  docs/beta-signoff.yaml was NOT updated (skipped gates invalidate signoff)."
+  echo "  Re-run without --skip flags to produce a valid signoff record."
+  exit 1
 else
   echo "${RED}${BOLD}GATES FAILED — not ready for beta deployment${RESET}"
   echo ""

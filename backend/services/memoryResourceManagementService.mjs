@@ -416,6 +416,86 @@ class MemoryResourceManager extends EventEmitter {
     this.emit('cleanup:completed', { cleanedCount });
   }
 
+  cleanupResourcesByTypes(types) {
+    const typeSet = new Set(types);
+    let cleanedCount = 0;
+
+    if (typeSet.has('timers')) {
+      for (const timer of this.resources.timers) {
+        try {
+          clearTimeout(timer);
+          cleanedCount++;
+        } catch (e) {
+          logger.warn(`[MemoryManager] Failed to clear timer: ${e.message}`);
+        }
+      }
+      this.resources.timers.clear();
+    }
+
+    if (typeSet.has('intervals')) {
+      for (const interval of this.resources.intervals) {
+        try {
+          clearInterval(interval);
+          cleanedCount++;
+        } catch (e) {
+          logger.warn(`[MemoryManager] Failed to clear interval: ${e.message}`);
+        }
+      }
+      this.resources.intervals.clear();
+    }
+
+    if (typeSet.has('eventListeners')) {
+      for (const [emitter, listeners] of this.resources.eventListeners) {
+        try {
+          for (const { event, listener } of listeners) {
+            emitter.removeListener(event, listener);
+            cleanedCount++;
+          }
+        } catch (e) {
+          logger.warn(`[MemoryManager] Failed to remove event listener: ${e.message}`);
+        }
+      }
+      this.resources.eventListeners.clear();
+    }
+
+    if (typeSet.has('streams')) {
+      for (const stream of this.resources.streams) {
+        try {
+          if (stream.destroy) {
+            stream.destroy();
+            cleanedCount++;
+          }
+        } catch (e) {
+          logger.warn(`[MemoryManager] Failed to destroy stream: ${e.message}`);
+        }
+      }
+      this.resources.streams.clear();
+    }
+
+    if (typeSet.has('connections')) {
+      for (const connection of this.resources.connections) {
+        try {
+          if (connection.close) {
+            connection.close();
+            cleanedCount++;
+          } else if (connection.end) {
+            connection.end();
+            cleanedCount++;
+          }
+        } catch (e) {
+          logger.warn(`[MemoryManager] Failed to close connection: ${e.message}`);
+        }
+      }
+      this.resources.connections.clear();
+    }
+
+    logger.info(
+      `[MemoryManager] Selective cleanup completed (${types.join(', ')}): ${cleanedCount} resources cleaned`,
+    );
+    this.emit('cleanup:completed', { cleanedCount, types });
+    return cleanedCount;
+  }
+
   /**
    * Setup event listeners for process events
    */
