@@ -247,7 +247,8 @@ describe('GET /api/traits/discipline-recommendations/:horseId — horse with tra
     expect(res.status).toBe(200);
     for (const rec of res.body.data.recommendations) {
       expect(typeof rec.discipline).toBe('string');
-      expect(Array.isArray(rec.traits)).toBe(true);
+      expect(Array.isArray(rec.specializedTraits)).toBe(true);
+      expect(typeof rec.recommendationScore).toBe('number');
     }
   });
 
@@ -295,5 +296,64 @@ describe('GET /api/traits/competition-comparison/:horseId — horse with traits'
     expect(res.body.success).toBe(true);
     expect(Array.isArray(res.body.data.comparison)).toBe(true);
     expect(res.body.data.comparison.length).toBeGreaterThan(0);
+  });
+});
+
+// ─── GET /api/traits/competition-effects — getTraitCompetitionEffects ─────────
+
+describe('GET /api/traits/competition-effects', () => {
+  it('returns 200 with all trait effects', async () => {
+    const res = await request(app)
+      .get('/api/traits/competition-effects')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data).toBeDefined();
+    expect(typeof res.body.data.totalTraits).toBe('number');
+    expect(Array.isArray(res.body.data.effects)).toBe(true);
+  });
+
+  it('filters by type=positive', async () => {
+    const res = await request(app)
+      .get('/api/traits/competition-effects?type=positive')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    // All returned effects should be positive
+    for (const effect of res.body.data.effects) {
+      expect(effect.type).toBe('positive');
+    }
+  });
+
+  it('filters by type=negative', async () => {
+    const res = await request(app)
+      .get('/api/traits/competition-effects?type=negative')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.filter.type).toBe('negative');
+  });
+
+  it('filters by discipline=Dressage highlights forDiscipline (line 476)', async () => {
+    const res = await request(app)
+      .get('/api/traits/competition-effects?discipline=Dressage')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    // Effects with Dressage specialization should have forDiscipline set
+    const withDiscipline = res.body.data.effects.filter(e => e.forDiscipline);
+    expect(withDiscipline.length).toBeGreaterThan(0);
+  });
+
+  it('returns 401 without auth', async () => {
+    const res = await request(app).get('/api/traits/competition-effects').set('Origin', ORIGIN);
+
+    expect(res.status).toBe(401);
   });
 });
