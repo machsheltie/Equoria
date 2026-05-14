@@ -241,12 +241,30 @@ jobs:
           #   - lcov: Codecov upload
           #   - json-summary: human-readable per-shard totals
           #   - json: coverage-final.json, required by `nyc merge` in Coverage Gate
-          node --experimental-vm-modules node_modules/jest/bin/jest.js \
+          #
+          # Heap management (Equoria-ac23): the CI invocation runs Jest directly
+          # via `node ... jest.js`, which bypasses the `--max-old-space-size=8192`
+          # flag set in backend/package.json's `test` script. Without it Node
+          # defaults to ~4GB old-space — and shard 2 (395 suites with coverage
+          # instrumentation) was hitting OOM/SIGTERM at heap ~3.8GB, surfacing
+          # as worker-failed-to-exit-gracefully on whichever suites happened to
+          # be last in the queue (breedController, memoryAdminGuard). Two
+          # cooperating mitigations:
+          #   1. --max-old-space-size=8192 — raise V8 old-space to 8GB, matching
+          #      the local `npm test` invocation (ubuntu-latest runners have
+          #      ≥16GB RAM, so this is well within budget).
+          #   2. --workerIdleMemoryLimit=1500MB — Jest 29 auto-recycles a worker
+          #      after a test file completes if its RSS exceeds the limit. This
+          #      prevents cumulative bloat from leaking module caches, coverage
+          #      counters, and Prisma client instances across hundreds of
+          #      suites in a single worker.
+          node --experimental-vm-modules --max-old-space-size=8192 node_modules/jest/bin/jest.js \
             --testPathPattern="$SHARD_PATTERN" \
             --coverage \
             --coverageReporters=lcov \
             --coverageReporters=json-summary \
             --coverageReporters=json \
+            --workerIdleMemoryLimit=1500MB \
             --ci \
             --forceExit
 
