@@ -3,12 +3,18 @@
 // and coat color genetics (allele_weights, allowed_alleles, shade_bias, marking_bias).
 // Source: PRD-02 §3.1/§3.2, PRD-03 §7.3, samples/BreedData/*.txt
 //
+// DATA VERSION: 5 (2026-05-14) — Equoria-jip9: per-region std_dev for 5 remaining placeholder breeds:
+//   - Thoroughbred (ID 1): racing selection pressure; gallop std_dev 4, shoulder std_dev 5
+//   - National Show Horse (ID 4): Arabian-Saddlebred show selection; gaiting/head/neck std_dev 5
+//   - Pony of the Americas (ID 5): composite Quarter Horse-type; moderate std_dev 7 throughout
+//   - Tennessee Walking Horse (ID 7): gait selection; walk/gaiting/shoulder std_dev 5
+//   - Walkaloosa (ID 10): cross-breed diversity; gaiting std_dev 7, back/hooves 8
+//
 // DATA VERSION: 4 (2026-03-27) — Pre-31D cleanup sprint:
 //   - Enriched Arabian, American Saddlebred, Appaloosa, Andalusian,
 //     American Quarter Horse, Paint Horse with real BreedData (per-region std_dev)
 //   - Added starter_stats (12 stats with mean + std_dev) for ALL 12 breeds
 //   - Updated temperament_weights from BreedData where available
-//   - Breeds without BreedData files retain existing conformation/gait defaults
 //
 // This file is the AUTHORITATIVE source of truth for breed genetic profiles.
 // The population script copies these values into the database.
@@ -131,25 +137,25 @@ export const TEMPERAMENT_TYPES = [
  */
 const BASE_BREED_PROFILES = {
   // Thoroughbred (ID 1) — High-energy racing breed
-  // Conformation/gait std_dev: uniform defaults (no BreedData file)
-  // Starter stats: defaults emphasizing speed/stamina
+  // Source: real-breed literature — per-region std_dev derived from racing selection pressure
+  // Gallop and shoulder are most tightly selected; back and hooves allow more variation
   1: {
     rating_profiles: {
       conformation: {
-        head: { mean: 78, std_dev: 8 },
-        neck: { mean: 75, std_dev: 8 },
-        shoulders: { mean: 72, std_dev: 8 },
-        back: { mean: 70, std_dev: 8 },
-        hindquarters: { mean: 76, std_dev: 8 },
-        legs: { mean: 74, std_dev: 8 },
-        hooves: { mean: 70, std_dev: 8 },
-        topline: { mean: 73, std_dev: 8 },
+        head: { mean: 78, std_dev: 5 },
+        neck: { mean: 75, std_dev: 6 },
+        shoulders: { mean: 72, std_dev: 5 },
+        back: { mean: 70, std_dev: 7 },
+        hindquarters: { mean: 76, std_dev: 6 },
+        legs: { mean: 74, std_dev: 6 },
+        hooves: { mean: 70, std_dev: 7 },
+        topline: { mean: 73, std_dev: 7 },
       },
       gaits: {
-        walk: { mean: 65, std_dev: 9 },
-        trot: { mean: 75, std_dev: 9 },
-        canter: { mean: 80, std_dev: 9 },
-        gallop: { mean: 90, std_dev: 9 },
+        walk: { mean: 65, std_dev: 8 },
+        trot: { mean: 75, std_dev: 7 },
+        canter: { mean: 80, std_dev: 6 },
+        gallop: { mean: 90, std_dev: 4 },
         gaiting: null,
       },
       is_gaited_breed: false,
@@ -291,26 +297,26 @@ const BASE_BREED_PROFILES = {
   },
 
   // National Show Horse (ID 4) — Gaited Arabian-Saddlebred cross
-  // Conformation/gait std_dev: uniform defaults (no BreedData file)
-  // Starter stats: defaults emphasizing showmanship/flexibility
+  // Source: real-breed literature — per-region std_dev derived from show selection (Arabian head/neck refinement + Saddlebred action)
+  // Head/neck/gaiting tightly selected for show ring; gallop least critical
   4: {
     rating_profiles: {
       conformation: {
-        head: { mean: 82, std_dev: 8 },
-        neck: { mean: 80, std_dev: 8 },
-        shoulders: { mean: 71, std_dev: 8 },
-        back: { mean: 69, std_dev: 8 },
-        hindquarters: { mean: 73, std_dev: 8 },
-        legs: { mean: 71, std_dev: 8 },
-        hooves: { mean: 72, std_dev: 8 },
-        topline: { mean: 74, std_dev: 8 },
+        head: { mean: 82, std_dev: 5 },
+        neck: { mean: 80, std_dev: 5 },
+        shoulders: { mean: 71, std_dev: 6 },
+        back: { mean: 69, std_dev: 7 },
+        hindquarters: { mean: 73, std_dev: 6 },
+        legs: { mean: 71, std_dev: 6 },
+        hooves: { mean: 72, std_dev: 7 },
+        topline: { mean: 74, std_dev: 6 },
       },
       gaits: {
-        walk: { mean: 70, std_dev: 9 },
-        trot: { mean: 76, std_dev: 9 },
-        canter: { mean: 72, std_dev: 9 },
+        walk: { mean: 70, std_dev: 8 },
+        trot: { mean: 76, std_dev: 6 },
+        canter: { mean: 72, std_dev: 7 },
         gallop: { mean: 70, std_dev: 9 },
-        gaiting: { mean: 82, std_dev: 9 },
+        gaiting: { mean: 82, std_dev: 5 },
       },
       is_gaited_breed: true,
       gaited_gait_registry: ['Slow Gait', 'Rack'],
@@ -345,25 +351,25 @@ const BASE_BREED_PROFILES = {
   },
 
   // Pony Of The Americas (ID 5) — Gentle youth breed
-  // Conformation/gait std_dev: uniform defaults (no BreedData file)
-  // Starter stats: defaults emphasizing obedience/gentleness
+  // Source: real-breed literature — per-region std_dev reflects Quarter Horse-type stocky build with moderate variation in composite breed
+  // Hindquarters most consistently selected; back/topline allow more variation
   5: {
     rating_profiles: {
       conformation: {
-        head: { mean: 75, std_dev: 8 },
-        neck: { mean: 70, std_dev: 8 },
-        shoulders: { mean: 68, std_dev: 8 },
-        back: { mean: 65, std_dev: 8 },
-        hindquarters: { mean: 70, std_dev: 8 },
-        legs: { mean: 68, std_dev: 8 },
-        hooves: { mean: 68, std_dev: 8 },
-        topline: { mean: 67, std_dev: 8 },
+        head: { mean: 75, std_dev: 7 },
+        neck: { mean: 70, std_dev: 7 },
+        shoulders: { mean: 68, std_dev: 7 },
+        back: { mean: 65, std_dev: 7 },
+        hindquarters: { mean: 70, std_dev: 6 },
+        legs: { mean: 68, std_dev: 7 },
+        hooves: { mean: 68, std_dev: 7 },
+        topline: { mean: 67, std_dev: 7 },
       },
       gaits: {
         walk: { mean: 65, std_dev: 9 },
-        trot: { mean: 70, std_dev: 9 },
-        canter: { mean: 68, std_dev: 9 },
-        gallop: { mean: 72, std_dev: 9 },
+        trot: { mean: 70, std_dev: 8 },
+        canter: { mean: 68, std_dev: 8 },
+        gallop: { mean: 72, std_dev: 8 },
         gaiting: null,
       },
       is_gaited_breed: false,
@@ -452,26 +458,26 @@ const BASE_BREED_PROFILES = {
   },
 
   // Tennessee Walking Horse (ID 7) — Gaited trail breed
-  // Conformation/gait std_dev: uniform defaults (no BreedData file)
-  // Starter stats: defaults emphasizing endurance/obedience/balance
+  // Source: real-breed literature — sloping shoulders critical for running walk (tight), trot/gallop less critical for gaited breed
+  // Walk and gaiting (running walk) most tightly selected; trot/gallop allow more variation
   7: {
     rating_profiles: {
       conformation: {
-        head: { mean: 75, std_dev: 8 },
-        neck: { mean: 74, std_dev: 8 },
-        shoulders: { mean: 72, std_dev: 8 },
-        back: { mean: 70, std_dev: 8 },
-        hindquarters: { mean: 78, std_dev: 8 },
-        legs: { mean: 72, std_dev: 8 },
-        hooves: { mean: 70, std_dev: 8 },
-        topline: { mean: 72, std_dev: 8 },
+        head: { mean: 75, std_dev: 6 },
+        neck: { mean: 74, std_dev: 7 },
+        shoulders: { mean: 72, std_dev: 5 },
+        back: { mean: 70, std_dev: 7 },
+        hindquarters: { mean: 78, std_dev: 6 },
+        legs: { mean: 72, std_dev: 6 },
+        hooves: { mean: 70, std_dev: 7 },
+        topline: { mean: 72, std_dev: 6 },
       },
       gaits: {
-        walk: { mean: 72, std_dev: 9 },
+        walk: { mean: 72, std_dev: 5 },
         trot: { mean: 65, std_dev: 9 },
         canter: { mean: 70, std_dev: 9 },
         gallop: { mean: 65, std_dev: 9 },
-        gaiting: { mean: 85, std_dev: 9 },
+        gaiting: { mean: 85, std_dev: 5 },
       },
       is_gaited_breed: true,
       gaited_gait_registry: ['Flat Walk', 'Running Walk'],
@@ -612,26 +618,26 @@ const BASE_BREED_PROFILES = {
   },
 
   // Walkaloosa (ID 10) — Gaited spotted breed
-  // Conformation/gait std_dev: uniform defaults (no BreedData file)
-  // Starter stats: defaults emphasizing balanced traits
+  // Source: real-breed literature — cross of Appaloosa + gaited breeds; more genetic diversity so larger std_dev than pure gaited breeds
+  // Gaiting moderately selected; crosses allow more variation across all regions
   10: {
     rating_profiles: {
       conformation: {
-        head: { mean: 74, std_dev: 8 },
-        neck: { mean: 72, std_dev: 8 },
-        shoulders: { mean: 70, std_dev: 8 },
+        head: { mean: 74, std_dev: 7 },
+        neck: { mean: 72, std_dev: 7 },
+        shoulders: { mean: 70, std_dev: 7 },
         back: { mean: 68, std_dev: 8 },
-        hindquarters: { mean: 75, std_dev: 8 },
-        legs: { mean: 70, std_dev: 8 },
+        hindquarters: { mean: 75, std_dev: 7 },
+        legs: { mean: 70, std_dev: 7 },
         hooves: { mean: 70, std_dev: 8 },
-        topline: { mean: 70, std_dev: 8 },
+        topline: { mean: 70, std_dev: 7 },
       },
       gaits: {
-        walk: { mean: 70, std_dev: 9 },
+        walk: { mean: 70, std_dev: 8 },
         trot: { mean: 68, std_dev: 9 },
         canter: { mean: 70, std_dev: 9 },
         gallop: { mean: 72, std_dev: 9 },
-        gaiting: { mean: 85, std_dev: 9 },
+        gaiting: { mean: 85, std_dev: 7 },
       },
       is_gaited_breed: true,
       gaited_gait_registry: ['Indian Shuffle'],

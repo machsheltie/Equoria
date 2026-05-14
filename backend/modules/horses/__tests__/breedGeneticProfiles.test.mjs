@@ -54,6 +54,59 @@ describe('Breed Genetic Profiles - Conformation Ratings', () => {
     expect(c.hooves.mean).toBe(70);
   });
 
+  test('conformation std_dev reflects racing selection for Thoroughbred (ID 1)', () => {
+    const c = BREED_GENETIC_PROFILES[1].rating_profiles.conformation;
+    expect(c.head.std_dev).toBe(5);
+    expect(c.neck.std_dev).toBe(6);
+    expect(c.shoulders.std_dev).toBe(5);
+    expect(c.back.std_dev).toBe(7);
+    expect(c.hindquarters.std_dev).toBe(6);
+    expect(c.legs.std_dev).toBe(6);
+    expect(c.hooves.std_dev).toBe(7);
+    expect(c.topline.std_dev).toBe(7);
+  });
+
+  test('gait std_dev reflects gallop selection pressure for Thoroughbred (ID 1)', () => {
+    const g = BREED_GENETIC_PROFILES[1].rating_profiles.gaits;
+    expect(g.gallop.std_dev).toBe(4);
+    expect(g.canter.std_dev).toBe(6);
+    expect(g.trot.std_dev).toBe(7);
+    expect(g.walk.std_dev).toBe(8);
+  });
+
+  test('conformation std_dev reflects show selection for National Show Horse (ID 4)', () => {
+    const c = BREED_GENETIC_PROFILES[4].rating_profiles.conformation;
+    expect(c.head.std_dev).toBe(5);
+    expect(c.neck.std_dev).toBe(5);
+    expect(c.shoulders.std_dev).toBe(6);
+  });
+
+  test('gaiting std_dev tight for National Show Horse (ID 4)', () => {
+    const g = BREED_GENETIC_PROFILES[4].rating_profiles.gaits;
+    expect(g.gaiting.std_dev).toBe(5);
+    expect(g.trot.std_dev).toBe(6);
+  });
+
+  test('conformation std_dev reflects shoulder selection for Tennessee Walking Horse (ID 7)', () => {
+    const c = BREED_GENETIC_PROFILES[7].rating_profiles.conformation;
+    expect(c.shoulders.std_dev).toBe(5);
+    expect(c.head.std_dev).toBe(6);
+  });
+
+  test('gait std_dev reflects walk/gaiting selection for Tennessee Walking Horse (ID 7)', () => {
+    const g = BREED_GENETIC_PROFILES[7].rating_profiles.gaits;
+    expect(g.walk.std_dev).toBe(5);
+    expect(g.gaiting.std_dev).toBe(5);
+    expect(g.trot.std_dev).toBe(9);
+    expect(g.gallop.std_dev).toBe(9);
+  });
+
+  test('gaiting std_dev reflects composite breed diversity for Walkaloosa (ID 10)', () => {
+    const g = BREED_GENETIC_PROFILES[10].rating_profiles.gaits;
+    expect(g.gaiting.std_dev).toBe(7);
+    expect(g.trot.std_dev).toBe(9);
+  });
+
   test('conformation means match BreedData/Arabian.txt for Arabian (ID 2)', () => {
     const c = BREED_GENETIC_PROFILES[2].rating_profiles.conformation;
     expect(c.head.mean).toBe(95);
