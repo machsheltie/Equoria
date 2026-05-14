@@ -592,13 +592,28 @@ export const getUserRankSummary = async (req, res) => {
       where: { horses: { some: {} } },
     });
 
+    // Fetch the most recent snapshot per category so we can compute rankChange.
+    // rankChange = previousRank - currentRank (positive means rank improved).
+    let snapshotMap = {};
+    try {
+      const snapshots = await prisma.$queryRaw`
+        SELECT DISTINCT ON (category) category, rank
+        FROM user_rank_snapshots
+        WHERE "userId" = ${userId}
+        ORDER BY category, "capturedAt" DESC
+      `;
+      snapshotMap = Object.fromEntries(snapshots.map(s => [s.category, Number(s.rank)]));
+    } catch (_snapshotErr) {
+      // Table may not exist in older envs — fall back to rankChange: 0
+    }
+
     const rankings = [
       {
         category: 'level',
         categoryLabel: 'Level',
         rank: levelRank,
         totalEntries: totalUsers,
-        rankChange: 0,
+        rankChange: snapshotMap['level'] != null ? snapshotMap['level'] - levelRank : 0,
         primaryStat: targetUser.level,
         statLabel: 'Level',
       },
@@ -608,7 +623,7 @@ export const getUserRankSummary = async (req, res) => {
         rank: xpRank,
         // Every xp_event has a user FK, so totalUsers >= xpGrouped.length.
         totalEntries: totalUsers,
-        rankChange: 0,
+        rankChange: snapshotMap['xp'] != null ? snapshotMap['xp'] - xpRank : 0,
         primaryStat: targetXpTotal,
         statLabel: 'XP',
       },
@@ -619,7 +634,7 @@ export const getUserRankSummary = async (req, res) => {
         // Guard: if target has zero horses, their rank can be horseOwnerCount + 1.
         // Ensure totalEntries >= rank so the UI never renders "#N of M<N".
         totalEntries: Math.max(horseOwnerCount, earningsRank),
-        rankChange: 0,
+        rankChange: snapshotMap['horse-earnings'] != null ? snapshotMap['horse-earnings'] - earningsRank : 0,
         primaryStat: targetEarningsTotal,
         statLabel: 'Earnings',
       },
@@ -628,7 +643,7 @@ export const getUserRankSummary = async (req, res) => {
         categoryLabel: 'Horse Performance',
         rank: performanceRank,
         totalEntries: Math.max(horseOwnerCount, performanceRank),
-        rankChange: 0,
+        rankChange: snapshotMap['horse-performance'] != null ? snapshotMap['horse-performance'] - performanceRank : 0,
         primaryStat: targetPerfMax,
         statLabel: 'Score',
       },
@@ -660,6 +675,71 @@ export const getUserRankSummary = async (req, res) => {
   }
 };
 
+/**
+ * POST /api/v1/leaderboards/admin/capture-rank-snapshots
+ * Admin-only: capture current ranks for all users into user_rank_snapshots.
+ * Intended to be called nightly (e.g., via Railway cron or an external scheduler).
+ */
+export const captureRankSnapshots = async (req, res) => {
+  try {
+    const users = await prisma.user.findMany({ select: { id: true } });
+    let captured = 0;
+
+    for (const { id: userId } of users) {
+      // Re-use the same rank computations from getUserRankSummary
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { level: true, xp: true },
+      });
+      if (!user) continue;
+
+      const [usersAheadLevel, targetXpAgg, targetEarningsAgg, targetPerfAgg] = await Promise.all([
+        prisma.user.count({
+          where: {
+            OR: [
+              { level: { gt: user.level } },
+              { AND: [{ level: user.level }, { xp: { gt: user.xp } }] },
+            ],
+          },
+        }),
+        prisma.xpEvent.aggregate({ where: { userId }, _sum: { amount: true } }),
+        prisma.horse.aggregate({ where: { userId }, _sum: { totalEarnings: true } }),
+        prisma.competitionResult.aggregate({ where: { horse: { userId } }, _max: { score: true } }),
+      ]);
+
+      const targetXpTotal = targetXpAgg._sum.amount ?? 0;
+      const targetEarnings = targetEarningsAgg._sum.totalEarnings ?? 0;
+      const targetPerf = targetPerfAgg._max.score ? Number(targetPerfAgg._max.score) : 0;
+
+      const [xpAhead, earningsAhead, perfAhead] = await Promise.all([
+        prisma.$queryRaw`SELECT COUNT(*)::int AS cnt FROM (SELECT "userId", COALESCE(SUM(amount),0) AS t FROM xp_events GROUP BY "userId" HAVING COALESCE(SUM(amount),0) > ${targetXpTotal}) sub`,
+        prisma.$queryRaw`SELECT COUNT(*)::int AS cnt FROM (SELECT "userId", COALESCE(SUM("totalEarnings"),0) AS t FROM horses WHERE "userId" IS NOT NULL GROUP BY "userId" HAVING COALESCE(SUM("totalEarnings"),0) > ${targetEarnings}) sub`,
+        prisma.$queryRaw`SELECT COUNT(*)::int AS cnt FROM (SELECT h."userId", MAX(cr.score) AS s FROM competition_results cr JOIN horses h ON cr."horseId"=h.id WHERE h."userId" IS NOT NULL GROUP BY h."userId" HAVING MAX(cr.score) > ${targetPerf}) sub`,
+      ]);
+
+      const rows = [
+        { userId, category: 'level', rank: Number(usersAheadLevel) + 1 },
+        { userId, category: 'xp', rank: Number(xpAhead[0]?.cnt ?? 0) + 1 },
+        { userId, category: 'horse-earnings', rank: Number(earningsAhead[0]?.cnt ?? 0) + 1 },
+        { userId, category: 'horse-performance', rank: Number(perfAhead[0]?.cnt ?? 0) + 1 },
+      ];
+
+      for (const row of rows) {
+        await prisma.$executeRaw`
+          INSERT INTO user_rank_snapshots ("userId", category, rank, "capturedAt")
+          VALUES (${row.userId}, ${row.category}, ${row.rank}, NOW())
+        `;
+      }
+      captured++;
+    }
+
+    return res.json({ success: true, message: `Captured rank snapshots for ${captured} users` });
+  } catch (error) {
+    logger.error(`[leaderboardController.captureRankSnapshots] Error: ${error.message}`);
+    return res.status(500).json({ success: false, message: 'Failed to capture rank snapshots' });
+  }
+};
+
 // Aliases
 export const getTopPlayersByLevel = getTopUsersByLevel;
 export const getTopPlayersByXP = getTopUsersByXP;
@@ -678,4 +758,5 @@ export default {
   getRecentWinners,
   getLeaderboardStats,
   getUserRankSummary,
+  captureRankSnapshots,
 };

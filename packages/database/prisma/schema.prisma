@@ -72,6 +72,7 @@ model User {
   showEntries             ShowEntry[]              @relation("ShowEntries")
   staffMarketplaceStates  StaffMarketplaceState[]
   notifications             Notification[]
+  rankSnapshots             UserRankSnapshot[]
 
   @@index([email])
   @@index([emailVerified])
@@ -1388,6 +1389,23 @@ model StaffMarketplaceState {
   @@unique([userId, staffType])
   @@index([userId])
   @@map("staff_marketplace_state")
+}
+
+// ── Rank Snapshots ─────────────────────────────────────────────────────────────
+// Nightly snapshots of each user's rank per category.  Used by getUserRankSummary
+// to compute week-over-week rankChange delta for the rank-change indicator UI.
+
+model UserRankSnapshot {
+  id         Int      @id @default(autoincrement())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  /// 'level' | 'xp' | 'horse-earnings' | 'horse-performance'
+  category   String
+  rank       Int
+  capturedAt DateTime @default(now())
+
+  @@index([userId, category, capturedAt(sort: Desc)])
+  @@map("user_rank_snapshots")
 }
 
 // ── BB-1: Foal age stage enum ──────────────────────────────────────────────────
