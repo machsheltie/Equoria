@@ -57,9 +57,10 @@ describe('HorseListView — Story 8.3 Live Data', () => {
   });
 
   it('renders a loading indicator before data arrives (AC: 6)', async () => {
-    // Delay the server response so we can observe the loading state
+    // Delay the server response so we can observe the loading state.
+    // horsesApi.list() calls /api/v1/horses?t=<timestamp> — intercept the v1 path.
     server.use(
-      http.get('*/api/horses', async () => {
+      http.get('*/api/v1/horses', async () => {
         await new Promise((r) => setTimeout(r, 100));
         return HttpResponse.json({
           success: true,
@@ -97,7 +98,8 @@ describe('HorseListView — Story 8.3 Live Data', () => {
   });
 
   it('renders empty state when API returns no horses (AC: 1)', async () => {
-    server.use(http.get('*/api/horses', () => HttpResponse.json({ success: true, data: [] })));
+    // horsesApi.list() calls /api/v1/horses?t=<timestamp> — intercept the v1 path.
+    server.use(http.get('*/api/v1/horses', () => HttpResponse.json({ success: true, data: [] })));
 
     renderHorseListView();
     // After data resolves with empty array, no horse names should appear

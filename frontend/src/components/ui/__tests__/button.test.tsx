@@ -25,6 +25,12 @@ describe('Button variants', () => {
     expect(btn.className).toContain('to-[var(--gold-light)]');
   });
 
+  it('default variant includes btn-cobalt class for horseshoe arc decorations', () => {
+    render(<Button>Primary Action</Button>);
+    const button = screen.getByRole('button');
+    expect(button).toHaveClass('btn-cobalt');
+  });
+
   it('secondary variant includes glass-panel-subtle class', () => {
     render(<Button variant="secondary">Secondary</Button>);
     const btn = screen.getByRole('button', { name: 'Secondary' });

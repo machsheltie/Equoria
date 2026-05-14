@@ -33,8 +33,9 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        /** Primary — gold gradient, Cinzel heading font; clean (no horseshoe arcs) */
+        /** Primary — gold gradient, Cinzel heading font; horseshoe arc decorations via btn-cobalt */
         default: [
+          'btn-cobalt',
           'bg-gradient-to-r from-[var(--gold-primary)] to-[var(--gold-light)]',
           'text-[var(--bg-deep-space)] font-semibold tracking-wide',
           'font-[var(--font-heading)]',
@@ -111,8 +112,7 @@ const buttonVariants = cva(
 );
 
 export interface ButtonProps
-  extends React.ButtonHTMLAttributes<HTMLButtonElement>,
-    VariantProps<typeof buttonVariants> {
+  extends React.ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   asChild?: boolean;
 }
 

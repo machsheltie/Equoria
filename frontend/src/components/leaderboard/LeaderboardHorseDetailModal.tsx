@@ -18,6 +18,7 @@
 
 import { Trophy, User, Award } from 'lucide-react';
 import BaseModal from '@/components/common/BaseModal';
+import { StatBar } from '@/components/ui/game/StatBar';
 
 // ---------------------------------------------------------------------------
 // TypeScript Interfaces
@@ -92,16 +93,6 @@ export interface LeaderboardHorseDetailModalProps {
 // ---------------------------------------------------------------------------
 
 /**
- * Returns a Tailwind background color class based on stat value.
- * Emerald for high (80+), yellow for medium (50-79), red for low (<50).
- */
-function getStatColorClass(value: number): string {
-  if (value >= 80) return 'bg-emerald-500';
-  if (value >= 50) return 'bg-yellow-500';
-  return 'bg-red-500';
-}
-
-/**
  * Formats a number as USD currency without decimal places.
  */
 function formatCurrency(amount: number): string {
@@ -134,28 +125,28 @@ const LoadingSkeleton = () => (
   <div className="space-y-6 animate-pulse">
     {/* Header skeleton */}
     <div data-testid="skeleton-block" className="space-y-2">
-      <div className="h-8 bg-[rgba(37,99,235,0.15)] rounded w-3/4" />
-      <div className="h-4 bg-[rgba(37,99,235,0.15)] rounded w-1/2" />
+      <div className="h-8 bg-[var(--bg-twilight)] rounded w-3/4" />
+      <div className="h-4 bg-[var(--bg-twilight)] rounded w-1/2" />
     </div>
     {/* Stats skeleton */}
     <div data-testid="skeleton-block" className="space-y-2">
-      <div className="h-4 bg-[rgba(37,99,235,0.15)] rounded w-full" />
-      <div className="h-4 bg-[rgba(37,99,235,0.15)] rounded w-full" />
-      <div className="h-4 bg-[rgba(37,99,235,0.15)] rounded w-5/6" />
-      <div className="h-4 bg-[rgba(37,99,235,0.15)] rounded w-4/6" />
+      <div className="h-4 bg-[var(--bg-twilight)] rounded w-full" />
+      <div className="h-4 bg-[var(--bg-twilight)] rounded w-full" />
+      <div className="h-4 bg-[var(--bg-twilight)] rounded w-5/6" />
+      <div className="h-4 bg-[var(--bg-twilight)] rounded w-4/6" />
     </div>
     {/* History skeleton */}
     <div data-testid="skeleton-block" className="space-y-2">
-      <div className="h-6 bg-[rgba(37,99,235,0.15)] rounded w-1/3" />
-      <div className="h-4 bg-[rgba(37,99,235,0.15)] rounded w-full" />
-      <div className="h-4 bg-[rgba(37,99,235,0.15)] rounded w-full" />
+      <div className="h-6 bg-[var(--bg-twilight)] rounded w-1/3" />
+      <div className="h-4 bg-[var(--bg-twilight)] rounded w-full" />
+      <div className="h-4 bg-[var(--bg-twilight)] rounded w-full" />
     </div>
     {/* Achievements skeleton */}
     <div data-testid="skeleton-block" className="space-y-2">
-      <div className="h-6 bg-[rgba(37,99,235,0.15)] rounded w-1/4" />
+      <div className="h-6 bg-[var(--bg-twilight)] rounded w-1/4" />
       <div className="flex gap-2">
-        <div className="h-8 bg-[rgba(37,99,235,0.15)] rounded w-32" />
-        <div className="h-8 bg-[rgba(37,99,235,0.15)] rounded w-28" />
+        <div className="h-8 bg-[var(--bg-twilight)] rounded w-32" />
+        <div className="h-8 bg-[var(--bg-twilight)] rounded w-28" />
       </div>
     </div>
   </div>
@@ -166,7 +157,7 @@ const LoadingSkeleton = () => (
  */
 const EmptyHorseState = () => (
   <div
-    className="flex flex-col items-center justify-center py-16 text-[rgb(148,163,184)]"
+    className="flex flex-col items-center justify-center py-16 text-[var(--text-secondary)]"
     data-testid="empty-horse-state"
   >
     <p className="text-lg font-medium">Horse details not available</p>
@@ -175,29 +166,12 @@ const EmptyHorseState = () => (
 );
 
 /**
- * A single stat row with label, value, and color-coded progress bar.
- */
-const StatBar = ({ label, value }: { label: string; value: number }) => (
-  <div className="flex items-center gap-3">
-    <span className="w-24 text-sm text-[rgb(148,163,184)] capitalize">{label}</span>
-    <div className="flex-1 h-2 bg-[rgba(15,35,70,0.6)] rounded-full overflow-hidden">
-      <div
-        className={`h-full rounded-full ${getStatColorClass(value)}`}
-        style={{ width: `${Math.min(value, 100)}%` }}
-        data-testid="stat-progress-bar"
-      />
-    </div>
-    <span className="w-8 text-sm font-medium text-[rgb(220,235,255)] text-right">{value}</span>
-  </div>
-);
-
-/**
  * Competition summary stat card showing a single metric.
  */
 const SummaryStatCard = ({ label, value }: { label: string; value: string }) => (
-  <div className="bg-[rgba(15,35,70,0.5)] rounded-lg p-3 text-center">
-    <div className="text-xl font-bold text-[rgb(220,235,255)]">{value}</div>
-    <div className="text-xs text-[rgb(148,163,184)] mt-1">{label}</div>
+  <div className="bg-[var(--bg-midnight)] rounded-lg p-3 text-center">
+    <div className="text-xl font-bold text-[var(--text-primary)]">{value}</div>
+    <div className="text-xs text-[var(--text-secondary)] mt-1">{label}</div>
   </div>
 );
 
@@ -234,7 +208,7 @@ const LeaderboardHorseDetailModal = ({
     <div className="flex items-center gap-3 w-full">
       {onViewFullProfile && horseData && (
         <button
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-[var(--text-primary)] text-sm font-medium rounded-lg hover:bg-[var(--gold-dim)] transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--celestial-primary)] text-[var(--text-primary)] text-sm font-medium rounded-lg hover:bg-[var(--gold-dim)] transition-colors"
           onClick={() => onViewFullProfile(horseData.horseId)}
           data-testid="view-full-profile-button"
         >
@@ -243,7 +217,7 @@ const LeaderboardHorseDetailModal = ({
         </button>
       )}
       <button
-        className="inline-flex items-center gap-2 px-4 py-2 bg-[rgba(15,35,70,0.5)] text-[rgb(220,235,255)] text-sm font-medium rounded-lg hover:bg-[rgba(37,99,235,0.2)] transition-colors"
+        className="inline-flex items-center gap-2 px-4 py-2 bg-[var(--bg-midnight)] text-[var(--text-primary)] text-sm font-medium rounded-lg hover:bg-[var(--bg-twilight)] transition-colors"
         onClick={onClose}
       >
         Close
@@ -275,25 +249,25 @@ const LeaderboardHorseDetailModal = ({
             -------------------------------------------------------- */}
             <div className="flex items-start gap-4">
               <div className="flex-1">
-                <p className="text-sm text-[rgb(148,163,184)] mt-1">
+                <p className="text-sm text-[var(--text-secondary)] mt-1">
                   {horseData.breed} &middot; {horseData.age} years old &middot; {horseData.sex}
                 </p>
                 <div className="flex items-center gap-2 mt-2">
                   <span
-                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[rgba(37,99,235,0.2)] text-blue-300"
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[var(--bg-twilight)] text-blue-300"
                     data-testid="level-badge"
                   >
                     Lvl {horseData.level}
                   </span>
                   {horseData.primaryDiscipline && (
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[rgba(139,92,246,0.2)] text-purple-300">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[var(--bg-midnight)] text-purple-300">
                       {horseData.primaryDiscipline}
                     </span>
                   )}
                 </div>
               </div>
               {/* Owner Info */}
-              <div className="flex items-center gap-1.5 text-sm text-[rgb(148,163,184)]">
+              <div className="flex items-center gap-1.5 text-sm text-[var(--text-secondary)]">
                 <User size={16} aria-hidden="true" />
                 <span>{horseData.owner.ownerName}</span>
               </div>
@@ -303,10 +277,10 @@ const LeaderboardHorseDetailModal = ({
                 Stats Section
             -------------------------------------------------------- */}
             <div data-testid="stats-section">
-              <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-3">Stats</h3>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-3">Stats</h3>
 
               {/* Physical Stats */}
-              <h4 className="text-sm font-medium text-[rgb(148,163,184)] mb-2">Physical</h4>
+              <h4 className="text-sm font-medium text-[var(--text-secondary)] mb-2">Physical</h4>
               <div className="space-y-2 mb-4">
                 {physicalStats.map((stat) => (
                   <StatBar key={stat} label={stat} value={horseData.stats[stat]} />
@@ -314,7 +288,7 @@ const LeaderboardHorseDetailModal = ({
               </div>
 
               {/* Mental Stats */}
-              <h4 className="text-sm font-medium text-[rgb(148,163,184)] mb-2">Mental</h4>
+              <h4 className="text-sm font-medium text-[var(--text-secondary)] mb-2">Mental</h4>
               <div className="space-y-2">
                 {mentalStats.map((stat) => (
                   <StatBar key={stat} label={stat} value={horseData.stats[stat]} />
@@ -326,7 +300,7 @@ const LeaderboardHorseDetailModal = ({
                 Competition History Section
             -------------------------------------------------------- */}
             <div data-testid="competition-history-section">
-              <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-3">
+              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
                 Competition History
               </h3>
 
@@ -348,9 +322,9 @@ const LeaderboardHorseDetailModal = ({
               </div>
 
               {/* Total Prize Money */}
-              <p className="text-sm text-[rgb(148,163,184)] mb-4">
+              <p className="text-sm text-[var(--text-secondary)] mb-4">
                 Total Prize Money:{' '}
-                <span className="font-semibold text-[rgb(220,235,255)]">
+                <span className="font-semibold text-[var(--text-primary)]">
                   {formatCurrency(horseData.competitionHistory.totalPrizeMoney)}
                 </span>
               </p>
@@ -360,7 +334,7 @@ const LeaderboardHorseDetailModal = ({
                 <div className="overflow-x-auto" data-testid="recent-competitions-table">
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="bg-[rgba(15,35,70,0.5)] text-left text-[rgb(148,163,184)]">
+                      <tr className="bg-[var(--bg-midnight)] text-left text-[var(--text-secondary)]">
                         <th className="px-3 py-2 font-medium">Date</th>
                         <th className="px-3 py-2 font-medium">Competition</th>
                         <th className="px-3 py-2 font-medium">Discipline</th>
@@ -372,19 +346,21 @@ const LeaderboardHorseDetailModal = ({
                       {horseData.competitionHistory.recentCompetitions.map((comp, index) => (
                         <tr
                           key={comp.competitionId}
-                          className={index % 2 === 1 ? 'bg-[rgba(15,35,70,0.3)]' : ''}
+                          className={index % 2 === 1 ? 'bg-[var(--bg-midnight)]/50' : ''}
                         >
-                          <td className="px-3 py-2 whitespace-nowrap text-[rgb(220,235,255)]">
+                          <td className="px-3 py-2 whitespace-nowrap text-[var(--text-primary)]">
                             {formatDate(comp.date)}
                           </td>
-                          <td className="px-3 py-2 text-[rgb(220,235,255)]">
+                          <td className="px-3 py-2 text-[var(--text-primary)]">
                             {comp.competitionName}
                           </td>
-                          <td className="px-3 py-2 text-[rgb(220,235,255)]">{comp.discipline}</td>
-                          <td className="px-3 py-2 text-right text-[rgb(220,235,255)]">
+                          <td className="px-3 py-2 text-[var(--text-primary)]">
+                            {comp.discipline}
+                          </td>
+                          <td className="px-3 py-2 text-right text-[var(--text-primary)]">
                             {comp.rank}/{comp.totalParticipants}
                           </td>
-                          <td className="px-3 py-2 text-right text-[rgb(220,235,255)]">
+                          <td className="px-3 py-2 text-right text-[var(--text-primary)]">
                             {formatCurrency(comp.prizeWon)}
                           </td>
                         </tr>
@@ -394,7 +370,7 @@ const LeaderboardHorseDetailModal = ({
                 </div>
               ) : (
                 <div
-                  className="text-center text-[rgb(148,163,184)] py-6"
+                  className="text-center text-[var(--text-secondary)] py-6"
                   data-testid="no-recent-competitions"
                 >
                   <p>No recent competitions</p>
@@ -406,13 +382,15 @@ const LeaderboardHorseDetailModal = ({
                 Achievements Section
             -------------------------------------------------------- */}
             <div data-testid="achievements-section">
-              <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-3">Achievements</h3>
+              <h3 className="text-lg font-semibold text-[var(--text-primary)] mb-3">
+                Achievements
+              </h3>
               {horseData.achievements.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {horseData.achievements.map((achievement) => (
                     <span
                       key={achievement}
-                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-[rgba(212,168,67,0.1)] text-amber-300 border border-amber-500/30"
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-[var(--badge-gold-bg)] text-amber-300 border border-amber-500/30"
                     >
                       <Award size={14} aria-hidden="true" />
                       {achievement}
@@ -420,7 +398,7 @@ const LeaderboardHorseDetailModal = ({
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-[rgb(148,163,184)]">No achievements yet</p>
+                <p className="text-sm text-[var(--text-secondary)]">No achievements yet</p>
               )}
             </div>
           </div>

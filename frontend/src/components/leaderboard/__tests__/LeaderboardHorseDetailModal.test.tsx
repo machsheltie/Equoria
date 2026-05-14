@@ -185,7 +185,7 @@ describe('LeaderboardHorseDetailModal', () => {
       expect(within(statsSection).getByText(/focus/i)).toBeInTheDocument();
 
       // Verify progress bars exist for each stat
-      const progressBars = within(statsSection).getAllByTestId('stat-progress-bar');
+      const progressBars = within(statsSection).getAllByRole('progressbar');
       expect(progressBars).toHaveLength(10);
     });
 
