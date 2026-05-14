@@ -131,19 +131,20 @@ test.describe.serial('Feed System Phase A — full loop', () => {
     await expect(page.getByTestId('empty-inventory')).toHaveCount(0);
 
     // The pooled feed inventory item card carries the testid
-    // `inventory-item-{id}` (InventoryPage.tsx:164). Match by testid prefix
+    // `inventory-item-{id}` (InventoryPage.tsx:156). Match by testid prefix
     // and assert at least one feed-category row is rendered. Bumped timeout
     // to 15s for CI Redis-reconnect contention.
     const feedItem = page.locator('[data-testid^="inventory-item-"]').first();
     await expect(feedItem).toBeVisible({ timeout: 15_000 });
-    await expect(feedItem).toContainText(/Equipped via the horse[‘’]s Equip page\./);
 
-    // The card itself must show the Basic Feed name and a quantity of ×99.
-    const card = feedItem.locator(
-      'xpath=ancestor::*[starts-with(@data-testid, "inventory-item-")][1]'
-    );
-    await expect(card).toContainText('Basic Feed');
-    await expect(card).toContainText('×99');
+    // The card must show the Basic Feed name and the quantity subtitle the
+    // inventory page actually renders for feed items: "N units in stock"
+    // (InventoryPage.tsx:108). Previous expectation of an "Equipped via the
+    // horse's Equip page" hint never matched the production frontend; the
+    // inventory page surfaces feed via a quantity subtitle rather than an
+    // explainer line. 99 units remain after the prior test consumed one.
+    await expect(feedItem).toContainText('Basic Feed');
+    await expect(feedItem).toContainText('99 units in stock');
   });
 });
 
