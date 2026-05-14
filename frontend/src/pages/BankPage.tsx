@@ -99,7 +99,7 @@ const BankPage: React.FC = () => {
             className="absolute -top-16 -right-16 w-48 h-48 rounded-full pointer-events-none"
             aria-hidden="true"
             style={{
-              background: 'radial-gradient(circle, rgba(201,162,39,0.15) 0%, transparent 60%)',
+              background: 'radial-gradient(circle, var(--glass-glow) 0%, transparent 60%)',
             }}
           />
           <div className="relative">
@@ -109,7 +109,7 @@ const BankPage: React.FC = () => {
             <p
               className="text-5xl font-bold text-[var(--gold-400)] mb-1 font-[var(--font-heading)]"
               data-testid="balance-amount"
-              style={{ textShadow: '0 0 30px rgba(201,162,39,0.3)' }}
+              style={{ textShadow: '0 0 30px var(--gold-dim)' }}
             >
               {balance.toLocaleString()}
             </p>
@@ -121,12 +121,7 @@ const BankPage: React.FC = () => {
         <div className="glass-panel rounded-2xl p-6" data-testid="weekly-reward-section">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center border border-[rgba(201,162,39,0.25)]"
-                style={{
-                  background: 'linear-gradient(135deg, rgba(201,162,39,0.12), rgba(10,22,40,0.8))',
-                }}
-              >
+              <div className="w-10 h-10 rounded-xl flex items-center justify-center border border-[var(--btn-glass-border)] bg-[var(--btn-gold-bg)]">
                 <Gift className="w-5 h-5 text-[var(--gold-400)]" />
               </div>
               <div>
@@ -147,7 +142,7 @@ const BankPage: React.FC = () => {
               className={`flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${
                 claimed || claiming
                   ? 'glass-panel-subtle text-[var(--text-muted)] cursor-not-allowed opacity-50'
-                  : 'bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)] text-[var(--celestial-navy-900)] hover:brightness-110 hover:shadow-[0_0_14px_rgba(201,162,39,0.3)]'
+                  : 'bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)] text-[var(--celestial-navy-900)] hover:brightness-110 hover:shadow-[var(--glow-gold)]'
               }`}
               data-testid="claim-button"
               data-onboarding-target="bank-claim-button"
@@ -198,15 +193,15 @@ const BankPage: React.FC = () => {
             {transactionHistory?.transactions.map((tx) => (
               <div
                 key={tx.id}
-                className="flex items-center justify-between p-4 glass-panel-subtle rounded-xl hover:border-[rgba(201,162,39,0.3)] transition-all"
+                className="flex items-center justify-between p-4 glass-panel-subtle rounded-xl hover:border-[var(--glass-hover)] transition-all"
                 data-testid={`transaction-${tx.id}`}
               >
                 <div className="flex items-center gap-3">
                   <div
                     className={`w-9 h-9 rounded-lg flex items-center justify-center border ${
                       tx.type === 'credit'
-                        ? 'border-[rgba(76,175,130,0.3)] bg-[rgba(76,175,130,0.08)]'
-                        : 'border-[rgba(224,90,90,0.3)] bg-[rgba(224,90,90,0.08)]'
+                        ? 'border-[var(--status-success)]/30 bg-[var(--badge-success-bg)]'
+                        : 'border-[var(--status-danger)]/30 bg-[var(--badge-danger-bg)]'
                     }`}
                   >
                     {tx.type === 'credit' ? (
