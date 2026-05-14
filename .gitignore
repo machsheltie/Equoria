@@ -95,6 +95,7 @@ next-env.d.ts
 # Testing
 .jest-cache/
 **/test-output*.txt
+**/coverage/
 coverage/nul
 backend/nul
 frontend-test-results.txt
