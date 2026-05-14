@@ -9,7 +9,6 @@ import {
   generateConformationScores,
   CONFORMATION_REGIONS,
 } from '../services/conformationService.mjs';
-import { BREED_GENETIC_PROFILES } from '../data/breedGeneticProfiles.mjs';
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 
 // === Task 3.1: Score generation produces all 8 regions ===
