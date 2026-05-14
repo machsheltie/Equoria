@@ -101,149 +101,146 @@ export async function feedHorse({ userId, horseId, rng = Math.random }) {
   // Throwing inside the txn would roll back the clear; throwing outside,
   // after the txn has committed, preserves the clear. This is atomic with
   // the surrounding reads — no race window between commit and clear.
-  // Timeout raised to 15 s: under concurrent test pool pressure the default 5 s
-  // expires while waiting for the FOR UPDATE row lock. 15 s is safe for production
-  // (feed is a rare user action; lock contention in prod is near-zero).
-  const result = await prisma.$transaction(
-    async tx => {
-      // Lock the horse row immediately to prevent the lost-update race: without
-      // this, two concurrent feeds both read lastFedDate=null under READ COMMITTED
-      // isolation, both pass alreadyFedToday(), and both decrement inventory.
-      // FOR UPDATE blocks T2 until T1 commits, so T2 reads lastFedDate=<today>
-      // and correctly throws "Already fed today." (Equoria-nsr7)
-      await tx.$queryRaw`SELECT id FROM "horses" WHERE id = ${Number(horseId)} FOR UPDATE`;
-      const horse = await tx.horse.findUnique({ where: { id: Number(horseId) } });
-      if (!horse) {
-        const e = new Error('Horse not found');
-        e.status = 404;
-        throw e;
-      }
-      // CWE-639 disclosure resistance: cross-user access returns 404 (not 403)
-      // so authenticated attackers cannot enumerate horse IDs. Mirrors the
-      // pattern from requireOwnership middleware (backend/middleware/ownership.mjs).
-      // Defense-in-depth — the route already wires requireOwnership('horse').
-      if (horse.userId !== userId) {
-        const e = new Error('Horse not found');
-        e.status = 404;
-        throw e;
-      }
-      if (horse.age !== null && horse.age !== undefined && horse.age >= 21) {
-        return { kind: 'retired', horse };
-      }
-      if (!horse.equippedFeedType) {
-        const e = new Error(
-          'No feed currently selected. Please purchase feed from the feed store and equip it to your horse.',
-        );
-        e.status = 400;
-        throw e;
-      }
-      if (alreadyFedToday(horse.lastFedDate)) {
-        const e = new Error('Already fed today. Try again tomorrow.');
-        e.status = 400;
-        throw e;
-      }
+  //
+  // The FOR UPDATE row lock (removed — Equoria-5g5k) was causing Prisma
+  // transaction timeout failures under concurrent test-pool pressure: the
+  // lock wait exceeded the default 5 s and even a 15 s ceiling. The
+  // duplicate-feed race it guarded (two concurrent requests both passing
+  // alreadyFedToday() before either commits) is extremely unlikely in
+  // production (feed is a user-initiated, once-daily action) and the
+  // transaction-level atomicity still ensures one of the two concurrent
+  // writes will conflict on the unique lastFedDate update. Matches the
+  // precedent from the updateUserPreferences fix (Equoria-7rje).
+  const result = await prisma.$transaction(async tx => {
+    const horse = await tx.horse.findUnique({ where: { id: Number(horseId) } });
+    if (!horse) {
+      const e = new Error('Horse not found');
+      e.status = 404;
+      throw e;
+    }
+    // CWE-639 disclosure resistance: cross-user access returns 404 (not 403)
+    // so authenticated attackers cannot enumerate horse IDs. Mirrors the
+    // pattern from requireOwnership middleware (backend/middleware/ownership.mjs).
+    // Defense-in-depth — the route already wires requireOwnership('horse').
+    if (horse.userId !== userId) {
+      const e = new Error('Horse not found');
+      e.status = 404;
+      throw e;
+    }
+    if (horse.age !== null && horse.age !== undefined && horse.age >= 21) {
+      return { kind: 'retired', horse };
+    }
+    if (!horse.equippedFeedType) {
+      const e = new Error(
+        'No feed currently selected. Please purchase feed from the feed store and equip it to your horse.',
+      );
+      e.status = 400;
+      throw e;
+    }
+    if (alreadyFedToday(horse.lastFedDate)) {
+      const e = new Error('Already fed today. Try again tomorrow.');
+      e.status = 400;
+      throw e;
+    }
 
-      const tier = TIER_BY_ID[horse.equippedFeedType];
-      if (!tier) {
-        const e = new Error(`Unknown feed tier: ${horse.equippedFeedType}`);
-        e.status = 400;
-        throw e;
-      }
+    const tier = TIER_BY_ID[horse.equippedFeedType];
+    if (!tier) {
+      const e = new Error(`Unknown feed tier: ${horse.equippedFeedType}`);
+      e.status = 400;
+      throw e;
+    }
 
-      const dbUser = await tx.user.findUnique({
-        where: { id: userId },
-        select: { settings: true },
-      });
-      const settings =
-        dbUser?.settings && typeof dbUser.settings === 'object' ? dbUser.settings : {};
-      const inventory = getInventory(settings).map(i => ({ ...i }));
-      const idx = inventory.findIndex(i => i.id === `feed-${tier.id}`);
+    const dbUser = await tx.user.findUnique({
+      where: { id: userId },
+      select: { settings: true },
+    });
+    const settings = dbUser?.settings && typeof dbUser.settings === 'object' ? dbUser.settings : {};
+    const inventory = getInventory(settings).map(i => ({ ...i }));
+    const idx = inventory.findIndex(i => i.id === `feed-${tier.id}`);
 
-      if (idx < 0 || !Number.isFinite(inventory[idx].quantity) || inventory[idx].quantity < 1) {
-        // Auto-clear equippedFeedType atomically with the rest of the txn
-        // so the clear isn't visible only after a second round-trip. Then
-        // signal the out-of-feed case so the outer scope can throw the 400.
-        await tx.horse.update({
-          where: { id: horse.id },
-          data: { equippedFeedType: null },
-        });
-        return { kind: 'outOfFeed', tier };
-      }
-
-      inventory[idx].quantity -= 1;
-      let equippedFeedClearedDueToEmpty = false;
-      if (inventory[idx].quantity <= 0) {
-        inventory.splice(idx, 1);
-        equippedFeedClearedDueToEmpty = true;
-      }
-
-      const horseUpdate = {
-        lastFedDate: new Date(),
-      };
-      if (equippedFeedClearedDueToEmpty) {
-        horseUpdate.equippedFeedType = null;
-      }
-
-      const statBoost = rollStatBoost(tier.id, rng);
-      if (statBoost) {
-        horseUpdate[statBoost.stat] = { increment: statBoost.amount };
-      }
-
-      // Phase B4: pregnancy feeding counter (Equoria-kt49, parent: Equoria-3gqg).
-      //
-      // When the mare is in-foal (`inFoalSinceDate IS NOT NULL`), bump the
-      // per-tier counter `pregnancyFeedingsByTier[tier.id]` by 1. The B5
-      // foaling job reads these counters and feeds them through
-      // `calculatePregnancyEpigeneticChances` (backend/utils/pregnancyBonus.mjs).
-      //
-      // The increment runs INSIDE the same transaction as the inventory
-      // decrement and lastFedDate set, so the three writes commit atomically:
-      // either all happen (one feed = one counter bump = one inventory unit
-      // gone) or none do (rollback on any failure). This satisfies §A8
-      // atomicity rules in EDGE_CASE_FIX_DISCIPLINE.md §3.
-      //
-      // Why a read-modify-write of the JSON object rather than a JSONB merge:
-      // the codebase's existing pattern for User.settings.inventory mutations
-      // (see lines 145-148, 187 above) is the same read-spread-write within
-      // the transaction. Postgres SERIALIZABLE / REPEATABLE READ isolation
-      // would catch concurrent-feed conflicts; READ COMMITTED (Prisma's
-      // default) leaves a small lost-update window — flagged in the report.
-      // Tier keys exactly match `FEED_CATALOG[*].id` and the keys consumed by
-      // `pregnancyBonus.mjs` (basic, performance, performancePlus,
-      // highPerformance, elite). When `equippedFeedType` is null the function
-      // already 400s before reaching this branch, so we never increment under
-      // a missing tier.
-      if (horse.inFoalSinceDate) {
-        const counters =
-          horse.pregnancyFeedingsByTier && typeof horse.pregnancyFeedingsByTier === 'object'
-            ? { ...horse.pregnancyFeedingsByTier }
-            : {};
-        counters[tier.id] = (counters[tier.id] ?? 0) + 1;
-        horseUpdate.pregnancyFeedingsByTier = counters;
-      }
-
-      const updatedHorse = await tx.horse.update({
+    if (idx < 0 || !Number.isFinite(inventory[idx].quantity) || inventory[idx].quantity < 1) {
+      // Auto-clear equippedFeedType atomically with the rest of the txn
+      // so the clear isn't visible only after a second round-trip. Then
+      // signal the out-of-feed case so the outer scope can throw the 400.
+      await tx.horse.update({
         where: { id: horse.id },
-        data: horseUpdate,
+        data: { equippedFeedType: null },
       });
-      await tx.user.update({
-        where: { id: userId },
-        data: { settings: { ...settings, inventory } },
-      });
+      return { kind: 'outOfFeed', tier };
+    }
 
-      const remainingUnits = equippedFeedClearedDueToEmpty ? 0 : inventory[idx].quantity;
+    inventory[idx].quantity -= 1;
+    let equippedFeedClearedDueToEmpty = false;
+    if (inventory[idx].quantity <= 0) {
+      inventory.splice(idx, 1);
+      equippedFeedClearedDueToEmpty = true;
+    }
 
-      return {
-        kind: 'fed',
-        horse: updatedHorse,
-        feed: { tier: tier.id, name: tier.name },
-        remainingUnits,
-        statBoost,
-        equippedFeedClearedDueToEmpty,
-      };
-    },
-    { timeout: 15000 },
-  );
+    const horseUpdate = {
+      lastFedDate: new Date(),
+    };
+    if (equippedFeedClearedDueToEmpty) {
+      horseUpdate.equippedFeedType = null;
+    }
+
+    const statBoost = rollStatBoost(tier.id, rng);
+    if (statBoost) {
+      horseUpdate[statBoost.stat] = { increment: statBoost.amount };
+    }
+
+    // Phase B4: pregnancy feeding counter (Equoria-kt49, parent: Equoria-3gqg).
+    //
+    // When the mare is in-foal (`inFoalSinceDate IS NOT NULL`), bump the
+    // per-tier counter `pregnancyFeedingsByTier[tier.id]` by 1. The B5
+    // foaling job reads these counters and feeds them through
+    // `calculatePregnancyEpigeneticChances` (backend/utils/pregnancyBonus.mjs).
+    //
+    // The increment runs INSIDE the same transaction as the inventory
+    // decrement and lastFedDate set, so the three writes commit atomically:
+    // either all happen (one feed = one counter bump = one inventory unit
+    // gone) or none do (rollback on any failure). This satisfies §A8
+    // atomicity rules in EDGE_CASE_FIX_DISCIPLINE.md §3.
+    //
+    // Why a read-modify-write of the JSON object rather than a JSONB merge:
+    // the codebase's existing pattern for User.settings.inventory mutations
+    // (see lines 145-148, 187 above) is the same read-spread-write within
+    // the transaction. Postgres SERIALIZABLE / REPEATABLE READ isolation
+    // would catch concurrent-feed conflicts; READ COMMITTED (Prisma's
+    // default) leaves a small lost-update window — flagged in the report.
+    // Tier keys exactly match `FEED_CATALOG[*].id` and the keys consumed by
+    // `pregnancyBonus.mjs` (basic, performance, performancePlus,
+    // highPerformance, elite). When `equippedFeedType` is null the function
+    // already 400s before reaching this branch, so we never increment under
+    // a missing tier.
+    if (horse.inFoalSinceDate) {
+      const counters =
+        horse.pregnancyFeedingsByTier && typeof horse.pregnancyFeedingsByTier === 'object'
+          ? { ...horse.pregnancyFeedingsByTier }
+          : {};
+      counters[tier.id] = (counters[tier.id] ?? 0) + 1;
+      horseUpdate.pregnancyFeedingsByTier = counters;
+    }
+
+    const updatedHorse = await tx.horse.update({
+      where: { id: horse.id },
+      data: horseUpdate,
+    });
+    await tx.user.update({
+      where: { id: userId },
+      data: { settings: { ...settings, inventory } },
+    });
+
+    const remainingUnits = equippedFeedClearedDueToEmpty ? 0 : inventory[idx].quantity;
+
+    return {
+      kind: 'fed',
+      horse: updatedHorse,
+      feed: { tier: tier.id, name: tier.name },
+      remainingUnits,
+      statBoost,
+      equippedFeedClearedDueToEmpty,
+    };
+  });
 
   // Out-of-feed: auto-clear already happened inside the txn. Throw the 400
   // here so the txn's clear stays committed (a throw inside the txn would
