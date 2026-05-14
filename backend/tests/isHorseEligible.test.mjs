@@ -157,19 +157,21 @@ describe('🏆 UNIT: Horse Eligibility - Competition Entry Validation', () => {
       expect(isHorseEligibleForShow(midLevelHorse, validShow)).toBe(true);
     });
 
-    it('should return false for horse with non-numeric level', () => {
+    it('should return true for horse with non-numeric level (level-restriction-exempt)', () => {
+      // Non-numeric level is treated as "no level" — exempt from level restrictions.
+      // Horse model uses horseXp/availableStatPoints rather than a level column.
       const invalidLevelHorse = { ...validHorse, level: 'ten' };
-      expect(isHorseEligibleForShow(invalidLevelHorse, validShow)).toBe(false);
+      expect(isHorseEligibleForShow(invalidLevelHorse, validShow)).toBe(true);
     });
 
-    it('should return false for horse with null level', () => {
+    it('should return true for horse with null level (level-restriction-exempt)', () => {
       const nullLevelHorse = { ...validHorse, level: null };
-      expect(isHorseEligibleForShow(nullLevelHorse, validShow)).toBe(false);
+      expect(isHorseEligibleForShow(nullLevelHorse, validShow)).toBe(true);
     });
 
-    it('should return false for horse with undefined level', () => {
+    it('should return true for horse with undefined level (level-restriction-exempt)', () => {
       const undefinedLevelHorse = { ...validHorse, level: undefined };
-      expect(isHorseEligibleForShow(undefinedLevelHorse, validShow)).toBe(false);
+      expect(isHorseEligibleForShow(undefinedLevelHorse, validShow)).toBe(true);
     });
 
     it('should handle show with no levelMin specified', () => {
