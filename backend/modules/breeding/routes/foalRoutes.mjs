@@ -10,14 +10,44 @@ import { body, param } from 'express-validator';
 import { enrichmentDiscoveryMiddleware } from '../../../middleware/traitDiscoveryMiddleware.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 import {
+  getFoalHandler,
   getFoalDevelopmentHandler,
+  getFoalActivitiesHandler,
   completeFoalActivity,
   advanceFoalDay,
   completeFoalEnrichment,
+  revealFoalTraitsHandler,
+  developFoalHandler,
   graduateFoalHandler,
 } from '../controllers/foalController.mjs';
 
 const router = express.Router();
+
+/**
+ * GET /api/foals/:foalId
+ * Get a foal's basic record. Returns 404 if not found, not owned, or already graduated.
+ *
+ * Equoria-149w
+ */
+router.get(
+  '/:foalId',
+  [param('foalId').isInt({ min: 1 }).withMessage('Foal ID must be a positive integer')],
+  requireOwnership('foal', { idParam: 'foalId' }),
+  getFoalHandler,
+);
+
+/**
+ * GET /api/foals/:foalId/activities
+ * Get the activity log for a foal.
+ *
+ * Equoria-sqvy
+ */
+router.get(
+  '/:foalId/activities',
+  [param('foalId').isInt({ min: 1 }).withMessage('Foal ID must be a positive integer')],
+  requireOwnership('foal', { idParam: 'foalId' }),
+  getFoalActivitiesHandler,
+);
 
 /**
  * GET /api/foals/:foalId/development
@@ -87,6 +117,56 @@ router.post(
   requireOwnership('foal', { idParam: 'foalId' }),
   enrichmentDiscoveryMiddleware(),
   completeFoalEnrichment,
+);
+
+/**
+ * POST /api/foals/:foalId/enrich
+ * Frontend contract alias for POST /:foalId/enrichment. Same validation and handler.
+ *
+ * Equoria-dsyu
+ */
+router.post(
+  '/:foalId/enrich',
+  [
+    param('foalId').isInt({ min: 1 }).withMessage('Foal ID must be a positive integer'),
+    body('day').isInt({ min: 0, max: 6 }).withMessage('Day must be an integer between 0 and 6'),
+    body('activity')
+      .notEmpty()
+      .withMessage('Activity is required')
+      .isString()
+      .withMessage('Activity must be a string')
+      .isLength({ min: 1, max: 100 })
+      .withMessage('Activity must be between 1 and 100 characters'),
+  ],
+  requireOwnership('foal', { idParam: 'foalId' }),
+  enrichmentDiscoveryMiddleware(),
+  completeFoalEnrichment,
+);
+
+/**
+ * POST /api/foals/:foalId/reveal-traits
+ * Trigger trait discovery for a foal.
+ *
+ * Equoria-xgf0
+ */
+router.post(
+  '/:foalId/reveal-traits',
+  [param('foalId').isInt({ min: 1 }).withMessage('Foal ID must be a positive integer')],
+  requireOwnership('foal', { idParam: 'foalId' }),
+  revealFoalTraitsHandler,
+);
+
+/**
+ * PUT /api/foals/:foalId/develop
+ * Update developable fields on a foal's FoalDevelopment record.
+ *
+ * Equoria-rkmh
+ */
+router.put(
+  '/:foalId/develop',
+  [param('foalId').isInt({ min: 1 }).withMessage('Foal ID must be a positive integer')],
+  requireOwnership('foal', { idParam: 'foalId' }),
+  developFoalHandler,
 );
 
 /**
