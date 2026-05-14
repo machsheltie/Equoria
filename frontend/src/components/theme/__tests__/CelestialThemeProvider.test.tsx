@@ -5,9 +5,9 @@
  */
 
 import React from 'react';
-import { render } from '@testing-library/react';
+import { render, act } from '@testing-library/react';
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { MemoryRouter } from '@/test/utils';
+import { MemoryRouter, useSearchParams } from '@/test/utils';
 import { CelestialThemeProvider } from '../CelestialThemeProvider';
 
 // Mock sonner so toast calls don't blow up in jsdom
@@ -27,6 +27,7 @@ describe('CelestialThemeProvider', () => {
   afterEach(() => {
     localStorage.clear();
     document.body.classList.remove('celestial');
+    vi.restoreAllMocks();
   });
 
   it('adds celestial class by default when no localStorage or param', () => {
@@ -127,5 +128,56 @@ describe('CelestialThemeProvider', () => {
       </MemoryRouter>
     );
     expect(toast).not.toHaveBeenCalled();
+  });
+
+  // Gap 1 — URL param cleanup verified (TEA:TA audit 2026-04-10)
+  it('removes ?theme param from URL after applying celestial theme', async () => {
+    function LocationDisplay() {
+      const [params] = useSearchParams();
+      return <span data-testid="search-params">{params.toString()}</span>;
+    }
+
+    const { getByTestId } = render(
+      <MemoryRouter initialEntries={['/?theme=celestial']}>
+        <CelestialThemeProvider />
+        <LocationDisplay />
+      </MemoryRouter>
+    );
+
+    await act(async () => {});
+
+    expect(getByTestId('search-params').textContent).not.toContain('theme');
+  });
+
+  // Gap 2 — safeLocalStorageGet throwing in THEME_KEY read path (TEA:TA audit 2026-04-10)
+  it('defaults to celestial class when localStorage.getItem throws', () => {
+    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+      throw new Error('Private browsing mode');
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <CelestialThemeProvider />
+      </MemoryRouter>
+    );
+
+    expect(document.body.classList.contains('celestial')).toBe(true);
+  });
+
+  // Gap 3 — WELCOME_SHOWN_KEY write failing silently (TEA:TA audit 2026-04-10)
+  it('does not crash and fires toast when localStorage.setItem throws for WELCOME_SHOWN_KEY', async () => {
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+      throw new Error('QuotaExceededError');
+    });
+
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <CelestialThemeProvider />
+      </MemoryRouter>
+    );
+
+    await act(async () => {});
+
+    expect(toast).toHaveBeenCalledWith(expect.stringContaining('Equoria has a new look'));
   });
 });
