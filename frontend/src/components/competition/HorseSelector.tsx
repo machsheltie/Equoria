@@ -19,6 +19,7 @@ import HorseSelectionCard, {
   type RelevantStat,
 } from './HorseSelectionCard';
 import { Loader2 } from 'lucide-react';
+import { competitionsApi } from '@/lib/api-client';
 
 // Re-export Horse type for consumers
 export type { Horse } from './HorseSelectionCard';
@@ -221,37 +222,37 @@ const HorseSelector = memo(
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    // Fetch horses and competition entries on mount
+    // Fetch horses and competition entries on mount.
+    // Uses the canonical apiClient (via competitionsApi) so VITE_API_URL /
+    // relative URL routing, CSRF, and auth cookie handling all match the
+    // rest of the app. Equoria-8jka migration: removed hardcoded
+    // http://localhost:3001 raw fetch() calls.
     useEffect(() => {
       const fetchData = async () => {
         setIsLoading(true);
         setError(null);
 
         try {
-          // Fetch user's horses
-          const horsesResponse = await fetch('http://localhost:3001/api/horses/user/eligible');
+          // Fetch user's eligible horses. apiClient unwraps {success, data}
+          // and returns the inner array directly.
+          const horsesData = await competitionsApi.getEligibleUserHorses();
+          setHorses((horsesData as Horse[]) || []);
 
-          if (!horsesResponse.ok) {
-            throw new Error('Failed to fetch horses');
-          }
-
-          const horsesData = await horsesResponse.json();
-          setHorses(horsesData.data || []);
-
-          // Fetch competition entries to check which horses are already entered
-          const entriesResponse = await fetch(
-            `http://localhost:3001/api/competitions/${competitionId}/entries`
-          );
-
-          if (entriesResponse.ok) {
-            const entriesData = await entriesResponse.json();
+          // Fetch competition entries to check which horses are already entered.
+          // Wrapped in its own try so a failure here doesn't blank out the
+          // horse list (mirrors prior behavior: entries failure was silently
+          // ignored by the old raw-fetch implementation).
+          try {
+            const entriesData = await competitionsApi.getEntries(competitionId);
             const enteredIds = new Set<number>(
-              (entriesData.data || []).map((e: CompetitionEntry) => e.horseId)
+              (entriesData || []).map((e: CompetitionEntry) => e.horseId)
             );
             setAlreadyEnteredIds(enteredIds);
+          } catch {
+            // Entries fetch is non-critical — UI degrades to "no horses already entered"
           }
         } catch (err) {
-          setError(err instanceof Error ? err.message : 'An error occurred');
+          setError(err instanceof Error ? err.message : 'Failed to fetch horses');
         } finally {
           setIsLoading(false);
         }

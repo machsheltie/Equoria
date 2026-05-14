@@ -1203,24 +1203,6 @@ export const handlers = [
     })
   ),
 
-  // Hardcoded port 3001 fallbacks (Equoria-sqyb) — competition HorseSelector.tsx
-  // bypasses apiClient and hits http://localhost:3001 directly. Local test files
-  // (HorseSelector.test.tsx) override these via server.use(...) with populated data;
-  // these are safety-net handlers so any other test that renders the component
-  // does not trigger MSW unhandled-request errors in CI.
-  http.get('http://localhost:3001/api/competitions/:id/entries', () =>
-    HttpResponse.json({
-      success: true,
-      data: [],
-    })
-  ),
-  http.get('http://localhost:3001/api/horses/user/eligible', () =>
-    HttpResponse.json({
-      success: true,
-      data: [],
-    })
-  ),
-
   // Competition Results System - Competition Results
   http.get(`${base}/api/competitions/:id/results`, ({ params }) => {
     const id = Number(params.id);

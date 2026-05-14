@@ -1926,6 +1926,32 @@ export const competitionsApi = {
         showId: data.competitionId,
       }
     ),
+  /**
+   * Get the list of horses already entered into a given competition.
+   * Returns minimal entry data — used by HorseSelector to mark horses as
+   * "already entered" so users can't double-enter the same competition.
+   */
+  getEntries: (competitionId: number) =>
+    apiClient.get<Array<{ horseId: number; horseName: string }>>(
+      `/api/competitions/${competitionId}/entries`
+    ),
+  /**
+   * Get the current user's horses that are eligible for competition entry.
+   * Eligibility filtering (age, health, etc.) is applied per-horse in the
+   * HorseSelector UI; this endpoint returns the candidate set.
+   */
+  getEligibleUserHorses: () =>
+    apiClient.get<
+      Array<{
+        id: number;
+        name: string;
+        age: number;
+        sex: string;
+        level: number;
+        health: string;
+        disciplines: Record<string, number>;
+      }>
+    >('/api/horses/user/eligible'),
 };
 
 /**
