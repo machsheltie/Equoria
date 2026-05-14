@@ -32,6 +32,15 @@ interface BreedSelectorProps {
 }
 
 // ── Stat tendency mini bar ─────────────────────────────────────────────────────
+//
+// Intentional local pattern (Equoria-uas2 decision: Option B).
+// This compact 3-column, h-1 bar layout is designed specifically for tiny
+// breed card grids where showing 6 stats side-by-side in a 80×80px card is
+// the goal. It is NOT a token violation — all colors use CSS variables.
+// game/StatBar (from the game component library) renders one stat at full
+// width with label + value text and is unsuitable for this dense layout.
+// If a multi-stat compact variant is needed elsewhere, create a `size="compact"`
+// prop on game/StatBar rather than reusing this local component.
 
 const STAT_LABELS: (keyof BreedStatTendencies)[] = [
   'speed',
