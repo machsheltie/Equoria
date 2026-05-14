@@ -14,6 +14,7 @@
 #   - frontend_typecheck:  TypeScript noEmit clean
 #   - routes_tests:        All backend route tests passing
 #   - integration_tests:   All real-DB integration tests passing
+#   - module_tests:        All module-colocated tests (backend/modules/**/__tests__/) passing
 #   - e2e_readiness:       Playwright beta-readiness suite (full route coverage) passing
 #   - no_http_cleanup:     No DELETE /test/cleanup routes in HTTP layer
 #   - no_db_mocks:         No jest.mock(prisma) in integration tests
@@ -33,6 +34,7 @@ last_gate_run:
     frontend_typecheck: PASS
     routes_tests: PASS
     integration_tests: PASS
+    module_tests: pending # added by Equoria-grx4; not run in this historical record
     e2e_readiness: PASS
     no_http_cleanup: PASS
     no_db_mocks: PASS

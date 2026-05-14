@@ -103,13 +103,13 @@ echo ""
 # ---------------------------------------------------------------------------
 # GATE 1 — Doctrine checks (machine-enforced CLAUDE.md compliance)
 # ---------------------------------------------------------------------------
-echo "${BOLD}[1/9] Doctrine Checks${RESET}"
+echo "${BOLD}[1/10] Doctrine Checks${RESET}"
 run_gate "Doctrine-checks suite (run-all.sh)" bash scripts/doctrine-checks/run-all.sh
 
 # ---------------------------------------------------------------------------
 # GATE 2 — Backend lint
 # ---------------------------------------------------------------------------
-echo "${BOLD}[2/9] Backend Lint${RESET}"
+echo "${BOLD}[2/10] Backend Lint${RESET}"
 # Run lint:fix first (auto-fixes indent/formatting issues), then verify zero errors remain.
 # ESLint exits 0 with no output when clean; exits non-zero with error output when issues remain.
 run_gate "Backend ESLint (no errors)" bash -c "cd backend && npm run lint:fix > /dev/null 2>&1; npm run lint"
@@ -117,26 +117,34 @@ run_gate "Backend ESLint (no errors)" bash -c "cd backend && npm run lint:fix > 
 # ---------------------------------------------------------------------------
 # GATE 3 — Frontend typecheck
 # ---------------------------------------------------------------------------
-echo "${BOLD}[3/9] Frontend Typecheck${RESET}"
+echo "${BOLD}[3/10] Frontend Typecheck${RESET}"
 run_gate "Frontend tsc --noEmit" bash -c "cd frontend && npx tsc --noEmit 2>&1"
 
 # ---------------------------------------------------------------------------
 # GATE 4 — Backend tests (routes + integration)
 # ---------------------------------------------------------------------------
-echo "${BOLD}[4/9] Backend Tests — Routes + Integration${RESET}"
+echo "${BOLD}[4/10] Backend Tests — Routes + Integration${RESET}"
 run_gate "Routes tests" bash -c "cd backend && npm test -- --testPathPattern='tests/routes' --forceExit 2>&1"
 run_gate "Integration tests" bash -c "cd backend && npm test -- --testPathPattern='tests/integration' --maxWorkers=1 --forceExit 2>&1"
 
 # ---------------------------------------------------------------------------
+# GATE 4b — Backend module-colocated tests (backend/modules/**/__tests__/)
+# ---------------------------------------------------------------------------
+# Commit 0d4c313a migrated 353+ tests to backend/modules/**/__tests__/. This
+# gate ensures those module-colocated tests are included in the readiness check.
+echo "${BOLD}[4b/10] Backend Tests — Module-Colocated (__tests__ dirs)${RESET}"
+run_gate "Module tests (backend/modules/*/__tests__)" bash -c "cd backend && npm test -- --testPathPattern='modules/.*/__tests__/' --maxWorkers=2 --forceExit 2>&1"
+
+# ---------------------------------------------------------------------------
 # GATE 5 — E2E beta readiness route coverage (production-parity)
 # ---------------------------------------------------------------------------
-echo "${BOLD}[5/9] E2E Readiness Gate — Full Beta Route Coverage${RESET}"
+echo "${BOLD}[5/10] E2E Readiness Gate — Full Beta Route Coverage${RESET}"
 run_gate "Playwright beta-readiness suite" bash -c "npm run test:e2e:beta-readiness 2>&1"
 
 # ---------------------------------------------------------------------------
 # GATE 6 — Security scan: no HTTP test-cleanup routes
 # ---------------------------------------------------------------------------
-echo "${BOLD}[6/9] Security Scan — No HTTP Cleanup Routes${RESET}"
+echo "${BOLD}[6/10] Security Scan — No HTTP Cleanup Routes${RESET}"
 printf "  Running: Check for test/cleanup routes in backend modules ...\n"
 if grep -rn "test/cleanup\|testCleanup\|test-cleanup" \
     backend/modules/*/routes/ \
@@ -150,7 +158,7 @@ fi
 # ---------------------------------------------------------------------------
 # GATE 7 — Mock scan: no DB mocks in integration tests + no frontend mocks
 # ---------------------------------------------------------------------------
-echo "${BOLD}[7/9] Mock Scan — Integration Tests + Frontend${RESET}"
+echo "${BOLD}[7/10] Mock Scan — Integration Tests + Frontend${RESET}"
 printf "  Running: Check integration tests for DB mocks ...\n"
 if grep -rn \
     "jest\.unstable_mockModule.*prisma\|jest\.unstable_mockModule.*db/\|jest\.mock.*prisma\|jest\.mock.*db/" \
@@ -174,7 +182,7 @@ fi
 # ---------------------------------------------------------------------------
 # GATE 8 — Bypass header scan: no test bypass headers in E2E or api-client
 # ---------------------------------------------------------------------------
-echo "${BOLD}[8/9] Bypass Header Scan — E2E Tests + API Client${RESET}"
+echo "${BOLD}[8/10] Bypass Header Scan — E2E Tests + API Client${RESET}"
 printf "  Running: Check E2E specs and api-client for bypass headers ...\n"
 # Guard files (tests/e2e/readiness/support/prodParity.ts and
 # production-parity.guard.spec.ts) intentionally contain bypass-header
@@ -193,7 +201,7 @@ fi
 # ---------------------------------------------------------------------------
 # GATE 9 — Skip scan: no test.skip on beta-critical E2E path
 # ---------------------------------------------------------------------------
-echo "${BOLD}[9/9] Skip Scan — Beta Critical E2E Path${RESET}"
+echo "${BOLD}[9/10] Skip Scan — Beta Critical E2E Path${RESET}"
 printf "  Running: Check beta-critical-path.spec.ts for unconditional test.skip / test.fixme ...\n"
 # Allow test.skip(true, ...) inside credential-guard if-blocks (infrastructure guards, not permanent skips).
 # Exclude comment lines (JSDoc * and // comments) and credential-guard in-body skips.
