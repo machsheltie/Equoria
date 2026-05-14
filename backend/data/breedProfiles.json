@@ -14196,50 +14196,50 @@
     "rating_profiles": {
       "conformation": {
         "head": {
-          "mean": 74,
-          "std_dev": 8
+          "mean": 82,
+          "std_dev": 5
         },
         "neck": {
-          "mean": 74,
-          "std_dev": 8
+          "mean": 80,
+          "std_dev": 5
         },
         "shoulders": {
-          "mean": 74,
-          "std_dev": 8
+          "mean": 71,
+          "std_dev": 6
         },
         "back": {
-          "mean": 76,
-          "std_dev": 8
+          "mean": 69,
+          "std_dev": 7
         },
         "hindquarters": {
-          "mean": 76,
-          "std_dev": 8
+          "mean": 73,
+          "std_dev": 6
         },
         "legs": {
-          "mean": 76,
-          "std_dev": 8
+          "mean": 71,
+          "std_dev": 6
         },
         "hooves": {
-          "mean": 76,
-          "std_dev": 8
+          "mean": 72,
+          "std_dev": 7
         },
         "topline": {
-          "mean": 76,
-          "std_dev": 8
+          "mean": 74,
+          "std_dev": 6
         }
       },
       "gaits": {
         "walk": {
-          "mean": 78,
-          "std_dev": 9
+          "mean": 70,
+          "std_dev": 8
         },
         "trot": {
-          "mean": 72,
-          "std_dev": 9
+          "mean": 76,
+          "std_dev": 6
         },
         "canter": {
-          "mean": 70,
-          "std_dev": 9
+          "mean": 72,
+          "std_dev": 7
         },
         "gallop": {
           "mean": 70,
@@ -14247,7 +14247,7 @@
         },
         "gaiting": {
           "mean": 82,
-          "std_dev": 9
+          "std_dev": 5
         }
       },
       "is_gaited_breed": true,
@@ -16325,54 +16325,54 @@
     "rating_profiles": {
       "conformation": {
         "head": {
-          "mean": 68,
-          "std_dev": 8
+          "mean": 75,
+          "std_dev": 7
         },
         "neck": {
-          "mean": 66,
-          "std_dev": 8
+          "mean": 70,
+          "std_dev": 7
         },
         "shoulders": {
-          "mean": 66,
-          "std_dev": 8
+          "mean": 68,
+          "std_dev": 7
         },
         "back": {
-          "mean": 68,
-          "std_dev": 8
+          "mean": 65,
+          "std_dev": 7
         },
         "hindquarters": {
-          "mean": 68,
-          "std_dev": 8
+          "mean": 70,
+          "std_dev": 6
         },
         "legs": {
-          "mean": 70,
-          "std_dev": 8
+          "mean": 68,
+          "std_dev": 7
         },
         "hooves": {
-          "mean": 74,
-          "std_dev": 8
+          "mean": 68,
+          "std_dev": 7
         },
         "topline": {
-          "mean": 70,
-          "std_dev": 8
+          "mean": 67,
+          "std_dev": 7
         }
       },
       "gaits": {
         "walk": {
-          "mean": 72,
+          "mean": 65,
           "std_dev": 9
         },
         "trot": {
-          "mean": 72,
-          "std_dev": 9
+          "mean": 70,
+          "std_dev": 8
         },
         "canter": {
-          "mean": 70,
-          "std_dev": 9
+          "mean": 68,
+          "std_dev": 8
         },
         "gallop": {
-          "mean": 68,
-          "std_dev": 9
+          "mean": 72,
+          "std_dev": 8
         },
         "gaiting": null
       },
@@ -20282,45 +20282,45 @@
     "rating_profiles": {
       "conformation": {
         "head": {
-          "mean": 74,
-          "std_dev": 8
+          "mean": 75,
+          "std_dev": 6
         },
         "neck": {
           "mean": 74,
-          "std_dev": 8
+          "std_dev": 7
         },
         "shoulders": {
-          "mean": 74,
-          "std_dev": 8
+          "mean": 72,
+          "std_dev": 5
         },
         "back": {
-          "mean": 76,
-          "std_dev": 8
+          "mean": 70,
+          "std_dev": 7
         },
         "hindquarters": {
-          "mean": 76,
-          "std_dev": 8
+          "mean": 78,
+          "std_dev": 6
         },
         "legs": {
-          "mean": 76,
-          "std_dev": 8
+          "mean": 72,
+          "std_dev": 6
         },
         "hooves": {
-          "mean": 76,
-          "std_dev": 8
+          "mean": 70,
+          "std_dev": 7
         },
         "topline": {
-          "mean": 76,
-          "std_dev": 8
+          "mean": 72,
+          "std_dev": 6
         }
       },
       "gaits": {
         "walk": {
-          "mean": 78,
-          "std_dev": 9
+          "mean": 72,
+          "std_dev": 5
         },
         "trot": {
-          "mean": 72,
+          "mean": 65,
           "std_dev": 9
         },
         "canter": {
@@ -20328,12 +20328,12 @@
           "std_dev": 9
         },
         "gallop": {
-          "mean": 70,
+          "mean": 65,
           "std_dev": 9
         },
         "gaiting": {
-          "mean": 82,
-          "std_dev": 9
+          "mean": 85,
+          "std_dev": 5
         }
       },
       "is_gaited_breed": true,
@@ -20431,54 +20431,54 @@
     "rating_profiles": {
       "conformation": {
         "head": {
-          "mean": 76,
-          "std_dev": 8
+          "mean": 78,
+          "std_dev": 5
         },
         "neck": {
-          "mean": 74,
-          "std_dev": 8
+          "mean": 75,
+          "std_dev": 6
         },
         "shoulders": {
-          "mean": 74,
-          "std_dev": 8
+          "mean": 72,
+          "std_dev": 5
         },
         "back": {
-          "mean": 68,
-          "std_dev": 8
+          "mean": 70,
+          "std_dev": 7
         },
         "hindquarters": {
           "mean": 76,
-          "std_dev": 8
+          "std_dev": 6
         },
         "legs": {
           "mean": 74,
-          "std_dev": 8
+          "std_dev": 6
         },
         "hooves": {
           "mean": 70,
-          "std_dev": 8
+          "std_dev": 7
         },
         "topline": {
-          "mean": 72,
-          "std_dev": 8
+          "mean": 73,
+          "std_dev": 7
         }
       },
       "gaits": {
         "walk": {
-          "mean": 62,
-          "std_dev": 9
+          "mean": 65,
+          "std_dev": 8
         },
         "trot": {
-          "mean": 72,
-          "std_dev": 9
+          "mean": 75,
+          "std_dev": 7
         },
         "canter": {
-          "mean": 78,
-          "std_dev": 9
+          "mean": 80,
+          "std_dev": 6
         },
         "gallop": {
           "mean": 90,
-          "std_dev": 9
+          "std_dev": 4
         },
         "gaiting": null
       },
@@ -21746,44 +21746,44 @@
       "conformation": {
         "head": {
           "mean": 74,
-          "std_dev": 8
+          "std_dev": 7
         },
         "neck": {
-          "mean": 74,
-          "std_dev": 8
+          "mean": 72,
+          "std_dev": 7
         },
         "shoulders": {
-          "mean": 74,
-          "std_dev": 8
+          "mean": 70,
+          "std_dev": 7
         },
         "back": {
-          "mean": 76,
+          "mean": 68,
           "std_dev": 8
         },
         "hindquarters": {
-          "mean": 76,
-          "std_dev": 8
+          "mean": 75,
+          "std_dev": 7
         },
         "legs": {
-          "mean": 76,
-          "std_dev": 8
+          "mean": 70,
+          "std_dev": 7
         },
         "hooves": {
-          "mean": 76,
+          "mean": 70,
           "std_dev": 8
         },
         "topline": {
-          "mean": 76,
-          "std_dev": 8
+          "mean": 70,
+          "std_dev": 7
         }
       },
       "gaits": {
         "walk": {
-          "mean": 78,
-          "std_dev": 9
+          "mean": 70,
+          "std_dev": 8
         },
         "trot": {
-          "mean": 72,
+          "mean": 68,
           "std_dev": 9
         },
         "canter": {
@@ -21791,12 +21791,12 @@
           "std_dev": 9
         },
         "gallop": {
-          "mean": 70,
+          "mean": 72,
           "std_dev": 9
         },
         "gaiting": {
-          "mean": 82,
-          "std_dev": 9
+          "mean": 85,
+          "std_dev": 7
         }
       },
       "is_gaited_breed": true,
