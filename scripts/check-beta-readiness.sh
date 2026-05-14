@@ -154,7 +154,7 @@ run_gate "Integration tests" bash -c "cd backend && npm test -- --testPathPatter
 # Commit 0d4c313a migrated 353+ tests to backend/modules/**/__tests__/. This
 # gate ensures those module-colocated tests are included in the readiness check.
 echo "${BOLD}[4b/10] Backend Tests — Module-Colocated (__tests__ dirs)${RESET}"
-run_gate "Module tests (backend/modules/*/__tests__)" bash -c "cd backend && npm test -- --testPathPattern='modules/.*/__tests__/' --maxWorkers=2 --forceExit 2>&1"
+run_gate "Module tests (backend/modules/*/__tests__)" bash -c "cd backend && npm test -- --testPathPattern='modules/.*/__tests__/' --maxWorkers=1 --forceExit 2>&1"
 
 # ---------------------------------------------------------------------------
 # GATE 5 — E2E beta readiness route coverage (production-parity)

@@ -613,7 +613,7 @@ export const getUserRankSummary = async (req, res) => {
         categoryLabel: 'Level',
         rank: levelRank,
         totalEntries: totalUsers,
-        rankChange: snapshotMap['level'] != null ? snapshotMap['level'] - levelRank : 0,
+        rankChange: snapshotMap['level'] !== null ? snapshotMap['level'] - levelRank : 0,
         primaryStat: targetUser.level,
         statLabel: 'Level',
       },
@@ -623,7 +623,7 @@ export const getUserRankSummary = async (req, res) => {
         rank: xpRank,
         // Every xp_event has a user FK, so totalUsers >= xpGrouped.length.
         totalEntries: totalUsers,
-        rankChange: snapshotMap['xp'] != null ? snapshotMap['xp'] - xpRank : 0,
+        rankChange: snapshotMap['xp'] !== null ? snapshotMap['xp'] - xpRank : 0,
         primaryStat: targetXpTotal,
         statLabel: 'XP',
       },
@@ -635,7 +635,7 @@ export const getUserRankSummary = async (req, res) => {
         // Ensure totalEntries >= rank so the UI never renders "#N of M<N".
         totalEntries: Math.max(horseOwnerCount, earningsRank),
         rankChange:
-          snapshotMap['horse-earnings'] != null ? snapshotMap['horse-earnings'] - earningsRank : 0,
+          snapshotMap['horse-earnings'] !== null ? snapshotMap['horse-earnings'] - earningsRank : 0,
         primaryStat: targetEarningsTotal,
         statLabel: 'Earnings',
       },
@@ -645,7 +645,7 @@ export const getUserRankSummary = async (req, res) => {
         rank: performanceRank,
         totalEntries: Math.max(horseOwnerCount, performanceRank),
         rankChange:
-          snapshotMap['horse-performance'] != null
+          snapshotMap['horse-performance'] !== null
             ? snapshotMap['horse-performance'] - performanceRank
             : 0,
         primaryStat: targetPerfMax,
