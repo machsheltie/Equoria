@@ -105,6 +105,15 @@ describe('Button sizes', () => {
     const btn = screen.getByRole('button', { name: 'Large' });
     expect(btn.className).toContain('h-12');
   });
+
+  it('xl size is h-14 with px-10 py-4 text-lg', () => {
+    render(<Button size="xl">Extra Large</Button>);
+    const btn = screen.getByRole('button', { name: 'Extra Large' });
+    expect(btn.className).toContain('h-14');
+    expect(btn.className).toContain('px-10');
+    expect(btn.className).toContain('py-4');
+    expect(btn.className).toContain('text-lg');
+  });
 });
 
 describe('Button accessibility', () => {

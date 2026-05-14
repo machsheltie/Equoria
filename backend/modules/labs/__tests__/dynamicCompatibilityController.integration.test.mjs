@@ -54,10 +54,12 @@ beforeAll(async () => {
 }, 30000);
 
 afterAll(async () => {
-  await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
-  await prisma.groom.delete({ where: { id: groom.id } }).catch(() => {});
+  await Promise.allSettled([
+    prisma.horse.delete({ where: { id: horse.id } }),
+    prisma.groom.delete({ where: { id: groom.id } }),
+  ]);
   await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
-}, 30000);
+}, 60000);
 
 // ─── GET /api/compatibility/config ───────────────────────────────────────────
 
