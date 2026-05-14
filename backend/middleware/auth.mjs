@@ -253,9 +253,18 @@ export const requireRole = (...roles) => {
             req.user.role = record.role;
           }
         } catch (lookupError) {
+          // Fail-closed on DB lookup errors — consistent with the passwordChangedAt
+          // catch block in authenticateToken above. A transient DB failure must not
+          // silently fall through to the role-check, which would return a misleading
+          // 403 "Insufficient permissions" to a valid admin user (Equoria-f8bp).
           logger.error(
             `[auth] requireRole DB lookup failed for user ${req.user.id}: ${lookupError.message}`,
           );
+          return res.status(500).json({
+            success: false,
+            message: 'Role verification unavailable. Please retry.',
+            status: 'error',
+          });
         }
       }
 
