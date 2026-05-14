@@ -212,7 +212,9 @@ describe('Temperament Assignment Service', () => {
           }
           const { stat, df } = chiSquared(observed, expected);
           const criticalValue = CHI2_CRITICAL_P001[df] ?? CHI2_CRITICAL_P001[20];
-          if (stat < criticalValue) passes++;
+          if (stat < criticalValue) {
+            passes++;
+          }
         }
         // At least one of two independent runs must pass the p=0.001 chi-squared test
         expect(passes).toBeGreaterThanOrEqual(1);
