@@ -248,7 +248,7 @@ describe('Statistical validation - breeding inheritance', () => {
     const conformation = BREED_GENETIC_PROFILES[breedId].rating_profiles.conformation;
     const sire = uniformScores(80);
     const dam = uniformScores(70);
-    const sampleSize = 1000;
+    const sampleSize = 10000;
     const allScores = [];
 
     for (let i = 0; i < sampleSize; i++) {
@@ -269,8 +269,8 @@ describe('Statistical validation - breeding inheritance', () => {
       }).length;
 
       const percentage = (withinRange / sampleSize) * 100;
-      // Normal distribution: ~95.4% within 2 std_devs
-      // Use 90% as conservative lower bound to avoid flakiness
+      // Normal distribution: ~95.4% within 2 std_devs.
+      // n=10000 makes sampling variance negligible (z-score ~23 below threshold).
       expect(percentage).toBeGreaterThanOrEqual(90);
     }
   });

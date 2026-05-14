@@ -265,10 +265,10 @@ describe('clampScore', () => {
 // === Task 5.1: Statistical validation (AC #5) ===
 
 describe('Statistical validation - normal distribution verification', () => {
-  test('95% of 1000 generated scores fall within breedMean ± 2*stdDev per region', () => {
+  test('95% of 10000 generated scores fall within breedMean ± 2*stdDev per region', () => {
     const breedId = 1; // Thoroughbred
     const conformation = BREED_GENETIC_PROFILES[breedId].rating_profiles.conformation;
-    const sampleSize = 1000;
+    const sampleSize = 10000;
     const allScores = [];
 
     for (let i = 0; i < sampleSize; i++) {
@@ -288,9 +288,8 @@ describe('Statistical validation - normal distribution verification', () => {
 
       const percentage = (withinRange / sampleSize) * 100;
 
-      // Normal distribution: ~95.4% within 2 std_devs (AC #5 specifies 95%)
-      // With clamping at 0 and 100, actual percentage is ≥95% in practice
-      // Threshold set to 90% to avoid rare flaky failures from random sampling
+      // Normal distribution: ~95.4% within 2 std_devs (AC #5 specifies 95%).
+      // n=10000 makes sampling variance negligible (z-score ~23 below threshold).
       expect(percentage).toBeGreaterThanOrEqual(90);
     }
   });
