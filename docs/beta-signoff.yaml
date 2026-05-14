@@ -23,45 +23,29 @@
 # ============================================================================
 
 last_gate_run:
-  # Equoria-2xlk: module_tests gate was added by Equoria-grx4 on 2026-05-14,
-  # after this historical record was written. Gate 4b was not run in this record.
-  # As of 2026-05-14 commit 733f531b, module_tests is FAILING — multiple module
-  # test suites fail in CI (auth, horses, grooms, labs, competition, traits, services).
-  # This record is preserved accurately; a new full gate run is required once
-  # module test failures are resolved.
-  commit: 41354f48
-  date: '2026-05-12 12:55:37'
-  gates_passed: 11
+  commit: d0853723
+  date: '2026-05-14 14:57:28'
+  gates_passed: 12
   gates_failed: 0
-  duration_seconds: 189
+  duration_seconds: 585
   gate_detail:
-    doctrine_checks: PASS
-    backend_lint: PASS
-    frontend_typecheck: PASS
+    doctrine_checks_suite_run_all_sh: PASS
+    backend_eslint_no_errors: PASS
+    frontend_tsc_noemit: PASS
     routes_tests: PASS
     integration_tests: PASS
-    module_tests: NOT_RUN # gate did not exist when this record was written (added by Equoria-grx4 on 2026-05-14)
-    e2e_readiness: PASS
-    no_http_cleanup: PASS
-    no_db_mocks: PASS
-    no_mock_data_frontend: PASS
-    no_bypass_headers: PASS
-    no_beta_skips: PASS
+    module_tests_backend_modules_tests: PASS
+    playwright_beta_readiness_suite: PASS
+    no_http_test_cleanup_routes: PASS
+    no_db_mocks_in_integration_tests: PASS
+    no_mock_data_in_frontend_production_code: PASS
+    no_bypass_headers_in_e2e_api_client: PASS
+    no_test_skip_on_beta_critical_paths_structural_check_file_exists_no_unconditional_skips: PASS
 
 current_gate_status:
-  # Partial gate check run on 2026-05-14 (commit 733f531b).
-  # Full readiness script did not complete — module tests still running locally.
-  # CI evidence (run 25859047971): Lint & Format PASS, Backend Tests FAIL.
-  # module_tests failures confirmed in CI shard 3: parameter-pollution,
-  # dynamicCompatibilityScoring, flagAssignmentEngine, developmentalWindowSystem,
-  # horseTemperamentAnalysis, conformationShowScoring, groomPersonalityTraits,
-  # security-attack-simulation, owasp-comprehensive, sql-injection-attempts, and more.
-  commit: 733f531b
-  date: '2026-05-14 08:10:00'
-  gate_detail:
-    backend_lint: PASS # CI run 25859047971 Lint & Format job passed
-    module_tests: FAIL # CI shard 3 confirmed multiple module __tests__/ failures
-    e2e_readiness: NOT_RUN # e2e-tests job blocked by backend-tests failures
+  # Full gate run completed 2026-05-14 at commit d0853723 — ALL 12 GATES PASS.
+  # See last_gate_run above for full gate detail.
+  # Human signoff pending: set signed_off_by + signed_off_date below to complete beta readiness.
 
 previous_gate_run:
   commit: 8b1c0c11
