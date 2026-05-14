@@ -34,7 +34,8 @@ describe('deployable runtime secret policy', () => {
   });
 
   it('script-level validation fails deployable modes that use committed test-only refresh secrets', () => {
-    process.env.NODE_ENV = 'beta-readiness';
+    // beta IS a deployable mode; beta-readiness is the local E2E harness (not deployable)
+    process.env.NODE_ENV = 'beta';
     process.env.JWT_SECRET = 'StrongSecret1234567890ABCDEFGHIJK';
     process.env.JWT_REFRESH_SECRET = 'test-jwt-refresh-secret-for-testing-only-32chars';
 
