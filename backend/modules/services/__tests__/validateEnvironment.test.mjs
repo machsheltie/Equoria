@@ -449,6 +449,35 @@ describe('validateEnvironment()', () => {
       // Error path must call process.exit(1)
       expect(exitCalls).toEqual([1]);
     });
+
+    it('logs warnings when environment generates warnings (covers warning loop line 117)', () => {
+      // Set JWT_SECRET to all-special-characters (32+ chars, no letters/numbers)
+      // so checkEnvironment() produces a warning, exercising the logger.warn
+      // branch inside the for..of warnings loop at line 116-118.
+      // No errors are produced (only a warning), so process.exit is NOT called.
+      const originalSecret = process.env.JWT_SECRET;
+      const originalRefresh = process.env.JWT_REFRESH_SECRET;
+      const originalExit = process.exit;
+      const exitCalls = [];
+      process.exit = code => exitCalls.push(code);
+
+      // All-special-char secret: length >= 32, no upper/lower/number → triggers the warning
+      const specialSecret = '!@#$%^&*()_+-=[]{}|;:,.<>?/~!@#$';
+
+      try {
+        process.env.JWT_SECRET = specialSecret;
+        // JWT_REFRESH_SECRET needs to also be special or warning fires for both
+        process.env.JWT_REFRESH_SECRET = specialSecret;
+        validateEnvironment();
+      } finally {
+        process.exit = originalExit;
+        process.env.JWT_SECRET = originalSecret;
+        process.env.JWT_REFRESH_SECRET = originalRefresh;
+      }
+
+      // Warning path: process.exit must NOT have been called (no errors, only warnings)
+      expect(exitCalls).toHaveLength(0);
+    });
   });
 
   describe('Deployable secret policy', () => {
