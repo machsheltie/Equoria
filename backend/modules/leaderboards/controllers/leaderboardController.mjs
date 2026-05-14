@@ -634,7 +634,8 @@ export const getUserRankSummary = async (req, res) => {
         // Guard: if target has zero horses, their rank can be horseOwnerCount + 1.
         // Ensure totalEntries >= rank so the UI never renders "#N of M<N".
         totalEntries: Math.max(horseOwnerCount, earningsRank),
-        rankChange: snapshotMap['horse-earnings'] != null ? snapshotMap['horse-earnings'] - earningsRank : 0,
+        rankChange:
+          snapshotMap['horse-earnings'] != null ? snapshotMap['horse-earnings'] - earningsRank : 0,
         primaryStat: targetEarningsTotal,
         statLabel: 'Earnings',
       },
@@ -643,7 +644,10 @@ export const getUserRankSummary = async (req, res) => {
         categoryLabel: 'Horse Performance',
         rank: performanceRank,
         totalEntries: Math.max(horseOwnerCount, performanceRank),
-        rankChange: snapshotMap['horse-performance'] != null ? snapshotMap['horse-performance'] - performanceRank : 0,
+        rankChange:
+          snapshotMap['horse-performance'] != null
+            ? snapshotMap['horse-performance'] - performanceRank
+            : 0,
         primaryStat: targetPerfMax,
         statLabel: 'Score',
       },
@@ -691,7 +695,9 @@ export const captureRankSnapshots = async (req, res) => {
         where: { id: userId },
         select: { level: true, xp: true },
       });
-      if (!user) continue;
+      if (!user) {
+        continue;
+      }
 
       const [usersAheadLevel, targetXpAgg, targetEarningsAgg, targetPerfAgg] = await Promise.all([
         prisma.user.count({
