@@ -206,7 +206,9 @@ describe('trainingAnalyticsService.getTrainingHistory', () => {
   }, 30000);
 
   afterAll(async () => {
-    if (!dbAvailable || !prisma) return;
+    if (!dbAvailable || !prisma) {
+      return;
+    }
     try {
       if (testHorse?.id) {
         await prisma.trainingLog.deleteMany({ where: { horseId: testHorse.id } });

@@ -308,7 +308,7 @@ describe('generateStoreStats', () => {
         const results = Array.from({ length: 20 }, () => generateStoreStats(breed));
         const totals = results.map(r => STAT_KEYS.reduce((s, k) => s + r[k], 0));
         // Not all totals can be identical (unless every stat hit mean exactly)
-        const uniqueTotals = new Set(totals);
+        const _uniqueTotals = new Set(totals);
         // At minimum, the function returns valid stats every time
         results.forEach(r => {
           const total = STAT_KEYS.reduce((s, k) => s + r[k], 0);

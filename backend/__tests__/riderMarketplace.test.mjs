@@ -203,14 +203,16 @@ describe('generateRandomRider', () => {
   });
 
   it('rookie and developing riders have empty knownAffinities', () => {
-    let checkedBoth = { rookie: false, developing: false };
+    const checkedBoth = { rookie: false, developing: false };
     for (let i = 0; i < 100; i++) {
       const rider = generateRandomRider();
       if (rider.skillLevel === 'rookie' || rider.skillLevel === 'developing') {
         expect(rider.knownAffinities).toEqual([]);
         checkedBoth[rider.skillLevel] = true;
       }
-      if (checkedBoth.rookie && checkedBoth.developing) break;
+      if (checkedBoth.rookie && checkedBoth.developing) {
+        break;
+      }
     }
   });
 
