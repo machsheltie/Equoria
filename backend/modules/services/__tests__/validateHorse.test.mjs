@@ -55,7 +55,7 @@ async function runChain(chain, req) {
     // The validateCreateHorse chain uses .forEach() inside an array literal
     // which inserts `undefined` for those stat validators (forEach returns undefined).
     // Skip nullish items and non-runnable items safely.
-    if (validator != null && typeof validator.run === 'function') {
+    if (validator !== null && validator !== undefined && typeof validator.run === 'function') {
       await validator.run(req);
     }
   }
