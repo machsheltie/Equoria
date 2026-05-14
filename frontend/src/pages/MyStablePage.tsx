@@ -61,6 +61,7 @@ interface StableProfile {
 const StableProfileTab: React.FC<{
   stable: StableProfile;
   isLoading: boolean;
+  isCareerStatsError: boolean;
   isEditing: boolean;
   draftStableName: string;
   onDraftStableNameChange: (_value: string) => void;
@@ -71,6 +72,7 @@ const StableProfileTab: React.FC<{
 }> = ({
   stable,
   isLoading,
+  isCareerStatsError,
   isEditing,
   draftStableName,
   onDraftStableNameChange,
@@ -124,6 +126,11 @@ const StableProfileTab: React.FC<{
       <h3 className="text-sm font-semibold text-white/50 uppercase tracking-widest mb-4">
         Stable Statistics
       </h3>
+      {isCareerStatsError && (
+        <p className="text-sm text-amber-400/80 mb-3" data-testid="career-stats-error">
+          Stats unavailable — could not load competition data.
+        </p>
+      )}
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4" data-testid="stable-stats">
         <StatBlock
           label="Total Horses"
@@ -267,7 +274,9 @@ const MyStablePage: React.FC = () => {
   // Story 21S-4: real user-level career totals via /api/users/:userId/competition-stats
   // User.id is declared as `number` in useAuth but the server returns a UUID
   // string; stringify defensively so the hook receives the shape it expects.
-  const { data: userCompetitionStats } = useUserCompetitionStats(user?.id ? String(user.id) : null);
+  const { data: userCompetitionStats, isError: isCompetitionStatsError } = useUserCompetitionStats(
+    user?.id ? String(user.id) : null
+  );
 
   const retiredHorses = horses.filter((horse) => (horse.ageYears ?? horse.age ?? 0) >= 21);
 
@@ -313,6 +322,8 @@ const MyStablePage: React.FC = () => {
 
   // Story 21S-4: competitionsEntered + firstPlaceFinishes now come from the
   // backend aggregation. Falls back to 0 only while the query is pending.
+  // When the query has errored, we keep zeros for the numeric stats but also
+  // expose isCompetitionStatsError so the UI can render a visible notice.
   const competitionsEntered = userCompetitionStats?.totalCompetitions ?? 0;
   const firstPlaceFinishes = userCompetitionStats?.totalWins ?? 0;
 
@@ -385,6 +396,7 @@ const MyStablePage: React.FC = () => {
                 <StableProfileTab
                   stable={stable}
                   isLoading={isLoading}
+                  isCareerStatsError={isCompetitionStatsError}
                   isEditing={isEditingStable}
                   draftStableName={draftStableName}
                   onDraftStableNameChange={setDraftStableName}

@@ -117,27 +117,39 @@ describe('MyStablePage — career stats wiring (Story 21S-4)', () => {
     expect(within(statsGrid).getByText('5')).toBeInTheDocument();
   });
 
-  it('renders zeros when the user has no competition history yet', async () => {
+  it('shows zeros and no error notice when query is loading/pending (isLoading: true)', async () => {
     mockUseHorses.mockReturnValue({ data: [], isLoading: false });
     mockUseUserCompetitionStats.mockReturnValue({
-      data: {
-        userId: 'user-123',
-        totalCompetitions: 0,
-        totalWins: 0,
-        totalTop3: 0,
-        winRate: 0,
-        totalPrizeMoney: 0,
-        totalXpGained: 0,
-        bestPlacement: 0,
-        mostSuccessfulDiscipline: '',
-        recentCompetitions: [],
-      },
-      isLoading: false,
+      data: undefined,
+      isLoading: true,
+      isError: false,
     });
 
     renderWithProviders();
 
-    // Page renders — zeros here are REAL backend zeros, not hardcoded
+    // Stats grid renders with 0 fallback values
+    const statsGrid = await screen.findByTestId('stable-stats');
+    expect(within(statsGrid).getByText('Competitions')).toBeInTheDocument();
+    // No error notice should be shown during loading
+    expect(screen.queryByTestId('career-stats-error')).not.toBeInTheDocument();
+  });
+
+  it('shows career-stats-error notice when useUserCompetitionStats fails (isError: true)', async () => {
+    mockUseHorses.mockReturnValue({ data: [], isLoading: false });
+    mockUseUserCompetitionStats.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+      error: new Error('Network error'),
+    });
+
+    renderWithProviders();
+
+    // The error notice must be visible with the correct testid
+    const errorNotice = await screen.findByTestId('career-stats-error');
+    expect(errorNotice).toBeInTheDocument();
+    expect(errorNotice).toHaveTextContent(/stats unavailable/i);
+    // Stats grid is still rendered (not replaced) showing zero fallbacks
     const statsGrid = await screen.findByTestId('stable-stats');
     expect(within(statsGrid).getByText('Competitions')).toBeInTheDocument();
   });
