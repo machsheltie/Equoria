@@ -2,9 +2,9 @@
 // Tests: weighted random selection, breed-specific generation, edge cases,
 // statistical distribution (chi-squared), and backward compatibility.
 
-import { generateTemperament, weightedRandomSelect } from '../modules/horses/services/temperamentService.mjs';
-import { TEMPERAMENT_TYPES } from '../modules/horses/data/breedGeneticProfiles.mjs';
-import { getBreedProfile } from '../modules/horses/data/breedProfileLoader.mjs';
+import { generateTemperament, weightedRandomSelect } from '../services/temperamentService.mjs';
+import { TEMPERAMENT_TYPES } from '../data/breedGeneticProfiles.mjs';
+import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 
 describe('Temperament Assignment Service', () => {
   // ── weightedRandomSelect ────────────────────────────────────────────────

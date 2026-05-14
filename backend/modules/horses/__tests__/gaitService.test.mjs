@@ -14,7 +14,7 @@ import {
   validateGaitScores,
   generateGaitScores,
   generateInheritedGaitScores,
-} from '../../modules/horses/services/gaitService.mjs';
+} from '../services/gaitService.mjs';
 
 // ---------------------------------------------------------------------------
 // Constants

@@ -8,7 +8,7 @@
  */
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../../db/index.mjs';
-import { createFoalFromPregnancy } from '../../modules/horses/services/foalingService.mjs';
+import { createFoalFromPregnancy } from '../services/foalingService.mjs';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

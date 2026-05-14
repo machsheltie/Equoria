@@ -6,9 +6,9 @@ import { describe, it, expect } from '@jest/globals';
 import {
   getTemperamentCompetitionModifiers,
   TEMPERAMENT_COMPETITION_MODIFIERS,
-} from '../modules/horses/services/temperamentService.mjs';
-import { TEMPERAMENT_TYPES } from '../modules/horses/data/breedGeneticProfiles.mjs';
-import { calculateCompetitionScore } from '../utils/competitionScore.mjs';
+} from '../services/temperamentService.mjs';
+import { TEMPERAMENT_TYPES } from '../data/breedGeneticProfiles.mjs';
+import { calculateCompetitionScore } from '../../../utils/competitionScore.mjs';
 
 // Deterministic luck function: 0.5 * 0.18 - 0.09 = 0 (zero luck modifier)
 const zeroLuck = () => 0.5;

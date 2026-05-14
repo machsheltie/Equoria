@@ -39,6 +39,7 @@ const BREED_STARTER_STATS_PATH = resolve(
   dirname(fileURLToPath(import.meta.url)),
   '..',
   '..',
+  '..',
   'data',
   'breedStarterStats.json',
 );

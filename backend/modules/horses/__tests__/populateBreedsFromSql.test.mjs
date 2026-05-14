@@ -25,7 +25,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { sanitizeSql } from '../seed/populateBreedsFromSql.mjs';
+import { sanitizeSql } from '../../../seed/populateBreedsFromSql.mjs';
 
 describe('sanitizeSql', () => {
   it('replaces breed_genetic_profile with "breedGeneticProfile"', () => {

@@ -6,7 +6,7 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import { getBreedProfile, countLoadedBreedProfiles } from '../../modules/horses/data/breedProfileLoader.mjs';
+import { getBreedProfile, countLoadedBreedProfiles } from '../data/breedProfileLoader.mjs';
 
 // ---------------------------------------------------------------------------
 // countLoadedBreedProfiles

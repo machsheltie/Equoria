@@ -15,8 +15,8 @@ import {
   getTemperamentGroomSynergy,
   weightedRandomSelect,
   generateTemperament,
-} from '../../modules/horses/services/temperamentService.mjs';
-import { TEMPERAMENT_TYPES } from '../../modules/horses/data/breedGeneticProfiles.mjs';
+} from '../services/temperamentService.mjs';
+import { TEMPERAMENT_TYPES } from '../data/breedGeneticProfiles.mjs';
 
 // ---------------------------------------------------------------------------
 // TEMPERAMENT_TRAINING_MODIFIERS

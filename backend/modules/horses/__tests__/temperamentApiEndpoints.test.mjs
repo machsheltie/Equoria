@@ -4,7 +4,7 @@
 // No Prisma mock needed — getTemperamentDefinitions does no DB queries.
 
 import { describe, it, expect, beforeEach } from '@jest/globals';
-import { getTemperamentDefinitions } from '../modules/horses/controllers/horseController.mjs';
+import { getTemperamentDefinitions } from '../controllers/horseController.mjs';
 
 // NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): the
 // previous logger mock was for noise suppression — no logger
