@@ -41,9 +41,15 @@ beforeAll(async () => {
       leaderId: user.id,
     },
   });
+
+  // Create membership so getElections (which requires membership) returns 200.
+  await prisma.clubMembership.create({
+    data: { clubId: club.id, userId: user.id, role: 'president' },
+  });
 }, 30000);
 
 afterAll(async () => {
+  await prisma.clubMembership.deleteMany({ where: { clubId: club.id } }).catch(() => {});
   await prisma.club.delete({ where: { id: club.id } }).catch(() => {});
   await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
 }, 30000);
@@ -204,8 +210,8 @@ describe('POST /api/clubs/:id/join', () => {
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken);
 
-    // president is auto-member (400) or successfully joined (200/201) are all valid
-    expect([200, 201, 400]).toContain(res.status);
+    // president is auto-member (400 or 409 conflict) or successfully joined (200/201) are all valid
+    expect([200, 201, 400, 409]).toContain(res.status);
     expect(res.body.success !== undefined).toBe(true);
   });
 

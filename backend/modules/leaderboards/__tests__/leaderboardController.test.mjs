@@ -16,6 +16,7 @@ import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
+import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -127,6 +128,11 @@ describe('GET /api/leaderboards/win-rate (Equoria-847r)', () => {
   });
 
   it('returns 200 with populated rankings including maxScore when results exist', async () => {
+    // Bust any stale leaderboard cache from earlier tests (in-memory cache persists
+    // across tests within the same Jest worker; without this a cached empty-rankings
+    // result from the first win-rate test can mask newly created competition data).
+    await invalidateCachePattern('leaderboard:*');
+
     const show = await prisma.show.create({
       data: {
         name: `TestFixture-WinRateShow-${Date.now()}`,
