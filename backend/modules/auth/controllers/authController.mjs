@@ -179,8 +179,10 @@ export const register = async (req, res, next) => {
       logger.error('[authController.register] Failed to create starter horse:', horseError);
     }
 
-    // Create new token family for this registration
-    const tokenPair = await createTokenPair(user.id);
+    // Create new token family for this registration.
+    // Equoria-ovp9: pass role so the access token carries it and requireRole()
+    // can skip the per-request DB lookup. New users always start with 'user'.
+    const tokenPair = await createTokenPair(user.id, undefined, user.role ?? 'user');
 
     // Create email verification token
     const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
@@ -281,8 +283,10 @@ export const login = async (req, res, next) => {
       where: { userId: user.id },
     });
 
-    // Create new token family for this login session
-    const tokenPair = await createTokenPair(user.id);
+    // Create new token family for this login session.
+    // Equoria-ovp9: pass role so the access token carries it and requireRole()
+    // can skip the per-request DB lookup on admin-guarded routes.
+    const tokenPair = await createTokenPair(user.id, undefined, user.role);
 
     // Set httpOnly cookies for security (prevents XSS attacks)
     // Using centralized cookie configuration for consistency

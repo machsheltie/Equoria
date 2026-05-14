@@ -238,11 +238,11 @@ export const requireRole = (...roles) => {
         throw new AppError('Authentication required', 401);
       }
 
-      // Story 21S-8: the JWT payload does not include `role` (see
-      // `createTokenPair` in utils/tokenRotationService.mjs), so `req.user.role`
-      // is typically undefined after `authenticateToken`. Lazy-look it up from
-      // the DB only for role-guarded endpoints — keeps authenticateToken fast
-      // while making requireRole actually enforce roles.
+      // Equoria-ovp9: `createTokenPair` now embeds `role` in the access-token
+      // payload, so `req.user.role` is already populated by `authenticateToken`
+      // for tokens issued after this change. Skip the DB lookup when the role
+      // is present. Retain the fallback lookup for stale tokens (issued before
+      // the role field was added) so they continue to work through their TTL.
       if (!req.user.role && req.user.id) {
         try {
           const record = await prisma.user.findUnique({

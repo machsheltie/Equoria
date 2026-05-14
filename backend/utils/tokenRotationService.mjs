@@ -57,8 +57,15 @@ export function generateTokenFamily() {
 /**
  * Build a fresh signed JWT pair with unique JTIs. Pure — no DB I/O.
  * Returned pair is guaranteed to differ across calls (16-byte random JTI).
+ *
+ * @param {string} userId
+ * @param {string} familyId
+ * @param {string} [role] - Optional user role embedded in the access token so
+ *   requireRole() can skip the per-request DB lookup when the role is already
+ *   present (Equoria-ovp9). Falls back gracefully when omitted (legacy callers
+ *   and the rotate path before a DB role lookup is performed).
  */
-function _buildSignedTokenPair(userId, familyId) {
+function _buildSignedTokenPair(userId, familyId, role) {
   const timestamp = Date.now();
   const nanoTime = process.hrtime.bigint();
   const randomBytes = crypto.randomBytes(16).toString('hex');
@@ -66,6 +73,7 @@ function _buildSignedTokenPair(userId, familyId) {
   const refreshJti = `refresh-${timestamp}-${nanoTime}-${randomBytes}`;
   const accessPayload = {
     userId,
+    ...(role ? { role } : {}),
     type: 'access',
     jti: accessJti,
     iat: Math.floor(Date.now() / 1000),
@@ -102,6 +110,7 @@ async function _persistRefreshTokenWithRetry({
   familyId,
   expiresAt,
   initialPair,
+  role,
 }) {
   const MAX_ATTEMPTS = 3;
   let pair = initialPair;
@@ -124,7 +133,7 @@ async function _persistRefreshTokenWithRetry({
           attempt,
           userId,
         });
-        pair = _buildSignedTokenPair(userId, familyId);
+        pair = _buildSignedTokenPair(userId, familyId, role);
         continue;
       }
       throw err;
@@ -140,15 +149,20 @@ async function _persistRefreshTokenWithRetry({
  *
  * Security Note: Includes unique JTI (JWT ID) claim for guaranteed uniqueness
  * even when multiple tokens are issued in the same millisecond.
+ *
+ * @param {string} userId
+ * @param {string} [familyId] - Token family ID; generated if omitted.
+ * @param {string} [role] - User role embedded in the access token so
+ *   requireRole() can skip the per-request DB lookup (Equoria-ovp9).
  */
-export async function createTokenPair(userId, familyId) {
+export async function createTokenPair(userId, familyId, role) {
   try {
     // Generate family ID if not provided
     if (!familyId) {
       familyId = generateTokenFamily();
     }
 
-    let { accessToken, refreshToken } = _buildSignedTokenPair(userId, familyId);
+    let { accessToken, refreshToken } = _buildSignedTokenPair(userId, familyId, role);
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
 
     // Store refresh token in database (best-effort in tests)
@@ -183,6 +197,7 @@ export async function createTokenPair(userId, familyId) {
         familyId,
         expiresAt,
         initialPair: { accessToken, refreshToken },
+        role,
       });
       accessToken = finalPair.accessToken;
       refreshToken = finalPair.refreshToken;
@@ -463,12 +478,22 @@ export async function rotateRefreshToken(oldToken) {
       const userId = validation.decoded.userId;
       const familyId = validation.decoded.familyId;
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-      const initialPair = _buildSignedTokenPair(userId, familyId);
+      // Equoria-ovp9: look up the user's role so the rotated access token
+      // carries it. This avoids a requireRole() DB round-trip on every admin-
+      // guarded request after a token rotation. The lookup is within the
+      // transaction so the role is consistent with the user row at rotation time.
+      const userRecord = await tx.user.findUnique({
+        where: { id: userId },
+        select: { role: true },
+      });
+      const rotationRole = userRecord?.role ?? undefined;
+      const initialPair = _buildSignedTokenPair(userId, familyId, rotationRole);
       const finalPair = await _persistRefreshTokenWithRetry({
         prismaClient: tx,
         userId,
         familyId,
         expiresAt,
+        role: rotationRole,
         initialPair,
       });
 
