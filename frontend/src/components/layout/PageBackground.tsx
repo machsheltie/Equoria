@@ -40,6 +40,21 @@ const LOADING_GRADIENT = 'linear-gradient(180deg, #0a0e1a 0%, #111827 100%)';
 const VEIL = 'linear-gradient(rgba(5,10,20,0.45), rgba(5,10,20,0.45))';
 
 /**
+ * Build the CSS background-image stack.
+ *
+ * Scene-derived paths (sceneDerived=true) use CSS image-set() so browsers
+ * that don't support WebP fall back to the matching JPEG automatically.
+ * Direct src-prop paths stay as a plain url() — the caller controls the format.
+ */
+function buildBackgroundImage(webpPath: string, sceneDerived: boolean): string {
+  if (sceneDerived) {
+    const jpgPath = webpPath.replace(/\.webp$/, '.jpg');
+    return `${VEIL}, image-set(url('${webpPath}') type('image/webp'), url('${jpgPath}') type('image/jpeg')), ${LOADING_GRADIENT}`;
+  }
+  return `${VEIL}, url('${webpPath}'), ${LOADING_GRADIENT}`;
+}
+
+/**
  * Returns CSSProperties for applying a full-viewport background image to
  * a container div. Includes gradient fallback, readability veil, cover
  * sizing, and an iOS-safe attachment strategy.
@@ -52,6 +67,7 @@ const VEIL = 'linear-gradient(rgba(5,10,20,0.45), rgba(5,10,20,0.45))';
 export function usePageBackground(options?: UsePageBackgroundOptions): CSSProperties {
   const hookPath = useResponsiveBackground(options?.scene);
   const webpPath = options?.src ?? hookPath;
+  const sceneDerived = !options?.src;
 
   const isTouch =
     typeof window !== 'undefined' &&
@@ -61,7 +77,7 @@ export function usePageBackground(options?: UsePageBackgroundOptions): CSSProper
     // Gradient floor — always painted first, visible while image loads or
     // when the hook returned no path (missing art + missing generic set).
     background: LOADING_GRADIENT,
-    backgroundImage: webpPath ? `${VEIL}, url('${webpPath}'), ${LOADING_GRADIENT}` : undefined,
+    backgroundImage: webpPath ? buildBackgroundImage(webpPath, sceneDerived) : undefined,
     backgroundSize: 'cover',
     backgroundPosition: 'center center',
     backgroundRepeat: 'no-repeat',
@@ -95,6 +111,7 @@ interface PageBackgroundProps {
 export function PageBackground({ scene, src, marker = false }: PageBackgroundProps) {
   const hookPath = useResponsiveBackground(scene);
   const webpPath = src ?? hookPath;
+  const sceneDerived = !src;
 
   // Legacy marker mode preserved so existing tests keep working without change.
   if (marker) {
@@ -107,7 +124,7 @@ export function PageBackground({ scene, src, marker = false }: PageBackgroundPro
     zIndex: 'var(--z-below)' as unknown as number,
     pointerEvents: 'none',
     background: LOADING_GRADIENT,
-    backgroundImage: webpPath ? `${VEIL}, url('${webpPath}'), ${LOADING_GRADIENT}` : undefined,
+    backgroundImage: webpPath ? buildBackgroundImage(webpPath, sceneDerived) : undefined,
     backgroundSize: 'cover',
     backgroundPosition: 'center center',
     backgroundRepeat: 'no-repeat',
