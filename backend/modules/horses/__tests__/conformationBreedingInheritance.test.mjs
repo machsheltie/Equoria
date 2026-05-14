@@ -9,6 +9,7 @@ import {
   CONFORMATION_REGIONS,
 } from '../services/conformationService.mjs';
 import { BREED_GENETIC_PROFILES } from '../data/breedGeneticProfiles.mjs';
+import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 
 // Helper: create a scores object with a uniform value for all regions
 function uniformScores(value) {
@@ -245,7 +246,9 @@ describe('Statistical validation - breeding inheritance', () => {
   // Task 4.3: 95% of inherited scores fall within baseValue ± 2*breedStdDev
   test('95% of inherited scores fall within baseValue ± 2*breedStdDev', () => {
     const breedId = 1; // Thoroughbred
-    const conformation = BREED_GENETIC_PROFILES[breedId].rating_profiles.conformation;
+    // Use the same data source the service uses (breedProfiles.json via getBreedProfile),
+    // not BREED_GENETIC_PROFILES (breedGeneticProfiles.mjs) which has different values.
+    const conformation = getBreedProfile(breedId).rating_profiles.conformation;
     const sire = uniformScores(80);
     const dam = uniformScores(70);
     const sampleSize = 10000;

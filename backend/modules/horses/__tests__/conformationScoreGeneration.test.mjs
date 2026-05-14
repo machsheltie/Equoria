@@ -10,6 +10,7 @@ import {
   CONFORMATION_REGIONS,
 } from '../services/conformationService.mjs';
 import { BREED_GENETIC_PROFILES } from '../data/breedGeneticProfiles.mjs';
+import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 
 // === Task 3.1: Score generation produces all 8 regions ===
 
@@ -267,7 +268,9 @@ describe('clampScore', () => {
 describe('Statistical validation - normal distribution verification', () => {
   test('95% of 10000 generated scores fall within breedMean ± 2*stdDev per region', () => {
     const breedId = 1; // Thoroughbred
-    const conformation = BREED_GENETIC_PROFILES[breedId].rating_profiles.conformation;
+    // Use the same data source the service uses (breedProfiles.json via getBreedProfile),
+    // not BREED_GENETIC_PROFILES (breedGeneticProfiles.mjs) which has different values.
+    const conformation = getBreedProfile(breedId).rating_profiles.conformation;
     const sampleSize = 10000;
     const allScores = [];
 
