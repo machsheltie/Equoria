@@ -123,8 +123,8 @@ const getStatIcon = (statName: string) => {
 const getStatColor = (value: number) => {
   if (value >= 90) return 'text-burnished-gold';
   if (value >= 75) return 'text-emerald-400';
-  if (value >= 60) return 'text-[rgb(180,195,215)]';
-  return 'text-[rgb(148,163,184)]';
+  if (value >= 60) return 'text-[var(--text-secondary)]';
+  return 'text-[var(--text-secondary)]';
 };
 
 const HorseDetailPage: React.FC = () => {
@@ -209,7 +209,7 @@ const HorseDetailPage: React.FC = () => {
           <h2 className="fantasy-header text-xl" style={{ color: 'var(--gold-500)' }}>
             {error?.message === 'Horse not found' ? 'Horse Not Found' : 'Error Loading Horse'}
           </h2>
-          <p className="text-sm text-[rgb(220,235,255)]">
+          <p className="text-sm text-[var(--text-primary)]">
             {error?.message === 'Horse not found'
               ? 'The horse you are looking for does not exist or has been removed.'
               : 'An error occurred while loading the horse details. Please try again.'}
@@ -325,7 +325,7 @@ const HorseDetailPage: React.FC = () => {
         <div className="mb-6">
           <button
             onClick={() => navigate('/stable')}
-            className="flex items-center gap-2 text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] transition-colors mb-4 text-sm"
+            className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors mb-4 text-sm"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Horse List
@@ -335,7 +335,7 @@ const HorseDetailPage: React.FC = () => {
           <div className="glass-panel rounded-lg p-6">
             <div className="flex flex-col md:flex-row gap-6">
               {/* Horse Image */}
-              <div className="w-full md:w-48 h-48 rounded-lg border border-[rgba(37,99,235,0.3)] overflow-hidden bg-[rgba(37,99,235,0.05)]">
+              <div className="w-full md:w-48 h-48 rounded-lg border border-[var(--glass-hover)] overflow-hidden bg-[var(--glass-bg)]">
                 <img
                   src={getHorseImage(horse.imageUrl, horse.breed)}
                   alt={horse.name}
@@ -382,7 +382,7 @@ const HorseDetailPage: React.FC = () => {
                           onChange={(e) => setEditName(e.target.value)}
                           autoFocus
                           maxLength={50}
-                          className="fantasy-title text-2xl text-[rgb(220,235,255)] bg-[rgba(15,35,70,0.6)] border border-burnished-gold/40 rounded-lg px-3 py-1 outline-none focus:border-burnished-gold/70 focus:shadow-[0_0_8px_rgba(200,168,78,0.2)]"
+                          className="fantasy-title text-2xl text-[var(--text-primary)] bg-[var(--glass-bg)] border border-burnished-gold/40 rounded-lg px-3 py-1 outline-none focus:border-burnished-gold/70 focus:shadow-[var(--glow-gold)]"
                         />
                         <Button type="submit" size="sm" disabled={updateHorseMutation.isPending}>
                           {updateHorseMutation.isPending ? 'Saving...' : 'Save'}
@@ -398,7 +398,7 @@ const HorseDetailPage: React.FC = () => {
                       </form>
                     ) : (
                       <div className="flex items-center gap-3 mb-2 flex-wrap">
-                        <h1 className="fantasy-title text-3xl text-[rgb(220,235,255)]">
+                        <h1 className="fantasy-title text-3xl text-[var(--text-primary)]">
                           {horse.name}
                         </h1>
                         {horse.displayedHealth && (
@@ -409,7 +409,7 @@ const HorseDetailPage: React.FC = () => {
                         )}
                       </div>
                     )}
-                    <div className="flex flex-wrap gap-3 text-sm fantasy-body text-[rgb(180,195,215)]">
+                    <div className="flex flex-wrap gap-3 text-sm fantasy-body text-[var(--text-secondary)]">
                       <span>Breed: {getBreedName(horse.breed)}</span>
                       <span>•</span>
                       <span>Color: {horse.finalDisplayColor || 'Unknown'}</span>
@@ -432,20 +432,22 @@ const HorseDetailPage: React.FC = () => {
                       if (!isEditing) setEditName(horse.name);
                       setIsEditing(!isEditing);
                     }}
-                    className="p-2 hover:bg-[rgba(200,168,78,0.15)] rounded transition-colors"
+                    className="p-2 hover:bg-[var(--btn-gold-bg)] rounded transition-colors"
                     aria-label={isEditing ? 'Cancel editing' : 'Edit horse name'}
                   >
                     {isEditing ? (
                       <X className="w-5 h-5 text-white/60" />
                     ) : (
-                      <Edit className="w-5 h-5 text-[rgb(160,175,200)]" />
+                      <Edit className="w-5 h-5 text-[var(--text-secondary)]" />
                     )}
                   </button>
                 </div>
 
                 {/* Description */}
                 {horse.description && (
-                  <p className="fantasy-body text-[rgb(220,235,255)] mb-4">{horse.description}</p>
+                  <p className="fantasy-body text-[var(--text-primary)] mb-4">
+                    {horse.description}
+                  </p>
                 )}
 
                 {/* In-foal panel — feed-system redesign 2026-04-29 (B6, Equoria-ta4s). */}
@@ -465,13 +467,15 @@ const HorseDetailPage: React.FC = () => {
                   {Object.entries(horse.stats).map(([statName, value]) => (
                     <div
                       key={statName}
-                      className="flex flex-col items-center p-3 bg-[rgba(15,35,70,0.4)] rounded border border-[rgba(37,99,235,0.2)]"
+                      className="flex flex-col items-center p-3 bg-[var(--bg-midnight)] rounded border border-[var(--glass-border)]"
                     >
                       <div className={`mb-1 ${getStatColor(value)}`}>{getStatIcon(statName)}</div>
-                      <span className="text-xs fantasy-caption text-[rgb(160,175,200)] capitalize">
+                      <span className="text-xs fantasy-caption text-[var(--text-secondary)] capitalize">
                         {statName}
                       </span>
-                      <span className="text-lg fantasy-title text-[rgb(220,235,255)]">{value}</span>
+                      <span className="text-lg fantasy-title text-[var(--text-primary)]">
+                        {value}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -505,7 +509,7 @@ const HorseDetailPage: React.FC = () => {
         {/* Tab Navigation */}
         <div className="glass-panel rounded-lg mb-6">
           <div
-            className="flex border-b border-[rgba(37,99,235,0.3)] overflow-x-auto rounded-t-lg bg-[rgba(15,35,70,0.4)]"
+            className="flex border-b border-[var(--glass-hover)] overflow-x-auto rounded-t-lg bg-[var(--bg-midnight)]"
             role="tablist"
             aria-label="Horse details tabs"
           >
@@ -519,8 +523,8 @@ const HorseDetailPage: React.FC = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-6 py-3 fantasy-body transition-colors whitespace-nowrap ${
                   activeTab === tab.id
-                    ? 'bg-[rgba(37,99,235,0.2)] text-[rgb(220,235,255)] border-b-2 border-burnished-gold'
-                    : 'text-[rgb(160,175,200)] hover:bg-[rgba(37,99,235,0.1)] hover:text-[rgb(220,235,255)]'
+                    ? 'bg-[var(--glass-border)] text-[var(--text-primary)] border-b-2 border-burnished-gold'
+                    : 'text-[var(--text-secondary)] hover:bg-[var(--glass-border)] hover:text-[var(--text-primary)]'
                 }`}
               >
                 {tab.icon}
@@ -598,15 +602,17 @@ const HorseDetailPage: React.FC = () => {
             className="glass-panel-heavy rounded-xl shadow-2xl max-w-sm w-full p-6"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="fantasy-title text-lg text-[rgb(220,235,255)] mb-4">
+            <h3 className="fantasy-title text-lg text-[var(--text-primary)] mb-4">
               Assign Rider to {horse.name}
             </h3>
             {ridersLoading && (
-              <p className="text-sm text-[rgb(160,175,200)] text-center py-4">Loading riders…</p>
+              <p className="text-sm text-[var(--text-secondary)] text-center py-4">
+                Loading riders…
+              </p>
             )}
             {!ridersLoading && (!riders || riders.length === 0) && (
               <div className="text-center py-4">
-                <p className="text-sm text-[rgb(160,175,200)] mb-3">No riders hired yet.</p>
+                <p className="text-sm text-[var(--text-secondary)] mb-3">No riders hired yet.</p>
                 <Button asChild>
                   <Link to="/riders" onClick={() => setShowRiderPicker(false)}>
                     Browse Rider Marketplace
@@ -638,10 +644,10 @@ const HorseDetailPage: React.FC = () => {
                   disabled={assignRiderMutation.isPending}
                   className="w-full text-left glass-panel hover:border-burnished-gold/40 disabled:opacity-50"
                 >
-                  <p className="font-bold text-[rgb(220,235,255)] text-sm">
+                  <p className="font-bold text-[var(--text-primary)] text-sm">
                     {rider.firstName} {rider.lastName}
                   </p>
-                  <p className="text-xs text-[rgb(160,175,200)] capitalize">
+                  <p className="text-xs text-[var(--text-secondary)] capitalize">
                     {rider.skillLevel} · {rider.personality}
                   </p>
                 </button>
@@ -662,11 +668,11 @@ const HorseDetailPage: React.FC = () => {
       {/* Story 12-5 — Sticky Bottom Action Bar (portal to escape stacking context) */}
       {createPortal(
         <div
-          className="fixed bottom-0 left-0 right-0 z-[var(--z-modal)] bg-[rgba(10,22,40,0.95)] border-t border-burnished-gold/40 backdrop-blur-sm"
+          className="fixed bottom-0 left-0 right-0 z-[var(--z-modal)] bg-[var(--bg-deep-space)]/95 border-t border-burnished-gold/40 backdrop-blur-sm"
           data-testid="horse-action-bar"
         >
           <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3 overflow-x-auto">
-            <span className="text-xs fantasy-caption text-[rgb(160,175,200)] whitespace-nowrap mr-1 flex-shrink-0">
+            <span className="text-xs fantasy-caption text-[var(--text-secondary)] whitespace-nowrap mr-1 flex-shrink-0">
               Quick Actions:
             </span>
             {(() => {
@@ -880,19 +886,19 @@ const HorseDetailPage: React.FC = () => {
 const OverviewTab: React.FC<{ horse: Horse }> = ({ horse }) => (
   <div className="space-y-6" data-testid="horse-detail-overview">
     <div>
-      <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-3">Current Status</h3>
+      <h3 className="fantasy-title text-xl text-[var(--text-primary)] mb-3">Current Status</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="p-4 bg-[rgba(15,35,70,0.4)] rounded border border-[rgba(37,99,235,0.2)]">
-          <p className="fantasy-caption text-[rgb(160,175,200)] mb-1">Health Status</p>
-          <p className="fantasy-body text-[rgb(220,235,255)]">{horse.healthStatus}</p>
+        <div className="p-4 bg-[var(--bg-midnight)] rounded border border-[var(--glass-border)]">
+          <p className="fantasy-caption text-[var(--text-secondary)] mb-1">Health Status</p>
+          <p className="fantasy-body text-[var(--text-primary)]">{horse.healthStatus}</p>
         </div>
-        <div className="p-4 bg-[rgba(15,35,70,0.4)] rounded border border-[rgba(37,99,235,0.2)]">
-          <p className="fantasy-caption text-[rgb(160,175,200)] mb-1">Age</p>
-          <p className="fantasy-body text-[rgb(220,235,255)]">{horse.age} years old</p>
+        <div className="p-4 bg-[var(--bg-midnight)] rounded border border-[var(--glass-border)]">
+          <p className="fantasy-caption text-[var(--text-secondary)] mb-1">Age</p>
+          <p className="fantasy-body text-[var(--text-primary)]">{horse.age} years old</p>
         </div>
-        <div className="p-4 bg-[rgba(15,35,70,0.4)] rounded border border-[rgba(37,99,235,0.2)]">
-          <p className="fantasy-caption text-[rgb(160,175,200)] mb-1">Date of Birth</p>
-          <p className="fantasy-body text-[rgb(220,235,255)]">
+        <div className="p-4 bg-[var(--bg-midnight)] rounded border border-[var(--glass-border)]">
+          <p className="fantasy-caption text-[var(--text-secondary)] mb-1">Date of Birth</p>
+          <p className="fantasy-body text-[var(--text-primary)]">
             {typeof horse.dateOfBirth === 'string' && !isNaN(new Date(horse.dateOfBirth).getTime())
               ? new Date(horse.dateOfBirth).toLocaleDateString('en-US', {
                   month: 'long',
@@ -902,21 +908,21 @@ const OverviewTab: React.FC<{ horse: Horse }> = ({ horse }) => (
               : 'Not recorded'}
           </p>
         </div>
-        <div className="p-4 bg-[rgba(15,35,70,0.4)] rounded border border-[rgba(37,99,235,0.2)]">
-          <p className="fantasy-caption text-[rgb(160,175,200)] mb-1">Gender</p>
-          <p className="fantasy-body text-[rgb(220,235,255)] capitalize">{horse.gender}</p>
+        <div className="p-4 bg-[var(--bg-midnight)] rounded border border-[var(--glass-border)]">
+          <p className="fantasy-caption text-[var(--text-secondary)] mb-1">Gender</p>
+          <p className="fantasy-body text-[var(--text-primary)] capitalize">{horse.gender}</p>
         </div>
       </div>
     </div>
 
     {horse.traits && horse.traits.length > 0 && (
       <div>
-        <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-3">Traits</h3>
+        <h3 className="fantasy-title text-xl text-[var(--text-primary)] mb-3">Traits</h3>
         <div className="flex flex-wrap gap-2">
           {horse.traits.map((trait, index) => (
             <span
               key={index}
-              className="px-3 py-1 bg-burnished-gold/20 text-[rgb(220,235,255)] rounded-full text-sm fantasy-body border border-burnished-gold/40"
+              className="px-3 py-1 bg-burnished-gold/20 text-[var(--text-primary)] rounded-full text-sm fantasy-body border border-burnished-gold/40"
             >
               {trait}
             </span>
@@ -934,7 +940,7 @@ const DisciplinesTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   if (disciplines.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="fantasy-body text-[rgb(160,175,200)]">
+        <p className="fantasy-body text-[var(--text-secondary)]">
           This horse has not trained in any disciplines yet.
         </p>
       </div>
@@ -943,14 +949,14 @@ const DisciplinesTab: React.FC<{ horse: Horse }> = ({ horse }) => {
 
   return (
     <div className="space-y-4">
-      <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-4">Discipline Scores</h3>
+      <h3 className="fantasy-title text-xl text-[var(--text-primary)] mb-4">Discipline Scores</h3>
       {disciplines.map(([discipline, score]) => (
         <div key={discipline} className="space-y-2">
           <div className="flex justify-between items-center">
-            <span className="fantasy-body text-[rgb(220,235,255)]">{discipline}</span>
+            <span className="fantasy-body text-[var(--text-primary)]">{discipline}</span>
             <span className={`fantasy-title ${getStatColor(score)}`}>{score}</span>
           </div>
-          <div className="h-3 bg-[rgba(15,35,70,0.5)] rounded-full overflow-hidden border border-[rgba(37,99,235,0.2)]">
+          <div className="h-3 bg-[var(--glass-surface-subtle-bg)] rounded-full overflow-hidden border border-[var(--glass-border)]">
             <div
               className={`h-full transition-all ${
                 score >= 90
@@ -959,7 +965,7 @@ const DisciplinesTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                     ? 'bg-emerald-500'
                     : score >= 60
                       ? 'bg-aged-bronze'
-                      : 'bg-[rgb(148,163,184)]'
+                      : 'bg-[var(--text-secondary)]'
               }`}
               style={{ width: `${score}%` }}
             />
@@ -1014,8 +1020,8 @@ const PedigreeTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   return (
     <div className="space-y-6" data-testid="pedigree-tab">
       <div>
-        <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-3">Family Tree</h3>
-        <p className="fantasy-body text-[rgb(160,175,200)] text-sm mb-6">
+        <h3 className="fantasy-title text-xl text-[var(--text-primary)] mb-3">Family Tree</h3>
+        <p className="fantasy-body text-[var(--text-secondary)] text-sm mb-6">
           Parentage and bloodline information for {horse.name}.
         </p>
       </div>
@@ -1023,53 +1029,53 @@ const PedigreeTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Sire */}
         <div
-          className="p-5 bg-[rgba(15,35,70,0.4)] rounded-lg border border-[rgba(37,99,235,0.2)]"
+          className="p-5 bg-[var(--bg-midnight)] rounded-lg border border-[var(--glass-border)]"
           data-testid="pedigree-sire"
         >
-          <p className="fantasy-caption text-[rgb(160,175,200)] mb-1 text-xs uppercase tracking-wider">
+          <p className="fantasy-caption text-[var(--text-secondary)] mb-1 text-xs uppercase tracking-wider">
             Sire (Father)
           </p>
           {hasSire ? (
             <Link
               to={`/horses/${horse.parentIds!.sireId}`}
-              className="fantasy-title text-lg text-burnished-gold hover:text-[rgb(220,235,255)] transition-colors flex items-center gap-2"
+              className="fantasy-title text-lg text-burnished-gold hover:text-[var(--text-primary)] transition-colors flex items-center gap-2"
             >
               <GitBranch className="w-4 h-4" />
               View Sire Profile
             </Link>
           ) : (
-            <p className="fantasy-title text-lg text-[rgb(148,163,184)]">Store Horse</p>
+            <p className="fantasy-title text-lg text-[var(--text-secondary)]">Store Horse</p>
           )}
         </div>
 
         {/* Dam */}
         <div
-          className="p-5 bg-[rgba(15,35,70,0.4)] rounded-lg border border-[rgba(37,99,235,0.2)]"
+          className="p-5 bg-[var(--bg-midnight)] rounded-lg border border-[var(--glass-border)]"
           data-testid="pedigree-dam"
         >
-          <p className="fantasy-caption text-[rgb(160,175,200)] mb-1 text-xs uppercase tracking-wider">
+          <p className="fantasy-caption text-[var(--text-secondary)] mb-1 text-xs uppercase tracking-wider">
             Dam (Mother)
           </p>
           {hasDam ? (
             <Link
               to={`/horses/${horse.parentIds!.damId}`}
-              className="fantasy-title text-lg text-burnished-gold hover:text-[rgb(220,235,255)] transition-colors flex items-center gap-2"
+              className="fantasy-title text-lg text-burnished-gold hover:text-[var(--text-primary)] transition-colors flex items-center gap-2"
             >
               <GitBranch className="w-4 h-4" />
               View Dam Profile
             </Link>
           ) : (
-            <p className="fantasy-title text-lg text-[rgb(148,163,184)]">Store Horse</p>
+            <p className="fantasy-title text-lg text-[var(--text-secondary)]">Store Horse</p>
           )}
         </div>
       </div>
 
       {/* Offspring section — future expansion */}
-      <div className="p-4 bg-[rgba(15,35,70,0.3)] rounded-lg border border-[rgba(37,99,235,0.15)]">
-        <p className="fantasy-caption text-[rgb(160,175,200)] text-xs uppercase tracking-wider mb-1">
+      <div className="p-4 bg-[var(--glass-surface-subtle-bg)] rounded-lg border border-[var(--glass-border)]">
+        <p className="fantasy-caption text-[var(--text-secondary)] text-xs uppercase tracking-wider mb-1">
           Offspring
         </p>
-        <p className="fantasy-body text-[rgb(160,175,200)] text-sm italic">
+        <p className="fantasy-body text-[var(--text-secondary)] text-sm italic">
           Offspring records are displayed once this horse has produced foals through the breeding
           system.
         </p>
@@ -1094,50 +1100,52 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       ? 'text-emerald-400'
       : horse.healthStatus?.toLowerCase().includes('injured')
         ? 'text-burnished-gold'
-        : 'text-[rgb(160,175,200)]';
+        : 'text-[var(--text-secondary)]';
 
   return (
     <div className="space-y-6" data-testid="health-vet-tab">
       {/* Current Status */}
       <div>
-        <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-3">
+        <h3 className="fantasy-title text-xl text-[var(--text-primary)] mb-3">
           Current Health Status
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="p-4 bg-[rgba(15,35,70,0.4)] rounded-lg border border-[rgba(37,99,235,0.2)]">
-            <p className="fantasy-caption text-[rgb(160,175,200)] mb-1 text-xs uppercase tracking-wider">
+          <div className="p-4 bg-[var(--bg-midnight)] rounded-lg border border-[var(--glass-border)]">
+            <p className="fantasy-caption text-[var(--text-secondary)] mb-1 text-xs uppercase tracking-wider">
               Status
             </p>
             <p className={`fantasy-title text-xl ${healthColor}`}>{horse.healthStatus}</p>
           </div>
-          <div className="p-4 bg-[rgba(15,35,70,0.4)] rounded-lg border border-[rgba(37,99,235,0.2)]">
-            <p className="fantasy-caption text-[rgb(160,175,200)] mb-1 text-xs uppercase tracking-wider">
+          <div className="p-4 bg-[var(--bg-midnight)] rounded-lg border border-[var(--glass-border)]">
+            <p className="fantasy-caption text-[var(--text-secondary)] mb-1 text-xs uppercase tracking-wider">
               Next Recommended Check
             </p>
-            <p className="fantasy-body text-[rgb(220,235,255)]">6 weeks from last visit</p>
+            <p className="fantasy-body text-[var(--text-primary)]">6 weeks from last visit</p>
           </div>
         </div>
       </div>
 
       {/* Vet History */}
       <div>
-        <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-3">Veterinary History</h3>
+        <h3 className="fantasy-title text-xl text-[var(--text-primary)] mb-3">
+          Veterinary History
+        </h3>
         {vetHistory.length === 0 ? (
-          <div className="text-center py-8 bg-[rgba(15,35,70,0.3)] rounded-lg border border-[rgba(37,99,235,0.15)]">
-            <Stethoscope className="w-8 h-8 text-[rgb(160,175,200)]/40 mx-auto mb-2" />
-            <p className="fantasy-body text-[rgb(160,175,200)]">No vet records on file.</p>
+          <div className="text-center py-8 bg-[var(--glass-surface-subtle-bg)] rounded-lg border border-[var(--glass-border)]">
+            <Stethoscope className="w-8 h-8 text-[var(--text-secondary)]/40 mx-auto mb-2" />
+            <p className="fantasy-body text-[var(--text-secondary)]">No vet records on file.</p>
           </div>
         ) : (
           <div className="space-y-3">
             {vetHistory.map((record, idx) => (
               <div
                 key={idx}
-                className="p-4 bg-[rgba(15,35,70,0.4)] rounded-lg border border-[rgba(37,99,235,0.2)] hover:border-burnished-gold/40 transition-colors"
+                className="p-4 bg-[var(--bg-midnight)] rounded-lg border border-[var(--glass-border)] hover:border-burnished-gold/40 transition-colors"
                 data-testid={`vet-record-${idx}`}
               >
                 <div className="flex items-start justify-between mb-1">
-                  <p className="fantasy-title text-[rgb(220,235,255)] text-sm">{record.type}</p>
-                  <span className="text-xs fantasy-caption text-[rgb(160,175,200)] flex items-center gap-1">
+                  <p className="fantasy-title text-[var(--text-primary)] text-sm">{record.type}</p>
+                  <span className="text-xs fantasy-caption text-[var(--text-secondary)] flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     {new Date(record.date).toLocaleDateString('en-GB', {
                       day: 'numeric',
@@ -1146,8 +1154,12 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                     })}
                   </span>
                 </div>
-                <p className="fantasy-body text-[rgb(220,235,255)] text-sm mb-1">{record.result}</p>
-                <p className="fantasy-caption text-[rgb(160,175,200)] text-xs">Vet: {record.vet}</p>
+                <p className="fantasy-body text-[var(--text-primary)] text-sm mb-1">
+                  {record.result}
+                </p>
+                <p className="fantasy-caption text-[var(--text-secondary)] text-xs">
+                  Vet: {record.vet}
+                </p>
               </div>
             ))}
           </div>
@@ -1155,10 +1167,12 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       </div>
 
       {/* Book Appointment CTA */}
-      <div className="p-4 bg-[rgba(15,35,70,0.3)] rounded-lg border border-[rgba(37,99,235,0.15)] flex items-center justify-between">
+      <div className="p-4 bg-[var(--glass-surface-subtle-bg)] rounded-lg border border-[var(--glass-border)] flex items-center justify-between">
         <div>
-          <p className="fantasy-title text-[rgb(220,235,255)] text-sm">Need a Vet Appointment?</p>
-          <p className="fantasy-body text-[rgb(160,175,200)] text-sm">
+          <p className="fantasy-title text-[var(--text-primary)] text-sm">
+            Need a Vet Appointment?
+          </p>
+          <p className="fantasy-body text-[var(--text-secondary)] text-sm">
             Visit the Vet Clinic to book a health check or treatment.
           </p>
         </div>
@@ -1185,18 +1199,18 @@ const StudSaleTab: React.FC<{
   return (
     <div className="space-y-6" data-testid="stud-sale-tab">
       <div>
-        <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-2">Listing Options</h3>
-        <p className="fantasy-body text-[rgb(160,175,200)] text-sm">
+        <h3 className="fantasy-title text-xl text-[var(--text-primary)] mb-2">Listing Options</h3>
+        <p className="fantasy-body text-[var(--text-secondary)] text-sm">
           List {horse.name} for outright sale, manage active listings, and browse the marketplace.
         </p>
       </div>
 
       {/* Current Listing Status */}
-      <div className="p-4 bg-[rgba(15,35,70,0.4)] rounded-lg border border-[rgba(37,99,235,0.2)]">
-        <p className="fantasy-caption text-[rgb(160,175,200)] text-xs uppercase tracking-wider mb-1">
+      <div className="p-4 bg-[var(--bg-midnight)] rounded-lg border border-[var(--glass-border)]">
+        <p className="fantasy-caption text-[var(--text-secondary)] text-xs uppercase tracking-wider mb-1">
           Current Status
         </p>
-        <p className="fantasy-title text-lg text-[rgb(220,235,255)]">
+        <p className="fantasy-title text-lg text-[var(--text-primary)]">
           {horse.forSale
             ? `Listed for ${(horse.salePrice ?? 0).toLocaleString()} coins`
             : 'Not Listed'}
@@ -1213,23 +1227,25 @@ const StudSaleTab: React.FC<{
                 'Stud services use the breeding flow; set stud status from breeding management.'
               )
             }
-            className="w-full flex items-center justify-between p-4 bg-[rgba(15,35,70,0.3)] rounded-lg border border-[rgba(37,99,235,0.15)] text-left hover:border-[rgba(37,99,235,0.3)] transition-colors"
+            className="w-full flex items-center justify-between p-4 bg-[var(--glass-surface-subtle-bg)] rounded-lg border border-[var(--glass-border)] text-left hover:border-[var(--glass-hover)] transition-colors"
             title="Open breeding management for stud service setup"
             data-testid="stud-listing-btn"
           >
             <div>
-              <p className="fantasy-title text-[rgb(220,235,255)] text-sm">Offer as Stud Service</p>
-              <p className="fantasy-body text-[rgb(160,175,200)] text-xs mt-0.5">
+              <p className="fantasy-title text-[var(--text-primary)] text-sm">
+                Offer as Stud Service
+              </p>
+              <p className="fantasy-body text-[var(--text-secondary)] text-xs mt-0.5">
                 Other players can pay a breeding fee to use {horse.name}
               </p>
             </div>
-            <span className="text-xs fantasy-caption text-[rgb(160,175,200)]">Breeding</span>
+            <span className="text-xs fantasy-caption text-[var(--text-secondary)]">Breeding</span>
           </button>
         )}
 
         {!isFemale && !isMale && (
-          <div className="p-4 bg-[rgba(15,35,70,0.3)] rounded-lg border border-[rgba(37,99,235,0.1)]">
-            <p className="fantasy-body text-[rgb(160,175,200)] text-sm italic">
+          <div className="p-4 bg-[var(--glass-surface-subtle-bg)] rounded-lg border border-[var(--glass-border)]">
+            <p className="fantasy-body text-[var(--text-secondary)] text-sm italic">
               Stud listing is only available for stallions.
             </p>
           </div>
@@ -1239,31 +1255,31 @@ const StudSaleTab: React.FC<{
           type="button"
           onClick={horse.forSale ? onDelist : onListForSale}
           disabled={isDelisting}
-          className="w-full flex items-center justify-between p-4 bg-[rgba(15,35,70,0.3)] rounded-lg border border-[rgba(37,99,235,0.15)] text-left hover:border-[rgba(37,99,235,0.3)] transition-colors"
+          className="w-full flex items-center justify-between p-4 bg-[var(--glass-surface-subtle-bg)] rounded-lg border border-[var(--glass-border)] text-left hover:border-[var(--glass-hover)] transition-colors"
           title={horse.forSale ? 'Remove marketplace listing' : 'List horse for sale'}
           data-testid="sale-listing-btn"
         >
           <div>
-            <p className="fantasy-title text-[rgb(220,235,255)] text-sm">
+            <p className="fantasy-title text-[var(--text-primary)] text-sm">
               {horse.forSale ? 'Remove Sale Listing' : 'List for Sale'}
             </p>
-            <p className="fantasy-body text-[rgb(160,175,200)] text-xs mt-0.5">
+            <p className="fantasy-body text-[var(--text-secondary)] text-xs mt-0.5">
               {horse.forSale
                 ? 'Take this horse off the Marketplace'
                 : `Place ${horse.name} on the Marketplace for other players to purchase`}
             </p>
           </div>
-          <span className="text-xs fantasy-caption text-[rgb(160,175,200)]">
+          <span className="text-xs fantasy-caption text-[var(--text-secondary)]">
             {isDelisting ? 'Saving...' : horse.forSale ? 'Delist' : 'Set Price'}
           </span>
         </button>
       </div>
 
       {/* Marketplace Link */}
-      <div className="p-4 bg-[rgba(15,35,70,0.3)] rounded-lg border border-[rgba(37,99,235,0.15)] flex items-center justify-between">
+      <div className="p-4 bg-[var(--glass-surface-subtle-bg)] rounded-lg border border-[var(--glass-border)] flex items-center justify-between">
         <div>
-          <p className="fantasy-title text-[rgb(220,235,255)] text-sm">Browse the Marketplace</p>
-          <p className="fantasy-body text-[rgb(160,175,200)] text-sm">
+          <p className="fantasy-title text-[var(--text-primary)] text-sm">Browse the Marketplace</p>
+          <p className="fantasy-body text-[var(--text-secondary)] text-sm">
             See horses listed for sale by other players.
           </p>
         </div>
@@ -1300,14 +1316,14 @@ const TackTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   if (!tack || equippedItems.length === 0) {
     return (
       <div className="text-center py-12">
-        <ShoppingCart className="w-10 h-10 text-[rgb(148,163,184)]/40 mx-auto mb-4" />
-        <p className="fantasy-body text-[rgb(160,175,200)] mb-2">No tack equipped</p>
-        <p className="text-sm text-[rgb(148,163,184)] mb-4">
+        <ShoppingCart className="w-10 h-10 text-[var(--text-secondary)]/40 mx-auto mb-4" />
+        <p className="fantasy-body text-[var(--text-secondary)] mb-2">No tack equipped</p>
+        <p className="text-sm text-[var(--text-secondary)] mb-4">
           Visit the Tack Shop to equip saddles, bridles, and more.
         </p>
         <Link
           to="/tack-shop"
-          className="text-sm text-burnished-gold hover:text-[rgb(220,235,255)] underline transition-colors"
+          className="text-sm text-burnished-gold hover:text-[var(--text-primary)] underline transition-colors"
         >
           Go to Tack Shop →
         </Link>
@@ -1317,20 +1333,20 @@ const TackTab: React.FC<{ horse: Horse }> = ({ horse }) => {
 
   return (
     <div className="space-y-4">
-      <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-4">Equipped Tack</h3>
+      <h3 className="fantasy-title text-xl text-[var(--text-primary)] mb-4">Equipped Tack</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {equippedItems.map(({ key, label }) => {
           const itemId = tack[key] as string;
           return (
             <div
               key={key}
-              className="p-4 bg-[rgba(15,35,70,0.4)] rounded border border-[rgba(37,99,235,0.2)]"
+              className="p-4 bg-[var(--bg-midnight)] rounded border border-[var(--glass-border)]"
               data-testid={`tack-equipped-${key}`}
             >
-              <span className="fantasy-caption text-[rgb(160,175,200)] capitalize block mb-1">
+              <span className="fantasy-caption text-[var(--text-secondary)] capitalize block mb-1">
                 {label}
               </span>
-              <p className="fantasy-body text-[rgb(220,235,255)] text-sm truncate">{itemId}</p>
+              <p className="fantasy-body text-[var(--text-primary)] text-sm truncate">{itemId}</p>
             </div>
           );
         })}
@@ -1339,7 +1355,7 @@ const TackTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       <div className="mt-4 text-right">
         <Link
           to="/tack-shop"
-          className="text-sm text-burnished-gold hover:text-[rgb(220,235,255)] underline transition-colors"
+          className="text-sm text-burnished-gold hover:text-[var(--text-primary)] underline transition-colors"
         >
           Manage tack in Tack Shop →
         </Link>
