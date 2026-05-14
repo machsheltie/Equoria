@@ -333,7 +333,7 @@ export async function getFoalActivitiesHandler(req, res) {
 
     res.json({
       success: true,
-      data: activities.map((a) => ({
+      data: activities.map(a => ({
         id: a.id,
         day: a.day,
         activityType: a.activityType,
@@ -397,11 +397,11 @@ export async function revealFoalTraitsHandler(req, res) {
       select: { epigeneticModifiers: true },
     });
 
-    const modifiers = (foal?.epigeneticModifiers ?? {
+    const modifiers = foal?.epigeneticModifiers ?? {
       positive: [],
       negative: [],
       hidden: [],
-    });
+    };
     const visibleTraits = [...(modifiers.positive || []), ...(modifiers.negative || [])];
 
     res.json({
@@ -453,9 +453,7 @@ export async function developFoalHandler(req, res) {
       }
       const value = Number(updates[field]);
       if (!Number.isFinite(value) || !Number.isInteger(value)) {
-        return res
-          .status(400)
-          .json({ success: false, message: `${field} must be an integer` });
+        return res.status(400).json({ success: false, message: `${field} must be an integer` });
       }
       // Range validation
       if (field === 'currentDay' && (value < 0 || value > 6)) {
