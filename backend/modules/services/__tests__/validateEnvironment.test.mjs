@@ -428,6 +428,27 @@ describe('validateEnvironment()', () => {
       // The test environment has valid vars — exit should NOT have been called
       expect(exitCalls).toHaveLength(0);
     });
+
+    it('calls process.exit(1) when environment has validation errors (covers error path lines 121-124)', () => {
+      // Remove a required var to force the error path
+      const originalDbUrl = process.env.DATABASE_URL;
+      const originalExit = process.exit;
+      const exitCalls = [];
+      process.exit = code => {
+        exitCalls.push(code);
+      };
+
+      try {
+        delete process.env.DATABASE_URL;
+        validateEnvironment();
+      } finally {
+        process.exit = originalExit;
+        process.env.DATABASE_URL = originalDbUrl;
+      }
+
+      // Error path must call process.exit(1)
+      expect(exitCalls).toEqual([1]);
+    });
   });
 
   describe('Deployable secret policy', () => {
