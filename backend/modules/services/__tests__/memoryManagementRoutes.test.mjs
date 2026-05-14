@@ -59,13 +59,11 @@ describe('Memory Management Routes', () => {
       },
     });
 
-    // Generate auth token (role embedded so requireRole middleware passes
-    // without a DB lookup).
-    authToken = jwt.sign(
-      { id: testUser.id, username: testUser.username, role: 'admin' },
-      process.env.JWT_SECRET || 'test-secret',
-      { expiresIn: '1h' },
-    );
+    // Generate auth token matching production pattern: no role in payload.
+    // requireRole() will perform the lazy DB lookup for the real admin role.
+    authToken = jwt.sign({ id: testUser.id, username: testUser.username }, process.env.JWT_SECRET || 'test-secret', {
+      expiresIn: '1h',
+    });
 
     // Create test Express app
     testApp = express();

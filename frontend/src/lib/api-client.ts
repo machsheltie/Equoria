@@ -889,7 +889,8 @@ export const horsesApi = {
     age?: number;
   }) => apiClient.post<HorseSummary>('/api/v1/horses', data),
   list: () => apiClient.get<HorseSummary[]>(`/api/v1/horses?t=${Date.now()}`),
-  get: (horseId: number) => apiClient.get<HorseSummary>(`/api/v1/horses/${horseId}?t=${Date.now()}`),
+  get: (horseId: number) =>
+    apiClient.get<HorseSummary>(`/api/v1/horses/${horseId}?t=${Date.now()}`),
   getTrainingHistory: (horseId: number) =>
     apiClient.get<HorseTrainingAnalytics>(`/api/v1/horses/${horseId}/training-history`),
   getBreedingData: (horseId: number) =>
@@ -1027,7 +1028,8 @@ interface RiderDiscoveryData {
  * Groom API surface
  */
 export const groomsApi = {
-  getUserGrooms: (userId: string | number) => apiClient.get<Groom[]>(`/api/v1/grooms/user/${userId}`),
+  getUserGrooms: (userId: string | number) =>
+    apiClient.get<Groom[]>(`/api/v1/grooms/user/${userId}`),
   getAssignments: () => apiClient.get<GroomAssignment[]>('/api/v1/groom-assignments'),
   getSalarySummary: () => apiClient.get<SalarySummary>('/api/v1/groom-salaries/summary'),
   getMarketplace: () => apiClient.get<MarketplaceData>('/api/v1/groom-marketplace'),
@@ -1064,7 +1066,8 @@ export const groomsApi = {
  *   GET  /api/v1/riders/:id/discovery      → RiderDiscoveryData
  */
 export const ridersApi = {
-  getUserRiders: (userId: string | number) => apiClient.get<Rider[]>(`/api/v1/riders/user/${userId}`),
+  getUserRiders: (userId: string | number) =>
+    apiClient.get<Rider[]>(`/api/v1/riders/user/${userId}`),
   getAssignments: () => apiClient.get<RiderAssignment[]>('/api/v1/riders/assignments'),
   getMarketplace: () => apiClient.get<RiderMarketplaceData>('/api/v1/riders/marketplace'),
   hireRider: (marketplaceId: string) =>
@@ -2111,7 +2114,11 @@ export const authApi = {
         role?: 'user' | 'admin' | 'moderator';
         completedOnboarding?: boolean;
         onboardingStep?: number;
+        /** Story 21S-5: canonical persisted preferences field. */
+        preferences?: Partial<UserPreferences>;
+        /** @deprecated Legacy JSONB columns — prefer preferences above. */
         notifications?: Record<string, boolean | string | number> | null;
+        /** @deprecated Legacy JSONB columns — prefer preferences above. */
         display?: Record<string, boolean | string | number> | null;
       };
     }>('/api/v1/auth/profile');

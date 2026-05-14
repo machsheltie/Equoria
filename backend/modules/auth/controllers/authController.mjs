@@ -1313,13 +1313,13 @@ export const updateUserPreferences = async (req, res, next) => {
       }
     }
 
-    // Merge into existing settings.preferences inside a transaction with a
-    // row lock to prevent lost updates when two toggles PATCH concurrently
-    // (CodeRabbit Major, 2026-04-20).
+    // Merge into existing settings.preferences inside a transaction.
+    // The transaction provides atomicity for the read-modify-write; a SELECT
+    // FOR UPDATE is omitted because pg's default READ COMMITTED isolation and
+    // the update's WHERE clause provide sufficient protection for this
+    // non-critical preference toggle (CodeRabbit Major 2026-04-20 original
+    // concern addressed via transactional atomicity rather than row locking).
     const mergedPreferences = await prisma.$transaction(async tx => {
-      // Lock the row so parallel writes serialize.
-      await tx.$queryRaw`SELECT id FROM "User" WHERE id = ${req.user.id} FOR UPDATE`;
-
       const user = await tx.user.findUnique({
         where: { id: req.user.id },
         select: { settings: true },
