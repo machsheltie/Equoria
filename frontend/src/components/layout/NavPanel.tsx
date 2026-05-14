@@ -97,8 +97,8 @@ export function NavPanel({ isOpen, onClose }: NavPanelProps) {
                   'flex items-center gap-3 px-3 py-3 rounded-[var(--radius-md)] mb-0.5',
                   'text-sm transition-all',
                   active
-                    ? 'bg-[var(--glass-border-gold-subtle)] border-0 border-l-2 border-l-[var(--gold-primary)] text-[var(--gold-light)]'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] border border-transparent'
+                    ? 'bg-[var(--glass-border-gold-subtle)] border-l-2 border-l-[var(--gold-primary)] text-[var(--gold-light)]'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] border-l-2 border-l-transparent'
                 )}
                 aria-current={active ? 'page' : undefined}
               >
