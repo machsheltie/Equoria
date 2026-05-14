@@ -5,7 +5,7 @@
  * SECURITY: CWE-384 (Session Fixation), CWE-613 (Insufficient Session Expiration)
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import {
   trackSessionActivity,
   enforceConcurrentSessions,
@@ -610,6 +610,112 @@ describe('Session Management Middleware', () => {
         where: { id: user2Token.id },
       });
       expect(user2Session).not.toBeNull();
+    });
+  });
+
+  /**
+   * Catch-block coverage tests (Equoria-ncvi)
+   *
+   * The four `try/catch` blocks in sessionManagement.mjs (lines 166, 222,
+   * 300-301, 351-352) are defensive error handlers for Prisma failures.
+   * They cannot be reached by ordinary integration-style fixtures: bad IDs
+   * make Prisma return empty results (no throw), not raise an error. The
+   * Security Gate enforces 100% statements + lines on this file, so we
+   * need targeted tests that force each Prisma call to reject.
+   *
+   * We use `jest.spyOn(prisma.refreshToken, '<method>').mockRejectedValueOnce`
+   * — the same pattern used in `backend/tests/horseAgingIntegration.test.mjs`
+   * line 450 to test a database-error branch. `restoreMocks: true` in
+   * jest.config.security.mjs guarantees the spy is removed after the test,
+   * so no other suite sees the rejection. This is error-injection on a
+   * single call inside one test, not a mocked primary path: every other
+   * test in this suite continues to use the real test DB.
+   */
+  describe('Catch-block error handling (Equoria-ncvi)', () => {
+    let req, res, next;
+
+    beforeEach(() => {
+      req = mockRequest();
+      res = mockResponse();
+      next = mockNext();
+    });
+
+    afterEach(() => {
+      // Extra safety beyond restoreMocks:true; ensures no spy leaks
+      // between tests in this describe block.
+      jest.restoreAllMocks();
+    });
+
+    it('trackSessionActivity: catches and logs prisma findFirst rejection (line 166)', async () => {
+      const user = await createTestUser();
+      const token = await createTestRefreshToken(user.id);
+      req.user = { id: user.id };
+      req.cookies = { refreshToken: token.rawToken };
+
+      // Force the findFirst inside the try block to throw — exercises L166 catch.
+      const spy = jest
+        .spyOn(prisma.refreshToken, 'findFirst')
+        .mockRejectedValueOnce(new Error('Simulated DB failure (ncvi)'));
+
+      await trackSessionActivity(req, res, next);
+
+      // Per the catch block contract: log the error but do NOT fail the request.
+      expect(spy).toHaveBeenCalledTimes(1);
+      expect(next.called).toBe(true);
+      expect(res._statusCalled).toBe(false);
+    });
+
+    it('enforceConcurrentSessions: catches and logs prisma count rejection (line 222)', async () => {
+      const user = await createTestUser();
+      req.user = { id: user.id };
+
+      // Force the count() inside the try block to throw — exercises L222 catch.
+      const spy = jest
+        .spyOn(prisma.refreshToken, 'count')
+        .mockRejectedValueOnce(new Error('Simulated DB failure (ncvi)'));
+
+      await enforceConcurrentSessions(req, res, next);
+
+      // Per the catch block contract: log the error but do NOT fail the request.
+      expect(spy).toHaveBeenCalledTimes(1);
+      expect(next.called).toBe(true);
+      expect(res._statusCalled).toBe(false);
+    });
+
+    it('getActiveSessions: catches prisma findMany rejection and forwards to next(error) (lines 300-301)', async () => {
+      const user = await createTestUser();
+      req.user = { id: user.id };
+
+      // Force the findMany inside the try block to throw — exercises L300-301.
+      const dbError = new Error('Simulated DB failure (ncvi)');
+      const spy = jest.spyOn(prisma.refreshToken, 'findMany').mockRejectedValueOnce(dbError);
+
+      await getActiveSessions(req, res, next);
+
+      // Per the catch block contract: forward error to express error handler.
+      expect(spy).toHaveBeenCalledTimes(1);
+      expect(next.called).toBe(true);
+      expect(next.lastArg).toBe(dbError);
+      // No response should have been written — the error handler owns it.
+      expect(res._statusCalled).toBe(false);
+    });
+
+    it('revokeSession: catches prisma deleteMany rejection and forwards to next(error) (lines 351-352)', async () => {
+      const user = await createTestUser();
+      req.user = { id: user.id };
+      req.params = { sessionId: '12345' };
+
+      // Force the deleteMany inside the try block to throw — exercises L351-352.
+      const dbError = new Error('Simulated DB failure (ncvi)');
+      const spy = jest.spyOn(prisma.refreshToken, 'deleteMany').mockRejectedValueOnce(dbError);
+
+      await revokeSession(req, res, next);
+
+      // Per the catch block contract: forward error to express error handler.
+      expect(spy).toHaveBeenCalledTimes(1);
+      expect(next.called).toBe(true);
+      expect(next.lastArg).toBe(dbError);
+      expect(res._statusCalled).toBe(false);
     });
   });
 });
