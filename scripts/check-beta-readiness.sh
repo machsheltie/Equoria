@@ -159,7 +159,22 @@ run_gate "Module tests (backend/modules/*/__tests__)" bash -c "cd backend && npm
 # ---------------------------------------------------------------------------
 # GATE 5 — E2E beta readiness route coverage (production-parity)
 # ---------------------------------------------------------------------------
+# Pre-flight: kill any stale server on port 3001 so playwright.beta-readiness.config.ts
+# can start a fresh backend with the correct EMAIL_CAPTURE_FILE env var.
+# reuseExistingServer:false is intentional — a stale backend from a prior dev
+# session silently drops email capture, causing latestCapturedEmail() to hang.
 echo "${BOLD}[5/10] E2E Readiness Gate — Full Beta Route Coverage${RESET}"
+printf "  Pre-flight: clearing port 3001 for fresh backend start ...\n"
+if command -v lsof &>/dev/null; then
+  lsof -ti:3001 | xargs -r kill -9 2>/dev/null || true
+elif command -v fuser &>/dev/null; then
+  fuser -k 3001/tcp 2>/dev/null || true
+elif [[ "$OSTYPE" == "msys"* ]] || [[ "$OSTYPE" == "cygwin"* ]] || [[ -n "$WINDIR" ]]; then
+  # Windows/Git Bash: use netstat + taskkill
+  PID=$(netstat -ano 2>/dev/null | awk '/[: ]3001 .*LISTENING/ {print $5; exit}' | tr -d '[:space:]')
+  [[ -n "$PID" && "$PID" != "0" ]] && taskkill /F /PID "$PID" 2>/dev/null || true
+fi
+sleep 1
 run_gate "Playwright beta-readiness suite" bash -c "npm run test:e2e:beta-readiness 2>&1"
 
 # ---------------------------------------------------------------------------
