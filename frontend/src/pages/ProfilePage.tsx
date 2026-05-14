@@ -121,7 +121,7 @@ const ProfilePage: React.FC = () => {
               borderTopColor: 'var(--celestial-primary)',
             }}
           />
-          <p className="text-sm text-[rgb(148,163,184)]">Loading profile…</p>
+          <p className="text-sm text-[var(--text-secondary)]">Loading profile…</p>
         </div>
       </div>
     );
@@ -166,33 +166,21 @@ const ProfilePage: React.FC = () => {
                   <User className="w-8 h-8 text-white" />
                 </div>
               </div>
-              <p className="text-xs text-[rgb(148,163,184)]">{UI_TEXT.profile.subtitle}</p>
+              <p className="text-xs text-[var(--text-secondary)]">{UI_TEXT.profile.subtitle}</p>
             </div>
 
             {/* Success and error feedback handled via toast notifications (AC-5, AC-6) */}
 
             {/* Email (read-only) */}
-            <div
-              className="rounded-lg px-3 py-2"
-              style={{
-                background: 'rgba(37,99,235,0.08)',
-                border: '1px solid rgba(37,99,235,0.2)',
-              }}
-            >
-              <p className="text-xs text-[rgb(148,163,184)] uppercase tracking-wider mb-0.5">
+            <div className="rounded-lg px-3 py-2 glass-panel-subtle">
+              <p className="text-xs text-[var(--text-secondary)] uppercase tracking-wider mb-0.5">
                 Email
               </p>
-              <p className="text-sm text-[rgb(220,235,255)]">{profileData?.user?.email}</p>
+              <p className="text-sm text-[var(--text-primary)]">{profileData?.user?.email}</p>
             </div>
 
             {/* XP & Level */}
-            <div
-              className="rounded-lg px-3 py-2"
-              style={{
-                background: 'rgba(37,99,235,0.08)',
-                border: '1px solid rgba(37,99,235,0.2)',
-              }}
-            >
+            <div className="rounded-lg px-3 py-2 glass-panel-subtle">
               <XPLevelDisplay
                 xp={profileData?.user?.xp}
                 level={profileData?.user?.level}
@@ -201,13 +189,7 @@ const ProfilePage: React.FC = () => {
             </div>
 
             {/* Currency */}
-            <div
-              className="rounded-lg px-3 py-2"
-              style={{
-                background: 'rgba(37,99,235,0.08)',
-                border: '1px solid rgba(37,99,235,0.2)',
-              }}
-            >
+            <div className="rounded-lg px-3 py-2 glass-panel-subtle">
               <CurrencyDisplay
                 amount={profileData?.user?.money}
                 label="Balance"
@@ -218,7 +200,7 @@ const ProfilePage: React.FC = () => {
 
             {/* Statistics */}
             <div className="space-y-2">
-              <p className="text-xs text-[rgb(148,163,184)] uppercase tracking-wider">
+              <p className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">
                 Game Statistics
               </p>
               <div className="grid grid-cols-2 gap-3">
@@ -254,13 +236,7 @@ const ProfilePage: React.FC = () => {
             </div>
 
             {/* Activity Feed */}
-            <div
-              className="rounded-lg px-3 py-2"
-              style={{
-                background: 'rgba(37,99,235,0.08)',
-                border: '1px solid rgba(37,99,235,0.2)',
-              }}
-            >
+            <div className="rounded-lg px-3 py-2 glass-panel-subtle">
               <ActivityFeed
                 activities={activities}
                 title="Recent Activity"
@@ -282,12 +258,12 @@ const ProfilePage: React.FC = () => {
               <div className="space-y-1">
                 <label
                   htmlFor="username"
-                  className="block text-xs text-[rgb(148,163,184)] uppercase tracking-wider"
+                  className="block text-xs text-[var(--text-secondary)] uppercase tracking-wider"
                 >
                   {UI_TEXT.profile.displayNameLabel}
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[rgb(100,130,165)] pointer-events-none" />
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-muted)] pointer-events-none" />
                   <input
                     id="username"
                     name="username"
@@ -309,12 +285,12 @@ const ProfilePage: React.FC = () => {
               <div className="space-y-1">
                 <label
                   htmlFor="bio"
-                  className="block text-xs text-[rgb(148,163,184)] uppercase tracking-wider"
+                  className="block text-xs text-[var(--text-secondary)] uppercase tracking-wider"
                 >
                   {UI_TEXT.profile.bioLabel}
                 </label>
                 <div className="relative">
-                  <FileText className="absolute left-3.5 top-3 w-4 h-4 text-[rgb(100,130,165)] pointer-events-none" />
+                  <FileText className="absolute left-3.5 top-3 w-4 h-4 text-[var(--text-muted)] pointer-events-none" />
                   <textarea
                     id="bio"
                     name="bio"
@@ -327,7 +303,7 @@ const ProfilePage: React.FC = () => {
                     style={{ paddingLeft: '2.5rem', paddingTop: '0.625rem' }}
                   />
                 </div>
-                <p className="text-xs text-[rgb(148,163,184)] text-right">
+                <p className="text-xs text-[var(--text-secondary)] text-right">
                   {UI_TEXT.profile.charactersRemaining(bioCharactersRemaining)}
                 </p>
                 {validationErrors.bio && (
@@ -363,7 +339,9 @@ const ProfilePage: React.FC = () => {
 
       {/* Footer */}
       <footer className="p-4 text-center border-t" style={{ borderColor: 'var(--border-muted)' }}>
-        <p className="text-xs text-[rgb(100,130,165)]">&copy; 2025 Equoria. All rights reserved.</p>
+        <p className="text-xs text-[var(--text-muted)]">
+          &copy; 2025 Equoria. All rights reserved.
+        </p>
       </footer>
     </div>
   );
