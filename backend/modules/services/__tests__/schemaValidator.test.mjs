@@ -1,41 +1,41 @@
 /**
- * schemaValidator — safe-DB branch-coverage tests (Equoria-rr7)
+ * schemaValidator — branch-coverage tests (Equoria-rr7)
  *
- * validateDatabaseSchema():
- *   In the current codebase, prisma.findFirst({ take: 0 }) throws a Prisma
- *   "take must be 1" error for every model.  This populates validationErrors,
- *   so the function always returns false — covering lines 81-89.
+ * After fixing the take:0→findMany({take:1}) bug, validateDatabaseSchema()
+ * now returns true when the DB has the required models/fields (the success path).
+ * Tests cover:
+ *   - success path (returns true, lines 63 / 92-93)
+ *   - validateDatabaseSchemaOrExit() success path (no process.exit, lines 113-119)
  *
- *   Calling with throwOnError:true covers lines 85-86 (throw inside outer try)
- *   and then lines 94-99 (outer catch with re-throw).
- *
- * validateDatabaseSchemaOrExit():
- *   Always calls process.exit(1) because the schema check above returns false.
- *   We stub process.exit to prevent the process from dying and assert it was
- *   called with code 1.  This covers lines 113-122.
+ * Branches that remain untestable without DB manipulation (capped at ~85%):
+ *   - missing-field error (lines 66-73): requires the schema to be missing a field
+ *   - outer-catch return false (line 101): requires prisma.$connect() to fail
+ *   - validateDatabaseSchemaOrExit outer-catch (lines 121-122): inner fn never throws
+ *     when called with throwOnError:false
  */
 
 import { describe, it, expect } from '@jest/globals';
 import { validateDatabaseSchema, validateDatabaseSchemaOrExit } from '../../../utils/schemaValidator.mjs';
 
 describe('validateDatabaseSchema()', () => {
-  it('returns false (schema validation fails due to Prisma take:0 constraint)', async () => {
+  it('returns true when required models and fields are present', async () => {
     const result = await validateDatabaseSchema();
-    expect(result).toBe(false);
+    expect(result).toBe(true);
   });
 
-  it('returns false with explicit throwOnError=false', async () => {
+  it('returns true with explicit throwOnError=false', async () => {
     const result = await validateDatabaseSchema({ throwOnError: false });
-    expect(result).toBe(false);
+    expect(result).toBe(true);
   });
 
-  it('rejects when throwOnError=true (validation error thrown then re-thrown by outer catch)', async () => {
-    await expect(validateDatabaseSchema({ throwOnError: true })).rejects.toThrow(/Database schema validation failed/);
+  it('returns true with throwOnError=true when schema is valid', async () => {
+    const result = await validateDatabaseSchema({ throwOnError: true });
+    expect(result).toBe(true);
   });
 });
 
 describe('validateDatabaseSchemaOrExit()', () => {
-  it('calls process.exit(1) because the schema check returns false', async () => {
+  it('does NOT call process.exit when schema is valid', async () => {
     const original = process.exit;
     let exitCode = null;
 
@@ -49,6 +49,7 @@ describe('validateDatabaseSchemaOrExit()', () => {
       process.exit = original;
     }
 
-    expect(exitCode).toBe(1);
+    // Schema is valid → isValid=true → process.exit is never called
+    expect(exitCode).toBeNull();
   });
 });

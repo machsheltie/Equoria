@@ -52,12 +52,11 @@ export async function validateDatabaseSchema({ throwOnError = false } = {}) {
     // Check each required model and its fields
     for (const { model, fields } of requiredSchemaElements) {
       try {
-        // Try to query the model to see if it exists
-        // We use findFirst with a limit of 0 to avoid retrieving actual data
-
-        await prisma[model.toLowerCase()].findFirst({
+        // Try to query the model to see if it exists.
+        // take:1 returns at most 1 row without loading the full table.
+        await prisma[model.toLowerCase()].findMany({
           select: fields.reduce((acc, field) => ({ ...acc, [field]: true }), {}),
-          take: 0,
+          take: 1,
         });
 
         logger.info(`✓ Model ${model} with required fields exists`);
