@@ -110,7 +110,13 @@ export async function getHorseCompetitionHistory(req, res, next) {
         showName: true,
         prizeWon: true,
         showId: true,
-        show: { select: { id: true, name: true } },
+        show: {
+          select: {
+            id: true,
+            name: true,
+            _count: { select: { competitionResults: true } },
+          },
+        },
       },
       orderBy: { runDate: 'desc' },
     });
@@ -172,10 +178,14 @@ export async function getHorseCompetitionHistory(req, res, next) {
       discipline: r.discipline,
       date: r.runDate,
       placement: parseCompetitionPlacement(r.placement),
-      totalParticipants: 0,
+      // Derive participant count from the number of results recorded for this show.
+      // This is the actual number of horses that competed (not just entries), which
+      // is the most accurate representation of the field size.
+      totalParticipants: r.show?._count?.competitionResults ?? 0,
       finalScore: Number(r.score),
       prizeMoney: Number(r.prizeWon ?? 0),
-      xpGained: 0,
+      // xpGained: omitted — not stored in CompetitionResult and cannot be reliably
+      // derived without a schema change (Equoria-aenc). Remove the misleading zero.
     }));
 
     return res.json({
