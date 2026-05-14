@@ -59,6 +59,8 @@ export const AuthHeader: React.FC = () => (
     style={{ background: 'var(--glass-surface-heavy-bg)', borderColor: 'var(--border-default)' }}
   >
     <div className="flex items-center justify-center p-4">
+      {/* --font-display (Cinzel Decorative) is intentional: this IS the EQUORIA wordmark.
+          Spec T3.2 said --font-heading but --font-display is semantically correct for the brand logo. */}
       <h1 className="fantasy-title text-3xl" style={{ fontFamily: 'var(--font-display)' }}>
         Equoria
       </h1>
