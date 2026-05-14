@@ -44,7 +44,8 @@ export interface CompetitionEntry {
   totalParticipants: number;
   finalScore: number;
   prizeMoney: number;
-  xpGained: number;
+  /** Not persisted in CompetitionResult schema; omitted by backend until Equoria-aenc migration lands. */
+  xpGained?: number;
 }
 
 /**
@@ -451,12 +452,14 @@ const CompetitionEntryCard = memo(
             </span>
           </div>
 
-          {/* XP */}
-          <div className="flex items-center gap-1">
-            <Zap className="h-4 w-4 text-purple-400" aria-hidden="true" />
-            <span className="font-medium text-[rgb(220,235,255)]">{entry.xpGained}</span>
-            <span className="text-[rgb(148,163,184)]">XP</span>
-          </div>
+          {/* XP — field not yet persisted; hide when absent */}
+          {entry.xpGained !== undefined && (
+            <div className="flex items-center gap-1">
+              <Zap className="h-4 w-4 text-purple-400" aria-hidden="true" />
+              <span className="font-medium text-[rgb(220,235,255)]">{entry.xpGained}</span>
+              <span className="text-[rgb(148,163,184)]">XP</span>
+            </div>
+          )}
 
           {/* Participants */}
           <div className="flex items-center gap-1 text-[rgb(148,163,184)]">

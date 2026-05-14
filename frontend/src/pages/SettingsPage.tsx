@@ -99,6 +99,7 @@ const DEFAULT_PREFERENCES: UserPreferences = {
   reducedMotion: false,
   highContrast: false,
   compactCards: false,
+  soundEnabled: false,
 };
 
 type NotificationKey =
@@ -339,6 +340,16 @@ const SettingsPage: React.FC = () => {
     ...DEFAULT_PREFERENCES,
     ...(user?.preferences ?? {}),
   };
+
+  // Sync server soundEnabled to localStorage on first load so the hook
+  // and other in-memory consumers see the authoritative server value.
+  const serverSoundEnabled = user?.preferences?.soundEnabled;
+  const setSoundEnabledRef = setSoundEnabled;
+  useEffect(() => {
+    if (typeof serverSoundEnabled === 'boolean') {
+      setSoundEnabledRef(serverSoundEnabled);
+    }
+  }, [serverSoundEnabled, setSoundEnabledRef]);
 
   const notifications = {
     emailCompetition: merged.emailCompetition,
@@ -671,9 +682,10 @@ const SettingsPage: React.FC = () => {
                 <Toggle
                   label="Sound Effects"
                   description="Enable UI sounds, cooldown chimes, and celebration audio"
-                  checked={soundEnabled}
+                  checked={merged.soundEnabled ?? soundEnabled}
                   onChange={(val) => {
                     setSoundEnabled(val);
+                    persist({ soundEnabled: val });
                     // Play a sample click so the user hears the change take effect
                     if (val) {
                       playSound('click');

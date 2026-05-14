@@ -70,7 +70,8 @@ export interface CompetitionEntry {
   totalParticipants: number;
   finalScore: number;
   prizeMoney: number;
-  xpGained: number;
+  /** Not persisted in CompetitionResult schema; omitted by backend until Equoria-aenc schema migration lands. */
+  xpGained?: number;
 }
 
 /**
@@ -106,7 +107,8 @@ export interface UserCompetitionStats {
   totalTop3: number;
   winRate: number;
   totalPrizeMoney: number;
-  totalXpGained: number;
+  /** Not persisted in CompetitionResult schema; omitted by backend until Equoria-aenc schema migration lands. */
+  totalXpGained?: number;
   bestPlacement: number;
   mostSuccessfulDiscipline: string;
   recentCompetitions: CompetitionEntry[];

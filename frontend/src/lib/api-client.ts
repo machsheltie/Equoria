@@ -2057,6 +2057,8 @@ export interface UserPreferences {
   reducedMotion: boolean;
   highContrast: boolean;
   compactCards: boolean;
+  // Sound
+  soundEnabled: boolean;
 }
 
 export const authApi = {

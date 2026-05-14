@@ -1280,6 +1280,8 @@ const ALLOWED_PREFERENCE_KEYS = [
   'reducedMotion',
   'highContrast',
   'compactCards',
+  // Sound
+  'soundEnabled',
 ];
 
 /**

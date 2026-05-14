@@ -549,7 +549,13 @@ export const getUserCompetitionStats = async (req, res, next) => {
         prizeWon: true,
         showId: true,
         horse: { select: { id: true, name: true } },
-        show: { select: { id: true, name: true } },
+        show: {
+          select: {
+            id: true,
+            name: true,
+            _count: { select: { competitionResults: true } },
+          },
+        },
       },
       orderBy: { runDate: 'desc' },
     });
@@ -564,7 +570,7 @@ export const getUserCompetitionStats = async (req, res, next) => {
         totalTop3: 0,
         winRate: 0,
         totalPrizeMoney: 0,
-        totalXpGained: 0,
+        // totalXpGained: omitted — not stored in CompetitionResult (Equoria-aenc)
         bestPlacement: 0,
         mostSuccessfulDiscipline: '',
         recentCompetitions: [],
@@ -611,10 +617,12 @@ export const getUserCompetitionStats = async (req, res, next) => {
       discipline: r.discipline,
       date: r.runDate,
       placement: placementToNumber(r.placement),
-      totalParticipants: 0,
+      // Derive participant count from results recorded for this show (actual field size).
+      totalParticipants: r.show?._count?.competitionResults ?? 0,
       finalScore: Number(r.score),
       prizeMoney: Number(r.prizeWon ?? 0),
-      xpGained: 0,
+      // xpGained: omitted — not stored in CompetitionResult and cannot be reliably
+      // derived without a schema change (Equoria-aenc). Remove the misleading zero.
     }));
 
     return res.json({
@@ -624,7 +632,8 @@ export const getUserCompetitionStats = async (req, res, next) => {
       totalTop3,
       winRate: Math.round(winRate * 100) / 100,
       totalPrizeMoney,
-      totalXpGained: 0,
+      // totalXpGained: omitted — not stored in CompetitionResult (Equoria-aenc).
+      // Remove the misleading zero rather than report false data.
       bestPlacement,
       mostSuccessfulDiscipline,
       recentCompetitions,
