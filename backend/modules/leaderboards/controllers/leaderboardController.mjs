@@ -168,34 +168,71 @@ export const getTopUsersByXP = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/leaderboards/win-rate (and /api/leaderboards/horses/performance)
+ *
+ * Returns top horses ranked by MAX(CompetitionResult.score).
+ *
+ * Fixed in Equoria-847r: the prior implementation queried
+ * prisma.horse.findMany({ orderBy: { performanceScore: 'desc' } }) which
+ * references a non-existent `performanceScore` column on the Horse model,
+ * causing PrismaClientValidationError → 500 on every request.
+ *
+ * Fix: two-step query —
+ *   Step A: GROUP BY horseId on competition_results, take MAX(score) per horse
+ *   Step B: fetch horse + breed + owner display fields for those horseIds
+ */
 export const getTopHorsesByPerformance = async (req, res) => {
+  const limit = 10;
+
   try {
-    const cacheKey = 'leaderboard:top-horses:performance';
-    const horses = await getCachedQuery(
+    const cacheKey = `leaderboard:top-horses:performance:${limit}`;
+
+    const rankings = await getCachedQuery(
       cacheKey,
-      () =>
-        prisma.horse.findMany({
-          orderBy: { performanceScore: 'desc' },
-          take: 10,
+      async () => {
+        // Step A: MAX score per horse from competition results, top N descending
+        const topScores = await prisma.competitionResult.groupBy({
+          by: ['horseId'],
+          _max: { score: true },
+          orderBy: { _max: { score: 'desc' } },
+          take: limit,
+        });
+
+        if (topScores.length === 0) {
+          return [];
+        }
+
+        // Step B: fetch horse + breed + owner display fields
+        const horseIds = topScores.map(entry => entry.horseId);
+        const horses = await prisma.horse.findMany({
+          where: { id: { in: horseIds } },
           select: {
             id: true,
             name: true,
             breed: { select: { name: true } },
             user: { select: { firstName: true, lastName: true } },
-            performanceScore: true,
           },
-        }),
+        });
+
+        const horseMap = Object.fromEntries(horses.map(h => [h.id, h]));
+
+        return topScores.map((entry, index) => {
+          const horse = horseMap[entry.horseId];
+          return {
+            rank: index + 1,
+            horseId: entry.horseId,
+            name: horse?.name || 'Unknown',
+            breed: horse?.breed?.name || 'Unknown',
+            owner: horse?.user
+              ? `${horse.user.firstName} ${horse.user.lastName}`.trim()
+              : 'Unknown',
+            maxScore: entry._max.score !== null ? Number(entry._max.score) : 0,
+          };
+        });
+      },
       CACHE_TTL,
     );
-
-    const rankings = horses.map((horse, index) => ({
-      rank: index + 1,
-      horseId: horse.id,
-      name: horse.name,
-      breed: horse.breed?.name || 'Unknown',
-      owner: horse.user ? `${horse.user.firstName} ${horse.user.lastName}`.trim() : 'Unknown',
-      performanceScore: horse.performanceScore,
-    }));
 
     res.json({
       success: true,
@@ -435,6 +472,15 @@ export const getLeaderboardStats = async (req, res) => {
  */
 export const getUserRankSummary = async (req, res) => {
   const { userId } = req.params;
+
+  // Validate UUID format before hitting Prisma to avoid PrismaClientKnownRequestError → 500
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!UUID_RE.test(userId)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid userId format',
+    });
+  }
 
   try {
     // 1) Fetch the target user. If missing, return 200 + empty arrays so the

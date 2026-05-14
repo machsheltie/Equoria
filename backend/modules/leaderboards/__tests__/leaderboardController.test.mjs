@@ -2,8 +2,13 @@
  * leaderboardController integration tests (Equoria-rr7 coverage sprint).
  *
  * Covers: getLeaderboardStats, getTopPlayersByLevel, getTopHorsesByEarnings,
- * getRecentWinners, getUserRankSummary.
+ * getRecentWinners, getUserRankSummary, getTopHorsesByPerformance (win-rate).
  * All leaderboard routes require auth (authRouter).
+ *
+ * Equoria-847r: getTopHorsesByPerformance must use MAX(CompetitionResult.score)
+ * not the non-existent performanceScore column.
+ *
+ * Equoria-ombe: getUserRankSummary must return 400 for non-UUID userId.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
@@ -14,7 +19,6 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
-// One shared user is enough — all these are read-only GETs
 let user;
 let token;
 
@@ -35,8 +39,6 @@ beforeAll(async () => {
 afterAll(async () => {
   await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
 }, 30000);
-
-// ─── GET /api/leaderboards/stats ─────────────────────────────────────────────
 
 describe('GET /api/leaderboards/stats', () => {
   it('returns 200 with leaderboard stats', async () => {
@@ -60,8 +62,6 @@ describe('GET /api/leaderboards/stats', () => {
   });
 });
 
-// ─── GET /api/leaderboards/players/level ─────────────────────────────────────
-
 describe('GET /api/leaderboards/players/level', () => {
   it('returns 200 with top players by level', async () => {
     const res = await request(app)
@@ -81,8 +81,6 @@ describe('GET /api/leaderboards/players/level', () => {
   });
 });
 
-// ─── GET /api/leaderboards/horses/earnings ────────────────────────────────────
-
 describe('GET /api/leaderboards/horses/earnings', () => {
   it('returns 200 with top horses by earnings', async () => {
     const res = await request(app)
@@ -95,8 +93,6 @@ describe('GET /api/leaderboards/horses/earnings', () => {
     expect(Array.isArray(res.body.data.horses)).toBe(true);
   });
 });
-
-// ─── GET /api/leaderboards/recent-winners ────────────────────────────────────
 
 describe('GET /api/leaderboards/recent-winners', () => {
   it('returns 200 with recent winners', async () => {
@@ -111,9 +107,89 @@ describe('GET /api/leaderboards/recent-winners', () => {
   });
 });
 
-// ─── GET /api/leaderboards/user-summary/:userId ───────────────────────────────
+describe('GET /api/leaderboards/win-rate (Equoria-847r)', () => {
+  it('returns 200 with rankings array (empty-results case)', async () => {
+    const res = await request(app)
+      .get('/api/leaderboards/win-rate')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
 
-describe('GET /api/leaderboards/user-summary/:userId', () => {
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data).toHaveProperty('rankings');
+    expect(Array.isArray(res.body.data.rankings)).toBe(true);
+  });
+
+  it('returns 401 without auth', async () => {
+    const res = await request(app).get('/api/leaderboards/win-rate').set('Origin', ORIGIN);
+
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 200 with populated rankings including maxScore when results exist', async () => {
+    const show = await prisma.show.create({
+      data: {
+        name: `TestFixture-WinRateShow-${Date.now()}`,
+        discipline: 'Racing',
+        levelMin: 1,
+        levelMax: 10,
+        entryFee: 0,
+        prize: 100,
+        runDate: new Date('2024-01-15'),
+        status: 'open',
+      },
+    });
+
+    const breed = await prisma.breed.findFirst();
+    const horse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-WinRateHorse-${Date.now()}`,
+        userId: user.id,
+        breedId: breed ? breed.id : null,
+        sex: 'mare',
+        dateOfBirth: new Date('2020-01-01'),
+        age: 4,
+      },
+    });
+
+    await prisma.competitionResult.create({
+      data: {
+        horseId: horse.id,
+        showId: show.id,
+        showName: show.name,
+        discipline: 'Racing',
+        placement: '1',
+        score: 87.5,
+        runDate: new Date('2024-01-15'),
+      },
+    });
+
+    try {
+      const res = await request(app)
+        .get('/api/leaderboards/win-rate')
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(Array.isArray(res.body.data.rankings)).toBe(true);
+      expect(res.body.data.rankings.length).toBeGreaterThanOrEqual(1);
+      for (const entry of res.body.data.rankings) {
+        expect(entry).toHaveProperty('maxScore');
+        expect(entry).toHaveProperty('horseId');
+        expect(entry).toHaveProperty('name');
+        expect(entry).toHaveProperty('rank');
+        expect(typeof entry.maxScore).toBe('number');
+      }
+    } finally {
+      await prisma.competitionResult.deleteMany({ where: { horseId: horse.id } });
+      await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
+      await prisma.show.delete({ where: { id: show.id } }).catch(() => {});
+    }
+  });
+});
+
+describe('GET /api/leaderboards/user-summary/:userId (Equoria-ombe)', () => {
   it('returns 200 with rank summary for the authenticated user', async () => {
     const res = await request(app)
       .get(`/api/leaderboards/user-summary/${user.id}`)
@@ -124,7 +200,7 @@ describe('GET /api/leaderboards/user-summary/:userId', () => {
     expect(res.body).toHaveProperty('userId');
   });
 
-  it('returns 200 with empty rankings for a non-existent userId', async () => {
+  it('returns 200 with empty rankings for a non-existent valid-UUID userId', async () => {
     const res = await request(app)
       .get('/api/leaderboards/user-summary/00000000-0000-0000-0000-000000000000')
       .set('Origin', ORIGIN)
@@ -133,5 +209,27 @@ describe('GET /api/leaderboards/user-summary/:userId', () => {
     expect(res.status).toBe(200);
     expect(res.body.userName).toBe('Unknown');
     expect(Array.isArray(res.body.rankings)).toBe(true);
+  });
+
+  it('returns 400 for a malformed non-UUID userId (Equoria-ombe)', async () => {
+    const res = await request(app)
+      .get('/api/leaderboards/user-summary/not-a-uuid')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toBe('Invalid userId format');
+  });
+
+  it('returns 400 for a numeric userId', async () => {
+    const res = await request(app)
+      .get('/api/leaderboards/user-summary/12345')
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    expect(res.body.message).toBe('Invalid userId format');
   });
 });
