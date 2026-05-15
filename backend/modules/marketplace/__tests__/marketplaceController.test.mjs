@@ -379,4 +379,70 @@ describe('marketplaceController integration', () => {
       await prisma.horse.delete({ where: { id: horseId } }).catch(() => {});
     });
   });
+
+  // ---------------------------------------------------------------------------
+  // Equoria-2keb: every real (non-test) DB breed has a starter-stats entry
+  // ---------------------------------------------------------------------------
+  // Bug: buyStoreHorse threw 500 when picked breed wasn't in
+  // backend/data/breedStarterStats.json. Audit found 'Quarter Horse' missing.
+  // Sentinel-positive: assert every real breed name in the DB resolves to a
+  // starter-stats key. Filters out test-fixture breeds (HORSUPD_*, OWASP*,
+  // Test*, TestFixture*) which are intentionally non-sellable.
+  describe('Equoria-2keb — every real DB breed resolves to starter stats', () => {
+    it('lists all DB breed names that are missing from breedStarterStats.json (should be empty)', async () => {
+      const statsPath = resolve(__dirname, '../../../data/breedStarterStats.json');
+      const statsNames = new Set(Object.keys(JSON.parse(readFileSync(statsPath, 'utf8'))));
+
+      const allBreeds = await prisma.breed.findMany({
+        select: { name: true },
+        orderBy: { name: 'asc' },
+      });
+
+      // Filter out test fixtures — these are not sellable products and don't
+      // need starter-stats entries. The pattern matches the cleanup helpers
+      // used elsewhere in the test suite.
+      const isTestFixture = name =>
+        /^Test Breed\b/.test(name) ||
+        /^TestFixture-/.test(name) ||
+        /^OWASP/.test(name) ||
+        /^HORSUPD_/.test(name) ||
+        /^Test Breed for /.test(name);
+
+      const realBreedNames = allBreeds.map(b => b.name).filter(n => !isTestFixture(n));
+      const missing = realBreedNames.filter(n => !statsNames.has(n));
+
+      // Sentinel-positive: print the missing list for diagnostics — must be empty.
+      expect(missing).toEqual([]);
+    });
+
+    it('generateStoreStats does not throw for any real DB breed name (sentinel-positive)', async () => {
+      const { generateStoreStats } = await import('../../../services/horseStarterStats.mjs');
+      const statsPath = resolve(__dirname, '../../../data/breedStarterStats.json');
+      const statsNames = new Set(Object.keys(JSON.parse(readFileSync(statsPath, 'utf8'))));
+
+      const allBreeds = await prisma.breed.findMany({
+        select: { name: true },
+        orderBy: { name: 'asc' },
+      });
+
+      const isTestFixture = name =>
+        /^Test Breed\b/.test(name) ||
+        /^TestFixture-/.test(name) ||
+        /^OWASP/.test(name) ||
+        /^HORSUPD_/.test(name) ||
+        /^Test Breed for /.test(name);
+
+      const realBreedNames = allBreeds.map(b => b.name).filter(n => !isTestFixture(n));
+
+      for (const name of realBreedNames) {
+        // Only assert no-throw when the breed actually has an entry; the
+        // prior test pins the contract that ALL real names should be in
+        // statsNames, so this branch documents the runtime contract for
+        // the canonical breeds.
+        if (statsNames.has(name)) {
+          expect(() => generateStoreStats(name)).not.toThrow();
+        }
+      }
+    });
+  });
 });

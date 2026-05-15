@@ -11449,6 +11449,56 @@
       "std": 3
     }
   },
+  "Quarter Horse": {
+    "speed": {
+      "mean": 20,
+      "std": 3
+    },
+    "stamina": {
+      "mean": 16,
+      "std": 3
+    },
+    "agility": {
+      "mean": 18,
+      "std": 3
+    },
+    "balance": {
+      "mean": 16,
+      "std": 3
+    },
+    "precision": {
+      "mean": 15,
+      "std": 3
+    },
+    "intelligence": {
+      "mean": 16,
+      "std": 3
+    },
+    "boldness": {
+      "mean": 17,
+      "std": 3
+    },
+    "flexibility": {
+      "mean": 16,
+      "std": 3
+    },
+    "obedience": {
+      "mean": 16,
+      "std": 3
+    },
+    "focus": {
+      "mean": 16,
+      "std": 3
+    },
+    "endurance": {
+      "mean": 15,
+      "std": 3
+    },
+    "strength": {
+      "mean": 18,
+      "std": 3
+    }
+  },
   "Racking": {
     "speed": {
       "mean": 18,
