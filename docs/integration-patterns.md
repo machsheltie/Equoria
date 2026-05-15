@@ -419,9 +419,10 @@ Request
 
 ### Rate Limiting
 
-- **Global:** 100 requests per 15 minutes per IP
-- **Auth endpoints:** 5 login attempts per 15 minutes
-- **Test mode:** Limits raised via `NODE_ENV === 'test'` configuration (no bypass header). The `x-test-bypass-rate-limit` header is FORBIDDEN per Epic 21R doctrine; sentinel test `backend/modules/services/__tests__/rate-limit-no-bypass.test.mjs` asserts it has no effect.
+- **Global (production):** 100 requests per 15 minutes per IP (`backend/app.mjs:449-454`)
+- **Global (beta):** 3000 requests per 15 minutes per IP (per Equoria-obwp follow-up; Playwright E2E suite headroom)
+- **Auth endpoints:** 200 failed login attempts per 15 minutes per IP/user (`backend/middleware/rateLimiting.mjs:434-440`). Uses `skipSuccessfulRequests: true` — successful logins do not count toward the cap. Equoria-f5r1 verified this against config.
+- **Test mode:** Limits raised via `NODE_ENV === 'test'` configuration (no bypass header — test cap is 20000). The `x-test-bypass-rate-limit` header is FORBIDDEN per Epic 21R doctrine; sentinel test `backend/modules/services/__tests__/rate-limit-no-bypass.test.mjs` asserts it has no effect.
 
 ## API Route Structure
 
