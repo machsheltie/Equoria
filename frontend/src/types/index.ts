@@ -28,11 +28,7 @@ export * from './horse';
 
 // `Foal` (extends Horse), foal development surfaces. We must NOT re-export
 // foal.ts's local `EpigeneticTrait` — that's the conflict resolved below.
-export type {
-  Foal,
-  FoalDevelopmentStatus,
-  FoalEnrichmentStatus,
-} from './foal';
+export type { Foal, FoalDevelopmentStatus, FoalEnrichmentStatus } from './foal';
 
 // Canonical owner of `EpigeneticTrait` and trait helpers.
 export * from './traits';
