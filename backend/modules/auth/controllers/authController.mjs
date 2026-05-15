@@ -45,27 +45,9 @@ export const STARTER_KIT_INVENTORY = [
 const STARTER_BONUS_COINS = 500;
 const PASSWORD_RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 
-async function ensurePasswordResetTokenTable(client = prisma) {
-  await client.$executeRawUnsafe(`
-    CREATE TABLE IF NOT EXISTS password_reset_tokens (
-      id SERIAL PRIMARY KEY,
-      "tokenHash" TEXT NOT NULL UNIQUE,
-      "userId" TEXT NOT NULL REFERENCES "User"(id) ON DELETE CASCADE,
-      email TEXT NOT NULL,
-      "expiresAt" TIMESTAMPTZ NOT NULL,
-      "usedAt" TIMESTAMPTZ,
-      "createdAt" TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      "ipAddress" TEXT,
-      "userAgent" TEXT
-    )
-  `);
-  await client.$executeRawUnsafe(
-    'CREATE INDEX IF NOT EXISTS password_reset_tokens_user_idx ON password_reset_tokens ("userId")',
-  );
-  await client.$executeRawUnsafe(
-    'CREATE INDEX IF NOT EXISTS password_reset_tokens_expires_idx ON password_reset_tokens ("expiresAt")',
-  );
-}
+// Note: password_reset_tokens table + indexes are created by migration
+// 20260414001000_add_password_reset_tokens. Runtime DDL was removed
+// (Equoria-v0yc) — schema is the migration's responsibility.
 
 function hashPasswordResetToken(token) {
   return crypto.createHash('sha256').update(token).digest('hex');
@@ -756,8 +738,6 @@ export const forgotPassword = async (req, res, next) => {
       throw new ValidationError('Email is required');
     }
 
-    await ensurePasswordResetTokenTable();
-
     const user = await prisma.user.findUnique({
       where: { email },
       select: { id: true, email: true, username: true, firstName: true },
@@ -783,8 +763,8 @@ export const forgotPassword = async (req, res, next) => {
     const ttlSeconds = Math.floor(PASSWORD_RESET_TOKEN_TTL_MS / 1000);
 
     // Invalidate existing unused tokens and insert the new one atomically.
-    // DDL (ensurePasswordResetTokenTable) is kept outside the transaction to avoid
-    // DDL-inside-Prisma-interactive-transaction issues; table is guaranteed to exist here.
+    // The password_reset_tokens table is created by migration
+    // 20260414001000_add_password_reset_tokens — no runtime DDL needed.
     // expiresAt uses NOW() server-side to avoid client timezone serialization issues.
     await prisma.$transaction(async tx => {
       await tx.$executeRawUnsafe(
@@ -837,8 +817,6 @@ export const resetPassword = async (req, res, next) => {
     if (candidatePassword.length < 8) {
       throw new ValidationError('New password must be at least 8 characters long');
     }
-
-    await ensurePasswordResetTokenTable();
 
     const tokenHash = hashPasswordResetToken(token);
     const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
