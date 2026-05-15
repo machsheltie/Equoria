@@ -20,8 +20,18 @@ import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, MockAuthProvider } from '../../test/utils';
-import { vi, describe, test, expect, beforeEach, afterEach } from 'vitest';
+import { vi, describe, test, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import HorseDetailPage from '../HorseDetailPage';
+
+// Pre-warm the lazy TrainingTab chunk. HorseDetailPage uses
+// React.lazy(() => import('./horse-detail/TrainingTab')) — on a cold module
+// cache the first test that triggers the lazy load races a 5s waitFor for
+// [data-testid='training-tab']. Importing the module here resolves the
+// dynamic import before any test runs, so subsequent Suspense boundaries
+// resolve synchronously (Equoria-q7mn).
+beforeAll(async () => {
+  await import('../horse-detail/TrainingTab');
+});
 
 // Mock horse data with training-compatible structure
 const createMockHorse = (overrides = {}) => ({
