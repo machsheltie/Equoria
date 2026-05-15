@@ -775,7 +775,7 @@ const HorseDetailPage: React.FC = () => {
           className="fixed bottom-0 left-0 right-0 z-[var(--z-modal)] bg-[var(--bg-deep-space)]/95 border-t border-burnished-gold/40 backdrop-blur-sm"
           data-testid="horse-action-bar"
         >
-          <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3 overflow-x-auto">
+          <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-center gap-3 overflow-x-auto">
             <span className="text-xs fantasy-caption text-[var(--text-secondary)] whitespace-nowrap mr-1 flex-shrink-0">
               Quick Actions:
             </span>
