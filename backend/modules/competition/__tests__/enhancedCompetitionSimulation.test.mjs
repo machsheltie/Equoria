@@ -440,9 +440,199 @@ describe('executeEnhancedCompetition — DB fixture integration (Equoria-rr7)', 
   it('returns success:false for executeEnhancedCompetition outer catch (lines 297-305)', async () => {
     // horse:null causes calculateCompetitionScore to throw inside entries.map(),
     // which is caught by the outer catch; show is real so showId access succeeds.
-    const result = await executeEnhancedCompetition(ecsShow, [{ horse: null, user: ecsUser }]);
-    expect(result.success).toBe(false);
-    expect(typeof result.error).toBe('string');
-    expect(result.showId).toBe(ecsShow.id);
+    // Use a FRESH open show — the prior test marked ecsShow as 'completed' via
+    // the Equoria-mzy1 idempotency flip, which would now short-circuit before
+    // the catch block. We want to genuinely exercise the catch path.
+    const freshShow = await prisma.show.create({
+      data: {
+        name: `TestFixture-ECS-FreshCatch-${Date.now()}`,
+        discipline: 'Racing',
+        levelMin: 1,
+        levelMax: 15,
+        entryFee: 50,
+        prize: 500,
+        runDate: new Date(),
+        showType: 'ridden',
+        status: 'open',
+      },
+    });
+
+    try {
+      const result = await executeEnhancedCompetition(freshShow, [{ horse: null, user: ecsUser }]);
+      expect(result.success).toBe(false);
+      expect(typeof result.error).toBe('string');
+      expect(result.showId).toBe(freshShow.id);
+    } finally {
+      await prisma.show.delete({ where: { id: freshShow.id } }).catch(() => {});
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// executeEnhancedCompetition — idempotency (Equoria-mzy1, mirrors Equoria-08ln)
+// ---------------------------------------------------------------------------
+// Adjacent-locations check (OPTIMAL_FIX_DISCIPLINE §3): conformation's
+// executeConformationShow has a pre-transaction status read + atomic
+// updateMany flip preventing double execution. The ridden-show path
+// executeEnhancedCompetition previously relied solely on the caller's
+// placement=null entries filter as an implicit guard — which works for
+// sequential calls but races on concurrent /execute calls (both readers
+// can see entries with placement=null before either writes results).
+//
+// Sentinel-positive test pair: first call succeeds and marks show
+// status='completed'; second call rejects with success=false; horse/user
+// state must not double-mutate.
+describe('executeEnhancedCompetition — idempotency (Equoria-mzy1)', () => {
+  let idemUser, idemShow, idemHorse;
+
+  beforeAll(async () => {
+    const ts = Date.now();
+    const rand = () => Math.random().toString(36).slice(2, 8);
+
+    idemUser = await prisma.user.create({
+      data: {
+        email: `idem-${ts}-${rand()}@test.com`,
+        username: `idem${ts}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'IDEM',
+        lastName: 'Tester',
+        money: 1000,
+      },
+    });
+
+    idemHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-IDEM-Horse-${ts}`,
+        sex: 'Mare',
+        dateOfBirth: new Date('2019-01-01'),
+        age: 35,
+        userId: idemUser.id,
+        speed: 80,
+        stamina: 80,
+        intelligence: 80,
+      },
+    });
+  }, 60000);
+
+  afterAll(async () => {
+    if (idemShow?.id) {
+      await prisma.competitionResult.deleteMany({ where: { showId: idemShow.id } }).catch(() => {});
+      await prisma.show.delete({ where: { id: idemShow.id } }).catch(() => {});
+    }
+    if (idemHorse?.id) {
+      await prisma.horseXpEvent.deleteMany({ where: { horseId: idemHorse.id } }).catch(() => {});
+      await prisma.horse.delete({ where: { id: idemHorse.id } }).catch(() => {});
+    }
+    if (idemUser?.id) {
+      await prisma.xpEvent.deleteMany({ where: { userId: idemUser.id } }).catch(() => {});
+      await prisma.notification.deleteMany({ where: { userId: idemUser.id } }).catch(() => {});
+      await prisma.user.delete({ where: { id: idemUser.id } }).catch(() => {});
+    }
+  }, 30000);
+
+  it('first call succeeds and marks show.status = "completed"', async () => {
+    const ts = Date.now();
+    idemShow = await prisma.show.create({
+      data: {
+        name: `TestFixture-IDEM-Show-First-${ts}`,
+        discipline: 'Racing',
+        levelMin: 1,
+        levelMax: 15,
+        entryFee: 50,
+        prize: 500,
+        runDate: new Date(),
+        showType: 'ridden',
+        status: 'open',
+      },
+    });
+
+    const entries = [{ horse: idemHorse, user: idemUser }];
+    const result = await executeEnhancedCompetition(idemShow, entries);
+
+    expect(result.success).toBe(true);
+
+    const showAfter = await prisma.show.findUnique({ where: { id: idemShow.id } });
+    expect(showAfter.status).toBe('completed');
+  });
+
+  it('second call on the same showId rejects with success=false', async () => {
+    // Sentinel-positive: re-running on the same show must not mutate state.
+    const ts = Date.now();
+    const show2 = await prisma.show.create({
+      data: {
+        name: `TestFixture-IDEM-Show-Second-${ts}`,
+        discipline: 'Racing',
+        levelMin: 1,
+        levelMax: 15,
+        entryFee: 50,
+        prize: 500,
+        runDate: new Date(),
+        showType: 'ridden',
+        status: 'open',
+      },
+    });
+
+    try {
+      const entries = [{ horse: idemHorse, user: idemUser }];
+      const moneyBefore = (await prisma.user.findUnique({ where: { id: idemUser.id } })).money;
+
+      const first = await executeEnhancedCompetition(show2, entries);
+      expect(first.success).toBe(true);
+
+      const moneyAfterFirst = (await prisma.user.findUnique({ where: { id: idemUser.id } })).money;
+      expect(moneyAfterFirst).toBeGreaterThan(moneyBefore);
+
+      // Pass the show object back — the function should detect it's now completed.
+      const showAfterFirst = await prisma.show.findUnique({ where: { id: show2.id } });
+      const second = await executeEnhancedCompetition(showAfterFirst, entries);
+
+      expect(second.success).toBe(false);
+      expect(String(second.error)).toMatch(/already executed|completed/i);
+
+      const moneyAfterSecond = (await prisma.user.findUnique({ where: { id: idemUser.id } })).money;
+      expect(moneyAfterSecond).toBe(moneyAfterFirst);
+
+      // No additional CompetitionResult rows beyond the first execution.
+      const resultCount = await prisma.competitionResult.count({ where: { showId: show2.id } });
+      expect(resultCount).toBe(1);
+    } finally {
+      await prisma.competitionResult.deleteMany({ where: { showId: show2.id } }).catch(() => {});
+      await prisma.show.delete({ where: { id: show2.id } }).catch(() => {});
+    }
+  });
+
+  it('rejects a show that was created with status=completed (sentinel)', async () => {
+    // Covers the case where some other path (admin override, data import,
+    // legacy fixture) sets status=completed without going through the
+    // execute path. The idempotency guard must trust persisted status
+    // and refuse, not silently re-distribute prizes.
+    const ts = Date.now();
+    const showCompleted = await prisma.show.create({
+      data: {
+        name: `TestFixture-IDEM-Show-Pre-${ts}`,
+        discipline: 'Racing',
+        levelMin: 1,
+        levelMax: 15,
+        entryFee: 50,
+        prize: 500,
+        runDate: new Date(),
+        showType: 'ridden',
+        status: 'completed',
+      },
+    });
+
+    try {
+      const entries = [{ horse: idemHorse, user: idemUser }];
+      const result = await executeEnhancedCompetition(showCompleted, entries);
+
+      expect(result.success).toBe(false);
+      expect(String(result.error)).toMatch(/already executed|completed/i);
+
+      // No CompetitionResult rows created.
+      const resultCount = await prisma.competitionResult.count({ where: { showId: showCompleted.id } });
+      expect(resultCount).toBe(0);
+    } finally {
+      await prisma.show.delete({ where: { id: showCompleted.id } }).catch(() => {});
+    }
   });
 });

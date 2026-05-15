@@ -115,6 +115,41 @@ export async function executeEnhancedCompetition(show, entries) {
       `[enhancedCompetitionSimulation] Executing competition: ${show.name} (${show.discipline})`,
     );
 
+    // Idempotency guard (Equoria-mzy1, mirrors Equoria-08ln on conformation).
+    // The caller filters entries by `placement: null` so a sequential second
+    // /execute call finds zero entries and returns 400 — but two concurrent
+    // calls can both pass that filter before either persists results, paying
+    // prizes / awarding XP twice. Pre-transaction status read = fast-path
+    // reject; atomic updateMany-with-predicate flip = race-condition guard.
+    if (show.status === 'completed' || show.status === 'executing') {
+      logger.warn(
+        `[enhancedCompetitionSimulation] Refusing to execute show ${show.id} — already executed (status=${show.status})`,
+      );
+      return {
+        success: false,
+        showId: show.id,
+        error: 'Show already executed',
+      };
+    }
+
+    // Atomic claim: succeeds only when the row is still open. A concurrent
+    // executor that already flipped status sees count=0 here and we abort
+    // before scoring / persisting anything.
+    const claim = await prisma.show.updateMany({
+      where: { id: show.id, status: 'open' },
+      data: { status: 'executing' },
+    });
+    if (claim.count === 0) {
+      logger.warn(
+        `[enhancedCompetitionSimulation] Atomic claim failed for show ${show.id} — concurrent executor won the race`,
+      );
+      return {
+        success: false,
+        showId: show.id,
+        error: 'Show already executed',
+      };
+    }
+
     // Calculate scores for all entries
     const competitionEntries = entries.map(({ horse, user }) => {
       // Equoria-qszs: pass show.showType so conformation shows correctly use the
@@ -271,6 +306,15 @@ export async function executeEnhancedCompetition(show, entries) {
       });
     }
 
+    // Idempotency final flip (Equoria-mzy1): mark the show as completed so
+    // any future /execute calls reject immediately at the pre-transaction
+    // status read. Done outside any transaction; the atomic 'open' → 'executing'
+    // claim above already serialized us against concurrent runs.
+    await prisma.show.update({
+      where: { id: show.id },
+      data: { status: 'completed', executedAt: new Date() },
+    });
+
     logger.info(
       `[enhancedCompetitionSimulation] Competition completed. ${results.length} entries processed.`,
     );
@@ -298,6 +342,19 @@ export async function executeEnhancedCompetition(show, entries) {
     };
   } catch (error) {
     logger.error('[enhancedCompetitionSimulation.executeEnhancedCompetition] Error:', error);
+    // Reset status back to open if we claimed it but then failed — otherwise
+    // the show is permanently locked at 'executing'. Use updateMany-with-predicate
+    // so we only reset rows we ourselves claimed (status=executing).
+    try {
+      await prisma.show.updateMany({
+        where: { id: show.id, status: 'executing' },
+        data: { status: 'open' },
+      });
+    } catch (rollbackErr) {
+      logger.error(
+        `[enhancedCompetitionSimulation] Failed to roll back status for show ${show.id}: ${rollbackErr.message}`,
+      );
+    }
     return {
       success: false,
       error: error?.message || error?.toString() || 'Unknown error occurred',
