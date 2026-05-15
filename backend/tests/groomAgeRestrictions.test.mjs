@@ -59,8 +59,11 @@ describe('Groom Age Restrictions & Task Eligibility', () => {
     });
   });
 
+  // Equoria-v6gg / Equoria-son6: horse.age is game-years. validateGroomingEligibility
+  // compares horse.age directly to year-denominated config thresholds. Fixtures below
+  // use game-year values matching each test's stated age intent.
   describe('Foal Enrichment Task Eligibility (0-2 years)', () => {
-    it('should allow newborn foal (0 days) to receive enrichment tasks', async () => {
+    it('should allow newborn foal (0 game-years) to receive enrichment tasks', async () => {
       const newbornFoal = { id: 1, age: 0, bondScore: 0 };
       const result = await validateGroomingEligibility(newbornFoal, 'gentle_touch');
 
@@ -68,24 +71,24 @@ describe('Groom Age Restrictions & Task Eligibility', () => {
       expect(result.reason).toContain('eligible');
     });
 
-    it('should allow 1-week-old foal (7 days) to receive enrichment tasks', async () => {
-      const weekOldFoal = { id: 2, age: 7, bondScore: 10 };
+    it('should allow under-1-game-year foal to receive enrichment tasks', async () => {
+      const weekOldFoal = { id: 2, age: 0, bondScore: 10 };
       const result = await validateGroomingEligibility(weekOldFoal, 'feeding_assistance');
 
       expect(result.eligible).toBe(true);
       expect(result.reason).toContain('eligible');
     });
 
-    it('should allow 1-year-old horse (365 days) to receive enrichment tasks', async () => {
-      const yearlingHorse = { id: 3, age: 365, bondScore: 25 };
+    it('should allow 1-game-year-old horse to receive enrichment tasks', async () => {
+      const yearlingHorse = { id: 3, age: 1, bondScore: 25 };
       const result = await validateGroomingEligibility(yearlingHorse, 'gentle_touch');
 
       expect(result.eligible).toBe(true);
       expect(result.reason).toContain('eligible');
     });
 
-    it('should allow 2.9-year-old horse (1059 days) to receive enrichment tasks', async () => {
-      const youngHorse = { id: 4, age: 1059, bondScore: 40 };
+    it('should allow 2-game-year-old horse to receive foal grooming tasks (1-3 years)', async () => {
+      const youngHorse = { id: 4, age: 2, bondScore: 40 };
       const result = await validateGroomingEligibility(youngHorse, 'hoof_handling');
 
       expect(result.eligible).toBe(true);
@@ -94,24 +97,24 @@ describe('Groom Age Restrictions & Task Eligibility', () => {
   });
 
   describe('Adult Horse Grooming Task Eligibility (3+ years)', () => {
-    it('should allow exactly 3-year-old horse (1095 days) to receive adult grooming tasks', async () => {
-      const threeYearOld = { id: 5, age: 1095, bondScore: 50 };
+    it('should allow exactly 3-game-year-old horse to receive adult grooming tasks', async () => {
+      const threeYearOld = { id: 5, age: 3, bondScore: 50 };
       const result = await validateGroomingEligibility(threeYearOld, 'brushing');
 
       expect(result.eligible).toBe(true);
       expect(result.reason).toContain('eligible');
     });
 
-    it('should allow 5-year-old horse (1825 days) to receive adult grooming tasks', async () => {
-      const adultHorse = { id: 6, age: 1825, bondScore: 75 };
+    it('should allow 5-game-year-old horse to receive adult grooming tasks', async () => {
+      const adultHorse = { id: 6, age: 5, bondScore: 75 };
       const result = await validateGroomingEligibility(adultHorse, 'hand-walking');
 
       expect(result.eligible).toBe(true);
       expect(result.reason).toContain('eligible');
     });
 
-    it('should allow senior horse (10+ years) to receive adult grooming tasks', async () => {
-      const seniorHorse = { id: 7, age: 3650, bondScore: 90 };
+    it('should allow senior horse (10+ game-years) to receive adult grooming tasks', async () => {
+      const seniorHorse = { id: 7, age: 10, bondScore: 90 };
       const result = await validateGroomingEligibility(seniorHorse, 'stall_care');
 
       expect(result.eligible).toBe(true);
@@ -121,7 +124,7 @@ describe('Groom Age Restrictions & Task Eligibility', () => {
 
   describe('Task Type Validation', () => {
     it('should reject invalid task types for any age', async () => {
-      const horse = { id: 8, age: 1000, bondScore: 50 };
+      const horse = { id: 8, age: 10, bondScore: 50 };
       const result = await validateGroomingEligibility(horse, 'invalid_task');
 
       expect(result.eligible).toBe(false);
@@ -129,7 +132,7 @@ describe('Groom Age Restrictions & Task Eligibility', () => {
     });
 
     it('should provide list of eligible tasks when task is invalid', async () => {
-      const horse = { id: 9, age: 500, bondScore: 30 };
+      const horse = { id: 9, age: 5, bondScore: 30 };
       const result = await validateGroomingEligibility(horse, 'nonexistent_task');
 
       expect(result.eligible).toBe(false);

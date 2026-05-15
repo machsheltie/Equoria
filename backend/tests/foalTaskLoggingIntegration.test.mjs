@@ -145,7 +145,7 @@ describe('Foal Task Logging Integration', () => {
         name: `Test Foal ${testCounter}`,
         sex: 'Colt',
         dateOfBirth: foalBirthDate,
-        age: 365, // 1 year old
+        age: 1, // 1 game-year old (post Equoria-son6: Horse.age is game-years)
         userId: testUser.id,
         bondScore: 50,
         stressLevel: 20,
@@ -305,7 +305,7 @@ describe('Foal Task Logging Integration', () => {
             name: `${taskType} Test Foal ${testCounter}`,
             sex: 'Colt',
             dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year ago
-            age: 365,
+            age: 1, // 1 game-year old (post Equoria-son6: Horse.age is game-years)
             userId: testUser.id,
             bondScore: 50,
             stressLevel: 20,
@@ -455,7 +455,7 @@ describe('Foal Task Logging Integration', () => {
       // Update foal to be 4 years old (beyond enrichment age)
       await prisma.horse.update({
         where: { id: testFoal.id },
-        data: { age: 1460 }, // 4 years old
+        data: { age: 4 }, // 4 game-years old (post Equoria-son6: Horse.age is game-years)
       });
 
       const response = await request(app)
@@ -478,15 +478,17 @@ describe('Foal Task Logging Integration', () => {
     }, 10000); // 10 second timeout
 
     it('should reject grooming tasks for horses too young', async () => {
-      // Update foal to be 6 months old (too young for grooming tasks)
-      // In game time: 6 months = ~3 days (0.4 years), which is under 1 year minimum for foal grooming
+      // Update foal to be under 1 game-year old (too young for foal grooming tasks).
+      // Post Equoria-son6: Horse.age is game-years (floor(realDays / 7)). A horse
+      // born 3 real days ago is age 0 game-years (floor(3/7) = 0), which is under
+      // FOAL_GROOMING_MIN_AGE (1 year) so hoof_handling must be rejected.
       const youngBirthDate = new Date();
-      youngBirthDate.setDate(youngBirthDate.getDate() - 3); // 3 days ago (6 months in game time)
+      youngBirthDate.setDate(youngBirthDate.getDate() - 3); // 3 real days ago → 0 game-years
 
       await prisma.horse.update({
         where: { id: testFoal.id },
         data: {
-          age: 3, // 3 days old (6 months in game time)
+          age: 0, // 0 game-years (under 1-year minimum for foal grooming)
           dateOfBirth: youngBirthDate,
         },
       });

@@ -144,7 +144,7 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
       const yearling = {
         id: 2,
         name: 'Yearling Horse',
-        age: 400, // ~1.1 years old
+        age: 1, // 1 game-year old (post Equoria-son6: Horse.age is game-years)
         healthStatus: 'Excellent',
       };
 
@@ -160,7 +160,7 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
       const matureHorse = {
         id: 3,
         name: 'Mature Horse',
-        age: 1500, // ~4.1 years old
+        age: 4, // 4 game-years old (post Equoria-son6: Horse.age is game-years)
         healthStatus: 'Good',
       };
 
@@ -175,27 +175,33 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
       const youngFoal = {
         id: 4,
         name: 'Very Young Foal',
-        age: 10, // 10 days old
+        age: 0, // under 1 game-year (post Equoria-son6: Horse.age is game-years)
         healthStatus: 'Good',
       };
 
-      const result = await validateGroomingEligibility(youngFoal, 'brushing'); // Adult task for young foal
+      const result = await validateGroomingEligibility(youngFoal, 'brushing'); // Adult task (3+ yr) for under-1-yr foal
 
       expect(result).toHaveProperty('eligible');
       expect(result).toHaveProperty('reason');
 
-      if (!result.eligible) {
-        expect(result.reason).toContain('not an eligible task');
-      }
+      // A horse under 1 game-year is below GENERAL_GROOMING_MIN_AGE (3) so the
+      // adult 'brushing' task must be rejected — assert it unconditionally
+      // (the prior `if (!result.eligible)` block was vacuous when age was a
+      // stale day-value that read as an adult game-year count).
+      expect(result.eligible).toBe(false);
+      expect(result.reason).toContain('not an eligible task');
     });
 
     it('should handle edge cases in age validation', async () => {
+      // Equoria-son6: Horse.age is game-years. Boundary values expressed in
+      // game-years matching the eligibility bands (enrichment 0-2, foal
+      // grooming 1-3, general grooming 3+).
       const edgeCases = [
-        { age: 0, task: 'early_touch' }, // Newborn - valid enrichment task
-        { age: 364, task: 'hoof_handling' }, // Almost 1 year - valid foal grooming task
-        { age: 366, task: 'hoof_handling' }, // Just over 1 year - valid foal grooming task
-        { age: 1094, task: 'brushing' }, // Almost 3 years - valid general grooming task
-        { age: 1096, task: 'brushing' }, // Just over 3 years - valid general grooming task
+        { age: 0, task: 'early_touch', expectEligible: true }, // Newborn - valid enrichment task (0-2)
+        { age: 1, task: 'hoof_handling', expectEligible: true }, // 1 game-year - valid foal grooming task (1-3)
+        { age: 3, task: 'hoof_handling', expectEligible: true }, // 3 game-years - still in foal grooming band (1-3)
+        { age: 3, task: 'brushing', expectEligible: true }, // exactly 3 game-years - valid general grooming task (3+)
+        { age: 5, task: 'brushing', expectEligible: true }, // 5 game-years - valid general grooming task (3+)
       ];
 
       for (const testCase of edgeCases) {
@@ -209,6 +215,7 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
         const result = await validateGroomingEligibility(horse, testCase.task);
         expect(result).toHaveProperty('eligible');
         expect(result).toHaveProperty('reason');
+        expect(result.eligible).toBe(testCase.expectEligible);
       }
     });
   });
@@ -308,27 +315,26 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
 
   describe('Age Group Descriptions', () => {
     it('should provide correct descriptions for different age groups', () => {
+      // Equoria-son6: ages are game-years; assert the exact string
+      // getAgeGroupDescription returns for each band (was a vacuous
+      // typeof-string check against dead expectedGroup labels).
       const ageTestCases = [
-        { age: 15, expectedGroup: 'newborn foal' },
-        { age: 180, expectedGroup: 'young foal' },
-        { age: 400, expectedGroup: 'yearling' },
-        { age: 800, expectedGroup: 'two-year-old' },
-        { age: 1200, expectedGroup: 'mature horse' },
+        { age: 0, expectedGroup: 'young foal (0-2 years)' },
+        { age: 2, expectedGroup: 'young foal (0-2 years)' },
+        { age: 3, expectedGroup: 'foal (1-3 years)' },
+        { age: 5, expectedGroup: 'adult horse (3+ years)' },
+        { age: 12, expectedGroup: 'adult horse (3+ years)' },
       ];
 
       ageTestCases.forEach(testCase => {
         const description = getAgeGroupDescription(testCase.age);
         expect(typeof description).toBe('string');
-        expect(description.length).toBeGreaterThan(0);
-
-        // Should contain age-appropriate terminology
-        const lowerDescription = description.toLowerCase();
-        expect(lowerDescription).toMatch(/foal|yearling|horse|young|mature/);
+        expect(description).toBe(testCase.expectedGroup);
       });
     });
 
     it('should handle boundary ages consistently', () => {
-      const boundaryAges = [0, 365, 730, 1095, 1460];
+      const boundaryAges = [0, 1, 2, 3, 4]; // game-years (post Equoria-son6)
 
       boundaryAges.forEach(age => {
         const description = getAgeGroupDescription(age);

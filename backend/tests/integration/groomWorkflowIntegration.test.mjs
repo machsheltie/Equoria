@@ -136,7 +136,7 @@ describe('Groom Workflow Integration Tests', () => {
         name: `Test Foal ${suffix}`,
         sex: 'Filly',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
-        age: 365,
+        age: 1, // 1 game-year (post Equoria-son6: Horse.age is game-years; foal does enrichment tasks 0-2yr)
         user: { connect: { id: testUser.id } },
         breed: { connect: { id: testBreed.id } },
         bondScore: 50,
@@ -155,7 +155,7 @@ describe('Groom Workflow Integration Tests', () => {
         name: `Test Young Horse ${suffix}`,
         sex: 'Colt',
         dateOfBirth: new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000),
-        age: 730,
+        age: 2, // 2 game-years (post Equoria-son6: Horse.age is game-years; does foal grooming tasks 1-3yr)
         user: { connect: { id: testUser.id } },
         breed: { connect: { id: testBreed.id } },
         bondScore: 60,
