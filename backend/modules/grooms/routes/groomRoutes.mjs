@@ -18,6 +18,7 @@ import {
   getGroomProfile,
   getGroomBonusTraits,
   updateGroomBonusTraits,
+  getGroomHorseSynergyPreview,
 } from '../controllers/groomController.mjs';
 import {
   checkRetirementEligibility,
@@ -524,6 +525,44 @@ router.post(
  *         description: Internal server error
  */
 router.get('/definitions', getGroomDefinitions);
+
+/**
+ * @swagger
+ * /api/grooms/{groomId}/horses/{horseId}/synergy:
+ *   get:
+ *     summary: Preview the temperament-groom synergy modifier for a groom/horse pair (31D-4, Equoria-ictn).
+ *     tags: [Grooms]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: groomId
+ *         required: true
+ *         schema: { type: integer, minimum: 1 }
+ *       - in: path
+ *         name: horseId
+ *         required: true
+ *         schema: { type: integer, minimum: 1 }
+ *     responses:
+ *       200:
+ *         description: Synergy preview computed
+ *       400:
+ *         description: Invalid id
+ *       401:
+ *         description: Authentication required
+ *       404:
+ *         description: Groom or horse not found
+ */
+router.get(
+  '/:groomId/horses/:horseId/synergy',
+  authenticateToken,
+  [
+    param('groomId').isInt({ min: 1 }).withMessage('groomId must be a positive integer'),
+    param('horseId').isInt({ min: 1 }).withMessage('horseId must be a positive integer'),
+    handleValidationErrors,
+  ],
+  getGroomHorseSynergyPreview,
+);
 
 /**
  * @swagger
