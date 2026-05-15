@@ -348,7 +348,10 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
           where,
           take: parseInt(limit),
           skip: parseInt(offset),
-          // Field selection: excludes large JSONB (genotype, colorGenotype, epigeneticFlags, etc.)
+          // Field selection: excludes large JSONB (colorGenotype, epigeneticFlags, etc.)
+          // — but INCLUDES phenotype (~500 bytes/row) because HorseCard.tsx
+          // reads phenotype.colorName to render the coat-color chip on every
+          // horse-list view (Equoria-tkyx).
           select: {
             id: true,
             name: true,
@@ -378,6 +381,8 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
             totalEarnings: true,
             trait: true,
             temperament: true,
+            // Coat-color phenotype — small JSONB needed by HorseCard chip.
+            phenotype: true,
             breed: { select: { id: true, name: true } },
             user: { select: { id: true, username: true } },
           },
