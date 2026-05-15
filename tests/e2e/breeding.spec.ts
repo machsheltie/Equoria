@@ -1,15 +1,55 @@
-import { test, expect } from '@playwright/test';
+import { test as base, expect } from '@playwright/test';
 import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
+
+/**
+ * Story 21-4 AC2/AC3/AC5 (Equoria-xxm3): browser console + pageerror
+ * listeners are wired through a Playwright fixture so they (a) register
+ * before any test code runs, (b) flow output into test.info() / attachments
+ * instead of console.log noise, (c) survive test isolation cleanly.
+ *
+ * Debug console.log statements that used to live in beforeAll (printing
+ * breedId, created horse names) are removed — Playwright's annotation API
+ * (test.info().annotations) is the canonical channel for that information.
+ */
+const test = base.extend<{ browserConsole: void }>({
+  browserConsole: [
+    async ({ page }, use, testInfo) => {
+      const consoleLines: string[] = [];
+      const errorLines: string[] = [];
+
+      page.on('console', (msg) => {
+        consoleLines.push(`[${msg.type()}] ${msg.text()}`);
+      });
+      page.on('pageerror', (err) => {
+        errorLines.push(err.stack ?? err.message);
+      });
+
+      await use();
+
+      if (consoleLines.length > 0) {
+        await testInfo.attach('browser-console', {
+          body: consoleLines.join('\n'),
+          contentType: 'text/plain',
+        });
+      }
+      if (errorLines.length > 0) {
+        await testInfo.attach('browser-pageerror', {
+          body: errorLines.join('\n\n'),
+          contentType: 'text/plain',
+        });
+      }
+    },
+    { auto: true },
+  ],
+});
 
 test.describe('Breeding Loop', () => {
   let session: AuthedSession;
   let stallionName: string;
   let mareName: string;
 
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async () => {
     test.setTimeout(90000);
-    page.on('console', (msg) => console.log(`BROWSER [${msg.type()}]: ${msg.text()}`));
-    page.on('pageerror', (err) => console.error(`BROWSER ERROR: ${err.message}`));
   });
 
   // Equoria-oua3: bare worker-scope `request` does NOT inherit project
@@ -32,7 +72,6 @@ test.describe('Breeding Loop', () => {
       const breeds = breedsJson?.data ?? breedsJson ?? [];
       if (Array.isArray(breeds) && breeds.length > 0) {
         breedId = breeds[0].id;
-        console.log('Using breedId:', breedId);
       }
     }
 
@@ -42,12 +81,15 @@ test.describe('Breeding Loop', () => {
       age: 5,
       sex: 'stallion',
     });
+    expect.soft(
+      stallionRes.ok(),
+      `Stallion creation should succeed (status ${stallionRes.status()})`
+    ).toBeTruthy();
     if (!stallionRes.ok()) {
       throw new Error(
         `Stallion creation failed: ${stallionRes.status()} ${await stallionRes.text()}`
       );
     }
-    console.log('Created stallion:', stallionName);
 
     const mareRes = await csrfMutate(session, 'POST', '/api/horses', {
       name: mareName,
@@ -55,10 +97,13 @@ test.describe('Breeding Loop', () => {
       age: 5,
       sex: 'mare',
     });
+    expect.soft(
+      mareRes.ok(),
+      `Mare creation should succeed (status ${mareRes.status()})`
+    ).toBeTruthy();
     if (!mareRes.ok()) {
       throw new Error(`Mare creation failed: ${mareRes.status()} ${await mareRes.text()}`);
     }
-    console.log('Created mare:', mareName);
   });
 
   test.afterAll(async () => {
