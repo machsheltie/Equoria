@@ -93,7 +93,7 @@ All allele pairs stored as `"allele1/allele2"` strings: `"E/e"`, `"Cr/Cr"`, `"nd
 ### File Locations
 
 - Service: `backend/modules/horses/services/genotypeGenerationService.mjs`
-- Tests: `backend/__tests__/genotypeGenerationService.test.mjs`
+- Tests: `backend/modules/horses/__tests__/genotypeGenerationService.test.mjs`
 - Migration: `packages/database/prisma/migrations/`
 
 ---
@@ -115,7 +115,7 @@ claude-sonnet-4-6
 ### File List
 
 - `backend/modules/horses/services/genotypeGenerationService.mjs` — new (pure-function service)
-- `backend/__tests__/genotypeGenerationService.test.mjs` — new (~15 tests)
+- `backend/modules/horses/__tests__/genotypeGenerationService.test.mjs` — new (~15 tests)
 - `packages/database/prisma/migrations/{timestamp}_add-color-genotype-phenotype/migration.sql` — new
 
 ### Change Log

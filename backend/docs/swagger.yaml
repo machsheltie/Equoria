@@ -521,6 +521,96 @@ paths:
         '200': { description: 'Color prediction results' }
         '400': { description: 'Invalid parameters' }
 
+  # ── Epic 31E-4: coat color genetics endpoints ───────────────────────────────
+  '/horses/{id}/genetics':
+    get:
+      tags: [Horses]
+      summary: 'Get full coat color genotype + phenotype for a horse (owner-only)'
+      description: |
+        Returns the horse's full color genotype (allele pairs per locus) and
+        phenotype JSONB for breeding planning. Returns `data: null` when the
+        horse pre-dates the color-genetics system (legacy horse). Requires
+        the requester to own the target horse.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: 'Genetics data (or null for legacy horses)'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  message: { type: string }
+                  data:
+                    nullable: true
+                    type: object
+                    properties:
+                      horseId: { type: integer }
+                      horseName: { type: string }
+                      colorGenotype:
+                        type: object
+                        description: 'Allele pairs keyed by locus name (e.g. E_Extension: "E/e")'
+                        additionalProperties: { type: string }
+                      phenotype:
+                        nullable: true
+                        type: object
+                        description: 'Phenotype JSONB (colorName, shade, markings, modifiers)'
+        '401': { description: 'Unauthorized' }
+        '403': { description: 'Forbidden — horse not owned by requester' }
+        '404': { description: 'Horse not found' }
+        '500': { description: 'Internal server error' }
+
+  '/horses/{id}/color':
+    get:
+      tags: [Horses]
+      summary: 'Get player-facing coat color and markings summary for a horse'
+      description: |
+        Player-safe view of a horse's coat (no genotype): color name, shade,
+        face / leg / advanced markings, and modifier flags. Returns
+        `data: null` when the horse has no phenotype data (legacy horse).
+        Requires the requester to own the target horse.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: id, in: path, required: true, schema: { type: integer } }
+      responses:
+        '200':
+          description: 'Color data (or null for legacy horses)'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  message: { type: string }
+                  data:
+                    nullable: true
+                    type: object
+                    properties:
+                      horseId: { type: integer }
+                      horseName: { type: string }
+                      colorName: { type: string, nullable: true }
+                      shade: { type: string, nullable: true }
+                      faceMarking: { type: string, nullable: true }
+                      legMarkings:
+                        nullable: true
+                        type: object
+                        description: 'Per-leg markings keyed by position (frontLeft, frontRight, hindLeft, hindRight)'
+                      advancedMarkings:
+                        nullable: true
+                        type: object
+                        description: 'Boolean flags for rare markings (e.g. bloodyShoulderPresent, snowflakePresent)'
+                      modifiers:
+                        nullable: true
+                        type: object
+                        description: 'Boolean modifier flags (isSooty, isFlaxen, isPangare, isRabicano)'
+        '401': { description: 'Unauthorized' }
+        '403': { description: 'Forbidden — horse not owned by requester' }
+        '404': { description: 'Horse not found' }
+        '500': { description: 'Internal server error' }
+
   # ── Breeds ───────────────────────────────────────────────────────────────────
   /breeds:
     get:
