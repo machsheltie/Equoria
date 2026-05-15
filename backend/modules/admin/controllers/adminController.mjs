@@ -49,7 +49,10 @@ export async function getCronStatus(req, res) {
 export async function getCronHealth(req, res) {
   try {
     logger.info('[adminController] GET /api/admin/cron/health');
-    const health = cronJobService.getHealth();
+    // Equoria-9wby: include persistent recentRuns[5] per job from CronRunLog
+    // so cross-restart history is visible. If DB read fails, recentRuns[] is
+    // an empty array per job (in-memory heartbeat data is still returned).
+    const health = await cronJobService.getHealthWithHistory({ recentRunsLimit: 5 });
     res.json({ success: true, data: health });
   } catch (error) {
     logger.error(`[adminController] GET /api/admin/cron/health error: ${error.message}`);

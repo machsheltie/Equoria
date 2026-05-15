@@ -1443,3 +1443,38 @@ enum AgeStage {
   yearling      // 26-52 weeks
   two_year_old  // 52-104 weeks
 }
+
+// ── Equoria-9wby: Persistent CronRunLog ────────────────────────────────────────
+// Cross-restart history of cron job executions. Complements the in-memory
+// heartbeat (CronJobService.heartbeats) added in Equoria-0elk by giving
+// /api/admin/cron/health a queryable last-N runs view per job that survives
+// process restarts.
+//
+// Written by CronJobService.runWithHeartbeat() on every cycle (success + error)
+// — one row per cycle, status = 'success' | 'error'. Aggregated summary
+// counters (horsesProcessed, birthdaysFound, etc.) come from each job
+// handler's return payload via summarizeResult() — see backend/services/cronJobs.mjs.
+
+model CronRunLog {
+  id                    Int      @id @default(autoincrement())
+  jobName               String
+  startedAt             DateTime
+  finishedAt            DateTime?
+  /// 'success' | 'error'
+  status                String
+  horsesProcessed       Int?
+  birthdaysFound        Int?
+  milestonesEvaluated   Int?
+  electionsOpened       Int?
+  electionsClosed       Int?
+  errorsCount           Int?
+  errorMessage          String?
+  /// Full handler summary payload as JSONB for forward-compat (new counters
+  /// surface here without a schema change).
+  summary               Json?
+  createdAt             DateTime @default(now())
+
+  @@index([jobName, startedAt(sort: Desc)])
+  @@index([status])
+  @@map("cron_run_logs")
+}

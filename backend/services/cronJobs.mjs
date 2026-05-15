@@ -72,6 +72,12 @@ class CronJobService {
    * error). The wrapped function returns the handler's result so caller
    * semantics are preserved.
    *
+   * Equoria-9wby: Also persists each run to the CronRunLog table so
+   * /api/admin/cron/health can surface cross-restart history. The DB write
+   * is best-effort — if persistence fails, the cron itself MUST NOT fail
+   * (observability layer must not break the system it observes). DB errors
+   * are logged at warn level and swallowed.
+   *
    * @param {string} jobName     - Job key for this.heartbeats
    * @param {Function} handler   - async () => Promise<result>
    */
@@ -80,22 +86,77 @@ class CronJobService {
     this.recordHeartbeat(jobName, { startedAt, finishedAt: null, status: 'running' });
     try {
       const result = await handler();
+      const finishedAt = new Date();
+      const summary = this.summarizeResult(result);
       this.recordHeartbeat(jobName, {
         startedAt,
-        finishedAt: new Date(),
+        finishedAt,
         status: 'success',
-        summary: this.summarizeResult(result),
+        summary,
         error: null,
       });
+      await this.persistRunLog({ jobName, startedAt, finishedAt, status: 'success', summary });
       return result;
     } catch (error) {
+      const finishedAt = new Date();
+      const errorMessage = error?.message ?? String(error);
       this.recordHeartbeat(jobName, {
         startedAt,
-        finishedAt: new Date(),
+        finishedAt,
         status: 'error',
-        error: error?.message ?? String(error),
+        error: errorMessage,
+      });
+      await this.persistRunLog({
+        jobName,
+        startedAt,
+        finishedAt,
+        status: 'error',
+        errorMessage,
       });
       throw error;
+    }
+  }
+
+  /**
+   * Equoria-9wby: Persist a single cron run to the CronRunLog table. Maps the
+   * free-form handler summary to typed counter columns where present, while
+   * always storing the full summary in the JSONB `summary` column for
+   * forward-compat. Best-effort — DB errors are logged and swallowed so cron
+   * never dies because the observability sidecar table is unhealthy.
+   *
+   * @param {Object} entry
+   * @param {string} entry.jobName
+   * @param {Date} entry.startedAt
+   * @param {Date} entry.finishedAt
+   * @param {'success'|'error'} entry.status
+   * @param {Object|null} [entry.summary]
+   * @param {string|null} [entry.errorMessage]
+   */
+  async persistRunLog({ jobName, startedAt, finishedAt, status, summary = null, errorMessage = null }) {
+    try {
+      const summaryObj = summary && typeof summary === 'object' ? summary : null;
+      await prisma.cronRunLog.create({
+        data: {
+          jobName,
+          startedAt,
+          finishedAt,
+          status,
+          horsesProcessed:
+            summaryObj?.horsesProcessed ?? summaryObj?.totalProcessed ?? null,
+          birthdaysFound: summaryObj?.birthdaysFound ?? null,
+          milestonesEvaluated:
+            summaryObj?.milestonesEvaluated ?? summaryObj?.milestonesTriggered ?? null,
+          electionsOpened: summaryObj?.opened ?? null,
+          electionsClosed: summaryObj?.closed ?? null,
+          errorsCount: typeof summaryObj?.errors === 'number' ? summaryObj.errors : null,
+          errorMessage,
+          summary: summaryObj,
+        },
+      });
+    } catch (err) {
+      logger.warn(
+        `[CronJobService.persistRunLog] Failed to persist CronRunLog for ${jobName}: ${err?.message ?? err}`,
+      );
     }
   }
 
@@ -681,6 +742,57 @@ class CronJobService {
       jobs: jobStatuses,
       totalJobs: this.jobs.size,
     };
+  }
+
+  /**
+   * Equoria-9wby: Async health snapshot variant that includes recentRuns[N]
+   * per job from the persistent CronRunLog table. Use this from the admin
+   * route handler so cross-restart history is visible.
+   *
+   * @param {Object} [opts]
+   * @param {Date}   [opts.now]
+   * @param {number} [opts.recentRunsLimit=5]
+   * @returns {Promise<Object>}
+   */
+  async getHealthWithHistory({ now = new Date(), recentRunsLimit = 5 } = {}) {
+    const base = this.getHealth(now);
+    try {
+      for (const jobName of Object.keys(base.jobs)) {
+        const rows = await prisma.cronRunLog.findMany({
+          where: { jobName },
+          orderBy: { startedAt: 'desc' },
+          take: recentRunsLimit,
+          select: {
+            id: true,
+            startedAt: true,
+            finishedAt: true,
+            status: true,
+            horsesProcessed: true,
+            birthdaysFound: true,
+            milestonesEvaluated: true,
+            electionsOpened: true,
+            electionsClosed: true,
+            errorsCount: true,
+            errorMessage: true,
+            summary: true,
+          },
+        });
+        base.jobs[jobName].recentRuns = rows.map(r => ({
+          ...r,
+          startedAt: r.startedAt instanceof Date ? r.startedAt.toISOString() : r.startedAt,
+          finishedAt:
+            r.finishedAt instanceof Date ? r.finishedAt.toISOString() : r.finishedAt,
+        }));
+      }
+    } catch (err) {
+      logger.warn(
+        `[CronJobService.getHealthWithHistory] CronRunLog read failed: ${err?.message ?? err}`,
+      );
+      for (const jobName of Object.keys(base.jobs)) {
+        base.jobs[jobName].recentRuns = [];
+      }
+    }
+    return base;
   }
 
   /**
