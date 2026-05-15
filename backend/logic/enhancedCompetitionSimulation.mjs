@@ -117,7 +117,9 @@ export async function executeEnhancedCompetition(show, entries) {
 
     // Calculate scores for all entries
     const competitionEntries = entries.map(({ horse, user }) => {
-      const rawScore = calculateCompetitionScore(horse, show.discipline);
+      // Equoria-qszs: pass show.showType so conformation shows correctly use the
+      // conformation temperament modifier instead of silently defaulting to ridden.
+      const rawScore = calculateCompetitionScore(horse, show.discipline, show.showType);
       // Ensure score is a valid decimal value (Prisma requires Decimal type)
       const score = rawScore !== null && !isNaN(rawScore) ? Number(rawScore) : 0;
 

@@ -114,7 +114,9 @@ export async function executeEnhancedCompetition(show, entries) {
 
     // Calculate scores for all entries
     const competitionEntries = entries.map(({ horse, user }) => {
-      const score = calculateCompetitionScore(horse, show.discipline);
+      // Equoria-qszs: pass show.showType so conformation shows correctly use the
+      // conformation temperament modifier instead of silently defaulting to ridden.
+      const score = calculateCompetitionScore(horse, show.discipline, show.showType);
       return {
         horse,
         user,

@@ -63,7 +63,9 @@ function runEnhancedCompetition(horses, show) {
   const results = horses.map(horse => {
     try {
       // Use the new calculateCompetitionScore function
-      const finalScore = calculateCompetitionScore(horse, show.discipline);
+      // Equoria-qszs: pass show.showType so conformation shows correctly use the
+      // conformation temperament modifier instead of silently defaulting to ridden.
+      const finalScore = calculateCompetitionScore(horse, show.discipline, show.showType);
 
       // Detect trait bonuses for transparency
       const traitInfo = detectTraitBonuses(horse, show.discipline);
@@ -542,4 +544,7 @@ async function enterAndRunShow(horseIds, show) {
   }
 }
 
-export { enterAndRunShow };
+// Equoria-u0mz: export runEnhancedCompetition for integration testing of the
+// pre-DB scoring path (e.g., to assert show.showType flows through to the
+// temperament modifier without requiring a full DB-backed enterAndRunShow run).
+export { enterAndRunShow, runEnhancedCompetition };
