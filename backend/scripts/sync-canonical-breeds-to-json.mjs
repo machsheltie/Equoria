@@ -67,9 +67,11 @@ function main() {
     }
   }
 
-  writeFileSync(JSON_PATH, JSON.stringify(json, null, 2) + '\n', 'utf8');
+  writeFileSync(JSON_PATH, `${JSON.stringify(json, null, 2)}\n`, 'utf8');
   console.log(`[sync] Updated ${updatedCount} of ${CANONICAL_BREEDS.length} canonical breeds:`);
-  for (const name of changedBreeds) console.log(`  - ${name}`);
+  for (const name of changedBreeds) {
+    console.log(`  - ${name}`);
+  }
   console.log(`[sync] Wrote ${JSON_PATH}`);
 }
 

@@ -353,8 +353,9 @@ export function createRateLimiter(options = {}) {
 
       if (redisClient && connected) {
         logger.debug(`[RateLimit:${keyPrefix}] Using Redis store for distributed rate limiting`);
+        // rate-limit-redis v4 requires sendCommand wrapper, not raw client.
         return new RedisStore({
-          client: redisClient,
+          sendCommand: (...args) => redisClient.sendCommand(args),
           prefix: `${keyPrefix}:`,
         });
       }
