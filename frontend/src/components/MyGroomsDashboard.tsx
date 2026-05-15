@@ -55,6 +55,11 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
 }) => {
   const [selectedHorseId, setSelectedHorseId] = useState<number | null>(null);
   const [selectedHorseName, setSelectedHorseName] = useState<string>('');
+  // Equoria-bu7m — horse temperament forwarded so AssignGroomModal can render
+  // the synergy preview badge (Equoria-atb6). Null for legacy horses.
+  const [selectedHorseTemperament, setSelectedHorseTemperament] = useState<
+    string | null
+  >(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [isHorsePickerOpen, setIsHorsePickerOpen] = useState(false);
   const { data: userHorses = [], isLoading: horsesLoading } = useHorses();
@@ -163,13 +168,19 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
   const handleAssignClick = (_groomId: number) => {
     setSelectedHorseId(null);
     setSelectedHorseName('');
+    setSelectedHorseTemperament(null);
     setIsHorsePickerOpen(true);
   };
 
   // Horse picker callback — sets the real horseId, closes picker, opens assign modal.
-  const handleHorsePicked = (horse: { id: number; name: string }) => {
+  const handleHorsePicked = (horse: {
+    id: number;
+    name: string;
+    temperament?: string | null;
+  }) => {
     setSelectedHorseId(horse.id);
     setSelectedHorseName(horse.name);
+    setSelectedHorseTemperament(horse.temperament ?? null);
     setIsHorsePickerOpen(false);
     setIsAssignModalOpen(true);
   };
@@ -186,6 +197,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
     setIsAssignModalOpen(false);
     setSelectedHorseId(null);
     setSelectedHorseName('');
+    setSelectedHorseTemperament(null);
   };
 
   // Filter and sort grooms
@@ -607,6 +619,9 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                           handleHorsePicked({
                             id: Number(horse.id),
                             name: String(horse.name ?? `Horse ${horse.id}`),
+                            temperament:
+                              (horse as { temperament?: string | null })
+                                .temperament ?? null,
                           })
                         }
                         data-testid={`groom-assign-horse-option-${horse.id}`}
@@ -647,6 +662,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
             userId={userId}
             onAssignmentComplete={handleAssignmentComplete}
             availableGrooms={finalGrooms}
+            horseTemperament={selectedHorseTemperament}
           />
         )}
       </div>
