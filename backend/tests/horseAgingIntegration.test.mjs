@@ -154,7 +154,13 @@ describe('Horse Aging Integration', () => {
           name: 'Milestone Integration Foal',
           sex: 'Filly',
           dateOfBirth: sevenDaysAgo, // 7 days before reference date (birthday today!)
-          age: 6, // Stored age is 6, calculated age will be 7 (birthday!)
+          // Post-son6: Horse.age is game-YEARS, not days. A 7-day-old foal is
+          // crossing into game-year 1. The stored age must be the game-year
+          // BEFORE the birthday (0) so updateHorseAge computes
+          // hadBirthday = calculatedAge(1) > storedAge(0) = true and passes
+          // prevAgeInDays = 0 * 7 = 0 into checkForMilestones, firing the
+          // age-1 milestone gate (previousAge < 7 && newAge >= 7).
+          age: 0, // game-year before the year-1 birthday
           userId: testUser.id,
           breedId: testBreed.id,
           bondScore: 85,
@@ -193,7 +199,7 @@ describe('Horse Aging Integration', () => {
       });
 
       // Check age update
-      expect(updatedFoal.age).toBe(7); // Now 1 year old in Equoria (7 days)
+      expect(updatedFoal.age).toBe(1); // game-years: floor(7d / 7) = 1 (post-son6)
 
       // Check trait milestone evaluation
       const { epigeneticModifiers } = updatedFoal;
@@ -250,8 +256,8 @@ describe('Horse Aging Integration', () => {
           data: {
             name: 'Milestone Foal',
             sex: 'Colt',
-            dateOfBirth: new Date('2025-05-25T00:00:00Z'), // 7 days ago
-            age: 6, // Stored age is 6, calculated age will be 7 (birthday!)
+            dateOfBirth: new Date('2025-05-25T00:00:00Z'), // 7 days ago → game-year 1
+            age: 0, // game-year before the year-1 birthday (see foal note above)
             userId: testUser.id,
             breedId: testBreed.id,
             taskLog: { trust_building: 6, desensitization: 4 },
@@ -264,8 +270,8 @@ describe('Horse Aging Integration', () => {
           data: {
             name: 'Training Ready Horse',
             sex: 'Mare',
-            dateOfBirth: new Date('2025-05-11T00:00:00Z'), // 21 days ago (3 years = 21 days)
-            age: 20, // Stored age is 20, calculated age will be 21 (birthday!)
+            dateOfBirth: new Date('2025-05-11T00:00:00Z'), // 21 days ago → game-year 3
+            age: 2, // game-year before the year-3 birthday (21d / 7 = 3 years)
             userId: testUser.id,
             breedId: testBreed.id,
           },
@@ -275,8 +281,8 @@ describe('Horse Aging Integration', () => {
           data: {
             name: 'No Birthday Horse',
             sex: 'Stallion',
-            dateOfBirth: new Date('2025-05-01T00:00:00Z'), // 31 days ago
-            age: 31, // Correct age (no birthday today)
+            dateOfBirth: new Date('2025-05-01T00:00:00Z'), // 31 days ago → game-year 4
+            age: 4, // Correct game-year (floor(31 / 7) = 4) so no birthday fires
             userId: testUser.id,
             breedId: testBreed.id,
           },
@@ -300,17 +306,17 @@ describe('Horse Aging Integration', () => {
 
       // Milestone foal should have traits assigned
       const milestoneHorse = updatedHorses.find(h => h.name === 'Milestone Foal');
-      expect(milestoneHorse.age).toBe(7); // 1 year old in Equoria
+      expect(milestoneHorse.age).toBe(1); // game-years: floor(7d / 7) = 1 (post-son6)
       expect(milestoneHorse.epigeneticModifiers.epigenetic_tags).toBeDefined();
       expect(milestoneHorse.epigeneticModifiers.epigenetic_tags.length).toBeGreaterThan(0);
 
       // Training ready horse should just have age updated
       const trainingHorse = updatedHorses.find(h => h.name === 'Training Ready Horse');
-      expect(trainingHorse.age).toBe(21); // 3 years old in Equoria
+      expect(trainingHorse.age).toBe(3); // game-years: floor(21d / 7) = 3 (post-son6)
 
       // No birthday horse should remain unchanged
       const noBirthdayHorse = updatedHorses.find(h => h.name === 'No Birthday Horse');
-      expect(noBirthdayHorse.age).toBe(31); // Unchanged
+      expect(noBirthdayHorse.age).toBe(4); // game-years: floor(31d / 7) = 4, unchanged
 
       // Restore original Date
       global.Date = OriginalDate;
@@ -340,8 +346,8 @@ describe('Horse Aging Integration', () => {
         data: {
           name: 'Minimal Development Foal',
           sex: 'Colt',
-          dateOfBirth: new Date('2025-05-25T00:00:00Z'), // 7 days ago
-          age: 6, // Stored age is 6, calculated age will be 7 (birthday!)
+          dateOfBirth: new Date('2025-05-25T00:00:00Z'), // 7 days ago → game-year 1
+          age: 0, // game-year before the year-1 birthday (see foal note above)
           userId: testUser.id,
           breedId: testBreed.id,
           taskLog: {
@@ -362,7 +368,7 @@ describe('Horse Aging Integration', () => {
         where: { id: foal.id },
       });
 
-      expect(updatedFoal.age).toBe(7); // 1 year old in Equoria
+      expect(updatedFoal.age).toBe(1); // game-years: floor(7d / 7) = 1 (post-son6)
 
       // With minimal task history and 50% random threshold, no traits should be assigned
       // bonded: 5% < 50% ✗
@@ -399,8 +405,8 @@ describe('Horse Aging Integration', () => {
         data: {
           name: 'No Development Foal',
           sex: 'Filly',
-          dateOfBirth: new Date('2025-05-25T00:00:00Z'), // 7 days ago
-          age: 6, // Stored age is 6, calculated age will be 7 (birthday!)
+          dateOfBirth: new Date('2025-05-25T00:00:00Z'), // 7 days ago → game-year 1
+          age: 0, // game-year before the year-1 birthday (see foal note above)
           userId: testUser.id,
           breedId: testBreed.id,
           taskLog: {}, // Empty task log
@@ -418,7 +424,7 @@ describe('Horse Aging Integration', () => {
         where: { id: foal.id },
       });
 
-      expect(updatedFoal.age).toBe(7); // 1 year old in Equoria
+      expect(updatedFoal.age).toBe(1); // game-years: floor(7d / 7) = 1 (post-son6)
 
       // No task history = no traits
       const epigeneticTags = updatedFoal.epigeneticModifiers?.epigenetic_tags || [];
