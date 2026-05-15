@@ -326,4 +326,87 @@ describe('MessagesPage', () => {
     expect(fallbackRow).toHaveAttribute('data-notif-type', 'something_new');
     expect(fallbackRow).toHaveTextContent('New notification');
   });
+
+  // Equoria-50pn AC-3: populated Notifications tab triggers markAllRead once.
+  // Asserts the useEffect at MessagesPage.tsx:96-100 fires the mark-read
+  // mutation exactly once when the user opens the notifications tab with
+  // unread items.
+  it('calls markAllRead.mutate once when notifications tab is activated with unread items', async () => {
+    mockUseGameNotifications.mockReturnValue({
+      data: {
+        notifications: [
+          {
+            id: 'n-1',
+            type: 'stat_gain',
+            isRead: false,
+            createdAt: new Date().toISOString(),
+            payload: {
+              horseName: 'Stardust',
+              stat: 'speed',
+              amount: 1,
+              feedName: 'Performance Feed',
+            },
+          },
+          {
+            id: 'n-2',
+            type: 'stat_gain',
+            isRead: false,
+            createdAt: new Date().toISOString(),
+            payload: {
+              horseName: 'Comet',
+              stat: 'stamina',
+              amount: 1,
+              feedName: 'Elite Feed',
+            },
+          },
+        ],
+        unreadCount: 2,
+      },
+      isLoading: false,
+    });
+
+    const user = userEvent.setup();
+    const Wrapper = createWrapper();
+    render(
+      <Wrapper>
+        <MessagesPage />
+      </Wrapper>
+    );
+
+    // Initial mount on inbox: mark-read must NOT have been called yet.
+    expect(mockMarkAllReadMutate).not.toHaveBeenCalled();
+
+    await user.click(screen.getByTestId('tab-notifications'));
+
+    // Both rows render with correct horse + stat copy.
+    const row1 = screen.getByTestId('game-notif-n-1');
+    expect(row1).toHaveTextContent('Stardust');
+    expect(row1).toHaveTextContent('+1 Speed from Performance Feed');
+    const row2 = screen.getByTestId('game-notif-n-2');
+    expect(row2).toHaveTextContent('Comet');
+    expect(row2).toHaveTextContent('+1 Stamina from Elite Feed');
+
+    // Mark-read fired exactly once on tab activation.
+    expect(mockMarkAllReadMutate).toHaveBeenCalledTimes(1);
+  });
+
+  // Equoria-50pn — when there are no unread, the mark-read mutation
+  // must NOT fire even when the user opens the notifications tab.
+  it('does NOT call markAllRead.mutate when unreadCount is 0', async () => {
+    mockUseGameNotifications.mockReturnValue({
+      data: { notifications: [], unreadCount: 0 },
+      isLoading: false,
+    });
+
+    const user = userEvent.setup();
+    const Wrapper = createWrapper();
+    render(
+      <Wrapper>
+        <MessagesPage />
+      </Wrapper>
+    );
+
+    await user.click(screen.getByTestId('tab-notifications'));
+    expect(mockMarkAllReadMutate).not.toHaveBeenCalled();
+  });
 });
