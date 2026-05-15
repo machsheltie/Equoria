@@ -546,6 +546,67 @@ describe('API Client - HttpOnly Cookie Support', () => {
       );
     });
 
+    it('execute() POSTs showId to /execute (Equoria-349l)', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          status: 'success',
+          data: {
+            showId: 42,
+            results: [
+              {
+                entryId: 1,
+                horseId: 7,
+                horseName: 'Test',
+                finalScore: 90.5,
+                placement: 1,
+                ribbon: 'Champion',
+                titlePoints: 10,
+                newTitle: null,
+                breedingValueBoost: 0,
+              },
+            ],
+          },
+        }),
+      });
+
+      await conformationShowsApi.execute(42);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/competition/conformation/execute'),
+        expect.objectContaining({
+          method: 'POST',
+          credentials: 'include',
+          body: JSON.stringify({ showId: 42 }),
+        })
+      );
+    });
+
+    it('getTitles() GETs /titles/:horseId (Equoria-349l)', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          status: 'success',
+          data: {
+            horseId: 7,
+            horseName: 'Test',
+            titlePoints: 25,
+            currentTitle: 'Champion',
+            breedingValueBoost: 5,
+          },
+        }),
+      });
+
+      await conformationShowsApi.getTitles(7);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/competition/conformation/titles/7'),
+        expect.objectContaining({ method: 'GET', credentials: 'include' })
+      );
+    });
+
     it('getEligibility() GETs /eligibility/:horseId', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,

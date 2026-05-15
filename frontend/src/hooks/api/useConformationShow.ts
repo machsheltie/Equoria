@@ -21,6 +21,8 @@ import {
   type ConformationShowEntryPayload,
   type ConformationShowEntryResult,
   type ConformationShowEligibilityResult,
+  type ConformationShowExecuteResult,
+  type ConformationShowTitlesResult,
 } from '@/lib/api-client';
 
 /**
@@ -60,5 +62,46 @@ export function useEnterConformationShow() {
         queryKey: ['competitions', 'conformation', 'eligibility', variables.horseId],
       });
     },
+  });
+}
+
+/**
+ * POST /api/v1/competition/conformation/execute (Equoria-349l)
+ *
+ * Host-only: backend gates by hostUserId and returns 404 to non-host callers
+ * (Equoria-dmec / CWE-639 doctrine). On success the show's entries are scored
+ * and titlePoints / breedingValueBoost are written to each entered horse —
+ * we invalidate competitions and the broad horses cache so callers see the
+ * fresh titles immediately.
+ */
+export function useExecuteConformationShow() {
+  const queryClient = useQueryClient();
+
+  return useMutation<ConformationShowExecuteResult, Error, { showId: number }>({
+    mutationFn: ({ showId }) => conformationShowsApi.execute(showId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['competitions'] });
+      queryClient.invalidateQueries({ queryKey: ['horses'] });
+      queryClient.invalidateQueries({ queryKey: ['horse'] });
+    },
+  });
+}
+
+/**
+ * GET /api/v1/competition/conformation/titles/:horseId (Equoria-349l)
+ *
+ * Reads titlePoints / currentTitle / breedingValueBoost. Cached for 2 minutes
+ * (titles only change after /execute runs, so we don't need real-time freshness
+ * on the read side).
+ */
+export function useConformationTitles(
+  horseId: number | null | undefined
+): UseQueryResult<ConformationShowTitlesResult, Error> {
+  return useQuery({
+    queryKey: ['horse', horseId, 'conformation', 'titles'],
+    queryFn: () => conformationShowsApi.getTitles(horseId as number),
+    enabled: typeof horseId === 'number' && horseId > 0,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 }
