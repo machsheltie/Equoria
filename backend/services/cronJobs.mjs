@@ -2,7 +2,10 @@ import cron from 'node-cron';
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 import { evaluateTraitRevelation } from '../utils/traitEvaluation.mjs';
-import { processHorseBirthdays } from '../utils/horseAgingSystem.mjs';
+import {
+  processHorseBirthdays,
+  processFoalMilestoneEvaluations,
+} from '../utils/horseAgingSystem.mjs';
 
 /**
  * Daily trait evaluation cron job that runs at midnight
@@ -49,6 +52,19 @@ class CronJobService {
       },
     );
 
+    // Equoria-3yxz: Daily foal milestone evaluation — runs at 12:10 AM
+    // (after aging so today's age increments are visible).
+    const dailyMilestoneJob = cron.schedule(
+      '10 0 * * *',
+      async () => {
+        await this.processFoalMilestones();
+      },
+      {
+        scheduled: false,
+        timezone: 'UTC',
+      },
+    );
+
     // Election status transition — runs every 15 minutes (upcoming→open, open→closed)
     const electionTransitionJob = cron.schedule(
       '*/15 * * * *',
@@ -63,6 +79,7 @@ class CronJobService {
 
     this.jobs.set('dailyTraitEvaluation', dailyTraitJob);
     this.jobs.set('dailyHorseAging', dailyAgingJob);
+    this.jobs.set('dailyFoalMilestoneEvaluation', dailyMilestoneJob);
     this.jobs.set('electionStatusTransition', electionTransitionJob);
 
     // Start all jobs
@@ -329,6 +346,35 @@ class CronJobService {
       return result;
     } catch (error) {
       logger.error(`[CronJobService.processHorseAging] Error: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Equoria-3yxz: Daily foal milestone evaluation pass.
+   * Iterates active foals in developmental windows and writes a MilestoneTraitLog
+   * row for any window the foal has just entered (and not yet been evaluated for).
+   *
+   * @param {Object} options - { dryRun, specificHorseId }
+   * @returns {Promise<Object>} Processing results
+   */
+  async processFoalMilestones(options = {}) {
+    const startTime = Date.now();
+    logger.info(
+      '[CronJobService.processFoalMilestones] Starting daily foal milestone evaluation',
+    );
+
+    try {
+      const result = await processFoalMilestoneEvaluations(options);
+      const duration = Date.now() - startTime;
+      logger.info(
+        `[CronJobService.processFoalMilestones] Completed in ${duration}ms — foals: ${result.totalProcessed}, evaluated: ${result.milestonesEvaluated}, skipped: ${result.milestonesSkipped}, errors: ${result.errors}`,
+      );
+      return result;
+    } catch (error) {
+      logger.error(
+        `[CronJobService.processFoalMilestones] Error: ${error.message}`,
+      );
       throw error;
     }
   }

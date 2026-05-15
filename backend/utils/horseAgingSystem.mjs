@@ -33,6 +33,11 @@ import prisma from '../db/index.mjs';
 import logger from './logger.mjs';
 import { evaluateEpigeneticTagsFromFoalTasks } from './traitEvaluation.mjs';
 import { evaluateTraitMilestones, checkMilestoneEligibility } from './milestoneTraitEvaluator.mjs';
+import {
+  evaluateEnhancedMilestone,
+  DEVELOPMENTAL_WINDOWS,
+  MILESTONE_TYPES,
+} from './enhancedMilestoneEvaluationSystem.mjs';
 
 /**
  * Calculate age in days from date of birth
@@ -447,9 +452,125 @@ export async function processHorseBirthdays(options = {}) {
   }
 }
 
+/**
+ * Equoria-3yxz: Daily cron pass that fires MilestoneTraitLog writes for
+ * every foal that has just entered (and not yet been evaluated for) a
+ * developmental window from enhancedMilestoneEvaluationSystem.DEVELOPMENTAL_WINDOWS.
+ *
+ * Without this, the system relies on the manual POST /api/v1/milestones/evaluate-milestone
+ * endpoint — meaning a foal's developmental milestones never trigger organically
+ * and the MilestoneTraitLog table stays empty for most accounts.
+ *
+ * Algorithm:
+ *   1. Find horses born within the last 30 days (covers all five windows
+ *      0-28d with a small safety margin).
+ *   2. For each, compute ageInDays and identify any window whose [start,end]
+ *      includes that day.
+ *   3. For each matching window: if no existing MilestoneTraitLog row exists
+ *      for (horseId, milestoneType), call evaluateEnhancedMilestone — which
+ *      writes the row (or returns a 'already evaluated' / 'window mismatch'
+ *      reason that we tally rather than treat as error).
+ *
+ * @param {Object} options - { dryRun, specificHorseId }
+ * @returns {Promise<Object>} { totalProcessed, milestonesEvaluated, milestonesSkipped, errors, duration }
+ */
+export async function processFoalMilestoneEvaluations(options = {}) {
+  const startTime = Date.now();
+  const { dryRun = false, specificHorseId = null } = options;
+
+  logger.info(
+    '[horseAgingSystem.processFoalMilestoneEvaluations] Starting daily foal milestone evaluation pass',
+  );
+
+  try {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+
+    const where = specificHorseId
+      ? { id: specificHorseId }
+      : { dateOfBirth: { gte: cutoff } };
+
+    const foals = await prisma.horse.findMany({
+      where,
+      select: { id: true, name: true, dateOfBirth: true },
+      orderBy: { id: 'asc' },
+    });
+
+    let milestonesEvaluated = 0;
+    let milestonesSkipped = 0;
+    let errors = 0;
+
+    for (const foal of foals) {
+      const ageInDays = Math.floor(
+        (Date.now() - new Date(foal.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24),
+      );
+
+      for (const milestoneType of Object.values(MILESTONE_TYPES)) {
+        const window = DEVELOPMENTAL_WINDOWS[milestoneType];
+        if (!window || ageInDays < window.start || ageInDays > window.end) {
+          continue;
+        }
+
+        try {
+          const existing = await prisma.milestoneTraitLog.findFirst({
+            where: { horseId: foal.id, milestoneType },
+            select: { id: true },
+          });
+          if (existing) {
+            milestonesSkipped++;
+            continue;
+          }
+
+          if (dryRun) {
+            logger.info(
+              `[horseAgingSystem.processFoalMilestoneEvaluations] DRY RUN: would evaluate milestone '${milestoneType}' for foal ${foal.id} (${foal.name}, ${ageInDays}d)`,
+            );
+            milestonesEvaluated++;
+            continue;
+          }
+
+          const result = await evaluateEnhancedMilestone(foal.id, milestoneType);
+          if (result?.success === false) {
+            milestonesSkipped++;
+            logger.info(
+              `[horseAgingSystem.processFoalMilestoneEvaluations] Skipped ${milestoneType} for foal ${foal.id}: ${result.reason}`,
+            );
+          } else {
+            milestonesEvaluated++;
+          }
+        } catch (error) {
+          errors++;
+          logger.error(
+            `[horseAgingSystem.processFoalMilestoneEvaluations] Error evaluating ${milestoneType} for foal ${foal.id}: ${error.message}`,
+          );
+        }
+      }
+    }
+
+    const duration = Date.now() - startTime;
+    logger.info(
+      `[horseAgingSystem.processFoalMilestoneEvaluations] Completed in ${duration}ms — foals checked: ${foals.length}, evaluated: ${milestonesEvaluated}, skipped: ${milestonesSkipped}, errors: ${errors}`,
+    );
+
+    return {
+      totalProcessed: foals.length,
+      milestonesEvaluated,
+      milestonesSkipped,
+      errors,
+      duration,
+    };
+  } catch (error) {
+    logger.error(
+      `[horseAgingSystem.processFoalMilestoneEvaluations] Critical error: ${error.message}`,
+    );
+    throw error;
+  }
+}
+
 export default {
   calculateAgeFromBirth,
   updateHorseAge,
   checkForMilestones,
   processHorseBirthdays,
+  processFoalMilestoneEvaluations,
 };
