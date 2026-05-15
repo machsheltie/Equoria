@@ -6,6 +6,7 @@
 import prisma from '../db/index.mjs';
 import logger from './logger.mjs';
 import { calculateGroomInteractionEffects } from './groomSystem.mjs';
+import { updateGroomSynergy } from '../services/groomProgressionService.mjs';
 
 /**
  * Daily care routine types and their characteristics
@@ -252,6 +253,17 @@ async function performAutomaticCare(assignment, routine) {
         stressLevel: newStressLevel,
       },
     });
+
+    // Equoria-5tjf: every automated care interaction also bumps the
+    // groom-horse synergy (sessionsTogether++, +1 synergyScore every 4th
+    // session). Mirrors the manual recordInteraction wire in 5v6g.
+    try {
+      await updateGroomSynergy(assignment.groomId, assignment.foalId, 'interaction_completed');
+    } catch (synergyError) {
+      logger.error(
+        `[dailyCareAutomation.performAutomaticCare] Failed to update synergy for groom ${assignment.groomId} / foal ${assignment.foalId}: ${synergyError.message}`,
+      );
+    }
 
     logger.debug(
       `[dailyCareAutomation.performAutomaticCare] ${routine.name} completed for ${assignment.foal.name}: +${effects.bondingChange} bonding, ${effects.stressChange} stress`,

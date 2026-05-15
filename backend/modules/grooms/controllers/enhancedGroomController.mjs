@@ -12,6 +12,7 @@ import {
   calculateRelationshipLevel,
   ENHANCED_INTERACTIONS,
 } from '../../../services/enhancedGroomInteractions.mjs';
+import { updateGroomSynergy } from '../../../services/groomProgressionService.mjs';
 
 /**
  * GET /api/grooms/enhanced/interactions/:groomId/:horseId
@@ -271,6 +272,16 @@ export async function performEnhancedInteraction(req, res) {
         stressLevel: newStressLevel,
       },
     });
+
+    // Equoria-5tjf: mirror Equoria-5v6g — every enhanced interaction also
+    // increments sessionsTogether and (every 4th session) bumps synergyScore.
+    try {
+      await updateGroomSynergy(parseInt(groomId), parseInt(horseId), 'interaction_completed');
+    } catch (synergyError) {
+      logger.error(
+        `[enhancedGroomController] Failed to update synergy for groom ${groomId} / horse ${horseId}: ${synergyError.message}`,
+      );
+    }
 
     // Check for relationship level change
     const oldLevel = calculateRelationshipLevel(horse.bondScore || 0);
