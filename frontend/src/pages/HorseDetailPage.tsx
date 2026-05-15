@@ -370,6 +370,13 @@ const HorseDetailPage: React.FC = () => {
     equippedFeedType:
       (horseRaw as unknown as { equippedFeedType?: string | null }).equippedFeedType ?? null,
     feedHealth: (horseRaw as unknown as { feedHealth?: string }).feedHealth as Horse['feedHealth'],
+    // Equoria-8xfo (31F-FE-2) — Conformation title fields from /horses/:id payload.
+    // currentTitle is null for never-shown horses; titlePoints starts at 0;
+    // breedingValueBoost is a 0..N multiplier (0.10 == +10%).
+    currentTitle: (horseRaw as unknown as { currentTitle?: string | null }).currentTitle ?? null,
+    titlePoints: (horseRaw as unknown as { titlePoints?: number }).titlePoints ?? 0,
+    breedingValueBoost:
+      (horseRaw as unknown as { breedingValueBoost?: number }).breedingValueBoost ?? 0,
   };
 
   // Tab configuration
@@ -479,6 +486,25 @@ const HorseDetailPage: React.FC = () => {
                             showCriticalWarning={horse.displayedHealth === 'critical'}
                           />
                         )}
+                        {/* Equoria-8xfo (31F-FE-2) — Conformation title ribbon.
+                            Hidden when never-shown (titlePoints === 0 || currentTitle === null).
+                            Tooltip surfaces breedingValueBoost as +X%. */}
+                        {horse.currentTitle && (horse.titlePoints ?? 0) > 0 ? (
+                          <span
+                            className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-[var(--gold-dim)] text-[var(--bg-midnight)]"
+                            title={
+                              horse.breedingValueBoost && horse.breedingValueBoost > 0
+                                ? `${horse.currentTitle} — Breeding value +${(
+                                    horse.breedingValueBoost * 100
+                                  ).toFixed(0)}%`
+                                : (horse.currentTitle ?? '')
+                            }
+                            data-testid="horse-detail-title-ribbon"
+                          >
+                            <span aria-hidden="true">🏆</span>
+                            {horse.currentTitle}
+                          </span>
+                        ) : null}
                       </div>
                     )}
                     <div className="flex flex-wrap gap-3 text-sm fantasy-body text-[var(--text-secondary)]">
@@ -1373,6 +1399,59 @@ const StudSaleTab: React.FC<{
           </p>
         )}
       </div>
+
+      {/* Equoria-8xfo (31F-FE-2) — Conformation Titles block.
+          Surfaces titlePoints, currentTitle, and breedingValueBoost so
+          prospective stud-fee buyers see the +breedingValueBoost. Hidden when
+          horse has never been entered in a conformation show
+          (titlePoints === 0 && currentTitle == null). */}
+      {((horse.titlePoints ?? 0) > 0 || horse.currentTitle) && (
+        <div
+          className="p-4 bg-[var(--bg-midnight)] rounded-lg border border-[var(--gold-dim)]"
+          data-testid="conformation-titles-block"
+        >
+          <p className="fantasy-caption text-[var(--text-secondary)] text-xs uppercase tracking-wider mb-2">
+            Conformation Titles
+          </p>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
+            <div>
+              <p className="fantasy-caption text-[var(--text-secondary)] text-[0.65rem] uppercase">
+                Current Title
+              </p>
+              <p
+                className="fantasy-title text-lg text-[var(--gold-light)]"
+                data-testid="conformation-current-title"
+              >
+                {horse.currentTitle ?? '—'}
+              </p>
+            </div>
+            <div>
+              <p className="fantasy-caption text-[var(--text-secondary)] text-[0.65rem] uppercase">
+                Title Points
+              </p>
+              <p
+                className="fantasy-title text-lg text-[var(--text-primary)]"
+                data-testid="conformation-title-points"
+              >
+                {(horse.titlePoints ?? 0).toLocaleString()}
+              </p>
+            </div>
+            {horse.breedingValueBoost && horse.breedingValueBoost > 0 ? (
+              <div>
+                <p className="fantasy-caption text-[var(--text-secondary)] text-[0.65rem] uppercase">
+                  Breeding Value Boost
+                </p>
+                <p
+                  className="fantasy-title text-lg text-emerald-400"
+                  data-testid="conformation-breeding-boost"
+                >
+                  +{(horse.breedingValueBoost * 100).toFixed(0)}%
+                </p>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      )}
 
       {/* Listing Type Buttons */}
       <div className="space-y-3">
