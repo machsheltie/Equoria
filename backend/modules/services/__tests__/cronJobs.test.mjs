@@ -39,11 +39,15 @@ describe('CronJobService.getStatus()', () => {
     expect(typeof status.jobs).toBe('object');
   });
 
-  it('returns serviceRunning:true, totalJobs:3, and all job keys after start', () => {
+  it('returns serviceRunning:true and exposes the canonical job keys after start', () => {
+    // Shape-based assertion (Equoria-1iv5): assert known job keys are present
+    // rather than a brittle totalJobs count that breaks every time a new cron
+    // job is added (it has grown 3 → 6 over time; the count alone is not a
+    // useful invariant).
     cronJobService.start();
     const status = cronJobService.getStatus();
     expect(status.serviceRunning).toBe(true);
-    expect(status.totalJobs).toBe(3);
+    expect(status.totalJobs).toBeGreaterThanOrEqual(3);
     expect(status.jobs).toHaveProperty('dailyTraitEvaluation');
     expect(status.jobs).toHaveProperty('dailyHorseAging');
     expect(status.jobs).toHaveProperty('electionStatusTransition');
@@ -67,7 +71,12 @@ describe('CronJobService.start()', () => {
 
     // service remains running; no duplicate jobs added
     expect(cronJobService.isRunning).toBe(true);
-    expect(cronJobService.getStatus().totalJobs).toBe(3);
+    // Equoria-1iv5: assert no-duplicate-additions by snapshotting the size
+    // across the second start() call rather than hard-coding a count.
+    const firstStatus = cronJobService.getStatus();
+    const beforeSize = firstStatus.totalJobs;
+    cronJobService.start();
+    expect(cronJobService.getStatus().totalJobs).toBe(beforeSize);
   });
 });
 
