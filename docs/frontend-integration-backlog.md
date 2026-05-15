@@ -6,25 +6,46 @@
 
 ---
 
-## ⏸ PAUSED — 2026-04-02
+## ✅ RESUMED — codebase audit 2026-05-15 (Equoria-qmrt)
 
-**Decision:** All Epic 31 frontend integration work is formally paused until **Epics 22–30 (Celestial Night Frontend Rebuild) are complete**.
+**Status:** The 2026-04-02 PAUSE block is OBSOLETE. Codebase audit on 2026-05-15
+confirmed that the bulk of Epic 31B/C/D/E/F frontend work has shipped on master
+between 2026-04-02 and 2026-05-15. The pause was effectively lifted as the work
+landed; this doc was not refreshed at the time. Equoria-qmrt filed and closed
+for this catch-up.
 
-**Rationale:**
+**What shipped since the pause was written (with file references):**
 
-- Epic 22 is in progress (22-1 and 22-2 done; 22-3–22-8 backlog)
-- Epic 22 establishes the design system (glass panels, game components, navigation) that all subsequent pages must use
-- Integrating 31B/C/D/E/F data into pages that will be fully redesigned creates double-work and visual debt
-- The conformation frontend work (31B partial, see below) was built on the old pre-Epic-22 styling — it must be re-styled in the Epic 22 context anyway
+- **31B Conformation:** `useHorseConformation` (8-region with `shoulders` + `topline`),
+  `useConformationAnalysis` (percentile), `ConformationTab`, `ConformationScoreCard` —
+  all wired into `HorseDetailPage.tsx`. The 7-region / `shoulder` mismatch from the
+  2026-04-02 Orphaned Work Audit has been corrected.
+- **31C Gaits:** `useHorseGaits`, `GaitsTab` (walk/trot/canter/gallop + gaited-breed
+  display + null handling) — wired.
+- **31D Temperament:** `useTemperamentDefinitions`, `TemperamentReferenceModal`,
+  temperament line on `HorseDetailPage.tsx`, `temperamentEffects` on
+  `TrainingResultModal` + `TrainingTab`.
+- **31E Coat color:** `useColorPrediction`, `useHorseCoatColor`, `useHorseCoatGenetics`,
+  `CoatTab`, `MarkingsPanel`, `HorseCard` color chip, `ColorPredictionChart` +
+  `LethalWhiteWarning` in `BreedingPairSelection`.
+- **31F Conformation shows:** `ConformationShowsPage`, `ConformationEntryModal`,
+  `useConformationEligibility` / `useConformationEnter` / `useConformationExecute`
+  / `useConformationTitles` hooks.
 
-**Resume trigger:** Epic 30 (Polish, Performance, and Launch) complete — or a dedicated "Epic 31 Frontend Integration" sprint is planned after Epic 24 (HorseDetailPage redesign), since that page is the primary consumer of 31B/C/D data.
+**Real remaining gaps (each filed as its own bd issue):**
 
-**Recommended resume order (unchanged):**
+- Equoria-tjai — 31D-FE-1: temperament chip on HorseCard
+- Equoria-atb6 — 31D-FE-2: groom synergy preview in AssignGroomModal (DONE 2026-05-15, see commit `cc9f73f37` + Equoria-bu7m wiring follow-up)
+- Equoria-u7e6 — 31F-FE-1: title chip on HorseCard
+- Equoria-8xfo — 31F-FE-2: title section on HorseDetailPage
+- Equoria-8g4n — 31F-FE-3: unify ConformationShowsPage into CompetitionBrowserPage
+- Equoria-iwy3 — 31E-FE-1: HorseDetailPage "Unknown" color fallback (legacy-horse handling)
 
-1. Horse Detail Page enrichment (31B + 31C) — integrate with Story 24.2 redesign
-2. Temperament display (31D) — HorseCard + HorseDetail + Training UI
-3. Coat color display (31E) — HorseCard visual differentiation
-4. Conformation shows (31F) — competition browser new section
+**Per-epic sections below retain their original `[ ]` / `[~]` markers from
+2026-04-02 for historical accuracy of the original gap list. Use the shipped-work
+summary above and the bd-issue list as the authoritative current state. The
+2026-04-02 Orphaned Work Audit section below describes mismatches that were
+resolved during the resumption — kept for traceability of the migration.**
 
 ---
 
@@ -286,6 +307,7 @@ When Epics 22–30 are complete, tackle in this order (integrate with the corres
 
 ---
 
-**Last Updated:** 2026-04-09
-**Updated By:** Epic 31E retrospective — full 31E frontend spec added, 31F backend status corrected to complete
-**Next Review:** When Epic 24 (Horse Card and Detail Redesign) is being planned
+**Last Updated:** 2026-05-15 (Equoria-qmrt)
+**Updated By:** Codebase audit refresh — PAUSE block superseded by RESUMED block at top; per-epic sections retained for historical accuracy. Real outstanding gaps tracked as individual bd issues (see RESUMED block).
+**Previous:** 2026-04-09 — Epic 31E retrospective — full 31E frontend spec added, 31F backend status corrected to complete
+**Next Review:** When the remaining 31D-FE / 31E-FE / 31F-FE bd issues are closed.
