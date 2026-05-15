@@ -17,6 +17,7 @@ baseline_commit: '9eadc4ed23d6f39fdf34333fffdca2e3a77c2ddf'
 ## Boundaries & Constraints
 
 **Always:**
+
 - Only tiers with `statRollPct > 0` can produce a stat boost (performance, performancePlus, highPerformance, elite). The basic tier never can.
 - The game notification write (`User.settings.gameNotifications` append) must happen OUTSIDE the Prisma `$transaction` block in `feedHorse()`, performed by the controller after the service returns a non-null `statBoost`. Keeping it outside the transaction avoids bloating the hot-path transaction and prevents a notification-write failure from rolling back the feed.
 - `gameNotifications` array is stored on `User.settings.gameNotifications: GameNotif[]`. Structure per item: `{ id: string (uuid), type: 'stat_gain', isRead: boolean, createdAt: ISO-string, payload: { horseName, stat, amount, feedName } }`.
@@ -24,9 +25,11 @@ baseline_commit: '9eadc4ed23d6f39fdf34333fffdca2e3a77c2ddf'
 - Mark-all-read fires when user opens the Notifications tab.
 
 **Ask First:**
+
 - If `User.settings` is found to be null for a user at notification-write time, initialize it to `{}` before appending — do NOT error out.
 
 **Never:**
+
 - Do not add a schema migration or new Prisma model for notifications.
 - Do not send a DirectMessage or use the existing messages system.
 - Do not show the notifications in the existing Inbox/Sent tabs.
@@ -35,15 +38,15 @@ baseline_commit: '9eadc4ed23d6f39fdf34333fffdca2e3a77c2ddf'
 
 ## I/O & Edge-Case Matrix
 
-| Scenario | Input / State | Expected Output / Behavior | Error Handling |
-|----------|--------------|---------------------------|----------------|
-| Stat boost fires | Feed succeeds, `statBoost = { stat: 'speed', amount: 1 }` | Single toast: "Fed Blaze with Performance Feed. 4 units left. +1 Speed!" | N/A |
-| No stat boost | Feed succeeds, `statBoost = null` | Toast: "Fed Blaze with Performance Feed. 4 units left." (no stat suffix) | N/A |
-| Basic feed | `equippedFeedType = 'basic'` | Feed succeeds, no stat roll, toast shows no stat suffix | N/A |
-| Notification persists | Stat boost fired, user navigates to Messages → Notifications tab | Entry shows: "Blaze gained +1 Speed from Performance Feed" with timestamp | N/A |
-| Bell unread dot | Stat boost notification is unread | Bell shows dot indicator | N/A |
-| Mark read | User opens Notifications tab | All unread game notifications set `isRead: true` via PATCH endpoint; bell dot clears | PATCH failure: tab still renders, badge resets on next poll |
-| Feed mutation query invalidation | `useFeedHorse.onSuccess` fires after stat boost | `['game-notifications']` query key invalidated so bell re-fetches immediately | N/A |
+| Scenario                         | Input / State                                                    | Expected Output / Behavior                                                           | Error Handling                                              |
+| -------------------------------- | ---------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------- |
+| Stat boost fires                 | Feed succeeds, `statBoost = { stat: 'speed', amount: 1 }`        | Single toast: "Fed Blaze with Performance Feed. 4 units left. +1 Speed!"             | N/A                                                         |
+| No stat boost                    | Feed succeeds, `statBoost = null`                                | Toast: "Fed Blaze with Performance Feed. 4 units left." (no stat suffix)             | N/A                                                         |
+| Basic feed                       | `equippedFeedType = 'basic'`                                     | Feed succeeds, no stat roll, toast shows no stat suffix                              | N/A                                                         |
+| Notification persists            | Stat boost fired, user navigates to Messages → Notifications tab | Entry shows: "Blaze gained +1 Speed from Performance Feed" with timestamp            | N/A                                                         |
+| Bell unread dot                  | Stat boost notification is unread                                | Bell shows dot indicator                                                             | N/A                                                         |
+| Mark read                        | User opens Notifications tab                                     | All unread game notifications set `isRead: true` via PATCH endpoint; bell dot clears | PATCH failure: tab still renders, badge resets on next poll |
+| Feed mutation query invalidation | `useFeedHorse.onSuccess` fires after stat boost                  | `['game-notifications']` query key invalidated so bell re-fetches immediately        | N/A                                                         |
 
 </frozen-after-approval>
 
@@ -62,6 +65,7 @@ baseline_commit: '9eadc4ed23d6f39fdf34333fffdca2e3a77c2ddf'
 ## Tasks & Acceptance
 
 **Execution:**
+
 - [x] `backend/modules/users/controllers/userController.mjs` -- Add `getGameNotifications(req, res)`: reads `user.settings.gameNotifications ?? []`, returns `{ success: true, data: { notifications, unreadCount } }`. Add `markGameNotificationsRead(req, res)`: sets all items' `isRead: true` in the array and writes back via Prisma update, returns `{ success: true }` -- provides the read/mark-read API surface for game notifications
 - [x] `backend/modules/users/routes/userRoutes.mjs` -- Wire `GET /me/game-notifications → getGameNotifications` and `PATCH /me/game-notifications/read-all → markGameNotificationsRead` (both protected by existing auth middleware) -- exposes notification endpoints
 - [x] `backend/modules/horses/controllers/horseFeedController.mjs` -- In `feedHorseHandler`, after `feedHorse()` returns and `result.statBoost` is non-null: append a `GameNotif` object to `user.settings.gameNotifications` via Prisma User.update outside the service transaction. Include `id: crypto.randomUUID()`, `type: 'stat_gain'`, `isRead: false`, `createdAt: new Date().toISOString()`, `payload: { horseName: result.horse.name, stat: result.statBoost.stat, amount: result.statBoost.amount, feedName: result.feed.name }` -- persists the stat gain event for in-app notification display
@@ -73,6 +77,7 @@ baseline_commit: '9eadc4ed23d6f39fdf34333fffdca2e3a77c2ddf'
 - [x] `frontend/src/pages/MessagesPage.tsx` -- Add `'notifications'` to `MessageTab` type. Add Notifications tab button in the tab row. When tab active, fetch via `useGameNotifications()`, call `markAllRead()` on mount, render each item as: horse name + stat gained + feed name + relative timestamp. Style similar to existing inbox rows -- players can review past stat gains from feeding
 
 **Acceptance Criteria:**
+
 - Given a horse fed with performance+ feed and `statBoost` fires, when feed completes, then a single toast reads "Fed [Name] with [Feed]. [N] units left. +1 [Stat]!"
 - Given a horse fed with basic feed, when feed completes, then toast reads "Fed [Name] with [Feed]. [N] units left." with no stat suffix
 - Given a stat boost fired, when user navigates to Messages → Notifications tab, then entry shows horse name, stat gained, feed name, and relative time
@@ -82,6 +87,7 @@ baseline_commit: '9eadc4ed23d6f39fdf34333fffdca2e3a77c2ddf'
 ## Design Notes
 
 **Toast merge pattern (HorseDetailPage):**
+
 ```tsx
 const statSuffix = result.statBoost
   ? ` +1 ${result.statBoost.stat.charAt(0).toUpperCase() + result.statBoost.stat.slice(1)}!`
@@ -90,6 +96,7 @@ toast.success(`Fed ${result.horse.name} with ${feedName}. ${remaining} units lef
 ```
 
 **Bell count merge (MainNavigation):**
+
 ```tsx
 const { data: gameNotifsData } = useGameNotifications();
 const gameUnread = gameNotifsData?.unreadCount ?? 0;
@@ -100,11 +107,13 @@ const totalUnread = unreadCount + gameUnread;
 ## Verification
 
 **Commands:**
+
 - `cd backend && npm test -- horseFeed` -- expected: existing feed tests still pass
 - `cd frontend && npx tsc --noEmit` -- expected: zero type errors
 - `cd frontend && npm run build` -- expected: build succeeds
 
 **Manual checks:**
+
 - Feed a horse with Performance Feed: single toast shows stat suffix when stat gained, no suffix when not
 - Open Messages → Notifications tab: stat gain entries appear; bell dot clears after opening tab
 - Feed with Basic feed: toast has no stat suffix, no notification entry created
@@ -113,8 +122,11 @@ const totalUnread = unreadCount + gameUnread;
 
 **Entry point — the notification write (controller, backend)**
 
-- Notification appended OUTSIDE service transaction; 100-item rolling cap prevents unbounded growth
+- Notification appended OUTSIDE service transaction; per-user retention cap of 100 enforced on
+  every write by `pruneOldNotifications()` (fire-and-forget; failures logged, not thrown)
   [`horseFeedController.mjs:227`](../../backend/modules/horses/controllers/horseFeedController.mjs#L227)
+  [`notificationService.mjs`](../../backend/utils/notificationService.mjs) — `NOTIFICATION_RETENTION_COUNT`
+  (Equoria-1fqs)
 
 **Backend API surface**
 
