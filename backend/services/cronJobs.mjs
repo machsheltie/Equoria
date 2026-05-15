@@ -7,6 +7,7 @@ import {
   processFoalMilestoneEvaluations,
 } from '../utils/horseAgingSystem.mjs';
 import { incrementWeeklyCareerWeeks } from './riderTrainerProgressionService.mjs';
+import { executeClosedShows } from '../modules/competition/shows/showController.mjs';
 
 /**
  * Daily trait evaluation cron job that runs at midnight
@@ -35,6 +36,8 @@ const JOB_STALENESS_MS = {
   dailyFoalMilestoneEvaluation: 30 * 60 * 60 * 1000,
   weeklyRiderTrainerCareerWeeks: 192 * 60 * 60 * 1000,
   electionStatusTransition: 30 * 60 * 1000,
+  // Equoria-aghl (FR-CN8): nightly show execution runs at 03:00 UTC.
+  nightlyShowExecution: 30 * 60 * 60 * 1000,
 };
 
 class CronJobService {
@@ -205,11 +208,30 @@ class CronJobService {
       },
     );
 
+    // Equoria-aghl (FR-CN8): Overnight show execution — runs nightly at 03:00 UTC.
+    // Picks up any Show with status='open' and closeDate <= now, scores all
+    // entries, awards prizes, awards rider XP, sets firstEverWin milestones,
+    // and marks each show 'completed'. Without this job the executeClosedShows
+    // endpoint is dead code unless an admin triggers POST /api/v1/shows/execute
+    // manually. Wrapped in runWithHeartbeat so /api/admin/cron/health surfaces
+    // staleness (Equoria-0elk integration).
+    const nightlyShowExecutionJob = cron.schedule(
+      '0 3 * * *',
+      async () => {
+        await this.runWithHeartbeat('nightlyShowExecution', () => this.executeOvernightShows());
+      },
+      {
+        scheduled: false,
+        timezone: 'UTC',
+      },
+    );
+
     this.jobs.set('dailyTraitEvaluation', dailyTraitJob);
     this.jobs.set('dailyHorseAging', dailyAgingJob);
     this.jobs.set('dailyFoalMilestoneEvaluation', dailyMilestoneJob);
     this.jobs.set('weeklyRiderTrainerCareerWeeks', weeklyRiderTrainerCareerJob);
     this.jobs.set('electionStatusTransition', electionTransitionJob);
+    this.jobs.set('nightlyShowExecution', nightlyShowExecutionJob);
 
     // Start all jobs
     this.jobs.forEach((job, name) => {
@@ -522,6 +544,40 @@ class CronJobService {
       return result;
     } catch (error) {
       logger.error(`[CronJobService.tickRiderTrainerCareerWeeks] Error: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Equoria-aghl (FR-CN8): Overnight show execution pass.
+   *
+   * Invokes the competition module's executeClosedShows handler with no req/res
+   * (the controller already gracefully handles missing res — see
+   * showController.mjs `if (res)` guards on success/error branches), which
+   * means it functions as both an HTTP-callable admin endpoint AND a
+   * cron-callable service action without duplicating the scoring/prize/XP
+   * pipeline.
+   *
+   * Behaviour: finds every Show where status='open' AND closeDate <= now,
+   * scores all entries, awards prizes, awards rider XP, sets firstEverWin
+   * milestones, and marks each show 'completed' with executedAt populated.
+   *
+   * Failure mode: errors bubble up so the heartbeat layer records them; the
+   * cron service does NOT crash the process. Logged at error level for ops
+   * triage.
+   */
+  async executeOvernightShows() {
+    const startTime = Date.now();
+    logger.info('[CronJobService.executeOvernightShows] Starting nightly overnight show execution');
+    try {
+      // Pass undefined for req/res — controller's `if (res)` guards both
+      // response paths (200-on-success, 500-on-error), so when called from
+      // cron those sends are skipped and the handler runs purely as a service.
+      await executeClosedShows(undefined, undefined);
+      const duration = Date.now() - startTime;
+      logger.info(`[CronJobService.executeOvernightShows] Completed in ${duration}ms`);
+    } catch (error) {
+      logger.error(`[CronJobService.executeOvernightShows] Error: ${error.message}`);
       throw error;
     }
   }
