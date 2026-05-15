@@ -61,7 +61,7 @@
 
 The frontend uses a single API client module at `frontend/src/lib/api-client.ts` built on the native `fetch` API (no Axios). It provides:
 
-- **57 typed endpoint methods** grouped into 16 domain-specific API objects
+- **~150 typed endpoint methods** grouped into 26 domain-specific API objects (see table below for the curated set)
 - **Automatic response unwrapping** via `fetchWithAuth<T>()`
 - **CSRF protection** with double-submit cookie pattern
 - **Token refresh** with single-flight deduplication
