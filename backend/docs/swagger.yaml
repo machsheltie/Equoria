@@ -852,6 +852,179 @@ paths:
       responses:
         '200': { description: 'List of disciplines' }
 
+  # ── Conformation Shows (31F-2 / 31F-3, Equoria-dm5o) ──────────────────────────
+  # Authoritative source for the conformation entry, eligibility, execute, and
+  # title-query endpoints. Controller: backend/modules/competition/controllers/
+  # conformationShowController.mjs. Sub-router mounted by Equoria-pety.
+  /competition/conformation/enter:
+    post:
+      tags: [Competition]
+      summary: 'Enter a horse in a conformation show'
+      description: |
+        Registers a horse + groom pair into a conformation-type show. The horse
+        and groom must both be owned by the authenticated user; the show must
+        have `showType === 'conformation'`. Returns 400 on critical-health,
+        validation failure, or non-conformation show; 404 on horse-ownership
+        failure (IDOR doctrine — indistinguishable from not-found); 409 on
+        duplicate entry.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [horseId, groomId, showId, className]
+              properties:
+                horseId: { type: integer, minimum: 1 }
+                groomId: { type: integer, minimum: 1 }
+                showId: { type: integer, minimum: 1 }
+                className:
+                  type: string
+                  description: 'Conformation class — e.g. Mares, Stallions, Geldings.'
+      responses:
+        '201':
+          description: 'Entry created'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      entryId: { type: integer }
+                      horseId: { type: integer }
+                      showId: { type: integer }
+                      ageClass:
+                        type: string
+                        description: "Resolved age class (e.g. 'foal', 'mature')."
+                      className: { type: string }
+                      warnings:
+                        type: array
+                        items: { type: string }
+        '400':
+          description: 'Validation failed, horse in critical health, show is not a conformation show, or eligibility rejected'
+        '404': { description: 'Horse not found / not owned by user (IDOR)' }
+        '409': { description: 'Horse is already entered in this show' }
+
+  '/competition/conformation/eligibility/{horseId}':
+    get:
+      tags: [Competition]
+      summary: 'Check whether a horse can enter conformation shows'
+      description: |
+        Resolves the horse's active groom assignment automatically and runs the
+        full conformation-entry validation against a placeholder class. The
+        eligibility flag plus the per-validation error/warning arrays are
+        returned so the UI can surface the precise blocker.
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: horseId, in: path, required: true, schema: { type: integer, minimum: 1 } }
+      responses:
+        '200':
+          description: 'Eligibility envelope'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      horseId: { type: integer }
+                      horseName: { type: string }
+                      eligible: { type: boolean }
+                      errors:
+                        type: array
+                        items: { type: string }
+                      warnings:
+                        type: array
+                        items: { type: string }
+                      ageClass: { type: string }
+                      groomAssigned: { type: boolean }
+        '400': { description: 'Validation error on horseId param' }
+        '404': { description: 'Horse not found / not owned by user (IDOR)' }
+
+  /competition/conformation/execute:
+    post:
+      tags: [Competition]
+      summary: 'Execute a conformation show (host only)'
+      description: |
+        Scores all entered horses, ranks them, and writes titlePoints +
+        breedingValueBoost to each. Authorization is host-gated (Equoria-dmec
+        / 31F-3): non-host callers receive 404 (CWE-639 doctrine — does not
+        leak the show's existence). No prize money is awarded for conformation
+        shows.
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [showId]
+              properties:
+                showId: { type: integer, minimum: 1 }
+      responses:
+        '200':
+          description: 'Show executed'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      showId: { type: integer }
+                      results:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            entryId: { type: integer }
+                            horseId: { type: integer }
+                            horseName: { type: string }
+                            finalScore: { type: number }
+                            placement: { type: integer }
+                            ribbon: { type: string, nullable: true }
+                            titlePoints: { type: integer }
+                            newTitle: { type: string, nullable: true }
+                            breedingValueBoost: { type: number }
+        '400': { description: 'Validation failure or unrecoverable service error' }
+        '404': { description: 'Show not found or caller is not the host (host-only gate, CWE-639)' }
+
+  '/competition/conformation/titles/{horseId}':
+    get:
+      tags: [Competition]
+      summary: "Query a horse's accumulated conformation title data"
+      description: 'Returns titlePoints, currentTitle, and breedingValueBoost. IDOR: 404 (not 403) on ownership failure.'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - { name: horseId, in: path, required: true, schema: { type: integer, minimum: 1 } }
+      responses:
+        '200':
+          description: 'Horse title data'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      horseId: { type: integer }
+                      horseName: { type: string }
+                      titlePoints: { type: integer }
+                      currentTitle: { type: string, nullable: true }
+                      breedingValueBoost: { type: number }
+        '400': { description: 'Validation error on horseId param' }
+        '404': { description: 'Horse not found / not owned by user (IDOR)' }
+
   # ── Shows (player-created) ────────────────────────────────────────────────────
   /shows:
     get:
