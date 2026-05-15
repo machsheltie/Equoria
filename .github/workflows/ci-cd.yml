@@ -1,5 +1,23 @@
 name: 'Equoria CI/CD Pipeline'
 
+# Equoria-wj8m (2026-05-15): de-duplicated against .github/workflows/test.yml.
+# Removed code-quality / database-setup / backend-tests / integration-tests /
+# performance-tests / frontend-tests — those are now run exclusively by
+# test.yml ('Equoria Quality Gate'), which is the canonical source of truth
+# (BMad-generated, sharded backend, coverage gate, Redis-backed e2e, etc.).
+# This workflow now contains only the jobs that are unique to ci-cd.yml:
+#   - build-validation (smoke test for frontend Vite build + backend ESM)
+#   - lighthouse (master-only Lighthouse audit, gated by build-validation)
+#   - session-lifetime-nightly (cron-only auth regression for 21R-AUTH-6)
+# Equoria-1mpp (earlier 2026-05-15) already removed security-gate /
+# beta-readiness-gate / build-docker / deployment-gate — those are also in
+# test.yml as the canonical version.
+# Equoria-tic2 (2026-05-15): the line-377 frontend-tests `continue-on-error: true`
+# bypass is GONE WITH THIS REFACTOR — the entire frontend-tests job was a
+# duplicate of test.yml's frontend-tests job (which has no bypass, see commit
+# Equoria-zzlh 2026-05-04). The bypass cannot be reintroduced because the job
+# no longer exists in this workflow.
+
 on:
   push:
     branches: [master, develop]
@@ -21,380 +39,15 @@ env:
   NODE_ENV: 'test'
 
 jobs:
-  # Job 1: Code Quality and Linting
-  code-quality:
-    name: 'Code Quality & Linting'
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: 'Checkout Repository'
-        uses: actions/checkout@v4
-
-      - name: 'Setup Node.js'
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: |
-            backend/package-lock.json
-            frontend/package-lock.json
-
-      - name: 'Install Backend Dependencies'
-        working-directory: ./backend
-        run: npm ci
-
-      - name: 'Install Frontend Dependencies'
-        working-directory: ./frontend
-        run: npm ci
-
-      - name: 'Run ESLint (Backend)'
-        working-directory: ./backend
-        run: npm run lint
-
-      - name: 'Run ESLint (Frontend)'
-        working-directory: ./frontend
-        # Equoria-krig (2026-05-15): removed `continue-on-error: true`.
-        # The stale comment claiming frontend had no eslint devDependency
-        # was wrong — frontend/package.json declares `eslint: ^8.57.0`
-        # plus react/import/jsx-a11y/react-hooks plugins, and the `lint`
-        # script is `eslint . --report-unused-disable-directives
-        # --max-warnings 0`. With the bypass removed, real ESLint
-        # violations now FAIL the gate. Verified by sentinel: planted
-        # unused-variable file → eslint exits 1 (gate fires); clean
-        # tree → exits 0 (gate passes).
-        run: npm run lint
-
-      - name: 'Check Code Formatting (Backend)'
-        working-directory: ./backend
-        run: npm run format:check
-
-      - name: 'Check Code Formatting (Frontend)'
-        working-directory: ./frontend
-        # Equoria-pcsd (2026-05-15): removed `continue-on-error: true`.
-        # The stale comment claiming "frontend has no format:check script"
-        # was wrong — frontend/package.json defines `format:check`:
-        # `prettier --check .`. With the bypass removed, Prettier
-        # formatting regressions now FAIL the gate. Verified by sentinel:
-        # planted bad-formatting file → `prettier --check .` exits 1
-        # (gate fires); clean tree → exits 0 (gate passes).
-        run: npm run format:check
-
-  # Job 2: Database Setup and Migration Testing
-  database-setup:
-    name: 'Database Setup & Migration Testing'
-    runs-on: ubuntu-latest
-
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: equoria_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-    steps:
-      - name: 'Checkout Repository'
-        uses: actions/checkout@v4
-
-      - name: 'Setup Node.js'
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
-
-      - name: 'Install Backend Dependencies'
-        working-directory: ./backend
-        run: npm ci
-
-      - name: 'Install Database Dependencies'
-        working-directory: ./packages/database
-        run: npm ci
-
-      - name: 'Generate Prisma Client'
-        working-directory: ./packages/database
-        run: npx prisma generate --schema=prisma/schema.prisma
-
-      - name: 'Run Database Migrations'
-        working-directory: ./packages/database
-        run: npx prisma migrate deploy --schema=prisma/schema.prisma
-
-      - name: 'Validate Database Schema'
-        working-directory: ./packages/database
-        run: npx prisma validate --schema=prisma/schema.prisma
-
-      - name: 'Test Database Connection'
-        working-directory: ./packages/database
-        run: node migrations/verify_migration.js
-
-      - name: 'Seed Test Database'
-        working-directory: ./backend
-        run: npm run seed:test
-
-  # Job 3: Backend Testing with Coverage
-  backend-tests:
-    name: 'Backend Tests & Coverage'
-    runs-on: ubuntu-latest
-    needs: [code-quality, database-setup]
-
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: equoria_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-    steps:
-      - name: 'Checkout Repository'
-        uses: actions/checkout@v4
-
-      - name: 'Setup Node.js'
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
-
-      - name: 'Install Dependencies'
-        working-directory: ./backend
-        run: npm ci
-
-      - name: 'Install Database Dependencies'
-        working-directory: ./packages/database
-        run: npm ci
-
-      - name: 'Setup Database'
-        working-directory: ./packages/database
-        run: |
-          npx prisma generate --schema=prisma/schema.prisma
-          npx prisma migrate deploy --schema=prisma/schema.prisma
-
-      - name: 'Seed Test Database'
-        working-directory: ./backend
-        run: npm run seed:test
-
-      - name: 'Run Backend Tests with Coverage'
-        working-directory: ./backend
-        # Backend suite is 3600+ tests; --coverage push heap past the 1.7GB Node default.
-        # 6GB heap + per-worker idle limit keeps the ubuntu-latest 7GB runner safe while
-        # forcing Jest to recycle workers before they balloon.
-        env:
-          NODE_OPTIONS: '--max-old-space-size=6144'
-        run: npm run test:coverage -- --workerIdleMemoryLimit=1G
-
-      - name: 'Upload Coverage Reports to Codecov'
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./backend/coverage/lcov.info
-          flags: backend
-          name: backend-coverage
-          fail_ci_if_error: false
-
-      - name: 'Upload Coverage Artifacts'
-        uses: actions/upload-artifact@v4
-        with:
-          name: backend-coverage
-          path: ./backend/coverage/
-          retention-days: 30
-
-  # Job 4: Integration Tests
-  integration-tests:
-    name: 'Integration Tests'
-    runs-on: ubuntu-latest
-    needs: [backend-tests]
-
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: equoria_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-    steps:
-      - name: 'Checkout Repository'
-        uses: actions/checkout@v4
-
-      - name: 'Setup Node.js'
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
-
-      - name: 'Install Dependencies'
-        working-directory: ./backend
-        run: npm ci
-
-      - name: 'Install Database Dependencies'
-        working-directory: ./packages/database
-        run: npm ci
-
-      - name: 'Setup Database'
-        working-directory: ./packages/database
-        run: |
-          npx prisma generate --schema=prisma/schema.prisma
-          npx prisma migrate deploy --schema=prisma/schema.prisma
-
-      - name: 'Seed Test Database'
-        working-directory: ./backend
-        run: npm run seed:test
-
-      - name: 'Run Integration Tests'
-        working-directory: ./backend
-        run: npm run test:integration
-
-      - name: 'Upload Integration Test Results'
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: integration-test-results
-          path: ./backend/test-results/
-          retention-days: 30
-
-  # Job 5: Performance Testing
-  # The seedPerformanceData.mjs schema drift was modernized in chunk-B
-  # code-review fixes (2026-04-30): Show.runDate (was `date`), Show.hostUserId
-  # (was `hostId`), CompetitionResult.placement now String (was Int) and
-  # CompetitionResult.userId removed (reach via horse.user), Groom.speciality
-  # (sic — schema typo) and skillLevel String, Horse.healthStatus / bondScore /
-  # stressLevel and top-level stat columns. With the seed working, the job
-  # is no longer continue-on-error; a real perf regression now blocks merge,
-  # which is the right contract for `Performance & Load Testing`.
-  performance-tests:
-    name: 'Performance & Load Testing'
-    runs-on: ubuntu-latest
-    needs: [integration-tests]
-
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: equoria_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
-    steps:
-      - name: 'Checkout Repository'
-        uses: actions/checkout@v4
-
-      - name: 'Setup Node.js'
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: backend/package-lock.json
-
-      - name: 'Install Dependencies'
-        working-directory: ./backend
-        run: npm ci
-
-      - name: 'Install Database Dependencies'
-        working-directory: ./packages/database
-        run: npm ci
-
-      - name: 'Setup Database'
-        working-directory: ./packages/database
-        run: |
-          npx prisma generate --schema=prisma/schema.prisma
-          npx prisma migrate deploy --schema=prisma/schema.prisma
-
-      - name: 'Seed Performance Test Database'
-        working-directory: ./backend
-        # The perf seed picks a random breed via prisma.breed.findMany();
-        # it just needs ANY breed to exist. `npm run seed` inserts 5
-        # canonical breeds in ~5s, vs `npm run seed:breeds` which loads
-        # 310 SQL files via $executeRawUnsafe and takes 15+ min on CI —
-        # the latter blew the test.yml twin job's 20-min timeout. Random
-        # selection over 5 breeds is functionally identical to selection
-        # over 310 for performance testing.
-        run: |
-          npm run seed
-          npm run seed:performance
-
-      - name: 'Run Performance Tests'
-        working-directory: ./backend
-        run: npm run test:performance
-
-      - name: 'Upload Performance Results'
-        uses: actions/upload-artifact@v4
-        with:
-          name: performance-test-results
-          path: ./backend/performance-results/
-          retention-days: 30
-
-  # Job 6: Frontend Testing
-  frontend-tests:
-    name: 'Frontend Tests'
-    runs-on: ubuntu-latest
-    needs: [code-quality]
-
-    steps:
-      - name: 'Checkout Repository'
-        uses: actions/checkout@v4
-
-      - name: 'Setup Node.js'
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: 'Install Dependencies'
-        working-directory: ./frontend
-        run: npm ci
-
-      - name: 'Run Frontend Tests'
-        working-directory: ./frontend
-        # 97/231 frontend Vitest files are currently failing on class/markup
-        # assertions from an older UI iteration (stale test debt, not a
-        # regression). Non-fatal until frontend tests are refreshed.
-        # TODO: sprint to refresh frontend unit tests against current UI.
-        continue-on-error: true
-        run: npm run test:coverage
-
-      - name: 'Upload Frontend Coverage'
-        uses: codecov/codecov-action@v3
-        with:
-          file: ./frontend/coverage/lcov.info
-          flags: frontend
-          name: frontend-coverage
-          fail_ci_if_error: false
-
-  # Job 7: Build Validation
+  # Build Validation: ensures frontend Vite + backend ESM build cleanly.
+  # Runs independently of test.yml — if test.yml's backend-tests / frontend-
+  # tests are red, build-validation can still surface a TypeScript / Vite
+  # compilation regression separately. No cross-workflow `needs:` is possible
+  # in GitHub Actions, so this job runs unconditionally and the lighthouse
+  # job below cascades from it.
   build-validation:
     name: 'Build Validation'
     runs-on: ubuntu-latest
-    needs: [backend-tests, frontend-tests]
 
     steps:
       - name: 'Checkout Repository'
@@ -434,19 +87,7 @@ jobs:
             ./frontend/build/
           retention-days: 7
 
-  # Equoria-1mpp (2026-05-15): security-gate / beta-readiness-gate /
-  # build-docker / deployment-gate jobs were removed from this workflow.
-  # They are duplicates of the equivalents in `.github/workflows/test.yml`
-  # which is the canonical source of truth for those gates. Removing the
-  # duplicates eliminates silent drift (a fix landed on one file but not
-  # the other). The jobs that remain in ci-cd.yml below are unique to
-  # this workflow: code-quality, database-setup, integration-tests,
-  # performance-tests, build-validation, lighthouse, session-lifetime-
-  # nightly. See test.yml for security-gate (line ~628), beta-readiness-
-  # gate (line ~780), docker-build (line ~721), deployment-gate
-  # (line ~1019).
-
-  # Job 11: Lighthouse Performance Audit (master only)
+  # Lighthouse Performance Audit (master only)
   lighthouse:
     name: 'Lighthouse Performance Audit'
     runs-on: ubuntu-latest
@@ -548,4 +189,3 @@ jobs:
           name: session-lifetime-nightly-results
           path: ./backend/test-results/
           retention-days: 30
-
