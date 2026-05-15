@@ -497,12 +497,22 @@ GET /health
 Response:
 {
   "success": true,
+  "status": "healthy",
   "message": "Server is healthy",
   "timestamp": "2026-03-19T...",
   "uptime": 12345.67,
-  "environment": "production"
+  "environment": "production",
+  "services": {
+    "api": "healthy",
+    "redis": { "status": "healthy", "...": "..." }
+  }
 }
 ```
+
+Source: `backend/app.mjs#publicRouter.get('/health')`. Liveness output is
+never cached (`Cache-Control: no-store`, ZAP rule 10049). Database
+readiness is exposed at `/ready` instead so the cheap `/health` probe does
+not consume Supabase Session-mode pool clients.
 
 ### Swagger Documentation
 
