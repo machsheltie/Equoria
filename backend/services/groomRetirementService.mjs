@@ -16,6 +16,7 @@
 
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
+import { LEGACY_CONSTANTS, LEGACY_PERKS, createLegacyLog } from './groomLegacyService.mjs';
 
 /**
  * Retirement reasons enum
@@ -150,6 +151,75 @@ export async function checkRetirementEligibility(groomId) {
 }
 
 /**
+ * Equoria-c0vo: Auto-create a GroomLegacyLog when a mentor-eligible groom retires.
+ *
+ * Eligibility: retiring groom level >= LEGACY_CONSTANTS.MINIMUM_MENTOR_LEVEL (7).
+ * Protégé selection: lowest-level active (non-retired) groom of the same user,
+ * excluding the retiring groom itself, that is not already a legacy protégé.
+ *
+ * If no eligible protégé exists yet, returns null and logs an info message —
+ * the user can still trigger generateLegacyProtege manually when they hire a
+ * new groom.
+ *
+ * @param {Object} retiredGroom - The freshly retired groom record (must include id, userId, level, personality)
+ * @returns {Promise<Object|null>} The created legacy log, or null if not eligible / no protégé.
+ */
+export async function autoCreateLegacyOnRetirement(retiredGroom) {
+  if (!retiredGroom || retiredGroom.level < LEGACY_CONSTANTS.MINIMUM_MENTOR_LEVEL) {
+    return null;
+  }
+
+  // Don't create a second legacy for a groom that already has one.
+  const existingLegacy = await prisma.groomLegacyLog.findFirst({
+    where: { retiredGroomId: retiredGroom.id },
+  });
+  if (existingLegacy) {
+    return null;
+  }
+
+  // Find the lowest-level active groom of the same user, not already a legacy protégé.
+  const protegeCandidate = await prisma.groom.findFirst({
+    where: {
+      userId: retiredGroom.userId,
+      retired: false,
+      isActive: true,
+      id: { not: retiredGroom.id },
+      legacyGroomMentors: { none: {} }, // not already a protégé in any legacy log
+    },
+    orderBy: [{ level: 'asc' }, { experience: 'asc' }],
+  });
+
+  if (!protegeCandidate) {
+    logger.info(
+      `[groomRetirementService.autoCreateLegacyOnRetirement] No eligible protégé for retired mentor groom ${retiredGroom.id} (level ${retiredGroom.level}); legacy deferred.`,
+    );
+    return null;
+  }
+
+  // Select a random perk from the mentor's personality pool.
+  const perkPool = LEGACY_PERKS[retiredGroom.personality] || [];
+  if (perkPool.length === 0) {
+    logger.warn(
+      `[groomRetirementService.autoCreateLegacyOnRetirement] No legacy perks defined for personality '${retiredGroom.personality}'; skipping auto-legacy for groom ${retiredGroom.id}.`,
+    );
+    return null;
+  }
+  const perk = perkPool[Math.floor(Math.random() * perkPool.length)];
+
+  const legacyLog = await createLegacyLog(
+    retiredGroom.id,
+    protegeCandidate.id,
+    perk.id,
+    retiredGroom.level,
+  );
+
+  logger.info(
+    `[groomRetirementService.autoCreateLegacyOnRetirement] Auto-created legacy log ${legacyLog.id}: retired mentor ${retiredGroom.id} (lvl ${retiredGroom.level}) → protégé ${protegeCandidate.id} (lvl ${protegeCandidate.level}), perk ${perk.id}.`,
+  );
+  return legacyLog;
+}
+
+/**
  * Process retirement for a groom
  * @param {number} groomId - The groom ID
  * @param {string} reason - Retirement reason
@@ -189,12 +259,27 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
 
     logger.info(`Processed retirement for groom ${groomId} with reason: ${retirementReason}`);
 
+    // Equoria-c0vo: auto-create GroomLegacyLog for level-7+ retirees by pairing
+    // the mentor with the same user's lowest-level active groom as protégé.
+    // If no eligible protégé exists, defer — the legacy can be created later via
+    // the manual generateLegacyProtege flow when a new groom is hired.
+    let legacyLog = null;
+    try {
+      legacyLog = await autoCreateLegacyOnRetirement(retiredGroom);
+    } catch (legacyError) {
+      logger.error(
+        `[groomRetirementService.processRetirement] Failed to auto-create legacy for groom ${groomId}: ${legacyError.message}`,
+      );
+      // Don't fail the retirement if legacy creation fails
+    }
+
     return {
       groom: retiredGroom,
       retirementReason,
       retirementTimestamp,
       assignmentCount: retiredGroom.groomAssignmentLogs.length,
       synergyRecords: retiredGroom.groomHorseSynergies.length,
+      legacyLog,
     };
   } catch (error) {
     logger.error(`Error processing retirement for groom ${groomId}: ${error.message}`);
