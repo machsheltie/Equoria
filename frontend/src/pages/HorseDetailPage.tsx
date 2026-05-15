@@ -13,7 +13,7 @@
  * Story 4-1: Training Session Interface - Task 6
  */
 
-import React, { lazy, Suspense, useState } from 'react';
+import React, { lazy, Suspense, useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -74,6 +74,8 @@ import { getBreedName } from '@/lib/utils';
 // Competition history (Story 5-3)
 import CompetitionHistory from '@/components/competition/CompetitionHistory';
 import { useHorseCompetitionHistory } from '@/hooks/api/useHorseCompetitionHistory';
+import { useHorseUltraRareTraits } from '@/hooks/api/useUltraRareTraits';
+import CinematicMoment from '@/components/feedback/CinematicMoment';
 // Shared types for page + lazy tabs
 import type { Horse, HorseStats } from './horse-detail/HorseDetailPageTypes';
 
@@ -181,6 +183,45 @@ const HorseDetailPage: React.FC = () => {
     useHorseCompetitionHistory(
       !isLoading && !isError && !!horseRaw && activeTab === 'competition' ? Number(id) : null
     );
+
+  // Equoria-gt6j — surface UltraRareTraitEvent reveals. The backend
+  // (Equoria-d4tl) auto-populates UltraRareTraitEvent rows on milestone
+  // boundaries; here we show a one-time CinematicMoment for the most recent
+  // event the player hasn't seen yet. "Seen" is tracked per-event-id in
+  // localStorage so the reveal fires exactly once, even across reloads.
+  const { data: ultraRareData } = useHorseUltraRareTraits(
+    !isLoading && !isError && !!horseRaw ? Number(id) : undefined
+  );
+  const [ultraRareReveal, setUltraRareReveal] = useState<{
+    id: number;
+    traitName: string;
+  } | null>(null);
+
+  useEffect(() => {
+    const events = ultraRareData?.recentEvents;
+    if (!events || events.length === 0) return;
+    // recentEvents is ordered by timestamp desc — index 0 is the newest.
+    const latest = events[0];
+    const storageKey = `urt-seen-${latest.id}`;
+    try {
+      if (localStorage.getItem(storageKey)) return;
+      setUltraRareReveal({ id: latest.id, traitName: latest.traitName });
+    } catch {
+      // localStorage unavailable (private mode / SSR) — show once this session.
+      setUltraRareReveal({ id: latest.id, traitName: latest.traitName });
+    }
+  }, [ultraRareData]);
+
+  const dismissUltraRareReveal = useCallback(() => {
+    if (ultraRareReveal) {
+      try {
+        localStorage.setItem(`urt-seen-${ultraRareReveal.id}`, '1');
+      } catch {
+        /* localStorage unavailable — reveal simply won't persist as seen */
+      }
+    }
+    setUltraRareReveal(null);
+  }, [ultraRareReveal]);
 
   // Loading state — detail page skeleton (portrait left + tab area right)
   if (isLoading) {
@@ -400,6 +441,15 @@ const HorseDetailPage: React.FC = () => {
 
   return (
     <div className="min-h-screen pb-20">
+      {/* Equoria-gt6j — ultra-rare trait reveal cinematic moment */}
+      {ultraRareReveal && (
+        <CinematicMoment
+          variant="trait-discovery"
+          title="Ultra-Rare Trait Revealed!"
+          subtitle={ultraRareReveal.traitName}
+          onDismiss={dismissUltraRareReveal}
+        />
+      )}
       <div className="max-w-7xl mx-auto p-4 md:p-6">
         {/* Header */}
         <div className="mb-6">
