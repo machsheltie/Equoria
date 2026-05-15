@@ -98,7 +98,7 @@ describe('Auth — Password Reset Integration', () => {
       .send({ email });
 
     expect(forgotRes.status).toBe(200);
-    expect(forgotRes.body.status).toBe('success');
+    expect(forgotRes.body.success).toBe(true);
 
     // 3. Extract raw token from the email capture file
     const capturedRawToken = readCapturedResetToken();
@@ -138,7 +138,7 @@ describe('Auth — Password Reset Integration', () => {
       .send({ token: capturedRawToken, newPassword });
 
     expect(resetRes.status).toBe(200);
-    expect(resetRes.body.status).toBe('success');
+    expect(resetRes.body.success).toBe(true);
     expect(resetRes.body.message).toMatch(/password reset successfully/i);
 
     // 5. Verify the old password no longer works
@@ -168,7 +168,7 @@ describe('Auth — Password Reset Integration', () => {
 
     // Must NOT reveal whether the account exists
     expect(resetRes.status).toBe(200);
-    expect(resetRes.body.status).toBe('success');
+    expect(resetRes.body.success).toBe(true);
   });
 
   // ────────────────────────────────────────────────────────────────────────

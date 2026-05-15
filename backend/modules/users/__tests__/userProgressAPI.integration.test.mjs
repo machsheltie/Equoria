@@ -158,7 +158,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         })
         .expect(201);
 
-      expect(registerResponse.body.status).toBe('success');
+      expect(registerResponse.body.success).toBe(true);
       testUser = registerResponse.body.data.user;
 
       // STEP 2: Login to get auth token
@@ -171,7 +171,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         })
         .expect(200);
 
-      expect(loginResponse.body.status).toBe('success');
+      expect(loginResponse.body.success).toBe(true);
 
       // Extract accessToken from httpOnly cookie
       const cookies = loginResponse.headers['set-cookie'];

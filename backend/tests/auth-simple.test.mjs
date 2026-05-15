@@ -139,7 +139,7 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
       .send(userData)
       .expect(201);
 
-    expect(response.body.status).toBe('success');
+    expect(response.body.success).toBe(true);
     expect(response.body.data.user.email).toBe(userData.email);
     // Tokens are now in httpOnly cookies for security, not in response body
     expect(response.headers['set-cookie']).toBeDefined();
@@ -172,7 +172,7 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
       .send(loginData)
       .expect(200);
 
-    expect(response.body.status).toBe('success');
+    expect(response.body.success).toBe(true);
     expect(response.body.data.user.email).toBe(loginData.email);
     // Tokens are now in httpOnly cookies for security, not in response body
     expect(response.headers['set-cookie']).toBeDefined();

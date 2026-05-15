@@ -65,7 +65,7 @@ describe('POST /api/v1/auth/register — starter horse integration', () => {
       .send(testUser)
       .expect(201);
 
-    expect(res.body.status).toBe('success');
+    expect(res.body.success).toBe(true);
 
     // Extract user ID from response
     const userId = res.body.data?.user?.id ?? res.body.data?.id;

@@ -122,7 +122,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
         .send(userData)
         .expect(201);
 
-      expect(response.body.status).toBe('success');
+      expect(response.body.success).toBe(true);
       expect(response.body.data.user.email).toBe(userData.email);
 
       // Extract token from httpOnly cookie

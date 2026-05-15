@@ -100,7 +100,7 @@ describe('Authentication with HttpOnly Cookies', () => {
         .expect(201);
 
       // Verify response structure
-      expect(response.body.status).toBe('success');
+      expect(response.body.success).toBe(true);
       expect(response.body.data.user).toMatchObject({
         username: registrationUser.username,
         email: registrationUser.email,
@@ -204,7 +204,7 @@ describe('Authentication with HttpOnly Cookies', () => {
         .expect(200);
 
       // Verify response
-      expect(response.body.status).toBe('success');
+      expect(response.body.success).toBe(true);
       expect(response.body.data.user.email).toBe(testUserData.email);
 
       // Tokens may be in response for API compatibility
@@ -283,7 +283,7 @@ describe('Authentication with HttpOnly Cookies', () => {
         .set('X-Test-Email', testUserData.email)
         .expect(200);
 
-      expect(response.body.status).toBe('success');
+      expect(response.body.success).toBe(true);
       expect(response.body.data.user.email).toBe(testUserData.email);
     });
 
@@ -331,7 +331,7 @@ describe('Authentication with HttpOnly Cookies', () => {
         .set('Cookie', [refreshCookie])
         .expect(200);
 
-      expect(response.body.status).toBe('success');
+      expect(response.body.success).toBe(true);
       expect(response.body.message).toBe('Token refreshed successfully');
 
       // Verify new accessToken cookie is set
@@ -421,7 +421,7 @@ describe('Authentication with HttpOnly Cookies', () => {
         .set(rateLimitBypassHeader)
         .set('Cookie', [cookieA])
         .expect(200);
-      expect(apiRefreshResponse.body.status).toBe('success');
+      expect(apiRefreshResponse.body.success).toBe(true);
 
       const cookieB = await loginFreshCookie();
       const authRefreshResponse = await request(app)
@@ -430,7 +430,7 @@ describe('Authentication with HttpOnly Cookies', () => {
         .set(rateLimitBypassHeader)
         .set('Cookie', [cookieB])
         .expect(200);
-      expect(authRefreshResponse.body.status).toBe('success');
+      expect(authRefreshResponse.body.success).toBe(true);
     });
   });
 
@@ -469,7 +469,7 @@ describe('Authentication with HttpOnly Cookies', () => {
         .set('X-Test-Email', testUserData.email)
         .expect(200);
 
-      expect(response.body.status).toBe('success');
+      expect(response.body.success).toBe(true);
 
       // Verify cookies are cleared (Max-Age=0 or Expires in past)
       const cookies = response.headers['set-cookie'];
@@ -635,7 +635,7 @@ describe('Authentication with HttpOnly Cookies', () => {
         .set('X-Test-Email', fallbackEmail)
         .expect(200);
 
-      expect(response.body.status).toBe('success');
+      expect(response.body.success).toBe(true);
       expect(response.body.data.user.email).toBe(fallbackEmail);
     });
   });

@@ -163,7 +163,7 @@ describe('Session Lifecycle Management', () => {
         })
         .expect(200);
 
-      expect(response.body.status).toBe('success');
+      expect(response.body.success).toBe(true);
 
       // Verify only ONE new token exists (old ones deleted)
       const tokensAfter = await prisma.refreshToken.count({
@@ -258,7 +258,7 @@ describe('Session Lifecycle Management', () => {
         .set('Cookie', __allCookies__)
         .expect(200);
 
-      expect(response.body.status).toBe('success');
+      expect(response.body.success).toBe(true);
 
       // Verify all tokens deleted
       const tokensAfter = await prisma.refreshToken.count({
@@ -549,7 +549,7 @@ describe('Session Lifecycle Management', () => {
         .set('Cookie', [`accessToken=${recentToken}`])
         .expect(200);
 
-      expect(response.body.status).toBe('success');
+      expect(response.body.success).toBe(true);
       expect(response.body.data.user).toBeDefined();
     });
 
@@ -597,7 +597,7 @@ describe('Session Lifecycle Management', () => {
         .set('Cookie', [`accessToken=${exactToken}`])
         .expect(200);
 
-      expect(response.body.status).toBe('success');
+      expect(response.body.success).toBe(true);
     });
   });
 

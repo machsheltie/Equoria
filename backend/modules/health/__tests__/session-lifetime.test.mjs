@@ -123,7 +123,7 @@ describe('refreshToken cookie (Path=/) works on both route aliases', () => {
       .set('Cookie', [refreshCookie])
       .expect(200);
 
-    expect(res.body.status).toBe('success');
+    expect(res.body.success).toBe(true);
     expect(res.body.message).toBe('Token refreshed successfully');
 
     const newAccess = res.headers['set-cookie']?.find(c => c.startsWith('accessToken='));
@@ -139,7 +139,7 @@ describe('refreshToken cookie (Path=/) works on both route aliases', () => {
       .set('Cookie', [refreshCookie])
       .expect(200);
 
-    expect(res.body.status).toBe('success');
+    expect(res.body.success).toBe(true);
   });
 
   it('refreshToken cookie Path=/ attribute lets both aliases receive it', async () => {

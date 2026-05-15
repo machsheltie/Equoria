@@ -99,7 +99,7 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
       .set(rateLimitBypassHeader)
       .expect(200);
 
-    expect(response.body.status).toBe('success');
+    expect(response.body.success).toBe(true);
     expect(response.body.data.step).toBe(1);
     expect(response.body.data.completed).toBe(false);
 

@@ -211,7 +211,7 @@ describe('System-Wide Data Integrity', () => {
       .send(registrationData)
       .expect(201);
 
-    expect(registerResponse.body.status).toBe('success');
+    expect(registerResponse.body.success).toBe(true);
     expect(registerResponse.headers['set-cookie']).toBeDefined();
 
     const registeredUserId = registerResponse.body.data.user.id;

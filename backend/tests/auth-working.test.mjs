@@ -155,7 +155,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
         .expect(201);
       trackUser(response);
 
-      expect(response.body.status).toBe('success');
+      expect(response.body.success).toBe(true);
       expect(response.body.message).toBe(
         'User registered successfully. Please check your email to verify your account.',
       );
@@ -238,7 +238,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
         .send(loginData)
         .expect(200);
 
-      expect(response.body.status).toBe('success');
+      expect(response.body.success).toBe(true);
       expect(response.body.message).toBe('Login successful');
       expect(response.body.data.user.email).toBe(loginData.email);
       // Tokens are now in httpOnly cookies for security, not in response body
@@ -309,7 +309,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
         .set('Cookie', `refreshToken=${refreshTokenValue}`) // Send as cookie header, not body
         .expect(200);
 
-      expect(response.body.status).toBe('success');
+      expect(response.body.success).toBe(true);
       expect(response.body.message).toBe('Token refreshed successfully');
       // Tokens are in httpOnly cookies, not response body
       expect(response.headers['set-cookie']).toBeDefined();
@@ -371,7 +371,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
         .set('Authorization', `Bearer ${authTokenValue}`) // Use renamed variable
         .expect(200);
 
-      expect(response.body.status).toBe('success');
+      expect(response.body.success).toBe(true);
       expect(response.body.data.user.email).toBe(testUserValue.email); // Use renamed variable
       expect(response.body.data.user.username).toBe(testUserValue.username); // Use renamed variable
       expect(response.body.data.user.firstName).toBe(testUserValue.firstName); // Use renamed variable
@@ -397,7 +397,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
         .set('Authorization', `Bearer ${authTokenValue}`) // Use renamed variable
         .expect(200);
 
-      expect(response.body.status).toBe('success');
+      expect(response.body.success).toBe(true);
       expect(response.body.message).toBe('Logout successful');
     });
   });

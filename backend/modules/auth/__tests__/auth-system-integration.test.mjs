@@ -165,7 +165,7 @@ describe('🔐 Authentication System Integration Tests', () => {
       .send(userData);
 
     expect(registerResponse.status).toBe(201);
-    expect(registerResponse.body.status).toBe('success');
+    expect(registerResponse.body.success).toBe(true);
 
     testUser = registerResponse.body.data.user;
 
@@ -270,7 +270,7 @@ describe('🔐 Authentication System Integration Tests', () => {
         .send({ refreshToken: refreshTokenValue }); // Keep for backward compatibility if needed by middleware
 
       expect(refreshResponse.status).toBe(200);
-      expect(refreshResponse.body.status).toBe('success');
+      expect(refreshResponse.body.success).toBe(true);
 
       // Tokens are now in httpOnly cookies, extract new access token from response cookies
       const cookies = refreshResponse.headers['set-cookie'];

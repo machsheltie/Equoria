@@ -132,7 +132,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
 
       const response = await authPost('/api/v1/auth/register').send(userData).expect(201);
       trackUser(response);
-      expect(response.body.status).toBe('success');
+      expect(response.body.success).toBe(true);
       expect(response.body.message).toBe(
         'User registered successfully. Please check your email to verify your account.',
       );
@@ -224,7 +224,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
 
       const response = await authPost('/api/v1/auth/login').send(loginData).expect(200);
 
-      expect(response.body.status).toBe('success');
+      expect(response.body.success).toBe(true);
       expect(response.body.message).toBe('Login successful');
       expect(response.body.data.user.email).toBe(loginData.email);
 
@@ -292,7 +292,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
 
     it('should refresh token successfully with valid refresh token', async () => {
       const response = await authPost('/api/v1/auth/refresh').send({ refreshToken: refreshTokenValue }).expect(200);
-      expect(response.body.status).toBe('success');
+      expect(response.body.success).toBe(true);
       expect(response.body.message).toBe('Token refreshed successfully');
 
       // New access token should be in cookies
@@ -339,7 +339,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     it('should get user profile successfully with valid token', async () => {
       const response = await authGet('/api/v1/auth/me').set('Authorization', `Bearer ${authToken}`).expect(200);
 
-      expect(response.body.status).toBe('success');
+      expect(response.body.success).toBe(true);
       expect(response.body.data.user).toBeDefined();
       expect(response.body.data.user.email).toBe(testUser.email);
       expect(response.body.data.user.firstName).toBe(testUser.firstName);
@@ -384,7 +384,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .expect(200);
 
-      expect(response.body.status).toBe('success');
+      expect(response.body.success).toBe(true);
       expect(response.body.message).toBe('Logout successful');
     });
 

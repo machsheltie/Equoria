@@ -220,7 +220,7 @@ export const register = async (req, res, next) => {
     const csrfToken = issueCsrfToken(req, res);
 
     res.status(201).json({
-      status: 'success',
+      success: true,
       message: 'User registered successfully. Please check your email to verify your account.',
       data: {
         user: {
@@ -314,7 +314,7 @@ export const login = async (req, res, next) => {
       typeof loginSettings.onboardingStep === 'number' ? loginSettings.onboardingStep : 0;
 
     res.status(200).json({
-      status: 'success',
+      success: true,
       message: 'Login successful',
       data: {
         user: {
@@ -386,7 +386,7 @@ export const refreshToken = async (req, res, next) => {
     logger.info('[authController.refreshToken] Token rotation successful');
 
     res.status(200).json({
-      status: 'success',
+      success: true,
       message: 'Token refreshed successfully',
       data: {
         // Tokens now in httpOnly cookies
@@ -459,7 +459,7 @@ export const getProfile = async (req, res, next) => {
     // redirect incorrectly on full-page navigations (e.g. page.goto('/bank')).
     res.setHeader('Cache-Control', 'no-store');
     res.status(200).json({
-      status: 'success',
+      success: true,
       data: {
         user: {
           id: user.id,
@@ -595,7 +595,7 @@ export const updateProfile = async (req, res, next) => {
         : {};
 
     res.status(200).json({
-      status: 'success',
+      success: true,
       data: {
         user: {
           id: updatedUser.id,
@@ -631,7 +631,7 @@ export const logout = async (req, res, next) => {
     res.clearCookie('refreshToken', CLEAR_COOKIE_OPTIONS.refreshToken);
 
     res.status(200).json({
-      status: 'success',
+      success: true,
       message: 'Logout successful',
     });
   } catch (error) {
@@ -715,7 +715,7 @@ export const changePassword = async (req, res, next) => {
     res.clearCookie('refreshToken', CLEAR_COOKIE_OPTIONS.refreshToken);
 
     res.status(200).json({
-      status: 'success',
+      success: true,
       message: 'Password changed successfully. Please login again.',
       data: {
         sessionInvalidated: true,
@@ -751,7 +751,7 @@ export const forgotPassword = async (req, res, next) => {
         email,
       });
       return res.status(200).json({
-        status: 'success',
+        success: true,
         message: responseMessage,
       });
     }
@@ -794,7 +794,7 @@ export const forgotPassword = async (req, res, next) => {
     });
 
     return res.status(200).json({
-      status: 'success',
+      success: true,
       message: responseMessage,
     });
   } catch (error) {
@@ -866,7 +866,7 @@ export const resetPassword = async (req, res, next) => {
     });
 
     return res.status(200).json({
-      status: 'success',
+      success: true,
       message: 'Password reset successfully. Please login again.',
     });
   } catch (error) {
@@ -911,7 +911,7 @@ export const verifyEmail = async (req, res, next) => {
     }
 
     res.status(200).json({
-      status: 'success',
+      success: true,
       message: 'Email verified successfully',
       data: {
         user: result.user,
@@ -966,7 +966,7 @@ export const resendVerification = async (req, res, next) => {
     }
 
     res.status(200).json({
-      status: 'success',
+      success: true,
       message: 'Verification email sent successfully',
       data: {
         emailSent: true,
@@ -1001,7 +1001,7 @@ export const getVerificationStatus = async (req, res, next) => {
     }
 
     res.status(200).json({
-      status: 'success',
+      success: true,
       data: {
         verified: status.verified,
         email: status.email,
@@ -1045,7 +1045,7 @@ export const completeOnboarding = async (req, res, next) => {
     logger.info(`[authController.completeOnboarding] User ${userId} completed onboarding`);
 
     res.status(200).json({
-      status: 'success',
+      success: true,
       message: 'Onboarding completed',
       data: { completedOnboarding: true },
     });
@@ -1241,7 +1241,7 @@ export const advanceOnboarding = async (req, res, next) => {
     );
 
     res.status(200).json({
-      status: 'success',
+      success: true,
       message: isComplete ? 'Onboarding complete' : 'Onboarding step advanced',
       data: {
         step: newStep,
@@ -1368,7 +1368,7 @@ export const updateUserPreferences = async (req, res, next) => {
     });
 
     return res.status(200).json({
-      status: 'success',
+      success: true,
       data: { preferences: mergedPreferences },
     });
   } catch (error) {

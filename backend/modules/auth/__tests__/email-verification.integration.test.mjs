@@ -179,7 +179,7 @@ describe('Email Verification System - Integration Tests', () => {
         .set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(200);
-      expect(response.body.status).toBe('success');
+      expect(response.body.success).toBe(true);
       expect(response.body.message).toBe('Email verified successfully');
       expect(response.body.data.verified).toBe(true);
       expect(response.body.data.user.emailVerified).toBe(true);
@@ -265,7 +265,7 @@ describe('Email Verification System - Integration Tests', () => {
         .set('Origin', 'http://localhost:3000');
 
       expect(response.status).toBe(200);
-      expect(response.body.status).toBe('success');
+      expect(response.body.success).toBe(true);
     });
   });
 
@@ -279,7 +279,7 @@ describe('Email Verification System - Integration Tests', () => {
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.status).toBe('success');
+      expect(response.body.success).toBe(true);
       expect(response.body.data.emailSent).toBe(true);
       expect(response.body.data.expiresAt).toBeDefined();
 
@@ -375,7 +375,7 @@ describe('Email Verification System - Integration Tests', () => {
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.status).toBe('success');
+      expect(response.body.success).toBe(true);
       expect(response.body.data.verified).toBe(false);
       expect(response.body.data.email).toBe(testUser.email);
       expect(response.body.data.verifiedAt).toBeNull();

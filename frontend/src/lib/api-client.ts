@@ -30,7 +30,12 @@ interface ApiError {
 }
 
 interface ApiResponse<T> {
-  status: string;
+  // Canonical envelope is { success: true, message, data }. The legacy
+  // { status: 'success', ... } shape was retired from authController in
+  // Equoria-1i70; both are kept optional here for backward-compat while
+  // any straggling endpoints get migrated.
+  success?: boolean;
+  status?: string;
   message?: string;
   data?: T;
 }
