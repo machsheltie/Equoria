@@ -20,6 +20,7 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import prisma from '../../../db/index.mjs';
 import { runFoalingJob, createFoalFromPregnancy } from '../services/foalingService.mjs';
+import { CORE_LOCI } from '../services/genotypeGenerationService.mjs';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -503,5 +504,134 @@ describe('runFoalingJob (B5)', () => {
     const refreshedDam = await prisma.horse.findUnique({ where: { id: dam.id } });
     expect(refreshedDam.pendingFoalName).toBeNull();
     expect(refreshedDam.pendingFoalBreedId).toBeNull();
+  });
+
+  // 31E-1a/31E-2 follow-up (Equoria-e8zj): foaling job must wire color genetics
+  // into the foal. AC1+AC2: foal.colorGenotype is non-null with all 17 CORE_LOCI
+  // and foal.phenotype includes colorName + markings.
+  it('color genetics: foal has non-null colorGenotype (all 17 CORE_LOCI) and phenotype with colorName', async () => {
+    const user = await createUser('colorgen');
+    createdUserIds.push(user.id);
+
+    const { dam } = await createMareSirePair({
+      userId: user.id,
+      breedId,
+      inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+      pregnancyFeedingsByTier: {},
+    });
+
+    const result = await runFoalingJob();
+    expect(result.foalsBorn).toBeGreaterThanOrEqual(1);
+
+    const foals = await prisma.horse.findMany({ where: { damId: dam.id } });
+    expect(foals.length).toBe(1);
+    const foal = foals[0];
+
+    // AC1: colorGenotype non-null with all 17 CORE_LOCI
+    expect(foal.colorGenotype).toBeTruthy();
+    expect(typeof foal.colorGenotype).toBe('object');
+    for (const locus of CORE_LOCI) {
+      expect(foal.colorGenotype[locus]).toBeTruthy();
+      expect(typeof foal.colorGenotype[locus]).toBe('string');
+    }
+
+    // AC2: phenotype non-null with colorName
+    expect(foal.phenotype).toBeTruthy();
+    expect(typeof foal.phenotype).toBe('object');
+    expect(typeof foal.phenotype.colorName).toBe('string');
+    expect(foal.phenotype.colorName.length).toBeGreaterThan(0);
+  });
+
+  // 31E-2 (Equoria-e8zj) AC3: when both parents have colorGenotype, foal
+  // genotype is produced by inheritColorGenotype (deterministic with seeded rng).
+  // Sentinel-positive test: this fails if the wiring of colorGenotype/phenotype
+  // into horseData is removed from createFoalFromPregnancy.
+  it('color genetics inheritance: both parents homozygous chestnut produces ee foal (sentinel)', async () => {
+    const user = await createUser('colorInherit');
+    createdUserIds.push(user.id);
+
+    // Build parents with known genotypes so we can assert inheritance, not
+    // random generation. Both parents homozygous chestnut (e/e at extension)
+    // means every foal MUST be e/e — deterministic regardless of rng.
+    const fiveYearsAgo = new Date(Date.now() - 5 * 365 * DAY_MS);
+    const sire = await prisma.horse.create({
+      data: {
+        name: `ColorSire_${Math.random().toString(36).slice(2, 6)}`,
+        sex: 'Stallion',
+        dateOfBirth: fiveYearsAgo,
+        age: 5,
+        breedId,
+        userId: user.id,
+        healthStatus: 'Good',
+        colorGenotype: {
+          E_Extension: 'e/e',
+          A_Agouti: 'a/a',
+          Cr_Cream: 'n/n',
+          D_Dun: 'nd2/nd2',
+          G_Gray: 'g/g',
+        },
+        phenotype: { colorName: 'Chestnut' },
+      },
+    });
+    const dam = await prisma.horse.create({
+      data: {
+        name: `ColorDam_${Math.random().toString(36).slice(2, 6)}`,
+        sex: 'Mare',
+        dateOfBirth: fiveYearsAgo,
+        age: 5,
+        breedId,
+        userId: user.id,
+        healthStatus: 'Good',
+        inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+        pregnancySireId: sire.id,
+        pregnancyFeedingsByTier: {},
+        colorGenotype: {
+          E_Extension: 'e/e',
+          A_Agouti: 'a/a',
+          Cr_Cream: 'n/n',
+          D_Dun: 'nd2/nd2',
+          G_Gray: 'g/g',
+        },
+        phenotype: { colorName: 'Chestnut' },
+      },
+    });
+
+    const result = await runFoalingJob();
+    expect(result.foalsBorn).toBeGreaterThanOrEqual(1);
+
+    const foals = await prisma.horse.findMany({ where: { damId: dam.id, sireId: sire.id } });
+    expect(foals.length).toBe(1);
+    const foal = foals[0];
+
+    // SENTINEL: foal MUST have colorGenotype.E_Extension === 'e/e' (Mendelian).
+    // If colorGenotype/phenotype wiring is stripped from createFoalFromPregnancy,
+    // foal.colorGenotype will be null and this test fails.
+    expect(foal.colorGenotype).toBeTruthy();
+    expect(foal.colorGenotype.E_Extension).toBe('e/e');
+    expect(foal.phenotype).toBeTruthy();
+    expect(typeof foal.phenotype.colorName).toBe('string');
+  });
+
+  // AC4: when sire or dam colorGenotype is null, fallback is generateGenotype —
+  // never NULL. Both parents lack genotype here.
+  it('color genetics fallback: parents without colorGenotype yield generated genotype (never null)', async () => {
+    const user = await createUser('colorFallback');
+    createdUserIds.push(user.id);
+
+    const { dam } = await createMareSirePair({
+      userId: user.id,
+      breedId,
+      inFoalSinceDate: new Date(Date.now() - 8 * DAY_MS),
+      pregnancyFeedingsByTier: {},
+    });
+
+    const result = await runFoalingJob();
+    expect(result.foalsBorn).toBeGreaterThanOrEqual(1);
+
+    const foals = await prisma.horse.findMany({ where: { damId: dam.id } });
+    expect(foals.length).toBe(1);
+    expect(foals[0].colorGenotype).toBeTruthy();
+    expect(foals[0].colorGenotype.E_Extension).toBeTruthy();
+    expect(foals[0].phenotype).toBeTruthy();
   });
 });

@@ -34,6 +34,10 @@ import {
   hasValidGaitScores,
 } from './gaitService.mjs';
 import { generateTemperament } from './temperamentService.mjs';
+import { generateGenotype } from './genotypeGenerationService.mjs';
+import { calculatePhenotype } from './phenotypeCalculationService.mjs';
+import { inheritColorGenotype } from './breedingColorInheritanceService.mjs';
+import { generateMarkings, inheritMarkings } from './markingGenerationService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import { calculatePregnancyEpigeneticChances } from '../../../utils/pregnancyBonus.mjs';
@@ -300,14 +304,19 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
   if (!Number.isInteger(requestedBreedId) || requestedBreedId <= 0) {
     throw new Error(`createFoalFromPregnancy: invalid breedId ${requestedBreedId}`);
   }
-  const breedRecord = await prisma.breed.findUnique({
-    where: { id: requestedBreedId },
-    select: { name: true },
-  });
+  // Raw SQL is used for breedGeneticProfile because the Prisma DMMF may not
+  // include the JSONB column on every code path; mirrors horseRoutes.mjs.
+  const breedRows = await prisma.$queryRaw`
+    SELECT name, "breedGeneticProfile"
+    FROM breeds
+    WHERE id = ${requestedBreedId}
+  `;
+  const breedRecord = breedRows[0];
   if (!breedRecord?.name) {
     throw new Error(`createFoalFromPregnancy: breed ${requestedBreedId} not found`);
   }
   const breedName = breedRecord.name;
+  const breedGeneticProfile = breedRecord.breedGeneticProfile ?? null;
 
   const sireConformation = sire.conformationScores;
   const damConformation = dam.conformationScores;
@@ -324,6 +333,47 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
       : generateGaitScores(breedName, conformationScores);
 
   const temperament = generateTemperament(breedName);
+
+  // Color genetics (31E-1a / 31E-2 / 31E-3) — wire color inheritance into
+  // pregnancy-based foaling. The runFoalingJob snapshot select only fetches a
+  // subset of columns, so we resolve colorGenotype + phenotype directly from
+  // the dam/sire records when missing. The service layer falls back gracefully
+  // (logs + random generation) when either parent's genotype is null.
+  let damColorGenotype = dam.colorGenotype ?? null;
+  let damPhenotype = dam.phenotype ?? null;
+  if (damColorGenotype === null || damPhenotype === null) {
+    const damColorRow = await prisma.horse.findUnique({
+      where: { id: damId },
+      select: { colorGenotype: true, phenotype: true },
+    });
+    damColorGenotype = damColorGenotype ?? damColorRow?.colorGenotype ?? null;
+    damPhenotype = damPhenotype ?? damColorRow?.phenotype ?? null;
+  }
+  let sireColorGenotype = sire.colorGenotype ?? null;
+  let sirePhenotype = sire.phenotype ?? null;
+  if (sireColorGenotype === null || sirePhenotype === null) {
+    const sireColorRow = await prisma.horse.findUnique({
+      where: { id: sireId },
+      select: { colorGenotype: true, phenotype: true },
+    });
+    sireColorGenotype = sireColorGenotype ?? sireColorRow?.colorGenotype ?? null;
+    sirePhenotype = sirePhenotype ?? sireColorRow?.phenotype ?? null;
+  }
+
+  // When both parents have a genotype → Mendelian inheritance (31E-2).
+  // Otherwise → breed-weighted random generation (31E-1a fallback).
+  const colorGenotype =
+    sireColorGenotype && damColorGenotype
+      ? inheritColorGenotype(sireColorGenotype, damColorGenotype, breedGeneticProfile, rng)
+      : generateGenotype(breedGeneticProfile, rng);
+
+  // Phenotype: base color + markings (31E-1b / 31E-3).
+  const baseColor = calculatePhenotype(colorGenotype, breedGeneticProfile?.shade_bias ?? null);
+  const markings =
+    sirePhenotype && damPhenotype
+      ? inheritMarkings(sirePhenotype, damPhenotype, breedGeneticProfile, baseColor.colorName, rng)
+      : generateMarkings(breedGeneticProfile, baseColor.colorName, rng);
+  const phenotype = { ...baseColor, ...markings };
 
   // Sex: callers (e.g. the breed controller for direct calls) may supply
   // options.sex; the foaling job does not, so randomize 50/50 using rng.
@@ -345,6 +395,8 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
     conformationScores,
     gaitScores,
     temperament,
+    colorGenotype,
+    phenotype,
     epigeneticModifiers: {
       positive: positiveTraits,
       negative: negativeTraits,
@@ -433,6 +485,8 @@ export async function runFoalingJob({ now = new Date(), rng = Math.random } = {}
       healthStatus: true,
       conformationScores: true,
       gaitScores: true,
+      colorGenotype: true,
+      phenotype: true,
       inFoalSinceDate: true,
       pregnancySireId: true,
       pregnancyFeedingsByTier: true,
