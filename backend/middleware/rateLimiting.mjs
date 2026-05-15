@@ -483,12 +483,35 @@ export const profileRateLimiter = createRateLimiter({
 
 /**
  * Mutation Rate Limiter (POST/PUT/DELETE)
- * Prevents abuse while allowing batch operations
- * 30 mutations per minute
+ * Prevents abuse while allowing batch operations.
+ *
+ * Production default: 30 mutations per minute.
+ *
+ * Beta override (Equoria-st9u, 2026-05-15): the Playwright E2E suite issues
+ * back-to-back stallion / mare / horse-create / feed / breed mutations from
+ * a single source IP (::1 in CI). Several specs trip the 30/min cap and
+ * report 429 'Too many actions' on stallion creation, which then cascades:
+ * downstream specs (feed-system-phase-b pregnancy-feeding-panel, breeding
+ * select-stallion) cannot complete their precondition fixtures and instant-
+ * fail on retries.
+ *
+ * Following the same pattern Equoria-obwp used for the global apiLimiter
+ * (RATE_LIMIT_MAX_BY_ENV in backend/app.mjs, beta:3000), beta gets a
+ * higher cap. Production remains at 30.
+ *
+ * NOT a bypass header — `NODE_ENV=beta` is selected by the deployment env,
+ * never by per-request header. Production traffic still hits 30/min.
  */
+const MUTATION_RATE_LIMIT_MAX_BY_ENV = {
+  // Tests already short-circuit via TEST_RATE_LIMIT_* env knobs when
+  // useEnvOverride:true is set — no test entry needed here.
+  beta: 120, // 2 mutations/sec sustained — fits Playwright suite without trip
+  development: 60,
+  production: 30,
+};
 export const mutationRateLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
-  max: 30, // 30 mutations per minute
+  max: MUTATION_RATE_LIMIT_MAX_BY_ENV[process.env.NODE_ENV] ?? 30,
   message: 'Too many actions. Please wait a moment.',
   skipSuccessfulRequests: false,
   keyPrefix: 'rl:mutation',
