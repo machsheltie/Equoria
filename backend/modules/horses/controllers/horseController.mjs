@@ -419,6 +419,12 @@ export async function getHorseOverview(req, res) {
         lastFedDate: true,
         lastVettedDate: true,
         healthStatus: true,
+        // Pregnancy state (B6 / Equoria-1adr): /overview is a projection used
+        // by future consumers; include the same pregnancy fields the full
+        // GET /:id route surfaces so /overview is not silently missing them.
+        inFoalSinceDate: true,
+        pregnancySireId: true,
+        pregnancyFeedingsByTier: true,
       },
     });
 
@@ -502,6 +508,12 @@ export async function getHorseOverview(req, res) {
       feedHealth: getFeedHealth(horse),
       vetHealth: getVetHealth(horse),
       displayedHealth: getDisplayedHealth(horse),
+      // Pregnancy state parity with GET /:id (B6 / Equoria-1adr).
+      // pregnancyFeedingsByTier defaults to {} (not null/undefined) so any
+      // consumer can read tier counts without an existence check.
+      inFoalSinceDate: horse.inFoalSinceDate ? horse.inFoalSinceDate.toISOString() : null,
+      pregnancySireId: horse.pregnancySireId ?? null,
+      pregnancyFeedingsByTier: horse.pregnancyFeedingsByTier ?? {},
     };
 
     logger.info(
