@@ -335,5 +335,48 @@ describe('marketplaceController integration', () => {
 
       expect(res.status).toBe(401);
     });
+
+    // Equoria-kiep — 31E follow-up: store-bought horse MUST have colorGenotype
+    // and phenotype populated (not NULL) — adjacent-locations fix to e8zj.
+    // Sentinel-positive: this fails if the 31E wiring is removed from buyStoreHorse.
+    it('purchased horse has non-null colorGenotype + phenotype (Equoria-kiep)', async () => {
+      if (!realBreedId) {
+        return;
+      }
+
+      // Top up funds (insufficient-funds test above may have zeroed them).
+      await prisma.user.update({ where: { id: user.id }, data: { money: 5000 } });
+
+      const csrf = await fetchCsrf(app);
+      const res = await request(app)
+        .post('/api/marketplace/store/buy')
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${token}`)
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken)
+        .send({ breedId: realBreedId, sex: 'Mare' });
+
+      expect(res.status).toBe(201);
+      expect(res.body.success).toBe(true);
+      const horseId = res.body.data?.horse?.id;
+      expect(horseId).toBeTruthy();
+
+      // Re-fetch to confirm DB persisted the genetics fields.
+      const stored = await prisma.horse.findUnique({
+        where: { id: horseId },
+        select: { colorGenotype: true, phenotype: true },
+      });
+      expect(stored).toBeTruthy();
+      expect(stored.colorGenotype).toBeTruthy();
+      expect(typeof stored.colorGenotype).toBe('object');
+      // All 17 CORE_LOCI must be present.
+      expect(stored.colorGenotype.E_Extension).toBeTruthy();
+      expect(stored.phenotype).toBeTruthy();
+      expect(typeof stored.phenotype.colorName).toBe('string');
+      expect(stored.phenotype.colorName.length).toBeGreaterThan(0);
+
+      // Cleanup
+      await prisma.horse.delete({ where: { id: horseId } }).catch(() => {});
+    });
   });
 });

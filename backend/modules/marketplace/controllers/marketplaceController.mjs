@@ -18,6 +18,11 @@ import { recordTransaction } from '../../../services/financialLedgerService.mjs'
 // horses. Random-stat seed paths are forbidden — see service module header.
 import { generateStoreStats } from '../../../services/horseStarterStats.mjs';
 import { canonicalizeHorseSex } from '../../../../packages/database/horseSexCanonical.mjs';
+// 31E color genetics (Equoria-kiep): store-bought horses must arrive with a
+// populated colorGenotype + phenotype, the same as foals and starter horses.
+import { generateGenotype } from '../../horses/services/genotypeGenerationService.mjs';
+import { calculatePhenotype } from '../../horses/services/phenotypeCalculationService.mjs';
+import { generateMarkings } from '../../horses/services/markingGenerationService.mjs';
 
 // ── Horse Trader store constants ──────────────────────────────────────────────
 
@@ -497,6 +502,25 @@ export async function buyStoreHorse(req, res) {
     const dateOfBirth = new Date();
     dateOfBirth.setFullYear(dateOfBirth.getFullYear() - 3);
 
+    // 31E color genetics (Equoria-kiep): generate colorGenotype + phenotype the
+    // same way the starter-horse (authController) and POST /api/v1/horses
+    // (horseRoutes) paths do. Without this, store-bought horses ship with
+    // NULL coat data and break the 31E invariant.
+    //
+    // Raw SQL on breedGeneticProfile mirrors horseRoutes.mjs / foalingService —
+    // the JSONB column isn't always reachable via the Prisma client depending
+    // on schema-drift between the app and the generated client.
+    const breedProfileRows = await prisma.$queryRaw`
+      SELECT "breedGeneticProfile"
+      FROM breeds
+      WHERE id = ${parsedBreedId}
+    `;
+    const breedGeneticProfile = breedProfileRows[0]?.breedGeneticProfile ?? null;
+    const colorGenotype = generateGenotype(breedGeneticProfile);
+    const baseColor = calculatePhenotype(colorGenotype, breedGeneticProfile?.shade_bias ?? null);
+    const markings = generateMarkings(breedGeneticProfile, baseColor.colorName);
+    const phenotype = { ...baseColor, ...markings };
+
     const createdHorse = await createHorse({
       name: horseName,
       breedId: parsedBreedId,
@@ -505,6 +529,8 @@ export async function buyStoreHorse(req, res) {
       dateOfBirth: dateOfBirth.toISOString(),
       userId: buyerId,
       healthStatus: 'Excellent',
+      colorGenotype,
+      phenotype,
       ...stats,
     });
 
