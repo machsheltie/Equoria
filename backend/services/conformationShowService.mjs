@@ -505,6 +505,19 @@ export async function executeConformationShow(showId) {
     throw err;
   }
 
+  // Idempotency guard (Equoria-08ln). A second call on an already-executed
+  // show would double-pay titlePoints + breedingValueBoost and insert
+  // duplicate CompetitionResult rows. The pre-transaction read here is the
+  // fast-path reject; the atomic flip inside $transaction below is the
+  // race-condition guard. Both are required: without the pre-read every
+  // duplicate call pays the full DB cost; without the atomic flip two
+  // concurrent calls can both pass the pre-read and double-execute.
+  if (show.status === 'completed') {
+    const err = new Error('Show already executed');
+    err.statusCode = 400;
+    throw err;
+  }
+
   // Load all entries with horse + active groom assignment + groom
   const entries = await prisma.showEntry.findMany({
     where: { showId },
@@ -552,6 +565,22 @@ export async function executeConformationShow(showId) {
 
   await prisma.$transaction(
     async tx => {
+      // Atomic idempotency claim (Equoria-08ln race-condition guard).
+      // updateMany with a `status: 'open'` predicate succeeds with count=1
+      // only when no concurrent caller has flipped the row yet. Two
+      // simultaneous executors race here; whichever wins gets count=1 and
+      // continues; the loser gets count=0 and throws. Pre-transaction read
+      // above + this atomic flip together fully close the gap.
+      const claim = await tx.show.updateMany({
+        where: { id: showId, status: 'open' },
+        data: { status: 'executing' },
+      });
+      if (claim.count === 0) {
+        const err = new Error('Show already executed');
+        err.statusCode = 400;
+        throw err;
+      }
+
       for (let i = 0; i < scored.length; i++) {
         const { horse, finalScore } = scored[i];
         const placement = i + 1;
@@ -597,6 +626,14 @@ export async function executeConformationShow(showId) {
           breedingValueBoost: newBoost,
         });
       }
+
+      // Finalise the idempotency claim — flip from 'executing' to 'completed'
+      // inside the same transaction so a future call gets rejected by both
+      // the pre-transaction read and the atomic flip above. Equoria-08ln.
+      await tx.show.update({
+        where: { id: showId },
+        data: { status: 'completed', executedAt: new Date() },
+      });
     },
     { timeout: 30000 },
   );

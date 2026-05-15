@@ -31,7 +31,12 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/glob
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../db/index.mjs';
 import { executeConformationShowHandler, getConformationTitles } from '../controllers/conformationShowController.mjs';
-import { resolveReward, resolveTitle, applyBreedingValueBoost } from '../../../services/conformationShowService.mjs';
+import {
+  resolveReward,
+  resolveTitle,
+  applyBreedingValueBoost,
+  executeConformationShow,
+} from '../../../services/conformationShowService.mjs';
 
 const SUITE_PREFIX = 'cfexe';
 
@@ -463,5 +468,135 @@ describe('getConformationTitles (real DB)', () => {
 
       expect(res.statusValue).toBe(404);
     });
+  });
+});
+
+// ===========================================================================
+// Idempotency — Equoria-08ln (executeConformationShow service)
+// ===========================================================================
+//
+// The first call to executeConformationShow() for an `open` show must run
+// to completion and flip Show.status to 'completed' atomically inside the
+// $transaction. The second call must reject with statusCode=400 and must
+// NOT mutate Horse.titlePoints / Horse.breedingValueBoost or insert any
+// additional CompetitionResult rows.
+//
+// Sentinel-positive test pair per OPTIMAL_FIX_DISCIPLINE §2:
+//   - first call: status open → completes, status:'completed'
+//   - second call: status already 'completed' → throws Show already executed
+//
+// Real DB. No mocks. No bypass headers.
+
+describe('executeConformationShow — idempotency (Equoria-08ln)', () => {
+  beforeAll(cleanupSuite);
+  afterAll(cleanupSuite);
+  afterEach(cleanupSuite);
+
+  it('first call completes and marks show.status === "completed"', async () => {
+    const user = await createUser();
+    const horse = await createHorse(user.id);
+    const groom = await createGroom(user.id);
+    await createGroomAssignment(groom.id, horse.id, user.id);
+    const show = await createConformationShow();
+    await createShowEntry(show.id, horse.id, user.id);
+
+    const results = await executeConformationShow(show.id);
+
+    expect(Array.isArray(results)).toBe(true);
+    expect(results.length).toBe(1);
+
+    const showAfter = await prisma.show.findUnique({ where: { id: show.id } });
+    expect(showAfter.status).toBe('completed');
+  });
+
+  it('second call on the same showId throws "Show already executed" with statusCode 400', async () => {
+    const user = await createUser();
+    const horse = await createHorse(user.id);
+    const groom = await createGroom(user.id);
+    await createGroomAssignment(groom.id, horse.id, user.id);
+    const show = await createConformationShow();
+    await createShowEntry(show.id, horse.id, user.id);
+
+    await executeConformationShow(show.id);
+
+    // Second call MUST throw — not silently re-distribute rewards.
+    let caught;
+    try {
+      await executeConformationShow(show.id);
+    } catch (err) {
+      caught = err;
+    }
+    expect(caught).toBeDefined();
+    expect(caught.statusCode).toBe(400);
+    expect(String(caught.message)).toMatch(/already executed/i);
+  });
+
+  it('second call leaves Horse.titlePoints and Horse.breedingValueBoost unchanged', async () => {
+    const user = await createUser();
+    const horse = await createHorse(user.id);
+    const groom = await createGroom(user.id);
+    await createGroomAssignment(groom.id, horse.id, user.id);
+    const show = await createConformationShow();
+    await createShowEntry(show.id, horse.id, user.id);
+
+    await executeConformationShow(show.id);
+    const horseAfterFirst = await prisma.horse.findUnique({ where: { id: horse.id } });
+    const tpAfterFirst = horseAfterFirst.titlePoints;
+    const bvbAfterFirst = horseAfterFirst.breedingValueBoost;
+
+    try {
+      await executeConformationShow(show.id);
+    } catch {
+      /* expected throw */
+    }
+
+    const horseAfterSecond = await prisma.horse.findUnique({ where: { id: horse.id } });
+    expect(horseAfterSecond.titlePoints).toBe(tpAfterFirst);
+    expect(horseAfterSecond.breedingValueBoost).toBeCloseTo(bvbAfterFirst);
+  });
+
+  it('second call creates no additional CompetitionResult rows', async () => {
+    const user = await createUser();
+    const horse = await createHorse(user.id);
+    const groom = await createGroom(user.id);
+    await createGroomAssignment(groom.id, horse.id, user.id);
+    const show = await createConformationShow();
+    await createShowEntry(show.id, horse.id, user.id);
+
+    await executeConformationShow(show.id);
+    const countAfterFirst = await prisma.competitionResult.count({ where: { showId: show.id } });
+    expect(countAfterFirst).toBe(1);
+
+    try {
+      await executeConformationShow(show.id);
+    } catch {
+      /* expected throw */
+    }
+
+    const countAfterSecond = await prisma.competitionResult.count({ where: { showId: show.id } });
+    expect(countAfterSecond).toBe(1);
+  });
+
+  it('rejects a show that was created with status already === "completed"', async () => {
+    // Sentinel: covers the case where some other path (admin override, data
+    // import, manual fixture) sets status=completed without going through
+    // executeConformationShow. The idempotency guard must trust the
+    // persisted status and refuse, not double-distribute.
+    const user = await createUser();
+    const horse = await createHorse(user.id);
+    const groom = await createGroom(user.id);
+    await createGroomAssignment(groom.id, horse.id, user.id);
+    const show = await createConformationShow({ status: 'completed' });
+    await createShowEntry(show.id, horse.id, user.id);
+
+    let caught;
+    try {
+      await executeConformationShow(show.id);
+    } catch (err) {
+      caught = err;
+    }
+    expect(caught).toBeDefined();
+    expect(caught.statusCode).toBe(400);
+    expect(String(caught.message)).toMatch(/already executed/i);
   });
 });
