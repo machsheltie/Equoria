@@ -38,6 +38,21 @@ partyAgents:
 
 # Architecture Decision Document
 
+> ## ⚠️ SUPERSEDED — 2026-05-15
+>
+> This document captured a December 2025 "Frontend Completion" sprint (Auth UI, Training UI, Breeding UI, API integration; ~62 files). **The sprint completed and the codebase has dramatically exceeded its scope** — 41 pages (vs. 5), 80+ API hooks (vs. 4), and 20+ feature directories now exist. The 8 ADRs (state, forms, auth, API client, error/loading, file org, tests) remain authoritative, but the file inventory, phase plan, and "Implementation Readiness" sections describe a past sprint.
+>
+> **Current scope of work:**
+>
+> - **Active priority:** Epic 21R — Beta Deployment Readiness Remediation (see `docs/sprint-change-proposal-2026-04-15.md` and `CLAUDE.md` "Current Sprint")
+> - **Shipped since this doc:** Epics 9A–14, 16–18, 20, 22, 31A–31F (see `CLAUDE.md` "Epic Deliverables")
+> - **Live module structure:** `backend/modules/*` (Epic 20), `frontend/src/{pages,components,hooks/api,contexts,lib,types,test}/`
+> - **Refresh tracker:** `Equoria-0pz0` (docs(frontend): refresh architecture-frontend.md to match current tree)
+>
+> Treat the ADR table and patterns sections (state management, error handling, optimistic updates, testing patterns) as still-valid guidance. Treat the file inventory, phase plan, and validation status sections as historical record.
+>
+> ---
+
 _This document builds collaboratively through step-by-step discovery. Sections are appended as we work through each architectural decision together._
 
 ## Document Purpose
