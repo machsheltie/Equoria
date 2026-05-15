@@ -81,6 +81,12 @@ interface TraitEffects {
   xpModifier: number;
 }
 
+interface TemperamentEffects {
+  temperament: string;
+  xpModifier: number;
+  scoreModifier: number;
+}
+
 interface TrainingResult {
   success: boolean;
   updatedHorse: {
@@ -93,6 +99,9 @@ interface TrainingResult {
   nextEligible: string | null;
   statGain: StatGain | null;
   traitEffects?: TraitEffects;
+  // Equoria-npnw — temperament modifier attribution. Null when horse.temperament
+  // is null (legacy pre-31D-1 horses).
+  temperamentEffects?: TemperamentEffects | null;
   // Deprecated fields for backward compatibility (will be removed)
   updatedScore?: number;
   nextEligibleDate?: string;

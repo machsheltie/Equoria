@@ -37,6 +37,12 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
     statGains?: { [stat: string]: number };
     xpGain?: number;
     nextTrainingDate: Date;
+    // Equoria-npnw — temperament modifier attribution for the result modal
+    temperamentEffects?: {
+      temperament: string;
+      xpModifier: number;
+      scoreModifier: number;
+    } | null;
   } | null>(null);
   const [trainingError, setTrainingError] = useState<string | null>(null);
 
@@ -156,6 +162,8 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         nextTrainingDate: result.nextEligible
           ? new Date(result.nextEligible)
           : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        // Equoria-npnw — surface temperament modifier attribution to the result modal
+        temperamentEffects: result.temperamentEffects ?? null,
       });
 
       // Open result modal
@@ -344,6 +352,7 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
           statGains={trainingResult.statGains}
           xpGain={trainingResult.xpGain}
           nextTrainingDate={trainingResult.nextTrainingDate}
+          temperamentEffects={trainingResult.temperamentEffects}
         />
       )}
     </div>
