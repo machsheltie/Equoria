@@ -234,7 +234,7 @@ const horseKeys = {
 
 | Data Type           | staleTime        | Rationale                              |
 | ------------------- | ---------------- | -------------------------------------- |
-| Horse list          | 0 (always stale) | Always refetch on mount for fresh data |
+| Horse list          | 2 min            | Core entity, moderate update frequency (`useHorses.ts`) |
 | Horse detail        | 60s              | Moderate update frequency              |
 | Training history    | 30s              | Changes after training sessions        |
 | Leaderboards        | 5 min            | Changes frequently but not real-time   |
