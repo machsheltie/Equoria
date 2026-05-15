@@ -598,7 +598,7 @@ export const getUserRankSummary = async (req, res) => {
     // pull rows ordered by capturedAt DESC, then dedupe-by-category in JS so
     // the first occurrence (newest per category) wins. Avoids `$queryRaw`
     // while preserving the original "latest snapshot per category" semantics.
-    let snapshotMap = {};
+    const snapshotMap = {};
     try {
       const snapshots = await prisma.userRankSnapshot.findMany({
         where: { userId },
@@ -763,6 +763,92 @@ export const captureRankSnapshots = async (req, res) => {
   }
 };
 
+/**
+ * GET /api/leaderboards/rank-history/:userId
+ *
+ * Returns the historical UserRankSnapshot time-series for a user, grouped by
+ * category (level / xp / horse-earnings / horse-performance). Powers the
+ * rank-trend Recharts LineChart on the profile page (Equoria-l332).
+ *
+ * Ownership is enforced at the route level (selfAccess middleware) — a user
+ * may only read their own rank history. Returns 200 + empty series when the
+ * user has no snapshots yet so the chart can render an honest empty state.
+ *
+ * Query params:
+ *   - days (optional): integer 1..365. Limits the series to snapshots captured
+ *     within the last N days. Omitted/invalid → full history (capped at 365d).
+ */
+export const getUserRankHistory = async (req, res) => {
+  const { userId } = req.params;
+
+  // Validate UUID format before hitting Prisma to avoid a Prisma 500.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  if (!UUID_RE.test(userId)) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid userId format',
+    });
+  }
+
+  // Clamp the lookback window. Default + max is 365 days.
+  let days = 365;
+  const rawDays = req.query?.days;
+  if (rawDays !== undefined) {
+    const parsed = Number.parseInt(rawDays, 10);
+    if (Number.isInteger(parsed) && parsed >= 1 && parsed <= 365) {
+      days = parsed;
+    }
+  }
+  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+  try {
+    const snapshots = await prisma.userRankSnapshot.findMany({
+      where: { userId, capturedAt: { gte: since } },
+      select: { category: true, rank: true, capturedAt: true },
+      orderBy: { capturedAt: 'asc' },
+    });
+
+    // Group into one ascending series per category. Categories with no
+    // snapshots are omitted (the chart only plots lines that have data).
+    const seriesByCategory = {};
+    for (const s of snapshots) {
+      if (!seriesByCategory[s.category]) {
+        seriesByCategory[s.category] = [];
+      }
+      seriesByCategory[s.category].push({
+        rank: Number(s.rank),
+        capturedAt: s.capturedAt.toISOString(),
+      });
+    }
+
+    const categoryLabels = {
+      level: 'Level',
+      xp: 'XP',
+      'horse-earnings': 'Horse Earnings',
+      'horse-performance': 'Horse Performance',
+    };
+
+    const series = Object.entries(seriesByCategory).map(([category, points]) => ({
+      category,
+      categoryLabel: categoryLabels[category] ?? category,
+      points,
+    }));
+
+    return res.json({
+      userId,
+      days,
+      series,
+    });
+  } catch (error) {
+    logger.error(`[leaderboardController.getUserRankHistory] Error: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve user rank history',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+    });
+  }
+};
+
 // Aliases
 export const getTopPlayersByLevel = getTopUsersByLevel;
 export const getTopPlayersByXP = getTopUsersByXP;
@@ -781,5 +867,6 @@ export default {
   getRecentWinners,
   getLeaderboardStats,
   getUserRankSummary,
+  getUserRankHistory,
   captureRankSnapshots,
 };

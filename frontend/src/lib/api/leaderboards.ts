@@ -48,6 +48,39 @@ export interface UserRankSummaryResponse {
 }
 
 /**
+ * A single rank data point in a category's historical series.
+ */
+export interface RankHistoryPoint {
+  /** The user's rank at this snapshot (lower is better). */
+  rank: number;
+  /** ISO-8601 timestamp the snapshot was captured. */
+  capturedAt: string;
+}
+
+/**
+ * One category's ascending rank time-series.
+ */
+export interface RankHistorySeries {
+  /** Raw category key: 'level' | 'xp' | 'horse-earnings' | 'horse-performance'. */
+  category: string;
+  /** Human-readable label for the legend/axis. */
+  categoryLabel: string;
+  /** Ascending-by-time list of rank points. */
+  points: RankHistoryPoint[];
+}
+
+/**
+ * API response for a user's historical rank time-series.
+ */
+export interface RankHistoryResponse {
+  userId: string;
+  /** Lookback window in days that was applied. */
+  days: number;
+  /** One series per category that has at least one snapshot. */
+  series: RankHistorySeries[];
+}
+
+/**
  * Custom error class for leaderboard API operations.
  */
 export class LeaderboardApiError extends Error {
@@ -132,4 +165,26 @@ export async function fetchUserRankSummary(
   userId: string
 ): Promise<UserRankSummaryResponse | null> {
   return apiClient.get<UserRankSummaryResponse>(`/api/leaderboards/user-summary/${userId}`);
+}
+
+/**
+ * Fetch a user's historical rank time-series across all categories.
+ *
+ * Ownership-enforced server-side — only returns the authenticated user's
+ * own history. Empty `series` when no snapshots have been captured yet.
+ *
+ * @param userId - User UUID to fetch history for (must be the caller's own)
+ * @param days - Optional lookback window in days (1..365, default 365)
+ * @returns Promise<RankHistoryResponse>
+ *
+ * @example
+ * const history = await fetchUserRankHistory('user-123', 90);
+ * console.log(`${history.series.length} categories have rank history`);
+ */
+export async function fetchUserRankHistory(
+  userId: string,
+  days?: number
+): Promise<RankHistoryResponse> {
+  const qs = days != null ? `?days=${days}` : '';
+  return apiClient.get<RankHistoryResponse>(`/api/leaderboards/rank-history/${userId}${qs}`);
 }

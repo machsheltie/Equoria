@@ -21,6 +21,8 @@ import { VALIDATION_RULES, UI_TEXT } from '../lib/constants';
 import { useProfile, useUpdateProfile } from '../hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { useActivityFeed, useUserProgress } from '../hooks/api/useUserProgress';
+import { useRankHistory } from '../hooks/api/useRankHistory';
+import RankHistoryChart from '@/components/leaderboard/RankHistoryChart';
 
 const ProfilePage: React.FC = () => {
   const { data: profileData, isLoading, isError, error: profileError } = useProfile();
@@ -33,6 +35,17 @@ const ProfilePage: React.FC = () => {
     error: activityError,
   } = useActivityFeed(userId);
   const { data: progressData, isLoading: isProgressLoading } = useUserProgress(userId);
+
+  // Rank-history time-series for the trend chart (Equoria-l332). The backend
+  // endpoint is ownership-enforced, so we only ever request the signed-in
+  // user's own id (a UUID string, distinct from the numeric `userId` above).
+  const rankUserId = profileData?.user?.id ? String(profileData.user.id) : '';
+  const {
+    data: rankHistory,
+    isLoading: isRankHistoryLoading,
+    isError: isRankHistoryError,
+    error: rankHistoryError,
+  } = useRankHistory({ userId: rankUserId, enabled: rankUserId.length > 0 });
 
   const [formData, setFormData] = useState<ProfileFormData>({
     username: '',
@@ -231,6 +244,24 @@ const ProfilePage: React.FC = () => {
                   type={StatisticType.WIN_RATE}
                   size="sm"
                   isLoading={isProgressLoading}
+                />
+              </div>
+            </div>
+
+            {/* Rank History Trend (Equoria-l332) */}
+            <div className="space-y-2">
+              <p className="text-xs text-[var(--text-secondary)] uppercase tracking-wider">
+                Rank History
+              </p>
+              <div className="rounded-lg px-3 py-3 glass-panel-subtle">
+                <RankHistoryChart
+                  series={rankHistory?.series ?? []}
+                  isLoading={isRankHistoryLoading}
+                  errorMessage={
+                    isRankHistoryError
+                      ? rankHistoryError?.message || 'Failed to load rank history'
+                      : undefined
+                  }
                 />
               </div>
             </div>
