@@ -126,19 +126,46 @@ export function HorseCard({
           {/* Equoria-92ss — phenotype coat color chip. Falls back to
               finalDisplayColor (legacy serializer field) and finally hides
               the chip entirely for legacy horses with no color recorded. */}
-          {(() => {
-            const colorName = horse.phenotype?.colorName ?? horse.finalDisplayColor ?? null;
-            if (!colorName) return null;
-            return (
+          <div className="mt-1 flex flex-wrap gap-1">
+            {(() => {
+              const colorName = horse.phenotype?.colorName ?? horse.finalDisplayColor ?? null;
+              if (!colorName) return null;
+              return (
+                <span
+                  className="inline-block px-2 py-0.5 rounded-[var(--radius-sm)] text-[0.6rem] font-medium bg-[var(--glass-glow)] text-[var(--gold-light)] truncate max-w-full"
+                  title={colorName}
+                  data-testid="horse-card-color-chip"
+                >
+                  {colorName}
+                </span>
+              );
+            })()}
+            {/* Equoria-tjai — Epic 31D temperament chip. Hidden when null. */}
+            {horse.temperament ? (
               <span
-                className="mt-1 inline-block px-2 py-0.5 rounded-[var(--radius-sm)] text-[0.6rem] font-medium bg-[var(--glass-glow)] text-[var(--gold-light)] truncate max-w-full"
-                title={colorName}
-                data-testid="horse-card-color-chip"
+                className="inline-block px-2 py-0.5 rounded-[var(--radius-sm)] text-[0.6rem] font-medium bg-[var(--glass-glow)] text-[var(--gold-light)] truncate max-w-full"
+                title={horse.temperament}
+                data-testid="horse-card-temperament-chip"
               >
-                {colorName}
+                {horse.temperament}
               </span>
-            );
-          })()}
+            ) : null}
+            {/* Equoria-u7e6 — Epic 31F conformation title chip. Hidden when null.
+                Tooltip surfaces breedingValueBoost (decimal multiplier → percentage). */}
+            {horse.currentTitle ? (
+              <span
+                className="inline-block px-2 py-0.5 rounded-[var(--radius-sm)] text-[0.6rem] font-semibold bg-[var(--gold-dim)] text-[var(--bg-midnight)] truncate max-w-full"
+                title={
+                  horse.breedingValueBoost && horse.breedingValueBoost > 0
+                    ? `${horse.currentTitle} — Breeding value +${(horse.breedingValueBoost * 100).toFixed(0)}%`
+                    : horse.currentTitle
+                }
+                data-testid="horse-card-title-chip"
+              >
+                {horse.currentTitle}
+              </span>
+            ) : null}
+          </div>
         </div>
       </div>
 

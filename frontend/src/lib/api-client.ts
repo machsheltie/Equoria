@@ -225,6 +225,16 @@ interface HorseSummary {
   finalDisplayColor?: string;
   // Full phenotype JSONB — returned by GET /horses/:id; colorName is the player-visible color
   phenotype?: { colorName?: string; [key: string]: unknown } | null;
+  // Epic 31D — horse temperament (e.g. "Calm", "Spirited"). Null/undefined for legacy horses.
+  // Drives groom synergy + competition modifiers; HorseCard renders a small chip when present.
+  temperament?: string | null;
+  // Epic 31F (Equoria-u7e6) — conformation title progression
+  // currentTitle: human-readable title (e.g. "Champion") or null for un-titled horses
+  // breedingValueBoost: 0..N multiplier applied to breeding outcomes (0 = no boost)
+  // titlePoints: cumulative show points used to compute the next title threshold
+  currentTitle?: string | null;
+  breedingValueBoost?: number;
+  titlePoints?: number;
   // Equipped tack (JSON field) — includes item IDs and <category>_condition values
   tack?: Record<string, unknown>;
   // Stats returned flat from API (all 12)

@@ -386,6 +386,11 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
             totalEarnings: true,
             trait: true,
             temperament: true,
+            // Conformation titles (Epic 31F, Equoria-u7e6) — small scalars
+            // read by HorseCard to render the title chip + breeding-value tooltip.
+            titlePoints: true,
+            currentTitle: true,
+            breedingValueBoost: true,
             // Coat-color phenotype — small JSONB needed by HorseCard chip.
             phenotype: true,
             breed: { select: { id: true, name: true } },
