@@ -544,7 +544,26 @@ claude-sonnet-4-6
 - `backend/modules/horses/routes/horseRoutes.mjs` (modified — import + GET /temperament-definitions route)
 - `backend/docs/swagger.yaml` (modified — GET /api/v1/horses/temperament-definitions endpoint)
 
+## What Was NOT Done (post-hoc audit, 2026-05-15)
+
+Audit of the shipped artifact against the codebase (per `OPTIMAL_FIX_DISCIPLINE.md` §6 — enumerate gaps) surfaced three follow-ups that the original "done" record did not flag:
+
+1. **No HTTP-level integration test for the bound route** — Equoria-ei5u (P2).
+   AC #6 and the "CRITICAL: Route Placement in Express" note (lines 86–94) make the static-path-before-`/:id` ordering a non-negotiable. The controller-only unit tests cannot detect a regression that reorders the routes. The parallel pattern shipped for `/horses/:id/gaits` (Equoria-2zia, commit 73c847dd, `gaitRoutesHttp.integration.test.mjs`) does not yet exist for temperament-definitions.
+
+2. **Swagger schema is opaque** — Equoria-d30k (P3).
+   `swagger.yaml:331–350` shipped with `definitions: { type: array, items: { type: object } }` — losing the fully-typed per-element schema spec'd in this story's Dev Notes (lines 388–453). The dev-record attribution to "linter auto-reformatting" was inaccurate; the content was dropped, not reformatted. SDK/type generators cannot consume the shape.
+
+3. **No frontend consumer** — Equoria-876o (P3, pre-existing).
+   The endpoint is reachable via curl only. FR-23's player-facing "see how temperament affects my horse" intent has no UI surface. Already tracked.
+
+### Doc-only drift (not worth a beads issue)
+
+- Dev record's File List says `backend/__tests__/temperamentApiEndpoints.test.mjs`; the file actually exists at `backend/modules/horses/__tests__/temperamentApiEndpoints.test.mjs`. Functional behaviour unaffected.
+- AC #1's `<200ms` NFR-02 is trivially met by a pure-memory function; no sentinel test was added and none is needed.
+
 ## Change Log
 
 - 2026-03-30: Implemented GET /api/v1/horses/temperament-definitions endpoint — getTemperamentDefinitions controller function, route registration, 13 unit tests, Swagger documentation (Story 31D-5)
 - 2026-03-31: Code review fixes — added explicit @jest/globals imports (describe/it/expect/beforeEach); renamed misleading empty-bestGroomPersonalities test; added F8 test validating non-empty description/prevalenceNote strings. 15 tests total, 0 regressions.
+- 2026-05-15: Post-hoc audit (review pass) — filed Equoria-ei5u (HTTP integration test) and Equoria-d30k (swagger schema completeness) as follow-ups; noted pre-existing Equoria-876o for frontend consumer. Story stays `done` per literal AC, but with explicit "What Was NOT Done" enumeration above.

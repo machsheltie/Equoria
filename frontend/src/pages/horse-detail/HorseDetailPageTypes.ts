@@ -60,4 +60,7 @@ export interface Horse {
   inFoalSinceDate?: string | null;
   pregnancySireId?: number | null;
   pregnancyFeedingsByTier?: Record<string, number>;
+  // Epic 31D — innate behavioural temperament (one of 11 types). May be null
+  // on legacy horses that predate the temperament system (Equoria-8k7k).
+  temperament?: string | null;
 }
