@@ -107,6 +107,60 @@ describe('getHorseAgeYears', () => {
   });
 });
 
+// Equoria-vdw5: Date-only arithmetic — the cron schedule fires at 00:05 UTC,
+// but legacy DB rows have dob timestamps like 2023-05-04T04:00Z (midnight EDT).
+// Time-of-day arithmetic on dob would underflow at the weekly anniversary:
+// dob=May 4 04:00 UTC, now=May 11 00:05 UTC → diffMs = 6d20h05m → floor(/day)=6,
+// floor(/week)=0 game-years. The user expectation is that any horse born on
+// the calendar date May 4 (regardless of stored time) ages up on the calendar
+// date May 11. The canonical implementation must therefore use date-only
+// arithmetic in UTC: floor((startOfDay(now) - startOfDay(dob)) / 7days).
+describe('getHorseAgeYears — date-only arithmetic (Equoria-vdw5)', () => {
+  test('May 1 dob ages to 1 game-year on May 8 (same time-of-day)', () => {
+    const dob = new Date('2026-05-01T00:00:00.000Z');
+    const now = new Date('2026-05-08T00:00:00.000Z');
+    expect(getHorseAgeYears(dob, now)).toBe(1);
+  });
+
+  test('dob stored at 04:00 UTC still ages on the calendar anniversary at 00:05 UTC', () => {
+    // The legacy-cron scenario from vdw5: dob has a 04:00 UTC offset (i.e.
+    // EDT midnight), cron runs at 00:05 UTC. Date-only arithmetic must
+    // produce ageDays=7 (and ageYears=1) because the calendar date diff
+    // is May 11 - May 4 = 7 days.
+    const dob = new Date('2023-05-04T04:00:00.000Z');
+    const now = new Date('2023-05-11T00:05:00.000Z');
+    expect(getHorseAgeDays(dob, now)).toBe(7);
+    expect(getHorseAgeYears(dob, now)).toBe(1);
+  });
+
+  test('does not age up one day late: dob May 4 ages on May 11 in UTC, not May 12', () => {
+    // Sentinel-positive for the off-by-one-day bug described in vdw5: the
+    // cron run on May 11 must increment the horse's age, not the run on
+    // May 12.
+    const dob = new Date('2023-05-04T04:00:00.000Z');
+    const may11 = new Date('2023-05-11T00:05:00.000Z');
+    const may12 = new Date('2023-05-12T00:05:00.000Z');
+    expect(getHorseAgeYears(dob, may11)).toBe(1);
+    expect(getHorseAgeYears(dob, may12)).toBe(1);
+    // And earlier than May 11 the horse must still be 0 game-years.
+    const may10 = new Date('2023-05-10T23:55:00.000Z');
+    expect(getHorseAgeYears(dob, may10)).toBe(0);
+  });
+
+  test('treats dob and now as date-only UTC: same-day dob → ageDays=0 regardless of time', () => {
+    // Both timestamps are May 15 UTC. Date-only diff = 0 → ageDays=0.
+    const dob = new Date('2026-05-15T23:59:00.000Z');
+    const now = new Date('2026-05-15T00:00:01.000Z');
+    expect(getHorseAgeDays(dob, now)).toBe(0);
+  });
+
+  test('next-calendar-day arithmetic: dob May 15 → ageDays=1 on May 16 regardless of time-of-day', () => {
+    const dob = new Date('2026-05-15T23:00:00.000Z');
+    const now = new Date('2026-05-16T00:30:00.000Z'); // 1.5 real hours later, but 1 calendar day later
+    expect(getHorseAgeDays(dob, now)).toBe(1);
+  });
+});
+
 describe('withAgeYears (serializer decorator)', () => {
   const fixedNow = new Date('2026-05-15T12:00:00.000Z');
 

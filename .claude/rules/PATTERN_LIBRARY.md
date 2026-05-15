@@ -1056,6 +1056,90 @@ test('canonical personality receives _any bonus', () => {
 
 ---
 
+### Horse Age — Date-Only UTC Arithmetic Convention (Equoria-vdw5)
+
+**Pattern:** Horse age math operates on UTC calendar dates, not real-time millisecond deltas. The canonical helpers in `backend/utils/horseAge.mjs` truncate both `dateOfBirth` and `now` to start-of-UTC-day before subtracting, so the result is always a whole number of UTC calendar days regardless of either timestamp's time-of-day component.
+
+**When to Use:**
+- Any code that needs the age of a horse from `dateOfBirth`. Always call `getHorseAgeDays()` or `getHorseAgeYears()`. Never inline `Math.floor((Date.now() - dob.getTime()) / 86400000)`.
+- Cron jobs that fire on a fixed UTC schedule and need "did this horse have a calendar-anniversary today?" semantics.
+- API serializers that return `ageYears` to the frontend.
+
+**Why Date-Only UTC:**
+The daily aging cron in `backend/services/cronJobs.mjs` fires at `0 5 * * * UTC` (00:05 UTC). Legacy DB rows have `dateOfBirth` stored with non-midnight UTC offsets (e.g. `2023-05-04T04:00:00.000Z` = midnight EDT). A millisecond-delta reading at the cron-fire time would underflow:
+
+```
+dob   = 2023-05-04T04:00Z
+now   = 2023-05-11T00:05Z  (cron run on the weekly-anniversary day)
+diffMs        = 6d 20h 05m
+ageDays (ms)  = floor(diffMs / 86400000) = 6   ← WRONG: horse not aged on May 11
+ageYears (ms) = floor(6 / 7) = 0
+```
+
+The user's expectation (verbatim, 2026-05-15): *"all horses should age up by a year every week on the day they were born (example: born May 1, 2026 would age May 8, May 15…)"*. A May 4 horse must age on May 11, not May 12. Date-only UTC arithmetic delivers that:
+
+```
+startOfUtcDay(dob)   = 2023-05-04T00:00Z
+startOfUtcDay(now)   = 2023-05-11T00:00Z
+diffMs               = exactly 7 days
+ageDays              = 7
+ageYears             = 1
+```
+
+**Implementation (canonical, do not re-implement):**
+
+```javascript
+// backend/utils/horseAge.mjs
+function startOfUtcDay(d) {
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+}
+
+export function getHorseAgeDays(dateOfBirth, now = new Date()) {
+  // … null / NaN / future guards return 0 …
+  const dobStart = startOfUtcDay(new Date(dateOfBirth)).getTime();
+  const nowStart = startOfUtcDay(now instanceof Date ? now : new Date(now)).getTime();
+  const diffMs = nowStart - dobStart;
+  if (diffMs <= 0) return 0;
+  return Math.floor(diffMs / MS_PER_DAY);
+}
+```
+
+**Sentinel-Positive Tests (required, in `backend/__tests__/horseAge.test.mjs`):**
+
+```javascript
+test('dob stored at 04:00 UTC still ages on the calendar anniversary at 00:05 UTC', () => {
+  const dob = new Date('2023-05-04T04:00:00.000Z');
+  const now = new Date('2023-05-11T00:05:00.000Z');
+  expect(getHorseAgeDays(dob, now)).toBe(7);
+  expect(getHorseAgeYears(dob, now)).toBe(1);
+});
+
+test('does not age up one day late: dob May 4 ages on May 11 in UTC, not May 12', () => {
+  const dob = new Date('2023-05-04T04:00:00.000Z');
+  const may11 = new Date('2023-05-11T00:05:00.000Z');
+  expect(getHorseAgeYears(dob, may11)).toBe(1);   // ages on May 11, not May 12
+  const may10 = new Date('2023-05-10T23:55:00.000Z');
+  expect(getHorseAgeYears(dob, may10)).toBe(0);   // not yet on May 10
+});
+```
+
+**Canonical Timezone:** **UTC.** The cron schedule uses `timezone: 'UTC'`. Prisma `DateTime` columns store UTC by default. There is no localization layer on age math.
+
+**Pitfalls to Avoid:**
+- ❌ Inline `Math.floor((Date.now() - dobMs) / 86400000)` anywhere — recreates the off-by-one bug for any dob not stored at midnight UTC.
+- ❌ Adding a per-user timezone to age arithmetic — age is a global game property, not a per-user perception.
+- ❌ Using `now.toLocaleDateString()` / local-zone helpers — produces drift on servers running in different timezones.
+- ✅ Always go through `getHorseAgeDays` / `getHorseAgeYears` / `withAgeYears` from `backend/utils/horseAge.mjs`.
+- ✅ When mocking `now` in tests, pass it explicitly as the second argument — do not rely on `Date.now()` overrides.
+
+**Cross-reference:**
+- Helper: `backend/utils/horseAge.mjs` (Equoria-m2mg + Equoria-vdw5)
+- Tests: `backend/__tests__/horseAge.test.mjs` — `describe('getHorseAgeYears — date-only arithmetic (Equoria-vdw5)')`
+- Cron: `backend/services/cronJobs.mjs` (`dailyHorseAging` at `5 0 * * *` UTC)
+- Adjacent: `backend/utils/horseAgingSystem.mjs#calculateAgeFromBirth` still uses ms-arithmetic for internal milestone day-threshold checks. That is out of scope for this rule because it operates on its own injected `currentDate` and is mocked in tests; the canonical-user-facing path (API serializers, training/competition eligibility, frontend) goes through `getHorseAgeYears` and is now date-only.
+
+---
+
 ## Pattern Evolution
 
 ### Deprecated Patterns

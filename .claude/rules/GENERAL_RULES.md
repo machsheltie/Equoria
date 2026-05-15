@@ -104,3 +104,10 @@ A comprehensive horse breeding and competition simulation game backend built wit
 - Main backend: `backend/`
 - Frontend app: `frontend/`
 - CI/Testing config: `.github/workflows/` and `scripts/`
+
+## ⏰ Horse Age Math — UTC Date-Only (Equoria-vdw5)
+
+- All horse-age math goes through `backend/utils/horseAge.mjs`. Use `getHorseAgeDays`, `getHorseAgeYears`, or `withAgeYears`. Never inline `Math.floor((Date.now() - dobMs) / 86400000)` — it produces an off-by-one-day for any dob not stored at midnight UTC.
+- Canonical timezone is UTC. The daily aging cron runs `5 0 * * *` in `timezone: 'UTC'`. Age is the difference between `startOfUtcDay(now)` and `startOfUtcDay(dob)`, ignoring time-of-day on both sides.
+- Game-year cadence: 7 real UTC days = 1 game year. A horse born May 1 ages to 1 on May 8 UTC.
+- Full convention + sentinel tests: see `.claude/rules/PATTERN_LIBRARY.md` § "Horse Age — Date-Only UTC Arithmetic Convention (Equoria-vdw5)".
