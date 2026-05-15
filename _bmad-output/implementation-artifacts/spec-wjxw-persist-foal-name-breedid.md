@@ -2,7 +2,7 @@
 title: 'Equoria-wjxw: persist pendingFoalName + pendingFoalBreedId at pregnancy start'
 type: 'bugfix'
 created: '2026-05-13'
-status: 'in-progress'
+status: 'done'
 baseline_commit: '298cad4c3b83737c2b599d965a7a57f5939c8068'
 context: []
 ---
