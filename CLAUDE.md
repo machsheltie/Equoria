@@ -334,15 +334,26 @@ bd sync             # Sync with remote
 ```
 equoria/
 ├── backend/              # Node.js + Express (100% complete)
-│   ├── controllers/      # Business logic
+│   ├── modules/         # Domain modules (each owns its own __tests__/)
+│   │   ├── community/   #   └── __tests__/  ← co-located tests (Epic 21-1 AC5)
+│   │   ├── trainers/    #   └── __tests__/
+│   │   └── …            #   └── __tests__/
+│   ├── controllers/      # Backward-compat shims (Epic 20)
 │   ├── routes/          # API endpoints
 │   ├── models/          # Data models
-│   └── __tests__/       # 468+ tests
+│   └── __tests__/       # Cross-module integration + middleware tests
 ├── frontend/            # React 19 browser game (Epic 18+ shipped — see Epic Deliverables)
 │   └── src/
 ├── packages/database/   # Prisma ORM + PostgreSQL
 └── .claude/            # Documentation (call via skills)
 ```
+
+**Module-test co-location convention** (Epic 21 Story 21-1 AC5): backend
+module tests live in `backend/modules/<domain>/__tests__/`, NOT in the
+top-level `backend/__tests__/` directory. Top-level `backend/__tests__/`
+is reserved for cross-module integration tests and middleware sentinels.
+Full convention + naming + pitfalls: `.claude/rules/CONTRIBUTING.md` §
+"Backend Module Conventions".
 
 ---
 

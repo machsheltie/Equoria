@@ -66,3 +66,37 @@ const sire = await prisma.horse.findUnique({ where: { id: sireId } });
 ```
 
 Cross-reference: `PATTERN_LIBRARY.md` § "Per-Locus Probability — Multi-Locus Genetics Calculation (31E-5)" notes the self-cross guard as a controller-level prerequisite for the breeding color prediction endpoint.
+
+---
+
+## Backend Module Conventions
+
+### Module-test co-location (Epic 21 Story 21-1 AC5)
+
+Backend module tests live in `backend/modules/<domain>/__tests__/`, NOT in a top-level `backend/__tests__/` directory. Each domain owns its own test directory.
+
+This pattern keeps tests physically adjacent to the code they test and makes domain ownership obvious from the file tree. When a module's controllers / services / routes change, the tests that exercise them are in the same folder — no cross-tree navigation, no guessing where the suite lives.
+
+**Established examples** (use these as templates when adding tests to a new module):
+
+- `backend/modules/community/__tests__/` — `clubController.test.mjs`, `clubController.integration.test.mjs`, `communityRoutes.integration.test.mjs`
+- `backend/modules/trainers/__tests__/` — `trainerController.test.mjs`, `trainerController.integration.test.mjs`, `trainerDiscoveryService.test.mjs`
+- `backend/modules/riders/__tests__/` — same shape: unit-style controller test + `.integration.test.mjs` HTTP path
+
+**Naming convention inside the module's `__tests__` directory:**
+
+- `<unit>.test.mjs` — function- / class-level tests (still real-DB; "no mocks ever" per CLAUDE.md Testing Philosophy)
+- `<routes-or-controller>.integration.test.mjs` — HTTP-chain integration tests via supertest against the real Express app + real DB
+
+**When NOT to use module co-location:**
+
+- Cross-module integration tests (e.g. a flow that spans `breeding` + `traits` + `competition`) belong under `backend/__tests__/integration/` because no single module owns them.
+- Security middleware sentinel tests live under `backend/__tests__/middleware/` and `backend/__tests__/integration/security/` because middleware is cross-cutting.
+
+**Pitfalls to avoid:**
+
+- ❌ Adding `backend/__tests__/<module>.test.mjs` for a module that already has a co-located `__tests__` directory — pick one location, keep the suite together.
+- ❌ Splitting a module's tests across both `backend/modules/<x>/__tests__/` AND `backend/__tests__/<x>/` — both will run, but a developer reading the file tree won't know which is canonical.
+- ✅ When in doubt, mirror the most recent module to land (currently `community`).
+
+Cross-reference: this convention is referenced from `CLAUDE.md` (project structure section). Any restructuring of `backend/modules/<x>/__tests__/` must update both files together.
