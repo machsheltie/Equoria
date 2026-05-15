@@ -200,24 +200,31 @@ describe('Temperament Assignment Service', () => {
           expected[type] = (weight / totalWeight) * SAMPLE_SIZE;
         }
 
-        // Run two independent chi-squared trials; require at least one to pass.
-        // Under H0 (correct distribution), P(both fail at p=0.001) = 10^-6 — CI-safe.
-        // A genuinely wrong distribution would fail both runs consistently.
-        let passes = 0;
-        for (let attempt = 0; attempt < 2; attempt++) {
-          const observed = {};
-          for (let i = 0; i < SAMPLE_SIZE; i++) {
-            const t = generateTemperament(breed.id);
-            observed[t] = (observed[t] || 0) + 1;
-          }
-          const { stat, df } = chiSquared(observed, expected);
-          const criticalValue = CHI2_CRITICAL_P001[df] ?? CHI2_CRITICAL_P001[20];
-          if (stat < criticalValue) {
-            passes++;
-          }
+        // Equoria-xylg: single chi-squared trial at p=0.001 with SAMPLE_SIZE=10000.
+        // The previous two-trial workaround (require 1 of 2 pass at p=0.001) was
+        // statistically opaque — a 5% drift on a single bucket could still
+        // pass one trial by luck. At N=10000 samples per breed × 11 temperament
+        // types (df ≤ 10, critical ≈ 29.6), the single-trial test has
+        // P(false-fail under H0) = 0.001 — CI-safe; weekly across ~10 runs
+        // expected false-fails = 0.01, i.e. once a decade.
+        // If this ever flakes in practice, prefer Option C (seed Math.random)
+        // over restoring the two-trial workaround.
+        const observed = {};
+        for (let i = 0; i < SAMPLE_SIZE; i++) {
+          const t = generateTemperament(breed.id);
+          observed[t] = (observed[t] || 0) + 1;
         }
-        // At least one of two independent runs must pass the p=0.001 chi-squared test
-        expect(passes).toBeGreaterThanOrEqual(1);
+        const { stat, df } = chiSquared(observed, expected);
+        const criticalValue = CHI2_CRITICAL_P001[df] ?? CHI2_CRITICAL_P001[20];
+        // Sanity-tag failure for easy triage: include the offending breed and
+        // computed stat so post-mortem doesn't require re-running.
+        if (stat >= criticalValue) {
+          // eslint-disable-next-line no-console
+          console.log(
+            `[xylg] Chi-squared failed for breed ${breed.id} ${breed.name}: stat=${stat.toFixed(2)} >= crit=${criticalValue} (df=${df}, N=${SAMPLE_SIZE})`,
+          );
+        }
+        expect(stat).toBeLessThan(criticalValue);
       });
     }
 
