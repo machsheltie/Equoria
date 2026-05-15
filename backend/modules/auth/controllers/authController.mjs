@@ -173,10 +173,20 @@ export const register = async (req, res, next) => {
           color: starterBaseColor.colorName,
         });
       } catch (colorError) {
-        // Non-fatal — horse exists, color can be backfilled later
-        logger.warn(
-          '[authController.register] Could not apply starter horse color:',
-          colorError.message,
+        // Equoria-a429: was logger.warn (silent fail-warn-drop pattern that
+        // produced 111 NULL-phenotype stragglers in the canonical DB). Now
+        // logger.error so the regression is visible in production logs +
+        // Sentry. Still non-fatal at the request level — the user is
+        // registered and the horse exists; the sentinel job in
+        // Equoria-fhag is the long-term guard.
+        logger.error(
+          '[authController.register] FAILED to apply starter horse color (horse will have NULL phenotype until backfilled):',
+          {
+            horseId: starterHorse.id,
+            userId: user.id,
+            error: colorError.message,
+            stack: colorError.stack,
+          },
         );
       }
     } catch (horseError) {
