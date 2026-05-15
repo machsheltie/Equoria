@@ -485,6 +485,58 @@ describe('marketplaceController integration', () => {
   });
 
   // ---------------------------------------------------------------------------
+  // Equoria-fkcf — v1-prefix contract sentinel
+  // ---------------------------------------------------------------------------
+  // The Horse Trader tech-spec and frontend api-client.ts:1456 target
+  // POST /api/v1/marketplace/store/buy. Most tests above hit the legacy
+  // /api/marketplace path (Epic 20 left both mounts active during the v1
+  // migration). If the legacy mount is ever retired without parallel
+  // coverage at /api/v1/, the contract silently breaks in production while
+  // tests still report green. This block exercises the v1 happy path so
+  // the v1 mount remains a tested contract.
+  describe('POST /api/v1/marketplace/store/buy (Equoria-fkcf v1 contract sentinel)', () => {
+    it('returns 201 and creates horse via the /api/v1/ prefix (sentinel-positive)', async () => {
+      if (!realBreedId) {
+        return; // Skip if no breeds in DB
+      }
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { money: 100000 },
+      });
+
+      const csrf = await fetchCsrf(app);
+      const res = await request(app)
+        .post('/api/v1/marketplace/store/buy')
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${token}`)
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken)
+        .send({ breedId: realBreedId, sex: 'Mare' });
+
+      expect(res.status).toBe(201);
+      expect(res.body.success).toBe(true);
+      expect(res.body.data).toHaveProperty('horse');
+
+      if (res.body.data?.horse?.id) {
+        await prisma.horse.delete({ where: { id: res.body.data.horse.id } }).catch(() => {});
+      }
+    });
+
+    it('returns 401 without auth via the /api/v1/ prefix', async () => {
+      const csrf = await fetchCsrf(app);
+      const res = await request(app)
+        .post('/api/v1/marketplace/store/buy')
+        .set('Origin', ORIGIN)
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken)
+        .send({ breedId: 1, sex: 'Mare' });
+
+      expect(res.status).toBe(401);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
   // Equoria-2keb: every real (non-test) DB breed has a starter-stats entry
   // ---------------------------------------------------------------------------
   // Bug: buyStoreHorse threw 500 when picked breed wasn't in
