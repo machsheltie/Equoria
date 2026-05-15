@@ -1422,7 +1422,7 @@ export interface Breed {
 
 /**
  * Breeds API surface
- *   GET /api/v1/breeds → Breed[]  (all 320 breeds, sorted A–Z)
+ *   GET /api/v1/breeds → Breed[]  (all breeds in the DB catalog, sorted A–Z)
  */
 export const breedsApi = {
   list: () => apiClient.get<Breed[]>('/api/v1/breeds'),

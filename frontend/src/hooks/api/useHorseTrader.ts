@@ -2,7 +2,7 @@
  * useHorseTrader hooks — Epic 21 extension (Horse Trader Store)
  *
  * Provides React Query hooks for the Horse Trader store page:
- *   - useBreeds()         → fetch all 320 breeds (sorted A–Z) for the breed selector
+ *   - useBreeds()         → fetch all breeds (sorted A–Z) for the breed selector
  *   - useBuyStoreHorse()  → mutation to purchase a 3-year-old store horse
  */
 

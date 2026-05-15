@@ -2,8 +2,9 @@
  * HorseTraderPage — Epic 21 extension
  *
  * Game store where players buy a 3-year-old horse of any breed for 1,000 coins.
- * Features a searchable breed dropdown (all 320 breeds), mare/stallion toggle,
- * balance display, and post-purchase success state with stable link.
+ * Features a searchable breed dropdown (live breed catalog from useBreeds),
+ * mare/stallion toggle, balance display, and post-purchase success state with
+ * stable link.
  *
  * Route: /marketplace/horse-trader
  */
@@ -85,7 +86,11 @@ const HorseTraderPage: React.FC = () => {
     <div className="min-h-screen" data-testid="horse-trader-page">
       <PageHero
         title="Horse Trader"
-        subtitle="Browse all 320 breeds. Pick your perfect horse."
+        subtitle={
+          breeds.length > 0
+            ? `Browse all ${breeds.length.toLocaleString()} breeds. Pick your perfect horse.`
+            : 'Browse our breed catalog. Pick your perfect horse.'
+        }
         mood="golden"
         icon={<ShoppingBag className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
       />
