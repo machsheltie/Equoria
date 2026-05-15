@@ -694,7 +694,7 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
     expect(response.body.message).toMatch(/mare/i);
   });
 
-  it('returns 400 when sireId does not exist', async () => {
+  it('returns 404 "Sire not found" when sireId does not exist (CWE-639 disclosure resistance, Equoria-zrbc)', async () => {
     const token = jwt.sign({ id: testUserId, email: testUserData.email, role: 'user' }, config.jwtSecret, {
       expiresIn: '1h',
     });
@@ -713,9 +713,126 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
         sireId: 999999999,
         damId: damHorseId,
       })
-      .expect(400);
+      .expect(404);
 
     expect(response.body.success).toBe(false);
-    expect(response.body.message).toMatch(/not found/i);
+    expect(response.body.message).toBe('Sire not found');
+  });
+
+  // Equoria-zrbc / 31E-2 follow-up — CWE-639 cross-user disclosure resistance.
+  // POST /api/v1/horses must reject sireId/damId belonging to another user
+  // with a 404 byte-identical to the "not found" response, so attackers cannot
+  // enumerate other players' horses by ID.
+  it("returns 404 when sireId points to another user's horse (cross-user sentinel)", async () => {
+    // Create a SECOND user + their own horse. Then attempt to use that
+    // horse as sireId under our test user — must return 404 "Sire not found".
+    const otherEmail = `otherUser_${timestamp}@test.com`;
+    const otherPasswordHash = await bcrypt.hash('Pass123!', 10);
+    const otherUser = await prisma.user.create({
+      data: {
+        username: `otherUser_${timestamp}`,
+        email: otherEmail,
+        password: otherPasswordHash,
+        firstName: 'Other',
+        lastName: 'User',
+        money: 0,
+        settings: {},
+      },
+    });
+    const otherSire = await prisma.horse.create({
+      data: {
+        name: `OtherUserSire_${timestamp}`,
+        age: 5,
+        dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
+        sex: 'stallion',
+        breedId,
+        userId: otherUser.id,
+        colorGenotype: buildGenotype({ E_Extension: 'e/e' }),
+      },
+    });
+
+    try {
+      const token = jwt.sign({ id: testUserId, email: testUserData.email, role: 'user' }, config.jwtSecret, {
+        expiresIn: '1h',
+      });
+
+      const response = await request(app)
+        .post('/api/v1/horses')
+        .set('Authorization', `Bearer ${token}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({
+          name: `CrossUserAttack_${timestamp}`,
+          breedId,
+          age: 0,
+          sex: 'mare',
+          sireId: otherSire.id, // attacker tries to use another user's stallion
+          damId: damHorseId,
+        })
+        .expect(404);
+
+      expect(response.body.success).toBe(false);
+      // Byte-identical to "Sire not found" — same as the non-existent case.
+      expect(response.body.message).toBe('Sire not found');
+    } finally {
+      await prisma.horse.deleteMany({ where: { id: otherSire.id } }).catch(() => {});
+      await prisma.user.deleteMany({ where: { id: otherUser.id } }).catch(() => {});
+    }
+  });
+
+  it("returns 404 when damId points to another user's horse (cross-user sentinel)", async () => {
+    const otherEmail = `otherUser2_${timestamp}@test.com`;
+    const otherPasswordHash = await bcrypt.hash('Pass123!', 10);
+    const otherUser = await prisma.user.create({
+      data: {
+        username: `otherUser2_${timestamp}`,
+        email: otherEmail,
+        password: otherPasswordHash,
+        firstName: 'Other2',
+        lastName: 'User',
+        money: 0,
+        settings: {},
+      },
+    });
+    const otherDam = await prisma.horse.create({
+      data: {
+        name: `OtherUserDam_${timestamp}`,
+        age: 5,
+        dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
+        sex: 'mare',
+        breedId,
+        userId: otherUser.id,
+        colorGenotype: buildGenotype({ E_Extension: 'e/e' }),
+      },
+    });
+
+    try {
+      const token = jwt.sign({ id: testUserId, email: testUserData.email, role: 'user' }, config.jwtSecret, {
+        expiresIn: '1h',
+      });
+
+      const response = await request(app)
+        .post('/api/v1/horses')
+        .set('Authorization', `Bearer ${token}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({
+          name: `CrossUserAttackDam_${timestamp}`,
+          breedId,
+          age: 0,
+          sex: 'mare',
+          sireId: sireHorseId,
+          damId: otherDam.id, // attacker tries to use another user's mare
+        })
+        .expect(404);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toBe('Dam not found');
+    } finally {
+      await prisma.horse.deleteMany({ where: { id: otherDam.id } }).catch(() => {});
+      await prisma.user.deleteMany({ where: { id: otherUser.id } }).catch(() => {});
+    }
   });
 });

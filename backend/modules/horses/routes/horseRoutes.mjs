@@ -739,28 +739,20 @@ router.post(
       let damHorse = null;
 
       if (sireId && damId) {
-        [sireHorse, damHorse] = await Promise.all([
-          prisma.horse.findUnique({
-            where: { id: sireId },
-            select: { colorGenotype: true, sex: true, phenotype: true },
-          }),
-          prisma.horse.findUnique({
-            where: { id: damId },
-            select: { colorGenotype: true, sex: true, phenotype: true },
-          }),
-        ]);
-
-        // Validate parent existence
-        if (!sireHorse) {
-          return res
-            .status(400)
-            .json({ success: false, message: `Sire horse with ID ${sireId} not found` });
+        // Dual ownership validation (CWE-284 + CWE-639). Mirrors POST /foals
+        // (horseRoutes.mjs:1197): same 404 'Sire not found' / 'Dam not found'
+        // for both not-found and cross-user cases to prevent ID-enumeration
+        // disclosure of other players' horses. Equoria-zrbc, 31E-2 follow-up.
+        const ownedSire = await findOwnedResource('horse', sireId, req.user.id);
+        if (!ownedSire) {
+          return res.status(404).json({ success: false, message: 'Sire not found' });
         }
-        if (!damHorse) {
-          return res
-            .status(400)
-            .json({ success: false, message: `Dam horse with ID ${damId} not found` });
+        const ownedDam = await findOwnedResource('horse', damId, req.user.id);
+        if (!ownedDam) {
+          return res.status(404).json({ success: false, message: 'Dam not found' });
         }
+        sireHorse = ownedSire;
+        damHorse = ownedDam;
 
         // Validate biological sex roles. Sex is canonical Title Case
         // post-Equoria-duz2 — see packages/database/horseSexCanonical.mjs.
