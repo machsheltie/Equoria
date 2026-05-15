@@ -191,12 +191,34 @@ describe('HorseDetailPage color readout fallback (Equoria-lsi5)', () => {
 
   test("temperament: literal 'Unknown' never appears even when a value is sent — Equoria-1k4n", async () => {
     // Even with a populated temperament the line must not regress to the
-    // literal 'Unknown' string. (Real value not asserted: see the NOTE above —
-    // the field is dropped during horse-object construction, a separate bug.)
+    // literal 'Unknown' string.
     global.fetch = makeFetch({ temperament: 'Spirited' });
     renderPage();
     const tempValue = await screen.findByTestId('horse-temperament-value');
     await waitFor(() => expect(tempValue).toBeInTheDocument());
     expect(tempValue).not.toHaveTextContent('Unknown');
+  });
+
+  // Equoria-gncv — the wiring gap referenced in the NOTE above is now fixed:
+  // `temperament` is copied off horseRaw during the `horse` object
+  // construction. These sentinels assert the REAL value reaches the render
+  // layer (the previously-impossible path) and that the fallback still
+  // applies when the column is null.
+  test('temperament: real DB value is displayed (wiring fixed) — Equoria-gncv', async () => {
+    global.fetch = makeFetch({ temperament: 'Spirited' });
+    renderPage();
+    const tempValue = await screen.findByTestId('horse-temperament-value');
+    // Before the gncv fix this could only ever read 'not recorded'.
+    await waitFor(() => expect(tempValue).toHaveTextContent('Spirited'));
+    expect(tempValue).not.toHaveTextContent('not recorded');
+  });
+
+  test("temperament: null column still falls back to 'not recorded' — Equoria-gncv", async () => {
+    // Sentinel-negative: the fix must not break the honest empty state for
+    // legacy horses that genuinely have no temperament.
+    global.fetch = makeFetch({ temperament: null });
+    renderPage();
+    const tempValue = await screen.findByTestId('horse-temperament-value');
+    await waitFor(() => expect(tempValue).toHaveTextContent('not recorded'));
   });
 });

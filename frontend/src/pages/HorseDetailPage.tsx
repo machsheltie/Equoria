@@ -325,6 +325,11 @@ const HorseDetailPage: React.FC = () => {
     breedId: (horseRaw as unknown as Record<string, unknown>).breedId as number | undefined,
     age: horseRaw.age,
     gender: resolvedGender,
+    // Equoria-gncv — temperament was never copied off horseRaw, so the
+    // temperament line (HorseDetailPage.tsx:601) + highlightTemperament
+    // (line 803) could never show the real DB value. Carry it through
+    // (null for legacy horses with no temperament).
+    temperament: (horseRaw as unknown as { temperament?: string | null }).temperament ?? null,
     dateOfBirth: horseRaw.dateOfBirth,
     healthStatus: horseRaw.healthStatus,
     imageUrl: horseRaw.imageUrl,
