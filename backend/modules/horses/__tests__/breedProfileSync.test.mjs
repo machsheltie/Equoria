@@ -1,43 +1,25 @@
 /**
- * Dual data source sync check — Equoria-l2xu
+ * Dual data source sync check — Equoria-l2xu / Equoria-is28
  *
- * Verifies that breedGeneticProfiles.mjs (BREED_GENETIC_PROFILES, the DB source of truth)
- * and breedProfiles.json (read by conformationService/gaitService/temperamentService via
- * breedProfileLoader) stay structurally consistent for all 12 canonical breeds.
+ * Verifies that breedGeneticProfiles.mjs (BREED_GENETIC_PROFILES, the authoritative
+ * source of truth) and breedProfiles.json (runtime data consumed by conformationService /
+ * gaitService / temperamentService via breedProfileLoader) stay BIT-EQUAL for the 12
+ * canonical breeds.
  *
- * KNOWN DIVERGENCE (as of 2026-05-14):
- *   breedGeneticProfiles.mjs was enriched with real BreedData values (per-region std_dev,
- *   updated means) during the 31D/31E sprints. breedProfiles.json was NOT updated at that time
- *   and retains older generic means for affected breeds. The two stores therefore have different
- *   conformation/gait mean values for breeds that have BreedData files.
- *
- *   Affected breeds (updated in .mjs but NOT in JSON):
- *     ID 2  — Arabian          (JSON head.mean=76 vs .mjs head.mean=95)
- *     ID 3  — American Saddlebred (JSON head.mean=70 vs .mjs head.mean=88)
- *     ID 6  — Appaloosa        (JSON head.mean=70 vs .mjs head.mean=82)
- *     ID 8  — Andalusian       (JSON head.mean=78 vs .mjs head.mean=85)
- *     ID 9  — American Quarter Horse (JSON uses generic vs .mjs uses BreedData)
- *     ID 11 — Lusitano         (JSON uses generic vs .mjs uses BreedData)
- *     ID 12 — Paint Horse      (JSON uses generic vs .mjs uses BreedData)
- *
- *   The conformationService/gaitService read from breedProfiles.json (via breedProfileLoader),
- *   so LIVE GAME SCORES use the JSON values — not the enriched .mjs values in the DB profile.
- *   This means the DB breedGeneticProfile is NOT currently driving conformation/gait scoring.
- *   A future task (tracked as Equoria-ec1c) should reconcile the two stores.
+ * Reconciled 2026-05-15 (Equoria-is28): backend/scripts/sync-canonical-breeds-to-json.mjs
+ * copies rating_profiles + temperament_weights + starter_stats from .mjs into JSON for
+ * the 12 canonical breeds. Non-canonical breeds (~297 entries) retain their category-
+ * template values from generate-breed-profiles.mjs and are NOT touched by the sync.
  *
  * What this test enforces:
- *   1. All 12 canonical breeds are present by name in breedProfiles.json — CI catches missing.
+ *   1. All 12 canonical breeds are present by name in breedProfiles.json.
  *   2. Both stores have the same 8 conformation region keys for each breed.
  *   3. Both stores have the same 5 gait keys for each breed.
  *   4. Both stores have the same 11 temperament weight keys for each breed.
- *   5. The is_gaited_breed flag is consistent between both stores (gaited is a game mechanic).
- *
- * What this test does NOT enforce (by design — the divergence is known and documented above):
- *   - Exact mean/std_dev value equality for conformation regions.
- *   - Exact mean/std_dev value equality for gaits.
- *   - Exact temperament weight value equality.
- *
- * When the JSON is reconciled with the .mjs file, add exact-value assertions here.
+ *   5. is_gaited_breed flag is consistent between both stores (game mechanic).
+ *   6. NEW (Equoria-is28): exact mean / std_dev equality for conformation regions,
+ *      gaits, and temperament weights across both stores. If a contributor edits one
+ *      side without re-running the sync script, CI fails fast.
  */
 
 import { describe, it, expect } from '@jest/globals';
@@ -165,31 +147,50 @@ describe('is_gaited_breed flag — must be consistent between both stores', () =
 });
 
 // ---------------------------------------------------------------------------
-// Sentinel: known divergence — document the value gap for CI visibility
-// This test PASSES because the divergence is known and accepted for now.
-// When the JSON is reconciled, update these expected values and remove
-// the divergence comment above.
+// Equoria-is28 (reconciled 2026-05-15): exact value equality for the 12
+// canonical breeds. JSON values were synced from .mjs by
+// backend/scripts/sync-canonical-breeds-to-json.mjs. If a contributor edits
+// either source without re-running the sync, these assertions fail fast in CI.
 // ---------------------------------------------------------------------------
-describe('Known divergence documentation — Arabian (ID 2) conformation means', () => {
-  it('Arabian conformation head.mean differs between .mjs (95) and JSON (76) — known gap', () => {
-    const mjsMean = BREED_GENETIC_PROFILES[2].rating_profiles.conformation.head.mean;
-    const jsonMean = JSON_PROFILES['Arabian'].rating_profiles.conformation.head.mean;
+describe('Equoria-is28 — exact conformation mean / std_dev equality (canonical breeds)', () => {
+  for (const breed of CANONICAL_BREEDS) {
+    it(`breed "${breed.name}" (ID ${breed.id}) — conformation values match exactly between .mjs and JSON`, () => {
+      const mjsConf = BREED_GENETIC_PROFILES[breed.id].rating_profiles.conformation;
+      const jsonConf = JSON_PROFILES[breed.name].rating_profiles.conformation;
+      for (const region of EXPECTED_CONFORMATION_REGIONS) {
+        expect(jsonConf[region].mean).toBe(mjsConf[region].mean);
+        expect(jsonConf[region].std_dev).toBe(mjsConf[region].std_dev);
+      }
+    });
+  }
+});
 
-    // Document the known state: .mjs has enriched BreedData value, JSON has old value
-    expect(mjsMean).toBe(95); // BreedData/Arabian.txt value
-    expect(jsonMean).toBe(76); // Old generic value — not updated when .mjs was enriched
+describe('Equoria-is28 — exact gait mean / std_dev equality (canonical breeds)', () => {
+  for (const breed of CANONICAL_BREEDS) {
+    it(`breed "${breed.name}" (ID ${breed.id}) — gait values match exactly between .mjs and JSON`, () => {
+      const mjsGaits = BREED_GENETIC_PROFILES[breed.id].rating_profiles.gaits;
+      const jsonGaits = JSON_PROFILES[breed.name].rating_profiles.gaits;
+      for (const gait of EXPECTED_GAITS) {
+        // gaiting may be null for non-gaited breeds
+        if (mjsGaits[gait] === null) {
+          expect(jsonGaits[gait]).toBeNull();
+        } else {
+          expect(jsonGaits[gait].mean).toBe(mjsGaits[gait].mean);
+          expect(jsonGaits[gait].std_dev).toBe(mjsGaits[gait].std_dev);
+        }
+      }
+    });
+  }
+});
 
-    // Assert the values differ so CI catches if someone accidentally "fixes" one side
-    // without updating the other, turning the known divergence back into hidden drift
-    expect(mjsMean).not.toBe(jsonMean);
-  });
-
-  it('Arabian conformation gallop.mean differs between .mjs (92) and JSON (90) — known gap', () => {
-    const mjsMean = BREED_GENETIC_PROFILES[2].rating_profiles.gaits.gallop.mean;
-    const jsonMean = JSON_PROFILES['Arabian'].rating_profiles.gaits.gallop.mean;
-
-    expect(mjsMean).toBe(92);
-    expect(jsonMean).toBe(90);
-    expect(mjsMean).not.toBe(jsonMean);
-  });
+describe('Equoria-is28 — exact temperament weight equality (canonical breeds)', () => {
+  for (const breed of CANONICAL_BREEDS) {
+    it(`breed "${breed.name}" (ID ${breed.id}) — temperament weights match exactly`, () => {
+      const mjsTw = BREED_GENETIC_PROFILES[breed.id].temperament_weights;
+      const jsonTw = JSON_PROFILES[breed.name].temperament_weights;
+      for (const key of EXPECTED_TEMPERAMENT_KEYS) {
+        expect(jsonTw[key]).toBe(mjsTw[key]);
+      }
+    });
+  }
 });

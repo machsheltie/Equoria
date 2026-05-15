@@ -241,6 +241,25 @@ describe('calculateCompetitionScore — extra branch coverage', () => {
     expect(conformationScore).toBeGreaterThan(riddenScore);
   });
 
+  it('Equoria-f0bv: parade showType uses riddenModifier (not conformationModifier)', () => {
+    // Calm: riddenModifier=0.02, conformationModifier=0.05 — parade should match ridden, not conformation.
+    const horse = makeHorse({ temperament: 'Calm', speed: 100, stamina: 100, intelligence: 100 });
+    const riddenScore = calculateCompetitionScore(horse, 'Racing', 'ridden', () => 0.5);
+    const paradeScore = calculateCompetitionScore(horse, 'Racing', 'parade', () => 0.5);
+    const conformationScore = calculateCompetitionScore(horse, 'Racing', 'conformation', () => 0.5);
+    expect(paradeScore).toBe(riddenScore);
+    expect(paradeScore).toBeLessThan(conformationScore);
+  });
+
+  it('Equoria-f0bv: parade with nervous temperament is penalized like ridden', () => {
+    // Nervous: riddenModifier=-0.05 — parade should apply the same penalty.
+    const nervous = makeHorse({ temperament: 'Nervous', speed: 100, stamina: 100, intelligence: 100 });
+    const neutral = makeHorse({ speed: 100, stamina: 100, intelligence: 100 });
+    const paradeNervous = calculateCompetitionScore(nervous, 'Racing', 'parade', () => 0.5);
+    const paradeNeutral = calculateCompetitionScore(neutral, 'Racing', 'parade', () => 0.5);
+    expect(paradeNervous).toBeLessThan(paradeNeutral);
+  });
+
   it('uses the injected _luckFn: max luck scores higher than min luck', () => {
     const horse = makeHorse({ speed: 100, stamina: 100, intelligence: 100 });
     const maxScore = calculateCompetitionScore(horse, 'Racing', 'ridden', () => 1);

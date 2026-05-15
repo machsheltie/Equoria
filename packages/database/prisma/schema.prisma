@@ -264,9 +264,22 @@ model Groom {
   level             Int                @default(1)
   /// Skill level
   skillLevel        String             @default("novice")
-  /// Personality type for trait development bonuses
+  /// Canonical groom personality (gentle | energetic | patient | strict).
+  /// Used by groom synergy (Epic 31D-4), temperament compatibility,
+  /// groomPersonalityEffects, getTemperamentGroomSynergy(), and
+  /// trait-development bonuses. THIS is the user-facing personality.
+  /// Equoria-4ukc: consolidation deferred — semantically distinct from
+  /// epigeneticInfluenceType (see below).
   personality       String
-  /// Groom personality type for epigenetic trait influence
+  /// Epigenetic trait-influence type (balanced | calm | energetic | gentle |
+  /// methodical | confident | ...). Used by enhancedMilestoneEvaluation,
+  /// groomPersonalityTraits, flagAssignmentEngine, and the trait-influence
+  /// trait-discovery pipeline. Distinct semantic from `personality`:
+  /// `personality` drives interaction synergy/care quality; this field drives
+  /// which epigenetic traits a groom imprints onto a foal. Defaults to
+  /// 'balanced' so legacy grooms have a safe no-op behavior.
+  /// Equoria-4ukc: kept separate after audit — both fields are live and read
+  /// by independent subsystems.
   epigeneticInfluenceType  String             @default("balanced")
   /// Bonus trait map for rare trait acquisition (JSON object with trait names and probability bonuses)
   bonusTraitMap     Json               @default("{}")
@@ -377,6 +390,8 @@ model GroomInteraction {
   qualityScore    Float?           @default(0.75)
   /// Milestone window identifier for grouping interactions
   milestoneWindowId String?
+  /// 31D-4: Temperament-groom synergy modifier applied to this interaction (e.g. 0.25 = +25%, -0.15 = -15%)
+  synergyModifier Float?           @default(0)
   /// Foreign keys
   foalId          Int
   groomId         Int

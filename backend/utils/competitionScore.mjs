@@ -6,7 +6,8 @@ import { getTemperamentCompetitionModifiers } from '../modules/horses/services/t
  * @param {Object} horse - Horse object with stats and traits
  * @param {string} eventType - Competition discipline (e.g., 'Racing', 'Show Jumping', 'Dressage')
  * @param {string} [showType='ridden'] - Competition show type: 'ridden' (Racing, Show Jumping,
- *   Dressage, Cross Country) or 'conformation' (halter/in-hand shows). Unrecognized values
+ *   Dressage, Cross Country), 'conformation' (halter/in-hand shows), or 'parade' (presentation-
+ *   style ridden work — uses ridden temperament modifier per Equoria-f0bv). Unrecognized values
  *   default to 'ridden' with a warning logged.
  * @returns {number} Final rounded competition score (minimum 0)
  */
@@ -93,16 +94,21 @@ export function calculateCompetitionScore(
     // Apply trait bonus
     const scoreWithTraitBonus = baseScore + traitBonus;
 
-    // Validate showType — normalize unrecognized values to 'ridden' (default behavior)
+    // Validate showType — normalize unrecognized values to 'ridden' (default behavior).
+    // Equoria-f0bv: 'parade' is a recognized showType (per Show.showType in schema) that
+    // uses the ridden temperament modifier — parade is presentation-style ridden work, so
+    // calm/steady horses benefit and nervous/reactive horses are penalized, consistent with
+    // other ridden disciplines. No separate paradeModifier column is needed.
     let effectiveShowType = showType;
-    if (showType !== 'ridden' && showType !== 'conformation') {
+    if (showType !== 'ridden' && showType !== 'conformation' && showType !== 'parade') {
       logger.warn(
         `[calculateCompetitionScore] Unrecognized showType "${showType}" — defaulting to ridden modifier`,
       );
       effectiveShowType = 'ridden';
     }
 
-    // Apply temperament modifier (pre-luck, per PRD-03 §7.5)
+    // Apply temperament modifier (pre-luck, per PRD-03 §7.5).
+    // 'ridden' and 'parade' both consume riddenModifier; only 'conformation' uses conformationModifier.
     const temperamentMods = getTemperamentCompetitionModifiers(horse.temperament);
     const tempMod =
       effectiveShowType === 'conformation'

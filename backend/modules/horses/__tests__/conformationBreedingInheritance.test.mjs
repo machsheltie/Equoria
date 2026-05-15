@@ -8,7 +8,13 @@ import {
   validateConformationScores,
   CONFORMATION_REGIONS,
 } from '../services/conformationService.mjs';
-import { BREED_GENETIC_PROFILES } from '../data/breedGeneticProfiles.mjs';
+// Equoria-5p26: All breed-mean assertions now read from getBreedProfile() — the same
+// runtime data source consumed by the service under test (breedProfiles.json via
+// breedProfileLoader). The legacy import from breedGeneticProfiles.mjs was removed
+// because BREED_GENETIC_PROFILES is a test-fixture / seed module, not the runtime
+// source. Equoria-is28 reconciled the two stores for the 12 canonical breeds, but
+// the test must still read from the SAME store the service reads from so any future
+// drift fails the test loudly rather than passing by coincidence.
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
 
 // Helper: create a scores object with a uniform value for all regions
@@ -209,7 +215,7 @@ describe('Statistical validation - breeding inheritance', () => {
   // Task 4.1: High-scoring parents produce foals averaging above breed mean
   test('high-scoring parents (sire=95, dam=90) produce foals with average head > breed mean', () => {
     const breedId = 1; // Thoroughbred, head mean = 78
-    const breedMean = BREED_GENETIC_PROFILES[breedId].rating_profiles.conformation.head.mean;
+    const breedMean = getBreedProfile(breedId).rating_profiles.conformation.head.mean;
     const sire = { ...uniformScores(80), head: 95 };
     const dam = { ...uniformScores(80), head: 90 };
     const headScores = [];
@@ -246,8 +252,9 @@ describe('Statistical validation - breeding inheritance', () => {
   // Task 4.3: 95% of inherited scores fall within baseValue ± 2*breedStdDev
   test('95% of inherited scores fall within baseValue ± 2*breedStdDev', () => {
     const breedId = 1; // Thoroughbred
-    // Use the same data source the service uses (breedProfiles.json via getBreedProfile),
-    // not BREED_GENETIC_PROFILES (breedGeneticProfiles.mjs) which has different values.
+    // Equoria-5p26: read from getBreedProfile (same source as service under test).
+    // After Equoria-is28 the two stores match for the 12 canonical breeds, but the
+    // test must still read from the runtime store to catch any future drift.
     const conformation = getBreedProfile(breedId).rating_profiles.conformation;
     const sire = uniformScores(80);
     const dam = uniformScores(70);
@@ -281,7 +288,7 @@ describe('Statistical validation - breeding inheritance', () => {
   // Statistical validation: non-Thoroughbred breed (Appaloosa, ID 6)
   test('Appaloosa (breed 6) high-scoring parents produce foals above breed mean', () => {
     const breedId = 6;
-    const breedMean = BREED_GENETIC_PROFILES[breedId].rating_profiles.conformation.head.mean;
+    const breedMean = getBreedProfile(breedId).rating_profiles.conformation.head.mean;
     const sire = { ...uniformScores(85), head: 95 };
     const dam = { ...uniformScores(85), head: 95 };
     const headScores = [];
@@ -304,7 +311,7 @@ describe('Legacy parent scores - intentional game design', () => {
     // Legacy/store horses default to score 20. Players who breed unimproved horses
     // will get weaker foals — this is the intended natural consequence.
     const breedId = 1; // Thoroughbred, head mean = 78
-    const breedMean = BREED_GENETIC_PROFILES[breedId].rating_profiles.conformation.head.mean;
+    const breedMean = getBreedProfile(breedId).rating_profiles.conformation.head.mean;
     const legacyParent = uniformScores(20);
     const headScores = [];
 
@@ -324,7 +331,7 @@ describe('Legacy parent scores - intentional game design', () => {
 
   test('improved parents (score=90) produce foals above breed mean — reward for training', () => {
     const breedId = 1;
-    const breedMean = BREED_GENETIC_PROFILES[breedId].rating_profiles.conformation.head.mean;
+    const breedMean = getBreedProfile(breedId).rating_profiles.conformation.head.mean;
     const improvedParent = uniformScores(90);
     const headScores = [];
 
