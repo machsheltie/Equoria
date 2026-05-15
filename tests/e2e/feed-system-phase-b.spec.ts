@@ -70,6 +70,7 @@ test.describe.serial('Feed System Phase B — pregnancy mechanic', () => {
     console.log('Created mare id:', mareId);
 
     // Buy 1 pack (100 units) of basic feed so the feeding test has inventory
+    // and so we can feed both horses prior to breeding (see next block).
     const buyRes = await csrfMutate(session, 'POST', '/api/v1/feed-shop/purchase', {
       feedTier: 'basic',
       packs: 1,
@@ -78,6 +79,34 @@ test.describe.serial('Feed System Phase B — pregnancy mechanic', () => {
       console.warn(
         `Feed purchase returned ${buyRes.status()} — feeding test may fail if inventory is empty`
       );
+    }
+
+    // Per Equoria-2e7e, POST /api/v1/horses/foals now rejects when either sire
+    // or dam has displayedHealth === 'critical'. Newly-created horses have
+    // `lastFedDate: NULL` (the schema default), which makes getFeedHealth()
+    // return 'critical' immediately — so a freshly-spawned mare/stallion
+    // cannot breed. Feed both horses once so they pass the critical-health
+    // gate before we attempt to start the pregnancy. The mare's feed counter
+    // is NOT incremented here because `inFoalSinceDate` is still NULL at this
+    // point (see horseFeedService.mjs:215). Both horses' lastFedDate will be
+    // "today", so the action-feed button in test 2 will be disabled with
+    // "Fed today. Available again at UTC midnight." — test 2 has been
+    // adjusted accordingly. Tracked: see follow-up bd issue.
+    for (const horseId of [stallionId, mareId]) {
+      const equipRes = await csrfMutate(session, 'POST', `/api/v1/horses/${horseId}/equip-feed`, {
+        feedType: 'basic',
+      });
+      if (!equipRes.ok()) {
+        throw new Error(
+          `Equip-feed for horse ${horseId} failed: ${equipRes.status()} ${await equipRes.text()}`
+        );
+      }
+      const feedRes = await csrfMutate(session, 'POST', `/api/v1/horses/${horseId}/feed`);
+      if (!feedRes.ok()) {
+        throw new Error(
+          `Feed for horse ${horseId} failed: ${feedRes.status()} ${await feedRes.text()}`
+        );
+      }
     }
 
     // Initiate the 7-day pregnancy via API (bypasses the UI breeding flow which
