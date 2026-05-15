@@ -57,6 +57,8 @@ import RecentGains from '../components/horse/RecentGains';
 import AgeUpCounter from '../components/horse/AgeUpCounter';
 import TrainingRecommendations from '../components/horse/TrainingRecommendations';
 import ConformationTab from '../components/horse/ConformationTab';
+// Equoria-ga5g — render markings (face / legs / advanced / modifiers) from phenotype JSONB
+import MarkingsPanel from '../components/horse/MarkingsPanel';
 // Equoria-aa6b — walk/trot/canter/gallop + breed-specific gait scores tab
 import GaitsTab from '../components/horse/GaitsTab';
 // Equoria-876o — reference modal for the 11 temperament definitions
@@ -76,12 +78,17 @@ import type { Horse, HorseStats } from './horse-detail/HorseDetailPageTypes';
 
 // Heavy tab sub-panels — lazy loaded so they only enter the bundle when first selected
 const GeneticsTab = lazy(() => import('./horse-detail/GeneticsTab'));
+// Equoria-ea3n + Equoria-oovy — 31E-4 dedicated Color & Genetics panel sourced
+// from the GET /horses/:id/color and /horses/:id/genetics endpoints (not the
+// main horse payload).
+const CoatTab = lazy(() => import('./horse-detail/CoatTab'));
 const TrainingTab = lazy(() => import('./horse-detail/TrainingTab'));
 
 type TabType =
   | 'overview'
   | 'disciplines'
   | 'genetics'
+  | 'coat'
   | 'conformation'
   | 'gaits'
   | 'progression'
@@ -295,6 +302,47 @@ const HorseDetailPage: React.FC = () => {
     finalDisplayColor:
       (rawHorse.finalDisplayColor as string | undefined) ||
       ((rawHorse.phenotype as { colorName?: string } | null)?.colorName ?? undefined),
+    // Epic 31E-3 / Equoria-ga5g — markings stored on phenotype JSONB.
+    // We pluck the marking-relevant fields off phenotype into a flat shape so
+    // the renderer can treat them as a single object regardless of JSONB drift.
+    markings: (() => {
+      const phenotype = rawHorse.phenotype as {
+        faceMarking?: string;
+        legMarkings?: {
+          frontLeft?: string;
+          frontRight?: string;
+          hindLeft?: string;
+          hindRight?: string;
+        };
+        advancedMarkings?: {
+          bloodyShoulderPresent?: boolean;
+          snowflakePresent?: boolean;
+          frostPresent?: boolean;
+        };
+        modifiers?: {
+          isSooty?: boolean;
+          isFlaxen?: boolean;
+          hasPangare?: boolean;
+          isRabicano?: boolean;
+        };
+      } | null;
+      if (!phenotype || typeof phenotype !== 'object') {
+        return null;
+      }
+      // Only return a markings object if at least one of the sub-fields exists.
+      const hasAny =
+        phenotype.faceMarking !== undefined ||
+        phenotype.legMarkings !== undefined ||
+        phenotype.advancedMarkings !== undefined ||
+        phenotype.modifiers !== undefined;
+      if (!hasAny) return null;
+      return {
+        faceMarking: phenotype.faceMarking,
+        legMarkings: phenotype.legMarkings,
+        advancedMarkings: phenotype.advancedMarkings,
+        modifiers: phenotype.modifiers,
+      };
+    })(),
     // In-foal state — feed-system redesign 2026-04-29 (B6, Equoria-ta4s).
     // Carried straight through from the backend Horse row.
     inFoalSinceDate:
@@ -315,6 +363,8 @@ const HorseDetailPage: React.FC = () => {
     { id: 'overview', label: 'Overview', icon: <Star className="w-4 h-4" /> },
     { id: 'disciplines', label: 'Disciplines', icon: <Trophy className="w-4 h-4" /> },
     { id: 'genetics', label: 'Genetics', icon: <Users className="w-4 h-4" /> },
+    // Equoria-ea3n / Equoria-oovy — 31E-4 coat-color & genotype tab
+    { id: 'coat', label: 'Coat', icon: <Eye className="w-4 h-4" /> },
     { id: 'conformation', label: 'Conformation', icon: <Ruler className="w-4 h-4" /> },
     { id: 'gaits', label: 'Gaits', icon: <Wind className="w-4 h-4" /> },
     { id: 'progression', label: 'Progression', icon: <TrendingUp className="w-4 h-4" /> },
@@ -458,6 +508,8 @@ const HorseDetailPage: React.FC = () => {
                         For Sale — {(horse.salePrice ?? 0).toLocaleString()} coins
                       </div>
                     )}
+                    {/* Equoria-ga5g — render markings (face / legs / advanced / modifiers) */}
+                    <MarkingsPanel markings={horse.markings} />
                   </div>
                   <button
                     onClick={() => {
@@ -583,6 +635,17 @@ const HorseDetailPage: React.FC = () => {
                 }
               >
                 <GeneticsTab horse={horse} />
+              </Suspense>
+            )}
+            {activeTab === 'coat' && (
+              <Suspense
+                fallback={
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-burnished-gold" />
+                  </div>
+                }
+              >
+                <CoatTab horseId={horse.id} />
               </Suspense>
             )}
             {activeTab === 'conformation' && <ConformationTab horseId={horse.id} />}
