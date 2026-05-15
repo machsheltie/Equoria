@@ -39,7 +39,7 @@ test.describe('Settings preferences persistence (21S-5)', () => {
     userPassword = 'SetPrefE2e1!Aa';
     username = `${SUITE_PREFIX}${suffix}`;
 
-    const reg = await request.post(`${BACKEND}/api/auth/register`, {
+    const reg = await request.post(`${BACKEND}/api/v1/auth/register`, {
       data: {
         email: userEmail,
         password: userPassword,
@@ -56,7 +56,7 @@ test.describe('Settings preferences persistence (21S-5)', () => {
     // Best-effort cleanup — log in to get token then log out.
     // Non-fatal if it fails (user was never created or already cleaned up).
     try {
-      const loginRes = await request.post(`${BACKEND}/api/auth/login`, {
+      const loginRes = await request.post(`${BACKEND}/api/v1/auth/login`, {
         data: { email: userEmail, password: userPassword },
         headers: { Origin: FRONTEND },
       });
@@ -64,7 +64,7 @@ test.describe('Settings preferences persistence (21S-5)', () => {
         const { data } = await loginRes.json();
         const csrfToken = data?.csrfToken ?? '';
         const loginCookies = loginRes.headers()['set-cookie'] ?? '';
-        await request.post(`${BACKEND}/api/auth/logout`, {
+        await request.post(`${BACKEND}/api/v1/auth/logout`, {
           headers: {
             Origin: FRONTEND,
             Cookie: loginCookies,

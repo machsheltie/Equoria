@@ -26,7 +26,7 @@ test.describe('Session lifetime — refresh flow (21R-AUTH-6)', () => {
     userEmail = `${SUITE_PREFIX}-${suffix}@example.com`;
     userPassword = 'SesLifeE2e1!Aa';
 
-    const reg = await request.post(`${BACKEND}/api/auth/register`, {
+    const reg = await request.post(`${BACKEND}/api/v1/auth/register`, {
       data: {
         email: userEmail,
         password: userPassword,
@@ -44,7 +44,7 @@ test.describe('Session lifetime — refresh flow (21R-AUTH-6)', () => {
     // direct API. We rely on beforeAll having succeeded; if it failed this
     // is a no-op (user was never created).
     try {
-      const loginRes = await request.post(`${BACKEND}/api/auth/login`, {
+      const loginRes = await request.post(`${BACKEND}/api/v1/auth/login`, {
         data: { email: userEmail, password: userPassword },
         headers: { Origin: 'http://localhost:3000' },
       });
@@ -52,7 +52,7 @@ test.describe('Session lifetime — refresh flow (21R-AUTH-6)', () => {
         const { data } = await loginRes.json();
         const csrfToken = data?.csrfToken ?? '';
         const loginCookies = loginRes.headers()['set-cookie'] ?? '';
-        await request.post(`${BACKEND}/api/auth/logout`, {
+        await request.post(`${BACKEND}/api/v1/auth/logout`, {
           headers: {
             Origin: 'http://localhost:3000',
             Cookie: loginCookies,
@@ -66,7 +66,7 @@ test.describe('Session lifetime — refresh flow (21R-AUTH-6)', () => {
   });
 
   test('login issues httpOnly accessToken and refreshToken cookies', async ({ page }) => {
-    const loginRes = await page.request.post(`${BACKEND}/api/auth/login`, {
+    const loginRes = await page.request.post(`${BACKEND}/api/v1/auth/login`, {
       data: { email: userEmail, password: userPassword },
       headers: { Origin: 'http://localhost:3000' },
     });
@@ -84,11 +84,11 @@ test.describe('Session lifetime — refresh flow (21R-AUTH-6)', () => {
     expect(setCookie).toMatch(/refreshToken=/);
   });
 
-  test('POST /api/auth/refresh-token rotates tokens and the new accessToken authenticates', async ({
+  test('POST /api/v1/auth/refresh-token rotates tokens and the new accessToken authenticates', async ({
     page,
   }) => {
     // Login to acquire refresh token in the browser's cookie jar.
-    const loginRes = await page.request.post(`${BACKEND}/api/auth/login`, {
+    const loginRes = await page.request.post(`${BACKEND}/api/v1/auth/login`, {
       data: { email: userEmail, password: userPassword },
       headers: { Origin: 'http://localhost:3000' },
     });
@@ -96,7 +96,7 @@ test.describe('Session lifetime — refresh flow (21R-AUTH-6)', () => {
 
     // Refresh — cookies from login are automatically forwarded because they
     // share the same APIRequestContext origin.
-    const refreshRes = await page.request.post(`${BACKEND}/api/auth/refresh-token`, {
+    const refreshRes = await page.request.post(`${BACKEND}/api/v1/auth/refresh-token`, {
       headers: { Origin: 'http://localhost:3000' },
     });
     expect(refreshRes.status()).toBe(200);
@@ -106,7 +106,7 @@ test.describe('Session lifetime — refresh flow (21R-AUTH-6)', () => {
     expect(refreshBody.message).toBe('Token refreshed successfully');
 
     // The refreshed access token must work on a protected route.
-    const profileRes = await page.request.get(`${BACKEND}/api/auth/profile`, {
+    const profileRes = await page.request.get(`${BACKEND}/api/v1/auth/profile`, {
       headers: { Origin: 'http://localhost:3000' },
     });
     expect(profileRes.status()).toBe(200);
@@ -115,16 +115,16 @@ test.describe('Session lifetime — refresh flow (21R-AUTH-6)', () => {
     expect(profileBody.data.user.email).toBe(userEmail);
   });
 
-  test('POST /auth/refresh-token legacy alias also accepts the refresh cookie', async ({
+  test.skip('POST /api/v1/auth/refresh-token legacy alias removed in 21R-AUTH-7', async ({
     page,
   }) => {
-    const loginRes = await page.request.post(`${BACKEND}/api/auth/login`, {
+    const loginRes = await page.request.post(`${BACKEND}/api/v1/auth/login`, {
       data: { email: userEmail, password: userPassword },
       headers: { Origin: 'http://localhost:3000' },
     });
     expect(loginRes.status()).toBe(200);
 
-    const legacyRefreshRes = await page.request.post(`${BACKEND}/auth/refresh-token`, {
+    const legacyRefreshRes = await page.request.post(`${BACKEND}/api/v1/auth/refresh-token`, {
       headers: { Origin: 'http://localhost:3000' },
     });
     expect(legacyRefreshRes.status()).toBe(200);
