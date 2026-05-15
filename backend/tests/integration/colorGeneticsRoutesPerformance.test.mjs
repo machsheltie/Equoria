@@ -123,9 +123,7 @@ describe('Color & Genetics Routes — performance NFRs (Equoria-z594)', () => {
     expect(res.status).toBe(200);
     if (elapsed >= GENETICS_BUDGET_MS) {
       // eslint-disable-next-line no-console
-      console.log(
-        `[z594] genetics warm latency = ${elapsed.toFixed(1)}ms (budget ${GENETICS_BUDGET_MS}ms)`,
-      );
+      console.log(`[z594] genetics warm latency = ${elapsed.toFixed(1)}ms (budget ${GENETICS_BUDGET_MS}ms)`);
     }
     expect(elapsed).toBeLessThan(GENETICS_BUDGET_MS);
   });
@@ -141,9 +139,7 @@ describe('Color & Genetics Routes — performance NFRs (Equoria-z594)', () => {
     expect(res.status).toBe(200);
     if (elapsed >= COLOR_BUDGET_MS) {
       // eslint-disable-next-line no-console
-      console.log(
-        `[z594] color warm latency = ${elapsed.toFixed(1)}ms (budget ${COLOR_BUDGET_MS}ms)`,
-      );
+      console.log(`[z594] color warm latency = ${elapsed.toFixed(1)}ms (budget ${COLOR_BUDGET_MS}ms)`);
     }
     expect(elapsed).toBeLessThan(COLOR_BUDGET_MS);
   });

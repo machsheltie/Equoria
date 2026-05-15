@@ -76,7 +76,7 @@ export default [
             {
               group: ['**/node_modules/@prisma/client/**', '**/packages/database/node_modules/**'],
               message:
-                'Do not import @prisma/client via deep-relative node_modules paths. Use `import prisma from \'../db/index.mjs\'` (shared singleton) or the bare specifier `@prisma/client` (standalone scripts). See Equoria-4qjo for context.',
+                "Do not import @prisma/client via deep-relative node_modules paths. Use `import prisma from '../db/index.mjs'` (shared singleton) or the bare specifier `@prisma/client` (standalone scripts). See Equoria-4qjo for context.",
             },
           ],
         },

@@ -418,9 +418,18 @@ describe('marketplaceController integration', () => {
       // generator regression that returns constant zeros or random 1-100,
       // not to pin the distribution shape.
       const STAT_KEYS = [
-        'speed', 'stamina', 'agility', 'balance', 'precision',
-        'intelligence', 'boldness', 'flexibility', 'obedience', 'focus',
-        'endurance', 'strength',
+        'speed',
+        'stamina',
+        'agility',
+        'balance',
+        'precision',
+        'intelligence',
+        'boldness',
+        'flexibility',
+        'obedience',
+        'focus',
+        'endurance',
+        'strength',
       ];
       for (const key of STAT_KEYS) {
         const s = profile[key];
