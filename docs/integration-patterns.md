@@ -150,6 +150,13 @@ export const apiClient = {
 | `messagesApi`           | Direct messages   | getInbox, getSent, getUnreadCount, sendMessage, markRead                                              |
 | `clubsApi`              | Clubs/elections   | getClubs, joinClub, createElection, nominate, vote, getResults                                        |
 | `horseMarketplaceApi`   | Horse marketplace | browse, listHorse, delistHorse, buyHorse, myListings, saleHistory                                     |
+| `breedsApi`             | Breeds catalog    | list                                                                                                  |
+| `horseFeedApi`          | Feed system       | feed, equipFeed, unequipFeed, getEquippable                                                           |
+| `bankApi`               | Bank / income     | claimWeekly, getClaimStatus, getTransactions                                                          |
+| `conformationShowsApi`  | Conformation shows| enter, getEligibility, execute, getTitles                                                             |
+| `craftingApi`           | Crafting system   | getMaterials, getRecipes, craftItem                                                                   |
+| `usersApi`              | User directory    | search                                                                                                |
+| `gameNotificationsApi`  | In-app notifications | getAll, markAllRead                                                                                |
 
 ## Authentication Flow
 
