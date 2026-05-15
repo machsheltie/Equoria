@@ -20,6 +20,24 @@ import { randomBytes } from 'node:crypto';
 import cronJobService from '../services/cronJobs.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 
+/**
+ * Equoria-s20o: realm-safe "is this a valid Date" assertion.
+ *
+ * `expect(x).toBeInstanceOf(Date)` is fragile here: the Prisma client this
+ * test imports (`../../packages/database/prismaClient.mjs`) and the one the
+ * service-under-test imports (`../db/index.mjs`) can resolve `@prisma/client`
+ * through different module realms (worktree node_modules junction / dual
+ * import paths), so a Date returned by Prisma is a *different realm's* Date
+ * and fails `instanceof` against jest's `Date` global even though it IS a
+ * Date. `Object.prototype.toString` tagging is realm-independent and is the
+ * correct cross-realm Date check. The persisted value is genuinely a Date —
+ * this asserts that without the realm coupling.
+ */
+function expectValidDate(value) {
+  expect(Object.prototype.toString.call(value)).toBe('[object Date]');
+  expect(Number.isNaN(new Date(value).getTime())).toBe(false);
+}
+
 const TAG = `9wby-${randomBytes(4).toString('hex')}`;
 const JOB_SUCCESS = `${TAG}-success`;
 const JOB_ERROR = `${TAG}-error`;
@@ -70,8 +88,8 @@ describe('Equoria-9wby: CronRunLog persistence', () => {
     expect(rows.length).toBe(1);
     const row = rows[0];
     expect(row.status).toBe('success');
-    expect(row.finishedAt).toBeInstanceOf(Date);
-    expect(row.startedAt).toBeInstanceOf(Date);
+    expectValidDate(row.finishedAt);
+    expectValidDate(row.startedAt);
     expect(row.horsesProcessed).toBe(7); // totalProcessed maps to horsesProcessed column
     expect(row.birthdaysFound).toBe(3);
     expect(row.milestonesEvaluated).toBe(2);
@@ -97,7 +115,7 @@ describe('Equoria-9wby: CronRunLog persistence', () => {
     const row = rows[0];
     expect(row.status).toBe('error');
     expect(row.errorMessage).toBe('9wby-synthetic-failure');
-    expect(row.finishedAt).toBeInstanceOf(Date);
+    expectValidDate(row.finishedAt);
     expect(row.horsesProcessed).toBeNull();
     expect(row.summary).toBeNull();
   });
@@ -118,8 +136,17 @@ describe('Equoria-9wby: CronRunLog persistence', () => {
     expect(jobBlock.recentRuns[0].horsesProcessed).toBe(3);
     expect(jobBlock.recentRuns[1].horsesProcessed).toBe(2);
     expect(jobBlock.recentRuns[2].horsesProcessed).toBe(1);
-    // Each entry has serialized timestamps.
-    expect(typeof jobBlock.recentRuns[0].startedAt).toBe('string');
+    // Equoria-s20o: recentRuns[].startedAt/finishedAt are contractually ISO
+    // strings (this feeds the JSON /api/admin/cron/health response). Assert
+    // both that the type is string AND that it round-trips as a valid ISO
+    // timestamp — a sentinel for the realm-safe serialization in
+    // getHealthWithHistory (a regression to the `instanceof Date` guard would
+    // leak a raw Date object and fail the typeof check here).
+    const { startedAt, finishedAt } = jobBlock.recentRuns[0];
+    expect(typeof startedAt).toBe('string');
+    expect(startedAt).toBe(new Date(startedAt).toISOString());
+    expect(typeof finishedAt).toBe('string');
+    expect(finishedAt).toBe(new Date(finishedAt).toISOString());
   });
 
   it('getHealthWithHistory respects the recentRunsLimit argument', async () => {

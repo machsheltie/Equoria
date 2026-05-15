@@ -11,6 +11,37 @@ import { executeClosedShows } from '../modules/competition/shows/showController.
 import { Sentry } from '../config/sentry.mjs';
 
 /**
+ * Equoria-s20o: Realm-safe ISO-string serializer for timestamp values.
+ *
+ * `value instanceof Date` is fragile across JS module realms: the Prisma
+ * client and this module can resolve `@prisma/client` through different
+ * `node_modules` trees (e.g. a git-worktree junction, or the dual import
+ * paths `../db/index.mjs` vs `../../packages/database/prismaClient.mjs`),
+ * so a Date produced by Prisma may fail `instanceof Date` against this
+ * realm's `Date` even though it IS a Date. `Object.prototype.toString`
+ * tag-checking is realm-independent and is the correct cross-realm guard.
+ *
+ * Returns an ISO 8601 string for any Date-like value (any realm), the
+ * value unchanged if it is null/undefined, and otherwise re-wraps via
+ * `new Date(value)` so string/number timestamps are normalized too.
+ *
+ * @param {*} value
+ * @returns {string|null|*}
+ */
+function toIsoStringSafe(value) {
+  if (value === null || value === undefined) {
+    return value;
+  }
+  if (Object.prototype.toString.call(value) === '[object Date]') {
+    const ms = value.getTime();
+    return Number.isNaN(ms) ? value : value.toISOString();
+  }
+  // String/number timestamp → normalize to ISO; leave non-coercible as-is.
+  const wrapped = new Date(value);
+  return Number.isNaN(wrapped.getTime()) ? value : wrapped.toISOString();
+}
+
+/**
  * Daily trait evaluation cron job that runs at midnight
  * Evaluates all foals aged 0-6 days for trait revelation
  */
@@ -152,7 +183,14 @@ class CronJobService {
    * @param {Object|null} [entry.summary]
    * @param {string|null} [entry.errorMessage]
    */
-  async persistRunLog({ jobName, startedAt, finishedAt, status, summary = null, errorMessage = null }) {
+  async persistRunLog({
+    jobName,
+    startedAt,
+    finishedAt,
+    status,
+    summary = null,
+    errorMessage = null,
+  }) {
     try {
       const summaryObj = summary && typeof summary === 'object' ? summary : null;
       await prisma.cronRunLog.create({
@@ -161,8 +199,7 @@ class CronJobService {
           startedAt,
           finishedAt,
           status,
-          horsesProcessed:
-            summaryObj?.horsesProcessed ?? summaryObj?.totalProcessed ?? null,
+          horsesProcessed: summaryObj?.horsesProcessed ?? summaryObj?.totalProcessed ?? null,
           birthdaysFound: summaryObj?.birthdaysFound ?? null,
           milestonesEvaluated:
             summaryObj?.milestonesEvaluated ?? summaryObj?.milestonesTriggered ?? null,
@@ -880,9 +917,13 @@ class CronJobService {
         });
         base.jobs[jobName].recentRuns = rows.map(r => ({
           ...r,
-          startedAt: r.startedAt instanceof Date ? r.startedAt.toISOString() : r.startedAt,
-          finishedAt:
-            r.finishedAt instanceof Date ? r.finishedAt.toISOString() : r.finishedAt,
+          // Equoria-s20o: realm-safe ISO serialization. recentRuns[].startedAt/
+          // finishedAt are contractually ISO strings (this method feeds the
+          // JSON /api/admin/cron/health response). The prior `instanceof Date`
+          // guard silently fell through to the raw Date object under a
+          // cross-realm Prisma client, breaking the string contract.
+          startedAt: toIsoStringSafe(r.startedAt),
+          finishedAt: toIsoStringSafe(r.finishedAt),
         }));
       }
     } catch (err) {
