@@ -23,6 +23,7 @@ import { getBreedName } from '@/lib/utils';
 import HorseSelector from '@/components/breeding/HorseSelector';
 import CompatibilityDisplay from '@/components/breeding/CompatibilityDisplay';
 import BreedingPredictionsPanel from './BreedingPredictionsPanel';
+import LethalWhiteWarning from '@/components/breeding/LethalWhiteWarning';
 import BreedingConfirmationModal from '@/components/breeding/BreedingConfirmationModal';
 import {
   CompatibilityPreview,
@@ -410,6 +411,12 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
             isLoading={loadingCompatibility}
           />
         </div>
+      )}
+
+      {/* Equoria-wodz — lethal-foal warning. Renders above the predictions
+          panel so the player sees the risk BEFORE expanding the chart. */}
+      {selectedSire && selectedDam && (
+        <LethalWhiteWarning sireId={selectedSire.id} damId={selectedDam.id} />
       )}
 
       {/* Breeding Predictions — collapsible */}
