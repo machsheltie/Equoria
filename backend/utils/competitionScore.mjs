@@ -17,6 +17,32 @@ export function calculateCompetitionScore(
   showType = 'ridden',
   _luckFn = Math.random,
 ) {
+  // Delegate to the detailed variant and return only the rounded score so
+  // existing callers keep their behaviour. Equoria-hv1y added the detailed
+  // calculator for runEnhancedCompetition; this is the back-compat shim.
+  return calculateCompetitionScoreDetailed(horse, eventType, showType, _luckFn).finalScore;
+}
+
+/**
+ * Same scoring as calculateCompetitionScore, but returns the full breakdown
+ * including the temperament impact (Equoria-hv1y, prerequisite for
+ * Equoria-pkga frontend display). The returned shape:
+ *   {
+ *     finalScore: <rounded integer ≥ 0>,
+ *     temperamentImpact: {
+ *       temperament: <string|null>,    // horse.temperament or null
+ *       modifier:    <number>,         // clamped applied modifier, e.g. 0.05
+ *       appliedAs:   'ridden' | 'conformation' | 'parade',
+ *     } | null
+ *   }
+ * temperamentImpact is null when horse has no temperament field (legacy data).
+ */
+export function calculateCompetitionScoreDetailed(
+  horse,
+  eventType,
+  showType = 'ridden',
+  _luckFn = Math.random,
+) {
   try {
     // Input validation
     if (!horse || typeof horse !== 'object') {
@@ -145,7 +171,19 @@ export function calculateCompetitionScore(
       `[calculateCompetitionScore] Horse ${horse.name || horse.id || '(unknown)'}: Final score: ${roundedScore} (base: ${baseScore}, trait: +${traitBonus}, temperament: ${(clampedTempMod * 100).toFixed(1)}%, luck: ${luckAdjustment.toFixed(1)})`,
     );
 
-    return roundedScore;
+    // Equoria-hv1y — surface per-horse temperament impact for the response
+    // envelope so frontend can render "Bold temperament: +5% ridden score".
+    // Returns null when horse has no temperament (legacy data) so callers can
+    // distinguish "no impact applied" from "impact was 0%".
+    const temperamentImpact = horse.temperament
+      ? {
+          temperament: horse.temperament,
+          modifier: clampedTempMod,
+          appliedAs: effectiveShowType,
+        }
+      : null;
+
+    return { finalScore: roundedScore, temperamentImpact };
   } catch (error) {
     logger.error(
       `[calculateCompetitionScore] Error calculating score for horse ${horse?.name || horse?.id || '(unknown)'}: ${error.message}`,

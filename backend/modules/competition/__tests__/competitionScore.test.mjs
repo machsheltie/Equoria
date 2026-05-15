@@ -1,6 +1,7 @@
 import { describe, it, expect } from '@jest/globals';
 import {
   calculateCompetitionScore,
+  calculateCompetitionScoreDetailed,
   getDisciplineStatWeights,
   validateHorseForCompetition,
 } from '../../../utils/competitionScore.mjs';
@@ -371,5 +372,55 @@ describe('calculateCompetitionScore — line-117 logger horse.id || (unknown) br
     const score = calculateCompetitionScore(horse, 'Racing', 'ridden', () => 0.5);
     expect(typeof score).toBe('number');
     expect(score).toBeGreaterThanOrEqual(0);
+  });
+});
+
+// ─── Equoria-hv1y — calculateCompetitionScoreDetailed temperamentImpact ──────
+//
+// The detailed variant returns { finalScore, temperamentImpact } so the
+// competition response can attribute the modifier per-horse. Tests cover:
+//   - finalScore equals what the legacy scorer returns (back-compat shim)
+//   - temperamentImpact returns the horse's temperament + applied modifier
+//   - appliedAs reflects the showType branch (ridden / conformation / parade)
+//   - temperamentImpact is null when horse has no temperament
+
+describe('calculateCompetitionScoreDetailed — Equoria-hv1y temperamentImpact', () => {
+  const baseHorse = makeHorse();
+
+  it('returns finalScore matching legacy calculateCompetitionScore (back-compat)', () => {
+    const horse = { ...baseHorse, temperament: 'Bold' };
+    // Deterministic luck so both variants produce identical results
+    const luck = () => 0.5;
+    const legacy = calculateCompetitionScore(horse, 'Racing', 'ridden', luck);
+    const detailed = calculateCompetitionScoreDetailed(horse, 'Racing', 'ridden', luck);
+    expect(detailed.finalScore).toBe(legacy);
+  });
+
+  it('surfaces temperament name + numeric modifier + appliedAs="ridden" for ridden show', () => {
+    const horse = { ...baseHorse, temperament: 'Bold' };
+    const { temperamentImpact } = calculateCompetitionScoreDetailed(horse, 'Racing', 'ridden', () => 0.5);
+    expect(temperamentImpact).toBeTruthy();
+    expect(temperamentImpact.temperament).toBe('Bold');
+    expect(typeof temperamentImpact.modifier).toBe('number');
+    expect(temperamentImpact.appliedAs).toBe('ridden');
+  });
+
+  it('surfaces appliedAs="conformation" when showType is conformation', () => {
+    const horse = { ...baseHorse, temperament: 'Calm' };
+    const { temperamentImpact } = calculateCompetitionScoreDetailed(horse, 'Dressage', 'conformation', () => 0.5);
+    expect(temperamentImpact.appliedAs).toBe('conformation');
+  });
+
+  it('surfaces appliedAs="parade" when showType is parade', () => {
+    const horse = { ...baseHorse, temperament: 'Calm' };
+    const { temperamentImpact } = calculateCompetitionScoreDetailed(horse, 'Racing', 'parade', () => 0.5);
+    expect(temperamentImpact.appliedAs).toBe('parade');
+  });
+
+  it('returns temperamentImpact:null when horse has no temperament field (legacy data)', () => {
+    const horse = makeHorse(); // no temperament
+    const { temperamentImpact, finalScore } = calculateCompetitionScoreDetailed(horse, 'Racing', 'ridden', () => 0.5);
+    expect(temperamentImpact).toBeNull();
+    expect(typeof finalScore).toBe('number');
   });
 });

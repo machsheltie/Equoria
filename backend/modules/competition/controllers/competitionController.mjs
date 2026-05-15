@@ -3,7 +3,7 @@ import { saveResult, getResultsByShow } from '../../../models/resultModel.mjs';
 import { addXpToUser } from '../../../models/userModel.mjs';
 import { logXpEvent } from '../../../models/xpLogModel.mjs';
 import { awardCompetitionXp } from '../../../models/horseXpModel.mjs';
-import { calculateCompetitionScore } from '../../../utils/competitionScore.mjs';
+import { calculateCompetitionScoreDetailed } from '../../../utils/competitionScore.mjs';
 import { isHorseEligibleForShow } from '../../../utils/isHorseEligible.mjs';
 import {
   calculatePrizeDistribution,
@@ -62,10 +62,15 @@ function runEnhancedCompetition(horses, show) {
   // Calculate scores for each horse using the new scoring system
   const results = horses.map(horse => {
     try {
-      // Use the new calculateCompetitionScore function
+      // Use the detailed calculator so we can surface temperamentImpact on the
+      // response (Equoria-hv1y, prerequisite for Equoria-pkga frontend display).
       // Equoria-qszs: pass show.showType so conformation shows correctly use the
       // conformation temperament modifier instead of silently defaulting to ridden.
-      const finalScore = calculateCompetitionScore(horse, show.discipline, show.showType);
+      const { finalScore, temperamentImpact } = calculateCompetitionScoreDetailed(
+        horse,
+        show.discipline,
+        show.showType,
+      );
 
       // Detect trait bonuses for transparency
       const traitInfo = detectTraitBonuses(horse, show.discipline);
@@ -77,6 +82,11 @@ function runEnhancedCompetition(horses, show) {
         score: finalScore,
         placement: null, // Will be assigned after sorting
         discipline: show.discipline,
+
+        // Equoria-hv1y — surface temperament impact so the frontend can render
+        // "Bold temperament: +5% ridden score" attribution chips on results.
+        // null when horse has no temperament (legacy rows).
+        temperamentImpact,
 
         // Enhanced scoring details for transparency
         scoringDetails: {
