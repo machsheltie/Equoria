@@ -1,11 +1,12 @@
 # Equoria Data Models
 
 **Generated:** 2026-03-19 (Full Rescan)
+**Updated:** 2026-05-15 (Equoria-wzu2 — added Notification, PasswordResetToken, UserTransaction, StaffMarketplaceState, UserRankSnapshot; added GroomInteraction.synergyModifier and Rider.totalCompetitions)
 **ORM:** Prisma (prisma-client-js)
 **Database:** PostgreSQL
-**Total Models:** 43
+**Total Models:** 48
 **Total Enums:** 6
-**Migrations:** 45
+**Migrations:** 73
 
 ---
 
@@ -218,6 +219,60 @@ User XP gain events.
 
 **Indexes:** userId, timestamp, [userId + timestamp]
 **Table:** xp_events
+
+### Notification
+
+In-app notifications surfaced via the bell icon and notifications drawer.
+
+| Field     | Type             | Description                                          |
+| --------- | ---------------- | ---------------------------------------------------- |
+| id        | String (cuid)    | Primary key                                          |
+| userId    | String           | FK to User (cascade delete)                          |
+| type      | String           | Notification type token (e.g. `stat_gain`, `breeding_complete`) |
+| isRead    | Boolean          | Read/unread flag (default: false)                    |
+| payload   | **Json (JSONB)** | Free-form payload (route hints, entity ids, copy)    |
+| createdAt | DateTime         | Created timestamp                                    |
+
+**Indexes:** [userId + isRead], [userId + createdAt(Desc)]
+**Table:** (default Prisma name: `Notification`)
+
+### PasswordResetToken
+
+Hashed password-reset tokens with audit trail (CWE-208/640 mitigations).
+
+| Field     | Type      | Description                              |
+| --------- | --------- | ---------------------------------------- |
+| id        | Int       | Primary key                              |
+| tokenHash | String    | SHA-256 hash of the reset token (unique) |
+| userId    | String    | FK to User (cascade delete)              |
+| email     | String    | Email at the time of reset request       |
+| expiresAt | DateTime  | Expiration                               |
+| usedAt    | DateTime? | Set on successful use                    |
+| createdAt | DateTime  | Created timestamp                        |
+| ipAddress | String?   | Audit: requester IP                      |
+| userAgent | String?   | Audit: requester UA                      |
+
+**Indexes:** userId, expiresAt
+**Table:** password_reset_tokens
+
+### UserTransaction
+
+Player-money ledger row for every credit/debit (purchases, payouts, salaries, sale proceeds, etc.).
+
+| Field        | Type             | Description                                                          |
+| ------------ | ---------------- | -------------------------------------------------------------------- |
+| id           | Int              | Primary key                                                          |
+| userId       | String           | FK to User (cascade delete)                                          |
+| type         | String           | `credit` or `debit`                                                  |
+| amount       | Int              | Amount in player-money units                                         |
+| category     | String           | Domain category (e.g. `breeding_fee`, `salary`, `marketplace_sale`)  |
+| description  | String           | Human-readable description                                           |
+| balanceAfter | Int?             | Running balance after this row (when computable)                     |
+| metadata     | **Json (JSONB)** | Free-form structured context (default: `{}`)                         |
+| createdAt    | DateTime         | Created timestamp                                                    |
+
+**Indexes:** [userId + createdAt], category
+**Table:** user_transactions
 
 ---
 
@@ -676,6 +731,7 @@ Records groom activities with horses.
 | taskType          | String?  | Task category for milestone evaluation |
 | qualityScore      | Float?   | Score 0.0-1.0 (default: 0.75)          |
 | milestoneWindowId | String?  | Milestone window grouping              |
+| synergyModifier   | Float?   | Cached groom-horse synergy multiplier applied at the time of this interaction (default: 0). Added in migration 20260515060000. |
 | foalId            | Int      | FK to Horse                            |
 | groomId           | Int      | FK to Groom                            |
 | assignmentId      | Int?     | FK to GroomAssignment                  |
@@ -840,6 +896,7 @@ Hired riders for competition.
 | experience  | Int      | Total XP (default: 0)                      |
 | level       | Int      | Level 1-10 (default: 1)                    |
 | careerWeeks | Int      | Weeks employed (default: 0)                |
+| totalCompetitions | Int | Total competitions entered (default: 0). Added in migration 20260513120000 — denominator for win-rate calculation. |
 | totalWins   | Int      | Competition wins (default: 0)              |
 | prestige    | Int      | Prestige 0-100 (default: 0)                |
 | retired     | Boolean  | Retirement status (default: false)         |
@@ -1097,6 +1154,49 @@ Individual facility upgrade records.
 
 **Table:** facility_upgrades
 
+> **STATUS NOTE (Equoria-flal, 2026-05-15):** `Facility` and `FacilityUpgrade`
+> are currently dead schema — zero Prisma queries reference these models
+> anywhere in `backend/`. They are documented here because they still ship
+> in `schema.prisma`, but a product decision is pending whether to (a) drop
+> both tables or (b) implement a real facility management surface. Until
+> that decision lands, treat this section as informational only.
+
+---
+
+## Domain: Operations & Snapshots
+
+### StaffMarketplaceState
+
+Per-user, per-staff-type rolling marketplace state — what offers the user currently sees in the hire surface, when the offer pool was last refreshed, and how many times it has cycled.
+
+| Field        | Type             | Description                                                                 |
+| ------------ | ---------------- | --------------------------------------------------------------------------- |
+| id           | Int              | Primary key                                                                 |
+| userId       | String           | FK to User (cascade delete)                                                 |
+| staffType    | String           | `groom` \| `rider` \| `trainer`                                             |
+| offers       | **Json (JSONB)** | Array of currently available staff offers (default: `[]`)                   |
+| lastRefresh  | DateTime         | Timestamp of the last marketplace refresh                                   |
+| refreshCount | Int              | How many times the marketplace has cycled for this user/staffType pair      |
+
+**Unique:** [userId + staffType]
+**Indexes:** userId
+**Table:** staff_marketplace_state
+
+### UserRankSnapshot
+
+Nightly snapshot of a user's rank in a given leaderboard category, used to compute week-over-week rank-change deltas for the rank-change indicator UI.
+
+| Field      | Type     | Description                                                       |
+| ---------- | -------- | ----------------------------------------------------------------- |
+| id         | Int      | Primary key                                                       |
+| userId     | String   | FK to User (cascade delete)                                       |
+| category   | String   | `level` \| `xp` \| `horse-earnings` \| `horse-performance`        |
+| rank       | Int      | Captured rank value                                               |
+| capturedAt | DateTime | Snapshot timestamp                                                |
+
+**Indexes:** [userId + category + capturedAt(Desc)]
+**Table:** user_rank_snapshots
+
 ---
 
 ## JSONB Fields Summary
@@ -1125,23 +1225,27 @@ All fields stored as PostgreSQL JSONB for flexible schema-within-schema:
 | UltraRareTraitEvent | appliedPerks        | `[]`                                        | Applied groom perks                      |
 | UltraRareTraitEvent | triggerConditions   | `{}`                                        | Trigger conditions met                   |
 | Facility            | upgrades            | `{}`                                        | Upgrade level map                        |
+| Notification        | payload             | (required)                                  | Route hints + entity ids + display copy  |
+| UserTransaction     | metadata            | `{}`                                        | Structured context for ledger entry      |
+| StaffMarketplaceState | offers            | `[]`                                        | Current offer pool snapshot              |
 
 ---
 
 ## Model Count by Domain
 
-| Domain              | Models                                                                                                                                                                           | Count  |
-| ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| Auth & Users        | User, RefreshToken, EmailVerificationToken, XpEvent                                                                                                                              | 4      |
-| Horses              | Horse, Breed, Stable, HorseXpEvent                                                                                                                                               | 4      |
-| Training            | TrainingLog                                                                                                                                                                      | 1      |
-| Competition         | Show, ShowEntry, CompetitionResult                                                                                                                                               | 3      |
-| Breeding & Foal Dev | FoalDevelopment, FoalActivity, FoalTrainingHistory                                                                                                                               | 3      |
-| Traits              | TraitHistoryLog, MilestoneTraitLog, UltraRareTraitEvent                                                                                                                          | 3      |
-| Grooms              | Groom, GroomAssignment, GroomInteraction, GroomSalaryPayment, GroomPerformanceRecord, GroomMetrics, GroomHorseSynergy, GroomAssignmentLog, GroomLegacyLog, GroomTalentSelections | 10     |
-| Riders              | Rider, RiderAssignment                                                                                                                                                           | 2      |
-| Trainers            | Trainer, TrainerAssignment                                                                                                                                                       | 2      |
-| Community           | ForumThread, ForumPost, DirectMessage, Club, ClubMembership, ClubElection, ClubCandidate, ClubBallot                                                                             | 8      |
-| Marketplace         | HorseSale                                                                                                                                                                        | 1      |
-| Services            | Facility, FacilityUpgrade                                                                                                                                                        | 2      |
-| **Total**           |                                                                                                                                                                                  | **43** |
+| Domain                  | Models                                                                                                                                                                           | Count  |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
+| Auth & Users            | User, RefreshToken, EmailVerificationToken, XpEvent, Notification, PasswordResetToken, UserTransaction                                                                           | 7      |
+| Horses                  | Horse, Breed, Stable, HorseXpEvent                                                                                                                                               | 4      |
+| Training                | TrainingLog                                                                                                                                                                      | 1      |
+| Competition             | Show, ShowEntry, CompetitionResult                                                                                                                                               | 3      |
+| Breeding & Foal Dev     | FoalDevelopment, FoalActivity, FoalTrainingHistory                                                                                                                               | 3      |
+| Traits                  | TraitHistoryLog, MilestoneTraitLog, UltraRareTraitEvent                                                                                                                          | 3      |
+| Grooms                  | Groom, GroomAssignment, GroomInteraction, GroomSalaryPayment, GroomPerformanceRecord, GroomMetrics, GroomHorseSynergy, GroomAssignmentLog, GroomLegacyLog, GroomTalentSelections | 10     |
+| Riders                  | Rider, RiderAssignment                                                                                                                                                           | 2      |
+| Trainers                | Trainer, TrainerAssignment                                                                                                                                                       | 2      |
+| Community               | ForumThread, ForumPost, DirectMessage, Club, ClubMembership, ClubElection, ClubCandidate, ClubBallot                                                                             | 8      |
+| Marketplace             | HorseSale                                                                                                                                                                        | 1      |
+| Services (dead schema)  | Facility, FacilityUpgrade                                                                                                                                                        | 2      |
+| Operations & Snapshots  | StaffMarketplaceState, UserRankSnapshot                                                                                                                                          | 2      |
+| **Total**               |                                                                                                                                                                                  | **48** |
