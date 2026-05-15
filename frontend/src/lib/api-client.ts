@@ -529,6 +529,11 @@ interface Competition {
   currentEntries?: number;
   status?: string;
   entryDeadline?: string;
+  // Equoria-e0cn: conformation shows are differentiated by showType ('conformation'
+  // vs ridden 'show'). Surfacing this here lets the conformation entry UI filter
+  // the unified competitions list without a separate backend endpoint.
+  showType?: string;
+  hostUserId?: string | null;
 }
 
 interface Discipline {

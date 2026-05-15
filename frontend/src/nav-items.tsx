@@ -21,6 +21,9 @@ const StableViewNav = lazy(() => import('./pages/StableView'));
 const ProfilePageNav = lazy(() => import('./pages/ProfilePage'));
 const CompetitionBrowserPage = lazy(() => import('./pages/CompetitionBrowserPage'));
 const CompetitionResultsPage = lazy(() => import('./pages/CompetitionResultsPage'));
+// Equoria-e0cn — conformation show entry surface (route-only; linked from
+// competitions browser as a follow-up).
+const ConformationShowsPage = lazy(() => import('./pages/ConformationShowsPage'));
 const PrizeHistoryPage = lazy(() => import('./pages/PrizeHistoryPage'));
 const WorldHubPage = lazy(() => import('./pages/WorldHubPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
@@ -210,6 +213,13 @@ export const navItems = [
     to: '/competition-results',
     icon: null,
     Page: CompetitionResultsPage,
+  },
+  // Equoria-e0cn — Conformation shows entry surface (route-only)
+  {
+    title: 'Conformation Shows',
+    to: '/conformation-shows',
+    icon: null,
+    Page: ConformationShowsPage,
   },
   {
     title: 'Prize History',
