@@ -999,6 +999,44 @@ export async function getGroomProfile(req, res) {
 }
 
 /**
+ * GET /api/grooms/:id/assignment-logs
+ * Equoria-wb7z — Surface GroomAssignmentLog rows for a single groom so the
+ * frontend can render assignment history (milestonesCompleted, traitsShaped,
+ * xpGained per past assignment). Ownership is enforced by route middleware.
+ */
+export async function getGroomAssignmentLogs(req, res) {
+  try {
+    const { id } = req.params;
+    const groomId = parseInt(id, 10);
+    if (isNaN(groomId)) {
+      return res.status(400).json({ success: false, message: 'Invalid groom ID' });
+    }
+
+    const logs = await prisma.groomAssignmentLog.findMany({
+      where: { groomId },
+      orderBy: { assignedAt: 'desc' },
+      include: {
+        horse: { select: { id: true, name: true } },
+      },
+      take: 50,
+    });
+
+    logger.info(
+      `[groomController.getGroomAssignmentLogs] Retrieved ${logs.length} assignment logs for groom ${groomId}`,
+    );
+
+    return res.json({ success: true, logs });
+  } catch (error) {
+    logger.error(`[groomController.getGroomAssignmentLogs] Error: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve groom assignment logs',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+    });
+  }
+}
+
+/**
  * GET /api/grooms/:id/bonus-traits
  * Get groom bonus traits
  */

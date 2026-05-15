@@ -16,6 +16,7 @@ import {
   hireGroom,
   getGroomDefinitions,
   getGroomProfile,
+  getGroomAssignmentLogs,
   getGroomBonusTraits,
   updateGroomBonusTraits,
   getGroomHorseSynergyPreview,
@@ -590,6 +591,19 @@ router.get(
   param('id').isInt().withMessage('Groom ID must be an integer'),
   requireOwnership('groom'),
   getGroomProfile,
+);
+
+/**
+ * GET /api/grooms/:id/assignment-logs
+ * Equoria-wb7z — Past-assignment history for a single groom.
+ * Returns up to 50 GroomAssignmentLog rows ordered by assignedAt desc,
+ * including the horse name + id for display.
+ */
+router.get(
+  '/:id/assignment-logs',
+  param('id').isInt().withMessage('Groom ID must be an integer'),
+  requireOwnership('groom'),
+  getGroomAssignmentLogs,
 );
 
 /**
