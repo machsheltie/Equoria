@@ -63,4 +63,37 @@ export interface Horse {
   // Epic 31D — innate behavioural temperament (one of 11 types). May be null
   // on legacy horses that predate the temperament system (Equoria-8k7k).
   temperament?: string | null;
+  // Epic 31E-3 / Equoria-ga5g — markings generated alongside coat color and
+  // stored on Horse.phenotype JSONB by markingGenerationService.mjs. Optional
+  // because legacy horses (created before 31E-3) won't have markings on the
+  // phenotype payload. Each field independently optional so we can render
+  // partial data when only some fields exist.
+  markings?: HorseMarkings | null;
+}
+
+export interface HorseLegMarkings {
+  frontLeft?: string;
+  frontRight?: string;
+  hindLeft?: string;
+  hindRight?: string;
+}
+
+export interface HorseAdvancedMarkings {
+  bloodyShoulderPresent?: boolean;
+  snowflakePresent?: boolean;
+  frostPresent?: boolean;
+}
+
+export interface HorseModifiers {
+  isSooty?: boolean;
+  isFlaxen?: boolean;
+  hasPangare?: boolean;
+  isRabicano?: boolean;
+}
+
+export interface HorseMarkings {
+  faceMarking?: string;
+  legMarkings?: HorseLegMarkings;
+  advancedMarkings?: HorseAdvancedMarkings;
+  modifiers?: HorseModifiers;
 }
