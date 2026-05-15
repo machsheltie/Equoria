@@ -14,6 +14,7 @@ import {
   captureRankSnapshots,
 } from '../controllers/leaderboardController.mjs';
 import { getAllDisciplines } from '../../../utils/competitionLogic.mjs';
+import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 import auth, { requireRole } from '../../../middleware/auth.mjs';
 import logger from '../../../utils/logger.mjs';
 
@@ -853,9 +854,15 @@ router.get(
         });
       }
 
-      // Calculate age in years from dateOfBirth
-      const ageMs = Date.now() - new Date(horse.dateOfBirth).getTime();
-      const ageYears = Math.floor(ageMs / (1000 * 60 * 60 * 24 * 365.25));
+      // Age in game-years via the canonical helper (7 real days = 1
+      // game-year, date-only UTC). Equoria-rkld: previously used raw
+      // Math.floor(ms / 365.25 days) calendar math, which both used the
+      // wrong unit (calendar years, not game-years) and was off-by-one for
+      // any dateOfBirth not stored at midnight UTC. getHorseAgeYears() is
+      // the same helper the canonical horse serializer uses
+      // (horseController.mjs), keeping the `age` field consistent across
+      // the API. See PATTERN_LIBRARY.md / Equoria-vdw5 for the convention.
+      const ageYears = getHorseAgeYears(horse.dateOfBirth);
 
       // Aggregate competition wins and top-three finishes
       let competitionWins = 0;
