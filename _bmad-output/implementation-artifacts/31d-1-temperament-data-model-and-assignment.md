@@ -27,8 +27,8 @@ So that horses have distinct personality traits that affect gameplay.
   - [x] 1.3 Implement `weightedRandomSelect(weights)` — generic weighted selection utility
   - [x] 1.4 Validate breed exists and has temperament_weights, throw if missing
 - [x] Task 2: Integrate into horse creation flows (AC: #1, #7, #8)
-  - [x] 2.1 Add temperament generation to `createFoal` in `horseController.mjs` (after gait scores, line ~183)
-  - [x] 2.2 Add temperament generation to POST /horses in `horseRoutes.mjs` (after gait scores, line ~481)
+  - [x] 2.1 Add temperament generation to foal birth in `foalingService.mjs` (currently line 326 — was originally added to `horseController.createFoal` but foal creation moved to `foalingService.mjs` during a later refactor)
+  - [x] 2.2 Add temperament generation to POST /horses in `horseRoutes.mjs` (currently line 731 — was originally line ~481; shifted by Epic 31E additions)
   - [x] 2.3 Verify temperament is passed through to `createHorse()` in horseModel (confirmed: line 24 destructures, line 173 persists)
 - [x] Task 3: Write comprehensive tests (AC: #1, #2, #3, #4, #5, #6)
   - [x] 3.1 Unit tests for `generateTemperament()` — returns valid temperament for each breed (12 breeds tested)
@@ -64,18 +64,19 @@ Mirror `conformationService.mjs` and `gaitService.mjs` structure:
 
 ### Integration Points (Exact Locations)
 
-**Foal creation:** `backend/modules/horses/controllers/horseController.mjs`
+> **Note (2026-05-15):** Foal creation moved from `horseController.mjs` to `backend/modules/horses/services/foalingService.mjs` during a later refactor, and Epic 31E shifted line numbers in `horseRoutes.mjs`. Current locations are listed below. Older "Insert after line N" instructions reflect the original codebase at story-implementation time.
 
-- Lines 157-169: conformation scores generated
-- Lines 171-180: gait scores generated
-- **Insert after line 180:** `const temperament = generateTemperament(breedId);`
-- Lines 183-202: add `temperament` to horseData object
+**Foal creation (current):** `backend/modules/horses/services/foalingService.mjs`
 
-**Store purchase:** `backend/modules/horses/routes/horseRoutes.mjs`
+- Line 36: `import { generateTemperament } from './temperamentService.mjs';`
+- Line 326: `const temperament = generateTemperament(breedName);`
+- Line 347: `temperament` included in horseData object
 
-- Lines 477-479: conformation and gait scores generated
-- **Insert after line 479:** `const temperament = generateTemperament(req.body.breedId);`
-- Lines 483-494: add `temperament` to horseData object
+**Store purchase (current):** `backend/modules/horses/routes/horseRoutes.mjs`
+
+- Line 34: `import { generateTemperament } from '../services/temperamentService.mjs';`
+- Line 731: `const temperament = generateTemperament(breedName);`
+- Line 831: `temperament` included in horseData object
 
 **Persistence:** `backend/models/horseModel.mjs`
 
@@ -203,7 +204,12 @@ Claude Opus 4.6 (claude-opus-4-6)
 - `backend/modules/horses/services/temperamentService.mjs` — temperament assignment service
 - `backend/__tests__/temperamentAssignment.test.mjs` — 27 tests (unit, statistical, edge case)
 
-**Modified:**
+**Modified (original implementation):**
 
-- `backend/modules/horses/controllers/horseController.mjs` — import + call generateTemperament in createFoal
+- `backend/modules/horses/controllers/horseController.mjs` — import + call generateTemperament in createFoal (foal creation later moved to foalingService.mjs)
 - `backend/modules/horses/routes/horseRoutes.mjs` — import + call generateTemperament in POST /horses
+
+**Current location of integration (post-refactor, 2026-05-15):**
+
+- `backend/modules/horses/services/foalingService.mjs` — calls `generateTemperament(breedName)` at line 326
+- `backend/modules/horses/routes/horseRoutes.mjs` — calls `generateTemperament(breedName)` at line 731

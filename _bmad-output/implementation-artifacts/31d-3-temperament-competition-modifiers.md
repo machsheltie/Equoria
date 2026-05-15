@@ -155,7 +155,7 @@ Tests verify these exact values when `Math.random` is mocked to 0.5.
 
 Follow `backend/__tests__/temperamentTrainingModifiers.test.mjs` structure from 31D-2:
 
-- File: `backend/__tests__/temperamentCompetitionModifiers.test.mjs`
+- File: `backend/modules/horses/__tests__/temperamentCompetitionModifiers.test.mjs`
 - Mock: `../utils/logger.mjs` only (competitionScore.mjs has no other external deps)
 - NO Prisma mock needed (competitionScore.mjs is pure — no DB calls)
 - Use `jest.spyOn(Math, 'random').mockReturnValue(0.5)` in `beforeEach`
@@ -164,7 +164,7 @@ Follow `backend/__tests__/temperamentTrainingModifiers.test.mjs` structure from 
 
 | File                                                         | Purpose                                                        |
 | ------------------------------------------------------------ | -------------------------------------------------------------- |
-| `backend/__tests__/temperamentCompetitionModifiers.test.mjs` | Unit + integration tests for temperament competition modifiers |
+| `backend/modules/horses/__tests__/temperamentCompetitionModifiers.test.mjs` | Unit + integration tests for temperament competition modifiers |
 
 ### Files to Modify
 
@@ -192,7 +192,7 @@ Follow `backend/__tests__/temperamentTrainingModifiers.test.mjs` structure from 
 
 - `jest.unstable_mockModule()` must be called BEFORE any dynamic `await import()` statements
 - All mock variables must be declared (`const mockFn = jest.fn()`) BEFORE `jest.unstable_mockModule()` calls
-- Run tests with: `node --experimental-vm-modules ./node_modules/jest-cli/bin/jest.js __tests__/temperamentCompetitionModifiers.test.mjs --no-coverage`
+- Run tests with: `node --experimental-vm-modules ./node_modules/jest-cli/bin/jest.js modules/horses/__tests__/temperamentCompetitionModifiers.test.mjs --no-coverage`
 - ESLint: `_` prefix for unused destructured vars in `Object.entries().map()` callbacks (e.g., `[_key, mods]`)
 - The existing 31 tests in `temperamentTrainingModifiers.test.mjs` must not regress
 
@@ -227,7 +227,7 @@ _No blockers. All 30 tests passed on first run. 17 competition/temperament suite
 
 - `backend/modules/horses/services/temperamentService.mjs` — modified
 - `backend/utils/competitionScore.mjs` — modified
-- `backend/__tests__/temperamentCompetitionModifiers.test.mjs` — created
+- `backend/modules/horses/__tests__/temperamentCompetitionModifiers.test.mjs` — created
 
 ## Change Log
 

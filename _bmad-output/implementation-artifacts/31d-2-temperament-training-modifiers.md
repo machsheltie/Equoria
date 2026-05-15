@@ -156,18 +156,28 @@ Add to the existing `backend/modules/horses/services/temperamentService.mjs` fil
 
 ### Test File Pattern
 
+> **Note (2026-05-15):** Original guidance below recommended mocking Prisma, logger, horseModel, and userModel. The shipped test file was converted to the no-mocks doctrine (Equoria-p6fx) and now runs against the real test DB using shared helpers — see updated guidance after the block.
+
 Follow `backend/__tests__/temperamentAssignment.test.mjs` structure from 31D-1:
 
-- File: `backend/__tests__/temperamentTrainingModifiers.test.mjs`
-- Mock: Prisma client, logger, horseModel, userModel (for `addXpToUser`)
+- File: `backend/modules/training/__tests__/temperamentTrainingModifiers.test.mjs`
+- ~~Mock: Prisma client, logger, horseModel, userModel (for `addXpToUser`)~~ — no longer used; see no-mocks pattern below.
 - Test real service logic with real modifier values
-- For integration tests, mock the training controller's dependencies but use real temperament modifier logic
+- ~~For integration tests, mock the training controller's dependencies but use real temperament modifier logic~~ — no longer used; integration tests now hit the real training controller + DB.
+
+**Current (no-mocks) pattern actually in use:**
+
+- File: `backend/modules/training/__tests__/temperamentTrainingModifiers.test.mjs`
+- Uses real test database — no Prisma, logger, horseModel, or userModel mocks
+- Test fixtures created via shared helpers: `createUser`, `createBreed`, `createHorse`
+- Cleanup uses `randomBytes`-prefixed names so fixtures don't collide with real game state
+- For determinism in stat-gain assertions, the training controller accepts a `_randomFn` DI parameter that tests override with a fixed roller
 
 ### Files to Create
 
 | File                                                      | Purpose                                                     |
 | --------------------------------------------------------- | ----------------------------------------------------------- |
-| `backend/__tests__/temperamentTrainingModifiers.test.mjs` | Unit + integration tests for temperament training modifiers |
+| `backend/modules/training/__tests__/temperamentTrainingModifiers.test.mjs` | Unit + integration tests for temperament training modifiers |
 
 ### Files to Modify
 
@@ -188,7 +198,7 @@ Follow `backend/__tests__/temperamentAssignment.test.mjs` structure from 31D-1:
 ### Project Structure Notes
 
 - New function added to existing service at `backend/modules/horses/services/temperamentService.mjs`
-- New test file at `backend/__tests__/temperamentTrainingModifiers.test.mjs`
+- New test file at `backend/modules/training/__tests__/temperamentTrainingModifiers.test.mjs`
 - ES modules only (`.mjs` extension, import/export)
 - All imports must include `.mjs` extension
 - The `temperamentMods` variable should be computed once and reused for both score and XP modifiers
@@ -230,4 +240,4 @@ claude-sonnet-4-6
 
 - `backend/modules/horses/services/temperamentService.mjs` (modified — added `TEMPERAMENT_TRAINING_MODIFIERS`, `getTemperamentTrainingModifiers`)
 - `backend/modules/training/controllers/trainingController.mjs` (modified — import + apply temperament modifiers to score and XP; added `temperamentEffects` to response)
-- `backend/__tests__/temperamentTrainingModifiers.test.mjs` (created — 31 unit + integration tests)
+- `backend/modules/training/__tests__/temperamentTrainingModifiers.test.mjs` (created — 31 unit + integration tests)

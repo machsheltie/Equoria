@@ -105,10 +105,18 @@ No external library needed — pure JS math.
 **New file:** `backend/modules/horses/services/conformationService.mjs`
 
 ```javascript
-// Import pattern (service does NOT use Prisma directly — no DB access needed):
+// Import pattern as originally implemented (service does NOT use Prisma directly — no DB access needed):
 import logger from '../../../utils/logger.mjs';
 import { BREED_GENETIC_PROFILES } from '../data/breedGeneticProfiles.mjs';
 ```
+
+> **Note (2026-05-15):** During the 309-breeds refactor, the data source moved from the in-code `BREED_GENETIC_PROFILES` constant to `backend/modules/horses/data/breedProfileLoader.mjs` (which reads `backend/data/breedProfiles.json`). Current import is:
+>
+> ```javascript
+> import { getBreedProfile } from '../data/breedProfileLoader.mjs';
+> ```
+>
+> Missing breeds or missing `rating_profiles.conformation` now throw rather than silently defaulting.
 
 ### 8 Conformation Regions
 
@@ -127,8 +135,8 @@ Regions and their breed mean ranges (std_dev = 8 for most breeds; Lusitano has p
 
 Two paths where conformation scores must be generated:
 
-1. **New horse creation:** `backend/modules/horses/controllers/horseController.mjs` — `createHorse()` function
-2. **Foal birth:** Check breeding controller for foal creation — likely `backend/controllers/breedingController.mjs` or `backend/modules/breeding/controllers/breedingController.mjs`
+1. **New horse creation (store purchase):** `backend/modules/horses/routes/horseRoutes.mjs` POST /horses handler — generates conformation scores and passes to `createHorse()`.
+2. **Foal birth:** `backend/modules/horses/services/foalingService.mjs` — uses `generateInheritedConformationScores()` (60/40 parent/breed-mean blend per Story 31B-2). Foal creation lives in `foalingService.mjs`, not in `breedingController.mjs`.
 
 **Pattern:** After horse record is created with default conformationScores, immediately update with generated scores. Or better: pass generated scores into the create call directly.
 
@@ -275,19 +283,20 @@ None — all tests passed on first run.
 - No Prisma migration needed — conformationScores JSONB field already exists with default 20s
 - AC #6 (immutability) satisfied by existing `validateHorseUpdatePayload` allowedFields whitelist
 - Integration via `horseData.conformationScores` passed to `createHorse()` — no separate DB update needed
-- Unknown breedId falls back to score 50 per region (graceful degradation)
-- POST /horses always generates conformation scores (falls back to 50s if no breedId)
+- Unknown breedId throws — silent-50 fallback removed during 309-breeds refactor
+- POST /horses always generates conformation scores (now throws on unknown breedId rather than falling back to 50s)
 - Integration tests for POST/PUT are validated by code inspection (DB-dependent tests deferred)
 - Legacy horses missing `overallConformation` key handled by `?? 0` fallback in calculateOverallConformation
 - Missing parent region scores in inheritance now fall back to breed mean with warning log
 
 ### File List
 
-**New files:**
+**New files (current locations as of 2026-05-15 — relocated to module __tests__ during Epic 20 reorganization):**
 
 1. `backend/modules/horses/services/conformationService.mjs` — Core service (normalRandom, clampScore, calculateOverallConformation, generateConformationScores, generateInheritedConformationScores, CONFORMATION_REGIONS)
-2. `backend/__tests__/conformationScoreGeneration.test.mjs` — 40 unit + statistical validation tests
-3. `backend/__tests__/conformationBreedingInheritance.test.mjs` — 26 breeding inheritance tests (Story 31B-2)
+2. `backend/modules/horses/__tests__/conformationScoreGeneration.test.mjs` — 26 unit + statistical validation tests
+3. `backend/modules/horses/__tests__/conformationBreedingInheritance.test.mjs` — 40 breeding inheritance tests (Story 31B-2)
+4. `backend/modules/horses/__tests__/conformationApiEndpoints.test.mjs` — 11 API endpoint tests (Story 31B-3)
 
 **Modified files:**
 
