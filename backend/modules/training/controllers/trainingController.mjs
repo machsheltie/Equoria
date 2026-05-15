@@ -18,6 +18,7 @@ import { getTemperamentTrainingModifiers } from '../../horses/services/temperame
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../db/index.mjs';
 import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
+import { awardTrainerSessionXP } from '../../../services/riderTrainerProgressionService.mjs';
 
 /**
  * Check if a horse is eligible to train in a specific discipline
@@ -402,6 +403,23 @@ async function trainHorse(horseId, discipline, _randomFn = Math.random) {
     logger.info(
       `[trainingController.trainHorse] Successfully trained horse ${horseId} in ${discipline} (Log ID: ${trainingLog.id}, Score +${disciplineScoreIncrease})`,
     );
+
+    // Equoria-r1nr: award trainer XP for the session. Trainer is identified
+    // via the horse's active TrainerAssignment row (if any). Fail-soft —
+    // trainer XP failure must not block the training result.
+    try {
+      const activeTrainerAssignment = await prisma.trainerAssignment.findFirst({
+        where: { horseId: parseInt(horseId, 10), isActive: true },
+        select: { trainerId: true },
+      });
+      if (activeTrainerAssignment?.trainerId) {
+        await awardTrainerSessionXP(activeTrainerAssignment.trainerId, statGainOccurred);
+      }
+    } catch (trainerXpErr) {
+      logger.error(
+        `[trainingController.trainHorse] Failed to award trainer XP for horse ${horseId}: ${trainerXpErr.message}`,
+      );
+    }
 
     // Bust ALL eligibility cache entries for this horse so the next check
     // for any discipline sees the new cooldown state immediately.

@@ -6,6 +6,7 @@ import {
   processHorseBirthdays,
   processFoalMilestoneEvaluations,
 } from '../utils/horseAgingSystem.mjs';
+import { incrementWeeklyCareerWeeks } from './riderTrainerProgressionService.mjs';
 
 /**
  * Daily trait evaluation cron job that runs at midnight
@@ -77,9 +78,23 @@ class CronJobService {
       },
     );
 
+    // Equoria-r1nr: Weekly career-week tick for riders + trainers.
+    // Runs every Monday at 12:15 AM UTC.
+    const weeklyRiderTrainerCareerJob = cron.schedule(
+      '15 0 * * 1',
+      async () => {
+        await this.tickRiderTrainerCareerWeeks();
+      },
+      {
+        scheduled: false,
+        timezone: 'UTC',
+      },
+    );
+
     this.jobs.set('dailyTraitEvaluation', dailyTraitJob);
     this.jobs.set('dailyHorseAging', dailyAgingJob);
     this.jobs.set('dailyFoalMilestoneEvaluation', dailyMilestoneJob);
+    this.jobs.set('weeklyRiderTrainerCareerWeeks', weeklyRiderTrainerCareerJob);
     this.jobs.set('electionStatusTransition', electionTransitionJob);
 
     // Start all jobs
@@ -374,6 +389,30 @@ class CronJobService {
     } catch (error) {
       logger.error(
         `[CronJobService.processFoalMilestones] Error: ${error.message}`,
+      );
+      throw error;
+    }
+  }
+
+  /**
+   * Equoria-r1nr: Weekly career-week ++ pass for riders and trainers.
+   * Mirrors the groom progression cron for the other NPC types.
+   */
+  async tickRiderTrainerCareerWeeks() {
+    const startTime = Date.now();
+    logger.info(
+      '[CronJobService.tickRiderTrainerCareerWeeks] Starting weekly rider/trainer career-week tick',
+    );
+    try {
+      const result = await incrementWeeklyCareerWeeks();
+      const duration = Date.now() - startTime;
+      logger.info(
+        `[CronJobService.tickRiderTrainerCareerWeeks] Completed in ${duration}ms — riders: ${result.ridersTicked}, trainers: ${result.trainersTicked}`,
+      );
+      return result;
+    } catch (error) {
+      logger.error(
+        `[CronJobService.tickRiderTrainerCareerWeeks] Error: ${error.message}`,
       );
       throw error;
     }

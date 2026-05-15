@@ -12,6 +12,7 @@
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import { applyRiderModifiers, computeRiderModifiers } from '../../../utils/riderBonus.mjs';
+import { awardRiderCompetitionXP } from '../../../services/riderTrainerProgressionService.mjs';
 
 const VALID_DISCIPLINES = [
   'Western Pleasure',
@@ -394,6 +395,16 @@ export async function executeClosedShows(req, res) {
               ...(placement === 1 ? { totalWins: { increment: 1 } } : {}),
             },
           });
+
+          // Equoria-r1nr: award XP + prestige to the rider for this competition.
+          // Fail-soft — XP failure must not block show execution.
+          try {
+            await awardRiderCompetitionXP(assignment.riderId, placement);
+          } catch (xpErr) {
+            logger.error(
+              `[showController] Failed to award rider XP for rider ${assignment.riderId}: ${xpErr.message}`,
+            );
+          }
         }
       });
 
