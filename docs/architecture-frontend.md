@@ -1,6 +1,6 @@
 # Equoria Frontend Architecture
 
-**Generated:** 2026-03-19 (full rescan)
+**Generated:** 2026-05-15 (full rescan; supersedes 2026-03-19)
 **Framework:** React 19 + TypeScript
 **Build Tool:** Vite 5.2
 **Styling:** TailwindCSS 3.4 + CSS custom properties (tokens.css)
@@ -34,18 +34,19 @@
 │  ┌───────────────────────────────────┴───────────────────────────────────┐  │
 │  │                      ROUTING (react-router-dom)                       │  │
 │  │  6 public routes (auth pages)                                         │  │
-│  │  25 authenticated routes via navItems + /horses/:id                   │  │
+│  │  31 nav-items routes (11 main nav + 20 sub-location/route-only)       │  │
+│  │  3 explicit App.tsx routes (/horses/:id, /horses/:id/equip, /foals/:id)│ │
 │  │  All pages lazy-loaded (React.lazy + Suspense)                        │  │
 │  └───────────────────────────────────────────────────────────────────────┘  │
 │                                      │                                      │
 │  ┌───────────────────────────────────┴───────────────────────────────────┐  │
 │  │                         COMPONENT LAYER                               │  │
 │  │  ┌──────────────────────┐  ┌──────────────────────────────────────┐  │  │
-│  │  │ 37 Page components   │  │ 198 Component files across 17        │  │  │
+│  │  │ 40 page components   │  │ 242 component files across 18        │  │  │
 │  │  │ (lazy-loaded chunks) │  │ domain folders + root                 │  │  │
 │  │  └──────────────────────┘  └──────────────────────────────────────┘  │  │
 │  │  ┌──────────────────────┐  ┌──────────────────────────────────────┐  │  │
-│  │  │ 22 UI primitives     │  │ Custom: GallopingLoader, FenceJump   │  │  │
+│  │  │ 25 UI primitives     │  │ Custom: GallopingLoader, FenceJump   │  │  │
 │  │  │ (shadcn/Radix-based) │  │ Bar, CinematicMoment, GlassPanel ... │  │  │
 │  │  └──────────────────────┘  └──────────────────────────────────────┘  │  │
 │  └───────────────────────────────────────────────────────────────────────┘  │
@@ -54,14 +55,14 @@
 │  │                         STATE MANAGEMENT                              │  │
 │  │  ┌──────────────────┐  ┌─────────────────┐  ┌────────────────────┐  │  │
 │  │  │ React Query       │  │ 2 Contexts       │  │ URL State          │  │  │
-│  │  │ 44 API hooks      │  │ Auth + Feature   │  │ useSearchParams    │  │  │
+│  │  │ 57 API hooks      │  │ Auth + Feature   │  │ useSearchParams    │  │  │
 │  │  │ Server state      │  │ Flags            │  │ Filters/sort       │  │  │
 │  │  └──────────────────┘  └─────────────────┘  └────────────────────┘  │  │
 │  └───────────────────────────────────────────────────────────────────────┘  │
 │                                      │                                      │
 │  ┌───────────────────────────────────┴───────────────────────────────────┐  │
 │  │                         API CLIENT                                    │  │
-│  │  api-client.ts: 57 typed endpoint methods                             │  │
+│  │  api-client.ts: typed endpoint methods across 17+ domain namespaces   │  │
 │  │  fetchWithAuth auto-unwraps data.data → hooks receive clean types     │  │
 │  │  All endpoints use /api/v1/ prefix                                    │  │
 │  └───────────────────────────────────────────────────────────────────────┘  │
@@ -76,40 +77,67 @@
 frontend/src/
 ├── App.tsx                          # Root: providers, router, layout
 ├── main.tsx                         # Entry point
-├── nav-items.tsx                    # 25 route definitions (11 nav + 14 sub-location)
+├── nav-items.tsx                    # 31 route definitions (11 nav + 20 sub-location/route-only)
 ├── index.css                        # 20+ animation keyframes, .btn-cobalt horseshoe borders
 ├── styles/
-│   └── tokens.css                   # CSS custom properties: colors, z-index, spacing
+│   ├── tokens.css                   # CSS custom properties: colors, z-index, spacing
+│   └── fonts.css                    # @font-face declarations
 ├── contexts/
 │   ├── AuthContext.tsx               # JWT auth state, login/logout/refresh
 │   └── FeatureFlagContext.tsx        # Runtime feature flag toggles
-├── lib/                             # 10 utility modules
-│   ├── api-client.ts                # 57 typed API methods, fetchWithAuth
+├── lib/                             # Utility modules
+│   ├── api-client.ts                # Typed API methods, fetchWithAuth
+│   ├── api/                         # Domain-namespaced API helpers
 │   ├── sentry.ts                    # Sentry init + ErrorBoundary
 │   ├── utils.ts                     # cn() classname merge
+│   ├── utils/                       # Additional utility helpers
 │   ├── constants.ts                 # App-wide constants
 │   ├── featureFlags.tsx             # Feature flag definitions
 │   ├── validation-schemas.ts        # Zod/form schemas
+│   ├── validations/                 # Per-domain validation schemas
 │   ├── xp-utils.ts                  # XP calculation helpers
 │   ├── currency-utils.ts            # Currency formatting
 │   ├── activity-utils.ts            # Activity feed helpers
-│   └── statistics-utils.ts          # Stat display helpers
+│   ├── statistics-utils.ts          # Stat display helpers
+│   ├── authSessionState.ts          # Auth session storage helpers
+│   ├── breed-images.ts              # Breed asset map
+│   └── soundManager.ts              # Sound effect playback
 ├── hooks/
 │   ├── useAuth.ts                   # Auth convenience hook
 │   ├── useSessionGuard.ts           # Session expiry guard
 │   ├── useRoleGuard.ts              # Role-based access
 │   ├── useHorseFilters.ts           # Horse list filter logic
 │   ├── useHorseGenetics.ts          # Genetics display logic
+│   ├── useHorseCoatGenetics.ts      # Coat-color genetics helpers
 │   ├── useResponsiveBackground.ts   # Responsive bg sizing
-│   └── api/                         # 44 React Query hooks (see below)
-├── pages/                           # 37 page components (all lazy-loaded)
+│   ├── useMediaQuery.ts             # Tailwind breakpoint media queries
+│   ├── useSound.ts                  # Sound playback hook
+│   └── api/                         # 57 React Query hooks (see below)
+├── types/                           # Domain TypeScript types
+│   ├── breeding.ts                  # Breeding-related types
+│   ├── foal.ts                      # Foal/lifecycle types
+│   ├── horse.ts                     # Core horse type
+│   ├── traits.ts                    # Trait definitions
+│   ├── groomBonusTrait.ts           # Groom bonus trait types
+│   ├── groomCareer.ts               # Groom career/XP types
+│   ├── groomLegacy.ts               # Groom legacy/retirement types
+│   ├── groomPersonality.ts          # Groom personality types
+│   ├── groomShowHandler.ts          # Groom show-handler types
+│   ├── groomTalent.ts               # Groom talent-tree types
+│   ├── groomTasks.ts                # Groom task definitions
+│   ├── riderCareer.ts               # Rider career types
+│   ├── riderDiscovery.ts            # Rider discovery types
+│   └── riderPersonality.ts          # Rider personality types
+├── pages/                           # 40 page components (all lazy-loaded)
 │   ├── Index.tsx                    # Home / Hub dashboard
 │   ├── StableView.tsx               # Stable management
 │   ├── TrainingPage.tsx             # Training hub
 │   ├── BreedingPage.tsx             # Breeding hub
 │   ├── CompetitionBrowserPage.tsx   # Competition discovery
+│   ├── ConformationShowsPage.tsx    # Conformation show entry surface
 │   ├── WorldHubPage.tsx             # 9 location cards
-│   ├── HorseDetailPage.tsx          # Tabbed horse detail (Overview/Stats/Pedigree/Health/Stud)
+│   ├── HorseDetailPage.tsx          # Tabbed horse detail
+│   ├── FoalDetailPage.tsx           # Foal lifecycle detail page
 │   ├── LoginPage.tsx                # Auth: login
 │   ├── RegisterPage.tsx             # Auth: register
 │   ├── OnboardingPage.tsx           # 3-step new player wizard
@@ -120,6 +148,7 @@ frontend/src/
 │   ├── MyStablePage.tsx             # Stable profile + Hall of Fame
 │   ├── CommunityPage.tsx            # Community hub
 │   ├── MessageBoardPage.tsx         # Forum threads (5 sections)
+│   ├── MessageThreadPage.tsx        # Individual forum thread view
 │   ├── ClubsPage.tsx                # Clubs + elections
 │   ├── MessagesPage.tsx             # Inbox/Sent DMs
 │   ├── GroomsPage.tsx               # Groom management
@@ -130,36 +159,39 @@ frontend/src/
 │   ├── FarrierPage.tsx              # Farrier services
 │   ├── FeedShopPage.tsx             # Feed purchases
 │   ├── TackShopPage.tsx             # Tack equipment
+│   ├── CraftingPage.tsx             # Leathersmith crafting workshop
+│   ├── MarketplaceHubPage.tsx       # Marketplace hub (Epic 21)
 │   ├── MarketplacePage.tsx          # General marketplace
 │   ├── HorseMarketplacePage.tsx     # Horse trading
+│   ├── HorseTraderPage.tsx          # Horse Trader sub-route
 │   ├── CompetitionResultsPage.tsx   # Results display
 │   ├── PrizeHistoryPage.tsx         # Prize transaction log
-│   ├── TrainingDashboardPage.tsx    # Training overview
 │   ├── VerifyEmailPage.tsx          # Email verification
 │   ├── ForgotPasswordPage.tsx       # Password reset request
 │   ├── ResetPasswordPage.tsx        # Password reset form
-│   └── breeding/
-│       ├── BreedingPairSelection.tsx # Pair selector with CinematicMoment
-│       └── BreedingPredictionsPanel.tsx # Trait predictions
-└── components/                      # 198 component files
-    ├── (root — 35 files)            # Top-level feature components
-    ├── auth/ (5)                    # Auth guards + layout
-    ├── breeding/ (10)               # Breeding center, selectors, predictions
-    ├── common/ (2)                  # BaseModal, CooldownTimer
-    ├── competition/ (17)            # Cards, modals, charts, prize display
-    ├── feedback/ (6)                # CinematicMoment, LevelUp, XP badges
+│   ├── breeding/                    # Breeding flow sub-pages
+│   ├── horse-detail/                # Horse-detail tabs/sub-pages
+│   └── horses/                      # Horse-related page modules
+└── components/                      # 242 component files (excluding tests)
+    ├── (root — 28 files)            # Top-level feature components incl. Fantasy* legacy
+    ├── auth/ (8)                    # Auth guards + layout
+    ├── breeding/ (12)               # Breeding center, selectors, predictions
+    ├── common/ (4)                  # BaseModal, CooldownTimer, shared primitives
+    ├── competition/ (20)            # Cards, modals, charts, prize display
+    ├── feedback/ (7)                # CinematicMoment, LevelUp, XP badges
     ├── foal/ (17)                   # Milestones, enrichment, evaluation
     ├── groom/ (9)                   # Talent tree, career, personality
-    ├── horse/ (17)                  # Filters, progression, XP bars, charts
+    ├── horse/ (21)                  # Filters, progression, XP bars, charts
     ├── hub/ (3)                     # NextActionsBar, WhileYouWereGone
-    ├── layout/ (10)                 # DashboardLayout, StarfieldBackground, NavPanel
+    ├── layout/ (12)                 # DashboardLayout, StarfieldBackground, NavPanel
+    ├── leaderboard/ (8)             # Leaderboard tabs, tables, badges
     ├── onboarding/ (2)              # OnboardingSpotlight, BreedSelector
     ├── rider/ (5)                   # Personality, career, assignment
     ├── theme/ (1)                   # CelestialThemeProvider
     ├── trainer/ (5)                 # Personality, career, assignment
     ├── training/ (25)               # Dashboard, modals, charts, trait modifiers
     ├── traits/ (7)                  # Epigenetic display, competition impact
-    └── ui/ (22)                     # shadcn primitives + custom UI
+    └── ui/ (25)                     # shadcn primitives + custom UI (incl. game/)
 ```
 
 ---
@@ -168,12 +200,15 @@ frontend/src/
 
 **Library:** react-router-dom v6
 
-**Total routes:** 31
+**Total routes:** 40
 
 - 6 public routes (login, register, verify-email, forgot-password, reset-password, onboarding)
-- 25 authenticated routes wrapped in `<ProtectedRoute>` + `<DashboardLayout>`
-  - 11 main nav routes (Home, Stable, Training, Breeding, Competitions, World, Marketplace, Riders, Leaderboards, Settings, Profile)
-  - 14 sub-location routes (Grooms, Vet, Farrier, Feed Shop, Tack Shop, Bank, Inventory, My Stable, Trainers, Community, Message Board, Clubs, Messages, Horse Detail)
+- 31 routes declared in `nav-items.tsx` and wrapped in `<ProtectedRoute>` + `<DashboardLayout>`
+  - 11 main nav routes (Home, My Stable, Inventory, Breeding, Competitions, World, Marketplace, Riders, Leaderboards, Settings, Profile)
+  - 20 sub-location / route-only entries (Grooms, Vet, Farrier, Feed Shop, Tack Shop, Crafting, Bank, Training, My Stable detail, Trainers, Marketplace sub-routes, Competition Results, Conformation Shows, Prizes, Community, Message Board, Message Thread, Clubs, Messages)
+- 3 explicit `<Route>` declarations in `App.tsx` for parameterized detail pages: `/horses/:id`, `/horses/:id/equip`, `/foals/:id`
+
+Note: "Training" is registered as a route-only entry (not in the main nav bar) — main-nav visibility was removed after the feed-system redesign.
 
 All pages are lazy-loaded via `React.lazy()` with `<Suspense fallback={<GallopingLoader />}>`.
 
@@ -183,20 +218,21 @@ All pages are lazy-loaded via `React.lazy()` with `<Suspense fallback={<Gallopin
 
 ### Server State: React Query (TanStack Query)
 
-44 API hook files in `hooks/api/` providing typed queries and mutations:
+57 API hook files in `hooks/api/` providing typed queries and mutations:
 
 | Domain          | Hooks                                                                                                                                                |
 | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Horses**      | useHorses, useHorseAge, useHorseStats, useHorseXP, useHorseLevelInfo, useHorseEligibility, useHorsePrizeSummary, useHorseCompetitionHistory          |
 | **Training**    | useTraining                                                                                                                                          |
-| **Breeding**    | useBreeding, useBreedingPrediction, useBreeds, useConformation                                                                                       |
+| **Breeding**    | useBreeding, useBreedingPrediction, useBreeds, useConformation, useConformationShow, useColorPrediction                                              |
+| **Genetics**    | useGaits, useTemperamentDefinitions                                                                                                                  |
 | **Competition** | useCompetitions, useCompetitionsFiltered, useCompetitionDetails, useCompetitionResults, useEnterCompetition, useClaimPrizes, useUserCompetitionStats |
 | **Prizes/XP**   | usePrizeHistory, useXpHistory, useAddXp                                                                                                              |
 | **Leaderboard** | useLeaderboard, useLeaderboardRefresh, useUserRankSummary                                                                                            |
 | **Staff**       | useGrooms, useRiders, useTrainers                                                                                                                    |
-| **Community**   | useForum, useMessages, useClubs                                                                                                                      |
-| **Commerce**    | useInventory, useTackShop, useFeedShop, useFarrier, useVet, useMarketplace                                                                           |
-| **User**        | useUserProgress, useProgression, useOnboarding                                                                                                       |
+| **Community**   | useForum, useMessages, useClubs, useGameNotifications                                                                                                |
+| **Commerce**    | useInventory, useTackShop, useFeedShop, useFarrier, useVet, useMarketplace, useHorseTrader, useCrafting, useEquippable, useEquipFeed, useFeedHorse   |
+| **User**        | useUserProgress, useProgression, useOnboarding, useUserBalance, useTransactionHistory, useUpdatePreferences                                          |
 | **Hub**         | useNextActions, useWhileYouWereGone                                                                                                                  |
 
 **Cache strategy:**
@@ -232,7 +268,7 @@ All pages are lazy-loaded via `React.lazy()` with `<Suspense fallback={<Gallopin
 
 ### api-client.ts
 
-- 57 typed endpoint methods organized by domain namespace (horsesApi, trainingApi, breedingApi, competitionsApi, etc.)
+- Typed endpoint methods organized by domain namespace (horsesApi, trainingApi, breedingApi, competitionsApi, etc.)
 - All endpoints use `/api/v1/` prefix
 - `fetchWithAuth()` auto-unwraps `data.data` — hooks receive clean typed responses
 - `VITE_API_URL ?? ''` for relative URLs in production (embedded SPA)
@@ -248,7 +284,9 @@ All pages are lazy-loaded via `React.lazy()` with `<Suspense fallback={<Gallopin
 
 ## Component Library
 
-### shadcn/ui Primitives (22 files in ui/)
+### shadcn/ui Primitives (25 files in `ui/`)
+
+Includes a `ui/game/` sub-folder (~12 files) holding game-themed UI primitives (e.g. cobalt buttons, parchment cards) used by the Celestial Night theme.
 
 | Component   | File              | Purpose                      |
 | ----------- | ----------------- | ---------------------------- |
@@ -285,14 +323,16 @@ All pages are lazy-loaded via `React.lazy()` with `<Suspense fallback={<Gallopin
 | BaseModal               | `common/BaseModal.tsx`                 | Reusable modal with focus trap + portal                 |
 | CooldownTimer           | `common/CooldownTimer.tsx`             | Real-time countdown display                             |
 
-### Fantasy-Themed Components (Root)
+### Fantasy-Themed Components (Root, legacy)
 
-| Component     | Purpose               |
-| ------------- | --------------------- |
-| FantasyButton | Styled action buttons |
-| FantasyForm   | Themed form wrapper   |
-| FantasyModal  | Styled modal dialogs  |
-| FantasyTabs   | Themed tab navigation |
+Four `Fantasy*` components remain at the root of `components/`. These predate the Celestial Night theme and are scheduled for replacement with `Celestial*` equivalents under bd issue Equoria-1nlw. New work should NOT add additional `Fantasy*` components — prefer `ui/` primitives or `theme/` wrappers.
+
+| Component     | Purpose                        |
+| ------------- | ------------------------------ |
+| FantasyButton | Styled action buttons (legacy) |
+| FantasyForm   | Themed form wrapper (legacy)   |
+| FantasyModal  | Styled modal dialogs (legacy)  |
+| FantasyTabs   | Themed tab navigation (legacy) |
 
 ---
 
@@ -350,7 +390,7 @@ Defined in `tokens.css` and consumed via `z-[var(--z-*)]` in Tailwind:
 
 ### Code Splitting
 
-- All 37 pages lazy-loaded via `React.lazy()` + `<Suspense>`
+- All 40 pages lazy-loaded via `React.lazy()` + `<Suspense>`
 - Initial chunk: ~321 KB
 - `rollup-plugin-visualizer` generates `dist/bundle-stats.html`
 
@@ -396,7 +436,7 @@ Defined in `tokens.css` and consumed via `z-[var(--z-*)]` in Tailwind:
 ### Data Flow
 
 ```
-api-client.ts (57 endpoints)
+api-client.ts (typed endpoints across 17+ domains)
     → React Query hooks (typed queries/mutations, cache keys)
         → Feature components (consume data, show loading/error states)
             → Mutations invalidate relevant cache keys
@@ -409,9 +449,9 @@ api-client.ts (57 endpoints)
 - **Auth:** register, login, refresh, profile, onboarding, advance-onboarding
 - **Horses:** list, detail, stats, genetics, conformation, XP, level
 - **Training:** check-eligibility, train, status, trainable-horses
-- **Breeding:** breed, pairs, predictions, foal development, enrichment, traits
+- **Breeding:** breed, pairs, predictions, foal development, enrichment, traits, color prediction
 - **Competition:** list, enter, results, prizes, claim, leaderboards
 - **Staff:** grooms (hire/assign/interact), riders, trainers
-- **Community:** forums (threads/posts), DMs (inbox/sent), clubs (join/leave/elections)
-- **Commerce:** inventory (equip/unequip), tack shop, feed shop, farrier, vet, marketplace
-- **User:** progress, dashboard, bank (balance/claim/transactions)
+- **Community:** forums (threads/posts), DMs (inbox/sent), clubs (join/leave/elections), in-game notifications
+- **Commerce:** inventory (equip/unequip), tack shop, feed shop, farrier, vet, marketplace, horse trader, crafting
+- **User:** progress, dashboard, bank (balance/claim/transactions), preferences
