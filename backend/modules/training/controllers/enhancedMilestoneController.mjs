@@ -14,6 +14,7 @@ import {
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
+import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 
 /**
  * POST /api/milestones/evaluate-milestone
@@ -132,9 +133,7 @@ export async function getMilestoneStatus(req, res) {
     const parsedHorseId = horse.id;
 
     // Calculate horse age in days
-    const ageInDays = Math.floor(
-      (Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24),
-    );
+    const ageInDays = getHorseAgeDays(horse.dateOfBirth);
 
     // Get existing milestone evaluations
     const milestoneEvaluations = await prisma.milestoneTraitLog.findMany({

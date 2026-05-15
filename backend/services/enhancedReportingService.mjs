@@ -16,6 +16,7 @@
 import logger from '../utils/logger.mjs';
 import _prisma from '../../packages/database/prismaClient.mjs';
 import { generateEnvironmentalReport } from './environmentalTriggerSystem.mjs';
+import { getHorseAgeDays } from '../utils/horseAge.mjs';
 
 /**
  * Generate insights from trait history data
@@ -82,7 +83,7 @@ export function generateEpigeneticRecommendations(
   const recommendations = [];
 
   // Age-based recommendations
-  const ageInDays = Math.floor((Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24));
+  const ageInDays = getHorseAgeDays(horse.dateOfBirth);
 
   if (ageInDays < 30) {
     recommendations.push('Critical early development period - focus on consistent, gentle care');
@@ -270,9 +271,7 @@ export function generateStableOverview(horses) {
   let totalStress = 0;
 
   horses.forEach(horse => {
-    const ageInDays = Math.floor(
-      (Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24),
-    );
+    const ageInDays = getHorseAgeDays(horse.dateOfBirth);
     const ageCategory =
       ageInDays < 30
         ? 'newborn'
@@ -340,9 +339,7 @@ export function analyzeDevelopmentalStages(horses) {
   };
 
   horses.forEach(horse => {
-    const ageInDays = Math.floor(
-      (Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24),
-    );
+    const ageInDays = getHorseAgeDays(horse.dateOfBirth);
 
     if (ageInDays < 14) {
       stages.critical++;
@@ -445,7 +442,7 @@ export async function generateHorseComparison(horses) {
     horses: horses.map(horse => ({
       id: horse.id,
       name: horse.name,
-      age: Math.floor((Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24)),
+      age: getHorseAgeDays(horse.dateOfBirth),
       traitCount: horse.epigeneticFlags.length,
       bondScore: horse.bondScore,
       stressLevel: horse.stressLevel,
@@ -682,7 +679,7 @@ export async function generateSummaryReport(horse) {
     basicInfo: {
       id: horse.id,
       name: horse.name,
-      age: Math.floor((Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24)),
+      age: getHorseAgeDays(horse.dateOfBirth),
       traitCount: horse.epigeneticFlags.length,
       traits: horse.epigeneticFlags,
     },
@@ -742,7 +739,7 @@ export async function generateComprehensiveReport(horse) {
  * Helper function to get age category
  */
 function getAgeCategory(dateOfBirth) {
-  const ageInDays = Math.floor((Date.now() - dateOfBirth.getTime()) / (1000 * 60 * 60 * 24));
+  const ageInDays = getHorseAgeDays(dateOfBirth);
 
   if (ageInDays < 30) {
     return 'newborn';
@@ -760,7 +757,7 @@ function getAgeCategory(dateOfBirth) {
  * Helper function to get developmental stage
  */
 function getDevelopmentalStage(dateOfBirth) {
-  const ageInDays = Math.floor((Date.now() - dateOfBirth.getTime()) / (1000 * 60 * 60 * 24));
+  const ageInDays = getHorseAgeDays(dateOfBirth);
 
   if (ageInDays < 14) {
     return 'critical_period';

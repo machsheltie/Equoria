@@ -18,6 +18,7 @@ import { validationResult } from 'express-validator';
 import _prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
+import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 import {
   evaluateHorseFlags,
   batchEvaluateFlags as batchEvaluateFlagsEngine,
@@ -126,9 +127,7 @@ export async function getHorseFlags(req, res) {
     });
 
     // Calculate horse age
-    const ageInDays = Math.floor(
-      (Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24),
-    );
+    const ageInDays = getHorseAgeDays(horse.dateOfBirth);
     const ageInYears = (ageInDays / 365.25).toFixed(2);
 
     return res.status(200).json({

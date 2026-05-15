@@ -17,6 +17,7 @@
 
 import logger from '../utils/logger.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
+import { getHorseAgeDays } from '../utils/horseAge.mjs';
 
 // Environmental trigger definitions
 const ENVIRONMENTAL_TRIGGERS = {
@@ -220,9 +221,7 @@ export async function calculateTriggerThresholds(horseId) {
       throw new Error(`Horse not found: ${horseId}`);
     }
 
-    const ageInDays = Math.floor(
-      (Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24),
-    );
+    const ageInDays = getHorseAgeDays(horse.dateOfBirth);
 
     // Base threshold (lower = more sensitive)
     const baseThreshold = 0.5;
@@ -291,9 +290,7 @@ export async function evaluateTraitExpressionProbability(horseId, traitName) {
     });
 
     // Age modifier - younger horses more likely to express new traits
-    const ageInDays = Math.floor(
-      (Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24),
-    );
+    const ageInDays = getHorseAgeDays(horse.dateOfBirth);
     let ageModifier = 1.0;
     if (ageInDays <= 30) {
       ageModifier = 1.5; // Young foals
@@ -562,9 +559,7 @@ export async function assessCriticalPeriodSensitivity(horseId) {
       select: { dateOfBirth: true },
     });
 
-    const currentAge = Math.floor(
-      (Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24),
-    );
+    const currentAge = getHorseAgeDays(horse.dateOfBirth);
 
     // Identify active critical periods
     const activeWindows = CRITICAL_PERIODS.filter(

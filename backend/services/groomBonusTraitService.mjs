@@ -19,6 +19,7 @@
 
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
+import { getHorseAgeDays } from '../utils/horseAge.mjs';
 
 // Constants for bonus trait validation
 const MAX_BONUS_TRAITS = 3;
@@ -173,9 +174,7 @@ export async function checkBonusEligibility(horseId, groomId) {
       throw new Error(`Horse with ID ${horseId} not found`);
     }
 
-    const ageInDays = Math.floor(
-      (Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24),
-    );
+    const ageInDays = getHorseAgeDays(horse.dateOfBirth);
     const milestoneWindowDays = Math.min(ageInDays, 30); // Consider up to 30 days for milestone window
 
     // Get groom assignment coverage

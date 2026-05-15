@@ -18,6 +18,7 @@
 
 import logger from '../utils/logger.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
+import { getHorseAgeDays } from '../utils/horseAge.mjs';
 
 // Critical developmental windows (in days from birth)
 const DEVELOPMENTAL_WINDOWS = {
@@ -139,9 +140,7 @@ export async function identifyDevelopmentalWindows(horseId) {
       throw new Error(`Horse not found: ${horseId}`);
     }
 
-    const currentAge = Math.floor(
-      (Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24),
-    );
+    const currentAge = getHorseAgeDays(horse.dateOfBirth);
 
     const activeWindows = [];
     const upcomingWindows = [];
@@ -221,9 +220,7 @@ export async function calculateWindowSensitivity(horseId, windowName) {
       throw new Error(`Unknown developmental window: ${windowName}`);
     }
 
-    const currentAge = Math.floor(
-      (Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24),
-    );
+    const currentAge = getHorseAgeDays(horse.dateOfBirth);
 
     // Base sensitivity from window definition
     const baseSensitivity = window.sensitivity;
@@ -403,9 +400,7 @@ export async function trackDevelopmentalMilestones(horseId) {
       select: { dateOfBirth: true, bondScore: true, stressLevel: true },
     });
 
-    const currentAge = Math.floor(
-      (Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24),
-    );
+    const currentAge = getHorseAgeDays(horse.dateOfBirth);
 
     // Get interaction history for milestone assessment
     const interactions = await prisma.groomInteraction.findMany({
@@ -490,9 +485,7 @@ export async function assessWindowClosure(horseId, windowName) {
       select: { dateOfBirth: true },
     });
 
-    const currentAge = Math.floor(
-      (Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24),
-    );
+    const currentAge = getHorseAgeDays(horse.dateOfBirth);
 
     let closureStatus;
     let closureDate = null;
@@ -625,9 +618,7 @@ export async function analyzeCriticalPeriodSensitivity(horseId) {
       select: { dateOfBirth: true, stressLevel: true, bondScore: true, epigeneticFlags: true },
     });
 
-    const currentAge = Math.floor(
-      (Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24),
-    );
+    const currentAge = getHorseAgeDays(horse.dateOfBirth);
 
     // Identify all critical periods
     const criticalPeriods = Object.values(DEVELOPMENTAL_WINDOWS).filter(
@@ -726,9 +717,7 @@ export async function generateDevelopmentalForecast(horseId, forecastDays) {
       select: { dateOfBirth: true, epigeneticFlags: true, stressLevel: true, bondScore: true },
     });
 
-    const currentAge = Math.floor(
-      (Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24),
-    );
+    const currentAge = getHorseAgeDays(horse.dateOfBirth);
     const forecastEndAge = currentAge + forecastDays;
 
     // Identify upcoming windows

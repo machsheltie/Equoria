@@ -17,6 +17,7 @@ import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 import { applyPersonalityEffectsToMilestone } from './personalityModifierEngine.mjs';
 import { evaluateAndPersistUltraRareTraits } from '../services/ultraRareTraitEvaluationService.mjs';
+import { getHorseAgeDays } from './horseAge.mjs';
 
 // Milestone types and their developmental windows
 export const MILESTONE_TYPES = {
@@ -100,9 +101,7 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
     }
 
     // Calculate horse age in days
-    const ageInDays = Math.floor(
-      (Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24),
-    );
+    const ageInDays = getHorseAgeDays(horse.dateOfBirth);
 
     // Only evaluate horses under 3 years (1095 days)
     if (ageInDays >= 1095) {

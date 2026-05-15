@@ -17,6 +17,7 @@ import logger from '../utils/logger.mjs';
 import { EPIGENETIC_FLAG_DEFINITIONS } from '../config/epigeneticFlagDefinitions.mjs';
 import { analyzeCarePatterns } from './carePatternAnalyzer.mjs';
 import { evaluateFlagTriggers } from './flagAssignmentEngine.mjs';
+import { getHorseAgeDays } from '../utils/horseAge.mjs';
 
 /**
  * Get all horses eligible for flag evaluation (under 3 years old)
@@ -94,9 +95,7 @@ export async function processHorseForFlagEvaluation(horseId) {
     }
 
     // Calculate horse age in days
-    const ageInDays = Math.floor(
-      (Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24),
-    );
+    const ageInDays = getHorseAgeDays(horse.dateOfBirth);
 
     // Skip if horse is over 3 years old
     if (ageInDays > 1095) {

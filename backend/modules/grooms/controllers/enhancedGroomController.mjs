@@ -13,6 +13,7 @@ import {
   ENHANCED_INTERACTIONS,
 } from '../../../services/enhancedGroomInteractions.mjs';
 import { updateGroomSynergy } from '../../../services/groomProgressionService.mjs';
+import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 
 /**
  * GET /api/grooms/enhanced/interactions/:groomId/:horseId
@@ -73,9 +74,7 @@ export async function getEnhancedInteractions(req, res) {
     // locally and pass a separate object to downstream consumers that still
     // expect day-granular semantics. The DB-loaded `horse.age` is preserved
     // unmodified for the API response.
-    const ageInDays = Math.floor(
-      (Date.now() - new Date(horse.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24),
-    );
+    const ageInDays = getHorseAgeDays(horse.dateOfBirth);
     // Shallow copy with day-granular age for downstream day-based consumers
     // (enhancedGroomInteractions.mjs reads horse.age as days at lines 119,
     // 135, 253, 502). Once Equoria-8y0v migrates those sites to game-years,
@@ -254,9 +253,7 @@ export async function performEnhancedInteraction(req, res) {
     // source. The shadow object below provides ageInDays for
     // calculateEnhancedEffects until Equoria-8y0v migrates those call sites
     // to game-years.
-    const ageInDays = Math.floor(
-      (Date.now() - new Date(horse.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24),
-    );
+    const ageInDays = getHorseAgeDays(horse.dateOfBirth);
     const horseForDayConsumers = { ...horse, age: ageInDays };
 
     // Calculate enhanced effects

@@ -17,6 +17,7 @@
 
 import logger from '../utils/logger.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
+import { getHorseAgeDays } from '../utils/horseAge.mjs';
 
 // Trait synergy definitions - traits that enhance each other
 const TRAIT_SYNERGIES = {
@@ -494,9 +495,7 @@ export async function modelTemporalInteractions(horseId, timeWindow) {
     });
 
     const traits = horse.epigeneticFlags;
-    const ageInDays = Math.floor(
-      (Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24),
-    );
+    const ageInDays = getHorseAgeDays(horse.dateOfBirth);
 
     // Model interaction evolution over time
     const interactionEvolution = modelInteractionEvolution(traits, timeWindow, ageInDays);

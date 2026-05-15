@@ -6,6 +6,8 @@
  * These flags influence long-term temperament and future trait probability.
  */
 
+import { getHorseAgeDays } from './horseAge.mjs';
+
 // Epigenetic flag definitions with their triggers and effects
 export const EPIGENETIC_FLAGS = {
   // Confidence-related flags
@@ -295,9 +297,7 @@ export const CARE_PATTERN_TRIGGERS = {
  */
 export function evaluateEpigeneticFlags(careHistory, groomData, horseData) {
   const flagsToApply = [];
-  const ageInDays = Math.floor(
-    (Date.now() - new Date(horseData.dateOfBirth)) / (1000 * 60 * 60 * 24),
-  );
+  const ageInDays = getHorseAgeDays(horseData.dateOfBirth);
 
   // Only apply epigenetic flags to horses under 3 years (1095 days)
   if (ageInDays >= 1095) {
