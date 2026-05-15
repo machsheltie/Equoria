@@ -29,6 +29,7 @@ import {
   useDelistHorse,
   useBuyHorse,
 } from '@/hooks/api/useMarketplace';
+import { useProfile } from '@/hooks/useAuth';
 import type { MarketplaceListing, MarketplaceBrowseFilters, MyListing } from '@/lib/api-client';
 import { getHorseImage } from '@/lib/breed-images';
 
@@ -534,9 +535,11 @@ const HorseMarketplacePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<MarketplaceTab>('browse');
   const [cinematicHorse, setCinematicHorse] = useState<string | null>(null);
 
-  // Large default so the client-side UI doesn't incorrectly block the button.
-  // The real balance check is enforced server-side atomically.
-  const userBalance = 999_999;
+  // Real user balance — server still enforces atomically on purchase, but the UI
+  // must reflect honest affordability so the Insufficient-Funds gate and remaining-
+  // balance display are not fake (21R doctrine: no fake product values).
+  const { data: profileData } = useProfile();
+  const userBalance = profileData?.user?.money ?? 0;
 
   const handlePurchased = useCallback((horseName: string) => {
     setCinematicHorse(horseName);
