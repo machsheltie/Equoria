@@ -14,7 +14,7 @@
  */
 
 import React, { memo, useCallback } from 'react';
-import { Trophy, Medal, Star, Calendar, DollarSign, Zap } from 'lucide-react';
+import { Trophy, Medal, Star, Calendar, DollarSign, Zap, Gift } from 'lucide-react';
 
 /**
  * Prize transaction data structure
@@ -41,6 +41,15 @@ export interface PrizeTransactionRowProps {
   transaction: PrizeTransaction;
   onViewCompetition?: (_competitionId: number) => void;
   onViewHorse?: (_horseId: number) => void;
+  /**
+   * Equoria-bx52 — claim handler for the unclaimed-prize button.
+   * When provided AND the transaction.claimed === false, the row
+   * renders a "Claim" button that invokes this callback with the
+   * transaction's competitionId. Callers wire this to useClaimPrizes.
+   */
+  onClaim?: (_competitionId: number) => void;
+  /** Disables the Claim button while a claim mutation is in flight. */
+  isClaiming?: boolean;
   layout?: 'table' | 'card';
 }
 
@@ -135,10 +144,55 @@ const PlacementBadge = memo(({ rank }: { rank: number }) => {
 PlacementBadge.displayName = 'PlacementBadge';
 
 /**
+ * Claim button (Equoria-bx52)
+ *
+ * Renders for unclaimed prizes only. Wires its onClick to the parent's
+ * onClaim(competitionId) handler — the parent should pass through to
+ * useClaimPrizes from @/hooks/api/useClaimPrizes.
+ */
+const ClaimButton = memo(
+  ({
+    competitionId,
+    onClaim,
+    isClaiming,
+  }: {
+    competitionId: number;
+    onClaim: (_competitionId: number) => void;
+    isClaiming?: boolean;
+  }) => {
+    const handleClick = useCallback(() => {
+      onClaim(competitionId);
+    }, [competitionId, onClaim]);
+
+    return (
+      <button
+        type="button"
+        onClick={handleClick}
+        disabled={isClaiming}
+        className="inline-flex items-center gap-1 px-3 py-1 rounded-md text-xs font-semibold bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)] text-[var(--celestial-navy-900)] hover:opacity-90 disabled:opacity-40 focus:outline-none focus:ring-2 focus:ring-[var(--gold-400)] focus:ring-offset-2 transition-opacity"
+        data-testid="claim-prize-button"
+        aria-label="Claim prize"
+      >
+        <Gift className="h-3.5 w-3.5" aria-hidden="true" />
+        {isClaiming ? 'Claiming…' : 'Claim'}
+      </button>
+    );
+  }
+);
+
+ClaimButton.displayName = 'ClaimButton';
+
+/**
  * Table row layout for desktop
  */
 const TableRowLayout = memo(
-  ({ transaction, onViewCompetition, onViewHorse }: Omit<PrizeTransactionRowProps, 'layout'>) => {
+  ({
+    transaction,
+    onViewCompetition,
+    onViewHorse,
+    onClaim,
+    isClaiming,
+  }: Omit<PrizeTransactionRowProps, 'layout'>) => {
     const handleCompetitionClick = useCallback(
       (e: React.MouseEvent) => {
         e.preventDefault();
@@ -255,6 +309,18 @@ const TableRowLayout = memo(
             <span className="text-[rgb(148,163,184)] font-normal">XP</span>
           </span>
         </td>
+
+        {/* Claim — Equoria-bx52. Renders only when onClaim is provided
+            AND the prize is unclaimed. */}
+        {onClaim && !transaction.claimed && (
+          <td className="px-4 py-3 text-right">
+            <ClaimButton
+              competitionId={transaction.competitionId}
+              onClaim={onClaim}
+              isClaiming={isClaiming}
+            />
+          </td>
+        )}
       </tr>
     );
   }
@@ -266,7 +332,13 @@ TableRowLayout.displayName = 'TableRowLayout';
  * Card layout for mobile
  */
 const CardLayout = memo(
-  ({ transaction, onViewCompetition, onViewHorse }: Omit<PrizeTransactionRowProps, 'layout'>) => {
+  ({
+    transaction,
+    onViewCompetition,
+    onViewHorse,
+    onClaim,
+    isClaiming,
+  }: Omit<PrizeTransactionRowProps, 'layout'>) => {
     const handleCompetitionClick = useCallback(
       (e: React.MouseEvent) => {
         e.preventDefault();
@@ -376,6 +448,18 @@ const CardLayout = memo(
             </span>
           </div>
         </div>
+
+        {/* Claim — Equoria-bx52. Renders only when onClaim is provided
+            AND the prize is unclaimed. */}
+        {onClaim && !transaction.claimed && (
+          <div className="mt-3 flex justify-end">
+            <ClaimButton
+              competitionId={transaction.competitionId}
+              onClaim={onClaim}
+              isClaiming={isClaiming}
+            />
+          </div>
+        )}
       </div>
     );
   }
@@ -393,6 +477,8 @@ const PrizeTransactionRow: React.FC<PrizeTransactionRowProps> = ({
   transaction,
   onViewCompetition,
   onViewHorse,
+  onClaim,
+  isClaiming,
   layout = 'table',
 }) => {
   if (layout === 'card') {
@@ -401,6 +487,8 @@ const PrizeTransactionRow: React.FC<PrizeTransactionRowProps> = ({
         transaction={transaction}
         onViewCompetition={onViewCompetition}
         onViewHorse={onViewHorse}
+        onClaim={onClaim}
+        isClaiming={isClaiming}
       />
     );
   }
@@ -410,6 +498,8 @@ const PrizeTransactionRow: React.FC<PrizeTransactionRowProps> = ({
       transaction={transaction}
       onViewCompetition={onViewCompetition}
       onViewHorse={onViewHorse}
+      onClaim={onClaim}
+      isClaiming={isClaiming}
     />
   );
 };

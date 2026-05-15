@@ -25,6 +25,7 @@ import { DollarSign, Star, Trophy, TrendingUp, ChevronRight, Home, RefreshCw } f
 import PageHero from '@/components/layout/PageHero';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePrizeHistory } from '@/hooks/api/usePrizeHistory';
+import { useClaimPrizes } from '@/hooks/api/useClaimPrizes';
 import { type TransactionFilters } from '@/lib/api/prizes';
 import PrizeTransactionHistory from '@/components/competition/PrizeTransactionHistory';
 
@@ -264,6 +265,17 @@ const PrizeHistoryPage = (): JSX.Element => {
     refetch();
   }, [refetch]);
 
+  // Equoria-bx52 — wire the per-row Claim button to useClaimPrizes.
+  // The hook handles cache invalidation (prize history, horse summaries,
+  // profile/balance, notifications) on success. See useClaimPrizes.ts.
+  const claimMutation = useClaimPrizes();
+  const handleClaim = useCallback(
+    (competitionId: number) => {
+      claimMutation.mutate({ competitionId });
+    },
+    [claimMutation]
+  );
+
   return (
     <div className="min-h-screen" data-testid="prize-history-page">
       <PageHero
@@ -337,6 +349,8 @@ const PrizeHistoryPage = (): JSX.Element => {
             transactions={transactions ?? []}
             filters={filters}
             onFilterChange={handleFilterChange}
+            onClaim={handleClaim}
+            isClaiming={claimMutation.isPending}
             isLoading={isLoading}
           />
         </section>

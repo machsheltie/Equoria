@@ -75,6 +75,14 @@ export interface PrizeTransactionHistoryProps {
   onPageChange?: (_page: number) => void;
   onViewCompetition?: (_competitionId: number) => void;
   onViewHorse?: (_horseId: number) => void;
+  /**
+   * Equoria-bx52 — claim handler forwarded to each PrizeTransactionRow.
+   * When provided, unclaimed rows render a Claim button that invokes
+   * this callback with the row's competitionId.
+   */
+  onClaim?: (_competitionId: number) => void;
+  /** Disables every Claim button while a claim mutation is in flight. */
+  isClaiming?: boolean;
   isLoading?: boolean;
   className?: string;
 }
@@ -471,6 +479,8 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
   onPageChange,
   onViewCompetition,
   onViewHorse,
+  onClaim,
+  isClaiming,
   isLoading = false,
   className = '',
 }) => {
@@ -806,6 +816,8 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
                       transaction={transaction}
                       onViewCompetition={onViewCompetition}
                       onViewHorse={onViewHorse}
+                      onClaim={onClaim}
+                      isClaiming={isClaiming}
                       layout="table"
                     />
                   ))}
