@@ -206,11 +206,11 @@ export * from '../modules/horses/controllers/horseController.mjs';
 
 ### Security Middleware (Advanced)
 
-| Middleware                   | Purpose                                                              |
-| ---------------------------- | -------------------------------------------------------------------- |
-| `auditLogger`                | Logs high-sensitivity operations (breeding, transactions, stat mods) |
-| `operationDedup`             | Prevents duplicate operations within 5-second window                 |
-| `suspiciousActivityDetector` | Detects excessive failures, rapid-fire, multi-IP patterns            |
+| Middleware                       | Purpose                                                                                                                              |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `auditLogger`                    | Logs high-sensitivity operations (breeding, transactions, stat mods)                                                                 |
+| `operationDedup`                 | Prevents duplicate operations within 5-second window                                                                                 |
+| suspicious-activity cache (`backend/middleware/auditLog.mjs`) | In-process `suspiciousActivityCache` Map embedded in `auditLog.mjs` (not a standalone middleware); flags excessive failures, rapid-fire, multi-IP patterns from inside the audit logger |
 
 ### Performance Middleware
 
