@@ -40,10 +40,31 @@ import {
 } from './enhancedMilestoneEvaluationSystem.mjs';
 
 /**
- * Calculate age in days from date of birth
+ * GAME-DESIGN UNIT CONTRACT (Equoria-son6 / Equoria-j9ip):
+ *   1 real-time week (7 days) = 1 game year.
+ *   Horse.age column stores GAME YEARS, not real-time days.
+ *
+ * `calculateAgeFromBirth()` returns real-time DAYS (used by internal cron
+ * milestone-day-threshold logic and any callers that want fine granularity).
+ *
+ * `calculateAgeInGameYears()` is what gets persisted to Horse.age:
+ *   floor(real-time-days / 7).
+ *
+ * Pre-fix bug: `updateHorseAge` wrote calculateAgeFromBirth() (days) directly
+ * to Horse.age. Every controller/serializer/frontend in the codebase treats
+ * Horse.age as game years (e.g. "horse.age < 3" means under 3 game years).
+ * The mismatch produced 1111-year displays for users.
+ */
+
+const DAYS_PER_GAME_YEAR = 7;
+
+/**
+ * Calculate age in REAL-TIME days from date of birth.
+ * Used internally by milestone day-threshold checks (7, 14, 21, 147 days).
+ *
  * @param {Date} dateOfBirth - Horse's date of birth
  * @param {Date} currentDate - Current date (default: now)
- * @returns {number} Age in days
+ * @returns {number} Age in real-time days
  */
 export function calculateAgeFromBirth(dateOfBirth, currentDate = new Date()) {
   try {
@@ -63,6 +84,19 @@ export function calculateAgeFromBirth(dateOfBirth, currentDate = new Date()) {
     logger.error(`[horseAgingSystem.calculateAgeFromBirth] Error: ${error.message}`);
     return 0;
   }
+}
+
+/**
+ * Calculate age in GAME YEARS from date of birth.
+ * This is the value persisted to Horse.age. 1 game year = 7 real-time days.
+ *
+ * @param {Date} dateOfBirth - Horse's date of birth
+ * @param {Date} currentDate - Current date (default: now)
+ * @returns {number} Age in game years (floor(days/7))
+ */
+export function calculateAgeInGameYears(dateOfBirth, currentDate = new Date()) {
+  const ageInDays = calculateAgeFromBirth(dateOfBirth, currentDate);
+  return Math.floor(ageInDays / DAYS_PER_GAME_YEAR);
 }
 
 /**
@@ -92,14 +126,18 @@ export async function updateHorseAge(horseId) {
       throw new Error(`Horse with ID ${horseId} not found`);
     }
 
-    // Calculate current age
-    const calculatedAge = calculateAgeFromBirth(horse.dateOfBirth);
+    // Compute both day-granular age (for milestone day-threshold checks) and
+    // game-year age (the value persisted to Horse.age). Equoria-son6: previously
+    // the days value was written directly to Horse.age, producing 1111-year
+    // displays since the rest of the codebase reads Horse.age as game-years.
+    const ageInDays = calculateAgeFromBirth(horse.dateOfBirth);
+    const calculatedAge = Math.floor(ageInDays / DAYS_PER_GAME_YEAR); // game-years
     const storedAge = horse.age || 0;
 
     // Check if age needs updating
     if (calculatedAge === storedAge) {
       logger.info(
-        `[horseAgingSystem.updateHorseAge] Horse ${horse.name} age is current: ${calculatedAge} days`,
+        `[horseAgingSystem.updateHorseAge] Horse ${horse.name} age is current: ${calculatedAge} game-years (${ageInDays} days)`,
       );
       return {
         horseId,
@@ -111,7 +149,7 @@ export async function updateHorseAge(horseId) {
       };
     }
 
-    // Update age in database
+    // Update age in database (game-years, not days — Equoria-son6 fix)
     await prisma.horse.update({
       where: { id: horseId },
       data: { age: calculatedAge },
@@ -120,13 +158,18 @@ export async function updateHorseAge(horseId) {
     const hadBirthday = calculatedAge > storedAge;
 
     logger.info(
-      `[horseAgingSystem.updateHorseAge] Updated horse ${horse.name} age: ${storedAge} → ${calculatedAge} days${hadBirthday ? ' (BIRTHDAY!)' : ''}`,
+      `[horseAgingSystem.updateHorseAge] Updated horse ${horse.name} age: ${storedAge} → ${calculatedAge} game-years (${ageInDays} days)${hadBirthday ? ' (BIRTHDAY!)' : ''}`,
     );
 
-    // Check for milestones if this was a birthday
+    // Check for milestones if this was a birthday. We pass the previous and
+    // current day-equivalents so milestone day-threshold logic (7, 14, 21,
+    // 147 days) keeps working at fine granularity. The previous day-equivalent
+    // is `storedAge * DAYS_PER_GAME_YEAR` (lower bound of the previous game-year
+    // bucket); the current day-equivalent is `ageInDays`.
     let milestoneResult = { milestonesTriggered: [], traitsAssigned: [] };
     if (hadBirthday) {
-      milestoneResult = await checkForMilestones(horseId, storedAge, calculatedAge);
+      const prevAgeInDays = storedAge * DAYS_PER_GAME_YEAR;
+      milestoneResult = await checkForMilestones(horseId, prevAgeInDays, ageInDays);
     }
 
     return {
@@ -403,7 +446,9 @@ export async function processHorseBirthdays(options = {}) {
     // Process each horse
     for (const horse of horses) {
       try {
-        const calculatedAge = calculateAgeFromBirth(horse.dateOfBirth);
+        // Compare game-years (the unit persisted to Horse.age) — Equoria-son6
+        const ageInDays = calculateAgeFromBirth(horse.dateOfBirth);
+        const calculatedAge = Math.floor(ageInDays / DAYS_PER_GAME_YEAR);
         const storedAge = horse.age || 0;
 
         if (calculatedAge !== storedAge) {
@@ -420,7 +465,7 @@ export async function processHorseBirthdays(options = {}) {
             // Dry run - just log what would happen
             const hadBirthday = calculatedAge > storedAge;
             logger.info(
-              `[horseAgingSystem.processHorseBirthdays] DRY RUN: Would update ${horse.name} age: ${storedAge} → ${calculatedAge}${hadBirthday ? ' (BIRTHDAY!)' : ''}`,
+              `[horseAgingSystem.processHorseBirthdays] DRY RUN: Would update ${horse.name} age: ${storedAge} → ${calculatedAge} game-years (${ageInDays}d)${hadBirthday ? ' (BIRTHDAY!)' : ''}`,
             );
           }
         }
@@ -486,9 +531,7 @@ export async function processFoalMilestoneEvaluations(options = {}) {
     const cutoff = new Date();
     cutoff.setDate(cutoff.getDate() - 30);
 
-    const where = specificHorseId
-      ? { id: specificHorseId }
-      : { dateOfBirth: { gte: cutoff } };
+    const where = specificHorseId ? { id: specificHorseId } : { dateOfBirth: { gte: cutoff } };
 
     const foals = await prisma.horse.findMany({
       where,
@@ -569,6 +612,7 @@ export async function processFoalMilestoneEvaluations(options = {}) {
 
 export default {
   calculateAgeFromBirth,
+  calculateAgeInGameYears,
   updateHorseAge,
   checkForMilestones,
   processHorseBirthdays,

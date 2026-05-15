@@ -192,12 +192,13 @@ describe('updateHorseAge() — DB-fixture paths (lines 95-135) (Equoria-jkht)', 
       },
     });
 
-    // Horse born 1 day ago, stored age=0 → calculatedAge=1 !== storedAge → DB update (lines 109-135)
+    // Horse born 7 days ago (1 game-year), stored age=0 → calculatedAge=1 !== storedAge → DB update
+    // Updated for Equoria-son6 game-year semantics (1 week = 1 game year)
     staleAgeHorse = await prisma.horse.create({
       data: {
         name: `TestFixture-HAS-Stale-${ts}`,
         sex: 'Filly',
-        dateOfBirth: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+        dateOfBirth: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
         age: 0,
         userId: fixtureUser.id,
       },
@@ -312,12 +313,13 @@ describe('processHorseBirthdays() — dryRun else-branch (lines 416-417) (Equori
         money: 1000,
       },
     });
-    // born 1 day ago, age=0 → calculatedAge(1) !== storedAge(0) → birthdaysFound++ then dryRun branch
+    // born 7 days ago (1 game-year), age=0 → calculatedAge(1) !== storedAge(0) → birthdaysFound++
+    // Updated for Equoria-son6 game-year semantics (1 week = 1 game year)
     pbHorse = await prisma.horse.create({
       data: {
         name: `TestFixture-PB-DryRun-${ts}`,
         sex: 'Colt',
-        dateOfBirth: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+        dateOfBirth: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
         age: 0,
         userId: pbUser.id,
       },

@@ -220,13 +220,14 @@ describe('Horse Aging System', () => {
         }
       };
 
-      // Create horse born 1 week ago (1 year in game time)
+      // Create horse born 1 week ago (1 game-year in game time)
+      // Equoria-son6: stored age in game-years not days
       const horse = await prisma.horse.create({
         data: {
           name: 'Birthday Horse',
           sex: 'Colt',
-          dateOfBirth: birth1WeekAgo, // Exactly 1 week ago (1 year in game time)
-          age: 6, // Currently 6 days old (will turn 7 = 1 year)
+          dateOfBirth: birth1WeekAgo, // Exactly 1 week ago (1 game-year)
+          age: 0, // Stored age=0 game-years → will become 1 game-year (birthday)
           userId: testUser.id,
           breedId: testBreed.id,
           bondScore: 75,
@@ -243,15 +244,16 @@ describe('Horse Aging System', () => {
 
       const result = await updateHorseAge(horse.id);
 
+      // Equoria-son6: Horse.age now stores game-years (floor(days/7)) not days
       expect(result.ageUpdated).toBe(true);
-      expect(result.newAge).toBe(7); // 1 year in game time
+      expect(result.newAge).toBe(1); // 7 real days = 1 game year
       expect(result.hadBirthday).toBe(true);
 
       // Verify database was updated
       const updatedHorse = await prisma.horse.findUnique({
         where: { id: horse.id },
       });
-      expect(updatedHorse.age).toBe(7); // 1 year in game time
+      expect(updatedHorse.age).toBe(1); // 1 game year (was 7 days pre-son6)
 
       // Restore original Date
       global.Date = OriginalDate;
@@ -274,13 +276,14 @@ describe('Horse Aging System', () => {
         }
       };
 
-      // Create horse born 6 months ago
+      // Create horse born 6 months ago (~182 days = 26 game-years)
+      // Equoria-son6: Horse.age now stores game-years not days
       const horse = await prisma.horse.create({
         data: {
           name: 'No Birthday Horse',
           sex: 'Filly',
           dateOfBirth: birth6MonthsAgo, // 6 months ago
-          age: 182, // Current age matches calculated age
+          age: 26, // floor(182/7) = 26 game-years
           userId: testUser.id,
           breedId: testBreed.id,
         },
@@ -290,7 +293,7 @@ describe('Horse Aging System', () => {
       const result = await updateHorseAge(horse.id);
 
       expect(result.ageUpdated).toBe(false);
-      expect(result.newAge).toBe(182);
+      expect(result.newAge).toBe(26);
       expect(result.hadBirthday).toBe(false);
 
       // Restore original Date
@@ -329,9 +332,10 @@ describe('Horse Aging System', () => {
 
       const result = await updateHorseAge(horse.id);
 
+      // Equoria-son6: ~365-366 real-time days → floor(365/7)=52 game-years
       expect(result.ageUpdated).toBe(true);
-      expect(result.newAge).toBe(365); // Correct calculated age (1 year)
-      expect(result.hadBirthday).toBe(true); // Age increased, so considered a birthday
+      expect(result.newAge).toBe(52); // floor(366/7) ≈ 52 game-years
+      expect(result.hadBirthday).toBe(false); // 52 < 100 stored → not a birthday, just a correction
 
       // Restore original Date
       global.Date = OriginalDate;
@@ -421,15 +425,16 @@ describe('Horse Aging System', () => {
         }
       };
 
-      // Create multiple horses with different birthday scenarios
+      // Equoria-son6: Horse.age now stores game-years (floor(days/7)) not days.
+      // Create multiple horses with different birthday scenarios.
       const horses = await Promise.all([
-        // Horse turning 1 year old (milestone)
+        // Horse turning 1 game-year old (milestone at day 7)
         prisma.horse.create({
           data: {
             name: 'Milestone Horse 1',
             sex: 'Colt',
-            dateOfBirth: birth1WeekAgo, // 1 week ago (1 year in game time)
-            age: 6, // Will turn 7 (1 year = 7 days), milestone triggers at 7
+            dateOfBirth: birth1WeekAgo, // 7 days ago → 1 game-year
+            age: 0, // Pre-cron state; will be updated to 1
             userId: testUser.id,
             breedId: testBreed.id,
             taskLog: { trust_building: 5 },
@@ -437,24 +442,24 @@ describe('Horse Aging System', () => {
             epigeneticModifiers: { positive: [], negative: [], hidden: [] },
           },
         }),
-        // Horse turning 2 years old (no milestone)
+        // Horse turning 2 game-years old (15 days = 2 game-years, no milestone)
         prisma.horse.create({
           data: {
             name: 'Regular Birthday Horse',
             sex: 'Filly',
-            dateOfBirth: birth15DaysAgo, // 15 days ago (2.14 years in game time)
-            age: 14, // Will turn 15 (no milestone at 15)
+            dateOfBirth: birth15DaysAgo, // 15 days ago = floor(15/7) = 2 game-years
+            age: 1, // Will turn 2
             userId: testUser.id,
             breedId: testBreed.id,
           },
         }),
-        // Horse with no birthday today (but incorrect age)
+        // Horse with no birthday today (but incorrect age) — 31 days = 4 game-years
         prisma.horse.create({
           data: {
             name: 'No Birthday Horse',
             sex: 'Colt',
-            dateOfBirth: birth31DaysAgo, // 31 days ago (4.4 years in game time)
-            age: 25, // Incorrect age, will be corrected to 31 (no milestone crossing)
+            dateOfBirth: birth31DaysAgo, // 31 days ago = floor(31/7) = 4 game-years
+            age: 3, // Incorrect age, will be corrected to 4 (no milestone crossing)
             userId: testUser.id,
             breedId: testBreed.id,
           },
@@ -471,15 +476,15 @@ describe('Horse Aging System', () => {
       expect(results.milestonesTriggered).toBe(1);
       expect(results.errors).toBe(0);
 
-      // Verify specific updates
+      // Verify specific updates (game-years not days)
       const updatedHorses = await prisma.horse.findMany({
         where: { id: { in: horses.map(h => h.id) } },
         orderBy: { name: 'asc' },
       });
 
-      expect(updatedHorses[0].age).toBe(7); // Milestone horse (1 year)
-      expect(updatedHorses[1].age).toBe(31); // No birthday horse (corrected age)
-      expect(updatedHorses[2].age).toBe(15); // Regular birthday horse (no milestone)
+      expect(updatedHorses[0].age).toBe(1); // Milestone horse (1 game-year)
+      expect(updatedHorses[1].age).toBe(4); // No birthday horse (corrected age, 4 game-years)
+      expect(updatedHorses[2].age).toBe(2); // Regular birthday horse (2 game-years)
 
       // Restore original Date
       global.Date = OriginalDate;
@@ -506,13 +511,14 @@ describe('Horse Aging System', () => {
         }
       };
 
+      // Equoria-son6: Horse.age in game-years. 21 days → 3 game-years.
       // Create horse turning 3 (training eligible)
       const horse = await prisma.horse.create({
         data: {
           name: 'Training Ready Horse',
           sex: 'Colt',
-          dateOfBirth: birth3WeeksAgo, // 3 weeks ago (3 years in game time)
-          age: 20, // About to turn 21 (3 years = 21 days)
+          dateOfBirth: birth3WeeksAgo, // 21 days ago = 3 game-years
+          age: 2, // About to turn 3
           userId: testUser.id,
           breedId: testBreed.id,
         },
@@ -521,16 +527,16 @@ describe('Horse Aging System', () => {
 
       const result = await updateHorseAge(horse.id);
 
-      expect(result.newAge).toBe(21); // 3 years old in game time
+      // Equoria-son6: Horse.age is in game-years now
+      expect(result.newAge).toBe(3); // 3 game-years (21 real days)
 
-      // Verify training eligibility (age >= 3 years = 21 days)
+      // Verify training eligibility (age >= 3 game-years)
       const updatedHorse = await prisma.horse.findUnique({
         where: { id: horse.id },
       });
 
-      const ageInYears = Math.floor(updatedHorse.age / 7); // 1 year = 7 days
-      expect(ageInYears).toBe(3);
-      expect(updatedHorse.age >= 21).toBe(true); // Training eligible
+      expect(updatedHorse.age).toBe(3);
+      expect(updatedHorse.age >= 3).toBe(true); // Training eligible
 
       // Restore original Date
       global.Date = OriginalDate;
