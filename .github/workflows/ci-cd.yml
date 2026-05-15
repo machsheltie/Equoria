@@ -53,10 +53,15 @@ jobs:
 
       - name: 'Run ESLint (Frontend)'
         working-directory: ./frontend
-        # frontend/package.json has no eslint devDependency — the lint script
-        # references a binary that isn't installed. Non-fatal until frontend
-        # adopts a proper lint toolchain. TODO: add eslint to frontend.
-        continue-on-error: true
+        # Equoria-krig (2026-05-15): removed `continue-on-error: true`.
+        # The stale comment claiming frontend had no eslint devDependency
+        # was wrong — frontend/package.json declares `eslint: ^8.57.0`
+        # plus react/import/jsx-a11y/react-hooks plugins, and the `lint`
+        # script is `eslint . --report-unused-disable-directives
+        # --max-warnings 0`. With the bypass removed, real ESLint
+        # violations now FAIL the gate. Verified by sentinel: planted
+        # unused-variable file → eslint exits 1 (gate fires); clean
+        # tree → exits 0 (gate passes).
         run: npm run lint
 
       - name: 'Check Code Formatting (Backend)'
