@@ -42,7 +42,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
     testHorse = await createTestHorse({
       userId: testUser.id,
       name: 'CompetitionAPIHorse',
-      age: 35, // 5 years * 7 days/year = 35 days
+      age: 5, // 5 game-years — Equoria-8y0v
       speed: 80,
       stamina: 75,
       focus: 70,

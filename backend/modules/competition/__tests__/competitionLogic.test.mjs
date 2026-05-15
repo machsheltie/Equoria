@@ -135,14 +135,25 @@ describe('getDisciplineConfig', () => {
 });
 
 describe('checkAgeRequirements', () => {
-  it('returns true for a horse age 21 (3+ game years)', () => {
-    // age is treated as days; 21 days / 7 = 3 years (min eligible)
+  // Equoria-8y0v: Horse.age stores GAME-YEARS directly (post Equoria-son6).
+  // Earlier convention treated horse.age as game-days and divided by 7.
+  it('returns true for a horse age 3 (minimum eligible)', () => {
+    const result = checkAgeRequirements({ age: 3 });
+    expect(result).toBe(true);
+  });
+
+  it('returns true for a horse age 21 (maximum eligible)', () => {
     const result = checkAgeRequirements({ age: 21 });
     expect(result).toBe(true);
   });
 
   it('returns false for a foal under minimum age', () => {
     const result = checkAgeRequirements({ age: 1 });
+    expect(result).toBe(false);
+  });
+
+  it('returns false for a retired horse (>21 years)', () => {
+    const result = checkAgeRequirements({ age: 22 });
     expect(result).toBe(false);
   });
 });

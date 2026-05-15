@@ -20,11 +20,12 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 // Fixtures
 // ---------------------------------------------------------------------------
 
-// age is stored in game-days; 7 days = 1 in-game year (checkAgeRequirements uses Math.floor(age/7))
+// Equoria-8y0v: Horse.age stores GAME-YEARS directly (per Equoria-son6).
+// checkAgeRequirements compares horse.age >= 3 && <= 21 with no /7 conversion.
 const validHorse = {
   id: 1,
   name: 'Spirit',
-  age: 35, // 5 years = 35 days
+  age: 5, // 5 game-years (eligible: 3-21)
   healthStatus: 'Good',
   speed: 60,
   stamina: 60,
@@ -60,15 +61,15 @@ describe('validateCompetitionEntry', () => {
     expect(result.errors).toHaveLength(0);
   });
 
-  it('rejects a horse that is too young (age < 3 years = <21 days)', async () => {
-    const youngHorse = { ...validHorse, age: 2 }; // 2 days = 0 years → ineligible; age<3 in days also catches the message
+  it('rejects a horse that is too young (age < 3 game-years)', async () => {
+    const youngHorse = { ...validHorse, age: 2 }; // 2 game-years → ineligible
     const result = await validateCompetitionEntry(youngHorse, validShow, validUser);
     expect(result.eligible).toBe(false);
     expect(result.errors.some(e => /too young/i.test(e))).toBe(true);
   });
 
-  it('rejects a horse that is too old (age > 21 years = >147 days)', async () => {
-    const oldHorse = { ...validHorse, age: 154 }; // 22 years = 154 days
+  it('rejects a horse that is too old (age > 21 game-years)', async () => {
+    const oldHorse = { ...validHorse, age: 22 }; // 22 game-years → retired
     const result = await validateCompetitionEntry(oldHorse, validShow, validUser);
     expect(result.eligible).toBe(false);
     expect(result.errors.some(e => /retired/i.test(e))).toBe(true);
@@ -161,20 +162,20 @@ describe('getCompetitionEligibilitySummary', () => {
     expect(summary).toHaveProperty('disciplineScore');
   });
 
-  it('marks age-eligible for a 5-year-old horse (35 days)', () => {
+  it('marks age-eligible for a 5-year-old horse', () => {
     const summary = getCompetitionEligibilitySummary(validHorse, 'Racing');
     expect(summary.ageEligible).toBe(true);
-    expect(summary.currentAge).toBe(35); // raw day value stored on horse
+    expect(summary.currentAge).toBe(5); // raw game-year value stored on horse
   });
 
-  it('marks age-ineligible for a 2-day-old horse (0 years)', () => {
-    const youngHorse = { ...validHorse, age: 2 }; // 2 days = 0 years
+  it('marks age-ineligible for a 2-year-old horse (under minimum)', () => {
+    const youngHorse = { ...validHorse, age: 2 };
     const summary = getCompetitionEligibilitySummary(youngHorse, 'Racing');
     expect(summary.ageEligible).toBe(false);
   });
 
-  it('marks age-ineligible for a 154-day-old horse (22 years)', () => {
-    const oldHorse = { ...validHorse, age: 154 }; // 22 years = 154 days
+  it('marks age-ineligible for a 22-year-old horse (retired)', () => {
+    const oldHorse = { ...validHorse, age: 22 };
     const summary = getCompetitionEligibilitySummary(oldHorse, 'Racing');
     expect(summary.ageEligible).toBe(false);
   });

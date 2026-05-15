@@ -149,7 +149,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
         return tx.horse.create({
           data: {
             name: 'Competition Integration Champion',
-            age: 35, // 5 years = 35 days (mature and experienced)
+            age: 5, // 5 game-years (mature and experienced) — Equoria-8y0v
             breed: { connect: { id: breed.id } },
             user: { connect: { id: testUser.id } },
             sex: 'Stallion',

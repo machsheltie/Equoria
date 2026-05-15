@@ -492,13 +492,17 @@ export function calculateHorseLevel(horse, discipline) {
 
 /**
  * Check if horse meets age requirements (3-21 years old)
- * @param {Object} horse - Horse object
+ *
+ * Equoria-8y0v: Horse.age stores GAME-YEARS (per Equoria-son6). Compare directly;
+ * do NOT divide by 7 — that produced a double-divide because the cron already
+ * converts days→years before persisting.
+ *
+ * @param {Object} horse - Horse object (horse.age is in game-years)
  * @returns {boolean} Whether horse meets age requirements
  */
 export function checkAgeRequirements(horse) {
   try {
-    const ageInDays = horse.age || 0;
-    const ageInYears = Math.floor(ageInDays / 7); // Convert days to years (1 year = 7 days)
+    const ageInYears = horse.age || 0;
     return ageInYears >= 3 && ageInYears <= 21;
   } catch (error) {
     logger.error('[competitionLogic.checkAgeRequirements] Error:', error.message);
