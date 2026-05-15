@@ -42,6 +42,7 @@ describe('useHorseFilters', () => {
         breedIds: [],
         disciplines: [],
         trainingStatus: 'all',
+        coatColors: [],
       });
     });
 
@@ -99,7 +100,16 @@ describe('useHorseFilters', () => {
         breedIds: ['1', '2'],
         disciplines: ['Racing'],
         trainingStatus: 'trained',
+        coatColors: [],
       });
+    });
+
+    it('should read coat colors from URL (Equoria-92ss)', () => {
+      const { result } = renderHook(() => useHorseFilters(), {
+        wrapper: createWrapper('/?colors=Bay,Chestnut,Black'),
+      });
+
+      expect(result.current.filters.coatColors).toEqual(['Bay', 'Chestnut', 'Black']);
     });
 
     it('should handle invalid age params', () => {
@@ -259,6 +269,7 @@ describe('useHorseFilters', () => {
         breedIds: [],
         disciplines: [],
         trainingStatus: 'all',
+        coatColors: [],
       });
     });
 
@@ -278,6 +289,7 @@ describe('useHorseFilters', () => {
         breedIds: [],
         disciplines: [],
         trainingStatus: 'all',
+        coatColors: [],
       });
     });
   });

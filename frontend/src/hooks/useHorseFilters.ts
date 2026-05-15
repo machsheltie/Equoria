@@ -21,6 +21,10 @@ export interface HorseFilters {
   breedIds: string[];
   disciplines: string[];
   trainingStatus: 'all' | 'trained' | 'untrained' | 'in_training';
+  // Equoria-92ss — coat color (phenotype.colorName) filter. Case-insensitive
+  // exact match on the list. Empty array means "any color" — legacy horses
+  // without phenotype.colorName are excluded when this filter is non-empty.
+  coatColors: string[];
 }
 
 /**
@@ -68,6 +72,7 @@ export function useHorseFilters() {
       breedIds: parseArrayParam(searchParams.get('breeds')),
       disciplines: parseArrayParam(searchParams.get('disciplines')),
       trainingStatus: parseTrainingStatus(searchParams.get('status')),
+      coatColors: parseArrayParam(searchParams.get('colors')),
     };
   }, [searchParams]);
 
@@ -121,6 +126,15 @@ export function useHorseFilters() {
           params.delete('disciplines');
         } else {
           params.set('disciplines', newFilters.disciplines.join(','));
+        }
+      }
+
+      // Update coatColors (Equoria-92ss)
+      if (newFilters.coatColors !== undefined) {
+        if (newFilters.coatColors.length === 0) {
+          params.delete('colors');
+        } else {
+          params.set('colors', newFilters.coatColors.join(','));
         }
       }
 
@@ -194,6 +208,20 @@ export function useHorseFilters() {
   );
 
   /**
+   * Toggle coat color in filter (Equoria-92ss)
+   */
+  const toggleCoatColor = useCallback(
+    (color: string) => {
+      const current = filters.coatColors;
+      const next = current.includes(color)
+        ? current.filter((c) => c !== color)
+        : [...current, color];
+      setFilters({ coatColors: next });
+    },
+    [filters.coatColors, setFilters]
+  );
+
+  /**
    * Set training status (convenience method)
    */
   const setTrainingStatus = useCallback(
@@ -211,6 +239,7 @@ export function useHorseFilters() {
     setAgeRange,
     toggleBreed,
     toggleDiscipline,
+    toggleCoatColor,
     setTrainingStatus,
   };
 }

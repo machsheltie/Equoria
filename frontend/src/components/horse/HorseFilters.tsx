@@ -28,6 +28,8 @@ export interface HorseFiltersProps {
     breedIds: string[];
     disciplines: string[];
     trainingStatus: 'all' | 'trained' | 'untrained' | 'in_training';
+    /** Equoria-92ss — phenotype.colorName filter values */
+    coatColors?: string[];
   };
 
   /**
@@ -44,6 +46,20 @@ export interface HorseFiltersProps {
    * Callback to toggle discipline selection
    */
   onDisciplineToggle: (_discipline: string) => void;
+
+  /**
+   * Callback to toggle coat color selection (Equoria-92ss).
+   * Optional — pages that don't yet pipe coat color may omit it; the UI is
+   * only rendered when both this callback AND `availableCoatColors` are
+   * supplied.
+   */
+  onCoatColorToggle?: (_color: string) => void;
+
+  /**
+   * Available coat-color values present in the current horse list. Pass an
+   * empty/undefined array to hide the color filter section.
+   */
+  availableCoatColors?: string[];
 
   /**
    * Callback to change training status
@@ -97,6 +113,8 @@ const HorseFilters = ({
   onDisciplineToggle,
   onTrainingStatusChange,
   onClearFilters,
+  onCoatColorToggle,
+  availableCoatColors = [],
   breeds = [],
   isLoading = false,
   activeFilterCount = 0,
@@ -285,6 +303,37 @@ const HorseFilters = ({
               ))}
             </div>
           </div>
+
+          {/* Coat Color Filter (Equoria-92ss) — rendered only when a parent
+              page supplies the toggle handler and at least one observed color. */}
+          {onCoatColorToggle && availableCoatColors.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium text-[rgb(148,163,184)] mb-2">
+                Coat Color
+              </label>
+              <div className="space-y-2 max-h-40 overflow-y-auto">
+                {availableCoatColors.map((color) => {
+                  const selected = (filters.coatColors ?? []).includes(color);
+                  return (
+                    <label
+                      key={color}
+                      className="flex items-center gap-2 cursor-pointer hover:bg-[rgba(15,35,70,0.5)] px-2 py-1 rounded transition-colors"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selected}
+                        onChange={() => onCoatColorToggle(color)}
+                        disabled={isLoading}
+                        className="w-4 h-4 text-blue-500 border-[rgba(37,99,235,0.3)] rounded focus:ring-blue-500 disabled:cursor-not-allowed"
+                        aria-label={`Filter by ${color}`}
+                      />
+                      <span className="text-sm text-[rgb(220,235,255)]">{color}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Training Status Filter */}
           <div>

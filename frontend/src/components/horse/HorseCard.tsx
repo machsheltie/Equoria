@@ -123,6 +123,22 @@ export function HorseCard({
           <p className="text-[0.7rem] text-[var(--text-muted)] truncate">
             {[sex, age ? `${age} yrs` : null].filter(Boolean).join(' · ')}
           </p>
+          {/* Equoria-92ss — phenotype coat color chip. Falls back to
+              finalDisplayColor (legacy serializer field) and finally hides
+              the chip entirely for legacy horses with no color recorded. */}
+          {(() => {
+            const colorName = horse.phenotype?.colorName ?? horse.finalDisplayColor ?? null;
+            if (!colorName) return null;
+            return (
+              <span
+                className="mt-1 inline-block px-2 py-0.5 rounded-[var(--radius-sm)] text-[0.6rem] font-medium bg-[var(--glass-glow)] text-[var(--gold-light)] truncate max-w-full"
+                title={colorName}
+                data-testid="horse-card-color-chip"
+              >
+                {colorName}
+              </span>
+            );
+          })()}
         </div>
       </div>
 
