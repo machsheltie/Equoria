@@ -22,9 +22,15 @@ import ConformationTab from '../ConformationTab';
 vi.mock('@/hooks/api/useConformation', () => ({
   useHorseConformation: vi.fn(),
   useBreedAverages: vi.fn(),
+  // Equoria-ac5y — percentile analysis hook added to ConformationTab
+  useConformationAnalysis: vi.fn(),
 }));
 
-import { useHorseConformation, useBreedAverages } from '@/hooks/api/useConformation';
+import {
+  useHorseConformation,
+  useBreedAverages,
+  useConformationAnalysis,
+} from '@/hooks/api/useConformation';
 
 const mockConformation = {
   head: 85,
@@ -70,6 +76,13 @@ function createWrapper() {
 describe('ConformationTab', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Equoria-ac5y — default percentile mock so existing test cases don't crash.
+    // Individual tests can override with vi.mocked(useConformationAnalysis).mockReturnValueOnce(...)
+    vi.mocked(useConformationAnalysis).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      error: null,
+    } as unknown as ReturnType<typeof useConformationAnalysis>);
   });
 
   describe('Loading States', () => {

@@ -15,10 +15,12 @@
  */
 
 import React from 'react';
-import { User, RefreshCw, CheckCircle, Heart } from 'lucide-react';
+import { User, RefreshCw, CheckCircle, Heart, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import GroomPersonalityBadge from './GroomPersonalityBadge';
 import GroomTaskPanel from './GroomTaskPanel';
+// Equoria-w1vq — surface temperament x personality synergy on the assignment card
+import { useGroomHorseSynergy } from '@/hooks/api/useGrooms';
 
 export interface GroomAssignment {
   id: number;
@@ -45,7 +47,42 @@ interface GroomAssignmentCardProps {
   onAssign: () => void;
   /** When true, shows compact task list without descriptions */
   compact?: boolean;
+  /**
+   * Equoria-w1vq — horse ID (numeric). When provided alongside an assignment,
+   * the card fetches and renders the temperament-personality synergy preview
+   * (positive / neutral / negative chip) using
+   * GET /api/v1/grooms/:groomId/horses/:horseId/synergy.
+   */
+  horseId?: number;
 }
+
+// Equoria-w1vq — small chip rendering the synergy preview for an assigned groom.
+const SynergyChip: React.FC<{ groomId: number; horseId: number }> = ({ groomId, horseId }) => {
+  const { data, isLoading, error } = useGroomHorseSynergy(groomId, horseId);
+  if (isLoading || error || !data) return null;
+
+  const { synergyModifier, message } = data;
+  const sign = synergyModifier > 0 ? 'positive' : synergyModifier < 0 ? 'negative' : 'neutral';
+  const colorClass =
+    sign === 'positive'
+      ? 'bg-emerald-900/30 border-emerald-500/40 text-emerald-300'
+      : sign === 'negative'
+        ? 'bg-rose-900/30 border-rose-500/40 text-rose-300'
+        : 'bg-[rgba(37,99,235,0.15)] border-[rgba(37,99,235,0.3)] text-[rgb(148,163,184)]';
+
+  return (
+    <div
+      className={`mt-3 flex items-start gap-2 rounded-md border px-3 py-2 ${colorClass}`}
+      data-testid="groom-synergy-chip"
+      data-synergy-sign={sign}
+    >
+      <Sparkles size={14} className="flex-shrink-0 mt-0.5" aria-hidden="true" />
+      <span className="text-xs font-medium" data-testid="groom-synergy-message">
+        {message}
+      </span>
+    </div>
+  );
+};
 
 /** Skill level display label */
 function skillLabel(skillLevel: string): string {
@@ -126,6 +163,7 @@ const GroomAssignmentCard: React.FC<GroomAssignmentCardProps> = ({
   horseAge,
   onAssign,
   compact = false,
+  horseId,
 }) => {
   // Empty state: no groom assigned
   if (!assignment) {
@@ -212,6 +250,11 @@ const GroomAssignmentCard: React.FC<GroomAssignmentCardProps> = ({
 
         {/* Bond score */}
         <BondScoreBar score={assignment.bondScore} />
+
+        {/* Equoria-w1vq — temperament x personality synergy preview */}
+        {horseId !== undefined && (
+          <SynergyChip groomId={assignment.groomId} horseId={horseId} />
+        )}
 
         {/* Task completion notice */}
         {assignment.lastTaskCompletedAt && (

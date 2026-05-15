@@ -49,6 +49,40 @@ export function useHorseConformation(
   });
 }
 
+// Equoria-ac5y — per-region percentile ranking against the same-breed population
+export interface ConformationAnalysisRegion {
+  score: number;
+  breedMean: number | null;
+  percentile: number;
+}
+
+export interface ConformationAnalysis {
+  horseId: number;
+  horseName: string;
+  breedId: number;
+  breedName: string;
+  breedMeanAvailable: boolean;
+  totalHorsesInBreed: number;
+  analysis: Record<string, ConformationAnalysisRegion>;
+  overallConformation: ConformationAnalysisRegion;
+}
+
+/**
+ * Fetch percentile-ranked conformation analysis for a horse.
+ * Endpoint: GET /api/v1/horses/:id/conformation/analysis
+ */
+export function useConformationAnalysis(
+  horseId: number | string,
+): UseQueryResult<ConformationAnalysis, Error> {
+  return useQuery({
+    queryKey: ['horse', String(horseId), 'conformation', 'analysis'],
+    queryFn: () => horsesApi.getConformationAnalysis(horseId),
+    enabled: horseId !== null && horseId !== undefined && horseId !== '',
+    staleTime: 5 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+  });
+}
+
 /**
  * Fetch breed average conformation scores from the backend.
  * Endpoint: GET /api/v1/breeds/:id/conformation-averages

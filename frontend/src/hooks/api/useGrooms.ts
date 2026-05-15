@@ -113,6 +113,24 @@ export function useAssignGroom() {
   });
 }
 
+// Equoria-w1vq — temperament x personality synergy preview
+export interface SynergyPreview {
+  synergyModifier: number;
+  temperament: string | null;
+  personality: string | null;
+  message: string;
+}
+
+export function useGroomHorseSynergy(groomId: number | null, horseId: number | null) {
+  return useQuery<SynergyPreview, ApiError>({
+    queryKey: ['groom-horse-synergy', groomId, horseId],
+    queryFn: () => groomsApi.getSynergy(groomId as number, horseId as number),
+    enabled: Boolean(groomId) && Boolean(horseId),
+    staleTime: 5 * 60 * 1000, // 5 minutes — temperament + personality rarely change
+    gcTime: 30 * 60 * 1000,
+  });
+}
+
 export function useDeleteAssignment() {
   const queryClient = useQueryClient();
 
