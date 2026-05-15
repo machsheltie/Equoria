@@ -11,6 +11,7 @@
 
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
+import { applyRiderModifiers, computeRiderModifiers } from '../../../utils/riderBonus.mjs';
 
 const VALID_DISCIPLINES = [
   'Western Pleasure',
@@ -287,6 +288,21 @@ export async function executeClosedShows(req, res) {
         continue;
       }
 
+      // Resolve active RiderAssignment per entry BEFORE scoring (Equoria-5bkh).
+      // Prior code computed score with NO rider modifier and queried
+      // RiderAssignment only post-hoc for stat tracking — hired riders had
+      // ZERO impact on scoring. We now load each entry's active assignment
+      // once and reuse it for both modifier application AND stat tracking
+      // below, avoiding a duplicate DB query.
+      const horseIds = entries.map(e => e.horseId);
+      const riderAssignments = horseIds.length
+        ? await prisma.riderAssignment.findMany({
+            where: { horseId: { in: horseIds }, isActive: true },
+            include: { rider: true },
+          })
+        : [];
+      const assignmentByHorseId = new Map(riderAssignments.map(ra => [ra.horseId, ra]));
+
       // Score each entry
       const scored = entries.map(entry => {
         const h = entry.horse;
@@ -298,7 +314,19 @@ export async function executeClosedShows(req, res) {
             (h.boldness ?? 50)) /
           5;
         const luck = (Math.random() - 0.5) * 18; // ±9%
-        return { entry, score: Math.max(0, Math.round(base + luck)) };
+        const subtotal = Math.max(0, base + luck);
+
+        // Apply rider modifiers if an active rider is assigned to this horse.
+        // computeRiderModifiers returns 0/0 for missing/null/malformed input —
+        // safe to call unconditionally.
+        const assignment = assignmentByHorseId.get(entry.horseId);
+        const { bonusPercent, penaltyPercent } = computeRiderModifiers({
+          rider: assignment?.rider ?? null,
+          discipline: show.discipline,
+        });
+        const scoreWithRider = applyRiderModifiers(subtotal, bonusPercent, penaltyPercent);
+
+        return { entry, score: Math.max(0, Math.round(scoreWithRider)), assignment };
       });
 
       // Sort descending by score
@@ -307,7 +335,7 @@ export async function executeClosedShows(req, res) {
       const totalPrize = Math.max(0, show.prize);
       const prizeSlots = [0.5, 0.3, 0.2]; // 1st/2nd/3rd shares
 
-      const resultOps = scored.map(async ({ entry, score }, i) => {
+      const resultOps = scored.map(async ({ entry, score, assignment }, i) => {
         const placement = i + 1;
         const prizeShare = prizeSlots[i] ?? 0;
         const prize = Math.floor(totalPrize * prizeShare);
@@ -355,13 +383,12 @@ export async function executeClosedShows(req, res) {
           }
         }
 
-        // Increment rider competition stats if an active rider is assigned
-        const riderAssignment = await prisma.riderAssignment.findFirst({
-          where: { horseId: entry.horseId, isActive: true },
-        });
-        if (riderAssignment) {
+        // Increment rider competition stats using the assignment we already
+        // loaded for scoring (Equoria-5bkh). This replaces the previous
+        // duplicate findFirst() lookup.
+        if (assignment) {
           await prisma.rider.update({
-            where: { id: riderAssignment.riderId },
+            where: { id: assignment.riderId },
             data: {
               totalCompetitions: { increment: 1 },
               ...(placement === 1 ? { totalWins: { increment: 1 } } : {}),
