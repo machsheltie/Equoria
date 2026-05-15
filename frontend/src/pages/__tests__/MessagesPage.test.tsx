@@ -250,4 +250,80 @@ describe('MessagesPage', () => {
     expect(screen.getByTestId('tab-notifications')).toHaveAttribute('aria-selected', 'true');
     expect(screen.getByTestId('empty-notifications')).toBeInTheDocument();
   });
+
+  // Regression: Equoria-rtog. Pre-fix, the Notifications tab destructured
+  // payload.{stat,amount,feedName} for every notif, so any foal_born row
+  // crashed the tab. After the dispatch-by-type fix, mixed types must
+  // render side-by-side without throwing, and unknown types must fall back.
+  it('renders mixed stat_gain + foal_born + unknown notifications without crashing', async () => {
+    mockUseGameNotifications.mockReturnValue({
+      data: {
+        notifications: [
+          {
+            id: 'n-stat',
+            type: 'stat_gain',
+            isRead: false,
+            createdAt: new Date().toISOString(),
+            payload: {
+              horseName: 'Stardust',
+              stat: 'speed',
+              amount: 2,
+              feedName: 'Premium Oats',
+            },
+          },
+          {
+            id: 'n-foal',
+            type: 'foal_born',
+            isRead: false,
+            createdAt: new Date().toISOString(),
+            payload: {
+              foalName: 'Comet Jr',
+              foalId: 42,
+              damName: 'Comet',
+              sireName: 'Blaze',
+            },
+          },
+          {
+            id: 'n-unknown',
+            type: 'something_new',
+            isRead: true,
+            createdAt: new Date().toISOString(),
+            payload: { whatever: 1 },
+          },
+        ],
+        unreadCount: 2,
+      },
+      isLoading: false,
+    });
+
+    const user = userEvent.setup();
+    const Wrapper = createWrapper();
+    render(
+      <Wrapper>
+        <MessagesPage />
+      </Wrapper>
+    );
+
+    await user.click(screen.getByTestId('tab-notifications'));
+
+    // stat_gain row renders with its existing copy
+    const statRow = screen.getByTestId('game-notif-n-stat');
+    expect(statRow).toBeInTheDocument();
+    expect(statRow).toHaveAttribute('data-notif-type', 'stat_gain');
+    expect(statRow).toHaveTextContent('Stardust');
+    expect(statRow).toHaveTextContent('+2 Speed from Premium Oats');
+
+    // foal_born row renders with the new copy
+    const foalRow = screen.getByTestId('game-notif-n-foal');
+    expect(foalRow).toBeInTheDocument();
+    expect(foalRow).toHaveAttribute('data-notif-type', 'foal_born');
+    expect(foalRow).toHaveTextContent('Comet Jr');
+    expect(foalRow).toHaveTextContent('Out of Comet by Blaze.');
+
+    // unknown type falls back rather than crashing
+    const fallbackRow = screen.getByTestId('game-notif-n-unknown');
+    expect(fallbackRow).toBeInTheDocument();
+    expect(fallbackRow).toHaveAttribute('data-notif-type', 'something_new');
+    expect(fallbackRow).toHaveTextContent('New notification');
+  });
 });
