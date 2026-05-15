@@ -29,6 +29,7 @@ import { HorseCard } from '@/components/horse/HorseCard';
 import { useHorses } from '@/hooks/api/useHorses';
 import { useVetServices, useBookVetAppointment } from '@/hooks/api/useVet';
 import type { VetService } from '@/hooks/api/useVet';
+import type { HorseSummary } from '@/lib/api-client';
 
 type VetTab = 'horses' | 'services';
 
@@ -106,12 +107,12 @@ const HorsesHealthTab: React.FC<HorsesHealthTabProps> = ({
     );
   }
 
-  const selectedHorse = horses.find((h) => h.id === selectedHorseId) ?? null;
+  const selectedHorse = horses.find((h: HorseSummary) => h.id === selectedHorseId) ?? null;
 
   return (
     <div data-testid="horses-health-tab" className="space-y-6">
       <CardGrid aria-label="Your horses">
-        {horses.map((horse) => (
+        {horses.map((horse: HorseSummary) => (
           <HorseCard
             key={horse.id}
             horse={horse}
@@ -138,7 +139,7 @@ const HorsesHealthTab: React.FC<HorsesHealthTabProps> = ({
             <p className="text-xs text-[var(--text-muted)]">Loading services…</p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {services.map((service) => {
+              {services.map((service: VetService) => {
                 const isThisBooked =
                   confirmedHorseId === selectedHorse.id && confirmedServiceId === service.id;
                 const isThisLoading =
@@ -233,7 +234,7 @@ const ServicesTab: React.FC = () => {
   return (
     <div data-testid="vet-services-tab">
       <CardGrid aria-label="Vet services">
-        {services.map((service) => (
+        {services.map((service: VetService) => (
           <ItemCard
             key={service.id}
             data-testid={`vet-service-${service.id}`}
@@ -280,7 +281,7 @@ const VeterinarianPage: React.FC = () => {
   } = useBookVetAppointment();
 
   const handleSelectHorse = (id: number) => {
-    setSelectedHorseId((prev) => (prev === id ? null : id));
+    setSelectedHorseId((prev: number | null) => (prev === id ? null : id));
   };
 
   const handleBook = (horseId: number, serviceId: string) => {
@@ -292,7 +293,7 @@ const VeterinarianPage: React.FC = () => {
           setConfirmedHorseId(horseId);
           setConfirmedServiceId(serviceId);
           setBookingServiceId(null);
-          const service = services.find((s) => s.id === serviceId);
+          const service = services.find((s: VetService) => s.id === serviceId);
           toast.success(`Appointment booked${service ? ` — ${service.name}` : ''}!`);
         },
         onError: () => {
