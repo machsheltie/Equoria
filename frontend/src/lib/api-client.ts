@@ -954,6 +954,33 @@ export const horsesApi = {
         overallConformation: number;
       };
     }>(`/api/v1/breeds/${breedId}/conformation-averages`),
+  // Equoria-aa6b — gait scores endpoint
+  getGaits: (horseId: number | string) =>
+    apiClient.get<{
+      horseId: number;
+      horseName: string;
+      breedId: number;
+      gaitScores: {
+        walk: number;
+        trot: number;
+        canter: number;
+        gallop: number;
+        gaiting: { name: string; score: number }[] | null;
+      };
+    } | null>(`/api/v1/horses/${horseId}/gaits`),
+  // Equoria-876o — temperament reference definitions (all 11 types)
+  getTemperamentDefinitions: () =>
+    apiClient.get<{
+      count: number;
+      definitions: {
+        name: string;
+        description: string;
+        prevalenceNote: string;
+        trainingModifiers: { xpModifier: number; scoreModifier: number };
+        competitionModifiers: { riddenModifier: number; conformationModifier: number };
+        bestGroomPersonalities: string[];
+      }[];
+    }>(`/api/v1/horses/temperament-definitions`),
 };
 
 /**

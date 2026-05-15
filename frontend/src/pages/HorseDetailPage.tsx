@@ -57,6 +57,10 @@ import RecentGains from '../components/horse/RecentGains';
 import AgeUpCounter from '../components/horse/AgeUpCounter';
 import TrainingRecommendations from '../components/horse/TrainingRecommendations';
 import ConformationTab from '../components/horse/ConformationTab';
+// Equoria-aa6b — walk/trot/canter/gallop + breed-specific gait scores tab
+import GaitsTab from '../components/horse/GaitsTab';
+// Equoria-876o — reference modal for the 11 temperament definitions
+import TemperamentReferenceModal from '../components/horse/TemperamentReferenceModal';
 import ScoreProgressionPanel from '../components/training/ScoreProgressionPanel';
 import { SkeletonBase } from '@/components/ui/SkeletonCard';
 import { useAuth } from '@/contexts/AuthContext';
@@ -79,6 +83,7 @@ type TabType =
   | 'disciplines'
   | 'genetics'
   | 'conformation'
+  | 'gaits'
   | 'progression'
   | 'training'
   | 'competition'
@@ -135,6 +140,8 @@ const HorseDetailPage: React.FC = () => {
   const [editName, setEditName] = useState('');
   const [showRiderPicker, setShowRiderPicker] = useState(false);
   const [showListModal, setShowListModal] = useState(false);
+  // Equoria-876o — temperament reference modal trigger
+  const [showTemperamentReference, setShowTemperamentReference] = useState(false);
   const [listPrice, setListPrice] = useState('');
 
   const listHorseMutation = useListHorse();
@@ -309,6 +316,7 @@ const HorseDetailPage: React.FC = () => {
     { id: 'disciplines', label: 'Disciplines', icon: <Trophy className="w-4 h-4" /> },
     { id: 'genetics', label: 'Genetics', icon: <Users className="w-4 h-4" /> },
     { id: 'conformation', label: 'Conformation', icon: <Ruler className="w-4 h-4" /> },
+    { id: 'gaits', label: 'Gaits', icon: <Wind className="w-4 h-4" /> },
     { id: 'progression', label: 'Progression', icon: <TrendingUp className="w-4 h-4" /> },
     { id: 'training', label: 'Training', icon: <Dumbbell className="w-4 h-4" /> },
     { id: 'competition', label: 'Competitions', icon: <Award className="w-4 h-4" /> },
@@ -419,6 +427,30 @@ const HorseDetailPage: React.FC = () => {
                       <span>Gender: {horse.gender}</span>
                       <span>•</span>
                       <span>Health: {horse.healthStatus}</span>
+                    </div>
+                    {/* Equoria-8k7k + Equoria-876o — temperament line w/ reference modal trigger */}
+                    <div
+                      className="flex flex-wrap items-center gap-2 text-sm fantasy-body text-[var(--text-secondary)] mt-1"
+                      data-testid="horse-temperament-line"
+                    >
+                      <span>
+                        Temperament:{' '}
+                        <span
+                          className="font-medium text-[var(--text-primary)]"
+                          data-testid="horse-temperament-value"
+                        >
+                          {horse.temperament ?? 'Unknown'}
+                        </span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowTemperamentReference(true)}
+                        className="text-xs text-burnished-gold hover:underline"
+                        data-testid="temperament-reference-open"
+                        aria-label="Open temperament reference"
+                      >
+                        Learn more
+                      </button>
                     </div>
                     {horse.forSale && (
                       <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-emerald-900/30 border border-emerald-500/40 text-emerald-400 text-xs w-fit">
@@ -554,6 +586,7 @@ const HorseDetailPage: React.FC = () => {
               </Suspense>
             )}
             {activeTab === 'conformation' && <ConformationTab horseId={horse.id} />}
+            {activeTab === 'gaits' && <GaitsTab horseId={horse.id} />}
             {activeTab === 'progression' && <ProgressionTab horse={horse} />}
             {activeTab === 'training' && (
               <Suspense
@@ -590,6 +623,13 @@ const HorseDetailPage: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Equoria-876o — Temperament Reference Modal */}
+      <TemperamentReferenceModal
+        isOpen={showTemperamentReference}
+        onClose={() => setShowTemperamentReference(false)}
+        highlightTemperament={horse.temperament ?? null}
+      />
 
       {/* Rider Picker Modal (Story 15-5) */}
       {showRiderPicker && (
