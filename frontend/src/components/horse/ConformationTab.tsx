@@ -193,8 +193,7 @@ const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
           </li>
           <li>• Scores range from 0-100, with higher scores indicating better conformation</li>
           <li>
-            • The Overall score is calculated as the average of all 7 body regions (excluding
-            itself)
+            • The Overall score is calculated as the average of all 8 body region scores
           </li>
           <li>• Good conformation contributes to better movement quality and longevity</li>
           {canShowComparison && (
