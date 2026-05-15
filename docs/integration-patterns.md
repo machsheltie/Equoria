@@ -184,7 +184,7 @@ export const apiClient = {
 - **Double-submit cookie pattern:** Backend sets a `csrfToken` cookie (`httpOnly: false`)
 - **Frontend reads:** `getCsrfToken()` fetches from `/api/auth/csrf-token` and caches it
 - **Mutations include:** `X-CSRF-Token` header on POST/PUT/DELETE/PATCH
-- **Test bypass:** In test mode, sends `x-test-skip-csrf: true` instead
+- **No test bypass:** Per Epic 21R doctrine, test-only CSRF bypass headers (`x-test-skip-csrf`) are forbidden. Tests acquire a real CSRF token via `/api/auth/csrf-token` like production clients. See `backend/__tests__/middleware/bypassHeaderHardening.test.mjs` for the sentinel.
 
 ### Cookie Security Settings
 
@@ -200,12 +200,14 @@ backend/utils/cookieConfig.mjs
 │ refreshToken   │ true     │ prod     │ lax/     │ 7 days               │
 │                │          │ only     │ strict   │ path: /auth/refresh  │
 ├────────────────┼──────────┼──────────┼──────────┼──────────────────────┤
-│ csrfToken      │ false    │ prod     │ lax/     │ 15 min               │
-│                │          │ only     │ strict   │                      │
+│ csrfToken      │ false    │ prod     │ lax/     │ 24 hours             │
+│                │          │ only     │ strict   │ (21R-AUTH-2)         │
 └────────────────┴──────────┴──────────┴──────────┴──────────────────────┘
 
 sameSite: 'lax' in development (cross-port 3000↔3001), 'strict' in production
 ```
+
+**21R-AUTH-2 rationale for the 24-hour CSRF TTL:** The CSRF cookie lifetime is intentionally decoupled from the 15-minute access-token lifetime so a user keeps a valid CSRF cookie across silent access-token refreshes. The `csrf-csrf` library's HMAC binds the token to `JWT_SECRET`, not to session identity, so a longer cookie lifetime does not weaken CSRF protection. See `backend/utils/cookieConfig.mjs` lines 108–125.
 
 ## React Query Caching Strategy
 
@@ -309,14 +311,19 @@ interface ApiError {
 
 Frontend tests use MSW in strict mode (`onUnhandledRequest: 'error'`). Every API call in tests must have a matching MSW handler or the test fails.
 
-### Test-Specific Headers
+### Test-Specific Headers — FORBIDDEN per Epic 21R doctrine
 
-| Header                     | Purpose                                             |
-| -------------------------- | --------------------------------------------------- |
-| `x-test-skip-csrf`         | Bypasses CSRF validation in test environment        |
-| `x-test-bypass-rate-limit` | Bypasses rate limiting in backend integration tests |
+Test-only bypass headers (`x-test-skip-csrf`, `x-test-bypass-rate-limit`, `x-test-user`, `x-test-bypass-auth`, `x-test-bypass-ownership`) and the `VITE_E2E_TEST` production-code switch are forbidden by the 21R Beta Readiness Doctrine in `CLAUDE.md`. They are not active in this codebase. Sentinel tests fail CI if they are reintroduced:
 
-The API client automatically sends `x-test-skip-csrf: true` when `import.meta.env.MODE === 'test'` or `VITE_E2E_TEST === 'true'`.
+- `backend/__tests__/middleware/bypassHeaderHardening.test.mjs` — asserts `csrf.mjs` contains no `x-test-skip-csrf` reference.
+- `backend/modules/services/__tests__/rate-limit-no-bypass.test.mjs` — asserts `x-test-bypass-rate-limit` has no effect on the limiter.
+- `scripts/doctrine-checks/check-no-bypass-headers.sh` — repo-wide grep for active bypass-header references.
+
+#### Correct test patterns
+
+- **Frontend (Vitest + RTL):** Use MSW handlers in strict mode to intercept API calls. No bypass headers needed — MSW responds before the request leaves the test process.
+- **Backend integration (supertest):** Use `backend/tests/helpers/testAuth.mjs` real-token helpers. The helper acquires a real JWT plus a real CSRF token via `/api/auth/csrf-token`, exactly like a production client.
+- **Playwright E2E:** Real credentials, real backend, real DB. No route interception to inject bypasses, no `test.skip` on beta-critical paths.
 
 ### Backend Test Strategy
 
@@ -374,20 +381,47 @@ Initial chunk: ~321KB (with React.lazy code splitting on routes).
 
 ## Backend Middleware Stack
 
-### Execution Order
+### Execution Order (matches `backend/app.mjs`)
 
 ```
-Request → Helmet → CORS → RateLimit → BodyParser → CookieParser
-       → CSRF → RequestLogger → Compression → ResponseOptimization
-       → Pagination → Routes → ErrorLogger → ErrorHandler → Response
+Request
+  → Sentry (initializeSentry)
+  → addSecurityHeaders            (21R-SEC: Permissions-Policy / Referrer-Policy before helmet)
+  → helmet(helmetConfig)          (CSP + COEP + HSTS)
+  → enforceNoOriginPolicy         (21R-SEC: hard-reject no-origin API mutations)
+  → cors(corsOptionsDelegate)
+  → apiLimiter                    (rate limiting on /api/*)
+  → express.json (verifyJsonBody) (21R-SEC-1/3: raw-bytes duplicate-key + depth-cap scan)
+  → express.urlencoded (verifyUrlEncodedBody)  (21R-SEC-5)
+  → rejectPollutedRequestBody     (21R-SEC: CWE-1321 body guard)
+  → rejectPollutedRequestQuery    (21R-SEC-4 Equoria-iq84: query guard)
+  → cookieParser
+  → requestLogger
+  → addDocumentationHeaders
+  → compression + responseOptimization + paginationMiddleware
+  → performanceMonitoring
+  → createResourceManagementMiddleware  (memory / perf tracking)
+  → memoryMonitoringMiddleware
+  → databaseConnectionMiddleware (Prisma)
+  → requestTimeoutMiddleware (30s)
+  → Routers (publicRouter, adminRouter, authRouter, …)
+  → errorRequestLogger
+  → attachSentryErrorHandler
+  → csrfErrorHandler
+  → requestBodySecurityErrorHandler  (21R-SEC-6 Equoria-tpbu: RequestBodySecurityError → 400)
+  → errorHandler (global)
+  → Response
 ```
+
+**Why the 21R-SEC layers are positioned where they are:** see `.claude/rules/SECURITY.md` § "Prototype Pollution Prevention (CWE-1321)" for the rationale of each guard. The order is intentional and must not be reshuffled without re-reviewing that section.
+
+**CSRF is router-scoped, not global.** `csrfProtection` is mounted by the routers that need it — for example `authRouter` (`backend/modules/auth/routes/authRouter.mjs:160`) and `adminRouter` (`backend/modules/admin/routes/adminRouter.mjs:166`) — so unauthenticated read endpoints under `publicRouter` (e.g. `/health`, `/ready`, `/ping`) and the SPA static fallback are not gated by CSRF. The `csrfErrorHandler` above is a global error tap that converts a thrown CSRF error from any router into a uniform 403 envelope.
 
 ### Rate Limiting
 
 - **Global:** 100 requests per 15 minutes per IP
 - **Auth endpoints:** 5 login attempts per 15 minutes
-- **Test mode:** 10,000 requests (effectively unlimited)
-- **Bypass header:** `x-test-bypass-rate-limit` for backend integration tests
+- **Test mode:** Limits raised via `NODE_ENV === 'test'` configuration (no bypass header). The `x-test-bypass-rate-limit` header is FORBIDDEN per Epic 21R doctrine; sentinel test `backend/modules/services/__tests__/rate-limit-no-bypass.test.mjs` asserts it has no effect.
 
 ## API Route Structure
 
