@@ -85,15 +85,16 @@ describe('Groom Bonding & Burnout Prevention System', () => {
   });
 
   describe('Age Restrictions', () => {
+    // Equoria-v6gg: horse.age is game-years post Equoria-son6. Fixtures updated.
     it('should allow grooming for horses 3+ years old', async () => {
-      const horse = { id: 1, age: 21, bondScore: 50 }; // 3 years old (21 days = 3 years in game time)
+      const horse = { id: 1, age: 3, bondScore: 50 }; // 3 years old
       const result = await validateGroomingEligibility(horse, 'brushing');
 
       expect(result.eligible).toBe(true);
     });
 
     it('should reject adult grooming tasks for horses under 3 years old', async () => {
-      const horse = { id: 1, age: 20, bondScore: 50 }; // Under 3 years (20 days = 2.86 years)
+      const horse = { id: 1, age: 2.86, bondScore: 50 }; // 2.86 years (just under 3)
       const result = await validateGroomingEligibility(horse, 'brushing');
 
       expect(result.eligible).toBe(false);
@@ -101,7 +102,7 @@ describe('Groom Bonding & Burnout Prevention System', () => {
     });
 
     it('should allow enrichment tasks for horses under 3 years old', async () => {
-      const horse = { id: 1, age: 10, bondScore: 30 }; // Young horse (10 days = 1.43 years)
+      const horse = { id: 1, age: 1.43, bondScore: 30 }; // 1.43 years young horse
       const result = await validateGroomingEligibility(horse, 'trust_building');
 
       expect(result.eligible).toBe(true);

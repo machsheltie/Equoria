@@ -139,20 +139,22 @@ describe('Groom Age Restrictions & Task Eligibility', () => {
   });
 
   describe('Age Boundary Conditions', () => {
-    it('should handle exactly 3 years (1095 days) as adult threshold', async () => {
-      const exactlyThreeYears = { id: 10, age: 1095, bondScore: 60 };
+    // Equoria-v6gg: horse.age is game-years post Equoria-son6. Fixture values
+    // updated from days-semantics to years-semantics.
+    it('should handle exactly 3 years as adult threshold', async () => {
+      const exactlyThreeYears = { id: 10, age: 3, bondScore: 60 };
 
       // Should be eligible for adult tasks
       const adultTaskResult = await validateGroomingEligibility(exactlyThreeYears, 'brushing');
       expect(adultTaskResult.eligible).toBe(true);
 
-      // Should also be eligible for foal tasks (transition period)
+      // Should also be eligible for foal tasks (transition period — adults get all task types)
       const foalTaskResult = await validateGroomingEligibility(exactlyThreeYears, 'gentle_touch');
       expect(foalTaskResult.eligible).toBe(true);
     });
 
-    it('should handle day before 3rd birthday (20 days)', async () => {
-      const almostThreeYears = { id: 11, age: 20, bondScore: 55 }; // 20 days = 2.86 years
+    it('should handle 2.86 years (between foal-enrichment and general-grooming bands)', async () => {
+      const almostThreeYears = { id: 11, age: 2.86, bondScore: 55 };
 
       // Should NOT be eligible for foal enrichment tasks (age > 2 years)
       const foalTaskResult = await validateGroomingEligibility(almostThreeYears, 'gentle_touch');
@@ -175,7 +177,7 @@ describe('Groom Age Restrictions & Task Eligibility', () => {
     });
 
     it('should handle very old horses (20+ years)', async () => {
-      const veryOldHorse = { id: 13, age: 7300, bondScore: 100 }; // 20 years
+      const veryOldHorse = { id: 13, age: 20, bondScore: 100 };
       const result = await validateGroomingEligibility(veryOldHorse, 'brushing');
 
       expect(result.eligible).toBe(true);

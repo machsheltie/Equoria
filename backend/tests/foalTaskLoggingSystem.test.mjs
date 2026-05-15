@@ -92,8 +92,9 @@ describe('Foal Task Logging & Streak Tracking System', () => {
   });
 
   describe('Age-Based Task Eligibility', () => {
+    // Equoria-v6gg: horse.age is game-years post Equoria-son6. Fixtures updated.
     it('should allow only enrichment tasks for 0-2 year olds', async () => {
-      const youngFoal = { id: 1, age: 7, bondScore: 10 }; // 1 year old (7 days = 1 year in game time)
+      const youngFoal = { id: 1, age: 1, bondScore: 10 }; // 1 year old
 
       // Should allow enrichment tasks
       const enrichmentResult = await validateGroomingEligibility(youngFoal, 'trust_building');
@@ -101,13 +102,13 @@ describe('Foal Task Logging & Streak Tracking System', () => {
       expect(enrichmentResult.taskType).toBe('enrichment');
 
       // Should reject grooming tasks for horses under 1 year
-      const zeroYearOld = { id: 2, age: 5, bondScore: 5 }; // 5 days = 0.7 years old
+      const zeroYearOld = { id: 2, age: 0.7, bondScore: 5 }; // 0.7 years old
       const groomingResult = await validateGroomingEligibility(zeroYearOld, 'hoof_handling');
       expect(groomingResult.eligible).toBe(false);
     });
 
     it('should allow both enrichment and grooming tasks for 1-3 year olds', async () => {
-      const overlapAgeFoal = { id: 3, age: 14, bondScore: 20 }; // 2 years old (14 days = 2 years in game time)
+      const overlapAgeFoal = { id: 3, age: 2, bondScore: 20 }; // 2 years old
 
       // Should allow enrichment tasks
       const enrichmentResult = await validateGroomingEligibility(overlapAgeFoal, 'desensitization');
@@ -121,7 +122,7 @@ describe('Foal Task Logging & Streak Tracking System', () => {
     });
 
     it('should allow all task types for 3+ year olds', async () => {
-      const adultHorse = { id: 4, age: 28, bondScore: 50 }; // 4 years old (28 days = 4 years in game time)
+      const adultHorse = { id: 4, age: 4, bondScore: 50 }; // 4 years old
 
       // Should allow enrichment tasks
       const enrichmentResult = await validateGroomingEligibility(adultHorse, 'trust_building');

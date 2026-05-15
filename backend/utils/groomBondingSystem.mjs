@@ -42,11 +42,17 @@ import logger from './logger.mjs';
 
 /**
  * Get eligible tasks for a horse based on age
- * @param {number} ageInDays - Horse age in days
+ *
+ * Equoria-v6gg: After Equoria-son6 migrated Horse.age to game-years, this
+ * function now accepts game-years directly. Previously it took ageInDays
+ * and divided by 7, which caused 7x age inflation when called with the
+ * post-son6 horse.age column (years), e.g. a 7-year-old became 1 year and
+ * fell back into foal-only tasks.
+ *
+ * @param {number} ageInYears - Horse age in game-years (from Horse.age column)
  * @returns {Array} Array of eligible task names
  */
-export function getEligibleTasksForAge(ageInDays) {
-  const ageInYears = ageInDays / 7; // 1 year = 7 days in game time
+export function getEligibleTasksForAge(ageInYears) {
   const eligibleTasks = [];
 
   // Ages 0-2: Enrichment tasks
@@ -95,12 +101,13 @@ export function categorizeTask(taskName) {
 
 /**
  * Get age group description for a horse
- * @param {number} ageInDays - Horse age in days
+ *
+ * Equoria-v6gg: Accepts game-years directly (was previously ageInDays / 7).
+ *
+ * @param {number} ageInYears - Horse age in game-years (from Horse.age column)
  * @returns {string} Age group description
  */
-export function getAgeGroupDescription(ageInDays) {
-  const ageInYears = ageInDays / 7; // 1 year = 7 days in game time
-
+export function getAgeGroupDescription(ageInYears) {
   if (ageInYears <= GROOM_CONFIG.FOAL_ENRICHMENT_MAX_AGE) {
     return 'young foal (0-2 years)';
   } else if (ageInYears <= GROOM_CONFIG.FOAL_GROOMING_MAX_AGE) {
@@ -167,15 +174,16 @@ export function calculateBondingEffects(
  * @returns {Object} Eligibility validation result
  */
 export async function validateGroomingEligibility(horse, groomingTask) {
-  // Check minimum age requirement (now 0 - allows foals from birth)
-  const minAgeInDays = GROOM_CONFIG.MIN_AGE_FOR_GROOMING_TASKS * 7; // 1 year = 7 days in game time
+  // Equoria-v6gg: horse.age is game-years (post Equoria-son6). Compare
+  // directly to the config's year-denominated minimum.
+  const minAgeInYears = GROOM_CONFIG.MIN_AGE_FOR_GROOMING_TASKS;
 
-  if (horse.age < minAgeInDays) {
+  if (horse.age < minAgeInYears) {
     return {
       eligible: false,
-      reason: `Horse must be at least ${GROOM_CONFIG.MIN_AGE_FOR_GROOMING_TASKS} years old for grooming tasks`,
+      reason: `Horse must be at least ${minAgeInYears} years old for grooming tasks`,
       currentAge: horse.age,
-      requiredAge: minAgeInDays,
+      requiredAge: minAgeInYears,
     };
   }
 

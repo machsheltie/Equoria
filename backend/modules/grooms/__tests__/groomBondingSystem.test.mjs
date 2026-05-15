@@ -223,29 +223,30 @@ const GENERAL_TASK = GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS[0]; // 'brushi
 // ── getEligibleTasksForAge — branch coverage ──────────────────────────────────
 
 describe('getEligibleTasksForAge — branch coverage', () => {
-  it('newborn (0 days) gets only enrichment tasks, no foal-grooming or general', () => {
+  // Equoria-v6gg: argument is now game-years (was previously ageInDays).
+  it('newborn (age=0 years) gets only enrichment tasks, no foal-grooming or general', () => {
     const tasks = getEligibleTasksForAge(0);
     expect(tasks.some(t => GROOM_CONFIG.ELIGIBLE_FOAL_ENRICHMENT_TASKS.includes(t))).toBe(true);
     expect(tasks.some(t => GROOM_CONFIG.ELIGIBLE_FOAL_GROOMING_TASKS.includes(t))).toBe(false);
     expect(tasks.some(t => GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS.includes(t))).toBe(false);
   });
 
-  it('7 days (1 year) gets enrichment + foal-grooming, no general', () => {
-    const tasks = getEligibleTasksForAge(7);
+  it('age=1 year gets enrichment + foal-grooming, no general', () => {
+    const tasks = getEligibleTasksForAge(1);
     expect(tasks.some(t => GROOM_CONFIG.ELIGIBLE_FOAL_ENRICHMENT_TASKS.includes(t))).toBe(true);
     expect(tasks.some(t => GROOM_CONFIG.ELIGIBLE_FOAL_GROOMING_TASKS.includes(t))).toBe(true);
     expect(tasks.some(t => GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS.includes(t))).toBe(false);
   });
 
-  it('21 days (3 years) gets all task types (general grooming threshold)', () => {
-    const tasks = getEligibleTasksForAge(21);
+  it('age=3 years gets all task types (general grooming threshold)', () => {
+    const tasks = getEligibleTasksForAge(3);
     expect(tasks.some(t => GROOM_CONFIG.ELIGIBLE_FOAL_ENRICHMENT_TASKS.includes(t))).toBe(true);
     expect(tasks.some(t => GROOM_CONFIG.ELIGIBLE_FOAL_GROOMING_TASKS.includes(t))).toBe(true);
     expect(tasks.some(t => GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS.includes(t))).toBe(true);
   });
 
   it('returns a deduplicated list (no task appears twice)', () => {
-    const tasks = getEligibleTasksForAge(21);
+    const tasks = getEligibleTasksForAge(3);
     expect(tasks.length).toBe([...new Set(tasks)].length);
   });
 });
@@ -265,20 +266,21 @@ describe('categorizeTask — branch coverage', () => {
 // ── getAgeGroupDescription — branch coverage ──────────────────────────────────
 
 describe('getAgeGroupDescription — branch coverage', () => {
-  it('14 days (2 years) → young foal (boundary)', () => {
-    expect(getAgeGroupDescription(14)).toBe('young foal (0-2 years)');
+  // Equoria-v6gg: argument is now game-years.
+  it('age=2 years → young foal (upper boundary of 0-2)', () => {
+    expect(getAgeGroupDescription(2)).toBe('young foal (0-2 years)');
   });
 
-  it('15 days (2.14 years) → foal (1-3 years)', () => {
-    expect(getAgeGroupDescription(15)).toBe('foal (1-3 years)');
+  it('age=2.5 years → foal (1-3 years)', () => {
+    expect(getAgeGroupDescription(2.5)).toBe('foal (1-3 years)');
   });
 
-  it('21 days (3 years) → foal (1-3 years, upper boundary)', () => {
-    expect(getAgeGroupDescription(21)).toBe('foal (1-3 years)');
+  it('age=3 years → foal (1-3 years, upper boundary)', () => {
+    expect(getAgeGroupDescription(3)).toBe('foal (1-3 years)');
   });
 
-  it('22 days (3.14 years) → adult horse (3+ years)', () => {
-    expect(getAgeGroupDescription(22)).toBe('adult horse (3+ years)');
+  it('age=3.5 years → adult horse (3+ years)', () => {
+    expect(getAgeGroupDescription(3.5)).toBe('adult horse (3+ years)');
   });
 });
 

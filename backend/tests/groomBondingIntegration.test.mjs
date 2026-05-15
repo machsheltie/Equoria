@@ -128,7 +128,7 @@ describe('Groom Bonding System Integration', () => {
         name: 'Test Horse',
         sex: 'Mare',
         dateOfBirth: birthDate,
-        age: 1460, // 4 years in days
+        age: 4, // 4 years (game-years, Equoria-v6gg)
         userId: testUser.id,
         bondScore: 20,
         daysGroomedInARow: 3,
@@ -232,17 +232,17 @@ describe('Groom Bonding System Integration', () => {
 
   describe('Age Restrictions', () => {
     it('should reject new grooming tasks for horses under 3 years old', async () => {
-      // Create young horse (2 years old in game time)
-      // In game time: 2 years = 14 days, which is under 3 years (21 days) minimum for general grooming
+      // Equoria-v6gg: horse.age is game-years (post Equoria-son6).
+      // Create a 2-year-old (under 3 years minimum for general grooming).
       const youngBirthDate = new Date();
-      youngBirthDate.setDate(youngBirthDate.getDate() - 14); // 14 days ago (2 years in game time)
+      youngBirthDate.setDate(youngBirthDate.getDate() - 14); // 14 real days = 2 game-years
 
       const youngHorse = await prisma.horse.create({
         data: {
           name: 'Young Horse',
           sex: 'Colt',
           dateOfBirth: youngBirthDate,
-          age: 14, // 14 days old (2 years in game time)
+          age: 2, // 2 years old (game-years)
           userId: testUser.id,
           bondScore: 0,
           daysGroomedInARow: 0,
