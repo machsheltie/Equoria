@@ -12,6 +12,7 @@ import {
   TEMPERAMENT_COMPETITION_MODIFIERS,
   TEMPERAMENT_GROOM_SYNERGY,
 } from '../services/temperamentService.mjs';
+import { predictBreedingColors } from '../services/breedingColorPredictionService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getFeedHealth, getVetHealth, getDisplayedHealth } from '../../../utils/horseHealth.mjs';
@@ -1393,10 +1394,8 @@ export async function getBreedingColorPrediction(req, res) {
       foalBreedProfile = breedRows[0]?.breedGeneticProfile ?? null;
     }
 
-    // Import and call the pure prediction service
-    const { predictBreedingColors } =
-      await import('../services/breedingColorPredictionService.mjs');
-
+    // Call the pure prediction service (statically imported at top — no circular dep).
+    // Pattern: PATTERN_LIBRARY.md "Per-Locus Probability — Multi-Locus Genetics Calculation".
     const prediction = predictBreedingColors(
       sire.colorGenotype,
       dam.colorGenotype,
