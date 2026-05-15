@@ -1,5 +1,31 @@
 name: OWASP ZAP Security Scan
 
+# Audit decision (Equoria-pwl9, 2026-05-15): the three continue-on-error
+# flags in this workflow are LEGITIMATE, not gate-weakening, per
+# .claude/rules/EDGE_CASE_FIX_DISCIPLINE.md section 2.
+#
+#   - Line ~262 ZAP Baseline Scan: advisory mode. WARN-threshold rules
+#     from .github/zap-rules.tsv collect alerts for SARIF triage without
+#     failing CI. Hard-block rules tagged FAIL in zap-rules.tsv still
+#     produce non-zero exits and are surfaced by the SARIF upload.
+#
+#   - Line ~278 ZAP API Scan: same rationale. Was previously missing
+#     rules_file_name (alerts duped across runs); now respects
+#     IGNORE/WARN/FAIL in zap-rules.tsv.
+#
+#   - Line ~459 Upload to GitHub Security: informational SARIF upload.
+#     The "if: always() && hashFiles(...)" guard prevents failing the
+#     job when the scan produced no SARIF — continue-on-error here
+#     ensures a transient upload network blip never masks a real ZAP
+#     finding from the steps above.
+#
+# Tracking mechanism for non-blocking findings: "Update ZAP tracking
+# issue" step writes a single rolled-up issue per run (allow_issue_writing
+# false on the actions themselves) so true findings aren't lost.
+#
+# Re-audit trigger: if zap-rules.tsv changes the FAIL set, or if a real
+# vulnerability is missed because of these flags, re-open Equoria-pwl9.
+
 on:
   push:
     branches: [master, develop]
