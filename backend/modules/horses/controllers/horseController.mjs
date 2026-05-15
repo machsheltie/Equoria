@@ -738,18 +738,72 @@ export async function getConformationAnalysis(req, res) {
       });
     }
 
-    // Get all same-breed horses for percentile calculation
-    // TODO(scalability): When breed populations exceed ~10k, switch to a SQL percentile_cont()
-    // aggregate or pre-computed percentile table to avoid loading all horses into memory.
-    const sameBreedHorses = await prisma.horse.findMany({
-      where: { breedId: horse.breedId },
-      select: { conformationScores: true },
-    });
+    // Equoria-ecph — Per-region percentiles now computed in Postgres via a
+    // single aggregate query, not by loading every same-breed horse into
+    // Node memory. The previous findMany() + filter loop was O(N) memory
+    // and O(N × 8) compute per request; this approach is O(1) memory and
+    // O(N × 8) compute on the DB side using JSONB casts and conditional
+    // COUNT(*) FILTER aggregates. Verified equivalent to the old
+    // empirical-CDF formula (count_below / total * 100, rounded).
+    //
+    // We compute the per-region "count of horses with score < horse's score"
+    // and the total valid-horse count for this breed in ONE query. Then
+    // percentile = round(count_below / total * 100). For overall, the
+    // schema may store `overallConformation` on the JSONB OR derive it from
+    // the regions; we use COALESCE on the persisted value, otherwise fall
+    // back to the 8-region average in the SQL itself.
+    const overallScore = scores.overallConformation ?? calculateOverallConformation(scores);
 
-    // Filter out horses without conformation scores
-    const validHorses = sameBreedHorses.filter(
-      h => h.conformationScores !== null && h.conformationScores !== undefined,
-    );
+    const regionParams = CONFORMATION_REGIONS.map(r => scores[r] ?? 0);
+    // CONFORMATION_REGIONS is a fixed compile-time list so embedding region
+    // names in the SQL is safe — no user input touches the identifiers. The
+    // 9 numeric thresholds (8 regions + overall) are passed as $1..$9, which
+    // Prisma's $queryRawUnsafe with positional parameters safely binds.
+    const filterClauses = CONFORMATION_REGIONS.map(
+      (region, idx) =>
+        `COUNT(*) FILTER (WHERE ("conformationScores"->>'${region}')::numeric < $${idx + 1}) AS lt_${region}`,
+    ).join(',\n          ');
+
+    // For "overall", prefer the stored overallConformation; if missing,
+    // compute the row's overall as the average of the 8 region scores.
+    const overallExpr = `
+      COALESCE(
+        ("conformationScores"->>'overallConformation')::numeric,
+        (
+          (
+            COALESCE(("conformationScores"->>'head')::numeric, 0) +
+            COALESCE(("conformationScores"->>'neck')::numeric, 0) +
+            COALESCE(("conformationScores"->>'shoulders')::numeric, 0) +
+            COALESCE(("conformationScores"->>'back')::numeric, 0) +
+            COALESCE(("conformationScores"->>'hindquarters')::numeric, 0) +
+            COALESCE(("conformationScores"->>'legs')::numeric, 0) +
+            COALESCE(("conformationScores"->>'hooves')::numeric, 0) +
+            COALESCE(("conformationScores"->>'topline')::numeric, 0)
+          ) / 8.0
+        )
+      )
+    `;
+
+    // $9 = overallScore. Note: when breedId itself is bound, it's $10.
+    // Prisma maps model `Horse` -> table `horses` (see @@map in schema.prisma).
+    // Column names retain camelCase identifiers without @map, so they need
+    // double-quoting in raw SQL to preserve case sensitivity.
+    const sql = `
+      SELECT
+          COUNT(*)::int AS total,
+          ${filterClauses},
+          COUNT(*) FILTER (WHERE ${overallExpr} < $9)::int AS lt_overall
+      FROM "horses"
+      WHERE "breedId" = $10
+        AND "conformationScores" IS NOT NULL
+    `;
+
+    // Prisma raw queries: positional params.
+    const aggRows = await prisma.$queryRawUnsafe(sql, ...regionParams, overallScore, horse.breedId);
+    const agg = aggRows?.[0] ?? { total: 0 };
+    const totalHorsesInBreed = Number(agg.total ?? 0);
+    // BigInt → Number coercion: COUNT(*) returns bigint; cast inline above
+    // returns int. Defensive Number() in case driver returns BigInt anyway.
 
     // Resolve breed name from the DB (covers all 309 breeds, not just
     // the 12 legacy CANONICAL_BREEDS entries).
@@ -789,32 +843,28 @@ export async function getConformationAnalysis(req, res) {
     }
     const breedMeanAvailable = breedConformation !== null;
 
-    // Calculate analysis per region
+    // Calculate analysis per region using the SQL aggregates from above.
+    // `agg.lt_<region>` is the count of same-breed horses with conformationScores->region < this horse's score.
     const analysis = {};
     for (const region of CONFORMATION_REGIONS) {
       const score = scores[region] ?? 0;
       const breedMean = breedConformation ? breedConformation[region].mean : null;
 
-      // Percentile: count horses scoring lower / total
+      // Percentile: count horses scoring lower / total (same formula as
+      // pre-Equoria-ecph, just sourced from the SQL aggregate).
       let percentile;
-      if (validHorses.length <= 1) {
+      if (totalHorsesInBreed <= 1) {
         // Only 1 horse of this breed → default to 50th percentile
         percentile = 50;
       } else {
-        const lowerCount = validHorses.filter(
-          h =>
-            h.conformationScores[region] !== null &&
-            h.conformationScores[region] !== undefined &&
-            h.conformationScores[region] < score,
-        ).length;
-        percentile = Math.round((lowerCount / validHorses.length) * 100);
+        const lowerCount = Number(agg[`lt_${region}`] ?? 0);
+        percentile = Math.round((lowerCount / totalHorsesInBreed) * 100);
       }
 
       analysis[region] = { score, breedMean, percentile };
     }
 
-    // Overall conformation analysis
-    const overallScore = scores.overallConformation ?? calculateOverallConformation(scores);
+    // Overall conformation analysis — overallScore already computed before SQL.
     const overallBreedMean = breedConformation
       ? Math.round(
           CONFORMATION_REGIONS.reduce((sum, r) => sum + breedConformation[r].mean, 0) /
@@ -823,20 +873,15 @@ export async function getConformationAnalysis(req, res) {
       : null;
 
     let overallPercentile;
-    if (validHorses.length <= 1) {
+    if (totalHorsesInBreed <= 1) {
       overallPercentile = 50;
     } else {
-      const overallLowerCount = validHorses.filter(h => {
-        const hOverall =
-          h.conformationScores.overallConformation ??
-          calculateOverallConformation(h.conformationScores);
-        return hOverall < overallScore;
-      }).length;
-      overallPercentile = Math.round((overallLowerCount / validHorses.length) * 100);
+      const overallLowerCount = Number(agg.lt_overall ?? 0);
+      overallPercentile = Math.round((overallLowerCount / totalHorsesInBreed) * 100);
     }
 
     logger.info(
-      `[horseController.getConformationAnalysis] Analysis for horse ${horse.id} (${breedName}): ${validHorses.length} same-breed horses`,
+      `[horseController.getConformationAnalysis] Analysis for horse ${horse.id} (${breedName}): ${totalHorsesInBreed} same-breed horses`,
     );
 
     res.status(200).json({
@@ -848,7 +893,7 @@ export async function getConformationAnalysis(req, res) {
         breedId: horse.breedId,
         breedName,
         breedMeanAvailable,
-        totalHorsesInBreed: validHorses.length,
+        totalHorsesInBreed,
         analysis,
         overallConformation: {
           score: overallScore,
@@ -858,7 +903,9 @@ export async function getConformationAnalysis(req, res) {
       },
     });
   } catch (error) {
-    logger.error(`[horseController.getConformationAnalysis] Error: ${error.message}`);
+    logger.error(
+      `[horseController.getConformationAnalysis] Error: ${error.message}\nStack: ${error.stack}`,
+    );
     res.status(500).json({
       success: false,
       message: 'Internal server error while retrieving conformation analysis',
