@@ -1,17 +1,24 @@
 /**
  * Foal Detail Page
  *
- * Minimal page rendered at /foals/:id. Loads the foal record + development
- * data via the existing useFoal / useFoalDevelopment hooks and displays a
- * small summary card.
+ * Page rendered at /foals/:id. Loads the foal record + development
+ * data via the existing useFoal / useFoalDevelopment hooks and displays
+ * a summary card plus the full foal lifecycle UI (FoalDevelopmentTracker)
+ * which exposes the 5 lifecycle primary actions:
+ *   - Enrich (POST /api/foals/:foalId/enrich)
+ *   - Reveal Traits (POST /api/foals/:foalId/reveal-traits)
+ *   - Advance Stage / Develop (PUT /api/foals/:foalId/develop)
+ *   - Graduate to Adult (POST /api/foals/:foalId/graduate)
+ *   - Activity (POST /api/foals/:foalId/activity, via DevelopmentTracker activity-select)
  *
- * Equoria-p3g0
+ * Equoria-p3g0 (initial page), Equoria-bi6i (lifecycle UI wired in).
  */
 
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, AlertCircle, Loader2 } from 'lucide-react';
 import { useFoal, useFoalDevelopment } from '@/hooks/api/useBreeding';
+import FoalDevelopmentTracker from '@/components/breeding/FoalDevelopmentTracker';
 
 const FoalDetailPage: React.FC = () => {
   const params = useParams<{ id?: string; foalId?: string }>();
@@ -128,6 +135,21 @@ const FoalDetailPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/*
+       * Foal lifecycle actions (Equoria-bi6i).
+       *
+       * FoalDevelopmentTracker owns the buttons + mutations + cache
+       * invalidation for the 5 primary actions called out in
+       * docs/beta-route-truth-table.md for the /breeding row:
+       *   enrich / reveal-traits / develop / graduate / activity.
+       *
+       * The hooks (useEnrichFoal, useRevealFoalTraits, useDevelopFoal,
+       * useGraduateFoal, useLogFoalActivity) all invalidate their
+       * relevant React Query keys on success — see
+       * frontend/src/hooks/api/useBreeding.ts.
+       */}
+      <FoalDevelopmentTracker foalId={foalId} />
     </div>
   );
 };
