@@ -133,8 +133,17 @@ describe('activity-utils', () => {
       expect(formatRelativeTime(timestamp)).toBe('5 minutes ago');
     });
 
-    it('should handle invalid date', () => {
-      expect(formatRelativeTime('invalid')).toBe('Unknown');
+    it('should handle invalid date (Equoria-zf80: "unknown time", never "Unknown")', () => {
+      // Equoria-zf80 — context-specific fallback for a relative-time string
+      // (Equoria-iwy3/1k4n convention: never the bare literal 'Unknown').
+      expect(formatRelativeTime('invalid')).toBe('unknown time');
+      expect(formatRelativeTime('invalid')).not.toBe('Unknown');
+    });
+
+    it('should handle a non-date/non-string/non-number input (Equoria-zf80)', () => {
+      // Exercises the `else` branch (the `else { return ... }` path) — a
+      // null/object input must also yield the honest fallback, not 'Unknown'.
+      expect(formatRelativeTime(null as unknown as Date)).toBe('unknown time');
     });
 
     it('should handle future dates', () => {

@@ -123,12 +123,15 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
       cumulativeXP += event.amount;
       cumulativeData.push(cumulativeXP);
 
-      // Handle empty or invalid timestamps gracefully
+      // Handle empty or invalid timestamps gracefully.
+      // Equoria-zf80 — context-specific fallback: a chart x-axis tick uses the
+      // conventional em-dash "no data" marker, not the literal 'Unknown' text
+      // (Equoria-iwy3 / 1k4n convention).
       const date = new Date(event.timestamp);
       const isValidDate = !isNaN(date.getTime()) && event.timestamp;
       const formattedDate = isValidDate
         ? date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-        : 'Unknown';
+        : '—';
       labels.push(formattedDate);
 
       eventMetadata.push(event);

@@ -57,14 +57,17 @@ export function formatRelativeTime(timestamp: Date | string | number): string {
     } else if (typeof timestamp === 'number') {
       date = new Date(timestamp);
     } else {
-      return 'Unknown';
+      // Equoria-zf80 — context-specific fallback for a relative-time string.
+      // 'unknown time' reads correctly in an activity feed; the bare literal
+      // 'Unknown' is the anti-pattern (Equoria-iwy3/1k4n convention).
+      return 'unknown time';
     }
 
     if (isNaN(date.getTime())) {
-      return 'Unknown';
+      return 'unknown time';
     }
   } catch {
-    return 'Unknown';
+    return 'unknown time';
   }
 
   const now = Date.now();

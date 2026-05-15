@@ -122,7 +122,12 @@ function entryToHorseDetail(entry: LeaderboardEntryData): HorseDetailData {
   return {
     horseId: entry.horseId ?? 0,
     horseName: entry.horseName ?? entry.ownerName,
-    breed: 'Unknown',
+    // Equoria-zf80 — literal-string fix only: 'not recorded' over the bare
+    // 'Unknown' anti-pattern (Equoria-iwy3 / 1k4n convention). NOTE: this whole
+    // object is a synthetic placeholder (age/sex/stats all hardcoded) — the
+    // broader fake-data smell is tracked separately in Equoria-8nfc, NOT
+    // bundled here per EDGE_CASE_FIX_DISCIPLINE §7.
+    breed: 'not recorded',
     age: 0,
     sex: 'Stallion',
     level: entry.secondaryStats?.level ?? entry.primaryStat,
