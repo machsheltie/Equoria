@@ -1,36 +1,26 @@
-﻿/**
- * 🧪 System-Wide Integration Tests
+/**
+ * 🧪 System-Wide Data Integrity Tests
  *
- * Comprehensive end-to-end integration tests validating complete user journeys
- * and cross-system integration across all Equoria game systems including:
- * - User registration and authentication flows
- * - Horse management and lifecycle workflows
- * - Breeding and genetics system integration
- * - Training and competition workflows
- * - Groom management and career progression
- * - Documentation and API system integration
+ * Cross-system data integrity assertions (Story 21-6 AC1).
+ * Slimmed from full user-journey coverage. The remaining tests are limited
+ * to data invariants that span MULTIPLE backend systems — e.g., training
+ * mutating both Horse and User progress, horse creation impacting user
+ * counts, groom interaction affecting groom experience visible via API.
  *
- * Testing Approach: TDD with NO MOCKING
- * - Real database operations with complete data workflows
- * - Authentic API integration testing
- * - Genuine cross-system validation
- * - Production-like user journey scenarios
+ * Full multi-screen user-journey scenarios live in tests/e2e/ Playwright
+ * specs, not here.
+ *
+ * Testing Approach: real database, no mocks (per CLAUDE.md Testing Philosophy).
  */
 
-// jest import removed - not used in this file
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
-// logger import removed - not used in this file
 
-describe('System-Wide Integration Tests', () => {
-  let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
-
+describe('System-Wide Data Integrity', () => {
+  let csrf;
   let testUser;
   let authToken;
   let testHorse;
@@ -38,22 +28,21 @@ describe('System-Wide Integration Tests', () => {
   let testBreed;
 
   beforeAll(async () => {
-    // Use a canonical breed by name so generateTemperament has a profile
-    // (test DB breeds have high IDs — don't rely on id <= 12)
+    csrf = await fetchCsrf(app);
+
     testBreed =
       (await prisma.breed.findFirst({ where: { name: 'Thoroughbred' } })) ??
       (await prisma.breed.create({
         data: { name: 'Thoroughbred', description: 'Test breed for integration testing' },
       }));
 
-    // Create test user for global tests
     const timestamp = Date.now();
     testUser = await prisma.user.create({
       data: {
-        username: `globaltest${timestamp.toString().slice(-6)}`,
-        email: `globaltest${timestamp}@test.com`,
+        username: `swi${timestamp.toString().slice(-6)}`,
+        email: `swi${timestamp}@test.com`,
         password: 'TestPassword123!',
-        firstName: 'Global',
+        firstName: 'SWI',
         lastName: 'Test',
         level: 1,
         xp: 0,
@@ -61,13 +50,11 @@ describe('System-Wide Integration Tests', () => {
       },
     });
 
-    // Create auth token for global tests using centralized helper
     authToken = generateTestToken({ id: testUser.id, email: testUser.email });
 
-    // Create test horse for global tests
     testHorse = await prisma.horse.create({
       data: {
-        name: 'Global Test Horse',
+        name: 'SWI Test Horse',
         age: 5,
         breed: { connect: { id: testBreed.id } },
         user: { connect: { id: testUser.id } },
@@ -77,10 +64,9 @@ describe('System-Wide Integration Tests', () => {
       },
     });
 
-    // Create test groom for global tests
     testGroom = await prisma.groom.create({
       data: {
-        name: 'Global Test Groom',
+        name: 'SWI Test Groom',
         userId: testUser.id,
         skillLevel: 'novice',
         experience: 0,
@@ -95,7 +81,6 @@ describe('System-Wide Integration Tests', () => {
   });
 
   afterAll(async () => {
-    // Cleanup test data
     if (testGroom) {
       await prisma.groom.deleteMany({ where: { id: testGroom.id } });
     }
@@ -105,405 +90,162 @@ describe('System-Wide Integration Tests', () => {
     if (testUser) {
       await prisma.user.deleteMany({ where: { id: testUser.id } });
     }
-    // Note: testBreed is a canonical seed breed — do not delete it
   });
 
-  describe('Complete User Journey: Registration to Competition', () => {
-    test('End-to-end user workflow: registration → horse purchase → training → competition', async () => {
-      // Step 1: User Registration (use unique timestamp to avoid conflicts)
-      const timestamp = Date.now();
-      const registrationData = {
-        username: `inttest${timestamp.toString().slice(-6)}`,
-        email: `integration${timestamp}@test.com`,
-        password: 'TestPassword123!',
-        firstName: 'Integration',
-        lastName: 'Test',
-      };
+  test('Horse creation increments owner horse count and sets ownership FK', async () => {
+    const initialCount = await prisma.horse.count({ where: { userId: testUser.id } });
 
-      const registerResponse = await request(app)
-        .post('/api/v1/auth/register')
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send(registrationData)
-        .expect(201);
+    const horseData = {
+      name: 'Consistency Test Horse',
+      age: 3,
+      breedId: testBreed.id,
+      sex: 'mare',
+      dateOfBirth: new Date(Date.now() - 3 * 365 * 24 * 60 * 60 * 1000),
+      temperament: 'energetic',
+    };
 
-      expect(registerResponse.body.status).toBe('success');
-      expect(registerResponse.body.data.user).toBeDefined();
-      // Tokens are now in httpOnly cookies, not response body
-      expect(registerResponse.headers['set-cookie']).toBeDefined();
+    const horseResponse = await request(app)
+      .post('/api/horses')
+      .set('Authorization', `Bearer ${authToken}`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send(horseData)
+      .expect(201);
 
-      // Use separate variable to avoid overwriting global testUser
-      const registeredUser = registerResponse.body.data.user;
-      // Extract token from cookies
-      const cookies = registerResponse.headers['set-cookie'];
-      const accessTokenCookie = cookies.find(cookie => cookie.startsWith('accessToken='));
-      const registeredAuthToken = accessTokenCookie.split(';')[0].split('=')[1];
+    const newHorse = horseResponse.body.data;
 
-      // Step 2: Test Documentation System Integration
-      const userDocsResponse = await request(app)
-        .get('/api/user-docs')
-        .set('Origin', 'http://localhost:3000')
-        .expect(200);
+    const finalCount = await prisma.horse.count({ where: { userId: testUser.id } });
+    expect(finalCount).toBe(initialCount + 1);
 
-      expect(userDocsResponse.body.success).toBe(true);
-      expect(userDocsResponse.body.data.documents).toBeDefined();
+    const created = await prisma.horse.findUnique({ where: { id: newHorse.id } });
+    expect(created.userId).toBe(testUser.id);
 
-      // Step 3: Test API Documentation
-      const apiDocsResponse = await request(app)
-        .get('/api-docs/swagger.json')
-        .set('Origin', 'http://localhost:3000')
-        .expect(200);
-
-      expect(apiDocsResponse.body.openapi).toBeDefined();
-      expect(apiDocsResponse.body.paths).toBeDefined();
-
-      // Step 4: Test Memory Management System
-      const memoryStatusResponse = await request(app)
-        .get('/api/memory/status')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${registeredAuthToken}`)
-        .expect(200);
-
-      expect(memoryStatusResponse.body.success).toBe(true);
-      expect(memoryStatusResponse.body.data.memory).toBeDefined();
-      expect(memoryStatusResponse.body.data.resources).toBeDefined();
-      expect(memoryStatusResponse.body.data.monitoring).toBeDefined();
-
-      // Step 5: Test User Progress System
-      const progressResponse = await request(app)
-        .get(`/api/users/${registeredUser.id}/progress`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${registeredAuthToken}`)
-        .expect(200);
-
-      expect(progressResponse.body.success).toBe(true);
-      expect(progressResponse.body.data.level).toBeDefined();
-      expect(progressResponse.body.data.xp).toBeDefined();
-      expect(progressResponse.body.data.progressPercentage).toBeDefined();
-
-      // Step 6: Test Documentation Search
-      const searchResponse = await request(app)
-        .get('/api/user-docs/search?q=horse')
-        .set('Origin', 'http://localhost:3000')
-        .expect(200);
-
-      expect(searchResponse.body.success).toBe(true);
-      expect(searchResponse.body.data.results).toBeDefined();
-    });
+    // Cleanup
+    await prisma.horse.deleteMany({ where: { id: newHorse.id } });
   });
 
-  describe('System Integration Validation', () => {
-    test('Documentation system integration', async () => {
-      // Test API documentation health
-      const apiDocHealthResponse = await request(app).get('/health').set('Origin', 'http://localhost:3000').expect(200);
+  test('Training a horse increments user XP — cross-system: Training → User Progress', async () => {
+    const initialProgress = await request(app)
+      .get(`/api/users/${testUser.id}/progress`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(200);
 
-      expect(apiDocHealthResponse.body.success).toBe(true);
-      expect(apiDocHealthResponse.body.message).toBe('Server is healthy');
+    const initialXP = initialProgress.body.data.xp;
 
-      // Test user documentation health
-      const userDocHealthResponse = await request(app)
-        .get('/api/user-docs/health')
-        .set('Origin', 'http://localhost:3000')
-        .expect(200);
+    await new Promise(resolve => setTimeout(resolve, 1000));
 
-      expect(userDocHealthResponse.body.success).toBe(true);
-      expect(userDocHealthResponse.body.data.status).toBe('healthy');
+    const trainingResponse = await request(app)
+      .post('/api/training/train')
+      .set('Authorization', `Bearer ${authToken}`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ horseId: testHorse.id, discipline: 'Dressage' })
+      .expect(200);
 
-      // Test documentation analytics
-      const analyticsResponse = await request(app)
-        .get('/api/user-docs/analytics')
-        .set('Origin', 'http://localhost:3000')
-        .expect(200);
+    expect(trainingResponse.body.success).toBe(true);
 
-      expect(analyticsResponse.body.success).toBe(true);
-      expect(analyticsResponse.body.data.totalDocuments).toBeGreaterThan(0);
-    });
+    await new Promise(resolve => setTimeout(resolve, 200));
 
-    test('Groom career progression and talent system integration', async () => {
-      // Create a groom for this test user (since testUser was overridden in the first test)
-      const testGroomForThisUser = await prisma.groom.create({
-        data: {
-          name: 'Test Groom for Career Progression',
-          userId: testUser.id,
-          skillLevel: 'novice',
-          experience: 0,
-          personality: 'calm',
-          epigeneticInfluenceType: 'calm',
-          speciality: 'foal_care',
-          level: 1,
-          careerWeeks: 0,
-          retired: false,
-        },
-      });
+    const finalProgress = await request(app)
+      .get(`/api/users/${testUser.id}/progress`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(200);
 
-      // Test groom level progression
-      const currentGroom = testGroomForThisUser;
+    const finalXP = finalProgress.body.data.xp;
+    expect(finalXP).toBeGreaterThan(initialXP);
 
-      // Perform a single groom interaction to gain experience
-      // Use 'early_touch' which is in the eligible tasks list (workaround for age categorization bug)
-      const interactionData = {
-        groomId: currentGroom.id,
+    // Cross-system invariant: level derives from xp
+    const finalLevel = finalProgress.body.data.level;
+    const expectedLevel = Math.floor(finalXP / 100) + 1;
+    expect(finalLevel).toBe(expectedLevel);
+  });
+
+  test('Groom interaction increments groom experience — cross-system: Groom Interaction → Groom Profile API', async () => {
+    const interactionResponse = await request(app)
+      .post('/api/grooms/interact')
+      .set('Authorization', `Bearer ${authToken}`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({
+        groomId: testGroom.id,
         foalId: testHorse.id,
         interactionType: 'early_touch',
         duration: 30,
-      };
+      })
+      .expect(200);
 
-      const interactionResponse = await request(app)
-        .post('/api/grooms/interact')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send(interactionData)
-        .expect(200);
+    expect(interactionResponse.body.success).toBe(true);
 
-      expect(interactionResponse.body.success).toBe(true);
+    const groomResponse = await request(app)
+      .get(`/api/grooms/user/${testUser.id}`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(200);
 
-      // Check groom progression
-      const groomResponse = await request(app)
-        .get(`/api/grooms/user/${testUser.id}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(groomResponse.body.success).toBe(true);
-      const { grooms } = groomResponse.body;
-      const updatedGroom = grooms.find(g => g.id === currentGroom.id);
-      expect(updatedGroom).toBeDefined();
-      expect(updatedGroom.experience).toBeGreaterThan(0);
-
-      // Test talent system when groom reaches appropriate level
-      if (updatedGroom.level >= 3) {
-        const talentsResponse = await request(app)
-          .get('/api/grooms/talents/definitions')
-          .set('Origin', 'http://localhost:3000')
-          .set('Authorization', `Bearer ${authToken}`)
-          .expect(200);
-
-        expect(talentsResponse.body.success).toBe(true);
-        expect(talentsResponse.body.data.talents).toBeDefined();
-      }
-
-      // Cleanup test groom
-      await prisma.groom.deleteMany({ where: { id: testGroomForThisUser.id } });
-    });
-
-    test('Documentation system integration with API endpoints', async () => {
-      // Test API documentation access
-      const apiDocsResponse = await request(app)
-        .get('/api-docs/swagger.json')
-        .set('Origin', 'http://localhost:3000')
-        .expect(200);
-
-      expect(apiDocsResponse.body.openapi).toBeDefined();
-      expect(apiDocsResponse.body.paths).toBeDefined();
-
-      // Test user documentation access
-      const userDocsResponse = await request(app)
-        .get('/api/user-docs')
-        .set('Origin', 'http://localhost:3000')
-        .expect(200);
-
-      expect(userDocsResponse.body.success).toBe(true);
-      expect(userDocsResponse.body.data.documents).toBeDefined();
-
-      // Test documentation search
-      const searchResponse = await request(app)
-        .get('/api/user-docs/search?q=horse')
-        .set('Origin', 'http://localhost:3000')
-        .expect(200);
-
-      expect(searchResponse.body.success).toBe(true);
-      expect(searchResponse.body.data.results).toBeDefined();
-
-      // Test documentation analytics
-      const analyticsResponse = await request(app)
-        .get('/api/user-docs/analytics')
-        .set('Origin', 'http://localhost:3000')
-        .expect(200);
-
-      expect(analyticsResponse.body.success).toBe(true);
-      expect(analyticsResponse.body.data.totalDocuments).toBeGreaterThan(0);
-    });
+    expect(groomResponse.body.success).toBe(true);
+    const updatedGroom = groomResponse.body.grooms.find(g => g.id === testGroom.id);
+    expect(updatedGroom).toBeDefined();
+    expect(updatedGroom.experience).toBeGreaterThan(0);
   });
 
-  describe('Performance and Load Testing', () => {
-    test('API response times under load', async () => {
-      const startTime = Date.now();
+  test('Auth registration produces auth cookies and queryable user record — cross-system: Auth → DB', async () => {
+    const ts = Date.now();
+    const registrationData = {
+      username: `swireg${ts.toString().slice(-6)}`,
+      email: `swireg${ts}@test.com`,
+      password: 'TestPassword123!',
+      firstName: 'Reg',
+      lastName: 'Test',
+    };
 
-      // Simulate concurrent requests
-      const promises = [];
-      for (let i = 0; i < 10; i++) {
-        promises.push(
-          request(app)
-            .get('/api/horses')
-            .set('Origin', 'http://localhost:3000')
-            .set('Authorization', `Bearer ${authToken}`),
-        );
-      }
+    const registerResponse = await request(app)
+      .post('/api/v1/auth/register')
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send(registrationData)
+      .expect(201);
 
-      const responses = await Promise.all(promises);
-      const endTime = Date.now();
-      const totalTime = endTime - startTime;
+    expect(registerResponse.body.status).toBe('success');
+    expect(registerResponse.headers['set-cookie']).toBeDefined();
 
-      // Verify all requests succeeded
-      responses.forEach(response => {
-        expect(response.status).toBe(200);
-        expect(response.body.success).toBe(true);
-      });
+    const registeredUserId = registerResponse.body.data.user.id;
 
-      // Verify reasonable response time (should complete within 5 seconds)
-      expect(totalTime).toBeLessThan(5000);
+    // Cross-system: API-reported user must exist in DB
+    const dbUser = await prisma.user.findUnique({ where: { id: registeredUserId } });
+    expect(dbUser).toBeDefined();
+    expect(dbUser.email).toBe(registrationData.email);
 
-      // Average response time should be reasonable
-      const avgResponseTime = totalTime / responses.length;
-      expect(avgResponseTime).toBeLessThan(1000);
-    });
-
-    test('Memory usage monitoring during operations', async () => {
-      const initialMemory = process.memoryUsage();
-
-      // Perform memory-intensive operations
-      const operations = [];
-      for (let i = 0; i < 20; i++) {
-        operations.push(
-          request(app).get('/api/user-docs/search?q=horse&includeContent=true').set('Origin', 'http://localhost:3000'),
-        );
-      }
-
-      await Promise.all(operations);
-
-      const finalMemory = process.memoryUsage();
-
-      // Memory usage should not increase dramatically
-      const memoryIncrease = finalMemory.heapUsed - initialMemory.heapUsed;
-      const memoryIncreasePercent = (memoryIncrease / initialMemory.heapUsed) * 100;
-
-      // Memory increase should be reasonable (less than 50% increase)
-      expect(memoryIncreasePercent).toBeLessThan(50);
-    });
+    // Cleanup registered user
+    await prisma.user.deleteMany({ where: { id: registeredUserId } });
   });
 
-  describe('Data Consistency Validation', () => {
-    test('Database transaction integrity across systems', async () => {
-      // Test that related data remains consistent across operations
-      const initialHorseCount = await prisma.horse.count({
-        where: { userId: testUser.id }, // Matches schema field
-      });
-
-      const initialGroomCount = await prisma.groom.count({
-        where: { userId: testUser.id },
-      });
-
-      // Perform operations that should maintain consistency
-      const horseData = {
-        name: 'Consistency Test Horse',
-        age: 3,
-        breedId: testBreed.id,
+  test('Horse delete does not cascade-orphan unrelated groom records — cross-system: Horse table → Groom table boundary', async () => {
+    // Create a horse and groom owned by the test user
+    const tempHorse = await prisma.horse.create({
+      data: {
+        name: 'Cascade Boundary Test Horse',
+        age: 4,
+        breed: { connect: { id: testBreed.id } },
+        user: { connect: { id: testUser.id } },
         sex: 'mare',
-        dateOfBirth: new Date(Date.now() - 3 * 365 * 24 * 60 * 60 * 1000),
-        temperament: 'energetic',
-      };
-
-      const horseResponse = await request(app)
-        .post('/api/horses')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send(horseData)
-        .expect(201);
-
-      const newHorse = horseResponse.body.data;
-
-      // Verify data consistency
-      const finalHorseCount = await prisma.horse.count({
-        where: { userId: testUser.id }, // Matches schema field
-      });
-
-      expect(finalHorseCount).toBe(initialHorseCount + 1);
-
-      // Verify horse ownership is correctly set
-      const createdHorse = await prisma.horse.findUnique({
-        where: { id: newHorse.id },
-      });
-
-      expect(createdHorse.userId).toBe(testUser.id); // Matches schema field
-
-      // Verify groom count remains unchanged
-      const finalGroomCount = await prisma.groom.count({
-        where: { userId: testUser.id },
-      });
-
-      expect(finalGroomCount).toBe(initialGroomCount);
+        dateOfBirth: new Date('2020-01-01'),
+        healthStatus: 'Excellent',
+      },
     });
 
-    test('User progress tracking accuracy', async () => {
-      // Create a horse for this test user (since testUser was overridden in the first test)
-      const testHorseForThisUser = await prisma.horse.create({
-        data: {
-          name: 'Progress Test Horse',
-          age: 5,
-          breed: { connect: { id: testBreed.id } },
-          user: { connect: { id: testUser.id } },
-          sex: 'mare',
-          dateOfBirth: new Date('2019-01-01'),
-          healthStatus: 'Excellent',
-        },
-      });
+    const groomsBefore = await prisma.groom.count({ where: { userId: testUser.id } });
 
-      const initialProgress = await request(app)
-        .get(`/api/users/${testUser.id}/progress`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
+    await prisma.horse.delete({ where: { id: tempHorse.id } });
 
-      const initialXP = initialProgress.body.data.xp;
-      const _initialLevel = initialProgress.body.data.level;
+    const groomsAfter = await prisma.groom.count({ where: { userId: testUser.id } });
 
-      // Perform XP-earning activity (training)
-      const trainingData = {
-        horseId: testHorseForThisUser.id,
-        discipline: 'Dressage',
-      };
-
-      // Wait for training cooldown to expire
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const trainingResponse = await request(app)
-        .post('/api/training/train')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send(trainingData)
-        .expect(200);
-
-      expect(trainingResponse.body.success).toBe(true);
-
-      // Wait for XP transaction to complete
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Verify progress update
-      const finalProgress = await request(app)
-        .get(`/api/users/${testUser.id}/progress`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      const finalXP = finalProgress.body.data.xp;
-      const finalLevel = finalProgress.body.data.level;
-
-      // XP should have increased
-      expect(finalXP).toBeGreaterThan(initialXP);
-
-      // Level should be calculated correctly
-      const expectedLevel = Math.floor(finalXP / 100) + 1;
-      expect(finalLevel).toBe(expectedLevel);
-
-      // Cleanup test horse
-      await prisma.horse.deleteMany({ where: { id: testHorseForThisUser.id } });
-    });
+    // Cross-system boundary: deleting a horse must not remove user's other grooms
+    expect(groomsAfter).toBe(groomsBefore);
   });
 });

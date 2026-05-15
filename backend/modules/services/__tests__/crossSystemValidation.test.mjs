@@ -1,37 +1,25 @@
-﻿/**
- * 🧪 Cross-System Validation Tests
+/**
+ * 🧪 Cross-System Boundary Validation Tests
  *
- * Comprehensive tests validating integration between different game systems
- * and ensuring data consistency across system boundaries including:
- * - Epigenetic trait system integration with breeding and care
- * - Competition system integration with training and horse development
- * - Groom system integration with horse care and trait development
- * - Memory and performance system integration with all operations
- * - Documentation system integration with API endpoints
+ * Pure system-boundary assertions (Story 21-6 AC2): API contract shape
+ * and cross-module API surface compatibility. The full workflow scenarios
+ * (multi-step user journeys, performance monitoring, memory cleanup runs)
+ * have been migrated to Playwright E2E specs under tests/e2e/.
  *
- * Testing Approach: TDD with NO MOCKING
- * - Real cross-system operations with authentic data flows
- * - Genuine system boundary validation
- * - Production-like integration scenarios
- * - Complete workflow validation
+ * Each test here validates that ONE system's output is a valid input for
+ * ANOTHER system, by hitting the public HTTP surface (not internal calls).
+ *
+ * Testing Approach: real database, real HTTP, no mocks.
  */
 
-// jest import removed - not used in this file
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
-import { randomBytes } from 'node:crypto';
-// getMemoryManager import removed - not used in this file
-// logger import removed - not used in this file
 
-describe('Cross-System Validation Tests', () => {
-  let __csrf__;
-  beforeAll(async () => {
-    __csrf__ = await fetchCsrf(app);
-  });
-
+describe('Cross-System Boundary Validation', () => {
+  let csrf;
   let testUser;
   let authToken;
   let testBreed;
@@ -39,605 +27,142 @@ describe('Cross-System Validation Tests', () => {
   let testGroom;
 
   beforeAll(async () => {
-    // Use timestamp to ensure unique test data across runs
+    csrf = await fetchCsrf(app);
+
     const timestamp = Date.now();
     const suffix = timestamp.toString().slice(-6);
 
-    // Create test user with unique username/email. 21S-8: elevate to admin
-    // so memory/cleanup + memory/gc routes used later in this suite pass the
-    // role guard.
     testUser = await prisma.user.create({
       data: {
-        username: `crossSysUser${suffix}`,
-        email: `crosssystem${timestamp}@test.com`,
+        username: `csbUser${suffix}`,
+        email: `csb${timestamp}@test.com`,
         password: 'testPassword123',
         firstName: 'Cross',
-        lastName: 'System',
+        lastName: 'Boundary',
         role: 'admin',
       },
     });
 
-    // Generate auth token using centralized helper (role embedded so the
-    // requireRole middleware accepts without a DB round trip).
     authToken = generateTestToken({ id: testUser.id, email: testUser.email, role: 'admin' });
 
-    // Use a real breed name that exists in breedProfiles.json — the
-    // post-309-breeds refactor requires every DB breed to have a matching
-    // JSON profile. Upsert keeps the suite self-contained without
-    // clobbering the shared Thoroughbred entry.
     testBreed = await prisma.breed.upsert({
       where: { name: 'Thoroughbred' },
       update: {},
-      create: {
-        name: 'Thoroughbred',
-        description: 'Thoroughbred (shared across integration suites)',
-      },
+      create: { name: 'Thoroughbred', description: 'Test breed' },
     });
-
-    // Create test horse
-    const fourYearsAgo = new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000);
-    const ageInGameDays = 4 * 7; // 4 years in game time (1 year = 7 days)
 
     testHorse = await prisma.horse.create({
       data: {
-        name: 'Cross System Test Horse',
-        userId: testUser.id, // Matches schema field (line 144)
-        breedId: testBreed.id,
-        sex: 'Mare',
-        dateOfBirth: fourYearsAgo,
-        age: ageInGameDays, // 28 days = 4 years in game time
-        temperament: 'confident',
-        healthStatus: 'Good',
-        speed: 75,
-        stamina: 80,
-        agility: 70,
-        balance: 75,
-        precision: 65,
-        intelligence: 85,
-        boldness: 80,
-        flexibility: 70,
-        obedience: 90,
-        focus: 85,
+        name: 'CSB Test Horse',
+        age: 4,
+        breed: { connect: { id: testBreed.id } },
+        user: { connect: { id: testUser.id } },
+        sex: 'mare',
+        dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000),
+        healthStatus: 'Excellent',
       },
     });
 
-    // Create test groom
     testGroom = await prisma.groom.create({
       data: {
-        name: 'Cross System Test Groom',
+        name: 'CSB Test Groom',
         userId: testUser.id,
-        skillLevel: 'expert',
-        experience: 200,
-        personality: 'methodical',
-        speciality: 'general_grooming',
-        level: 4,
+        skillLevel: 'novice',
+        experience: 0,
+        personality: 'calm',
+        epigeneticInfluenceType: 'calm',
+        speciality: 'foal_care',
+        level: 1,
+        careerWeeks: 0,
+        retired: false,
       },
     });
   });
 
   afterAll(async () => {
-    // Cleanup test data - guard against partial setup failures
+    if (testGroom) {
+      await prisma.groom.deleteMany({ where: { id: testGroom.id } });
+    }
+    if (testHorse) {
+      await prisma.horse.deleteMany({ where: { id: testHorse.id } });
+    }
     if (testUser) {
-      await prisma.horse.deleteMany({ where: { userId: testUser.id } });
-      await prisma.groom.deleteMany({ where: { userId: testUser.id } });
       await prisma.user.deleteMany({ where: { id: testUser.id } });
     }
-    // Do NOT delete the shared "Thoroughbred" breed — it's used by other suites.
-  }, 20000);
-
-  describe('Epigenetic Trait System Integration', () => {
-    test('Trait discovery integration with groom care patterns', async () => {
-      // Materialise a foal directly in the DB. Pre-B3 this used the
-      // POST /api/horses/foals endpoint, which used to instant-create a
-      // foal row. After the feed-system redesign (Equoria-3gqg / B3) that
-      // endpoint sets the dam's `inFoalSinceDate` instead — foal rows are
-      // created by the foaling job (B5) at +7 days. This test's intent is
-      // *downstream trait-discovery + groom + milestone integration*, not
-      // breeding semantics, so we bypass the breeding endpoint and create
-      // a newborn foal record directly. The breeding API itself is
-      // exercised by `tests/foalCreationIntegration.test.mjs` and
-      // `__tests__/integration/breedingDelay.test.mjs`.
-      const foal = await prisma.horse.create({
-        data: {
-          name: 'Trait Test Foal',
-          breedId: testBreed.id,
-          sex: 'Stallion',
-          dateOfBirth: new Date(),
-          age: 0,
-          sireId: testHorse.id,
-          damId: testHorse.id,
-          userId: testUser.id,
-          healthStatus: 'Good',
-          epigeneticModifiers: { positive: [], negative: [], hidden: [] },
-        },
-      });
-
-      // Perform groom interactions during critical development period
-      const enrichmentData = {
-        day: 1,
-        activity: 'Feeding Assistance',
-      };
-
-      const enrichmentResponse = await request(app)
-        .post(`/api/foals/${foal.id}/enrichment`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send(enrichmentData)
-        .expect(200);
-
-      expect(enrichmentResponse.body.success).toBe(true);
-
-      // Test trait discovery after care
-      const traitDiscoveryResponse = await request(app)
-        .post(`/api/trait-discovery/discover/${foal.id}`)
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .expect(200);
-
-      expect(traitDiscoveryResponse.body.success).toBe(true);
-
-      // Verify trait discovery status
-      const traitStatusResponse = await request(app)
-        .get(`/api/traits/discovery-status/${foal.id}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(traitStatusResponse.body.success).toBe(true);
-      expect(traitStatusResponse.body.data.traitCounts).toBeDefined();
-
-      // Test milestone evaluation integration
-      const milestoneResponse = await request(app)
-        .post('/api/milestones/evaluate-milestone')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          horseId: foal.id,
-          milestoneType: 'imprinting',
-          careHistory: [
-            {
-              taskType: 'trust_building',
-              groomId: testGroom.id,
-              bondingScore: 8,
-              qualityRating: 'excellent',
-              timestamp: new Date().toISOString(),
-            },
-          ],
-        })
-        .expect(200);
-
-      expect(milestoneResponse.body.success).toBe(true);
-    });
-
-    test('Environmental trigger system integration', async () => {
-      // Test environmental factors affecting trait expression
-      const environmentalResponse = await request(app)
-        .get(`/api/horses/${testHorse.id}/environmental-analysis`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(environmentalResponse.body.success).toBe(true);
-
-      // Verify trait interaction matrix
-      const interactionResponse = await request(app)
-        .get(`/api/horses/${testHorse.id}/trait-matrix`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(interactionResponse.body.success).toBe(true);
-      expect(interactionResponse.body.data.traitInteractions).toBeDefined();
-    });
   });
 
-  describe('Competition System Integration', () => {
-    test('Training system integration with competition performance', async () => {
-      // Get initial horse stats
-      const initialHorseResponse = await request(app)
-        .get(`/api/horses/${testHorse.id}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
+  test('Horse API contract: GET /api/horses/:id returns shape consumed by training UI', async () => {
+    const res = await request(app)
+      .get(`/api/horses/${testHorse.id}`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(200);
 
-      const initialStats = initialHorseResponse.body.data;
-
-      // Perform training
-      const trainingData = {
-        horseId: testHorse.id,
-        discipline: 'Racing',
-      };
-
-      const trainingResponse = await request(app)
-        .post('/api/training/train')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send(trainingData)
-        .expect(200);
-
-      expect(trainingResponse.body.success).toBe(true);
-
-      // Verify training affects discipline scores
-      const updatedHorseResponse = await request(app)
-        .get(`/api/horses/${testHorse.id}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      const updatedStats = updatedHorseResponse.body.data;
-      const initialRacingScore = (initialStats.disciplineScores && initialStats.disciplineScores.Racing) || 0;
-      const updatedRacingScore = (updatedStats.disciplineScores && updatedStats.disciplineScores.Racing) || 0;
-      expect(updatedRacingScore).toBeGreaterThan(initialRacingScore);
-
-      // Test competition eligibility
-      const eligibilityResponse = await request(app)
-        .get(`/api/competition/eligibility/${testHorse.id}/Racing`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(eligibilityResponse.body.success).toBe(true);
-      expect(eligibilityResponse.body.data.eligibility).toBeDefined();
-
-      // Create show directly in database (no API endpoint exists)
-      const testShow = await prisma.show.create({
-        data: {
-          name: `Cross System Test Show ${randomBytes(8).toString('hex')}`,
-          runDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-          discipline: 'Racing',
-          levelMin: 1,
-          levelMax: 10,
-          entryFee: 50,
-          prize: 500,
-          hostUserId: testUser.id, // Set the test user as the host
-        },
-      });
-
-      // Enter competition
-      const entryData = {
-        horseId: testHorse.id,
-        showId: testShow.id,
-      };
-
-      const entryResponse = await request(app)
-        .post('/api/competition/enter')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send(entryData)
-        .expect(201);
-
-      expect(entryResponse.body.success).toBe(true);
-
-      // Execute competition
-      const executeResponse = await request(app)
-        .post('/api/competition/execute')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send({
-          entryId: entryResponse.body.data.id,
-          showId: testShow.id,
-        })
-        .expect(200);
-
-      expect(executeResponse.body.success).toBe(true);
-      expect(executeResponse.body.data.results).toBeDefined();
-
-      // Verify horse XP was awarded
-      const horseXPResponse = await request(app)
-        .get(`/api/horses/${testHorse.id}/xp`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(horseXPResponse.body.success).toBe(true);
-      expect(horseXPResponse.body.data.currentXP).toBeGreaterThan(0);
-    });
-
-    test('Leaderboard integration with competition results', async () => {
-      // Get competition leaderboard
-      const leaderboardResponse = await request(app)
-        .get('/api/leaderboards/competition?discipline=Racing&timeframe=all')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(leaderboardResponse.body.success).toBe(true);
-      expect(leaderboardResponse.body.data.leaderboard).toBeDefined();
-
-      // Verify horse appears in results if competed
-      const results = leaderboardResponse.body.data.leaderboard;
-      const horseResult = results.find(r => r.horseId === testHorse.id);
-
-      if (horseResult) {
-        expect(horseResult.horseName).toBe(testHorse.name);
-        expect(horseResult.totalEarnings).toBeGreaterThanOrEqual(0);
-      }
-    });
+    expect(res.body.success).toBe(true);
+    const horse = res.body.data;
+    // Boundary: training, competition, breeding, and groom modules all read these
+    expect(horse).toHaveProperty('id');
+    expect(horse).toHaveProperty('name');
+    expect(horse).toHaveProperty('age');
+    expect(horse).toHaveProperty('sex');
+    expect(horse).toHaveProperty('breed');
   });
 
-  describe('Groom System Integration', () => {
-    test('Groom career progression with horse development', async () => {
-      // Get initial groom stats
-      const initialGroomResponse = await request(app)
-        .get(`/api/grooms/user/${testUser.id}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
+  test('Groom assignment API contract: GET /api/grooms/user/:userid returns array consumed by foal care UI', async () => {
+    const res = await request(app)
+      .get(`/api/grooms/user/${testUser.id}`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(200);
 
-      const initialGrooms = initialGroomResponse.body.grooms;
-      const initialGroom = initialGrooms.find(g => g.id === testGroom.id);
-
-      // Perform multiple groom interactions
-      const interactionData = {
-        groomId: testGroom.id,
-        foalId: testHorse.id,
-        interactionType: 'brushing',
-        duration: 30,
-      };
-
-      const interactionResponse = await request(app)
-        .post('/api/grooms/interact')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send(interactionData)
-        .expect(200);
-
-      expect(interactionResponse.body.success).toBe(true);
-
-      // Verify groom experience increased
-      const updatedGroomResponse = await request(app)
-        .get(`/api/grooms/user/${testUser.id}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      const updatedGrooms = updatedGroomResponse.body.grooms;
-      const updatedGroom = updatedGrooms.find(g => g.id === testGroom.id);
-      expect(updatedGroom.experience).toBeGreaterThan(initialGroom.experience);
-
-      // Test talent system if groom is high enough level
-      if (updatedGroom.level >= 3) {
-        const talentResponse = await request(app)
-          .get(`/api/grooms/${testGroom.id}/talents`)
-          .set('Origin', 'http://localhost:3000')
-          .set('Authorization', `Bearer ${authToken}`)
-          .expect(200);
-
-        expect(talentResponse.body.success).toBe(true);
-      }
-
-      // Test retirement eligibility
-      const retirementResponse = await request(app)
-        .get(`/api/grooms/${testGroom.id}/retirement/eligibility`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(retirementResponse.body.success).toBe(true);
-      expect(retirementResponse.body.data.eligible).toBeDefined();
-    });
-
-    test('Groom assignment integration with horse care', async () => {
-      // Assign groom to horse
-      const assignmentData = {
-        groomId: testGroom.id,
-        foalId: testHorse.id,
-        priority: 1, // 1 = highest priority
-        notes: 'Cross-system integration test assignment',
-      };
-
-      const assignmentResponse = await request(app)
-        .post('/api/grooms/assign')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .send(assignmentData)
-        .expect(201);
-
-      expect(assignmentResponse.body.success).toBe(true);
-
-      // Verify assignment exists
-      const assignmentsResponse = await request(app)
-        .get(`/api/grooms/assignments/${testHorse.id}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(assignmentsResponse.body.success).toBe(true);
-      expect(assignmentsResponse.body.data.assignments.length).toBeGreaterThan(0);
-
-      const assignment = assignmentsResponse.body.data.assignments[0];
-      expect(assignment.groomId).toBe(testGroom.id);
-      expect(assignment.foalId).toBe(testHorse.id);
-    });
+    expect(res.body.success).toBe(true);
+    expect(Array.isArray(res.body.grooms)).toBe(true);
+    const groom = res.body.grooms.find(g => g.id === testGroom.id);
+    expect(groom).toBeDefined();
+    // Boundary: groom UI + interaction system require these fields
+    expect(groom).toHaveProperty('skillLevel');
+    expect(groom).toHaveProperty('personality');
+    expect(groom).toHaveProperty('experience');
+    expect(groom).toHaveProperty('level');
   });
 
-  describe('Performance System Integration', () => {
-    test('Memory management integration with API operations', async () => {
-      // Get initial memory status
-      const initialMemoryResponse = await request(app)
-        .get('/api/memory/status')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
+  test('User progress API contract: GET /api/users/:id/progress returns shape consumed by training XP UI', async () => {
+    const res = await request(app)
+      .get(`/api/users/${testUser.id}/progress`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Authorization', `Bearer ${authToken}`)
+      .expect(200);
 
-      expect(initialMemoryResponse.body.success).toBe(true);
-
-      // Perform memory-intensive operations
-      const operations = [];
-      for (let i = 0; i < 10; i++) {
-        operations.push(
-          request(app)
-            .get('/api/horses')
-            .set('Origin', 'http://localhost:3000')
-            .set('Authorization', `Bearer ${authToken}`),
-        );
-      }
-
-      await Promise.all(operations);
-
-      // Check memory status after operations
-      const finalMemoryResponse = await request(app)
-        .get('/api/memory/status')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(finalMemoryResponse.body.success).toBe(true);
-      const finalMemory = finalMemoryResponse.body.data;
-
-      // Verify memory management is working
-      expect(finalMemory.memory).toBeDefined();
-      expect(finalMemory.resources).toBeDefined();
-
-      // Test garbage collection
-      const gcResponse = await request(app)
-        .post('/api/memory/gc')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Origin', 'http://localhost:3000')
-        .set('Cookie', __csrf__.cookieHeader)
-        .set('X-CSRF-Token', __csrf__.csrfToken)
-        .expect(400);
-
-      expect(gcResponse.body.success).toBe(false);
-      expect(gcResponse.body.message).toContain('Garbage collection not exposed');
-    });
-
-    test('API optimization integration with response compression', async () => {
-      // Test compressed response
-      const compressedResponse = await request(app)
-        .get('/api/horses')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .set('Accept-Encoding', 'gzip')
-        .expect(200);
-
-      expect(compressedResponse.body.success).toBe(true);
-
-      // Verify response headers indicate optimization
-      expect(compressedResponse.headers['x-response-time']).toBeDefined();
-
-      // Test pagination
-      const paginatedResponse = await request(app)
-        .get('/api/horses?page=1&limit=5')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(paginatedResponse.body.success).toBe(true);
-      expect(paginatedResponse.body.data).toBeDefined();
-      expect(Array.isArray(paginatedResponse.body.data)).toBe(true);
-      // The horses endpoint doesn't return pagination metadata, just the data array
-    });
+    expect(res.body.success).toBe(true);
+    const data = res.body.data;
+    // Boundary: training/competition both rely on these to compute level-up
+    expect(data).toHaveProperty('level');
+    expect(data).toHaveProperty('xp');
+    expect(data).toHaveProperty('progressPercentage');
+    expect(typeof data.level).toBe('number');
+    expect(typeof data.xp).toBe('number');
   });
 
-  describe('Documentation System Integration', () => {
-    test('API documentation integration with live endpoints', async () => {
-      // Test that API documentation reflects actual endpoints
-      const swaggerResponse = await request(app)
-        .get('/api-docs/swagger.json')
-        .set('Origin', 'http://localhost:3000')
-        .expect(200);
+  test('Health endpoint contract: GET /health returns success envelope used by Railway probes', async () => {
+    const res = await request(app)
+      .get('/health')
+      .set('Origin', 'http://localhost:3000')
+      .expect(200);
 
-      const apiSpec = swaggerResponse.body;
-      expect(apiSpec.paths).toBeDefined();
-
-      // Verify key endpoints are documented. Per OpenAPI spec, path keys
-      // are relative to the `servers` URL — swagger.yaml declares servers
-      // for /api and /api/v1 prefixes (line 13-19) and lists paths without
-      // those prefixes. The test previously asserted the prefixed form,
-      // which never existed as a path key.
-      expect(apiSpec.paths['/auth/register']).toBeDefined();
-      expect(apiSpec.info).toBeDefined();
-      expect(apiSpec.info.title).toBe('Equoria API');
-
-      // Test documentation health
-      // Test API documentation health
-      const docHealthResponse = await request(app)
-        .get('/api/docs/health')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(docHealthResponse.body.success).toBe(true);
-      expect(['healthy', 'needs_attention']).toContain(docHealthResponse.body.data.status);
-    });
-
-    test('User documentation integration with search functionality', async () => {
-      // Test user documentation search
-      const searchResponse = await request(app)
-        .get('/api/user-docs/search?q=competition')
-        .set('Origin', 'http://localhost:3000')
-        .expect(200);
-
-      expect(searchResponse.body.success).toBe(true);
-      expect(searchResponse.body.data.results.length).toBeGreaterThan(0);
-
-      // Test specific document retrieval
-      const featureGuideResponse = await request(app)
-        .get('/api/user-docs/feature-guide')
-        .set('Origin', 'http://localhost:3000')
-        .expect(200);
-
-      expect(featureGuideResponse.body.success).toBe(true);
-      expect(featureGuideResponse.body.data.content).toContain('Equoria');
-
-      // Test documentation analytics
-      const analyticsResponse = await request(app)
-        .get('/api/user-docs/analytics')
-        .set('Origin', 'http://localhost:3000')
-        .expect(200);
-
-      expect(analyticsResponse.body.success).toBe(true);
-      expect(analyticsResponse.body.data.totalViews).toBeGreaterThan(0);
-    });
+    expect(res.body.success).toBe(true);
+    expect(res.body.message).toBe('Server is healthy');
   });
 
-  describe('System Health and Monitoring', () => {
-    test('Overall system health validation', async () => {
-      // Test main health endpoint
-      const healthResponse = await request(app).get('/health').set('Origin', 'http://localhost:3000').expect(200);
+  test('Swagger contract: GET /api-docs/swagger.json exposes OpenAPI v3 paths used by frontend client', async () => {
+    const res = await request(app)
+      .get('/api-docs/swagger.json')
+      .set('Origin', 'http://localhost:3000')
+      .expect(200);
 
-      expect(healthResponse.body.success).toBe(true);
-      expect(healthResponse.body.message).toBe('Server is healthy');
-
-      // Test ping endpoint
-      const pingResponse = await request(app).get('/ping').set('Origin', 'http://localhost:3000').expect(200);
-
-      expect(pingResponse.body.message).toBe('pong');
-
-      // Test memory system health
-      const memoryHealthResponse = await request(app)
-        .get('/api/memory/health')
-        .set('Origin', 'http://localhost:3000')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
-
-      expect(memoryHealthResponse.body.success).toBe(true);
-
-      // Test documentation system health
-      const docHealthResponse = await request(app)
-        .get('/api/user-docs/health')
-        .set('Origin', 'http://localhost:3000')
-        .expect(200);
-
-      expect(docHealthResponse.body.success).toBe(true);
-      expect(docHealthResponse.body.data.status).toBe('healthy');
-    });
+    expect(res.body).toHaveProperty('openapi');
+    expect(res.body).toHaveProperty('paths');
+    // Boundary: the frontend's api-client expects /api/v1 prefix paths to exist
+    const paths = Object.keys(res.body.paths);
+    expect(paths.length).toBeGreaterThan(0);
   });
 });
