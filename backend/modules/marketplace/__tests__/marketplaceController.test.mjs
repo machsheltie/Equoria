@@ -336,6 +336,110 @@ describe('marketplaceController integration', () => {
       expect(res.status).toBe(401);
     });
 
+    // Equoria-xooh: invalid breedId returns 404. Sentinel-positive — fails
+    // if the 'Breed not found' branch in marketplaceController.mjs:429-431 is
+    // removed or short-circuited. Uses a breedId guaranteed to not exist
+    // (max int4) so the DB lookup misses.
+    it('returns 404 when breedId does not exist (AC tech-spec line 631)', async () => {
+      // Ensure user has funds so we don't hit the insufficient-funds path
+      // before the breed lookup.
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { money: 100000 },
+      });
+
+      const csrf = await fetchCsrf(app);
+      const res = await request(app)
+        .post('/api/marketplace/store/buy')
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${token}`)
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken)
+        // breedId 2147483647 = int4 max; will not collide with any real row.
+        .send({ breedId: 2147483647, sex: 'Mare' });
+
+      expect(res.status).toBe(404);
+      expect(res.body.success).toBe(false);
+      expect(res.body.message || res.body.error).toMatch(/breed not found/i);
+
+      // F1 contract: no coins should have been deducted on a 404. Verify the
+      // refund-on-failure logic did not mask a bug where the deduction
+      // partially landed.
+      const userAfter = await prisma.user.findUnique({ where: { id: user.id } });
+      expect(userAfter.money).toBe(100000);
+    });
+
+    // Equoria-xooh AC-7: stat-range verification. Purchased horse stats must
+    // fall within the breed's mean ± k*std_dev window. We use k=6 (deeper
+    // than 3*std_dev to absorb Box-Muller variance + clampStatsToTotalCap
+    // post-hoc adjustments at the 200-total cap). Tight enough to catch a
+    // generator regression that returns zeros or constants; loose enough to
+    // avoid flaking on legitimate distribution outliers.
+    it('purchased horse stats fall within breed mean ± 6*std_dev (AC-7 sentinel)', async () => {
+      if (!realBreedId) {
+        return; // Skip if no breeds in DB
+      }
+
+      // Reload starter-stats JSON and find the profile for realBreedId's breed
+      const statsPath = resolve(__dirname, '../../../data/breedStarterStats.json');
+      const statsByName = JSON.parse(readFileSync(statsPath, 'utf8'));
+
+      // Look up the actual breed name for realBreedId
+      const breed = await prisma.breed.findUnique({
+        where: { id: realBreedId },
+        select: { name: true },
+      });
+      const profile = statsByName[breed.name];
+      expect(profile).toBeDefined();
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { money: 100000 },
+      });
+
+      const csrf = await fetchCsrf(app);
+      const res = await request(app)
+        .post('/api/marketplace/store/buy')
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${token}`)
+        .set('Cookie', csrf.cookieHeader)
+        .set('X-CSRF-Token', csrf.csrfToken)
+        .send({ breedId: realBreedId, sex: 'Mare' });
+
+      expect(res.status).toBe(201);
+      const horseId = res.body.data.horse.id;
+      const stored = await prisma.horse.findUnique({ where: { id: horseId } });
+
+      // For each stat key in the breed profile, assert the sampled value
+      // falls within mean ± 6*std_dev. Box-Muller variance plus the
+      // total-cap clamp can push individual stats off the mean by several
+      // std_dev, so we use a generous bound here. The point is to catch a
+      // generator regression that returns constant zeros or random 1-100,
+      // not to pin the distribution shape.
+      const STAT_KEYS = [
+        'speed', 'stamina', 'agility', 'balance', 'precision',
+        'intelligence', 'boldness', 'flexibility', 'obedience', 'focus',
+        'endurance', 'strength',
+      ];
+      for (const key of STAT_KEYS) {
+        const s = profile[key];
+        const mean = s.mean;
+        const std = s.std ?? s.std_dev ?? 3;
+        const value = stored[key];
+        expect(typeof value).toBe('number');
+        // Lower bound: 1 (game minimum) OR mean - 6*std, whichever is higher
+        // Upper bound: 100 (game maximum) OR mean + 6*std, whichever is lower
+        expect(value).toBeGreaterThanOrEqual(Math.max(1, mean - 6 * std));
+        expect(value).toBeLessThanOrEqual(Math.min(100, mean + 6 * std));
+      }
+
+      // Total must respect the 200 cap from clampStatsToTotalCap
+      const total = STAT_KEYS.reduce((sum, k) => sum + stored[k], 0);
+      expect(total).toBeLessThanOrEqual(200);
+
+      await prisma.horse.delete({ where: { id: horseId } }).catch(() => {});
+    });
+
     // Equoria-kiep — 31E follow-up: store-bought horse MUST have colorGenotype
     // and phenotype populated (not NULL) — adjacent-locations fix to e8zj.
     // Sentinel-positive: this fails if the 31E wiring is removed from buyStoreHorse.
