@@ -332,7 +332,8 @@ paths:
     get:
       tags: [Horses]
       summary: 'Get all temperament type definitions with game effects'
-      description: 'Returns all 11 temperament types with descriptions, training modifiers, competition modifiers, and best groom personality matches. Public endpoint — no authentication required.'
+      description: 'Returns all 11 temperament types with descriptions, training modifiers, competition modifiers, and best groom personality matches. Requires authentication.'
+      security: [{ bearerAuth: [] }]
       responses:
         '200':
           description: 'Temperament definitions retrieved successfully'
@@ -340,13 +341,63 @@ paths:
             application/json:
               schema:
                 type: object
+                required: [success, message, data]
                 properties:
                   success: { type: boolean, example: true }
+                  message: { type: string }
                   data:
                     type: object
+                    required: [count, definitions]
                     properties:
                       count: { type: integer, example: 11 }
-                      definitions: { type: array, items: { type: object } }
+                      definitions:
+                        type: array
+                        items:
+                          type: object
+                          required:
+                            [
+                              name,
+                              description,
+                              prevalenceNote,
+                              trainingModifiers,
+                              competitionModifiers,
+                              bestGroomPersonalities,
+                            ]
+                          properties:
+                            name:
+                              type: string
+                              description: 'Canonical temperament name (e.g. "Bold", "Nervous", "Calm")'
+                            description:
+                              type: string
+                              description: 'Human-readable behavioural summary'
+                            prevalenceNote:
+                              type: string
+                              description: 'Prose note on how common this temperament is in the population'
+                            trainingModifiers:
+                              type: object
+                              required: [xpModifier, scoreModifier]
+                              properties:
+                                xpModifier:
+                                  type: number
+                                  description: 'Multiplier applied to XP earned per training session (e.g. 1.10 = +10%)'
+                                scoreModifier:
+                                  type: number
+                                  description: 'Multiplier applied to per-stat training gain'
+                            competitionModifiers:
+                              type: object
+                              required: [riddenModifier, conformationModifier]
+                              properties:
+                                riddenModifier:
+                                  type: number
+                                  description: 'Multiplier on final score for ridden disciplines'
+                                conformationModifier:
+                                  type: number
+                                  description: 'Multiplier on final score for conformation/halter classes'
+                            bestGroomPersonalities:
+                              type: array
+                              description: 'Groom personalities that pair positively with this temperament (synergy > 0). Empty when no personality has a positive synergy.'
+                              items: { type: string }
+        '401': { description: Unauthorized }
         '500': { description: 'Internal server error' }
 
   '/horses/{id}/xp':
