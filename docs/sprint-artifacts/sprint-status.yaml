@@ -4738,10 +4738,17 @@ summary:
 
   31D-4-groom-temperament-synergy:
     title: 'Groom Temperament Synergy'
-    status: backlog
+    status: done
     epic: 31D
     story: 4
     prerequisites: [31D-1-temperament-assignment-service-migration]
+    notes: |
+      2026-05-15 post-merge audit found the production POST /api/grooms/interact path
+      did not apply synergy. Remediation: Equoria-ng1i (commit db3580c4) wired
+      getTemperamentGroomSynergy into calculateGroomInteractionEffects;
+      Equoria-gi9o persisted synergyModifier on GroomInteraction; Equoria-ictn
+      added GET /api/grooms/:groomId/horses/:horseId/synergy preview API.
+      Frontend chip rendering deferred to Equoria-gwq3.
 
   31D-5-temperament-definitions-endpoint:
     title: 'Temperament Definitions Endpoint'

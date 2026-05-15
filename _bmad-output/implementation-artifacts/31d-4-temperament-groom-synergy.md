@@ -376,3 +376,14 @@ None — all tasks completed cleanly on first pass.
 
 - 2026-03-30: Implemented Story 31D.4 — added TEMPERAMENT_GROOM_SYNERGY constant + getTemperamentGroomSynergy() to temperamentService; extended calculateBondingEffects() with backward-compatible synergy params; wired processGroomingSession() to fetch and apply groom personality + horse temperament; added 37-test suite covering all ACs.
 - 2026-03-31: Code review fixes — added CANONICAL_GROOM_PERSONALITIES set to validate personality before \_any return (Calm/Steady no longer grant bonus to non-canonical personalities); added .trim() to both temperament and personality normalisation for robustness; added 6 new tests (cap boundary with synergy, \_any bypass with invalid personality, whitespace normalisation). 43 tests total, 0 regressions.
+
+## Post-merge audit (2026-05-15)
+
+Per COMPLETION_VERIFICATION_POLICY.md and OPTIMAL_FIX_DISCIPLINE.md, an adversarial review of 31D-4 found that the live production endpoint — `POST /api/grooms/interact` → `recordInteraction` → `calculateGroomInteractionEffects` (in `backend/utils/groomSystem.mjs`) — did **not** apply temperament-groom synergy. The synergy-aware `calculateBondingEffects`/`processGroomingSession` path was orphaned (test-only). Acceptance criteria #1 and #2 could not be verified end-to-end against the real endpoint.
+
+Remediation issues:
+- **Equoria-ng1i (P1, closed 2026-05-15, commit db3580c4)** — wired `getTemperamentGroomSynergy` into `calculateGroomInteractionEffects`; selected `temperament` on the controller's `prisma.horse.findUnique` call; integration test in `backend/modules/grooms/__tests__/recordInteractionSynergy.integration.test.mjs` asserts Nervous+patient → +0.25 and Nervous+strict → -0.15 against the live endpoint with real DB.
+- **Equoria-gi9o (P2, closed 2026-05-15, commit db3580c4)** — added `synergyModifier Float? @default(0)` to `GroomInteraction` schema + SQL migration `20260515060000_add_groom_interaction_synergy_modifier`; `recordInteraction` and `enhancedGroomInteractions.calculateEnhancedEffects` persist the modifier on every row for analytics.
+- **Equoria-ictn (P2, closed 2026-05-15, commit 3d793346)** — added `GET /api/grooms/:groomId/horses/:horseId/synergy` preview endpoint so the UI can render a synergy chip before assignment. Frontend chip rendering deferred to `Equoria-gwq3` to avoid conflict with concurrent frontend work.
+
+**31D-4 is now functionally complete end-to-end.** Sprint-status update follows.
