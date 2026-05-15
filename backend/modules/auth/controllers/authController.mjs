@@ -21,8 +21,10 @@ import { issueCsrfToken } from '../../../middleware/csrf.mjs';
 import { evictPasswordChangedAtCache } from '../../../middleware/auth.mjs';
 import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
 
-// Starter kit seeded for every new user at registration (Story 15-2)
-const STARTER_KIT_INVENTORY = [
+// Starter kit seeded for every new user at registration (Story 15-2).
+// Exported for test locking — see backend/modules/auth/__tests__/starterKitInventory.test.mjs
+// (Equoria-oroi). Any drift in itemId / name / bonus values must be intentional.
+export const STARTER_KIT_INVENTORY = [
   {
     id: 'starter-saddle',
     itemId: 'all-purpose-saddle',
