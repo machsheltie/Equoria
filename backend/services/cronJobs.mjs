@@ -8,6 +8,7 @@ import {
 } from '../utils/horseAgingSystem.mjs';
 import { incrementWeeklyCareerWeeks } from './riderTrainerProgressionService.mjs';
 import { executeClosedShows } from '../modules/competition/shows/showController.mjs';
+import { Sentry } from '../config/sentry.mjs';
 
 /**
  * Daily trait evaluation cron job that runs at midnight
@@ -30,6 +31,15 @@ import { executeClosedShows } from '../modules/competition/shows/showController.
  * enough to detect the original Equoria-0elk failure mode (cron never
  * scheduled at startup → heartbeat permanently null → STALE).
  */
+/**
+ * Equoria-304a: Threshold for firing a stale-heartbeat operational alert.
+ * Daily jobs run every 24h with a 6h tolerance window (JOB_STALENESS_MS = 30h),
+ * but we want a noisier alert at 25h since by then a daily job is provably
+ * skipped (24h + 1h grace). Alert debounces — only one Sentry event per
+ * stale-streak, not one per /health poll.
+ */
+export const STALE_ALERT_THRESHOLD_MS = 25 * 60 * 60 * 1000;
+
 const JOB_STALENESS_MS = {
   dailyTraitEvaluation: 30 * 60 * 60 * 1000,
   dailyHorseAging: 30 * 60 * 60 * 1000,
@@ -46,6 +56,11 @@ class CronJobService {
     this.isRunning = false;
     // Equoria-0elk: per-job heartbeat — last-run timestamps + status + summary
     this.heartbeats = new Map();
+    // Equoria-304a: debounce state for stale-heartbeat alerting. Stores
+    // jobName -> lastAlertedAt timestamp so we only fire ONE Sentry event per
+    // stale streak (not one per /health poll). Cleared on the per-job heartbeat
+    // success path so a recovered + re-staling job alerts again.
+    this.staleAlertState = new Map();
   }
 
   /**
@@ -65,6 +80,11 @@ class CronJobService {
       finishedAt: entry.finishedAt ?? null,
       status: entry.status ?? existing.status ?? 'unknown',
     });
+    // Equoria-304a: a successful run clears the stale alert debounce so a
+    // subsequent stale streak fires a fresh alert (not silently suppressed).
+    if (entry.status === 'success') {
+      this.staleAlertState.delete(jobName);
+    }
   }
 
   /**
@@ -745,6 +765,84 @@ class CronJobService {
   }
 
   /**
+   * Equoria-304a: Evaluate the health snapshot for stale jobs and fire a
+   * debounced Sentry alert when any job has been stale for > 25h.
+   *
+   * Debounce rule: at most ONE alert per stale streak per job. The streak
+   * ends (and the debounce clears) only when the job records a successful
+   * run (see recordHeartbeat). If the job remains stale across many polls,
+   * we do NOT re-emit; if it recovers and goes stale again, we DO emit.
+   *
+   * The Sentry event payload lists ALL stale jobs in this cycle plus their
+   * last-finishedAt timestamps so on-call can immediately see which crons
+   * skipped.
+   *
+   * No-op when Sentry DSN isn't configured (Sentry.captureMessage becomes
+   * a noop). Safe to call on every /health poll — the debounce + threshold
+   * guarantee bounded emit rate.
+   *
+   * @param {Object} health - snapshot from getHealth()
+   * @param {Date}   [now]
+   * @returns {Object[]}    - the list of jobs we alerted on this call (empty
+   *                          if debounced or below threshold)
+   */
+  evaluateStaleAlerts(health, now = new Date()) {
+    const nowMs = now.getTime();
+    const toAlert = [];
+    for (const [jobName, block] of Object.entries(health.jobs)) {
+      // Only fire when this job has been stale longer than the 25h alert
+      // threshold (independent of the per-job staleness flag, which uses
+      // 30h for daily jobs).
+      const finishedAtMs = block.lastFinishedAt ? new Date(block.lastFinishedAt).getTime() : null;
+      const staleForMs = finishedAtMs === null ? Infinity : nowMs - finishedAtMs;
+      if (staleForMs <= STALE_ALERT_THRESHOLD_MS) continue;
+
+      // Debounce: one alert per stale streak per job.
+      if (this.staleAlertState.has(jobName)) continue;
+
+      this.staleAlertState.set(jobName, nowMs);
+      toAlert.push({
+        jobName,
+        lastFinishedAt: block.lastFinishedAt,
+        status: block.status,
+        staleForHours: Number.isFinite(staleForMs)
+          ? Math.round(staleForMs / (60 * 60 * 1000))
+          : null,
+      });
+    }
+
+    if (toAlert.length === 0) return [];
+
+    try {
+      Sentry.withScope(scope => {
+        scope.setTag('event_type', 'operational');
+        scope.setTag('alert', 'cron_stale_heartbeat');
+        scope.setLevel('error');
+        scope.setContext('stale_cron_jobs', {
+          count: toAlert.length,
+          thresholdHours: Math.round(STALE_ALERT_THRESHOLD_MS / (60 * 60 * 1000)),
+          jobs: toAlert,
+        });
+        const jobNames = toAlert.map(j => j.jobName).join(', ');
+        Sentry.captureMessage(
+          `Cron stale heartbeat alert: ${toAlert.length} job(s) stale > 25h — ${jobNames}`,
+          'error',
+        );
+      });
+      logger.error(
+        `[CronJobService.evaluateStaleAlerts] Stale cron jobs (>25h): ${toAlert
+          .map(j => `${j.jobName}(${j.staleForHours}h)`)
+          .join(', ')}`,
+      );
+    } catch (err) {
+      logger.warn(
+        `[CronJobService.evaluateStaleAlerts] Sentry emit failed: ${err?.message ?? err}`,
+      );
+    }
+    return toAlert;
+  }
+
+  /**
    * Equoria-9wby: Async health snapshot variant that includes recentRuns[N]
    * per job from the persistent CronRunLog table. Use this from the admin
    * route handler so cross-restart history is visible.
@@ -756,6 +854,9 @@ class CronJobService {
    */
   async getHealthWithHistory({ now = new Date(), recentRunsLimit = 5 } = {}) {
     const base = this.getHealth(now);
+    // Equoria-304a: evaluate stale-heartbeat alerts on every /health poll.
+    // Debounced internally — bounded emit rate even under poll storms.
+    this.evaluateStaleAlerts(base, now);
     try {
       for (const jobName of Object.keys(base.jobs)) {
         const rows = await prisma.cronRunLog.findMany({
