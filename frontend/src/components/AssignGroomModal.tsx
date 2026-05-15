@@ -16,8 +16,8 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, User, AlertCircle, CheckCircle } from 'lucide-react';
-import { useAssignGroom } from '../hooks/api/useGrooms';
+import { X, User, AlertCircle, CheckCircle, Sparkles } from 'lucide-react';
+import { useAssignGroom, useGroomHorseSynergy } from '../hooks/api/useGrooms';
 import type { ApiError } from '@/lib/api-client';
 
 // Type definitions
@@ -43,7 +43,53 @@ interface AssignGroomModalProps {
   userId: number;
   onAssignmentComplete?: (_assignment: unknown) => void;
   availableGrooms?: Groom[];
+  /**
+   * Equoria-atb6 (31D-FE-2) — horse temperament. When non-null, each groom
+   * row renders a synergy-preview badge fetched from
+   * GET /api/v1/grooms/:groomId/horses/:horseId/synergy. When null (legacy
+   * horse with no temperament), badges are hidden entirely — no fetches
+   * fire, so there is no N+1 storm.
+   */
+  horseTemperament?: string | null;
 }
+
+/**
+ * Equoria-atb6 (31D-FE-2) — Synergy preview badge for a single groom row.
+ *
+ * Renders +X% bonding / −X% bonding chip when synergy is non-zero. Hides
+ * when synergy is 0 (silence-is-golden — no clutter for non-matching pairs)
+ * or when the synergy preview hasn't loaded yet.
+ *
+ * The hook is per-pair which means N grooms = N HTTP requests on first
+ * paint, but each is cached separately (5 min staleTime in the hook), and
+ * the badge is only mounted when horseTemperament is non-null. Bulk-fetch
+ * is not justified at typical groom-list sizes (≤10) and would require a
+ * new endpoint.
+ */
+const SynergyBadge: React.FC<{ groomId: number; horseId: number }> = ({ groomId, horseId }) => {
+  const { data } = useGroomHorseSynergy(groomId, horseId);
+  if (!data || data.synergyModifier === 0) return null;
+
+  const pct = Math.round(data.synergyModifier * 100);
+  const sign = data.synergyModifier > 0 ? 'positive' : 'negative';
+  const colorClass =
+    sign === 'positive'
+      ? 'bg-emerald-900/30 border-emerald-500/40 text-emerald-300'
+      : 'bg-rose-900/30 border-rose-500/40 text-rose-300';
+  const label = `${pct > 0 ? '+' : ''}${pct}% bonding`;
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md border text-xs font-medium ${colorClass}`}
+      data-testid="groom-row-synergy-badge"
+      data-synergy-sign={sign}
+      title={data.message}
+    >
+      <Sparkles size={10} aria-hidden="true" />
+      {label}
+    </span>
+  );
+};
 
 const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
   isOpen,
@@ -53,6 +99,7 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
   userId: _userId,
   onAssignmentComplete,
   availableGrooms = [],
+  horseTemperament = null,
 }) => {
   // State management
   const [selectedGroomId, setSelectedGroomId] = useState<number | null>(null);
@@ -219,9 +266,17 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="font-semibold text-[rgb(220,235,255)]">{groom.name}</h4>
-                          <span className="text-sm text-[rgb(148,163,184)] capitalize">
-                            {groom.skillLevel}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            {/* Equoria-atb6 (31D-FE-2) — synergy badge.
+                                Only mounted when horseTemperament is non-null
+                                so legacy horses fire zero synergy requests. */}
+                            {horseTemperament ? (
+                              <SynergyBadge groomId={groom.id} horseId={horseId} />
+                            ) : null}
+                            <span className="text-sm text-[rgb(148,163,184)] capitalize">
+                              {groom.skillLevel}
+                            </span>
+                          </div>
                         </div>
                         <div className="text-sm text-[rgb(148,163,184)] space-y-1">
                           <p>
