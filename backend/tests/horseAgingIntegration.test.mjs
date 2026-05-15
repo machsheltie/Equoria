@@ -444,8 +444,12 @@ describe('Horse Aging Integration', () => {
         data: {
           name: 'Error Test Horse',
           sex: 'Colt',
-          dateOfBirth: new Date('2024-06-01'),
-          age: 364,
+          dateOfBirth: new Date('2024-06-01'), // ~365 days before the 2025-06-01 reference → game-year 52
+          // Post-son6: Horse.age is game-YEARS, not days. Was age:364 (days-
+          // semantic). This test mocks prisma.horse.update to reject before
+          // any age write and never asserts age, so the value is cosmetic —
+          // but it must read correctly to future maintainers (Equoria-1kss).
+          age: 52, // game-years: floor(365d / 7) = 52 (post-son6)
           userId: testUser.id,
           breedId: testBreed.id,
         },
