@@ -81,7 +81,11 @@ export async function getNextActions(req, res) {
         select: { foalId: true, foal: { select: { name: true } } },
       });
     } catch (foalErr) {
-      logger.warn('nextActionsController: foalDevelopment query failed — schema may be missing', {
+      // FoalDevelopment is a real model in prisma/schema.prisma. The defensive
+      // catch keeps the next-actions dashboard usable when transient query
+      // errors occur (FK traversal of soft-deleted foals, etc.) instead of
+      // failing the whole response. Real errors still get logged.
+      logger.warn('nextActionsController: foalDevelopment query failed', {
         userId,
         error: foalErr.message,
       });
