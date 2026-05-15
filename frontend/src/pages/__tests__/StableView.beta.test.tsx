@@ -21,8 +21,11 @@ vi.mock('@/config/betaRouteScope', async (importOriginal) => {
   };
 });
 
-// Mock HorseCard so stable renders without full card complexity
-vi.mock('../../components/HorseCard', () => ({
+// Mock HorseCard so stable renders without full card complexity.
+// Points at the canonical `components/horse/HorseCard` (the stale
+// `components/HorseCard` duplicate was retired in Equoria-oi4c).
+vi.mock('@/components/horse/HorseCard', () => ({
+  HorseCard: () => null,
   default: () => null,
 }));
 
