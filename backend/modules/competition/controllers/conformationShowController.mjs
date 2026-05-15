@@ -19,6 +19,20 @@ import {
   executeConformationShow as executeShowService,
 } from '../../../services/conformationShowService.mjs';
 
+/**
+ * Resolve the owned Horse for the request: prefer req.horse populated by the
+ * requireOwnership middleware (production / route-level wiring). Fall back to
+ * findOwnedResource() when the controller is invoked directly (most existing
+ * integration tests bypass the routing layer and pass a raw req object).
+ * Returns the horse row or null on miss. Per Equoria-s433 / spec-5oll.
+ */
+async function resolveOwnedHorse(req, horseId, userId) {
+  if (req.horse) {
+    return req.horse;
+  }
+  return findOwnedResource('horse', horseId, userId);
+}
+
 // ---------------------------------------------------------------------------
 // POST /api/v1/competition/conformation/enter
 // ---------------------------------------------------------------------------
@@ -55,8 +69,10 @@ export async function enterConformationShow(req, res) {
       `[conformationShowController.POST /enter] User ${userId} entering horse ${horseId} in show ${showId}`,
     );
 
-    // Verify horse ownership — returns null on ownership failure (IDOR: 404 not 403)
-    const horse = await findOwnedResource('horse', horseId, userId);
+    // Horse ownership validated by requireOwnership({from:'body'}) middleware
+    // (Equoria-s433); the resolved Horse row is attached to req.horse. The
+    // fallback path is for unit tests that invoke the controller directly.
+    const horse = await resolveOwnedHorse(req, horseId, userId);
     if (!horse) {
       return res.status(404).json({ success: false, message: 'Horse not found' });
     }
@@ -194,8 +210,9 @@ export async function checkConformationEligibility(req, res) {
       `[conformationShowController.GET /eligibility] Checking eligibility for horse ${horseId} user ${userId}`,
     );
 
-    // Verify horse ownership — IDOR: 404 on fail
-    const horse = await findOwnedResource('horse', horseId, userId);
+    // Horse ownership validated by requireOwnership middleware (Equoria-s433).
+    // The fallback path is for unit tests that invoke the controller directly.
+    const horse = await resolveOwnedHorse(req, horseId, userId);
     if (!horse) {
       return res.status(404).json({ success: false, message: 'Horse not found' });
     }
@@ -339,8 +356,9 @@ export async function getConformationTitles(req, res) {
       `[conformationShowController.GET /titles] User ${userId} querying titles for horse ${horseId}`,
     );
 
-    // Verify horse ownership — IDOR: 404 on failure
-    const horse = await findOwnedResource('horse', horseId, userId);
+    // Horse ownership validated by requireOwnership middleware (Equoria-s433).
+    // The fallback path is for unit tests that invoke the controller directly.
+    const horse = await resolveOwnedHorse(req, horseId, userId);
     if (!horse) {
       return res.status(404).json({ success: false, message: 'Horse not found' });
     }
