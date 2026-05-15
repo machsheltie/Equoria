@@ -17,11 +17,10 @@ import {
   getBreedingInsights,
 } from '../../../services/traitHistoryService.mjs';
 import { EPIGENETIC_FLAGS, GROOM_PERSONALITIES } from '../../../utils/epigeneticFlags.mjs';
-import { PrismaClient } from '../../../../packages/database/node_modules/@prisma/client/index.js';
+import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 
 /**
  * GET /api/epigenetic-traits/definitions

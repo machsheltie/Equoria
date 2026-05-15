@@ -6,9 +6,7 @@
  * that influenced their development.
  */
 
-import { PrismaClient } from '../../packages/database/node_modules/@prisma/client/index.js';
-
-const prisma = new PrismaClient();
+import prisma from '../db/index.mjs';
 
 /**
  * Logs a trait assignment to the history

@@ -12,11 +12,10 @@
 // Jest is available globally in test environment
 import request from 'supertest';
 import app from '../../app.mjs';
-import { PrismaClient } from '../../../packages/database/node_modules/@prisma/client/index.js';
+import prisma from '../../db/index.mjs';
 import jwt from 'jsonwebtoken';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
-const prisma = new PrismaClient();
 
 describe('Epigenetic Trait System Integration Tests', () => {
   let __csrf__;

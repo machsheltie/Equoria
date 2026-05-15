@@ -5,7 +5,7 @@
  * Usage: node backend/seed/seedDevData.mjs
  */
 
-import { PrismaClient } from '../../packages/database/node_modules/@prisma/client/index.js';
+import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';

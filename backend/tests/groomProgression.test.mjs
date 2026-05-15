@@ -11,7 +11,7 @@
  * Tests validate real system behavior with actual database operations.
  */
 
-import { PrismaClient } from '../../packages/database/node_modules/@prisma/client/index.js';
+import prisma from '../db/index.mjs';
 import {
   awardGroomXP,
   calculateGroomLevel,
@@ -19,8 +19,6 @@ import {
   logGroomAssignment,
   getGroomProfile,
 } from '../services/groomProgressionService.mjs';
-
-const prisma = new PrismaClient();
 
 describe('Groom Progression System', () => {
   let testUser;

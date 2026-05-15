@@ -65,7 +65,35 @@ export default [
               message:
                 '__TESTING_ONLY_JsonScanner is a test-only export. Production code must use verifyJsonBody / rejectPollutedRequestBody / requestBodySecurityErrorHandler. See backend/middleware/requestBodySecurity.mjs for context.',
             },
+            // Equoria-4qjo (21R-SEC-3-REVIEW-7-FOLLOW): forbid the deep-relative
+            // `node_modules/@prisma/client/index.js` import pattern. Production
+            // code must either (a) use the project's shared prismaClient
+            // singleton via `import prisma from '../db/index.mjs'` or (b) use
+            // the bare specifier `@prisma/client` for standalone scripts.
+            // Deep-relative-into-node_modules is fragile (breaks when workspace
+            // layout changes) and the `.js` extension violates the ES Modules
+            // doctrine (CLAUDE.md / ES_MODULES_REQUIREMENTS.md).
+            {
+              group: ['**/node_modules/@prisma/client/**', '**/packages/database/node_modules/**'],
+              message:
+                'Do not import @prisma/client via deep-relative node_modules paths. Use `import prisma from \'../db/index.mjs\'` (shared singleton) or the bare specifier `@prisma/client` (standalone scripts). See Equoria-4qjo for context.',
+            },
           ],
+        },
+      ],
+
+      // Equoria-4qjo: forbid `.js` extension in import paths anywhere in
+      // backend/. ES Modules doctrine requires `.mjs` for ESM source files;
+      // bare specifiers and JSON imports are unaffected (JSON uses `.json`).
+      // AST selector matches `ImportDeclaration` whose `source.value` is a
+      // string ending in `.js`. Re-uses the no-restricted-syntax slot but as
+      // a distinct rule entry merged with the test-file sentinel (Equoria-ip82).
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: 'ImportDeclaration[source.value=/\\.js$/]',
+          message:
+            'Imports must use `.mjs` extension or bare specifiers. The `.js` extension is reserved for legacy CommonJS modules in node_modules. See Equoria-4qjo / CLAUDE.md ES_MODULES_REQUIREMENTS.md.',
         },
       ],
 
@@ -205,6 +233,16 @@ export default [
             'TemplateLiteral:has(CallExpression[callee.object.name="Date"][callee.property.name="now"]):has(CallExpression[callee.object.name="Math"][callee.property.name="random"])',
           message:
             "Date.now()+Math.random() fixture-IDs are collision-prone and re-introduce the Equoria-3gti flake. Use `randomBytes(8).toString('hex')` from node:crypto instead. See Equoria-ip82 for context.",
+        },
+        // Equoria-4qjo: same .js-extension import ban applies to test files.
+        // Test fixtures that import from a deep-relative `.js` path in
+        // node_modules will rot when workspace layout shifts; the canonical
+        // pattern is `import prisma from '../db/index.mjs'` or a bare
+        // specifier.
+        {
+          selector: 'ImportDeclaration[source.value=/\\.js$/]',
+          message:
+            'Imports must use `.mjs` extension or bare specifiers. The `.js` extension is reserved for legacy CommonJS modules in node_modules. See Equoria-4qjo / CLAUDE.md ES_MODULES_REQUIREMENTS.md.',
         },
       ],
     },
