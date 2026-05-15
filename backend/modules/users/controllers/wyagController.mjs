@@ -64,7 +64,13 @@ export async function getWhileYouWereGone(req, res) {
         });
       }
     } catch (err) {
-      logger.warn('WYAGController: competitionResult query failed — schema may be missing', {
+      // WYAG is a low-priority dashboard surface; CompetitionResult is a real
+      // model in prisma/schema.prisma. A defensive catch here keeps the
+      // dashboard usable when transient query errors occur (FK traversal of
+      // soft-deleted horses, etc.) instead of failing the whole response.
+      // Surface the failure to the caller via dataWarnings so the UI can
+      // signal "data unavailable" instead of crashing.
+      logger.warn('WYAGController: competitionResult query failed', {
         error: err.message,
       });
       dataWarnings.push('competition_results_unavailable');
@@ -91,7 +97,10 @@ export async function getWhileYouWereGone(req, res) {
         });
       }
     } catch (err) {
-      logger.warn('WYAGController: directMessage query failed — schema may be missing', {
+      // DirectMessage is a real model in prisma/schema.prisma. Catching here
+      // keeps the WYAG dashboard usable if a message query fails (e.g.
+      // soft-deleted sender FK). Surfaced to caller via dataWarnings.
+      logger.warn('WYAGController: directMessage query failed', {
         error: err.message,
       });
       dataWarnings.push('messages_unavailable');
@@ -121,7 +130,11 @@ export async function getWhileYouWereGone(req, res) {
         });
       }
     } catch (err) {
-      logger.warn('WYAGController: foalDevelopment query failed — schema may be missing', {
+      // FoalDevelopment is a real model in prisma/schema.prisma. The defensive
+      // catch covers transient FK errors during foal-relation traversal
+      // (parallel to the issue tracked in Equoria-j8s2 for nextActionsController).
+      // Surfaced to caller via dataWarnings.
+      logger.warn('WYAGController: foalDevelopment query failed', {
         error: err.message,
       });
       dataWarnings.push('foal_milestones_unavailable');
