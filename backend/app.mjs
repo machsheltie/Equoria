@@ -112,7 +112,7 @@ import inventoryRoutes from './routes/inventoryRoutes.mjs';
 import forumRoutes from './routes/forumRoutes.mjs';
 import messageRoutes from './routes/messageRoutes.mjs';
 import clubRoutes from './routes/clubRoutes.mjs';
-import marketplaceRoutes from './modules/marketplace/routes/marketplaceRoutes.mjs';
+import marketplaceRoutes from './routes/marketplaceRoutes.mjs';
 import nextActionsRoutes from './routes/nextActionsRoutes.mjs';
 import wyagRoutes from './routes/wyagRoutes.mjs';
 import showRoutes from './routes/showRoutes.mjs';
