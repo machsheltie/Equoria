@@ -72,11 +72,12 @@ Equoria is a web-based horse breeding and competition simulation where players m
 - Inventory: JSONB-based tack system (saddle, bridle), equip/unequip
 - Farrier, Veterinarian, Feed/Tack shops
 
-### 3.7 Community (PRD-03)
+### 3.7 Community (PRD-03 / PRD-11)
 
 - Forums: threads + posts with view tracking
 - Direct Messages: inbox/sent, unread count, auto-mark-read
 - Clubs: discipline/breed clubs, governance, elections, voting
+- FR81 canonical spec: **PRD-11-Community-System.md** (Equoria-56uu) — documents the shipped Epic 19B backend (forum, clubs+elections, DMs), out-of-scope boundaries, and 5 open product questions.
 
 ### 3.8 Onboarding (PRD-02)
 
@@ -163,18 +164,19 @@ Equoria is a web-based horse breeding and competition simulation where players m
 
 ## 9. PRD Index
 
-| Doc                                         | Title                 | Status                      |
-| ------------------------------------------- | --------------------- | --------------------------- |
-| [PRD-00](./PRD-00-Brief.md)                 | Product Brief         | v2.0.0 — Updated 2026-03-18 |
-| [PRD-01](./PRD-01-Overview.md)              | Overview & Vision     | v2.2.0 — Updated 2026-03-18 |
-| [PRD-02](./PRD-02-Core-Features.md)         | Core Features         | v1.1.0 — Updated 2026-03-18 |
-| [PRD-03](./PRD-03-Gameplay-Systems.md)      | Gameplay Systems      | v2.1.0 — Updated 2026-03-18 |
-| [PRD-04](./PRD-04-Advanced-Systems.md)      | Advanced Systems      | v1.1.0 — Updated 2026-03-18 |
-| [PRD-07](./PRD-07-Player-Guide.md)          | Player Guide          | v1.0.0 — Reference          |
-| [PRD-08](./PRD-08-Security-Architecture.md) | Security Architecture | v1.0.0 — Reference          |
-| [PRD-10](./PRD-10-Project-Milestones.md)    | Project Milestones    | v2.0.0 — Updated 2026-03-18 |
+| Doc                                         | Title                   | Status                       |
+| ------------------------------------------- | ----------------------- | ---------------------------- |
+| [PRD-00](./PRD-00-Brief.md)                 | Product Brief           | v2.0.0 — Updated 2026-03-18  |
+| [PRD-01](./PRD-01-Overview.md)              | Overview & Vision       | v2.2.0 — Updated 2026-03-18  |
+| [PRD-02](./PRD-02-Core-Features.md)         | Core Features           | v1.1.0 — Updated 2026-03-18  |
+| [PRD-03](./PRD-03-Gameplay-Systems.md)      | Gameplay Systems        | v2.1.0 — Updated 2026-03-18  |
+| [PRD-04](./PRD-04-Advanced-Systems.md)      | Advanced Systems        | v1.1.0 — Updated 2026-03-18  |
+| [PRD-07](./PRD-07-Player-Guide.md)          | Player Guide            | v1.0.0 — Reference           |
+| [PRD-08](./PRD-08-Security-Architecture.md) | Security Architecture   | v1.0.0 — Reference           |
+| [PRD-10](./PRD-10-Project-Milestones.md)    | Project Milestones      | v2.0.0 — Updated 2026-03-18  |
+| [PRD-11](./PRD-11-Community-System.md)      | Community System (FR81) | v1.0.0 — Authored 2026-05-15 |
 
-**Note:** PRD-05 (Deployment), PRD-06 (Testing), and PRD-09 (Dev Standards) are covered by `docs/deployment/`, `docs/testing-architecture.md`, and `CLAUDE.md` / `_bmad-output/project-context.md` respectively.
+**Note:** PRD-05/06 numbering is overloaded: `PRD-05-Rider-System.md` + `PRD-06-Trainer-System.md` are the canonical staff-system specs (see §3.5), while deployment/testing/dev-standards content lives in `docs/deployment/`, `docs/testing-architecture.md`, and `CLAUDE.md` / `_bmad-output/project-context.md`. (The Rider/Trainer rows are not yet in this index table — pre-existing drift, tracked separately, out of Equoria-56uu scope.)
 
 ### Related Specifications
 
