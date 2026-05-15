@@ -25,7 +25,7 @@ synthetic test secrets that satisfy `validate-environment.mjs`.
 
 ---
 
-## Workflow Index (eleven workflows, 2026-05-15)
+## Workflow Index (twelve workflows, 2026-05-15)
 
 | Workflow | File | Purpose | Blocks merge? |
 | --- | --- | --- | --- |
@@ -36,6 +36,7 @@ synthetic test secrets that satisfy `validate-environment.mjs`.
 | **Evidence Verification** | `evidence-verification.yml` | Re-runs every `_bmad-output/test-artifacts/evidence/*.md` verification command and asserts expected-output markers still appear | yes |
 | **PR Body Evidence** | `pr-body-evidence.yml` | Parses PR description against `.github/pull_request_template.md` and fails on placeholder / unticked checkboxes | yes |
 | **OWASP ZAP Security Scan** | `security-scan.yml` | Baseline + API + scheduled full ZAP scans, SARIF upload | informational + scheduled |
+| **CodeQL** | `codeql.yml` | GitHub CodeQL JS/TS SAST on push, PR, and weekly cron — security-extended + security-and-quality query suites, SARIF upload to Security tab | informational + scheduled |
 | **HttpOnly Cookie Auth Tests** | `test-auth-cookies.yml` | Path-filtered auth-cookie regression suite for `authController` / middleware / hooks | yes (auth-touching PRs) |
 | **Claude Code Review** | `claude-code-review.yml` | On-PR Claude review for non-draft PRs | informational |
 | **Claude Code** | `claude.yml` | Triggered by `@claude` mention in PR / issue comments | manual |
@@ -321,7 +322,31 @@ known-bad fixtures so a parser regression fails the gate immediately.
 - SARIF format upload for GitHub Security tab integration
 - `permissions: contents: read, security-events: write`
 
-### 5.2 HttpOnly Cookie Authentication Tests (`test-auth-cookies.yml`)
+### 5.2 CodeQL (`codeql.yml`)
+
+GitHub CodeQL static-analysis security testing for JavaScript and TypeScript.
+Added by Equoria-2njt (2026-05-15) alongside the existing OWASP ZAP runtime
+scans. Why both: ZAP catches issues by exercising the running app (XSS
+reflection, auth-redirect chains, header misconfig); CodeQL catches issues
+by tracing data flow through compiled JS/TS (taint flow from request input
+to Prisma queries, prototype-pollution sinks, unsafe-eval / unsafe-dynamic-
+method patterns).
+
+- **Triggers**: push to `master` / `develop`, `pull_request`, weekly Tuesday
+  03:00 UTC cron (offset from ZAP's Monday cron to avoid scan congestion),
+  `workflow_dispatch`.
+- **Languages**: `javascript-typescript` (CodeQL v3 combined language).
+- **Query suites**: `security-extended` + `security-and-quality`.
+- **Path scope**: `backend/`, `frontend/src/`, `scripts/`. Excludes
+  `node_modules/`, `dist/`, `build/`, `coverage/`, `playwright-report/`,
+  `test-results/`, `__tests__/**/*fixture*`, `frontend/storybook-static/`.
+  Fixture exclusion is intentional: integration tests contain intentional
+  bad-pattern strings (e.g. polluted-key fixtures) that would produce false
+  positives.
+- **Upload behavior**: `upload: always` so partial results from a timed-out
+  scan still reach the Security tab.
+
+### 5.3 HttpOnly Cookie Authentication Tests (`test-auth-cookies.yml`)
 
 Path-filtered regression suite. Runs only when the PR touches:
 - `backend/modules/auth/controllers/authController.mjs`
@@ -473,13 +498,11 @@ placebo.
 
 Issues tracked against this pipeline:
 
-- **Equoria-2njt** — implement `.github/workflows/codeql.yml` for
-  JavaScript/TypeScript SAST. **Not yet present.** Do not reference
-  codeql.yml in code or doc until that issue lands.
 - **Equoria-pwl9** — audit ZAP scan `continue-on-error` flags for
   legitimacy vs gate-weakening.
 - Burn-in flake threshold tuning (currently informational only).
 
-When `codeql.yml` lands, this doc gains a Section 11 entry describing the
-SAST scan triggers, fail conditions, and SARIF upload behavior. Until
-then the section is intentionally absent.
+Recent additions:
+
+- **Equoria-2njt** (landed 2026-05-15) — `.github/workflows/codeql.yml`
+  added for JavaScript/TypeScript SAST. See § 5.2 above.

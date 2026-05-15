@@ -1,0 +1,97 @@
+name: 'CodeQL'
+
+# Equoria-2njt (2026-05-15): JavaScript / TypeScript Static Application Security
+# Testing via GitHub's CodeQL analysis engine. Adds compile-time SAST coverage
+# alongside the existing runtime OWASP ZAP scans (security-scan.yml) and the
+# request-pipeline sentinel-positive integration tests (parameter-pollution,
+# request-body, prototype-pollution).
+#
+# Why CodeQL: catches data-flow vulnerabilities the runtime ZAP scan cannot
+# reach (e.g. tainted-source-to-sink chains through controller -> service ->
+# Prisma queries, prototype-pollution patterns at the JS level, SSRF gadgets
+# in URL builders). Per docs/devops-cicd.md §6, this workflow is paired with
+# docs/devops-cicd.md §12 "Future Work" — when this file lands, the doc gains
+# a CodeQL section referencing it.
+#
+# Findings appear in the GitHub Security tab via the SARIF upload step.
+# Path scope: JavaScript + TypeScript across backend/, frontend/, scripts/.
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+    branches: [master, develop]
+  schedule:
+    # Weekly full scan — Tuesdays 03:00 UTC. Separate from ZAP weekly (Mondays)
+    # to avoid scan congestion on a single day.
+    - cron: '0 3 * * 2'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+jobs:
+  analyze:
+    name: 'CodeQL Analysis (${{ matrix.language }})'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['javascript-typescript']
+
+    steps:
+      - name: 'Checkout Repository'
+        uses: actions/checkout@v4
+
+      # Initializes the CodeQL tools for scanning. The github/codeql-action
+      # plugin pins the engine version centrally — pin to a tagged release
+      # rather than @main per GitHub's supply-chain guidance.
+      - name: 'Initialize CodeQL'
+        uses: github/codeql-action/init@v3
+        with:
+          languages: ${{ matrix.language }}
+          # Use the security-extended query suite (vs default) for tighter
+          # coverage of prototype-pollution, SSRF, taint-flow, and unsafe-
+          # dynamic-method patterns.
+          queries: security-extended,security-and-quality
+          # Path filters keep CodeQL focused on first-party application code.
+          # node_modules and Prisma-generated files are excluded by default,
+          # but we narrow further to skip generated artifacts and test
+          # fixtures (fixtures contain intentional bad-pattern strings that
+          # would produce false positives).
+          config: |
+            paths:
+              - backend
+              - frontend/src
+              - scripts
+            paths-ignore:
+              - '**/node_modules/**'
+              - '**/dist/**'
+              - '**/build/**'
+              - '**/coverage/**'
+              - '**/playwright-report/**'
+              - '**/test-results/**'
+              - '**/__tests__/**/*fixture*'
+              - 'frontend/storybook-static/**'
+
+      # Autobuild for JS/TS is a no-op (no compile required) — runs the
+      # standard CodeQL extraction for the path-filtered tree configured
+      # above. Kept for parity with the canonical CodeQL workflow template.
+      - name: 'Autobuild'
+        uses: github/codeql-action/autobuild@v3
+
+      # Run the analysis and upload SARIF results to the GitHub Security
+      # tab. The category disambiguates this run from any other SARIF
+      # uploads (e.g. ZAP) so findings don't collide.
+      - name: 'Perform CodeQL Analysis'
+        uses: github/codeql-action/analyze@v3
+        with:
+          category: '/language:${{ matrix.language }}'
+          # upload: 'always' ensures partial results from a timed-out scan
+          # still reach Security. The default ('failure-only') would lose
+          # them and mask in-progress findings.
+          upload: always
