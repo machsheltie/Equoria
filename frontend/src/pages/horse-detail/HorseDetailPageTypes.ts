@@ -38,6 +38,9 @@ export interface Horse {
   description?: string;
   forSale?: boolean;
   salePrice?: number;
+  // Stud listing fields (Equoria-q072) — set/cleared via /api/v1/horses/:id/stud-listing
+  studStatus?: string;
+  studFee?: number;
   userId?: string;
   parentIds?: {
     sireId?: number;

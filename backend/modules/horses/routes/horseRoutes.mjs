@@ -13,6 +13,8 @@ import {
   getBreedingColorPrediction,
   getHorseCompetitionHistory,
   resetHorseLastFed,
+  listHorseAtStud,
+  unlistHorseAtStud,
 } from '../controllers/horseController.mjs';
 import { trainingAnalyticsService } from '../../../services/trainingAnalyticsService.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
@@ -627,6 +629,61 @@ router.post(
         success: false,
         message: 'Internal server error',
       });
+    }
+  },
+);
+
+/**
+ * POST /horses/:id/stud-listing  (Equoria-q072)
+ * List a stallion at stud with a fee.
+ * Body: { studFee: number (non-negative integer) }
+ *
+ * Security: requireOwnership('horse') validates the user owns the horse.
+ * Controller enforces sex === 'Stallion' and studFee shape.
+ */
+router.post(
+  '/:id/stud-listing',
+  mutationRateLimiter,
+  rejectPollutedRequest,
+  validateHorseId,
+  [
+    body('studFee')
+      .exists()
+      .withMessage('studFee is required')
+      .bail()
+      .isInt({ min: 0 })
+      .withMessage('studFee must be a non-negative integer'),
+  ],
+  handleValidationErrors,
+  requireOwnership('horse'),
+  async (req, res) => {
+    try {
+      await listHorseAtStud(req, res);
+    } catch (error) {
+      logger.error(`[horseRoutes] Error in stud listing: ${error.message}`);
+      res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  },
+);
+
+/**
+ * DELETE /horses/:id/stud-listing  (Equoria-q072)
+ * Unlist a stallion from stud (resets studStatus + studFee).
+ *
+ * Security: requireOwnership('horse') validates the user owns the horse.
+ */
+router.delete(
+  '/:id/stud-listing',
+  mutationRateLimiter,
+  rejectPollutedRequest,
+  validateHorseId,
+  requireOwnership('horse'),
+  async (req, res) => {
+    try {
+      await unlistHorseAtStud(req, res);
+    } catch (error) {
+      logger.error(`[horseRoutes] Error in stud unlisting: ${error.message}`);
+      res.status(500).json({ success: false, message: 'Internal server error' });
     }
   },
 );

@@ -940,6 +940,24 @@ export const horsesApi = {
     apiClient.get<RecentGains>(`/api/v1/horses/${horseId}/gains/recent?days=${days}`),
   update: (horseId: number, data: { name?: string }) =>
     apiClient.put<HorseSummary>(`/api/v1/horses/${horseId}`, data),
+  /** List a stallion at stud (Equoria-q072). POST /api/v1/horses/:id/stud-listing */
+  listAtStud: (horseId: number, studFee: number) =>
+    apiClient.post<{
+      id: number;
+      name: string;
+      sex: string;
+      studStatus: string;
+      studFee: number;
+    }>(`/api/v1/horses/${horseId}/stud-listing`, { studFee }),
+  /** Unlist a stallion from stud (Equoria-q072). DELETE /api/v1/horses/:id/stud-listing */
+  unlistAtStud: (horseId: number) =>
+    apiClient.delete<{
+      id: number;
+      name: string;
+      sex: string;
+      studStatus: string;
+      studFee: number;
+    }>(`/api/v1/horses/${horseId}/stud-listing`),
   getConformation: (horseId: number | string) =>
     apiClient.get<{
       horseId: number;
