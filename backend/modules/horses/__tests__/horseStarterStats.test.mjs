@@ -136,6 +136,47 @@ describe('horseStarterStats — sampleStat (Box-Muller + clamp)', () => {
     expect(observed).toBeGreaterThan(29);
     expect(observed).toBeLessThan(31);
   });
+
+  it('SENTINEL (Equoria-tseq): distribution shape is normal, not triangular', () => {
+    // Equoria-tseq guard: data-fix scripts previously used a triangular
+    // approximation `(r1+r2-1)*1.41` which under-disperses for large std_devs.
+    // True Box-Muller produces a normal distribution. The two are detectably
+    // different by sample variance: triangular has variance ≈ 1/6 (≈0.17) for
+    // u ∈ [-1,1]-shifted sums, so triangular*1.41 has variance ≈ (1.41)²/6 ≈
+    // 0.33 — about ⅓ of unit-normal variance. We measure the empirical
+    // variance of z = (sample - mean) / std_dev and assert it's close to 1.0
+    // (true normal) and definitively NOT close to 0.33 (triangular).
+    //
+    // We use mean=50 and std_dev=15 to put the bulk of the distribution well
+    // inside [1, 100] so the clamp does not distort variance materially.
+    const N = 10000;
+    const mean = 50;
+    const stdDev = 15;
+    const zSamples = [];
+    let clampedCount = 0;
+    for (let i = 0; i < N; i++) {
+      const v = sampleStat({ mean, std_dev: stdDev });
+      // Track clamping rate as a sanity check — should be small (~<2%) for
+      // these parameters; otherwise variance measurement is biased low.
+      if (v === 1 || v === 100) {
+        clampedCount += 1;
+      }
+      zSamples.push((v - mean) / stdDev);
+    }
+    expect(clampedCount / N).toBeLessThan(0.05);
+
+    const empiricalMean = zSamples.reduce((s, z) => s + z, 0) / N;
+    const empiricalVar = zSamples.reduce((s, z) => s + (z - empiricalMean) ** 2, 0) / (N - 1);
+
+    // True normal: empiricalVar should be ≈ 1.0 (after dividing by std_dev).
+    // Allow [0.85, 1.15] tolerance — N=10000 makes this gap statistically
+    // tight (SE of variance ≈ sqrt(2/N) ≈ 0.014; 10-sigma is 0.14). Slight
+    // shrinkage from integer rounding + occasional clamp.
+    expect(empiricalVar).toBeGreaterThan(0.85);
+    expect(empiricalVar).toBeLessThan(1.15);
+    // Triangular would give ~0.33 — must be definitively above that.
+    expect(empiricalVar).toBeGreaterThan(0.5);
+  });
 });
 
 describe('horseStarterStats — clampStatsToTotalCap', () => {

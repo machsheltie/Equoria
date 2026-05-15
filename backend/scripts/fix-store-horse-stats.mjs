@@ -43,8 +43,12 @@ async function main() {
     for (const stat of STAT_KEYS_TO_FIX) {
       if (starterStats?.[stat]) {
         const { mean, std_dev } = starterStats[stat];
-        // Apply same Box-Muller variance as the store, capped 1–20
-        const z = (Math.random() + Math.random() - 1) * 1.41;
+        // True Box-Muller (matches sampleStat in backend/services/horseStarterStats.mjs).
+        // Previous (r1+r2-1)*1.41 form was triangular, not normal — under-dispersed
+        // for large std_devs and dampened breed differentiation (Equoria-tseq).
+        const u1 = Math.random() || Number.EPSILON; // guard against log(0)
+        const u2 = Math.random();
+        const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
         updates[stat] = Math.max(1, Math.min(20, Math.round(mean + std_dev * z)));
       } else {
         // No breed profile — assign a neutral starter value

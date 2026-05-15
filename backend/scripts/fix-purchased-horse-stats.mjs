@@ -24,8 +24,24 @@ const STAT_KEYS = [
   'endurance',
 ];
 
+/**
+ * Sample a stat from a normal distribution using true Box-Muller.
+ *
+ * The previous `(Math.random() + Math.random() - 1) * 1.41` form produces a
+ * TRIANGULAR distribution, not normal — empirical sample variance of
+ * z = (sample - mean) / std_dev is ~0.33 instead of the expected ~1.0.
+ * With large std_devs the distribution is under-dispersed, which dampens
+ * the breed differentiation the breed profiles were designed to express.
+ * (Equoria-tseq, 31A-era defect.)
+ *
+ * True Box-Muller: z = sqrt(-2*ln(u1)) * cos(2*pi*u2).
+ * Same shape as `backend/services/horseStarterStats.mjs#sampleStat` and
+ * `backend/modules/horses/services/conformationService.mjs#normalRandom`.
+ */
 function sampleStat({ mean, std_dev }) {
-  const z = (Math.random() + Math.random() - 1) * 1.41;
+  const u1 = Math.random() || Number.EPSILON; // guard against log(0)
+  const u2 = Math.random();
+  const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
   return Math.max(1, Math.min(20, Math.round(mean + std_dev * z)));
 }
 
