@@ -103,7 +103,18 @@ export default {
   errorOnDeprecated: true,
 
   // Test patterns to ignore
-  testPathIgnorePatterns: ['/node_modules/', '/coverage/', '/dist/', '/build/', '/tests/load/'],
+  // Story 21-7 AC2 (Equoria-6ydf): performance tests are excluded from the
+  // default `npm test` run. They live alongside unit tests but match the
+  // Performance/performance filename convention and run only via
+  // `npm run test:performance` (jest.config.performance.mjs).
+  testPathIgnorePatterns: [
+    '/node_modules/',
+    '/coverage/',
+    '/dist/',
+    '/build/',
+    '/tests/load/',
+    '[Pp]erformance.*\\.test\\.mjs$',
+  ],
 
   // Watch mode configuration
   watchPathIgnorePatterns: ['/node_modules/', '/coverage/', '/dist/', '/build/'],
