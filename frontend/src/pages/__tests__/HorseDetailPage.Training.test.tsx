@@ -292,9 +292,14 @@ describe('HorseDetailPage Training Tab Integration', () => {
       await waitForHorseToLoad();
       await navigateToTrainingTab();
 
-      await waitFor(() => {
-        expect(screen.getByTestId('training-tab')).toBeInTheDocument();
-      });
+      // TrainingTab is lazy-loaded via Suspense; allow extra time for the chunk
+      // to resolve under CI load (default 1000ms can flake).
+      await waitFor(
+        () => {
+          expect(screen.getByTestId('training-tab')).toBeInTheDocument();
+        },
+        { timeout: 5000 }
+      );
     });
 
     test('Training tab is keyboard accessible', async () => {
