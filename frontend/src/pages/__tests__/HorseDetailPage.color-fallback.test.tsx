@@ -1,0 +1,160 @@
+/**
+ * HorseDetailPage — color readout fallback tests (Equoria-lsi5).
+ *
+ * Verifies the three branches of the fallback chain on the page header:
+ *   horse.phenotype?.colorName ?? horse.finalDisplayColor ?? 'Unknown'
+ *
+ * This mirrors HorseCard.tsx:130. Each branch is exercised against a fresh
+ * mocked API response so a regression in the readout cannot pass silently.
+ *
+ * Per CLAUDE.md frontend testing philosophy: existing unit tests may keep
+ * mocked fetch responses; new full-stack feature coverage prefers Playwright.
+ * These three unit assertions are scoped to the render-layer fallback only —
+ * the end-to-end real-DB color chip is covered by the Equoria-fhag sentinel.
+ */
+
+import React from 'react';
+import { render, screen, waitFor } from '@testing-library/react';
+import '@testing-library/jest-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { BrowserRouter, Routes, Route, MockAuthProvider } from '../../test/utils';
+import { vi } from 'vitest';
+import HorseDetailPage from '../HorseDetailPage';
+
+const baseHorse = {
+  id: 1,
+  name: 'ColorTest',
+  breed: 'Thoroughbred',
+  age: 5,
+  gender: 'Stallion',
+  dateOfBirth: '2020-03-15',
+  healthStatus: 'Excellent',
+  stats: {
+    speed: 50,
+    stamina: 50,
+    agility: 50,
+    strength: 50,
+    intelligence: 50,
+    precision: 50,
+    balance: 50,
+    boldness: 50,
+    flexibility: 50,
+    obedience: 50,
+    focus: 50,
+    endurance: 50,
+  },
+  disciplineScores: {},
+};
+
+const originalFetch = global.fetch;
+
+function makeFetch(horseOverride: Record<string, unknown>) {
+  return vi.fn(((url: RequestInfo | URL) => {
+    const urlStr = typeof url === 'string' ? url : url.toString();
+    if (
+      urlStr.includes('/epigenetic-insights') ||
+      urlStr.includes('/trait-interactions') ||
+      urlStr.includes('/trait-timeline') ||
+      urlStr.includes('/genotype') ||
+      urlStr.includes('/color')
+    ) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ success: true, data: { traits: [] } }),
+      } as Response);
+    }
+    // Main horse fetch
+    return Promise.resolve({
+      ok: true,
+      status: 200,
+      json: () =>
+        Promise.resolve({
+          success: true,
+          data: { ...baseHorse, ...horseOverride },
+        }),
+    } as Response);
+  }) as typeof fetch);
+}
+
+function renderPage() {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  window.history.pushState({}, 'Test', '/horses/1');
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <MockAuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/horses/:id" element={<HorseDetailPage />} />
+          </Routes>
+        </BrowserRouter>
+      </MockAuthProvider>
+    </QueryClientProvider>
+  );
+}
+
+describe('HorseDetailPage color readout fallback (Equoria-lsi5)', () => {
+  afterEach(() => {
+    global.fetch = originalFetch;
+    vi.restoreAllMocks();
+  });
+
+  test('renders phenotype.colorName when present (canonical-DB case)', async () => {
+    global.fetch = makeFetch({
+      phenotype: { colorName: 'Bay' },
+      // legacy column is null for every real horse — still must be ignored
+      finalDisplayColor: null,
+    });
+    renderPage();
+    const colorLine = await screen.findByTestId('horse-detail-color');
+    await waitFor(() => expect(colorLine).toHaveTextContent('Color: Bay'));
+    expect(colorLine).not.toHaveTextContent('Unknown');
+  });
+
+  test('falls back to finalDisplayColor when phenotype is null', async () => {
+    global.fetch = makeFetch({
+      phenotype: null,
+      finalDisplayColor: 'Chestnut',
+    });
+    renderPage();
+    const colorLine = await screen.findByTestId('horse-detail-color');
+    await waitFor(() => expect(colorLine).toHaveTextContent('Color: Chestnut'));
+  });
+
+  test("renders 'Unknown' only when both fields are absent", async () => {
+    global.fetch = makeFetch({
+      phenotype: null,
+      finalDisplayColor: null,
+    });
+    renderPage();
+    const colorLine = await screen.findByTestId('horse-detail-color');
+    await waitFor(() => expect(colorLine).toHaveTextContent('Color: Unknown'));
+  });
+
+  test('handles malformed phenotype (array) without crash via type guard', async () => {
+    // CONTRIBUTING.md §1 JSONB type guard: arrays must not produce a colorName.
+    // This sentinel proves the guard is wired correctly — without it, the
+    // fallback would silently degrade rather than fail loudly.
+    global.fetch = makeFetch({
+      phenotype: ['unexpected'],
+      finalDisplayColor: 'Black',
+    });
+    renderPage();
+    const colorLine = await screen.findByTestId('horse-detail-color');
+    // Should fall through to finalDisplayColor, NOT crash and NOT read [0].
+    await waitFor(() => expect(colorLine).toHaveTextContent('Color: Black'));
+  });
+
+  test('phenotype.colorName wins over finalDisplayColor when both populated', async () => {
+    global.fetch = makeFetch({
+      phenotype: { colorName: 'Palomino' },
+      finalDisplayColor: 'Bay', // should be ignored
+    });
+    renderPage();
+    const colorLine = await screen.findByTestId('horse-detail-color');
+    await waitFor(() => expect(colorLine).toHaveTextContent('Color: Palomino'));
+    expect(colorLine).not.toHaveTextContent('Bay');
+  });
+});

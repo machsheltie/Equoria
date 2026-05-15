@@ -298,11 +298,24 @@ const HorseDetailPage: React.FC = () => {
     tack: (horseRaw as unknown as Record<string, unknown>).tack as
       | Record<string, unknown>
       | undefined,
-    // Resolve coat color: prefer the flat string field; fall back to phenotype.colorName
-    // (horses created before the color-genetics system may only have the JSONB phenotype).
-    finalDisplayColor:
-      (rawHorse.finalDisplayColor as string | undefined) ||
-      ((rawHorse.phenotype as { colorName?: string } | null)?.colorName ?? undefined),
+    // Resolve coat color (Equoria-lsi5): we now expose BOTH fields so the
+    // render layer can apply the canonical fallback (phenotype.colorName ??
+    // finalDisplayColor ?? 'Unknown'), mirroring HorseCard.tsx:130. The
+    // legacy finalDisplayColor TEXT column is NULL for every canonical-DB
+    // horse, so phenotype.colorName is the real source of truth.
+    finalDisplayColor: (rawHorse.finalDisplayColor as string | undefined) ?? undefined,
+    phenotype: (() => {
+      // JSONB type guard per .claude/rules/CONTRIBUTING.md §1 — Prisma returns
+      // JsonValue which can be null, primitive, array, or object. Only return
+      // a phenotype object shape after the four-part guard passes.
+      const raw = (rawHorse as unknown as { phenotype?: unknown }).phenotype;
+      if (raw === null || raw === undefined || typeof raw !== 'object' || Array.isArray(raw)) {
+        return null;
+      }
+      const ph = raw as { colorName?: unknown; [key: string]: unknown };
+      const colorName = typeof ph.colorName === 'string' ? ph.colorName : undefined;
+      return { ...ph, colorName };
+    })(),
     // Epic 31E-3 / Equoria-ga5g — markings stored on phenotype JSONB.
     // We pluck the marking-relevant fields off phenotype into a flat shape so
     // the renderer can treat them as a single object regardless of JSONB drift.
@@ -471,7 +484,14 @@ const HorseDetailPage: React.FC = () => {
                     <div className="flex flex-wrap gap-3 text-sm fantasy-body text-[var(--text-secondary)]">
                       <span>Breed: {getBreedName(horse.breed)}</span>
                       <span>•</span>
-                      <span>Color: {horse.finalDisplayColor || 'Unknown'}</span>
+                      {/* Equoria-lsi5 — mirror HorseCard.tsx:130 fallback chain.
+                          phenotype.colorName is the canonical genetics-derived
+                          color; finalDisplayColor is the vestigial pre-31E
+                          column (NULL for all canonical DB horses); 'Unknown'
+                          only when neither is populated. */}
+                      <span data-testid="horse-detail-color">
+                        Color: {horse.phenotype?.colorName ?? horse.finalDisplayColor ?? 'Unknown'}
+                      </span>
                       <span>•</span>
                       <span>Age: {horse.age}</span>
                       <span>•</span>
