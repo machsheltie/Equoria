@@ -8,7 +8,7 @@
 import express from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import { authenticateToken } from '../../../middleware/auth.mjs';
-import { requireOwnership, findOwnedResource } from '../../../middleware/ownership.mjs';
+import { requireOwnership } from '../../../middleware/ownership.mjs';
 import { evaluateEnhancedMilestone } from '../../../utils/enhancedMilestoneEvaluation.mjs';
 import {
   logTraitAssignment,
@@ -137,8 +137,9 @@ router.post(
  * POST /api/epigenetic-traits/log-trait
  * Log a trait assignment to history
  *
- * Security: Validates horse ownership using findOwnedResource helper (atomic, prevents CWE-639)
- * Note: Uses helper directly since horseId is in body, not params
+ * Security: Validates horse ownership via requireOwnership({from:'body'})
+ * middleware — atomic single-query check, returns 404 on miss (CWE-639).
+ * Migrated from inline findOwnedResource per Equoria-c9zc / spec-5oll.
  */
 router.post(
   '/log-trait',
@@ -159,29 +160,24 @@ router.post(
     body('bondScore').optional().isInt({ min: 0, max: 100 }),
     body('stressLevel').optional().isInt({ min: 0, max: 10 }),
   ],
+  // Run validationResult BEFORE requireOwnership so a non-numeric horseId
+  // surfaces as "Validation failed" (express-validator) rather than
+  // "Invalid horse ID" (requireOwnership's malformed-ID error).
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        error: 'Validation failed',
+        details: errors.array(),
+      });
+    }
+    next();
+  },
+  requireOwnership('horse', { idParam: 'horseId', from: 'body' }),
   async (req, res) => {
     try {
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({
-          success: false,
-          error: 'Validation failed',
-          details: errors.array(),
-        });
-      }
-
-      const userId = req.user.id;
-      const { horseId } = req.body;
-
-      // Validate horse ownership (atomic single-query validation)
-      const horse = await findOwnedResource('horse', horseId, userId);
-      if (!horse) {
-        return res.status(404).json({
-          success: false,
-          error: 'Horse not found or not owned by user',
-        });
-      }
-
+      // Ownership resolved by middleware — horse row attached at req.horse.
       // Log the trait assignment
       const historyEntry = await logTraitAssignment(req.body);
 
