@@ -128,15 +128,11 @@ describe('hasValidGaitScores', () => {
   });
 
   it('returns false when all standard gait scores are Infinity / -Infinity', () => {
-    expect(
-      hasValidGaitScores({ walk: Infinity, trot: -Infinity, canter: Infinity, gallop: -Infinity }),
-    ).toBe(false);
+    expect(hasValidGaitScores({ walk: Infinity, trot: -Infinity, canter: Infinity, gallop: -Infinity })).toBe(false);
   });
 
   it('returns false when standard gait values are non-numeric (strings, null, undefined)', () => {
-    expect(hasValidGaitScores({ walk: '70', trot: 'fast', canter: null, gallop: undefined })).toBe(
-      false,
-    );
+    expect(hasValidGaitScores({ walk: '70', trot: 'fast', canter: null, gallop: undefined })).toBe(false);
   });
 
   it('returns true when at least one mixed-type value is finite numeric', () => {
@@ -335,16 +331,11 @@ describe('validateGaitScores', () => {
   });
 
   it('sets gaiting to null when gaiting key is non-array (object, string, number)', () => {
+    expect(validateGaitScores({ walk: 75, trot: 80, canter: 85, gallop: 90, gaiting: 'Rack' }).gaiting).toBeNull();
     expect(
-      validateGaitScores({ walk: 75, trot: 80, canter: 85, gallop: 90, gaiting: 'Rack' }).gaiting,
+      validateGaitScores({ walk: 75, trot: 80, canter: 85, gallop: 90, gaiting: { name: 'Rack' } }).gaiting,
     ).toBeNull();
-    expect(
-      validateGaitScores({ walk: 75, trot: 80, canter: 85, gallop: 90, gaiting: { name: 'Rack' } })
-        .gaiting,
-    ).toBeNull();
-    expect(
-      validateGaitScores({ walk: 75, trot: 80, canter: 85, gallop: 90, gaiting: 42 }).gaiting,
-    ).toBeNull();
+    expect(validateGaitScores({ walk: 75, trot: 80, canter: 85, gallop: 90, gaiting: 42 }).gaiting).toBeNull();
   });
 });
 

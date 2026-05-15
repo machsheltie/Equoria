@@ -626,9 +626,7 @@ export function calculateGroomInteractionEffects(groom, foal, interactionType, d
     // Returns 0 (no-op) if foal.temperament or groom.personality is missing/unknown.
     const synergyModifier = getTemperamentGroomSynergy(foal?.temperament, groom?.personality);
     if (synergyModifier !== 0) {
-      finalEffects.bondingChange = Math.round(
-        finalEffects.bondingChange * (1 + synergyModifier),
-      );
+      finalEffects.bondingChange = Math.round(finalEffects.bondingChange * (1 + synergyModifier));
     }
     finalEffects.synergyModifier = synergyModifier;
 

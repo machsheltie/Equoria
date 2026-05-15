@@ -90,9 +90,7 @@ describe('31D-4 (Equoria-ng1i): POST /api/grooms/interact applies temperament-gr
   }, 60000);
 
   afterAll(async () => {
-    await prisma.groomInteraction
-      .deleteMany({ where: { foalId: nervousFoal?.id } })
-      .catch(() => {});
+    await prisma.groomInteraction.deleteMany({ where: { foalId: nervousFoal?.id } }).catch(() => {});
     await prisma.horse.delete({ where: { id: nervousFoal?.id } }).catch(() => {});
     await prisma.groom.deleteMany({ where: { userId: user?.id } }).catch(() => {});
     await prisma.user.delete({ where: { id: user?.id } }).catch(() => {});
