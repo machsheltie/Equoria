@@ -10,6 +10,7 @@
 import logger from './logger.mjs';
 import fs from 'fs';
 import path from 'path';
+import nodemailer from 'nodemailer';
 
 // Email configuration
 const EMAIL_CONFIG = {
@@ -20,6 +21,74 @@ const EMAIL_CONFIG = {
     process.env.PASSWORD_RESET_URL_BASE || 'http://localhost:3000/reset-password',
   SUPPORT_EMAIL: process.env.SUPPORT_EMAIL || 'support@equoria.com',
 };
+
+// Cached SMTP transporter (lazy-initialized so import-time doesn't fail).
+let cachedTransporter = null;
+
+/**
+ * Build / return a nodemailer SMTP transporter from env config.
+ *
+ * Required env vars in production:
+ *   - SMTP_HOST  (e.g. email-smtp.us-east-1.amazonaws.com for SES, smtp.resend.com for Resend)
+ *   - SMTP_PORT  (587 STARTTLS or 465 TLS)
+ *   - SMTP_USER  (provider's SMTP username)
+ *   - SMTP_PASS  (provider's SMTP password / API key)
+ *
+ * Throws (fail-loud) if any required var is missing in production. Returns
+ * `null` in non-production so capture/dev paths stay opt-in.
+ */
+function getSmtpTransporter() {
+  if (cachedTransporter) {
+    return cachedTransporter;
+  }
+
+  const host = process.env.SMTP_HOST;
+  const port = process.env.SMTP_PORT;
+  const user = process.env.SMTP_USER;
+  const pass = process.env.SMTP_PASS;
+
+  if (!host || !port || !user || !pass) {
+    if (process.env.NODE_ENV === 'production') {
+      // Fail closed: refuse to silently drop user-facing emails in production.
+      throw new Error(
+        '[EmailService] SMTP not configured. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS in environment.',
+      );
+    }
+    return null;
+  }
+
+  cachedTransporter = nodemailer.createTransport({
+    host,
+    port: Number(port),
+    secure: Number(port) === 465,
+    auth: { user, pass },
+  });
+  return cachedTransporter;
+}
+
+/**
+ * Reset the cached transporter (test-only helper so env changes between tests
+ * take effect). Not exported on the default export.
+ */
+export function _resetTransporter() {
+  cachedTransporter = null;
+}
+
+/**
+ * Deliver a single message via the configured SMTP provider.
+ * Throws on send failure so callers can surface the error.
+ */
+async function sendViaSmtp({ to, subject, html, text }) {
+  const transporter = getSmtpTransporter();
+  if (!transporter) {
+    // Non-production path with no SMTP configured — should never reach here
+    // because the production branches gate on getSmtpTransporter() first.
+    throw new Error('[EmailService] sendViaSmtp called without a configured transporter');
+  }
+  const from = `"${EMAIL_CONFIG.FROM_NAME}" <${EMAIL_CONFIG.FROM_EMAIL}>`;
+  const info = await transporter.sendMail({ from, to, subject, html, text });
+  return info;
+}
 
 /**
  * Capture non-production emails for local readiness gates.
@@ -265,14 +334,22 @@ export async function sendVerificationEmail(email, token, user = {}) {
       };
     }
 
-    // Production email sending via AWS SES is not yet configured
-    logger.warn('[EmailService] AWS SES not configured, email not sent', {
+    // Production: send via configured SMTP provider. Fails loud if unconfigured.
+    const info = await sendViaSmtp({
       to: email,
+      subject,
+      html: htmlEmail,
+      text: plainTextEmail,
+    });
+
+    logger.info('[EmailService] Verification email sent', {
+      to: email,
+      messageId: info?.messageId,
     });
 
     return {
       success: true,
-      messageId: 'no-email-service-configured',
+      messageId: info?.messageId,
       preview: verificationUrl,
     };
   } catch (error) {
@@ -310,7 +387,7 @@ export async function sendWelcomeEmail(email, user = {}) {
     `;
     const bodyText = `Hi ${userName},\n\nCongratulations! Your email has been successfully verified. You now have full access to Equoria.\n\nHere's what you can do next:\n- Browse and purchase your first horses\n- Start breeding champions\n- Compete in shows and events\n- Build your stable empire\n\nWe're excited to have you as part of the Equoria community!`;
 
-    const _htmlEmail = generateEmailTemplate(
+    const htmlEmail = generateEmailTemplate(
       subject,
       heading,
       bodyHtml,
@@ -318,7 +395,7 @@ export async function sendWelcomeEmail(email, user = {}) {
       dashboardUrl,
     );
 
-    const _plainTextEmail = generatePlainTextEmail(
+    const plainTextEmail = generatePlainTextEmail(
       heading,
       bodyText,
       'Go to your dashboard',
@@ -343,14 +420,22 @@ export async function sendWelcomeEmail(email, user = {}) {
       };
     }
 
-    // TODO: Send via AWS SES in production
-    logger.warn('[EmailService] AWS SES not configured, welcome email not sent', {
+    // Production: send via configured SMTP provider. Fails loud if unconfigured.
+    const info = await sendViaSmtp({
       to: email,
+      subject,
+      html: htmlEmail,
+      text: plainTextEmail,
+    });
+
+    logger.info('[EmailService] Welcome email sent', {
+      to: email,
+      messageId: info?.messageId,
     });
 
     return {
       success: true,
-      messageId: 'no-email-service-configured-welcome',
+      messageId: info?.messageId,
     };
   } catch (error) {
     logger.error('[EmailService] Error sending welcome email:', error);
@@ -402,13 +487,22 @@ export async function sendPasswordResetEmail(email, token, user = {}) {
       };
     }
 
-    logger.warn('[EmailService] AWS SES not configured, password reset email not sent', {
+    // Production: send via configured SMTP provider. Fails loud if unconfigured.
+    const info = await sendViaSmtp({
       to: email,
+      subject,
+      html: htmlEmail,
+      text: plainTextEmail,
+    });
+
+    logger.info('[EmailService] Password reset email sent', {
+      to: email,
+      messageId: info?.messageId,
     });
 
     return {
       success: true,
-      messageId: 'no-email-service-configured-password-reset',
+      messageId: info?.messageId,
       preview: resetUrl,
     };
   } catch (error) {

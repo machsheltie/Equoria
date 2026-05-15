@@ -73,6 +73,7 @@
     "ioredis": "^5.7.0",
     "jsonwebtoken": "^9.0.2",
     "node-cron": "^4.2.1",
+    "nodemailer": "^8.0.7",
     "opossum": "^8.1.4",
     "pg": "^8.16.0",
     "rate-limit-redis": "^4.3.1",
