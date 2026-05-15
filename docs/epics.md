@@ -222,6 +222,8 @@ Epic 23: Hub & Daily Loop ──────────────────
 
 **Dependencies:** None (entry point)
 
+**Polish deferrals → Epic 30:** Any "we'll polish this in Epic 30" deferral from this epic is bound by [Epic 30 § Scope Bounds](#scope-bounds-equoria-pv4l-2026-05-15). Theme primitives added here are wrapped/applied (not modified) by Stories 30.1/30.4 only — no Celestial-primitive changes inside Epic 30. Deferrals outside that bound require a new epic, not the Epic 30 bucket.
+
 ### Story 22.1: Font Migration
 
 As a player,
@@ -588,6 +590,8 @@ Deferred Components (defined in UX §6.4/§11.1 — not built in Epic 22, tracke
 
 **Dependencies:** Epic 22 (Foundation)
 
+**Polish deferrals → Epic 30:** Hub empty/loading states deferred from this epic are caught by [Epic 30 § Scope Bounds](#scope-bounds-equoria-pv4l-2026-05-15) Story 30.4 (EmptyState) only. Hub layout/loop logic changes are NOT Epic 30 scope — file a new epic.
+
 ### Story 23.1: NextActionsBar Component
 
 As a player,
@@ -741,6 +745,8 @@ UX Patterns: UX §5 (Hub), §6 (NextActions), Wireframe 1 (Hub Dashboard)
 
 **Dependencies:** Epic 22 (Foundation) + Story 24.1 (WYAG backend)
 
+**Polish deferrals → Epic 30:** WYWG overlay is a feature surface, not a polish target. Only its error state (via Story 30.2 ErrorCard) is in [Epic 30 § Scope Bounds](#scope-bounds-equoria-pv4l-2026-05-15). Overlay behavior/priority changes are NOT Epic 30 scope.
+
 ### Story 24.1: Backend — WYAG Aggregation Endpoint
 
 As a frontend developer,
@@ -870,6 +876,8 @@ UX Patterns: UX §6 (WYAG), Wireframe 2 (WhileYouWereGone)
 **FRs Covered:** FR-CN8, FR-CN20
 
 **Dependencies:** None (parallel with frontend epics)
+
+**Polish deferrals → Epic 30:** This is a backend model epic. The only Epic 30 touchpoint is that Story 30.3 RewardToast must consume competition events through the established hook layer (`useEnterCompetition`), not via direct push subscriptions added in Epic 30. See [Epic 30 § Scope Bounds](#scope-bounds-equoria-pv4l-2026-05-15). No backend changes belong in Epic 30.
 
 ### Story BA.1: Show Model Expansion
 
@@ -1063,6 +1071,8 @@ Architecture Sections: `backend/modules/competition/`, `packages/database/prisma
 
 **Dependencies:** Epic 22 (Foundation)
 
+**Polish deferrals → Epic 30:** Onboarding empty/error states are caught by [Epic 30 § Scope Bounds](#scope-bounds-equoria-pv4l-2026-05-15) Stories 30.2/30.4 only. Onboarding flow/step changes are NOT Epic 30 scope — file a new epic.
+
 ### Story 25.1: BreedSelector Component
 
 As a new player,
@@ -1169,6 +1179,8 @@ UX Patterns: UX §10.1 (Onboarding), Wireframe 3 (Onboarding Wizard)
 **FRs Covered:** FR-CN12
 
 **Dependencies:** Epic 22 (Foundation)
+
+**Polish deferrals → Epic 30:** Training-success meaningful events use Story 30.3 RewardToast via `useTrainHorse` only; routine training UI polish is bound by [Epic 30 § Scope Bounds](#scope-bounds-equoria-pv4l-2026-05-15). Training flow logic changes are NOT Epic 30 scope.
 
 ### Story 26.1: DisciplineSelector Component
 
@@ -1278,6 +1290,8 @@ UX Patterns: UX §10.3 (Training), Wireframe 4 (Training Page)
 **FRs Covered:** FR-CN13, FR-CN10
 
 **Dependencies:** Epic BACKEND-A (competition model must be live)
+
+**Polish deferrals → Epic 30:** Competition results empty state via Story 30.4; top-place win toast via Story 30.3 (`useEnterCompetition`). Both bound by [Epic 30 § Scope Bounds](#scope-bounds-equoria-pv4l-2026-05-15). Competition flow/tabs changes are NOT Epic 30 scope. Note: 1st-place cinematic moments shipped in Epic 18 — Story 30.3 RewardToast does NOT replace them.
 
 ### Story 27.1: CompetitionFieldPreview Component
 
@@ -1423,6 +1437,8 @@ UX Patterns: UX §10.4 (Competition), Wireframe 5 (Competition Page)
 **FRs Covered:** FR-CN9
 
 **Dependencies:** None (parallel with frontend epics)
+
+**Polish deferrals → Epic 30:** This is a backend model epic. Only touchpoint: Story 30.3 RewardToast consumes foal-milestone events through the established hook layer, not direct push subscriptions added in Epic 30. See [Epic 30 § Scope Bounds](#scope-bounds-equoria-pv4l-2026-05-15). No backend changes belong in Epic 30.
 
 ### Story BB.1: Age-Based Development
 
@@ -1581,6 +1597,8 @@ Architecture Sections: `backend/modules/breeding/`, `packages/database/prisma/sc
 
 **Dependencies:** Epic 22 (Foundation)
 
+**Polish deferrals → Epic 30:** Breeding empty state via Story 30.4 only; foal-birth cinematic moments shipped in Epic 18 and are NOT replaced by Story 30.3 RewardToast. Bound by [Epic 30 § Scope Bounds](#scope-bounds-equoria-pv4l-2026-05-15). Breeding flow/genetics changes are NOT Epic 30 scope.
+
 ### Story 28.1: CompatibilityPreview Component
 
 As a player evaluating a breeding pair,
@@ -1703,6 +1721,8 @@ UX Patterns: UX §10.5 (Breeding), Wireframe 6 (Breeding Page)
 **FRs Covered:** FR-CN9, FR-CN10, FR-CN15
 
 **Dependencies:** Epic BACKEND-B (foal development model)
+
+**Polish deferrals → Epic 30:** Foal-development empty/error states via Stories 30.4/30.2; trait-discovery cinematic moments shipped in Epic 18 and are NOT replaced by Story 30.3. Bound by [Epic 30 § Scope Bounds](#scope-bounds-equoria-pv4l-2026-05-15). Foal development logic changes are NOT Epic 30 scope.
 
 ### Story 29.1: DevelopmentTracker Component
 
@@ -1858,6 +1878,48 @@ UX Patterns: UX §10.6 (Foal Development), §10.7 (Horse Detail), Wireframe 7, W
 **FRs Covered:** FR-CN17, FR-CN18, FR-CN2
 
 **Dependencies:** All previous epics (final pass)
+
+### Scope Bounds (Equoria-pv4l, 2026-05-15)
+
+Epic 30 is the project's "polish & consistency" gate. It is **not** an absorber for arbitrary unfinished work from earlier epics. The dependency line "All previous epics" is accurate (it gates the audit work) but creates a real risk of scope creep — every deferred item gets the label "we'll catch it in Epic 30" until Epic 30 becomes unshippable. The bounds below exist to prevent that.
+
+**IN-SCOPE (capped at the 6 stories already defined; no new stories without an explicit user decision):**
+
+- Story 30.1: GoldBorderFrame component (1 new component, applied to hero panels / Hall of Fame / horse portraits — enumerated import sites only, no broader theme refactor)
+- Story 30.2: ErrorCard restyle (1 existing component restyled; existing error-boundary catch points reuse it as-is, no new error boundaries)
+- Story 30.3: RewardToast (1 new component; meaningful-only triggers fired from `useTrainHorse`, `useEnterCompetition`, `useDiscoverTrait`, `useBreed`, `useLevelUp` only — no generic mutation hooks)
+- Story 30.4: EmptyState (1 new reusable component applied to the 6 enumerated pages: My Horses, Competitions, Messages, Results, Inventory, Breeding — no other pages)
+- Story 30.5: Accessibility audit (deliverables: `docs/sprint-artifacts/wcag-audit-epic30-*.md`; Lighthouse a11y ≥ 0.85 on each of the 8 highest-traffic pages — login, hub, train, compete, horse-detail, breed, results, messages — and the 7 WCAG checks in the existing AC table). **Story 30.5 fixes a11y findings in the relevant page components only — not a parallel a11y layer.**
+- Story 30.6: Bundle audit (deliverable: `docs/sprint-artifacts/bundle-audit-epic30-*.md`; initial bundle < 400KB, fonts ≤ 60KB, LCP < 2.5s simulated 4G; lazy-load only the 3 enumerated components: DevelopmentTracker, CompetitionFieldPreview, CompatibilityPreview)
+
+**Story cap:** Epic 30 will accept **at most 8 stories total** (the 6 above + at most 2 additions, each requiring explicit user authorization before being added). This is a planning rail, not a wish — agents must file a separate issue and tag it "epic-30-candidate" before any new Epic 30 story is created.
+
+**NOT in Epic 30 (file a new epic or backlog issue instead):**
+
+- Wholesale refactors of `frontend/src/index.css` or `tokens.css` beyond the additions the 6 stories already require. Token system changes belong in their own epic (proposed Epic 31).
+- Retiring `Fantasy*` components in favor of `Celestial*` equivalents (Equoria-1nlw — already filed separately, blocks no Epic 30 story).
+- Performance work beyond Story 30.6's bundle budget (server response-time tuning, Prisma query optimization, image format conversion). Those belong in a "Performance Hardening" epic.
+- New game features ("just a small breeding tweak", "one more competition view") — Epic 30 is presentation polish only. New features file a new epic.
+- Mobile-app native shell migration — this is a web app polish epic; mobile is out of scope.
+- Backend security hardening beyond what Story 30.5's a11y findings transitively require — security work belongs in `21R-SEC-*`.
+- Localization (i18n) — out of scope for this epic. File a separate epic if needed.
+- New keyboard shortcuts beyond Tab/Enter/Space — WCAG 2.1.1 covers the minimum; richer shortcut systems are a separate epic.
+- Brand-new pages or routes. Empty-state coverage applies to the 6 enumerated pages; pages not listed get an EmptyState only if added as a separate Story 30.4 addendum (counts against the 8-story cap).
+- Animation overhauls — Story 30.1's corner flourishes and Story 30.3's fade transitions are the only motion additions allowed. Wholesale animation libraries (Framer Motion adoption, scroll-tied animations) are out of scope.
+
+**Cross-references to upstream epics:** Each prior epic that defers polish to Epic 30 must link to the specific Story 30.x that absorbs the deferral. The epic names below match the actual epic headers in this document (Epic 22 = Celestial Night Foundation, 23 = Hub & Daily Loop, 24 = WhileYouWereGone, 25 = Onboarding Rebuild, 26 = Training Flow Redesign, 27 = Competition Flow Redesign, 28 = Breeding Flow Redesign, 29 = Foal Development Overhaul, BACKEND-A = Competition Model Rewrite, BACKEND-B = Foal Development Model Expansion). Upstream epics whose deferrals are caught by Epic 30:
+
+- Epic 22 (Celestial Night Foundation) — components added under Epic 22 are eligible for GoldBorderFrame application in Story 30.1 and EmptyState application in Story 30.4 if they currently show bare "No data" text. **Bound:** the application is via the existing component API; no Celestial-theme primitive changes inside Epic 30.
+- Epic 23 (Hub & Daily Loop) — hub empty/loading states go through Story 30.4 EmptyState. **Bound:** NextActionsBar logic and hub layout unchanged by Epic 30.
+- Epic 24 (WhileYouWereGone) — the WYWG overlay error state uses Story 30.2 ErrorCard. **Bound:** overlay behavior/priority unchanged; WYWG is a feature surface, not a polish target.
+- Epic 25 (Onboarding Rebuild) — onboarding empty/error states go through Stories 30.4/30.2. **Bound:** onboarding flow/steps unchanged by Epic 30.
+- Epic 26 (Training Flow Redesign) — training-success meaningful events use Story 30.3 RewardToast via `useTrainHorse` only. **Bound:** routine "settings saved" stays inline; training flow logic unchanged.
+- Epic 27 (Competition Flow Redesign) — competition results empty state via Story 30.4; top-place win toast via Story 30.3 (`useEnterCompetition`). **Bound:** 1st-place cinematic moments shipped in Epic 18; Story 30.3 does NOT replace `CinematicMoment` overlays.
+- Epic 28 (Breeding Flow Redesign) — breeding empty state via Story 30.4. **Bound:** foal-birth cinematic moments shipped in Epic 18; Story 30.3 does NOT replace them; breeding flow/genetics unchanged.
+- Epic 29 (Foal Development Overhaul) — foal-development empty/error states via Stories 30.4/30.2. **Bound:** trait-discovery cinematic moments shipped in Epic 18; Story 30.3 does NOT replace them; DevelopmentTracker lazy-load is the only Story 30.6 touchpoint.
+- BACKEND-A (Competition Model Rewrite) / BACKEND-B (Foal Development Model Expansion) — Story 30.3 RewardToast consumes competition/foal events through the established hook surface only (e.g., `useEnterCompetition`); if a push-event channel exists, RewardToast subscribers must use the same hook layer — Epic 30 does NOT add direct WebSocket / SSE subscriptions in RewardToast itself, and Epic 30 contains NO backend changes.
+
+**Bypass / override:** Any addition to Epic 30 scope beyond the 8-story cap or NOT-in-scope list above requires explicit user authorization recorded in this section. Until that authorization is recorded, agents must file a new epic (or a new backlog issue) for the requested item rather than extending Epic 30.
 
 ### Story 30.1: GoldBorderFrame Component
 
