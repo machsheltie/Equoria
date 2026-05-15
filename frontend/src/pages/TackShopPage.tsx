@@ -14,13 +14,26 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Heart, ShoppingBag, Loader2, AlertCircle, CheckCircle, Filter } from 'lucide-react';
+import {
+  Heart,
+  ShoppingBag,
+  Loader2,
+  AlertCircle,
+  CheckCircle,
+  Filter,
+  Sparkles,
+  X,
+} from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
 import { CardGrid } from '@/components/ui/CardGrid';
 import { ItemCard } from '@/components/ui/ItemCard';
 import { FantasyTabs } from '@/components/FantasyTabs';
 import { HorseCard } from '@/components/horse/HorseCard';
-import { useTackInventory, usePurchaseTackItem } from '@/hooks/api/useTackShop';
+import {
+  useTackInventory,
+  usePurchaseTackItem,
+  useUnequipDecoration,
+} from '@/hooks/api/useTackShop';
 import { useHorses } from '@/hooks/api/useHorses';
 import type { TackItem } from '@/hooks/api/useTackShop';
 import type { HorseSummary } from '@/lib/api-client';
@@ -417,6 +430,86 @@ const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorses }) =>
 };
 
 // ---------------------------------------------------------------------------
+// DecorationsPanel (Equoria-n9n8)
+//
+// Renders the decorations currently equipped on the selected horse and
+// surfaces an "Unequip" button per row that fires the
+// useUnequipDecoration mutation. Without this panel, the
+// POST /api/v1/tack-shop/unequip-decoration endpoint had no UI path.
+// ---------------------------------------------------------------------------
+
+interface DecorationsPanelProps {
+  horse: HorseSummary;
+}
+
+const DecorationsPanel: React.FC<DecorationsPanelProps> = ({ horse }) => {
+  const unequipMutation = useUnequipDecoration();
+
+  const decorations = useMemo<string[]>(() => {
+    const raw =
+      horse.tack && typeof horse.tack === 'object'
+        ? (horse.tack as Record<string, unknown>).decorations
+        : undefined;
+    return Array.isArray(raw) ? raw.filter((v): v is string => typeof v === 'string') : [];
+  }, [horse.tack]);
+
+  const handleUnequip = (itemId: string) => {
+    unequipMutation.mutate(
+      { horseId: horse.id, itemId },
+      {
+        onSuccess: () => {
+          toast.success(`Unequipped decoration "${itemId}"`);
+        },
+        onError: () => {
+          toast.error('Failed to unequip decoration. Please try again.');
+        },
+      }
+    );
+  };
+
+  return (
+    <section
+      className="p-4 rounded-xl glass-panel"
+      data-testid="decorations-panel"
+      aria-label="Equipped decorations"
+    >
+      <h3 className="text-sm font-semibold text-[var(--cream)] uppercase tracking-widest mb-3 flex items-center gap-2">
+        <Sparkles className="w-4 h-4 text-[var(--gold-400)]" />
+        Equipped Decorations
+      </h3>
+
+      {decorations.length === 0 ? (
+        <p className="text-xs text-[var(--text-muted)] italic" data-testid="decorations-empty">
+          No decorations equipped on {horse.name}. Visit the Shop tab to buy decorative items.
+        </p>
+      ) : (
+        <ul className="space-y-2" data-testid="decorations-list">
+          {decorations.map((itemId) => (
+            <li
+              key={itemId}
+              className="flex items-center justify-between p-2 rounded-lg bg-[var(--glass-bg)] border border-[var(--glass-border)]"
+            >
+              <span className="text-sm text-[var(--cream)]">{itemId}</span>
+              <button
+                type="button"
+                onClick={() => handleUnequip(itemId)}
+                disabled={unequipMutation.isPending}
+                className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium rounded-md bg-[var(--status-danger)]/10 border border-[var(--status-danger)]/20 text-[var(--status-danger)] hover:bg-[var(--status-danger)]/20 disabled:opacity-40 transition-colors"
+                aria-label={`Unequip ${itemId}`}
+                data-testid={`unequip-decoration-${itemId}`}
+              >
+                <X className="h-3 w-3" aria-hidden="true" />
+                Unequip
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+};
+
+// ---------------------------------------------------------------------------
 
 interface HorsesTackTabProps {
   selectedHorse: HorseSummary | null;
@@ -497,15 +590,22 @@ const HorsesTackTab: React.FC<HorsesTackTabProps> = ({
       </CardGrid>
 
       {selectedHorse && (
-        <div className="flex justify-end pt-2">
-          <button
-            type="button"
-            onClick={onGoToShop}
-            className="px-5 py-2.5 bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)] rounded-lg text-sm font-medium hover:bg-[var(--status-success)]/20 hover:border-[var(--status-success)]/40 transition-all"
-          >
-            Continue to Shop →
-          </button>
-        </div>
+        <>
+          {/* Equoria-n9n8 — decorations management for the selected horse.
+              The panel renders an Unequip button per equipped decoration
+              (POST /api/v1/tack-shop/unequip-decoration). */}
+          <DecorationsPanel horse={selectedHorse} />
+
+          <div className="flex justify-end pt-2">
+            <button
+              type="button"
+              onClick={onGoToShop}
+              className="px-5 py-2.5 bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)] rounded-lg text-sm font-medium hover:bg-[var(--status-success)]/20 hover:border-[var(--status-success)]/40 transition-all"
+            >
+              Continue to Shop →
+            </button>
+          </div>
+        </>
       )}
     </div>
   );
