@@ -16,6 +16,7 @@ import { predictBreedingColors } from '../services/breedingColorPredictionServic
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import { getFeedHealth, getVetHealth, getDisplayedHealth } from '../../../utils/horseHealth.mjs';
+import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 
 /**
  * Get competition history for a specific horse
@@ -404,6 +405,9 @@ export async function getHorseOverview(req, res) {
         id: true,
         name: true,
         age: true,
+        // dateOfBirth required by getHorseAgeYears() — supplies the
+        // ageYears field on the overview response (Equoria-lvjy).
+        dateOfBirth: true,
         trait: true,
         disciplineScores: true,
         totalEarnings: true,
@@ -483,7 +487,10 @@ export async function getHorseOverview(req, res) {
     const overviewData = {
       id: horse.id,
       name: horse.name,
-      age: horse.age,
+      age: horse.age, // transitional: kept for backwards compat; deprecated in OpenAPI (Equoria-lvjy)
+      // Game-year age computed from dateOfBirth (1 week = 1 game-year).
+      // Frontend reads `horse.ageYears ?? horse.age` — this is the primary path.
+      ageYears: getHorseAgeYears(horse.dateOfBirth),
       trait: horse.trait,
       disciplineScores: horse.disciplineScores || {},
       nextTrainingDate,

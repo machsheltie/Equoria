@@ -19,6 +19,7 @@ import logger from '../../../utils/logger.mjs';
 import prisma from '../../../db/index.mjs';
 import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
 import { awardTrainerSessionXP } from '../../../services/riderTrainerProgressionService.mjs';
+import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 
 /**
  * Check if a horse is eligible to train in a specific discipline
@@ -615,12 +616,16 @@ async function getTrainableHorses(userId) {
           d => d !== 'Gaited' || checkTraitRequirements(horse, 'Gaited'),
         );
 
+        // Equoria-lvjy: ageYears is computed from dateOfBirth at response
+        // time (not the cached horse.age column). The legacy `age` field
+        // continues to surface the cached/effective integer for backwards
+        // compat during the Equoria-son6 → Equoria-x49d rollout.
         const horseData = {
           id: horse.id,
           horseId: horse.id,
           name: horse.name,
           age: effectiveAge,
-          ageYears: effectiveAge,
+          ageYears: getHorseAgeYears(horse.dateOfBirth),
           level: horse.horseXp?.level ?? 1,
           breed: horse.breed?.name ?? null,
           sex: horse.sex ?? null,

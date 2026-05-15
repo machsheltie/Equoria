@@ -76,3 +76,31 @@ export function getHorseAgeYears(dateOfBirth, now = new Date()) {
   const days = getHorseAgeDays(dateOfBirth, now);
   return Math.floor(days / DAYS_PER_GAME_YEAR);
 }
+
+/**
+ * Decorate a horse plain-object with `ageYears` computed from `dateOfBirth`.
+ *
+ * Used by horse-read serializers (list, overview, single) so the frontend
+ * receives a stable game-year unit without recomputing client-side. The
+ * frontend currently reads `horse.ageYears ?? horse.age` (HorseCard,
+ * StableView, MyStablePage, BreedingPairSelection) — this decorator
+ * supplies the primary path. Pure: does not mutate the input.
+ *
+ * Requires the input to carry `dateOfBirth` (Prisma `select` clauses must
+ * include it). If `dateOfBirth` is missing, `ageYears` defaults to 0 per
+ * the underlying helper's null-safety rules.
+ *
+ * @template T
+ * @param {T & { dateOfBirth?: Date|string|null }} horse
+ * @param {Date} [now=new Date()]
+ * @returns {T & { ageYears: number }}
+ */
+export function withAgeYears(horse, now = new Date()) {
+  if (!horse || typeof horse !== 'object') {
+    return horse;
+  }
+  return {
+    ...horse,
+    ageYears: getHorseAgeYears(horse.dateOfBirth, now),
+  };
+}

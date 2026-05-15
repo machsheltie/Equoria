@@ -45,6 +45,7 @@ import { createFoalFromPregnancy } from '../services/foalingService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import { withHealth } from '../../../utils/horseHealth.mjs';
+import { withAgeYears } from '../../../utils/horseAge.mjs';
 import {
   getCachedQuery,
   generateCacheKey,
@@ -356,6 +357,10 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
             id: true,
             name: true,
             age: true,
+            // dateOfBirth required by withAgeYears() to compute ageYears
+            // for HorseCard.tsx / StableView.tsx / MyStablePage.tsx /
+            // BreedingPairSelection.tsx (Equoria-lvjy).
+            dateOfBirth: true,
             sex: true,
             healthStatus: true,
             lastFedDate: true,
@@ -395,7 +400,7 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
     res.json({
       success: true,
       message: `Found ${horses.length} horses`,
-      data: horses.map(h => withHealth(h)),
+      data: horses.map(h => withAgeYears(withHealth(h))),
     });
   } catch (error) {
     logger.error(`[horseRoutes] Error getting horses: ${error.message}`);
@@ -711,7 +716,9 @@ router.get(
     try {
       // Horse already validated and attached to req.horse by ownership middleware
       // No need for additional database query!
-      const horse = withHealth(req.horse);
+      // requireOwnership middleware loads req.horse with all columns by
+      // default, so dateOfBirth is already present for withAgeYears.
+      const horse = withAgeYears(withHealth(req.horse));
 
       res.json({
         success: true,

@@ -6,7 +6,7 @@
  * dateOfBirth, plus all the safety paths (null, future, NaN).
  */
 
-import { getHorseAgeDays, getHorseAgeYears } from '../utils/horseAge.mjs';
+import { getHorseAgeDays, getHorseAgeYears, withAgeYears } from '../utils/horseAge.mjs';
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
@@ -104,5 +104,49 @@ describe('getHorseAgeYears', () => {
 
   test('returns 0 for invalid date string', () => {
     expect(getHorseAgeYears('garbage', fixedNow)).toBe(0);
+  });
+});
+
+describe('withAgeYears (serializer decorator)', () => {
+  const fixedNow = new Date('2026-05-15T12:00:00.000Z');
+
+  test('returns the input unchanged when horse is null', () => {
+    expect(withAgeYears(null, fixedNow)).toBeNull();
+  });
+
+  test('returns the input unchanged when horse is a primitive', () => {
+    expect(withAgeYears('not-a-horse', fixedNow)).toBe('not-a-horse');
+  });
+
+  test('adds ageYears=3 for a horse with dateOfBirth 21 days ago (lvjy AC)', () => {
+    // AC: create horse with dob 21 days ago via API, fetch, assert ageYears===3
+    const dob = new Date(fixedNow.getTime() - 21 * MS_PER_DAY);
+    const horse = { id: 42, name: 'Test', dateOfBirth: dob };
+    const decorated = withAgeYears(horse, fixedNow);
+    expect(decorated.ageYears).toBe(3);
+    expect(decorated.id).toBe(42);
+    expect(decorated.name).toBe('Test');
+  });
+
+  test('adds ageYears=0 when dateOfBirth is missing', () => {
+    const horse = { id: 1, name: 'X' };
+    expect(withAgeYears(horse, fixedNow).ageYears).toBe(0);
+  });
+
+  test('does not mutate the input horse object', () => {
+    const dob = new Date(fixedNow.getTime() - 14 * MS_PER_DAY);
+    const horse = { id: 7, dateOfBirth: dob };
+    const before = { ...horse };
+    withAgeYears(horse, fixedNow);
+    expect(horse).toEqual(before);
+    expect('ageYears' in horse).toBe(false);
+  });
+
+  test('preserves the legacy age field if present (transitional)', () => {
+    const dob = new Date(fixedNow.getTime() - 21 * MS_PER_DAY);
+    const horse = { id: 1, age: 99, dateOfBirth: dob };
+    const decorated = withAgeYears(horse, fixedNow);
+    expect(decorated.age).toBe(99); // transitional: backend keeps age until lvjy fully rolls out
+    expect(decorated.ageYears).toBe(3); // primary signal
   });
 });

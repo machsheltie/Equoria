@@ -2398,7 +2398,23 @@ components:
         id: { type: integer }
         name: { type: string }
         breed: { type: string }
-        age: { type: integer }
+        age:
+          type: integer
+          deprecated: true
+          description: >-
+            DEPRECATED (Equoria-lvjy): cached integer column with mixed unit
+            semantics across the codebase. Use ageYears (game-years,
+            computed from dateOfBirth at response time) for all new
+            consumers. Slated for removal in Equoria-gj29 once the
+            frontend transitional fallback (Equoria-x49d) is cleared.
+        ageYears:
+          type: integer
+          description: >-
+            Horse age in game-years, computed from dateOfBirth at response
+            time. Equoria convention: 1 game-week (7 real days) = 1
+            game-year. Returns 0 if dateOfBirth is missing, invalid, or in
+            the future. This is the primary age field for all read paths
+            (HorseCard, StableView, MyStablePage, BreedingPairSelection).
         sex: { type: string, enum: [male, female] }
         userId: { type: string }
         speed: { type: integer }
