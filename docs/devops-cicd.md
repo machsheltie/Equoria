@@ -1,495 +1,485 @@
 # Equoria DevOps & CI/CD Documentation
 
 **Generated:** 2025-12-01
-**Last Updated:** 2026-03-19 (Full Rescan)
+**Last Updated:** 2026-05-15 (post-Epic 21R refactor — Equoria-wj8m, Equoria-1mpp, Equoria-tic2, Equoria-rh32)
 
 ## Overview
 
-Equoria uses GitHub Actions for continuous integration and security scanning, Docker multi-stage builds for packaging, Railway for production deployment, and Husky + lint-staged for local git hooks. The test pipeline covers Jest (backend), Vitest (frontend), and Playwright (E2E).
+Equoria uses GitHub Actions for continuous integration, security scanning, and
+adversarial-review gating, Docker multi-stage builds for packaging, Railway for
+production deployment, and Husky for local git hooks. The pipeline is split
+across **eleven workflows** which together exercise lint, doctrine compliance,
+backend Jest (sharded), frontend Vitest, Playwright E2E, Lighthouse, OWASP ZAP,
+performance, security, beta-readiness, deployment-gate, burn-in, and a set of
+adversarial review gates (Blind Hunter, Evidence Verification, PR Body Evidence).
+
+The canonical source of truth for backend / frontend / E2E test execution is
+`.github/workflows/test.yml` (**"Equoria Quality Gate"**). The legacy
+`ci-cd.yml` was demoted to a 3-job sidecar by Equoria-wj8m / 1mpp / tic2 on
+2026-05-15 and now runs only build-validation, Lighthouse, and the nightly
+session-lifetime cron.
+
+Node is pinned at **22.x** in every workflow (raised from 18.x in the 2026-05-15
+refactor). All workflows pin `JWT_SECRET` / `JWT_REFRESH_SECRET` to length-32+
+synthetic test secrets that satisfy `validate-environment.mjs`.
 
 ---
 
-## CI/CD Pipelines
+## Workflow Index (eleven workflows, 2026-05-15)
 
-### 1. Main CI/CD Pipeline (`ci-cd.yml`)
+| Workflow | File | Purpose | Blocks merge? |
+| --- | --- | --- | --- |
+| **Equoria Quality Gate** | `test.yml` | Canonical pipeline: lint → db-preflight → backend (sharded) → coverage gate → frontend → E2E → performance → security → docker → beta-readiness → deployment-gate → burn-in | yes (required) |
+| **Equoria CI/CD Pipeline** | `ci-cd.yml` | Build-validation smoke + Lighthouse + nightly session-lifetime cron | partial |
+| **Doctrine Gate** | `doctrine-gate.yml` | Runs `scripts/doctrine-checks/run-all.sh` against PRs and master | yes (when branch protection enabled) |
+| **Blind Hunter Gate** | `blind-hunter-gate.yml` | Adversarial Claude review on PRs touching CI / request-pipeline / doctrine paths | yes (when branch protection enabled) |
+| **Evidence Verification** | `evidence-verification.yml` | Re-runs every `_bmad-output/test-artifacts/evidence/*.md` verification command and asserts expected-output markers still appear | yes |
+| **PR Body Evidence** | `pr-body-evidence.yml` | Parses PR description against `.github/pull_request_template.md` and fails on placeholder / unticked checkboxes | yes |
+| **OWASP ZAP Security Scan** | `security-scan.yml` | Baseline + API + scheduled full ZAP scans, SARIF upload | informational + scheduled |
+| **HttpOnly Cookie Auth Tests** | `test-auth-cookies.yml` | Path-filtered auth-cookie regression suite for `authController` / middleware / hooks | yes (auth-touching PRs) |
+| **Claude Code Review** | `claude-code-review.yml` | On-PR Claude review for non-draft PRs | informational |
+| **Claude Code** | `claude.yml` | Triggered by `@claude` mention in PR / issue comments | manual |
+| **Update Visual Baselines** | `update-visual-baselines.yml` | Manual `workflow_dispatch` for regenerating Playwright `toHaveScreenshot` baselines on Linux + Chromium | manual |
 
-**File:** `.github/workflows/ci-cd.yml`
+---
 
-**Triggers:**
+## 1. Equoria Quality Gate (`test.yml`) — Canonical Pipeline
 
-- Push to `master` or `develop`
-- Pull requests to `master` or `develop`
-- Manual dispatch (`workflow_dispatch`)
+`.github/workflows/test.yml` is the BMad-TEA-generated quality pipeline.
+1194 lines, ~13 jobs. All other workflows are supplementary.
 
-**Global Environment:**
+### Triggers
+
+- `push` to `master` or `develop`
+- `pull_request` to `master` or `develop`
+- `schedule: '0 2 * * 0'` (Sundays 02:00 UTC) — runs the **burn-in** job
+- `workflow_dispatch`
+
+### Concurrency
 
 ```yaml
-NODE_VERSION: '18.x'
+group: ${{ github.workflow }}-${{ github.ref }}-${{ github.sha }}
+cancel-in-progress: true
+```
+
+**Per-SHA grouping** (Equoria-sv0b): every commit gets its own concurrency
+group so each push runs to completion. The cancel-in-progress flag only fires
+when the same SHA is re-pushed (rebase + force-push, webhook duplication, or
+manual `workflow_dispatch` on an existing commit).
+
+### Global Environment
+
+```yaml
+NODE_VERSION: '22.x'
 DATABASE_URL: 'postgresql://test:test@localhost:5432/equoria_test'
-JWT_SECRET: 'test-jwt-secret-for-ci'
-JWT_REFRESH_SECRET: 'test-refresh-secret-for-ci'
+JWT_SECRET: 'Test-JWT-Secret-For-CI-Minimum-32-Chars-Long-A1'
+JWT_REFRESH_SECRET: 'Test-Refresh-Secret-For-CI-Minimum-32-Chars-B2'
 NODE_ENV: 'test'
+REDIS_URL: 'redis://localhost:6379'  # ioredis is mocked in jest tests; URL kept for CI parity
 ```
 
-**PostgreSQL Service:** Postgres 15 with health checks on all jobs that need a database.
-
-#### Pipeline Job Graph
+### Job Graph
 
 ```
-                  code-quality ─────────────────────────┐
-                  (lint + format)                        │
-                        │                                │
-                        ├───────────────┐                │
-                        ▼               │                ▼
-               backend-tests            │         frontend-tests
-               (coverage)               │         (Vitest + coverage)
-                    │                   │                │
-                    ▼                   │                │
-             integration-tests          │                │
-                    │                   │                │
-                    ▼                   │                │
-            performance-tests           │                │
-                    │                   │                │
-                    │       ┌───────────┘                │
-                    │       ▼                            │
-                    │  security-scan                     │
-                    │  (npm audit)                       │
-                    │       │                            │
-                    │       │     build-validation ◄─────┘
-                    │       │          │
-                    │       │          ├── build-docker (master only)
-                    │       │          └── lighthouse (master only)
-                    │       │
-                    └───┬───┘
-                        ▼
-               deployment-readiness
-                  (master only)
+   lint ──────────────┐
+                      ├──> backend-tests (matrix: shard 1/2/3)
+   db-preflight ──────┤        │
+                      │        ▼
+                      │   coverage-gate (70% line/branch)
+                      │
+                      ├──> frontend-tests (Vitest + coverage)
+                      │
+                      ├──> e2e-tests (Playwright + DB + Redis)
+                      │
+                      ├──> performance-tests
+                      │
+                      ├──> security-gate (audit-allowlist + sentinel tests)
+                      │
+                      ▼
+              docker-build (multi-stage Dockerfile smoke)
+                      │
+                      ▼
+              beta-readiness-gate (NODE_ENV=beta-readiness)
+                      │
+                      ▼
+              deployment-gate (aggregated required checks)
+
+   burn-in (Sunday cron) — parallel; not part of merge gate
 ```
 
-#### Job Details
+### Key jobs
 
-| #   | Job                      | Description                                                               | Depends On                                         | Runs On     |
-| --- | ------------------------ | ------------------------------------------------------------------------- | -------------------------------------------------- | ----------- |
-| 1   | **code-quality**         | ESLint + Prettier check for backend and frontend                          | None                                               | Always      |
-| 2   | **database-setup**       | Prisma generate, migrate deploy, validate, verify migration, seed test DB | None                                               | Always      |
-| 3   | **backend-tests**        | `npm run test:coverage` + Codecov upload + artifact upload                | code-quality, database-setup                       | Always      |
-| 4   | **integration-tests**    | `npm run test:integration`                                                | backend-tests                                      | Always      |
-| 5   | **performance-tests**    | `npm run test:performance` with performance seed data                     | integration-tests                                  | Always      |
-| 6   | **frontend-tests**       | `npm test -- --coverage --watchAll=false` + Codecov upload                | code-quality                                       | Always      |
-| 7   | **build-validation**     | Build backend + frontend, upload build artifacts                          | backend-tests, frontend-tests                      | Always      |
-| 8   | **security-scan**        | `npm audit --audit-level=moderate` for backend and frontend               | code-quality                                       | Always      |
-| 9   | **deployment-readiness** | Download artifacts + create deployment summary                            | build-validation, security-scan, performance-tests | master only |
-| 10  | **build-docker**         | Multi-stage Docker build + smoke test + verify embedded frontend          | build-validation                                   | master only |
-| 11  | **lighthouse**           | Lighthouse CI against static Vite build                                   | build-validation                                   | master only |
+#### 1.1 `lint` — Lint & Format
 
-#### Job 10: Docker Build Validation (master only)
+Installs root `npm ci` (eslint flat-config imports `@eslint/js` and
+`typescript-eslint` from root `node_modules`), then runs:
 
-Builds the multi-stage Docker image, runs a smoke test container with `docker run`, hits `/health`, and verifies `/app/backend/public/index.html` exists (frontend embedded).
+- ESLint backend (`backend && npm run lint`)
+- ESLint frontend (`frontend && npm run lint`) — hard-required since commit
+  4ffa8316 added eslint to `frontend/devDependencies`
+- Prettier check, backend + frontend
 
-#### Job 11: Lighthouse Performance Audit (master only)
+#### 1.2 `db-preflight` — Database Migration Check
 
-Uses `treosh/lighthouse-ci-action@v11` with `.lighthouserc.yml`:
+Spins up the Postgres service, runs `prisma migrate deploy` against the test
+DB, and asserts there are no pending migrations. Mirrors the local
+`scripts/preflight/db-health.mjs` check (Equoria-urld).
 
-| Category       | Level             | Min Score |
-| -------------- | ----------------- | --------- |
-| Accessibility  | Error (blocks CI) | 0.85      |
-| Performance    | Warn              | 0.65      |
-| Best Practices | Warn              | 0.80      |
-| SEO            | Warn              | 0.50      |
+#### 1.3 `backend-tests` — Sharded Backend Suite
 
-Runs against the static `frontend/dist` build (no server needed). Results uploaded to temporary public storage.
+`strategy.matrix.shard: [1, 2, 3]` — Jest splits the suite by file count. Each
+shard runs:
 
----
-
-### 2. CI Workflow (`ci.yml`)
-
-**File:** `.github/workflows/ci.yml`
-
-**Triggers:**
-
-- Push to `main`, `master`, or `develop`
-- Pull requests to `main`, `master`, or `develop`
-
-A lighter-weight pipeline with four jobs:
-
-| Job             | Description                                        | Depends On  |
-| --------------- | -------------------------------------------------- | ----------- |
-| **setup**       | Checkout + install root dependencies               | None        |
-| **lint_format** | Prettier check + ESLint (root workspace)           | setup       |
-| **tests**       | `npm test -- --runInBand` with Postgres 15 service | lint_format |
-| **typecheck**   | `npm run typecheck` (TypeScript compiler check)    | setup       |
-
-Environment: `DATABASE_URL` and `NODE_ENV=test` set at job level for the tests job.
-
----
-
-### 3. OWASP ZAP Security Scan (`security-scan.yml`)
-
-**File:** `.github/workflows/security-scan.yml`
-
-**Triggers:**
-
-- Push to `master` or `develop`
-- Pull requests to `master` or `develop`
-- Scheduled: Every Monday at 02:00 UTC
-- Manual dispatch
-
-**Permissions:** `contents: read`, `security-events: write`, `issues: write`, `pull-requests: write`
-
-#### Jobs
-
-**dependency-scan** - Dependency Vulnerability Scan:
-
-- Runs `npm audit --json` for both backend and frontend
-- Parses critical/high/moderate/low counts with `jq`
-- Fails if critical or high vulnerabilities found
-- Comments on PRs with vulnerability table if failures detected
-- Uploads audit JSON reports (90-day retention)
-
-**zap-scan** - OWASP ZAP API Security Scan:
-
-- Services: Postgres 14 + Redis 7-alpine
-- Starts the backend API server, exports OpenAPI spec from `/api-docs/swagger.json`
-- **ZAP Baseline Scan** (`zaproxy/action-baseline@v0.10.0`): Runs on every push/PR
-- **ZAP API Scan** (`zaproxy/action-api-scan@v0.6.0`): OpenAPI-driven scan
-- **ZAP Full Scan** (`zaproxy/action-full-scan@v0.9.0`): Weekly (schedule trigger only)
-- Fails on high-severity findings for push events
-- Creates GitHub issues automatically for high-severity findings
-- Uploads SARIF to GitHub Security tab via `github/codeql-action/upload-sarif@v3`
-- Uploads HTML and JSON reports as artifacts
-
----
-
-### 4. CodeQL Advanced (`codeql.yml`)
-
-**File:** `.github/workflows/codeql.yml`
-
-**Triggers:**
-
-- Push to `master`
-- Pull requests to `master`
-- Scheduled: Fridays at 19:31 UTC
-
-**Configuration:**
-
-- Language: `javascript-typescript`
-- Build mode: `none` (interpreted language, no build step)
-- Uses `github/codeql-action/init@v3` and `github/codeql-action/analyze@v3`
-
-Detects SQL injection, XSS, path traversal, insecure configurations, and other security patterns.
-
----
-
-### 5. HttpOnly Cookie Authentication Tests (`test-auth-cookies.yml`)
-
-**File:** `.github/workflows/test-auth-cookies.yml`
-
-**Triggers:**
-
-- Push to `master` or `develop` (path-filtered: auth controllers, middleware, API client, auth test files)
-- Pull requests to `master` or `develop`
-
-#### Jobs
-
-| Job                     | Description                                                      | Depends On               |
-| ----------------------- | ---------------------------------------------------------------- | ------------------------ |
-| **backend-auth-tests**  | Runs `auth-cookies.test.mjs` with Postgres 14                    | None                     |
-| **frontend-auth-tests** | Runs `api-client.test.ts` + `useAuth.test.ts`                    | None                     |
-| **security-audit**      | Grep-based verification of cookie security flags                 | backend + frontend tests |
-| **integration-test**    | curl-based E2E: Register, Login, Profile, Logout with cookie jar | backend + frontend tests |
-
-**Security Audit Checks:**
-
-- `httpOnly: true` present in authController
-- `sameSite: 'strict'` flag present
-- `secure: process.env.NODE_ENV === 'production'` configured
-- `credentials: 'include'` in frontend API client
-- No `localStorage` token storage (XSS protection)
-
----
-
-## Docker Multi-Stage Build
-
-**File:** `Dockerfile`
-
-### Stage 1: `frontend-builder`
-
-```dockerfile
-FROM node:18-alpine AS frontend-builder
-WORKDIR /app/frontend
-COPY frontend/package*.json ./
-RUN npm ci
-COPY frontend/ ./
-RUN npm run build
+```
+node --experimental-vm-modules --max-old-space-size=8192 \
+  node_modules/jest/bin/jest.js \
+  --shard=${{ matrix.shard }}/3 \
+  --coverage \
+  --coverageReporters=json
 ```
 
-Builds the Vite frontend. `VITE_API_URL` is left unset so the frontend uses relative `/api/...` URLs in production.
+Coverage JSON from each shard is uploaded as an artifact for `coverage-gate`
+to merge. The shard outputs are also uploaded individually so a failing shard
+keeps its console log even when other shards green.
 
-### Stage 2: `production`
+**Per Epic 21R doctrine**: no `test.skip`, no `continue-on-error`, no bypass
+headers in any beta-relevant suite (enforced by the doctrine-gate workflow).
 
-```dockerfile
-FROM node:18-alpine AS production
-```
+#### 1.4 `coverage-gate` — 70% Line/Branch Threshold
 
-- Installs `curl` for health checks
-- Installs backend production dependencies (`npm ci --only=production`)
-- Installs database package production dependencies
-- Copies backend + packages source
-- Runs `npx prisma generate` to create Prisma client
-- Copies built frontend from Stage 1 into `/app/backend/public` (Express serves these as static assets)
-- Creates non-root `nodejs` user (UID 1001) for security
-- Exposes port 3000
-- Health check: `curl -f http://localhost:3000/health` (30s interval, 30s start period, 3 retries)
-- Entry point: `node server.mjs`
+`needs: [backend-tests]`. Downloads `coverage-shard-1|2|3` artifacts, merges
+them via `nyc merge`, and asserts the merged report meets the line + branch
+threshold (currently 70%). Fails the merge if coverage drops.
 
----
+#### 1.5 `frontend-tests` — Vitest
 
-## Railway Deployment
+`needs: [lint]`. Runs `vitest run --coverage` in `frontend/`. The
+`continue-on-error: true` bypass that historically lived on this job was
+removed in Equoria-zzlh (2026-05-04) and cannot be reintroduced — the
+`check-no-continue-on-error.sh` doctrine check fails the gate if it returns.
 
-**File:** `railway.toml`
+#### 1.6 `e2e-tests` — Playwright
 
-```toml
-[build]
-builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
+`needs: [db-preflight, lint]`. Boots the backend (`backend && npm run start`)
+and the Vite frontend, then runs `npx playwright test`. Reads
+storageState seeded by `tests/e2e/global-setup.ts` so specs use the same
+real-credential path as local runs (no `x-test-user` / `x-test-skip-csrf`
+bypass headers — Equoria-iswu / 21R-CI-1). Uploads `playwright-report` HTML
+on success or failure.
 
-[deploy]
-startCommand = "sh -c 'cd /app/packages/database && npx prisma migrate deploy && cd /app/backend && node server.mjs'"
-healthcheckPath = "/health"
-healthcheckTimeout = 300
-restartPolicyType = "ON_FAILURE"
-restartPolicyMaxRetries = 10
-```
+Active spec list (22 files, 2026-05-15):
+`auth-page-chrome`, `auth`, `beta-critical-path`, `breeding`,
+`celestial-night-features`, `celestial-night-navigation`, `community`,
+`conformation-shows`, `core-game-flows`, `feed-stat-gain-notifications`,
+`feed-system-phase-a`, `feed-system-phase-b`, `font-migration`,
+`glass-panel-surface`, `groom-lifecycle`, `horse-detail-coat-genetics`,
+`inventory`, `navigation-structure`, `onboarding-flow`, `session-lifetime`,
+`settings-persistence`, `smoke`.
 
-**Key behavior:**
+#### 1.7 `performance-tests` — Non-blocking
 
-- Uses the multi-stage Dockerfile for builds
-- Start command runs `prisma migrate deploy` before starting the server on every deploy (idempotent -- safe with no new migrations)
-- Health check on `/health` with 300-second timeout
-- Auto-restart on failure, up to 10 retries
+Runs the backend performance suite (`/metrics` warm-latency SLA, etc.). Not
+gated for merge — surfaces regressions to the PR comment without blocking.
 
-**Deployment flow:** `git push master` triggers Railway auto-deploy via the Dockerfile pipeline.
+#### 1.8 `security-gate` — Audit-Allowlist + Sentinel Tests
 
----
+Runs `npm audit --audit-level=high` against an allowlist
+(`scripts/doctrine-checks/gates-allowlist.txt`), executes the
+sentinel-positive security test suite (request-body, parameter-pollution,
+rate-limit), and asserts no `continue-on-error` markers exist in any
+workflow file.
 
-## Dependabot Configuration
+#### 1.9 `docker-build` — Multi-stage Smoke
 
-**File:** `.github/dependabot.yml`
+Builds the production Dockerfile (Vite frontend → Express + embedded SPA),
+loads the image, and runs `prisma migrate status` against the test DB inside
+the container to confirm the multi-stage build wiring still works.
 
-| Ecosystem      | Directory   | Schedule                  | PR Limit | Labels                              |
-| -------------- | ----------- | ------------------------- | -------- | ----------------------------------- |
-| npm            | `/backend`  | Daily 09:00 UTC           | 10       | dependencies, backend, security     |
-| npm            | `/frontend` | Daily 09:00 UTC           | 10       | dependencies, frontend, security    |
-| npm            | `/` (root)  | Daily 09:00 UTC           | 5        | dependencies, root, security        |
-| github-actions | `/`         | Weekly (Monday) 09:00 UTC | 5        | dependencies, github-actions, ci/cd |
+#### 1.10 `beta-readiness-gate` — `bash scripts/check-beta-readiness.sh`
 
-**Grouping:**
+`NODE_ENV=beta-readiness`. Runs the canonical end-to-end readiness gate. Per
+21R doctrine, this script must run with all sub-gates enabled and no skip
+flags. Output is uploaded as `beta-readiness-artifacts`.
 
-- Development dependencies: minor + patch updates grouped
-- Production dependencies: patch updates only grouped
-- Commit prefix: `deps(backend)`, `deps(frontend)`, `deps(root)`, `ci`
-- Reviewer: `Hopeful4ky`
-- `insecure-external-code-execution: deny` on all npm ecosystems
+#### 1.11 `deployment-gate` — Aggregated Required Status
 
----
+Acts as the single required check for branch protection. Depends on all
+preceding jobs (`needs: [lint, db-preflight, backend-tests, coverage-gate,
+frontend-tests, e2e-tests, security-gate, docker-build,
+beta-readiness-gate]`). When all of those green, deployment-gate succeeds.
 
-## Git Hooks (Husky + lint-staged)
+#### 1.12 `burn-in` — Weekly Flaky Detection (cron only)
 
-**Directory:** `.husky/`
-
-### Pre-commit Hook
-
-**File:** `.husky/pre-commit`
-
-Runs `lint-staged` which is configured in root `package.json`:
-
-```json
-{
-  "lint-staged": {
-    "**/*.{js,jsx,ts,tsx,mjs,cjs}": ["prettier --write", "eslint --fix"],
-    "**/*.{json,md,css,scss,html,yml,yaml}": ["prettier --write"]
-  }
-}
-```
-
-Auto-formats and lints all staged files before every commit.
-
-### Pre-push Hook
-
-**File:** `.husky/pre-push`
-
-```sh
-cd backend
-npm test
-```
-
-Runs the full backend Jest test suite before every push. Blocks the push if any test fails.
+Sunday 02:00 UTC. Runs the full backend Jest suite **10×** to surface
+flakes. Failures upload as `burn-in-failures-<run_id>`. Does not block
+merge — runs on a schedule for trend monitoring.
 
 ---
 
-## Test Pipeline
+## 2. CI/CD Pipeline (`ci-cd.yml`) — 3-Job Sidecar
 
-### Backend Tests (Jest)
+After Equoria-wj8m / 1mpp / tic2 (2026-05-15) this workflow was demoted from
+the canonical 11-job pipeline to a 3-job sidecar that only carries the jobs
+unique to ci-cd.yml.
 
-- **Framework:** Jest with ES modules support
-- **Count:** 226+ suites, 3617+ tests passing
-- **CI command:** `npm run test:coverage` (with lcov output)
-- **Integration tests:** `npm run test:integration` (separate job in CI)
-- **Performance tests:** `npm run test:performance` (requires performance seed data)
-- **Coverage:** Uploaded to Codecov (`backend` flag) and as GitHub Actions artifact (30-day retention)
+### Triggers
 
-### Frontend Tests (Vitest)
+- `push` to `master` or `develop`
+- `pull_request` to `master` or `develop`
+- `workflow_dispatch`
+- `schedule: '0 2 * * *'` — daily 02:00 UTC for `session-lifetime-nightly`
 
-- **Framework:** Vitest + React Testing Library + MSW (`onUnhandledRequest: 'error'` strict mode)
-- **CI command:** `npm test -- --coverage --watchAll=false`
-- **Coverage:** Uploaded to Codecov (`frontend` flag)
+### Jobs
 
-### E2E Tests (Playwright)
+| Job | Purpose |
+| --- | --- |
+| `build-validation` | Vite production build + backend ESM `node --check` smoke. Catches TypeScript / Vite compilation regressions even when test.yml is red. |
+| `lighthouse` | Master-only Lighthouse CI run gated by `build-validation`. Thresholds: a11y error ≥0.85, performance warn ≥0.6 (`.lighthouserc.yml`). |
+| `session-lifetime-nightly` | Cron-only auth-regression spec for 21R-AUTH-6 — re-runs `tests/e2e/session-lifetime.spec.ts` against a fresh backend to detect 14-day refresh-token drift. |
 
-- **Framework:** Playwright (Chromium, Firefox, WebKit)
-- **Config:** `playwright.config.ts`
-- **Test directory:** `tests/e2e/`
-- **Test files:**
-  - `smoke.spec.ts` -- Basic smoke tests
-  - `auth.spec.ts` -- Authentication flows
-  - `core-game-flows.spec.ts` -- Core game mechanics
-  - `breeding.spec.ts` -- Breeding system
-  - `onboarding-flow.spec.ts` -- New player onboarding
-  - `celestial-night-navigation.spec.ts` -- Theme navigation
-  - `celestial-night-features.spec.ts` -- Theme features
-- **Global setup:** `tests/e2e/global-setup.ts`
-- **Web servers:** Backend on port 3001 + Vite dev server on port 3000 (auto-started)
-- **CI settings:** `forbidOnly: true`, `retries: 2`, `workers: 1`
-- **Tracing:** `on-first-retry`
+**Removed from this workflow (now in `test.yml`):**
+`code-quality`, `database-setup`, `backend-tests`, `integration-tests`,
+`performance-tests`, `frontend-tests`, `security-gate`, `beta-readiness-gate`,
+`build-docker`, `deployment-gate`.
 
 ---
 
-## Environment Configuration
+## 3. Doctrine Gate (`doctrine-gate.yml`)
 
-### Required Environment Variables
+**Purpose:** machine-checked enforcement of the rules in `CLAUDE.md`,
+`.claude/rules/EDGE_CASE_FIX_DISCIPLINE.md`, and the 21R Beta Readiness
+Doctrine. Each rule has a script in `scripts/doctrine-checks/check-*.{sh,mjs}`.
+Failure of any script fails the gate.
 
-| Variable             | CI Value                                             | Production              | Description                  |
-| -------------------- | ---------------------------------------------------- | ----------------------- | ---------------------------- |
-| `NODE_ENV`           | `test`                                               | `production`            | Environment mode             |
-| `DATABASE_URL`       | `postgresql://test:test@localhost:5432/equoria_test` | Railway-provided        | PostgreSQL connection string |
-| `JWT_SECRET`         | `test-jwt-secret-for-ci`                             | Secret (32+ chars)      | JWT signing key              |
-| `JWT_REFRESH_SECRET` | `test-refresh-secret-for-ci`                         | Secret (32+ chars)      | Refresh token signing key    |
-| `PORT`               | 3000                                                 | Railway-assigned        | Server port                  |
-| `VITE_API_URL`       | Not set                                              | Not set (relative URLs) | Frontend API base URL        |
+The full check list (auto-discovered via `scripts/doctrine-checks/run-all.sh`):
 
-### ZAP Scan Additional Variables
+- `check-audit-level.sh` — no `--audit-level=low/moderate` weakening
+- `check-gates-run-on-prs.mjs` — every required gate runs on `pull_request`
+- `check-husky-hooks-no-heredoc-cmdsub.sh` — pre-push avoids fragile heredoc / `$(...)` patterns
+- `check-husky-hooks-parse.sh` — husky scripts parse cleanly under bash
+- `check-needs-references.mjs` — workflow `needs:` references are valid
+- `check-no-bypass-headers.sh` — no `x-test-skip-csrf` / `x-test-bypass-auth` / `x-test-bypass-rate-limit` / `x-test-user` / `x-test-bypass-ownership` in beta-relevant code
+- `check-no-cleanup-routes.mjs` — no `/__test__/cleanup` style routes in production paths
+- `check-no-continue-on-error.sh` — zero `continue-on-error: true` in CI workflows
+- `check-no-db-mocks.mjs` — no Prisma client mocks in backend tests (`vi.mock` / `jest.mock` of `prisma`)
+- `check-no-frontend-mocks.mjs` — no new `vi.mock` of `api-client`
+- `check-no-skips-in-readiness.sh` — no `test.skip` / `it.skip` / `describe.skip` / `test.fixme` in readiness-relevant specs
+- `check-no-stale-js-extensions.sh` — no `.js` extensions on `.mjs` files
+- `check-no-test-only-imports.mjs` — no `import` of test-only fixtures from production code
+- `check-playwright-orchestration.mjs` — Playwright config has correct `webServer` orchestration
+- `check-security-middleware-tested.mjs` — every middleware in `backend/middleware/*Security*` has a sentinel-positive test
+- `check-workflow-concurrency-per-sha.mjs` — every workflow has per-SHA concurrency
 
-| Variable               | Value                   | Description                 |
-| ---------------------- | ----------------------- | --------------------------- |
-| `REFRESH_SECRET`       | test value              | Refresh secret for ZAP scan |
-| `REDIS_HOST`           | localhost               | Redis for ZAP test env      |
-| `SESSION_SECRET`       | test value              | Session secret              |
-| `COOKIE_SECRET`        | test value              | Cookie signing secret       |
-| `CSRF_SECRET`          | test value              | CSRF token secret           |
-| `FRONTEND_URL`         | `http://localhost:5173` | CORS origin                 |
-| `ENABLE_RATE_LIMITING` | true                    | Rate limiting toggle        |
-| `ENABLE_CSRF`          | true                    | CSRF protection toggle      |
-
----
-
-## CI Artifacts
-
-| Artifact                     | Retention | Source                              |
-| ---------------------------- | --------- | ----------------------------------- |
-| `backend-coverage`           | 30 days   | `backend/coverage/` (lcov + HTML)   |
-| `integration-test-results`   | 30 days   | `backend/test-results/`             |
-| `performance-test-results`   | 30 days   | `backend/performance-results/`      |
-| `build-artifacts`            | 7 days    | `backend/dist/` + `frontend/build/` |
-| `security-audit-reports`     | 90 days   | Backend/frontend npm audit JSON     |
-| `zap-baseline-report`        | Default   | ZAP HTML report                     |
-| `zap-api-report`             | Default   | ZAP JSON report                     |
-| `backend-auth-test-results`  | Default   | Backend auth test coverage          |
-| `frontend-auth-test-results` | Default   | Frontend auth test coverage         |
+The gate runs and reports on every PR today; it becomes a hard merge blocker
+when the branch-protection toggle for "Require Doctrine Gate" is enabled in
+GitHub Settings.
 
 ---
 
-## Codecov Integration
+## 4. Adversarial Review Gates
 
-Coverage reports uploaded for both backend and frontend:
+### 4.1 Blind Hunter Gate (`blind-hunter-gate.yml`)
 
-```yaml
-- uses: codecov/codecov-action@v3
-  with:
-    file: ./backend/coverage/lcov.info # or frontend
-    flags: backend # or frontend
-    name: backend-coverage
-    fail_ci_if_error: false
-```
+Calls Claude with the Blind Hunter prompt against the PR diff for PRs that
+touch high-risk paths (`.github/workflows/`, `backend/middleware/request*`,
+`scripts/doctrine-checks/`). Parses the output for P0/P1 findings; applies
+the `blind-hunter-passed` label only when zero blocking findings are
+reported. The label is removed on every push so the gate cannot be bypassed
+by labelling and then sneaking in another commit.
 
----
+### 4.2 Evidence Verification (`evidence-verification.yml`)
 
-## Quality Gates
+Re-runs the verification command from every
+`_bmad-output/test-artifacts/evidence/*.md` file on every PR and on pushes
+to master. Fails the gate if any verified command's output is missing one
+of its declared expected-output markers, or if any evidence file is
+malformed. Per the rule in `COMPLETION_VERIFICATION_POLICY.md`, this gate
+exists because the 21R audit found 4-of-6 stories falsely marked `done`
+without runnable verification.
 
-### Required for All PRs
+### 4.3 PR Body Evidence (`pr-body-evidence.yml`)
 
-- Code quality passes (ESLint + Prettier for backend and frontend)
-- TypeScript type check passes (`npm run typecheck`)
-- All backend tests pass
-- All frontend tests pass
-- Integration tests pass
-- Security audit at moderate level
-- Build validation succeeds
+Parses every PR description against `.github/pull_request_template.md`.
+Fails the gate if:
+- the doctrine-gate exit code / output block is still the template placeholder
+- any "No new bypass mechanisms" checkbox is unticked
+- the "Gate enforcement" or "Middleware test coverage" sections are not
+  marked N/A AND have empty fields
 
-### Required for master Deployment
-
-- All PR quality gates pass
-- Performance tests within limits
-- Docker image builds and smoke test passes
-- Frontend assets embedded in Docker image
-- Lighthouse accessibility score >= 0.85
-- Deployment readiness check passes
+A sentinel self-test step runs the parser against three known-good /
+known-bad fixtures so a parser regression fails the gate immediately.
 
 ---
 
-## Scripts Reference
+## 5. Security & Auth Workflows
 
-### Backend
+### 5.1 OWASP ZAP Security Scan (`security-scan.yml`)
+
+- Baseline scan on every push to `master` / `develop`
+- API scan using `backend/docs/swagger.yaml` as the OpenAPI specification
+- Full scan on the weekly Monday 02:00 UTC schedule
+- SARIF format upload for GitHub Security tab integration
+- `permissions: contents: read, security-events: write`
+
+### 5.2 HttpOnly Cookie Authentication Tests (`test-auth-cookies.yml`)
+
+Path-filtered regression suite. Runs only when the PR touches:
+- `backend/modules/auth/controllers/authController.mjs`
+- `backend/middleware/auth.mjs`
+- `backend/app.mjs`
+- `frontend/src/lib/api-client.ts`
+- `frontend/src/hooks/useAuth.ts`
+- `backend/modules/auth/__tests__/auth-cookies.test.mjs`
+- `frontend/src/**/__tests__/**`
+- `.github/workflows/test-auth-cookies.yml` itself
+
+---
+
+## 6. Claude-Operated Workflows
+
+### 6.1 Claude Code Review (`claude-code-review.yml`)
+
+Runs Claude review on every PR `opened` / `synchronize` / `ready_for_review` /
+`reopened` event. Informational — not a merge blocker. Optional author / path
+filters are commented out in the file for future enablement.
+
+### 6.2 Claude Code (`claude.yml`)
+
+Triggers on `@claude` mention in PR / issue / review comments and on
+`issues: assigned`. Used for interactive Claude commands on bd issues.
+
+---
+
+## 7. Manual Workflows
+
+### 7.1 Update Visual Baselines (`update-visual-baselines.yml`)
+
+`workflow_dispatch` only — regenerates Playwright `toHaveScreenshot`
+baselines on the ubuntu-latest + chromium stack that matches normal CI.
+Optional `spec` input targets a single spec file. After the job pushes the
+snapshots, the consumer is expected to remove any `test.fixme` guards from
+the spec and commit that separately so the test becomes a first-class CI
+check.
+
+---
+
+## 8. Local Git Hooks (Husky)
+
+### 8.1 pre-push (`.husky/pre-push`)
+
+The pre-push hook runs the full backend Jest suite locally before allowing
+a push. It is the canonical proof that the code on the branch is in a
+working state. Three preflight gates run before the suite:
+
+1. **Doctrine checks** (`scripts/doctrine-checks/run-all.sh`, Equoria-ocy3 B2)
+   — runs all `check-*.{sh,mjs}` scripts. Fast (~2-5s). Mirrors what the
+   doctrine-gate workflow runs on the merge commit, so a `--no-verify`
+   push still gets caught at CI.
+2. **DB reachability** (`scripts/preflight/db-probe.mjs`, Equoria-wnsc) —
+   probes the `DATABASE_URL` in `backend/.env.test` with the same pg
+   client the suite uses. Fails fast with a clear error message if
+   Postgres is unreachable.
+3. **DB structural health** (`scripts/preflight/db-health.mjs`, Equoria-urld)
+   — checks for pending migrations and orphan FK rows before spending
+   ~10 min on Jest.
+
+The Jest command itself:
 
 ```bash
-npm run lint              # ESLint
-npm run format:check      # Prettier check
-npm run test:coverage     # Jest with coverage
-npm run test:integration  # Integration tests only
-npm run test:performance  # Performance tests only
-npm run build             # Production build
-npm run seed:test         # Seed test database
-npm run seed:performance  # Seed for performance tests
-npm start                 # Start production server
-npm run dev               # Start development server (nodemon)
+node \
+  --max-old-space-size=12288 \
+  --experimental-vm-modules \
+  node_modules/jest/bin/jest.js \
+  --runInBand \
+  --retryTimes=1
 ```
 
-### Frontend
+Key flags (do not simplify without re-reading `.husky/pre-push` comments):
 
-```bash
-npm run lint              # ESLint
-npm run format:check      # Prettier check
-npm test                  # Vitest
-npm run build             # Vite production build
-npm run dev               # Vite dev server
-```
+- `--max-old-space-size=12288` is passed **directly to node** on argv (not
+  via `NODE_OPTIONS`) because `NODE_OPTIONS` is silently dropped in the
+  `git push` hook environment. Three earlier attempts via `NODE_OPTIONS`
+  OOM'd at ~4 GB. 12 GB single-process heap is verified sufficient (peak
+  observed RSS under `--runInBand`: ~3.8 GB across the full 4830-test
+  suite).
+- `--runInBand` runs all tests sequentially in the same Node process.
+  Restored 2026-04-29 after `--maxWorkers=1 --workerIdleMemoryLimit=2048MB`
+  produced a non-deterministic FK / test-isolation flake that cost 4 push
+  attempts across PR #105 and PR #106.
+- `--retryTimes=1` handles flaky order-dependent tests. With `--runInBand`,
+  the retry happens in the same process — order-dependent state
+  (rate-limit buckets, in-memory caches) is preserved, so a retry that
+  "shouldn't" pass usually doesn't. That is the desired behavior.
 
-### Database
-
-```bash
-npx prisma generate       # Generate Prisma client
-npx prisma migrate deploy # Run migrations (idempotent)
-npx prisma validate       # Validate schema
-npx prisma migrate dev    # Create + apply new migration (development)
-```
-
-### E2E
-
-```bash
-npx playwright test       # Run all E2E tests
-npx playwright test --project=chromium  # Single browser
-npx playwright show-report               # View HTML report
-```
+**Current authorized bypass** (CLAUDE.md TEMPORARY EXCEPTION, 2026-05-12):
+`git push origin master --no-verify` is allowed on every push while the
+hook itself is being investigated for an infrastructure issue. This
+exception is time-boxed; when the user removes the exception section from
+`CLAUDE.md`, Rule 4 (the full pre-push hook must run) returns to force.
 
 ---
 
-_Generated by BMAD document-project workflow_
+## 9. Beta-Readiness Gate — `scripts/check-beta-readiness.sh`
+
+Per the 21R doctrine in `CLAUDE.md`, the final signoff command is:
+
+```bash
+bash scripts/check-beta-readiness.sh
+```
+
+The script must run with all gates enabled. It must not accept skip flags.
+Any environment that cannot run the full gate cannot produce
+beta-readiness signoff. The script is invoked by the `beta-readiness-gate`
+job in `test.yml` with `NODE_ENV=beta-readiness`.
+
+---
+
+## 10. Sentinel-Positive Test Pattern
+
+Per `.claude/rules/OPTIMAL_FIX_DISCIPLINE.md §2`, every check / gate / scan
+/ validator that this pipeline adds must ship with a **sentinel-positive
+test** — a test that proves the check fires on a real violation, not just
+that the check passes when nothing is wrong.
+
+Examples in the codebase:
+
+- `check-security-middleware-tested.mjs` enforces that every file in
+  `backend/middleware/*Security*` has at least one sentinel-positive test
+  asserting the middleware rejects a polluted payload.
+- The doctrine-gate scripts themselves each have a known-bad fixture
+  (e.g. `pr-body-evidence.yml` runs the parser against three fixtures —
+  one good, two malformed — before parsing the real PR body).
+
+This pattern is the difference between "the gate currently passes" and
+"the gate will fire when it should." Without a sentinel, a check is a
+placebo.
+
+---
+
+## 11. Node / Tooling Versions
+
+- **Node.js**: `22.x` across all workflows and `Dockerfile` (raised from
+  18.x in the 2026-05-15 refactor)
+- **PostgreSQL service**: 15 (CI service container)
+- **Playwright**: pinned via `frontend/package.json` — see
+  `playwright.config.ts` and `playwright.beta-readiness.config.ts` for
+  CI- vs readiness-tier configuration
+- **Jest**: 29.x (backend) — upgrade to 30 is tracked in
+  `.claude/DEPENDENCY_MAINTENANCE.md`
+
+---
+
+## 12. Future Work
+
+Issues tracked against this pipeline:
+
+- **Equoria-2njt** — implement `.github/workflows/codeql.yml` for
+  JavaScript/TypeScript SAST. **Not yet present.** Do not reference
+  codeql.yml in code or doc until that issue lands.
+- **Equoria-pwl9** — audit ZAP scan `continue-on-error` flags for
+  legitimacy vs gate-weakening.
+- Burn-in flake threshold tuning (currently informational only).
+
+When `codeql.yml` lands, this doc gains a Section 11 entry describing the
+SAST scan triggers, fail conditions, and SARIF upload behavior. Until
+then the section is intentionally absent.
