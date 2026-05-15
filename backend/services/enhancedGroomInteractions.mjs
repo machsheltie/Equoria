@@ -13,6 +13,7 @@
 
 import logger from '../utils/logger.mjs';
 import { recordGroomPerformance } from './groomPerformanceService.mjs';
+import { getTemperamentGroomSynergy } from '../modules/horses/services/temperamentService.mjs';
 
 // Enhanced interaction types with contextual variations
 export const ENHANCED_INTERACTIONS = {
@@ -314,6 +315,13 @@ export function calculateEnhancedEffects(groom, horse, interactionType, variatio
       stress += specialEvent.effects.stress || 0;
     }
 
+    // 31D-4 (Equoria-gi9o follow-up): apply temperament-groom synergy modifier
+    // to enhancedGroomInteractions bondingChange — parity with calculateGroomInteractionEffects.
+    const synergyModifier = getTemperamentGroomSynergy(horse?.temperament, groom?.personality);
+    if (synergyModifier !== 0) {
+      bonding = Math.round(bonding * (1 + synergyModifier));
+    }
+
     // Ensure reasonable bounds
     bonding = Math.max(1, Math.min(25, bonding));
     stress = Math.max(-20, Math.min(5, stress));
@@ -321,6 +329,7 @@ export function calculateEnhancedEffects(groom, horse, interactionType, variatio
     const result = {
       bondingChange: bonding,
       stressChange: stress,
+      synergyModifier,
       quality: calculateInteractionQuality(bonding, stress),
       relationshipLevel: relationshipLevel.name,
       variation: variationData.name,

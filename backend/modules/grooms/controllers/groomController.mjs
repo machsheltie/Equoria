@@ -324,6 +324,9 @@ export async function recordInteraction(req, res) {
           taskLog: true,
           lastGroomed: true,
           daysGroomedInARow: true,
+          // 31D-4 (Equoria-ng1i): temperament drives groom synergy in calculateGroomInteractionEffects
+          temperament: true,
+          dateOfBirth: true,
         },
       }),
     ]);
@@ -425,6 +428,8 @@ export async function recordInteraction(req, res) {
         taskType,
         qualityScore,
         milestoneWindowId,
+        // 31D-4 (Equoria-gi9o): persist temperament-groom synergy modifier for analytics
+        synergyModifier: effects.synergyModifier ?? 0,
       },
     });
 

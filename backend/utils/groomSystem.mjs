@@ -7,6 +7,7 @@ import prisma from '../db/index.mjs';
 import logger from './logger.mjs';
 import { calculatePersonalityEffects } from './groomPersonalityEffects.mjs';
 import { ELIGIBLE_FOAL_ENRICHMENT_TASKS, FOAL_GROOMING_TASKS } from '../config/groomConfig.mjs';
+import { getTemperamentGroomSynergy } from '../modules/horses/services/temperamentService.mjs';
 
 /**
  * Groom specialties and their bonding modifiers
@@ -620,12 +621,23 @@ export function calculateGroomInteractionEffects(groom, foal, interactionType, d
     // Apply personality effects to modify base calculations
     const finalEffects = calculatePersonalityEffects(groom, foal, interactionType, baseEffects);
 
+    // 31D-4 (Equoria-ng1i): Apply temperament-groom synergy modifier.
+    // Per PRD-03 §7.6: final bondingChange *= (1 + synergyModifier).
+    // Returns 0 (no-op) if foal.temperament or groom.personality is missing/unknown.
+    const synergyModifier = getTemperamentGroomSynergy(foal?.temperament, groom?.personality);
+    if (synergyModifier !== 0) {
+      finalEffects.bondingChange = Math.round(
+        finalEffects.bondingChange * (1 + synergyModifier),
+      );
+    }
+    finalEffects.synergyModifier = synergyModifier;
+
     // Ensure both bondingChange and stressChange stay within reasonable bounds after all modifications
     finalEffects.bondingChange = Math.max(0, Math.min(10, finalEffects.bondingChange));
     finalEffects.stressChange = Math.max(-10, Math.min(5, finalEffects.stressChange));
 
     logger.info(
-      `[groomSystem.calculateGroomInteractionEffects] Applied personality effects for ${groom.personality}: ${finalEffects.personalityEffects?.bonusesApplied?.join(', ') || 'none'}`,
+      `[groomSystem.calculateGroomInteractionEffects] Applied personality effects for ${groom.personality}: ${finalEffects.personalityEffects?.bonusesApplied?.join(', ') || 'none'} (synergy=${synergyModifier})`,
     );
 
     return finalEffects;
