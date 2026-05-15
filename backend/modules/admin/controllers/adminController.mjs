@@ -38,6 +38,26 @@ export async function getCronStatus(req, res) {
 }
 
 /**
+ * GET /api/admin/cron/health (Equoria-0elk)
+ * Cron heartbeat / staleness snapshot — answers "is the cron firing?".
+ *
+ * Returns per-job lastStartedAt / lastFinishedAt / status / summary + a
+ * stale flag computed against per-job staleness thresholds. Top-level
+ * `anyStale` boolean exists so monitoring can alert without walking the
+ * per-job map. See `services/cronJobs.mjs:JOB_STALENESS_MS` for thresholds.
+ */
+export async function getCronHealth(req, res) {
+  try {
+    logger.info('[adminController] GET /api/admin/cron/health');
+    const health = cronJobService.getHealth();
+    res.json({ success: true, data: health });
+  } catch (error) {
+    logger.error(`[adminController] GET /api/admin/cron/health error: ${error.message}`);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+}
+
+/**
  * POST /api/admin/cron/start
  * Start cron job service
  */

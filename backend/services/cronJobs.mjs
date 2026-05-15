@@ -12,10 +12,116 @@ import { incrementWeeklyCareerWeeks } from './riderTrainerProgressionService.mjs
  * Daily trait evaluation cron job that runs at midnight
  * Evaluates all foals aged 0-6 days for trait revelation
  */
+/**
+ * Equoria-0elk: Stale-after thresholds (ms) per job, used by the heartbeat
+ * health endpoint. If `now - lastFinishedAt > stalenessMs`, the job is
+ * flagged STALE in /api/admin/cron/health responses.
+ *
+ * Choose values 1.25x the expected period:
+ *   - daily jobs: 30h (24h period + 6h tolerance)
+ *   - 15-minute jobs: 30min (15min period + 15min tolerance)
+ *   - weekly jobs: 192h (168h period + 24h tolerance)
+ *
+ * The in-memory heartbeat map is reset on process restart — it answers
+ * "is the cron firing in THIS instance?", not "is the cron firing in
+ * production-as-a-whole?". A persistent CronRunLog table (filed as a
+ * follow-up issue) gives cross-restart history. The in-memory layer is
+ * enough to detect the original Equoria-0elk failure mode (cron never
+ * scheduled at startup → heartbeat permanently null → STALE).
+ */
+const JOB_STALENESS_MS = {
+  dailyTraitEvaluation: 30 * 60 * 60 * 1000,
+  dailyHorseAging: 30 * 60 * 60 * 1000,
+  dailyFoalMilestoneEvaluation: 30 * 60 * 60 * 1000,
+  weeklyRiderTrainerCareerWeeks: 192 * 60 * 60 * 1000,
+  electionStatusTransition: 30 * 60 * 1000,
+};
+
 class CronJobService {
   constructor() {
     this.jobs = new Map();
     this.isRunning = false;
+    // Equoria-0elk: per-job heartbeat — last-run timestamps + status + summary
+    this.heartbeats = new Map();
+  }
+
+  /**
+   * Equoria-0elk: Record a job heartbeat. Called by each scheduled handler
+   * (success or error path) so /api/admin/cron/health can surface STALE jobs.
+   *
+   * @param {string} jobName - Canonical job key (matches this.jobs key).
+   * @param {Object} entry   - { startedAt, finishedAt, status, summary?, error? }
+   */
+  recordHeartbeat(jobName, entry) {
+    const existing = this.heartbeats.get(jobName) ?? {};
+    this.heartbeats.set(jobName, {
+      ...existing,
+      ...entry,
+      // Always keep the first-seen startedAt for the current cycle's entry
+      startedAt: entry.startedAt ?? existing.startedAt ?? null,
+      finishedAt: entry.finishedAt ?? null,
+      status: entry.status ?? existing.status ?? 'unknown',
+    });
+  }
+
+  /**
+   * Equoria-0elk: Wrap a scheduled-job handler to record heartbeat (success +
+   * error). The wrapped function returns the handler's result so caller
+   * semantics are preserved.
+   *
+   * @param {string} jobName     - Job key for this.heartbeats
+   * @param {Function} handler   - async () => Promise<result>
+   */
+  async runWithHeartbeat(jobName, handler) {
+    const startedAt = new Date();
+    this.recordHeartbeat(jobName, { startedAt, finishedAt: null, status: 'running' });
+    try {
+      const result = await handler();
+      this.recordHeartbeat(jobName, {
+        startedAt,
+        finishedAt: new Date(),
+        status: 'success',
+        summary: this.summarizeResult(result),
+        error: null,
+      });
+      return result;
+    } catch (error) {
+      this.recordHeartbeat(jobName, {
+        startedAt,
+        finishedAt: new Date(),
+        status: 'error',
+        error: error?.message ?? String(error),
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Equoria-0elk: Reduce a handler's free-form result to a JSON-safe summary
+   * suitable for the health endpoint. Defensive — handlers return varied
+   * shapes (processHorseBirthdays vs transitionElectionStatuses etc.).
+   */
+  summarizeResult(result) {
+    if (!result || typeof result !== 'object') return null;
+    const allow = [
+      'totalProcessed',
+      'birthdaysFound',
+      'milestonesTriggered',
+      'milestonesEvaluated',
+      'milestonesSkipped',
+      'errors',
+      'duration',
+      'opened',
+      'closed',
+      'ridersTicked',
+      'trainersTicked',
+      'horsesProcessed',
+    ];
+    const out = {};
+    for (const k of allow) {
+      if (k in result) out[k] = result[k];
+    }
+    return Object.keys(out).length ? out : null;
   }
 
   /**
@@ -29,11 +135,13 @@ class CronJobService {
 
     logger.info('[CronJobService] Starting cron job service');
 
+    // Equoria-0elk: every scheduled handler is wrapped in runWithHeartbeat so
+    // /api/admin/cron/health can detect "cron silently didn't run" failures.
     // Daily trait evaluation job - runs at midnight
     const dailyTraitJob = cron.schedule(
       '0 0 * * *',
       async () => {
-        await this.evaluateDailyFoalTraits();
+        await this.runWithHeartbeat('dailyTraitEvaluation', () => this.evaluateDailyFoalTraits());
       },
       {
         scheduled: false,
@@ -45,7 +153,7 @@ class CronJobService {
     const dailyAgingJob = cron.schedule(
       '5 0 * * *',
       async () => {
-        await this.processHorseAging();
+        await this.runWithHeartbeat('dailyHorseAging', () => this.processHorseAging());
       },
       {
         scheduled: false,
@@ -58,7 +166,9 @@ class CronJobService {
     const dailyMilestoneJob = cron.schedule(
       '10 0 * * *',
       async () => {
-        await this.processFoalMilestones();
+        await this.runWithHeartbeat('dailyFoalMilestoneEvaluation', () =>
+          this.processFoalMilestones(),
+        );
       },
       {
         scheduled: false,
@@ -70,7 +180,9 @@ class CronJobService {
     const electionTransitionJob = cron.schedule(
       '*/15 * * * *',
       async () => {
-        await this.transitionElectionStatuses();
+        await this.runWithHeartbeat('electionStatusTransition', () =>
+          this.transitionElectionStatuses(),
+        );
       },
       {
         scheduled: false,
@@ -83,7 +195,9 @@ class CronJobService {
     const weeklyRiderTrainerCareerJob = cron.schedule(
       '15 0 * * 1',
       async () => {
-        await this.tickRiderTrainerCareerWeeks();
+        await this.runWithHeartbeat('weeklyRiderTrainerCareerWeeks', () =>
+          this.tickRiderTrainerCareerWeeks(),
+        );
       },
       {
         scheduled: false,
@@ -375,9 +489,7 @@ class CronJobService {
    */
   async processFoalMilestones(options = {}) {
     const startTime = Date.now();
-    logger.info(
-      '[CronJobService.processFoalMilestones] Starting daily foal milestone evaluation',
-    );
+    logger.info('[CronJobService.processFoalMilestones] Starting daily foal milestone evaluation');
 
     try {
       const result = await processFoalMilestoneEvaluations(options);
@@ -387,9 +499,7 @@ class CronJobService {
       );
       return result;
     } catch (error) {
-      logger.error(
-        `[CronJobService.processFoalMilestones] Error: ${error.message}`,
-      );
+      logger.error(`[CronJobService.processFoalMilestones] Error: ${error.message}`);
       throw error;
     }
   }
@@ -411,9 +521,7 @@ class CronJobService {
       );
       return result;
     } catch (error) {
-      logger.error(
-        `[CronJobService.tickRiderTrainerCareerWeeks] Error: ${error.message}`,
-      );
+      logger.error(`[CronJobService.tickRiderTrainerCareerWeeks] Error: ${error.message}`);
       throw error;
     }
   }
@@ -516,6 +624,62 @@ class CronJobService {
       serviceRunning: this.isRunning,
       jobs: jobStatuses,
       totalJobs: this.jobs.size,
+    };
+  }
+
+  /**
+   * Equoria-0elk: Heartbeat health snapshot for /api/admin/cron/health.
+   *
+   * For each scheduled job, returns:
+   *   - lastStartedAt / lastFinishedAt: timestamps (or null if never run in
+   *     this process — the canonical "cron silently didn't run" signal).
+   *   - status: 'success' | 'error' | 'running' | 'never-run'.
+   *   - summary: handler-specific JSON-safe stats from the last success.
+   *   - stalenessMs: staleness threshold for this job.
+   *   - stale: true if lastFinishedAt is null OR older than stalenessMs.
+   *
+   * Top-level `anyStale` flag exists so monitoring can boolean-alert without
+   * walking the per-job map.
+   *
+   * @returns {Object}
+   */
+  getHealth(now = new Date()) {
+    const nowMs = now.getTime();
+    const perJob = {};
+    let anyStale = false;
+
+    for (const jobName of this.jobs.keys()) {
+      const hb = this.heartbeats.get(jobName) ?? null;
+      const stalenessMs = JOB_STALENESS_MS[jobName] ?? 30 * 60 * 60 * 1000;
+      const lastFinishedAt = hb?.finishedAt ?? null;
+      const lastStartedAt = hb?.startedAt ?? null;
+      const status = hb?.status ?? 'never-run';
+
+      // STALE when never finished, OR finished but too long ago.
+      let stale = false;
+      if (!lastFinishedAt) {
+        stale = true;
+      } else {
+        stale = nowMs - new Date(lastFinishedAt).getTime() > stalenessMs;
+      }
+      if (stale) anyStale = true;
+
+      perJob[jobName] = {
+        lastStartedAt: lastStartedAt ? new Date(lastStartedAt).toISOString() : null,
+        lastFinishedAt: lastFinishedAt ? new Date(lastFinishedAt).toISOString() : null,
+        status,
+        summary: hb?.summary ?? null,
+        error: hb?.error ?? null,
+        stalenessMs,
+        stale,
+      };
+    }
+
+    return {
+      serviceRunning: this.isRunning,
+      now: now.toISOString(),
+      anyStale,
+      jobs: perJob,
     };
   }
 }

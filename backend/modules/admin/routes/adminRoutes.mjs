@@ -10,6 +10,7 @@
 import express from 'express';
 import {
   getCronStatus,
+  getCronHealth,
   startCron,
   stopCron,
   evaluateTraits,
@@ -24,6 +25,7 @@ const router = express.Router();
 
 // ── Cron ──────────────────────────────────────────────────────────────────────
 router.get('/cron/status', getCronStatus);
+router.get('/cron/health', getCronHealth); // Equoria-0elk heartbeat/staleness
 router.post('/cron/start', startCron);
 router.post('/cron/stop', stopCron);
 
