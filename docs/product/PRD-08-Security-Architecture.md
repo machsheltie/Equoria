@@ -196,9 +196,20 @@ function sanitize(input) {
 | ------------------ | ---------- | ---------- | ---------- |
 | **Global**         | 100        | 15 minutes | Block IP   |
 | **Authentication** | 200 failed | 15 minutes | Block IP   |
-| **Training**       | 10         | 1 hour     | Block user |
-| **Breeding**       | 5          | 1 hour     | Block user |
-| **Financial**      | 20         | 15 minutes | Block user |
+| **Training**       | 20 failed  | 1 minute   | Block user |
+| **Breeding**       | 10         | 5 minutes  | Block user |
+| **Competition**    | 20         | 5 minutes  | Block user |
+| **Foal**           | 15         | 1 minute   | Block user |
+| **Mutation**       | 30 (prod)  | 1 minute   | Block user |
+| **Financial**      | _see note_ | —          | —          |
+
+> **Financial limiter (Equoria-c9y4):** there is currently **no dedicated
+> financial rate limiter** in `backend/middleware/rateLimiting.mjs`. Bank /
+> transaction routes inherit only the global apiLimiter (100 / 15 min). The
+> prior "20 / 15 min" row described a limiter that does not exist in code.
+> Whether financial endpoints should get a dedicated stricter limiter is a
+> security-posture decision, not a docs codification — tracked separately
+> in Equoria-ftjm. This table now reflects code reality.
 
 ### 4.2 Suspicious Activity Detection
 
