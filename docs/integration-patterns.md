@@ -213,7 +213,7 @@ sameSite: 'lax' in development (cross-port 3000↔3001), 'strict' in production
 
 ### Hook Architecture
 
-44 React Query hooks in `frontend/src/hooks/api/` consume the API surface objects. Each hook:
+58 React Query hooks in `frontend/src/hooks/api/` consume the API surface objects (count current as of 2026-05-15; verify with `ls frontend/src/hooks/api/*.ts | wc -l`). Each hook:
 
 - Uses structured query keys (e.g., `['horses']`, `['horses', horseId]`)
 - Returns typed data directly (no envelope unwrapping needed, `fetchWithAuth` handles that)
