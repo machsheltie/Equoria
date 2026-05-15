@@ -44,7 +44,7 @@ import EligibilityFilter, { EligibilityFilterType } from './training/Eligibility
 import { canTrain } from '../lib/utils/training-utils';
 import { getHorseImage } from '@/lib/breed-images';
 import { getBreedName } from '@/lib/utils';
-import type { Horse } from '@/types/horse';
+import type { Horse } from '@/types';
 
 interface HorseListViewProps {
   userId: number;
