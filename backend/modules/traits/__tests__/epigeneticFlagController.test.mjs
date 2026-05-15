@@ -114,6 +114,37 @@ describe('GET /api/flags/horses/:id/flags', () => {
 
     expect(res.status).toBe(401);
   });
+
+  // Sentinel for Equoria-8qu4: ageInYears must be canonical game-years
+  // (floor(ageDays / 7)), NOT calendar-years (ageDays / 365.25). A horse
+  // born 35 real days ago is 5 game-years old, not ~0.10 calendar-years.
+  it('reports ageInYears in canonical game-years, not calendar-years', async () => {
+    const thirtyFiveDaysAgo = new Date(Date.now() - 35 * 24 * 60 * 60 * 1000);
+    const youngHorse = await prisma.horse.create({
+      data: {
+        name: `TestFixture-FlagAge-${randomBytes(4).toString('hex')}`,
+        sex: 'Filly',
+        dateOfBirth: thirtyFiveDaysAgo,
+        age: 5,
+        userId: user.id,
+      },
+    });
+
+    try {
+      const res = await request(app)
+        .get(`/api/flags/horses/${youngHorse.id}/flags`)
+        .set('Origin', ORIGIN)
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      // Game-years: floor(35 / 7) === 5. Calendar-years bug would give ~0.10.
+      expect(Number(res.body.data.ageInYears)).toBe(5);
+      // Under 3 game-years gate must use the same canonical unit.
+      expect(res.body.data.canReceiveMoreFlags).toBe(false);
+    } finally {
+      await prisma.horse.delete({ where: { id: youngHorse.id } }).catch(() => {});
+    }
+  });
 });
 
 // ─── GET /api/flags/horses/:id/care-patterns ─────────────────────────────────

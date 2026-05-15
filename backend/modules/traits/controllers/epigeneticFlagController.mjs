@@ -18,7 +18,7 @@ import { validationResult } from 'express-validator';
 import _prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import { findOwnedResource } from '../../../middleware/ownership.mjs';
-import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
+import { getHorseAgeYears } from '../../../utils/horseAge.mjs';
 import {
   evaluateHorseFlags,
   batchEvaluateFlags as batchEvaluateFlagsEngine,
@@ -126,9 +126,10 @@ export async function getHorseFlags(req, res) {
           };
     });
 
-    // Calculate horse age
-    const ageInDays = getHorseAgeDays(horse.dateOfBirth);
-    const ageInYears = (ageInDays / 365.25).toFixed(2);
+    // Calculate horse age in canonical game-years (1 game-week = 1 game-year,
+    // floor(ageDays / 7)) — consistent with horseController serializer and the
+    // leaderboard /horse/:horseId route. NOT calendar-years (Equoria-8qu4).
+    const ageInYears = getHorseAgeYears(horse.dateOfBirth);
 
     return res.status(200).json({
       success: true,
@@ -142,7 +143,7 @@ export async function getHorseFlags(req, res) {
         flagCount: flagDetails.length,
         flags: flagDetails,
         maxFlags: 5,
-        canReceiveMoreFlags: flagDetails.length < 5 && parseFloat(ageInYears) < 3,
+        canReceiveMoreFlags: flagDetails.length < 5 && ageInYears < 3,
       },
     });
   } catch (error) {
