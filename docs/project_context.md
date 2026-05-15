@@ -9,6 +9,7 @@
 ## Critical Rules (MUST Follow)
 
 ### API Calls
+
 ```typescript
 // ALWAYS use centralized client - NEVER raw fetch()
 import { apiRequest } from '@/lib/api';
@@ -18,11 +19,13 @@ const data = await apiRequest('/api/endpoint', { method: 'POST', body });
 ```
 
 ### TypeScript
+
 - **No `any` types** - Find proper type or use `unknown`
 - **No `@ts-ignore`** - Fix the type issue instead
 - **Strict mode** - All new code must pass strict checks
 
 ### State Management
+
 - **Server state:** React Query only (no Redux)
 - **Form state:** useState + Zod validation
 - **Auth state:** AuthContext provider
@@ -31,15 +34,15 @@ const data = await apiRequest('/api/endpoint', { method: 'POST', body });
 
 ## Technology Stack
 
-| Layer | Technology | Version |
-|-------|------------|---------|
-| Frontend | React + Vite | React 18, Vite 5 |
-| State | TanStack Query | v5 |
-| Styling | TailwindCSS | v3.x |
-| UI | Radix UI | Latest |
-| Validation | Zod | Latest |
-| Backend | Node.js + Express | Node 20, Express 4 |
-| Database | PostgreSQL + Prisma | PG 15+, Prisma 5 |
+| Layer      | Technology          | Version            |
+| ---------- | ------------------- | ------------------ |
+| Frontend   | React + Vite        | React 18, Vite 5   |
+| State      | TanStack Query      | v5                 |
+| Styling    | TailwindCSS         | v3.x               |
+| UI         | Radix UI            | Latest             |
+| Validation | Zod                 | Latest             |
+| Backend    | Node.js + Express   | Node 20, Express 4 |
+| Database   | PostgreSQL + Prisma | PG 15+, Prisma 5   |
 
 ---
 
@@ -63,18 +66,19 @@ frontend/src/
 
 ### Naming Conventions
 
-| Type | Pattern | Example |
-|------|---------|---------|
-| Components | PascalCase.tsx | `TrainingDashboard.tsx` |
-| Hooks | use{Name}.ts | `useAuth.ts` |
-| Tests | {Name}.test.tsx | `TrainingDashboard.test.tsx` |
-| Types | {name}.ts | `horse.ts` |
+| Type       | Pattern         | Example                      |
+| ---------- | --------------- | ---------------------------- |
+| Components | PascalCase.tsx  | `TrainingDashboard.tsx`      |
+| Hooks      | use{Name}.ts    | `useAuth.ts`                 |
+| Tests      | {Name}.test.tsx | `TrainingDashboard.test.tsx` |
+| Types      | {name}.ts       | `horse.ts`                   |
 
 ---
 
 ## Implementation Patterns
 
 ### Component Pattern
+
 ```typescript
 const Component: React.FC<Props> = ({ id }) => {
   const { data, isLoading, error } = useQuery({...});
@@ -95,6 +99,7 @@ const Component: React.FC<Props> = ({ id }) => {
 ```
 
 ### Form Pattern
+
 ```typescript
 // 1. Define Zod schema
 const schema = z.object({
@@ -114,23 +119,21 @@ mutate(result.data);
 ```
 
 ### Query Key Pattern
+
 ```typescript
-['horses']                    // All horses
-['horses', horseId]           // Single horse
-['training', horseId, 'status'] // Nested resource
-['currentUser']               // Singleton
+['horses'][('horses', horseId)][('training', horseId, 'status')]['currentUser']; // All horses // Single horse // Nested resource // Singleton
 ```
 
 ---
 
 ## Error Handling
 
-| Error Type | Display Method |
-|------------|----------------|
+| Error Type     | Display Method     |
+| -------------- | ------------------ |
 | Zod validation | Inline under field |
-| API 4xx | Inline OR Toast |
-| API 5xx | Toast only |
-| Network | Toast + Retry |
+| API 4xx        | Inline OR Toast    |
+| API 5xx        | Toast only         |
+| Network        | Toast + Retry      |
 
 ---
 
@@ -157,14 +160,14 @@ describe('Component', () => {
 
 ## Anti-Patterns (NEVER Do)
 
-| Anti-Pattern | Correct Approach |
-|--------------|------------------|
-| `fetch('/api/...')` | `apiRequest('/api/...')` |
-| `any` type | Find proper type |
-| `// @ts-ignore` | Fix the type |
-| `useState` for API data | `useQuery` |
-| Inline styles | Tailwind classes |
-| `console.log` in prod | Remove or use logger |
+| Anti-Pattern            | Correct Approach         |
+| ----------------------- | ------------------------ |
+| `fetch('/api/...')`     | `apiRequest('/api/...')` |
+| `any` type              | Find proper type         |
+| `// @ts-ignore`         | Fix the type             |
+| `useState` for API data | `useQuery`               |
+| Inline styles           | Tailwind classes         |
+| `console.log` in prod   | Remove or use logger     |
 
 ---
 
@@ -191,14 +194,14 @@ import type { Horse } from '@/types';
 
 ## Quick Reference
 
-| Question | Answer |
-|----------|--------|
-| Where do pages go? | `frontend/src/pages/` |
-| Where do API hooks go? | `frontend/src/hooks/api/` |
-| How to make API calls? | `apiRequest()` from `@/lib/api` |
-| How to validate forms? | Zod schema + `safeParse()` |
-| How to show loading? | `<Skeleton />` for lists, spinner for buttons |
-| How to show errors? | Inline for forms, Toast for API errors |
+| Question               | Answer                                        |
+| ---------------------- | --------------------------------------------- |
+| Where do pages go?     | `frontend/src/pages/`                         |
+| Where do API hooks go? | `frontend/src/hooks/api/`                     |
+| How to make API calls? | `apiRequest()` from `@/lib/api`               |
+| How to validate forms? | Zod schema + `safeParse()`                    |
+| How to show loading?   | `<Skeleton />` for lists, spinner for buttons |
+| How to show errors?    | Inline for forms, Toast for API errors        |
 
 ---
 
@@ -220,9 +223,9 @@ interface ApiResponse<T> {
 - **Method:** HttpOnly cookies (backend manages tokens)
 - **Frontend requirement:** `credentials: 'include'` on ALL requests
 - **Token rotation:** Automatic (15-min access tokens)
-- **Rate limiting:** 5 requests per 15 minutes on auth endpoints
+- **Rate limiting:** 200 failed requests per 15 minutes on auth endpoints (successful auths not counted)
 
 ---
 
-*This file is auto-generated from the Architecture Decision Document*
-*Update when architectural decisions change*
+_This file is auto-generated from the Architecture Decision Document_
+_Update when architectural decisions change_

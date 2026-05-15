@@ -27,7 +27,7 @@
 - JWT access tokens (15-minute expiry) and refresh tokens (7-day expiry)
 - PostgreSQL users table with UUID primary keys
 - JSONB settings field for flexible preferences
-- Rate limiting on authentication endpoints (5 attempts per 15 minutes)
+- Rate limiting on authentication endpoints (200 failed attempts per 15 minutes; successful auths not counted)
 
 **Acceptance Criteria:**
 

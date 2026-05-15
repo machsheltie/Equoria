@@ -85,12 +85,12 @@ The Equoria frontend completion is a **thin UI layer** over a production-ready b
 
 **Non-Functional Requirements:**
 
-| NFR             | Requirement  | Enforcement         |
-| --------------- | ------------ | ------------------- |
-| API Latency     | <200ms @ p95 | Backend handles     |
-| Dashboard Load  | <500ms       | React Query caching |
-| Auth Rate Limit | 5 req/15 min | Backend enforced    |
-| Test Coverage   | 80% minimum  | CI/CD gate          |
+| NFR             | Requirement       | Enforcement                                     |
+| --------------- | ----------------- | ----------------------------------------------- |
+| API Latency     | <200ms @ p95      | Backend handles                                 |
+| Dashboard Load  | <500ms            | React Query caching                             |
+| Auth Rate Limit | 200 failed/15 min | Backend enforced (successful auths not counted) |
+| Test Coverage   | 80% minimum       | CI/CD gate                                      |
 
 ### Architecture Decisions Made
 
@@ -144,12 +144,12 @@ The Equoria frontend completion is a **thin UI layer** over a production-ready b
 
 ### Security Hardening (from Red Team Analysis)
 
-| Attack Vector | Defense                         | Status                 |
-| ------------- | ------------------------------- | ---------------------- |
-| CSRF          | `sameSite: 'strict'` cookies    | ✅ Backend implemented |
-| XSS via Forms | React escaping + Zod validation | ✅ Double defense      |
-| Token Theft   | HttpOnly cookies (no JS access) | ✅ Backend implemented |
-| Brute Force   | Rate limiting (5/15min)         | ✅ Backend implemented |
+| Attack Vector | Defense                          | Status                 |
+| ------------- | -------------------------------- | ---------------------- |
+| CSRF          | `sameSite: 'strict'` cookies     | ✅ Backend implemented |
+| XSS via Forms | React escaping + Zod validation  | ✅ Double defense      |
+| Token Theft   | HttpOnly cookies (no JS access)  | ✅ Backend implemented |
+| Brute Force   | Rate limiting (200 failed/15min) | ✅ Backend implemented |
 
 ### MVP Prioritization (from War Room)
 

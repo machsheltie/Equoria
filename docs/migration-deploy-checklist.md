@@ -22,7 +22,7 @@ Both layers are required. The runtime guard saves audit-log clarity; the checkli
 - [ ] Identify whether the migration touches an authenticated table (see list above). If no, this checklist does not apply.
 - [ ] If yes: write a one-paragraph migration plan into the migration's `migration.sql` header comment. Include: which rows are purged/rehashed, expected row count delta, expected user impact ("all users re-login on next refresh", "no user impact", etc.).
 - [ ] Confirm the runtime guard for the affected auth path returns a sensible non-reuse signal when its lookup misses on a user with zero rows — e.g. `validateRefreshToken` returns `error: 'SESSION_UPGRADE_REQUIRED'`. If a new auth path is involved, add an equivalent guard before deploying.
-- [ ] Confirm the deploy environment has its rate-limit window configured to absorb the expected re-login storm without locking out legitimate users. The default `authRateLimiter` is 5 attempts per 15 min; on a force-relogin event with N active users, only ~ (limit × users/min over the window) succeed per minute. Raise the cap temporarily if N is large.
+- [ ] Confirm the deploy environment has its rate-limit window configured to absorb the expected re-login storm without locking out legitimate users. The default `authRateLimiter` is 200 failed attempts per 15 min with `skipSuccessfulRequests: true` (only failures count, so a force-relogin storm of _successful_ re-auths is not throttled). Raise the cap temporarily only if a failure storm (e.g. mass stale-token rejections) is expected.
 
 ---
 

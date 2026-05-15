@@ -121,7 +121,7 @@ Tests:
 #### **Multi-Layer Rate Limiting**
 
 - **Global Rate Limits**: 100 requests per 15 minutes per IP
-- **Auth Rate Limits**: 5 login attempts per 15 minutes
+- **Auth Rate Limits**: 200 failed login attempts per 15 minutes (successful auths not counted; `skipSuccessfulRequests: true`)
 - **Operation-Specific Limits**: Custom limits for sensitive operations
 - **Anti-Automation**: Detects and blocks rapid-fire requests
 

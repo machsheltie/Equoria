@@ -237,7 +237,7 @@ Path params (`req.params`), headers, and cookies are out of scope: each is a fla
 - Strong password requirements (8+ chars, complexity rules)
 - JWT token expiration enforcement (1h access, 7d refresh)
 - Refresh token rotation on use
-- Failed login attempt rate limiting (5 attempts/15min)
+- Failed login attempt rate limiting (200 failed attempts/15min; successful auths not counted)
 - Session management with secure httpOnly cookies
 - Password reset with secure token generation
 - Multi-factor authentication ready (infrastructure in place)
@@ -481,13 +481,11 @@ None identified.
 ### 6.2 Short-Term Improvements (1-3 months)
 
 1. **Multi-Factor Authentication (MFA)**
-
    - Implement TOTP-based MFA for admin accounts
    - Optional MFA for all user accounts
    - Recovery code generation
 
 2. **Security Headers Enhancement**
-
    - Content Security Policy (CSP)
    - Subresource Integrity (SRI) for CDN assets
    - Feature Policy restrictions
@@ -500,13 +498,11 @@ None identified.
 ### 6.3 Long-Term Enhancements (3-6 months)
 
 1. **Security Penetration Testing**
-
    - Third-party security audit
    - Automated penetration testing (Burp Suite)
    - Bug bounty program consideration
 
 2. **Advanced Monitoring**
-
    - Real User Monitoring (RUM)
    - Application Performance Monitoring (APM)
    - Security Information and Event Management (SIEM)

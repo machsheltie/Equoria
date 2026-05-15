@@ -203,17 +203,17 @@ The following table is an excerpt — `frontend/package.json` is the
 canonical reference. Storybook commands (`storybook`, `build-storybook`)
 and other utility scripts are also defined there.
 
-| Script                  | Description                              |
-| ----------------------- | ---------------------------------------- |
-| `npm run dev`           | Start Vite dev server                    |
-| `npm run build`         | TypeScript check + Vite production build |
-| `npm run preview`       | Preview production build locally         |
-| `npm test`              | Run Vitest (watch mode)                  |
-| `npm run test:run`      | Run Vitest once (CI mode)                |
-| `npm run test:coverage` | Run Vitest with coverage                 |
-| `npm run lint`          | Run ESLint                               |
-| `npm run storybook`     | Run Storybook dev server                 |
-| `npm run build-storybook` | Build Storybook static site            |
+| Script                    | Description                              |
+| ------------------------- | ---------------------------------------- |
+| `npm run dev`             | Start Vite dev server                    |
+| `npm run build`           | TypeScript check + Vite production build |
+| `npm run preview`         | Preview production build locally         |
+| `npm test`                | Run Vitest (watch mode)                  |
+| `npm run test:run`        | Run Vitest once (CI mode)                |
+| `npm run test:coverage`   | Run Vitest with coverage                 |
+| `npm run lint`            | Run ESLint                               |
+| `npm run storybook`       | Run Storybook dev server                 |
+| `npm run build-storybook` | Build Storybook static site              |
 
 ### Database (`packages/database/`)
 
@@ -540,7 +540,7 @@ Production deployment targets Railway:
 ### Rate Limiting
 
 - 100 requests per 15 minutes (general)
-- 5 requests per 15 minutes (auth endpoints)
+- 200 failed requests per 15 minutes (auth endpoints; successful auths not counted)
 - Redis-backed in production, in-memory fallback for development
 - Suspicious activity detection (rapid-fire, multi-IP, error-then-success patterns)
 
