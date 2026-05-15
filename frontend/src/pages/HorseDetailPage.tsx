@@ -298,11 +298,12 @@ const HorseDetailPage: React.FC = () => {
     tack: (horseRaw as unknown as Record<string, unknown>).tack as
       | Record<string, unknown>
       | undefined,
-    // Resolve coat color (Equoria-lsi5): we now expose BOTH fields so the
-    // render layer can apply the canonical fallback (phenotype.colorName ??
-    // finalDisplayColor ?? 'Unknown'), mirroring HorseCard.tsx:130. The
-    // legacy finalDisplayColor TEXT column is NULL for every canonical-DB
-    // horse, so phenotype.colorName is the real source of truth.
+    // Resolve coat color (Equoria-lsi5 + Equoria-iwy3): we now expose BOTH
+    // fields so the render layer can apply the canonical fallback
+    // (phenotype.colorName ?? finalDisplayColor ?? 'not recorded'), mirroring
+    // HorseCard.tsx:130. The legacy finalDisplayColor TEXT column is NULL for
+    // every canonical-DB horse, so phenotype.colorName is the real source of
+    // truth.
     finalDisplayColor: (rawHorse.finalDisplayColor as string | undefined) ?? undefined,
     phenotype: (() => {
       // JSONB type guard per .claude/rules/CONTRIBUTING.md §1 — Prisma returns
@@ -510,13 +511,17 @@ const HorseDetailPage: React.FC = () => {
                     <div className="flex flex-wrap gap-3 text-sm fantasy-body text-[var(--text-secondary)]">
                       <span>Breed: {getBreedName(horse.breed)}</span>
                       <span>•</span>
-                      {/* Equoria-lsi5 — mirror HorseCard.tsx:130 fallback chain.
-                          phenotype.colorName is the canonical genetics-derived
-                          color; finalDisplayColor is the vestigial pre-31E
-                          column (NULL for all canonical DB horses); 'Unknown'
-                          only when neither is populated. */}
+                      {/* Equoria-lsi5 + Equoria-iwy3 — mirror HorseCard.tsx:130
+                          fallback chain. phenotype.colorName is the canonical
+                          genetics-derived color; finalDisplayColor is the
+                          vestigial pre-31E column (NULL for all canonical DB
+                          horses). Per frontend-integration-backlog.md doctrine
+                          (line 258), legacy horses (phenotype: null,
+                          finalDisplayColor: null) must NEVER render the literal
+                          string 'Unknown'. 'not recorded' is the honest
+                          fallback. */}
                       <span data-testid="horse-detail-color">
-                        Color: {horse.phenotype?.colorName ?? horse.finalDisplayColor ?? 'Unknown'}
+                        Color: {horse.phenotype?.colorName ?? horse.finalDisplayColor ?? 'not recorded'}
                       </span>
                       <span>•</span>
                       <span>Age: {horse.age}</span>

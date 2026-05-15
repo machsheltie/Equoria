@@ -2,7 +2,12 @@
  * HorseDetailPage — color readout fallback tests (Equoria-lsi5).
  *
  * Verifies the three branches of the fallback chain on the page header:
- *   horse.phenotype?.colorName ?? horse.finalDisplayColor ?? 'Unknown'
+ *   horse.phenotype?.colorName ?? horse.finalDisplayColor ?? 'not recorded'
+ *
+ * Per Equoria-iwy3 (31E-FE-1) the literal string 'Unknown' was replaced with
+ * 'not recorded' so legacy horses (phenotype: null, finalDisplayColor: null)
+ * render an honest fallback consistent with frontend-integration-backlog.md
+ * doctrine (line 258): never show 'Unknown' for legacy horses.
  *
  * This mirrors HorseCard.tsx:130. Each branch is exercised against a fresh
  * mocked API response so a regression in the readout cannot pass silently.
@@ -123,14 +128,19 @@ describe('HorseDetailPage color readout fallback (Equoria-lsi5)', () => {
     await waitFor(() => expect(colorLine).toHaveTextContent('Color: Chestnut'));
   });
 
-  test("renders 'Unknown' only when both fields are absent", async () => {
+  test("renders 'not recorded' (never 'Unknown') when both fields are absent — Equoria-iwy3", async () => {
+    // Per frontend-integration-backlog.md doctrine line 258: legacy horses with
+    // colorGenotype: null and phenotype: null must NEVER show 'Unknown'. The
+    // honest fallback is 'not recorded'.
     global.fetch = makeFetch({
       phenotype: null,
       finalDisplayColor: null,
     });
     renderPage();
     const colorLine = await screen.findByTestId('horse-detail-color');
-    await waitFor(() => expect(colorLine).toHaveTextContent('Color: Unknown'));
+    await waitFor(() => expect(colorLine).toHaveTextContent('Color: not recorded'));
+    // Sentinel-positive: the literal 'Unknown' must never appear in the color line.
+    expect(colorLine).not.toHaveTextContent('Unknown');
   });
 
   test('handles malformed phenotype (array) without crash via type guard', async () => {
