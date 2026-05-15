@@ -106,6 +106,48 @@ describe('CoatTab (31E-4 / ea3n + oovy)', () => {
     expect(screen.getByTestId('coat-locus-A_Agouti')).toHaveTextContent(/A\/a/);
   });
 
+  it('renders "not recorded" (not literal "Unknown") when payload has null colorName (Equoria-3o5s, iwy3 convention)', () => {
+    // Backend returns a color object but colorName is null — rare but possible
+    // for partially-migrated horses. Per frontend-integration-backlog.md
+    // doctrine (line 258) + Equoria-iwy3, the UI must never render literal
+    // 'Unknown'; it must use the 'not recorded' convention.
+    vi.mocked(coatHooks.useHorseCoatColor).mockReturnValue({
+      isLoading: false,
+      isError: false,
+      isSuccess: true,
+      data: {
+        horseId: 7,
+        horseName: 'Partial',
+        colorName: null,
+        shade: null,
+        faceMarking: null,
+        legMarkings: null,
+        advancedMarkings: null,
+        modifiers: null,
+      },
+      error: null,
+    } as unknown as ReturnType<typeof coatHooks.useHorseCoatColor>);
+    vi.mocked(coatHooks.useHorseCoatGenetics).mockReturnValue({
+      isLoading: false,
+      isError: false,
+      isSuccess: true,
+      data: null,
+      error: null,
+    } as unknown as ReturnType<typeof coatHooks.useHorseCoatGenetics>);
+
+    const Wrapper = makeWrapper();
+    render(
+      <Wrapper>
+        <CoatTab horseId={7} />
+      </Wrapper>
+    );
+
+    const colorName = screen.getByTestId('coat-color-name');
+    // Sentinel-positive: the exact defect (literal "Unknown") must NOT appear.
+    expect(colorName).not.toHaveTextContent(/Unknown/);
+    expect(colorName).toHaveTextContent(/not recorded/i);
+  });
+
   it('renders empty-state when color data is null (legacy horse, AC3)', () => {
     vi.mocked(coatHooks.useHorseCoatColor).mockReturnValue({
       isLoading: false,

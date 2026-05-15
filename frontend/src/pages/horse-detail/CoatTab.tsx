@@ -111,7 +111,7 @@ export default function CoatTab({ horseId }: CoatTabProps) {
                 className="text-2xl font-display text-deep-mahogany"
                 data-testid="coat-color-name"
               >
-                {colorQuery.data.colorName ?? 'Unknown'}
+                {colorQuery.data.colorName ?? 'not recorded'}
                 {colorQuery.data.shade ? ` — ${colorQuery.data.shade}` : ''}
               </div>
             </div>
