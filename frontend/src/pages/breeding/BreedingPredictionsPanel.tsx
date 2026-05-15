@@ -11,6 +11,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Sparkles, AlertCircle } from 'lucide-react';
 import { horsesApi } from '@/lib/api-client';
+import ColorPredictionChart from '@/components/breeding/ColorPredictionChart';
 
 export interface BreedingPredictionsPanelProps {
   sireId: number;
@@ -96,6 +97,10 @@ const BreedingPredictionsPanel: React.FC<BreedingPredictionsPanelProps> = ({ sir
           </div>
         </div>
       </div>
+
+      {/* Equoria-4v6w — 31E-5 offspring coat-color probability chart. Renders
+          its own loading / legacy-horse / all-lethal / error states. */}
+      <ColorPredictionChart sireId={sireId} damId={damId} />
     </div>
   );
 };
