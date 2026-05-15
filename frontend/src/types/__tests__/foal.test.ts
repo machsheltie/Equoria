@@ -64,7 +64,7 @@ const createFoal = (ageInDays: number, completedMilestones: MilestoneType[] = []
   id: 1,
   name: 'Test Foal',
   breedId: 1,
-  sex: 'male',
+  sex: 'Male',
   birthDate: new Date(Date.now() - ageInDays * 24 * 60 * 60 * 1000).toISOString(),
   ageInDays,
   currentMilestone: null,
