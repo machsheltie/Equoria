@@ -116,9 +116,15 @@ describe('Database Query Optimization', () => {
   });
 
   describe('Query Performance Analysis', () => {
-    test('analyzes complex epigenetic queries for performance bottlenecks', async () => {
-      const startTime = Date.now();
+    // NOTE (Equoria-ogxk, 2026-05-15): Wall-clock timing assertions removed.
+    // They had been progressively relaxed from 150ms → 2000ms / 10000ms to
+    // accommodate parallel-loaded test runs, at which point the assertions
+    // no longer caught any regression they were designed to catch. Per the
+    // ogxk AC ("No more threshold inflation"), shape/correctness assertions
+    // are kept; real perf budgets belong in a dedicated perf job, not the
+    // pre-push unit suite (filed forward as needed).
 
+    test('analyzes complex epigenetic queries and returns the expected shape', async () => {
       const analysis = await analyzeQueryPerformance({
         queryType: 'epigenetic_trait_search',
         userId: testUserId,
@@ -129,14 +135,14 @@ describe('Database Query Optimization', () => {
         },
       });
 
-      const executionTime = Date.now() - startTime;
-
       expect(analysis).toBeDefined();
-      expect(analysis.executionTime).toBeLessThan(2000); // < 2s (100ms target in prod; relaxed for CI)
       expect(analysis.queryPlan).toBeDefined();
       expect(analysis.indexUsage).toBeDefined();
       expect(analysis.recommendations).toBeInstanceOf(Array);
-      expect(executionTime).toBeLessThan(2000);
+      // executionTime is part of the response contract — assert it's a
+      // non-negative number, not a wall-clock threshold.
+      expect(typeof analysis.executionTime).toBe('number');
+      expect(analysis.executionTime).toBeGreaterThanOrEqual(0);
     });
 
     test('identifies slow JSONB queries and optimization opportunities', async () => {
@@ -151,23 +157,20 @@ describe('Database Query Optimization', () => {
 
       expect(analysis.jsonbOptimizations).toBeDefined();
       expect(analysis.indexRecommendations).toContain('GIN index on disciplineScores');
-      expect(analysis.queryComplexity).toBeLessThan(1000); // Complexity score
+      // queryComplexity is a non-time complexity score — keep the assertion;
+      // it has nothing to do with wall-clock time.
+      expect(analysis.queryComplexity).toBeLessThan(1000);
     });
 
-    test('benchmarks multi-table join performance', async () => {
-      const startTime = Date.now();
-
+    test('analyzes multi-table joins and returns the expected shape', async () => {
       const analysis = await analyzeQueryPerformance({
         queryType: 'user_horses_with_results',
         userId: testUserId,
         includeRelations: ['breed', 'competitionResults', 'trainingLogs'],
       });
 
-      const executionTime = Date.now() - startTime;
-
       expect(analysis.joinOptimizations).toBeDefined();
       expect(analysis.nPlusOneRisks).toBeInstanceOf(Array);
-      expect(executionTime).toBeLessThan(10000); // Relaxed: timing varies heavily under system load
     });
   });
 
@@ -252,13 +255,12 @@ describe('Database Query Optimization', () => {
         }),
       );
 
-      const startTime = Date.now();
+      // Equoria-ogxk: wall-clock threshold removed; flaky under parallel
+      // suite load and offered no real-world signal. Correctness (all 5
+      // requests resolved + pool not exhausted) is the meaningful assertion.
       const results = await Promise.all(concurrentRequests);
-      const executionTime = Date.now() - startTime;
 
       expect(results).toHaveLength(5);
-      expect(executionTime).toBeLessThan(2000); // < 2 seconds for 5 concurrent requests
-
       // Verify no connection pool exhaustion
       const poolStatus = await implementConnectionPooling({ action: 'status' });
       expect(poolStatus.errors).toHaveLength(0);
@@ -342,7 +344,12 @@ describe('Database Query Optimization', () => {
   });
 
   describe('Performance Benchmarking', () => {
-    test('meets response time targets for common operations', async () => {
+    test('returns the expected benchmark shape for common operations', async () => {
+      // Equoria-ogxk: wall-clock thresholds removed. They were progressively
+      // relaxed to 5000ms / 10000ms under parallel-suite load, at which point
+      // they no longer caught the regressions they were designed to catch.
+      // Shape + correctness assertions remain; perf budgets belong in a
+      // dedicated perf job, not the pre-push unit suite.
       const benchmarks = await benchmarkDatabaseOperations({
         operations: [
           'user_horses_list',
@@ -355,8 +362,11 @@ describe('Database Query Optimization', () => {
       });
 
       for (const [, metrics] of Object.entries(benchmarks)) {
-        expect(metrics.averageTime).toBeLessThan(5000); // < 5s (relaxed for full-suite parallel system load)
-        expect(metrics.p95Time).toBeLessThan(10000); // 95th percentile < 10s (relaxed for CI/CD parallel load)
+        // Shape contract: every operation reports averageTime, p95Time, errorRate.
+        expect(typeof metrics.averageTime).toBe('number');
+        expect(metrics.averageTime).toBeGreaterThanOrEqual(0);
+        expect(typeof metrics.p95Time).toBe('number');
+        expect(metrics.p95Time).toBeGreaterThanOrEqual(metrics.averageTime); // p95 >= avg
         expect(metrics.errorRate).toBe(0);
       }
     });
