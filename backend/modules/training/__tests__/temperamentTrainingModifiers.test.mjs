@@ -289,4 +289,81 @@ describe('trainHorse() — temperament modifier integration (real DB)', () => {
       scoreModifier: 0.05,
     });
   });
+
+  // ───────────────────────────────────────────────────────────────────────────
+  // Equoria-lhsr — AC #6 stacking sentinel for temperament + trait modifiers
+  //
+  // Story 31D-2 AC #6: temperament modifiers stack MULTIPLICATIVELY with trait
+  // effects (sequential Math.round(base*(1+trait)) then *(1+temp)).
+  //
+  // This test pins the EXACT integer result that the sequential implementation
+  // produces. A refactor that combined them additively (base*(1+trait+temp))
+  // would produce a DIFFERENT integer and fail this test.
+  //
+  // Scenario: eager_learner (trainingXpModifier=+0.25) + Lazy temperament
+  //   (xpModifier=-0.20, scoreModifier=-0.15) on a base of 5.
+  //
+  // Sequential (current impl):
+  //   XP    : Math.round(Math.round(5 * 1.25) * 0.80) = Math.round(6 * 0.80)
+  //         = Math.round(4.8) = 5
+  //   Score: Math.round(Math.round(5 * 1.25) * 0.85) = Math.round(6 * 0.85)
+  //         = Math.round(5.1) = 5
+  //
+  // Additive combine (regression):
+  //   XP    : Math.round(5 * (1 + 0.25 - 0.20)) = Math.round(5 * 1.05)
+  //         = Math.round(5.25) = 5  ← same! sentinel must use score path too
+  //   Score: Math.round(5 * (1 + 0.25 - 0.15)) = Math.round(5 * 1.10)
+  //         = Math.round(5.5)  = 6  ← DIFFERS from sequential (5)
+  //
+  // Either path on its own would fail the additive combine. We assert BOTH XP
+  // and score deltas to defend AC #6 from regressions on either branch.
+  // ───────────────────────────────────────────────────────────────────────────
+  it('Lazy + eager_learner: temperament and trait stack multiplicatively (AC #6)', async () => {
+    const user = await createUser();
+    const horse = await prisma.horse.create({
+      data: {
+        name: `${SUITE_PREFIX}-stack-${randomBytes(4).toString('hex')}`,
+        sex: 'Mare',
+        dateOfBirth: new Date('2020-01-01'),
+        age: 5,
+        temperament: 'Lazy',
+        epigeneticModifiers: { positive: ['eager_learner'], negative: [], hidden: [] },
+        disciplineScores: { Dressage: 0 },
+        trainingCooldown: null,
+        breed: { connect: { id: breed.id } },
+        user: { connect: { id: user.id } },
+      },
+    });
+    const userBefore = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { xp: true },
+    });
+
+    const result = await trainHorse(horse.id, 'Dressage', noStatGain);
+
+    expect(result.success).toBe(true);
+    expect(result.temperamentEffects).toEqual({
+      temperament: 'Lazy',
+      xpModifier: -0.2,
+      scoreModifier: -0.15,
+    });
+
+    // Sequential expected values (AC #6 — current impl)
+    const expectedXp = Math.round(Math.round(5 * 1.25) * 0.8); // 5
+    const expectedScore = Math.round(Math.round(5 * 1.25) * 0.85); // 5
+
+    // Sentinel-positive: additive combine would produce score=6, so this MUST
+    // be 5 to defend AC #6 against the regression described in lhsr.
+    const additiveScoreRegression = Math.round(5 * (1 + 0.25 - 0.15)); // 6
+    expect(expectedScore).not.toBe(additiveScoreRegression); // sanity: sentinel actually distinguishes
+
+    const userAfter = await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { xp: true },
+    });
+    expect(userAfter.xp - userBefore.xp).toBe(expectedXp);
+
+    const horseAfter = await prisma.horse.findUnique({ where: { id: horse.id } });
+    expect(horseAfter.disciplineScores.Dressage).toBe(expectedScore);
+  });
 });
