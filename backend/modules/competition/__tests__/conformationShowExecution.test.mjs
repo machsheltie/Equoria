@@ -124,19 +124,21 @@ async function createGroom(userId) {
 }
 
 async function createConformationShow(overrides = {}) {
-  return prisma.show.create({
-    data: {
-      name: `${SUITE_PREFIX}-show-${randomBytes(4).toString('hex')}`,
-      discipline: 'Conformation',
-      levelMin: 1,
-      levelMax: 10,
-      entryFee: 50,
-      prize: 0,
-      runDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-      showType: 'conformation',
-      status: overrides.status ?? 'open',
-    },
-  });
+  const data = {
+    name: `${SUITE_PREFIX}-show-${randomBytes(4).toString('hex')}`,
+    discipline: 'Conformation',
+    levelMin: 1,
+    levelMax: 10,
+    entryFee: 50,
+    prize: 0,
+    runDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+    showType: 'conformation',
+    status: overrides.status ?? 'open',
+  };
+  if (overrides.hostUserId !== undefined) {
+    data.hostUserId = overrides.hostUserId;
+  }
+  return prisma.show.create({ data });
 }
 
 async function createGroomAssignment(groomId, foalId, userId) {
@@ -284,7 +286,7 @@ describe('executeConformationShowHandler (real DB)', () => {
       const groom = await createGroom(user.id);
       await createGroomAssignment(groom.id, horse1.id, user.id);
       await createGroomAssignment(groom.id, horse2.id, user.id);
-      const show = await createConformationShow();
+      const show = await createConformationShow({ hostUserId: user.id });
       await createShowEntry(show.id, horse1.id, user.id);
       await createShowEntry(show.id, horse2.id, user.id);
 
@@ -316,7 +318,7 @@ describe('executeConformationShowHandler (real DB)', () => {
 
     it('zero entries returns 200 with empty results array', async () => {
       const user = await createUser();
-      const show = await createConformationShow();
+      const show = await createConformationShow({ hostUserId: user.id });
 
       const req = buildReq({ user: { id: user.id }, body: { showId: show.id } });
       const res = buildRes();
@@ -336,7 +338,7 @@ describe('executeConformationShowHandler (real DB)', () => {
       const horse = await createHorse(user.id);
       const groom = await createGroom(user.id);
       await createGroomAssignment(groom.id, horse.id, user.id);
-      const show = await createConformationShow();
+      const show = await createConformationShow({ hostUserId: user.id });
       await createShowEntry(show.id, horse.id, user.id);
 
       const req = buildReq({ user: { id: user.id }, body: { showId: show.id } });
@@ -351,14 +353,14 @@ describe('executeConformationShowHandler (real DB)', () => {
   });
 
   describe('Error handling', () => {
-    it('returns 400 when show does not exist', async () => {
+    it('returns 404 when show does not exist (CWE-639: indistinguishable from non-host)', async () => {
       const user = await createUser();
       const req = buildReq({ user: { id: user.id }, body: { showId: 999999999 } });
       const res = buildRes();
 
       await executeConformationShowHandler(req, res);
 
-      expect(res.statusValue).toBe(400);
+      expect(res.statusValue).toBe(404);
       expect(res.jsonValue.success).toBe(false);
       expect(res.jsonValue.message).toMatch(/not found/i);
     });
@@ -376,6 +378,7 @@ describe('executeConformationShowHandler (real DB)', () => {
           runDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           showType: 'ridden',
           status: 'open',
+          hostUserId: user.id,
         },
       });
 
@@ -386,6 +389,95 @@ describe('executeConformationShowHandler (real DB)', () => {
 
       expect(res.statusValue).toBe(400);
       expect(res.jsonValue.message).toMatch(/conformation/i);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Equoria-dmec — Host authorization (31F-3)
+  // -----------------------------------------------------------------------
+  // SECURITY GAP fix: previously any authenticated user could execute any
+  // conformation show by sending its showId, awarding ribbons / titlePoints /
+  // breedingValueBoost on horses they don't own. Now the controller scopes
+  // the show lookup by hostUserId and returns 404 (CWE-639, matching the
+  // ridden-competition /execute pattern). Sentinel-positive: non-host gets
+  // 404 even though the show exists; the host gets 200 (covered above).
+  // No state mutation must occur when the call is rejected.
+  describe('AC — host authorization (Equoria-dmec, CWE-639)', () => {
+    it('returns 404 when caller is not the show host (state must NOT mutate)', async () => {
+      const host = await createUser();
+      const attacker = await createUser();
+
+      // Set up a real show with horses + entries owned by the host.
+      const horse = await createHorse(host.id, {
+        titlePoints: 0,
+        currentTitle: null,
+        breedingValueBoost: 0,
+      });
+      const groom = await createGroom(host.id);
+      await createGroomAssignment(groom.id, horse.id, host.id);
+      const show = await createConformationShow({ hostUserId: host.id });
+      await createShowEntry(show.id, horse.id, host.id);
+
+      // Snapshot pre-call state to verify nothing mutated.
+      const horseBefore = await prisma.horse.findUnique({ where: { id: horse.id } });
+      const resultsBefore = await prisma.competitionResult.count({ where: { showId: show.id } });
+
+      // Attacker invokes /execute with the host's showId.
+      const req = buildReq({ user: { id: attacker.id }, body: { showId: show.id } });
+      const res = buildRes();
+
+      await executeConformationShowHandler(req, res);
+
+      // CWE-639: 404 indistinguishable from not-found.
+      expect(res.statusValue).toBe(404);
+      expect(res.jsonValue.success).toBe(false);
+      expect(res.jsonValue.message).toMatch(/not found/i);
+
+      // State must NOT have mutated.
+      const horseAfter = await prisma.horse.findUnique({ where: { id: horse.id } });
+      expect(horseAfter.titlePoints).toBe(horseBefore.titlePoints);
+      expect(horseAfter.currentTitle).toBe(horseBefore.currentTitle);
+      expect(horseAfter.breedingValueBoost).toBeCloseTo(horseBefore.breedingValueBoost ?? 0);
+
+      const resultsAfter = await prisma.competitionResult.count({ where: { showId: show.id } });
+      expect(resultsAfter).toBe(resultsBefore);
+
+      // Show must remain 'open' — not flipped to 'completed'.
+      const showAfter = await prisma.show.findUnique({ where: { id: show.id } });
+      expect(showAfter.status).toBe('open');
+    });
+
+    it('returns 404 when show has no host (null hostUserId)', async () => {
+      // Legacy shows or shows imported without a host owner cannot be
+      // executed by anyone via this endpoint. Same 404 shape.
+      const user = await createUser();
+      const show = await createConformationShow(); // no hostUserId set
+
+      const req = buildReq({ user: { id: user.id }, body: { showId: show.id } });
+      const res = buildRes();
+
+      await executeConformationShowHandler(req, res);
+
+      expect(res.statusValue).toBe(404);
+      expect(res.jsonValue.message).toMatch(/not found/i);
+    });
+
+    it('returns 200 when caller IS the show host (sentinel-positive — fix did not over-restrict)', async () => {
+      const host = await createUser();
+      const horse = await createHorse(host.id);
+      const groom = await createGroom(host.id);
+      await createGroomAssignment(groom.id, horse.id, host.id);
+      const show = await createConformationShow({ hostUserId: host.id });
+      await createShowEntry(show.id, horse.id, host.id);
+
+      const req = buildReq({ user: { id: host.id }, body: { showId: show.id } });
+      const res = buildRes();
+
+      await executeConformationShowHandler(req, res);
+
+      expect(res.statusValue).toBe(200);
+      expect(res.jsonValue.success).toBe(true);
+      expect(res.jsonValue.data.showId).toBe(show.id);
     });
   });
 });

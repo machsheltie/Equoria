@@ -268,8 +268,24 @@ export async function executeConformationShowHandler(req, res) {
     }
 
     const { showId } = req.body;
+    const userId = req.user?.id;
 
-    logger.info(`[conformationShowController.POST /execute] Executing show ${showId}`);
+    logger.info(
+      `[conformationShowController.POST /execute] User ${userId} executing show ${showId}`,
+    );
+
+    // Authorization (Equoria-dmec, 31F-3): only the show host may execute.
+    // CWE-639: non-host caller receives 404 (indistinguishable from not-found),
+    // matching the ridden-competition /execute pattern at
+    // competitionRoutes.mjs:466-470 (Equoria-c4g3 doctrine). Prevents arbitrary
+    // users from awarding ribbons/titlePoints/breedingValueBoost on shows they
+    // don't own.
+    const show = await prisma.show.findFirst({
+      where: { id: showId, hostUserId: userId },
+    });
+    if (!show) {
+      return res.status(404).json({ success: false, message: 'Show not found' });
+    }
 
     const results = await executeShowService(showId);
 
