@@ -12,7 +12,7 @@ import {
 } from '../controllers/traitController.mjs';
 import { handleValidationErrors } from '../../../middleware/validationErrorHandler.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
-import { requireOwnership, findOwnedResource } from '../../../middleware/ownership.mjs';
+import { requireOwnership, validateBatchOwnership } from '../../../middleware/ownership.mjs';
 import logger from '../../../utils/logger.mjs';
 
 const router = express.Router();
@@ -56,21 +56,20 @@ router.post(
         `[traitDiscoveryRoutes] POST /discover/batch - Processing ${horseIds.length} horses for user ${userId}`,
       );
 
-      // Validate ownership for each horse (atomic)
-      const validatedHorses = [];
-      const ownershipErrors = [];
-
-      for (const horseId of horseIds) {
-        const horse = await findOwnedResource('horse', parseInt(horseId), userId);
-        if (horse) {
-          validatedHorses.push(parseInt(horseId));
-        } else {
-          ownershipErrors.push({
-            horseId,
-            error: 'Horse not found or you do not own this horse',
-          });
-        }
-      }
+      // Validate ownership for the entire batch in a single query
+      // (Equoria-xqyu: replaced N sequential findOwnedResource calls with one
+      // validateBatchOwnership IN-clause query — same atomicity, much less
+      // round-trip cost for larger batches).
+      const parsedHorseIds = horseIds.map(id => parseInt(id, 10));
+      const ownedHorses = await validateBatchOwnership('horse', parsedHorseIds, userId);
+      const ownedIds = new Set(ownedHorses.map(h => h.id));
+      const validatedHorses = parsedHorseIds.filter(id => ownedIds.has(id));
+      const ownershipErrors = parsedHorseIds
+        .filter(id => !ownedIds.has(id))
+        .map(id => ({
+          horseId: id,
+          error: 'Horse not found or you do not own this horse',
+        }));
 
       // If no horses are valid, return error
       if (validatedHorses.length === 0) {
