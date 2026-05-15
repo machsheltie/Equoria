@@ -13,6 +13,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import { trainingAnalyticsService } from '../services/trainingAnalyticsService.mjs';
 
 // ─── Shared fixture helpers ────────────────────────────────────────────────────
@@ -175,13 +176,14 @@ describe('trainingAnalyticsService.getTrainingHistory', () => {
       const mod = await import('../../packages/database/prismaClient.mjs');
       prisma = mod.default;
 
-      const ts = Date.now();
-      const rand = Math.random().toString(36).slice(2, 8);
+      // Equoria-qmze: collision-safe fixture ID via randomBytes (replaces
+      // Date.now()+Math.random() pattern flagged by Equoria-3gti).
+      const rand = randomBytes(8).toString('hex');
 
       testUser = await prisma.user.create({
         data: {
-          email: `trainanalytics-${ts}-${rand}@test.com`,
-          username: `trainanalytics${ts}${rand}`,
+          email: `trainanalytics-${rand}@test.com`,
+          username: `trainanalytics${rand}`,
           password: 'irrelevant-hash',
           firstName: 'TrainAnalytics',
           lastName: 'Tester',
@@ -191,7 +193,7 @@ describe('trainingAnalyticsService.getTrainingHistory', () => {
 
       testHorse = await prisma.horse.create({
         data: {
-          name: `TestFixture-TrainAnalytics-${ts}`,
+          name: `TestFixture-TrainAnalytics-${rand}`,
           sex: 'Filly',
           dateOfBirth: new Date('2020-01-01'),
           age: 5,

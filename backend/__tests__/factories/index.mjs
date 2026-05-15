@@ -16,7 +16,15 @@
  * @module __tests__/factories
  */
 
+import { randomBytes } from 'node:crypto';
 import jwt from 'jsonwebtoken';
+
+// Equoria-qmze: collision-safe fixture identifiers. Replaces
+// Date.now()+Math.random().toString(36) patterns flagged by Equoria-3gti
+// (see Equoria-ip82 ESLint rule). All factory IDs/strings derive from
+// randomBytes(n) so suite reordering never collides.
+const randHex = (bytes = 4) => randomBytes(bytes).toString('hex');
+const randInt = (max = 10000) => Number.parseInt(randomBytes(4).toString('hex'), 16) % max;
 
 /**
  * Default test configuration
@@ -33,9 +41,9 @@ const TEST_CONFIG = {
  */
 export function createMockUser(overrides = {}) {
   const defaults = {
-    id: Math.floor(Math.random() * 10000),
-    email: `test${Math.random()}@example.com`,
-    username: `testuser${Math.random().toString(36).substr(2, 9)}`,
+    id: randInt(),
+    email: `test${randHex(4)}@example.com`,
+    username: `testuser${randHex(5)}`,
     password: 'hashedPassword123',
     role: 'USER',
     isVerified: true,
@@ -71,8 +79,8 @@ export function createMockUserWithHash(overrides = {}) {
  */
 export function createMockHorse(overrides = {}) {
   const defaults = {
-    id: Math.floor(Math.random() * 10000),
-    name: `TestHorse${Math.random().toString(36).substr(2, 9)}`,
+    id: randInt(),
+    name: `TestHorse${randHex(5)}`,
     userId: 1,
     breed: 'Thoroughbred',
     gender: 'MARE',
@@ -105,8 +113,8 @@ export function createMockHorse(overrides = {}) {
  */
 export function createMockGroom(overrides = {}) {
   const defaults = {
-    id: Math.floor(Math.random() * 10000),
-    name: `TestGroom${Math.random().toString(36).substr(2, 9)}`,
+    id: randInt(),
+    name: `TestGroom${randHex(5)}`,
     userId: 1,
     specialty: 'TRAINING',
     experience: 50,
@@ -153,8 +161,7 @@ export function createMockToken(userId, options = {}) {
  * @returns {string} JWT refresh token string
  */
 export function createMockRefreshToken(userId, options = {}) {
-  const { expired = false, familyId = `family_${Math.random().toString(36).substr(2, 9)}` } =
-    options;
+  const { expired = false, familyId = `family_${randHex(5)}` } = options;
 
   return createMockToken(userId, {
     expired,
@@ -162,7 +169,7 @@ export function createMockRefreshToken(userId, options = {}) {
     payload: {
       familyId,
       timestamp: Date.now(),
-      random: Math.random().toString(36).substring(2),
+      random: randHex(5),
     },
   });
 }
@@ -184,10 +191,10 @@ export function createMalformedToken() {
  */
 export function createMockRefreshTokenRecord(overrides = {}) {
   const defaults = {
-    id: Math.floor(Math.random() * 10000),
+    id: randInt(),
     userId: 1,
     token: createMockRefreshToken(1),
-    familyId: `family_${Math.random().toString(36).substr(2, 9)}`,
+    familyId: `family_${randHex(5)}`,
     isValid: true,
     expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
     createdAt: new Date(),
@@ -204,7 +211,7 @@ export function createMockRefreshTokenRecord(overrides = {}) {
  */
 export function createMockTrainingSession(overrides = {}) {
   const defaults = {
-    id: Math.floor(Math.random() * 10000),
+    id: randInt(),
     horseId: 1,
     userId: 1,
     type: 'SPEED',
@@ -229,7 +236,7 @@ export function createMockTrainingSession(overrides = {}) {
  */
 export function createMockCompetitionEntry(overrides = {}) {
   const defaults = {
-    id: Math.floor(Math.random() * 10000),
+    id: randInt(),
     horseId: 1,
     userId: 1,
     competitionId: 1,
@@ -250,7 +257,7 @@ export function createMockCompetitionEntry(overrides = {}) {
  */
 export function createMockBreeding(overrides = {}) {
   const defaults = {
-    id: Math.floor(Math.random() * 10000),
+    id: randInt(),
     mareId: 1,
     stallionId: 2,
     userId: 1,
@@ -268,7 +275,7 @@ export function createMockBreeding(overrides = {}) {
  * @returns {string} Mock CSRF token
  */
 export function createMockCsrfToken() {
-  return `csrf_${Math.random().toString(36).substr(2, 9)}_${Date.now()}`;
+  return `csrf_${randHex(8)}`;
 }
 
 /**

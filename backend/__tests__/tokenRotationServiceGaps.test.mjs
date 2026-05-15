@@ -20,6 +20,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import jwt from 'jsonwebtoken';
 import {
   createTokenPair,
@@ -130,14 +131,16 @@ describe('cleanupExpiredTokens() — boundary values', () => {
 
 describe('invalidateTokenFamily() — edge cases', () => {
   it('handles an unlikely familyId with no rows (count=0)', async () => {
-    const testFamilyId = `gap-test-family-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    // Equoria-qmze: collision-safe fixture ID via randomBytes (replaces
+    // Date.now()+Math.random() which Equoria-3gti flagged as flake-prone).
+    const testFamilyId = `gap-test-family-${randomBytes(8).toString('hex')}`;
     const result = await invalidateTokenFamily(testFamilyId);
     expect(result.success).toBe(true);
     expect(result.invalidatedCount).toBe(0);
   });
 
   it('returns familyId in response matching the input', async () => {
-    const testFamilyId = `gap-fid-${Date.now()}`;
+    const testFamilyId = `gap-fid-${randomBytes(8).toString('hex')}`;
     const result = await invalidateTokenFamily(testFamilyId);
     expect(result.familyId).toBe(testFamilyId);
     expect(result.success).toBe(true);
@@ -172,12 +175,12 @@ describe('createTokenPair() — with real DB user (Equoria-rr7 gap coverage)', (
   let gapUser = null;
 
   beforeAll(async () => {
-    const ts = Date.now();
-    const rand = Math.random().toString(36).slice(2, 8);
+    // Equoria-qmze: collision-safe fixture ID via randomBytes.
+    const rand = randomBytes(8).toString('hex');
     gapUser = await prisma.user.create({
       data: {
-        email: `trs-gap-${ts}-${rand}@test.invalid`,
-        username: `trsgap${ts}${rand}`.slice(0, 50),
+        email: `trs-gap-${rand}@test.invalid`,
+        username: `trsgap${rand}`.slice(0, 50),
         password: 'test-hash',
         firstName: 'Gap',
         lastName: 'Test',
