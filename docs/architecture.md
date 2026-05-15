@@ -670,16 +670,18 @@ frontend/src/
 │   │   ├── PasswordStrength.test.tsx
 │   │   └── index.ts
 │   │
-│   ├── shared/                          # NEW - Shared UI patterns
-│   │   ├── Skeleton.tsx                 # Loading skeletons
-│   │   ├── ErrorMessage.tsx             # Error display
-│   │   ├── Toast.tsx                    # Toast notifications
-│   │   ├── CooldownTimer.tsx            # Training cooldown display
-│   │   ├── CooldownTimer.test.tsx
+│   ├── shared/                          # SUPERSEDED 2026-05-15 (Equoria-6qiq) — directory
+│   │                                    # never shipped; functional equivalents live elsewhere:
+│   │   ├── Skeleton.tsx                 #   → components/ui/SkeletonCard.tsx
+│   │   ├── ErrorMessage.tsx             #   → components/ui/ErrorCard.tsx + EmptyState.tsx
+│   │   ├── Toast.tsx                    #   → components/ui/sonner.tsx + feedback/RewardToast.tsx
+│   │   ├── CooldownTimer.tsx            #   → components/common/CooldownTimer.tsx +
+│   │   ├── CooldownTimer.test.tsx       #     training/CooldownCountdown.tsx
 │   │   └── index.ts
 │   │
-│   ├── stable/                          # NEW - Cross-domain components
-│   │   ├── HorseOverview.tsx            # Training + breeding + stats
+│   ├── stable/                          # SUPERSEDED 2026-05-15 (Equoria-6qiq) — directory
+│   │                                    # never shipped; HorseOverview was subsumed by
+│   │   ├── HorseOverview.tsx            #   pages/HorseDetailPage.tsx + components/horse/*
 │   │   ├── HorseOverview.test.tsx
 │   │   └── index.ts
 │   │
@@ -1018,7 +1020,7 @@ PHASE 4 - Breeding UI:
 └── components/breeding/FoalDevelopmentTracker.tsx
 
 PHASE 5 - Polish:
-├── components/shared/*.tsx
+├── components/shared/*.tsx     # SUPERSEDED — see tree note above (Equoria-6qiq)
 ├── test/mocks/handlers.ts
 └── test/factories/*.ts
 ```
