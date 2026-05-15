@@ -3,6 +3,7 @@ import { body, param, validationResult } from 'express-validator';
 import prisma from '../../../db/index.mjs';
 import { getUserById } from '../../../models/userModel.mjs';
 import { enterAndRunShow } from '../controllers/competitionController.mjs';
+import conformationShowRoutes from './conformationShowRoutes.mjs';
 import { getResultsByShow, getResultsByHorse } from '../../../models/resultModel.mjs';
 import { requireOwnership, findOwnedResource } from '../../../middleware/ownership.mjs';
 import {
@@ -626,6 +627,18 @@ router.get(
     }
   },
 );
+
+// ---------------------------------------------------------------------------
+// /conformation/* — conformation-show sub-router (Equoria-pety, 31F-2 Task 3)
+// ---------------------------------------------------------------------------
+// Mounted BEFORE the parameterised `/:competitionId/claim-prizes` route so
+// the literal `/conformation` prefix is matched before express attempts to
+// bind it as a `competitionId`. Without this ordering, an authenticated
+// POST /competition/conformation/enter would be routed to the claim-prizes
+// handler, which would then 400 on a non-numeric `competitionId` param —
+// shadowing the real sub-router. Auth + csrfProtection are inherited from
+// the parent authRouter in app.mjs.
+router.use('/conformation', conformationShowRoutes);
 
 /**
  * POST /api/competition/:competitionId/claim-prizes
