@@ -509,17 +509,79 @@ paths:
         '403': { description: 'Forbidden — horse belongs to another user' }
         '404': { description: 'Horse not found' }
 
-  '/horses/{id}/color-prediction':
-    get:
+  '/horses/breeding/color-prediction':
+    post:
       tags: [Horses]
-      summary: 'Get breeding color prediction for a horse pair'
+      summary: 'Calculate offspring coat-color probability distribution for a sire/dam pair'
+      description: |
+        Per-locus Punnett squares are combined via Cartesian product across all
+        coat loci, lethal genotype combinations are filtered, and remaining
+        probabilities are renormalized and aggregated by phenotype (color name).
+
+        Ownership: both `sireId` and `damId` must be owned by the authenticated
+        user — a 404 ("Horse not found") is returned when either horse is missing
+        OR not owned (no information leak between the two cases).
+
+        AC6 legacy-horse handling: when either parent lacks `colorGenotype`, the
+        response is HTTP 200 with `data: null` and a message indicating that
+        prediction requires both parents to have genetics data. Callers MUST
+        handle the null-data case.
+
+        Optional `foalBreedId` overrides the breed used to resolve the foal's
+        breed genetic profile (defaults to dam's breed).
       security: [{ bearerAuth: [] }]
-      parameters:
-        - { name: id, in: path, required: true, schema: { type: integer } }
-        - { name: partnerId, in: query, required: true, schema: { type: integer } }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [sireId, damId]
+              properties:
+                sireId:
+                  type: integer
+                  minimum: 1
+                  description: 'ID of the sire horse (must be owned by requester)'
+                damId:
+                  type: integer
+                  minimum: 1
+                  description: 'ID of the dam horse (must be owned by requester)'
+                foalBreedId:
+                  type: integer
+                  minimum: 1
+                  description: "Optional — overrides foal breed profile lookup (defaults to dam's breed)"
       responses:
-        '200': { description: 'Color prediction results' }
-        '400': { description: 'Invalid parameters' }
+        '200':
+          description: 'Color prediction results (or null for legacy horses lacking genotype)'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  message: { type: string }
+                  data:
+                    nullable: true
+                    type: object
+                    description: 'AC6: null when either parent lacks colorGenotype (legacy horse)'
+                    properties:
+                      sireId: { type: integer }
+                      damId: { type: integer }
+                      possibleColors:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            colorName: { type: string }
+                            probability: { type: number, format: float, minimum: 0, maximum: 1 }
+                            percentage: { type: string, example: '50.0%' }
+                      totalCombinations: { type: integer, minimum: 0 }
+                      lethalCombinationsFiltered: { type: integer, minimum: 0 }
+        '400': { description: 'Validation failed (missing/invalid sireId or damId)' }
+        '401': { description: 'Unauthorized — missing or invalid auth token' }
+        '404':
+          { description: 'Horse not found OR not owned by requester (no leak between the two)' }
+        '500': { description: 'Internal server error while calculating prediction' }
 
   # ── Epic 31E-4: coat color genetics endpoints ───────────────────────────────
   '/horses/{id}/genetics':
