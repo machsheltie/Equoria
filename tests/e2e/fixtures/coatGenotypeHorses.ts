@@ -84,11 +84,23 @@ function genotypesForScenario(
   switch (scenario) {
     case 'frame-overo': {
       // Frame-overo lethal-white: O/O homozygous is lethal in utero.
-      // Two heterozygous Oo parents → 25% OO offspring.
+      // Two heterozygous O/n parents → 25% O/O offspring (filtered as lethal).
+      //
+      // CRITICAL (Equoria-wrm5): locus key MUST match `O_FrameOvero` from
+      // backend/modules/horses/services/genotypeGenerationService.mjs CORE_LOCI
+      // AND `LETHAL_COMBINATIONS.O_FrameOvero = Set(['O/O'])` from
+      // breedingColorInheritanceService.mjs. Using any other key (e.g. the
+      // legacy 'W20_Pattern' placeholder) silently passes through
+      // filterLethalGenotypes() because no lethal set is registered for that
+      // key — and the LethalWhiteWarning banner never fires.
+      //
+      // Wild-type allele is `n` (per GENERIC_DEFAULTS.O_FrameOvero = 'n/n'),
+      // not `o`. After Punnett: O/O (0.25, lethal-filtered), O/n (0.5), n/n
+      // (0.25), so lethalCombinationsFiltered === 1 and the warning renders.
       const heterozygous = {
         E_Extension: 'E/e',
         A_Agouti: 'A/a',
-        W20_Pattern: 'O/o', // O = frame-overo allele, o = wild-type
+        O_FrameOvero: 'O/n',
       };
       return [heterozygous, { ...heterozygous }];
     }
