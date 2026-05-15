@@ -121,6 +121,36 @@ describe('hasValidGaitScores', () => {
   it('returns false when only gaiting (non-standard) key is present', () => {
     expect(hasValidGaitScores({ gaiting: [{ name: 'Rack', score: 80 }] })).toBe(false);
   });
+
+  // Equoria-rttp: extra coverage for non-finite and mixed-type values
+  it('returns false when all standard gait scores are NaN', () => {
+    expect(hasValidGaitScores({ walk: NaN, trot: NaN, canter: NaN, gallop: NaN })).toBe(false);
+  });
+
+  it('returns false when all standard gait scores are Infinity / -Infinity', () => {
+    expect(
+      hasValidGaitScores({ walk: Infinity, trot: -Infinity, canter: Infinity, gallop: -Infinity }),
+    ).toBe(false);
+  });
+
+  it('returns false when standard gait values are non-numeric (strings, null, undefined)', () => {
+    expect(hasValidGaitScores({ walk: '70', trot: 'fast', canter: null, gallop: undefined })).toBe(
+      false,
+    );
+  });
+
+  it('returns true when at least one mixed-type value is finite numeric', () => {
+    expect(hasValidGaitScores({ walk: '70', trot: NaN, canter: 80, gallop: null })).toBe(true);
+  });
+
+  it('returns false for arrays (object-typed but no standard gait keys)', () => {
+    expect(hasValidGaitScores([70, 80, 90, 100])).toBe(false);
+  });
+
+  it('returns false for booleans', () => {
+    expect(hasValidGaitScores(true)).toBe(false);
+    expect(hasValidGaitScores(false)).toBe(false);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -207,6 +237,114 @@ describe('validateGaitScores', () => {
     };
     const result = validateGaitScores(scores);
     expect(result.gaiting[0].name).toBe('Unknown Gait');
+  });
+
+  // Equoria-rttp: extra coverage for mixed/invalid inputs, non-string names, clamping edges
+  it('handles undefined input as null-equivalent (returns defaults)', () => {
+    const result = validateGaitScores(undefined);
+    expect(result.walk).toBe(50);
+    expect(result.trot).toBe(50);
+    expect(result.canter).toBe(50);
+    expect(result.gallop).toBe(50);
+    expect(result.gaiting).toBeNull();
+  });
+
+  it('handles array input by treating standard gait keys as absent (defaults 50)', () => {
+    const result = validateGaitScores([75, 80, 85, 90]);
+    expect(result.walk).toBe(50);
+    expect(result.trot).toBe(50);
+    expect(result.canter).toBe(50);
+    expect(result.gallop).toBe(50);
+    expect(result.gaiting).toBeNull();
+  });
+
+  it('mixed valid + invalid standard gait scores — preserves valid, defaults invalid', () => {
+    const scores = { walk: 80, trot: NaN, canter: 'bad', gallop: undefined };
+    const result = validateGaitScores(scores);
+    expect(result.walk).toBe(80);
+    expect(result.trot).toBe(50);
+    expect(result.canter).toBe(50);
+    expect(result.gallop).toBe(50);
+  });
+
+  it('replaces Infinity / -Infinity standard gait scores with default 50', () => {
+    const scores = { walk: Infinity, trot: -Infinity, canter: 70, gallop: 80 };
+    const result = validateGaitScores(scores);
+    expect(result.walk).toBe(50);
+    expect(result.trot).toBe(50);
+    expect(result.canter).toBe(70);
+    expect(result.gallop).toBe(80);
+  });
+
+  it('preserves exact boundary values (0, 100)', () => {
+    const result = validateGaitScores({ walk: 0, trot: 100, canter: 50, gallop: 1 });
+    expect(result.walk).toBe(0);
+    expect(result.trot).toBe(100);
+    expect(result.canter).toBe(50);
+    expect(result.gallop).toBe(1);
+  });
+
+  it('normalizes gaiting entry with non-string name (number, object, null)', () => {
+    const scores = {
+      walk: 75,
+      trot: 80,
+      canter: 85,
+      gallop: 90,
+      gaiting: [
+        { name: 123, score: 70 },
+        { name: { foo: 'bar' }, score: 75 },
+        { name: null, score: 80 },
+      ],
+    };
+    const result = validateGaitScores(scores);
+    expect(result.gaiting).toHaveLength(3);
+    for (const entry of result.gaiting) {
+      expect(entry.name).toBe('Unknown Gait');
+    }
+    expect(result.gaiting[0].score).toBe(70);
+    expect(result.gaiting[1].score).toBe(75);
+    expect(result.gaiting[2].score).toBe(80);
+  });
+
+  it('clamps gaiting entry scores out of range', () => {
+    const scores = {
+      walk: 75,
+      trot: 80,
+      canter: 85,
+      gallop: 90,
+      gaiting: [
+        { name: 'Rack', score: 150 },
+        { name: 'Pace', score: -25 },
+      ],
+    };
+    const result = validateGaitScores(scores);
+    expect(result.gaiting[0].score).toBe(100);
+    expect(result.gaiting[1].score).toBe(0);
+  });
+
+  it('normalizes gaiting entry with Infinity score to default 50', () => {
+    const scores = {
+      walk: 75,
+      trot: 80,
+      canter: 85,
+      gallop: 90,
+      gaiting: [{ name: 'Rack', score: Infinity }],
+    };
+    const result = validateGaitScores(scores);
+    expect(result.gaiting[0].score).toBe(50);
+  });
+
+  it('sets gaiting to null when gaiting key is non-array (object, string, number)', () => {
+    expect(
+      validateGaitScores({ walk: 75, trot: 80, canter: 85, gallop: 90, gaiting: 'Rack' }).gaiting,
+    ).toBeNull();
+    expect(
+      validateGaitScores({ walk: 75, trot: 80, canter: 85, gallop: 90, gaiting: { name: 'Rack' } })
+        .gaiting,
+    ).toBeNull();
+    expect(
+      validateGaitScores({ walk: 75, trot: 80, canter: 85, gallop: 90, gaiting: 42 }).gaiting,
+    ).toBeNull();
   });
 });
 
