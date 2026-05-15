@@ -15,6 +15,8 @@ import {
   ApiError,
   Groom,
   GroomAssignment,
+  GroomProfile,
+  GroomAssignmentLogEntry,
   MarketplaceData,
   SalarySummary,
 } from '@/lib/api-client';
@@ -27,6 +29,9 @@ export const groomKeys = {
   assignmentsForHorse: (horseId: number) => [...groomKeys.assignments(), 'horse', horseId] as const,
   salaries: () => [...groomKeys.all, 'salaries'] as const,
   marketplace: () => [...groomKeys.all, 'marketplace'] as const,
+  // Equoria-cbkw
+  profile: (groomId: number) => [...groomKeys.all, 'profile', groomId] as const,
+  assignmentLogs: (groomId: number) => [...groomKeys.all, 'assignment-logs', groomId] as const,
 };
 
 // Hooks
@@ -128,6 +133,38 @@ export function useGroomHorseSynergy(groomId: number | null, horseId: number | n
     enabled: Boolean(groomId) && Boolean(horseId),
     staleTime: 5 * 60 * 1000, // 5 minutes — temperament + personality rarely change
     gcTime: 30 * 60 * 1000,
+  });
+}
+
+// Equoria-cbkw — GroomMetrics from GET /api/v1/grooms/:id/profile.
+// Backend wraps the profile in { success, groom } (no .data key), so the
+// api-client returns the whole body; we select `.groom` here.
+export function useGroomProfile(groomId: number | null, options: { enabled?: boolean } = {}) {
+  return useQuery<GroomProfile, ApiError>({
+    queryKey: groomKeys.profile(groomId as number),
+    queryFn: async () => {
+      const res = await groomsApi.getProfile(groomId as number);
+      return res.groom;
+    },
+    enabled: Boolean(groomId) && (options.enabled ?? true),
+    staleTime: 2 * 60 * 1000,
+  });
+}
+
+// Equoria-cbkw — GroomAssignmentLog history from
+// GET /api/v1/grooms/:id/assignment-logs. Backend wraps in { success, logs }.
+export function useGroomAssignmentLogs(
+  groomId: number | null,
+  options: { enabled?: boolean } = {}
+) {
+  return useQuery<GroomAssignmentLogEntry[], ApiError>({
+    queryKey: groomKeys.assignmentLogs(groomId as number),
+    queryFn: async () => {
+      const res = await groomsApi.getAssignmentLogs(groomId as number);
+      return res.logs ?? [];
+    },
+    enabled: Boolean(groomId) && (options.enabled ?? true),
+    staleTime: 2 * 60 * 1000,
   });
 }
 

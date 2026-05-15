@@ -431,6 +431,48 @@ interface GroomAssignment {
   startDate: string;
 }
 
+// Equoria-cbkw — GroomMetrics aggregated on every performance-record write
+// (backend groomPerformanceService). 7 score fields, 0-100 each.
+interface GroomMetrics {
+  id: number;
+  groomId: number;
+  totalInteractions: number;
+  bondingEffectiveness: number;
+  taskCompletion: number;
+  horseWellbeing: number;
+  showPerformance: number;
+  consistency: number;
+  playerSatisfaction: number;
+  reputationScore: number;
+  lastUpdated: string;
+}
+
+// Equoria-cbkw — GroomProfile response shape from GET /api/v1/grooms/:id/profile.
+interface GroomProfile {
+  id: number;
+  name: string;
+  speciality: string;
+  experience: number;
+  skillLevel: string;
+  personality: string;
+  sessionRate: number;
+  metrics: GroomMetrics | null;
+  currentAssignments: number;
+}
+
+// Equoria-cbkw — GroomAssignmentLog rows from GET /api/v1/grooms/:id/assignment-logs.
+interface GroomAssignmentLogEntry {
+  id: number;
+  groomId: number;
+  horseId: number;
+  assignedAt: string;
+  unassignedAt: string | null;
+  milestonesCompleted: number;
+  traitsShaped: string[];
+  xpGained: number;
+  horse: { id: number; name: string };
+}
+
 interface MarketplaceGroom {
   marketplaceId: string;
   firstName: string;
@@ -1215,6 +1257,15 @@ export const groomsApi = {
       personality: string | null;
       message: string;
     }>(`/api/v1/grooms/${groomId}/horses/${horseId}/synergy`),
+  // Equoria-cbkw — backend returns { success, groom: profile }; no .data key
+  // so apiClient.get returns the whole body. Caller reads `.groom`.
+  getProfile: (groomId: number) =>
+    apiClient.get<{ success: boolean; groom: GroomProfile }>(`/api/v1/grooms/${groomId}/profile`),
+  // Equoria-cbkw — backend returns { success, logs }; no .data key.
+  getAssignmentLogs: (groomId: number) =>
+    apiClient.get<{ success: boolean; logs: GroomAssignmentLogEntry[] }>(
+      `/api/v1/grooms/${groomId}/assignment-logs`
+    ),
 };
 
 /**
@@ -2668,6 +2719,9 @@ export type {
   FoalDevelopment,
   Groom,
   GroomAssignment,
+  GroomMetrics,
+  GroomProfile,
+  GroomAssignmentLogEntry,
   HorseAge,
   HorseProgression,
   HorseStats,

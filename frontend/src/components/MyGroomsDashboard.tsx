@@ -13,6 +13,7 @@ import AssignGroomModal from './AssignGroomModal';
 import { SkeletonBase } from '@/components/ui/SkeletonCard';
 import GroomPersonalityBadge from './groom/GroomPersonalityBadge';
 import GroomPersonalityDisplay from './groom/GroomPersonalityDisplay';
+import GroomDetailPanel from './groom/GroomDetailPanel';
 import {
   useUserGrooms,
   useGroomAssignments,
@@ -57,9 +58,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
   const [selectedHorseName, setSelectedHorseName] = useState<string>('');
   // Equoria-bu7m — horse temperament forwarded so AssignGroomModal can render
   // the synergy preview badge (Equoria-atb6). Null for legacy horses.
-  const [selectedHorseTemperament, setSelectedHorseTemperament] = useState<
-    string | null
-  >(null);
+  const [selectedHorseTemperament, setSelectedHorseTemperament] = useState<string | null>(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [isHorsePickerOpen, setIsHorsePickerOpen] = useState(false);
   const { data: userHorses = [], isLoading: horsesLoading } = useHorses();
@@ -67,6 +66,8 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
   const [specialtyFilter, setSpecialtyFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('name');
   const [expandedPersonalityId, setExpandedPersonalityId] = useState<number | null>(null);
+  // Equoria-cbkw — which groom's metrics + assignment-history panel is open.
+  const [expandedDetailId, setExpandedDetailId] = useState<number | null>(null);
 
   // Fetch grooms data using centralized hook
   const { data: groomsResponse, isLoading: groomsLoading } = useUserGrooms(userId);
@@ -173,11 +174,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
   };
 
   // Horse picker callback — sets the real horseId, closes picker, opens assign modal.
-  const handleHorsePicked = (horse: {
-    id: number;
-    name: string;
-    temperament?: string | null;
-  }) => {
+  const handleHorsePicked = (horse: { id: number; name: string; temperament?: string | null }) => {
     setSelectedHorseId(horse.id);
     setSelectedHorseName(horse.name);
     setSelectedHorseTemperament(horse.temperament ?? null);
@@ -512,6 +509,23 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                   )}
                 </div>
 
+                {/* Performance metrics + assignment history toggle (Equoria-cbkw) */}
+                <div className="mb-4">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedDetailId(expandedDetailId === groom.id ? null : groom.id)
+                    }
+                    className="w-full text-left text-xs fantasy-caption text-[rgb(100,130,165)] hover:text-[rgb(212,168,67)] transition-colors flex items-center justify-between py-1"
+                    aria-expanded={expandedDetailId === groom.id}
+                    data-testid={`groom-detail-toggle-${groom.id}`}
+                  >
+                    <span>Performance &amp; History</span>
+                    <span>{expandedDetailId === groom.id ? '▲' : '▼'}</span>
+                  </button>
+                  {expandedDetailId === groom.id && <GroomDetailPanel groomId={groom.id} enabled />}
+                </div>
+
                 {/* Assignments */}
                 <div className="mb-6">
                   <h4
@@ -620,8 +634,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                             id: Number(horse.id),
                             name: String(horse.name ?? `Horse ${horse.id}`),
                             temperament:
-                              (horse as { temperament?: string | null })
-                                .temperament ?? null,
+                              (horse as { temperament?: string | null }).temperament ?? null,
                           })
                         }
                         data-testid={`groom-assign-horse-option-${horse.id}`}

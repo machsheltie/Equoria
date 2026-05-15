@@ -6,7 +6,7 @@
  */
 
 import React from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen, within, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from '../../test/utils';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import '@testing-library/jest-dom';
@@ -550,6 +550,87 @@ describe('MyGroomsDashboard Component', () => {
 
       const groomGrid = screen.getByTestId('groom-grid');
       expect(groomGrid).toHaveClass('grid');
+    });
+  });
+
+  // Equoria-cbkw — GroomMetrics + GroomAssignmentLog surfacing.
+  // No API mocking (per CLAUDE.md frontend testing philosophy): the panel is
+  // collapsed by default so no request fires; clicking the toggle mounts the
+  // panel which then renders its loading state (queryFn never resolves in
+  // jsdom without a server — that loading state is itself the assertion that
+  // the panel + hooks are wired).
+  describe('Equoria-cbkw — Performance & History panel', () => {
+    it('renders a Performance & History toggle for every groom', () => {
+      const Wrapper = createTestWrapper();
+      render(
+        <MyGroomsDashboard
+          userId={1}
+          groomsData={mockGroomsData}
+          assignmentsData={mockAssignmentsData}
+          salaryCostsData={mockSalaryCostsData}
+        />,
+        { wrapper: Wrapper }
+      );
+
+      for (const groom of mockGroomsData) {
+        expect(screen.getByTestId(`groom-detail-toggle-${groom.id}`)).toBeInTheDocument();
+      }
+    });
+
+    it('detail panel is collapsed by default (no panel rendered until toggled)', () => {
+      const Wrapper = createTestWrapper();
+      render(
+        <MyGroomsDashboard
+          userId={1}
+          groomsData={mockGroomsData}
+          assignmentsData={mockAssignmentsData}
+          salaryCostsData={mockSalaryCostsData}
+        />,
+        { wrapper: Wrapper }
+      );
+
+      expect(screen.queryByTestId('groom-detail-panel-1')).not.toBeInTheDocument();
+    });
+
+    it('clicking the toggle mounts the detail panel with metrics + history sections', () => {
+      const Wrapper = createTestWrapper();
+      render(
+        <MyGroomsDashboard
+          userId={1}
+          groomsData={mockGroomsData}
+          assignmentsData={mockAssignmentsData}
+          salaryCostsData={mockSalaryCostsData}
+        />,
+        { wrapper: Wrapper }
+      );
+
+      fireEvent.click(screen.getByTestId('groom-detail-toggle-1'));
+
+      const panel = screen.getByTestId('groom-detail-panel-1');
+      expect(panel).toBeInTheDocument();
+      expect(within(panel).getByTestId('groom-metrics-section-1')).toBeInTheDocument();
+      expect(within(panel).getByTestId('groom-assignment-log-section-1')).toBeInTheDocument();
+      // toggle reflects expanded state
+      expect(screen.getByTestId('groom-detail-toggle-1')).toHaveAttribute('aria-expanded', 'true');
+    });
+
+    it('toggling again collapses the panel', () => {
+      const Wrapper = createTestWrapper();
+      render(
+        <MyGroomsDashboard
+          userId={1}
+          groomsData={mockGroomsData}
+          assignmentsData={mockAssignmentsData}
+          salaryCostsData={mockSalaryCostsData}
+        />,
+        { wrapper: Wrapper }
+      );
+
+      const toggle = screen.getByTestId('groom-detail-toggle-1');
+      fireEvent.click(toggle);
+      expect(screen.getByTestId('groom-detail-panel-1')).toBeInTheDocument();
+      fireEvent.click(toggle);
+      expect(screen.queryByTestId('groom-detail-panel-1')).not.toBeInTheDocument();
     });
   });
 });
