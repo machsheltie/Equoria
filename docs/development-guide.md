@@ -45,7 +45,11 @@ cd ../../backend && npm run seed
 
 ### Environment Configuration
 
-Copy `backend/.env.example` to `backend/.env` and fill in values:
+Copy `backend/.env.example` to `backend/.env` and fill in values. The
+snippet below is the **minimum** required to boot the dev server — the
+canonical list lives in `backend/.env.example` (BCRYPT_SALT_ROUNDS,
+LOG_LEVEL, REDIS_HOST/PORT/DB/PASSWORD/TLS, rate-limit tuning, feature
+flags, etc.). Read `backend/.env.example` end-to-end before customizing.
 
 ```env
 # Server
@@ -71,14 +75,19 @@ SENTRY_DSN=
 COOKIE_DOMAIN=
 ```
 
-For the frontend, create `frontend/.env` if needed:
+For the frontend, copy `frontend/.env.example` to `frontend/.env` and
+customize as needed:
 
 ```env
 # API URL (leave empty for relative /api/... URLs in production)
 VITE_API_URL=http://localhost:3000
+# Optional Sentry DSN — leave unset to disable frontend error reporting
+VITE_SENTRY_DSN=
 ```
 
-See `backend/.env.example` for the full list of environment variables including Redis, feature flags, session management, and security options.
+See `backend/.env.example` (canonical) and `frontend/.env.example` for
+the complete env-var surface including Redis, feature flags, session
+management, and security options.
 
 ### Running the Application
 
@@ -144,7 +153,7 @@ equoria/
 
 Backend code is organized into 18 domain modules under `backend/modules/`:
 
-auth, users, horses, breeding, traits, training, competition, grooms, riders, trainers, community, services, leaderboards, admin, docs, health, labs
+admin, auth, breeding, community, competition, docs, grooms, health, horses, labs, leaderboards, marketplace, riders, services, trainers, training, traits, users
 
 Each module contains its own `routes/` and `controllers/` directories. Backward-compatible shims at `backend/routes/` and `backend/controllers/` re-export from the modules, so existing imports and tests continue to work.
 
@@ -165,6 +174,13 @@ Each module contains its own `routes/` and `controllers/` directories. Backward-
 
 ### Backend (`backend/`)
 
+The following table is an excerpt of the most commonly-used scripts. Run
+`npm run` inside `backend/` (or check `backend/package.json` scripts) for
+the full surface — additional auth-specific runners (`test:auth`),
+incremental test runners (`test:changed`), granular coverage commands
+(`coverage:*`), runtime validators (`validate-*`), and Prisma-specific
+DB helpers (`db:*`) are available.
+
 | Script                     | Description                                  |
 | -------------------------- | -------------------------------------------- |
 | `npm run dev`              | Start development server (nodemon)           |
@@ -183,6 +199,10 @@ Each module contains its own `routes/` and `controllers/` directories. Backward-
 
 ### Frontend (`frontend/`)
 
+The following table is an excerpt — `frontend/package.json` is the
+canonical reference. Storybook commands (`storybook`, `build-storybook`)
+and other utility scripts are also defined there.
+
 | Script                  | Description                              |
 | ----------------------- | ---------------------------------------- |
 | `npm run dev`           | Start Vite dev server                    |
@@ -192,6 +212,8 @@ Each module contains its own `routes/` and `controllers/` directories. Backward-
 | `npm run test:run`      | Run Vitest once (CI mode)                |
 | `npm run test:coverage` | Run Vitest with coverage                 |
 | `npm run lint`          | Run ESLint                               |
+| `npm run storybook`     | Run Storybook dev server                 |
+| `npm run build-storybook` | Build Storybook static site            |
 
 ### Database (`packages/database/`)
 
@@ -410,9 +432,20 @@ export const getAll = async (req, res, next) => {
 
 3. **Register Route** (in `backend/app.mjs`)
 
+   Per Epic 20, `backend/app.mjs` exposes two routers under the `/api/v1`
+   mount point: `authRouter` (authenticated routes — JWT cookie required)
+   and `publicRouter` (unauthenticated routes — register, login, breeds).
+   Pick the one your endpoints need:
+
 ```javascript
-import domainRoutes from './modules/<domain>/routes/<domain>Routes.mjs';
-apiV1Router.use('/<domain>', domainRoutes);
+// Prefer the backwards-compat shim path so all modules import consistently
+import domainRoutes from './routes/<domain>Routes.mjs';
+
+// Authenticated:
+authRouter.use('/<domain>', domainRoutes);
+
+// OR public (rare — register/login/breeds only):
+publicRouter.use('/<domain>', domainRoutes);
 ```
 
 4. **Add backward-compat shim** if needed (`backend/routes/<domain>Routes.mjs`):
@@ -447,21 +480,34 @@ Error:
 
 ### GitHub Actions
 
-**File:** `.github/workflows/ci-cd.yml`
+CI is intentionally split across two workflow files so each can run on its
+own trigger cadence and so a failure in one does not silently mask the
+other.
 
-Pipeline stages:
+**`.github/workflows/test.yml`** (Equoria Quality Gate) — runs on every
+push and PR. Owns the bulk of the gates:
 
-1. **Code Quality & Linting** — ESLint + Prettier for backend and frontend
-2. **Database Setup** — PostgreSQL service, migrations
-3. **Backend Tests** — Jest with coverage
-4. **Integration Tests** — API integration tests
-5. **Performance Tests** — Load and performance benchmarks
-6. **Frontend Tests** — Vitest component tests
-7. **Build Validation** — Production build verification
-8. **Security Scanning** — npm audit
-9. **Docker Smoke Test** — Build and run container
-10. **Lighthouse CI** — Accessibility and performance checks
-11. **Deployment Readiness** — Final validation (master only)
+1. **Lint & Format** — ESLint + Prettier for backend and frontend
+2. **Database Migration Check** — Prisma schema diff vs migrations
+3. **Backend Tests (Shards 1-3)** — Jest with real test DB
+4. **Frontend Tests** — Vitest component tests
+5. **Performance Tests** — Load and latency benchmarks
+6. **E2E Tests (Playwright)** — Full-stack regression
+7. **Security Gate** — npm audit + dependency review
+8. **Coverage Gate** — backend + frontend coverage thresholds
+9. **Beta Readiness Gate** — scripts/check-beta-readiness.sh
+10. **Burn-In (Flaky Detection)** — optional, scheduled
+
+**`.github/workflows/ci-cd.yml`** (Equoria CI/CD Pipeline) — focused on
+build artifacts and post-merge validation:
+
+1. **Docker Build Validation** — multi-stage Dockerfile smoke test
+2. **Lighthouse CI** — accessibility + performance audits
+3. **Session Lifetime (Nightly)** — long-running session-cookie checks
+
+Additional workflows live alongside these for security scans
+(`security-scan.yml` — OWASP ZAP), auth-cookie regression
+(`test-auth-cookies.yml`), and doctrine enforcement (`doctrine-gate.yml`).
 
 ### Branch Strategy
 

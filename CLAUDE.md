@@ -139,7 +139,7 @@ The command must run with all gates enabled. It must not accept skip flags. Any 
 - `frontend/src/App.tsx` — Sentry ErrorBoundary wrapper
 - `frontend/vite.config.ts` — `rollup-plugin-visualizer` → `dist/bundle-stats.html`
 - `.github/workflows/ci-cd.yml` — Jobs 10 (Docker smoke test) + 11 (Lighthouse CI)
-- `.lighthouserc.yml` — Lighthouse CI thresholds (a11y error ≥0.85, perf warn ≥0.6)
+- `.lighthouserc.yml` — Lighthouse CI thresholds (a11y error ≥0.85, perf warn ≥0.65)
 - `docs/deployment/RAILWAY_SETUP.md` — Step-by-step Railway setup guide
 
 ### Epic 13 Deliverables
