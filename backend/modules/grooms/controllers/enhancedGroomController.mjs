@@ -55,6 +55,10 @@ export async function getEnhancedInteractions(req, res) {
           id: true,
           name: true,
           dateOfBirth: true,
+          // Equoria-ogmu: load Horse.age (game-years per Equoria-son6) so the
+          // response can expose it directly; previously the controller
+          // overwrote a non-loaded field with ageInDays.
+          age: true,
           bondScore: true,
           stressLevel: true,
         },
@@ -64,17 +68,25 @@ export async function getEnhancedInteractions(req, res) {
     // Resources are guaranteed to exist and be owned by user due to middleware validation
     // No additional checks needed
 
-    // Calculate age from date of birth
+    // Equoria-ogmu: do NOT mutate horse.age. Horse.age stores game-years
+    // (1 game-year = 7 real-time days; see Equoria-son6). Compute ageInDays
+    // locally and pass a separate object to downstream consumers that still
+    // expect day-granular semantics. The DB-loaded `horse.age` is preserved
+    // unmodified for the API response.
     const ageInDays = Math.floor(
       (Date.now() - new Date(horse.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24),
     );
-    horse.age = ageInDays;
+    // Shallow copy with day-granular age for downstream day-based consumers
+    // (enhancedGroomInteractions.mjs reads horse.age as days at lines 119,
+    // 135, 253, 502). Once Equoria-8y0v migrates those sites to game-years,
+    // this shadow object can be removed.
+    const horseForDayConsumers = { ...horse, age: ageInDays };
 
     // Get relationship level
     const relationshipLevel = calculateRelationshipLevel(horse.bondScore || 0);
 
     // Get available interactions
-    const availableInteractions = getAvailableInteractions(groom, horse);
+    const availableInteractions = getAvailableInteractions(groom, horseForDayConsumers);
 
     // Get interaction history for this pair
     const recentInteractions = await prisma.groomInteraction.findMany({
@@ -113,7 +125,10 @@ export async function getEnhancedInteractions(req, res) {
         horse: {
           id: horse.id,
           name: horse.name,
+          // Equoria-ogmu: `age` is game-years (DB value, unmutated);
+          // `ageInDays` is the day-granular value for clients that need it.
           age: horse.age,
+          ageInDays,
           bondScore: horse.bondScore,
           stressLevel: horse.stressLevel,
         },
@@ -216,6 +231,9 @@ export async function performEnhancedInteraction(req, res) {
         id: true,
         name: true,
         dateOfBirth: true,
+        // Equoria-ogmu: load Horse.age so consumers needing game-years see
+        // the real DB value (not a day-count overwrite as in the pre-fix bug).
+        age: true,
         bondScore: true,
         stressLevel: true,
       },
@@ -229,14 +247,26 @@ export async function performEnhancedInteraction(req, res) {
       });
     }
 
-    // Calculate age from date of birth
+    // Equoria-ogmu: do NOT mutate horse.age. Compute ageInDays locally and
+    // pass a shallow copy to downstream day-based consumers. Note that the
+    // SELECT clause above does not load Horse.age, so the local `horse`
+    // object has no `age` field at all — the previous mutation was the only
+    // source. The shadow object below provides ageInDays for
+    // calculateEnhancedEffects until Equoria-8y0v migrates those call sites
+    // to game-years.
     const ageInDays = Math.floor(
       (Date.now() - new Date(horse.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24),
     );
-    horse.age = ageInDays;
+    const horseForDayConsumers = { ...horse, age: ageInDays };
 
     // Calculate enhanced effects
-    const effects = calculateEnhancedEffects(groom, horse, interactionType, variation, duration);
+    const effects = calculateEnhancedEffects(
+      groom,
+      horseForDayConsumers,
+      interactionType,
+      variation,
+      duration,
+    );
 
     // Record the interaction
     const interaction = await prisma.groomInteraction.create({

@@ -137,6 +137,30 @@ describe('GET /api/grooms/enhanced/interactions/:groomId/:horseId', () => {
     expect(res.body.data).toBeDefined();
   });
 
+  // Equoria-ogmu: regression — response.horse.age must equal the DB value
+  // (game-years), NOT the real-time day count. The controller previously
+  // mutated `horse.age = ageInDays`, masquerading days as years to the API.
+  it('returns horse.age as game-years (not days) and ageInDays as a separate field', async () => {
+    const res = await request(app)
+      .get(`/api/grooms/enhanced/interactions/${groom.id}/${horse.id}`)
+      .set('Origin', ORIGIN)
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    const respHorse = res.body.data.horse;
+
+    // The fixture is created with age=3 (game-years). The response must echo it.
+    expect(respHorse.age).toBe(3);
+
+    // ageInDays is a separate field, day-granular, much larger than the game-year age.
+    expect(typeof respHorse.ageInDays).toBe('number');
+    expect(respHorse.ageInDays).toBeGreaterThan(respHorse.age);
+    expect(respHorse.ageInDays).toBeGreaterThan(700); // DOB 2022-06-01 → > ~700 days
+
+    // Sentinel: catches re-introduction of the `horse.age = ageInDays` mutation.
+    expect(respHorse.age).not.toBe(respHorse.ageInDays);
+  });
+
   it('returns 404 for a groom not owned by user', async () => {
     const res = await request(app)
       .get(`/api/grooms/enhanced/interactions/999999999/${horse.id}`)
