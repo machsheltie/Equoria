@@ -18,26 +18,28 @@ Then all `ShowEntry` records for the show are loaded,
 And each horse's conformation show score is calculated via `calculateConformationShowScore()` from `conformationShowService.mjs`,
 And entries are ranked by score (highest first, ties broken by entry creation order),
 And for each placement, the appropriate reward is applied:
-  - 1st: ribbon=`'Blue'`, titlePoints=10, breedingValueBoost=+5%
-  - 2nd: ribbon=`'Red'`, titlePoints=7, breedingValueBoost=+3%
-  - 3rd: ribbon=`'Yellow'`, titlePoints=5, breedingValueBoost=+1%
-  - 4th+: ribbon=`'White'`, titlePoints=2, breedingValueBoost=0%
-And a `CompetitionResult` record is created per horse with `placement`, `score`, `statGains` (containing ribbon and titlePoints awarded),
-And the horse's `titlePoints` accumulation and `currentTitle` are updated per the title-progression thresholds,
-And the horse's `breedingValueBoost` is incremented (capped at 15%),
-And the response is HTTP 200 with `{ success: true, data: { showId, results: [{ horseId, placement, score, ribbon, titlePoints, newTitle, breedingValueBoost }] } }`.
+
+- 1st: ribbon=`'Blue'`, titlePoints=10, breedingValueBoost=+5%
+- 2nd: ribbon=`'Red'`, titlePoints=7, breedingValueBoost=+3%
+- 3rd: ribbon=`'Yellow'`, titlePoints=5, breedingValueBoost=+1%
+- 4th+: ribbon=`'White'`, titlePoints=2, breedingValueBoost=0%
+  And a `CompetitionResult` record is created per horse with `placement`, `score`, `statGains` (containing ribbon and titlePoints awarded),
+  And the horse's `titlePoints` accumulation and `currentTitle` are updated per the title-progression thresholds,
+  And the horse's `breedingValueBoost` is incremented (capped at 15%),
+  And the response is HTTP 200 with `{ success: true, data: { showId, results: [{ horseId, placement, score, ribbon, titlePoints, newTitle, breedingValueBoost }] } }`.
 
 **AC2 — Title progression thresholds:**
 
 Given a horse accumulates title points across multiple shows,
 When `updateHorseTitle()` is called after each show,
 Then `currentTitle` is set to the highest threshold reached:
-  - 0–24 points: `null` (no title)
-  - 25–49 points: `'Noteworthy'`
-  - 50–99 points: `'Distinguished'`
-  - 100–199 points: `'Champion'`
-  - 200+ points: `'Grand Champion'`
-And titles are permanent — a horse that reaches `'Champion'` keeps it even if not competing again.
+
+- 0–24 points: `null` (no title)
+- 25–49 points: `'Noteworthy'`
+- 50–99 points: `'Distinguished'`
+- 100–199 points: `'Champion'`
+- 200+ points: `'Grand Champion'`
+  And titles are permanent — a horse that reaches `'Champion'` keeps it even if not competing again.
 
 **AC3 — Breeding value boost cap:**
 
@@ -66,9 +68,10 @@ And the response is HTTP 200 with `{ success: true, data: { horseId, horseName, 
 Given the Horse model currently has no title-tracking fields,
 When the Prisma migration runs,
 Then three new optional fields are added to `Horse`:
-  - `titlePoints Int @default(0)` — accumulated title points from conformation shows
-  - `currentTitle String?` — current title prefix (null if below Noteworthy threshold)
-  - `breedingValueBoost Float @default(0.0)` — accumulated breeding value boost (0.0–0.15)
+
+- `titlePoints Int @default(0)` — accumulated title points from conformation shows
+- `currentTitle String?` — current title prefix (null if below Noteworthy threshold)
+- `breedingValueBoost Float @default(0.0)` — accumulated breeding value boost (0.0–0.15)
 
 **AC7 — Integration tests:**
 
@@ -116,8 +119,8 @@ And `GET /api/v1/competition/conformation/titles/:horseId` returns correct accum
   - [x] Add `GET /titles/:horseId` route with `queryRateLimiter` and param validation to `conformationShowRoutes.mjs`
 
 - [x] Task 6: Integration tests (AC: #7)
-  - [x] Create `backend/__tests__/conformationShowExecution.test.mjs`
-  - [x] Mock `prisma`, `conformationShowService`, `findOwnedResource`, `rateLimiting`, `express-validator` (plain functions, not jest.fn, to survive `jest.resetAllMocks()`)
+  - [x] Create `backend/modules/competition/__tests__/conformationShowExecution.test.mjs`
+  - [x] Real-DB integration tests (no mocks) per Equoria-p6fx no-mocks doctrine (2026-04-30); test file header documents the conversion from the original `jest.unstable_mockModule` pattern
   - [x] Test: execute show → 1st place receives Blue ribbon + 10 pts + 5% boost
   - [x] Test: execute show → 4th place receives White ribbon + 2 pts + 0% boost
   - [x] Test: horse at 22 pts + 4 more = 26 → `currentTitle` set to `'Noteworthy'`
@@ -131,6 +134,7 @@ And `GET /api/v1/competition/conformation/titles/:horseId` returns correct accum
 ### Schema Design Decision
 
 The Horse model currently has no title-tracking fields. This story adds three optional fields:
+
 - `titlePoints Int @default(0)` — simple integer counter, no upper bound
 - `currentTitle String?` — denormalized for fast read (recomputed on each show execution)
 - `breedingValueBoost Float @default(0.0)` — float in [0.0, 0.15], enforced in service logic not DB constraint
@@ -140,21 +144,21 @@ Breeding value boost affects offspring conformation generation in the breeding s
 ### Reward Table (from PRD-03 §3.6)
 
 | Placement | Ribbon | Title Points | Breeding Boost |
-|-----------|--------|-------------|----------------|
-| 1st       | Blue   | +10         | +5%            |
-| 2nd       | Red    | +7          | +3%            |
-| 3rd       | Yellow | +5          | +1%            |
-| 4th+      | White  | +2          | 0%             |
+| --------- | ------ | ------------ | -------------- |
+| 1st       | Blue   | +10          | +5%            |
+| 2nd       | Red    | +7           | +3%            |
+| 3rd       | Yellow | +5           | +1%            |
+| 4th+      | White  | +2           | 0%             |
 
 ### Title Thresholds (from PRD-03 §3.6 / FR-40)
 
-| Accumulated Points | Title           |
-|--------------------|-----------------|
-| 0–24               | (none)          |
-| 25–49              | Noteworthy      |
-| 50–99              | Distinguished   |
-| 100–199            | Champion        |
-| 200+               | Grand Champion  |
+| Accumulated Points | Title          |
+| ------------------ | -------------- |
+| 0–24               | (none)         |
+| 25–49              | Noteworthy     |
+| 50–99              | Distinguished  |
+| 100–199            | Champion       |
+| 200+               | Grand Champion |
 
 Titles are permanent. `resolveTitle()` returns the highest threshold reached; once earned, a title cannot be lost.
 
@@ -165,15 +169,25 @@ Conformation shows do NOT award prize money. `CompetitionResult.prizeWon` must r
 ### Existing Service Exports to Reuse
 
 `backend/services/conformationShowService.mjs` already exports:
+
 - `calculateConformationShowScore(horse, groom, groomAssignment)` — returns numeric final score
 - `validateConformationEntry(horse, groom, className, userId)` — async, returns `{ valid, errors, warnings, ageClass }`
 - `CONFORMATION_SHOW_CONFIG`, `CONFORMATION_AGE_CLASSES`, `SHOW_HANDLING_SKILL_SCORES`
 
 The execute function needs to call `calculateConformationShowScore` for each entry after loading the required horse/groom/assignment data.
 
-### Mock Pattern for Tests
+### Test Pattern (real DB, no mocks)
 
-Use plain arrow functions (not `jest.fn()`) in `jest.unstable_mockModule` factories. `jest.resetAllMocks()` resets `jest.fn()` instances to `undefined` return, causing cascading TypeErrors. Plain functions survive `resetAllMocks()`. See `conformationShowEntry.test.mjs` for the established pattern.
+Per Equoria-p6fx (no-mocks doctrine epic, 2026-04-30) the
+`conformationShowExecution.test.mjs` file has been converted from the
+original `jest.unstable_mockModule` pattern (which mocked `prisma`,
+`conformationShowService`, `findOwnedResource`, `rateLimiting`, and
+`express-validator`) to real-DB integration tests. Tests now create
+real shows + entries + horses + grooms + assignments and exercise the
+full controller → service → DB pipeline. Pure helper unit tests
+(`resolveReward`, `resolveTitle`, `applyBreedingValueBoost`) remain
+unmocked. See the test file header for the conversion rationale and
+the integration-test pattern shared with `conformationShowEntry.test.mjs`.
 
 ### Import Paths
 
@@ -196,7 +210,7 @@ Use plain arrow functions (not `jest.fn()`) in `jest.unstable_mockModule` factor
 - [Source: docs/product/PRD-03-Gameplay-Systems.md §3.6 Conformation Show System]
 - [Source: docs/epics-physical-systems.md FR-39, FR-40, FR-41, FR-43, FR-45]
 - [Source: backend/services/conformationShowService.mjs — existing service API]
-- [Source: backend/__tests__/conformationShowEntry.test.mjs — mock pattern reference]
+- [Source: backend/modules/competition/__tests__/conformationShowEntry.test.mjs — real-DB integration test pattern reference (post-Equoria-p6fx no-mocks doctrine)]
 - [Source: packages/database/prisma/schema.prisma — Horse model, ShowEntry, CompetitionResult]
 
 ## Dev Agent Record
@@ -217,7 +231,7 @@ claude-sonnet-4-6
 - Task 3: Added `executeConformationShowHandler` to controller — delegates to service, maps service `statusCode=400` errors to HTTP 400, everything else to 500.
 - Task 4: Added `getConformationTitles` handler — IDOR-safe (404 not 403) via `findOwnedResource`.
 - Task 5: Registered `POST /execute` (mutationRateLimiter + showId validation) and `GET /titles/:horseId` (queryRateLimiter + horseId validation) in `conformationShowRoutes.mjs`.
-- Task 6: 34 tests in `conformationShowExecution.test.mjs` — all pass. Covers: reward table unit tests, title threshold unit tests, boost cap unit tests, controller execute (1st/4th/Noteworthy/cap/400/500), controller titles (200/404/400/500). Plain arrow function mocks used throughout per story dev notes.
+- Task 6: 29 tests in `backend/modules/competition/__tests__/conformationShowExecution.test.mjs` (verified by jest run 2026-05-15 — Equoria-aqh0). Covers: pure helper unit tests (`resolveReward`, `resolveTitle`, `applyBreedingValueBoost`), real-DB integration for `executeConformationShowHandler` (1st/4th/Noteworthy/cap/400/500 paths) and `getConformationTitles` (200/404/400/500). Originally written with `jest.unstable_mockModule` (plain-function factories); converted to real-DB tests per Equoria-p6fx no-mocks doctrine.
 
 ### File List
 
@@ -225,4 +239,4 @@ claude-sonnet-4-6
 - `backend/services/conformationShowService.mjs` — added REWARD_TABLE, BREEDING_BOOST_CAP, TITLE_THRESHOLDS, resolveReward, resolveTitle, applyBreedingValueBoost, executeConformationShow
 - `backend/modules/competition/controllers/conformationShowController.mjs` — added executeConformationShowHandler, getConformationTitles; updated import
 - `backend/modules/competition/routes/conformationShowRoutes.mjs` — added POST /execute and GET /titles/:horseId routes; updated import
-- `backend/__tests__/conformationShowExecution.test.mjs` — new; 34 tests all passing
+- `backend/modules/competition/__tests__/conformationShowExecution.test.mjs` — new; 29 tests all passing (real-DB integration tests per Equoria-p6fx no-mocks doctrine; verified 2026-05-15 via jest run)
