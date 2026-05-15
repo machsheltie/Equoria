@@ -3,6 +3,9 @@ import logger from '../utils/logger.mjs';
 import { applyEpigeneticTraitsAtBirth } from '../utils/atBirthTraits.mjs';
 import { validateConformationScores } from '../modules/horses/services/conformationService.mjs';
 import { validateGaitScores } from '../modules/horses/services/gaitService.mjs';
+import { generateGenotype } from '../modules/horses/services/genotypeGenerationService.mjs';
+import { calculatePhenotype } from '../modules/horses/services/phenotypeCalculationService.mjs';
+import { generateMarkings } from '../modules/horses/services/markingGenerationService.mjs';
 import { HORSE_STAT_VALUES } from '../constants/schema.mjs';
 
 async function createHorse(horseData) {
@@ -169,7 +172,58 @@ async function createHorse(horseData) {
         logger.error(`[horseModel.createHorse] Error applying at-birth traits: ${error.message}`);
         // Continue with horse creation even if trait application fails
       }
-    } // Create horse with all provided fields
+    } // Equoria-ennm: Auto-generate colorGenotype + phenotype when caller omits them.
+    // createHorse is the GENERIC creation path called from horseRoutes POST /horses,
+    // marketplace tests, breeding tests, etc. Without this defence any caller that
+    // forgets to pass color genetics produces a NULL-phenotype horse. The horseRoutes
+    // POST /horses path already pre-computes these; this branch is the safety net for
+    // every other caller. Throws on generation failure so the model layer fails loud.
+    let resolvedColorGenotype = colorGenotype;
+    let resolvedPhenotype = phenotype;
+    if (resolvedColorGenotype == null || resolvedPhenotype == null) {
+      // Resolve the breed's breedGeneticProfile via raw SQL because the Prisma DMMF
+      // may omit the JSONB column. Both call-shapes are supported: scalar breedId
+      // or breed: { connect: { id } } / breed: number.
+      let resolvedBreedId = null;
+      if (typeof breedId === 'number') {
+        resolvedBreedId = breedId;
+      } else if (breed && typeof breed === 'object' && breed.connect && breed.connect.id) {
+        resolvedBreedId = breed.connect.id;
+      } else if (typeof breed === 'number') {
+        resolvedBreedId = breed;
+      }
+
+      let breedGeneticProfile = null;
+      if (resolvedBreedId != null) {
+        try {
+          const breedRows = await prisma.$queryRaw`
+            SELECT "breedGeneticProfile"
+            FROM breeds
+            WHERE id = ${resolvedBreedId}
+          `;
+          breedGeneticProfile = breedRows?.[0]?.breedGeneticProfile ?? null;
+        } catch (lookupErr) {
+          logger.warn(
+            `[horseModel.createHorse] Failed to load breedGeneticProfile for breed ${resolvedBreedId}: ${lookupErr.message}. Falling back to generic defaults.`,
+          );
+          breedGeneticProfile = null;
+        }
+      }
+
+      if (resolvedColorGenotype == null) {
+        resolvedColorGenotype = generateGenotype(breedGeneticProfile);
+      }
+      if (resolvedPhenotype == null) {
+        const baseColor = calculatePhenotype(
+          resolvedColorGenotype,
+          breedGeneticProfile?.shade_bias ?? null,
+        );
+        const markings = generateMarkings(breedGeneticProfile, baseColor.colorName);
+        resolvedPhenotype = { ...baseColor, ...markings };
+      }
+    }
+
+    // Create horse with all provided fields
     const horse = await prisma.horse.create({
       data: {
         name,
@@ -181,8 +235,8 @@ async function createHorse(horseData) {
         ...(dateOfBirth && { dateOfBirth: new Date(dateOfBirth) }),
         ...(genotype && { genotype }),
         ...(phenotypicMarkings && { phenotypicMarkings }),
-        ...(colorGenotype && { colorGenotype }),
-        ...(phenotype && { phenotype }),
+        ...(resolvedColorGenotype && { colorGenotype: resolvedColorGenotype }),
+        ...(resolvedPhenotype && { phenotype: resolvedPhenotype }),
         ...(finalDisplayColor && { finalDisplayColor }),
         ...(shade && { shade }),
         ...(imageUrl && { imageUrl }),
