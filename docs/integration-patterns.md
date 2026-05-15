@@ -8,7 +8,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         FRONTEND (React 19)                         │
-│                         Dev Port: 3001                              │
+│                         Dev Port: 3000                              │
 │  ┌─────────────┐  ┌──────────────┐  ┌──────────────┐               │
 │  │ Components  │  │  44 React    │  │  React Query │               │
 │  │ (Radix UI)  │  │  Query Hooks │  │  Cache Layer │               │
@@ -22,13 +22,13 @@
 │                    └─────┬──────┘                                   │
 └──────────────────────────┼──────────────────────────────────────────┘
                            │
-                           │ Dev: Vite proxy /api → :3000
+                           │ Dev: Vite proxy /api → :3001
                            │ Prod: relative URLs (same origin)
                            │ credentials: 'include'
                            ▼
 ┌─────────────────────────────────────────────────────────────────────┐
 │                         BACKEND (Express)                           │
-│                         Port: 3000                                  │
+│                         Port: 3001                                  │
 │  ┌─────────────────────────────────────────────────────────────┐   │
 │  │                    Middleware Stack                          │   │
 │  │  Helmet → CORS → RateLimit → CookieParser → CSRF → Auth    │   │
@@ -74,7 +74,7 @@ The frontend uses a single API client module at `frontend/src/lib/api-client.ts`
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
 ```
 
-- **Development:** Vite dev server proxies `/api` requests to `http://localhost:3000`
+- **Development:** Vite dev server proxies (port 3000) `/api` requests to backend at `http://localhost:3001`
 - **Production:** Empty string = relative URLs (same origin, Express serves both SPA and API)
 - **Split deploy:** Set `VITE_API_URL` to the backend origin
 
@@ -83,10 +83,10 @@ const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
 ```typescript
 // frontend/vite.config.ts
 server: {
-  port: 3001,
+  port: 3000,
   proxy: {
     '/api': {
-      target: 'http://localhost:3000',
+      target: 'http://localhost:3001',
       changeOrigin: true,
     },
   },
