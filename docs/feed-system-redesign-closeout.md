@@ -29,7 +29,7 @@
 
 ### Cleanup (C1)
 
-- Documentation: PROJECT_MILESTONES, DEV_NOTES, ARCH-01-Overview updated. (C1 — commits e55dc25a / f41c4f12 on master, not in this worktree branch)
+- Documentation: PROJECT_MILESTONES and ARCH-01-Overview updated. (C1 — commits e55dc25a / f41c4f12 on master, not in this worktree branch). DEV_NOTES.md is intentionally omitted — it does not exist at any canonical top-level or `.claude/docs/` path on this repo (only stale archived copies under `.archive/legacy-helpers/` and `.claude/docs/planning/`); no new DEV_NOTES entry was authored (Equoria-ikqm).
 
 ## Test evidence (raw command outputs, last lines)
 
