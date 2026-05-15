@@ -45,6 +45,15 @@ export default defineConfig({
           maxWorkers: 4,
           // Better isolation between test files
           isolate: true,
+          // Vitest 4 requires unique sequence.groupOrder between projects with
+          // different maxWorkers, otherwise it throws at startup before any
+          // test runs ("Projects '0' and 'storybook (chromium)' have different
+          // 'maxWorkers' but same 'sequence.groupOrder'"). Run the unit suite
+          // first (0) so the heavier Storybook browser-mode pool starts after
+          // the cheap jsdom forks have already warmed (Equoria-60h2).
+          sequence: {
+            groupOrder: 0,
+          },
         },
       },
       {
@@ -58,6 +67,13 @@ export default defineConfig({
         ],
         test: {
           name: 'storybook',
+          // Run Storybook browser-mode tests AFTER the jsdom unit suite to
+          // satisfy Vitest 4's distinct-groupOrder requirement when projects
+          // declare different maxWorkers, and to avoid contending with the
+          // unit forks-pool for CPU during chromium boot (Equoria-60h2).
+          sequence: {
+            groupOrder: 1,
+          },
           // Storybook browser-mode tests boot a Playwright/chromium browser
           // per worker. Cold-start under CI parallel load can exceed the
           // default 5s test timeout AND the default 60s server-connect
