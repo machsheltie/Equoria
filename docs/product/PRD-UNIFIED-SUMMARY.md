@@ -59,11 +59,11 @@ Equoria is a web-based horse breeding and competition simulation where players m
 - Prize distribution with currency rewards and stat gains
 - Show management: eligibility validation, result tracking, leaderboards
 
-### 3.5 Staff Systems (PRD-03)
+### 3.5 Staff Systems (PRD-03 / PRD-05 / PRD-06)
 
-- **Grooms:** Hire, assign to foals, bonding interactions, skill progression, retirement at 104 weeks
-- **Riders:** 4 personalities, 3 skill levels, XP/career progression, discovery system
-- **Trainers:** 5 personalities, discipline tendencies, horse compatibility, career milestones
+- **Grooms:** Hire, assign to foals, bonding interactions, skill progression, retirement at 104 weeks (PRD-03)
+- **Riders:** 4 personalities, 3 skill levels, XP/career progression, discovery system — canonical spec **PRD-05-Rider-System.md** (Equoria-swpv)
+- **Trainers:** 5 personalities, discipline tendencies, horse compatibility, career milestones — canonical spec **PRD-06-Trainer-System.md** (Equoria-t4p4)
 
 ### 3.6 Economy & Services (PRD-02, PRD-03)
 
