@@ -242,10 +242,10 @@ const { predictBreedingColors } = await import(
 ### File Locations
 
 - Service: `backend/modules/horses/services/breedingColorPredictionService.mjs`
-- Tests: `backend/__tests__/breedingColorPredictionService.test.mjs`
+- Tests: `backend/modules/horses/__tests__/breedingColorPredictionService.test.mjs`
 - Controller: `backend/modules/horses/controllers/horseController.mjs` (append)
 - Route: `backend/modules/horses/routes/horseRoutes.mjs` (new POST route)
-- Controller test: `backend/__tests__/breedingColorPredictionApi.test.mjs`
+- Controller test: `backend/modules/horses/__tests__/breedingColorPredictionApi.test.mjs`
 
 ### Previous Story Learnings (31E-3 and 31E-4)
 
@@ -309,5 +309,5 @@ Claude Opus 4.6 (1M context)
 - `backend/modules/horses/services/breedingColorPredictionService.mjs` — new (pure-function service)
 - `backend/modules/horses/controllers/horseController.mjs` — modified (getBreedingColorPrediction + isValidGenotype appended)
 - `backend/modules/horses/routes/horseRoutes.mjs` — modified (import + POST route added)
-- `backend/__tests__/breedingColorPredictionService.test.mjs` — new (19 service tests)
-- `backend/__tests__/breedingColorPredictionApi.test.mjs` — new (6 controller tests)
+- `backend/modules/horses/__tests__/breedingColorPredictionService.test.mjs` — new (19 service tests)
+- `backend/modules/horses/__tests__/breedingColorPredictionApi.test.mjs` — new (6 controller tests)
