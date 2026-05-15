@@ -250,6 +250,36 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
 
         .expect(401);
     });
+
+    test('should reject horse not owned by user with 404 (CWE-639, Equoria-8ug7)', async () => {
+      // Migrated from inline findOwnedResource to requireOwnership({from:'body'}).
+      // The CWE-639 doctrine: a foreign-horse caller must receive 404
+      // indistinguishable from not-found — never 403 or any other status that
+      // would leak the resource's existence.
+      const otherUserResult = await createTestUser({
+        username: `other_enter_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        email: `other_enter_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+      });
+      const otherHorse = await createTestHorse({
+        userId: otherUserResult.user.id,
+        name: `Other Horse Enter ${Date.now()}`,
+      });
+
+      const response = await request(app)
+        .post('/api/competition/enter')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('Origin', 'http://localhost:3000')
+        .set('Cookie', __csrf__.cookieHeader)
+        .set('X-CSRF-Token', __csrf__.csrfToken)
+        .send({
+          horseId: otherHorse.id,
+          showId: testShow.id,
+        })
+        .expect(404);
+
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toBe('Horse not found');
+    });
   });
 
   describe('🏁 POST /api/competition/execute', () => {

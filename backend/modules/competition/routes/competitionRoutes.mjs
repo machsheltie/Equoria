@@ -5,7 +5,7 @@ import { getUserById } from '../../../models/userModel.mjs';
 import { enterAndRunShow } from '../controllers/competitionController.mjs';
 import conformationShowRoutes from './conformationShowRoutes.mjs';
 import { getResultsByShow, getResultsByHorse } from '../../../models/resultModel.mjs';
-import { requireOwnership, findOwnedResource } from '../../../middleware/ownership.mjs';
+import { requireOwnership } from '../../../middleware/ownership.mjs';
 import {
   validateCompetitionEntry,
   executeEnhancedCompetition,
@@ -259,7 +259,8 @@ router.get(
  *   "showId": 1
  * }
  *
- * Security: Validates horse ownership using findOwnedResource helper
+ * Security: Validates horse ownership via requireOwnership middleware
+ * (atomic single-query check from req.body; Equoria-8ug7 / spec-5oll).
  */
 router.post(
   '/enter',
@@ -269,21 +270,28 @@ router.post(
     body('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
     body('showId').isInt({ min: 1 }).withMessage('Show ID must be a positive integer'),
   ],
+  // Express-validator only attaches results to the request; it doesn't
+  // short-circuit. We need this in a dedicated middleware BEFORE
+  // requireOwnership so a non-numeric horseId returns 400 "Validation
+  // failed" (express-validator's contract) instead of 400 "Invalid horse
+  // ID" (requireOwnership's contract for malformed IDs).
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      logger.warn(
+        `[competitionRoutes.POST /enter] Validation errors: ${JSON.stringify(errors.array())}`,
+      );
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array(),
+      });
+    }
+    next();
+  },
+  requireOwnership('horse', { idParam: 'horseId', from: 'body' }),
   async (req, res) => {
     try {
-      // Check for validation errors
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        logger.warn(
-          `[competitionRoutes.POST /enter] Validation errors: ${JSON.stringify(errors.array())}`,
-        );
-        return res.status(400).json({
-          success: false,
-          message: 'Validation failed',
-          errors: errors.array(),
-        });
-      }
-
       const { horseId, showId } = req.body;
       const userId = req.user.id;
 
@@ -291,14 +299,9 @@ router.post(
         `[competitionRoutes.POST /enter] User ${userId} entering horse ${horseId} in show ${showId}`,
       );
 
-      // Validate horse ownership (atomic single-query validation)
-      const horse = await findOwnedResource('horse', horseId, userId);
-      if (!horse) {
-        return res.status(404).json({
-          success: false,
-          message: 'Horse not found',
-        });
-      }
+      // Ownership validated by requireOwnership middleware (Equoria-8ug7).
+      // The resolved Horse row is attached to req.horse — no second query.
+      const horse = req.horse;
 
       // Get show details
       const show = await prisma.show.findUnique({
