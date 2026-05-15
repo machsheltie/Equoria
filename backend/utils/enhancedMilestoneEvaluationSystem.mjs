@@ -16,6 +16,7 @@
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 import { applyPersonalityEffectsToMilestone } from './personalityModifierEngine.mjs';
+import { evaluateAndPersistUltraRareTraits } from '../services/ultraRareTraitEvaluationService.mjs';
 
 // Milestone types and their developmental windows
 export const MILESTONE_TYPES = {
@@ -230,11 +231,29 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
       `[enhancedMilestoneEvaluationSystem.evaluateEnhancedMilestone] Completed evaluation for horse ${horseId}: ${traitOutcome.trait || 'no trait'} (score: ${finalScore})`,
     );
 
+    // Equoria-d4tl: every milestone log write triggers an ultra-rare/exotic
+    // trait evaluation. Wrapped in try/catch so a failure in the ultra-rare
+    // engine never bricks the primary milestone result.
+    let ultraRareEvaluation = null;
+    try {
+      ultraRareEvaluation = await evaluateAndPersistUltraRareTraits(horseId, {
+        source: 'milestone',
+        milestoneType,
+        milestoneLogId: milestoneLog.id,
+        finalScore,
+      });
+    } catch (urtError) {
+      logger.error(
+        `[enhancedMilestoneEvaluationSystem.evaluateEnhancedMilestone] Ultra-rare evaluation failed for horse ${horseId}: ${urtError.message}`,
+      );
+    }
+
     return {
       success: true,
       milestoneLog,
       finalScore,
       traitOutcome,
+      ultraRareEvaluation,
       modifiers: {
         bondModifier,
         taskConsistencyModifier,
