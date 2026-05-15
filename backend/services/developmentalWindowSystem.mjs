@@ -827,7 +827,7 @@ function generateDevelopmentRecommendations(traitName, windowName, opportunity) 
 /**
  * Assess milestone progress
  */
-function assessMilestoneProgress(milestoneName, milestone, interactions, currentAge, horse) {
+export function assessMilestoneProgress(milestoneName, milestone, interactions, currentAge, horse) {
   const window = DEVELOPMENTAL_WINDOWS[milestone.window];
 
   // Check if window has passed
@@ -859,7 +859,7 @@ function assessMilestoneProgress(milestoneName, milestone, interactions, current
     // Currently in window - assess progress
     const windowInteractions = interactions.filter(interaction => {
       const interactionAge = Math.floor(
-        (interaction.createdAt.getTime() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 1000),
+        (interaction.createdAt.getTime() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24),
       );
       return interactionAge >= window.startDay;
     });
