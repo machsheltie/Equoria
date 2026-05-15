@@ -761,3 +761,76 @@ describe('POST /api/v1/horses — phenotype integration', () => {
     createdHorseId = horse.id;
   });
 });
+
+// ---------------------------------------------------------------------------
+// FR36 sentinel: phenotypeCalculationService must produce >= 50 distinct
+// colorName outputs (PRD-02 §3.3 "Shade variants per base phenotype color").
+// Equoria-vst9. This is a sentinel-positive test per OPTIMAL_FIX_DISCIPLINE §2:
+// it fails if the distinct-colorName count ever regresses below the FR36
+// minimum (e.g. a refactor collapses subtypes or removes a dilution path).
+//
+// Enumeration strategy: take the Cartesian product of representative allele
+// pairs for every locus that can influence colorName. We use the documented
+// allele symbols (from the service's own predicate functions) and pick the
+// behaviourally-distinct pairs per locus (homozygous-active / het / inactive
+// where the predicate distinguishes them). Loci that only set boolean flags
+// without overriding colorName (SB1_Sabino1, SW_SplashWhite, O_FrameOvero)
+// are held constant — they do not add colorName variety.
+// ---------------------------------------------------------------------------
+describe('FR36: distinct colorName coverage (Equoria-vst9)', () => {
+  // Behaviourally-distinct allele pairs per colorName-affecting locus.
+  const LOCUS_VARIANTS = {
+    E_Extension: ['E/E', 'e/e'], // functional vs recessive red
+    A_Agouti: ['A/a', 'At/a', 'a/a'], // bay / seal_brown / black
+    EDXW: ['n/n', 'EDXW/n'], // off / black-pigment override
+    Cr_Cream: ['n/n', 'Cr/n', 'Cr/Cr'], // none / single / double dilute
+    D_Dun: ['nd2/nd2', 'D/nd2'], // none / dun
+    Z_Silver: ['n/n', 'Z/n'], // none / silver
+    Ch_Champagne: ['n/n', 'Ch/n'], // none / champagne
+    Prl_Pearl: ['n/n', 'prl/prl'], // none / pearl homozygous
+    MFSD12_Mushroom: ['N/N', 'M/M'], // none / mushroom
+    G_Gray: ['g/g', 'G/g'], // none / gray (overrides colorName)
+    Rn_Roan: ['rn/rn', 'Rn/rn'], // none / roan (renames base)
+    W_DominantWhite: ['w/w', 'W/w'], // none / dominant white (overrides all)
+    TO_Tobiano: ['to/to', 'TO/to'], // none / tobiano
+    LP_LeopardComplex: ['lp/lp', 'LP/LP'], // none / appaloosa
+    PATN1_Pattern1: ['patn1/patn1', 'PATN1/patn1'], // minimal / full appaloosa
+  };
+
+  function* cartesian(loci) {
+    if (loci.length === 0) {
+      yield {};
+      return;
+    }
+    const [[locus, variants], ...rest] = loci;
+    for (const variant of variants) {
+      for (const sub of cartesian(rest)) {
+        yield { [locus]: variant, ...sub };
+      }
+    }
+  }
+
+  it('produces at least 50 distinct colorName values across valid genotypes', () => {
+    const lociEntries = Object.entries(LOCUS_VARIANTS);
+    const distinct = new Set();
+    let combos = 0;
+
+    for (const genotype of cartesian(lociEntries)) {
+      combos += 1;
+      const { colorName } = calculatePhenotype(genotype);
+      expect(typeof colorName).toBe('string');
+      expect(colorName.length).toBeGreaterThan(0);
+      expect(colorName).not.toBe('Unknown'); // non-empty genotype must resolve
+      distinct.add(colorName);
+    }
+
+    // Combo count guard: ensure the enumeration actually ran the full
+    // Cartesian product (catches an accidental early-return / empty loop
+    // that would make the >=50 assertion vacuous).
+    const expectedCombos = lociEntries.reduce((acc, [, v]) => acc * v.length, 1);
+    expect(combos).toBe(expectedCombos);
+
+    // FR36 minimum.
+    expect(distinct.size).toBeGreaterThanOrEqual(50);
+  });
+});
