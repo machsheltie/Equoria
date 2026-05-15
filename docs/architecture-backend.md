@@ -82,28 +82,34 @@
 │                           DATA ACCESS LAYER                                │
 │                         Prisma ORM + PostgreSQL                            │
 │  ┌──────────────────┐  ┌──────────────────┐  ┌──────────────────────────┐ │
-│  │  prismaClient    │  │  Models (43)     │  │  Connection Pooling      │ │
+│  │  prismaClient    │  │  Models (48)     │  │  Connection Pooling      │ │
 │  │  Query Builder   │  │  Enums (6)       │  │  Transaction Support     │ │
-│  │                  │  │  1299 lines      │  │  JSONB flexibility       │ │
+│  │                  │  │  1433 lines      │  │  JSONB flexibility       │ │
 │  └──────────────────┘  └──────────────────┘  └──────────────────────────┘ │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
 ## Codebase Statistics
 
-| Metric           | Count |
-| ---------------- | ----- |
-| Total .mjs files | 1071  |
-| Domain modules   | 18    |
-| Route files      | 97    |
-| Controller files | 83    |
-| Middleware files | 22    |
-| Utility files    | 70    |
-| HTTP endpoints   | 130+  |
-| Prisma models    | 43    |
-| Prisma enums     | 6     |
-| Test suites      | 226+  |
-| Total tests      | 3651+ |
+| Metric                         | Count |
+| ------------------------------ | ----- |
+| Total backend .mjs files       | 1014  |
+| Domain modules                 | 18    |
+| Route files                    | 97    |
+| Controller files               | 83    |
+| Middleware files               | 22    |
+| Utility files                  | 69    |
+| HTTP endpoints                 | 130+  |
+| Prisma models                  | 48    |
+| Prisma enums                   | 6     |
+| Backend test files (.test.mjs) | 551   |
+| Total tests                    | 3617+ |
+
+> Stat refresh 2026-05-15 (Equoria-b7k5). "Test files" = files matching
+> `*.test.mjs` under `backend/`. The CLAUDE.md project status reports
+> "3617+ tests passing (226 suites)" — the 226 figure refers to Jest
+> _test suites_ as reported by `jest`'s aggregate output, which groups
+> related `describe` blocks rather than counting raw files.
 
 ## Entry Point
 
@@ -381,9 +387,9 @@ CSRF errors are handled by a dedicated `csrfErrorHandler` middleware.
 
 **File:** `packages/database/prisma/schema.prisma`
 
-- 43 models (Horse, User, Breed, Show, CompetitionResult, Groom, GroomAssignment, Rider, Trainer, ForumThread, ForumPost, DirectMessage, Club, ClubMembership, ClubElection, ClubCandidate, ClubBallot, and more)
+- 48 models (Horse, User, Breed, Show, CompetitionResult, Groom, GroomAssignment, Rider, Trainer, ForumThread, ForumPost, DirectMessage, Club, ClubMembership, ClubElection, ClubCandidate, ClubBallot, Notification, and more)
 - 6 enums
-- 1299 lines
+- 1433 lines
 - JSONB fields for flexible data (genetics, tack, inventory, settings)
 - Indexed for performance (GIN indexes on JSONB columns)
 
@@ -460,7 +466,7 @@ Shutdown sequence:
 
 **Framework:** Jest with `--experimental-vm-modules` (ES module support)
 
-- **226+ test suites**, **3651+ tests** passing
+- **226+ test suites**, **3617+ tests** passing (551 .test.mjs files under `backend/`; the 226 figure is Jest's aggregate test-suite count)
 - Balanced mocking strategy: external dependencies only (DB, HTTP, logger)
 - Real business logic tested with actual implementations
 - Integration tests with Prisma for database operations
