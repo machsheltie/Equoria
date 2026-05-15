@@ -61,7 +61,7 @@ describe('Milestone Trait Evaluator', () => {
     testHorse = {
       id: 'test-horse-milestone',
       name: 'Test Horse',
-      age: 365, // 1 year old
+      age: 1, // 1 game-year old (post Equoria-son6/nxga: horse.age stores game-years)
       task_log: [],
       trait_milestones: {},
       epigeneticModifiers: {
@@ -113,7 +113,7 @@ describe('Milestone Trait Evaluator', () => {
     });
 
     it('should assign resistance trait when discouraged 3+ times at age 2', () => {
-      testHorse.age = 730; // 2 years old
+      testHorse.age = 2; // 2 game-years old
       testHorse.task_log = [
         { task: 'brushing', date: '2025-01-01' }, // discourages aloof
         { task: 'brushing', date: '2025-01-02' }, // discourages aloof
@@ -138,7 +138,7 @@ describe('Milestone Trait Evaluator', () => {
     });
 
     it('should not mark traits as epigenetic at age 3', () => {
-      testHorse.age = 1095; // 3 years old
+      testHorse.age = 3; // 3 game-years old
       testHorse.task_log = [
         { task: 'hand_walking', date: '2025-01-01' },
         { task: 'hand_walking', date: '2025-01-02' },
@@ -206,7 +206,7 @@ describe('Milestone Trait Evaluator', () => {
     });
 
     it('should not evaluate if not a milestone age', () => {
-      testHorse.age = 200; // Less than 1 year (365 days)
+      testHorse.age = 0; // Newborn (game-year 0) — not a milestone age
 
       const result = evaluateTraitMilestones(testHorse);
 
@@ -334,7 +334,7 @@ describe('Milestone Trait Evaluator', () => {
     });
 
     it('should return not eligible for non-milestone age', () => {
-      testHorse.age = 200; // Less than 1 year (365 days)
+      testHorse.age = 0; // Newborn (game-year 0) — not a milestone age
 
       const eligibility = checkMilestoneEligibility(testHorse);
 
@@ -345,7 +345,7 @@ describe('Milestone Trait Evaluator', () => {
 
   describe('getMilestoneSummary', () => {
     it('should return correct summary for horse with completed milestones', () => {
-      testHorse.age = 1095; // 3 years old
+      testHorse.age = 3; // 3 game-years old
       testHorse.trait_milestones = {
         age_1: true,
         age_2: true,
@@ -361,7 +361,7 @@ describe('Milestone Trait Evaluator', () => {
     });
 
     it('should return correct summary for horse with all milestones complete', () => {
-      testHorse.age = 1460; // 4 years old
+      testHorse.age = 4; // 4 game-years old
       testHorse.trait_milestones = {
         age_1: true,
         age_2: true,

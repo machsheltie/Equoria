@@ -48,7 +48,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
       const horse = {
         id: 1,
         name: 'Young Horse',
-        age: 365, // Exactly 1 year
+        age: 1, // Exactly 1 game-year (post Equoria-son6/nxga: horse.age is game-years)
         trait_milestones: {}, // No previous milestones
       };
 
@@ -65,7 +65,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
       const horse = {
         id: 2,
         name: 'Developing Horse',
-        age: 730, // Exactly 2 years
+        age: 2, // Exactly 2 game-years
         dateOfBirth: new Date(Date.now() - 730 * 24 * 60 * 60 * 1000),
         healthStatus: 'Excellent',
       };
@@ -82,7 +82,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
       const horse = {
         id: 3,
         name: 'Mature Horse',
-        age: 1095, // Exactly 3 years
+        age: 3, // Exactly 3 game-years
         dateOfBirth: new Date(Date.now() - 1095 * 24 * 60 * 60 * 1000),
         healthStatus: 'Good',
       };
@@ -99,7 +99,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
       const horse = {
         id: 4,
         name: 'Very Young Horse',
-        age: 200, // Less than 1 year
+        age: 0, // Newborn (< 1 game-year) — not a milestone age
         dateOfBirth: new Date(Date.now() - 200 * 24 * 60 * 60 * 1000),
         healthStatus: 'Good',
       };
@@ -116,7 +116,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
       const horse = {
         id: 5,
         name: 'Old Horse',
-        age: 2000, // Over 3 years
+        age: 5, // Over 3 game-years (past all milestones)
         dateOfBirth: new Date(Date.now() - 2000 * 24 * 60 * 60 * 1000),
         healthStatus: 'Good',
       };
@@ -135,7 +135,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
       const horse = {
         id: 6,
         name: 'Well-Cared Horse',
-        age: 365, // Exactly 1 year
+        age: 1, // 1 game-year (post Equoria-nxga)
         healthStatus: 'Excellent',
         task_log: [
           { task: 'feeding', completedAt: new Date() },
@@ -162,7 +162,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
       const horse = {
         id: 7,
         name: 'Two Year Old',
-        age: 730, // Exactly 2 years
+        age: 2, // 2 game-years
         healthStatus: 'Good',
         task_log: [
           { task: 'feeding', completedAt: new Date() },
@@ -186,7 +186,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
       const horse = {
         id: 8,
         name: 'Average Horse',
-        age: 730, // 2 years old - milestone age
+        age: 2, // 2 game-years — milestone age
         healthStatus: 'Good',
         task_log: [
           { task: 'feeding', completedAt: new Date() },
@@ -216,7 +216,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
       const horse = {
         id: 9,
         name: 'Well-Cared Horse',
-        age: 365, // 1 year milestone
+        age: 1, // 1 game-year milestone
         healthStatus: 'Excellent',
         task_log: [
           // Extensive feeding history (encourages resilient trait)
@@ -251,7 +251,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
       const horse = {
         id: 10,
         name: 'Minimally Cared Horse',
-        age: 730, // 2 year milestone
+        age: 2, // 2 game-year milestone
         healthStatus: 'Good',
         task_log: [
           { task: 'feeding', completedAt: new Date() },
@@ -274,7 +274,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
       const horse = {
         id: 11,
         name: 'No Care Horse',
-        age: 1095, // 3 year milestone
+        age: 3, // 3 game-year milestone
         healthStatus: 'Fair',
         task_log: [], // No task history
         trait_milestones: { age_1: true, age_2: true }, // Previous milestones completed
@@ -296,7 +296,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
       const horse = {
         id: 12,
         name: 'Non-Milestone Horse',
-        age: 500, // Not a milestone age (1.37 years)
+        age: 0, // Not a milestone age (newborn, game-year 0)
         healthStatus: 'Excellent',
         task_log: [
           { task: 'feeding', completedAt: new Date() },
@@ -310,15 +310,18 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
 
       expect(result).toHaveProperty('success');
       expect(result).toHaveProperty('milestoneAge');
-      expect(result.success).toBe(true); // The function actually succeeds but evaluates for age 1
-      expect(result.milestoneAge).toBe(1); // 500 days = 1.37 years, so it evaluates for age 1
+      // Post Equoria-nxga: horse.age is game-years. A newborn (age 0) is genuinely
+      // NOT a milestone age — evaluation is correctly skipped.
+      expect(result.success).toBe(false);
+      expect(result.reason).toBe('not_milestone_age');
+      expect(result.milestoneAge).toBe(0);
     });
 
     it('should handle already evaluated milestones', () => {
       const horse = {
         id: 13,
         name: 'Already Evaluated Horse',
-        age: 365, // 1 year milestone
+        age: 1, // 1 game-year milestone
         healthStatus: 'Good',
         task_log: [{ task: 'feeding', completedAt: new Date() }],
         trait_milestones: { age_1: true }, // Already evaluated
@@ -337,7 +340,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
       const horse = {
         id: 14,
         name: 'Horse with Existing Traits',
-        age: 730, // 2 year milestone
+        age: 2, // 2 game-year milestone
         healthStatus: 'Good',
         task_log: [
           { task: 'feeding', completedAt: new Date() },
@@ -366,7 +369,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
       const horse = {
         id: 15,
         name: 'No Task Log Horse',
-        age: 365, // 1 year milestone
+        age: 1, // 1 game-year milestone
         healthStatus: 'Good',
         // Missing task_log property
         trait_milestones: {},
@@ -385,7 +388,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
       const horse = {
         id: 16,
         name: 'Null Task Log Horse',
-        age: 730, // 2 year milestone
+        age: 2, // 2 game-year milestone
         healthStatus: 'Good',
         task_log: null,
         trait_milestones: { age_1: true },
@@ -403,7 +406,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
     it('should handle invalid horse data gracefully', () => {
       const invalidHorse = {
         id: 17,
-        age: 365, // Valid milestone age
+        age: 1, // Valid milestone age (game-year 1)
         // Missing some properties but should not crash
       };
 
@@ -416,7 +419,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
       const horse = {
         id: 18,
         name: 'Malformed Modifiers Horse',
-        age: 1095, // 3 year milestone
+        age: 3, // 3 game-year milestone
         healthStatus: 'Good',
         task_log: [{ task: 'feeding', completedAt: new Date() }],
         trait_milestones: { age_1: true, age_2: true },
@@ -436,7 +439,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
       const horses = [
         {
           id: 19,
-          age: 365,
+          age: 1, // 1 game-year milestone
           healthStatus: 'Excellent',
           task_log: [
             { task: 'feeding', completedAt: new Date() },
@@ -448,7 +451,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
         },
         {
           id: 20,
-          age: 730,
+          age: 2, // 2 game-year milestone
           healthStatus: 'Good',
           task_log: [
             { task: 'feeding', completedAt: new Date() },
@@ -459,7 +462,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
         },
         {
           id: 21,
-          age: 1095,
+          age: 3, // 3 game-year milestone
           healthStatus: 'Fair',
           task_log: [{ task: 'feeding', completedAt: new Date() }],
           trait_milestones: { age_1: true, age_2: true },
@@ -477,7 +480,8 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
         expect(typeof result.isEpigenetic).toBe('boolean');
 
         // Epigenetic should be true for horses under 3 years
-        if (horse.age < 1095) {
+        if (horse.age < 3) {
+          // Epigenetic for under 3 game-years
           expect(result.isEpigenetic).toBe(true);
         } else {
           expect(result.isEpigenetic).toBe(false);
@@ -489,7 +493,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
       const horse = {
         id: 22,
         name: 'Consistent Horse',
-        age: 365,
+        age: 1, // 1 game-year milestone
         healthStatus: 'Good',
         task_log: [
           { task: 'feeding', completedAt: new Date() },

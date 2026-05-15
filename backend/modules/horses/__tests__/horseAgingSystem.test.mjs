@@ -229,9 +229,12 @@ describe('updateHorseAge() — DB-fixture paths (lines 95-135) (Equoria-jkht)', 
 });
 
 // ── checkForMilestones — milestone age 14 DB-fixture (lines 250-308) ─────────────
-// Covers the if(horse) block and both eligibility branches:
-//   not-eligible (303-306): horse.age=0 → Math.floor(0/365)=0 → not in MILESTONE_AGES
-//   eligible+success (254-296): horse.age=365 → Math.floor(365/365)=1 → in MILESTONE_AGES
+// Covers the if(horse) block and both eligibility branches. Post Equoria-son6 /
+// Equoria-nxga: horse.age stores GAME YEARS. milestoneTraitEvaluator no longer
+// divides by 365 — milestoneAge IS horse.age.
+//   not-eligible (303-306): horse.age=0 → milestoneAge 0 → not in MILESTONE_AGES
+//   eligible+success (254-296): horse.age=2 → milestoneAge 2 → in MILESTONE_AGES
+//   (checkForMilestones(id,13,14) crosses the 14-day threshold = game-year 2)
 
 describe('checkForMilestones() — milestone age 14 DB-fixture paths (lines 250-308) (Equoria-rr7)', () => {
   let masUser;
@@ -251,7 +254,7 @@ describe('checkForMilestones() — milestone age 14 DB-fixture paths (lines 250-
         money: 1000,
       },
     });
-    // age=0: Math.floor(0/365)=0 → not in MILESTONE_AGES → eligible:false → not-eligible branch
+    // age=0 (game-years): milestoneAge 0 → not in MILESTONE_AGES → eligible:false → not-eligible branch
     masHorseNotEligible = await prisma.horse.create({
       data: {
         name: `TestFixture-MAS-NotElig-${ts}`,
@@ -261,13 +264,13 @@ describe('checkForMilestones() — milestone age 14 DB-fixture paths (lines 250-
         userId: masUser.id,
       },
     });
-    // age=365: Math.floor(365/365)=1 → in MILESTONE_AGES, no prior milestone → eligible:true → success branch
+    // age=2 (game-years): milestoneAge 2 → in MILESTONE_AGES, no prior milestone → eligible:true → success branch
     masHorseEligible = await prisma.horse.create({
       data: {
         name: `TestFixture-MAS-Eligible-${ts}`,
         sex: 'Filly',
-        dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
-        age: 365,
+        dateOfBirth: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
+        age: 2,
         userId: masUser.id,
       },
     });
@@ -285,7 +288,7 @@ describe('checkForMilestones() — milestone age 14 DB-fixture paths (lines 250-
     expect(result.traitsAssigned).toEqual([]);
   });
 
-  it('enters if(horse) block and eligible+success branch (lines 254-296) when horse.age=365', async () => {
+  it('enters if(horse) block and eligible+success branch (lines 254-296) when horse.age=2 game-years', async () => {
     const result = await checkForMilestones(masHorseEligible.id, 13, 14);
     expect(Array.isArray(result.milestonesTriggered)).toBe(true);
     expect(result.retirementTriggered).toBe(false);

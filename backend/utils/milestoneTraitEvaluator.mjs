@@ -61,7 +61,11 @@ export function evaluateTraitMilestones(horse) {
       `[milestoneTraitEvaluator.evaluateTraitMilestones] Starting evaluation for horse ${horse.id} at age ${horse.age}`,
     );
 
-    const milestoneAge = Math.floor(horse.age / 365); // Convert days to years
+    // Equoria-nxga / Equoria-son6: horse.age stores GAME YEARS (post son6 cron migration).
+    // The previous Math.floor(horse.age / 365) divide assumed days-semantic horse.age and
+    // produced milestoneAge=0 for every real horse (3-year-old → floor(3/365)=0), causing
+    // milestones to never fire in production. horse.age IS the milestone year directly.
+    const milestoneAge = horse.age;
 
     // Check if this is a milestone age
     if (!MILESTONE_AGES.includes(milestoneAge)) {
@@ -299,7 +303,8 @@ function applyTraitToHorse(horse, traitName, metadata = {}) {
  * @returns {Object} Eligibility result with details
  */
 export function checkMilestoneEligibility(horse) {
-  const milestoneAge = Math.floor(horse.age / 365);
+  // Equoria-nxga: horse.age is game-years post Equoria-son6 (was days pre-fix).
+  const milestoneAge = horse.age;
   const milestoneKey = `age_${milestoneAge}`;
   const alreadyEvaluated = horse.trait_milestones?.[milestoneKey];
 
@@ -320,7 +325,8 @@ export function checkMilestoneEligibility(horse) {
  */
 export function getMilestoneSummary(horse) {
   const milestones = horse.trait_milestones || {};
-  const currentAge = Math.floor(horse.age / 365);
+  // Equoria-nxga: horse.age is game-years post Equoria-son6.
+  const currentAge = horse.age;
 
   return {
     currentAge,

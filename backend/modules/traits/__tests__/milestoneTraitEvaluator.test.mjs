@@ -15,11 +15,13 @@ import {
   TRAIT_THRESHOLDS,
 } from '../../../utils/milestoneTraitEvaluator.mjs';
 
-// Age helpers — milestoneAge = Math.floor(horse.age / 365)
-const AGE_YEAR_1 = 365; // milestoneAge = 1
-const AGE_YEAR_2 = 730; // milestoneAge = 2
-const AGE_YEAR_3 = 1095; // milestoneAge = 3
-const AGE_NON_MILESTONE = 200; // milestoneAge = 0 — not a milestone
+// Age helpers — post Equoria-son6 / Equoria-nxga: horse.age stores GAME YEARS
+// directly (1 game year = 7 real-time days, persisted as the integer year).
+// milestoneAge IS horse.age (no /365 divide).
+const AGE_YEAR_1 = 1; // milestoneAge = 1
+const AGE_YEAR_2 = 2; // milestoneAge = 2
+const AGE_YEAR_3 = 3; // milestoneAge = 3
+const AGE_NON_MILESTONE = 0; // milestoneAge = 0 — not a milestone (newborn)
 
 // Valid task names from TASK_TRAIT_INFLUENCE_MAP
 const BRUSHING = 'brushing'; // encourages: bonded, patient | discourages: aloof
@@ -56,20 +58,20 @@ describe('exported constants', () => {
 // checkMilestoneEligibility
 // ---------------------------------------------------------------------------
 describe('checkMilestoneEligibility', () => {
-  it('returns eligible=true for age 365 (year 1)', () => {
+  it('returns eligible=true for age 1 (year 1)', () => {
     const result = checkMilestoneEligibility(emptyHorse(AGE_YEAR_1));
     expect(result.eligible).toBe(true);
     expect(result.milestoneAge).toBe(1);
     expect(result.isMilestoneAge).toBe(true);
   });
 
-  it('returns eligible=true for age 730 (year 2)', () => {
+  it('returns eligible=true for age 2 (year 2)', () => {
     const result = checkMilestoneEligibility(emptyHorse(AGE_YEAR_2));
     expect(result.eligible).toBe(true);
     expect(result.milestoneAge).toBe(2);
   });
 
-  it('returns eligible=true for age 1095 (year 3)', () => {
+  it('returns eligible=true for age 3 (year 3)', () => {
     const result = checkMilestoneEligibility(emptyHorse(AGE_YEAR_3));
     expect(result.eligible).toBe(true);
     expect(result.milestoneAge).toBe(3);
@@ -107,7 +109,7 @@ describe('getMilestoneSummary', () => {
     expect(summary).toHaveProperty('allMilestonesComplete');
   });
 
-  it('currentAge matches Math.floor(age/365)', () => {
+  it('currentAge equals horse.age (game-years, post Equoria-nxga)', () => {
     const summary = getMilestoneSummary(emptyHorse(AGE_YEAR_2));
     expect(summary.currentAge).toBe(2);
   });
@@ -138,7 +140,7 @@ describe('getMilestoneSummary', () => {
   });
 
   it('nextMilestone is undefined when age is past all milestones', () => {
-    const horse = emptyHorse(1500); // milestoneAge = 4, beyond all milestones
+    const horse = emptyHorse(4); // 4 game-years, beyond all milestones
     const summary = getMilestoneSummary(horse);
     expect(summary.nextMilestone).toBeUndefined();
   });
@@ -450,5 +452,89 @@ describe('getMilestoneSummary — trait_milestones||{} right-branch', () => {
     expect(summary.completedMilestones).toHaveLength(0);
     expect(summary.pendingMilestones).toContain('age_1');
     expect(summary.pendingMilestones).toContain('age_2');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// GAME-YEAR SEMANTICS (Equoria-nxga / Equoria-son6)
+// Sentinel tests: horse.age stores GAME YEARS (post-son6). The /365 divide
+// in the old day-semantic code produced milestoneAge=0 for every real horse,
+// breaking milestones across the entire game. These tests assert the new
+// contract: horse.age IS already the milestone year (1, 2, or 3).
+// ---------------------------------------------------------------------------
+describe('GAME-YEAR semantics — horse.age is game-years (Equoria-nxga)', () => {
+  const gameYearHorse = (ageYears, milestones = {}) => ({
+    id: 999,
+    age: ageYears,
+    task_log: [],
+    trait_milestones: milestones,
+    epigeneticModifiers: { positive: [], negative: [], hidden: [], epigenetic: [] },
+  });
+
+  it('checkMilestoneEligibility — age=1 game-year is the year-1 milestone', () => {
+    const result = checkMilestoneEligibility(gameYearHorse(1));
+    expect(result.milestoneAge).toBe(1);
+    expect(result.eligible).toBe(true);
+    expect(result.isMilestoneAge).toBe(true);
+  });
+
+  it('checkMilestoneEligibility — age=2 game-years is the year-2 milestone', () => {
+    const result = checkMilestoneEligibility(gameYearHorse(2));
+    expect(result.milestoneAge).toBe(2);
+    expect(result.eligible).toBe(true);
+  });
+
+  it('checkMilestoneEligibility — age=3 game-years is the year-3 milestone', () => {
+    const result = checkMilestoneEligibility(gameYearHorse(3));
+    expect(result.milestoneAge).toBe(3);
+    expect(result.eligible).toBe(true);
+  });
+
+  it('checkMilestoneEligibility — age=0 (newborn) is NOT a milestone', () => {
+    const result = checkMilestoneEligibility(gameYearHorse(0));
+    expect(result.milestoneAge).toBe(0);
+    expect(result.eligible).toBe(false);
+  });
+
+  it('checkMilestoneEligibility — age=4 game-years is past milestones', () => {
+    const result = checkMilestoneEligibility(gameYearHorse(4));
+    expect(result.milestoneAge).toBe(4);
+    expect(result.eligible).toBe(false);
+    expect(result.isMilestoneAge).toBe(false);
+  });
+
+  it('evaluateTraitMilestones — age=2 game-years performs evaluation (NOT skipped as non-milestone)', () => {
+    // Sentinel-positive: With the bug (/365 divide), age=2 → floor(2/365)=0 → reason "not_milestone_age".
+    // With the fix, age=2 IS the year-2 milestone → evaluation performed.
+    const result = evaluateTraitMilestones(gameYearHorse(2));
+    expect(result.success).toBe(true);
+    expect(result.reason).not.toBe('not_milestone_age');
+    expect(result.evaluationPerformed).toBe(true);
+    expect(result.milestoneAge).toBe(2);
+  });
+
+  it('evaluateTraitMilestones — age=1 game-year applies traits when threshold met', () => {
+    // Real-world flow from horseAgingSystem.checkForMilestones:
+    //   - DB horse.age is in game-years (post son6).
+    //   - Function is called with that horse.
+    //   - Must trigger milestone year-1 trait application.
+    const horse = gameYearHorse(1);
+    horse.task_log = [{ task: 'brushing' }, { task: 'brushing' }, { task: 'brushing' }];
+    const result = evaluateTraitMilestones(horse);
+    expect(result.success).toBe(true);
+    expect(result.milestoneAge).toBe(1);
+    expect(result.traitsApplied.length).toBeGreaterThan(0);
+  });
+
+  it('getMilestoneSummary — currentAge reflects game-years directly (no /365)', () => {
+    const summary = getMilestoneSummary(gameYearHorse(2));
+    expect(summary.currentAge).toBe(2);
+    expect(summary.nextMilestone).toBe(3);
+  });
+
+  it('getMilestoneSummary — age=5 game-years has no nextMilestone (past all)', () => {
+    const summary = getMilestoneSummary(gameYearHorse(5));
+    expect(summary.currentAge).toBe(5);
+    expect(summary.nextMilestone).toBeUndefined();
   });
 });
