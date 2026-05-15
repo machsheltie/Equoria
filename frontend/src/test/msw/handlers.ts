@@ -111,6 +111,10 @@
  * POST   /api/v1/messages                         send message
  * PATCH  /api/v1/messages/:id/read                mark as read
  *
+ * ── Marketplace / Horse Trader (Equoria-m1ck) ────────────────────────────
+ * GET    /api/v1/breeds                           breed catalog (combobox)
+ * POST   /api/v1/marketplace/store/buy            buy 3-year-old store horse
+ *
  * ── Clubs (19B-3) ────────────────────────────────────────────────────────
  * GET    /api/v1/clubs                            club list (filterable)
  * GET    /api/v1/clubs/mine                       my memberships
@@ -1924,6 +1928,32 @@ export const handlers = [
         { id: 3, name: 'Warmblood', description: 'A dressage breed' },
       ],
       count: 3,
+    });
+  }),
+
+  // ── Marketplace: Horse Trader store purchase (Equoria-m1ck) ────────────────
+  // POST /api/v1/marketplace/store/buy — buy a 3-year-old store horse.
+  // Default handler returns the success envelope. Tests that need to exercise
+  // the 400 insufficient-funds path should override with `server.use(...)` in
+  // the test itself (see HorseTraderPage.test.tsx for the error variant).
+  http.post(`${base}/api/v1/marketplace/store/buy`, async ({ request }) => {
+    const body = (await request.json().catch(() => ({}))) as {
+      breedId?: number;
+      sex?: 'Mare' | 'Stallion';
+    };
+    return HttpResponse.json({
+      success: true,
+      data: {
+        horse: {
+          id: 9001,
+          name: `${body.sex ?? 'Mare'} of Breed ${body.breedId ?? 1}`,
+          breedId: body.breedId ?? 1,
+          sex: body.sex ?? 'Mare',
+          age: 3,
+        },
+        pricePaid: 1000,
+        newBalance: 4000,
+      },
     });
   }),
 
