@@ -115,10 +115,24 @@ describe('calculateLineageQuality', () => {
 
   it('should add up to +50 from average stats', () => {
     const sire = createHorse({
-      stats: { speed: 100, stamina: 100, agility: 100, strength: 100, intelligence: 100, health: 100 },
+      stats: {
+        speed: 100,
+        stamina: 100,
+        agility: 100,
+        strength: 100,
+        intelligence: 100,
+        health: 100,
+      },
     });
     const dam = createHorse({
-      stats: { speed: 100, stamina: 100, agility: 100, strength: 100, intelligence: 100, health: 100 },
+      stats: {
+        speed: 100,
+        stamina: 100,
+        agility: 100,
+        strength: 100,
+        intelligence: 100,
+        health: 100,
+      },
     });
     const score = calculateLineageQuality(sire, dam);
     // Base 50 + (100+100)/4 = 50 + 50 = 100
@@ -178,12 +192,26 @@ describe('calculateLineageQuality', () => {
 
   it('should cap score at 100', () => {
     const sire = createHorse({
-      stats: { speed: 100, stamina: 100, agility: 100, strength: 100, intelligence: 100, health: 100 },
+      stats: {
+        speed: 100,
+        stamina: 100,
+        agility: 100,
+        strength: 100,
+        intelligence: 100,
+        health: 100,
+      },
       level: 20,
       traits: ['speed', 'strength', 'agility', 'endurance', 'intelligence', 'boldness'],
     });
     const dam = createHorse({
-      stats: { speed: 100, stamina: 100, agility: 100, strength: 100, intelligence: 100, health: 100 },
+      stats: {
+        speed: 100,
+        stamina: 100,
+        agility: 100,
+        strength: 100,
+        intelligence: 100,
+        health: 100,
+      },
       level: 20,
       traits: ['speed', 'strength', 'agility', 'endurance', 'intelligence', 'boldness'],
     });
