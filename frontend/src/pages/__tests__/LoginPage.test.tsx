@@ -622,8 +622,22 @@ describe('LoginPage', () => {
 
       const submitButton = screen.getByRole('button', { name: /^enter$/i });
 
-      // Click multiple times rapidly
+      // First click triggers mutate(); useLogin sets isPending=true and the
+      // button's `disabled` attribute is applied on the next React render.
       await user.click(submitButton);
+
+      // Wait for the disabled state to land in the DOM before the rapid
+      // follow-up clicks. Asserting this between clicks is the deterministic
+      // disabled-state guard — relying on userEvent.click() to observe
+      // pointer-events:none on subsequent rapid clicks races React's render
+      // flush and produced flaky callCount=2 results (Equoria-axw4 / s23m,
+      // sibling of Equoria-n2cl).
+      await waitFor(() => {
+        expect(submitButton).toBeDisabled();
+      });
+
+      // Now that the disabled state is committed, additional clicks must be
+      // swallowed by HTMLButtonElement's native disabled behavior.
       await user.click(submitButton);
       await user.click(submitButton);
 
