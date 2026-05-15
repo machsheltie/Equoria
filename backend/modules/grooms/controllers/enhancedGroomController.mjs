@@ -455,7 +455,7 @@ function getNextThreshold(currentLevel) {
   return levels[currentLevel + 1] || null;
 }
 
-function generateInteractionRecommendations(groom, horse, relationshipLevel) {
+export function generateInteractionRecommendations(groom, horse, relationshipLevel) {
   const recommendations = [];
 
   // Based on stress level
@@ -477,7 +477,11 @@ function generateInteractionRecommendations(groom, horse, relationshipLevel) {
   }
 
   // Based on groom specialty
-  if (groom.speciality === 'foalCare' && horse.age < 1095) {
+  // Equoria-9ty8: horse.age is game-years (post Equoria-son6). Previously
+  // compared against 1095 (the day-count for 3 years), which after the son6
+  // migration was always true (every horse < 1095 years), causing the foalCare
+  // recommendation to fire for adult horses too. Foal-care window = 0-3 years.
+  if (groom.speciality === 'foalCare' && horse.age < 3) {
     recommendations.push({
       type: 'enrichment',
       variation: 'Sensory Exploration',
