@@ -1,0 +1,32 @@
+-- Equoria-2lov: Final reconciliation of legacy user_transactions index drift.
+--
+-- Context:
+--   Migration 20260414000000_add_user_transactions/migration.sql creates
+--   `user_transactions_user_created_idx` (snake_case, DESC ordering) which is
+--   NOT defined in schema.prisma (the schema only declares
+--   `@@index([userId, createdAt])` → `user_transactions_userId_createdAt_idx`).
+--   Two prior cleanup migrations attempted to drop the orphan:
+--     - 20260430000000_drift_cleanup_orphan_user_tx_index
+--     - 20260501130000_drift_cleanup_ad_hoc_horse_indexes
+--   But the orphan has reappeared on the canonical equoria DB and on
+--   equoria_test (verified via `prisma migrate diff` 2026-05-15). The reappearance
+--   is consistent with a manual `prisma db execute` replay or partial reset
+--   re-running the original add_user_transactions migration SQL.
+--
+-- This migration is the FINAL drop. It is fully idempotent (IF EXISTS) so it
+-- is a no-op on environments where the orphan is already absent (e.g., a
+-- production DB that never had the drift).
+--
+-- Verification after deploy:
+--   prisma migrate diff --from-schema-datamodel prisma/schema.prisma \
+--     --to-url $DATABASE_URL
+--   → must print "No difference detected".
+--
+-- Note on the original migration file:
+--   `20260414000000_add_user_transactions/migration.sql` line 13 still creates
+--   the orphan on a green-field DB. Editing past migration files breaks
+--   checksums, so the file is intentionally left as-is. On a fresh deploy,
+--   this migration (and the two earlier cleanup migrations) run AFTER the
+--   original and leave the DB in the schema-aligned state.
+
+DROP INDEX IF EXISTS "user_transactions_user_created_idx";
