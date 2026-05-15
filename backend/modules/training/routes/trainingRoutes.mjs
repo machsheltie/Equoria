@@ -8,9 +8,8 @@ import {
 } from '../controllers/trainingController.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { trainingLimiter } from '../../../middleware/trainingRateLimit.mjs';
-import { requireOwnership, findOwnedResource } from '../../../middleware/ownership.mjs';
+import { requireOwnership } from '../../../middleware/ownership.mjs';
 import { getAllDisciplines } from '../../../utils/statMap.mjs';
-import { AppError } from '../../../errors/index.mjs';
 import logger from '../../../utils/logger.mjs';
 
 const router = express.Router();
@@ -49,15 +48,14 @@ router.post(
       .withMessage('Discipline must be between 1 and 50 characters'),
     handleValidationErrors,
   ],
+  // Equoria-ydjc: migrated from inline findOwnedResource to canonical
+  // requireOwnership middleware. handleValidationErrors above ensures the
+  // body shape is valid before the middleware runs, so a non-numeric
+  // horseId still surfaces as "Validation failed".
+  requireOwnership('horse', { idParam: 'horseId', from: 'body' }),
   async (req, res) => {
     try {
       const { horseId, discipline } = req.body;
-
-      // Validate horse ownership
-      const horse = await findOwnedResource('horse', horseId, req.user.id);
-      if (!horse) {
-        throw new AppError('Horse not found', 404);
-      }
 
       logger.info(
         `[trainingRoutes.checkEligibility] User ${req.user.id} checking eligibility for horse ${horseId} in ${discipline}`,
@@ -98,36 +96,12 @@ router.post(
       .withMessage('Discipline must be between 1 and 50 characters'),
     handleValidationErrors,
   ],
+  // Equoria-ydjc: migrated from inline findOwnedResource to canonical
+  // requireOwnership middleware (attaches the resolved horse to req.horse
+  // for trainRouteHandler — same contract as the old inline version).
+  requireOwnership('horse', { idParam: 'horseId', from: 'body' }),
   async (req, res, next) => {
-    try {
-      const { horseId } = req.body;
-
-      // Validate horse ownership before training
-      const horse = await findOwnedResource('horse', horseId, req.user.id);
-      if (!horse) {
-        throw new AppError('Horse not found', 404);
-      }
-
-      // Attach validated horse to request for handler
-      req.horse = horse;
-
-      // Proceed to training handler
-      return trainRouteHandler(req, res, next);
-    } catch (error) {
-      // Symbol-marker check survives module-cache duplication
-      // (jest.unstable_mockModule etc.); see errors/AppError.mjs comment.
-      if (AppError.isAppError(error)) {
-        return res.status(error.statusCode).json({
-          success: false,
-          message: error.message,
-        });
-      }
-      logger.error(`[trainingRoutes.train] Error: ${error.message}`);
-      return res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-      });
-    }
+    return trainRouteHandler(req, res, next);
   },
 );
 
