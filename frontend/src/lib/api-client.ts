@@ -1002,7 +1002,39 @@ export const horsesApi = {
         bestGroomPersonalities: string[];
       }[];
     }>(`/api/v1/horses/temperament-definitions`),
+  // Equoria-lsdb — 31E-4 coat-color genetics endpoint.
+  // Returns null when the horse has no genotype data (legacy horse), not an
+  // error. Consumers should branch on `data === null` to render fallback UI.
+  getGenetics: (horseId: number | string) =>
+    apiClient.get<HorseGeneticsResponse | null>(`/api/v1/horses/${horseId}/genetics`),
+  // Equoria-lsdb — 31E-4 player-facing coat-color endpoint.
+  // Returns null when the horse has no phenotype data (legacy horse).
+  getColor: (horseId: number | string) =>
+    apiClient.get<HorseColorResponse | null>(`/api/v1/horses/${horseId}/color`),
 };
+
+/**
+ * 31E-4 — coat-color genetics & color response types (Equoria-lsdb).
+ * Both endpoints return the canonical envelope { success, message, data } where
+ * `data === null` for legacy horses that pre-date the color-genetics system.
+ */
+export interface HorseGeneticsResponse {
+  horseId: number;
+  horseName: string;
+  colorGenotype: Record<string, string>;
+  phenotype: Record<string, unknown> | null;
+}
+
+export interface HorseColorResponse {
+  horseId: number;
+  horseName: string;
+  colorName: string | null;
+  shade: string | null;
+  faceMarking: string | null;
+  legMarkings: Record<string, string> | string[] | null;
+  advancedMarkings: Record<string, unknown> | string[] | null;
+  modifiers: Record<string, unknown> | null;
+}
 
 /**
  * Rider interfaces (Epic 9C)
