@@ -10,4 +10,4 @@ global.jest = vi;
 // (e.g. Tabs ArrowKey navigation) emit "not wrapped in act()" warnings even
 // when userEvent handles them correctly.
 // See: https://github.com/reactwg/react-18/discussions/102
-globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true;
