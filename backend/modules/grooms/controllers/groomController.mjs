@@ -38,6 +38,7 @@ import { awardGroomXP, updateGroomSynergy } from '../../../services/groomProgres
 import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
 import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
 import { getTemperamentGroomSynergy } from '../../horses/services/temperamentService.mjs';
+import { getHorseAgeDays } from '../../../utils/horseAge.mjs';
 
 const GROOM_LIST_SELECT = {
   id: true,
@@ -59,7 +60,7 @@ const GROOM_LIST_SELECT = {
  * @returns {string|null} Current milestone window ID or null if not in any window
  */
 function getCurrentMilestoneWindow(dateOfBirth) {
-  const ageInDays = Math.floor((Date.now() - new Date(dateOfBirth)) / (1000 * 60 * 60 * 24));
+  const ageInDays = getHorseAgeDays(dateOfBirth);
 
   // Only track milestone windows for horses under 3 years (1095 days)
   if (ageInDays >= 1095) {
@@ -402,7 +403,7 @@ export async function recordInteraction(req, res) {
 
     // Determine milestone window and task type for enhanced evaluation
     const milestoneWindowId = getCurrentMilestoneWindow(foal.dateOfBirth);
-    const ageInDays = Math.floor((Date.now() - new Date(foal.dateOfBirth)) / (1000 * 60 * 60 * 24));
+    const ageInDays = getHorseAgeDays(foal.dateOfBirth);
     const taskType = determineTaskType(interactionType, ageInDays);
     const qualityScore =
       effects.quality === 'excellent'

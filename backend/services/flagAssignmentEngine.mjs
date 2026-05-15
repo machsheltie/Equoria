@@ -16,6 +16,7 @@
 import logger from '../utils/logger.mjs';
 import { EPIGENETIC_FLAG_DEFINITIONS, FLAG_TYPES } from '../config/epigeneticFlagDefinitions.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
+import { getHorseAgeDays } from '../utils/horseAge.mjs';
 
 /**
  * Evaluate flag triggers based on care patterns
@@ -630,7 +631,7 @@ function calculateBaseScore(flagDef, carePatterns) {
  * Calculate age-based sensitivity modifier
  */
 function calculateAgeModifier(horse) {
-  const ageInDays = Math.floor((Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24));
+  const ageInDays = getHorseAgeDays(horse.dateOfBirth);
 
   // Younger horses are more sensitive to flag triggers
   if (ageInDays <= 30) {
@@ -743,7 +744,7 @@ function calculateAssignmentThreshold(flagDef, horse) {
   }
 
   // Adjust based on horse age (younger horses have lower thresholds)
-  const ageInDays = Math.floor((Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24));
+  const ageInDays = getHorseAgeDays(horse.dateOfBirth);
 
   if (ageInDays <= 30) {
     baseThreshold *= 0.8; // Very young

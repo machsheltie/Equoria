@@ -7,6 +7,7 @@
  */
 
 import prisma from '../db/index.mjs';
+import { getHorseAgeDays } from '../utils/horseAge.mjs';
 
 /**
  * Logs a trait assignment to the history
@@ -36,7 +37,7 @@ export async function logTraitAssignment(traitData) {
     throw new Error(`Horse with ID ${horseId} not found`);
   }
 
-  const ageInDays = Math.floor((Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24));
+  const ageInDays = getHorseAgeDays(horse.dateOfBirth);
 
   // Create the trait history log entry
   const historyEntry = await prisma.traitHistoryLog.create({

@@ -13,6 +13,7 @@ import {
   evaluateEpigeneticFlags,
 } from './epigeneticFlags.mjs';
 import { evaluateUltraRareTriggers, evaluateExoticUnlocks } from './ultraRareTriggerEngine.mjs';
+import { getHorseAgeDays } from './horseAge.mjs';
 // Note: Using existing trait effects system instead of separate definitions
 
 /**
@@ -29,7 +30,7 @@ export async function evaluateEnhancedMilestone(
   currentGroom,
   milestoneData,
 ) {
-  const ageInDays = Math.floor((Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24));
+  const ageInDays = getHorseAgeDays(horse.dateOfBirth);
 
   // Base milestone evaluation
   const baseMilestone = await evaluateBaseMilestone(horse, milestoneData);
@@ -428,7 +429,7 @@ async function evaluateBaseMilestone(horse, _milestoneData) {
 }
 
 function getAgeCategory(horse) {
-  const ageInDays = Math.floor((Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24));
+  const ageInDays = getHorseAgeDays(horse.dateOfBirth);
 
   if (ageInDays < 180) {
     return 'foal';
@@ -446,7 +447,7 @@ function getAgeCategory(horse) {
 }
 
 function getDevelopmentalStage(horse) {
-  const ageInDays = Math.floor((Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24));
+  const ageInDays = getHorseAgeDays(horse.dateOfBirth);
 
   if (ageInDays < 30) {
     return 'imprinting';
