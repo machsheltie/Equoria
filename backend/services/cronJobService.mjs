@@ -9,6 +9,7 @@ import logger from '../utils/logger.mjs';
 import { processWeeklySalaries } from './groomSalaryService.mjs';
 import { cleanupExpiredTokens } from '../utils/tokenRotationService.mjs';
 import { runFoalingJob } from '../modules/horses/services/foalingService.mjs';
+import { processRiderTrainerRetirement } from './riderTrainerRetirementService.mjs';
 import legacyCronJobs from './cronJobs.mjs';
 // Track running jobs
 const runningJobs = new Map();
@@ -64,10 +65,27 @@ export function initializeCronJobs() {
 
     runningJobs.set('foaling', foalingJob);
 
+    // Rider/Trainer auto-retirement — Every Monday at 09:30 UTC, just after
+    // the weekly salary processing. Retires any rider/trainer whose
+    // careerWeeks have crossed the mandatory-retirement threshold (Equoria-osum).
+    const retirementJob = cron.schedule(
+      '30 9 * * 1',
+      async () => {
+        await runRiderTrainerRetirement();
+      },
+      {
+        scheduled: false,
+        timezone: 'UTC',
+      },
+    );
+
+    runningJobs.set('riderTrainerRetirement', retirementJob);
+
     // Start all jobs
     salaryJob.start();
     tokenCleanupJob.start();
     foalingJob.start();
+    retirementJob.start();
 
     // Start trait evaluation + horse aging jobs (defined in cronJobs.mjs)
     legacyCronJobs.start();
@@ -200,6 +218,35 @@ async function runTokenCleanup() {
       error: error.message,
     };
   }
+}
+
+/**
+ * Run Rider + Trainer auto-retirement pass (Equoria-osum).
+ * Retires any rider/trainer with careerWeeks above the mandatory-retirement
+ * threshold and deactivates their active assignments.
+ */
+async function runRiderTrainerRetirement() {
+  try {
+    logger.info('[cronJobService] Starting rider/trainer auto-retirement pass...');
+    const results = await processRiderTrainerRetirement();
+    logger.info(
+      `[cronJobService] Rider/trainer auto-retirement complete. ` +
+        `Riders retired: ${results.riders.retiredCount}; ` +
+        `trainers retired: ${results.trainers.retiredCount}.`,
+    );
+    return results;
+  } catch (error) {
+    logger.error(`[cronJobService] Error in rider/trainer auto-retirement: ${error.message}`);
+    return { riders: null, trainers: null, error: error.message };
+  }
+}
+
+/**
+ * Manually trigger the rider/trainer auto-retirement pass (for testing/admin).
+ * @returns {Promise<Object>} Processing results
+ */
+export async function triggerRiderTrainerRetirement() {
+  return processRiderTrainerRetirement();
 }
 
 /**
