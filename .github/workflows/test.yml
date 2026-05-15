@@ -443,6 +443,30 @@ jobs:
         ports:
           - 5432:5432
 
+      # Equoria-obwp: provision Redis for the E2E backend (NODE_ENV=beta in
+      # playwright.config.ts → real rate-limit middleware path). Without a
+      # Redis service the limiter falls back to in-memory mode and the
+      # in-process counter accumulates across all 130 sequential Playwright
+      # tests in one chromium worker, eventually tripping the 500/15min
+      # registration cap and 429-ing the remainder of the run. With Redis
+      # available the limiter uses RedisStore and counters reset cleanly per
+      # window — beta-critical-path, breeding, onboarding-flow, session-
+      # lifetime, and settings-persistence specs no longer share rate-limit
+      # state through a leaky in-memory bucket. Bypass headers are explicitly
+      # disabled under NODE_ENV=beta (see backend/middleware/rateLimiting.mjs
+      # Story 21S-2), so Redis is the only correct fix — raising the cap via
+      # TEST_RATE_LIMIT_MAX_REQUESTS would not apply (those env knobs only
+      # take effect under NODE_ENV=test or JEST_WORKER_ID).
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     steps:
       - uses: actions/checkout@v4
 
