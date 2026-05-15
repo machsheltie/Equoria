@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
-import { apiClient, authApi, breedingPredictionApi } from '../api-client';
+import { apiClient, authApi, breedingPredictionApi, conformationShowsApi } from '../api-client';
 import { server } from '@/test/msw/server';
 import authSessionState from '../authSessionState';
 
@@ -509,6 +509,67 @@ describe('API Client - HttpOnly Cookie Support', () => {
       const body = JSON.parse((callArgs?.body as string) ?? '{}');
       expect(body).toEqual({ sireId: 1, damId: 2 });
       expect(Object.prototype.hasOwnProperty.call(body, 'foalBreedId')).toBe(false);
+    });
+  });
+
+  describe('conformationShowsApi (Equoria-1vkm)', () => {
+    // Wrappers for /api/v1/competition/conformation/* (sub-router wired by
+    // Equoria-pety). Unit-tests verify URL/method/body shape only. Real-DB
+    // HTTP coverage lives in backend/modules/competition/__tests__/.
+
+    it('enter() POSTs payload to the conformation /enter endpoint', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 201,
+        json: async () => ({
+          status: 'success',
+          data: {
+            entryId: 99,
+            horseId: 1,
+            showId: 2,
+            ageClass: 'mature',
+            className: 'Mares',
+            warnings: [],
+          },
+        }),
+      });
+
+      await conformationShowsApi.enter({ horseId: 1, groomId: 3, showId: 2, className: 'Mares' });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/competition/conformation/enter'),
+        expect.objectContaining({
+          method: 'POST',
+          credentials: 'include',
+          body: JSON.stringify({ horseId: 1, groomId: 3, showId: 2, className: 'Mares' }),
+        })
+      );
+    });
+
+    it('getEligibility() GETs /eligibility/:horseId', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          status: 'success',
+          data: {
+            horseId: 7,
+            horseName: 'Test Horse',
+            eligible: true,
+            errors: [],
+            warnings: [],
+            ageClass: 'mature',
+            groomAssigned: true,
+          },
+        }),
+      });
+
+      await conformationShowsApi.getEligibility(7);
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/competition/conformation/eligibility/7'),
+        expect.objectContaining({ method: 'GET', credentials: 'include' })
+      );
     });
   });
 
