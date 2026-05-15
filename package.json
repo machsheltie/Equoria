@@ -26,7 +26,7 @@
     "start-backend": "cd backend && npm run start",
     "prepare": "husky",
     "format:check": "prettier --check .",
-    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "typecheck": "tsc -p frontend/tsconfig.json --noEmit",
     "check-prerequisites": "node scripts/check-prerequisites.mjs"
   },
   "keywords": [
