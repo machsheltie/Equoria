@@ -17,9 +17,15 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { performance } from 'node:perf_hooks';
 import express from 'express';
 import request from 'supertest';
 import performanceMonitorRouter from '../../../utils/performanceMonitor.mjs';
+
+// Story 21-7 AC4 (Equoria-w981): critical-path SLA. /metrics is an ops
+// endpoint with no DB work — it must return well under 100 ms on warm cache.
+// A regression past the budget fails CI via npm run test:performance.
+const METRICS_SLA_MS = 100;
 
 describe('performanceMonitor router (Equoria-rr7)', () => {
   let app;
@@ -78,6 +84,34 @@ describe('performanceMonitor router (Equoria-rr7)', () => {
       // Standard fields the cacheHelper always emits.
       expect(typeof res.body.data.cache.hitRate).toBe('number');
       expect(typeof res.body.data.cache.redisAvailable).toBe('boolean');
+    });
+
+    it(`warm response latency under ${METRICS_SLA_MS}ms SLA (FR-100, Story 21-7 AC4)`, async () => {
+      // Warm the router once — first call pays JIT + module-init cost.
+      await request(app).get('/api/performance/metrics');
+
+      // Sample 3 times; assert MEDIAN under SLA. Median is robust to one-off
+      // GC pauses while still failing CI on a real regression because the
+      // budget would need to be breached on at least 2 of 3 samples.
+      const samples = [];
+      for (let i = 0; i < 3; i += 1) {
+        const start = performance.now();
+        const res = await request(app).get('/api/performance/metrics');
+        const elapsed = performance.now() - start;
+        expect(res.status).toBe(200);
+        samples.push(elapsed);
+      }
+      samples.sort((a, b) => a - b);
+      const median = samples[1];
+
+      if (median >= METRICS_SLA_MS) {
+        // eslint-disable-next-line no-console
+        console.log(
+          `[Equoria-w981] /metrics median warm latency = ${median.toFixed(1)}ms ` +
+            `(samples: ${samples.map((s) => s.toFixed(1)).join(', ')}, budget ${METRICS_SLA_MS}ms)`,
+        );
+      }
+      expect(median).toBeLessThan(METRICS_SLA_MS);
     });
   });
 
