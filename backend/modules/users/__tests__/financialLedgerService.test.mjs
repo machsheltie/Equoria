@@ -33,8 +33,11 @@ beforeAll(async () => {
 }, 30000);
 
 afterAll(async () => {
-  // Clean up test transactions before deleting the user
-  await prisma.$executeRawUnsafe('DELETE FROM user_transactions WHERE "userId" = $1', user.id).catch(() => {});
+  // Clean up test transactions before deleting the user.
+  // Typed Prisma deleteMany (replaces $executeRawUnsafe — Equoria-3ear). The
+  // scoped where-clause filters by this test's userId only, satisfying
+  // CLAUDE.md §2 "Cleanup logic must be SCOPED".
+  await prisma.userTransaction.deleteMany({ where: { userId: user.id } }).catch(() => {});
   await prisma.user.delete({ where: { id: user.id } }).catch(() => {});
 }, 30000);
 

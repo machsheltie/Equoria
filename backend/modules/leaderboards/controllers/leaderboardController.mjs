@@ -594,15 +594,22 @@ export const getUserRankSummary = async (req, res) => {
 
     // Fetch the most recent snapshot per category so we can compute rankChange.
     // rankChange = previousRank - currentRank (positive means rank improved).
+    // Typed Prisma replacement of the DISTINCT ON raw query (Equoria-3ear):
+    // pull rows ordered by capturedAt DESC, then dedupe-by-category in JS so
+    // the first occurrence (newest per category) wins. Avoids `$queryRaw`
+    // while preserving the original "latest snapshot per category" semantics.
     let snapshotMap = {};
     try {
-      const snapshots = await prisma.$queryRaw`
-        SELECT DISTINCT ON (category) category, rank
-        FROM user_rank_snapshots
-        WHERE "userId" = ${userId}
-        ORDER BY category, "capturedAt" DESC
-      `;
-      snapshotMap = Object.fromEntries(snapshots.map(s => [s.category, Number(s.rank)]));
+      const snapshots = await prisma.userRankSnapshot.findMany({
+        where: { userId },
+        select: { category: true, rank: true, capturedAt: true },
+        orderBy: { capturedAt: 'desc' },
+      });
+      for (const s of snapshots) {
+        if (!(s.category in snapshotMap)) {
+          snapshotMap[s.category] = Number(s.rank);
+        }
+      }
     } catch (_snapshotErr) {
       // Table may not exist in older envs — fall back to rankChange: 0
     }
@@ -732,11 +739,19 @@ export const captureRankSnapshots = async (req, res) => {
         { userId, category: 'horse-performance', rank: Number(perfAhead[0]?.cnt ?? 0) + 1 },
       ];
 
+      // Typed Prisma create (replaces $executeRaw INSERT — Equoria-3ear).
+      // createMany is faster but doesn't auto-default capturedAt the same way
+      // (the schema's @default(now()) applies per-row); since we only have 4
+      // rows per user, the individual create loop has negligible overhead and
+      // keeps capturedAt timestamps schema-default-driven.
       for (const row of rows) {
-        await prisma.$executeRaw`
-          INSERT INTO user_rank_snapshots ("userId", category, rank, "capturedAt")
-          VALUES (${row.userId}, ${row.category}, ${row.rank}, NOW())
-        `;
+        await prisma.userRankSnapshot.create({
+          data: {
+            userId: row.userId,
+            category: row.category,
+            rank: row.rank,
+          },
+        });
       }
       captured++;
     }
