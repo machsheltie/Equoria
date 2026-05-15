@@ -35,13 +35,13 @@ async function setupTestData() {
 
     // 3. Create test horses of different ages
     const horses = await Promise.all([
-      // Foal (1 year old - 365 days)
+      // Foal (1 game-year old) — Equoria-9llg/3i1r: horse.age is game-years post Equoria-son6
       prisma.horse.upsert({
         where: { name: 'Test Foal' },
         update: {},
         create: {
           name: 'Test Foal',
-          age: 365, // 1 year old
+          age: 1, // 1 game-year
           breedId: breed.id,
           userId: testUser.id,
           gender: 'filly',
@@ -63,13 +63,13 @@ async function setupTestData() {
         },
       }),
 
-      // Young horse (2 years old - 730 days)
+      // Young horse (2 game-years old)
       prisma.horse.upsert({
         where: { name: 'Test Young Horse' },
         update: {},
         create: {
           name: 'Test Young Horse',
-          age: 730, // 2 years old
+          age: 2, // 2 game-years
           breedId: breed.id,
           userId: testUser.id,
           gender: 'colt',
@@ -91,13 +91,13 @@ async function setupTestData() {
         },
       }),
 
-      // Adult horse (4 years old - 1460 days)
+      // Adult horse (4 game-years old)
       prisma.horse.upsert({
         where: { name: 'Test Adult Horse' },
         update: {},
         create: {
           name: 'Test Adult Horse',
-          age: 1460, // 4 years old
+          age: 4, // 4 game-years
           breedId: breed.id,
           userId: testUser.id,
           gender: 'stallion',
@@ -184,8 +184,8 @@ async function setupTestData() {
     console.log(`👤 Test User: ${testUser.username} (ID: ${testUser.id})`);
     console.log('\n🐎 Test Horses:');
     horses.forEach(horse => {
-      const ageYears = Math.floor(horse.age / 365);
-      console.log(`  - ${horse.name} (ID: ${horse.id}, Age: ${ageYears} years, ${horse.age} days)`);
+      // Equoria-9llg/3i1r: horse.age is game-years post Equoria-son6, not real-time days.
+      console.log(`  - ${horse.name} (ID: ${horse.id}, Age: ${horse.age} game-years)`);
     });
     console.log('\n👨‍💼 Test Grooms:');
     grooms.forEach(groom => {

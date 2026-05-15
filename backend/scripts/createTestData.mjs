@@ -43,15 +43,13 @@ async function createTestData() {
         strength: 40,
         focus: 55,
         agility: 60,
-        age: 365,
+        age: 1, // Equoria-9llg/3i1r: horse.age is game-years post Equoria-son6
         taskLog: {},
         lastGroomed: null,
         daysGroomedInARow: 0,
       },
     });
-    console.log(
-      `✅ Created foal: ${foal.name} (ID: ${foal.id}, Age: ${Math.floor(foal.age / 365)} years)`,
-    );
+    console.log(`✅ Created foal: ${foal.name} (ID: ${foal.id}, Age: ${foal.age} game-years)`);
 
     const youngHorse = await prisma.horse.create({
       data: {
@@ -65,14 +63,14 @@ async function createTestData() {
         strength: 50,
         focus: 65,
         agility: 70,
-        age: 730,
+        age: 2, // game-years
         taskLog: {},
         lastGroomed: null,
         daysGroomedInARow: 0,
       },
     });
     console.log(
-      `✅ Created young horse: ${youngHorse.name} (ID: ${youngHorse.id}, Age: ${Math.floor(youngHorse.age / 365)} years)`,
+      `✅ Created young horse: ${youngHorse.name} (ID: ${youngHorse.id}, Age: ${youngHorse.age} game-years)`,
     );
 
     const adultHorse = await prisma.horse.create({
@@ -87,14 +85,14 @@ async function createTestData() {
         strength: 70,
         focus: 85,
         agility: 90,
-        age: 1460,
+        age: 4, // game-years
         taskLog: {},
         lastGroomed: null,
         daysGroomedInARow: 0,
       },
     });
     console.log(
-      `✅ Created adult horse: ${adultHorse.name} (ID: ${adultHorse.id}, Age: ${Math.floor(adultHorse.age / 365)} years)`,
+      `✅ Created adult horse: ${adultHorse.name} (ID: ${adultHorse.id}, Age: ${adultHorse.age} game-years)`,
     );
 
     // 4. Create test grooms
