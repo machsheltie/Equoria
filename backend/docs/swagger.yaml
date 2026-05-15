@@ -416,7 +416,43 @@ paths:
       parameters:
         - { name: id, in: path, required: true, schema: { type: integer, minimum: 1 } }
       responses:
-        '200': { description: 'Gait scores retrieved successfully' }
+        '200':
+          description: 'Gait scores retrieved successfully'
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [success, message, data]
+                properties:
+                  success: { type: boolean }
+                  message: { type: string }
+                  data:
+                    type: object
+                    nullable: true
+                    description: 'Null for legacy horses without gait scores'
+                    required: [horseId, horseName, breedId, gaitScores]
+                    properties:
+                      horseId: { type: integer }
+                      horseName: { type: string }
+                      breedId: { type: integer }
+                      gaitScores:
+                        type: object
+                        required: [walk, trot, canter, gallop]
+                        properties:
+                          walk: { type: integer, minimum: 0, maximum: 100 }
+                          trot: { type: integer, minimum: 0, maximum: 100 }
+                          canter: { type: integer, minimum: 0, maximum: 100 }
+                          gallop: { type: integer, minimum: 0, maximum: 100 }
+                          gaiting:
+                            type: array
+                            nullable: true
+                            description: 'Specialty gaits for gaited breeds (e.g. running walk, tölt); null/omitted for non-gaited breeds'
+                            items:
+                              type: object
+                              required: [name, score]
+                              properties:
+                                name: { type: string }
+                                score: { type: integer, minimum: 0, maximum: 100 }
         '400': { description: 'Invalid horse ID' }
         '401': { description: Unauthorized }
         '403': { description: 'Forbidden — horse belongs to another user' }
