@@ -34,7 +34,7 @@ import {
 import { DEVELOPMENTAL_WINDOWS } from '../../../utils/enhancedMilestoneEvaluationSystem.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
-import { awardGroomXP } from '../../../services/groomProgressionService.mjs';
+import { awardGroomXP, updateGroomSynergy } from '../../../services/groomProgressionService.mjs';
 import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
 import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
 import { getTemperamentGroomSynergy } from '../../horses/services/temperamentService.mjs';
@@ -480,6 +480,18 @@ export async function recordInteraction(req, res) {
         `[groomController.recordInteraction] Failed to award XP to groom ${groomId}: ${xpError.message}`,
       );
       // Don't fail the interaction if XP awarding fails
+    }
+
+    // Equoria-5v6g: update GroomHorseSynergy on every interaction so sessionsTogether
+    // increments and synergyScore grows gradually (every 4th session). Without this,
+    // synergy is only adjusted on milestone/trait-shaping events.
+    try {
+      await updateGroomSynergy(groomId, foalId, 'interaction_completed');
+    } catch (synergyError) {
+      logger.error(
+        `[groomController.recordInteraction] Failed to update synergy for groom ${groomId} / horse ${foalId}: ${synergyError.message}`,
+      );
+      // Don't fail the interaction if synergy update fails
     }
 
     res.status(200).json({

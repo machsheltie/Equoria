@@ -129,14 +129,26 @@ export async function updateGroomSynergy(groomId, horseId, action, sessions = 1)
       trait_shaped: 2,
       rare_trait_influenced: 3,
       reassigned_early: -5,
+      // Equoria-5v6g: generic interactions track sessions every time, with a small
+      // synergyScore delta every 4th session (handled inline via sessionsTogether modulo).
+      interaction_completed: 0,
     };
 
-    const synergyGain = synergyGains[action] || 0;
+    let synergyGain = synergyGains[action] || 0;
 
     // Find or create synergy record
     let synergyRecord = await prisma.groomHorseSynergy.findFirst({
       where: { groomId, horseId },
     });
+
+    // Equoria-5v6g: for generic interactions, award +1 synergy every 4th session crossed.
+    // This keeps synergy growth small relative to milestone events (+1) but ensures
+    // sustained grooming still increases the score over time.
+    if (action === 'interaction_completed') {
+      const oldSessions = synergyRecord?.sessionsTogether ?? 0;
+      const newSessions = oldSessions + sessions;
+      synergyGain = Math.floor(newSessions / 4) - Math.floor(oldSessions / 4);
+    }
 
     if (!synergyRecord) {
       synergyRecord = await prisma.groomHorseSynergy.create({
