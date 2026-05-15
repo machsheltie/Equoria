@@ -347,10 +347,30 @@ export const BREED_COAT_COLOR_GENETICS = {
     },
     shade_bias: {
       Bay: { dark: 0.22, standard: 0.53, light: 0.25 },
-      Chestnut: { dark: 0.18, standard: 0.47, light: 0.35 },
+      // Equoria-er4n: 'liver' is a shade-bias entry on Chestnut (darkest chestnut form);
+      // colorName remains 'Chestnut' to keep the locus deterministic. See docs in
+      // phenotypeCalculationService.mjs for the canonical naming style guide.
+      Chestnut: { liver: 0.1, dark: 0.18, standard: 0.42, light: 0.3 },
       Black: { standard: 0.7, light: 0.3 },
       Palomino: { dark: 0.15, standard: 0.55, light: 0.3 },
       Buckskin: { dark: 0.2, standard: 0.55, light: 0.25 },
+      // Equoria-ek5c: shade_bias coverage for producible dilute/pattern colors
+      'Smoky Black': { standard: 0.7, light: 0.3 },
+      Cremello: { standard: 0.6, light: 0.4 },
+      Perlino: { standard: 0.6, light: 0.4 },
+      'Smoky Cream': { standard: 0.7, light: 0.3 },
+      'Red Dun': { dark: 0.2, standard: 0.55, light: 0.25 },
+      'Bay Dun': { dark: 0.25, standard: 0.55, light: 0.2 },
+      Grulla: { standard: 0.7, dark: 0.2, light: 0.1 },
+      Dunalino: { standard: 0.55, light: 0.3, dark: 0.15 },
+      Dunskin: { standard: 0.55, light: 0.3, dark: 0.15 },
+      'Smoky Grulla': { standard: 0.7, dark: 0.3 },
+      'Red Roan': { dark: 0.2, standard: 0.55, light: 0.25 },
+      'Bay Roan': { dark: 0.25, standard: 0.55, light: 0.2 },
+      'Blue Roan': { standard: 0.7, light: 0.3 },
+      Gray: { standard: 0.6, dark: 0.2, light: 0.2 },
+      'Steel Gray': { standard: 0.6, dark: 0.2, light: 0.2 },
+      'Rose Gray': { standard: 0.6, dark: 0.2, light: 0.2 },
     },
     marking_bias: {
       face: { none: 0.35, star: 0.25, strip: 0.2, blaze: 0.15, snip: 0.05 },

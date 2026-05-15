@@ -85,8 +85,14 @@ export function splitAlleles(allelePair) {
 
 /**
  * Check whether an allele pair is lethal for the given locus.
- * Checks both `A/B` and the reversed `B/A` form so that order-insensitive
- * asymmetric lethals are caught if added to LETHAL_COMBINATIONS in the future.
+ *
+ * NOTE (Equoria-k8d7, 2026-05-15): Every entry in LETHAL_COMBINATIONS is currently
+ * a symmetric homozygous pair (e.g. 'O/O', 'W20/W20'). The reversed-pair check
+ * that previously lived here was dead code under the current biological model.
+ * If an asymmetric lethal becomes biologically known, restore reversed-ordering
+ * logic with:
+ *   const [a, b] = allelePair.split('/');
+ *   if (lethalSet.has(`${b}/${a}`)) return true;
  *
  * @param {string} locus - genotype locus key (e.g. 'O_FrameOvero')
  * @param {string} allelePair - assembled pair (e.g. 'O/O')
@@ -97,16 +103,7 @@ export function isLethalCombination(locus, allelePair) {
   if (!lethalSet) {
     return false;
   }
-  if (lethalSet.has(allelePair)) {
-    return true;
-  }
-  // Also check reversed ordering (B/A) so asymmetric future lethals are caught regardless of
-  // sire/dam draw order.
-  const parts = allelePair.split('/');
-  if (parts.length === 2) {
-    return lethalSet.has(`${parts[1]}/${parts[0]}`);
-  }
-  return false;
+  return lethalSet.has(allelePair);
 }
 
 /**
@@ -135,19 +132,29 @@ export function assembleAllelePair(sireAllele, damAllele) {
 /**
  * Build the heterozygous fallback for a locus when lethal rerolls are exhausted.
  * Uses the sire allele and dam allele directly in heterozygous form if they differ,
- * otherwise places the lethal allele first and the wild-type `n` second
- * (canonical carrier form: `O/n`, `W5/n`, etc.) matching the spec's specified fallback.
+ * otherwise places the lethal allele first and the parent's wild-type partner second
+ * (canonical carrier form: `O/n`, `W20/w`, etc.).
  *
- * @param {string} sireAllele
- * @param {string} damAllele
+ * Equoria-xb5k: The wild-type partner is derived from the parents' actual allele
+ * pairs so loci with non-'n' wild-types (e.g. W_DominantWhite uses 'w', LP uses 'lp')
+ * produce the correct carrier form rather than a hardcoded '/n'.
+ *
+ * @param {string[]} sireAlleles - splitAlleles result for sire
+ * @param {string[]} damAlleles - splitAlleles result for dam
  * @returns {string}
  */
-function buildHeterozygousFallback(sireAllele, damAllele) {
-  if (sireAllele !== damAllele) {
-    return `${sireAllele}/${damAllele}`;
+function buildHeterozygousFallback(sireAlleles, damAlleles) {
+  const sireA = sireAlleles[0];
+  const damA = damAlleles[0];
+  if (sireA !== damA) {
+    return `${sireA}/${damA}`;
   }
-  // Both are the same lethal allele — carrier form: lethal allele first, wild-type n second
-  return `${sireAllele}/n`;
+  // Both first alleles are the same lethal — find the wild-type partner from either parent's pair.
+  // Prefer the sire's other allele; fall back to dam's; finally to 'n' if neither parent is a carrier.
+  const sireWild = sireAlleles.find(a => a !== sireA);
+  const damWild = damAlleles.find(a => a !== damA);
+  const wildType = sireWild ?? damWild ?? 'n';
+  return `${sireA}/${wildType}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -183,7 +190,7 @@ export function inheritLocus(locus, sireAllelePair, damAllelePair, rng) {
   logger.warn(
     `[breedingColorInheritanceService] Locus ${locus}: exhausted ${MAX_REROLL_ATTEMPTS} reroll attempts — using heterozygous fallback`,
   );
-  return buildHeterozygousFallback(sireAlleles[0], damAlleles[0]);
+  return buildHeterozygousFallback(sireAlleles, damAlleles);
 }
 
 // ---------------------------------------------------------------------------
@@ -212,12 +219,20 @@ function enforceBreedRestrictions(foalGenotype, foalBreedProfile) {
       continue;
     }
     if (restricted[locus] !== undefined && !allowed.includes(restricted[locus])) {
-      const replacement = allowed[0];
-      // Guard: never install a lethal allele pair via breed restriction
-      // (would bypass the reroll mechanism entirely).
-      if (isLethalCombination(locus, replacement)) {
+      // Equoria-tr50: Try each allowed allele in order, picking the first non-lethal one.
+      // If allowed[0] is lethal we previously skipped the entire restriction; now we
+      // iterate allowed[1..n] so a misconfigured profile (lethal at index 0) still
+      // applies a partial restriction. Only fully skip if every allowed entry is lethal.
+      let replacement = null;
+      for (const candidate of allowed) {
+        if (!isLethalCombination(locus, candidate)) {
+          replacement = candidate;
+          break;
+        }
+      }
+      if (replacement === null) {
         logger.warn(
-          `[breedingColorInheritanceService] enforceBreedRestrictions: breed profile requires lethal allele '${replacement}' for locus '${locus}' — restriction skipped to preserve non-lethal genotype`,
+          `[breedingColorInheritanceService] enforceBreedRestrictions: every allowed allele for locus '${locus}' is lethal — restriction skipped to preserve non-lethal genotype`,
         );
         continue;
       }

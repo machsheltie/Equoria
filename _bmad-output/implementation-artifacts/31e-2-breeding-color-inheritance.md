@@ -56,8 +56,8 @@ Then it falls back gracefully without throwing.
   - [x] T1.2: `drawAllele(allelePair, rng)` — pick one allele with 50/50 probability
   - [x] T1.3: `assembleAllelePair(sireAllele, damAllele)` — combine into pair string
   - [x] T1.4: `LETHAL_COMBINATIONS` — define lethal genotype patterns (O/O, W20/W20, SW3/SW3, EDXW1/EDXW1, etc.)
-  - [x] T1.5: `isLethalCombination(genotype)` — check full genotype against lethal list
-  - [x] T1.6: `inheritLocus(sireAllelePair, damAllelePair, rng, maxRerolls)` — per-locus inheritance with lethal reroll
+  - [x] T1.5: `isLethalCombination(locus, allelePair)` — check one locus + allele pair against lethal list
+  - [x] T1.6: `inheritLocus(locus, sireAllelePair, damAllelePair, rng)` — per-locus inheritance with lethal reroll (maxRerolls is the internal constant MAX_REROLL_ATTEMPTS = 100)
   - [x] T1.7: `inheritColorGenotype(sireGenotype, damGenotype, foalBreedProfile, rng)` — full inheritance pipeline
 - [x] T2: Wire `inheritColorGenotype` into foal creation path (POST /api/v1/horses with sireId/damId)
 - [x] T3: Write tests (~54)
@@ -103,7 +103,7 @@ return makeCombinedHeterozygous(sire, dam)  # carrier fallback
 ### File Locations
 
 - Service: `backend/modules/horses/services/breedingColorInheritanceService.mjs`
-- Tests: `backend/__tests__/breedingColorInheritanceService.test.mjs`
+- Tests: `backend/modules/horses/__tests__/breedingColorInheritanceService.test.mjs`
 
 ---
 
@@ -125,7 +125,7 @@ claude-sonnet-4-6
 ### File List
 
 - `backend/modules/horses/services/breedingColorInheritanceService.mjs` — new (pure-function service)
-- `backend/__tests__/breedingColorInheritanceService.test.mjs` — new (~54 tests)
+- `backend/modules/horses/__tests__/breedingColorInheritanceService.test.mjs` — new (~54 tests)
 
 ### Change Log
 

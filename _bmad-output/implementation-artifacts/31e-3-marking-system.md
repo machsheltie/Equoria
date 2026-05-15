@@ -86,7 +86,7 @@ Then all marking data is stored in `Horse.phenotype` JSONB alongside color data.
 ### File Locations
 
 - Service: `backend/modules/horses/services/markingGenerationService.mjs`
-- Tests: `backend/__tests__/markingGenerationService.test.mjs`
+- Tests: `backend/modules/horses/__tests__/markingGenerationService.test.mjs`
 
 ---
 
@@ -108,7 +108,7 @@ claude-sonnet-4-6
 ### File List
 
 - `backend/modules/horses/services/markingGenerationService.mjs` — new (pure-function service)
-- `backend/__tests__/markingGenerationService.test.mjs` — new (~43 tests)
+- `backend/modules/horses/__tests__/markingGenerationService.test.mjs` — new (~43 tests)
 
 ### Change Log
 

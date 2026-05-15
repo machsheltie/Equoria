@@ -472,6 +472,148 @@ describe('inheritColorGenotype — O/O never appears (AC2 property)', () => {
 });
 
 // ---------------------------------------------------------------------------
+// Equoria-jeam: Per-locus GENERIC_DEFAULTS fallback when one parent omits a locus
+// ---------------------------------------------------------------------------
+
+describe('inheritColorGenotype — GENERIC_DEFAULTS fallback (Equoria-jeam)', () => {
+  it('foal gets a valid Extension pair when dam omits E_Extension entirely', () => {
+    const sire = buildGenotype({ E_Extension: 'E/E' });
+    // Dam has no E_Extension key
+    const dam = buildGenotype();
+    delete dam.E_Extension;
+    const foal = inheritColorGenotype(sire, dam);
+    expect(foal).toHaveProperty('E_Extension');
+    expect(typeof foal.E_Extension).toBe('string');
+    // With sire E/E and dam defaulting to 'E/e', foal can be E/E or E/e — never undefined/n/n
+    expect(['E/E', 'E/e', 'e/E']).toContain(foal.E_Extension);
+  });
+
+  it('symmetric case: foal gets valid Extension when sire omits E_Extension', () => {
+    const sire = buildGenotype();
+    delete sire.E_Extension;
+    const dam = buildGenotype({ E_Extension: 'E/E' });
+    const foal = inheritColorGenotype(sire, dam);
+    expect(['E/E', 'E/e', 'e/E']).toContain(foal.E_Extension);
+  });
+
+  it('D_Dun default is nd2/nd2 (not n/n) when both parents omit it', () => {
+    const sire = buildGenotype();
+    const dam = buildGenotype();
+    delete sire.D_Dun;
+    delete dam.D_Dun;
+    const foal = inheritColorGenotype(sire, dam);
+    // Both parents default to 'nd2/nd2', so foal must be nd2/nd2
+    expect(foal.D_Dun).toBe('nd2/nd2');
+  });
+
+  it('union of loci includes loci only present in one parent', () => {
+    // Sire has a non-CORE locus 'Custom_Locus'; dam does not
+    const sire = { ...buildGenotype(), Custom_Locus: 'X/x' };
+    const dam = buildGenotype();
+    const foal = inheritColorGenotype(sire, dam);
+    expect(foal).toHaveProperty('Custom_Locus');
+    // Dam will default to 'n/n' for unknown locus; foal is X/n or n/X or X/X or n/n
+    expect(typeof foal.Custom_Locus).toBe('string');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Equoria-tr50: enforceBreedRestrictions iterates alternates when allowed[0] lethal
+// ---------------------------------------------------------------------------
+
+describe('inheritColorGenotype — alternate-allowed-allele fallback (Equoria-tr50)', () => {
+  it('uses allowed[1] when allowed[0] is lethal (O/O lethal, O/n picked instead)', () => {
+    const profile = {
+      allowed_alleles: {
+        O_FrameOvero: ['O/O', 'O/n'], // O/O is lethal — must skip and use O/n
+      },
+    };
+    const sire = buildGenotype({ O_FrameOvero: 'n/n' });
+    const dam = buildGenotype({ O_FrameOvero: 'n/n' });
+    const foal = inheritColorGenotype(sire, dam, profile);
+    // Inherited n/n is not in allowed; allowed[0]=O/O is lethal → must use O/n
+    expect(foal.O_FrameOvero).toBe('O/n');
+  });
+
+  it('skips restriction entirely when EVERY allowed is lethal', () => {
+    const profile = {
+      allowed_alleles: {
+        O_FrameOvero: ['O/O'], // only lethal allowed
+      },
+    };
+    const sire = buildGenotype({ O_FrameOvero: 'n/n' });
+    const dam = buildGenotype({ O_FrameOvero: 'n/n' });
+    const foal = inheritColorGenotype(sire, dam, profile);
+    // Must NOT install O/O; foal keeps inherited n/n
+    expect(isLethalCombination('O_FrameOvero', foal.O_FrameOvero)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Equoria-xb5k: W/SW/EDXW lethal-reroll exhaustion fallback paths
+// ---------------------------------------------------------------------------
+
+describe('inheritLocus — reroll exhaustion fallback (Equoria-xb5k)', () => {
+  it('W_DominantWhite W20/w × W20/w → fallback returns W20/w (carrier form)', () => {
+    // Force all 100 rerolls to lethal by always picking index 0 (W20)
+    const alwaysFirst = deterministicRng([0.1]);
+    const result = inheritLocus('W_DominantWhite', 'W20/w', 'W20/w', alwaysFirst);
+    expect(result).toBe('W20/w');
+    expect(isLethalCombination('W_DominantWhite', result)).toBe(false);
+  });
+
+  it('SW_SplashWhite SW3/n × SW3/n → fallback returns SW3/n', () => {
+    const alwaysFirst = deterministicRng([0.1]);
+    const result = inheritLocus('SW_SplashWhite', 'SW3/n', 'SW3/n', alwaysFirst);
+    expect(result).toBe('SW3/n');
+    expect(isLethalCombination('SW_SplashWhite', result)).toBe(false);
+  });
+
+  it('EDXW EDXW1/n × EDXW1/n → fallback returns EDXW1/n', () => {
+    const alwaysFirst = deterministicRng([0.1]);
+    const result = inheritLocus('EDXW', 'EDXW1/n', 'EDXW1/n', alwaysFirst);
+    expect(result).toBe('EDXW1/n');
+    expect(isLethalCombination('EDXW', result)).toBe(false);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Equoria-bkbo: Statistical distribution test for O/n × O/n renormalization
+// ---------------------------------------------------------------------------
+
+describe('inheritColorGenotype — O/n × O/n renormalized distribution (Equoria-bkbo)', () => {
+  // After lethal removal: P(O/n or n/O) = 2/3, P(n/n) = 1/3.
+  // 10000 trials, chi-squared df=1, p=0.001 critical = 10.828.
+  it('O/n × O/n produces ~67% O/n and ~33% n/n (chi-squared df=1 p > 0.001)', () => {
+    const TRIALS = 10000;
+    const sire = buildGenotype({ O_FrameOvero: 'O/n' });
+    const dam = buildGenotype({ O_FrameOvero: 'O/n' });
+
+    const counts = { On: 0, nn: 0 };
+    for (let i = 0; i < TRIALS; i++) {
+      const foal = inheritColorGenotype(sire, dam);
+      const o = foal.O_FrameOvero;
+      if (o === 'n/n') {
+        counts.nn++;
+      } else if (o === 'O/n' || o === 'n/O') {
+        counts.On++;
+      }
+      // O/O should never appear; if it does, this throws via toBeLessThan below indirectly
+      expect(o).not.toBe('O/O');
+    }
+
+    // Expected: 2/3 O/n, 1/3 n/n (after lethal removal of O/O)
+    const expectedOn = (TRIALS * 2) / 3;
+    const expectednn = TRIALS / 3;
+
+    const chiSq = (counts.On - expectedOn) ** 2 / expectedOn + (counts.nn - expectednn) ** 2 / expectednn;
+
+    // df=1, p=0.001 critical value = 10.828
+    expect(chiSq).toBeLessThan(10.828);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Integration: POST /api/v1/horses with sireId + damId inherits genotype
 // ---------------------------------------------------------------------------
 
