@@ -1348,6 +1348,18 @@ export async function getBreedingColorPrediction(req, res) {
   try {
     const { sireId, damId, foalBreedId } = req.body;
 
+    // Self-cross guard (Equoria-eef8): reject sireId === damId with 400
+    // BEFORE any DB work — pattern documented in PATTERN_LIBRARY.md
+    // "Per-Locus Probability — Multi-Locus Genetics Calculation (31E-5)".
+    // Prevents both the obvious self-breeding bug and a class of wasted-DB
+    // work that would otherwise scale with attacker volume.
+    if (sireId === damId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Sire and dam cannot be the same horse',
+      });
+    }
+
     // Fetch both horses with ownership validation
     const [sire, dam] = await Promise.all([
       prisma.horse.findUnique({

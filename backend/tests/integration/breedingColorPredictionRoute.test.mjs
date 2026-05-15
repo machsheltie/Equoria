@@ -11,8 +11,9 @@
  *   - 400 on prototype-pollution body (rejectPollutedRequest hit)
  *   - 401 with no auth token
  *   - 404 cross-user (ownership violation — must NOT leak existence)
- *   - sireId === damId currently allowed by route (no self-cross block) —
- *     documented so the behavior is intentional, not a regression-trap.
+ *   - 400 self-cross (sireId === damId) — guard implemented per
+ *     PATTERN_LIBRARY.md "Per-Locus Probability" Self-cross requirement
+ *     (Equoria-eef8 closed the doc-vs-code drift).
  *
  * Sister test of backend/tests/integration/colorGeneticsRoutes.test.mjs (Equoria-5j0z).
  * Existing controller-level test at backend/modules/horses/__tests__/breedingColorPredictionApi.test.mjs
@@ -268,11 +269,12 @@ describe('POST /api/v1/horses/breeding/color-prediction — HTTP integration (Eq
     expect(res.status).toBe(404);
   });
 
-  it('documents that the route currently allows sireId === damId (no self-cross block at route level)', async () => {
-    // The route validator does not block sire===dam. The prediction service
-    // mathematically can compute it. If product decides a 400 should be added,
-    // change the route validator + this test. Documenting current behavior so
-    // a future regression-block isn't silently a behavior change.
+  it('rejects self-cross (sireId === damId) with 400 before any DB work (Equoria-eef8)', async () => {
+    // Sentinel-positive coverage for the self-cross guard documented in
+    // PATTERN_LIBRARY.md "Per-Locus Probability". The guard MUST fire before
+    // Promise.all([getSire, getDam]) so a single Horse.findUnique cannot be
+    // observed in the SQL log. We assert on the user-visible response only,
+    // since asserting on log content is brittle in real-DB integration tests.
     const res = await attachCsrf(
       request(app)
         .post('/api/v1/horses/breeding/color-prediction')
@@ -282,9 +284,10 @@ describe('POST /api/v1/horses/breeding/color-prediction — HTTP integration (Eq
       csrf,
     );
 
-    expect([200, 400]).toContain(res.status);
-    if (res.status === 200) {
-      expect(res.body.success).toBe(true);
-    }
+    expect(res.status).toBe(400);
+    expect(res.body.success).toBe(false);
+    // Match the canonical "Sire and dam cannot be the same horse" message
+    // documented in PATTERN_LIBRARY.md so future contributors can grep.
+    expect(res.body.message).toMatch(/sire.*dam.*same horse/i);
   });
 });
