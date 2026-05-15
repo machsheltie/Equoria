@@ -1,13 +1,11 @@
 import { chromium, expect, type FullConfig } from '@playwright/test';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-/** Path where test credentials are saved for reuse in login-flow test */
-export const CREDENTIALS_FILE = path.resolve(__dirname, 'test-credentials.json');
+// Story 21-8 AC1 (Equoria-4m96): credentials are no longer written to
+// tests/e2e/test-credentials.json. They are written to process.env keys
+// (E2E_TEST_EMAIL, E2E_TEST_PASSWORD, E2E_TEST_USERNAME, E2E_TEST_HORSE_ID).
+// Playwright forks test workers AFTER globalSetup returns, so env mutations
+// here propagate to every worker. Tests must read via the helper in
+// tests/e2e/helpers/credentials.ts (or process.env directly).
 
 async function globalSetup(config: FullConfig) {
   const { baseURL, storageState } = config.projects[0].use;
@@ -99,10 +97,12 @@ async function globalSetup(config: FullConfig) {
     await page.context().storageState({ path: storageState as string });
     console.log('Storage state saved.');
 
-    // ── 4. Persist credentials so login-flow test can fill them ─────────────
-    const creds: Record<string, string | number> = { email, password, username };
-    fs.writeFileSync(CREDENTIALS_FILE, JSON.stringify(creds, null, 2), 'utf-8');
-    console.log('Credentials saved:', CREDENTIALS_FILE);
+    // ── 4. Persist credentials in process.env so worker tests can read them ─
+    // (Equoria-4m96, Story 21-8 AC1: no test-credentials.json file I/O.)
+    process.env.E2E_TEST_EMAIL = email;
+    process.env.E2E_TEST_PASSWORD = password;
+    process.env.E2E_TEST_USERNAME = username;
+    console.log('Credentials saved to process.env (E2E_TEST_*).');
 
     // ── 5. Reuse the real starter horse created by registration/onboarding ───
     console.log('Fetching starter horse created during onboarding...');
@@ -113,8 +113,7 @@ async function globalSetup(config: FullConfig) {
       const starterHorse = Array.isArray(horses) ? horses[0] : null;
       if (starterHorse?.id) {
         console.log('Starter horse id:', starterHorse.id);
-        creds.testHorseId = starterHorse.id;
-        fs.writeFileSync(CREDENTIALS_FILE, JSON.stringify(creds, null, 2), 'utf-8');
+        process.env.E2E_TEST_HORSE_ID = String(starterHorse.id);
       }
     } else {
       console.warn('Starter horse lookup failed:', horsesRes.status(), await horsesRes.text());

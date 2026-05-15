@@ -9,28 +9,12 @@
  *  AC5: Competition entry — select horse → confirm → result displayed
  */
 import { test, expect } from '@playwright/test';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
 import { createAuthedSession, csrfMutate, type AuthedSession } from './helpers/api';
+import { readTestCredentials } from './helpers/credentials';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const CREDENTIALS_FILE = path.resolve(__dirname, 'test-credentials.json');
-
-/** Read saved credentials written by global-setup */
-function readCredentials(): {
-  email: string;
-  password: string;
-  username: string;
-  testHorseId?: number;
-} {
-  if (!fs.existsSync(CREDENTIALS_FILE)) {
-    throw new Error(
-      `test-credentials.json not found — did global-setup run? (${CREDENTIALS_FILE})`
-    );
-  }
-  return JSON.parse(fs.readFileSync(CREDENTIALS_FILE, 'utf-8'));
+/** Read saved credentials persisted by global-setup into process.env. */
+function readCredentials() {
+  return readTestCredentials();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
