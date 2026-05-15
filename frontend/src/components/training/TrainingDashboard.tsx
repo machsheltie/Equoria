@@ -98,7 +98,15 @@ const HorseCard = ({ horse, onTrainClick }: HorseCardProps): JSX.Element => {
           <div>
             <h4 className="text-lg font-semibold text-[rgb(220,235,255)]">{horse.name}</h4>
             <p className="text-sm text-[rgb(148,163,184)]">
-              Age: {horse.ageYears ?? 'Unknown'} years
+              {/* Equoria-1k4n — context-specific fallback: 'Age: not recorded'
+                  reads correctly without the trailing 'years' unit, instead of
+                  the literal 'Unknown' (Equoria-iwy3 convention). Age is
+                  normally always derivable from dateOfBirth; absence is a
+                  legacy/data gap, not a real zero. */}
+              Age:{' '}
+              {horse.ageYears !== undefined && horse.ageYears !== null
+                ? `${horse.ageYears} years`
+                : 'not recorded'}
             </p>
           </div>
           {horse.level !== undefined && (

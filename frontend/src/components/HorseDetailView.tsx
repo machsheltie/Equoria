@@ -245,7 +245,11 @@ const HorseDetailView = ({ horseId: propHorseId }: HorseDetailViewProps) => {
                     >
                       <div className="flex justify-between items-center">
                         <span className="font-semibold text-[rgb(220,235,255)]">
-                          {entry.discipline || 'Unknown'}
+                          {/* Equoria-1k4n — a real history entry should carry a
+                              discipline; if absent it is missing data, so show
+                              'not recorded' (Equoria-iwy3 convention) rather
+                              than the literal 'Unknown'. */}
+                          {entry.discipline || 'not recorded'}
                         </span>
                         <span className="text-sm text-aged-bronze">
                           Score: {entry.score !== undefined ? entry.score : '--'}

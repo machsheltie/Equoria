@@ -167,4 +167,36 @@ describe('HorseDetailPage color readout fallback (Equoria-lsi5)', () => {
     await waitFor(() => expect(colorLine).toHaveTextContent('Color: Palomino'));
     expect(colorLine).not.toHaveTextContent('Bay');
   });
+
+  // Equoria-1k4n — the temperament line in the same header block previously
+  // rendered the literal 'Unknown', contradicting the iwy3 doctrine comment
+  // sitting a few lines above it. The 1k4n scope is the literal-string fix:
+  // the fallback must read 'not recorded', never 'Unknown'.
+  //
+  // NOTE (adjacent bug, filed separately per OPTIMAL_FIX_DISCIPLINE §3): the
+  // HorseDetailPage `horse` object construction (HorseDetailPage.tsx ~321-422)
+  // never copies `temperament` from the fetched row, so this line ALWAYS hits
+  // the fallback regardless of the real DB value. That wiring gap is a
+  // distinct defect tracked in its own issue — NOT bundled into 1k4n. These
+  // tests therefore assert the literal-string contract (the 1k4n scope), not
+  // the (currently impossible) real-value path.
+  test("temperament: legacy horse renders 'not recorded' (never 'Unknown') — Equoria-1k4n", async () => {
+    global.fetch = makeFetch({ temperament: null });
+    renderPage();
+    const tempValue = await screen.findByTestId('horse-temperament-value');
+    await waitFor(() => expect(tempValue).toHaveTextContent('not recorded'));
+    // Sentinel-positive: the exact defect (literal 'Unknown') must NOT appear.
+    expect(tempValue).not.toHaveTextContent('Unknown');
+  });
+
+  test("temperament: literal 'Unknown' never appears even when a value is sent — Equoria-1k4n", async () => {
+    // Even with a populated temperament the line must not regress to the
+    // literal 'Unknown' string. (Real value not asserted: see the NOTE above —
+    // the field is dropped during horse-object construction, a separate bug.)
+    global.fetch = makeFetch({ temperament: 'Spirited' });
+    renderPage();
+    const tempValue = await screen.findByTestId('horse-temperament-value');
+    await waitFor(() => expect(tempValue).toBeInTheDocument());
+    expect(tempValue).not.toHaveTextContent('Unknown');
+  });
 });

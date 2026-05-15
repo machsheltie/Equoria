@@ -302,13 +302,17 @@ describe('BreedingConfirmationModal - Story 6-1', () => {
   });
 
   describe('Edge Cases', () => {
-    it('should handle missing breed information gracefully', () => {
+    it('should handle missing breed information gracefully (Equoria-1k4n: "not recorded", never "Unknown")', () => {
       const sireNoBreed = { ...mockSire, breedName: undefined };
       const damNoBreed = { ...mockDam, breedName: undefined };
 
       render(<BreedingConfirmationModal {...defaultProps} sire={sireNoBreed} dam={damNoBreed} />);
 
-      expect(screen.getAllByText('Unknown').length).toBeGreaterThanOrEqual(2);
+      // Equoria-1k4n — legacy/missing breed renders the honest 'not recorded'
+      // fallback (Equoria-iwy3 convention), one per horse (sire + dam).
+      expect(screen.getAllByText('not recorded').length).toBeGreaterThanOrEqual(2);
+      // Sentinel-positive: the exact defect (literal 'Unknown') must NOT appear.
+      expect(screen.queryByText('Unknown')).not.toBeInTheDocument();
     });
 
     it('should handle missing health status', () => {

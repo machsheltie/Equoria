@@ -371,6 +371,35 @@ describe('HorseDetailView', () => {
       });
     });
 
+    it('Equoria-1k4n: entry with missing discipline shows "not recorded", never "Unknown"', async () => {
+      const user = userEvent.setup();
+      // A real history entry should carry a discipline; if absent it is
+      // missing data — render the honest 'not recorded' fallback
+      // (Equoria-iwy3 convention), never the literal 'Unknown'.
+      renderWithProviders(<HorseDetailView />, {
+        trainingHistory: [
+          {
+            id: 99,
+            discipline: undefined as unknown as string,
+            score: 70,
+            trainedAt: '2025-02-01T10:00:00Z',
+          },
+        ],
+      });
+
+      await waitFor(() => {
+        expect(screen.getByText('Thunder')).toBeInTheDocument();
+      });
+
+      await user.click(screen.getByRole('tab', { name: 'Training' }));
+
+      await waitFor(() => {
+        expect(screen.getByText('not recorded')).toBeInTheDocument();
+      });
+      // Sentinel-positive: the exact defect (literal 'Unknown') must NOT appear.
+      expect(screen.queryByText('Unknown')).not.toBeInTheDocument();
+    });
+
     it('should format training dates correctly', async () => {
       const user = userEvent.setup();
       renderWithProviders(<HorseDetailView />, { trainingHistory: mockTrainingHistory });

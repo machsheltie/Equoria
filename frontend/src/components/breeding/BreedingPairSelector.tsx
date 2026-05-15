@@ -129,7 +129,9 @@ const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({ stallionId,
             <div>
               <p className="text-sm text-[rgb(148,163,184)]">Temperament</p>
               <p className="text-base font-medium capitalize text-[rgb(220,235,255)]">
-                {stallionData.temperamentInfluence?.temperament || 'Unknown'}
+                {/* Equoria-1k4n — legacy horses have null temperament;
+                    'not recorded' per the Equoria-iwy3 convention. */}
+                {stallionData.temperamentInfluence?.temperament || 'not recorded'}
               </p>
             </div>
           </div>
@@ -158,7 +160,9 @@ const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({ stallionId,
             <div>
               <p className="text-sm text-[rgb(148,163,184)]">Temperament</p>
               <p className="text-base font-medium capitalize text-[rgb(220,235,255)]">
-                {mareData.temperamentInfluence?.temperament || 'Unknown'}
+                {/* Equoria-1k4n — legacy horses have null temperament;
+                    'not recorded' per the Equoria-iwy3 convention. */}
+                {mareData.temperamentInfluence?.temperament || 'not recorded'}
               </p>
             </div>
           </div>

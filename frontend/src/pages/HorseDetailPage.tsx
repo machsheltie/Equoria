@@ -571,7 +571,8 @@ const HorseDetailPage: React.FC = () => {
                           string 'Unknown'. 'not recorded' is the honest
                           fallback. */}
                       <span data-testid="horse-detail-color">
-                        Color: {horse.phenotype?.colorName ?? horse.finalDisplayColor ?? 'not recorded'}
+                        Color:{' '}
+                        {horse.phenotype?.colorName ?? horse.finalDisplayColor ?? 'not recorded'}
                       </span>
                       <span>•</span>
                       <span>Age: {horse.age}</span>
@@ -591,7 +592,13 @@ const HorseDetailPage: React.FC = () => {
                           className="font-medium text-[var(--text-primary)]"
                           data-testid="horse-temperament-value"
                         >
-                          {horse.temperament ?? 'Unknown'}
+                          {/* Equoria-1k4n — legacy horses have null
+                              temperament; 'not recorded' is the honest
+                              fallback per the Equoria-iwy3 convention,
+                              consistent with the color readout above (this
+                              line previously rendered the literal 'Unknown',
+                              contradicting the same-block doctrine comment). */}
+                          {horse.temperament ?? 'not recorded'}
                         </span>
                       </span>
                       <button

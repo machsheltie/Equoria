@@ -217,6 +217,36 @@ describe('BreedingPairSelector', () => {
       expect(screen.getByText(/spirited/i)).toBeInTheDocument();
       expect(screen.getByText(/gentle/i)).toBeInTheDocument();
     });
+
+    it('Equoria-1k4n: legacy horses with no temperament show "not recorded", never "Unknown"', () => {
+      // Legacy horses have null temperamentInfluence.temperament. The render
+      // must use the honest 'not recorded' fallback (Equoria-iwy3 convention),
+      // not the literal 'Unknown' string.
+      mockUseHorseBreedingData.mockImplementation((horseId: number) => {
+        if (horseId === 3) {
+          return {
+            data: { ...mockStallionData, temperamentInfluence: { temperament: null } },
+            isLoading: false,
+            error: null,
+          };
+        }
+        if (horseId === 1) {
+          return {
+            data: { ...mockMareData, temperamentInfluence: { temperament: null } },
+            isLoading: false,
+            error: null,
+          };
+        }
+        return { data: undefined, isLoading: true, error: null };
+      });
+
+      renderWithProvider(<BreedingPairSelector stallionId={3} mareId={1} />);
+
+      // One 'not recorded' per horse (stallion + mare temperament lines).
+      expect(screen.getAllByText('not recorded').length).toBeGreaterThanOrEqual(2);
+      // Sentinel-positive: the exact defect (literal 'Unknown') must NOT appear.
+      expect(screen.queryByText('Unknown')).not.toBeInTheDocument();
+    });
   });
 
   describe('Offspring Predictions', () => {

@@ -254,6 +254,35 @@ describe('TrainingDashboard', () => {
       expect(screen.getByText(/On Cooldown \(2\)/)).toBeInTheDocument();
       expect(screen.getByText(/Ineligible \(2\)/)).toBeInTheDocument();
     });
+
+    it('Equoria-1k4n: horse with missing ageYears shows "Age: not recorded", never "Unknown"', () => {
+      // Legacy/data-gap horses may lack ageYears. The context-specific
+      // fallback drops the trailing 'years' unit and uses 'not recorded'
+      // (Equoria-iwy3 convention), never the literal 'Unknown'.
+      mockUseTrainableHorses.mockReturnValue({
+        data: [
+          {
+            id: 77,
+            name: 'NoAgeHorse',
+            level: 3,
+            breed: 'Arabian',
+            ageYears: undefined,
+            bestDisciplines: ['dressage'],
+            nextEligibleAt: null,
+          },
+        ],
+        isLoading: false,
+        isError: false,
+        error: null,
+        refetch: mockRefetch,
+      });
+
+      renderDashboard();
+
+      expect(screen.getByText('Age: not recorded')).toBeInTheDocument();
+      // Sentinel-positive: the exact defect (literal 'Unknown') must NOT appear.
+      expect(screen.queryByText(/Unknown/)).not.toBeInTheDocument();
+    });
   });
 
   // ==================== HORSE GROUPING TESTS ====================

@@ -63,7 +63,10 @@ const HorseCard: React.FC<HorseCardProps> = ({ horse, type }) => {
         <div className="flex items-center justify-between">
           <span className="text-[rgb(148,163,184)]">Breed:</span>
           <span className="font-medium text-[rgb(220,235,255)]">
-            {horse.breedName || 'Unknown'}
+            {/* Equoria-1k4n — legacy horses may lack breedName; 'not recorded'
+                is the honest fallback per the Equoria-iwy3 convention (never
+                render the literal 'Unknown' for missing data). */}
+            {horse.breedName || 'not recorded'}
           </span>
         </div>
 
