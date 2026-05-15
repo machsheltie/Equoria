@@ -10,7 +10,6 @@
  *     profiles) are still generated from category templates.
  */
 
-import { jest } from '@jest/globals';
 import { generateProfiles, buildProfile } from '../../scripts/generateBreedProfiles.mjs';
 
 describe('generateBreedProfiles — manualOverride preservation (Equoria-z5zu)', () => {

@@ -185,6 +185,28 @@ export default [
       // requestBodySecurity.mjs to set up monkey-patches and contract
       // sentinels. The production-block rule blocks them everywhere else.
       'no-restricted-imports': 'off',
+
+      // Equoria-ip82: fixture-ID regression guard. Equoria-3gti's flake fix
+      // removed Date.now()+Math.random().toString(36) collision-prone fixture
+      // identifiers from test files (replaced with randomBytes(8).toString('hex')).
+      // Without this rule, a new contributor can silently reintroduce the
+      // pattern and the flake returns when Jest test scheduling shifts.
+      //
+      // The AST selector matches template literals containing BOTH a
+      // `Date.now()` call AND a `Math.random()` call — the canonical
+      // signature of the collision-prone construction
+      // `` `fixture_${Date.now()}_${Math.random().toString(36).slice(2)}` ``.
+      // Single-call uses of either are not matched (legitimate timing/seed
+      // utilities).
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector:
+            'TemplateLiteral:has(CallExpression[callee.object.name="Date"][callee.property.name="now"]):has(CallExpression[callee.object.name="Math"][callee.property.name="random"])',
+          message:
+            "Date.now()+Math.random() fixture-IDs are collision-prone and re-introduce the Equoria-3gti flake. Use `randomBytes(8).toString('hex')` from node:crypto instead. See Equoria-ip82 for context.",
+        },
+      ],
     },
   },
   {
