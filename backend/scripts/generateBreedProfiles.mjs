@@ -11,20 +11,26 @@
  *   - rating_profiles.gaited_gait_registry
  *   - temperament_weights           (11 types summing to 100)
  *   - category                      (draft|gaited|pony|sport|racing|general)
+ *   - manualOverride                (optional bool — see Hand-tuning below)
  *
  * The profile values come from category-level templates derived from
  * the 12 previously-hand-tuned canonical profiles. This file is meant to
  * be AUDITABLE and HAND-TUNED: the generator is deterministic, and any
  * breed that deserves finer-grained tuning can simply have its entry in
- * breedProfiles.json overwritten by hand — subsequent reruns of this
- * generator should be wired to preserve manual edits (not implemented
- * in this first pass; safe to rerun until manual tuning begins).
+ * breedProfiles.json overwritten by hand.
+ *
+ * Hand-tuning (Equoria-z5zu):
+ *   To preserve hand-tuned values across re-runs, add `"manualOverride": true`
+ *   at the top level of the breed's profile entry in breedProfiles.json. The
+ *   generator will leave any breed entry with manualOverride=true untouched
+ *   on subsequent runs. New breeds added to breedStarterStats.json that do
+ *   not yet exist in the output file are always generated from the templates.
  *
  * Run:
  *   node backend/scripts/generateBreedProfiles.mjs
  */
 
-import { readFileSync, writeFileSync } from 'fs';
+import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
 
@@ -439,22 +445,82 @@ function buildProfile(name) {
 
 // ── Generate ──────────────────────────────────────────────────────────
 
-const stats = JSON.parse(readFileSync(STATS_PATH, 'utf8'));
-const breedNames = Object.keys(stats).sort();
+/**
+ * Build the full profile map for the given breed-name list, preserving any
+ * existing entries that opt in to hand-tuning via `manualOverride: true`.
+ *
+ * Exported so tests can verify preservation without touching the filesystem.
+ *
+ * @param {string[]} breedNames  Sorted list of breed display names to generate.
+ * @param {Record<string, unknown>} existing  Previous breedProfiles.json
+ *   contents (empty object if no prior file). Any entry with truthy
+ *   `manualOverride` is copied through unchanged.
+ * @returns {{ profiles: Record<string, unknown>, counts: Record<string, number>, preserved: string[] }}
+ */
+export function generateProfiles(breedNames, existing = {}) {
+  const profiles = {};
+  const counts = { general: 0, racing: 0, sport: 0, draft: 0, gaited: 0, pony: 0 };
+  const preserved = [];
 
-const profiles = {};
-const counts = { general: 0, racing: 0, sport: 0, draft: 0, gaited: 0, pony: 0 };
+  for (const name of breedNames) {
+    const existingEntry = existing[name];
+    if (existingEntry && existingEntry.manualOverride === true) {
+      // Hand-tuned: preserve as-is. Still credit the entry's category so the
+      // category breakdown counts match the actual file contents.
+      profiles[name] = existingEntry;
+      preserved.push(name);
+      if (
+        existingEntry.category &&
+        Object.prototype.hasOwnProperty.call(counts, existingEntry.category)
+      ) {
+        counts[existingEntry.category] += 1;
+      }
+      continue;
+    }
+    const profile = buildProfile(name);
+    profiles[name] = profile;
+    counts[profile.category] += 1;
+  }
 
-for (const name of breedNames) {
-  const profile = buildProfile(name);
-  profiles[name] = profile;
-  counts[profile.category] += 1;
+  return { profiles, counts, preserved };
 }
 
-writeFileSync(OUT_PATH, `${JSON.stringify(profiles, null, 2)}\n`, 'utf8');
+// Export internals for unit tests.
+export { buildProfile, classify, STATS_PATH, OUT_PATH };
 
-console.log(`Wrote ${breedNames.length} breed profiles → ${OUT_PATH}`);
-console.log('Category breakdown:');
-for (const [cat, n] of Object.entries(counts)) {
-  console.log(`  ${cat.padEnd(10)} ${n}`);
+// Allow `node generateBreedProfiles.mjs` to run end-to-end. When this module is
+// imported (e.g. by a test) the import.meta.url check prevents the side-effect.
+const isDirectRun = process.argv[1] && resolve(process.argv[1]) === __filename;
+if (isDirectRun) {
+  const stats = JSON.parse(readFileSync(STATS_PATH, 'utf8'));
+  const breedNames = Object.keys(stats).sort();
+
+  // Read existing output so manualOverride entries survive re-runs.
+  let existing = {};
+  if (existsSync(OUT_PATH)) {
+    try {
+      existing = JSON.parse(readFileSync(OUT_PATH, 'utf8'));
+    } catch (e) {
+      console.warn(
+        `Warning: could not parse existing ${OUT_PATH}; regenerating from scratch. (${e.message})`,
+      );
+      existing = {};
+    }
+  }
+
+  const { profiles, counts, preserved } = generateProfiles(breedNames, existing);
+
+  writeFileSync(OUT_PATH, `${JSON.stringify(profiles, null, 2)}\n`, 'utf8');
+
+  console.log(`Wrote ${breedNames.length} breed profiles → ${OUT_PATH}`);
+  if (preserved.length > 0) {
+    console.log(`Preserved ${preserved.length} hand-tuned entries (manualOverride=true):`);
+    for (const name of preserved) {
+      console.log(`  · ${name}`);
+    }
+  }
+  console.log('Category breakdown:');
+  for (const [cat, n] of Object.entries(counts)) {
+    console.log(`  ${cat.padEnd(10)} ${n}`);
+  }
 }
