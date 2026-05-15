@@ -64,6 +64,16 @@ export interface ParticipantResult {
   finalScore: number;
   prizeWon: number;
   isCurrentUser: boolean;
+  /**
+   * Equoria-jnw3 — temperament-driven score modifier surfaced from the
+   * backend's `calculateCompetitionScoreDetailed`. null when the horse has no
+   * temperament recorded (legacy data); UI renders nothing in that case.
+   */
+  temperamentImpact?: {
+    temperament: string | null;
+    modifier: number;
+    appliedAs: 'ridden' | 'conformation' | 'parade';
+  } | null;
 }
 
 /**
@@ -665,6 +675,26 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
                         size="small"
                       />
                     </div>
+                    {/* Equoria-jnw3 — temperament modifier attribution chip.
+                        Hidden gracefully when horse has no temperament. */}
+                    {result.temperamentImpact && result.temperamentImpact.temperament && (
+                      <div
+                        className="mt-1 text-[0.65rem] text-burnished-gold"
+                        data-testid={`temperament-impact-${result.horseId}`}
+                      >
+                        <span data-testid="temperament-impact-name">
+                          {result.temperamentImpact.temperament}
+                        </span>
+                        {': '}
+                        <span data-testid="temperament-impact-modifier">
+                          {result.temperamentImpact.modifier > 0 ? '+' : ''}
+                          {Math.round(result.temperamentImpact.modifier * 100)}%
+                        </span>{' '}
+                        <span className="text-[rgb(148,163,184)]">
+                          ({result.temperamentImpact.appliedAs} score)
+                        </span>
+                      </div>
+                    )}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span data-testid="owner-name" className="text-[rgb(148,163,184)]">
