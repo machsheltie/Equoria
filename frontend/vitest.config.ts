@@ -37,14 +37,12 @@ export default defineConfig({
           // headroom without masking real hangs; genuinely-stuck tests still
           // fail well under 20s of patience.
           testTimeout: 20000,
-          // Limit concurrency to reduce resource contention
+          // Limit concurrency to reduce resource contention.
+          // Vitest 4 removed test.poolOptions — fork pool options
+          // (singleFork, maxForks) are now top-level (maxWorkers).
+          // See https://vitest.dev/guide/migration#pool-rework
           pool: 'forks',
-          poolOptions: {
-            forks: {
-              singleFork: false,
-              maxForks: 4,
-            },
-          },
+          maxWorkers: 4,
           // Better isolation between test files
           isolate: true,
         },
