@@ -620,6 +620,8 @@ async function getTrainableHorses(userId) {
         // time (not the cached horse.age column). The legacy `age` field
         // continues to surface the cached/effective integer for backwards
         // compat during the Equoria-son6 → Equoria-x49d rollout.
+        // Equoria-7l75: phenotype surfaced for HorseCard.tsx coat-color chip
+        // (sibling fix of tkyx for the /horses list endpoint).
         const horseData = {
           id: horse.id,
           horseId: horse.id,
@@ -629,6 +631,7 @@ async function getTrainableHorses(userId) {
           level: horse.horseXp?.level ?? 1,
           breed: horse.breed?.name ?? null,
           sex: horse.sex ?? null,
+          phenotype: horse.phenotype ?? null,
           trainableDisciplines: availableDisciplines,
           bestDisciplines: horse.disciplineScores
             ? Object.entries(horse.disciplineScores)
