@@ -15,9 +15,7 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
+import { readTestCredentials } from './helpers/credentials';
 
 test.describe.configure({ mode: 'serial' });
 
@@ -187,18 +185,10 @@ test.describe('Path 2: Returning-player login smoke', () => {
 
     // No rate-limit bypass — auth limiter skips successful requests
 
-    // Use global-setup credentials (fully onboarded user with a horse)
-    const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    const credsPath = path.resolve(__dirname, 'test-credentials.json');
-
-    if (!fs.existsSync(credsPath)) {
-      throw new Error(
-        'test-credentials.json not found — global-setup did not run. ' +
-          'Ensure the E2E global setup completed successfully before running beta-critical-path tests.'
-      );
-    }
-
-    const { email, password } = JSON.parse(fs.readFileSync(credsPath, 'utf-8'));
+    // Use global-setup credentials (fully onboarded user with a horse).
+    // Credentials are read from process.env via the credentials helper —
+    // no filesystem I/O (Equoria-sf4h, Story 21-8 AC1 follow-up).
+    const { email, password } = readTestCredentials();
 
     await page.goto('/login', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('h2')).toContainText('Welcome Back', { timeout: 15000 });
@@ -237,18 +227,9 @@ test.describe('Path 3: Horse detail smoke', () => {
     test.setTimeout(60000);
 
     // No rate-limit bypass — auth limiter skips successful requests
-
-    const __dirname = path.dirname(fileURLToPath(import.meta.url));
-    const credsPath = path.resolve(__dirname, 'test-credentials.json');
-
-    if (!fs.existsSync(credsPath)) {
-      throw new Error(
-        'test-credentials.json not found — global-setup did not run. ' +
-          'Ensure the E2E global setup completed successfully before running beta-critical-path tests.'
-      );
-    }
-
-    const { email, password } = JSON.parse(fs.readFileSync(credsPath, 'utf-8'));
+    // Credentials are read from process.env via the credentials helper —
+    // no filesystem I/O (Equoria-sf4h, Story 21-8 AC1 follow-up).
+    const { email, password } = readTestCredentials();
 
     await page.goto('/login', { waitUntil: 'domcontentloaded' });
     await expect(page.locator('h2')).toContainText('Welcome Back', { timeout: 15000 });

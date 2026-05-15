@@ -1,21 +1,10 @@
 import { test, expect } from '@playwright/test';
-import fs from 'fs';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import { readTestCredentials } from './helpers/credentials';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-type Credentials = {
-  email: string;
-  password: string;
-  username: string;
-  testHorseId?: number;
-};
-
-function readCredentials(): Credentials {
-  const file = path.resolve(__dirname, 'test-credentials.json');
-  return JSON.parse(fs.readFileSync(file, 'utf-8')) as Credentials;
+// Credentials are read from process.env via the credentials helper —
+// no filesystem I/O (Equoria-sf4h, Story 21-8 AC1 follow-up).
+function readCredentials() {
+  return readTestCredentials();
 }
 
 // Tests must run in order: empty-state assertion depends on inventory being

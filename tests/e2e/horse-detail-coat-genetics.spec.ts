@@ -7,7 +7,8 @@
  * /horses/:id/genetics endpoints.
  *
  * No bypass headers. No mocks. Uses the project's global-setup storage
- * state + the `testHorseId` written into test-credentials.json by setup.
+ * state + the `testHorseId` written into process.env by setup (read via
+ * the credentials helper — no filesystem I/O, Equoria-sf4h).
  *
  * If the starter horse from global-setup happens to be a legacy horse with
  * NULL color data, the spec falls back to asserting the empty-state copy —
@@ -15,26 +16,10 @@
  */
 
 import { test, expect } from '@playwright/test';
-import path from 'path';
-import { fileURLToPath } from 'url';
-import fs from 'fs';
+import { readTestCredentials } from './helpers/credentials';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-const CREDENTIALS_FILE = path.resolve(__dirname, 'test-credentials.json');
-
-function readCredentials(): {
-  email: string;
-  password: string;
-  username: string;
-  testHorseId?: number;
-} {
-  if (!fs.existsSync(CREDENTIALS_FILE)) {
-    throw new Error(
-      `test-credentials.json not found — did global-setup run? (${CREDENTIALS_FILE})`
-    );
-  }
-  return JSON.parse(fs.readFileSync(CREDENTIALS_FILE, 'utf-8'));
+function readCredentials() {
+  return readTestCredentials();
 }
 
 test.describe('Horse Detail — Coat & Genetics (31E-4)', () => {
@@ -43,7 +28,7 @@ test.describe('Horse Detail — Coat & Genetics (31E-4)', () => {
     const horseId = creds.testHorseId;
     if (!horseId) {
       throw new Error(
-        'test-credentials.json has no testHorseId — global-setup must seed a starter horse'
+        'E2E_TEST_HORSE_ID missing in process.env — global-setup must seed a starter horse'
       );
     }
 
