@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -21,8 +22,8 @@ let token;
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
-      email: `uc-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-      username: `uc${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+      email: `uc-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+      username: `uc${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
       firstName: 'UC',
       lastName: 'Tester',
@@ -236,8 +237,8 @@ describe('GET /api/users/:userId/competition-stats — with results', () => {
   beforeAll(async () => {
     statsUser = await prisma.user.create({
       data: {
-        email: `stats-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@test.com`,
-        username: `stats${Date.now()}${Math.random().toString(36).slice(2, 4)}`,
+        email: `stats-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+        username: `stats${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'hash',
         firstName: 'Stats',
         lastName: 'Tester',
@@ -381,8 +382,8 @@ describe('GET /api/users/dashboard/:userId', () => {
   it('returns 403 when accessing another user dashboard', async () => {
     const other = await prisma.user.create({
       data: {
-        email: `dash-other-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@test.com`,
-        username: `dashother${Date.now()}${Math.random().toString(36).slice(2, 4)}`,
+        email: `dash-other-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+        username: `dashother${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'hash',
         firstName: 'Dash',
         lastName: 'Other',
@@ -413,8 +414,8 @@ describe('GET /api/users/dashboard/:userId — with horses and activity', () => 
   beforeAll(async () => {
     dashUser = await prisma.user.create({
       data: {
-        email: `dash-rich-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@test.com`,
-        username: `dashrich${Date.now()}${Math.random().toString(36).slice(2, 4)}`,
+        email: `dash-rich-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+        username: `dashrich${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'hash',
         firstName: 'Dash',
         lastName: 'Rich',
@@ -528,8 +529,8 @@ describe('PUT /api/users/:id', () => {
   it('returns 403 when updating another user', async () => {
     const other = await prisma.user.create({
       data: {
-        email: `put-other-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@test.com`,
-        username: `putother${Date.now()}${Math.random().toString(36).slice(2, 4)}`,
+        email: `put-other-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+        username: `putother${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'hash',
         firstName: 'Put',
         lastName: 'Other',
@@ -640,8 +641,8 @@ describe('DELETE /api/users/:id', () => {
     // Create a throwaway user since we'll delete them
     const throwaway = await prisma.user.create({
       data: {
-        email: `del-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@test.com`,
-        username: `del${Date.now()}${Math.random().toString(36).slice(2, 4)}`,
+        email: `del-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+        username: `del${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'hash',
         firstName: 'Del',
         lastName: 'Throwaway',
@@ -673,8 +674,8 @@ describe('DELETE /api/users/:id', () => {
   it('returns 403 when deleting another user', async () => {
     const other = await prisma.user.create({
       data: {
-        email: `del-other-${Date.now()}-${Math.random().toString(36).slice(2, 6)}@test.com`,
-        username: `delother${Date.now()}${Math.random().toString(36).slice(2, 4)}`,
+        email: `del-other-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+        username: `delother${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'hash',
         firstName: 'Del',
         lastName: 'Other',

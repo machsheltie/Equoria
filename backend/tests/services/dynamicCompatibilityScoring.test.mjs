@@ -14,6 +14,7 @@
  */
 
 import prisma from '../../../packages/database/prismaClient.mjs';
+import { randomBytes } from 'node:crypto';
 import {
   calculateDynamicCompatibility,
   analyzeCompatibilityFactors,
@@ -38,8 +39,8 @@ describe('Dynamic Compatibility Scoring', () => {
         // Create test user
         testUser = await tx.user.create({
           data: {
-            username: `compatibility_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            email: `compatibility_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
+            username: `compatibility_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+            email: `compatibility_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
             password: 'test_hash',
             firstName: 'Test',
             lastName: 'User',
@@ -54,7 +55,7 @@ describe('Dynamic Compatibility Scoring', () => {
           // Expert calm groom
           tx.groom.create({
             data: {
-              name: `Expert Calm Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              name: `Expert Calm Groom ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               personality: 'calm',
               epigeneticInfluenceType: 'calm',
               skillLevel: 'expert',
@@ -68,7 +69,7 @@ describe('Dynamic Compatibility Scoring', () => {
           // Novice energetic groom
           tx.groom.create({
             data: {
-              name: `Novice Energetic Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              name: `Novice Energetic Groom ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               personality: 'energetic',
               epigeneticInfluenceType: 'energetic',
               skillLevel: 'novice',
@@ -82,7 +83,7 @@ describe('Dynamic Compatibility Scoring', () => {
           // Experienced methodical groom
           tx.groom.create({
             data: {
-              name: `Experienced Methodical Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              name: `Experienced Methodical Groom ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               personality: 'methodical',
               epigeneticInfluenceType: 'methodical',
               skillLevel: 'experienced',
@@ -99,7 +100,7 @@ describe('Dynamic Compatibility Scoring', () => {
           // High-stress fearful horse
           tx.horse.create({
             data: {
-              name: `Test Horse Fearful ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              name: `Test Horse Fearful ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'filly',
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,
@@ -111,7 +112,7 @@ describe('Dynamic Compatibility Scoring', () => {
           // Confident social horse
           tx.horse.create({
             data: {
-              name: `Test Horse Confident ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              name: `Test Horse Confident ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'colt',
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,
@@ -123,7 +124,7 @@ describe('Dynamic Compatibility Scoring', () => {
           // Moderate temperament horse
           tx.horse.create({
             data: {
-              name: `Test Horse Moderate ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              name: `Test Horse Moderate ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'Colt',
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,

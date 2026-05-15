@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import {
   detectEnvironmentalTriggers,
   calculateTriggerThresholds,
@@ -26,8 +27,8 @@ let horse;
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
-      email: `envtrigger-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-      username: `envtrigger${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+      email: `envtrigger-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+      username: `envtrigger${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
       firstName: 'EnvTrigger',
       lastName: 'Tester',

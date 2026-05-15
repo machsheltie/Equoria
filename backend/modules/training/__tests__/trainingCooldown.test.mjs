@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import { canTrain, getCooldownTimeRemaining, formatCooldown, setCooldown } from '../../../utils/trainingCooldown.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
@@ -131,7 +132,7 @@ describe('setCooldown — success path (line 84) (Equoria-jkht)', () => {
   let testUser, testBreed, testHorse;
 
   beforeAll(async () => {
-    const RUN_ID = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    const RUN_ID = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
     testBreed = await prisma.breed.create({
       data: { name: `TCooldown_breed_${RUN_ID}` },
     });

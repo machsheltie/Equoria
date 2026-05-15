@@ -25,6 +25,7 @@
  */
 
 import { describe, beforeAll, afterAll, expect, it } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { generateTestToken } from './helpers/authHelper.mjs';
@@ -47,7 +48,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
   let testDam;
   let authToken;
   const createdFoalIds = [];
-  const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).slice(2, 7)}`;
+  const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
 
   beforeAll(async () => {
     // Create a real user in the database

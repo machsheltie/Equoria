@@ -11,6 +11,7 @@
 
 // Jest is available globally in test environment
 import request from 'supertest';
+import { randomBytes } from 'node:crypto';
 import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
 import jwt from 'jsonwebtoken';
@@ -316,8 +317,8 @@ describe('Epigenetic Trait System Integration Tests', () => {
       // Create another user
       const otherUser = await prisma.user.create({
         data: {
-          username: `otherUser_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          email: `other_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
+          username: `otherUser_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+          email: `other_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
           password: 'hashedPassword',
           firstName: 'Other',
           lastName: 'User',
@@ -440,8 +441,8 @@ describe('Trait History Service', () => {
     // Create minimal test data for service tests
     testUser = await prisma.user.create({
       data: {
-        username: `serviceTestUser_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-        email: `service_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
+        username: `serviceTestUser_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+        email: `service_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
         password: 'hashedPassword',
         firstName: 'Service',
         lastName: 'Test',

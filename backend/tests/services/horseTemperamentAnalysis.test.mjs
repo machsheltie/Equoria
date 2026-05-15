@@ -14,6 +14,7 @@
  */
 
 import prisma from '../../../packages/database/prismaClient.mjs';
+import { randomBytes } from 'node:crypto';
 import {
   analyzeHorseTemperament,
   classifyTemperamentFromFlags,
@@ -32,8 +33,8 @@ describe('Horse Temperament Analysis', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        username: `temperament_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-        email: `temperament_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
+        username: `temperament_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+        email: `temperament_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
         password: 'test_hash',
         firstName: 'Test',
         lastName: 'User',
@@ -47,7 +48,7 @@ describe('Horse Temperament Analysis', () => {
     testGrooms = await Promise.all([
       prisma.groom.create({
         data: {
-          name: `Calm Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: `Calm Groom ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           personality: 'calm',
           epigeneticInfluenceType: 'calm',
           skillLevel: 'expert',
@@ -58,7 +59,7 @@ describe('Horse Temperament Analysis', () => {
       }),
       prisma.groom.create({
         data: {
-          name: `Energetic Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: `Energetic Groom ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           personality: 'energetic',
           epigeneticInfluenceType: 'energetic',
           skillLevel: 'expert',
@@ -77,7 +78,7 @@ describe('Horse Temperament Analysis', () => {
       // Nervous/reactive horse
       prisma.horse.create({
         data: {
-          name: `Test Horse Nervous ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: `Test Horse Nervous ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'filly',
           dateOfBirth: oneMonthAgo,
           userId: testUser.id,
@@ -89,7 +90,7 @@ describe('Horse Temperament Analysis', () => {
       // Confident/social horse
       prisma.horse.create({
         data: {
-          name: `Test Horse Confident ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: `Test Horse Confident ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'colt',
           dateOfBirth: oneMonthAgo,
           userId: testUser.id,
@@ -101,7 +102,7 @@ describe('Horse Temperament Analysis', () => {
       // Mixed temperament horse
       prisma.horse.create({
         data: {
-          name: `Test Horse Mixed ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: `Test Horse Mixed ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'Colt',
           dateOfBirth: oneMonthAgo,
           userId: testUser.id,
@@ -113,7 +114,7 @@ describe('Horse Temperament Analysis', () => {
       // Developing temperament horse (no flags yet)
       prisma.horse.create({
         data: {
-          name: `Test Horse Developing ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: `Test Horse Developing ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'mare',
           dateOfBirth: oneMonthAgo,
           userId: testUser.id,

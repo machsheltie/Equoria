@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import {
   analyzeCompatibilityTrends,
   getOptimalGroomRecommendations,
@@ -23,8 +24,8 @@ let groom;
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
-      email: `dyncompat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-      username: `dyncompat${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+      email: `dyncompat-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+      username: `dyncompat${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
       firstName: 'DynCompat',
       lastName: 'Tester',

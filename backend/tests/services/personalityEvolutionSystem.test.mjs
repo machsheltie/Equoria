@@ -15,6 +15,7 @@
 
 // jest import removed - not used in this file
 import prisma from '../../../packages/database/prismaClient.mjs';
+import { randomBytes } from 'node:crypto';
 import {
   evolveGroomPersonality,
   evolveHorseTemperament,
@@ -48,8 +49,8 @@ describe('Personality Evolution System', () => {
         // Create test user
         testUser = await tx.user.create({
           data: {
-            username: `personality_evolution_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            email: `personality_evolution_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
+            username: `personality_evolution_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+            email: `personality_evolution_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
             password: 'test_hash',
             firstName: 'Test',
             lastName: 'User',
@@ -62,7 +63,7 @@ describe('Personality Evolution System', () => {
         // Create test breed
         testBreed = await tx.breed.create({
           data: {
-            name: `Test Breed ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            name: `Test Breed ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
             description: 'Test breed for personality evolution testing',
           },
         });

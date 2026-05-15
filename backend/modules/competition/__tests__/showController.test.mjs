@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -29,8 +30,8 @@ let pastShowNoEntriesId; // show with closeDate in the past, no entries
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
-      email: `show-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-      username: `show${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+      email: `show-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+      username: `show${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
       firstName: 'Show',
       lastName: 'Tester',
@@ -53,8 +54,8 @@ beforeAll(async () => {
   // ── executeClosedShows fixtures ────────────────────────────────────────────
   execUser = await prisma.user.create({
     data: {
-      email: `showexec-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-      username: `showexec${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+      email: `showexec-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+      username: `showexec${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
       firstName: 'ShowExec',
       lastName: 'Tester',

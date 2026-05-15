@@ -13,6 +13,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import {
   getUserProgression,
@@ -63,7 +64,7 @@ let testUser;
 let highXpUser; // user with enough XP to be above level 1 in DB but level=1 (triggers level-up)
 
 beforeAll(async () => {
-  const suffix = `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+  const suffix = `${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}`;
 
   testUser = await prisma.user.create({
     data: {

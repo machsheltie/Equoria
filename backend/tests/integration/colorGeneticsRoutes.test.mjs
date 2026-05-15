@@ -15,6 +15,7 @@
  */
 
 import request from 'supertest';
+import { randomBytes } from 'node:crypto';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
@@ -36,7 +37,7 @@ describe('Color & Genetics Routes — HTTP integration (31E-4 / Equoria-5j0z)', 
   });
 
   beforeEach(async () => {
-    const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
 
     // Two users so we can exercise the cross-user (not-owned) path.
     testUser = await prisma.user.create({

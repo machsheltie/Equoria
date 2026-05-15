@@ -5,6 +5,7 @@
 
 import prisma from '../db/index.mjs';
 
+import { randomBytes } from 'node:crypto';
 describe('Schema Validation', () => {
   let testUser;
   let testBreed;
@@ -43,7 +44,7 @@ describe('Schema Validation', () => {
 
   beforeEach(async () => {
     // Generate unique ID for this test
-    uniqueId = `schema-test-user-${Date.now()}_${Math.random().toString(36).slice(2, 6)}-${Math.random().toString(36).substr(2, 9)}`;
+    uniqueId = `schema-test-user-${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}`;
 
     // Create test breed
     testBreed = await prisma.breed.create({
@@ -57,8 +58,8 @@ describe('Schema Validation', () => {
     testUser = await prisma.user.create({
       data: {
         id: uniqueId,
-        username: `schematestuser${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-        email: `schema-test-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+        username: `schematestuser${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+        email: `schema-test-${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@example.com`,
         password: 'TestPassword123!',
         firstName: 'Schema',
         lastName: 'Tester',

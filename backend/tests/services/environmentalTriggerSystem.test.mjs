@@ -16,6 +16,7 @@
  */
 
 import prisma from '../../../packages/database/prismaClient.mjs';
+import { randomBytes } from 'node:crypto';
 import {
   detectEnvironmentalTriggers,
   calculateTriggerThresholds,
@@ -44,8 +45,8 @@ describe('Environmental Trigger System', () => {
         // Create test user
         testUser = await tx.user.create({
           data: {
-            username: `env_trigger_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            email: `env_trigger_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
+            username: `env_trigger_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+            email: `env_trigger_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
             password: 'test_hash',
             firstName: 'Test',
             lastName: 'User',
@@ -59,7 +60,7 @@ describe('Environmental Trigger System', () => {
         testGrooms = await Promise.all([
           tx.groom.create({
             data: {
-              name: `Calm Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              name: `Calm Groom ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               personality: 'calm',
               epigeneticInfluenceType: 'calm',
               skillLevel: 'expert',
@@ -72,7 +73,7 @@ describe('Environmental Trigger System', () => {
           }),
           tx.groom.create({
             data: {
-              name: `Energetic Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              name: `Energetic Groom ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               personality: 'energetic',
               epigeneticInfluenceType: 'energetic',
               skillLevel: 'expert',
@@ -89,7 +90,7 @@ describe('Environmental Trigger System', () => {
           // Young foal - high environmental sensitivity
           tx.horse.create({
             data: {
-              name: `Test Foal Young ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              name: `Test Foal Young ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'filly',
               dateOfBirth: oneWeekAgo,
               userId: testUser.id,
@@ -101,7 +102,7 @@ describe('Environmental Trigger System', () => {
           // Older foal - moderate sensitivity
           tx.horse.create({
             data: {
-              name: `Test Foal Older ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              name: `Test Foal Older ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'colt',
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,
@@ -113,7 +114,7 @@ describe('Environmental Trigger System', () => {
           // Stressed foal - high trigger sensitivity
           tx.horse.create({
             data: {
-              name: `Test Foal Stressed ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              name: `Test Foal Stressed ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'filly',
               dateOfBirth: twoWeeksAgo,
               userId: testUser.id,

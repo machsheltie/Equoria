@@ -1,8 +1,9 @@
 import { describe, it, expect, jest, afterEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import { validateJwtSecrets } from '../../../scripts/validate-environment.mjs';
 
 const originalEnv = { ...process.env };
-const importFresh = path => import(`${path}?cacheBust=${Date.now()}-${Math.random().toString(16).slice(2)}`);
+const importFresh = path => import(`${path}?cacheBust=${randomBytes(4).toString('hex')}-${Math.random().toString(16).slice(2)}`);
 
 describe('deployable runtime secret policy', () => {
   afterEach(() => {

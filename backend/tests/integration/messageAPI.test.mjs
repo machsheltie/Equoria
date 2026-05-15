@@ -4,6 +4,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import { createTestUser, cleanupTestData } from '../helpers/testAuth.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
@@ -145,8 +146,8 @@ describe('📬 INTEGRATION: Messages API', () => {
 
     it('should block access to messages not yours', async () => {
       const other = await createTestUser({
-        username: `other_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-        email: `other_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
+        username: `other_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+        email: `other_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
       });
       const res = await request(app)
         .get(`/api/messages/${sentMessageId}`)

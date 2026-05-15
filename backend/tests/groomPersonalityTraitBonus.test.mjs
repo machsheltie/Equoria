@@ -14,6 +14,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import app from '../app.mjs';
@@ -44,7 +45,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
     // Create test breed first
     testBreed = await prisma.breed.create({
       data: {
-        name: `TestBreed_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        name: `TestBreed_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         description: 'Test breed for personality tests',
       },
     });
@@ -52,10 +53,10 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
     // Create test user with real database operations
     testUser = await prisma.user.create({
       data: {
-        username: `testuser_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        username: `testuser_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         firstName: 'Test',
         lastName: 'User',
-        email: `test_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+        email: `test_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@example.com`,
         password: 'hashedpassword',
         money: 10000,
         xp: 100,
@@ -66,7 +67,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
     // Create test horse with temperament
     testHorse = await prisma.horse.create({
       data: {
-        name: `GPT-TestHorse_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        name: `GPT-TestHorse_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         userId: testUser.id,
         dateOfBirth: new Date(Date.now() - 0 * 24 * 60 * 60 * 1000), // 0 days old (newborn for imprinting)
         temperament: FOAL_TEMPERAMENT_TYPES.SPIRITED,
@@ -81,7 +82,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
     // Create test groom with personality
     testGroom = await prisma.groom.create({
       data: {
-        name: `TestGroom_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        name: `TestGroom_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         speciality: 'foalCare',
         experience: 5,
         skillLevel: 'intermediate',

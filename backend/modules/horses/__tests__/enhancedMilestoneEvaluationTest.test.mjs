@@ -13,6 +13,7 @@
  */
 
 import { describe, it, expect, afterAll, beforeAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import { evaluateEnhancedMilestone } from '../../../utils/enhancedMilestoneEvaluation.mjs';
 import cronJobService from '../../../services/cronJobs.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -420,8 +421,8 @@ let dbMilestoneHorse;
 beforeAll(async () => {
   dbMilestoneUser = await prisma.user.create({
     data: {
-      email: `enhancedmilestone-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-      username: `enhancedmilestone${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+      email: `enhancedmilestone-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+      username: `enhancedmilestone${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
       firstName: 'EnhancedMilestone',
       lastName: 'DBTester',

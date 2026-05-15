@@ -35,6 +35,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 // Jest globals are available in test environment
 import request from 'supertest';
 import app from '../../../app.mjs';
@@ -191,7 +192,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
 
       // Second registration with same email — expect 409 Conflict (Equoria-t0wk)
       const response = await authPost('/api/v1/auth/register')
-        .send({ ...userData, username: `other_${Date.now()}_${Math.random().toString(36).slice(2, 6)}` }) // Use a different username
+        .send({ ...userData, username: `other_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}` }) // Use a different username
         .expect(409);
 
       expect(response.body.success).toBe(false);
@@ -240,7 +241,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
 
     it('should reject login with invalid email', async () => {
       const loginData = {
-        email: `nonexistent_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+        email: `nonexistent_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@example.com`,
         password: 'Password123!',
       };
 

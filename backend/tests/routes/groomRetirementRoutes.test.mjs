@@ -8,6 +8,7 @@
  */
 
 import request from 'supertest';
+import { randomBytes } from 'node:crypto';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
@@ -27,7 +28,7 @@ describe('Groom Retirement Routes', () => {
   beforeEach(async () => {
     // Create a fresh user for each test — avoids FK violations from test interference
     // when the full suite runs and Prisma connections are recycled between test files.
-    const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).slice(2, 7)}`;
+    const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
     testUser = await prisma.user.create({
       data: {
         username: `testuser_routes_${ts}`,

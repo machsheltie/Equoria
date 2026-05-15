@@ -9,6 +9,7 @@
  */
 
 import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../app.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
@@ -28,9 +29,9 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        id: `test-user-epigenetic-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-        username: `testuser${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-        email: `test${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+        id: `test-user-epigenetic-${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+        username: `testuser${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+        email: `test${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@example.com`,
         password: 'TestPassword123!',
         role: 'admin',
         firstName: 'Test',

@@ -19,6 +19,7 @@
 
 // jest import removed - not used in this file
 import request from 'supertest';
+import { randomBytes } from 'node:crypto';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
@@ -50,8 +51,8 @@ describe('Personality Evolution Controller API', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        username: `personality_evolution_api_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-        email: `personality_evolution_api_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
+        username: `personality_evolution_api_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+        email: `personality_evolution_api_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
         password: 'test_hash',
         firstName: 'Test',
         lastName: 'User',

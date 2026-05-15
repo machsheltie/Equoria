@@ -15,6 +15,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -28,8 +29,8 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
   beforeEach(async () => {
     user = await prisma.user.create({
       data: {
-        email: `health-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-        username: `health${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+        email: `health-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+        username: `health${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-test-hash',
         firstName: 'Test',
         lastName: 'User',
@@ -41,7 +42,7 @@ describe('Horse JSON includes feedHealth / vetHealth / displayedHealth', () => {
 
     const horse = await prisma.horse.create({
       data: {
-        name: `Healthy${Date.now()}${Math.random().toString(36).slice(2, 5)}`,
+        name: `Healthy${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         sex: 'mare',
         dateOfBirth: new Date('2020-01-01'),
         age: 5,

@@ -5,6 +5,7 @@
  */
 
 import request from 'supertest';
+import { randomBytes } from 'node:crypto';
 import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
@@ -27,7 +28,7 @@ describe('Groom Salary System', () => {
   let authToken;
 
   beforeEach(async () => {
-    const testSuffix = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(16).slice(2, 8)}`;
+    const testSuffix = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${Math.random().toString(16).slice(2, 8)}`;
 
     testUser = await prisma.user.create({
       data: {
@@ -199,7 +200,7 @@ describe('Groom Salary System', () => {
 
     it('should validate groom ownership', async () => {
       // Create another user's groom
-      const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.floor(Math.random() * 10000)}`;
+      const uniqueSuffix = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${Math.floor(Math.random() * 10000)}`;
       const otherUser = await prisma.user.create({
         data: {
           username: `otherSalaryUser_${uniqueSuffix}`,

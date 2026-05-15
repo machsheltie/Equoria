@@ -12,6 +12,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import prisma from '../../db/index.mjs';
 import { hireGroom, assignGroom, recordInteraction } from '../../controllers/groomController.mjs';
 
@@ -107,7 +108,7 @@ describe('Groom Workflow Integration Tests', () => {
       },
     });
 
-    const suffix = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    const suffix = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
 
     testBreed = await prisma.breed.create({
       data: {

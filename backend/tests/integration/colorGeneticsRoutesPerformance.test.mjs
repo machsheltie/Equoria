@@ -29,7 +29,6 @@ import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
-import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const GENETICS_BUDGET_MS = 300;
@@ -58,7 +57,6 @@ const FULL_GENOTYPE = {
 };
 
 describe('Color & Genetics Routes — performance NFRs (Equoria-z594)', () => {
-  let csrf;
   let perfUser;
   let perfToken;
   let perfHorse;
@@ -66,8 +64,6 @@ describe('Color & Genetics Routes — performance NFRs (Equoria-z594)', () => {
   const createdUserIds = [];
 
   beforeAll(async () => {
-    csrf = await fetchCsrf(app);
-
     const ts = randomBytes(8).toString('hex');
     perfUser = await prisma.user.create({
       data: {

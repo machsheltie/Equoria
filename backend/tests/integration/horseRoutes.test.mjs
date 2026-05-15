@@ -9,6 +9,7 @@
  */
 
 import request from 'supertest';
+import { randomBytes } from 'node:crypto';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
@@ -26,7 +27,7 @@ describe('Horse Routes Integration Tests', () => {
   let foalHorse;
 
   beforeEach(async () => {
-    const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).slice(2, 7)}`;
+    const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
     // Wrap user+horse creates in $transaction so all 3 operations run on
     // the same connection. The previous sequential calls hit
     // `horses_userId_fkey` violations under the pool=20 default: user.
@@ -128,7 +129,7 @@ describe('Horse Routes Integration Tests', () => {
     });
 
     test('should return 403 when accessing another users trainable horses', async () => {
-      const otherTs = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_other`;
+      const otherTs = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_other`;
       const otherUser = await prisma.user.create({
         data: {
           username: `other_hr_${otherTs}`,

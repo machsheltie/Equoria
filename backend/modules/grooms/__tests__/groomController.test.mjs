@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -20,10 +21,10 @@ const VALID_SKILL = 'novice'; // costModifier=0.7 → hiringCost=Math.round(500*
 const VALID_PERSONALITY = 'gentle';
 
 function uniqueEmail(prefix = 'gc') {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`;
+  return `${prefix}-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`;
 }
 function uniqueUsername(prefix = 'gc') {
-  return `${prefix}${Date.now()}${Math.random().toString(36).slice(2, 6)}`;
+  return `${prefix}${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`;
 }
 
 describe('groomController integration', () => {

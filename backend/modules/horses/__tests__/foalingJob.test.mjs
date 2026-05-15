@@ -18,6 +18,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import prisma from '../../../db/index.mjs';
 import { runFoalingJob, createFoalFromPregnancy } from '../services/foalingService.mjs';
 import { CORE_LOCI } from '../services/genotypeGenerationService.mjs';
@@ -25,7 +26,7 @@ import { CORE_LOCI } from '../services/genotypeGenerationService.mjs';
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 async function createUser(suffix) {
-  const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}_${suffix}`;
+  const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${suffix}`;
   return prisma.user.create({
     data: {
       username: `b5_${ts}`,

@@ -33,7 +33,7 @@ export async function pruneOldNotifications(userId, retentionCount = NOTIFICATIO
       skip: retentionCount,
       select: { id: true },
     });
-    if (stale.length === 0) return 0;
+    if (stale.length === 0) { return 0; }
     const ids = stale.map(row => row.id);
     const result = await prisma.notification.deleteMany({ where: { id: { in: ids } } });
     return result.count;

@@ -15,6 +15,7 @@
  */
 
 import request from 'supertest';
+import { randomBytes } from 'node:crypto';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
@@ -63,7 +64,7 @@ describe('Dynamic Compatibility Controller API', () => {
       testBreedId = breed.id;
     }
 
-    const uid = `${RUN_PREFIX}-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    const uid = `${RUN_PREFIX}-${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
     const groomData = [
       {
         name: `Calm Expert ${uid}`,

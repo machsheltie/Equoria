@@ -11,6 +11,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import {
   getTopUsersByXp,
@@ -24,7 +25,7 @@ import {
   getPlayerXpRank,
 } from '../../../services/leaderboardService.mjs';
 
-const RUN_ID = `${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+const RUN_ID = `${randomBytes(4).toString('hex')}_${Math.floor(Math.random() * 100000)}`;
 const PREFIX = `LB_TEST_${RUN_ID}`;
 
 // Test cohort: 3 users with deliberately spread XP/level/money so ranking

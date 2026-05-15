@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, beforeAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
@@ -23,10 +24,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 function uniqueEmail(prefix = 'mp') {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`;
+  return `${prefix}-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`;
 }
 function uniqueUsername(prefix = 'mp') {
-  return `${prefix}${Date.now()}${Math.random().toString(36).slice(2, 6)}`;
+  return `${prefix}${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`;
 }
 
 // Resolve a breed ID that also has a breedStarterStats.json entry (required by buyStoreHorse)

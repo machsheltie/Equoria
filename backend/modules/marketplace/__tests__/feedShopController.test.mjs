@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -15,10 +16,10 @@ import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 const ORIGIN = 'http://localhost:3000';
 
 function uniqueEmail(prefix = 'feed') {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`;
+  return `${prefix}-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`;
 }
 function uniqueUsername(prefix = 'feed') {
-  return `${prefix}${Date.now()}${Math.random().toString(36).slice(2, 6)}`;
+  return `${prefix}${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`;
 }
 
 describe('feedShopController integration', () => {

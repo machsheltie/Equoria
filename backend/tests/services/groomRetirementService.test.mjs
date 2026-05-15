@@ -13,6 +13,7 @@
  */
 
 import prisma from '../../../packages/database/prismaClient.mjs';
+import { randomBytes } from 'node:crypto';
 import {
   incrementCareerWeeks,
   checkRetirementEligibility,
@@ -32,8 +33,8 @@ describe('Groom Retirement Service', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        username: `testuser_retirement_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-        email: `test_retirement_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+        username: `testuser_retirement_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+        email: `test_retirement_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@example.com`,
         password: 'hashedpassword123',
         firstName: 'Test',
         lastName: 'User',
@@ -43,7 +44,7 @@ describe('Groom Retirement Service', () => {
     // Create test horse for assignment logs
     testHorse = await prisma.horse.create({
       data: {
-        name: `Test Horse ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        name: `Test Horse ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         sex: 'Stallion',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
         userId: testUser.id,
@@ -57,7 +58,7 @@ describe('Groom Retirement Service', () => {
     // Create fresh test groom for each test
     testGroom = await prisma.groom.create({
       data: {
-        name: `Test Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        name: `Test Groom ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         personality: 'calm',
         skillLevel: 'intermediate',
         speciality: 'foal_care',
@@ -297,7 +298,7 @@ describe('Groom Retirement Service', () => {
       testGrooms = await Promise.all([
         prisma.groom.create({
           data: {
-            name: `Test Groom Early ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            name: `Test Groom Early ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
             personality: 'calm',
             skillLevel: 'novice',
             speciality: 'foal_care',
@@ -309,7 +310,7 @@ describe('Groom Retirement Service', () => {
         }),
         prisma.groom.create({
           data: {
-            name: `Test Groom Mid ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            name: `Test Groom Mid ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
             personality: 'energetic',
             skillLevel: 'intermediate',
             speciality: 'general_grooming',
@@ -321,7 +322,7 @@ describe('Groom Retirement Service', () => {
         }),
         prisma.groom.create({
           data: {
-            name: `Test Groom Near Retirement ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            name: `Test Groom Near Retirement ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
             personality: 'methodical',
             skillLevel: 'expert',
             speciality: 'specialized_disciplines',
@@ -333,7 +334,7 @@ describe('Groom Retirement Service', () => {
         }),
         prisma.groom.create({
           data: {
-            name: `Test Groom Level 10 ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+            name: `Test Groom Level 10 ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
             personality: 'calm',
             skillLevel: 'expert',
             speciality: 'foal_care',
@@ -401,7 +402,7 @@ describe('Groom Retirement Service', () => {
       // Create a groom that will cause an error during processing by making it invalid after creation
       const problemGroom = await prisma.groom.create({
         data: {
-          name: `Problem Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: `Problem Groom ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           personality: 'calm',
           skillLevel: 'novice',
           speciality: 'foal_care',

@@ -13,6 +13,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import {
   hasAlreadyCompletedFoalTaskToday,
   calculateGroomInteractionEffects,
@@ -342,8 +343,8 @@ let groomNotFoundHorse;
 beforeAll(async () => {
   groomNotFoundUser = await prisma.user.create({
     data: {
-      email: `groomsys-gnf-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-      username: `groomsysgnf${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+      email: `groomsys-gnf-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+      username: `groomsysgnf${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
       firstName: 'GroomSys',
       lastName: 'GNFTester',

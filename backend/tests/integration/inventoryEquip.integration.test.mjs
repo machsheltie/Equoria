@@ -10,6 +10,7 @@
  */
 
 import request from 'supertest';
+import { randomBytes } from 'node:crypto';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { createTestUser, createTestHorse } from '../helpers/testAuth.mjs';
@@ -46,8 +47,8 @@ describe('Inventory Equip — same-category swap', () => {
 
   beforeAll(async () => {
     ({ user: testUser, token: authToken } = await createTestUser({
-      username: `invequip_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-      email: `invequip_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+      username: `invequip_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+      email: `invequip_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@example.com`,
     }));
 
     testHorse = await createTestHorse({ userId: testUser.id });

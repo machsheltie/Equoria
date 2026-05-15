@@ -3,6 +3,7 @@
  */
 
 import { describe, beforeEach, expect, it, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import dotenv from 'dotenv';
@@ -34,7 +35,7 @@ describe('Horse Seed Integration Tests', () => {
 
   describe('checkHorseExists - Real Database Operations', () => {
     it('should return true if horse exists in database', async () => {
-      const userTag = `TestSeed_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+      const userTag = `TestSeed_${Date.now().toString(36)}_${randomBytes(4).toString('hex')}`;
       const testUser = await prisma.user.create({
         data: {
           username: userTag,

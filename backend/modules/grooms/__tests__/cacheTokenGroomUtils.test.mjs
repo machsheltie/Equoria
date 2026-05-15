@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import { cacheStats, generateCacheKey, getCachedQuery, invalidateCache } from '../../../utils/cacheHelper.mjs';
 import { hashRefreshToken, generateTokenFamily } from '../../../utils/tokenRotationService.mjs';
 import { applyRareTraitBoosterEffects } from '../../../utils/groomRareTraitPerks.mjs';
@@ -24,8 +25,8 @@ let horse;
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
-      email: `cacheutiltest-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-      username: `cacheutiltest${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+      email: `cacheutiltest-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+      username: `cacheutiltest${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
       firstName: 'CacheUtil',
       lastName: 'Tester',

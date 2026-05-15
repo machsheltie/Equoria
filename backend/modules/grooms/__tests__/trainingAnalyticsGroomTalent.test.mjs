@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import { trainingAnalyticsService } from '../../../services/trainingAnalyticsService.mjs';
 import {
   getTalentTreeDefinitions,
@@ -24,8 +25,8 @@ let groom;
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
-      email: `traintalent-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-      username: `traintalent${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+      email: `traintalent-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+      username: `traintalent${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
       firstName: 'TrainTalent',
       lastName: 'Tester',

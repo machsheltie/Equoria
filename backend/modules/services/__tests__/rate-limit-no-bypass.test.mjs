@@ -33,6 +33,7 @@
  */
 
 import { describe, it, expect, beforeAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
@@ -149,7 +150,7 @@ describe('/api/v1/auth/login authRateLimiter — real-path no-bypass coverage (E
       req = req.set(name, value);
     }
     return req.send({
-      email: `ocn9-no-such-user-${Date.now()}-${Math.random()}@example.com`,
+      email: `ocn9-no-such-user-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@example.com`,
       password: 'wrong-password',
     });
   };

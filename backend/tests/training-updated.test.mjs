@@ -37,6 +37,7 @@
  */
 
 import request from 'supertest';
+import { randomBytes } from 'node:crypto';
 import app from '../app.mjs';
 import prisma from '../db/index.mjs';
 import bcrypt from 'bcryptjs';
@@ -75,7 +76,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
   beforeAll(async () => {
     // Use 'trainupd_' prefix — not matched by cleanupTestData's 'testuser_' pattern,
     // so parallel suites calling cleanupTestData won't wipe this suite's data.
-    const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).slice(2, 8)}`;
+    const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
     // rounds=1: fast in tests; password is never verified (JWT generated directly)
     const hashedPw = await bcrypt.hash('TestPassword123!', 1);
     const user = await prisma.user.create({

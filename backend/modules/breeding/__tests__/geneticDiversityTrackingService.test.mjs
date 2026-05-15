@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import {
   calculateAdvancedGeneticDiversity,
   calculateEffectivePopulationSize,
@@ -28,8 +29,8 @@ let mare;
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
-      email: `gendiv-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-      username: `gendiv${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+      email: `gendiv-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+      username: `gendiv${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
       firstName: 'GenDiv',
       lastName: 'Tester',

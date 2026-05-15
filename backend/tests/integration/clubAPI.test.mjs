@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import { createTestUser, cleanupTestData } from '../helpers/testAuth.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
@@ -55,7 +56,7 @@ describe('🏇 INTEGRATION: Club API', () => {
         .set('Cookie', __csrf__.cookieHeader)
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({
-          name: `Test Club ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: `Test Club ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           type: 'discipline',
           category: 'Dressage',
           description: 'For dressage lovers',
@@ -72,7 +73,7 @@ describe('🏇 INTEGRATION: Club API', () => {
     });
 
     it('should reject duplicate club name', async () => {
-      const clubName = `Dup Club ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      const clubName = `Dup Club ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
       await request(app)
         .post('/api/clubs')
         .set('Authorization', `Bearer ${leaderToken}`)

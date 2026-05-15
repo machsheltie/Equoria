@@ -26,6 +26,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import prisma from '../db/index.mjs';
 
 describe('Foal Task Log Storage', () => {
@@ -60,7 +61,7 @@ describe('Foal Task Log Storage', () => {
     }
 
     // Create test user
-    const uniqueSuffix = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.floor(Math.random() * 100000)}`;
+    const uniqueSuffix = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${Math.floor(Math.random() * 100000)}`;
     testUser = await prisma.user.create({
       data: {
         id: `test-user-task-log-${uniqueSuffix}`,

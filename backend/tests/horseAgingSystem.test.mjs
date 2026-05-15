@@ -30,6 +30,7 @@
  */
 
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import prisma from '../db/index.mjs';
 
 // Mock logger
@@ -63,9 +64,9 @@ describe('Horse Aging System', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        id: `aging-user-${Date.now()}_${Math.random().toString(36).slice(2, 6)}-${Math.random()}`,
-        username: `aginguser-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-        email: `aging-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+        id: `aging-user-${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}`,
+        username: `aginguser-${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+        email: `aging-${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@example.com`,
         password: 'TestPassword123!',
         firstName: 'Aging',
         lastName: 'Tester',
@@ -77,7 +78,7 @@ describe('Horse Aging System', () => {
     // Create test breed
     testBreed = await prisma.breed.create({
       data: {
-        name: `Test Breed ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        name: `Test Breed ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         description: 'Test breed for aging',
       },
     });

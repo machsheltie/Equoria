@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -23,8 +24,8 @@ let message;
 beforeAll(async () => {
   sender = await prisma.user.create({
     data: {
-      email: `msgsend-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-      username: `msgsend${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+      email: `msgsend-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+      username: `msgsend${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
       firstName: 'MsgSend',
       lastName: 'Tester',
@@ -33,8 +34,8 @@ beforeAll(async () => {
   });
   recipient = await prisma.user.create({
     data: {
-      email: `msgrecv-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-      username: `msgrecv${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+      email: `msgrecv-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+      username: `msgrecv${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
       firstName: 'MsgRecv',
       lastName: 'Tester',

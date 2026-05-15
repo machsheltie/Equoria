@@ -30,6 +30,7 @@
  */
 
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
@@ -157,7 +158,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
       // Create test show for competition result
       const testShow = await prisma.show.create({
         data: {
-          name: `Summer Invitational ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: `Summer Invitational ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           discipline: 'Dressage',
           levelMin: 1,
           levelMax: 10,

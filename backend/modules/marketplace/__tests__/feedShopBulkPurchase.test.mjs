@@ -10,6 +10,7 @@
  */
 
 import { describe, it, expect, beforeAll, beforeEach, afterEach, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -31,8 +32,8 @@ describe('POST /api/feed-shop/purchase (bulk pack purchase)', () => {
   beforeEach(async () => {
     user = await prisma.user.create({
       data: {
-        email: `feed-bulk-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-        username: `feedbulk${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+        email: `feed-bulk-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+        username: `feedbulk${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-test-hash',
         firstName: 'Test',
         lastName: 'User',

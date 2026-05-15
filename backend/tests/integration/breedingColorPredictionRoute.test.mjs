@@ -22,6 +22,7 @@
  */
 
 import request from 'supertest';
+import { randomBytes } from 'node:crypto';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
@@ -68,7 +69,7 @@ describe('POST /api/v1/horses/breeding/color-prediction — HTTP integration (Eq
   });
 
   beforeEach(async () => {
-    const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+    const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
 
     owner = await prisma.user.create({
       data: {

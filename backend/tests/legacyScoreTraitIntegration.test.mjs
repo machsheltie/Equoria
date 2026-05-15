@@ -16,6 +16,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import app from '../app.mjs';
@@ -43,7 +44,7 @@ describe('Legacy Score Trait Integration System', () => {
     // suite's horse mid-test, causing FK violations on traitHistoryLog.create.
     testBreed = await prisma.breed.create({
       data: {
-        name: `LegacyTraitTest_Breed_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        name: `LegacyTraitTest_Breed_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         description: 'Test breed for legacy score tests',
       },
     });
@@ -51,10 +52,10 @@ describe('Legacy Score Trait Integration System', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        username: `legacytrait_user_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        username: `legacytrait_user_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         firstName: 'Test',
         lastName: 'User',
-        email: `legacytrait_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+        email: `legacytrait_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@example.com`,
         password: 'hashedpassword',
         money: 10000,
         xp: 100,
@@ -65,7 +66,7 @@ describe('Legacy Score Trait Integration System', () => {
     // Create test groom
     testGroom = await prisma.groom.create({
       data: {
-        name: `LegacyTraitTest_Groom_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        name: `LegacyTraitTest_Groom_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         speciality: 'foal_care',
         experience: 10,
         skillLevel: 'expert',
@@ -79,7 +80,7 @@ describe('Legacy Score Trait Integration System', () => {
     // Create test horse (4 years old to test legacy score calculation)
     testHorse = await prisma.horse.create({
       data: {
-        name: `LegacyTraitTest_Horse_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        name: `LegacyTraitTest_Horse_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         sex: 'stallion',
         dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000), // 4 years old
         temperament: 'spirited',

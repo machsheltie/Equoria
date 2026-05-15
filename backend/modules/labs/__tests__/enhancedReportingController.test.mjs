@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -23,8 +24,8 @@ let horse2;
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
-      email: `enhreport-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-      username: `enhreport${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+      email: `enhreport-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+      username: `enhreport${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
       firstName: 'EnhReport',
       lastName: 'Tester',

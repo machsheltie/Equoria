@@ -13,6 +13,7 @@
  */
 
 import prisma from '../../../packages/database/prismaClient.mjs';
+import { randomBytes } from 'node:crypto';
 import {
   evaluateWeeklyFlags,
   processHorseForFlagEvaluation,
@@ -28,8 +29,8 @@ describe('Weekly Flag Evaluation Service', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        username: `flagtest_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-        email: `flagtest_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
+        username: `flagtest_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+        email: `flagtest_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
         password: 'test_hash',
         firstName: 'Test',
         lastName: 'User',
@@ -43,7 +44,7 @@ describe('Weekly Flag Evaluation Service', () => {
     testGrooms = await Promise.all([
       prisma.groom.create({
         data: {
-          name: `Test Groom Calm ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: `Test Groom Calm ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           personality: 'calm',
           epigeneticInfluenceType: 'calm',
           skillLevel: 'experienced',
@@ -54,7 +55,7 @@ describe('Weekly Flag Evaluation Service', () => {
       }),
       prisma.groom.create({
         data: {
-          name: `Test Groom Energetic ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: `Test Groom Energetic ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           personality: 'energetic',
           epigeneticInfluenceType: 'energetic',
           skillLevel: 'experienced',
@@ -76,7 +77,7 @@ describe('Weekly Flag Evaluation Service', () => {
       // Young foal (1 week old) - eligible for flag evaluation
       prisma.horse.create({
         data: {
-          name: `Test Foal Week ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: `Test Foal Week ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'filly',
           dateOfBirth: oneWeekAgo,
           userId: testUser.id,
@@ -88,7 +89,7 @@ describe('Weekly Flag Evaluation Service', () => {
       // Young horse (1 month old) - eligible for flag evaluation
       prisma.horse.create({
         data: {
-          name: `Test Foal Month ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: `Test Foal Month ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'colt',
           dateOfBirth: oneMonthAgo,
           userId: testUser.id,
@@ -100,7 +101,7 @@ describe('Weekly Flag Evaluation Service', () => {
       // 2-year-old horse - still eligible for flag evaluation
       prisma.horse.create({
         data: {
-          name: `Test Horse 2yo ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: `Test Horse 2yo ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'Colt',
           dateOfBirth: twoYearsAgo,
           userId: testUser.id,
@@ -112,7 +113,7 @@ describe('Weekly Flag Evaluation Service', () => {
       // 4-year-old horse - NOT eligible for flag evaluation
       prisma.horse.create({
         data: {
-          name: `Test Horse 4yo ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: `Test Horse 4yo ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'mare',
           dateOfBirth: fourYearsAgo,
           userId: testUser.id,
@@ -198,7 +199,7 @@ describe('Weekly Flag Evaluation Service', () => {
       // Create a horse with 5 flags already
       const horseWithMaxFlags = await prisma.horse.create({
         data: {
-          name: `Test Horse Max Flags ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: `Test Horse Max Flags ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'filly',
           dateOfBirth: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 1 month old
           userId: testUser.id,

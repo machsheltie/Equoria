@@ -12,6 +12,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -19,7 +20,7 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 
 const ORIGIN = 'http://localhost:3000';
-const TAG = `ng1i-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+const TAG = `ng1i-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}`;
 
 describe('31D-4 (Equoria-ng1i): POST /api/grooms/interact applies temperament-groom synergy', () => {
   let user;

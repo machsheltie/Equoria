@@ -14,6 +14,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import { validateBreeding, validateTraining, validateTransaction } from '../../../middleware/gameIntegrity.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
@@ -69,7 +70,7 @@ let trainingHorse;
 let injuredTrainingHorse;
 let cooldownTrainingHorse;
 
-const SUFFIX = `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+const SUFFIX = `${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}`;
 
 beforeAll(async () => {
   ownerUser = await prisma.user.create({

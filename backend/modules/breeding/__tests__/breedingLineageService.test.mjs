@@ -7,6 +7,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import {
   calculateInheritanceProbabilities,
   calculateFlagInheritanceScore,
@@ -29,8 +30,8 @@ let mare;
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
-      email: `breedlin-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-      username: `breedlin${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+      email: `breedlin-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+      username: `breedlin${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
       firstName: 'BreedLin',
       lastName: 'Tester',

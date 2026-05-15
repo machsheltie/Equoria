@@ -14,6 +14,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -134,8 +135,8 @@ describe('feedHorse service — stat-boost integration (real DB)', () => {
   beforeEach(async () => {
     const user = await prisma.user.create({
       data: {
-        email: `svc-feed-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-        username: `svcfeed${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+        email: `svc-feed-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+        username: `svcfeed${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-test-hash',
         firstName: 'Test',
         lastName: 'User',
@@ -156,7 +157,7 @@ describe('feedHorse service — stat-boost integration (real DB)', () => {
     userId = user.id;
     const horse = await prisma.horse.create({
       data: {
-        name: `SvcHorse${Date.now()}${Math.random().toString(36).slice(2, 5)}`,
+        name: `SvcHorse${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         sex: 'Stallion',
         dateOfBirth: new Date('2020-01-01'),
         age: 5,
@@ -267,8 +268,8 @@ describe('feedHorse service — pregnancy feeding counter (Phase B4, real DB)', 
   beforeEach(async () => {
     const user = await prisma.user.create({
       data: {
-        email: `pf-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-        username: `pf${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+        email: `pf-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+        username: `pf${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-test-hash',
         firstName: 'Test',
         lastName: 'User',
@@ -292,7 +293,7 @@ describe('feedHorse service — pregnancy feeding counter (Phase B4, real DB)', 
     // empty counter map, no prior feeding today.
     const dam = await prisma.horse.create({
       data: {
-        name: `Dam${Date.now()}${Math.random().toString(36).slice(2, 5)}`,
+        name: `Dam${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         sex: 'mare',
         dateOfBirth: new Date('2020-01-01'),
         age: 5,
@@ -373,8 +374,8 @@ describe('feedHorse service — sequential-feed guard (Equoria-nsr7 / Equoria-5g
   beforeEach(async () => {
     const user = await prisma.user.create({
       data: {
-        email: `conc-feed-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-        username: `concfeed${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+        email: `conc-feed-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+        username: `concfeed${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-test-hash',
         firstName: 'Test',
         lastName: 'User',
@@ -395,7 +396,7 @@ describe('feedHorse service — sequential-feed guard (Equoria-nsr7 / Equoria-5g
     userId = user.id;
     const horse = await prisma.horse.create({
       data: {
-        name: `ConcHorse${Date.now()}${Math.random().toString(36).slice(2, 5)}`,
+        name: `ConcHorse${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         sex: 'Stallion',
         dateOfBirth: new Date('2020-01-01'),
         age: 5,

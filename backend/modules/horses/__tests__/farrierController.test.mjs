@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -21,8 +22,8 @@ let horse;
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
-      email: `farrier-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-      username: `farrier${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+      email: `farrier-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+      username: `farrier${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
       firstName: 'Farrier',
       lastName: 'Tester',
@@ -151,8 +152,8 @@ describe('POST /api/farrier/book-service', () => {
     // Create a user with only $10 — hoof-trim costs $80, so insufficient
     const brokeUser = await prisma.user.create({
       data: {
-        email: `farrier-broke-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-        username: `farbroke${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+        email: `farrier-broke-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+        username: `farbroke${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-hash',
         firstName: 'Broke',
         lastName: 'Tester',

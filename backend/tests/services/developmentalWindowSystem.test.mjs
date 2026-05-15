@@ -16,6 +16,7 @@
  */
 
 import prisma from '../../../packages/database/prismaClient.mjs';
+import { randomBytes } from 'node:crypto';
 import {
   identifyDevelopmentalWindows,
   calculateWindowSensitivity,
@@ -36,8 +37,8 @@ describe('Developmental Window System', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        username: `dev_window_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-        email: `dev_window_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
+        username: `dev_window_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+        email: `dev_window_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
         password: 'test_hash',
         firstName: 'Test',
         lastName: 'User',
@@ -51,7 +52,7 @@ describe('Developmental Window System', () => {
     testGrooms = await Promise.all([
       prisma.groom.create({
         data: {
-          name: `Developmental Groom ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: `Developmental Groom ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           personality: 'calm',
           epigeneticInfluenceType: 'calm',
           skillLevel: 'expert',
@@ -76,7 +77,7 @@ describe('Developmental Window System', () => {
       // Newborn foal - imprinting window
       prisma.horse.create({
         data: {
-          name: `Test Foal Newborn ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: `Test Foal Newborn ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'filly',
           dateOfBirth: oneDayAgo,
           userId: testUser.id,
@@ -88,7 +89,7 @@ describe('Developmental Window System', () => {
       // Week-old foal - early socialization window
       prisma.horse.create({
         data: {
-          name: `Test Foal Week ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: `Test Foal Week ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'colt',
           dateOfBirth: oneWeekAgo,
           userId: testUser.id,
@@ -100,7 +101,7 @@ describe('Developmental Window System', () => {
       // Two-week-old foal - fear period window
       prisma.horse.create({
         data: {
-          name: `Test Foal TwoWeek ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: `Test Foal TwoWeek ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'filly',
           dateOfBirth: twoWeeksAgo,
           userId: testUser.id,
@@ -112,7 +113,7 @@ describe('Developmental Window System', () => {
       // Month-old foal - curiosity development window
       prisma.horse.create({
         data: {
-          name: `Test Foal Month ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: `Test Foal Month ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'Colt',
           dateOfBirth: oneMonthAgo,
           userId: testUser.id,
@@ -124,7 +125,7 @@ describe('Developmental Window System', () => {
       // Three-month-old foal - independence development
       prisma.horse.create({
         data: {
-          name: `Test Foal ThreeMonth ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+          name: `Test Foal ThreeMonth ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'colt',
           dateOfBirth: threeMonthsAgo,
           userId: testUser.id,
@@ -497,8 +498,8 @@ describe('Developmental Window System', () => {
     beforeAll(async () => {
       rr7BranchUser = await prisma.user.create({
         data: {
-          username: `TestFixture-DWS-rr7-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          email: `TestFixture-DWS-rr7-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
+          username: `TestFixture-DWS-rr7-${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+          email: `TestFixture-DWS-rr7-${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
           password: 'test_hash',
           firstName: 'DWS',
           lastName: 'Branch',
@@ -634,8 +635,8 @@ describe('Developmental Window System', () => {
     beforeAll(async () => {
       rr7BiiUser = await prisma.user.create({
         data: {
-          username: `TestFixture-DWS-BII-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          email: `TestFixture-DWS-BII-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
+          username: `TestFixture-DWS-BII-${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+          email: `TestFixture-DWS-BII-${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
           password: 'test_hash',
           firstName: 'DWSBII',
           lastName: 'Branch',
@@ -747,8 +748,8 @@ describe('Developmental Window System', () => {
     beforeAll(async () => {
       rr7BiiiUser = await prisma.user.create({
         data: {
-          username: `TestFixture-DWS-BIII-${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-          email: `TestFixture-DWS-BIII-${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
+          username: `TestFixture-DWS-BIII-${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+          email: `TestFixture-DWS-BIII-${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
           password: 'test_hash',
           firstName: 'DWSBIII',
           lastName: 'Branch',

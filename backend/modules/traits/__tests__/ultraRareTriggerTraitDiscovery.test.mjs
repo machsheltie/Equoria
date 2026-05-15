@@ -6,6 +6,7 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import { evaluateUltraRareTriggers, evaluateExoticUnlocks } from '../../../utils/ultraRareTriggerEngine.mjs';
 import { revealTraits, batchRevealTraits, getDiscoveryProgress } from '../../../utils/traitDiscovery.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -16,8 +17,8 @@ let horse;
 beforeAll(async () => {
   user = await prisma.user.create({
     data: {
-      email: `ultratrait-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-      username: `ultratrait${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+      email: `ultratrait-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+      username: `ultratrait${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
       firstName: 'UltraTrait',
       lastName: 'Tester',
@@ -124,8 +125,8 @@ let highStressHorse;
 beforeAll(async () => {
   highStressUser = await prisma.user.create({
     data: {
-      email: `ultratrait-hs-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-      username: `ultratraiths${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+      email: `ultratrait-hs-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+      username: `ultratraiths${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
       password: 'irrelevant-hash',
       firstName: 'HighStress',
       lastName: 'Tester',

@@ -17,6 +17,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import bcrypt from 'bcryptjs';
 import app from '../../../app.mjs';
@@ -35,7 +36,7 @@ describe('createFoal — delayed pregnancy (B3)', () => {
   beforeEach(async () => {
     csrf = await fetchCsrf(app);
 
-    const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const ts = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
     const hashed = await bcrypt.hash('TestPassword123!', 1);
     user = await prisma.user.create({
       data: {

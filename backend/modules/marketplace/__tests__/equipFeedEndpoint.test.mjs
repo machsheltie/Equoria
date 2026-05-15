@@ -10,6 +10,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -24,8 +25,8 @@ describe('Equip / Unequip feed endpoints', () => {
   beforeEach(async () => {
     user = await prisma.user.create({
       data: {
-        email: `equip-feed-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-        username: `eqfeed${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+        email: `equip-feed-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+        username: `eqfeed${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-test-hash',
         firstName: 'Test',
         lastName: 'User',
@@ -47,7 +48,7 @@ describe('Equip / Unequip feed endpoints', () => {
 
     const horse = await prisma.horse.create({
       data: {
-        name: `EqHorse${Date.now()}${Math.random().toString(36).slice(2, 5)}`,
+        name: `EqHorse${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         sex: 'mare',
         dateOfBirth: new Date('2020-01-01'),
         age: 5,
@@ -214,8 +215,8 @@ describe('Equip / Unequip feed endpoints', () => {
     // 404 envelope is the same whether the horse is missing or simply not-owned.
     const other = await prisma.user.create({
       data: {
-        email: `other-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-        username: `other${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+        email: `other-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+        username: `other${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-test-hash',
         firstName: 'Other',
         lastName: 'User',

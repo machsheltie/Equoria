@@ -19,6 +19,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../app.mjs';
 import prisma from '../db/index.mjs';
@@ -83,7 +84,7 @@ describe('Groom Bonding System Integration', () => {
     await cleanupTestData();
 
     // Create test user with unique identifiers
-    const suffix = `${Date.now()}_${Math.random().toString(36).slice(2, 6)}_${Math.random().toString(36).substr(2, 5)}`;
+    const suffix = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
     testUser = await prisma.user.create({
       data: {
         id: `user-bonding-${suffix}`,

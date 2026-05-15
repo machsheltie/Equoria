@@ -37,6 +37,7 @@
  */
 
 import { fileURLToPath } from 'url';
+import { randomBytes } from 'node:crypto';
 import { dirname, join } from 'path';
 import dotenv from 'dotenv';
 
@@ -154,7 +155,7 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
     }
 
     // Create test show with unique name or find existing one
-    const showName = `Business Logic Test Show ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+    const showName = `Business Logic Test Show ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
     testShow = await prisma.show.create({
       data: {
         name: showName,

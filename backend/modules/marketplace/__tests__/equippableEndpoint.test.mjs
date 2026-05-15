@@ -14,6 +14,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -28,8 +29,8 @@ describe('GET /api/horses/:id/equippable', () => {
   beforeEach(async () => {
     user = await prisma.user.create({
       data: {
-        email: `eq-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-        username: `eq${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+        email: `eq-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+        username: `eq${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-test-hash',
         firstName: 'Test',
         lastName: 'User',
@@ -74,7 +75,7 @@ describe('GET /api/horses/:id/equippable', () => {
 
     const a = await prisma.horse.create({
       data: {
-        name: `EqA${Date.now()}${Math.random().toString(36).slice(2, 5)}`,
+        name: `EqA${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         sex: 'mare',
         dateOfBirth: new Date('2020-01-01'),
         age: 5,
@@ -83,7 +84,7 @@ describe('GET /api/horses/:id/equippable', () => {
     });
     const b = await prisma.horse.create({
       data: {
-        name: `EqB${Date.now()}${Math.random().toString(36).slice(2, 5)}`,
+        name: `EqB${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         sex: 'mare',
         dateOfBirth: new Date('2020-01-01'),
         age: 5,
@@ -225,8 +226,8 @@ describe('GET /api/horses/:id/equippable', () => {
     // A separate user must not be able to query horse A's equippable list.
     const other = await prisma.user.create({
       data: {
-        email: `eqother-${Date.now()}-${Math.random().toString(36).slice(2, 8)}@test.com`,
-        username: `eqother${Date.now()}${Math.random().toString(36).slice(2, 6)}`,
+        email: `eqother-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}@test.com`,
+        username: `eqother${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         password: 'irrelevant-test-hash',
         firstName: 'Other',
         lastName: 'User',

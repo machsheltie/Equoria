@@ -14,6 +14,7 @@
  */
 
 import prisma from '../../../packages/database/prismaClient.mjs';
+import { randomBytes } from 'node:crypto';
 import {
   evaluateFlagTriggers,
   evaluatePersonalityModifiedTriggers,
@@ -38,8 +39,8 @@ describe('Enhanced Flag Assignment Engine', () => {
         // Create test user
         testUser = await tx.user.create({
           data: {
-            username: `flagengine_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
-            email: `flagengine_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@test.com`,
+            username: `flagengine_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
+            email: `flagengine_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@test.com`,
             password: 'test_hash',
             firstName: 'Test',
             lastName: 'User',
@@ -53,7 +54,7 @@ describe('Enhanced Flag Assignment Engine', () => {
         testGrooms = await Promise.all([
           tx.groom.create({
             data: {
-              name: `Test Groom Calm ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              name: `Test Groom Calm ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               personality: 'calm',
               epigeneticInfluenceType: 'calm',
               skillLevel: 'experienced',
@@ -64,7 +65,7 @@ describe('Enhanced Flag Assignment Engine', () => {
           }),
           tx.groom.create({
             data: {
-              name: `Test Groom Energetic ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              name: `Test Groom Energetic ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               personality: 'energetic',
               epigeneticInfluenceType: 'energetic',
               skillLevel: 'experienced',
@@ -75,7 +76,7 @@ describe('Enhanced Flag Assignment Engine', () => {
           }),
           tx.groom.create({
             data: {
-              name: `Test Groom Methodical ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              name: `Test Groom Methodical ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               personality: 'methodical',
               epigeneticInfluenceType: 'methodical',
               skillLevel: 'expert',
@@ -90,7 +91,7 @@ describe('Enhanced Flag Assignment Engine', () => {
           // Very young foal (1 week) - high sensitivity to triggers
           tx.horse.create({
             data: {
-              name: `Test Foal Week ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              name: `Test Foal Week ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'filly',
               dateOfBirth: oneWeekAgo,
               userId: testUser.id,
@@ -102,7 +103,7 @@ describe('Enhanced Flag Assignment Engine', () => {
           // Young foal (1 month) - moderate sensitivity
           tx.horse.create({
             data: {
-              name: `Test Foal Month ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              name: `Test Foal Month ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'colt',
               dateOfBirth: oneMonthAgo,
               userId: testUser.id,
@@ -114,7 +115,7 @@ describe('Enhanced Flag Assignment Engine', () => {
           // Older foal (6 months) - lower sensitivity
           tx.horse.create({
             data: {
-              name: `Test Foal 6mo ${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+              name: `Test Foal 6mo ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
               sex: 'Colt',
               dateOfBirth: sixMonthsAgo,
               userId: testUser.id,

@@ -18,6 +18,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import app from '../app.mjs';
@@ -41,7 +42,7 @@ describe('Breeding Prediction System', () => {
     // Create test breed
     testBreed = await prisma.breed.create({
       data: {
-        name: `TestBreed_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        name: `TestBreed_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         description: 'Test breed for breeding prediction tests',
       },
     });
@@ -49,10 +50,10 @@ describe('Breeding Prediction System', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        username: `testuser_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        username: `testuser_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         firstName: 'Test',
         lastName: 'User',
-        email: `test_${Date.now()}_${Math.random().toString(36).slice(2, 6)}@example.com`,
+        email: `test_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@example.com`,
         password: 'hashedpassword',
         money: 10000,
         xp: 100,
@@ -63,7 +64,7 @@ describe('Breeding Prediction System', () => {
     // Create test groom
     testGroom = await prisma.groom.create({
       data: {
-        name: `TestGroom_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        name: `TestGroom_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         speciality: 'foal_care',
         experience: 10,
         skillLevel: 'expert',
@@ -77,7 +78,7 @@ describe('Breeding Prediction System', () => {
     // Create test stallion (5 years old)
     testStallion = await prisma.horse.create({
       data: {
-        name: `TestStallion_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        name: `TestStallion_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         sex: 'stallion',
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000), // 5 years old
         temperament: 'spirited',
@@ -90,7 +91,7 @@ describe('Breeding Prediction System', () => {
     // Create test mare (4 years old)
     testMare = await prisma.horse.create({
       data: {
-        name: `TestMare_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+        name: `TestMare_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         sex: 'mare',
         dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000), // 4 years old
         temperament: 'calm',
