@@ -12,6 +12,7 @@ import {
   getColor,
   getBreedingColorPrediction,
   getHorseCompetitionHistory,
+  resetHorseLastFed,
 } from '../controllers/horseController.mjs';
 import { trainingAnalyticsService } from '../../../services/trainingAnalyticsService.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
@@ -1301,6 +1302,23 @@ router.post(
   authenticateToken,
   requireOwnership('horse'),
   feedHorseHandler,
+);
+
+/**
+ * POST /horses/:id/reset-last-fed
+ * Owner-scoped test/fixture helper: rewinds the horse's lastFedDate so the
+ * same-day feed gate (alreadyFedToday) no longer blocks a subsequent feed.
+ * Body: { days?: number } (default 1, max 30).
+ *
+ * See horseController.resetHorseLastFed for full rationale (Equoria-4sqr).
+ */
+router.post(
+  '/:id/reset-last-fed',
+  mutationRateLimiter,
+  validateHorseId,
+  authenticateToken,
+  requireOwnership('horse'),
+  resetHorseLastFed,
 );
 
 /**
