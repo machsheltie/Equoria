@@ -36,6 +36,64 @@ let redisCircuitBreaker = null;
 let isRedisAvailable = false;
 
 /**
+ * Boot-race fix (Equoria-obwp follow-up):
+ *
+ * Previously `initializeRedis()` was kicked off at the bottom of this module
+ * as a fire-and-forget promise (`.catch(...)`), AFTER each `export const
+ * xxxRateLimiter = createRateLimiter({...})` had already evaluated the
+ * `store:` IIFE inside `rateLimit({...})`. That IIFE captures the store
+ * choice at limiter-construction time, so when Redis later connected, the
+ * limiters were forever stuck on the in-memory fallback.
+ *
+ * Symptom: E2E logs showed `Redis connected successfully` ~400ms AFTER
+ * `[RateLimit:rl:auth] Redis not connected - using in-memory rate limiting`,
+ * and the global apiLimiter (max=500/15min) then 429'd Playwright after the
+ * suite accumulated ~500 requests from `::1`, because the counter sat in
+ * the limiter's in-memory Map for the full 15-min window with no Redis
+ * coordination.
+ *
+ * Fix: top-level `await initializeRedis()` BEFORE any limiter is created.
+ * ESM module evaluation blocks consumers (app.mjs, server.mjs) until
+ * top-level awaits resolve, so by the time the `export const` limiters
+ * below run, `isRedisConnected()` is correct and the IIFE selects
+ * RedisStore as intended.
+ *
+ * Test/JEST env short-circuits inside `initializeRedis()` (returns null
+ * immediately) so test suites pay no startup cost.
+ *
+ * Note: `async function initializeRedis` is hoisted, so calling it before
+ * its declaration block below is legal JavaScript.
+ */
+// Bounded init: race against a 5s timeout so an unreachable Redis cannot
+// hang server startup indefinitely. The redis client's reconnectStrategy
+// retries forever without our intervention; without this race, top-level
+// await would block forever when Redis is down. After timeout, limiters
+// fall back to in-memory just like the old fire-and-forget behaviour, but
+// when Redis IS reachable (the common case in beta/prod/E2E) we wait the
+// few hundred ms it takes to connect and limiters bind to RedisStore.
+const REDIS_BOOT_TIMEOUT_MS = parseInt(process.env.REDIS_BOOT_TIMEOUT_MS || '5000', 10);
+await Promise.race([
+  initializeRedis().catch(error => {
+    // initializeRedis itself catches and logs internally; this is defensive.
+    logger.error('[Redis] Failed to initialize on startup, falling back to in-memory:', error);
+  }),
+  new Promise(resolve => {
+    setTimeout(() => {
+      // If we hit this branch, Redis didn't connect within the budget.
+      // Limiters created below will see isRedisAvailable=false and fall
+      // back to in-memory. Redis client may still connect later in the
+      // background — but the boot-race window is closed by then.
+      if (!isRedisAvailable) {
+        logger.warn(
+          `[Redis] Boot-time connect did not complete within ${REDIS_BOOT_TIMEOUT_MS}ms — limiters will use in-memory fallback`,
+        );
+      }
+      resolve();
+    }, REDIS_BOOT_TIMEOUT_MS);
+  }),
+]);
+
+/**
  * Initialize Redis client with automatic reconnection
  * Handles connection failures gracefully with exponential backoff
  */
@@ -487,11 +545,12 @@ export const competitionRateLimiter = createRateLimiter({
   keyPrefix: 'rl:competition',
 });
 
-// Initialize Redis connection
-// This runs when the module is imported
-initializeRedis().catch(error => {
-  logger.error('[Redis] Failed to initialize on startup:', error);
-});
+// Redis initialization moved to the TOP of this module as a top-level
+// `await` (see boot-race fix block near the top of the file). Limiters
+// created above this point now see the connected Redis client and bind
+// to RedisStore correctly. Do NOT re-add a deferred initializer here:
+// doing so would re-introduce the race where limiters lock to in-memory
+// before Redis connects.
 
 // Export for use in other modules
 export default {

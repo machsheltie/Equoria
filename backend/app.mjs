@@ -432,7 +432,18 @@ const RATE_LIMIT_MAX_BY_ENV = {
   // realistic suite run consumes.
   test: 20000,
   'beta-readiness': 1000,
-  beta: 500,
+  // Equoria-obwp follow-up: bumped from 500 → 3000.
+  // The Playwright E2E suite issues ~7 minutes of sequential requests from
+  // a single source IP (::1 in CI). Each spec triggers register/login plus
+  // a handful of API calls; the full suite easily exceeds 500 requests in
+  // one 15-min window. Even with Redis-backed distributed rate limiting
+  // (now correctly wired by the boot-race fix in middleware/rateLimiting.mjs),
+  // the per-IP counter is identical — `ip:::1` is a single key. 3000 is
+  // still well below what a real abusive client could trip while leaving
+  // headroom for the suite to grow without re-tripping. A 15-min window of
+  // 3000 reqs = 3.3 req/sec sustained, which is consistent with a human
+  // beta tester pattern and easily exceeded by automated scraping.
+  beta: 3000,
   development: 500,
 };
 const apiLimiter = createRateLimiter({
