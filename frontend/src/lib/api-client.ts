@@ -2068,6 +2068,20 @@ export interface BreedingCompatibility {
   factors: Array<{ name: string; impact: number; description: string }>;
 }
 
+export interface BreedingColorPredictionEntry {
+  colorName: string;
+  probability: number;
+  percentage: string;
+}
+
+export interface BreedingColorPredictionResult {
+  sireId: number;
+  damId: number;
+  possibleColors: BreedingColorPredictionEntry[];
+  totalCombinations: number;
+  lethalCombinationsFiltered: number;
+}
+
 export const breedingPredictionApi = {
   /**
    * Calculate inbreeding coefficient for a breeding pair
@@ -2092,6 +2106,23 @@ export const breedingPredictionApi = {
    */
   getBreedingCompatibility: (payload: { stallionId: number; mareId: number }) =>
     apiClient.post<BreedingCompatibility>('/api/v1/genetics/breeding-compatibility', payload),
+
+  /**
+   * Calculate offspring coat-color probability distribution for a sire/dam pair.
+   *
+   * Backend implements per-locus Punnett -> Cartesian product across all coat loci,
+   * filters lethal combinations, renormalizes, and aggregates by phenotype.
+   * AC6 legacy-horse case: when either parent lacks colorGenotype, the response
+   * returns `{ success: true, data: null }` — caller MUST handle null data.
+   *
+   * @param payload sireId/damId required, foalBreedId optional (defaults to dam's breed)
+   * @returns BreedingColorPredictionResult | null (null = AC6 legacy horse)
+   */
+  getColorPrediction: (payload: { sireId: number; damId: number; foalBreedId?: number }) =>
+    apiClient.post<BreedingColorPredictionResult | null>(
+      '/api/v1/horses/breeding/color-prediction',
+      payload
+    ),
 };
 
 /**

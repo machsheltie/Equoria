@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
-import { apiClient, authApi } from '../api-client';
+import { apiClient, authApi, breedingPredictionApi } from '../api-client';
 import { server } from '@/test/msw/server';
 import authSessionState from '../authSessionState';
 
@@ -436,6 +436,79 @@ describe('API Client - HttpOnly Cookie Support', () => {
       const headers = callArgs?.headers as Record<string, string>;
 
       expect(headers?.['Content-Type']).toBe('application/json');
+    });
+  });
+
+  describe('breedingPredictionApi.getColorPrediction', () => {
+    // Equoria-vg4c: wrapper for POST /api/v1/horses/breeding/color-prediction.
+    // Backend lives at backend/modules/horses/routes/horseRoutes.mjs#L592
+    // and computes per-locus Punnett squares -> phenotype aggregation.
+    // We unit-test the wrapper SHAPE here (URL, method, body) — HTTP-level
+    // coverage with real DB lives in Equoria-wpih.
+
+    it('POSTs sireId/damId to the breeding color-prediction endpoint', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          status: 'success',
+          data: {
+            sireId: 1,
+            damId: 2,
+            possibleColors: [{ colorName: 'Black', probability: 0.5, percentage: '50.0%' }],
+            totalCombinations: 4,
+            lethalCombinationsFiltered: 0,
+          },
+        }),
+      });
+
+      await breedingPredictionApi.getColorPrediction({ sireId: 1, damId: 2 });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/horses/breeding/color-prediction'),
+        expect.objectContaining({
+          method: 'POST',
+          credentials: 'include',
+          body: JSON.stringify({ sireId: 1, damId: 2 }),
+        })
+      );
+    });
+
+    it('includes optional foalBreedId in the request body when provided', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ status: 'success', data: null }),
+      });
+
+      await breedingPredictionApi.getColorPrediction({
+        sireId: 11,
+        damId: 22,
+        foalBreedId: 7,
+      });
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('/api/v1/horses/breeding/color-prediction'),
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ sireId: 11, damId: 22, foalBreedId: 7 }),
+        })
+      );
+    });
+
+    it('omits foalBreedId from body when not provided', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ status: 'success', data: null }),
+      });
+
+      await breedingPredictionApi.getColorPrediction({ sireId: 1, damId: 2 });
+
+      const callArgs = mockFetch.mock.calls[0][1];
+      const body = JSON.parse((callArgs?.body as string) ?? '{}');
+      expect(body).toEqual({ sireId: 1, damId: 2 });
+      expect(Object.prototype.hasOwnProperty.call(body, 'foalBreedId')).toBe(false);
     });
   });
 
