@@ -10,6 +10,7 @@ import { processWeeklySalaries } from './groomSalaryService.mjs';
 import { cleanupExpiredTokens } from '../utils/tokenRotationService.mjs';
 import { runFoalingJob } from '../modules/horses/services/foalingService.mjs';
 import { processRiderTrainerRetirement } from './riderTrainerRetirementService.mjs';
+import { captureAllUserRankSnapshots } from './userRankSnapshotService.mjs';
 import legacyCronJobs from './cronJobs.mjs';
 // Track running jobs
 const runningJobs = new Map();
@@ -81,11 +82,29 @@ export function initializeCronJobs() {
 
     runningJobs.set('riderTrainerRetirement', retirementJob);
 
+    // UserRankSnapshot capture — Daily at 02:00 UTC. Walks every user, computes
+    // their current rank across the four leaderboard categories, and persists a
+    // UserRankSnapshot row per category. Frontend chart consumes this history
+    // via leaderboardController.getUserRankSummary (Equoria-dbdk).
+    const rankSnapshotJob = cron.schedule(
+      '0 2 * * *',
+      async () => {
+        await runUserRankSnapshotCapture();
+      },
+      {
+        scheduled: false,
+        timezone: 'UTC',
+      },
+    );
+
+    runningJobs.set('userRankSnapshot', rankSnapshotJob);
+
     // Start all jobs
     salaryJob.start();
     tokenCleanupJob.start();
     foalingJob.start();
     retirementJob.start();
+    rankSnapshotJob.start();
 
     // Start trait evaluation + horse aging jobs (defined in cronJobs.mjs)
     legacyCronJobs.start();
@@ -247,6 +266,31 @@ async function runRiderTrainerRetirement() {
  */
 export async function triggerRiderTrainerRetirement() {
   return processRiderTrainerRetirement();
+}
+
+/**
+ * Run the nightly UserRankSnapshot capture pass (Equoria-dbdk).
+ */
+async function runUserRankSnapshotCapture() {
+  try {
+    logger.info('[cronJobService] Starting nightly UserRankSnapshot capture...');
+    const result = await captureAllUserRankSnapshots();
+    logger.info(
+      `[cronJobService] UserRankSnapshot capture complete. Snapshots written for ${result.captured} users.`,
+    );
+    return result;
+  } catch (error) {
+    logger.error(`[cronJobService] Error in UserRankSnapshot capture: ${error.message}`);
+    return { captured: 0, error: error.message };
+  }
+}
+
+/**
+ * Manually trigger the UserRankSnapshot capture pass (for testing/admin).
+ * @returns {Promise<Object>} Capture results
+ */
+export async function triggerUserRankSnapshotCapture() {
+  return captureAllUserRankSnapshots();
 }
 
 /**
