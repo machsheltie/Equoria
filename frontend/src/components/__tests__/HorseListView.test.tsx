@@ -17,11 +17,16 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from '../../test/utils';
+import { createMockHorse } from '../../test/factories';
 import HorseListView from '../HorseListView';
 
-// Mock horse data for testing (NO MOCKING - real data structures)
+// Mock horse data for testing (NO MOCKING - real data structures).
+// Refactored to use the createMockHorse factory (Equoria-tjyc) — values are
+// preserved exactly so component behavior is unchanged; the factory just
+// removes the repeated literal object boilerplate. The third horse omits
+// imageUrl (undefined) to exercise the placeholder path.
 const mockHorses = [
-  {
+  createMockHorse({
     id: 1,
     name: 'Thunder',
     breed: 'Thoroughbred',
@@ -34,9 +39,11 @@ const mockHorses = [
       speed: 85,
       stamina: 80,
       agility: 75,
+      strength: 70,
+      intelligence: 68,
+      temperament: 68,
       balance: 70,
       precision: 72,
-      intelligence: 68,
       boldness: 78,
       flexibility: 65,
       obedience: 70,
@@ -46,8 +53,8 @@ const mockHorses = [
       'Western Pleasure': 85,
       Dressage: 70,
     },
-  },
-  {
+  }),
+  createMockHorse({
     id: 2,
     name: 'Lightning',
     breed: 'Arabian',
@@ -60,9 +67,11 @@ const mockHorses = [
       speed: 90,
       stamina: 85,
       agility: 88,
+      strength: 70,
+      intelligence: 85,
+      temperament: 68,
       balance: 82,
       precision: 80,
-      intelligence: 85,
       boldness: 75,
       flexibility: 78,
       obedience: 80,
@@ -72,8 +81,8 @@ const mockHorses = [
       Endurance: 90,
       'Show Jumping': 75,
     },
-  },
-  {
+  }),
+  createMockHorse({
     id: 3,
     name: 'Storm',
     breed: 'Quarter Horse',
@@ -81,14 +90,16 @@ const mockHorses = [
     level: 15,
     health: 90,
     xp: 3000,
-    // No imageUrl - should use placeholder
+    imageUrl: undefined, // No imageUrl - should use placeholder
     stats: {
       speed: 80,
       stamina: 75,
       agility: 70,
+      strength: 70,
+      intelligence: 72,
+      temperament: 68,
       balance: 75,
       precision: 78,
-      intelligence: 72,
       boldness: 85,
       flexibility: 68,
       obedience: 75,
@@ -98,7 +109,7 @@ const mockHorses = [
       'Barrel Racing': 88,
       Reining: 82,
     },
-  },
+  }),
 ];
 
 // Test wrapper with required providers
