@@ -69,7 +69,6 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
   // log from `requestBodySecurityErrorHandler`.
   let loggerWarnSpy;
   let _origLoggerWarn;
-  const _origScan = __TESTING_ONLY_JsonScanner?.prototype?.scan;
 
   beforeEach(() => {
     _origLoggerWarn = logger.warn;
@@ -83,15 +82,27 @@ describe('verifyJsonBody silent-catch fix (21R-SEC-3-FOLLOW-1)', () => {
 
   afterEach(() => {
     logger.warn = _origLoggerWarn;
-    if (_origScan !== undefined && __TESTING_ONLY_JsonScanner?.prototype) {
-      __TESTING_ONLY_JsonScanner.prototype.scan = _origScan;
-    }
+    // Per Equoria-72kw / REVIEW-4: jest.spyOn auto-restores via
+    // restoreMocks:true in jest.config.security.mjs. Explicit prototype
+    // restoration is no longer needed and was a source of cross-worker
+    // contamination when a patch threw before the capture/restore pair
+    // completed.
+    jest.restoreAllMocks();
   });
 
   const stubScannerToThrow = valueToThrow => {
-    __TESTING_ONLY_JsonScanner.prototype.scan = function () {
-      throw valueToThrow;
-    };
+    // Equoria-72kw: jest.spyOn replaces the method on the prototype but
+    // tracks the original internally; afterEach jest.restoreAllMocks() (or
+    // restoreMocks:true in jest.config.security.mjs) puts it back. Unlike
+    // direct `.prototype.scan = ...` mutation, this auto-restores even if
+    // the test fails or a later teardown throws — no cross-test VM leak.
+    // We use mockImplementation (not mockImplementationOnce) to preserve
+    // the original semantics: every scan() call throws until restoration.
+    jest
+      .spyOn(__TESTING_ONLY_JsonScanner.prototype, 'scan')
+      .mockImplementation(() => {
+        throw valueToThrow;
+      });
   };
 
   // Helper: assert the response is the canonical 400 + envelope from the
