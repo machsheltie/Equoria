@@ -295,6 +295,13 @@ model Groom {
   imageUrl          String?
   /// Active status
   isActive          Boolean            @default(true)
+  /// Show-handling skill rating used by Epic 31F conformation show scoring
+  /// (handler weight: 20%). Values: novice | competent | skilled | expert | master.
+  /// Mapped to a 0-100 score in conformationShowService.SHOW_HANDLING_SKILL_SCORES.
+  /// Backed by migration 20260403000000_add_groom_show_handling_skill. The DB
+  /// column name is the camelCase string "showHandlingSkill" (matching the
+  /// migration SQL), so no @map is required.
+  showHandlingSkill String             @default("novice")
   /// Hire date
   hiredDate         DateTime           @default(now())
   /// Career progression tracking
