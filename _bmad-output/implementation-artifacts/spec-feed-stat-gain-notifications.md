@@ -4,7 +4,41 @@ type: 'feature'
 created: '2026-05-07'
 status: 'done'
 baseline_commit: '9eadc4ed23d6f39fdf34333fffdca2e3a77c2ddf'
+amendments:
+  - date: '2026-05-15'
+    by: 'heirregular@yahoo.com (renegotiated 2026-05-15; user direction: keep the Prisma model)'
+    issue: 'Equoria-6z9c'
+    summary: |
+      Storage layer renegotiated from `User.settings.gameNotifications` JSONB to a
+      dedicated Prisma `Notification` model. Rationale: proper indexing
+      (`@@index([userId, isRead])`, `@@index([userId, createdAt(desc)])`), no
+      JSONB hot-path bloat as notifications accumulate, native pagination, and
+      cleaner retention-pruning queries. The implementation already shipped this
+      design (commits prior to 2026-05-15); this amendment records the
+      renegotiation rather than reverting working code.
+      Affected frozen-block bullets:
+        * "Approach" — notifications now persist via the Notification table.
+        * "Always" — notification write happens via prisma.notification.create()
+          OUTSIDE the feed transaction (rationale unchanged).
+        * "Always" — storage shape moved from JSONB to a relational row; payload
+          fields preserved.
+        * "Never" — the prohibition "Do not add a schema migration or new Prisma
+          model for notifications" is inverted: a Notification model with indexed
+          (userId, isRead) and (userId, createdAt desc) IS the chosen design.
+        * "Never" — the prohibition on capping stored notifications is replaced
+          by the active per-user retention cap (NOTIFICATION_RETENTION_COUNT, see
+          Equoria-1fqs) enforced fire-and-forget after each notification write.
 ---
+
+> **⚠️ Implementation Note (Equoria-ezy8, 2026-05-15):** This spec's storage design
+> was renegotiated AFTER approval. The original `User.settings.gameNotifications`
+> JSONB approach was superseded by a dedicated `Notification` Prisma model
+> (planned in Equoria-j59e at `docs/superpowers/plans/2026-05-12-notifications-system.md`;
+> shipped commits prior to 2026-05-15). All live notification reads/writes hit
+> `prisma.notification`; no live code path reads or writes
+> `User.settings.gameNotifications`. The amendment is documented in the
+> frontmatter `amendments` block and inline at each affected constraint.
+> See Equoria-6z9c for the spec-update audit.
 
 <frozen-after-approval reason="human-owned intent — do not modify unless human renegotiates">
 
@@ -12,29 +46,30 @@ baseline_commit: '9eadc4ed23d6f39fdf34333fffdca2e3a77c2ddf'
 
 **Problem:** When feeding a horse with a stat-boosting feed tier and a stat is gained, the player sees two disjointed toasts ("Fed X with Y. N units left." then "+1 stat!") and has no persistent record of the gain they can check later in notifications.
 
-**Approach:** Merge the two toasts into one informative message; simultaneously write a game notification (stored in `User.settings.gameNotifications` JSONB, no schema migration) that increments the bell unread count and appears in a new Notifications tab in MessagesPage.
+**Approach (amended 2026-05-15 — see frontmatter `amendments`):** Merge the two toasts into one informative message; simultaneously write a game notification to the dedicated `Notification` Prisma model (one row per notification, indexed by (userId, isRead) and (userId, createdAt desc)) that increments the bell unread count and appears in a new Notifications tab in MessagesPage.
 
 ## Boundaries & Constraints
 
 **Always:**
 
 - Only tiers with `statRollPct > 0` can produce a stat boost (performance, performancePlus, highPerformance, elite). The basic tier never can.
-- The game notification write (`User.settings.gameNotifications` append) must happen OUTSIDE the Prisma `$transaction` block in `feedHorse()`, performed by the controller after the service returns a non-null `statBoost`. Keeping it outside the transaction avoids bloating the hot-path transaction and prevents a notification-write failure from rolling back the feed.
-- `gameNotifications` array is stored on `User.settings.gameNotifications: GameNotif[]`. Structure per item: `{ id: string (uuid), type: 'stat_gain', isRead: boolean, createdAt: ISO-string, payload: { horseName, stat, amount, feedName } }`.
+- The game notification write (`prisma.notification.create()`) must happen OUTSIDE the Prisma `$transaction` block in `feedHorse()`, performed by the controller after the service returns a non-null `statBoost`. Keeping it outside the transaction avoids bloating the hot-path transaction and prevents a notification-write failure from rolling back the feed. (Amended 2026-05-15: was `User.settings.gameNotifications` append; now a row insert on the `Notification` model. Same out-of-transaction rationale.)
+- Notifications persist as rows on the `Notification` Prisma model (see `packages/database/prisma/schema.prisma` `Notification` model). Row shape: `{ id: uuid, userId, type: 'stat_gain', isRead: boolean, createdAt: timestamp, payload: Json containing { horseName, stat, amount, feedName } }`. Indexes: `@@index([userId, isRead])`, `@@index([userId, createdAt(desc)])`. (Amended 2026-05-15: was a JSONB array on `User.settings.gameNotifications`.)
 - Bell unread count must reflect unread game notifications via a new lightweight endpoint that returns `{ unreadCount: number }`.
 - Mark-all-read fires when user opens the Notifications tab.
+- Per-user retention cap of 100 notifications enforced by `pruneOldNotifications()` after every write (fire-and-forget; failures logged, not thrown). Implemented in `backend/utils/notificationService.mjs`, see `NOTIFICATION_RETENTION_COUNT` (Equoria-1fqs). (Added 2026-05-15: original spec deferred capping to "future concern"; now active.)
 
 **Ask First:**
 
-- If `User.settings` is found to be null for a user at notification-write time, initialize it to `{}` before appending — do NOT error out.
+- If `User.settings` is found to be null for a user at notification-write time, initialize it to `{}` before appending — do NOT error out. (Amended 2026-05-15: legacy guard from the JSONB-era design; with the Notification model, `User.settings` is no longer touched on notification write. Kept for historical context only.)
 
 **Never:**
 
-- Do not add a schema migration or new Prisma model for notifications.
 - Do not send a DirectMessage or use the existing messages system.
 - Do not show the notifications in the existing Inbox/Sent tabs.
 - Do not change the `feedHorse()` service signature or its transaction scope.
-- Do not cap the stored game notification array in this spec (future concern).
+- (Removed 2026-05-15: "Do not add a schema migration or new Prisma model for notifications" — inverted by the renegotiated design. The `Notification` Prisma model IS the chosen storage layer; see frontmatter `amendments`.)
+- (Removed 2026-05-15: "Do not cap the stored game notification array in this spec" — superseded by the retention-cap row in **Always** above.)
 
 ## I/O & Edge-Case Matrix
 
@@ -52,9 +87,14 @@ baseline_commit: '9eadc4ed23d6f39fdf34333fffdca2e3a77c2ddf'
 
 ## Code Map
 
-- `backend/modules/horses/controllers/horseFeedController.mjs:208-235` — `feedHorseHandler`; write game notification here AFTER service returns `statBoost`
-- `backend/modules/users/controllers/userController.mjs` — add `getGameNotifications` and `markGameNotificationsRead` handlers
-- `backend/modules/users/routes/userRoutes.mjs` — add `GET /api/v1/users/me/game-notifications` and `PATCH /api/v1/users/me/game-notifications/read-all`
+> **Amended 2026-05-15 (Equoria-6z9c):** updated to reflect the Prisma `Notification` model design. The original spec listed `User.settings` writes; replaced with the relational notification service.
+
+- `packages/database/prisma/schema.prisma` — `Notification` model with `@@index([userId, isRead])` and `@@index([userId, createdAt(desc)])`
+- `backend/utils/notificationService.mjs` — `createNotification()`, `pruneOldNotifications()`, `NOTIFICATION_RETENTION_COUNT` (Equoria-1fqs). Writes to `prisma.notification`.
+- `backend/modules/horses/controllers/horseFeedController.mjs:227` — `feedHorseHandler`; calls `createNotification()` AFTER service returns `statBoost`, OUTSIDE the feed transaction
+- `backend/modules/users/controllers/userController.mjs:738` — `getGameNotifications` (reads `prisma.notification`)
+- `backend/modules/users/controllers/userController.mjs:763` — `markGameNotificationsRead` (updates `prisma.notification` rows)
+- `backend/modules/users/routes/userRoutes.mjs:140` — `GET /api/v1/users/me/game-notifications` and `PATCH /api/v1/users/me/game-notifications/read-all`, registered before `/:id` to prevent param shadowing
 - `frontend/src/lib/api-client.ts` — add `gameNotificationsApi` with `getAll()` and `markAllRead()`
 - `frontend/src/hooks/api/useGameNotifications.ts` — new file; `useGameNotifications()` + `useMarkGameNotificationsRead()`
 - `frontend/src/hooks/api/useFeedHorse.ts` — add invalidation of `['game-notifications']` in `onSuccess` when `statBoost` is non-null (or unconditionally in onSettled)
@@ -64,11 +104,13 @@ baseline_commit: '9eadc4ed23d6f39fdf34333fffdca2e3a77c2ddf'
 
 ## Tasks & Acceptance
 
+> **Historical task descriptions — amended 2026-05-15 (Equoria-6z9c).** The task descriptions below reflect the ORIGINAL JSONB-on-`User.settings` plan, all marked `[x]` done. Actual shipped implementation uses the `Notification` Prisma model — see `## Code Map` above for the as-built file map and the frontmatter `amendments` for the renegotiation rationale. The historical descriptions are preserved here for audit traceability rather than rewritten retroactively.
+
 **Execution:**
 
-- [x] `backend/modules/users/controllers/userController.mjs` -- Add `getGameNotifications(req, res)`: reads `user.settings.gameNotifications ?? []`, returns `{ success: true, data: { notifications, unreadCount } }`. Add `markGameNotificationsRead(req, res)`: sets all items' `isRead: true` in the array and writes back via Prisma update, returns `{ success: true }` -- provides the read/mark-read API surface for game notifications
+- [x] `backend/modules/users/controllers/userController.mjs` -- (HISTORICAL: described JSONB read of `user.settings.gameNotifications`; as-built reads via `prisma.notification`.) Add `getGameNotifications(req, res)`: returns `{ success: true, data: { notifications, unreadCount } }`. Add `markGameNotificationsRead(req, res)`: sets all items' `isRead: true`, returns `{ success: true }` -- provides the read/mark-read API surface for game notifications
 - [x] `backend/modules/users/routes/userRoutes.mjs` -- Wire `GET /me/game-notifications → getGameNotifications` and `PATCH /me/game-notifications/read-all → markGameNotificationsRead` (both protected by existing auth middleware) -- exposes notification endpoints
-- [x] `backend/modules/horses/controllers/horseFeedController.mjs` -- In `feedHorseHandler`, after `feedHorse()` returns and `result.statBoost` is non-null: append a `GameNotif` object to `user.settings.gameNotifications` via Prisma User.update outside the service transaction. Include `id: crypto.randomUUID()`, `type: 'stat_gain'`, `isRead: false`, `createdAt: new Date().toISOString()`, `payload: { horseName: result.horse.name, stat: result.statBoost.stat, amount: result.statBoost.amount, feedName: result.feed.name }` -- persists the stat gain event for in-app notification display
+- [x] `backend/modules/horses/controllers/horseFeedController.mjs` -- (HISTORICAL: described JSONB append on `user.settings.gameNotifications` via Prisma `User.update`; as-built calls `notificationService.createNotification()` which inserts a row into the `Notification` Prisma model, outside the feed transaction.) In `feedHorseHandler`, after `feedHorse()` returns and `result.statBoost` is non-null: create a notification with `type: 'stat_gain'`, `isRead: false`, `payload: { horseName, stat, amount, feedName }` -- persists the stat gain event for in-app notification display
 - [x] `frontend/src/lib/api-client.ts` -- Add `gameNotificationsApi.getAll()` → `GET /api/v1/users/me/game-notifications` and `gameNotificationsApi.markAllRead()` → `PATCH /api/v1/users/me/game-notifications/read-all`. Export `GameNotification` type -- client API surface for game notifications
 - [x] `frontend/src/hooks/api/useGameNotifications.ts` -- New file. `useGameNotifications()`: query key `['game-notifications']`, staleTime 30s, returns notifications array + unreadCount. `useMarkGameNotificationsRead()`: mutation calling `markAllRead()`, on success invalidates `['game-notifications']` and `['messages', 'unread-count']` -- React Query layer for game notifications
 - [x] `frontend/src/hooks/api/useFeedHorse.ts` -- In `onSettled`, add `queryClient.invalidateQueries({ queryKey: ['game-notifications'], refetchType: 'none' })` alongside existing invalidations -- ensures bell re-fetches after a feed
