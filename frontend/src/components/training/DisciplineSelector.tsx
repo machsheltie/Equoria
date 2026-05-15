@@ -8,6 +8,13 @@
  *  - Stat impact preview per discipline (primary/secondary/tertiary stats + predicted gain range)
  *  - Backward compatible: same selectedDiscipline / onDisciplineChange interface
  *
+ * RELATIONSHIP TO DisciplinePicker (Equoria-nhic, 2026-05-15):
+ * DisciplineSelector and the older DisciplinePicker live side-by-side
+ * intentionally — they serve different UX surfaces (this one is the modal
+ * TrainingSessionModal flow; DisciplinePicker is the horse-scoped tab on
+ * HorseDetailPage). Both are load-bearing and both have test coverage.
+ * Do NOT consolidate without a unified UX spec agreed up-front.
+ *
  * Props:
  *  - selectedDiscipline: currently selected discipline string
  *  - onDisciplineChange: callback(discipline: string)

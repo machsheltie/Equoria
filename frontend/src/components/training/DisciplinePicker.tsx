@@ -9,6 +9,19 @@
  * - Responsive grid: 1 col mobile, 2 cols tablet, 4 cols desktop
  *
  * Story 4-1: Training Session Interface - Task 3
+ *
+ * RELATIONSHIP TO DisciplineSelector (Equoria-nhic, 2026-05-15):
+ * This component (DisciplinePicker) and its sibling DisciplineSelector
+ * (Epic 26-1 rebuild) are intentionally separate surfaces, NOT migration
+ * debt. They serve different UX contexts:
+ *   - DisciplinePicker — inline/embedded use on the horse-scoped training
+ *     tab (pages/horse-detail/TrainingTab.tsx). Shows the FULL 23-discipline
+ *     grid with per-discipline current scores, optimized for picking a
+ *     long-term training focus.
+ *   - DisciplineSelector — modal/session use inside TrainingSessionModal.
+ *     Shows the top-5 recommended disciplines first with stat-impact
+ *     preview, optimized for a single-session pick.
+ * Do NOT consolidate without first agreeing on a unified UX spec.
  */
 
 import { getDisciplinesByCategory } from '../../lib/utils/training-utils.js';
