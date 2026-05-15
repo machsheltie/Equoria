@@ -1,8 +1,8 @@
 /**
  * Trainer Discovery Service
  * Generates and persists trainer discovery slot trait pools.
- * Uses raw SQL for the `discovery_slots` JSONB column because the Prisma client
- * is regenerated only when the engine DLL is free; raw queries bypass that constraint.
+ * Persists to the typed `Trainer.discoverySlots` Prisma field (JSONB column
+ * `discovery_slots`, backed by migration 20260513140000).
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -251,32 +251,34 @@ export function generateDiscoverySlots(speciality, personality) {
 }
 
 /**
- * Read discovery_slots from the DB for a trainer.
- * Uses $queryRaw because the Prisma generated client may not yet include
- * the discovery_slots column (requires engine DLL regeneration).
+ * Read discoverySlots from the DB for a trainer via the typed Prisma client.
  *
  * @param {number} trainerId
- * @returns {Promise<Array>} parsed JSONB array, empty array if not set
+ * @returns {Promise<Array>} parsed JSONB array, empty array if not set or row missing
  */
 export async function readDiscoverySlots(trainerId) {
-  const rows = await prisma.$queryRaw`
-    SELECT discovery_slots FROM trainers WHERE id = ${trainerId} LIMIT 1
-  `;
-  const raw = rows[0]?.discovery_slots;
-  if (!raw) {
+  const row = await prisma.trainer.findUnique({
+    where: { id: trainerId },
+    select: { discoverySlots: true },
+  });
+  const raw = row?.discoverySlots;
+  // Prisma returns JsonValue — guard against null/non-array (DB default is '[]', but
+  // historical rows could theoretically be other shapes; treat anything non-array as empty).
+  if (raw === null || raw === undefined) {
     return [];
   }
   return Array.isArray(raw) ? raw : [];
 }
 
 /**
- * Write discovery_slots to the DB for a trainer.
+ * Write discoverySlots to the DB for a trainer via the typed Prisma client.
  *
  * @param {number} trainerId
  * @param {Array} slots
  */
 export async function writeDiscoverySlots(trainerId, slots) {
-  await prisma.$executeRaw`
-    UPDATE trainers SET discovery_slots = ${JSON.stringify(slots)}::jsonb WHERE id = ${trainerId}
-  `;
+  await prisma.trainer.update({
+    where: { id: trainerId },
+    data: { discoverySlots: slots },
+  });
 }

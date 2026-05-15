@@ -1133,6 +1133,11 @@ model Trainer {
   retired      Boolean             @default(false)
   /// Biography
   bio          String?
+  /// Discovery slot trait pool (3 categories × 2 slots = 6 entries).
+  /// Persists generated career-affinity trait content. Visibility is computed
+  /// from trainer level at read-time (one slot revealed per 2 levels, max 6).
+  /// Backed by migration 20260513140000_add_trainer_discovery_slots.
+  discoverySlots Json              @default("[]") @map("discovery_slots")
   /// User association
   userId       String?
   /// Timestamps
