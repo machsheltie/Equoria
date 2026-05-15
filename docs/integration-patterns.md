@@ -38,7 +38,8 @@
 │  │               18 Domain Modules (backend/modules/)           │  │
 │  │  auth, users, horses, breeding, traits, training,            │  │
 │  │  competition, grooms, riders, trainers, community,           │  │
-│  │  services, leaderboards, admin, docs, health, labs           │  │
+│  │  services, leaderboards, admin, docs, health, labs,          │  │
+│  │  marketplace                                                  │  │
 │  └──────────────────────────────────────────────────────────────┘  │
 │                                                                     │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                │
