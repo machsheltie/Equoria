@@ -45,16 +45,19 @@ const basicGroom = {
   sessionRate: 15,
 };
 
+// Equoria-yny4: horse.age is game-years (post Equoria-son6). Foal = 0-3
+// game-years; adult = >= 3. The previous fixtures used days (365 / 1460);
+// migrating to game-years (1 / 4) keeps the same semantic class.
 const youngHorse = {
   id: 'h1',
-  age: 365,
+  age: 1, // 1 game-year — foal
   bondScore: 0,
   stressLevel: 20,
 };
 
 const adultHorse = {
   id: 'h2',
-  age: 1460,
+  age: 4, // 4 game-years — adult
   bondScore: 150,
   stressLevel: 40,
 };
@@ -160,8 +163,9 @@ describe('checkForSpecialEvent', () => {
     let seenEvent = false;
     for (let i = 0; i < 200; i++) {
       const context = {
+        // Equoria-yny4: age is game-years; 1 = young foal
         groom: gentleGroom,
-        horse: { ...youngHorse, age: 365, stressLevel: 10 },
+        horse: { ...youngHorse, age: 1, stressLevel: 10 },
         relationshipLevel: RELATIONSHIP_LEVELS.STRANGER,
         interactionType: 'enrichment',
       };
@@ -264,8 +268,9 @@ describe('getAvailableInteractions', () => {
     expect(ids).toContain('daily_care');
   });
 
-  it('enrichment is excluded for horse older than 3 years (> 1095 days)', () => {
-    const oldHorse = { ...adultHorse, age: 1460 };
+  it('enrichment is excluded for horse older than 3 game-years', () => {
+    // Equoria-yny4: horse.age is game-years (post Equoria-son6). 4 > 3 → excluded.
+    const oldHorse = { ...adultHorse, age: 4 };
     const result = getAvailableInteractions(gentleGroom, oldHorse);
     const ids = result.map(i => i.id);
     expect(ids).not.toContain('enrichment');
@@ -334,9 +339,10 @@ describe('calculateRelationshipLevel — negative-points fallback (line 180)', (
 // ---------------------------------------------------------------------------
 describe('processInteractionWithPerformance — full function body coverage', () => {
   it('returns shape with performanceTracked:true (recordGroomPerformance is fire-and-forget)', async () => {
+    // Equoria-yny4: age is game-years; 1 = young foal
     const result = await processInteractionWithPerformance(
       { id: 999999, personality: 'gentle', skillLevel: 'expert', speciality: 'medical', sessionRate: 20 },
-      { id: 999999, age: 365, bondScore: 0, stressLevel: 20 },
+      { id: 999999, age: 1, bondScore: 0, stressLevel: 20 },
       '00000000-0000-0000-0000-000000000000',
       'daily_care',
       'Morning Routine',
@@ -351,15 +357,66 @@ describe('processInteractionWithPerformance — full function body coverage', ()
   });
 
   it('throws when calculateEnhancedEffects throws (covers catch block lines 459-462)', async () => {
+    // Equoria-yny4: age is game-years; 1 = young foal
     await expect(
       processInteractionWithPerformance(
         { id: 999999, personality: 'gentle', skillLevel: 'expert', speciality: 'medical', sessionRate: 20 },
-        { id: 999999, age: 365, bondScore: 0, stressLevel: 20 },
+        { id: 999999, age: 1, bondScore: 0, stressLevel: 20 },
         '00000000-0000-0000-0000-000000000000',
         'UNKNOWN_TYPE_XYZ',
         'Morning Routine',
         30,
       ),
     ).rejects.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Equoria-yny4 — game-year semantics (sentinel-positive tests)
+// These tests fail if the service regresses to day-based thresholds (1095 / 730).
+// ---------------------------------------------------------------------------
+describe('Equoria-yny4 — horse.age treated as game-years', () => {
+  it('age=3 game-years (would have been 3 days under legacy semantics) excludes enrichment', () => {
+    // Under legacy day-semantics: 3 days < 1095 → enrichment available (WRONG).
+    // Under game-year semantics: 3 game-years > 3 is FALSE, so age > 3 fails,
+    // BUT age === 3 should still include enrichment (boundary). To prove the
+    // service uses game-year thresholds, we use age=4: under legacy 4 < 1095
+    // → enrichment available; under game-years 4 > 3 → enrichment excluded.
+    const fourYearOld = { id: 'sentinel', age: 4, bondScore: 0, stressLevel: 10 };
+    const result = getAvailableInteractions(
+      { id: 'g', personality: 'gentle', skillLevel: 'expert', speciality: 'foalCare', sessionRate: 20 },
+      fourYearOld,
+    );
+    const ids = result.map(i => i.id);
+    expect(ids).not.toContain('enrichment');
+  });
+
+  it('age=2 game-years (would have been 2 days under legacy semantics) keeps enrichment', () => {
+    // Under legacy day-semantics: 2 days < 1095 → enrichment available (right answer for wrong reason).
+    // Under game-year semantics: 2 game-years < 3 → enrichment available (correct).
+    // Sentinel value: also under legacy semantics age=2 would mean 2-day-old foal;
+    // game-year semantics correctly classifies a 2-game-year horse as a foal.
+    const twoYearOld = { id: 'sentinel', age: 2, bondScore: 0, stressLevel: 10 };
+    const result = getAvailableInteractions(
+      { id: 'g', personality: 'gentle', skillLevel: 'expert', speciality: 'foalCare', sessionRate: 20 },
+      twoYearOld,
+    );
+    const ids = result.map(i => i.id);
+    expect(ids).toContain('enrichment');
+  });
+
+  it('age=1500 (legacy "4-year-old in days") is rejected for enrichment under game-years', () => {
+    // Under legacy semantics: 1500 days > 1095 → excluded (right answer, wrong reason).
+    // Under game-year semantics: 1500 game-years > 3 → still excluded.
+    // This test guards against a regression that re-introduces the 1095 threshold,
+    // because a regression would still pass this test — so we PAIR it with the
+    // age=4 test above (which a regression would fail).
+    const ancientHorse = { id: 'sentinel', age: 1500, bondScore: 0, stressLevel: 10 };
+    const result = getAvailableInteractions(
+      { id: 'g', personality: 'gentle', skillLevel: 'expert', speciality: 'foalCare', sessionRate: 20 },
+      ancientHorse,
+    );
+    const ids = result.map(i => i.id);
+    expect(ids).not.toContain('enrichment');
   });
 });

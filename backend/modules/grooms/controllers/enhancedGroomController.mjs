@@ -69,23 +69,18 @@ export async function getEnhancedInteractions(req, res) {
     // Resources are guaranteed to exist and be owned by user due to middleware validation
     // No additional checks needed
 
-    // Equoria-ogmu: do NOT mutate horse.age. Horse.age stores game-years
-    // (1 game-year = 7 real-time days; see Equoria-son6). Compute ageInDays
-    // locally and pass a separate object to downstream consumers that still
-    // expect day-granular semantics. The DB-loaded `horse.age` is preserved
-    // unmodified for the API response.
+    // Equoria-yny4: horse.age is game-years (post Equoria-son6) and
+    // enhancedGroomInteractions.mjs now reads it as game-years. The shadow
+    // `horseForDayConsumers` object is no longer needed — pass horse directly.
+    // ageInDays is still computed for API response consumers that want a
+    // day-granular field alongside game-years.
     const ageInDays = getHorseAgeDays(horse.dateOfBirth);
-    // Shallow copy with day-granular age for downstream day-based consumers
-    // (enhancedGroomInteractions.mjs reads horse.age as days at lines 119,
-    // 135, 253, 502). Once Equoria-8y0v migrates those sites to game-years,
-    // this shadow object can be removed.
-    const horseForDayConsumers = { ...horse, age: ageInDays };
 
     // Get relationship level
     const relationshipLevel = calculateRelationshipLevel(horse.bondScore || 0);
 
     // Get available interactions
-    const availableInteractions = getAvailableInteractions(groom, horseForDayConsumers);
+    const availableInteractions = getAvailableInteractions(groom, horse);
 
     // Get interaction history for this pair
     const recentInteractions = await prisma.groomInteraction.findMany({
@@ -246,24 +241,14 @@ export async function performEnhancedInteraction(req, res) {
       });
     }
 
-    // Equoria-ogmu: do NOT mutate horse.age. Compute ageInDays locally and
-    // pass a shallow copy to downstream day-based consumers. Note that the
-    // SELECT clause above does not load Horse.age, so the local `horse`
-    // object has no `age` field at all — the previous mutation was the only
-    // source. The shadow object below provides ageInDays for
-    // calculateEnhancedEffects until Equoria-8y0v migrates those call sites
-    // to game-years.
-    const ageInDays = getHorseAgeDays(horse.dateOfBirth);
-    const horseForDayConsumers = { ...horse, age: ageInDays };
+    // Equoria-yny4: horse.age is game-years (post Equoria-son6) and
+    // enhancedGroomInteractions.mjs now reads it as game-years. The shadow
+    // `horseForDayConsumers` object is no longer needed — pass horse directly.
+    // The SELECT clause loads Horse.age so the service receives the real
+    // game-year value.
 
     // Calculate enhanced effects
-    const effects = calculateEnhancedEffects(
-      groom,
-      horseForDayConsumers,
-      interactionType,
-      variation,
-      duration,
-    );
+    const effects = calculateEnhancedEffects(groom, horse, interactionType, variation, duration);
 
     // Record the interaction
     const interaction = await prisma.groomInteraction.create({

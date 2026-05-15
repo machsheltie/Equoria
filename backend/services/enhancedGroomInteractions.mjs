@@ -116,7 +116,9 @@ export const SPECIAL_EVENTS = {
     id: 'learning_moment',
     name: 'Learning Moment',
     probability: 0.08, // 8% chance
-    conditions: ['horse_age < 1095'], // Under 3 years
+    // Equoria-yny4: horse.age is game-years (post Equoria-son6). 3 game-years
+    // is the foal-care upper bound (was 1095 days pre-migration).
+    conditions: ['horse_age < 3'], // Under 3 game-years
     effects: { bonding: 8, stress: -5, development: 5 },
   },
 
@@ -132,7 +134,9 @@ export const SPECIAL_EVENTS = {
     id: 'playful_interaction',
     name: 'Playful Moment',
     probability: 0.1, // 10% chance
-    conditions: ['horse_age < 730', 'stress_level < 40'], // Under 2 years, low stress
+    // Equoria-yny4: horse.age is game-years (post Equoria-son6). 2 game-years
+    // is the playful-foal upper bound (was 730 days pre-migration).
+    conditions: ['horse_age < 2', 'stress_level < 40'], // Under 2 game-years, low stress
     effects: { bonding: 10, stress: -8, joy: 5 },
   },
 };
@@ -249,8 +253,9 @@ function evaluateCondition(condition, context) {
   }
 
   if (condition === 'groom_specialty_match') {
-    // Check if groom's specialty matches the interaction type
-    return groom.speciality === 'foalCare' && horse.age < 1095; // 3 years
+    // Equoria-yny4: horse.age is game-years (post Equoria-son6). Foal-care
+    // window = 0-3 game-years (was 1095 days pre-migration).
+    return groom.speciality === 'foalCare' && horse.age < 3;
   }
 
   return false;
@@ -499,8 +504,9 @@ function canPerformInteraction(groom, horse, interaction) {
   }
 
   // Age-based restrictions
-  if (interaction.category === 'enrichment' && horse.age > 1095) {
-    // Over 3 years
+  // Equoria-yny4: horse.age is game-years (post Equoria-son6). Enrichment
+  // is for horses 0-3 game-years (was > 1095 days pre-migration).
+  if (interaction.category === 'enrichment' && horse.age > 3) {
     return false;
   }
 
