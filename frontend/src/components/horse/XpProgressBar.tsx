@@ -10,17 +10,89 @@
  * Story 3-4: XP & Progression Display - Task 1
  */
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useHorseXP } from '@/hooks/api/useHorseXP';
 import FenceJumpBar from '@/components/ui/FenceJumpBar';
+import { useRewardToast } from '@/components/feedback';
 
 interface XpProgressBarProps {
   horseId: number;
 }
 
+/** FenceJumpBar fence markers — Spec 11.3.10 "threshold crossed (25/50/75/100%)". */
+const FENCE_THRESHOLDS = [25, 50, 75, 100] as const;
+
+/** Highest fence threshold at or below a given progress %, else 0. */
+function highestThresholdReached(pct: number): number {
+  let reached = 0;
+  for (const t of FENCE_THRESHOLDS) {
+    if (pct >= t) reached = t;
+  }
+  return reached;
+}
+
 const XpProgressBar = ({ horseId }: XpProgressBarProps) => {
   const { data: xpData, isLoading, error, isError, refetch } = useHorseXP(horseId);
   const [showTooltip, setShowTooltip] = useState(false);
+  const { notify } = useRewardToast();
+
+  // Derived progress (only valid once data has loaded).
+  const hasData = Boolean(xpData);
+  const level = xpData ? xpData.availableStatPoints + 1 : 0;
+  const xpInCurrentLevel = xpData ? xpData.currentXP - xpData.availableStatPoints * 100 : 0;
+  const progressPercentage = xpData ? Math.round((xpInCurrentLevel / 100) * 100) : 0;
+  const xpToNext = xpData ? xpData.xpToNextStatPoint : Number.POSITIVE_INFINITY;
+
+  // Meaningful-progress triggers (Spec 11.3.10), sourced from REAL useHorseXP
+  // data. Fire only on an actual fence-threshold crossing or when within
+  // 10 XP of the next level — routine +5 XP that does not cross a fence
+  // produces NO toast (the provider also drops non-meaningful items).
+  const prevThresholdRef = useRef<number | null>(null);
+  const approachingNotifiedRef = useRef(false);
+  useEffect(() => {
+    if (!hasData) return;
+    const reached = highestThresholdReached(progressPercentage);
+    const prev = prevThresholdRef.current;
+
+    // Initialise baseline on first real data without toasting (avoids a
+    // spurious toast just for opening the page on an in-progress bar).
+    if (prev === null) {
+      prevThresholdRef.current = reached;
+      approachingNotifiedRef.current = xpToNext <= 10;
+      return;
+    }
+
+    if (reached > prev) {
+      prevThresholdRef.current = reached;
+      notify({
+        type: reached === 100 ? 'level-up' : 'milestone',
+        title:
+          reached === 100 ? `Level ${level + 1} reached!` : `${reached}% to Level ${level + 1}`,
+        message:
+          reached === 100
+            ? `${xpData?.currentXP ?? 0} XP — a new stat point is ready.`
+            : `Keep going — ${xpToNext} XP to the next level.`,
+        meaningful: true,
+      });
+    } else if (reached < prev) {
+      // Bar reset after a level-up — re-arm for the new level.
+      prevThresholdRef.current = reached;
+      approachingNotifiedRef.current = false;
+    }
+
+    // Approaching level-up (within 10 XP) — fire once per level.
+    if (xpToNext <= 10 && !approachingNotifiedRef.current) {
+      approachingNotifiedRef.current = true;
+      notify({
+        type: 'level-up',
+        title: `Almost Level ${level + 1}!`,
+        message: `Just ${xpToNext} XP to go.`,
+        meaningful: true,
+      });
+    } else if (xpToNext > 10) {
+      approachingNotifiedRef.current = false;
+    }
+  }, [hasData, progressPercentage, xpToNext, level, notify, xpData]);
 
   // Loading state
   if (isLoading) {
@@ -46,10 +118,10 @@ const XpProgressBar = ({ horseId }: XpProgressBarProps) => {
     );
   }
 
-  // Calculate level and progress
-  const level = xpData.availableStatPoints + 1;
-  const xpInCurrentLevel = xpData.currentXP - xpData.availableStatPoints * 100;
-  const progressPercentage = Math.round((xpInCurrentLevel / 100) * 100);
+  // level / xpInCurrentLevel / progressPercentage are computed once at the
+  // top of the component (so the meaningful-progress effect can read them).
+  // After the early returns xpData is guaranteed defined, so those hoisted
+  // values are final here.
 
   return (
     <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-4 shadow-sm">
