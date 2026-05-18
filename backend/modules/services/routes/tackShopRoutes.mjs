@@ -16,6 +16,8 @@ import {
   purchaseTackItem,
   unequipDecoration,
 } from '../controllers/tackShopController.mjs';
+// Equoria-ftjm: dedicated stricter per-user economy-mutation limiter.
+import { financialRateLimiter } from '../../../middleware/rateLimiting.mjs';
 
 const router = express.Router();
 
@@ -34,6 +36,7 @@ router.get('/inventory', getTackInventory);
 
 router.post(
   '/purchase',
+  financialRateLimiter,
   [
     body('horseId').isInt({ min: 1 }).withMessage('horseId must be a positive integer'),
     body('itemId').notEmpty().withMessage('itemId is required'),

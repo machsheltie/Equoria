@@ -11,6 +11,8 @@ import express from 'express';
 import { body, validationResult } from 'express-validator';
 import logger from '../../../utils/logger.mjs';
 import { getFeedCatalog, purchaseFeed } from '../controllers/feedShopController.mjs';
+// Equoria-ftjm: dedicated stricter per-user economy-mutation limiter.
+import { financialRateLimiter } from '../../../middleware/rateLimiting.mjs';
 
 const router = express.Router();
 
@@ -29,6 +31,7 @@ router.get('/catalog', getFeedCatalog);
 
 router.post(
   '/purchase',
+  financialRateLimiter,
   [
     body('feedTier').isString().notEmpty().withMessage('feedTier is required'),
     body('packs').isInt({ min: 1 }).withMessage('packs must be an integer ≥ 1'),

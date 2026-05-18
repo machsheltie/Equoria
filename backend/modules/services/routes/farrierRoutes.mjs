@@ -11,6 +11,8 @@ import express from 'express';
 import { body, validationResult } from 'express-validator';
 import logger from '../../../utils/logger.mjs';
 import { getFarrierServices, bookFarrierService } from '../controllers/farrierController.mjs';
+// Equoria-ftjm: dedicated stricter per-user economy-mutation limiter.
+import { financialRateLimiter } from '../../../middleware/rateLimiting.mjs';
 
 const router = express.Router();
 
@@ -29,6 +31,7 @@ router.get('/services', getFarrierServices);
 
 router.post(
   '/book-service',
+  financialRateLimiter,
   [
     body('horseId').isInt({ min: 1 }).withMessage('horseId must be a positive integer'),
     body('serviceId').notEmpty().withMessage('serviceId is required'),

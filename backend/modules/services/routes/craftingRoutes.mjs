@@ -16,6 +16,8 @@ import {
   getRecipes,
   craftItem,
 } from '../controllers/craftingController.mjs';
+// Equoria-ftjm: dedicated stricter per-user economy-mutation limiter.
+import { financialRateLimiter } from '../../../middleware/rateLimiting.mjs';
 
 const router = express.Router();
 
@@ -36,6 +38,7 @@ router.get('/recipes', getRecipes);
 
 router.post(
   '/craft',
+  financialRateLimiter,
   [body('recipeId').notEmpty().withMessage('recipeId is required'), handleValidationErrors],
   craftItem,
 );

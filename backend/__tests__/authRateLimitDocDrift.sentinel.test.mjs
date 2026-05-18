@@ -128,6 +128,14 @@ describe('Auth rate-limit code ↔ docs drift sentinel (Equoria-wfz1)', () => {
     const mutation = block('mutationRateLimiter');
     expect(mutation).toMatch(/windowMs:\s*60\s*\*\s*1000/);
     expect(src).toMatch(/production:\s*30\b/);
+
+    // Financial (Equoria-ftjm): dedicated economy-mutation limiter,
+    // 20 / 15 min. Locks the cap so a tightening/loosening without a
+    // doc update fails here.
+    const financial = block('financialRateLimiter');
+    expect(financial).toMatch(/windowMs:\s*15\s*\*\s*60\s*\*\s*1000/);
+    expect(financial).toMatch(/max:\s*20\b/);
+    expect(financial).toMatch(/skipSuccessfulRequests:\s*false/);
   });
 
   it('the two canonical limiter tables state the reconciled non-auth values and no stale ones (c9y4)', () => {
@@ -139,13 +147,19 @@ describe('Auth rate-limit code ↔ docs drift sentinel (Equoria-wfz1)', () => {
     // Stale claims gone.
     expect(rl).not.toMatch(/Training\s*\|\s*10 requests\s*\|\s*1 minute/);
     expect(rl).not.toMatch(/Competition\s*\|\s*20 entries\s*\|\s*1 hour/);
+    // Equoria-ftjm: financial limiter row now exists and states 20/15min.
+    expect(rl).toMatch(/Financial\s*\|\s*20 mutations\s*\|\s*15 minutes/);
 
     const prd = read('docs/product/PRD-08-Security-Architecture.md');
     expect(prd).toMatch(/\*\*Training\*\*\s*\|\s*20 failed\s*\|\s*1 minute/);
     expect(prd).toMatch(/\*\*Breeding\*\*\s*\|\s*10\s*\|\s*5 minutes/);
-    // The phantom financial limiter row must be replaced by the posture note.
-    expect(prd).not.toMatch(/\*\*Financial\*\*\s*\|\s*20\s*\|\s*15 minutes/);
-    expect(prd).toMatch(/no dedicated\s*\n?>?\s*financial rate limiter/i);
+    // Equoria-ftjm decision (b): the financial limiter is now REAL, so the
+    // row must state the real value and the prior "no dedicated financial
+    // rate limiter" posture note must be gone (replaced by the resolved
+    // note). Flipped from the c9y4 negative assertions.
+    expect(prd).toMatch(/\*\*Financial\*\*\s*\|\s*20\s*\|\s*15 minutes/);
+    expect(prd).not.toMatch(/no dedicated\s*\n?>?\s*financial rate limiter/i);
+    expect(prd).toMatch(/Equoria-ftjm[\s\S]*?resolved/i);
   });
 
   it('SENTRY_SETUP.md auth-failure ALERT threshold is intentionally still 5 events / 15 minutes', () => {

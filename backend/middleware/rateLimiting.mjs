@@ -569,6 +569,42 @@ export const competitionRateLimiter = createRateLimiter({
   keyPrefix: 'rl:competition',
 });
 
+/**
+ * Financial / Economy Mutation Rate Limiter (Equoria-ftjm)
+ *
+ * Applied ONLY to state-changing financial endpoints that move in-game
+ * currency: the weekly bank claim, shop purchases (feed / tack), crafting
+ * (deducts coins), and vet/farrier service bookings. Read-only economy
+ * endpoints (catalog/inventory/claim-status/transaction history) are NOT
+ * gated — they inherit the global apiLimiter only.
+ *
+ * Threat model — economy abuse: horse-sim games (Horseland, Equus Ipsum,
+ * etc.) have historically been exploited via coin-duplication and mass
+ * purchase/transaction flooding. The global 100/15min apiLimiter is far too
+ * permissive to throttle a scripted coin-grind or transaction-spam attack
+ * against the ledger. A dedicated, much stricter per-user cap raises the
+ * cost of any economy-abuse automation while staying invisible to honest
+ * play.
+ *
+ * 20 mutations / 15 minutes per AUTHENTICATED USER. Per-user (not just IP)
+ * because the createRateLimiter keyGenerator keys on `user:${req.user.id}`
+ * when a JWT is present (these routes are all behind authenticateToken),
+ * so one abusive account cannot exhaust the limit for everyone behind a
+ * shared NAT/IP. Financial mutations are deliberate, low-frequency actions
+ * — a normal session is a handful (claim weekly reward, buy a few feed
+ * packs, book one vet visit), nowhere near 20/15min. This mirrors the
+ * conservative competition (20/5min) posture. Failed mutations still count
+ * (skipSuccessfulRequests:false) so a script probing the ledger with
+ * rejected requests is throttled too.
+ */
+export const financialRateLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // 20 financial mutations per 15 minutes per user
+  message: 'Financial action limit exceeded. Please wait before making more economy actions.',
+  skipSuccessfulRequests: false,
+  keyPrefix: 'rl:financial',
+});
+
 // Redis initialization moved to the TOP of this module as a top-level
 // `await` (see boot-race fix block near the top of the file). Limiters
 // created above this point now see the connected Redis client and bind
@@ -588,6 +624,7 @@ export default {
   foalRateLimiter,
   breedingRateLimiter,
   competitionRateLimiter,
+  financialRateLimiter,
   isRedisConnected,
   getRedisClient,
   closeRedis,

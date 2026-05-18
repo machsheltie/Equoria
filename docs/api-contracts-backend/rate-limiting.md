@@ -9,5 +9,6 @@
 | Breeding       | 10 operations       | 5 minutes  |
 | Foal           | 15 actions          | 1 minute   |
 | Mutation       | 30 requests (prod)  | 1 minute   |
+| Financial      | 20 mutations        | 15 minutes |
 
 ---

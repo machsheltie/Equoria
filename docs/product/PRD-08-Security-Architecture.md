@@ -201,15 +201,22 @@ function sanitize(input) {
 | **Competition**    | 20         | 5 minutes  | Block user |
 | **Foal**           | 15         | 1 minute   | Block user |
 | **Mutation**       | 30 (prod)  | 1 minute   | Block user |
-| **Financial**      | _see note_ | —          | —          |
+| **Financial**      | 20         | 15 minutes | Block user |
 
-> **Financial limiter (Equoria-c9y4):** there is currently **no dedicated
-> financial rate limiter** in `backend/middleware/rateLimiting.mjs`. Bank /
-> transaction routes inherit only the global apiLimiter (100 / 15 min). The
-> prior "20 / 15 min" row described a limiter that does not exist in code.
-> Whether financial endpoints should get a dedicated stricter limiter is a
-> security-posture decision, not a docs codification — tracked separately
-> in Equoria-ftjm. This table now reflects code reality.
+> **Financial limiter (Equoria-ftjm):** the security-posture decision
+> spun out of Equoria-c9y4 was resolved (decision **b**): economy
+> mutation routes now get a **dedicated stricter per-user limiter**
+> (`financialRateLimiter`, 20 mutations / 15 min, keyed on
+> `user:${req.user.id}`) in `backend/middleware/rateLimiting.mjs`,
+> instead of relying only on the global apiLimiter (100 / 15 min).
+> It is mounted on the coin-moving POSTs only — `POST /bank/claim`,
+> `POST /feed-shop/purchase`, `POST /tack-shop/purchase`,
+> `POST /crafting/craft`, `POST /vet/book-appointment`,
+> `POST /farrier/book-service`. Read-only economy endpoints
+> (catalog / inventory / claim-status / transaction history) are NOT
+> gated. Rationale: economy-abuse threat (coin-grind / mass-purchase /
+> transaction-flood scripts) — see `.claude/rules/SECURITY.md`
+> "Financial Transaction Security". This table now reflects code reality.
 
 ### 4.2 Suspicious Activity Detection
 
