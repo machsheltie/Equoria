@@ -509,18 +509,39 @@ RATE_LIMIT_MAX_REQUESTS=100
 - **Reads (GET/HEAD/OPTIONS) are NOT persisted.** The trail is
   mutation-scoped by design; read-volume audit is out of scope for A09's
   "detect malicious activity" intent and would dwarf the table.
-- Audit-log **retention/rotation policy** is not yet automated (the table
-  grows unbounded). Tracked as a scoped follow-up — see "What was NOT
-  done" below.
 - Non-sensitive mutating routes (e.g. inventory equip, cosmetic settings)
   are outside the sensitive-prefix allowlist by design; widening the
   allowlist is a deliberate posture decision, not an implicit gap.
 
-**Risk Level:** LOW for the sensitive-mutation surface (now DB-backed +
-enforced). Retention automation is the remaining MEDIUM item.
+**Retention / rotation (2026-05-18, Equoria-54qq8 — RESOLVED):** the
+previously-unbounded `audit_logs` table now has an automated time-based
+retention purge. `backend/services/auditLogRetentionService.mjs#purgeExpiredAuditLogs()`
+performs a **scoped DELETE** (`where: { createdAt: { lt: cutoff } }`, never
+unscoped) of rows older than the retention window. It is invoked nightly at
+03:30 UTC by `CronJobService` (`backend/services/cronJobs.mjs`, job key
+`auditLogRetention`, wrapped in `runWithHeartbeat` so
+`/api/admin/cron/health` surfaces staleness + the deleted-row summary).
+
+- **Retention window:** default **90 days** (aligned with the existing
+  90-day CI audit-report retention in the A06 section), overridable via the
+  `AUDIT_LOG_RETENTION_DAYS` env var, **clamped to a 7-day floor** so a
+  misconfigured env can never effectively disable the trail or wipe
+  near-current forensic history.
+- **Why time-based purge over partitioning:** partitioning is the
+  higher-throughput option but requires a partitioned-table migration plus a
+  partition-maintenance job — materially more invasive than a single-instance
+  beta warrants. The scoped DELETE rides the existing `(createdAt DESC)`
+  index. Switching to partitioning if volume outgrows a nightly DELETE is a
+  documented future spike, not pre-built (avoids speculative complexity).
+
+**Risk Level:** LOW for the sensitive-mutation surface — DB-backed,
+globally enforced, **and now retention-bounded**.
 - Test Coverage: `backend/__tests__/auditLogPersistence.integration.test.mjs`
   (real-DB: one row per sensitive mutation with correct fields + secret
-  redaction; no row for reads; fail-soft sentinel) + the legacy
+  redaction; no row for reads; fail-soft sentinel);
+  `backend/__tests__/auditLogRetention.integration.test.mjs` (real-DB:
+  old rows purged, recent rows retained, sub-floor env clamped, scoped
+  DELETE) + the legacy
   `backend/modules/services/__tests__/owasp-comprehensive.test.mjs` A09
   file-path assertions.
 
@@ -546,17 +567,18 @@ nothing to protect — not "compliant via controls."
 ### **Compliance Summary** (corrected 2026-05-18)
 
 - ✅ **9/10 OWASP categories implemented; A09 DB-backed + globally enforced
-  for sensitive mutations (retention automation pending); A10 N/A (no SSRF
-  surface)** — the prior "10/10 fully addressed" was inaccurate; A09 PARTIAL
-  resolved 2026-05-18 (Equoria-jw10w).
+  for sensitive mutations + retention-bounded (Equoria-54qq8 nightly purge);
+  A10 N/A (no SSRF surface)** — the prior "10/10 fully addressed" was
+  inaccurate; A09 PARTIAL resolved 2026-05-18 (Equoria-jw10w), retention
+  automation landed 2026-05-18 (Equoria-54qq8).
 - ✅ **262 executed security test cases across the 8 core files** (jest run
   2026-05-18, point-in-time; the prior "400+" / "243+" were unverified — see
   SECURITY_ASSESSMENT_REPORT.md §3.1) + `auditLogPersistence.integration.test.mjs`
   (4 real-DB A09 cases)
 - ✅ **Automated continuous dependency scanning (backend + frontend + root)**
 - ✅ **Monitoring: file logging + Sentry mounted; DB-backed audit trail
-  implemented and globally enforced for sensitive mutating routes (reads +
-  retention automation out of scope by design — see A09)**
+  implemented and globally enforced for sensitive mutating routes, with an
+  automated nightly retention purge (reads out of scope by design — see A09)**
 
 ---
 

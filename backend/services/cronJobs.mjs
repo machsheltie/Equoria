@@ -7,6 +7,7 @@ import {
   processFoalMilestoneEvaluations,
 } from '../utils/horseAgingSystem.mjs';
 import { incrementWeeklyCareerWeeks } from './riderTrainerProgressionService.mjs';
+import { purgeExpiredAuditLogs } from './auditLogRetentionService.mjs';
 import { executeClosedShows } from '../modules/competition/shows/showController.mjs';
 import { Sentry } from '../config/sentry.mjs';
 
@@ -79,6 +80,8 @@ const JOB_STALENESS_MS = {
   electionStatusTransition: 30 * 60 * 1000,
   // Equoria-aghl (FR-CN8): nightly show execution runs at 03:00 UTC.
   nightlyShowExecution: 30 * 60 * 60 * 1000,
+  // Equoria-54qq8: audit-log retention purge runs nightly at 03:30 UTC.
+  auditLogRetention: 30 * 60 * 60 * 1000,
 };
 
 class CronJobService {
@@ -348,12 +351,31 @@ class CronJobService {
       },
     );
 
+    // Equoria-54qq8 (OWASP A09 follow-up): nightly audit-log retention purge.
+    // Runs at 03:30 UTC — after nightlyShowExecution (03:00) so the two
+    // heaviest nightly jobs don't overlap. Scoped DELETE of audit_logs rows
+    // older than the retention window (default 90d, AUDIT_LOG_RETENTION_DAYS
+    // override, clamped to a 7d floor). Wrapped in runWithHeartbeat so
+    // /api/admin/cron/health surfaces staleness; errors bubble to the
+    // heartbeat layer and never crash the process.
+    const auditLogRetentionJob = cron.schedule(
+      '30 3 * * *',
+      async () => {
+        await this.runWithHeartbeat('auditLogRetention', () => this.purgeExpiredAuditLogs());
+      },
+      {
+        scheduled: false,
+        timezone: 'UTC',
+      },
+    );
+
     this.jobs.set('dailyTraitEvaluation', dailyTraitJob);
     this.jobs.set('dailyHorseAging', dailyAgingJob);
     this.jobs.set('dailyFoalMilestoneEvaluation', dailyMilestoneJob);
     this.jobs.set('weeklyRiderTrainerCareerWeeks', weeklyRiderTrainerCareerJob);
     this.jobs.set('electionStatusTransition', electionTransitionJob);
     this.jobs.set('nightlyShowExecution', nightlyShowExecutionJob);
+    this.jobs.set('auditLogRetention', auditLogRetentionJob);
 
     // Start all jobs
     this.jobs.forEach((job, name) => {
@@ -700,6 +722,36 @@ class CronJobService {
       logger.info(`[CronJobService.executeOvernightShows] Completed in ${duration}ms`);
     } catch (error) {
       logger.error(`[CronJobService.executeOvernightShows] Error: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Equoria-54qq8 (OWASP A09 follow-up): nightly audit-log retention purge.
+   *
+   * Delegates to auditLogRetentionService.purgeExpiredAuditLogs(), a scoped
+   * DELETE of audit_logs rows older than the retention window. The returned
+   * summary ({ deletedCount, retentionDays, cutoff }) flows into the
+   * heartbeat layer so /api/admin/cron/health surfaces what was purged.
+   *
+   * Failure mode: errors bubble up so runWithHeartbeat records them; the
+   * cron service does NOT crash. Logged at error level for ops triage.
+   *
+   * @returns {Promise<{ deletedCount: number, retentionDays: number, cutoff: string }>}
+   */
+  async purgeExpiredAuditLogs() {
+    const startTime = Date.now();
+    logger.info('[CronJobService.purgeExpiredAuditLogs] Starting audit-log retention purge');
+    try {
+      const result = await purgeExpiredAuditLogs();
+      const duration = Date.now() - startTime;
+      logger.info(
+        `[CronJobService.purgeExpiredAuditLogs] Completed in ${duration}ms — ` +
+          `deleted ${result.deletedCount} row(s), retention ${result.retentionDays}d`,
+      );
+      return result;
+    } catch (error) {
+      logger.error(`[CronJobService.purgeExpiredAuditLogs] Error: ${error.message}`);
       throw error;
     }
   }

@@ -31,16 +31,16 @@ This report assesses the Equoria platform's security posture following Phase 4 S
 
 The rating was lowered from the v2.0 "A+ (Excellent)" because that grade rested on inflated claims. The underlying implemented controls are genuinely strong; the rating reflects honest scope, not a regression in code.
 
-| Category                       | Rating | Status                                                                                             |
-| ------------------------------ | ------ | -------------------------------------------------------------------------------------------------- |
-| Authentication & Authorization | A      | ✅ Strong (opt-in TOTP MFA — see A07)                                                              |
-| Data Protection                | A      | ✅ Strong                                                                                          |
-| Input Validation               | A+     | ✅ Excellent (proto-pollution defenses verified)                                                   |
-| Security Testing               | B+     | ✅ Good (counts corrected; no coverage % claimed)                                                  |
-| Monitoring & Logging           | A-     | ✅ File + DB audit trail (globally enforced for sensitive mutations; retention automation pending) |
-| Configuration Security         | A      | ✅ Strong                                                                                          |
-| Dependency Management          | A+     | ✅ Excellent (backend + frontend audited in CI)                                                    |
-| **Overall Grade**              | **B+** | ✅ **Strong (honest scope)**                                                                       |
+| Category                       | Rating | Status                                                                                                        |
+| ------------------------------ | ------ | ------------------------------------------------------------------------------------------------------------- |
+| Authentication & Authorization | A      | ✅ Strong (opt-in TOTP MFA — see A07)                                                                         |
+| Data Protection                | A      | ✅ Strong                                                                                                     |
+| Input Validation               | A+     | ✅ Excellent (proto-pollution defenses verified)                                                              |
+| Security Testing               | B+     | ✅ Good (counts corrected; no coverage % claimed)                                                             |
+| Monitoring & Logging           | A      | ✅ File + DB audit trail (globally enforced for sensitive mutations; nightly retention purge — Equoria-54qq8) |
+| Configuration Security         | A      | ✅ Strong                                                                                                     |
+| Dependency Management          | A+     | ✅ Excellent (backend + frontend audited in CI)                                                               |
+| **Overall Grade**              | **B+** | ✅ **Strong (honest scope)**                                                                                  |
 
 ---
 
@@ -338,7 +338,7 @@ not closed by this shipped opt-in MFA).
 
 ---
 
-### A09:2021 - Security Logging and Monitoring Failures ✅ DB-BACKED + GLOBALLY ENFORCED FOR SENSITIVE MUTATIONS (retention automation pending)
+### A09:2021 - Security Logging and Monitoring Failures ✅ DB-BACKED + GLOBALLY ENFORCED FOR SENSITIVE MUTATIONS + RETENTION-BOUNDED
 
 > **Resolution (2026-05-18, Equoria-jw10w):** The PARTIAL state from the
 > 2026-05-18 accuracy correction is now fixed for the mutation surface.
@@ -348,8 +348,18 @@ not closed by this shipped opt-in MFA).
 > ONCE app-wide in `backend/app.mjs` (right after `requestLogger`), so
 > coverage of sensitive mutating routes is enforced by construction — not
 > opt-in per route. Verified by a real-DB integration test (no mocks).
-> **Remaining gap:** audit-log retention/rotation is not yet automated (the
-> table grows unbounded); reads are intentionally not persisted.
+>
+> **Retention RESOLVED (2026-05-18, Equoria-54qq8):** the previously-unbounded
+> `audit_logs` table now has an automated time-based retention purge.
+> `backend/services/auditLogRetentionService.mjs#purgeExpiredAuditLogs()`
+> performs a **scoped DELETE** (`where: { createdAt: { lt: cutoff } }`, never
+> unscoped) of rows older than the retention window, invoked nightly at
+> 03:30 UTC by `CronJobService` (job key `auditLogRetention`, wrapped in
+> `runWithHeartbeat`). Default window **90 days** (aligned with the 90-day CI
+> audit-report retention), overridable via `AUDIT_LOG_RETENTION_DAYS`,
+> **clamped to a 7-day floor** so a misconfigured env can never effectively
+> disable the trail or wipe near-current forensic history. Reads remain
+> intentionally not persisted (mutation-scoped trail by design).
 
 **Implementation (verified):**
 
@@ -409,19 +419,24 @@ not closed by this shipped opt-in MFA).
   fields + secret redaction; no row for reads; fail-soft sentinel that
   genuinely exercises the Prisma error path (NaN → Int reject → 0 rows, no
   throw)
+- `backend/__tests__/auditLogRetention.integration.test.mjs` — real-DB,
+  no mocks: rows older than the retention window are deleted while recent
+  rows are retained; scoped DELETE only; sub-floor `AUDIT_LOG_RETENTION_DAYS`
+  is clamped so near-current history is never wiped
 - `backend/modules/services/__tests__/owasp-comprehensive.test.mjs` A09 section
 - `backend/modules/services/__tests__/auditLog.test.mjs` (helper unit tests)
 - Sentry integration tests
 
-**Risk Level:** LOW for the sensitive-mutation surface (DB-backed + enforced
-by construction). MEDIUM residual: audit-log retention/rotation automation is
-not yet implemented (unbounded table growth).
-**Recommendation:** Implement retention/rotation (time-based purge or
-partitioning) and configure Sentry alerts/dashboards in production. Consider
+**Risk Level:** LOW for the sensitive-mutation surface — DB-backed, enforced
+by construction, **and now retention-bounded** (Equoria-54qq8 nightly purge).
+The previous MEDIUM residual (unbounded `audit_logs` growth) is resolved.
+**Recommendation:** Configure Sentry alerts/dashboards in production. Consider
 widening the sensitive-prefix allowlist if non-listed mutating routes need
 audit coverage (deliberate posture decision). DB-backed persistence + global
-enforcement delivered under **Equoria-jw10w**; retention is a scoped
-follow-up.
+enforcement delivered under **Equoria-jw10w**; automated time-based retention
+delivered under **Equoria-54qq8**. If audit volume outgrows a nightly scoped
+DELETE, migrating `audit_logs` to a partitioned table is a documented future
+spike (not pre-built — avoids speculative complexity).
 
 ---
 
@@ -717,14 +732,14 @@ None identified.
 > Limit Hit Rate 0.1%" — no production telemetry source exists for these (the
 > app is pre-beta); they were invented. Only verifiable rows retained.
 
-| Metric                         | Current Value                                                                     | Status          |
-| ------------------------------ | --------------------------------------------------------------------------------- | --------------- |
-| Security test files (verified) | 14+ files; 262 executed cases across the 8 core files (jest run 2026-05-18, §3.1) | ✅ Substantial  |
-| OWASP Top 10 addressed         | 9 implemented (A09 DB-backed+enforced, Equoria-jw10w), A10 N/A                    | ✅ Honest scope |
-| Known dep vulnerabilities      | 0 (per last CI scan; re-run for live)                                             | ✅ Good         |
-| DB-backed audit trail          | Implemented + globally enforced for sensitive mutations (retention TODO)          | ✅ Done (jw10w) |
-| Automated dep scans (CI)       | backend + frontend + root                                                         | ✅ Active       |
-| Production security telemetry  | N/A — app is pre-beta                                                             | ⚪ N/A          |
+| Metric                         | Current Value                                                                     | Status                  |
+| ------------------------------ | --------------------------------------------------------------------------------- | ----------------------- |
+| Security test files (verified) | 14+ files; 262 executed cases across the 8 core files (jest run 2026-05-18, §3.1) | ✅ Substantial          |
+| OWASP Top 10 addressed         | 9 implemented (A09 DB-backed+enforced, Equoria-jw10w), A10 N/A                    | ✅ Honest scope         |
+| Known dep vulnerabilities      | 0 (per last CI scan; re-run for live)                                             | ✅ Good                 |
+| DB-backed audit trail          | Implemented + globally enforced + nightly retention purge                         | ✅ Done (jw10w + 54qq8) |
+| Automated dep scans (CI)       | backend + frontend + root                                                         | ✅ Active               |
+| Production security telemetry  | N/A — app is pre-beta                                                             | ⚪ N/A                  |
 
 ### 7.2 Security Trends
 
@@ -781,14 +796,14 @@ configured. This is a hard pre-production blocker, not a soft warning.
 
 ### 9.1 Industry Standards Compliance
 
-| Standard                     | Compliance Status          | Notes                                                                                                                |
-| ---------------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------- |
-| OWASP Top 10:2021            | ✅ Substantial (corrected) | 9 implemented; A09 DB-backed + globally enforced for sensitive mutations (retention TODO); A10 N/A (no SSRF surface) |
-| CWE Top 25                   | ✅ 95% Addressed           | 24/25 categories mitigated                                                                                           |
-| NIST Cybersecurity Framework | ✅ Substantial Compliance  | Identify, Protect, Detect, Respond, Recover                                                                          |
-| PCI DSS                      | ⚠️ N/A                     | Not applicable unless payment processing added                                                                       |
-| GDPR                         | ⚠️ Partial                 | Basic requirements met, full audit needed                                                                            |
-| SOC 2                        | ⚠️ Not Certified           | Consider for enterprise customers                                                                                    |
+| Standard                     | Compliance Status          | Notes                                                                                                           |
+| ---------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| OWASP Top 10:2021            | ✅ Substantial (corrected) | 9 implemented; A09 DB-backed + globally enforced + retention-bounded (jw10w + 54qq8); A10 N/A (no SSRF surface) |
+| CWE Top 25                   | ✅ 95% Addressed           | 24/25 categories mitigated                                                                                      |
+| NIST Cybersecurity Framework | ✅ Substantial Compliance  | Identify, Protect, Detect, Respond, Recover                                                                     |
+| PCI DSS                      | ⚠️ N/A                     | Not applicable unless payment processing added                                                                  |
+| GDPR                         | ⚠️ Partial                 | Basic requirements met, full audit needed                                                                       |
+| SOC 2                        | ⚠️ Not Certified           | Consider for enterprise customers                                                                               |
 
 ### 9.2 Regulatory Compliance
 
@@ -845,11 +860,11 @@ configured. This is a hard pre-production blocker, not a soft warning.
 Equoria implements **strong, verifiable security controls** across most
 critical areas, with honestly-scoped gaps. Verified state:
 
-✅ **9/10 OWASP categories implemented; A09 DB-backed + globally enforced for sensitive mutations (Equoria-jw10w; retention automation pending); A10 N/A (no SSRF surface)**
+✅ **9/10 OWASP categories implemented; A09 DB-backed + globally enforced for sensitive mutations + retention-bounded (Equoria-jw10w persistence, Equoria-54qq8 nightly retention purge); A10 N/A (no SSRF surface)**
 ✅ **262 executed security test cases across the 8 core files, jest run 2026-05-18 (exact counts in §3.1) + 4 real-DB A09 audit-trail cases**
 ✅ **Automated continuous dependency scanning (backend + frontend + root)**
 ✅ **0 known dependency vulnerabilities per last CI scan**
-⚠️ **Gaps before production:** audit-log retention/rotation automation (TODO — DB-backed audit trail shipped Equoria-jw10w), admin-account MFA enforcement (TODO — opt-in TOTP MFA shipped Equoria-2vwwh; mfaSecret at-rest encryption TODO), real security contacts (TODO), SSRF-guard gate before any external-URL feature (TODO)
+⚠️ **Gaps before production:** admin-account MFA enforcement (TODO — opt-in TOTP MFA shipped Equoria-2vwwh; mfaSecret at-rest encryption TODO), real security contacts (TODO), SSRF-guard gate before any external-URL feature (TODO)
 
 ### 11.2 Security Strengths
 
@@ -873,8 +888,9 @@ not optional polish.
 (several were misrepresented as "ready" in v2.0):
 
 1. ✅ DONE (Equoria-jw10w): DB-backed audit persistence + global enforcement
-   for sensitive mutations. Remaining: implement audit-log retention/rotation
-   automation (unbounded table growth) before production
+   for sensitive mutations. ✅ DONE (Equoria-54qq8): automated nightly
+   audit-log retention purge (scoped DELETE, 90-day default, 7-day floor) —
+   unbounded-growth residual resolved
 2. Add admin-account MFA enforcement + encrypt mfaSecret at rest (opt-in TOTP MFA shipped Equoria-2vwwh; these two are tracked follow-ups)
 3. Replace placeholder security contacts with real monitored channels
 4. File + link the blocking SSRF-guard gate before any external-URL feature
@@ -958,7 +974,8 @@ _This assessment (v2.1, accuracy-corrected 2026-05-18) records the verified
 security state of the Equoria platform. It does NOT certify production
 readiness: Phase 4 Security Hardening delivered strong controls; the
 DB-backed audit trail is now implemented and globally enforced for sensitive
-mutations (Equoria-jw10w), but audit-log retention automation, MFA, real
-security contacts, and the SSRF-guard prerequisite gate remain open. Earlier "certified / approved for production /
+mutations (Equoria-jw10w) with automated retention purge (Equoria-54qq8),
+but MFA, real security contacts, and the SSRF-guard prerequisite gate remain
+open. Earlier "certified / approved for production /
 100% compliant" language was inaccurate and has been removed per
 `.claude/rules/COMPLETION_VERIFICATION_POLICY.md`._
