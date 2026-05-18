@@ -173,13 +173,13 @@ describe('HorseDetailPage color readout fallback (Equoria-lsi5)', () => {
   // sitting a few lines above it. The 1k4n scope is the literal-string fix:
   // the fallback must read 'not recorded', never 'Unknown'.
   //
-  // NOTE (adjacent bug, filed separately per OPTIMAL_FIX_DISCIPLINE §3): the
-  // HorseDetailPage `horse` object construction (HorseDetailPage.tsx ~321-422)
-  // never copies `temperament` from the fetched row, so this line ALWAYS hits
-  // the fallback regardless of the real DB value. That wiring gap is a
-  // distinct defect tracked in its own issue — NOT bundled into 1k4n. These
-  // tests therefore assert the literal-string contract (the 1k4n scope), not
-  // the (currently impossible) real-value path.
+  // NOTE: the adjacent wiring bug referenced here (the `horse` object
+  // construction never copied `temperament` from the fetched row, so the line
+  // could never show a real DB value) was filed as Equoria-gncv and FIXED —
+  // HorseDetailPage.tsx now passes `temperament` through. The real-value path
+  // is covered by HorseDetailPage.temperament-wiring.test.tsx. The two tests
+  // below remain scoped to the 1k4n literal-string contract (legacy-null and
+  // never-'Unknown'), which is still a valid, distinct guarantee.
   test("temperament: legacy horse renders 'not recorded' (never 'Unknown') — Equoria-1k4n", async () => {
     global.fetch = makeFetch({ temperament: null });
     renderPage();
