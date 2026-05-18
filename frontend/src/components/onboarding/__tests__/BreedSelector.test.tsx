@@ -62,9 +62,9 @@ describe('BreedSelector', () => {
 
   it('calls onChange when a breed is selected', () => {
     render(<BreedSelector breeds={mockBreeds} value={{}} onChange={onChange} />);
-    // Click Thoroughbred card (there are multiple buttons, get by text)
-    const breedButtons = screen.getAllByRole('button', { pressed: false });
-    const thoroughbredBtn = breedButtons.find((btn) => btn.textContent?.includes('Thoroughbred'));
+    // Breed cards are ARIA radios inside the radiogroup (Equoria-zanq).
+    const breedRadios = screen.getAllByRole('radio');
+    const thoroughbredBtn = breedRadios.find((btn) => btn.textContent?.includes('Thoroughbred'));
     fireEvent.click(thoroughbredBtn!);
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ breedId: 1, breedName: 'Thoroughbred' })

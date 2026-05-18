@@ -10,7 +10,7 @@
  *  - Skeleton loading + error state
  */
 
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { LayoutGrid, List, Star } from 'lucide-react';
 import { type Breed, type BreedStatTendencies } from '@/hooks/api/useBreeds';
 
@@ -88,20 +88,40 @@ function StatBars({ tendencies }: { tendencies: BreedStatTendencies }) {
 
 // ── Breed card (grid view) ─────────────────────────────────────────────────────
 
+/**
+ * Shared radio-option a11y props (Equoria-zanq, Spec 11.3.4 — radiogroup
+ * with arrow-key navigation). Each breed card/row is an ARIA `radio` inside
+ * the `radiogroup`; roving tabindex (only the checked/first option is
+ * tabbable) + the parent's arrow-key handler implement the WAI-ARIA radio
+ * group keyboard pattern.
+ */
+interface RadioOptionProps {
+  isSelected: boolean;
+  /** Roving tabindex: 0 only for the checked option (or first if none). */
+  tabIndex: number;
+  onKeyDown: (_e: React.KeyboardEvent) => void;
+}
+
 function BreedCard({
   breed,
   isSelected,
   onSelect,
+  tabIndex,
+  onKeyDown,
 }: {
   breed: Breed;
   isSelected: boolean;
   onSelect: () => void;
-}) {
+} & RadioOptionProps) {
   return (
     <button
       type="button"
       onClick={onSelect}
-      aria-pressed={isSelected}
+      role="radio"
+      aria-checked={isSelected}
+      tabIndex={tabIndex}
+      onKeyDown={onKeyDown}
+      data-breed-option={breed.id}
       className={[
         'text-left rounded-xl p-3 border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-bright)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-night-sky)]',
         isSelected
@@ -144,11 +164,13 @@ function BreedRow({
   breed,
   isSelected,
   onSelect,
+  tabIndex,
+  onKeyDown,
 }: {
   breed: Breed;
   isSelected: boolean;
   onSelect: () => void;
-}) {
+} & RadioOptionProps) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -163,7 +185,11 @@ function BreedRow({
       <button
         type="button"
         onClick={onSelect}
-        aria-pressed={isSelected}
+        role="radio"
+        aria-checked={isSelected}
+        tabIndex={tabIndex}
+        onKeyDown={onKeyDown}
+        data-breed-option={breed.id}
         className="w-full flex items-center gap-3 p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-bright)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-night-sky)] rounded-xl"
       >
         {/* Portrait thumbnail */}
@@ -285,11 +311,39 @@ function ListSkeleton() {
 
 export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const radioGroupRef = useRef<HTMLDivElement | null>(null);
 
   const selectedBreed = breeds.find((b) => b.id === value.breedId) ?? null;
 
   function selectBreed(breed: Breed) {
     onChange({ ...value, breedId: breed.id, breedName: breed.name });
+  }
+
+  // WAI-ARIA radio-group keyboard pattern (Equoria-zanq, Spec 11.3.4).
+  // Arrow keys move selection AND focus to the adjacent breed; Home/End jump
+  // to the ends. Wraps around. Selecting via arrows also checks the option
+  // (standard radiogroup behaviour).
+  const selectedIndex = breeds.findIndex((b) => b.id === value.breedId);
+  function handleOptionKeyDown(e: React.KeyboardEvent, index: number) {
+    const last = breeds.length - 1;
+    let next: number | null = null;
+    if (e.key === 'ArrowDown' || e.key === 'ArrowRight') next = index >= last ? 0 : index + 1;
+    else if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') next = index <= 0 ? last : index - 1;
+    else if (e.key === 'Home') next = 0;
+    else if (e.key === 'End') next = last;
+    if (next === null) return;
+    e.preventDefault();
+    selectBreed(breeds[next]);
+    const el = radioGroupRef.current?.querySelector<HTMLElement>(
+      `[data-breed-option="${breeds[next].id}"]`
+    );
+    el?.focus();
+  }
+  // Roving tabindex: only the checked option (or the first, if none checked)
+  // is in the tab order; the rest are reached via arrow keys.
+  function optionTabIndex(index: number): number {
+    if (selectedIndex >= 0) return index === selectedIndex ? 0 : -1;
+    return index === 0 ? 0 : -1;
   }
 
   function selectGender(gender: Gender) {
@@ -341,30 +395,34 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
 
       {/* ── Breed grid / list ── */}
       <div
+        ref={radioGroupRef}
         className="max-h-64 overflow-y-auto scroll-area-celestial pr-1"
-        role="listbox"
+        role="radiogroup"
         aria-label="Horse breeds"
-        aria-multiselectable="false"
       >
         {viewMode === 'grid' ? (
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-            {breeds.map((breed) => (
+            {breeds.map((breed, index) => (
               <BreedCard
                 key={breed.id}
                 breed={breed}
                 isSelected={value.breedId === breed.id}
                 onSelect={() => selectBreed(breed)}
+                tabIndex={optionTabIndex(index)}
+                onKeyDown={(e) => handleOptionKeyDown(e, index)}
               />
             ))}
           </div>
         ) : (
           <div className="space-y-2">
-            {breeds.map((breed) => (
+            {breeds.map((breed, index) => (
               <BreedRow
                 key={breed.id}
                 breed={breed}
                 isSelected={value.breedId === breed.id}
                 onSelect={() => selectBreed(breed)}
+                tabIndex={optionTabIndex(index)}
+                onKeyDown={(e) => handleOptionKeyDown(e, index)}
               />
             ))}
           </div>

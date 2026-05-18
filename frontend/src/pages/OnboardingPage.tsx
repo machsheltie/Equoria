@@ -23,7 +23,12 @@ import { Button } from '@/components/ui/button';
 import { authApi } from '@/lib/api-client';
 import type { User } from '@/hooks/useAuth';
 import { usePageBackground } from '@/components/layout/PageBackground';
-import { type BreedSelectionValue, type Gender } from '@/components/onboarding/BreedSelector';
+import {
+  BreedSelector,
+  BreedSelectorSkeleton,
+  type BreedSelectionValue,
+  type Gender,
+} from '@/components/onboarding/BreedSelector';
 import { getHorseImage } from '@/lib/breed-images';
 import { useBreeds } from '@/hooks/api/useBreeds';
 
@@ -94,21 +99,6 @@ interface HorseStepProps {
 const HorseStep: React.FC<HorseStepProps> = ({ selection, onChange }) => {
   const { data: breeds, isLoading, isError } = useBreeds();
 
-  function selectBreed(e: React.ChangeEvent<HTMLSelectElement>) {
-    const breed = breeds?.find((b) => b.id === Number(e.target.value));
-    if (breed) {
-      onChange({ ...selection, breedId: breed.id, breedName: breed.name });
-    }
-  }
-
-  function selectGender(gender: Gender) {
-    onChange({ ...selection, gender });
-  }
-
-  function setHorseName(e: React.ChangeEvent<HTMLInputElement>) {
-    onChange({ ...selection, horseName: e.target.value });
-  }
-
   return (
     <div className="space-y-5">
       {/* Horse image — responsive */}
@@ -120,80 +110,21 @@ const HorseStep: React.FC<HorseStepProps> = ({ selection, onChange }) => {
         />
       </div>
 
-      {/* Breed dropdown */}
-      <div>
-        <label
-          htmlFor="breed-select"
-          className="block text-xs text-[var(--text-muted)] font-[var(--font-body)] uppercase tracking-widest mb-2"
+      {/* Real BreedSelector (Equoria-zanq, Spec 11.3.4) — grid/list, stat
+          tendencies, lore, gender, name, radiogroup + arrow-key nav. Replaces
+          the prior plain <select>. */}
+      {isLoading ? (
+        <BreedSelectorSkeleton viewMode="grid" />
+      ) : isError || !breeds ? (
+        <p
+          className="text-sm text-[var(--text-muted)] font-[var(--font-body)] text-center py-6"
+          role="alert"
         >
-          Select a Breed
-        </label>
-        {isLoading ? (
-          <div className="h-11 rounded-lg bg-[var(--bg-midnight)] animate-pulse" />
-        ) : isError ? (
-          <p className="text-sm text-[var(--text-muted)] font-[var(--font-body)]">
-            Couldn&apos;t load breeds — please try refreshing.
-          </p>
-        ) : (
-          <select
-            id="breed-select"
-            value={selection.breedId ?? ''}
-            onChange={selectBreed}
-            className="celestial-input w-full rounded-lg h-11"
-            data-testid="breed-select"
-          >
-            <option value="" disabled>
-              — Choose a breed —
-            </option>
-            {breeds?.map((breed) => (
-              <option key={breed.id} value={breed.id}>
-                {breed.name}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
-
-      {/* Gender selection — gold buttons */}
-      <div>
-        <p className="text-xs text-[var(--text-muted)] font-[var(--font-body)] uppercase tracking-widest mb-2">
-          Gender
+          Couldn&apos;t load breeds — please try refreshing.
         </p>
-        <div className="grid grid-cols-2 gap-3">
-          {(['Mare', 'Stallion'] as const).map((g) => (
-            <Button
-              key={g}
-              variant="default"
-              onClick={() => selectGender(g)}
-              aria-pressed={selection.gender === g}
-              className="w-full"
-            >
-              {g === 'Mare' ? '♀' : '♂'} {g}
-            </Button>
-          ))}
-        </div>
-      </div>
-
-      {/* Name input */}
-      <div>
-        <label
-          htmlFor="horse-name-input"
-          className="block text-xs text-[var(--text-muted)] font-[var(--font-body)] uppercase tracking-widest mb-2"
-        >
-          Name Your Horse
-        </label>
-        <input
-          id="horse-name-input"
-          type="text"
-          value={selection.horseName ?? ''}
-          onChange={setHorseName}
-          placeholder="e.g. Midnight Comet"
-          maxLength={40}
-          required
-          className="celestial-input w-full rounded-lg"
-          data-testid="horse-name-input"
-        />
-      </div>
+      ) : (
+        <BreedSelector breeds={breeds} value={selection} onChange={onChange} />
+      )}
     </div>
   );
 };
