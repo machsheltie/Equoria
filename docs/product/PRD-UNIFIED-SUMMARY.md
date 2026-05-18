@@ -120,7 +120,12 @@ Equoria is a web-based horse breeding and competition simulation where players m
 
 ## 5. Security (PRD-08)
 
-- OWASP Top 10:2021 — **10/10 categories addressed**, 400+ security tests
+- OWASP Top 10:2021 — **8/10 categories implemented; A09 partial (file/Sentry
+  logging only, no DB-backed audit trail); A10 N/A (no external-URL/SSRF
+  attack surface)**; 262 executed security test cases across the 8 core files
+  (jest run 2026-05-18). The prior "10/10 / 400+" was a false-green overclaim
+  — corrected 2026-05-18 (Equoria-qt6v) to match
+  `docs/SECURITY_ASSESSMENT_REPORT.md` §2/§3.1 (the authoritative source).
 - JWT with HMAC-SHA256, bcrypt 12+ rounds, rate limiting (100 req/15min)
 - Protected stats: cannot be modified directly via API
 - Server-side timestamps for all operations
