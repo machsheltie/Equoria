@@ -371,10 +371,16 @@ privileged-operation exposure (TODO — no infrastructure currently exists).
 - `auditLog.test.mjs` (audit-log helper unit tests — file path, not DB)
 - Sentry integration tests
 
-**Risk Level:** MEDIUM (no tamper-evident, queryable, retained audit trail)
+**Risk Level:** MEDIUM (no tamper-evident, queryable, retained audit trail; the
+`auditLog()` factory is opt-in per route, not globally mounted — verified
+2026-05-18, Equoria-9s9f: zero `auditLog` references in `backend/app.mjs`, no
+`AuditLog` model in `packages/database/prisma/schema.prisma`)
 **Recommendation:** Implement DB-backed audit persistence in `auditLog.mjs` and
-mount it globally; configure Sentry alerts/dashboards in production. Until then,
-do not represent audit logging as a compliance control to auditors.
+enforce it by construction (global mount, or a sentinel test asserting every
+sensitive route attaches an `audit*` middleware); configure Sentry
+alerts/dashboards in production. Until then, do not represent audit logging as a
+compliance control to auditors. **Tracked as Equoria-jw10w** (feature work —
+scoped separately, not closed by this accuracy correction).
 
 ---
 

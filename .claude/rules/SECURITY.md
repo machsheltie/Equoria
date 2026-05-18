@@ -426,15 +426,39 @@ RATE_LIMIT_MAX_REQUESTS=100
 - Unsigned code rejection
 - Test Coverage: `backend/modules/services/__tests__/owasp-comprehensive.test.mjs` (A08 section)
 
-### **A09:2021 - Security Logging and Monitoring Failures** ✅
+### **A09:2021 - Security Logging and Monitoring Failures** ⚠️ PARTIAL — FILE/SENTRY ONLY, NO DB AUDIT TRAIL
 
-- Comprehensive audit logging (Winston)
-- Sentry error tracking and security event monitoring
-- Failed authentication logging
-- Ownership violation logging
-- Rate limit violation logging
-- Suspicious activity pattern detection
-- Test Coverage: `backend/modules/services/__tests__/owasp-comprehensive.test.mjs` (A09 section), `backend/modules/services/__tests__/auditLog.test.mjs`
+> **Correction (2026-05-18, Equoria-9s9f):** The v2.0 `✅ COMPLIANT` / "Audit
+> Log Coverage 100%" claim was a false-green. Codebase audit:
+> `backend/middleware/auditLog.mjs` `storeAuditLog()` (~line 126) is a no-op
+> that only `logger.warn`s — **DB persistence is explicitly not implemented**
+> and there is **no `AuditLog` model in `packages/database/prisma/schema.prisma`**.
+> The `auditLog()` middleware factory is **not mounted globally in
+> `backend/app.mjs`** (zero references) — it only runs on routes that
+> explicitly opt in, so sensitive operations without an explicit `audit*`
+> middleware are not audited. Coverage is therefore neither 100% nor
+> enforced-by-construction.
+
+**What is actually true (assessed, not assumed):**
+
+- `requestLogger` (Winston) provides request-level file logging
+- Sentry error tracking and security event monitoring is wired
+- Failed-auth / ownership-violation / rate-limit events are logged via the
+  per-route `audit*` helpers **where those helpers are explicitly attached**
+- Suspicious-activity pattern detection runs in-process (in-memory cache)
+
+**What is NOT true / NOT implemented:**
+
+- No tamper-evident, queryable, retained DB audit trail (`storeAuditLog` is a
+  file-log no-op; no `AuditLog` table)
+- No global enforcement — audit middleware is opt-in per route, not mounted
+  app-wide
+- "100% audit-log coverage" is unmeasured and false
+
+**Risk Level:** MEDIUM. **Tracked gap:** Equoria-jw10w (DB-backed audit
+persistence + global enforcement) — a real feature, not closed by this
+doc correction.
+- Test Coverage: `backend/modules/services/__tests__/owasp-comprehensive.test.mjs` (A09 section — file-path assertions, not a DB trail)
 
 ### **A10:2021 - Server-Side Request Forgery (SSRF)** ⚪ N/A — NO EXTERNAL-URL SURFACE
 
