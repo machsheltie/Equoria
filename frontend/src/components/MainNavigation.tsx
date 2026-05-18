@@ -10,6 +10,10 @@ import { Link } from 'react-router-dom';
 import { Bell, LogOut, User } from 'lucide-react';
 import { useUnreadCount } from '@/hooks/api/useMessages';
 import { useGameNotifications } from '@/hooks/api/useGameNotifications';
+// Equoria-rgyv (ADR-011): live SSE nudge — invalidates the notification
+// query on server events so the bell updates immediately instead of
+// waiting for the 5s poll. Polling remains the fallback / source of truth.
+import { useEventStream } from '@/hooks/api/useEventStream';
 import { useAuth } from '@/contexts/AuthContext';
 import { Breadcrumb } from '@/components/layout/Breadcrumb';
 
@@ -31,6 +35,9 @@ interface MainNavigationProps {
 const MainNavigation: React.FC<MainNavigationProps> = ({ onOpenNav, hideHamburger = false }) => {
   const { data: unreadData } = useUnreadCount();
   const { data: gameNotifsData } = useGameNotifications();
+  // Open the live event stream for the duration the nav (always-mounted in
+  // the authenticated shell) is on screen.
+  useEventStream();
   const { user, logout } = useAuth();
 
   const dmUnread = unreadData?.count ?? 0;

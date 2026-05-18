@@ -10,6 +10,11 @@
 // notification creation must not be coupled to retention bookkeeping.
 import prisma from '../db/index.mjs';
 import logger from './logger.mjs';
+// Equoria-rgyv (ADR-011): publish a low-latency real-time nudge for the SSE
+// transport AFTER the durable DB write. Fire-and-forget — a bus failure
+// must never affect the notification write (the DB row is the source of
+// truth; the stream is an accelerator over polling).
+import { publishUserEvent } from '../services/eventBus.mjs';
 
 // Per-user retention cap. Matches the existing read-side `take: 100` so the
 // table size stays bounded at exactly what the UI can ever surface.
@@ -51,6 +56,15 @@ export async function createNotification(userId, type, payload) {
   } catch (err) {
     logger.error(`[notificationService] failed to create notification: ${err.message}`);
     return;
+  }
+
+  // Equoria-rgyv (ADR-011): publish the real-time nudge AFTER the DB insert
+  // succeeded. publishUserEvent never throws, but guard anyway so a future
+  // change cannot couple the notification write to bus delivery.
+  try {
+    publishUserEvent(userId, type, payload);
+  } catch (err) {
+    logger.error(`[notificationService] event bus publish failed: ${err.message}`);
   }
 
   // Prune AFTER successful insert. Non-blocking fire-and-forget — if the

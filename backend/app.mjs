@@ -73,6 +73,8 @@ import authRoutes from './routes/authRoutes.mjs';
 import authenticatedAuthRoutes from './modules/auth/routes/authenticatedAuthRoutes.mjs';
 import horseRoutes from './routes/horseRoutes.mjs';
 import userRoutes from './routes/userRoutes.mjs';
+// Equoria-rgyv (ADR-011): authenticated SSE real-time event stream.
+import eventRoutes from './modules/events/routes/eventRoutes.mjs';
 import trainingRoutes from './routes/trainingRoutes.mjs';
 import competitionRoutes from './routes/competitionRoutes.mjs';
 import breedRoutes from './routes/breedRoutes.mjs';
@@ -187,6 +189,8 @@ authRouter.use('/auth', authenticatedAuthRoutes);
 // Core game features
 authRouter.use('/horses', horseRoutes);
 authRouter.use('/users', userRoutes);
+// Equoria-rgyv (ADR-011): GET /api/v1/events/stream — per-user SSE stream.
+authRouter.use('/events', eventRoutes);
 authRouter.use('/training', trainingRoutes);
 authRouter.use('/competition', competitionRoutes);
 authRouter.use('/breeds', breedRoutes);
