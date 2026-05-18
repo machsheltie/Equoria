@@ -24,6 +24,9 @@ import {
   validateConformationEntry,
   executeConformationShow,
 } from '../../../services/conformationShowService.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 // ── isValidConformationClass ──────────────────────────────────────────────────
 
@@ -435,6 +438,7 @@ describe('conformationShowService — DB fixture branch coverage (Equoria-rr7)',
 
     cssHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-CSS-Horse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),

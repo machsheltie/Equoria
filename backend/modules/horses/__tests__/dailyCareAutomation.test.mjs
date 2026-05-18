@@ -14,6 +14,9 @@ import {
   isGroomAvailableToday,
   determineRoutinesToPerform,
 } from '../../../utils/dailyCareAutomation.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const PREFIX = 'TestFixture-DailyCare-';
 
@@ -51,6 +54,7 @@ beforeAll(async () => {
 
   foal = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `${PREFIX}Foal-${uid()}`,
       sex: 'Filly',
       dateOfBirth: new Date('2024-01-01'),

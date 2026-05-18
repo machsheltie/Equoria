@@ -15,6 +15,9 @@ import {
   updatePersonalityTraits,
 } from '../../../services/groomPersonalityTraits.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 let user;
 let horse;
@@ -34,6 +37,7 @@ beforeAll(async () => {
 
   horse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-GroomPersonHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
@@ -188,6 +192,7 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
 
     fearfulHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GPT-FearfulHorse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -199,6 +204,7 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
 
     stressedFearfulHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GPT-StressedHorse-${ts}`,
         sex: 'Colt',
         dateOfBirth: new Date(),
@@ -388,6 +394,7 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
     [gpHorseFearfulReactive, gpHorseCompatible, gpHorseNeutral, gpHorseHighStress, gpHorseBrave] = await Promise.all([
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `TestFixture-GP-HorseFearfulReactive-${ts}`,
           sex: 'Filly',
           dateOfBirth: new Date(),
@@ -398,6 +405,7 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
       }),
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `TestFixture-GP-HorseCompatible-${ts}`,
           sex: 'Colt',
           dateOfBirth: new Date(),
@@ -408,6 +416,7 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
       }),
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `TestFixture-GP-HorseNeutral-${ts}`,
           sex: 'Filly',
           dateOfBirth: new Date(),
@@ -418,6 +427,7 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
       }),
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `TestFixture-GP-HorseHighStress-${ts}`,
           sex: 'Colt',
           dateOfBirth: new Date(),
@@ -429,6 +439,7 @@ describe('groomPersonalityTraits — branch coverage (Equoria-jkht)', () => {
       }),
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `TestFixture-GP-HorseBrave-${ts}`,
           sex: 'Filly',
           dateOfBirth: new Date(),
@@ -573,6 +584,7 @@ describe('groomPersonalityTraits — remaining branches (Equoria-rr7)', () => {
 
     rbrHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-RBR-Horse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),

@@ -20,6 +20,9 @@ import {
   calculateUserSalaryCost,
 } from '../../../services/groomSalaryService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 // ── calculateWeeklySalary — pure branches ─────────────────────────────────────
 
@@ -151,6 +154,7 @@ describe('calculateUserSalaryCost — DB fixture (Equoria-jkht)', () => {
 
     gssHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GSS-Horse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),

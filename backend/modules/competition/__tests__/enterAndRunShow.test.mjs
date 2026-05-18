@@ -13,6 +13,9 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../db/index.mjs';
 import { enterAndRunShow } from '../controllers/competitionController.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const PREFIX = 'TestFixture-EaRS-';
 
@@ -41,6 +44,7 @@ beforeAll(async () => {
   // Horse with NO rider — fails hasValidRider check
   horse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `${PREFIX}NoRider-${uid()}`,
       sex: 'Mare',
       dateOfBirth: new Date('2020-01-01'),
@@ -55,6 +59,7 @@ beforeAll(async () => {
   // when horse.level is undefined — treated as level-restriction-exempt).
   horseWithRider = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `${PREFIX}WithRider-${uid()}`,
       sex: 'Mare',
       dateOfBirth: new Date('2020-01-01'),
@@ -192,6 +197,7 @@ describe('enterAndRunShow — critical-health gate', () => {
   beforeAll(async () => {
     criticalHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `${PREFIX}CriticalHealth-${uid()}`,
         sex: 'Mare',
         dateOfBirth: new Date('2020-01-01'),

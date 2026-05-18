@@ -21,6 +21,9 @@ import {
   getTopPerformingGrooms,
 } from '../../../services/groomPerformanceService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 // ── Pure-path tests (no DB fixture needed) ────────────────────────────────────
 
@@ -259,6 +262,7 @@ describe('groomPerformanceService — recordGroomPerformance branch coverage (Eq
 
     rgrHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-RGR-Horse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),

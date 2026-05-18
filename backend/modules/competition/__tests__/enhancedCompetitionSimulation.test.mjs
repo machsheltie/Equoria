@@ -15,6 +15,9 @@ import {
   executeEnhancedCompetition,
 } from '../../../logic/enhancedCompetitionSimulation.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -326,6 +329,7 @@ describe('executeEnhancedCompetition — DB fixture integration (Equoria-rr7)', 
     // Tier1≈240, Tier2≈180, Tier3≈120, Tier4≈60 — min gap 49 > max luck (24).
     ecsHorse1 = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-ECS-Horse1-${ts}`,
         sex: 'Colt',
         dateOfBirth: new Date('2019-01-01'),
@@ -338,6 +342,7 @@ describe('executeEnhancedCompetition — DB fixture integration (Equoria-rr7)', 
     });
     ecsHorse2 = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-ECS-Horse2-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date('2019-01-01'),
@@ -350,6 +355,7 @@ describe('executeEnhancedCompetition — DB fixture integration (Equoria-rr7)', 
     });
     ecsHorse3 = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-ECS-Horse3-${ts}`,
         sex: 'Colt',
         dateOfBirth: new Date('2019-01-01'),
@@ -362,6 +368,7 @@ describe('executeEnhancedCompetition — DB fixture integration (Equoria-rr7)', 
     });
     ecsHorse4 = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-ECS-Horse4-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date('2019-01-01'),
@@ -503,6 +510,7 @@ describe('executeEnhancedCompetition — idempotency (Equoria-mzy1)', () => {
 
     idemHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-IDEM-Horse-${ts}`,
         sex: 'Mare',
         dateOfBirth: new Date('2019-01-01'),

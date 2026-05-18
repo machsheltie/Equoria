@@ -25,6 +25,9 @@ import {
   calculateUserSalaryCost,
 } from '../../../services/groomSalaryService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 let user;
 let horse;
@@ -44,6 +47,7 @@ beforeAll(async () => {
 
   horse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-GroomBonusHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),

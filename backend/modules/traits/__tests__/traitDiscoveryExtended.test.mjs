@@ -23,6 +23,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { revealTraits, batchRevealTraits, getDiscoveryProgress } from '../../../utils/traitDiscovery.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 // ── Fixtures ─────────────────────────────────────────────────────────────────
 
@@ -72,6 +73,7 @@ beforeAll(async () => {
     prisma.horse.create({
       data: {
         ...base,
+        ...fixtureColor(),
         name: `TestFixture-TD-NoHidden-${ts}`,
         sex: 'Stallion',
         age: 1,
@@ -83,6 +85,7 @@ beforeAll(async () => {
     prisma.horse.create({
       data: {
         ...base,
+        ...fixtureColor(),
         name: `TestFixture-TD-NoCond-${ts}`,
         sex: 'Mare',
         age: 1,
@@ -94,6 +97,7 @@ beforeAll(async () => {
     prisma.horse.create({
       data: {
         ...base,
+        ...fixtureColor(),
         name: `TestFixture-TD-NoSuitable-${ts}`,
         sex: 'Filly',
         age: 1,
@@ -105,6 +109,7 @@ beforeAll(async () => {
     prisma.horse.create({
       data: {
         ...base,
+        ...fixtureColor(),
         name: `TestFixture-TD-SuccessPos-${ts}`,
         sex: 'Stallion',
         age: 5, // adult ≥ 3
@@ -116,6 +121,7 @@ beforeAll(async () => {
     prisma.horse.create({
       data: {
         ...base,
+        ...fixtureColor(),
         name: `TestFixture-TD-SuccessNeg-${ts}`,
         sex: 'Colt',
         age: 1, // foal
@@ -127,6 +133,7 @@ beforeAll(async () => {
     prisma.horse.create({
       data: {
         ...base,
+        ...fixtureColor(),
         name: `TestFixture-TD-Enrichment-${ts}`,
         sex: 'Mare',
         age: 2, // foal
@@ -138,6 +145,7 @@ beforeAll(async () => {
     prisma.horse.create({
       data: {
         ...base,
+        ...fixtureColor(),
         name: `TestFixture-TD-Progress-${ts}`,
         sex: 'Mare',
         age: 4, // adult
@@ -149,6 +157,7 @@ beforeAll(async () => {
     prisma.horse.create({
       data: {
         ...base,
+        ...fixtureColor(),
         name: `TestFixture-TD-ThreeTraits-${ts}`,
         sex: 'Stallion',
         age: 5, // adult
@@ -165,6 +174,7 @@ beforeAll(async () => {
     prisma.horse.create({
       data: {
         ...base,
+        ...fixtureColor(),
         name: `TestFixture-TD-LegendaryTrait-${ts}`,
         sex: 'Mare',
         age: 5,
@@ -177,6 +187,7 @@ beforeAll(async () => {
     prisma.horse.create({
       data: {
         ...base,
+        ...fixtureColor(),
         name: `TestFixture-TD-RareTrait-${ts}`,
         sex: 'Stallion',
         age: 5,
@@ -189,6 +200,7 @@ beforeAll(async () => {
     prisma.horse.create({
       data: {
         ...base,
+        ...fixtureColor(),
         name: `TestFixture-TD-MediumOnly-${ts}`,
         sex: 'Mare',
         age: 5,

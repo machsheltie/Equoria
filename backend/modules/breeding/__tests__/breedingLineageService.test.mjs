@@ -22,6 +22,9 @@ import {
   generateBreedingRecommendations,
 } from '../../../services/advancedLineageAnalysisService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 let user;
 let stallion;
@@ -41,6 +44,7 @@ beforeAll(async () => {
 
   stallion = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-BreedLinStallion-${Date.now()}`,
       sex: 'Stallion',
       dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
@@ -51,6 +55,7 @@ beforeAll(async () => {
 
   mare = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-BreedLinMare-${Date.now()}`,
       sex: 'Mare',
       dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000),

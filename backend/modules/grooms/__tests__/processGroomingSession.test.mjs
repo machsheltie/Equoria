@@ -13,6 +13,9 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../db/index.mjs';
 import { processGroomingSession } from '../../../utils/groomBondingSystem.mjs';
 import { GROOM_CONFIG } from '../../../config/groomConfig.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const SUITE_PREFIX = 'pgs';
 const ADULT_HORSE_AGE = GROOM_CONFIG.GENERAL_GROOMING_MIN_AGE * 7; // 21
@@ -35,6 +38,7 @@ async function createUser() {
 async function createHorse(userId, overrides = {}) {
   return prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `${SUITE_PREFIX}-h-${randomBytes(4).toString('hex')}`,
       sex: 'Mare',
       dateOfBirth: new Date('2020-01-01'),

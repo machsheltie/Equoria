@@ -14,6 +14,9 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createNotification } from '../../../utils/notificationService.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 describe('SENTINEL: competition placement → competition_stat_gain Notification', () => {
   let user;
@@ -33,6 +36,7 @@ describe('SENTINEL: competition placement → competition_stat_gain Notification
 
     horse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-CompNotifHorse-${Date.now()}`,
         sex: 'Mare',
         dateOfBirth: new Date('2019-01-01'),

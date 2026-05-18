@@ -21,6 +21,7 @@ import {
   getDiscoveryProgress,
 } from '../../../utils/traitDiscovery.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 // ENRICHMENT_DISCOVERIES entries and their thresholds:
 //   SOCIALIZATION_COMPLETE:       activities=[social_interaction, group_play],         minCount=3
@@ -425,6 +426,7 @@ describe('revealTraits() + getDiscoveryProgress() — DB-fixture paths (Equoria-
     // Horse with no hidden traits → revealTraits returns early at line 190
     noHiddenHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-TD-NoHidden-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -439,6 +441,7 @@ describe('revealTraits() + getDiscoveryProgress() — DB-fixture paths (Equoria-
     // Horse with one hidden trait but bond=0, stress=100 → no conditions met at line 237
     noConditionsHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-TD-NoConditions-${ts}`,
         sex: 'Colt',
         dateOfBirth: new Date(),

@@ -15,6 +15,9 @@ import {
   getGroomProfile,
 } from '../../../services/groomProgressionService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 let user;
 let horse;
@@ -34,6 +37,7 @@ beforeAll(async () => {
 
   horse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-GroomProgressHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
@@ -243,6 +247,7 @@ describe('updateGroomSynergy — branch coverage (Equoria-jkht)', () => {
 
     sgHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GP-SG-Horse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -317,6 +322,7 @@ describe('logGroomAssignment — branch coverage (Equoria-jkht)', () => {
 
     laHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GP-LA-Horse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -400,6 +406,7 @@ describe('calculateSynergyEffects via getGroomProfile — branch coverage (Equor
 
     seHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GP-SE-Horse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -527,6 +534,7 @@ describe('logGroomAssignment — default-param + null-coalesce fallback branches
 
     la2Horse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GP-LA2-Horse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),

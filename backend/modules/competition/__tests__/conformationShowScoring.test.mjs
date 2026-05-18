@@ -28,6 +28,9 @@ import {
   CONFORMATION_AGE_CLASSES,
 } from '../../../services/conformationShowService.mjs';
 import { CONFORMATION_CLASSES } from '../../../constants/schema.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const SUITE_PREFIX = 'cfsco';
 
@@ -486,6 +489,7 @@ describe('validateConformationEntry (real DB)', () => {
 
     const dbHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'ValidHorse',
         sex: 'Mare',
         dateOfBirth: new Date('2022-01-01'),
@@ -578,6 +582,7 @@ describe('validateConformationEntry (real DB)', () => {
     });
     const h = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'RecentHorse',
         sex: 'Mare',
         dateOfBirth: new Date('2022-01-01'),

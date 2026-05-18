@@ -12,6 +12,9 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -42,6 +45,7 @@ beforeAll(async () => {
 
   horse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-ShowHorse-${Date.now()}`,
       sex: 'Stallion',
       dateOfBirth: new Date('2018-01-01'),
@@ -68,6 +72,7 @@ beforeAll(async () => {
 
   execHorse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-ExecHorse-${Date.now()}`,
       sex: 'Mare',
       dateOfBirth: new Date('2018-01-01'),
@@ -362,6 +367,7 @@ describe('POST /api/shows/:id/enter — additional validation paths', () => {
     // Horse too young (age < 3)
     const youngHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-YoungHorse-${Date.now()}`,
         sex: 'Colt',
         dateOfBirth: new Date('2025-01-01'),
@@ -375,6 +381,7 @@ describe('POST /api/shows/:id/enter — additional validation paths', () => {
     // Injured horse
     const injuredHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-InjuredHorse-${Date.now()}`,
         sex: 'Mare',
         dateOfBirth: new Date('2018-01-01'),
@@ -521,6 +528,7 @@ describe('POST /api/shows/:id/enter — additional validation paths', () => {
     const brokeToken = generateTestToken({ id: brokeUser.id, email: brokeUser.email, role: 'user' });
     const brokeHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-BrokeHorse-${Date.now()}`,
         sex: 'Stallion',
         dateOfBirth: new Date('2018-01-01'),

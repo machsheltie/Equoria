@@ -15,6 +15,9 @@ import {
   calculateCareRiskScore,
 } from '../../../services/carePatternAnalyzer.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 let user;
 let horse;
@@ -33,6 +36,7 @@ beforeAll(async () => {
 
   horse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-CarePatternHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
@@ -201,6 +205,7 @@ describe('carePatternAnalyzer — with interactions (Equoria-jkht)', () => {
 
     caHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-CP-Horse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -370,6 +375,7 @@ describe('carePatternAnalyzer — single-interaction and specialized branches (E
 
     cpa2Horse1 = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-CPA2-Horse1-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -391,6 +397,7 @@ describe('carePatternAnalyzer — single-interaction and specialized branches (E
 
     cpa2HorseStress = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-CPA2-HorseStress-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -412,6 +419,7 @@ describe('carePatternAnalyzer — single-interaction and specialized branches (E
 
     cpa2HorseMixed = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-CPA2-HorseMixed-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -443,6 +451,7 @@ describe('carePatternAnalyzer — single-interaction and specialized branches (E
 
     cpa2HorseLowEff = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-CPA2-HorseLowEff-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),

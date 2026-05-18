@@ -17,6 +17,9 @@ import { randomBytes } from 'node:crypto';
 import { getConformation, getConformationAnalysis } from '../controllers/horseController.mjs';
 import { CONFORMATION_REGIONS } from '../services/conformationService.mjs';
 import { getBreedProfile } from '../data/breedProfileLoader.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 // ── Test data setup ────────────────────────────────────────────────────────
 const ts = `${randomBytes(8).toString('hex')}_${Math.random().toString(36).slice(2, 7)}`;
@@ -45,6 +48,7 @@ const BASE_SCORES = {
 async function seedHorse(scores) {
   const horse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `ConfApiTest_${randomBytes(8).toString('hex')}_${Math.random().toString(36).slice(2, 5)}`,
       sex: 'Mare',
       dateOfBirth: new Date('2020-01-01'),

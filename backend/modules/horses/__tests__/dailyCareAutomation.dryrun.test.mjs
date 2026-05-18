@@ -27,6 +27,9 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../db/index.mjs';
 import { runDailyCareAutomation } from '../../../utils/dailyCareAutomation.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const PREFIX = 'TestFixture-DCADryRun-';
 
@@ -69,6 +72,7 @@ beforeAll(async () => {
 
   foal = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `${PREFIX}Foal-${id}`,
       sex: 'Filly',
       dateOfBirth: new Date('2024-01-01'),

@@ -21,6 +21,9 @@ import {
   generateGeneticDiversityReport,
 } from '../../../services/geneticDiversityTrackingService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 let user;
 let stallion;
@@ -40,6 +43,7 @@ beforeAll(async () => {
 
   stallion = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-GenDivStallion-${Date.now()}`,
       sex: 'Stallion',
       dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
@@ -50,6 +54,7 @@ beforeAll(async () => {
 
   mare = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-GenDivMare-${Date.now()}`,
       sex: 'Mare',
       dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000),
@@ -244,6 +249,7 @@ describe('calculateDetailedInbreedingCoefficient — critical inbreeding (Equori
 
     ancestorA = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GDT-Crit-AncestorA-${ts}`,
         sex: 'Stallion',
         dateOfBirth: new Date(Date.now() - 10 * 365 * 24 * 60 * 60 * 1000),
@@ -254,6 +260,7 @@ describe('calculateDetailedInbreedingCoefficient — critical inbreeding (Equori
 
     motherMare = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GDT-Crit-MotherMare-${ts}`,
         sex: 'Mare',
         dateOfBirth: new Date(Date.now() - 7 * 365 * 24 * 60 * 60 * 1000),
@@ -265,6 +272,7 @@ describe('calculateDetailedInbreedingCoefficient — critical inbreeding (Equori
 
     offspringStallion = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GDT-Crit-OffspringS-${ts}`,
         sex: 'Stallion',
         dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000),
@@ -329,6 +337,7 @@ describe('calculateDetailedInbreedingCoefficient — high inbreeding full siblin
 
     sireP = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GDT-High-SireP-${ts}`,
         sex: 'Stallion',
         dateOfBirth: new Date(Date.now() - 10 * 365 * 24 * 60 * 60 * 1000),
@@ -339,6 +348,7 @@ describe('calculateDetailedInbreedingCoefficient — high inbreeding full siblin
 
     damD = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GDT-High-DamD-${ts}`,
         sex: 'Mare',
         dateOfBirth: new Date(Date.now() - 10 * 365 * 24 * 60 * 60 * 1000),
@@ -349,6 +359,7 @@ describe('calculateDetailedInbreedingCoefficient — high inbreeding full siblin
 
     fullSibSF = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GDT-High-FullSibSF-${ts}`,
         sex: 'Stallion',
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
@@ -361,6 +372,7 @@ describe('calculateDetailedInbreedingCoefficient — high inbreeding full siblin
 
     fullSibMF = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GDT-High-FullSibMF-${ts}`,
         sex: 'Mare',
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
@@ -418,6 +430,7 @@ describe('calculateDetailedInbreedingCoefficient — medium inbreeding half-sibl
 
     parentPH = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GDT-Med-ParentPH-${ts}`,
         sex: 'Stallion',
         dateOfBirth: new Date(Date.now() - 10 * 365 * 24 * 60 * 60 * 1000),
@@ -428,6 +441,7 @@ describe('calculateDetailedInbreedingCoefficient — medium inbreeding half-sibl
 
     halfSibSH = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GDT-Med-HalfSibSH-${ts}`,
         sex: 'Stallion',
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
@@ -439,6 +453,7 @@ describe('calculateDetailedInbreedingCoefficient — medium inbreeding half-sibl
 
     halfSibMH = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GDT-Med-HalfSibMH-${ts}`,
         sex: 'Mare',
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
@@ -501,6 +516,7 @@ describe('calculateGeneticCompatibility and generateCompatibilityRecommendation 
     // traitScore=40: both share all 3 traits → overlapRatio=1.0 > 0.8
     sameTraitStallion = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GDT-BC-SameS-${ts}`,
         sex: 'Stallion',
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
@@ -512,6 +528,7 @@ describe('calculateGeneticCompatibility and generateCompatibilityRecommendation 
 
     sameTraitMare = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GDT-BC-SameM-${ts}`,
         sex: 'Mare',
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
@@ -524,6 +541,7 @@ describe('calculateGeneticCompatibility and generateCompatibilityRecommendation 
     // traitScore=60 (no overlap) + statScore+=85 (diff=14, 10≤14<25) → recommendation='fair'
     diffTraitStallion = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GDT-BC-DiffS-${ts}`,
         sex: 'Stallion',
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
@@ -539,6 +557,7 @@ describe('calculateGeneticCompatibility and generateCompatibilityRecommendation 
 
     diffTraitMare = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GDT-BC-DiffM-${ts}`,
         sex: 'Mare',
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
@@ -555,6 +574,7 @@ describe('calculateGeneticCompatibility and generateCompatibilityRecommendation 
     // traitScore=85: partial overlap → overlapRatio=2/9≈0.22 (0.2≤x≤0.8) → recommendation='fair'
     partialOverlapStallion = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GDT-BC-PartS-${ts}`,
         sex: 'Stallion',
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
@@ -570,6 +590,7 @@ describe('calculateGeneticCompatibility and generateCompatibilityRecommendation 
 
     partialOverlapMare = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GDT-BC-PartM-${ts}`,
         sex: 'Mare',
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
@@ -586,6 +607,7 @@ describe('calculateGeneticCompatibility and generateCompatibilityRecommendation 
     // statScore+=40: stat diff=30 ≥ 25 → recommendation='poor'
     bigStatStallion = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GDT-BC-BigS-${ts}`,
         sex: 'Stallion',
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
@@ -601,6 +623,7 @@ describe('calculateGeneticCompatibility and generateCompatibilityRecommendation 
 
     bigStatMare = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GDT-BC-BigM-${ts}`,
         sex: 'Mare',
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),

@@ -23,6 +23,9 @@ import {
   DEVELOPMENTAL_WINDOWS,
 } from '../../../utils/enhancedMilestoneEvaluationSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 // Minimal groomCareHistory stub used by functions that accept it but don't branch on it
 const emptyHistory = { totalInteractions: 0, taskDiversity: 0, averageQuality: 0, interactions: [] };
@@ -217,6 +220,7 @@ describe('evaluateEnhancedMilestone() — DB-fixture paths (Equoria-jkht)', () =
     // Horse born 1100 days ago → ageInDays >= 1095 → "too old" path (lines 107-113)
     tooOldHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-EMES-TooOld-${ts}`,
         sex: 'Colt',
         dateOfBirth: new Date(Date.now() - 1100 * 24 * 60 * 60 * 1000),
@@ -228,6 +232,7 @@ describe('evaluateEnhancedMilestone() — DB-fixture paths (Equoria-jkht)', () =
     // Horse born 30 days ago → ageInDays=30 > IMPRINTING.end=1 → "wrong window" (lines 117-124)
     wrongWindowHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-EMES-WrongWindow-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
@@ -239,6 +244,7 @@ describe('evaluateEnhancedMilestone() — DB-fixture paths (Equoria-jkht)', () =
     // Horse born today → ageInDays=0 → in IMPRINTING window {start:0,end:1} (lines 127-232)
     freshHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-EMES-Fresh-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -331,6 +337,7 @@ describe('evaluateEnhancedMilestone() — personality effects + interaction bran
     // temperament must be non-null to trigger personality effects block
     personalityHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-PersonalityHorse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),

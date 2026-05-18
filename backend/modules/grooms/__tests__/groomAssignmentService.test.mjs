@@ -24,6 +24,9 @@ import {
   calculateWeeklySalaryCosts,
 } from '../../../services/groomAssignmentService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 // ── Pure-path tests ───────────────────────────────────────────────────────────
 
@@ -118,6 +121,7 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
 
     gasHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GAS-Horse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -128,6 +132,7 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
 
     _gasHorse2 = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GAS-Horse2-${ts}`,
         sex: 'Colt',
         dateOfBirth: new Date(),
@@ -138,6 +143,7 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
 
     gasHorse3 = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-GAS-Horse3-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -310,6 +316,7 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
       // No notes-bearing active assignment available; create one via prisma directly
       const gasHorse4 = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `TestFixture-GAS-Horse4-${Date.now()}`,
           sex: 'Filly',
           dateOfBirth: new Date(),
@@ -384,13 +391,34 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
       },
     });
     const lh1 = await prisma.horse.create({
-      data: { name: `TestFixture-GAS-LH1-${ts}`, sex: 'Filly', dateOfBirth: new Date(), age: 0, userId: gasUser.id },
+      data: {
+        ...fixtureColor(),
+        name: `TestFixture-GAS-LH1-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: gasUser.id,
+      },
     });
     const lh2 = await prisma.horse.create({
-      data: { name: `TestFixture-GAS-LH2-${ts}`, sex: 'Filly', dateOfBirth: new Date(), age: 0, userId: gasUser.id },
+      data: {
+        ...fixtureColor(),
+        name: `TestFixture-GAS-LH2-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: gasUser.id,
+      },
     });
     const lh3 = await prisma.horse.create({
-      data: { name: `TestFixture-GAS-LH3-${ts}`, sex: 'Filly', dateOfBirth: new Date(), age: 0, userId: gasUser.id },
+      data: {
+        ...fixtureColor(),
+        name: `TestFixture-GAS-LH3-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: new Date(),
+        age: 0,
+        userId: gasUser.id,
+      },
     });
 
     // Fill both slots
@@ -428,6 +456,7 @@ describe('groomAssignmentService — DB fixture branch coverage (Equoria-jkht)',
       });
       const omHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `TestFixture-GAS-OMHorse-${ts}`,
           sex: 'Filly',
           dateOfBirth: new Date(),

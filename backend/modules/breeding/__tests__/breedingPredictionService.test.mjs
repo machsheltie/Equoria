@@ -36,6 +36,9 @@ import {
   generateBreedingData,
 } from '../../../services/breedingPredictionService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 // ── Pure-path tests — no fixture ──────────────────────────────────────────────
 
@@ -88,6 +91,7 @@ describe('breedingPredictionService — DB fixture branch coverage (Equoria-jkht
 
     bpsStallionCalm = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-BPS-StallionCalm-${ts}`,
         sex: 'Stallion',
         dateOfBirth: new Date(),
@@ -99,6 +103,7 @@ describe('breedingPredictionService — DB fixture branch coverage (Equoria-jkht
 
     bpsMareGentle = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-BPS-MareGentle-${ts}`,
         sex: 'Mare',
         dateOfBirth: new Date(),
@@ -110,6 +115,7 @@ describe('breedingPredictionService — DB fixture branch coverage (Equoria-jkht
 
     bpsHorseNoTraits = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-BPS-NoTraits-${ts}`,
         sex: 'Mare',
         dateOfBirth: new Date(),
@@ -120,6 +126,7 @@ describe('breedingPredictionService — DB fixture branch coverage (Equoria-jkht
 
     bpsHorseRare = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-BPS-Rare-${ts}`,
         sex: 'Mare',
         dateOfBirth: new Date(),

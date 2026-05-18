@@ -30,6 +30,9 @@ import prisma from '../../../../packages/database/prismaClient.mjs';
 
 const GHOST_UUID = '00000000-0000-0000-0000-ffffffffffff';
 import { ELIGIBLE_FOAL_ENRICHMENT_TASKS, FOAL_GROOMING_TASKS } from '../../../config/groomConfig.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const TODAY = '2026-05-12';
 
@@ -353,6 +356,7 @@ beforeAll(async () => {
   });
   groomNotFoundHorse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-GroomSysGNFHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
@@ -422,6 +426,7 @@ beforeAll(async () => {
 
   foalForSuccessAssign = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-SuccessAssignFoal-${ts}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
@@ -432,6 +437,7 @@ beforeAll(async () => {
 
   foalForInteractTest = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-InteractFoal-${ts}`,
       sex: 'Colt',
       dateOfBirth: new Date(),
@@ -442,6 +448,7 @@ beforeAll(async () => {
 
   foalPreAssigned = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-PreAssignedFoal-${ts}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
@@ -461,6 +468,7 @@ beforeAll(async () => {
 
   foalForEnsure = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-EnsureFoal-${ts}`,
       sex: 'Colt',
       dateOfBirth: new Date(),

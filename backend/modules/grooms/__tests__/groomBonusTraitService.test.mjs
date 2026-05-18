@@ -22,6 +22,9 @@ import {
   getUserGroomsWithBonusTraits,
 } from '../../../services/groomBonusTraitService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const RUN_ID = Date.now();
 const PREFIX = `GBTSvc${RUN_ID}`;
@@ -52,6 +55,7 @@ beforeAll(async () => {
 
   horse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `${PREFIX}_horse`,
       sex: 'Filly',
       dateOfBirth: thirtyDaysAgo,
