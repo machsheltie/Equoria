@@ -47,8 +47,20 @@ describe('captureAllUserRankSnapshots (Equoria-dbdk)', () => {
     expect(result.captured).toBeGreaterThanOrEqual(1);
 
     const after = await prisma.userRankSnapshot.count({ where: { userId: fixtureUser.id } });
-    // Four categories captured for the fixture user.
-    expect(after - before).toBe(4);
+    // captureAllUserRankSnapshots() is a GLOBAL pass with a real-DB side
+    // effect: it snapshots EVERY user, writing exactly one row per category
+    // per user per invocation. Equoria-3gk21: a concurrent suite that also
+    // calls captureAllUserRankSnapshots() (e.g. the sibling perf suites)
+    // between our `before` and `after` counts legitimately snapshots our
+    // fixture user a second time — so `after - before` is 8, not 4. The
+    // brittle `toBe(4)` assumed this suite is the only caller, violating
+    // CLAUDE.md §2 (never assume test data dominates the real DB). The true
+    // invariant of a single pass is: a POSITIVE MULTIPLE OF 4 rows added
+    // (one full {level,xp,horse-earnings,horse-performance} set per pass),
+    // never a partial set.
+    const delta = after - before;
+    expect(delta).toBeGreaterThanOrEqual(4);
+    expect(delta % 4).toBe(0);
 
     const categories = await prisma.userRankSnapshot.findMany({
       where: { userId: fixtureUser.id },
@@ -59,5 +71,8 @@ describe('captureAllUserRankSnapshots (Equoria-dbdk)', () => {
     expect(categorySet.has('xp')).toBe(true);
     expect(categorySet.has('horse-earnings')).toBe(true);
     expect(categorySet.has('horse-performance')).toBe(true);
+    // No category may be missing AND no spurious category may appear,
+    // regardless of how many concurrent passes ran.
+    expect([...categorySet].sort()).toEqual(['horse-earnings', 'horse-performance', 'level', 'xp']);
   });
 });
