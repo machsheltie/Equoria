@@ -107,6 +107,12 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
             'Controller Trained Horse',
             'Controller Horse 1',
             'Controller Horse 2',
+            // Equoria-lfj5: created mid-test (workflow + fresh-route cases) via
+            // raw prisma.horse.create() with NULL phenotype. Omitted from this
+            // cleanup list before, so they leaked into the canonical DB and
+            // tripped horseColorNullSentinel. See Equoria-g9sa for root cause.
+            'Workflow Test Horse',
+            'Fresh Route Test Horse',
           ],
         },
       },
@@ -308,6 +314,12 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
             'Controller Trained Horse',
             'Controller Horse 1',
             'Controller Horse 2',
+            // Equoria-lfj5: created mid-test (workflow + fresh-route cases) via
+            // raw prisma.horse.create() with NULL phenotype. Omitted from this
+            // cleanup list before, so they leaked into the canonical DB and
+            // tripped horseColorNullSentinel. See Equoria-g9sa for root cause.
+            'Workflow Test Horse',
+            'Fresh Route Test Horse',
           ],
         },
       },

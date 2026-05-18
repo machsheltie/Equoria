@@ -201,7 +201,15 @@ beforeAll(async () => {
 }, 30000);
 
 afterAll(async () => {
-  // Cascade delete via user (horses are userId-linked; prisma cascade handles it)
+  // Equoria-lfj5: explicit SCOPED horse cleanup FIRST. These fixtures are created
+  // via raw prisma.horse.create() (bypassing createHorse() phenotype auto-gen,
+  // see Equoria-g9sa), so they are born NULL-phenotype and MUST NOT leak into the
+  // canonical DB or they trip horseColorNullSentinel. The previous user-cascade
+  // delete with a silent .catch() left 15+ orphan rows. Scope by THIS suite's own
+  // userId (unique per run) — explicit, not cascade-only, and won't delete a
+  // sibling suite's in-flight TestFixture-TD-* rows (which share the name prefix).
+  await prisma.horse.deleteMany({ where: { userId: sharedUser.id } }).catch(() => {});
+  // Then remove the user (cascade handles any remaining linked rows).
   await prisma.user.delete({ where: { id: sharedUser.id } }).catch(() => {});
 }, 30000);
 
