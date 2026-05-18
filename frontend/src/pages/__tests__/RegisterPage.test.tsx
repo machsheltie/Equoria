@@ -429,18 +429,12 @@ describe('RegisterPage', () => {
         expect(screen.getByText(/special character/i)).toBeInTheDocument();
       });
 
-      // Verify the count is exactly 5 (not 4, not 6)
-      const requirementLabels = [
-        /8\+ characters/i,
-        /lowercase/i,
-        /uppercase/i,
-        /number/i,
-        /special character/i,
-      ];
-      expect(requirementLabels).toHaveLength(5);
-      requirementLabels.forEach((pattern) => {
-        expect(screen.getByText(pattern)).toBeInTheDocument();
-      });
+      // Assert the actual rendered DOM row count — NOT a local array literal.
+      // This fails if RegisterPage renders other than exactly 5 requirement
+      // rows (sentinel-positive: deleting/adding a <RequirementCheck> changes
+      // this count and the test fails). Equoria-5ryz.
+      const renderedRows = screen.getAllByTestId('password-requirement-row');
+      expect(renderedRows).toHaveLength(5);
     });
 
     it('special character requirement is met for allowed chars (@$!%*?&)', async () => {

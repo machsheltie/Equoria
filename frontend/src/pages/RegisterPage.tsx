@@ -106,7 +106,7 @@ const RegisterPage: React.FC = () => {
   };
 
   const RequirementCheck = ({ met, label }: { met: boolean; label: string }) => (
-    <div className="flex items-center gap-1.5 text-xs">
+    <div className="flex items-center gap-1.5 text-xs" data-testid="password-requirement-row">
       {met ? (
         <Check className="w-3 h-3" style={{ color: 'var(--gold-500)' }} />
       ) : (
