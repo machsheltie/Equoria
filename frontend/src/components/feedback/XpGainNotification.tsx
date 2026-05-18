@@ -220,7 +220,7 @@ const XpGainNotification = memo(function XpGainNotification({
           aria-label="Close notification"
           className="
             p-1 rounded-full
-            text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)]
+            text-slate-400 hover:text-[rgb(220,235,255)]
             hover:bg-[rgba(15,35,70,0.5)]
             transition-colors duration-150
             focus:outline-none focus:ring-2 focus:ring-blue-500
@@ -253,7 +253,7 @@ const XpGainNotification = memo(function XpGainNotification({
       </div>
 
       {/* Level and XP info text */}
-      <div data-testid="xp-level-info" className="text-sm text-[rgb(148,163,184)]">
+      <div data-testid="xp-level-info" className="text-sm text-slate-400">
         <span data-testid="xp-level-text">Level {currentLevel}</span>
         {' - '}
         <span data-testid="xp-progress-text">

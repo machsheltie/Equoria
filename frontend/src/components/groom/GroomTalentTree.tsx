@@ -76,7 +76,7 @@ function TalentCard({
         <div className="flex items-center gap-1.5 min-w-0">
           {talent.isLocked && (
             <Lock
-              className="w-3 h-3 text-[rgb(148,163,184)] flex-shrink-0"
+              className="w-3 h-3 text-slate-400 flex-shrink-0"
               aria-hidden="true"
               data-testid={`talent-locked-icon-${talent.id}`}
             />
@@ -114,7 +114,7 @@ function TalentCard({
       </div>
 
       <p
-        className="text-xs text-[rgb(148,163,184)] mb-2"
+        className="text-xs text-slate-400 mb-2"
         data-testid={`talent-description-${talent.id}`}
       >
         {talent.description}
@@ -167,7 +167,7 @@ function TierRow({
   onSelectTalent?: (_tierKey: 'tier1' | 'tier2' | 'tier3', _talentId: string) => void;
   isSaving?: boolean;
 }) {
-  const tierLabelClass = tier.isUnlocked ? 'text-[rgb(220,235,255)]' : 'text-[rgb(148,163,184)]';
+  const tierLabelClass = tier.isUnlocked ? 'text-[rgb(220,235,255)]' : 'text-slate-400';
 
   return (
     <div data-testid={`tier-section-${tier.tierKey}`}>
@@ -177,7 +177,7 @@ function TierRow({
           {tier.isUnlocked ? (
             <CheckCircle className="w-4 h-4 text-emerald-400" aria-hidden="true" />
           ) : (
-            <Lock className="w-4 h-4 text-[rgb(148,163,184)]" aria-hidden="true" />
+            <Lock className="w-4 h-4 text-slate-400" aria-hidden="true" />
           )}
           <span
             className={`text-sm font-semibold ${tierLabelClass}`}
@@ -187,7 +187,7 @@ function TierRow({
           </span>
         </div>
         <span
-          className="text-xs text-[rgb(148,163,184)]"
+          className="text-xs text-slate-400"
           data-testid={`tier-requirement-${tier.tierKey}`}
         >
           Level {tier.minLevel}+ required
@@ -227,7 +227,7 @@ function TierRow({
 function TierConnector() {
   return (
     <div className="flex justify-center py-1" aria-hidden="true">
-      <ChevronDown className="w-5 h-5 text-[rgb(148,163,184)]" />
+      <ChevronDown className="w-5 h-5 text-slate-400" />
     </div>
   );
 }
@@ -264,7 +264,7 @@ const GroomTalentTree: React.FC<GroomTalentTreeProps> = ({
           <h3 className="font-semibold text-[rgb(220,235,255)]" data-testid="talent-tree-title">
             Talent Tree
           </h3>
-          <p className="text-xs text-[rgb(148,163,184)]" data-testid="talent-personality-label">
+          <p className="text-xs text-slate-400" data-testid="talent-personality-label">
             {personalityLabel} specialization
           </p>
         </div>
@@ -281,7 +281,7 @@ const GroomTalentTree: React.FC<GroomTalentTreeProps> = ({
       {/* Unknown personality fallback */}
       {tiers.length === 0 && (
         <p
-          className="text-sm text-[rgb(148,163,184)] text-center py-4"
+          className="text-sm text-slate-400 text-center py-4"
           data-testid="talent-unknown-personality"
         >
           Talent tree not available for this personality type.
@@ -303,7 +303,7 @@ const GroomTalentTree: React.FC<GroomTalentTreeProps> = ({
           data-testid="talent-tree-complete"
         >
           <p className="text-sm font-medium text-[rgb(220,235,255)]">Talent tree complete!</p>
-          <p className="text-xs text-[rgb(148,163,184)]">All 3 tiers selected for this groom.</p>
+          <p className="text-xs text-slate-400">All 3 tiers selected for this groom.</p>
         </div>
       )}
     </div>

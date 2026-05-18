@@ -161,10 +161,10 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
       </div>
 
       {/* Description */}
-      <p className="text-sm text-[rgb(148,163,184)] mb-3 ml-11">{description}</p>
+      <p className="text-sm text-slate-400 mb-3 ml-11">{description}</p>
 
       {/* Time Info */}
-      <div className="flex items-center gap-4 mb-3 ml-11 text-xs text-[rgb(148,163,184)]">
+      <div className="flex items-center gap-4 mb-3 ml-11 text-xs text-slate-400">
         <div className="flex items-center gap-1">
           <Clock className="h-3 w-3" />
           <span>Duration: {durationMinutes}m</span>
@@ -188,7 +188,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
       {/* Cannot Perform Reason */}
       {!canPerform && reason && status.status !== 'on_cooldown' && (
         <div className="mb-3 ml-11">
-          <div className="flex items-center gap-2 text-xs text-[rgb(148,163,184)] bg-[rgba(15,35,70,0.4)] rounded px-2 py-1.5">
+          <div className="flex items-center gap-2 text-xs text-slate-400 bg-[rgba(15,35,70,0.4)] rounded px-2 py-1.5">
             <Lock className="h-3 w-3" />
             <span>{reason}</span>
           </div>
@@ -207,7 +207,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
           {benefits.temperamentModifiers &&
             Object.entries(benefits.temperamentModifiers).map(([stat, value]) => (
               <div key={stat} className="flex items-center justify-between">
-                <span className="text-[rgb(148,163,184)] capitalize">{stat}:</span>
+                <span className="text-slate-400 capitalize">{stat}:</span>
                 <span className="font-medium text-[rgb(220,235,255)]">
                   {formatBenefit(value, true)}
                 </span>
@@ -216,26 +216,26 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
 
           {/* Other Benefits */}
           <div className="flex items-center justify-between">
-            <span className="text-[rgb(148,163,184)]">Trait Discovery:</span>
+            <span className="text-slate-400">Trait Discovery:</span>
             <span className="font-medium text-[rgb(220,235,255)]">
               {formatBenefit(benefits.traitDiscoveryBoost)}
             </span>
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-[rgb(148,163,184)]">Milestone:</span>
+            <span className="text-slate-400">Milestone:</span>
             <span className="font-medium text-[rgb(220,235,255)]">
               +{benefits.milestoneBonus} pts
             </span>
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-[rgb(148,163,184)]">Bonding:</span>
+            <span className="text-slate-400">Bonding:</span>
             <span className="font-medium text-[rgb(220,235,255)]">+{benefits.bondingIncrease}</span>
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-[rgb(148,163,184)]">Stress:</span>
+            <span className="text-slate-400">Stress:</span>
             <span className="font-medium text-emerald-400">-{benefits.stressReduction}</span>
           </div>
         </div>

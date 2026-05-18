@@ -31,7 +31,7 @@ const HorseStatsCard: React.FC<HorseStatsCardProps> = ({ horse }) => {
       <div className="mb-3">
         <p className="text-lg font-bold text-[rgb(220,235,255)]">{horse.name}</p>
         {horse.level !== undefined && (
-          <p className="text-sm text-[rgb(148,163,184)]">Level {horse.level}</p>
+          <p className="text-sm text-slate-400">Level {horse.level}</p>
         )}
       </div>
 
@@ -39,28 +39,28 @@ const HorseStatsCard: React.FC<HorseStatsCardProps> = ({ horse }) => {
       <div className="grid gap-2">
         {horse.breed && (
           <div className="flex justify-between text-sm">
-            <span className="font-medium text-[rgb(148,163,184)]">Breed:</span>
+            <span className="font-medium text-slate-400">Breed:</span>
             <span className="text-[rgb(220,235,255)]">{getBreedName(horse.breed)}</span>
           </div>
         )}
 
         {horse.ageYears !== undefined && (
           <div className="flex justify-between text-sm">
-            <span className="font-medium text-[rgb(148,163,184)]">Age:</span>
+            <span className="font-medium text-slate-400">Age:</span>
             <span className="text-[rgb(220,235,255)]">{formatAge(horse.ageYears)}</span>
           </div>
         )}
 
         {horse.gender && (
           <div className="flex justify-between text-sm">
-            <span className="font-medium text-[rgb(148,163,184)]">Gender:</span>
+            <span className="font-medium text-slate-400">Gender:</span>
             <span className="text-[rgb(220,235,255)]">{horse.gender}</span>
           </div>
         )}
 
         {horse.bestDisciplines && horse.bestDisciplines.length > 0 && (
           <div className="mt-2 pt-2 border-t border-[rgba(37,99,235,0.2)]">
-            <p className="text-xs font-semibold uppercase tracking-wide text-[rgb(148,163,184)] mb-1">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 mb-1">
               Best Disciplines:
             </p>
             <p className="text-sm text-[rgb(220,235,255)]">{horse.bestDisciplines.join(', ')}</p>

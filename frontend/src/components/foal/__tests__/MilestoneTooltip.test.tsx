@@ -241,22 +241,22 @@ describe('MilestoneTooltip Component', () => {
     };
 
     it('should display Clock icon for pending status', () => {
-      // Component migrated to dark theme: pending uses text-[rgb(148,163,184)]
+      // Component migrated to dark theme: pending uses text-slate-400
       const { container } = render(<MilestoneTooltip {...pendingPayload} />);
-      expect(container.querySelector('.text-\\[rgb\\(148\\,163\\,184\\)\\]')).toBeInTheDocument();
+      expect(container.querySelector('.text-slate-400')).toBeInTheDocument();
     });
 
     it('should display "Upcoming" label', () => {
-      // Component migrated to dark theme: pending label uses text-[rgb(148,163,184)]
+      // Component migrated to dark theme: pending label uses text-slate-400
       render(<MilestoneTooltip {...pendingPayload} />);
       expect(screen.getByText('Upcoming')).toBeInTheDocument();
-      expect(screen.getByText('Upcoming')).toHaveClass('text-[rgb(148,163,184)]');
+      expect(screen.getByText('Upcoming')).toHaveClass('text-slate-400');
     });
 
     it('should show gray progress bar for pending status', () => {
-      // Component migrated to dark theme: pending bar uses bg-[rgb(148,163,184)]
+      // Component migrated to dark theme: pending bar uses bg-slate-400
       const { container } = render(<MilestoneTooltip {...pendingPayload} />);
-      const progressBar = container.querySelector('.bg-\\[rgb\\(148\\,163\\,184\\)\\]');
+      const progressBar = container.querySelector('.bg-slate-400');
       expect(progressBar).toBeInTheDocument();
       expect(progressBar).toHaveStyle({ width: '0%' });
     });
@@ -497,8 +497,8 @@ describe('MilestoneTooltip Component', () => {
 
       const { container } = render(<MilestoneTooltip {...zeroProgressPayload} />);
       expect(screen.getByText('0%')).toBeInTheDocument();
-      // Component migrated to dark theme: pending bar uses bg-[rgb(148,163,184)]
-      const progressBar = container.querySelector('.bg-\\[rgb\\(148\\,163\\,184\\)\\]');
+      // Component migrated to dark theme: pending bar uses bg-slate-400
+      const progressBar = container.querySelector('.bg-slate-400');
       expect(progressBar).toHaveStyle({ width: '0%' });
     });
 

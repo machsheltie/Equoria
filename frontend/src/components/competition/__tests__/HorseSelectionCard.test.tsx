@@ -151,7 +151,7 @@ describe('HorseSelectionCard', () => {
       const badge = screen.getByTestId('eligibility-badge');
       expect(badge).toHaveTextContent(/too old/i);
       expect(badge).toHaveClass('bg-[rgba(15,35,70,0.5)]');
-      expect(badge).toHaveClass('text-[rgb(148,163,184)]');
+      expect(badge).toHaveClass('text-slate-400');
 
       // Radix UI creates multiple tooltip elements
       await user.hover(badge);

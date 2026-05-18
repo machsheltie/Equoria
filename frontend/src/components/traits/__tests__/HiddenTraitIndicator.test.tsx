@@ -97,7 +97,7 @@ describe('HiddenTraitIndicator Component', () => {
     it('should show Lock icon for hidden traits', () => {
       const { container } = render(<HiddenTraitIndicator discoveryStatus={hiddenTraitsStatus} />);
       // Lock icon now uses muted-text dark-theme color
-      expect(container.querySelector('.text-\\[rgb\\(148\\,163\\,184\\)\\]')).toBeInTheDocument();
+      expect(container.querySelector('.text-slate-400')).toBeInTheDocument();
     });
   });
 

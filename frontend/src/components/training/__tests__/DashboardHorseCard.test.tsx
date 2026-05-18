@@ -148,7 +148,7 @@ describe('DashboardHorseCard', () => {
 
       const badge = screen.getByTestId('status-badge');
       expect(badge).toHaveClass('bg-[rgba(15,35,70,0.5)]');
-      expect(badge).toHaveClass('text-[rgb(148,163,184)]');
+      expect(badge).toHaveClass('text-slate-400');
     });
   });
 

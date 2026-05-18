@@ -231,7 +231,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
             <div className="glass-panel p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="fantasy-caption text-[rgb(148,163,184)] mb-1">Weekly Cost</p>
+                  <p className="fantasy-caption text-slate-400 mb-1">Weekly Cost</p>
                   <p className="fantasy-title text-2xl text-[rgb(220,235,255)]">
                     ${finalSalaryCosts.totalWeeklyCost.toLocaleString()}
                   </p>
@@ -251,7 +251,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
             <div className="glass-panel p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="fantasy-caption text-[rgb(148,163,184)] mb-1">Monthly Cost</p>
+                  <p className="fantasy-caption text-slate-400 mb-1">Monthly Cost</p>
                   <p className="fantasy-title text-2xl text-[rgb(220,235,255)]">
                     ${finalSalaryCosts.totalMonthlyCost.toLocaleString()}
                   </p>
@@ -271,7 +271,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
             <div className="glass-panel p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="fantasy-caption text-[rgb(148,163,184)] mb-1">Total Grooms</p>
+                  <p className="fantasy-caption text-slate-400 mb-1">Total Grooms</p>
                   <p className="fantasy-title text-2xl text-[rgb(220,235,255)]">
                     {finalGrooms.length}
                   </p>
@@ -322,7 +322,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
             <div className="flex-1 min-w-[200px]">
               <label
                 htmlFor="skill-filter"
-                className="fantasy-caption block text-[rgb(148,163,184)] mb-2"
+                className="fantasy-caption block text-slate-400 mb-2"
               >
                 Filter by Skill Level
               </label>
@@ -343,7 +343,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
             <div className="flex-1 min-w-[200px]">
               <label
                 htmlFor="specialty-filter"
-                className="fantasy-caption block text-[rgb(148,163,184)] mb-2"
+                className="fantasy-caption block text-slate-400 mb-2"
               >
                 Filter by Specialty
               </label>
@@ -364,7 +364,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
             <div className="flex-1 min-w-[200px]">
               <label
                 htmlFor="sort-by"
-                className="fantasy-caption block text-[rgb(148,163,184)] mb-2"
+                className="fantasy-caption block text-slate-400 mb-2"
               >
                 Sort By
               </label>
@@ -413,7 +413,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                       className="px-3 py-1 text-xs font-bold uppercase tracking-tighter rounded-md"
                       style={{
                         background: 'rgba(100,130,165,0.15)',
-                        color: 'rgb(148,163,184)',
+                        color: 'rgb(var(--mystic-silver))',
                         border: '1px solid rgba(100,130,165,0.3)',
                       }}
                     >
@@ -441,7 +441,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                   }}
                 >
                   <div className="flex justify-between items-center">
-                    <span className="fantasy-caption text-xs text-[rgb(148,163,184)]">
+                    <span className="fantasy-caption text-xs text-slate-400">
                       Experience
                     </span>
                     <span className="fantasy-body text-[rgb(220,235,255)] font-bold">
@@ -449,19 +449,19 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="fantasy-caption text-xs text-[rgb(148,163,184)]">
+                    <span className="fantasy-caption text-xs text-slate-400">
                       Personality
                     </span>
                     <GroomPersonalityBadge personality={groom.personality} />
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="fantasy-caption text-xs text-[rgb(148,163,184)]">Salary</span>
+                    <span className="fantasy-caption text-xs text-slate-400">Salary</span>
                     <span className="fantasy-body text-[rgb(16,185,129)] font-bold">
                       ${groom.sessionRate}/week
                     </span>
                   </div>
                   <div className="space-y-1">
-                    <div className="flex justify-between items-center text-xs fantasy-caption text-[rgb(148,163,184)]">
+                    <div className="flex justify-between items-center text-xs fantasy-caption text-slate-400">
                       <span>Assignments</span>
                       <span>
                         {groomAssignments.length} / {maxAssignments}
@@ -529,7 +529,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                 {/* Assignments */}
                 <div className="mb-6">
                   <h4
-                    className="fantasy-caption text-[rgb(148,163,184)] mb-3 pb-1"
+                    className="fantasy-caption text-slate-400 mb-3 pb-1"
                     style={{ borderBottom: '1px solid var(--border-muted)' }}
                   >
                     Current Assignments

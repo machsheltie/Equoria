@@ -139,11 +139,11 @@ const getPlacementBadgeClasses = (rank: number): string => {
     case 1:
       return 'bg-yellow-400 text-yellow-900'; // Gold
     case 2:
-      return 'bg-[rgba(148,163,184,0.3)] text-[rgb(220,235,255)]'; // Silver
+      return 'bg-slate-400/30 text-[rgb(220,235,255)]'; // Silver
     case 3:
       return 'bg-orange-400 text-orange-900'; // Bronze
     default:
-      return 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)]'; // Other
+      return 'bg-[rgba(15,35,70,0.5)] text-slate-400'; // Other
   }
 };
 
@@ -198,7 +198,7 @@ const ValueDisplay = memo(
       ? 'text-emerald-400'
       : isNegative
         ? 'text-red-400'
-        : 'text-[rgb(148,163,184)]';
+        : 'text-slate-400';
 
     const displayValue = showSign ? formatWithSign(value, decimals) : value.toFixed(decimals);
 
@@ -222,7 +222,7 @@ const DiffIndicator = memo(({ diff, testId }: { diff: number; testId: string }) 
   return (
     <span
       className={`inline-flex items-center gap-1 ${
-        isPositive ? 'text-emerald-400' : isNegative ? 'text-red-400' : 'text-[rgb(148,163,184)]'
+        isPositive ? 'text-emerald-400' : isNegative ? 'text-red-400' : 'text-slate-400'
       }`}
       data-testid={testId}
     >
@@ -257,10 +257,10 @@ const BreakdownRow = memo(
   }) => (
     <div className="flex items-start justify-between py-2 border-b border-[rgba(37,99,235,0.2)] last:border-0">
       <div className="flex items-start gap-2">
-        <Icon className="h-4 w-4 text-[rgb(148,163,184)] mt-0.5" aria-hidden="true" />
+        <Icon className="h-4 w-4 text-slate-400 mt-0.5" aria-hidden="true" />
         <div>
           <p className="text-sm font-medium text-[rgb(220,235,255)]">{label}</p>
-          {sublabel && <p className="text-xs text-[rgb(148,163,184)]">{sublabel}</p>}
+          {sublabel && <p className="text-xs text-slate-400">{sublabel}</p>}
         </div>
       </div>
       <div className="text-right">
@@ -378,13 +378,13 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
           {/* Horse and Competition Info */}
           <div>
             <h2 className="text-2xl font-bold text-[rgb(220,235,255)]">{horseName}</h2>
-            <p className="text-sm text-[rgb(148,163,184)]">{competitionName}</p>
+            <p className="text-sm text-slate-400">{competitionName}</p>
           </div>
 
           {/* Score and Placement */}
           <div className="flex items-center gap-6">
             <div className="text-right">
-              <p className="text-xs text-[rgb(148,163,184)] uppercase tracking-wide">Final Score</p>
+              <p className="text-xs text-slate-400 uppercase tracking-wide">Final Score</p>
               <p className="text-3xl font-bold text-[rgb(220,235,255)]">{finalScore.toFixed(1)}</p>
             </div>
             <PlacementBadge rank={rank} />
@@ -437,24 +437,24 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
             </h4>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-[rgb(148,163,184)]">
-                  Speed <span className="text-xs text-[rgb(148,163,184)]/60">(50%)</span>
+                <span className="text-slate-400">
+                  Speed <span className="text-xs text-slate-400/60">(50%)</span>
                 </span>
                 <span className="font-medium text-[rgb(220,235,255)]">
                   {scoreBreakdown.baseScore.speed}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[rgb(148,163,184)]">
-                  Stamina <span className="text-xs text-[rgb(148,163,184)]/60">(30%)</span>
+                <span className="text-slate-400">
+                  Stamina <span className="text-xs text-slate-400/60">(30%)</span>
                 </span>
                 <span className="font-medium text-[rgb(220,235,255)]">
                   {scoreBreakdown.baseScore.stamina}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[rgb(148,163,184)]">
-                  Agility <span className="text-xs text-[rgb(148,163,184)]/60">(20%)</span>
+                <span className="text-slate-400">
+                  Agility <span className="text-xs text-slate-400/60">(20%)</span>
                 </span>
                 <span className="font-medium text-[rgb(220,235,255)]">
                   {scoreBreakdown.baseScore.agility}
@@ -481,7 +481,7 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
             {/* Trait Bonuses */}
             <div className="py-2 border-b border-[rgba(37,99,235,0.2)]">
               <div className="flex items-start gap-2 mb-2">
-                <Sparkles className="h-4 w-4 text-[rgb(148,163,184)] mt-0.5" aria-hidden="true" />
+                <Sparkles className="h-4 w-4 text-slate-400 mt-0.5" aria-hidden="true" />
                 <div className="flex-1">
                   <div className="flex justify-between">
                     <p className="text-sm font-medium text-[rgb(220,235,255)]">Trait Bonuses</p>
@@ -492,7 +492,7 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
                       {scoreBreakdown.traitBonuses.map((tb, i) => (
                         <div
                           key={i}
-                          className="flex justify-between text-xs text-[rgb(148,163,184)]"
+                          className="flex justify-between text-xs text-slate-400"
                         >
                           <span>{tb.trait}</span>
                           <ValueDisplay value={tb.bonus} showSign decimals={0} />
@@ -507,7 +507,7 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
             {/* Equipment */}
             <div className="py-2 border-b border-[rgba(37,99,235,0.2)]">
               <div className="flex items-start gap-2">
-                <Briefcase className="h-4 w-4 text-[rgb(148,163,184)] mt-0.5" aria-hidden="true" />
+                <Briefcase className="h-4 w-4 text-slate-400 mt-0.5" aria-hidden="true" />
                 <div className="flex-1">
                   <div className="flex justify-between">
                     <p className="text-sm font-medium text-[rgb(220,235,255)]">Equipment</p>
@@ -518,7 +518,7 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
                     />
                   </div>
                   <div className="mt-1 space-y-1">
-                    <div className="flex justify-between text-xs text-[rgb(148,163,184)]">
+                    <div className="flex justify-between text-xs text-slate-400">
                       <span>Saddle</span>
                       <ValueDisplay
                         value={scoreBreakdown.equipmentBonuses.saddle}
@@ -526,7 +526,7 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
                         decimals={0}
                       />
                     </div>
-                    <div className="flex justify-between text-xs text-[rgb(148,163,184)]">
+                    <div className="flex justify-between text-xs text-slate-400">
                       <span>Bridle</span>
                       <ValueDisplay
                         value={scoreBreakdown.equipmentBonuses.bridle}
@@ -584,7 +584,7 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* vs Average */}
             <div className="bg-[rgba(15,35,70,0.5)] rounded-lg p-4">
-              <p className="text-sm text-[rgb(148,163,184)] mb-1">vs Competition Average</p>
+              <p className="text-sm text-slate-400 mb-1">vs Competition Average</p>
               <p className="text-lg font-medium text-[rgb(220,235,255)]">
                 {comparisonData.averageScore.toFixed(1)}
               </p>
@@ -593,7 +593,7 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
 
             {/* vs Winner */}
             <div className="bg-[rgba(15,35,70,0.5)] rounded-lg p-4">
-              <p className="text-sm text-[rgb(148,163,184)] mb-1">
+              <p className="text-sm text-slate-400 mb-1">
                 vs Winner ({comparisonData.winnerName})
               </p>
               <p className="text-lg font-medium text-[rgb(220,235,255)]">
@@ -607,11 +607,11 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
               className="bg-[rgba(15,35,70,0.5)] rounded-lg p-4"
               data-testid="percentile-ranking"
             >
-              <p className="text-sm text-[rgb(148,163,184)] mb-1">Ranking</p>
+              <p className="text-sm text-slate-400 mb-1">Ranking</p>
               <p className="text-lg font-bold text-blue-400">
                 Top {Math.ceil(100 - percentile + 1)}%
               </p>
-              <p className="text-xs text-[rgb(148,163,184)]">of {totalParticipants} participants</p>
+              <p className="text-xs text-slate-400">of {totalParticipants} participants</p>
             </div>
           </div>
         </div>
@@ -630,7 +630,7 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
 
           <ul className="space-y-2">
             {insights.map((insight, index) => (
-              <li key={index} className="flex items-start gap-2 text-sm text-[rgb(148,163,184)]">
+              <li key={index} className="flex items-start gap-2 text-sm text-slate-400">
                 <span className="text-amber-500 mt-0.5">&#8226;</span>
                 {insight}
               </li>

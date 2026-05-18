@@ -123,14 +123,14 @@ const CompetitionCard = ({
       {/* Header: Name and Discipline */}
       <div className="mb-3">
         <h3 className="text-lg font-semibold text-[rgb(220,235,255)] truncate">{name}</h3>
-        <p className="text-sm text-[rgb(148,163,184)]">{discipline}</p>
+        <p className="text-sm text-slate-400">{discipline}</p>
       </div>
 
       {/* Competition Details */}
       <div className="space-y-2 text-sm">
         {/* Date */}
         <div className="flex items-center" data-testid="competition-date">
-          <Calendar className="h-4 w-4 text-[rgb(148,163,184)] mr-2" aria-hidden="true" />
+          <Calendar className="h-4 w-4 text-slate-400 mr-2" aria-hidden="true" />
           <span className="text-[rgb(220,235,255)]">{formatDate(date)}</span>
         </div>
 

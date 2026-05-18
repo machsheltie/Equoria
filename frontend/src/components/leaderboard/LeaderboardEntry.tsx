@@ -124,7 +124,7 @@ const SecondaryStats = ({
   switch (category) {
     case 'level':
       return (
-        <div className="flex gap-4 text-sm text-[rgb(148,163,184)]">
+        <div className="flex gap-4 text-sm text-slate-400">
           {stats.winRate !== undefined && (
             <span data-testid="secondary-stat-win-rate">WR: {stats.winRate}%</span>
           )}
@@ -135,7 +135,7 @@ const SecondaryStats = ({
       );
     case 'prize-money':
       return (
-        <div className="flex gap-4 text-sm text-[rgb(148,163,184)]">
+        <div className="flex gap-4 text-sm text-slate-400">
           {stats.wins !== undefined && (
             <span data-testid="secondary-stat-wins">Wins: {stats.wins}</span>
           )}
@@ -146,7 +146,7 @@ const SecondaryStats = ({
       );
     case 'win-rate':
       return (
-        <div className="flex gap-4 text-sm text-[rgb(148,163,184)]">
+        <div className="flex gap-4 text-sm text-slate-400">
           {stats.wins !== undefined && (
             <span data-testid="secondary-stat-wins">Wins: {stats.wins}</span>
           )}
@@ -157,7 +157,7 @@ const SecondaryStats = ({
       );
     case 'discipline':
       return (
-        <div className="flex gap-4 text-sm text-[rgb(148,163,184)]">
+        <div className="flex gap-4 text-sm text-slate-400">
           {stats.level !== undefined && (
             <span data-testid="secondary-stat-level">Lvl: {stats.level}</span>
           )}
@@ -168,7 +168,7 @@ const SecondaryStats = ({
       );
     case 'owner':
       return (
-        <div className="flex gap-4 text-sm text-[rgb(148,163,184)]">
+        <div className="flex gap-4 text-sm text-slate-400">
           {stats.totalPrizeMoney !== undefined && (
             <span data-testid="secondary-stat-prize-money">
               Prize: ${stats.totalPrizeMoney.toLocaleString()}
@@ -181,7 +181,7 @@ const SecondaryStats = ({
       );
     case 'recent-winners':
       return (
-        <div className="flex gap-4 text-sm text-[rgb(148,163,184)]">
+        <div className="flex gap-4 text-sm text-slate-400">
           {stats.totalPrizeMoney !== undefined && (
             <span data-testid="secondary-stat-prize-money">
               Won: ${stats.totalPrizeMoney.toLocaleString()}
@@ -249,7 +249,7 @@ const LeaderboardEntryComponent = ({
         {entry.horseName && (
           <div className="truncate font-medium text-[rgb(220,235,255)]">{entry.horseName}</div>
         )}
-        <div className="truncate text-sm text-[rgb(148,163,184)]">{entry.ownerName}</div>
+        <div className="truncate text-sm text-slate-400">{entry.ownerName}</div>
       </div>
 
       {/* Primary Stat */}

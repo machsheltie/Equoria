@@ -55,7 +55,7 @@ function LevelProgressBar({ experience }: { experience: number }) {
           {progress.level}
         </span>
         <div className="flex-1">
-          <div className="flex justify-between text-xs text-[rgb(148,163,184)] mb-1">
+          <div className="flex justify-between text-xs text-slate-400 mb-1">
             <span data-testid="level-label">
               Level {progress.level}
               {progress.isMaxLevel ? ' (Max)' : ''}
@@ -83,7 +83,7 @@ function LevelProgressBar({ experience }: { experience: number }) {
           </div>
         </div>
       </div>
-      <p className="text-xs text-[rgb(148,163,184)]" data-testid="total-xp">
+      <p className="text-xs text-slate-400" data-testid="total-xp">
         Total XP: {experience}
       </p>
     </div>
@@ -106,10 +106,10 @@ function CareerTimeline({
 
   return (
     <div data-testid="career-timeline-section">
-      <h4 className="text-xs font-semibold text-[rgb(148,163,184)] uppercase tracking-wide mb-2">
+      <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
         Career Timeline
       </h4>
-      <div className="flex justify-between text-xs text-[rgb(148,163,184)] mb-1">
+      <div className="flex justify-between text-xs text-slate-400 mb-1">
         <span>
           <Clock className="inline w-3 h-3 mr-1" aria-hidden="true" />
           <span data-testid="career-weeks">{careerWeeks} weeks active</span>
@@ -139,7 +139,7 @@ function CareerTimeline({
           data-testid="career-progress-fill"
         />
       </div>
-      <p className="text-xs text-[rgb(148,163,184)]" data-testid="retirement-deadline">
+      <p className="text-xs text-slate-400" data-testid="retirement-deadline">
         Mandatory retirement at {MANDATORY_RETIREMENT_WEEKS} weeks
       </p>
     </div>
@@ -214,7 +214,7 @@ function RetiredNotice({
       data-testid="retired-notice"
     >
       <Award
-        className="flex-shrink-0 text-[rgb(148,163,184)] mt-0.5"
+        className="flex-shrink-0 text-slate-400 mt-0.5"
         size={16}
         aria-hidden="true"
       />
@@ -223,7 +223,7 @@ function RetiredNotice({
           {reasonLabel}
         </p>
         {retiredDate && (
-          <p className="text-xs text-[rgb(148,163,184)]" data-testid="retired-date">
+          <p className="text-xs text-slate-400" data-testid="retired-date">
             Retired on {retiredDate}
           </p>
         )}
@@ -251,7 +251,7 @@ function PerformanceMetricsGrid({ metrics }: { metrics: GroomPerformanceMetrics 
 
   return (
     <div data-testid="performance-metrics-section">
-      <h4 className="text-xs font-semibold text-[rgb(148,163,184)] uppercase tracking-wide mb-3 flex items-center gap-1">
+      <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3 flex items-center gap-1">
         <TrendingUp className="w-3 h-3" aria-hidden="true" />
         Performance History
       </h4>
@@ -261,7 +261,7 @@ function PerformanceMetricsGrid({ metrics }: { metrics: GroomPerformanceMetrics 
             key={m.testId}
             className="flex items-center justify-between bg-[rgba(15,35,70,0.4)] rounded px-3 py-2 border border-[rgba(37,99,235,0.3)]"
           >
-            <span className="text-xs text-[rgb(148,163,184)]">{m.label}</span>
+            <span className="text-xs text-slate-400">{m.label}</span>
             <span
               className={`text-sm font-semibold ${getScoreColor(m.value)}`}
               data-testid={m.testId}
@@ -271,7 +271,7 @@ function PerformanceMetricsGrid({ metrics }: { metrics: GroomPerformanceMetrics 
           </div>
         ))}
         <div className="flex items-center justify-between bg-[rgba(15,35,70,0.4)] rounded px-3 py-2 border border-[rgba(37,99,235,0.3)]">
-          <span className="text-xs text-[rgb(148,163,184)]">Interactions</span>
+          <span className="text-xs text-slate-400">Interactions</span>
           <span
             className="text-sm font-semibold text-[rgb(220,235,255)]"
             data-testid="metric-total-interactions"
@@ -288,7 +288,7 @@ function PerformanceMetricsGrid({ metrics }: { metrics: GroomPerformanceMetrics 
 function MilestoneTracker({ milestones }: { milestones: CareerMilestone[] }) {
   return (
     <div data-testid="career-milestones-section">
-      <h4 className="text-xs font-semibold text-[rgb(148,163,184)] uppercase tracking-wide mb-3 flex items-center gap-1">
+      <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3 flex items-center gap-1">
         <Star className="w-3 h-3" aria-hidden="true" />
         Career Milestones
       </h4>
@@ -296,7 +296,7 @@ function MilestoneTracker({ milestones }: { milestones: CareerMilestone[] }) {
         {milestones.map((milestone) => (
           <div
             key={milestone.id}
-            className={`flex items-center gap-2 text-xs ${milestone.reached ? 'text-[rgb(220,235,255)]' : 'text-[rgb(148,163,184)]'}`}
+            className={`flex items-center gap-2 text-xs ${milestone.reached ? 'text-[rgb(220,235,255)]' : 'text-slate-400'}`}
             data-testid={`milestone-${milestone.id}`}
           >
             {milestone.reached ? (
@@ -310,7 +310,7 @@ function MilestoneTracker({ milestones }: { milestones: CareerMilestone[] }) {
             <div>
               <span className="font-medium">{milestone.label}</span>
               {!milestone.reached && (
-                <span className="ml-1 text-[rgb(148,163,184)]">— {milestone.description}</span>
+                <span className="ml-1 text-slate-400">— {milestone.description}</span>
               )}
             </div>
           </div>
@@ -331,7 +331,7 @@ function RetirementBenefitsInfo() {
         <Calendar className="w-3 h-3" aria-hidden="true" />
         Retirement Rules
       </h4>
-      <ul className="space-y-1 text-xs text-[rgb(148,163,184)]">
+      <ul className="space-y-1 text-xs text-slate-400">
         <li data-testid="rule-mandatory">
           Mandatory retirement at {CAREER_CONSTANTS.MANDATORY_RETIREMENT_WEEKS} weeks (2 years)
         </li>
@@ -382,7 +382,7 @@ const GroomCareerPanel: React.FC<GroomCareerPanelProps> = ({
         </h3>
         {groom.retired && (
           <span
-            className="text-xs bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] px-2 py-0.5 rounded border border-[rgba(37,99,235,0.3)]"
+            className="text-xs bg-[rgba(15,35,70,0.5)] text-slate-400 px-2 py-0.5 rounded border border-[rgba(37,99,235,0.3)]"
             data-testid="retired-badge"
           >
             Retired

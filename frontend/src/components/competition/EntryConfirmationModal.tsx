@@ -206,7 +206,7 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
       {competition && (
         <div className="space-y-6">
           {/* Subtitle */}
-          <p id="entry-confirmation-description" className="text-sm text-[rgb(148,163,184)] -mt-2">
+          <p id="entry-confirmation-description" className="text-sm text-slate-400 -mt-2">
             Review your competition entry details before submitting
           </p>
 
@@ -252,7 +252,7 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
             </h3>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-[rgb(148,163,184)]">Name</span>
+                <span className="text-sm text-slate-400">Name</span>
                 <span
                   className="text-sm font-medium text-[rgb(220,235,255)]"
                   data-testid="competition-name"
@@ -261,7 +261,7 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-[rgb(148,163,184)]">Discipline</span>
+                <span className="text-sm text-slate-400">Discipline</span>
                 <span
                   className="inline-block px-2 py-0.5 bg-[rgba(37,99,235,0.1)] text-blue-400 text-xs font-medium rounded-full border border-blue-500/30"
                   data-testid="competition-discipline"
@@ -270,7 +270,7 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
                 </span>
               </div>
               <div className="flex justify-between items-center" data-testid="competition-date">
-                <span className="text-sm text-[rgb(148,163,184)] flex items-center">
+                <span className="text-sm text-slate-400 flex items-center">
                   <Calendar className="h-3 w-3 mr-1" aria-hidden="true" />
                   Date
                 </span>
@@ -295,11 +295,11 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
                     data-testid={`horse-item-${horse.id}`}
                   >
                     <span className="font-medium text-[rgb(220,235,255)]">{horse.name}</span>
-                    <span className="text-sm text-[rgb(148,163,184)]">Level {horse.level}</span>
+                    <span className="text-sm text-slate-400">Level {horse.level}</span>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-[rgb(148,163,184)] italic p-3 bg-[rgba(15,35,70,0.5)] rounded-lg">
+                <p className="text-sm text-slate-400 italic p-3 bg-[rgba(15,35,70,0.5)] rounded-lg">
                   No horses selected
                 </p>
               )}
@@ -330,7 +330,7 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
             <div className="border-t border-[rgba(37,99,235,0.2)] pt-3 space-y-2">
               {/* Current Balance */}
               <div className="flex justify-between items-center">
-                <span className="text-sm text-[rgb(148,163,184)]">Current Balance</span>
+                <span className="text-sm text-slate-400">Current Balance</span>
                 <span
                   className="text-sm font-medium text-[rgb(220,235,255)]"
                   data-testid="current-balance"
@@ -341,7 +341,7 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
 
               {/* New Balance */}
               <div className="flex justify-between items-center">
-                <span className="text-sm text-[rgb(148,163,184)]">Balance After Entry</span>
+                <span className="text-sm text-slate-400">Balance After Entry</span>
                 <span
                   className={cn(
                     'text-sm font-medium',

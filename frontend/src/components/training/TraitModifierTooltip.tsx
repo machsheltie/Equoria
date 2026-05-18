@@ -258,18 +258,18 @@ const TraitModifierTooltip = ({
           <hr className="border-[rgba(37,99,235,0.3)] mb-2" />
 
           {/* Effect description */}
-          <p className="text-xs text-[rgb(148,163,184)] mb-2">
+          <p className="text-xs text-slate-400 mb-2">
             <span className="font-medium text-[rgb(220,235,255)]">Effect:</span> {effectDescription}
           </p>
 
           {/* Affected disciplines */}
-          <p className="text-xs text-[rgb(148,163,184)] mb-2">
+          <p className="text-xs text-slate-400 mb-2">
             <span className="font-medium text-[rgb(220,235,255)]">Disciplines:</span>{' '}
             {disciplineList}
           </p>
 
           {/* Full description */}
-          <p className="text-xs text-[rgb(148,163,184)] mb-3">{modifier.description}</p>
+          <p className="text-xs text-slate-400 mb-3">{modifier.description}</p>
 
           {/* Learn More button (optional) */}
           {onLearnMore && (

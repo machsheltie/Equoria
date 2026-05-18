@@ -227,7 +227,7 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
   if (!horseId) {
     return (
       <div data-testid="epigenetic-dashboard" className={`text-center py-12 ${className}`}>
-        <p className="text-[rgb(148,163,184)]">Please select a horse to view epigenetic data</p>
+        <p className="text-slate-400">Please select a horse to view epigenetic data</p>
       </div>
     );
   }

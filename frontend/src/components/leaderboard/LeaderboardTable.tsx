@@ -61,7 +61,7 @@ const SkeletonRow = () => (
  */
 const EmptyState = () => (
   <div
-    className="flex flex-col items-center justify-center py-16 text-[rgb(148,163,184)]"
+    className="flex flex-col items-center justify-center py-16 text-slate-400"
     data-testid="empty-state"
   >
     <p className="text-lg font-medium">No entries found</p>
@@ -91,7 +91,7 @@ const LeaderboardTable = ({
       <div role="table" aria-label="Leaderboard rankings">
         {/* Column Headers */}
         <div
-          className="flex items-center gap-4 px-4 py-2 bg-[rgba(15,35,70,0.5)] rounded-t-lg font-bold text-sm text-[rgb(148,163,184)]"
+          className="flex items-center gap-4 px-4 py-2 bg-[rgba(15,35,70,0.5)] rounded-t-lg font-bold text-sm text-slate-400"
           data-testid="table-header"
           role="row"
         >
@@ -156,7 +156,7 @@ const LeaderboardTable = ({
           Previous
         </button>
 
-        <span className="text-sm text-[rgb(148,163,184)]">
+        <span className="text-sm text-slate-400">
           Page {currentPage} of {totalPages}
         </span>
 

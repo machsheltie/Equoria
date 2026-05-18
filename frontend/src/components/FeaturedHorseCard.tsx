@@ -24,7 +24,7 @@ const FeaturedHorseCard = ({
             <div className="w-2 h-2 rounded-full" style={{ background: 'var(--gold-500)' }} />
             <div className="w-8 h-0.5 bg-[rgba(37,99,235,0.5)]" />
           </div>
-          <h2 className="fantasy-caption text-[rgb(148,163,184)]">Featured Companion</h2>
+          <h2 className="fantasy-caption text-slate-400">Featured Companion</h2>
         </div>
 
         {/* Horse Image */}
@@ -54,7 +54,7 @@ const FeaturedHorseCard = ({
         {/* Horse Info */}
         <div className="text-center">
           <h3 className="fantasy-title text-2xl mb-1">{horseName}</h3>
-          <p className="fantasy-header text-lg text-[rgb(148,163,184)] italic">{breed}</p>
+          <p className="fantasy-header text-lg text-slate-400 italic">{breed}</p>
         </div>
       </div>
     </div>

@@ -255,7 +255,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
     return (
       <div className="flex items-center justify-center min-h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-        <span className="ml-3 text-lg text-[rgb(148,163,184)]">Loading horses...</span>
+        <span className="ml-3 text-lg text-slate-400">Loading horses...</span>
       </div>
     );
   }
@@ -279,7 +279,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
       <div className="mb-6 flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-[rgb(220,235,255)] mb-2">My Horses</h1>
-          <p className="text-[rgb(148,163,184)]">
+          <p className="text-slate-400">
             Showing {filteredAndSortedHorses.length} of {horses.length} horses
             {hasActiveFilters(filters) && (
               <span className="ml-2 text-blue-400">
@@ -294,7 +294,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
         {!isMobile && (
           <button
             onClick={toggleView}
-            className="flex items-center gap-2 px-4 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg hover:bg-[rgba(15,35,70,0.5)] transition-colors text-[rgb(148,163,184)]"
+            className="flex items-center gap-2 px-4 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg hover:bg-[rgba(15,35,70,0.5)] transition-colors text-slate-400"
             aria-label={`Switch to ${viewMode === 'grid' ? 'list' : 'grid'} view`}
             title={`Switch to ${viewMode === 'grid' ? 'list' : 'grid'} view`}
           >
@@ -372,13 +372,13 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
                       <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">
                         {horse.name}
                       </h3>
-                      <p className="text-sm text-[rgb(148,163,184)]">{getBreedName(horse.breed)}</p>
+                      <p className="text-sm text-slate-400">{getBreedName(horse.breed)}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium text-[rgb(220,235,255)]">
                         Level {horse.level}
                       </p>
-                      <p className="text-xs text-[rgb(148,163,184)]">{horse.age} years old</p>
+                      <p className="text-xs text-slate-400">{horse.age} years old</p>
                     </div>
                   </div>
 
@@ -408,7 +408,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
                       ) : (
                         <button
                           disabled
-                          className="p-2 text-[rgb(148,163,184)] cursor-not-allowed rounded-lg"
+                          className="p-2 text-slate-400 cursor-not-allowed rounded-lg"
                           aria-label="Training unavailable"
                           data-testid={`train-button-disabled-${horse.id}`}
                         >
@@ -424,7 +424,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
                       </button>
                     </div>
                     <div
-                      className="text-xs text-[rgb(148,163,184)]"
+                      className="text-xs text-slate-400"
                       title={`Disciplines: ${formatDisciplinesTooltip(horse.disciplineScores)}`}
                     >
                       {calculatePrimaryDiscipline(horse.disciplineScores)}
@@ -459,23 +459,23 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
                   <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-1">
                     {horse.name}
                   </h3>
-                  <p className="text-sm text-[rgb(148,163,184)]">{getBreedName(horse.breed)}</p>
+                  <p className="text-sm text-slate-400">{getBreedName(horse.breed)}</p>
                 </div>
 
                 <div className="space-y-1 text-sm mb-4">
                   <div className="flex justify-between">
-                    <span className="text-[rgb(148,163,184)]">Age:</span>
+                    <span className="text-slate-400">Age:</span>
                     <span className="font-medium text-[rgb(220,235,255)]">{horse.age} years</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[rgb(148,163,184)]">Level:</span>
+                    <span className="text-slate-400">Level:</span>
                     <span className="font-medium text-[rgb(220,235,255)]">{horse.level}</span>
                   </div>
                   <div
                     className="flex justify-between"
                     title={`Disciplines: ${formatDisciplinesTooltip(horse.disciplineScores)}`}
                   >
-                    <span className="text-[rgb(148,163,184)]">Primary:</span>
+                    <span className="text-slate-400">Primary:</span>
                     <span className="font-medium text-[rgb(220,235,255)]">
                       {calculatePrimaryDiscipline(horse.disciplineScores)}
                     </span>
@@ -509,7 +509,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
                   ) : (
                     <button
                       disabled
-                      className="p-2 text-[rgb(148,163,184)] cursor-not-allowed rounded-lg"
+                      className="p-2 text-slate-400 cursor-not-allowed rounded-lg"
                       aria-label="Training unavailable"
                       title="Training unavailable"
                       data-testid={`train-button-disabled-${horse.id}`}
@@ -542,11 +542,11 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
           >
             <thead className="bg-[rgba(15,35,70,0.5)]">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-[rgb(148,163,184)] uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                   Image
                 </th>
                 <th
-                  className="px-6 py-3 text-left text-xs font-medium text-[rgb(148,163,184)] uppercase tracking-wider cursor-pointer hover:bg-[rgba(15,35,70,0.7)]"
+                  className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-[rgba(15,35,70,0.7)]"
                   onClick={() => handleSort('name')}
                   aria-sort={
                     sortConfig.key === 'name'
@@ -567,7 +567,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
                   </div>
                 </th>
                 <th
-                  className="px-6 py-3 text-left text-xs font-medium text-[rgb(148,163,184)] uppercase tracking-wider cursor-pointer hover:bg-[rgba(15,35,70,0.7)]"
+                  className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-[rgba(15,35,70,0.7)]"
                   onClick={() => handleSort('breed')}
                   aria-sort={
                     sortConfig.key === 'breed'
@@ -588,7 +588,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
                   </div>
                 </th>
                 <th
-                  className="px-6 py-3 text-left text-xs font-medium text-[rgb(148,163,184)] uppercase tracking-wider cursor-pointer hover:bg-[rgba(15,35,70,0.7)]"
+                  className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-[rgba(15,35,70,0.7)]"
                   onClick={() => handleSort('age')}
                   aria-sort={
                     sortConfig.key === 'age'
@@ -609,7 +609,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
                   </div>
                 </th>
                 <th
-                  className="px-6 py-3 text-left text-xs font-medium text-[rgb(148,163,184)] uppercase tracking-wider cursor-pointer hover:bg-[rgba(15,35,70,0.7)]"
+                  className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider cursor-pointer hover:bg-[rgba(15,35,70,0.7)]"
                   onClick={() => handleSort('level')}
                   aria-sort={
                     sortConfig.key === 'level'
@@ -629,13 +629,13 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
                       ))}
                   </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-[rgb(148,163,184)] uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                   Primary Discipline
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-[rgb(148,163,184)] uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                   Training Status
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-[rgb(148,163,184)] uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-slate-400 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -700,7 +700,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
                       ) : (
                         <button
                           disabled
-                          className="text-[rgb(148,163,184)] cursor-not-allowed p-1 rounded"
+                          className="text-slate-400 cursor-not-allowed p-1 rounded"
                           aria-label="Training unavailable"
                           data-testid={`train-button-disabled-${horse.id}`}
                         >
@@ -730,21 +730,21 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
             <button
               onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
-              className="relative inline-flex items-center px-4 py-2 border border-[rgba(37,99,235,0.3)] text-sm font-medium rounded-md text-[rgb(148,163,184)] bg-[rgba(15,35,70,0.4)] hover:bg-[rgba(15,35,70,0.6)] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="relative inline-flex items-center px-4 py-2 border border-[rgba(37,99,235,0.3)] text-sm font-medium rounded-md text-slate-400 bg-[rgba(15,35,70,0.4)] hover:bg-[rgba(15,35,70,0.6)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Previous
             </button>
             <button
               onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
-              className="ml-3 relative inline-flex items-center px-4 py-2 border border-[rgba(37,99,235,0.3)] text-sm font-medium rounded-md text-[rgb(148,163,184)] bg-[rgba(15,35,70,0.4)] hover:bg-[rgba(15,35,70,0.6)] disabled:opacity-50 disabled:cursor-not-allowed"
+              className="ml-3 relative inline-flex items-center px-4 py-2 border border-[rgba(37,99,235,0.3)] text-sm font-medium rounded-md text-slate-400 bg-[rgba(15,35,70,0.4)] hover:bg-[rgba(15,35,70,0.6)] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Next
             </button>
           </div>
           <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm text-[rgb(148,163,184)]">
+              <p className="text-sm text-slate-400">
                 Showing{' '}
                 <span className="font-medium text-[rgb(220,235,255)]">
                   {(currentPage - 1) * itemsPerPage + 1}
@@ -768,7 +768,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
                 <button
                   onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
-                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] text-sm font-medium text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.6)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] text-sm font-medium text-slate-400 hover:bg-[rgba(15,35,70,0.6)] disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Previous page"
                 >
                   <ChevronLeft className="w-5 h-5" />
@@ -782,7 +782,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
                     className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                       page === currentPage
                         ? 'z-[var(--z-raised)] bg-[rgba(37,99,235,0.1)] border-blue-500/30 text-blue-400'
-                        : 'bg-[rgba(15,35,70,0.4)] border-[rgba(37,99,235,0.3)] text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.6)]'
+                        : 'bg-[rgba(15,35,70,0.4)] border-[rgba(37,99,235,0.3)] text-slate-400 hover:bg-[rgba(15,35,70,0.6)]'
                     }`}
                   >
                     {page}
@@ -792,7 +792,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
                 <button
                   onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
-                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] text-sm font-medium text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.6)] disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] text-sm font-medium text-slate-400 hover:bg-[rgba(15,35,70,0.6)] disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Next page"
                 >
                   <ChevronRight className="w-5 h-5" />
@@ -806,14 +806,14 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
       {/* Empty state */}
       {filteredAndSortedHorses.length === 0 && !isLoading && (
         <div className="text-center py-12">
-          <p className="text-[rgb(148,163,184)] text-lg">
+          <p className="text-slate-400 text-lg">
             {horses.length === 0
               ? 'No horses in your stable yet.'
               : 'No horses found matching your criteria.'}
           </p>
           {horses.length > 0 && hasActiveFilters(filters) && (
             <>
-              <p className="text-[rgb(148,163,184)] text-sm mt-2">
+              <p className="text-slate-400 text-sm mt-2">
                 Try adjusting your filters or search terms.
               </p>
               <button

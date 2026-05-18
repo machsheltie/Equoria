@@ -31,7 +31,7 @@ const categoryOptions: CategoryOption[] = [
     label: 'All Activities',
     icon: Sparkles,
     color:
-      'text-[rgb(148,163,184)] bg-[rgba(37,99,235,0.05)] border-[rgba(37,99,235,0.2)] hover:bg-[rgba(37,99,235,0.1)]',
+      'text-slate-400 bg-[rgba(37,99,235,0.05)] border-[rgba(37,99,235,0.2)] hover:bg-[rgba(37,99,235,0.1)]',
   },
   {
     value: 'trust',

@@ -103,7 +103,7 @@ const statusConfigs: Record<EligibilityStatus, StatusConfig> = {
     label: 'Too Old',
     icon: <AlertTriangle className="h-3 w-3" aria-hidden="true" />,
     bgColor: 'bg-[rgba(15,35,70,0.5)]',
-    textColor: 'text-[rgb(148,163,184)]',
+    textColor: 'text-slate-400',
     showTooltip: true,
   },
   'wrong-level': {
@@ -183,7 +183,7 @@ const StatItem = memo(({ name, value }: { name: string; value: number }) => {
       data-testid="stat-item"
       className={cn(
         'flex justify-between items-center text-sm',
-        isHighStat ? 'text-emerald-400 font-medium' : 'text-[rgb(148,163,184)]'
+        isHighStat ? 'text-emerald-400 font-medium' : 'text-slate-400'
       )}
     >
       <span>{name}</span>
@@ -268,7 +268,7 @@ const HorseSelectionCard = memo(
             </div>
 
             {/* Horse Details: Age, Sex, Level */}
-            <div className="flex items-center gap-3 text-xs text-[rgb(148,163,184)]">
+            <div className="flex items-center gap-3 text-xs text-slate-400">
               <span data-testid="horse-age">
                 <span className="font-medium">{horse.age}</span> yrs
               </span>
@@ -287,14 +287,14 @@ const HorseSelectionCard = memo(
               .slice(0, 3)
               .map((stat) => <StatItem key={stat.name} name={stat.name} value={stat.value} />)
           ) : (
-            <p className="text-sm text-[rgb(148,163,184)] italic">No stats available</p>
+            <p className="text-sm text-slate-400 italic">No stats available</p>
           )}
         </div>
 
         {/* Expected Performance */}
         <div className="pt-2 border-t border-[rgba(37,99,235,0.2)]">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-[rgb(148,163,184)]">Expected Performance</span>
+            <span className="text-xs text-slate-400">Expected Performance</span>
             <span
               data-testid="expected-performance"
               className={cn(
@@ -303,7 +303,7 @@ const HorseSelectionCard = memo(
                   ? 'text-emerald-400'
                   : expectedPerformance !== undefined && expectedPerformance >= 60
                     ? 'text-amber-400'
-                    : 'text-[rgb(148,163,184)]'
+                    : 'text-slate-400'
               )}
             >
               {expectedPerformance !== undefined ? `${expectedPerformance}%` : 'N/A'}
@@ -320,7 +320,7 @@ const HorseSelectionCard = memo(
                     ? 'bg-emerald-400'
                     : expectedPerformance >= 60
                       ? 'bg-amber-400'
-                      : 'bg-[rgb(148,163,184)]'
+                      : 'bg-slate-400'
                 )}
                 style={{ width: `${Math.min(100, expectedPerformance)}%` }}
               />

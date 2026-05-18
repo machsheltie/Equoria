@@ -31,7 +31,7 @@ const SKILL_LEVEL_LABELS: Record<
 > = {
   novice: {
     label: 'Novice',
-    colorClass: 'bg-[rgba(15,35,70,0.6)] text-[rgb(148,163,184)]',
+    colorClass: 'bg-[rgba(15,35,70,0.6)] text-slate-400',
     visibility: 'Stats hidden — unknown potential',
   },
   developing: {

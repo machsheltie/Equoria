@@ -77,7 +77,7 @@ const XpProgressBar: React.FC<XpProgressBarProps> = React.memo(
         {showPercentage && (
           <span
             data-testid="xp-progress-percent-text"
-            className="text-xs text-[rgb(148,163,184)] mt-1 block text-right"
+            className="text-xs text-slate-400 mt-1 block text-right"
           >
             {clampedPercent}%
           </span>

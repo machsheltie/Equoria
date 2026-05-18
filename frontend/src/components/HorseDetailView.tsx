@@ -54,7 +54,7 @@ const HorseDetailView = ({ horseId: propHorseId }: HorseDetailViewProps) => {
     if (value >= 90) return 'text-burnished-gold';
     if (value >= 75) return 'text-emerald-400';
     if (value >= 60) return 'text-aged-bronze';
-    return 'text-[rgb(148,163,184)]';
+    return 'text-slate-400';
   };
 
   // Loading state
@@ -93,7 +93,7 @@ const HorseDetailView = ({ horseId: propHorseId }: HorseDetailViewProps) => {
       <div className="flex items-center justify-center min-h-screen bg-background">
         <div className="max-w-md w-full mx-4">
           <div className="glass-panel rounded-lg p-6">
-            <div className="text-sm text-[rgb(148,163,184)]">Horse not found</div>
+            <div className="text-sm text-slate-400">Horse not found</div>
             <Button type="button" size="sm" className="mt-4" onClick={() => navigate('/horses')}>
               Back to Horse List
             </Button>
@@ -144,7 +144,7 @@ const HorseDetailView = ({ horseId: propHorseId }: HorseDetailViewProps) => {
                   (stat) => (
                     <div key={stat} className="flex flex-col items-center">
                       <div className={getStatColor(75)}>{getStatIcon(stat)}</div>
-                      <span className="text-xs text-[rgb(148,163,184)] mt-1 capitalize">
+                      <span className="text-xs text-slate-400 mt-1 capitalize">
                         {stat}
                       </span>
                       <span className="text-sm font-semibold text-[rgb(220,235,255)]">--</span>

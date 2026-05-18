@@ -101,23 +101,23 @@ const CompetitionImpactPanel: React.FC<CompetitionImpactPanelProps> = ({
       <div className="rounded-lg border-2 border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] p-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="p-3 rounded-lg bg-[rgba(15,35,70,0.5)]">
-            <Trophy className="h-6 w-6 text-[rgb(148,163,184)]" />
+            <Trophy className="h-6 w-6 text-slate-400" />
           </div>
           <div className="flex-1">
             <h3 className="text-lg font-bold text-[rgb(220,235,255)]">Competition Impact</h3>
-            <p className="text-sm text-[rgb(148,163,184)]">
+            <p className="text-sm text-slate-400">
               How this trait affects performance across disciplines
             </p>
           </div>
           <div className="text-right">
-            <p className="text-xs text-[rgb(148,163,184)]">Total Impact</p>
+            <p className="text-xs text-slate-400">Total Impact</p>
             <p
               className={`text-2xl font-bold ${
                 totalImpact > 0
                   ? 'text-emerald-400'
                   : totalImpact < 0
                     ? 'text-red-400'
-                    : 'text-[rgb(148,163,184)]'
+                    : 'text-slate-400'
               }`}
             >
               {formatImpactModifier(totalImpact)}

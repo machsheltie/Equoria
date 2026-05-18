@@ -53,7 +53,7 @@ const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
       >
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4" />
-          <p className="text-sm text-[rgb(148,163,184)]">Loading conformation scores...</p>
+          <p className="text-sm text-slate-400">Loading conformation scores...</p>
         </div>
       </div>
     );
@@ -92,7 +92,7 @@ const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
         className="w-full rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-6 text-center"
         data-testid="conformation-no-data"
       >
-        <p className="text-sm text-[rgb(148,163,184)]">
+        <p className="text-sm text-slate-400">
           No conformation data available for this horse.
         </p>
       </div>
@@ -119,14 +119,14 @@ const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-xl font-semibold text-[rgb(220,235,255)]">Conformation Scores</h3>
-          <p className="text-sm text-[rgb(148,163,184)] mt-1">
+          <p className="text-sm text-slate-400 mt-1">
             Physical assessment across 8 body regions
           </p>
         </div>
 
         {breedId && (
           <div className="flex items-center gap-2">
-            <label htmlFor="breed-comparison-toggle" className="text-sm text-[rgb(148,163,184)]">
+            <label htmlFor="breed-comparison-toggle" className="text-sm text-slate-400">
               Show breed comparison
             </label>
             <button
@@ -244,7 +244,7 @@ const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
         <p className="text-xs font-semibold text-[rgb(220,235,255)] mb-2">
           About Conformation Scoring:
         </p>
-        <ul className="space-y-1 text-xs text-[rgb(148,163,184)]">
+        <ul className="space-y-1 text-xs text-slate-400">
           <li>
             • Conformation scores assess physical structure and balance across 8 key body regions
           </li>

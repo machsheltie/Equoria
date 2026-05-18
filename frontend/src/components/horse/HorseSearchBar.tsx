@@ -159,7 +159,7 @@ const HorseSearchBar = ({
               ? 'text-blue-400 animate-pulse'
               : hasValue
                 ? 'text-[rgb(220,235,255)]'
-                : 'text-[rgb(148,163,184)]'
+                : 'text-slate-400'
           }`}
         />
       </div>
@@ -177,7 +177,7 @@ const HorseSearchBar = ({
         className={`
           w-full pl-11 pr-10 py-2.5
           border border-[rgba(37,99,235,0.3)] rounded-lg
-          text-[rgb(220,235,255)] placeholder-[rgb(148,163,184)]
+          text-[rgb(220,235,255)] placeholder-slate-400
           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
           transition-all duration-200
           ${isLoading ? 'bg-[rgba(37,99,235,0.1)]' : 'bg-[rgba(15,35,70,0.4)]'}
@@ -196,7 +196,7 @@ const HorseSearchBar = ({
           className={`
             absolute right-3 top-1/2 -translate-y-1/2
             p-1 rounded-full
-            text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] hover:bg-[rgba(15,35,70,0.5)]
+            text-slate-400 hover:text-[rgb(220,235,255)] hover:bg-[rgba(15,35,70,0.5)]
             focus:outline-none focus:ring-2 focus:ring-blue-500
             transition-all duration-200
           `}

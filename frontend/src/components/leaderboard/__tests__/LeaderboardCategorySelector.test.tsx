@@ -97,7 +97,7 @@ describe('LeaderboardCategorySelector', () => {
       const prizeButton = screen.getByTestId('category-prize-money');
       // Inactive tabs use a tokenized translucent navy background
       expect(prizeButton).toHaveClass('bg-[rgba(15,35,70,0.5)]');
-      expect(prizeButton).toHaveClass('text-[rgb(148,163,184)]');
+      expect(prizeButton).toHaveClass('text-slate-400');
     });
 
     it('calls onCategoryChange when a category is clicked', async () => {

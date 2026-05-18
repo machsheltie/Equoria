@@ -81,7 +81,7 @@ const EvaluationHistoryItem: React.FC<EvaluationHistoryItemProps> = ({
               <Award className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
                 <h4 className="font-semibold text-[rgb(220,235,255)]">{milestoneName}</h4>
-                <div className="flex items-center gap-2 mt-1 text-xs text-[rgb(148,163,184)]">
+                <div className="flex items-center gap-2 mt-1 text-xs text-slate-400">
                   <Calendar className="h-3 w-3" />
                   <span>{formatEvaluationDate(evaluatedAt)}</span>
                 </div>
@@ -100,7 +100,7 @@ const EvaluationHistoryItem: React.FC<EvaluationHistoryItemProps> = ({
               {/* Traits */}
               {traitsConfirmed && traitsConfirmed.length > 0 && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-[rgb(148,163,184)]">Traits:</span>
+                  <span className="text-xs text-slate-400">Traits:</span>
                   <div className="flex flex-wrap gap-1">
                     {traitsConfirmed.slice(0, 2).map((trait, index) => (
                       <span
@@ -111,7 +111,7 @@ const EvaluationHistoryItem: React.FC<EvaluationHistoryItemProps> = ({
                       </span>
                     ))}
                     {traitsConfirmed.length > 2 && (
-                      <span className="text-xs text-[rgb(148,163,184)]">
+                      <span className="text-xs text-slate-400">
                         +{traitsConfirmed.length - 2} more
                       </span>
                     )}
@@ -131,9 +131,9 @@ const EvaluationHistoryItem: React.FC<EvaluationHistoryItemProps> = ({
             aria-label={isExpanded ? 'Collapse details' : 'View details'}
           >
             {isExpanded ? (
-              <ChevronUp className="h-5 w-5 text-[rgb(148,163,184)]" />
+              <ChevronUp className="h-5 w-5 text-slate-400" />
             ) : (
-              <ChevronDown className="h-5 w-5 text-[rgb(148,163,184)]" />
+              <ChevronDown className="h-5 w-5 text-slate-400" />
             )}
           </button>
         </div>
@@ -175,14 +175,14 @@ const EvaluationHistoryItem: React.FC<EvaluationHistoryItemProps> = ({
           {/* Quick Stats Summary */}
           <div className="grid grid-cols-3 gap-3">
             <div className="rounded-lg bg-[rgba(15,35,70,0.4)] border border-[rgba(37,99,235,0.3)] p-3 text-center">
-              <p className="text-xs text-[rgb(148,163,184)] mb-1">Bond</p>
+              <p className="text-xs text-slate-400 mb-1">Bond</p>
               <p
                 className={`text-lg font-bold ${
                   bondModifier > 0
                     ? 'text-emerald-400'
                     : bondModifier < 0
                       ? 'text-red-400'
-                      : 'text-[rgb(148,163,184)]'
+                      : 'text-slate-400'
                 }`}
               >
                 {bondModifier > 0 ? '+' : ''}
@@ -190,11 +190,11 @@ const EvaluationHistoryItem: React.FC<EvaluationHistoryItemProps> = ({
               </p>
             </div>
             <div className="rounded-lg bg-[rgba(15,35,70,0.4)] border border-[rgba(37,99,235,0.3)] p-3 text-center">
-              <p className="text-xs text-[rgb(148,163,184)] mb-1">Consistency</p>
+              <p className="text-xs text-slate-400 mb-1">Consistency</p>
               <p className="text-lg font-bold text-emerald-400">+{taskConsistency}</p>
             </div>
             <div className="rounded-lg bg-[rgba(15,35,70,0.4)] border border-[rgba(37,99,235,0.3)] p-3 text-center">
-              <p className="text-xs text-[rgb(148,163,184)] mb-1">Quality</p>
+              <p className="text-xs text-slate-400 mb-1">Quality</p>
               <p className="text-lg font-bold text-amber-400">
                 {careQuality > 0 ? '+' : ''}
                 {careQuality}

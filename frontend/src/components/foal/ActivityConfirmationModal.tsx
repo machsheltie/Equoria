@@ -108,7 +108,7 @@ const ActivityConfirmationModal: React.FC<ActivityConfirmationModalProps> = ({
           <p className="text-base font-bold text-[rgb(220,235,255)]">
             {foal.name || 'Unnamed Foal'} ({foal.ageInDays} days old)
           </p>
-          <div className="flex items-center gap-4 mt-2 text-xs text-[rgb(148,163,184)]">
+          <div className="flex items-center gap-4 mt-2 text-xs text-slate-400">
             <div>
               <span className="font-medium">Bonding:</span> {foal.bondingLevel || 0}/100
             </div>
@@ -120,7 +120,7 @@ const ActivityConfirmationModal: React.FC<ActivityConfirmationModalProps> = ({
 
         {/* Description */}
         <div>
-          <p className="text-sm text-[rgb(148,163,184)]">{description}</p>
+          <p className="text-sm text-slate-400">{description}</p>
         </div>
 
         {/* Time Details */}

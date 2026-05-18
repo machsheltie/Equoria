@@ -65,14 +65,14 @@ const GroomDetailPanel: React.FC<GroomDetailPanelProps> = ({ groomId, enabled })
     >
       {/* ---- Performance metrics ---- */}
       <section data-testid={`groom-metrics-section-${groomId}`}>
-        <h4 className="text-xs font-semibold text-[rgb(148,163,184)] uppercase tracking-wide mb-3 flex items-center gap-1">
+        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3 flex items-center gap-1">
           <TrendingUp className="w-3 h-3" aria-hidden="true" />
           Performance Metrics
         </h4>
 
         {profileLoading && (
           <p
-            className="text-xs text-[rgb(148,163,184)] italic"
+            className="text-xs text-slate-400 italic"
             data-testid={`groom-metrics-loading-${groomId}`}
           >
             Loading metrics…
@@ -87,7 +87,7 @@ const GroomDetailPanel: React.FC<GroomDetailPanelProps> = ({ groomId, enabled })
 
         {!profileLoading && !profileError && !metrics && (
           <p
-            className="text-xs text-[rgb(148,163,184)] italic"
+            className="text-xs text-slate-400 italic"
             data-testid={`groom-metrics-empty-${groomId}`}
           >
             No metrics recorded yet — they accumulate as this groom completes interactions.
@@ -103,7 +103,7 @@ const GroomDetailPanel: React.FC<GroomDetailPanelProps> = ({ groomId, enabled })
                   key={f.key}
                   className="flex items-center justify-between bg-[rgba(15,35,70,0.4)] rounded px-3 py-2 border border-[rgba(37,99,235,0.3)]"
                 >
-                  <span className="text-xs text-[rgb(148,163,184)]">{f.label}</span>
+                  <span className="text-xs text-slate-400">{f.label}</span>
                   <span
                     className={`text-sm font-semibold ${scoreColor(value)}`}
                     data-testid={`groom-metric-${f.key}-${groomId}`}
@@ -114,7 +114,7 @@ const GroomDetailPanel: React.FC<GroomDetailPanelProps> = ({ groomId, enabled })
               );
             })}
             <div className="flex items-center justify-between bg-[rgba(15,35,70,0.4)] rounded px-3 py-2 border border-[rgba(37,99,235,0.3)]">
-              <span className="text-xs text-[rgb(148,163,184)]">Interactions</span>
+              <span className="text-xs text-slate-400">Interactions</span>
               <span
                 className="text-sm font-semibold text-[rgb(220,235,255)]"
                 data-testid={`groom-metric-totalInteractions-${groomId}`}
@@ -128,14 +128,14 @@ const GroomDetailPanel: React.FC<GroomDetailPanelProps> = ({ groomId, enabled })
 
       {/* ---- Assignment history ---- */}
       <section data-testid={`groom-assignment-log-section-${groomId}`}>
-        <h4 className="text-xs font-semibold text-[rgb(148,163,184)] uppercase tracking-wide mb-3 flex items-center gap-1">
+        <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-3 flex items-center gap-1">
           <History className="w-3 h-3" aria-hidden="true" />
           Assignment History
         </h4>
 
         {logsLoading && (
           <p
-            className="text-xs text-[rgb(148,163,184)] italic"
+            className="text-xs text-slate-400 italic"
             data-testid={`groom-logs-loading-${groomId}`}
           >
             Loading assignment history…
@@ -150,7 +150,7 @@ const GroomDetailPanel: React.FC<GroomDetailPanelProps> = ({ groomId, enabled })
 
         {!logsLoading && !logsError && (logs?.length ?? 0) === 0 && (
           <p
-            className="text-xs text-[rgb(148,163,184)] italic"
+            className="text-xs text-slate-400 italic"
             data-testid={`groom-logs-empty-${groomId}`}
           >
             No past assignments recorded for this groom yet.
@@ -176,7 +176,7 @@ const GroomDetailPanel: React.FC<GroomDetailPanelProps> = ({ groomId, enabled })
                       : ' → active'}
                   </span>
                 </div>
-                <div className="flex flex-wrap gap-3 text-xs text-[rgb(148,163,184)]">
+                <div className="flex flex-wrap gap-3 text-xs text-slate-400">
                   <span data-testid={`groom-log-milestones-${log.id}`}>
                     Milestones: {log.milestonesCompleted}
                   </span>

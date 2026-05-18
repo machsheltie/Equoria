@@ -229,7 +229,7 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
           <div className="h-6 bg-[rgba(15,35,70,0.5)] rounded w-1/4 mb-4"></div>
           <div className="h-64 bg-[rgba(15,35,70,0.3)] rounded"></div>
         </div>
-        <p className="text-center text-[rgb(148,163,184)] mt-4">Loading XP history...</p>
+        <p className="text-center text-slate-400 mt-4">Loading XP history...</p>
       </div>
     );
   }
@@ -260,7 +260,7 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
       <div className="p-4 bg-[rgba(15,35,70,0.5)] rounded-lg shadow border border-[rgba(37,99,235,0.3)]">
         <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4">XP History</h3>
         <div className="bg-[rgba(15,35,70,0.3)] border border-[rgba(37,99,235,0.3)] rounded p-8 text-center">
-          <p className="text-[rgb(148,163,184)]">No XP history available for this horse</p>
+          <p className="text-slate-400">No XP history available for this horse</p>
         </div>
       </div>
     );
@@ -279,7 +279,7 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
             className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
               timeRange === '7d'
                 ? 'bg-emerald-600 text-[var(--text-primary)] active'
-                : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.3)]'
+                : 'bg-[rgba(15,35,70,0.5)] text-slate-400 hover:bg-[rgba(15,35,70,0.3)]'
             }`}
             aria-pressed={timeRange === '7d'}
           >
@@ -290,7 +290,7 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
             className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
               timeRange === '30d'
                 ? 'bg-emerald-600 text-[var(--text-primary)] active'
-                : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.3)]'
+                : 'bg-[rgba(15,35,70,0.5)] text-slate-400 hover:bg-[rgba(15,35,70,0.3)]'
             }`}
             aria-pressed={timeRange === '30d'}
           >
@@ -301,7 +301,7 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
             className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
               timeRange === '90d'
                 ? 'bg-emerald-600 text-[var(--text-primary)] active'
-                : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.3)]'
+                : 'bg-[rgba(15,35,70,0.5)] text-slate-400 hover:bg-[rgba(15,35,70,0.3)]'
             }`}
             aria-pressed={timeRange === '90d'}
           >
@@ -312,7 +312,7 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
             className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
               timeRange === 'all'
                 ? 'bg-emerald-600 text-[var(--text-primary)] active'
-                : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.3)]'
+                : 'bg-[rgba(15,35,70,0.5)] text-slate-400 hover:bg-[rgba(15,35,70,0.3)]'
             }`}
             aria-pressed={timeRange === 'all'}
           >

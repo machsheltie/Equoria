@@ -83,7 +83,7 @@ const DisciplineCategory = ({
   return (
     <div className="space-y-3">
       {/* Category Header */}
-      <h3 className="text-sm font-semibold text-[rgb(148,163,184)] uppercase tracking-wider">
+      <h3 className="text-sm font-semibold text-slate-400 uppercase tracking-wider">
         {title}
       </h3>
 
@@ -110,7 +110,7 @@ const DisciplineCategory = ({
                   isSelected
                     ? 'bg-blue-600 text-[var(--text-primary)] border-[var(--gold-primary)] shadow-md'
                     : isDisabled
-                      ? 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] border-[rgba(37,99,235,0.2)] cursor-not-allowed'
+                      ? 'bg-[rgba(15,35,70,0.5)] text-slate-400 border-[rgba(37,99,235,0.2)] cursor-not-allowed'
                       : 'bg-[rgba(15,35,70,0.4)] text-[rgb(220,235,255)] border-[rgba(37,99,235,0.3)] hover:border-[var(--gold-light)] hover:bg-[rgba(37,99,235,0.08)] cursor-pointer'
                 }
               `}
@@ -122,8 +122,8 @@ const DisciplineCategory = ({
                     isSelected
                       ? 'text-[var(--gold-light)]'
                       : isDisabled
-                        ? 'text-[rgb(148,163,184)]'
-                        : 'text-[rgb(148,163,184)]'
+                        ? 'text-slate-400'
+                        : 'text-slate-400'
                   }`}
                 >
                   Score: {score}
@@ -189,7 +189,7 @@ const DisciplinePicker = ({
       {/* Loading Overlay */}
       {isLoading && (
         <div
-          className="mt-4 text-center text-sm text-[rgb(148,163,184)]"
+          className="mt-4 text-center text-sm text-slate-400"
           role="status"
           aria-live="polite"
         >

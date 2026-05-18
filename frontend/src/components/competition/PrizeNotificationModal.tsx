@@ -104,7 +104,7 @@ const getPlacementBadgeClasses = (placement: 1 | 2 | 3): string => {
     case 1:
       return 'bg-yellow-400 text-yellow-900'; // Gold
     case 2:
-      return 'bg-[rgba(148,163,184,0.3)] text-[rgb(220,235,255)]'; // Silver
+      return 'bg-slate-400/30 text-[rgb(220,235,255)]'; // Silver
     case 3:
       return 'bg-orange-600 text-orange-50'; // Bronze
   }
@@ -118,7 +118,7 @@ const getGradientClasses = (placement: 1 | 2 | 3): string => {
     case 1:
       return 'from-yellow-400 via-amber-500 to-yellow-600'; // Gold gradient
     case 2:
-      return 'from-[rgb(148,163,184)] via-[rgb(100,130,165)] to-[rgb(75,100,135)]'; // Silver gradient
+      return 'from-slate-400 via-[rgb(100,130,165)] to-[rgb(75,100,135)]'; // Silver gradient
     case 3:
       return 'from-orange-400 via-orange-500 to-orange-600'; // Bronze gradient
   }
@@ -140,7 +140,7 @@ const PlacementIcon = memo(({ placement }: { placement: 1 | 2 | 3 }) => {
   return (
     <Medal
       className={`h-10 w-10 drop-shadow-lg ${
-        placement === 2 ? 'text-[rgb(148,163,184)]' : 'text-orange-500'
+        placement === 2 ? 'text-slate-400' : 'text-orange-500'
       }`}
       aria-hidden="true"
       data-testid="medal-icon"
@@ -318,15 +318,15 @@ const PrizeNotificationModal = memo(function PrizeNotificationModal({
             {/* Competition Context */}
             <div className="mt-6 pt-4 border-t border-[rgba(37,99,235,0.2)]">
               <div className="flex items-center gap-2 mb-2">
-                <Award className="h-4 w-4 text-[rgb(148,163,184)]" aria-hidden="true" />
+                <Award className="h-4 w-4 text-slate-400" aria-hidden="true" />
                 <span
-                  className="text-sm font-medium text-[rgb(148,163,184)]"
+                  className="text-sm font-medium text-slate-400"
                   data-testid="competition-name"
                 >
                   {competitionName}
                 </span>
               </div>
-              <div className="flex items-center justify-between text-xs text-[rgb(148,163,184)]">
+              <div className="flex items-center justify-between text-xs text-slate-400">
                 <span
                   className="bg-[rgba(37,99,235,0.1)] text-blue-400 px-2 py-1 rounded-full"
                   data-testid="competition-discipline"

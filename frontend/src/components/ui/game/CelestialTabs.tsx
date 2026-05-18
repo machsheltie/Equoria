@@ -67,7 +67,7 @@ export const CelestialTabs = ({
             value={tab.value}
             className={`
               relative bg-[rgba(15,35,70,0.5)] border border-[rgba(37,99,235,0.2)] rounded-t-lg px-4 py-3
-              fantasy-title text-base text-[rgb(148,163,184)] transition-all duration-300 min-w-0
+              fantasy-title text-base text-slate-400 transition-all duration-300 min-w-0
               data-[state=active]:bg-[rgba(37,99,235,0.2)] data-[state=active]:text-[rgb(220,235,255)] data-[state=active]:border-[rgba(212,168,67,0.5)]
               data-[state=active]:shadow-lg data-[state=active]:magical-glow
               hover:bg-[rgba(37,99,235,0.1)] hover:border-[rgba(37,99,235,0.4)] hover:text-[rgb(220,235,255)]

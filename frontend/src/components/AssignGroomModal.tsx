@@ -196,7 +196,7 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
           <h2 className="text-2xl font-bold text-[rgb(220,235,255)]">Assign Groom</h2>
           <button
             onClick={onClose}
-            className="text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] transition-colors"
+            className="text-slate-400 hover:text-[rgb(220,235,255)] transition-colors"
             aria-label="Close modal"
           >
             <X size={24} />
@@ -208,7 +208,7 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
           {/* Horse Information */}
           <div className="bg-[rgba(37,99,235,0.1)] border border-[rgba(37,99,235,0.3)] rounded-lg p-4 mb-6">
             <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-2">Horse</h3>
-            <p className="text-[rgb(148,163,184)]">{horseName}</p>
+            <p className="text-slate-400">{horseName}</p>
           </div>
 
           {/* Success Message */}
@@ -232,8 +232,8 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
             <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4">Select Groom</h3>
 
             {availableGrooms.length === 0 ? (
-              <div className="text-center py-8 text-[rgb(148,163,184)]">
-                <User size={48} className="mx-auto mb-4 text-[rgb(148,163,184)]" />
+              <div className="text-center py-8 text-slate-400">
+                <User size={48} className="mx-auto mb-4 text-slate-400" />
                 <p className="text-lg">No grooms available</p>
                 <p className="text-sm mt-2">
                   Hire grooms from the marketplace to assign them to your horses.
@@ -273,12 +273,12 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                             {horseTemperament ? (
                               <SynergyBadge groomId={groom.id} horseId={horseId} />
                             ) : null}
-                            <span className="text-sm text-[rgb(148,163,184)] capitalize">
+                            <span className="text-sm text-slate-400 capitalize">
                               {groom.skillLevel}
                             </span>
                           </div>
                         </div>
-                        <div className="text-sm text-[rgb(148,163,184)] space-y-1">
+                        <div className="text-sm text-slate-400 space-y-1">
                           <p>
                             <span className="font-medium">Specialty:</span>{' '}
                             <span className="capitalize">{formatSpecialty(groom.specialty)}</span>
@@ -319,7 +319,7 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
               <div>
                 <label
                   htmlFor="priority"
-                  className="block text-sm font-medium text-[rgb(148,163,184)] mb-2"
+                  className="block text-sm font-medium text-slate-400 mb-2"
                 >
                   Priority Level
                 </label>
@@ -336,7 +336,7 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                   <option value={4}>4 - Low</option>
                   <option value={5}>5 - Lowest</option>
                 </select>
-                <p className="text-xs text-[rgb(148,163,184)] mt-1">
+                <p className="text-xs text-slate-400 mt-1">
                   Priority 1 assignments receive the most attention from the groom
                 </p>
               </div>
@@ -351,11 +351,11 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                     onChange={(e) => setReplacePrimary(e.target.checked)}
                     className="mt-1 mr-3"
                   />
-                  <label htmlFor="replacePrimary" className="text-sm text-[rgb(148,163,184)]">
+                  <label htmlFor="replacePrimary" className="text-sm text-slate-400">
                     <span className="font-medium text-[rgb(220,235,255)]">
                       Replace existing primary assignment
                     </span>
-                    <p className="text-xs text-[rgb(148,163,184)] mt-1">
+                    <p className="text-xs text-slate-400 mt-1">
                       If this horse already has a primary groom, deactivate that assignment
                     </p>
                   </label>
@@ -366,7 +366,7 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
               <div>
                 <label
                   htmlFor="notes"
-                  className="block text-sm font-medium text-[rgb(148,163,184)] mb-2"
+                  className="block text-sm font-medium text-slate-400 mb-2"
                 >
                   Notes (Optional)
                 </label>
@@ -380,7 +380,7 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                   placeholder="Add any special instructions or notes for this assignment..."
                   aria-label="Assignment notes"
                 />
-                <p className="text-xs text-[rgb(148,163,184)] mt-1">
+                <p className="text-xs text-slate-400 mt-1">
                   {notes.length}/500 characters
                 </p>
               </div>

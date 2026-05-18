@@ -163,7 +163,7 @@ const HorseFilters = ({
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-[rgba(37,99,235,0.3)]">
         <div className="flex items-center gap-2">
-          <Filter className="w-5 h-5 text-[rgb(148,163,184)]" aria-hidden="true" />
+          <Filter className="w-5 h-5 text-slate-400" aria-hidden="true" />
           <h2 className="text-lg font-semibold text-[rgb(220,235,255)]">Filters</h2>
           {hasActiveFilters && (
             <span
@@ -198,9 +198,9 @@ const HorseFilters = ({
             aria-expanded={isExpanded}
           >
             {isExpanded ? (
-              <ChevronUp className="w-5 h-5 text-[rgb(148,163,184)]" aria-hidden="true" />
+              <ChevronUp className="w-5 h-5 text-slate-400" aria-hidden="true" />
             ) : (
-              <ChevronDown className="w-5 h-5 text-[rgb(148,163,184)]" aria-hidden="true" />
+              <ChevronDown className="w-5 h-5 text-slate-400" aria-hidden="true" />
             )}
           </button>
         </div>
@@ -211,7 +211,7 @@ const HorseFilters = ({
         <div className="p-4 space-y-6">
           {/* Age Range Filter */}
           <div>
-            <label className="block text-sm font-medium text-[rgb(148,163,184)] mb-2">
+            <label className="block text-sm font-medium text-slate-400 mb-2">
               Age Range
             </label>
             <div className="grid grid-cols-2 gap-3">
@@ -228,7 +228,7 @@ const HorseFilters = ({
                   value={filters.minAge ?? ''}
                   onChange={handleMinAgeChange}
                   disabled={isLoading}
-                  className="w-full px-3 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg text-sm bg-[rgba(15,35,70,0.4)] text-[rgb(220,235,255)] placeholder-[rgb(148,163,184)] focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-[rgba(15,35,70,0.3)] disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg text-sm bg-[rgba(15,35,70,0.4)] text-[rgb(220,235,255)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-[rgba(15,35,70,0.3)] disabled:cursor-not-allowed"
                   aria-label="Minimum age filter"
                 />
               </div>
@@ -245,7 +245,7 @@ const HorseFilters = ({
                   value={filters.maxAge ?? ''}
                   onChange={handleMaxAgeChange}
                   disabled={isLoading}
-                  className="w-full px-3 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg text-sm bg-[rgba(15,35,70,0.4)] text-[rgb(220,235,255)] placeholder-[rgb(148,163,184)] focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-[rgba(15,35,70,0.3)] disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg text-sm bg-[rgba(15,35,70,0.4)] text-[rgb(220,235,255)] placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-[rgba(15,35,70,0.3)] disabled:cursor-not-allowed"
                   aria-label="Maximum age filter"
                 />
               </div>
@@ -255,7 +255,7 @@ const HorseFilters = ({
           {/* Breed Filter */}
           {breeds.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-[rgb(148,163,184)] mb-2">
+              <label className="block text-sm font-medium text-slate-400 mb-2">
                 Breeds
               </label>
               <div className="space-y-2 max-h-40 overflow-y-auto">
@@ -281,7 +281,7 @@ const HorseFilters = ({
 
           {/* Discipline Filter */}
           <div>
-            <label className="block text-sm font-medium text-[rgb(148,163,184)] mb-2">
+            <label className="block text-sm font-medium text-slate-400 mb-2">
               Disciplines
             </label>
             <div className="space-y-2">
@@ -308,7 +308,7 @@ const HorseFilters = ({
               page supplies the toggle handler and at least one observed color. */}
           {onCoatColorToggle && availableCoatColors.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-[rgb(148,163,184)] mb-2">
+              <label className="block text-sm font-medium text-slate-400 mb-2">
                 Coat Color
               </label>
               <div className="space-y-2 max-h-40 overflow-y-auto">
@@ -337,7 +337,7 @@ const HorseFilters = ({
 
           {/* Training Status Filter */}
           <div>
-            <label className="block text-sm font-medium text-[rgb(148,163,184)] mb-2">
+            <label className="block text-sm font-medium text-slate-400 mb-2">
               Training Status
             </label>
             <div className="space-y-2">
@@ -371,7 +371,7 @@ const HorseFilters = ({
       {/* Loading Overlay */}
       {isLoading && (
         <div className="absolute inset-0 bg-[rgba(15,35,70,0.5)] flex items-center justify-center rounded-lg">
-          <div className="text-sm text-[rgb(148,163,184)]" role="status" aria-live="polite">
+          <div className="text-sm text-slate-400" role="status" aria-live="polite">
             Applying filters...
           </div>
         </div>

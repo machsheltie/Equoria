@@ -61,7 +61,7 @@ const HorseCard: React.FC<HorseCardProps> = ({ horse, type }) => {
       <div className="space-y-2 text-sm">
         {/* Breed & Age */}
         <div className="flex items-center justify-between">
-          <span className="text-[rgb(148,163,184)]">Breed:</span>
+          <span className="text-slate-400">Breed:</span>
           <span className="font-medium text-[rgb(220,235,255)]">
             {/* Equoria-1k4n — legacy horses may lack breedName; 'not recorded'
                 is the honest fallback per the Equoria-iwy3 convention (never
@@ -71,13 +71,13 @@ const HorseCard: React.FC<HorseCardProps> = ({ horse, type }) => {
         </div>
 
         <div className="flex items-center justify-between">
-          <span className="text-[rgb(148,163,184)]">Age:</span>
+          <span className="text-slate-400">Age:</span>
           <span className="font-medium text-[rgb(220,235,255)]">{horse.age} years</span>
         </div>
 
         {/* Health Status */}
         <div className="flex items-center justify-between">
-          <span className="text-[rgb(148,163,184)]">Health:</span>
+          <span className="text-slate-400">Health:</span>
           <div className="flex items-center gap-1">
             <Heart className="h-3 w-3 text-red-500" />
             <span className="font-medium text-[rgb(220,235,255)] capitalize">
@@ -89,7 +89,7 @@ const HorseCard: React.FC<HorseCardProps> = ({ horse, type }) => {
         {/* Level (if available) */}
         {horse.level !== undefined && (
           <div className="flex items-center justify-between">
-            <span className="text-[rgb(148,163,184)]">Level:</span>
+            <span className="text-slate-400">Level:</span>
             <span className="font-medium text-[rgb(220,235,255)]">{horse.level}</span>
           </div>
         )}
@@ -97,7 +97,7 @@ const HorseCard: React.FC<HorseCardProps> = ({ horse, type }) => {
         {/* Temperament (if available) */}
         {horse.temperament && (
           <div className="flex items-center justify-between">
-            <span className="text-[rgb(148,163,184)]">Temperament:</span>
+            <span className="text-slate-400">Temperament:</span>
             <span className="font-medium text-[rgb(220,235,255)] capitalize">
               {horse.temperament}
             </span>
@@ -171,7 +171,7 @@ const BreedingConfirmationModal: React.FC<BreedingConfirmationModalProps> = ({
         <div className="rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)] p-4">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-[rgb(148,163,184)]" />
+              <TrendingUp className="h-5 w-5 text-slate-400" />
               <h5 className="text-sm font-semibold text-[rgb(220,235,255)]">Compatibility Score</h5>
             </div>
             <span className={`text-2xl font-bold ${compatibilityColor}`}>
@@ -182,17 +182,17 @@ const BreedingConfirmationModal: React.FC<BreedingConfirmationModalProps> = ({
           {/* Compatibility Breakdown */}
           <div className="grid grid-cols-3 gap-2 mt-3 text-xs">
             <div className="text-center">
-              <p className="text-[rgb(148,163,184)]">Temperament</p>
+              <p className="text-slate-400">Temperament</p>
               <p className="font-semibold text-[rgb(220,235,255)]">
                 {compatibility.temperamentMatch}
               </p>
             </div>
             <div className="text-center">
-              <p className="text-[rgb(148,163,184)]">Trait Synergy</p>
+              <p className="text-slate-400">Trait Synergy</p>
               <p className="font-semibold text-[rgb(220,235,255)]">{compatibility.traitSynergy}</p>
             </div>
             <div className="text-center">
-              <p className="text-[rgb(148,163,184)]">Genetic Diversity</p>
+              <p className="text-slate-400">Genetic Diversity</p>
               <p className="font-semibold text-[rgb(220,235,255)]">
                 {compatibility.geneticDiversity}
               </p>
@@ -209,7 +209,7 @@ const BreedingConfirmationModal: React.FC<BreedingConfirmationModalProps> = ({
             </div>
             <span className="text-xl font-bold text-emerald-400">${studFee.toLocaleString()}</span>
           </div>
-          <p className="text-xs text-[rgb(148,163,184)] mt-2">
+          <p className="text-xs text-slate-400 mt-2">
             This amount will be deducted from your account balance immediately.
           </p>
         </div>

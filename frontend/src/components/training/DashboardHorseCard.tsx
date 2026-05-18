@@ -45,7 +45,7 @@ const DashboardHorseCard = ({ horse, onTrain, className = '' }: DashboardHorseCa
     ineligible: {
       text: 'Ineligible',
       bgColor: 'bg-[rgba(15,35,70,0.5)]',
-      textColor: 'text-[rgb(148,163,184)]',
+      textColor: 'text-slate-400',
       borderColor: 'border-[rgba(37,99,235,0.2)]',
     },
   };
@@ -61,7 +61,7 @@ const DashboardHorseCard = ({ horse, onTrain, className = '' }: DashboardHorseCa
       <div className="flex items-start justify-between mb-3">
         <div>
           <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">{name}</h3>
-          <p className="text-sm text-[rgb(148,163,184)]">
+          <p className="text-sm text-slate-400">
             {age} {age === 1 ? 'year' : 'years'} old
           </p>
         </div>
@@ -85,7 +85,7 @@ const DashboardHorseCard = ({ horse, onTrain, className = '' }: DashboardHorseCa
 
         {/* Ineligible: Show reason */}
         {trainingStatus === 'ineligible' && (
-          <p className="text-sm text-[rgb(148,163,184)]">
+          <p className="text-sm text-slate-400">
             {ineligibilityReason || 'Not eligible for training'}
           </p>
         )}

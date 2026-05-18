@@ -236,7 +236,7 @@ const TrainingSessionModal = ({
           <div>
             <div className="mb-4 flex items-start justify-between">
               <div>
-                <p className="text-xs uppercase tracking-wide text-[rgb(148,163,184)]">
+                <p className="text-xs uppercase tracking-wide text-slate-400">
                   Training Complete
                 </p>
                 <h3 className="text-xl font-bold text-[rgb(220,235,255)]">{horse.name}</h3>
@@ -261,11 +261,11 @@ const TrainingSessionModal = ({
             {/* Training Form */}
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs uppercase tracking-wide text-[rgb(148,163,184)]">
+                <p className="text-xs uppercase tracking-wide text-slate-400">
                   Training Session
                 </p>
                 <h3 className="text-xl font-bold text-[rgb(220,235,255)]">{horse.name}</h3>
-                <p className="text-sm text-[rgb(148,163,184)]">
+                <p className="text-sm text-slate-400">
                   Choose a discipline to train. Eligibility and cooldown are enforced server-side.
                 </p>
               </div>

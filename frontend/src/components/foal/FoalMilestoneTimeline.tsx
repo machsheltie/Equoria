@@ -113,10 +113,10 @@ const FoalMilestoneTimeline: React.FC<FoalMilestoneTimelineProps> = ({ foal, mil
             <h2 className="text-2xl font-bold text-[rgb(220,235,255)]">
               {foal.name || 'Unnamed Foal'}
             </h2>
-            <p className="text-[rgb(148,163,184)] mt-1">
+            <p className="text-slate-400 mt-1">
               {getSexLabel(foal.sex)} • {foal.ageInDays} days old
             </p>
-            <div className="flex items-center gap-2 mt-2 text-sm text-[rgb(148,163,184)]">
+            <div className="flex items-center gap-2 mt-2 text-sm text-slate-400">
               <Calendar className="h-4 w-4" />
               <span>Born: {formatDate(foal.birthDate)}</span>
             </div>
@@ -128,7 +128,7 @@ const FoalMilestoneTimeline: React.FC<FoalMilestoneTimelineProps> = ({ foal, mil
             aria-label="Help"
             title="View milestone guide"
           >
-            <HelpCircle className="h-5 w-5 text-[rgb(148,163,184)]" />
+            <HelpCircle className="h-5 w-5 text-slate-400" />
           </button>
         </div>
 
@@ -173,7 +173,7 @@ const FoalMilestoneTimeline: React.FC<FoalMilestoneTimelineProps> = ({ foal, mil
             <CartesianGrid strokeDasharray="3 3" stroke="rgba(37,99,235,0.2)" />
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 12, fill: 'rgb(148,163,184)' }}
+              tick={{ fontSize: 12, fill: 'rgb(var(--mystic-silver))' }}
               interval={0}
               angle={-45}
               textAnchor="end"
@@ -215,15 +215,15 @@ const FoalMilestoneTimeline: React.FC<FoalMilestoneTimelineProps> = ({ foal, mil
         <div className="flex items-center justify-center gap-6 mt-4 text-sm">
           <div className="flex items-center gap-2">
             <div className="h-3 w-3 rounded-full bg-green-500 border-2 border-[rgba(15,35,70,0.5)]"></div>
-            <span className="text-[rgb(148,163,184)]">Completed</span>
+            <span className="text-slate-400">Completed</span>
           </div>
           <div className="flex items-center gap-2">
             <div className="h-3 w-3 rounded-full bg-blue-500 border-2 border-[rgba(15,35,70,0.5)]"></div>
-            <span className="text-[rgb(148,163,184)]">Current</span>
+            <span className="text-slate-400">Current</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-[rgb(148,163,184)] border-2 border-[rgba(15,35,70,0.5)]"></div>
-            <span className="text-[rgb(148,163,184)]">Upcoming</span>
+            <div className="h-3 w-3 rounded-full bg-slate-400 border-2 border-[rgba(15,35,70,0.5)]"></div>
+            <span className="text-slate-400">Upcoming</span>
           </div>
         </div>
       </div>
@@ -260,7 +260,7 @@ const FoalMilestoneTimeline: React.FC<FoalMilestoneTimelineProps> = ({ foal, mil
         </div>
 
         {sortedMilestones.length === 0 && (
-          <div className="text-center py-8 text-[rgb(148,163,184)]">
+          <div className="text-center py-8 text-slate-400">
             <p>No milestone data available.</p>
           </div>
         )}

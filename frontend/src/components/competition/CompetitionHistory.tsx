@@ -127,11 +127,11 @@ const getPlacementBadgeClasses = (rank: number): string => {
     case 1:
       return 'bg-yellow-400 text-yellow-900';
     case 2:
-      return 'bg-[rgba(148,163,184,0.3)] text-[rgb(220,235,255)]';
+      return 'bg-slate-400/30 text-[rgb(220,235,255)]';
     case 3:
       return 'bg-orange-400 text-orange-900';
     default:
-      return 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)]';
+      return 'bg-[rgba(15,35,70,0.5)] text-slate-400';
   }
 };
 
@@ -192,7 +192,7 @@ const StatisticsCard = memo(({ statistics }: { statistics: CompetitionStatistics
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
         {/* Total Competitions */}
         <div className="text-center p-3 bg-[rgba(15,35,70,0.5)] rounded-lg">
-          <p className="text-xs text-[rgb(148,163,184)] uppercase tracking-wide mb-1">Total</p>
+          <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Total</p>
           <p
             className="text-2xl font-bold text-[rgb(220,235,255)]"
             data-testid="stat-total-competitions"
@@ -203,7 +203,7 @@ const StatisticsCard = memo(({ statistics }: { statistics: CompetitionStatistics
 
         {/* Wins */}
         <div className="text-center p-3 bg-[rgba(15,35,70,0.5)] rounded-lg">
-          <p className="text-xs text-[rgb(148,163,184)] uppercase tracking-wide mb-1">Wins</p>
+          <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Wins</p>
           <p className="text-2xl font-bold text-yellow-600" data-testid="stat-wins">
             {statistics.wins}
           </p>
@@ -211,7 +211,7 @@ const StatisticsCard = memo(({ statistics }: { statistics: CompetitionStatistics
 
         {/* Top 3 Finishes */}
         <div className="text-center p-3 bg-[rgba(15,35,70,0.5)] rounded-lg">
-          <p className="text-xs text-[rgb(148,163,184)] uppercase tracking-wide mb-1">Top 3</p>
+          <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Top 3</p>
           <p className="text-2xl font-bold text-orange-600" data-testid="stat-top3">
             {statistics.top3Finishes}
           </p>
@@ -219,7 +219,7 @@ const StatisticsCard = memo(({ statistics }: { statistics: CompetitionStatistics
 
         {/* Win Rate */}
         <div className="text-center p-3 bg-[rgba(15,35,70,0.5)] rounded-lg">
-          <p className="text-xs text-[rgb(148,163,184)] uppercase tracking-wide mb-1">Win Rate</p>
+          <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">Win Rate</p>
           <p className={`text-2xl font-bold ${winRateColorClass}`} data-testid="stat-win-rate">
             {statistics.winRate.toFixed(1)}%
           </p>
@@ -227,7 +227,7 @@ const StatisticsCard = memo(({ statistics }: { statistics: CompetitionStatistics
 
         {/* Total Prize Money */}
         <div className="text-center p-3 bg-[rgba(15,35,70,0.5)] rounded-lg">
-          <p className="text-xs text-[rgb(148,163,184)] uppercase tracking-wide mb-1">
+          <p className="text-xs text-slate-400 uppercase tracking-wide mb-1">
             Prize Money
           </p>
           <p className="text-2xl font-bold text-purple-400" data-testid="stat-total-prize">
@@ -238,8 +238,8 @@ const StatisticsCard = memo(({ statistics }: { statistics: CompetitionStatistics
         {/* Average/Best Placement */}
         <div className="text-center p-3 bg-[rgba(15,35,70,0.5)] rounded-lg">
           <div className="flex justify-between mb-1">
-            <p className="text-xs text-[rgb(148,163,184)] uppercase tracking-wide">Avg</p>
-            <p className="text-xs text-[rgb(148,163,184)] uppercase tracking-wide">Best</p>
+            <p className="text-xs text-slate-400 uppercase tracking-wide">Avg</p>
+            <p className="text-xs text-slate-400 uppercase tracking-wide">Best</p>
           </div>
           <div className="flex justify-between">
             <p
@@ -309,9 +309,9 @@ LoadingSkeletons.displayName = 'LoadingSkeletons';
  */
 const EmptyState = memo(() => (
   <div className="py-12 text-center" data-testid="empty-state">
-    <Trophy className="mx-auto h-16 w-16 text-[rgb(148,163,184)] mb-4" aria-hidden="true" />
+    <Trophy className="mx-auto h-16 w-16 text-slate-400 mb-4" aria-hidden="true" />
     <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">No competition history yet</h3>
-    <p className="text-sm text-[rgb(148,163,184)] max-w-sm mx-auto">
+    <p className="text-sm text-slate-400 max-w-sm mx-auto">
       Enter your first competition to start building your record. Every journey begins with a single
       step!
     </p>
@@ -325,11 +325,11 @@ EmptyState.displayName = 'EmptyState';
  */
 const FilteredEmptyState = memo(() => (
   <div className="py-12 text-center" data-testid="filtered-empty-state">
-    <Filter className="mx-auto h-12 w-12 text-[rgb(148,163,184)] mb-4" aria-hidden="true" />
+    <Filter className="mx-auto h-12 w-12 text-slate-400 mb-4" aria-hidden="true" />
     <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">
       No competitions match your filters
     </h3>
-    <p className="text-sm text-[rgb(148,163,184)]">
+    <p className="text-sm text-slate-400">
       Try adjusting your filters to see more results.
     </p>
   </div>
@@ -344,7 +344,7 @@ const ErrorState = memo(({ message, onRetry }: { message: string; onRetry?: () =
   <div className="py-12 text-center" data-testid="error-state">
     <AlertCircle className="mx-auto h-12 w-12 text-red-400 mb-4" aria-hidden="true" />
     <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">Unable to load history</h3>
-    <p className="text-sm text-[rgb(148,163,184)] mb-4">{message}</p>
+    <p className="text-sm text-slate-400 mb-4">{message}</p>
     {onRetry && (
       <button
         onClick={onRetry}
@@ -424,7 +424,7 @@ const CompetitionEntryCard = memo(
               >
                 {disciplineName}
               </span>
-              <span className="text-sm text-[rgb(148,163,184)] flex items-center gap-1">
+              <span className="text-sm text-slate-400 flex items-center gap-1">
                 <Calendar className="h-3 w-3" aria-hidden="true" />
                 {formatDate(entry.date)}
               </span>
@@ -437,8 +437,8 @@ const CompetitionEntryCard = memo(
         <div className="flex flex-wrap items-center gap-4 text-sm border-t border-[rgba(37,99,235,0.2)] pt-3">
           {/* Score */}
           <div className="flex items-center gap-1">
-            <Target className="h-4 w-4 text-[rgb(148,163,184)]" aria-hidden="true" />
-            <span className="text-[rgb(148,163,184)]">Score:</span>
+            <Target className="h-4 w-4 text-slate-400" aria-hidden="true" />
+            <span className="text-slate-400">Score:</span>
             <span className="font-medium text-[rgb(220,235,255)]">
               {entry.finalScore.toFixed(1)}
             </span>
@@ -457,12 +457,12 @@ const CompetitionEntryCard = memo(
             <div className="flex items-center gap-1">
               <Zap className="h-4 w-4 text-purple-400" aria-hidden="true" />
               <span className="font-medium text-[rgb(220,235,255)]">{entry.xpGained}</span>
-              <span className="text-[rgb(148,163,184)]">XP</span>
+              <span className="text-slate-400">XP</span>
             </div>
           )}
 
           {/* Participants */}
-          <div className="flex items-center gap-1 text-[rgb(148,163,184)]">
+          <div className="flex items-center gap-1 text-slate-400">
             <span>
               ({entry.placement}/{entry.totalParticipants})
             </span>
@@ -613,7 +613,7 @@ const FilterControls = memo(
               className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
                 hasActiveFilters
                   ? 'bg-[rgba(239,68,68,0.15)] text-red-400 hover:bg-[rgba(239,68,68,0.25)] focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
-                  : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] cursor-not-allowed'
+                  : 'bg-[rgba(15,35,70,0.5)] text-slate-400 cursor-not-allowed'
               }`}
               data-testid="clear-filters"
               aria-label="Clear all filters"
@@ -737,7 +737,7 @@ const CompetitionHistory: React.FC<CompetitionHistoryProps> = ({
         aria-label="Competition history"
       >
         <h2 className="text-2xl font-bold text-[rgb(220,235,255)] mb-2">{horseName}</h2>
-        <p className="text-[rgb(148,163,184)] mb-6">Competition History</p>
+        <p className="text-slate-400 mb-6">Competition History</p>
         <LoadingSkeletons />
       </div>
     );
@@ -753,7 +753,7 @@ const CompetitionHistory: React.FC<CompetitionHistoryProps> = ({
         aria-label="Competition history"
       >
         <h2 className="text-2xl font-bold text-[rgb(220,235,255)] mb-2">{horseName}</h2>
-        <p className="text-[rgb(148,163,184)] mb-6">Competition History</p>
+        <p className="text-slate-400 mb-6">Competition History</p>
         <ErrorState message={error} onRetry={onRetry} />
       </div>
     );
@@ -769,7 +769,7 @@ const CompetitionHistory: React.FC<CompetitionHistoryProps> = ({
         aria-label="Competition history"
       >
         <h2 className="text-2xl font-bold text-[rgb(220,235,255)] mb-2">{horseName}</h2>
-        <p className="text-[rgb(148,163,184)] mb-6">Competition History</p>
+        <p className="text-slate-400 mb-6">Competition History</p>
 
         {/* Show empty statistics card */}
         {data && <StatisticsCard statistics={data.statistics} />}
@@ -789,7 +789,7 @@ const CompetitionHistory: React.FC<CompetitionHistoryProps> = ({
     >
       {/* Header */}
       <h2 className="text-2xl font-bold text-[rgb(220,235,255)] mb-2">{horseName}</h2>
-      <p className="text-[rgb(148,163,184)] mb-6">Competition History</p>
+      <p className="text-slate-400 mb-6">Competition History</p>
 
       {/* Statistics Card */}
       <StatisticsCard statistics={data.statistics} />
@@ -813,7 +813,7 @@ const CompetitionHistory: React.FC<CompetitionHistoryProps> = ({
         <>
           {/* Results Count */}
           <div className="mb-3">
-            <p className="text-sm text-[rgb(148,163,184)]">
+            <p className="text-sm text-slate-400">
               {filteredCompetitions.length}{' '}
               {filteredCompetitions.length === 1 ? 'competition' : 'competitions'} found
             </p>

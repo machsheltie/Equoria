@@ -31,7 +31,7 @@ function getComponentColor(value: number, isModifier: boolean = false): string {
     // For other components: green if high, yellow if medium, gray if low
     if (value >= 2) return 'text-emerald-400';
     if (value >= 1) return 'text-yellow-400';
-    return 'text-[rgb(148,163,184)]';
+    return 'text-slate-400';
   }
 }
 
@@ -139,10 +139,10 @@ const ScoreBreakdownPanel: React.FC<ScoreBreakdownPanelProps> = ({
               />
             </div>
             {/* Center line */}
-            <div className="absolute left-1/2 top-0 w-0.5 h-full bg-[rgb(148,163,184)] -translate-x-1/2" />
+            <div className="absolute left-1/2 top-0 w-0.5 h-full bg-slate-400 -translate-x-1/2" />
           </div>
 
-          <p className="text-xs text-[rgb(148,163,184)]">{getBondExplanation(bondModifier)}</p>
+          <p className="text-xs text-slate-400">{getBondExplanation(bondModifier)}</p>
         </div>
 
         {/* Task Consistency */}
@@ -172,7 +172,7 @@ const ScoreBreakdownPanel: React.FC<ScoreBreakdownPanelProps> = ({
             </div>
           </div>
 
-          <p className="text-xs text-[rgb(148,163,184)]">{getTaskExplanation(taskConsistency)}</p>
+          <p className="text-xs text-slate-400">{getTaskExplanation(taskConsistency)}</p>
         </div>
 
         {/* Care Quality */}
@@ -201,7 +201,7 @@ const ScoreBreakdownPanel: React.FC<ScoreBreakdownPanelProps> = ({
             </div>
           </div>
 
-          <p className="text-xs text-[rgb(148,163,184)]">{getCareExplanation(careQuality)}</p>
+          <p className="text-xs text-slate-400">{getCareExplanation(careQuality)}</p>
         </div>
 
         {/* Total Calculation */}
@@ -211,7 +211,7 @@ const ScoreBreakdownPanel: React.FC<ScoreBreakdownPanelProps> = ({
               <span className="text-sm font-semibold text-[rgb(220,235,255)]">Total Score</span>
             </div>
             <div className="flex items-center gap-3">
-              <div className="text-xs text-[rgb(148,163,184)]">
+              <div className="text-xs text-slate-400">
                 {bondModifier > 0 ? '+' : ''}
                 {bondModifier} + {taskConsistency} + {careQuality > 0 ? '+' : ''}
                 {careQuality}
@@ -235,7 +235,7 @@ const ScoreBreakdownPanel: React.FC<ScoreBreakdownPanelProps> = ({
         {/* Key factors summary */}
         <div className="rounded-lg bg-[rgba(15,35,70,0.3)] border border-[rgba(37,99,235,0.3)] p-3">
           <p className="text-xs font-semibold text-[rgb(220,235,255)] mb-2">Key Factors:</p>
-          <div className="space-y-1 text-xs text-[rgb(148,163,184)]">
+          <div className="space-y-1 text-xs text-slate-400">
             {bondModifier > 0 && (
               <div className="flex items-center gap-2">
                 <span className="text-emerald-400">✓</span>
@@ -268,7 +268,7 @@ const ScoreBreakdownPanel: React.FC<ScoreBreakdownPanelProps> = ({
             )}
             {careQuality === 0 && (
               <div className="flex items-center gap-2">
-                <span className="text-[rgb(148,163,184)]">○</span>
+                <span className="text-slate-400">○</span>
                 <span>No special groom bonuses this milestone</span>
               </div>
             )}

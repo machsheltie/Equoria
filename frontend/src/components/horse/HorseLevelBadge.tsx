@@ -194,9 +194,9 @@ const HorseLevelBadge = memo(function HorseLevelBadge({
           <span className="block font-semibold text-[rgb(220,235,255)]">
             {tierInfo.tierName} Tier
           </span>
-          <span className="block text-[rgb(148,163,184)]">Level {displayLevel}</span>
+          <span className="block text-slate-400">Level {displayLevel}</span>
           {tierInfo.nextTierLevel && tierInfo.nextTierName && (
-            <span className="mt-1 block text-[rgb(148,163,184)]">
+            <span className="mt-1 block text-slate-400">
               {tierInfo.nextTierLevel - displayLevel} more level
               {tierInfo.nextTierLevel - displayLevel !== 1 ? 's' : ''} to {tierInfo.nextTierName}
             </span>

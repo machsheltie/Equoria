@@ -102,7 +102,7 @@ const RankChangeIndicator = ({ rankChange }: { rankChange: number }) => {
   // rankChange === 0
   return (
     <span
-      className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)]"
+      className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium bg-[rgba(15,35,70,0.5)] text-slate-400"
       data-testid="rank-change-indicator"
     >
       <Minus size={12} aria-hidden="true" />
@@ -180,7 +180,7 @@ const RankSummaryCard = ({
       {/* Rank Display */}
       <div className="text-center my-3">
         <span className="text-2xl font-extrabold text-[rgb(220,235,255)]">#{ranking.rank}</span>
-        <span className="text-sm text-[rgb(148,163,184)] ml-1">
+        <span className="text-sm text-slate-400 ml-1">
           of {ranking.totalEntries.toLocaleString()}
         </span>
       </div>
@@ -196,7 +196,7 @@ const RankSummaryCard = ({
           className={`flex items-center justify-center gap-1 mt-2 px-2 py-1 rounded-full text-xs font-semibold ${
             isGoldAchievement
               ? 'bg-[rgba(212,168,67,0.1)] text-yellow-400'
-              : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)]'
+              : 'bg-[rgba(15,35,70,0.5)] text-slate-400'
           }`}
           data-testid="achievement-badge"
         >

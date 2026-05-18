@@ -98,7 +98,7 @@ describe('CompetitionImpactPanel Component', () => {
     it('should display trophy icon', () => {
       const { container } = render(<CompetitionImpactPanel trait={baseTrait} />);
       // Trophy icon now uses muted-text color in dark theme
-      expect(container.querySelector('.text-\\[rgb\\(148\\,163\\,184\\)\\]')).toBeInTheDocument();
+      expect(container.querySelector('.text-slate-400')).toBeInTheDocument();
     });
   });
 

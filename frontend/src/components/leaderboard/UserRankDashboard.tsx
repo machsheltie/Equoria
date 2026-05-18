@@ -78,10 +78,10 @@ const DashboardSkeleton = () => (
  */
 const EmptyRankingsState = () => (
   <div
-    className="flex flex-col items-center justify-center py-12 text-[rgb(148,163,184)]"
+    className="flex flex-col items-center justify-center py-12 text-slate-400"
     data-testid="empty-rankings-state"
   >
-    <Trophy size={48} className="mb-4 text-[rgb(148,163,184)]" aria-hidden="true" />
+    <Trophy size={48} className="mb-4 text-slate-400" aria-hidden="true" />
     <p className="text-lg font-medium">No rankings yet</p>
     <p className="text-sm mt-1">
       Compete in shows and train your horses to appear on the leaderboards.
@@ -98,7 +98,7 @@ const BestRankingItem = ({ bestRanking }: { bestRanking: BestRanking }) => (
     <span className="text-sm text-[rgb(220,235,255)]">
       {bestRanking.achievement} in {bestRanking.categoryLabel}
     </span>
-    <span className="text-xs text-[rgb(148,163,184)] ml-auto">#{bestRanking.rank}</span>
+    <span className="text-xs text-slate-400 ml-auto">#{bestRanking.rank}</span>
   </div>
 );
 
@@ -167,7 +167,7 @@ const UserRankDashboard = ({
           </h3>
 
           {bestRankings.length === 0 ? (
-            <p className="text-sm text-[rgb(148,163,184)] py-2">No achievements yet</p>
+            <p className="text-sm text-slate-400 py-2">No achievements yet</p>
           ) : (
             <div className="glass-panel rounded-lg p-4 divide-y divide-[rgba(37,99,235,0.3)]">
               {bestRankings.map((best) => (

@@ -130,7 +130,7 @@ describe('PrizeNotificationModal', () => {
       const placementBadge = screen.getByTestId('placement-badge');
       expect(placementBadge).toHaveTextContent('2nd Place');
       // Silver badge uses slate-tinted background per design tokens
-      expect(placementBadge).toHaveClass('bg-[rgba(148,163,184,0.3)]');
+      expect(placementBadge).toHaveClass('bg-slate-400/30');
 
       // Check for medal icons (header and badge)
       const medalIcons = screen.getAllByTestId('medal-icon');

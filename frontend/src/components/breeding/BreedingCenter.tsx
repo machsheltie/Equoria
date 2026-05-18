@@ -18,7 +18,7 @@ const BreedingCenter = () => {
 
   if (horsesLoading) {
     return (
-      <div className="flex items-center justify-center p-12 text-[rgb(148,163,184)]">
+      <div className="flex items-center justify-center p-12 text-slate-400">
         <p>Loading horses...</p>
       </div>
     );
@@ -69,9 +69,9 @@ const BreedingCenter = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs uppercase tracking-wide text-[rgb(148,163,184)]">Breeding</p>
+          <p className="text-xs uppercase tracking-wide text-slate-400">Breeding</p>
           <h3 className="text-xl font-bold text-[rgb(220,235,255)]">Breeding Center</h3>
-          <p className="text-sm text-[rgb(148,163,184)]">
+          <p className="text-sm text-slate-400">
             Pair mares and stallions, browse marketplace, and review breeding history.
           </p>
         </div>
@@ -88,7 +88,7 @@ const BreedingCenter = () => {
             className={`border-b-2 px-1 py-4 text-sm font-medium transition-colors ${
               activeTab === 'my-mares'
                 ? 'border-emerald-400 text-emerald-400'
-                : 'border-transparent text-[rgb(148,163,184)] hover:border-[rgba(37,99,235,0.3)] hover:text-[rgb(220,235,255)]'
+                : 'border-transparent text-slate-400 hover:border-[rgba(37,99,235,0.3)] hover:text-[rgb(220,235,255)]'
             }`}
           >
             My Mares
@@ -101,7 +101,7 @@ const BreedingCenter = () => {
             className={`border-b-2 px-1 py-4 text-sm font-medium transition-colors ${
               activeTab === 'stud-marketplace'
                 ? 'border-emerald-400 text-emerald-400'
-                : 'border-transparent text-[rgb(148,163,184)] hover:border-[rgba(37,99,235,0.3)] hover:text-[rgb(220,235,255)]'
+                : 'border-transparent text-slate-400 hover:border-[rgba(37,99,235,0.3)] hover:text-[rgb(220,235,255)]'
             }`}
           >
             Stud Marketplace
@@ -114,7 +114,7 @@ const BreedingCenter = () => {
             className={`border-b-2 px-1 py-4 text-sm font-medium transition-colors ${
               activeTab === 'history'
                 ? 'border-emerald-400 text-emerald-400'
-                : 'border-transparent text-[rgb(148,163,184)] hover:border-[rgba(37,99,235,0.3)] hover:text-[rgb(220,235,255)]'
+                : 'border-transparent text-slate-400 hover:border-[rgba(37,99,235,0.3)] hover:text-[rgb(220,235,255)]'
             }`}
           >
             History
@@ -237,7 +237,7 @@ const BreedingCenter = () => {
                     className="rounded-md border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] p-4 shadow-sm hover:shadow-md transition-shadow"
                   >
                     <h5 className="text-base font-bold text-[rgb(220,235,255)]">{stallion.name}</h5>
-                    <div className="mt-2 space-y-1 text-sm text-[rgb(148,163,184)]">
+                    <div className="mt-2 space-y-1 text-sm text-slate-400">
                       {stallion.breed && (
                         <p className="capitalize">{getBreedName(stallion.breed)}</p>
                       )}
@@ -249,7 +249,7 @@ const BreedingCenter = () => {
               </div>
             ) : (
               <div className="rounded-md border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)] px-6 py-12 text-center">
-                <p className="text-sm text-[rgb(148,163,184)]">
+                <p className="text-sm text-slate-400">
                   No stallions found matching the selected breed.
                 </p>
               </div>
@@ -264,7 +264,7 @@ const BreedingCenter = () => {
 
             {/* Empty state - will be replaced with actual history data later */}
             <div className="rounded-md border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)] px-6 py-12 text-center">
-              <p className="text-sm text-[rgb(148,163,184)]">
+              <p className="text-sm text-slate-400">
                 No breeding history yet. Start breeding to see your history here!
               </p>
             </div>
@@ -274,16 +274,16 @@ const BreedingCenter = () => {
               <table className="min-w-full divide-y divide-[rgba(37,99,235,0.2)]">
                 <thead className="bg-[rgba(15,35,70,0.5)]">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-[rgb(148,163,184)]">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-400">
                       Date
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-[rgb(148,163,184)]">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-400">
                       Mare
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-[rgb(148,163,184)]">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-400">
                       Stallion
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-[rgb(148,163,184)]">
+                    <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wide text-slate-400">
                       Foal
                     </th>
                   </tr>

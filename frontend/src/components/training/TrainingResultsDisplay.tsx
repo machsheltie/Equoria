@@ -48,13 +48,13 @@ const TrainingResultsDisplay: React.FC<TrainingResultsDisplayProps> = ({
 
       {/* Discipline */}
       <div className="mb-4">
-        <p className="text-sm font-medium text-[rgb(148,163,184)]">Discipline</p>
+        <p className="text-sm font-medium text-slate-400">Discipline</p>
         <p className="text-base font-semibold text-[rgb(220,235,255)]">{result.discipline}</p>
       </div>
 
       {/* Score Display */}
       <div className="mb-4">
-        <p className="text-sm font-medium text-[rgb(148,163,184)]">Score</p>
+        <p className="text-sm font-medium text-slate-400">Score</p>
         <div className="flex items-baseline gap-2">
           <span className="text-2xl font-bold text-[rgb(220,235,255)]">{result.updatedScore}</span>
           {scoreChange !== null && (
@@ -64,7 +64,7 @@ const TrainingResultsDisplay: React.FC<TrainingResultsDisplayProps> = ({
                   ? 'text-emerald-400'
                   : scoreDeclined
                     ? 'text-amber-400'
-                    : 'text-[rgb(148,163,184)]'
+                    : 'text-slate-400'
               }`}
             >
               ({formatScoreChange(scoreChange)})
@@ -81,7 +81,7 @@ const TrainingResultsDisplay: React.FC<TrainingResultsDisplayProps> = ({
               ? 'border border-emerald-500/30 bg-[rgba(16,185,129,0.1)] text-emerald-400'
               : scoreDeclined
                 ? 'border border-amber-500/30 bg-[rgba(212,168,67,0.1)] text-amber-400'
-                : 'border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.3)] text-[rgb(148,163,184)]'
+                : 'border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.3)] text-slate-400'
           }`}
         >
           {scoreImproved && <span>✨ Score improved!</span>}
@@ -99,7 +99,7 @@ const TrainingResultsDisplay: React.FC<TrainingResultsDisplayProps> = ({
 
       {/* Next Eligible Date */}
       <div className="mb-6">
-        <p className="text-sm font-medium text-[rgb(148,163,184)]">Next Training:</p>
+        <p className="text-sm font-medium text-slate-400">Next Training:</p>
         <p className="text-sm text-[rgb(220,235,255)]">{formatDate(result.nextEligibleDate)}</p>
       </div>
 

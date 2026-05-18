@@ -373,7 +373,7 @@ describe('TrainingHistoryTable', () => {
       render(<TrainingHistoryTable history={[]} />);
 
       const emptyMessage = screen.getByTestId('empty-state');
-      expect(emptyMessage).toHaveClass('text-[rgb(148,163,184)]');
+      expect(emptyMessage).toHaveClass('text-slate-400');
     });
   });
 
@@ -472,7 +472,7 @@ describe('TrainingHistoryTable', () => {
       const zeroGain = screen.getByText('0');
       expect(zeroGain).toBeInTheDocument();
       // Zero gain should have neutral muted styling
-      expect(zeroGain).toHaveClass('text-[rgb(148,163,184)]');
+      expect(zeroGain).toHaveClass('text-slate-400');
     });
 
     it('should handle entries without traits', () => {

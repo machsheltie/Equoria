@@ -54,7 +54,7 @@ const TrainingDashboardTable = ({
         <div className="flex items-center justify-between mb-4">
           <div>
             <h2 className="text-lg font-semibold text-[rgb(220,235,255)]">Training Status</h2>
-            <p className="text-sm text-[rgb(148,163,184)]">
+            <p className="text-sm text-slate-400">
               {horses.length} {horses.length === 1 ? 'horse' : 'horses'} total
             </p>
           </div>
@@ -62,7 +62,7 @@ const TrainingDashboardTable = ({
           {/* Sort Controls */}
           {horses.length > 0 && (
             <div className="flex items-center gap-2" data-testid="sort-controls">
-              <span className="text-sm text-[rgb(148,163,184)]">Sort by:</span>
+              <span className="text-sm text-slate-400">Sort by:</span>
               <div className="flex gap-2">
                 <button
                   onClick={() => setSortBy('name')}
@@ -108,9 +108,9 @@ const TrainingDashboardTable = ({
         {/* Empty State */}
         {horses.length === 0 && (
           <div className="py-12 text-center" data-testid="empty-state">
-            <Search className="mx-auto h-12 w-12 text-[rgb(148,163,184)] mb-4" aria-hidden="true" />
+            <Search className="mx-auto h-12 w-12 text-slate-400 mb-4" aria-hidden="true" />
             <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">No horses found</h3>
-            <p className="text-sm text-[rgb(148,163,184)]">
+            <p className="text-sm text-slate-400">
               Try adjusting your filters or search criteria to see more results.
             </p>
           </div>

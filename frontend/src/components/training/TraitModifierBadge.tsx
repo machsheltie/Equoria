@@ -78,7 +78,7 @@ const categoryConfigs: Record<TraitModifier['category'], CategoryConfig> = {
   neutral: {
     bgColor: 'bg-[rgba(15,35,70,0.3)]',
     borderColor: 'border-[rgba(37,99,235,0.3)]',
-    textColor: 'text-[rgb(148,163,184)]',
+    textColor: 'text-slate-400',
     Icon: Info,
   },
 };

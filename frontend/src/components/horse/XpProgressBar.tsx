@@ -98,7 +98,7 @@ const XpProgressBar = ({ horseId }: XpProgressBarProps) => {
   if (isLoading) {
     return (
       <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-4 shadow-sm">
-        <div className="text-center text-sm text-[rgb(148,163,184)]">Loading XP data...</div>
+        <div className="text-center text-sm text-slate-400">Loading XP data...</div>
       </div>
     );
   }
@@ -128,11 +128,11 @@ const XpProgressBar = ({ horseId }: XpProgressBarProps) => {
       {/* Header: Level Display */}
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <p className="text-xs uppercase tracking-wide text-[rgb(148,163,184)]">Level</p>
+          <p className="text-xs uppercase tracking-wide text-slate-400">Level</p>
           <h3 className="text-2xl font-bold text-emerald-400">Level {level}</h3>
         </div>
         <div className="text-right">
-          <p className="text-xs text-[rgb(148,163,184)]">XP Progress</p>
+          <p className="text-xs text-slate-400">XP Progress</p>
           <p className="text-sm font-medium text-[rgb(220,235,255)]">
             {xpData.currentXP} / {xpData.nextStatPointAt} XP
           </p>
@@ -156,22 +156,22 @@ const XpProgressBar = ({ horseId }: XpProgressBarProps) => {
         {/* Tooltip */}
         {showTooltip && (
           <div className="absolute left-1/2 top-full z-[var(--z-raised)] mt-2 w-64 -translate-x-1/2 rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-3 shadow-lg">
-            <div className="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-[rgb(148,163,184)]">
+            <div className="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-slate-400">
               XP Breakdown
             </div>
             <div className="space-y-1 text-sm">
               <div className="flex justify-between">
-                <span className="text-[rgb(148,163,184)]">Current XP:</span>
+                <span className="text-slate-400">Current XP:</span>
                 <span className="font-medium text-[rgb(220,235,255)]">{xpData.currentXP}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[rgb(148,163,184)]">Stat Points Earned:</span>
+                <span className="text-slate-400">Stat Points Earned:</span>
                 <span className="font-medium text-[rgb(220,235,255)]">
                   {xpData.availableStatPoints}
                 </span>
               </div>
               <div className="flex justify-between border-t border-[rgba(37,99,235,0.3)] pt-1">
-                <span className="text-[rgb(148,163,184)]">Next Stat Point:</span>
+                <span className="text-slate-400">Next Stat Point:</span>
                 <span className="font-medium text-emerald-400">{xpData.xpToNextStatPoint} XP</span>
               </div>
             </div>
@@ -180,7 +180,7 @@ const XpProgressBar = ({ horseId }: XpProgressBarProps) => {
       </div>
 
       {/* Next Level Info */}
-      <div className="mt-2 text-center text-xs text-[rgb(148,163,184)]">
+      <div className="mt-2 text-center text-xs text-slate-400">
         {xpData.xpToNextStatPoint} XP to Level {level + 1}
       </div>
     </div>

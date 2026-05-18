@@ -69,7 +69,7 @@ const GroomPersonalityDisplay: React.FC<GroomPersonalityDisplayProps> = ({
       ? 'text-emerald-400 bg-[rgba(16,185,129,0.1)] border-emerald-500/30'
       : info.effectivenessRating === 'medium'
         ? 'text-amber-400 bg-[rgba(212,168,67,0.1)] border-[rgba(212,168,67,0.3)]'
-        : 'text-[rgb(148,163,184)] bg-[rgba(15,35,70,0.3)] border-[rgba(37,99,235,0.3)]';
+        : 'text-slate-400 bg-[rgba(15,35,70,0.3)] border-[rgba(37,99,235,0.3)]';
 
   const experienceLabel =
     experience >= 10
@@ -115,7 +115,7 @@ const GroomPersonalityDisplay: React.FC<GroomPersonalityDisplayProps> = ({
 
         {/* Trait Influences */}
         <div>
-          <h5 className="text-xs font-bold text-[rgb(148,163,184)] uppercase tracking-wide mb-2">
+          <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">
             Trait Influences
           </h5>
           <div data-testid="trait-influences">
@@ -128,7 +128,7 @@ const GroomPersonalityDisplay: React.FC<GroomPersonalityDisplayProps> = ({
         {/* Compatibility Ratings (hidden in compact mode) */}
         {!compact && (
           <div>
-            <h5 className="text-xs font-bold text-[rgb(148,163,184)] uppercase tracking-wide mb-2">
+            <h5 className="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">
               Horse Compatibility
             </h5>
             <div data-testid="compatibility-ratings">
@@ -144,15 +144,15 @@ const GroomPersonalityDisplay: React.FC<GroomPersonalityDisplayProps> = ({
           className="bg-[rgba(15,35,70,0.3)] rounded-md p-3 border border-[rgba(37,99,235,0.3)]"
           data-testid="development-note"
         >
-          <p className="text-xs font-semibold text-[rgb(148,163,184)] uppercase tracking-wide mb-1">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">
             Career Development
             {experience > 0 && (
-              <span className="ml-2 normal-case font-normal text-[rgb(148,163,184)]">
+              <span className="ml-2 normal-case font-normal text-slate-400">
                 — {experienceLabel} ({experience} yr{experience !== 1 ? 's' : ''})
               </span>
             )}
           </p>
-          <p className="text-sm text-[rgb(148,163,184)]">{info.developmentNote}</p>
+          <p className="text-sm text-slate-400">{info.developmentNote}</p>
         </div>
       </div>
     </div>

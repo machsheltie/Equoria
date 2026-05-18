@@ -74,7 +74,7 @@ const ConformationScoreCard = ({
           <h4 className="text-base font-semibold text-[rgb(220,235,255)]">{displayName}</h4>
           <div className="group relative">
             <Info
-              className="h-4 w-4 text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)]"
+              className="h-4 w-4 text-slate-400 hover:text-[rgb(220,235,255)]"
               aria-hidden="true"
             />
             <div className="absolute left-0 top-6 w-64 p-3 bg-[rgba(10,22,40,0.95)] text-[rgb(220,235,255)] text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[var(--z-raised)] border border-[rgba(37,99,235,0.3)]">
@@ -94,7 +94,7 @@ const ConformationScoreCard = ({
       {/* Score Display */}
       <div className="flex items-baseline gap-1 mb-3" data-testid={`score-display-${region}`}>
         <span className="text-3xl font-bold text-[rgb(220,235,255)]">{Math.round(score)}</span>
-        <span className="text-lg text-[rgb(148,163,184)]">/100</span>
+        <span className="text-lg text-slate-400">/100</span>
       </div>
 
       {/* Progress Bar */}
@@ -118,7 +118,7 @@ const ConformationScoreCard = ({
               ? 'text-emerald-400'
               : comparison.label === 'Below Average'
                 ? 'text-rose-400'
-                : 'text-[rgb(148,163,184)]'
+                : 'text-slate-400'
           }`}
           data-testid={`breed-comparison-${region}`}
         >
@@ -139,7 +139,7 @@ const ConformationScoreCard = ({
 
       {/* Breed Average Display (when not showing comparison) */}
       {!shouldShowComparison && breedAverage !== undefined && (
-        <div className="text-xs text-[rgb(148,163,184)]" data-testid={`breed-average-${region}`}>
+        <div className="text-xs text-slate-400" data-testid={`breed-average-${region}`}>
           Breed avg: {formatScore(breedAverage)}
         </div>
       )}

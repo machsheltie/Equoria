@@ -70,7 +70,7 @@ function formatTemperamentChange(stat: string, value: number): string {
 function getResultColor(value: number): string {
   if (value > 0) return 'text-emerald-400';
   if (value < 0) return 'text-red-400';
-  return 'text-[rgb(148,163,184)]';
+  return 'text-slate-400';
 }
 
 /**
@@ -83,10 +83,10 @@ const ActivityHistoryList: React.FC<ActivityHistoryListProps> = ({ history, maxI
     return (
       <div className="text-center py-12">
         <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[rgba(15,35,70,0.5)] mb-4">
-          <Clock className="h-8 w-8 text-[rgb(148,163,184)]" />
+          <Clock className="h-8 w-8 text-slate-400" />
         </div>
-        <p className="text-[rgb(148,163,184)] text-sm">No activities completed yet</p>
-        <p className="text-[rgb(148,163,184)] text-xs mt-1">
+        <p className="text-slate-400 text-sm">No activities completed yet</p>
+        <p className="text-slate-400 text-xs mt-1">
           Start enrichment activities to see your foal's progress here
         </p>
       </div>
@@ -134,11 +134,11 @@ const ActivityHistoryList: React.FC<ActivityHistoryListProps> = ({ history, maxI
 
               {/* Time Info */}
               <div className="text-right flex-shrink-0">
-                <div className="flex items-center gap-1 text-xs text-[rgb(148,163,184)]">
+                <div className="flex items-center gap-1 text-xs text-slate-400">
                   <Calendar className="h-3 w-3" />
                   <span>{formatActivityDate(item.performedAt)}</span>
                 </div>
-                <div className="flex items-center gap-1 text-xs text-[rgb(148,163,184)] mt-1">
+                <div className="flex items-center gap-1 text-xs text-slate-400 mt-1">
                   <Clock className="h-3 w-3" />
                   <span>{item.durationMinutes}m</span>
                 </div>
@@ -151,7 +151,7 @@ const ActivityHistoryList: React.FC<ActivityHistoryListProps> = ({ history, maxI
               {item.results.milestonePoints > 0 && (
                 <div className="flex items-center gap-2 text-xs">
                   <Award className="h-3 w-3 text-amber-400" />
-                  <span className="text-[rgb(148,163,184)]">Milestone:</span>
+                  <span className="text-slate-400">Milestone:</span>
                   <span className="font-semibold text-amber-400">
                     +{item.results.milestonePoints} pts
                   </span>
@@ -162,7 +162,7 @@ const ActivityHistoryList: React.FC<ActivityHistoryListProps> = ({ history, maxI
               {item.results.bondingChange !== 0 && (
                 <div className="flex items-center gap-2 text-xs">
                   <Heart className="h-3 w-3 text-blue-400" />
-                  <span className="text-[rgb(148,163,184)]">Bonding:</span>
+                  <span className="text-slate-400">Bonding:</span>
                   <span className={`font-semibold ${getResultColor(item.results.bondingChange)}`}>
                     {item.results.bondingChange > 0 ? '+' : ''}
                     {item.results.bondingChange}
@@ -174,7 +174,7 @@ const ActivityHistoryList: React.FC<ActivityHistoryListProps> = ({ history, maxI
               {item.results.stressChange !== 0 && (
                 <div className="flex items-center gap-2 text-xs">
                   <TrendingUp className="h-3 w-3 text-emerald-400" />
-                  <span className="text-[rgb(148,163,184)]">Stress:</span>
+                  <span className="text-slate-400">Stress:</span>
                   <span className={`font-semibold ${getResultColor(-item.results.stressChange)}`}>
                     {item.results.stressChange > 0 ? '+' : ''}
                     {item.results.stressChange}
@@ -233,7 +233,7 @@ const ActivityHistoryList: React.FC<ActivityHistoryListProps> = ({ history, maxI
       {/* Show More indicator */}
       {maxItems && history.length > maxItems && (
         <div className="text-center py-2">
-          <p className="text-xs text-[rgb(148,163,184)]">
+          <p className="text-xs text-slate-400">
             Showing {maxItems} of {history.length} activities
           </p>
         </div>

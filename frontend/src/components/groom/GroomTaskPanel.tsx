@@ -31,7 +31,7 @@ interface GroomTaskPanelProps {
 function DurationBadge({ minutes }: { minutes: number }) {
   return (
     <span
-      className="inline-flex items-center text-xs bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] px-2 py-0.5 rounded"
+      className="inline-flex items-center text-xs bg-[rgba(15,35,70,0.5)] text-slate-400 px-2 py-0.5 rounded"
       aria-label={`Duration: ${formatDuration(minutes)}`}
     >
       ⏱ {formatDuration(minutes)}
@@ -44,7 +44,7 @@ function EffectChip({ label, type }: { label: string; type: 'positive' | 'neutra
   const colorClass =
     type === 'positive'
       ? 'bg-[rgba(16,185,129,0.1)] text-emerald-400 border border-emerald-500/30'
-      : 'bg-[rgba(15,35,70,0.3)] text-[rgb(148,163,184)] border border-[rgba(37,99,235,0.3)]';
+      : 'bg-[rgba(15,35,70,0.3)] text-slate-400 border border-[rgba(37,99,235,0.3)]';
   return <span className={`inline-block text-xs px-2 py-0.5 rounded ${colorClass}`}>{label}</span>;
 }
 
@@ -67,7 +67,7 @@ function TaskCard({ task, compact }: { task: TaskInfo; compact: boolean }) {
 
       {!compact && (
         <p
-          className="text-xs text-[rgb(148,163,184)] mt-1 mb-2"
+          className="text-xs text-slate-400 mt-1 mb-2"
           data-testid={`task-description-${task.id}`}
         >
           {task.description}
@@ -116,7 +116,7 @@ function CategorySection({
 
       {!compact && (
         <p
-          className="text-xs text-[rgb(148,163,184)] mb-3"
+          className="text-xs text-slate-400 mb-3"
           data-testid={`category-description-${category}`}
         >
           {info.description}
@@ -157,7 +157,7 @@ const GroomTaskPanel: React.FC<GroomTaskPanelProps> = ({ horseAge, compact = fal
           Available Tasks
         </h3>
         <span
-          className="text-xs text-[rgb(148,163,184)] bg-[rgba(15,35,70,0.4)] px-2 py-1 rounded border border-[rgba(37,99,235,0.3)]"
+          className="text-xs text-slate-400 bg-[rgba(15,35,70,0.4)] px-2 py-1 rounded border border-[rgba(37,99,235,0.3)]"
           data-testid="horse-age-label"
         >
           Horse age: {ageLabel}
@@ -167,7 +167,7 @@ const GroomTaskPanel: React.FC<GroomTaskPanelProps> = ({ horseAge, compact = fal
       {/* No tasks available */}
       {availableCategories.length === 0 && (
         <p
-          className="text-sm text-[rgb(148,163,184)] text-center py-4"
+          className="text-sm text-slate-400 text-center py-4"
           data-testid="no-tasks-message"
         >
           No tasks available for this horse age.
@@ -189,7 +189,7 @@ const GroomTaskPanel: React.FC<GroomTaskPanelProps> = ({ horseAge, compact = fal
       {/* Mutual exclusivity note */}
       {!compact && availableCategories.length > 0 && (
         <p
-          className="text-xs text-[rgb(148,163,184)] mt-4 border-t border-[rgba(37,99,235,0.3)] pt-3"
+          className="text-xs text-slate-400 mt-4 border-t border-[rgba(37,99,235,0.3)] pt-3"
           data-testid="mutual-exclusivity-note"
         >
           Note: Only one enrichment or grooming task may be performed per day.

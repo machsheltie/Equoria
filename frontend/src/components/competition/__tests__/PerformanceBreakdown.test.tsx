@@ -393,7 +393,7 @@ describe('PerformanceBreakdown', () => {
 
       const badge = screen.getByTestId('placement-badge');
       // Silver badge uses slate-tinted background per design tokens
-      expect(badge).toHaveClass('bg-[rgba(148,163,184,0.3)]');
+      expect(badge).toHaveClass('bg-slate-400/30');
       expect(screen.getByText(/2nd/)).toBeInTheDocument();
     });
 

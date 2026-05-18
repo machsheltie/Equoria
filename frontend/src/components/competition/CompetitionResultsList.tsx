@@ -116,11 +116,11 @@ const getPlacementBadgeClasses = (rank: number): string => {
     case 1:
       return 'bg-yellow-400 text-yellow-900'; // Gold
     case 2:
-      return 'bg-[rgba(148,163,184,0.3)] text-[rgb(220,235,255)]'; // Silver
+      return 'bg-slate-400/30 text-[rgb(220,235,255)]'; // Silver
     case 3:
       return 'bg-orange-400 text-orange-900'; // Bronze
     default:
-      return 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)]'; // Other
+      return 'bg-[rgba(15,35,70,0.5)] text-slate-400'; // Other
   }
 };
 
@@ -186,11 +186,11 @@ LoadingSkeletons.displayName = 'LoadingSkeletons';
  */
 const EmptyState = memo(() => (
   <div className="py-12 text-center" data-testid="empty-state">
-    <Trophy className="mx-auto h-12 w-12 text-[rgb(148,163,184)] mb-4" aria-hidden="true" />
+    <Trophy className="mx-auto h-12 w-12 text-slate-400 mb-4" aria-hidden="true" />
     <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">
       No competition results found
     </h3>
-    <p className="text-sm text-[rgb(148,163,184)]">Enter competitions to see your results here.</p>
+    <p className="text-sm text-slate-400">Enter competitions to see your results here.</p>
   </div>
 ));
 
@@ -203,7 +203,7 @@ const ErrorState = memo(({ message, onRetry }: { message: string; onRetry?: () =
   <div className="py-12 text-center" data-testid="error-state">
     <AlertCircle className="mx-auto h-12 w-12 text-red-400 mb-4" aria-hidden="true" />
     <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">Unable to load results</h3>
-    <p className="text-sm text-[rgb(148,163,184)] mb-4">{message}</p>
+    <p className="text-sm text-slate-400 mb-4">{message}</p>
     {onRetry && (
       <button
         onClick={onRetry}
@@ -267,12 +267,12 @@ const ResultCard = memo(
           <h3 className="text-lg font-semibold text-[rgb(220,235,255)] truncate">
             {result.competitionName}
           </h3>
-          <p className="text-sm text-[rgb(148,163,184)]">{disciplineName}</p>
+          <p className="text-sm text-slate-400">{disciplineName}</p>
         </div>
 
         {/* Date */}
         <div className="flex items-center mb-2 text-sm">
-          <Calendar className="h-4 w-4 text-[rgb(148,163,184)] mr-2" aria-hidden="true" />
+          <Calendar className="h-4 w-4 text-slate-400 mr-2" aria-hidden="true" />
           <span className="text-[rgb(220,235,255)]">{formatDate(result.date)}</span>
         </div>
 
@@ -432,7 +432,7 @@ const FilterControls = memo(
               className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
                 hasActiveFilters
                   ? 'bg-[rgba(239,68,68,0.15)] text-red-400 hover:bg-[rgba(239,68,68,0.25)] focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
-                  : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] cursor-not-allowed'
+                  : 'bg-[rgba(15,35,70,0.5)] text-slate-400 cursor-not-allowed'
               }`}
               data-testid="clear-filters"
               aria-label="Clear all filters"
@@ -614,7 +614,7 @@ const CompetitionResultsList = ({
 
       {/* Results Count */}
       <div className="px-4 pb-2">
-        <p className="text-sm text-[rgb(148,163,184)]">
+        <p className="text-sm text-slate-400">
           {sortedResults.length} {sortedResults.length === 1 ? 'result' : 'results'} found
         </p>
       </div>

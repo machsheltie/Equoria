@@ -133,9 +133,9 @@ describe('ScoreBreakdownPanel Component', () => {
     });
 
     it('should show slate color for low consistency (0)', () => {
-      // Component migrated to dark theme: low consistency uses text-[rgb(148,163,184)]
+      // Component migrated to dark theme: low consistency uses text-slate-400
       const { container } = render(<ScoreBreakdownPanel {...defaultProps} taskConsistency={0} />);
-      const slateElements = container.querySelectorAll('[class*="rgb(148,163,184)"]');
+      const slateElements = container.querySelectorAll('[class*="slate-400"]');
       expect(slateElements.length).toBeGreaterThan(0);
     });
 

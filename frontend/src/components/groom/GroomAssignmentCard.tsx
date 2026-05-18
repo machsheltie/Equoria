@@ -68,7 +68,7 @@ const SynergyChip: React.FC<{ groomId: number; horseId: number }> = ({ groomId, 
       ? 'bg-emerald-900/30 border-emerald-500/40 text-emerald-300'
       : sign === 'negative'
         ? 'bg-rose-900/30 border-rose-500/40 text-rose-300'
-        : 'bg-[rgba(37,99,235,0.15)] border-[rgba(37,99,235,0.3)] text-[rgb(148,163,184)]';
+        : 'bg-[rgba(37,99,235,0.15)] border-[rgba(37,99,235,0.3)] text-slate-400';
 
   return (
     <div
@@ -103,7 +103,7 @@ function BondScoreBar({ score }: { score: number }) {
 
   return (
     <div className="mt-2" data-testid="bond-score-section">
-      <div className="flex justify-between text-xs text-[rgb(148,163,184)] mb-1">
+      <div className="flex justify-between text-xs text-slate-400 mb-1">
         <span>Bond Score</span>
         <span data-testid="bond-score-value">{clamped}/100</span>
       </div>
@@ -172,9 +172,9 @@ const GroomAssignmentCard: React.FC<GroomAssignmentCardProps> = ({
         className="rounded-lg border-2 border-dashed border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] p-6 text-center"
         data-testid="no-assignment-card"
       >
-        <User className="mx-auto text-[rgb(148,163,184)] mb-3" size={32} />
+        <User className="mx-auto text-slate-400 mb-3" size={32} />
         <h3 className="font-medium text-[rgb(220,235,255)] mb-1">No Groom Assigned</h3>
-        <p className="text-sm text-[rgb(148,163,184)] mb-4">
+        <p className="text-sm text-slate-400 mb-4">
           Assign a groom to {horseName} to begin task-based care and bonding.
         </p>
         <Button
@@ -219,13 +219,13 @@ const GroomAssignmentCard: React.FC<GroomAssignmentCardProps> = ({
 
             <div className="flex flex-wrap items-center gap-2 mb-2">
               <span
-                className="text-xs text-[rgb(148,163,184)] capitalize"
+                className="text-xs text-slate-400 capitalize"
                 data-testid="groom-skill-level"
               >
                 {skillLabel(assignment.skillLevel)}
               </span>
               <span className="text-[rgba(37,99,235,0.3)]">·</span>
-              <span className="text-xs text-[rgb(148,163,184)]" data-testid="groom-experience">
+              <span className="text-xs text-slate-400" data-testid="groom-experience">
                 {assignment.experience} yr{assignment.experience !== 1 ? 's' : ''} exp.
               </span>
             </div>
@@ -239,7 +239,7 @@ const GroomAssignmentCard: React.FC<GroomAssignmentCardProps> = ({
 
           <button
             onClick={onAssign}
-            className="ml-3 flex items-center gap-1 text-xs text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] border border-[rgba(37,99,235,0.3)] hover:border-[rgba(37,99,235,0.6)] rounded px-2 py-1 transition-colors"
+            className="ml-3 flex items-center gap-1 text-xs text-slate-400 hover:text-[rgb(220,235,255)] border border-[rgba(37,99,235,0.3)] hover:border-[rgba(37,99,235,0.6)] rounded px-2 py-1 transition-colors"
             data-testid="change-groom-button"
             aria-label={`Change groom assigned to ${horseName}`}
           >
@@ -264,7 +264,7 @@ const GroomAssignmentCard: React.FC<GroomAssignmentCardProps> = ({
         {/* Notes */}
         {assignment.notes && (
           <p
-            className="text-xs text-[rgb(148,163,184)] italic mt-3 border-t border-[rgba(37,99,235,0.3)] pt-2"
+            className="text-xs text-slate-400 italic mt-3 border-t border-[rgba(37,99,235,0.3)] pt-2"
             data-testid="assignment-notes"
           >
             {assignment.notes}

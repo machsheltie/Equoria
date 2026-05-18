@@ -360,7 +360,7 @@ describe('CompetitionResultsList', () => {
 
       // Silver badge for 2nd place (slate-tinted background per design tokens)
       const silverBadge = screen.getByTestId('placement-badge-2');
-      expect(silverBadge).toHaveClass('bg-[rgba(148,163,184,0.3)]');
+      expect(silverBadge).toHaveClass('bg-slate-400/30');
 
       // Bronze badge for 3rd place
       const bronzeBadge = screen.getByTestId('placement-badge-3');
@@ -471,7 +471,7 @@ describe('CompetitionResultsList', () => {
       );
 
       const silverBadge = screen.getByTestId('placement-badge-2');
-      expect(silverBadge).toHaveClass('bg-[rgba(148,163,184,0.3)]', 'text-[rgb(220,235,255)]');
+      expect(silverBadge).toHaveClass('bg-slate-400/30', 'text-[rgb(220,235,255)]');
     });
 
     it('3rd place badge is bronze colored', () => {

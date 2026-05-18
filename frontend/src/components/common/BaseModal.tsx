@@ -242,7 +242,7 @@ const BaseModal = memo(function BaseModal({
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed p-1 flex-shrink-0"
+              className="text-slate-400 hover:text-[rgb(220,235,255)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed p-1 flex-shrink-0"
               aria-label="Close modal"
               data-testid={`${dataTestId}-close-button`}
             >

@@ -277,7 +277,7 @@ describe('DisciplinePicker', () => {
       });
       expect(racingButton).toHaveClass(
         'bg-[rgba(15,35,70,0.5)]',
-        'text-[rgb(148,163,184)]',
+        'text-slate-400',
         'cursor-not-allowed'
       );
     });

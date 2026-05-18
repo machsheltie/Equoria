@@ -71,7 +71,7 @@ const TraitDetailModal: React.FC<TraitDetailModalProps> = ({
 
             {/* Category */}
             <div className="mb-3">
-              <span className="text-sm font-medium text-[rgb(148,163,184)] bg-[rgba(37,99,235,0.1)] px-3 py-1 rounded">
+              <span className="text-sm font-medium text-slate-400 bg-[rgba(37,99,235,0.1)] px-3 py-1 rounded">
                 {trait.category}
               </span>
             </div>
@@ -138,7 +138,7 @@ const TraitDetailModal: React.FC<TraitDetailModalProps> = ({
         {/* Competition Impact */}
         <div>
           <h3 className="text-lg font-bold text-[rgb(220,235,255)] mb-4 flex items-center gap-2">
-            <Info className="h-5 w-5 text-[rgb(148,163,184)]" />
+            <Info className="h-5 w-5 text-slate-400" />
             Competition Impact
           </h3>
           <CompetitionImpactPanel trait={trait} showSynergies={true} />
@@ -148,7 +148,7 @@ const TraitDetailModal: React.FC<TraitDetailModalProps> = ({
         {traitHistory && traitHistory.events.length > 0 && (
           <div>
             <h3 className="text-lg font-bold text-[rgb(220,235,255)] mb-4 flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-[rgb(148,163,184)]" />
+              <Calendar className="h-5 w-5 text-slate-400" />
               Trait History
             </h3>
             <TraitHistoryTimeline history={traitHistory} />

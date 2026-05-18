@@ -63,7 +63,7 @@ function formatGain(gain: number): { text: string; className: string } {
   if (gain < 0) {
     return { text: `${gain}`, className: 'text-red-400' };
   }
-  return { text: '0', className: 'text-[rgb(148,163,184)]' };
+  return { text: '0', className: 'text-slate-400' };
 }
 
 /**
@@ -121,7 +121,7 @@ function SortableHeader({
   return (
     <th
       scope="col"
-      className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[rgb(148,163,184)]"
+      className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400"
     >
       {onSort ? (
         <button
@@ -194,7 +194,7 @@ const TrainingHistoryTable: React.FC<TrainingHistoryTableProps> = ({
 
   // Shared table header cells (non-sortable)
   const staticHeaderCellClass =
-    'px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[rgb(148,163,184)]';
+    'px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-slate-400';
 
   // Loading state
   if (loading) {
@@ -274,7 +274,7 @@ const TrainingHistoryTable: React.FC<TrainingHistoryTableProps> = ({
                 <td colSpan={5}>
                   <div
                     data-testid="empty-state"
-                    className="py-8 text-center text-[rgb(148,163,184)]"
+                    className="py-8 text-center text-slate-400"
                   >
                     No training history found
                   </div>
@@ -369,11 +369,11 @@ const TrainingHistoryTable: React.FC<TrainingHistoryTableProps> = ({
             aria-label="Go to previous page"
             onClick={goToPreviousPage}
             disabled={currentPage === 1}
-            className="rounded bg-[rgba(15,35,70,0.5)] px-3 py-1.5 text-sm text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.7)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded bg-[rgba(15,35,70,0.5)] px-3 py-1.5 text-sm text-slate-400 hover:bg-[rgba(15,35,70,0.7)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Previous
           </button>
-          <span data-testid="pagination-info" className="text-sm text-[rgb(148,163,184)]">
+          <span data-testid="pagination-info" className="text-sm text-slate-400">
             Page {currentPage} of {totalPages}
           </span>
           <button
@@ -382,7 +382,7 @@ const TrainingHistoryTable: React.FC<TrainingHistoryTableProps> = ({
             aria-label="Go to next page"
             onClick={goToNextPage}
             disabled={currentPage === totalPages}
-            className="rounded bg-[rgba(15,35,70,0.5)] px-3 py-1.5 text-sm text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.7)] disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded bg-[rgba(15,35,70,0.5)] px-3 py-1.5 text-sm text-slate-400 hover:bg-[rgba(15,35,70,0.7)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Next
           </button>

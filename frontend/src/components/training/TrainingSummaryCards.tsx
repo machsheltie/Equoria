@@ -41,9 +41,9 @@ const TrainingSummaryCards = ({ summary, className = '' }: TrainingSummaryCardsP
       <div className="glass-panel rounded-lg p-6 border-l-4 border-emerald-500">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-[rgb(148,163,184)]">Ready to Train</p>
+            <p className="text-sm font-medium text-slate-400">Ready to Train</p>
             <p className="text-3xl font-bold text-emerald-400 mt-2">{readyCount}</p>
-            <p className="text-sm text-[rgb(148,163,184)] mt-1">{readyPercentage}% of total</p>
+            <p className="text-sm text-slate-400 mt-1">{readyPercentage}% of total</p>
           </div>
           <CheckCircle2 className="h-12 w-12 text-emerald-400 opacity-20" aria-hidden="true" />
         </div>
@@ -53,9 +53,9 @@ const TrainingSummaryCards = ({ summary, className = '' }: TrainingSummaryCardsP
       <div className="glass-panel rounded-lg p-6 border-l-4 border-amber-500">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-[rgb(148,163,184)]">In Cooldown</p>
+            <p className="text-sm font-medium text-slate-400">In Cooldown</p>
             <p className="text-3xl font-bold text-amber-400 mt-2">{cooldownCount}</p>
-            <p className="text-sm text-[rgb(148,163,184)] mt-1">{cooldownPercentage}% of total</p>
+            <p className="text-sm text-slate-400 mt-1">{cooldownPercentage}% of total</p>
           </div>
           <Clock className="h-12 w-12 text-amber-400 opacity-20" aria-hidden="true" />
         </div>
@@ -65,9 +65,9 @@ const TrainingSummaryCards = ({ summary, className = '' }: TrainingSummaryCardsP
       <div className="glass-panel rounded-lg p-6 border-l-4 border-red-500">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-[rgb(148,163,184)]">Ineligible</p>
+            <p className="text-sm font-medium text-slate-400">Ineligible</p>
             <p className="text-3xl font-bold text-red-400 mt-2">{ineligibleCount}</p>
-            <p className="text-sm text-[rgb(148,163,184)] mt-1">{ineligiblePercentage}% of total</p>
+            <p className="text-sm text-slate-400 mt-1">{ineligiblePercentage}% of total</p>
           </div>
           <XCircle className="h-12 w-12 text-red-400 opacity-20" aria-hidden="true" />
         </div>

@@ -64,9 +64,9 @@ function getSourceColor(source: string): string {
     case 'dam':
       return 'text-purple-400 bg-[rgba(147,51,234,0.1)]';
     case 'random':
-      return 'text-[rgb(148,163,184)] bg-[rgba(15,35,70,0.5)]';
+      return 'text-slate-400 bg-[rgba(15,35,70,0.5)]';
     default:
-      return 'text-[rgb(148,163,184)] bg-[rgba(15,35,70,0.5)]';
+      return 'text-slate-400 bg-[rgba(15,35,70,0.5)]';
   }
 }
 
@@ -118,7 +118,7 @@ const TraitPredictionCard: React.FC<TraitPredictionCardProps> = ({
           <div className="flex-1 min-w-0">
             <h4 className="font-semibold text-[rgb(220,235,255)]">{traitName}</h4>
             {category && (
-              <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium text-[rgb(148,163,184)] bg-[rgba(15,35,70,0.5)] rounded">
+              <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium text-slate-400 bg-[rgba(15,35,70,0.5)] rounded">
                 {category}
               </span>
             )}
@@ -135,7 +135,7 @@ const TraitPredictionCard: React.FC<TraitPredictionCardProps> = ({
       </div>
 
       {/* Description */}
-      {description && <p className="text-sm text-[rgb(148,163,184)] mb-3">{description}</p>}
+      {description && <p className="text-sm text-slate-400 mb-3">{description}</p>}
 
       {/* Progress Bar */}
       <div className="mb-3">

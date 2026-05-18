@@ -232,7 +232,7 @@ const TrainingResultModal = ({
             +{scoreGain}
           </p>
 
-          <p className="text-sm text-[rgb(148,163,184)] mt-1" data-testid="score-breakdown">
+          <p className="text-sm text-slate-400 mt-1" data-testid="score-breakdown">
             ({scoreBreakdown})
           </p>
         </div>
@@ -256,7 +256,7 @@ const TrainingResultModal = ({
                 Object.entries(statGains).map(([stat, gain]) => (
                   <li
                     key={stat}
-                    className="text-[rgb(148,163,184)]"
+                    className="text-slate-400"
                     data-testid={`stat-gain-${stat}`}
                   >
                     • {stat}: <span className="text-emerald-400 font-medium">+{gain}</span>
@@ -278,7 +278,7 @@ const TrainingResultModal = ({
             data-testid="temperament-effects-section"
           >
             <h3 className="font-semibold text-[rgb(220,235,255)] mb-2">Temperament Modifier:</h3>
-            <p className="text-sm text-[rgb(148,163,184)]" data-testid="temperament-effects-text">
+            <p className="text-sm text-slate-400" data-testid="temperament-effects-text">
               <span
                 className="text-burnished-gold font-medium"
                 data-testid="temperament-effects-name"
@@ -302,7 +302,7 @@ const TrainingResultModal = ({
 
         {/* Next Training Date */}
         <div
-          className="mt-4 text-sm text-[rgb(148,163,184)] flex items-center justify-center"
+          className="mt-4 text-sm text-slate-400 flex items-center justify-center"
           data-testid="next-training-section"
         >
           <Calendar className="w-4 h-4 mr-1" aria-hidden="true" />

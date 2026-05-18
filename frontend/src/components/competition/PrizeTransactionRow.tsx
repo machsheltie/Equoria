@@ -105,7 +105,7 @@ const getPlacementBadgeClasses = (rank: number): string => {
     case 3:
       return 'bg-orange-400 text-orange-900';
     default:
-      return 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)]';
+      return 'bg-[rgba(15,35,70,0.5)] text-slate-400';
   }
 };
 
@@ -238,10 +238,10 @@ const TableRowLayout = memo(
         {/* Date */}
         <td className="px-4 py-3 whitespace-nowrap">
           <span
-            className="text-sm text-[rgb(148,163,184)] flex items-center gap-1"
+            className="text-sm text-slate-400 flex items-center gap-1"
             data-testid="transaction-date"
           >
-            <Calendar className="h-4 w-4 text-[rgb(148,163,184)]" aria-hidden="true" />
+            <Calendar className="h-4 w-4 text-slate-400" aria-hidden="true" />
             {formatDate(transaction.date)}
           </span>
         </td>
@@ -306,7 +306,7 @@ const TableRowLayout = memo(
           >
             <Zap className="h-4 w-4" aria-hidden="true" />
             {formatNumber(transaction.xpGained)}
-            <span className="text-[rgb(148,163,184)] font-normal">XP</span>
+            <span className="text-slate-400 font-normal">XP</span>
           </span>
         </td>
 
@@ -395,7 +395,7 @@ const CardLayout = memo(
             </button>
             <div className="flex items-center gap-2 mt-1">
               <span
-                className="text-xs text-[rgb(148,163,184)] flex items-center gap-1"
+                className="text-xs text-slate-400 flex items-center gap-1"
                 data-testid="transaction-date"
               >
                 <Calendar className="h-3 w-3" aria-hidden="true" />
@@ -415,7 +415,7 @@ const CardLayout = memo(
         {/* Horse and Details Row */}
         <div className="flex items-center justify-between border-t border-[rgba(37,99,235,0.2)] pt-3">
           <div>
-            <span className="text-xs text-[rgb(148,163,184)]">Horse: </span>
+            <span className="text-xs text-slate-400">Horse: </span>
             <button
               onClick={handleHorseClick}
               onKeyDown={handleHorseKeyDown}
@@ -444,7 +444,7 @@ const CardLayout = memo(
             >
               <Zap className="h-4 w-4" aria-hidden="true" />
               {formatNumber(transaction.xpGained)}
-              <span className="text-[rgb(148,163,184)] font-normal">XP</span>
+              <span className="text-slate-400 font-normal">XP</span>
             </span>
           </div>
         </div>

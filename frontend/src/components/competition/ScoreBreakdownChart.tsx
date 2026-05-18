@@ -138,7 +138,7 @@ const CustomTooltip = ({ active, payload }: TooltipProps) => {
     const isPositive = data.value > 0;
     const valueColor =
       data.value === 0
-        ? 'text-[rgb(148,163,184)]'
+        ? 'text-slate-400'
         : isPositive
           ? 'text-emerald-400'
           : 'text-red-400';
@@ -150,7 +150,7 @@ const CustomTooltip = ({ active, payload }: TooltipProps) => {
           {isPositive ? '+' : ''}
           {data.value.toFixed(1)} points
         </p>
-        <p className="text-sm text-[rgb(148,163,184)] mt-1">{data.description}</p>
+        <p className="text-sm text-slate-400 mt-1">{data.description}</p>
       </div>
     );
   }
@@ -313,19 +313,19 @@ const ScoreBreakdownChart: React.FC<ScoreBreakdownChartProps> = ({
           <XAxis
             type="number"
             domain={domain}
-            tick={{ fontSize: 11, fill: 'rgb(148,163,184)' }}
+            tick={{ fontSize: 11, fill: 'rgb(var(--mystic-silver))' }}
             axisLine={{ stroke: 'rgba(37,99,235,0.3)' }}
           />
           <YAxis
             type="category"
             dataKey="name"
             width={70}
-            tick={{ fontSize: 12, fill: 'rgb(148,163,184)' }}
+            tick={{ fontSize: 12, fill: 'rgb(var(--mystic-silver))' }}
             axisLine={{ stroke: 'rgba(37,99,235,0.3)' }}
           />
           <ReferenceLine x={0} stroke="#94a3b8" strokeDasharray="3 3" />
           {interactive && (
-            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(148, 163, 184, 0.1)' }} />
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgb(var(--mystic-silver) / 0.1)' }} />
           )}
           {showLegend && <Legend wrapperStyle={{ paddingTop: '10px' }} iconType="square" />}
           <Bar dataKey="value" radius={[0, 4, 4, 0]}>

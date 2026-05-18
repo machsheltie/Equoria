@@ -17,7 +17,7 @@ const TrainingHistoryPanel = ({ horseId }: TrainingHistoryPanelProps) => {
   // Early return if no horse selected - queries won't execute due to enabled guards
   if (!horseId) {
     return (
-      <div className="rounded-md border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] px-4 py-3 text-sm text-[rgb(148,163,184)] shadow-sm">
+      <div className="rounded-md border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] px-4 py-3 text-sm text-slate-400 shadow-sm">
         Select a horse above to view discipline status and training history.
       </div>
     );
@@ -26,11 +26,11 @@ const TrainingHistoryPanel = ({ horseId }: TrainingHistoryPanelProps) => {
   return (
     <div className="rounded-md border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] p-4 shadow-sm">
       <h4 className="text-base font-semibold text-[rgb(220,235,255)]">Discipline Status</h4>
-      <p className="text-sm text-[rgb(148,163,184)]">
+      <p className="text-sm text-slate-400">
         Snapshot of each discipline for this horse. Updates after every session.
       </p>
 
-      {isLoading && <div className="mt-2 text-sm text-[rgb(148,163,184)]">Loading status…</div>}
+      {isLoading && <div className="mt-2 text-sm text-slate-400">Loading status…</div>}
       {error && (
         <div className="mt-2 rounded-md border border-amber-500/30 bg-[rgba(212,168,67,0.1)] px-3 py-2 text-sm text-amber-400">
           {error.message}
@@ -47,11 +47,11 @@ const TrainingHistoryPanel = ({ horseId }: TrainingHistoryPanelProps) => {
               <span className="text-sm font-semibold text-[rgb(220,235,255)]">
                 {entry.discipline.replace(/_/g, ' ')}
               </span>
-              <span className="text-xs text-[rgb(148,163,184)]">
+              <span className="text-xs text-slate-400">
                 Score: {entry.score !== undefined ? entry.score : '—'}
               </span>
             </div>
-            <div className="text-xs text-[rgb(148,163,184)]">
+            <div className="text-xs text-slate-400">
               {entry.nextEligibleDate
                 ? `Cooldown until ${new Date(entry.nextEligibleDate).toLocaleString()}`
                 : 'Ready to train'}
@@ -60,7 +60,7 @@ const TrainingHistoryPanel = ({ horseId }: TrainingHistoryPanelProps) => {
         ))}
 
         {!isLoading && !error && (!data || data.length === 0) && (
-          <div className="rounded-md border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] px-3 py-2 text-sm text-[rgb(148,163,184)]">
+          <div className="rounded-md border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] px-3 py-2 text-sm text-slate-400">
             No discipline data available yet.
           </div>
         )}
@@ -68,7 +68,7 @@ const TrainingHistoryPanel = ({ horseId }: TrainingHistoryPanelProps) => {
 
       <div className="mt-4">
         <h5 className="text-sm font-semibold text-[rgb(220,235,255)]">Training History</h5>
-        {historyLoading && <div className="text-sm text-[rgb(148,163,184)]">Loading history…</div>}
+        {historyLoading && <div className="text-sm text-slate-400">Loading history…</div>}
         {historyError && (
           <div className="mt-1 rounded-md border border-amber-500/30 bg-[rgba(212,168,67,0.1)] px-3 py-2 text-sm text-amber-400">
             {historyError.message}
@@ -82,20 +82,20 @@ const TrainingHistoryPanel = ({ horseId }: TrainingHistoryPanelProps) => {
             >
               <div className="flex items-center justify-between">
                 <span className="font-semibold">{entry.discipline ?? 'Discipline'}</span>
-                <span className="text-xs text-[rgb(148,163,184)]">
+                <span className="text-xs text-slate-400">
                   {entry.trainedAt
                     ? new Date(entry.trainedAt).toLocaleString()
                     : 'Timestamp pending'}
                 </span>
               </div>
-              <div className="text-xs text-[rgb(148,163,184)]">
+              <div className="text-xs text-slate-400">
                 Score: {entry.score !== undefined ? entry.score : '—'}{' '}
                 {entry.notes ? `• ${entry.notes}` : ''}
               </div>
             </div>
           ))}
           {!historyLoading && !historyError && (!history || history.length === 0) && (
-            <div className="rounded-md border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] px-3 py-2 text-sm text-[rgb(148,163,184)] shadow-sm">
+            <div className="rounded-md border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] px-3 py-2 text-sm text-slate-400 shadow-sm">
               No training history available yet.
             </div>
           )}

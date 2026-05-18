@@ -42,7 +42,7 @@ function getTierColor(tier?: string): string {
     case 'uncommon':
       return 'text-emerald-400 bg-[rgba(16,185,129,0.1)] border-emerald-500/30';
     default:
-      return 'text-[rgb(148,163,184)] bg-[rgba(15,35,70,0.3)] border-[rgba(37,99,235,0.3)]';
+      return 'text-slate-400 bg-[rgba(15,35,70,0.3)] border-[rgba(37,99,235,0.3)]';
   }
 }
 
@@ -87,7 +87,7 @@ const TraitConfirmationCard: React.FC<TraitConfirmationCardProps> = ({
                 </span>
               )}
             </div>
-            <p className="text-xs text-[rgb(148,163,184)] mt-1">{trait.description}</p>
+            <p className="text-xs text-slate-400 mt-1">{trait.description}</p>
           </div>
         </div>
       </div>
@@ -147,7 +147,7 @@ const TraitConfirmationCard: React.FC<TraitConfirmationCardProps> = ({
                       {effect.type.toLowerCase().includes('percent') ? '%' : ''}
                     </span>
                   </p>
-                  <p className="text-xs text-[rgb(148,163,184)] mt-0.5">{effect.description}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{effect.description}</p>
                 </div>
               </div>
             ))}
@@ -162,7 +162,7 @@ const TraitConfirmationCard: React.FC<TraitConfirmationCardProps> = ({
             <Info className={`h-4 w-4 ${typeColor.split(' ')[0]} flex-shrink-0 mt-0.5`} />
             <div>
               <p className="text-xs font-semibold text-[rgb(220,235,255)] mb-1">Why This Trait?</p>
-              <p className="text-xs text-[rgb(148,163,184)]">{confirmationReason}</p>
+              <p className="text-xs text-slate-400">{confirmationReason}</p>
             </div>
           </div>
         </div>
@@ -170,7 +170,7 @@ const TraitConfirmationCard: React.FC<TraitConfirmationCardProps> = ({
 
       {/* Category Badge (if available) */}
       {trait.category && (
-        <div className="mt-3 text-xs text-[rgb(148,163,184)]">
+        <div className="mt-3 text-xs text-slate-400">
           <span className="font-medium">Category:</span> {trait.category}
         </div>
       )}

@@ -75,13 +75,13 @@ const CurrentMilestonePanel: React.FC<CurrentMilestonePanelProps> = ({
       {/* Age Window */}
       <div className="mb-4 pb-4 border-b border-blue-500/30">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-[rgb(148,163,184)]">Age Window:</span>
+          <span className="text-slate-400">Age Window:</span>
           <span className="font-semibold text-[rgb(220,235,255)]">
             Days {ageWindow.min}-{ageWindow.max}
           </span>
         </div>
         <div className="flex items-center justify-between text-sm mt-1">
-          <span className="text-[rgb(148,163,184)]">Foal Age:</span>
+          <span className="text-slate-400">Foal Age:</span>
           <span className="font-semibold text-blue-400">{foalAge} days old</span>
         </div>
       </div>
@@ -102,13 +102,13 @@ const CurrentMilestonePanel: React.FC<CurrentMilestonePanelProps> = ({
       )}
 
       {/* Description */}
-      {description && <p className="text-sm text-[rgb(148,163,184)] mb-4">{description}</p>}
+      {description && <p className="text-sm text-slate-400 mb-4">{description}</p>}
 
       {/* Days Remaining */}
       <div className="mb-4 flex items-center gap-2">
-        <Clock className="h-5 w-5 text-[rgb(148,163,184)]" />
+        <Clock className="h-5 w-5 text-slate-400" />
         <div className="flex-1">
-          <p className="text-sm text-[rgb(148,163,184)]">Days remaining in window:</p>
+          <p className="text-sm text-slate-400">Days remaining in window:</p>
           <p className="text-lg font-bold text-[rgb(220,235,255)]">
             {daysRemaining} day{daysRemaining !== 1 ? 's' : ''}
           </p>
@@ -118,7 +118,7 @@ const CurrentMilestonePanel: React.FC<CurrentMilestonePanelProps> = ({
       {/* Progress Bar */}
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-2">
-          <TrendingUp className="h-5 w-5 text-[rgb(148,163,184)]" />
+          <TrendingUp className="h-5 w-5 text-slate-400" />
           <div className="flex-1 flex items-center justify-between">
             <span className="text-sm font-medium text-[rgb(220,235,255)]">Milestone Progress</span>
             <span className="text-sm font-bold text-[rgb(220,235,255)]">{progress}%</span>
@@ -142,7 +142,7 @@ const CurrentMilestonePanel: React.FC<CurrentMilestonePanelProps> = ({
             aria-label={`Milestone progress: ${progress}%`}
           />
         </div>
-        <p className="text-xs text-[rgb(148,163,184)] mt-1">
+        <p className="text-xs text-slate-400 mt-1">
           Day {foalAge - ageWindow.min + 1} of {ageWindow.max - ageWindow.min + 1} in this window
         </p>
       </div>

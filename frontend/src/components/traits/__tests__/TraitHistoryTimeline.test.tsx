@@ -103,7 +103,7 @@ describe('TraitHistoryTimeline Component', () => {
       };
       const { container } = render(<TraitHistoryTimeline history={emptyHistory} />);
       // Calendar icon now uses muted-text dark-theme color
-      expect(container.querySelector('.text-\\[rgb\\(148\\,163\\,184\\)\\]')).toBeInTheDocument();
+      expect(container.querySelector('.text-slate-400')).toBeInTheDocument();
     });
 
     it('should show helpful message in empty state', () => {

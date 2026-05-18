@@ -54,9 +54,9 @@ const LoadingSkeletons = () => (
  */
 const EmptyState = () => (
   <div className="py-12 text-center" data-testid="empty-state">
-    <Trophy className="mx-auto h-12 w-12 text-[rgb(148,163,184)] mb-4" aria-hidden="true" />
+    <Trophy className="mx-auto h-12 w-12 text-slate-400 mb-4" aria-hidden="true" />
     <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">No competitions found</h3>
-    <p className="text-sm text-[rgb(148,163,184)]">
+    <p className="text-sm text-slate-400">
       Check back later for upcoming competitions to enter.
     </p>
   </div>
@@ -89,11 +89,11 @@ const CompetitionList = ({
         <div className="mb-4">
           <h2 className="text-lg font-semibold text-[rgb(220,235,255)]">{displayTitle}</h2>
           {!isLoading && (
-            <p className="text-sm text-[rgb(148,163,184)]">
+            <p className="text-sm text-slate-400">
               {competitionCount} {competitionCount === 1 ? 'competition' : 'competitions'} available
             </p>
           )}
-          {isLoading && <p className="text-sm text-[rgb(148,163,184)]">Loading competitions...</p>}
+          {isLoading && <p className="text-sm text-slate-400">Loading competitions...</p>}
         </div>
 
         {/* Loading State */}

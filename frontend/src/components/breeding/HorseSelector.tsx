@@ -116,14 +116,14 @@ const HorseSelector: React.FC<HorseSelectorProps> = ({
       {/* Header */}
       <div className="mb-3">
         <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">{title}</h3>
-        <p className="text-xs text-[rgb(148,163,184)] mt-1">
+        <p className="text-xs text-slate-400 mt-1">
           {filter === 'male' ? 'Select a stallion (3+ years)' : 'Select a mare (3+ years)'}
         </p>
       </div>
 
       {/* Search Box */}
       <div className="relative mb-3">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[rgb(148,163,184)]" />
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
         <input
           type="text"
           value={searchTerm}
@@ -138,7 +138,7 @@ const HorseSelector: React.FC<HorseSelectorProps> = ({
       <div className="space-y-2 max-h-[400px] overflow-y-auto">
         {sortedHorses.length === 0 ? (
           <div className="rounded-md border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)] p-4 text-center">
-            <p className="text-sm text-[rgb(148,163,184)]">
+            <p className="text-sm text-slate-400">
               No {filter === 'male' ? 'stallions' : 'mares'} found
             </p>
           </div>
@@ -173,7 +173,7 @@ const HorseSelector: React.FC<HorseSelectorProps> = ({
                     </div>
 
                     {/* Breed & Age */}
-                    <p className="text-xs text-[rgb(148,163,184)] mt-1">
+                    <p className="text-xs text-slate-400 mt-1">
                       {horse.breedName || 'Unknown Breed'} • {horse.age} years old
                     </p>
 
@@ -181,7 +181,7 @@ const HorseSelector: React.FC<HorseSelectorProps> = ({
                     <div className="flex items-center gap-2 mt-2">
                       {/* Health Status */}
                       {horse.healthStatus && (
-                        <div className="flex items-center gap-1 text-xs text-[rgb(148,163,184)]">
+                        <div className="flex items-center gap-1 text-xs text-slate-400">
                           <Heart className="h-3 w-3" />
                           <span className="capitalize">{horse.healthStatus}</span>
                         </div>
@@ -224,7 +224,7 @@ const HorseSelector: React.FC<HorseSelectorProps> = ({
 
       {/* Summary */}
       <div className="mt-3 pt-3 border-t border-[rgba(37,99,235,0.2)]">
-        <p className="text-xs text-[rgb(148,163,184)]">
+        <p className="text-xs text-slate-400">
           {sortedHorses.filter((h) => canHorseBreed(h).canBreed).length} of {sortedHorses.length}{' '}
           available
         </p>

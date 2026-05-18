@@ -106,8 +106,8 @@ const getStrengthInfo = (strength: number) => {
     };
   }
   return {
-    color: 'text-[rgb(148,163,184)]',
-    bgColor: 'bg-[rgb(148,163,184)]',
+    color: 'text-slate-400',
+    bgColor: 'bg-slate-400',
     label: 'Low',
   };
 };
@@ -182,7 +182,7 @@ export const TraitCard: React.FC<TraitCardProps> = ({
                   ? 'bg-gradient-to-r from-burnished-gold to-purple-500 text-[var(--text-primary)]'
                   : trait.rarity === 'rare'
                     ? 'bg-burnished-gold text-[var(--text-primary)]'
-                    : 'bg-[rgba(37,99,235,0.2)] text-[rgb(148,163,184)]'
+                    : 'bg-[rgba(37,99,235,0.2)] text-slate-400'
               }`}
             >
               {trait.rarity.charAt(0).toUpperCase() + trait.rarity.slice(1)}
@@ -194,7 +194,7 @@ export const TraitCard: React.FC<TraitCardProps> = ({
                 className={`text-xs px-2 py-1 rounded-full ${
                   trait.isActive
                     ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
-                    : 'bg-[rgba(37,99,235,0.1)] text-[rgb(148,163,184)] border border-[rgba(37,99,235,0.2)]'
+                    : 'bg-[rgba(37,99,235,0.1)] text-slate-400 border border-[rgba(37,99,235,0.2)]'
                 }`}
               >
                 {trait.isActive ? 'Active' : 'Dormant'}
@@ -210,7 +210,7 @@ export const TraitCard: React.FC<TraitCardProps> = ({
       {/* Strength Meter */}
       <div className="mb-3">
         <div className="flex justify-between items-center mb-1">
-          <span className="text-xs text-[rgb(148,163,184)] flex items-center gap-1">
+          <span className="text-xs text-slate-400 flex items-center gap-1">
             <TrendingUp className="w-3 h-3" />
             Strength
           </span>
@@ -232,7 +232,7 @@ export const TraitCard: React.FC<TraitCardProps> = ({
           <div className="flex items-center gap-2">
             <span className="text-sm">
               {sourceInfo.icon}{' '}
-              <span className="text-xs text-[rgb(148,163,184)]">{sourceInfo.label}</span>
+              <span className="text-xs text-slate-400">{sourceInfo.label}</span>
             </span>
           </div>
         </div>
@@ -240,7 +240,7 @@ export const TraitCard: React.FC<TraitCardProps> = ({
 
       {/* Discovery Date (Epigenetic Only) */}
       {trait.type === 'epigenetic' && trait.discoveryDate && (
-        <div className="text-xs text-[rgb(148,163,184)] mb-2">
+        <div className="text-xs text-slate-400 mb-2">
           Discovered: {new Date(trait.discoveryDate).toLocaleDateString()}
         </div>
       )}
@@ -258,7 +258,7 @@ export const TraitCard: React.FC<TraitCardProps> = ({
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(trait.impact.stats).map(([stat, value]) => (
                   <div key={stat} className="flex justify-between text-xs">
-                    <span className="capitalize text-[rgb(148,163,184)]">{stat}:</span>
+                    <span className="capitalize text-slate-400">{stat}:</span>
                     <span className={value > 0 ? 'text-emerald-400' : 'text-red-400'}>
                       {value > 0 ? '+' : ''}
                       {value}
@@ -276,7 +276,7 @@ export const TraitCard: React.FC<TraitCardProps> = ({
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(trait.impact.disciplines).map(([discipline, value]) => (
                   <div key={discipline} className="flex justify-between text-xs">
-                    <span className="capitalize text-[rgb(148,163,184)]">{discipline}:</span>
+                    <span className="capitalize text-slate-400">{discipline}:</span>
                     <span className={value > 0 ? 'text-emerald-400' : 'text-red-400'}>
                       {value > 0 ? '+' : ''}
                       {value}

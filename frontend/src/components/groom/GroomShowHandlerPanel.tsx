@@ -49,7 +49,7 @@ function ScoreWeightRow({
     <div className="flex items-center gap-2" data-testid={testId}>
       <div className="flex-1 min-w-0">
         <div className="flex justify-between text-xs mb-0.5">
-          <span className="text-[rgb(148,163,184)]">{label}</span>
+          <span className="text-slate-400">{label}</span>
           <span className="font-medium text-[rgb(220,235,255)]">{percent}%</span>
         </div>
         <div className="h-1.5 bg-[rgba(15,35,70,0.5)] rounded-full overflow-hidden">
@@ -100,18 +100,18 @@ const GroomShowHandlerPanel: React.FC<GroomShowHandlerPanelProps> = ({ groom }) 
 
       {/* Handler skill bonus range */}
       <div className="bg-[rgba(15,35,70,0.4)] rounded-lg border border-[rgba(37,99,235,0.3)] p-3">
-        <p className="text-xs font-medium text-[rgb(148,163,184)] mb-1">Handler Bonus Range</p>
+        <p className="text-xs font-medium text-slate-400 mb-1">Handler Bonus Range</p>
         <p className="text-lg font-bold text-[rgb(220,235,255)]" data-testid="handler-bonus-range">
           {getHandlerBonusRange(groom.skillLevel)}
         </p>
-        <p className="text-xs text-[rgb(148,163,184)] mt-0.5">
+        <p className="text-xs text-slate-400 mt-0.5">
           Applies to conformation show performance
         </p>
       </div>
 
       {/* Conformation show scoring breakdown */}
       <div data-testid="scoring-breakdown-section">
-        <p className="text-xs font-semibold text-[rgb(148,163,184)] mb-2 uppercase tracking-wide">
+        <p className="text-xs font-semibold text-slate-400 mb-2 uppercase tracking-wide">
           Conformation Show Scoring
         </p>
         <div className="space-y-2">
@@ -146,7 +146,7 @@ const GroomShowHandlerPanel: React.FC<GroomShowHandlerPanelProps> = ({ groom }) 
       <div data-testid="personality-synergy-section">
         <div className="flex items-center gap-1.5 mb-2">
           <Zap className="w-3 h-3 text-amber-400" aria-hidden="true" />
-          <p className="text-xs font-semibold text-[rgb(148,163,184)] uppercase tracking-wide">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
             Personality Synergy
           </p>
           <span
@@ -168,7 +168,7 @@ const GroomShowHandlerPanel: React.FC<GroomShowHandlerPanelProps> = ({ groom }) 
             ))}
           </div>
         ) : (
-          <p className="text-xs text-[rgb(148,163,184)]" data-testid="no-synergy-disciplines">
+          <p className="text-xs text-slate-400" data-testid="no-synergy-disciplines">
             No discipline synergy for this personality
           </p>
         )}
@@ -178,7 +178,7 @@ const GroomShowHandlerPanel: React.FC<GroomShowHandlerPanelProps> = ({ groom }) 
       <div data-testid="specialty-section">
         <div className="flex items-center gap-1.5 mb-2">
           <Star className="w-3 h-3 text-blue-400" aria-hidden="true" />
-          <p className="text-xs font-semibold text-[rgb(148,163,184)] uppercase tracking-wide">
+          <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide">
             Specialty
           </p>
           {isShowSpecialty && (
@@ -211,7 +211,7 @@ const GroomShowHandlerPanel: React.FC<GroomShowHandlerPanelProps> = ({ groom }) 
             ))}
           </div>
         ) : (
-          <p className="text-xs text-[rgb(148,163,184)]" data-testid="no-specialty-disciplines">
+          <p className="text-xs text-slate-400" data-testid="no-specialty-disciplines">
             No specific discipline bonus
           </p>
         )}

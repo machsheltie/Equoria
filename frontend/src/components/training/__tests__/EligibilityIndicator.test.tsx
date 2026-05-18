@@ -211,7 +211,7 @@ describe('EligibilityIndicator', () => {
       const { container } = render(<EligibilityIndicator horse={youngHorse} />);
 
       const statusText = container.querySelector('[data-testid="status-text"]');
-      expect(statusText).toHaveClass('text-[rgb(148,163,184)]');
+      expect(statusText).toHaveClass('text-slate-400');
     });
 
     it('should show correct text color for too old state (red)', () => {
@@ -327,7 +327,7 @@ describe('EligibilityIndicator', () => {
       const { container } = render(<EligibilityIndicator horse={youngHorse} />);
 
       const icon = container.querySelector('[data-testid="status-icon"]');
-      expect(icon).toHaveClass('text-[rgb(148,163,184)]');
+      expect(icon).toHaveClass('text-slate-400');
     });
 
     it('should render AlertCircle icon for too old state', () => {

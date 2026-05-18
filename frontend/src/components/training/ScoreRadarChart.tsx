@@ -70,7 +70,7 @@ const CustomTooltip = ({
     return (
       <div className="glass-panel border border-[rgba(37,99,235,0.3)] rounded-lg p-3 shadow-lg">
         <p className="font-semibold text-[rgb(220,235,255)]">{data.discipline}</p>
-        <p className="text-[rgb(148,163,184)]">
+        <p className="text-slate-400">
           Score: <span className="font-medium text-[rgb(220,235,255)]">{data.score}</span>
         </p>
         <p className="text-sm" style={{ color: CATEGORY_COLORS[data.category] }}>
@@ -139,11 +139,11 @@ const ScoreRadarChart: React.FC<ScoreRadarChartProps> = ({
           aria-describedby={descriptionId}
         >
           <PolarGrid />
-          <PolarAngleAxis dataKey="discipline" tick={{ fontSize: 10, fill: 'rgb(148,163,184)' }} />
+          <PolarAngleAxis dataKey="discipline" tick={{ fontSize: 10, fill: 'rgb(var(--mystic-silver))' }} />
           <PolarRadiusAxis
             angle={30}
             domain={[0, 100]}
-            tick={{ fontSize: 9, fill: 'rgb(148,163,184)' }}
+            tick={{ fontSize: 9, fill: 'rgb(var(--mystic-silver))' }}
           />
           <Radar
             name="Score"
@@ -157,7 +157,7 @@ const ScoreRadarChart: React.FC<ScoreRadarChartProps> = ({
             <Legend
               wrapperStyle={{ paddingTop: '10px' }}
               formatter={(value) => (
-                <span className="text-sm text-[rgb(148,163,184)]">{value}</span>
+                <span className="text-sm text-slate-400">{value}</span>
               )}
             />
           )}

@@ -316,7 +316,7 @@ describe('TraitModifierBadge', () => {
     it('should use gray text color (text-gray-600) for neutral traits', () => {
       const { container } = render(<TraitModifierBadge modifier={neutralModifier} />);
       const badge = container.querySelector('[data-testid="trait-badge-calm"]');
-      expect(badge).toHaveClass('text-[rgb(148,163,184)]');
+      expect(badge).toHaveClass('text-slate-400');
     });
   });
 

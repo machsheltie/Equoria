@@ -138,7 +138,7 @@ const LoadingSpinner = () => (
     className="flex flex-col items-center justify-center py-12"
   >
     <Loader2 className="h-8 w-8 animate-spin text-blue-400" aria-hidden="true" />
-    <p className="mt-2 text-sm text-[rgb(148,163,184)]">Loading horses...</p>
+    <p className="mt-2 text-sm text-slate-400">Loading horses...</p>
   </div>
 );
 
@@ -152,7 +152,7 @@ const EmptyState = () => (
   >
     <div className="rounded-full bg-[rgba(15,35,70,0.5)] p-4 mb-4">
       <svg
-        className="h-8 w-8 text-[rgb(148,163,184)]"
+        className="h-8 w-8 text-slate-400"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -167,7 +167,7 @@ const EmptyState = () => (
       </svg>
     </div>
     <p className="text-[rgb(220,235,255)] font-medium">No eligible horses</p>
-    <p className="text-sm text-[rgb(148,163,184)] mt-1">
+    <p className="text-sm text-slate-400 mt-1">
       You don't have any horses that can enter this competition.
     </p>
   </div>
@@ -198,7 +198,7 @@ const ErrorState = ({ message }: { message: string }) => (
       </svg>
     </div>
     <p className="text-red-400 font-medium">Failed to load horses</p>
-    <p className="text-sm text-[rgb(148,163,184)] mt-1">{message}</p>
+    <p className="text-sm text-slate-400 mt-1">{message}</p>
   </div>
 );
 
@@ -394,7 +394,7 @@ const HorseSelector = memo(
             >
               Select Horses
             </h3>
-            <p className="text-sm text-[rgb(148,163,184)]">
+            <p className="text-sm text-slate-400">
               <span data-testid="eligible-count" className="font-medium">
                 {eligibleHorses.length}
               </span>{' '}
@@ -404,7 +404,7 @@ const HorseSelector = memo(
 
           <div className="flex items-center gap-2">
             {/* Selection count */}
-            <div className="text-sm text-[rgb(148,163,184)]">
+            <div className="text-sm text-slate-400">
               <span data-testid="selected-count" className="font-medium">
                 {selectedHorses.length}
               </span>
@@ -433,7 +433,7 @@ const HorseSelector = memo(
                 disabled={selectedHorses.length === 0}
                 className={cn(
                   'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
-                  'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.7)]',
+                  'bg-[rgba(15,35,70,0.5)] text-slate-400 hover:bg-[rgba(15,35,70,0.7)]',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
               >

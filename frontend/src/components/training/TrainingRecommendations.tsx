@@ -70,7 +70,7 @@ const TrainingRecommendations = ({ horses, className = '' }: TrainingRecommendat
         <Lightbulb className="h-5 w-5 text-amber-400" aria-hidden="true" />
         <h2 className="text-lg font-semibold text-[rgb(220,235,255)]">Training Recommendations</h2>
       </div>
-      <p className="text-sm text-[rgb(148,163,184)] mb-6">
+      <p className="text-sm text-slate-400 mb-6">
         AI-powered suggestions to optimize your training strategy
       </p>
 
@@ -78,10 +78,10 @@ const TrainingRecommendations = ({ horses, className = '' }: TrainingRecommendat
       {noHorses && (
         <div className="py-8 text-center" data-testid="empty-recommendations">
           <Lightbulb
-            className="mx-auto h-12 w-12 text-[rgb(148,163,184)] mb-4"
+            className="mx-auto h-12 w-12 text-slate-400 mb-4"
             aria-hidden="true"
           />
-          <p className="text-sm text-[rgb(148,163,184)]">
+          <p className="text-sm text-slate-400">
             Add horses to receive training recommendations tailored to your stable
           </p>
         </div>
@@ -90,8 +90,8 @@ const TrainingRecommendations = ({ horses, className = '' }: TrainingRecommendat
       {/* Empty State - No Ready Horses */}
       {noReadyHorses && (
         <div className="py-8 text-center mb-6" data-testid="empty-recommendations">
-          <Clock className="mx-auto h-12 w-12 text-[rgb(148,163,184)] mb-4" aria-hidden="true" />
-          <p className="text-sm text-[rgb(148,163,184)]">
+          <Clock className="mx-auto h-12 w-12 text-slate-400 mb-4" aria-hidden="true" />
+          <p className="text-sm text-slate-400">
             No training recommendations available - all horses are on cooldown or ineligible
           </p>
         </div>
@@ -115,11 +115,11 @@ const TrainingRecommendations = ({ horses, className = '' }: TrainingRecommendat
                 <div className="flex-1">
                   <div className="font-medium text-[rgb(220,235,255)]">
                     {rec.horseName}
-                    <span className="ml-2 text-sm text-[rgb(148,163,184)] font-normal">
+                    <span className="ml-2 text-sm text-slate-400 font-normal">
                       {rec.age} {rec.age === 1 ? 'year' : 'years'} old
                     </span>
                   </div>
-                  <p className="text-sm text-[rgb(148,163,184)] mt-1">{rec.reason}</p>
+                  <p className="text-sm text-slate-400 mt-1">{rec.reason}</p>
                 </div>
               </div>
             ))}
@@ -140,7 +140,7 @@ const TrainingRecommendations = ({ horses, className = '' }: TrainingRecommendat
                 data-testid="training-tip"
               >
                 <Icon
-                  className="h-4 w-4 text-[rgb(148,163,184)] flex-shrink-0 mt-0.5"
+                  className="h-4 w-4 text-slate-400 flex-shrink-0 mt-0.5"
                   aria-hidden="true"
                 />
                 <p className="text-sm text-[rgb(220,235,255)]">{tip.text}</p>

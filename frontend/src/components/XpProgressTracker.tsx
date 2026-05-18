@@ -128,12 +128,12 @@ const XpProgressTracker: React.FC<XpProgressTrackerProps> = React.memo(
         {/* Level and XP text row */}
         <div className="flex items-center justify-between">
           <span className={`font-semibold text-[rgb(220,235,255)] ${sizeStyles.levelText}`}>
-            <span className="text-[rgb(148,163,184)]">Level </span>
+            <span className="text-slate-400">Level </span>
             <span data-testid="xp-tracker-level">{currentLevel}</span>
           </span>
           <span
             data-testid="xp-tracker-text"
-            className={`text-[rgb(148,163,184)] ${sizeStyles.xpText}`}
+            className={`text-slate-400 ${sizeStyles.xpText}`}
           >
             {safeXpForCurrentLevel}/{xpToNextLevel} XP
           </span>

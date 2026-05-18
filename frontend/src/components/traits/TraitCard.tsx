@@ -42,7 +42,7 @@ const TraitCard: React.FC<TraitCardProps> = ({ trait, onClick, showCompetitionIm
       ? 'text-emerald-400'
       : totalImpact < 0
         ? 'text-red-400'
-        : 'text-[rgb(148,163,184)]';
+        : 'text-slate-400';
 
   return (
     <div
@@ -59,7 +59,7 @@ const TraitCard: React.FC<TraitCardProps> = ({ trait, onClick, showCompetitionIm
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <h4 className={`font-bold text-lg ${tierStyle.textColor}`}>{trait.name}</h4>
-            <Info className="h-4 w-4 text-[rgb(148,163,184)] opacity-0 group-hover:opacity-100 transition-opacity" />
+            <Info className="h-4 w-4 text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
           </div>
 
           {/* Tier Badge */}
@@ -88,7 +88,7 @@ const TraitCard: React.FC<TraitCardProps> = ({ trait, onClick, showCompetitionIm
 
       {/* Category */}
       <div className="mb-3 relative">
-        <span className="text-xs font-medium text-[rgb(148,163,184)] bg-[rgba(37,99,235,0.1)] px-2 py-1 rounded">
+        <span className="text-xs font-medium text-slate-400 bg-[rgba(37,99,235,0.1)] px-2 py-1 rounded">
           {trait.category}
         </span>
       </div>
@@ -135,7 +135,7 @@ const TraitCard: React.FC<TraitCardProps> = ({ trait, onClick, showCompetitionIm
             );
           })}
           {trait.epigeneticFlags.length > 2 && (
-            <span className="text-xs text-[rgb(148,163,184)] px-2 py-0.5">
+            <span className="text-xs text-slate-400 px-2 py-0.5">
               +{trait.epigeneticFlags.length - 2} more
             </span>
           )}
@@ -145,7 +145,7 @@ const TraitCard: React.FC<TraitCardProps> = ({ trait, onClick, showCompetitionIm
       {/* Best Disciplines Preview */}
       {showCompetitionImpact && bestDisciplines.length > 0 && (
         <div className="mt-3 pt-3 border-t border-[rgba(37,99,235,0.2)] relative">
-          <p className="text-xs font-semibold text-[rgb(148,163,184)] mb-1">Best For:</p>
+          <p className="text-xs font-semibold text-slate-400 mb-1">Best For:</p>
           <div className="flex flex-wrap gap-1">
             {bestDisciplines.map((disc, index) => (
               <span

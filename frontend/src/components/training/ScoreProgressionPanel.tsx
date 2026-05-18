@@ -241,15 +241,15 @@ const ScoreProgressionPanel: React.FC<ScoreProgressionPanelProps> = ({
         </h3>
         <ul className="space-y-2 text-sm text-[rgb(220,235,255)]">
           <li className="flex items-start">
-            <span className="mr-2 text-[rgb(148,163,184)]">{'•'}</span>
+            <span className="mr-2 text-slate-400">{'•'}</span>
             <span>Base score cap: 100 per discipline</span>
           </li>
           <li className="flex items-start">
-            <span className="mr-2 text-[rgb(148,163,184)]">{'•'}</span>
+            <span className="mr-2 text-slate-400">{'•'}</span>
             <span>Trait bonuses can add +10-20</span>
           </li>
           <li className="flex items-start">
-            <span className="mr-2 text-[rgb(148,163,184)]">{'•'}</span>
+            <span className="mr-2 text-slate-400">{'•'}</span>
             <span>Groom bonuses can add +5-15</span>
           </li>
         </ul>

@@ -138,7 +138,7 @@ const RecentGains = ({ horseId }: RecentGainsProps) => {
   if (isLoading) {
     return (
       <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-6 shadow-sm">
-        <div className="text-center text-sm text-[rgb(148,163,184)]">Loading recent gains...</div>
+        <div className="text-center text-sm text-slate-400">Loading recent gains...</div>
       </div>
     );
   }
@@ -163,7 +163,7 @@ const RecentGains = ({ horseId }: RecentGainsProps) => {
     return (
       <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-6 shadow-sm">
         <h3 className="mb-4 text-lg font-semibold text-[rgb(220,235,255)]">Recent Gains</h3>
-        <div className="text-center text-sm text-[rgb(148,163,184)]">
+        <div className="text-center text-sm text-slate-400">
           No XP gains in the selected time period.
           <br />
           No recent gains available.
@@ -180,7 +180,7 @@ const RecentGains = ({ horseId }: RecentGainsProps) => {
 
         <div className="flex items-center gap-3">
           {/* Sort selector */}
-          <label htmlFor="sort-select" className="text-sm text-[rgb(148,163,184)]">
+          <label htmlFor="sort-select" className="text-sm text-slate-400">
             Sort by:
           </label>
           <select
@@ -203,7 +203,7 @@ const RecentGains = ({ horseId }: RecentGainsProps) => {
                 className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                   selectedRange === range
                     ? 'bg-emerald-600 text-[var(--text-primary)]'
-                    : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.3)]'
+                    : 'bg-[rgba(15,35,70,0.5)] text-slate-400 hover:bg-[rgba(15,35,70,0.3)]'
                 }`}
                 aria-label={TIME_RANGE_LABELS[range]}
               >
@@ -219,7 +219,7 @@ const RecentGains = ({ horseId }: RecentGainsProps) => {
         {groupedGains.map((group) => (
           <li key={group.date} className="space-y-2">
             {/* Date header */}
-            <div className="text-sm font-semibold text-[rgb(148,163,184)]">{group.displayDate}</div>
+            <div className="text-sm font-semibold text-slate-400">{group.displayDate}</div>
 
             {/* Events for this date */}
             <ul className="space-y-1.5">
@@ -251,15 +251,15 @@ const RecentGains = ({ horseId }: RecentGainsProps) => {
 
                     {/* Expand/collapse icon */}
                     {expandedIds.has(event.id) ? (
-                      <ChevronUp className="h-4 w-4 text-[rgb(148,163,184)]" />
+                      <ChevronUp className="h-4 w-4 text-slate-400" />
                     ) : (
-                      <ChevronDown className="h-4 w-4 text-[rgb(148,163,184)]" />
+                      <ChevronDown className="h-4 w-4 text-slate-400" />
                     )}
                   </button>
 
                   {/* Expanded details */}
                   {expandedIds.has(event.id) && (
-                    <div className="mt-2 border-t border-[rgba(37,99,235,0.3)] pt-2 text-sm text-[rgb(148,163,184)]">
+                    <div className="mt-2 border-t border-[rgba(37,99,235,0.3)] pt-2 text-sm text-slate-400">
                       <p>
                         <strong>Time:</strong>{' '}
                         {new Date(event.timestamp).toLocaleString('en-US', {
@@ -285,15 +285,15 @@ const RecentGains = ({ horseId }: RecentGainsProps) => {
       {/* Summary Statistics */}
       <div className="mt-6 grid grid-cols-3 gap-4 border-t border-[rgba(37,99,235,0.3)] pt-4">
         <div className="text-center">
-          <p className="text-xs text-[rgb(148,163,184)]">Total XP</p>
+          <p className="text-xs text-slate-400">Total XP</p>
           <p className="text-lg font-semibold text-emerald-400">+{stats.total}</p>
         </div>
         <div className="text-center">
-          <p className="text-xs text-[rgb(148,163,184)]">Events</p>
+          <p className="text-xs text-slate-400">Events</p>
           <p className="text-lg font-semibold text-[rgb(220,235,255)]">{stats.count} events</p>
         </div>
         <div className="text-center">
-          <p className="text-xs text-[rgb(148,163,184)]">Avg per Event</p>
+          <p className="text-xs text-slate-400">Avg per Event</p>
           <p className="text-lg font-semibold text-[rgb(220,235,255)]">Avg +{stats.average}</p>
         </div>
       </div>

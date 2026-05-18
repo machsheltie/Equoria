@@ -187,7 +187,7 @@ const XpHistoryTimeline: React.FC<XpHistoryTimelineProps> = memo(
           <div data-testid="error-state" className="py-8 text-center">
             <AlertCircle className="mx-auto h-12 w-12 text-red-400 mb-3" aria-hidden="true" />
             <p className="text-sm text-red-400 font-medium mb-1">{error.message}</p>
-            <p className="text-xs text-[rgb(148,163,184)]">Please try again later.</p>
+            <p className="text-xs text-slate-400">Please try again later.</p>
           </div>
         </div>
       );
@@ -213,7 +213,7 @@ const XpHistoryTimeline: React.FC<XpHistoryTimelineProps> = memo(
                 <label htmlFor={`date-filter-${horseId}`} className="sr-only">
                   Filter by date range
                 </label>
-                <Calendar className="h-4 w-4 text-[rgb(148,163,184)]" aria-hidden="true" />
+                <Calendar className="h-4 w-4 text-slate-400" aria-hidden="true" />
                 <select
                   id={`date-filter-${horseId}`}
                   data-testid="date-filter"
@@ -235,12 +235,12 @@ const XpHistoryTimeline: React.FC<XpHistoryTimelineProps> = memo(
           <div data-testid="empty-state" className="py-12 text-center">
             <div data-testid="empty-state-icon">
               <Trophy
-                className="mx-auto h-16 w-16 text-[rgb(148,163,184)] mb-4"
+                className="mx-auto h-16 w-16 text-slate-400 mb-4"
                 aria-hidden="true"
               />
             </div>
             <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">No XP gains yet</h3>
-            <p className="text-sm text-[rgb(148,163,184)] max-w-sm mx-auto">
+            <p className="text-sm text-slate-400 max-w-sm mx-auto">
               Train and compete to start earning XP. Your history will appear here.
             </p>
           </div>
@@ -267,7 +267,7 @@ const XpHistoryTimeline: React.FC<XpHistoryTimelineProps> = memo(
             <label htmlFor={`date-filter-${horseId}`} className="sr-only">
               Filter by date range
             </label>
-            <Calendar className="h-4 w-4 text-[rgb(148,163,184)]" aria-hidden="true" />
+            <Calendar className="h-4 w-4 text-slate-400" aria-hidden="true" />
             <select
               id={`date-filter-${horseId}`}
               data-testid="date-filter"

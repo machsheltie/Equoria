@@ -164,9 +164,9 @@ describe('CategoryFilter Component', () => {
 
   describe('category icons', () => {
     it('should display Sparkles icon for All Activities', () => {
-      // Component migrated to dark theme: All uses text-[rgb(148,163,184)] (slate-400-ish)
+      // Component migrated to dark theme: All uses text-slate-400 (slate-400-ish)
       const { container } = render(<CategoryFilter {...defaultProps} selectedCategory="all" />);
-      expect(container.querySelector('.text-\\[rgb\\(148\\,163\\,184\\)\\]')).toBeInTheDocument();
+      expect(container.querySelector('.text-slate-400')).toBeInTheDocument();
     });
 
     it('should display Heart icon for Trust', () => {

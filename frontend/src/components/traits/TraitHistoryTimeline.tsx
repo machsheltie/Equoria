@@ -67,7 +67,7 @@ const CustomTooltip: React.FC<Record<string, unknown>> = ({ active, payload }) =
       </div>
 
       {/* Event Type */}
-      <p className="text-xs font-semibold text-[rgb(148,163,184)] uppercase tracking-wide mb-1">
+      <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-1">
         {event.eventType}
       </p>
 
@@ -77,10 +77,10 @@ const CustomTooltip: React.FC<Record<string, unknown>> = ({ active, payload }) =
       </p>
 
       {/* Description */}
-      <p className="text-xs text-[rgb(148,163,184)]">{event.description}</p>
+      <p className="text-xs text-slate-400">{event.description}</p>
 
       {/* Timestamp */}
-      <p className="text-xs text-[rgb(148,163,184)] mt-2">
+      <p className="text-xs text-slate-400 mt-2">
         {new Date(event.timestamp).toLocaleDateString('en-US', {
           month: 'short',
           day: 'numeric',
@@ -100,9 +100,9 @@ const TraitHistoryTimeline: React.FC<TraitHistoryTimelineProps> = ({ history }) 
   if (history.events.length === 0) {
     return (
       <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.3)] p-8 text-center">
-        <Calendar className="h-12 w-12 text-[rgb(148,163,184)] mx-auto mb-3" />
-        <p className="text-sm text-[rgb(148,163,184)]">No trait history events recorded yet</p>
-        <p className="text-xs text-[rgb(148,163,184)] mt-1">
+        <Calendar className="h-12 w-12 text-slate-400 mx-auto mb-3" />
+        <p className="text-sm text-slate-400">No trait history events recorded yet</p>
+        <p className="text-xs text-slate-400 mt-1">
           Events will appear here as traits are discovered and activated
         </p>
       </div>
@@ -181,7 +181,7 @@ const TraitHistoryTimeline: React.FC<TraitHistoryTimelineProps> = ({ history }) 
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <p className={`font-bold ${tierStyle.textColor}`}>{event.traitName}</p>
-                    <span className="text-xs font-semibold text-[rgb(148,163,184)] uppercase">
+                    <span className="text-xs font-semibold text-slate-400 uppercase">
                       {event.eventType}
                     </span>
                   </div>
@@ -190,9 +190,9 @@ const TraitHistoryTimeline: React.FC<TraitHistoryTimelineProps> = ({ history }) 
                     <span className="font-medium">Trigger:</span> {event.trigger}
                   </p>
 
-                  <p className="text-xs text-[rgb(148,163,184)]">{event.description}</p>
+                  <p className="text-xs text-slate-400">{event.description}</p>
 
-                  <p className="text-xs text-[rgb(148,163,184)] mt-2">
+                  <p className="text-xs text-slate-400 mt-2">
                     {new Date(event.timestamp).toLocaleDateString('en-US', {
                       month: 'long',
                       day: 'numeric',

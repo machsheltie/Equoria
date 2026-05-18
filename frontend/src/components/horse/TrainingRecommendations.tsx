@@ -137,10 +137,10 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
       case 'senior':
         return {
           text: 'Senior horse - limited training capacity, gentle exercise only.',
-          color: 'text-[rgb(148,163,184)]',
+          color: 'text-slate-400',
         };
       default:
-        return { text: '', color: 'text-[rgb(148,163,184)]' };
+        return { text: '', color: 'text-slate-400' };
     }
   };
 
@@ -148,7 +148,7 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
   if (isLoading) {
     return (
       <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-6 shadow-sm">
-        <div className="text-center text-sm text-[rgb(148,163,184)]">
+        <div className="text-center text-sm text-slate-400">
           Loading training recommendations...
         </div>
       </div>
@@ -246,7 +246,7 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
             )}
           </button>
         </div>
-        <div className="mt-2 flex items-center gap-4 text-sm text-[rgb(148,163,184)]">
+        <div className="mt-2 flex items-center gap-4 text-sm text-slate-400">
           <span className="font-semibold">{statsData.horseName}</span>
           <span>•</span>
           <span>
@@ -314,13 +314,13 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
                     {rec.priority} priority
                   </span>
                 </div>
-                <span className="text-sm text-[rgb(148,163,184)]">
+                <span className="text-sm text-slate-400">
                   {rec.currentValue}/{rec.potentialValue} (+{rec.gap})
                 </span>
               </div>
 
               <div className="mt-3 space-y-2">
-                <p className="text-xs font-semibold text-[rgb(148,163,184)]">Suggested Training:</p>
+                <p className="text-xs font-semibold text-slate-400">Suggested Training:</p>
                 <ul className="space-y-1">
                   {rec.suggestions.map((suggestion, idx) => (
                     <li
@@ -370,8 +370,8 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
       {/* Action Footer */}
       {recommendations.length > 0 && (
         <div className="mt-6 rounded-md bg-[rgba(15,35,70,0.3)] border border-[rgba(37,99,235,0.3)] p-4">
-          <p className="text-xs font-semibold text-[rgb(148,163,184)] mb-2">Training Tips:</p>
-          <ul className="space-y-1 text-xs text-[rgb(148,163,184)]">
+          <p className="text-xs font-semibold text-slate-400 mb-2">Training Tips:</p>
+          <ul className="space-y-1 text-xs text-slate-400">
             <li>• Focus on high priority stats first for maximum improvement</li>
             <li>• Training effectiveness varies by age and training window</li>
             <li>• Consistent training yields better results than sporadic sessions</li>

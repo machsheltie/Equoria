@@ -73,13 +73,13 @@ const QuickTrainModal = ({ isOpen, horses, onClose, onTrain }: QuickTrainModalPr
             <h2 id="quick-train-modal-title" className="text-xl font-bold text-[rgb(220,235,255)]">
               Quick Train
             </h2>
-            <p className="text-sm text-[rgb(148,163,184)] mt-1">
+            <p className="text-sm text-slate-400 mt-1">
               Select horses to train simultaneously
             </p>
           </div>
           <button
             onClick={onClose}
-            className="text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+            className="text-slate-400 hover:text-[rgb(220,235,255)] focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
             data-testid="close-button"
             aria-label="Close quick train modal"
           >
@@ -92,11 +92,11 @@ const QuickTrainModal = ({ isOpen, horses, onClose, onTrain }: QuickTrainModalPr
           {readyHorses.length === 0 ? (
             /* Empty State */
             <div className="py-12 text-center" data-testid="empty-state">
-              <Zap className="mx-auto h-12 w-12 text-[rgb(148,163,184)] mb-4" aria-hidden="true" />
+              <Zap className="mx-auto h-12 w-12 text-slate-400 mb-4" aria-hidden="true" />
               <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">
                 No horses ready for training
               </h3>
-              <p className="text-sm text-[rgb(148,163,184)]">
+              <p className="text-sm text-slate-400">
                 All your horses are either on cooldown or ineligible for training.
               </p>
             </div>
@@ -104,7 +104,7 @@ const QuickTrainModal = ({ isOpen, horses, onClose, onTrain }: QuickTrainModalPr
             <>
               {/* Horse Count and Select All */}
               <div className="flex items-center justify-between mb-4">
-                <div className="text-sm text-[rgb(148,163,184)]">
+                <div className="text-sm text-slate-400">
                   {readyHorses.length} {readyHorses.length === 1 ? 'horse' : 'horses'} ready
                   {hasSelection && (
                     <span className="ml-2 font-medium text-blue-400">
@@ -149,12 +149,12 @@ const QuickTrainModal = ({ isOpen, horses, onClose, onTrain }: QuickTrainModalPr
                       {selectedIds.has(horse.id) ? (
                         <CheckSquare className="h-5 w-5 text-blue-400" aria-hidden="true" />
                       ) : (
-                        <Square className="h-5 w-5 text-[rgb(148,163,184)]" aria-hidden="true" />
+                        <Square className="h-5 w-5 text-slate-400" aria-hidden="true" />
                       )}
                     </div>
                     <div className="flex-1">
                       <div className="font-medium text-[rgb(220,235,255)]">{horse.name}</div>
-                      <div className="text-sm text-[rgb(148,163,184)]">
+                      <div className="text-sm text-slate-400">
                         {horse.age} {horse.age === 1 ? 'year' : 'years'} old
                       </div>
                     </div>

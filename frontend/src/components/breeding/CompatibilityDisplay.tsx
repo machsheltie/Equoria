@@ -110,7 +110,7 @@ const CompatibilityDisplay: React.FC<CompatibilityDisplayProps> = ({
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-emerald-500 border-r-transparent"></div>
-            <p className="mt-3 text-sm text-[rgb(148,163,184)]">Analyzing compatibility...</p>
+            <p className="mt-3 text-sm text-slate-400">Analyzing compatibility...</p>
           </div>
         </div>
       </div>
@@ -122,11 +122,11 @@ const CompatibilityDisplay: React.FC<CompatibilityDisplayProps> = ({
     return (
       <div className="glass-panel rounded-lg border border-[rgba(37,99,235,0.2)] p-6">
         <div className="flex flex-col items-center justify-center h-64 text-center">
-          <Target className="h-16 w-16 text-[rgb(148,163,184)] mb-4" />
+          <Target className="h-16 w-16 text-slate-400 mb-4" />
           <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-2">
             Select Both Parents
           </h3>
-          <p className="text-sm text-[rgb(148,163,184)] max-w-md">
+          <p className="text-sm text-slate-400 max-w-md">
             Choose a sire and dam from the lists above to view their breeding compatibility analysis
             and recommendations.
           </p>
@@ -146,7 +146,7 @@ const CompatibilityDisplay: React.FC<CompatibilityDisplayProps> = ({
             <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">
               Compatibility Analysis
             </h3>
-            <p className="text-sm text-[rgb(148,163,184)] mt-1">
+            <p className="text-sm text-slate-400 mt-1">
               Breeding pair compatibility assessment
             </p>
           </div>

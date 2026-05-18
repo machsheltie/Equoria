@@ -115,7 +115,7 @@ const XpHistoryEntry: React.FC<XpHistoryEntryProps> = memo(
     // Determine timeline dot styling
     const dotClasses = isLevelUp
       ? 'w-4 h-4 rounded-full bg-yellow-400 border-2 border-yellow-500 z-[var(--z-raised)]'
-      : 'w-3 h-3 rounded-full bg-[rgb(148,163,184)] border-2 border-[rgba(37,99,235,0.3)] z-[var(--z-raised)]';
+      : 'w-3 h-3 rounded-full bg-slate-400 border-2 border-[rgba(37,99,235,0.3)] z-[var(--z-raised)]';
 
     return (
       <div
@@ -156,7 +156,7 @@ const XpHistoryEntry: React.FC<XpHistoryEntryProps> = memo(
         <div data-testid="entry-card" className={`${cardClasses} flex-1 mb-3`}>
           {/* Top row: date and source badge */}
           <div className="flex items-center justify-between mb-2">
-            <span data-testid="entry-date" className="text-sm text-[rgb(148,163,184)]">
+            <span data-testid="entry-date" className="text-sm text-slate-400">
               {formattedDate}
             </span>
 
@@ -177,7 +177,7 @@ const XpHistoryEntry: React.FC<XpHistoryEntryProps> = memo(
             {/* XP amount */}
             <span data-testid="xp-amount" className="text-lg font-bold text-emerald-400">
               +{entry.xpAmount}
-              <span className="text-sm font-normal text-[rgb(148,163,184)] ml-1">XP</span>
+              <span className="text-sm font-normal text-slate-400 ml-1">XP</span>
             </span>
 
             {/* Level display */}
@@ -195,7 +195,7 @@ const XpHistoryEntry: React.FC<XpHistoryEntryProps> = memo(
                   </span>
                 </>
               ) : (
-                <span data-testid="level-display" className="text-sm text-[rgb(148,163,184)]">
+                <span data-testid="level-display" className="text-sm text-slate-400">
                   Level {entry.newLevel}
                 </span>
               )}

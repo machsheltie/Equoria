@@ -206,7 +206,7 @@ const TrainingConfirmModal = ({
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-slate-400 hover:text-[rgb(220,235,255)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Close modal"
             data-testid="close-button"
           >
@@ -219,13 +219,13 @@ const TrainingConfirmModal = ({
           {/* Horse and Discipline Info */}
           <div className="bg-[rgba(37,99,235,0.1)] rounded-lg p-4 border border-blue-500/30">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-[rgb(148,163,184)]">Horse</span>
+              <span className="text-sm font-medium text-slate-400">Horse</span>
               <span className="text-[rgb(220,235,255)] font-semibold" data-testid="horse-name">
                 {horseName}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-[rgb(148,163,184)]">Discipline</span>
+              <span className="text-sm font-medium text-slate-400">Discipline</span>
               <span className="text-[rgb(220,235,255)] font-semibold" data-testid="discipline-name">
                 {disciplineName}
               </span>
@@ -234,11 +234,11 @@ const TrainingConfirmModal = ({
 
           {/* Expected Outcome */}
           <div>
-            <h3 className="text-sm font-medium text-[rgb(148,163,184)] mb-3">Expected Outcome</h3>
+            <h3 className="text-sm font-medium text-slate-400 mb-3">Expected Outcome</h3>
 
             {/* Base Score Gain */}
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-[rgb(148,163,184)]">Base Score Gain</span>
+              <span className="text-sm text-slate-400">Base Score Gain</span>
               <span
                 className="text-sm font-semibold text-emerald-400"
                 data-testid="base-score-gain"
@@ -249,12 +249,12 @@ const TrainingConfirmModal = ({
 
             {/* Score Progression */}
             <div className="flex justify-between items-center mb-3">
-              <span className="text-sm text-[rgb(148,163,184)]">Score Progression</span>
+              <span className="text-sm text-slate-400">Score Progression</span>
               <span className="text-lg font-semibold" data-testid="score-progression">
                 <span data-testid="current-score" className="text-[rgb(220,235,255)]">
                   {currentScore}
                 </span>
-                <span className="mx-2 text-[rgb(148,163,184)]">→</span>
+                <span className="mx-2 text-slate-400">→</span>
                 <span className="text-blue-400" data-testid="new-score">
                   {newScore}
                 </span>
@@ -264,7 +264,7 @@ const TrainingConfirmModal = ({
             {/* Trait Modifiers */}
             {traitModifiers.length > 0 && (
               <div className="border-t border-[rgba(37,99,235,0.2)] pt-3 mt-3">
-                <h4 className="text-xs font-medium text-[rgb(148,163,184)] uppercase tracking-wider mb-2">
+                <h4 className="text-xs font-medium text-slate-400 uppercase tracking-wider mb-2">
                   Trait Modifiers
                 </h4>
                 <ul className="space-y-1" data-testid="trait-modifiers-list">
@@ -274,7 +274,7 @@ const TrainingConfirmModal = ({
                       className="flex justify-between items-center text-sm"
                       data-testid={`trait-modifier-${index}`}
                     >
-                      <span className="text-[rgb(148,163,184)]">{trait.name}</span>
+                      <span className="text-slate-400">{trait.name}</span>
                       <span
                         className={`font-semibold ${
                           trait.modifier >= 0 ? 'text-emerald-400' : 'text-red-400'
@@ -308,7 +308,7 @@ const TrainingConfirmModal = ({
           {/* Next Training Availability */}
           <div className="bg-[rgba(15,35,70,0.5)] rounded-lg p-3 border border-[rgba(37,99,235,0.2)]">
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-[rgb(148,163,184)]">
+              <span className="text-sm font-medium text-slate-400">
                 Next Training Available
               </span>
               <span className="text-sm text-[rgb(220,235,255)]" data-testid="next-training-date">
@@ -316,7 +316,7 @@ const TrainingConfirmModal = ({
               </span>
             </div>
             {cooldownDays > 0 && (
-              <p className="text-xs text-[rgb(148,163,184)] mt-1">
+              <p className="text-xs text-slate-400 mt-1">
                 {cooldownDays} day{cooldownDays !== 1 ? 's' : ''} cooldown after this session
               </p>
             )}

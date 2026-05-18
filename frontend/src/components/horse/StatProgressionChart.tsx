@@ -170,7 +170,7 @@ const StatProgressionChart = ({ horseId }: StatProgressionChartProps) => {
   if (isLoading) {
     return (
       <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-6 shadow-sm">
-        <div className="text-center text-sm text-[rgb(148,163,184)]">Loading XP progression...</div>
+        <div className="text-center text-sm text-slate-400">Loading XP progression...</div>
       </div>
     );
   }
@@ -196,7 +196,7 @@ const StatProgressionChart = ({ horseId }: StatProgressionChartProps) => {
   if (!chartData || historyData.events.length === 0) {
     return (
       <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-6 shadow-sm">
-        <div className="text-center text-sm text-[rgb(148,163,184)]">
+        <div className="text-center text-sm text-slate-400">
           No XP history data available for this time range.
         </div>
       </div>
@@ -218,7 +218,7 @@ const StatProgressionChart = ({ horseId }: StatProgressionChartProps) => {
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                 selectedRange === range
                   ? 'bg-emerald-600 text-[var(--text-primary)]'
-                  : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.3)]'
+                  : 'bg-[rgba(15,35,70,0.5)] text-slate-400 hover:bg-[rgba(15,35,70,0.3)]'
               }`}
               aria-label={TIME_RANGE_LABELS[range]}
             >
@@ -240,19 +240,19 @@ const StatProgressionChart = ({ horseId }: StatProgressionChartProps) => {
       {/* Summary Stats */}
       <div className="mt-4 grid grid-cols-3 gap-4 border-t border-[rgba(37,99,235,0.3)] pt-4">
         <div className="text-center">
-          <p className="text-xs text-[rgb(148,163,184)]">Total XP Gained</p>
+          <p className="text-xs text-slate-400">Total XP Gained</p>
           <p className="text-lg font-semibold text-emerald-400">
             +{historyData.events.reduce((sum, event) => sum + event.amount, 0)}
           </p>
         </div>
         <div className="text-center">
-          <p className="text-xs text-[rgb(148,163,184)]">Data Points</p>
+          <p className="text-xs text-slate-400">Data Points</p>
           <p className="text-lg font-semibold text-[rgb(220,235,255)]">
             {historyData.events.length}
           </p>
         </div>
         <div className="text-center">
-          <p className="text-xs text-[rgb(148,163,184)]">Current XP</p>
+          <p className="text-xs text-slate-400">Current XP</p>
           <p className="text-lg font-semibold text-[rgb(220,235,255)]">
             {historyData.events[historyData.events.length - 1]?.amount || 0}
           </p>

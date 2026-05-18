@@ -103,7 +103,7 @@ describe('RankSummaryCard', () => {
       const indicator = screen.getByTestId('rank-change-indicator');
       expect(indicator).toHaveTextContent('\u2014');
       // Neutral "no change" state uses tokenized slate colors per design tokens
-      expect(indicator.className).toMatch(/rgb\(148,163,184\)|rgba\(15,35,70/);
+      expect(indicator.className).toMatch(/text-slate-400|rgba\(15,35,70/);
     });
   });
 

@@ -29,7 +29,7 @@ function getStatusIcon(status: string, isCurrent: boolean) {
   if (isCurrent) {
     return <Target className="h-5 w-5 text-blue-400" />;
   }
-  return <Clock className="h-5 w-5 text-[rgb(148,163,184)]" />;
+  return <Clock className="h-5 w-5 text-slate-400" />;
 }
 
 /**
@@ -46,7 +46,7 @@ function getStatusLabel(status: string, isCurrent: boolean): string {
  */
 function formatScore(score: number): { text: string; color: string } {
   const prefix = score > 0 ? '+' : '';
-  let color = 'text-[rgb(148,163,184)]';
+  let color = 'text-slate-400';
 
   if (score >= 5) color = 'text-emerald-400';
   else if (score >= 0) color = 'text-blue-400';
@@ -93,7 +93,7 @@ const MilestoneCard: React.FC<MilestoneCardProps> = ({
           {/* Milestone Info */}
           <div className="flex-1 min-w-0">
             <h4 className="font-semibold text-[rgb(220,235,255)] text-sm">{name}</h4>
-            <p className="text-xs text-[rgb(148,163,184)] mt-1">
+            <p className="text-xs text-slate-400 mt-1">
               Age Window: Days {ageWindow.min}-{ageWindow.max}
             </p>
             <p className="text-xs font-medium text-[rgb(220,235,255)] mt-1">
@@ -102,17 +102,17 @@ const MilestoneCard: React.FC<MilestoneCardProps> = ({
           </div>
 
           {/* Arrow icon for clickable cards */}
-          {onClick && <ChevronRight className="h-5 w-5 text-[rgb(148,163,184)] flex-shrink-0" />}
+          {onClick && <ChevronRight className="h-5 w-5 text-slate-400 flex-shrink-0" />}
         </div>
       </div>
 
       {/* Description */}
-      {description && <p className="text-sm text-[rgb(148,163,184)] mt-2 ml-8">{description}</p>}
+      {description && <p className="text-sm text-slate-400 mt-2 ml-8">{description}</p>}
 
       {/* Focus area */}
       {milestone.focus && (
         <div className="mt-2 ml-8">
-          <p className="text-xs text-[rgb(148,163,184)]">
+          <p className="text-xs text-slate-400">
             <span className="font-medium">Focus:</span> {milestone.focus}
           </p>
         </div>
@@ -125,7 +125,7 @@ const MilestoneCard: React.FC<MilestoneCardProps> = ({
           {score !== undefined && (
             <div className="flex items-center gap-2">
               <Award className="h-4 w-4 text-amber-400" />
-              <span className="text-xs text-[rgb(148,163,184)]">Score:</span>
+              <span className="text-xs text-slate-400">Score:</span>
               <span className={`text-sm font-bold ${formatScore(score).color}`}>
                 {formatScore(score).text}
               </span>
@@ -135,7 +135,7 @@ const MilestoneCard: React.FC<MilestoneCardProps> = ({
           {/* Traits confirmed */}
           {traitsConfirmed && traitsConfirmed.length > 0 && (
             <div>
-              <p className="text-xs text-[rgb(148,163,184)] mb-1">Traits Confirmed:</p>
+              <p className="text-xs text-slate-400 mb-1">Traits Confirmed:</p>
               <div className="flex flex-wrap gap-1">
                 {traitsConfirmed.map((trait, index) => (
                   <span
@@ -154,7 +154,7 @@ const MilestoneCard: React.FC<MilestoneCardProps> = ({
       {/* Pending milestone info */}
       {isPending && daysUntil > 0 && (
         <div className="mt-2 ml-8">
-          <p className="text-xs text-[rgb(148,163,184)]">
+          <p className="text-xs text-slate-400">
             Begins in: <span className="font-medium text-[rgb(220,235,255)]">{daysUntil} days</span>
           </p>
         </div>
@@ -164,7 +164,7 @@ const MilestoneCard: React.FC<MilestoneCardProps> = ({
       {isCurrent && (
         <div className="mt-3 ml-8">
           <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-[rgb(148,163,184)]">Progress in window:</span>
+            <span className="text-slate-400">Progress in window:</span>
             <span className="font-medium text-blue-400">
               Day {foalAge} of {ageWindow.max}
             </span>

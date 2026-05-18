@@ -280,7 +280,7 @@ const LevelUpCelebrationModal = memo(function LevelUpCelebrationModal({
           <div data-testid="stat-changes-table" className="mb-4">
             {statChanges.length > 0 && (
               <>
-                <h3 className="text-sm font-semibold text-[rgb(148,163,184)] mb-2 uppercase tracking-wide">
+                <h3 className="text-sm font-semibold text-slate-400 mb-2 uppercase tracking-wide">
                   Stat Changes
                 </h3>
                 <div className="space-y-2">
@@ -302,13 +302,13 @@ const LevelUpCelebrationModal = memo(function LevelUpCelebrationModal({
                         {/* Old Value */}
                         <span
                           data-testid="stat-old-value"
-                          className="text-sm text-[rgb(148,163,184)] w-12 text-right"
+                          className="text-sm text-slate-400 w-12 text-right"
                         >
                           {change.oldValue}
                         </span>
 
                         {/* Arrow separator */}
-                        <span className="mx-2 text-[rgb(148,163,184)]" aria-hidden="true">
+                        <span className="mx-2 text-slate-400" aria-hidden="true">
                           →
                         </span>
 
@@ -316,7 +316,7 @@ const LevelUpCelebrationModal = memo(function LevelUpCelebrationModal({
                         <span
                           data-testid="stat-new-value"
                           className={`text-sm font-semibold w-12 text-right ${
-                            hasIncreased ? 'text-emerald-400' : 'text-[rgb(148,163,184)]'
+                            hasIncreased ? 'text-emerald-400' : 'text-slate-400'
                           }`}
                         >
                           {change.newValue}

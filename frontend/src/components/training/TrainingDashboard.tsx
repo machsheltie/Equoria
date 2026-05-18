@@ -97,7 +97,7 @@ const HorseCard = ({ horse, onTrainClick }: HorseCardProps): JSX.Element => {
         <div className="flex items-start justify-between">
           <div>
             <h4 className="text-lg font-semibold text-[rgb(220,235,255)]">{horse.name}</h4>
-            <p className="text-sm text-[rgb(148,163,184)]">
+            <p className="text-sm text-slate-400">
               {/* Equoria-1k4n — context-specific fallback: 'Age: not recorded'
                   reads correctly without the trailing 'years' unit, instead of
                   the literal 'Unknown' (Equoria-iwy3 convention). Age is
@@ -110,7 +110,7 @@ const HorseCard = ({ horse, onTrainClick }: HorseCardProps): JSX.Element => {
             </p>
           </div>
           {horse.level !== undefined && (
-            <span className="rounded bg-[rgba(15,35,70,0.5)] px-2 py-1 text-xs font-medium text-[rgb(148,163,184)] border border-[rgba(37,99,235,0.2)]">
+            <span className="rounded bg-[rgba(15,35,70,0.5)] px-2 py-1 text-xs font-medium text-slate-400 border border-[rgba(37,99,235,0.2)]">
               Level {horse.level}
             </span>
           )}
@@ -118,12 +118,12 @@ const HorseCard = ({ horse, onTrainClick }: HorseCardProps): JSX.Element => {
 
         {/* Breed Info */}
         {horse.breed && (
-          <p className="mt-1 text-sm text-[rgb(148,163,184)]">{getBreedName(horse.breed)}</p>
+          <p className="mt-1 text-sm text-slate-400">{getBreedName(horse.breed)}</p>
         )}
 
         {/* Best Disciplines */}
         {horse.bestDisciplines && horse.bestDisciplines.length > 0 && (
-          <p className="mt-1 text-xs text-[rgb(148,163,184)]">
+          <p className="mt-1 text-xs text-slate-400">
             Best: {horse.bestDisciplines.join(', ')}
           </p>
         )}
@@ -268,7 +268,7 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
     return (
       <div
         data-testid="loading-state"
-        className="text-center py-12 text-[rgb(148,163,184)]"
+        className="text-center py-12 text-slate-400"
         role="status"
         aria-label="Loading horses"
       >
@@ -289,7 +289,7 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
   // Empty state (no horses at all)
   if (!horses || horses.length === 0) {
     return (
-      <div data-testid="empty-state" className="text-center py-12 text-[rgb(148,163,184)]">
+      <div data-testid="empty-state" className="text-center py-12 text-slate-400">
         No trainable horses found. Add horses to start training.
       </div>
     );
@@ -356,7 +356,7 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
       return (
         <div
           data-testid="empty-filtered-state"
-          className="glass-panel rounded-lg border border-[rgba(37,99,235,0.2)] p-6 text-center text-[rgb(148,163,184)]"
+          className="glass-panel rounded-lg border border-[rgba(37,99,235,0.2)] p-6 text-center text-slate-400"
         >
           No {filterLabels[selectedFilter]} horses found.
         </div>
@@ -381,7 +381,7 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-[rgb(220,235,255)]">Training Dashboard</h2>
-          <p className="text-sm text-[rgb(148,163,184)]">
+          <p className="text-sm text-slate-400">
             Track readiness, start sessions, and review training progress.
           </p>
         </div>

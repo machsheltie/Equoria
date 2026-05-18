@@ -336,12 +336,12 @@ describe('EvaluationHistoryItem Component', () => {
     });
 
     it('should show slate color for zero bond modifier', () => {
-      // Component migrated to dark theme: zero bond modifier uses text-[rgb(148,163,184)]
+      // Component migrated to dark theme: zero bond modifier uses text-slate-400
       const zeroEval = { ...mockEvaluation, bondModifier: 0 };
       const { container } = render(
         <EvaluationHistoryItem evaluation={zeroEval} defaultExpanded={true} />
       );
-      const slateElements = container.querySelectorAll('[class*="rgb(148,163,184)"]');
+      const slateElements = container.querySelectorAll('[class*="slate-400"]');
       expect(slateElements.length).toBeGreaterThan(0);
     });
 

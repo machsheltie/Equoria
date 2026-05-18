@@ -163,9 +163,9 @@ SkeletonRow.displayName = 'SkeletonRow';
  */
 const EmptyState = memo(() => (
   <div className="py-12 text-center" data-testid="empty-state">
-    <Trophy className="mx-auto h-16 w-16 text-[rgb(148,163,184)] mb-4" aria-hidden="true" />
+    <Trophy className="mx-auto h-16 w-16 text-slate-400 mb-4" aria-hidden="true" />
     <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">No transactions yet</h3>
-    <p className="text-sm text-[rgb(148,163,184)] max-w-sm mx-auto">
+    <p className="text-sm text-slate-400 max-w-sm mx-auto">
       Compete in events to start earning prizes. Your transaction history will appear here.
     </p>
   </div>
@@ -178,11 +178,11 @@ EmptyState.displayName = 'EmptyState';
  */
 const FilteredEmptyState = memo(() => (
   <div className="py-12 text-center" data-testid="filtered-empty-state">
-    <Filter className="mx-auto h-12 w-12 text-[rgb(148,163,184)] mb-4" aria-hidden="true" />
+    <Filter className="mx-auto h-12 w-12 text-slate-400 mb-4" aria-hidden="true" />
     <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">
       No transactions match your filters
     </h3>
-    <p className="text-sm text-[rgb(148,163,184)]">
+    <p className="text-sm text-slate-400">
       Try adjusting your filters to see more results.
     </p>
   </div>
@@ -218,7 +218,7 @@ const SortButton = memo(
       <button
         onClick={handleClick}
         className={`flex items-center gap-1 text-xs font-semibold uppercase tracking-wide ${
-          isActive ? 'text-blue-400' : 'text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)]'
+          isActive ? 'text-blue-400' : 'text-slate-400 hover:text-[rgb(220,235,255)]'
         } focus:outline-none focus:ring-2 focus:ring-blue-500 rounded`}
         data-testid={testId}
         aria-label={`Sort by ${label} ${direction === 'asc' ? 'descending' : 'ascending'}`}
@@ -365,7 +365,7 @@ const FilterControls = memo(
               className={`w-full px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
                 hasActiveFilters
                   ? 'bg-[rgba(239,68,68,0.15)] text-red-400 hover:bg-[rgba(239,68,68,0.25)] focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
-                  : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] cursor-not-allowed'
+                  : 'bg-[rgba(15,35,70,0.5)] text-slate-400 cursor-not-allowed'
               }`}
               data-testid="clear-filters"
               aria-label="Clear all filters"
@@ -414,12 +414,12 @@ const PaginationControls = memo(
         className="flex items-center justify-between px-4 py-3 bg-[rgba(15,35,70,0.5)] border-t border-[rgba(37,99,235,0.2)]"
         data-testid="pagination-controls"
       >
-        <div className="text-sm text-[rgb(148,163,184)]">
+        <div className="text-sm text-slate-400">
           <span data-testid="total-transactions">{totalTransactions}</span> transactions total
         </div>
 
         <div className="flex items-center gap-4">
-          <span className="text-sm text-[rgb(148,163,184)]" data-testid="page-info">
+          <span className="text-sm text-slate-400" data-testid="page-info">
             Page {currentPage} of {totalPages}
           </span>
 
@@ -429,8 +429,8 @@ const PaginationControls = memo(
               disabled={currentPage <= 1}
               className={`p-2 rounded-lg transition-colors ${
                 currentPage <= 1
-                  ? 'text-[rgb(148,163,184)]/40 cursor-not-allowed'
-                  : 'text-[rgb(148,163,184)] hover:bg-[rgba(37,99,235,0.1)] focus:outline-none focus:ring-2 focus:ring-blue-500'
+                  ? 'text-slate-400/40 cursor-not-allowed'
+                  : 'text-slate-400 hover:bg-[rgba(37,99,235,0.1)] focus:outline-none focus:ring-2 focus:ring-blue-500'
               }`}
               data-testid="prev-page-btn"
               aria-label="Previous page"
@@ -443,8 +443,8 @@ const PaginationControls = memo(
               disabled={currentPage >= totalPages}
               className={`p-2 rounded-lg transition-colors ${
                 currentPage >= totalPages
-                  ? 'text-[rgb(148,163,184)]/40 cursor-not-allowed'
-                  : 'text-[rgb(148,163,184)] hover:bg-[rgba(37,99,235,0.1)] focus:outline-none focus:ring-2 focus:ring-blue-500'
+                  ? 'text-slate-400/40 cursor-not-allowed'
+                  : 'text-slate-400 hover:bg-[rgba(37,99,235,0.1)] focus:outline-none focus:ring-2 focus:ring-blue-500'
               }`}
               data-testid="next-page-btn"
               aria-label="Next page"
@@ -660,37 +660,37 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
               <thead className="bg-[rgba(15,35,70,0.5)] border-b border-[rgba(37,99,235,0.2)]">
                 <tr>
                   <th className="px-4 py-3 text-left" data-testid="column-date">
-                    <span className="text-xs font-semibold text-[rgb(148,163,184)] uppercase">
+                    <span className="text-xs font-semibold text-slate-400 uppercase">
                       Date
                     </span>
                   </th>
                   <th className="px-4 py-3 text-left" data-testid="column-competition">
-                    <span className="text-xs font-semibold text-[rgb(148,163,184)] uppercase">
+                    <span className="text-xs font-semibold text-slate-400 uppercase">
                       Competition
                     </span>
                   </th>
                   <th className="px-4 py-3 text-left" data-testid="column-horse">
-                    <span className="text-xs font-semibold text-[rgb(148,163,184)] uppercase">
+                    <span className="text-xs font-semibold text-slate-400 uppercase">
                       Horse
                     </span>
                   </th>
                   <th className="px-4 py-3 text-left">
-                    <span className="text-xs font-semibold text-[rgb(148,163,184)] uppercase">
+                    <span className="text-xs font-semibold text-slate-400 uppercase">
                       Discipline
                     </span>
                   </th>
                   <th className="px-4 py-3 text-center" data-testid="column-placement">
-                    <span className="text-xs font-semibold text-[rgb(148,163,184)] uppercase">
+                    <span className="text-xs font-semibold text-slate-400 uppercase">
                       Place
                     </span>
                   </th>
                   <th className="px-4 py-3 text-right" data-testid="column-prize">
-                    <span className="text-xs font-semibold text-[rgb(148,163,184)] uppercase">
+                    <span className="text-xs font-semibold text-slate-400 uppercase">
                       Prize
                     </span>
                   </th>
                   <th className="px-4 py-3 text-right" data-testid="column-xp">
-                    <span className="text-xs font-semibold text-[rgb(148,163,184)] uppercase">
+                    <span className="text-xs font-semibold text-slate-400 uppercase">
                       XP
                     </span>
                   </th>
@@ -766,17 +766,17 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
                       />
                     </th>
                     <th className="px-4 py-3 text-left" data-testid="column-competition">
-                      <span className="text-xs font-semibold text-[rgb(148,163,184)] uppercase">
+                      <span className="text-xs font-semibold text-slate-400 uppercase">
                         Competition
                       </span>
                     </th>
                     <th className="px-4 py-3 text-left" data-testid="column-horse">
-                      <span className="text-xs font-semibold text-[rgb(148,163,184)] uppercase">
+                      <span className="text-xs font-semibold text-slate-400 uppercase">
                         Horse
                       </span>
                     </th>
                     <th className="px-4 py-3 text-left">
-                      <span className="text-xs font-semibold text-[rgb(148,163,184)] uppercase">
+                      <span className="text-xs font-semibold text-slate-400 uppercase">
                         Discipline
                       </span>
                     </th>

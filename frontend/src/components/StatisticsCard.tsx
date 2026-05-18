@@ -90,7 +90,7 @@ const TrendIndicator: React.FC<{ trend: number }> = ({ trend }) => {
   const directionClasses = {
     [TrendDirection.UP]: 'trend-positive text-emerald-600',
     [TrendDirection.DOWN]: 'trend-negative text-red-600',
-    [TrendDirection.NEUTRAL]: 'trend-neutral text-[rgb(148,163,184)]',
+    [TrendDirection.NEUTRAL]: 'trend-neutral text-slate-400',
   };
 
   const ArrowIcon = {

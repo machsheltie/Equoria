@@ -97,7 +97,7 @@ const BreedingInsightsCard: React.FC<BreedingInsightsCardProps> = ({ insights })
           </div>
         </div>
 
-        <p className="text-xs text-[rgb(148,163,184)]">
+        <p className="text-xs text-slate-400">
           Based on parent stats, traits, level, and genetic diversity
         </p>
       </div>
@@ -166,7 +166,7 @@ const BreedingInsightsCard: React.FC<BreedingInsightsCardProps> = ({ insights })
       {considerations.length > 0 && (
         <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-4">
           <div className="flex items-center gap-2 mb-3">
-            <Info className="h-5 w-5 text-[rgb(148,163,184)]" />
+            <Info className="h-5 w-5 text-slate-400" />
             <h4 className="text-sm font-bold text-[rgb(220,235,255)] uppercase tracking-wide">
               📋 Considerations
             </h4>
@@ -174,7 +174,7 @@ const BreedingInsightsCard: React.FC<BreedingInsightsCardProps> = ({ insights })
           <ul className="space-y-2">
             {considerations.map((consideration, index) => (
               <li key={index} className="flex items-start gap-2 text-sm text-[rgb(220,235,255)]">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-[rgb(148,163,184)] mt-1.5 flex-shrink-0" />
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-slate-400 mt-1.5 flex-shrink-0" />
                 <span>{consideration}</span>
               </li>
             ))}

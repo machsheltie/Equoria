@@ -89,8 +89,8 @@ const statusConfigs: Record<EligibilityStatus, StatusConfig> = {
     text: 'Too Young',
     bgColor: 'bg-[rgba(15,35,70,0.5)]',
     borderColor: 'border-[rgba(37,99,235,0.2)]',
-    textColor: 'text-[rgb(148,163,184)]',
-    iconColor: 'text-[rgb(148,163,184)]',
+    textColor: 'text-slate-400',
+    iconColor: 'text-slate-400',
     Icon: X,
   },
   'too-old': {
@@ -200,7 +200,7 @@ const EligibilityIndicator = ({
         {shouldShowDate && cooldownDateText && (
           <div
             data-testid="cooldown-date"
-            className={`${isCompact ? 'text-[10px]' : 'text-xs'} text-[rgb(148,163,184)]`}
+            className={`${isCompact ? 'text-[10px]' : 'text-xs'} text-slate-400`}
           >
             {cooldownDateText}
           </div>

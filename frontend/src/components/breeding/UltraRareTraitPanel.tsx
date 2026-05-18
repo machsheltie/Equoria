@@ -48,9 +48,9 @@ const UltraRareTraitPanel: React.FC<UltraRareTraitPanelProps> = ({ traits }) => 
   if (traits.length === 0) {
     return (
       <div className="glass-panel rounded-lg border border-[rgba(37,99,235,0.2)] p-6 text-center">
-        <Sparkles className="h-8 w-8 text-[rgb(148,163,184)] mx-auto mb-2" />
-        <p className="text-sm text-[rgb(148,163,184)]">No ultra-rare trait potential detected</p>
-        <p className="text-xs text-[rgb(148,163,184)] mt-1">
+        <Sparkles className="h-8 w-8 text-slate-400 mx-auto mb-2" />
+        <p className="text-sm text-slate-400">No ultra-rare trait potential detected</p>
+        <p className="text-xs text-slate-400 mt-1">
           Ultra-rare traits require specific parent combinations and care patterns
         </p>
       </div>

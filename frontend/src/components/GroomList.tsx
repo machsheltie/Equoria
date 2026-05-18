@@ -144,7 +144,7 @@ const GroomList: React.FC<GroomListProps> = ({
       <div data-testid="groom-list" className="min-h-screen bg-[rgba(15,35,70,0.3)] p-4 lg:p-8">
         <div className="max-w-7xl mx-auto flex items-center justify-center h-64">
           <RefreshCw className="w-8 h-8 text-blue-400 animate-spin" />
-          <span className="ml-2 text-[rgb(148,163,184)]">Loading marketplace...</span>
+          <span className="ml-2 text-slate-400">Loading marketplace...</span>
         </div>
       </div>
     );
@@ -181,7 +181,7 @@ const GroomList: React.FC<GroomListProps> = ({
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-3xl font-bold text-[rgb(220,235,255)] mb-2">Groom Marketplace</h1>
-            <p className="text-[rgb(148,163,184)]">
+            <p className="text-slate-400">
               Hire professional grooms to care for your horses
             </p>
           </div>
@@ -236,7 +236,7 @@ const GroomList: React.FC<GroomListProps> = ({
             <div>
               <label
                 htmlFor="skill-level-filter"
-                className="block text-xs font-bold text-[rgb(148,163,184)] uppercase tracking-wider mb-2"
+                className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
               >
                 Skill Level
               </label>
@@ -259,7 +259,7 @@ const GroomList: React.FC<GroomListProps> = ({
             <div>
               <label
                 htmlFor="specialty-filter"
-                className="block text-xs font-bold text-[rgb(148,163,184)] uppercase tracking-wider mb-2"
+                className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
               >
                 Specialty
               </label>
@@ -282,7 +282,7 @@ const GroomList: React.FC<GroomListProps> = ({
             <div>
               <label
                 htmlFor="sort-select"
-                className="block text-xs font-bold text-[rgb(148,163,184)] uppercase tracking-wider mb-2"
+                className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2"
               >
                 Sort By
               </label>
@@ -307,11 +307,11 @@ const GroomList: React.FC<GroomListProps> = ({
         <div data-testid="groom-marketplace">
           {filteredAndSortedGrooms.length === 0 ? (
             <div className="glass-panel border border-[rgba(37,99,235,0.3)] rounded-lg p-12 text-center">
-              <Users className="w-16 h-16 text-[rgb(148,163,184)] mx-auto mb-4" />
+              <Users className="w-16 h-16 text-slate-400 mx-auto mb-4" />
               <h3 className="text-xl font-semibold text-[rgb(220,235,255)] mb-2">
                 No Grooms Available
               </h3>
-              <p className="text-[rgb(148,163,184)] mb-6">
+              <p className="text-slate-400 mb-6">
                 Try refreshing the marketplace to see new grooms
               </p>
               <Button onClick={handleRefresh}>Refresh Marketplace</Button>
@@ -352,17 +352,17 @@ const GroomList: React.FC<GroomListProps> = ({
                     {/* Groom Details */}
                     <div className="space-y-2 mb-4 text-sm border-y border-[rgba(37,99,235,0.3)] py-4">
                       <div className="flex justify-between">
-                        <span className="text-[rgb(148,163,184)]">Experience:</span>
+                        <span className="text-slate-400">Experience:</span>
                         <span className="font-semibold text-[rgb(220,235,255)]">
                           {groom.experience} years
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-[rgb(148,163,184)]">Personality:</span>
+                        <span className="text-slate-400">Personality:</span>
                         <GroomPersonalityBadge personality={groom.personality} />
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-[rgb(148,163,184)]">Weekly Salary:</span>
+                        <span className="text-slate-400">Weekly Salary:</span>
                         <span className="font-bold text-emerald-400">
                           ${groom.sessionRate}/week
                         </span>
@@ -370,7 +370,7 @@ const GroomList: React.FC<GroomListProps> = ({
                     </div>
 
                     {/* Bio */}
-                    <p className="text-sm text-[rgb(148,163,184)] mb-6 line-clamp-2 italic">
+                    <p className="text-sm text-slate-400 mb-6 line-clamp-2 italic">
                       "{groom.bio}"
                     </p>
 
@@ -429,7 +429,7 @@ const GroomList: React.FC<GroomListProps> = ({
               <h3 className="text-xl font-bold text-[rgb(220,235,255)]">Confirm Hire</h3>
             </div>
 
-            <p className="text-[rgb(148,163,184)] mb-6 leading-relaxed">
+            <p className="text-slate-400 mb-6 leading-relaxed">
               Are you sure you want to hire{' '}
               <strong className="text-[rgb(220,235,255)]">
                 {selectedGroom.firstName} {selectedGroom.lastName}
@@ -439,13 +439,13 @@ const GroomList: React.FC<GroomListProps> = ({
 
             <div className="bg-[rgba(15,35,70,0.5)] rounded-xl p-5 mb-6 border border-[rgba(37,99,235,0.3)]">
               <div className="flex items-center justify-between mb-3 text-sm">
-                <span className="text-[rgb(148,163,184)]">Weekly Salary:</span>
+                <span className="text-slate-400">Weekly Salary:</span>
                 <span className="font-semibold text-[rgb(220,235,255)]">
                   ${selectedGroom.sessionRate}
                 </span>
               </div>
               <div className="flex items-center justify-between pt-3 border-t border-[rgba(37,99,235,0.3)]">
-                <span className="text-sm font-bold text-[rgb(148,163,184)]">Total Upfront:</span>
+                <span className="text-sm font-bold text-slate-400">Total Upfront:</span>
                 <span className="text-2xl font-black text-blue-400">
                   ${calculateHiringCost(selectedGroom.sessionRate)}
                 </span>
@@ -455,7 +455,7 @@ const GroomList: React.FC<GroomListProps> = ({
             <div className="flex gap-3">
               <button
                 onClick={() => setShowHireModal(false)}
-                className="flex-1 px-4 py-2.5 border border-[rgba(37,99,235,0.3)] rounded-lg text-[rgb(148,163,184)] font-bold hover:bg-[rgba(15,35,70,0.5)] transition-colors"
+                className="flex-1 px-4 py-2.5 border border-[rgba(37,99,235,0.3)] rounded-lg text-slate-400 font-bold hover:bg-[rgba(15,35,70,0.5)] transition-colors"
               >
                 Cancel
               </button>

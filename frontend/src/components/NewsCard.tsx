@@ -21,7 +21,7 @@ const NewsCard = ({ newsItems }: NewsCardProps) => {
       case 'event':
         return 'text-[rgb(37,99,235)]';
       case 'update':
-        return 'text-[rgb(148,163,184)]';
+        return 'text-slate-400';
       default:
         return 'text-[rgb(220,235,255)]';
     }

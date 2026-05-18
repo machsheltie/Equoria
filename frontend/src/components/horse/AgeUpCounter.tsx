@@ -45,7 +45,7 @@ const AgeUpCounter = ({ horseId }: AgeUpCounterProps) => {
   if (isLoading) {
     return (
       <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-6 shadow-sm">
-        <div className="text-center text-sm text-[rgb(148,163,184)]">Loading age data...</div>
+        <div className="text-center text-sm text-slate-400">Loading age data...</div>
       </div>
     );
   }
@@ -76,7 +76,7 @@ const AgeUpCounter = ({ horseId }: AgeUpCounterProps) => {
 
         {/* Current Age */}
         <div className="mt-4">
-          <p className="text-sm text-[rgb(148,163,184)]">Current Age</p>
+          <p className="text-sm text-slate-400">Current Age</p>
           <p className="text-2xl font-bold text-[rgb(220,235,255)]">
             {ageData.currentAge.years} years, {ageData.currentAge.months} months
           </p>
@@ -84,7 +84,7 @@ const AgeUpCounter = ({ horseId }: AgeUpCounterProps) => {
 
         {/* No milestone message */}
         <div className="mt-6 rounded-md bg-[rgba(15,35,70,0.4)] p-4 text-center">
-          <p className="text-sm text-[rgb(148,163,184)]">
+          <p className="text-sm text-slate-400">
             Horse has reached full maturity. No more milestone stat gains expected.
           </p>
         </div>
@@ -105,7 +105,7 @@ const AgeUpCounter = ({ horseId }: AgeUpCounterProps) => {
 
       {/* Current Age */}
       <div className="mt-4 relative">
-        <p className="text-sm text-[rgb(148,163,184)]">Current Age</p>
+        <p className="text-sm text-slate-400">Current Age</p>
         <div
           className="relative inline-block"
           onMouseEnter={() => setShowAgeTooltip(true)}
@@ -120,12 +120,12 @@ const AgeUpCounter = ({ horseId }: AgeUpCounterProps) => {
             </div>
           )}
         </div>
-        <p className="text-xs text-[rgb(148,163,184)]">({ageData.ageInDays} days old)</p>
+        <p className="text-xs text-slate-400">({ageData.ageInDays} days old)</p>
       </div>
 
       {/* Next Milestone */}
       <div className="mt-6">
-        <p className="text-sm text-[rgb(148,163,184)]">Next Milestone</p>
+        <p className="text-sm text-slate-400">Next Milestone</p>
         <div
           className="relative inline-block"
           onMouseEnter={() => setShowMilestoneTooltip(true)}
@@ -157,7 +157,7 @@ const AgeUpCounter = ({ horseId }: AgeUpCounterProps) => {
           >
             {formatCountdown(nextMilestone.monthsRemaining, nextMilestone.daysRemaining)}
           </p>
-          <p data-testid="days-remaining" className="text-xs text-[rgb(148,163,184)]">
+          <p data-testid="days-remaining" className="text-xs text-slate-400">
             ({nextMilestone.daysRemaining} days)
           </p>
 
@@ -177,7 +177,7 @@ const AgeUpCounter = ({ horseId }: AgeUpCounterProps) => {
             onMouseEnter={() => setShowStatTooltip(true)}
             onMouseLeave={() => setShowStatTooltip(false)}
           >
-            <p className="text-sm text-[rgb(148,163,184)]">Expected Stat Changes</p>
+            <p className="text-sm text-slate-400">Expected Stat Changes</p>
             {showStatTooltip && (
               <div className="absolute z-[var(--z-raised)] mt-1 rounded-md bg-[rgba(10,22,40,0.95)] px-3 py-2 text-xs text-[rgb(220,235,255)] shadow-lg border border-[rgba(37,99,235,0.3)] whitespace-nowrap">
                 Stats will change when horse ages up
@@ -203,11 +203,11 @@ const AgeUpCounter = ({ horseId }: AgeUpCounterProps) => {
                 ? 'text-emerald-400'
                 : isLoss
                   ? 'text-rose-400'
-                  : 'text-[rgb(148,163,184)]';
+                  : 'text-slate-400';
 
               return (
                 <div key={stat} className="flex items-center justify-between text-sm">
-                  <span className="capitalize text-[rgb(148,163,184)]">{stat}</span>
+                  <span className="capitalize text-slate-400">{stat}</span>
                   <span className={`font-semibold ${colorClass}`}>
                     {value > 0 ? '+' : ''}
                     {value}
@@ -237,7 +237,7 @@ const AgeUpCounter = ({ horseId }: AgeUpCounterProps) => {
                   ? 'text-blue-400'
                   : trainingWindow.windowName === 'Too Young'
                     ? 'text-amber-400'
-                    : 'text-[rgb(148,163,184)]'
+                    : 'text-slate-400'
               }`}
               aria-hidden="true"
             />
@@ -264,7 +264,7 @@ const AgeUpCounter = ({ horseId }: AgeUpCounterProps) => {
                 </p>
               )}
               {!trainingWindow.isPrimeWindow && trainingWindow.windowName !== 'Too Young' && (
-                <p className="text-xs text-[rgb(148,163,184)] mt-1">
+                <p className="text-xs text-slate-400 mt-1">
                   Focus on maintaining current fitness and skills.
                 </p>
               )}
@@ -277,12 +277,12 @@ const AgeUpCounter = ({ horseId }: AgeUpCounterProps) => {
       <div className="mt-6 rounded-md bg-[rgba(15,35,70,0.4)] p-4 border border-[rgba(37,99,235,0.3)]">
         <div className="flex items-start gap-2">
           <Info
-            className="h-4 w-4 text-[rgb(148,163,184)] mt-0.5"
+            className="h-4 w-4 text-slate-400 mt-0.5"
             aria-label="Age mechanics information"
           />
           <div className="flex-1">
             <p className="text-xs font-semibold text-[rgb(220,235,255)]">Age Mechanics:</p>
-            <ul className="mt-2 space-y-1 text-xs text-[rgb(148,163,184)]">
+            <ul className="mt-2 space-y-1 text-xs text-slate-400">
               <li>• Horses age up at specific milestones ({MILESTONE_AGES.join(', ')} years)</li>
               <li>• Each milestone brings permanent stat changes</li>
               <li>• Some stats increase (maturity), others decrease (aging)</li>

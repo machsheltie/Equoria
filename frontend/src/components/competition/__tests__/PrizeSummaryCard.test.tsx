@@ -225,8 +225,8 @@ describe('PrizeSummaryCard', () => {
 
       const card = screen.getByTestId('prize-summary-card');
       // Silver styling uses slate-tinted background per design tokens
-      expect(card).toHaveClass('bg-[rgba(148,163,184,0.1)]');
-      expect(card).toHaveClass('border-[rgba(148,163,184,0.4)]');
+      expect(card).toHaveClass('bg-slate-400/10');
+      expect(card).toHaveClass('border-slate-400/40');
     });
 
     it('has bronze styling when best placement is 3rd', () => {

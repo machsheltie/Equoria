@@ -52,7 +52,7 @@ function getStatusInfo(status: 'completed' | 'current' | 'pending') {
     case 'pending':
       return {
         icon: Clock,
-        color: 'text-[rgb(148,163,184)]',
+        color: 'text-slate-400',
         bg: 'bg-[rgba(15,35,70,0.3)]',
         label: 'Upcoming',
       };
@@ -90,13 +90,13 @@ const MilestoneTooltip: React.FC<MilestoneTooltipProps> = ({ active, payload }) 
       <div className="space-y-2 mt-3">
         {/* Age */}
         <div className="flex items-center justify-between text-xs">
-          <span className="text-[rgb(148,163,184)]">Age Window:</span>
+          <span className="text-slate-400">Age Window:</span>
           <span className="font-medium text-[rgb(220,235,255)]">Day {ageDay}+</span>
         </div>
 
         {/* Progress */}
         <div className="flex items-center justify-between text-xs">
-          <span className="text-[rgb(148,163,184)]">Progress:</span>
+          <span className="text-slate-400">Progress:</span>
           <span className="font-medium text-[rgb(220,235,255)]">{progress}%</span>
         </div>
 
@@ -108,7 +108,7 @@ const MilestoneTooltip: React.FC<MilestoneTooltipProps> = ({ active, payload }) 
                 ? 'bg-green-500'
                 : status === 'current'
                   ? 'bg-blue-500'
-                  : 'bg-[rgb(148,163,184)]'
+                  : 'bg-slate-400'
             }`}
             style={{ width: `${progress}%` }}
           />
@@ -117,7 +117,7 @@ const MilestoneTooltip: React.FC<MilestoneTooltipProps> = ({ active, payload }) 
         {/* Score (if completed) */}
         {status === 'completed' && score !== undefined && (
           <div className="flex items-center justify-between text-xs mt-2 pt-2 border-t border-[rgba(37,99,235,0.3)]">
-            <span className="text-[rgb(148,163,184)]">Evaluation Score:</span>
+            <span className="text-slate-400">Evaluation Score:</span>
             <span
               className={`font-semibold ${
                 score >= 5 ? 'text-emerald-400' : score >= 0 ? 'text-blue-400' : 'text-amber-400'
