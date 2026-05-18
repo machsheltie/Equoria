@@ -25,8 +25,19 @@ let groomId;
 
 const daysAgo = n => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
 const hoursAgo = n => new Date(Date.now() - n * 60 * 60 * 1000);
-const monthsAgo = n => new Date(Date.now() - n * 30 * 24 * 60 * 60 * 1000);
 const yearsAgo = n => new Date(Date.now() - n * 365.25 * 24 * 60 * 60 * 1000);
+
+// Equoria-z183: epigenetic eligibility is gated on canonical GAME-years
+// (1 game-week = 1 game-year, floor(ageDays / 7)), not calendar years. A
+// horse is eligible only while < 3 game-years old, i.e. born < 21 real
+// days ago. Before the fix, carePatternAnalysis divided by 365.25
+// (calendar years) so even a 150-real-day-old horse (5-months default
+// fixture = 21 game-years) wrongly read ageInYears ≈ 0.41 < 3 and passed
+// the gate. Use a deliberately game-young default DOB (14 real days →
+// floor(14/7) = 2 game-years → eligible) so pattern fixtures exercise the
+// real eligible path. Interaction fixtures reach back to daysAgo(11)
+// inside windows scoped by an explicit evaluationDate, which remain valid.
+const ELIGIBLE_DOB = () => daysAgo(14);
 
 // ─── fixtures ─────────────────────────────────────────────────────────────────
 
@@ -35,7 +46,7 @@ async function mkHorse(suffix, opts = {}) {
     data: {
       name: `${PREFIX}${suffix}`,
       sex: 'Colt',
-      dateOfBirth: opts.dateOfBirth ?? monthsAgo(5),
+      dateOfBirth: opts.dateOfBirth ?? ELIGIBLE_DOB(),
       bondScore: opts.bondScore ?? 50,
       stressLevel: opts.stressLevel ?? 20,
     },
@@ -125,6 +136,44 @@ describe('analyzeCarePatterns', () => {
 
       expect(result.eligible).toBe(false);
       expect(result.reason).toContain('too old');
+    } finally {
+      await rmHorse(horse.id);
+    }
+  });
+
+  // Equoria-z183 SENTINEL-POSITIVE (OPTIMAL_FIX_DISCIPLINE §2):
+  // A 35-real-day-old horse is canonically floor(35 / 7) = 5 game-years
+  // old, which is >= the age-3 epigenetic boundary so it must be
+  // INELIGIBLE. The pre-fix calendar-year math computed
+  // ageInYears = 35 / 365.25 ≈ 0.096 → < 3 → it WRONGLY returned
+  // eligible:true with ageInYears ≈ 0.10. This test fails on the old
+  // calendar math (eligible would be true, ageInYears ≈ 0.10) and passes
+  // on the game-years fix (eligible:false, ageInYears === 5).
+  test('SENTINEL: 35-day-old horse is 5 game-years and ineligible (old calendar math gave 0.10 yr → wrongly eligible)', async () => {
+    const horse = await mkHorse('Z183Sentinel', { dateOfBirth: daysAgo(35) });
+    try {
+      const result = await analyzeCarePatterns(horse.id, new Date());
+
+      expect(result.eligible).toBe(false);
+      // Canonical: floor(35 / 7) = 5 game-years (NOT 0.10 calendar-years)
+      expect(result.ageInYears).toBe(5);
+      expect(result.ageInYears).toBeGreaterThanOrEqual(3); // new math → ineligible (right)
+      expect(result.reason).toContain('too old');
+    } finally {
+      await rmHorse(horse.id);
+    }
+  });
+
+  // Equoria-z183: a horse young in GAME-years (born 14 real days ago →
+  // floor(14 / 7) = 2 game-years) is still inside the developmental
+  // window and remains eligible. Confirms the gate uses game-years.
+  test('14-day-old horse is 2 game-years and eligible', async () => {
+    const horse = await mkHorse('Z183Eligible', { dateOfBirth: daysAgo(14) });
+    try {
+      const result = await analyzeCarePatterns(horse.id, new Date());
+
+      expect(result.eligible).toBe(true);
+      expect(result.ageInYears).toBe(2);
     } finally {
       await rmHorse(horse.id);
     }
