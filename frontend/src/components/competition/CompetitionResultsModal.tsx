@@ -51,6 +51,7 @@ import LevelUpCelebrationModal, { type StatChange } from '../feedback/LevelUpCel
 import XpProgressTracker from '../XpProgressTracker';
 import HorseLevelBadge from '../horse/HorseLevelBadge';
 import { useHorseLevelInfo } from '@/hooks/api/useHorseLevelInfo';
+import { useCompetitionResults } from '@/hooks/api/useCompetitionResults';
 
 /**
  * Participant result data structure
@@ -181,11 +182,11 @@ const getPlacementBadgeClasses = (rank: number): string => {
     case 1:
       return 'bg-yellow-400 text-yellow-900'; // Gold
     case 2:
-      return 'bg-[rgba(148,163,184,0.3)] text-[rgb(220,235,255)]'; // Silver
+      return 'bg-slate-400/30 text-[rgb(220,235,255)]'; // Silver
     case 3:
       return 'bg-orange-400 text-orange-900'; // Bronze
     default:
-      return 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)]'; // Other
+      return 'bg-[rgba(15,35,70,0.5)] text-slate-400'; // Other
   }
 };
 
@@ -247,11 +248,9 @@ LoadingSkeletons.displayName = 'LoadingSkeletons';
  */
 const EmptyState = memo(() => (
   <div className="py-12 text-center" data-testid="empty-state">
-    <Trophy className="mx-auto h-12 w-12 text-[rgb(148,163,184)] mb-4" aria-hidden="true" />
+    <Trophy className="mx-auto h-12 w-12 text-slate-400 mb-4" aria-hidden="true" />
     <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">No results available</h3>
-    <p className="text-sm text-[rgb(148,163,184)]">
-      Results for this competition are not yet available.
-    </p>
+    <p className="text-sm text-slate-400">Results for this competition are not yet available.</p>
   </div>
 ));
 
@@ -264,7 +263,7 @@ const ErrorState = memo(({ message, onRetry }: { message: string; onRetry?: () =
   <div className="py-12 text-center" data-testid="error-state">
     <AlertCircle className="mx-auto h-12 w-12 text-red-400 mb-4" aria-hidden="true" />
     <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">Unable to load results</h3>
-    <p className="text-sm text-[rgb(148,163,184)] mb-4">{message}</p>
+    <p className="text-sm text-slate-400 mb-4">{message}</p>
     {onRetry && (
       <button
         onClick={onRetry}
@@ -324,24 +323,28 @@ SortHeader.displayName = 'SortHeader';
  * Displays full competition results with a sortable rankings table.
  * Delegates portal, focus trap, scroll lock, and keyboard handling to BaseModal.
  */
-const CompetitionResultsModal = memo(function CompetitionResultsModal({
-  isOpen,
-  onClose,
-  competitionId,
-  onViewPerformance,
-  onRetry,
-  onFirstView,
-  showPrizeNotification = false,
-  onPrizeNotificationClose,
-  showXpNotification = false,
-  onXpNotificationClose,
-  showLevelUpCelebration = false,
-  onLevelUpClose,
-  levelUpData,
-  _testResults,
-  _testLoading = false,
-  _testError = null,
-}: CompetitionResultsModalProps) {
+const CompetitionResultsModal = memo(function CompetitionResultsModal(
+  props: CompetitionResultsModalProps
+) {
+  const {
+    isOpen,
+    onClose,
+    competitionId,
+    onViewPerformance,
+    onRetry,
+    onFirstView,
+    showPrizeNotification = false,
+    onPrizeNotificationClose,
+    showXpNotification = false,
+    onXpNotificationClose,
+    showLevelUpCelebration = false,
+    onLevelUpClose,
+    levelUpData,
+    _testResults,
+    _testLoading = false,
+    _testError = null,
+  } = props;
+
   // Sort state
   const [sortField, setSortField] = useState<SortField>('rank');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -349,10 +352,35 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
   // Prize summary expansion state
   const [isPrizeExpanded, setIsPrizeExpanded] = useState(false);
 
-  // Use test props or real data fetching (in production, you'd fetch here based on competitionId)
-  const results = _testResults;
-  const isLoading = _testLoading;
-  const error = _testError;
+  // Equoria-55bo.3 — REAL production data fetch.
+  // Previously this modal rendered ONLY from `_testResults`, so a beta tester
+  // clicking a result row got an empty/broken modal (no fetch in production).
+  // Now the production default fetches real results via useCompetitionResults.
+  // `_testResults`/`_testLoading`/`_testError` remain ONLY as an explicit
+  // test-injection seam: they take precedence ONLY when the prop is actually
+  // passed (so a test injecting `null` still works), never as the prod default.
+  const usingTestSeam = '_testResults' in props;
+
+  const {
+    data: fetchedResults,
+    isLoading: fetchLoading,
+    isError: fetchIsError,
+    error: fetchError,
+  } = useCompetitionResults(usingTestSeam ? null : competitionId);
+
+  // The API hook's CompetitionResults is structurally a subset of this
+  // component's CompetitionResults (the latter only adds the OPTIONAL
+  // `temperamentImpact` field per Equoria-jnw3), so the fetched payload is a
+  // valid local CompetitionResults with that field simply absent.
+  const results: CompetitionResults | null = usingTestSeam
+    ? (_testResults ?? null)
+    : ((fetchedResults as CompetitionResults | undefined) ?? null);
+  const isLoading = usingTestSeam ? _testLoading : fetchLoading;
+  const error = usingTestSeam
+    ? _testError
+    : fetchIsError
+      ? (fetchError?.message ?? 'Failed to load competition results')
+      : null;
 
   // Calculate user prizes for PrizeSummaryCard (Story 5-3)
   const userPrizes: HorsePrize[] = useMemo(() => {
@@ -690,14 +718,14 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
                           {result.temperamentImpact.modifier > 0 ? '+' : ''}
                           {Math.round(result.temperamentImpact.modifier * 100)}%
                         </span>{' '}
-                        <span className="text-[rgb(148,163,184)]">
+                        <span className="text-slate-400">
                           ({result.temperamentImpact.appliedAs} score)
                         </span>
                       </div>
                     )}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span data-testid="owner-name" className="text-[rgb(148,163,184)]">
+                    <span data-testid="owner-name" className="text-slate-400">
                       {result.ownerName}
                     </span>
                   </td>
@@ -710,9 +738,7 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
                     <span
                       data-testid="prize-value"
                       className={
-                        result.prizeWon > 0
-                          ? 'font-semibold text-emerald-400'
-                          : 'text-[rgb(148,163,184)]'
+                        result.prizeWon > 0 ? 'font-semibold text-emerald-400' : 'text-slate-400'
                       }
                     >
                       {formatCurrency(result.prizeWon)}
@@ -780,13 +806,13 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
               {results?.discipline || 'N/A'}
             </span>
             <div
-              className="flex items-center text-sm text-[rgb(148,163,184)]"
+              className="flex items-center text-sm text-slate-400"
               data-testid="competition-date"
             >
               <Calendar className="h-4 w-4 mr-1" aria-hidden="true" />
               {results?.date ? formatDate(results.date) : 'N/A'}
             </div>
-            <div className="flex items-center text-sm text-[rgb(148,163,184)]">
+            <div className="flex items-center text-sm text-slate-400">
               <Users className="h-4 w-4 mr-1" aria-hidden="true" />
               <span data-testid="total-participants">{results?.totalParticipants || 0}</span>
               <span className="ml-1">participants</span>
@@ -808,21 +834,21 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
               <div className="grid grid-cols-3 gap-4">
                 <div className="text-center" data-testid="prize-1st">
                   <div className="text-lg font-bold text-amber-400">1st</div>
-                  <div className="text-sm text-[rgb(148,163,184)]">50%</div>
+                  <div className="text-sm text-slate-400">50%</div>
                   <div className="font-semibold text-[rgb(220,235,255)]">
                     {formatCurrency(results.prizeDistribution.first)}
                   </div>
                 </div>
                 <div className="text-center" data-testid="prize-2nd">
-                  <div className="text-lg font-bold text-[rgb(148,163,184)]">2nd</div>
-                  <div className="text-sm text-[rgb(148,163,184)]">30%</div>
+                  <div className="text-lg font-bold text-slate-400">2nd</div>
+                  <div className="text-sm text-slate-400">30%</div>
                   <div className="font-semibold text-[rgb(220,235,255)]">
                     {formatCurrency(results.prizeDistribution.second)}
                   </div>
                 </div>
                 <div className="text-center" data-testid="prize-3rd">
                   <div className="text-lg font-bold text-orange-600">3rd</div>
-                  <div className="text-sm text-[rgb(148,163,184)]">20%</div>
+                  <div className="text-sm text-slate-400">20%</div>
                   <div className="font-semibold text-orange-600">
                     {formatCurrency(results.prizeDistribution.third)}
                   </div>

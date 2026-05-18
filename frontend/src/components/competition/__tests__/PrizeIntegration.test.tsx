@@ -54,6 +54,24 @@ vi.mock('@/hooks/api/useHorseLevelInfo', () => ({
   },
 }));
 
+// Mock useCompetitionResults hook (Equoria-55bo.3): the modal now performs a
+// real production fetch via this hook. These tests exercise the _testResults
+// seam, so the hook is mocked to a no-op result (avoids QueryClient dependency
+// for seam-only render paths). Hook mock — NOT api-client mock.
+vi.mock('@/hooks/api/useCompetitionResults', () => ({
+  useCompetitionResults: vi.fn().mockReturnValue({
+    data: undefined,
+    isLoading: false,
+    isError: false,
+    error: null,
+    refetch: vi.fn(),
+  }),
+  competitionResultsQueryKeys: {
+    all: ['competition-results'] as const,
+    results: (competitionId: number) => ['competition-results', competitionId] as const,
+  },
+}));
+
 // Mock the results list component to isolate page testing
 vi.mock('@/components/competition/CompetitionResultsList', () => ({
   default: vi.fn(({ onResultClick }) => {

@@ -24,6 +24,12 @@ import CompetitionResultsModal, {
   type CompetitionResultsModalProps,
   type CompetitionResults,
 } from '../CompetitionResultsModal';
+import * as useCompetitionResultsHook from '@/hooks/api/useCompetitionResults';
+
+// Mock the real competition results hook (Equoria-55bo.3).
+// Mocking the hook (not api-client) injects deterministic data while still
+// proving the production code path calls useCompetitionResults — not a stub.
+vi.mock('@/hooks/api/useCompetitionResults');
 
 // Mock useHorseLevelInfo hook to avoid QueryClient dependency (Story 5-4 integration)
 vi.mock('@/hooks/api/useHorseLevelInfo', () => ({
@@ -146,6 +152,16 @@ describe('CompetitionResultsModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     document.body.style.overflow = '';
+    // Default: real hook returns no data. Tests that pass _testResults
+    // exercise the test-injection seam (which takes precedence); tests that
+    // omit it exercise the real production fetch path.
+    vi.mocked(useCompetitionResultsHook.useCompetitionResults).mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof useCompetitionResultsHook.useCompetitionResults>);
   });
 
   afterEach(() => {
@@ -317,7 +333,7 @@ describe('CompetitionResultsModal', () => {
       // Silver badge for 2nd place (slate-tinted background per design tokens)
       const silverBadge = screen.getByTestId('placement-badge-2');
       expect(silverBadge).toBeInTheDocument();
-      expect(silverBadge).toHaveClass('bg-[rgba(148,163,184,0.3)]');
+      expect(silverBadge).toHaveClass('bg-slate-400/30');
 
       // Bronze badge for 3rd place
       const bronzeBadge = screen.getByTestId('placement-badge-3');
@@ -664,6 +680,75 @@ describe('CompetitionResultsModal', () => {
       const row4 = screen.getByTestId('result-row-104');
       const prizeCell = within(row4).getByTestId('prize-value');
       expect(prizeCell).toHaveTextContent('$0');
+    });
+  });
+
+  // ==================== PRODUCTION DATA FETCH (Equoria-55bo.3) ====================
+  describe('Production data fetch (no test seam)', () => {
+    it('fetches real results via useCompetitionResults when _testResults is not provided', () => {
+      vi.mocked(useCompetitionResultsHook.useCompetitionResults).mockReturnValue({
+        data: sampleResults,
+        isLoading: false,
+        isError: false,
+        error: null,
+        refetch: vi.fn(),
+      } as unknown as ReturnType<typeof useCompetitionResultsHook.useCompetitionResults>);
+
+      // No _testResults / _testLoading / _testError props — production path only
+      renderWithRouter(
+        <CompetitionResultsModal isOpen={true} onClose={mockOnClose} competitionId={1} />
+      );
+
+      // The real hook must be called with the competition ID
+      expect(useCompetitionResultsHook.useCompetitionResults).toHaveBeenCalledWith(1);
+      // Real fetched data must render (not an empty/stub state)
+      expect(screen.getByTestId('results-table')).toBeInTheDocument();
+      // Modal title reflects the fetched competition name (rendered as the
+      // BaseModal title) — proves real data flowed through, not a stub.
+      expect(screen.getAllByText('Spring Grand Prix Championship').length).toBeGreaterThan(0);
+      expect(screen.getByTestId('result-row-101')).toBeInTheDocument();
+    });
+
+    it('renders honest empty state (not stub data) when production fetch returns nothing', () => {
+      renderWithRouter(
+        <CompetitionResultsModal isOpen={true} onClose={mockOnClose} competitionId={1} />
+      );
+
+      expect(screen.queryByTestId('results-table')).not.toBeInTheDocument();
+      expect(screen.getByTestId('empty-state')).toBeInTheDocument();
+    });
+
+    it('surfaces the real hook loading state when no test seam is given', () => {
+      vi.mocked(useCompetitionResultsHook.useCompetitionResults).mockReturnValue({
+        data: undefined,
+        isLoading: true,
+        isError: false,
+        error: null,
+        refetch: vi.fn(),
+      } as unknown as ReturnType<typeof useCompetitionResultsHook.useCompetitionResults>);
+
+      renderWithRouter(
+        <CompetitionResultsModal isOpen={true} onClose={mockOnClose} competitionId={1} />
+      );
+
+      expect(screen.getAllByTestId('skeleton-row').length).toBeGreaterThan(0);
+    });
+
+    it('surfaces the real hook error state when no test seam is given', () => {
+      vi.mocked(useCompetitionResultsHook.useCompetitionResults).mockReturnValue({
+        data: undefined,
+        isLoading: false,
+        isError: true,
+        error: { message: 'Server unavailable', status: 'error', statusCode: 500 },
+        refetch: vi.fn(),
+      } as unknown as ReturnType<typeof useCompetitionResultsHook.useCompetitionResults>);
+
+      renderWithRouter(
+        <CompetitionResultsModal isOpen={true} onClose={mockOnClose} competitionId={1} />
+      );
+
+      expect(screen.getByTestId('error-state')).toBeInTheDocument();
+      expect(screen.getByText('Server unavailable')).toBeInTheDocument();
     });
   });
 });
