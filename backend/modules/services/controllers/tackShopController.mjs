@@ -661,16 +661,27 @@ export async function purchaseTackItem(req, res) {
         select: { money: true },
       }),
     ]);
-    // Record financial transaction as best-effort (non-blocking)
-    recordTransaction({
-      userId,
-      type: 'debit',
-      amount: item.cost,
-      category: 'tack_purchase',
-      description: `${item.name} for ${horse.name ?? horseId}`,
-      balanceAfter: updatedUser?.money,
-      metadata: { horseId, itemId: item.id, category: item.category },
-    }).catch(err => logger.error(`[tackShopController] ledger error: ${err.message}`));
+    // Record financial transaction as best-effort. Equoria-78i38: this was
+    // previously fire-and-forget (`recordTransaction(...).catch(...)`). The
+    // dangling promise settled after the test's afterAll() deleted the user
+    // and Jest tore down the module registry, throwing an
+    // "import-after-teardown ReferenceError" that crashed the suite. The
+    // write is now awaited so it completes inside the request lifecycle; the
+    // try/catch preserves best-effort semantics — a ledger failure logs and
+    // is swallowed, it does not fail the (already-committed) purchase.
+    try {
+      await recordTransaction({
+        userId,
+        type: 'debit',
+        amount: item.cost,
+        category: 'tack_purchase',
+        description: `${item.name} for ${horse.name ?? horseId}`,
+        balanceAfter: updatedUser?.money,
+        metadata: { horseId, itemId: item.id, category: item.category },
+      });
+    } catch (err) {
+      logger.error(`[tackShopController] ledger error: ${err.message}`);
+    }
 
     logger.info(
       `[tackShopController] User ${userId} purchased "${item.name}" for horse ${horseId} — cost $${item.cost}`,

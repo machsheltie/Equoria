@@ -333,6 +333,45 @@ describe('purchaseTackItem — decorative items', () => {
     expect(res._status).toBe(404);
     expect(res._body.message).toMatch(/Horse not found/i);
   });
+
+  // Equoria-78i38: the financial-ledger write must complete BEFORE
+  // purchaseTackItem resolves. Previously it was a fire-and-forget
+  // `recordTransaction(...).catch(...)` — the dangling promise settled
+  // after afterAll() deleted the test user and Jest tore down the module
+  // registry, producing an "import-after-teardown ReferenceError" that
+  // crashed the suite. Awaiting the ledger write keeps the row creation
+  // inside the request lifecycle. Sentinel: the ledger row exists the
+  // instant the handler returns (no microtask drain / setTimeout needed).
+  it('writes the ledger transaction synchronously before the handler resolves', async () => {
+    const before = await prisma.userTransaction.count({
+      where: { userId: testUser.id, category: 'tack_purchase' },
+    });
+
+    const req = makeReq({ body: { horseId: testHorse.id, itemId: 'show-ribbon' } });
+    const res = makeRes();
+    await purchaseTackItem(req, res);
+
+    expect(res._status).toBe(200);
+
+    // No await-tick / flushPromises here on purpose: with the fire-and-forget
+    // bug this count is still `before` right after the handler resolves.
+    const after = await prisma.userTransaction.count({
+      where: { userId: testUser.id, category: 'tack_purchase' },
+    });
+    expect(after).toBe(before + 1);
+
+    const row = await prisma.userTransaction.findFirst({
+      where: { userId: testUser.id, category: 'tack_purchase' },
+      orderBy: { createdAt: 'desc' },
+    });
+    expect(row).not.toBeNull();
+    expect(row.type).toBe('debit');
+    expect(row.amount).toBe(120); // show-ribbon cost
+
+    await prisma.userTransaction.deleteMany({
+      where: { userId: testUser.id, category: 'tack_purchase' },
+    });
+  });
 });
 
 // ── unequipDecoration (real DB) ───────────────────────────────────────────────
