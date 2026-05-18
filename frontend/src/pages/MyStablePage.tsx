@@ -16,6 +16,7 @@ import { useQueries } from '@tanstack/react-query';
 import PageHero from '@/components/layout/PageHero';
 import { Button } from '@/components/ui/button';
 import { CelestialTabs } from '@/components/ui/game';
+import { GoldBorderFrame } from '@/components/ui/GoldBorderFrame';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUpdateProfile } from '@/hooks/useAuth';
 import { useHorses } from '@/hooks/api/useHorses';
@@ -220,48 +221,74 @@ const LegacyHallTab: React.FC<{ entries: HallOfFameEntry[] }> = ({ entries }) =>
   </div>
 );
 
-const HallOfFameCard: React.FC<{ entry: HallOfFameEntry; rank: number }> = ({ entry, rank }) => (
-  <div className="glass-panel hover:border-celestial-gold/30" data-testid={`hof-entry-${entry.id}`}>
-    <div className="flex items-start gap-4">
-      {/* Rank Badge */}
-      <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-celestial-gold/10 border border-celestial-gold/30">
-        <span className="text-sm font-bold text-celestial-gold">#{rank}</span>
-      </div>
+const HallOfFameCard: React.FC<{ entry: HallOfFameEntry; rank: number }> = ({ entry, rank }) => {
+  // Spec 11.3.13: GoldBorderFrame is reserved for "championship horses /
+  // featured / highest-level horses". A Hall-of-Fame horse that actually
+  // earned at least one competition 1st-place win is a true champion — this
+  // is real backend data (career.wins is derived from
+  // useHorseCompetitionHistory → history.statistics.wins, NOT a hardcoded
+  // "featured" flag). A retired horse with zero career wins is in the hall
+  // but does not get the ornate champion frame.
+  const isChampion = entry.career.wins > 0;
 
-      {/* Horse Details */}
-      <div className="flex-1">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="text-xl" aria-hidden="true">
-            {entry.icon}
-          </span>
-          <h3 className="font-bold text-white/90">{entry.name}</h3>
-          <span className="text-xs text-white/40 ml-1">
-            {entry.breed} · {entry.discipline}
-          </span>
+  const card = (
+    <div
+      className="glass-panel hover:border-celestial-gold/30"
+      data-testid={`hof-entry-${entry.id}`}
+    >
+      <div className="flex items-start gap-4">
+        {/* Rank Badge */}
+        <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-celestial-gold/10 border border-celestial-gold/30">
+          <span className="text-sm font-bold text-celestial-gold">#{rank}</span>
         </div>
-        <p className="text-xs text-white/50 mb-3">Retired at age {entry.retiredAge}</p>
 
-        {/* Career Stats */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="text-center p-2 bg-white/5 rounded-lg">
-            <p className="text-lg font-bold text-white/80">{entry.career.competitions}</p>
-            <p className="text-xs text-white/40">Competitions</p>
+        {/* Horse Details */}
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xl" aria-hidden="true">
+              {entry.icon}
+            </span>
+            <h3 className="font-bold text-white/90">{entry.name}</h3>
+            <span className="text-xs text-white/40 ml-1">
+              {entry.breed} · {entry.discipline}
+            </span>
           </div>
-          <div className="text-center p-2 bg-white/5 rounded-lg">
-            <p className="text-lg font-bold text-celestial-gold">{entry.career.wins}</p>
-            <p className="text-xs text-white/40">Wins</p>
-          </div>
-          <div className="text-center p-2 bg-white/5 rounded-lg">
-            <p className="text-lg font-bold text-white/80">
-              {entry.career.earnings.toLocaleString()}
-            </p>
-            <p className="text-xs text-white/40">Coins Earned</p>
+          <p className="text-xs text-white/50 mb-3">Retired at age {entry.retiredAge}</p>
+
+          {/* Career Stats */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="text-center p-2 bg-white/5 rounded-lg">
+              <p className="text-lg font-bold text-white/80">{entry.career.competitions}</p>
+              <p className="text-xs text-white/40">Competitions</p>
+            </div>
+            <div className="text-center p-2 bg-white/5 rounded-lg">
+              <p className="text-lg font-bold text-celestial-gold">{entry.career.wins}</p>
+              <p className="text-xs text-white/40">Wins</p>
+            </div>
+            <div className="text-center p-2 bg-white/5 rounded-lg">
+              <p className="text-lg font-bold text-white/80">
+                {entry.career.earnings.toLocaleString()}
+              </p>
+              <p className="text-xs text-white/40">Coins Earned</p>
+            </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+
+  if (!isChampion) {
+    return card;
+  }
+
+  // Champion (≥1 real career win): wrap in the ornate GoldBorderFrame so the
+  // hall-of-fame champion is visually highlighted per spec 11.3.13.
+  return (
+    <div data-testid={`hof-champion-frame-${entry.id}`}>
+      <GoldBorderFrame className="rounded-xl">{card}</GoldBorderFrame>
+    </div>
+  );
+};
 
 const MyStablePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<StableTab>('profile');
