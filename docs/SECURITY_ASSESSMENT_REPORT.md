@@ -214,8 +214,22 @@ Path params (`req.params`), headers, and cookies are out of scope: each is a fla
 - Security header validation tests
 - Error message sanitization tests
 
-**Risk Level:** LOW
-**Recommendation:** Review CORS origins before production deployment
+**Accepted residual (CSP `style-src 'unsafe-inline'`):** The Helmet CSP keeps
+`style-src 'self' 'unsafe-inline'`. `script-src` is `'self'`-only (no
+`'unsafe-inline'`/`'unsafe-eval'`), so the high-severity script-execution XSS
+path is blocked; the residual is the lower-severity style-injection vector.
+`'unsafe-inline'` is required because Radix UI's transitive
+`react-style-singleton` injects runtime `<style>` tags after load and the
+static-SPA serving model has no per-request nonce path. This is an explicit,
+tracked accepted-risk decision with defined re-evaluation triggers —
+**not** a silent omission or false-green — documented in
+`docs/architecture/adr-008-csp-style-src-unsafe-inline.md` (bd Equoria-e3k9).
+A CI sentinel (`backend/modules/services/__tests__/security.test.mjs`) locks
+the CSP shape so it cannot silently broaden.
+
+**Risk Level:** LOW (style-injection residual accepted per ADR-008)
+**Recommendation:** Review CORS origins before production deployment; revisit
+ADR-008 when any of its re-evaluation triggers fire.
 
 ---
 
