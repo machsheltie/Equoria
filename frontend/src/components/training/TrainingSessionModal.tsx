@@ -38,6 +38,7 @@ import TrainingResultsDisplay from './TrainingResultsDisplay';
 import TraitModifierList from './TraitModifierList';
 import EligibilityAlternatives from './EligibilityAlternatives';
 import type { TraitModifier } from './TraitModifierBadge';
+import { getDisciplineTraitModifiers } from './disciplineTraitGrouping';
 
 interface TrainingSessionModalProps {
   horse: TrainableHorse;
@@ -60,74 +61,11 @@ interface TrainingSessionModalProps {
 }
 
 /**
- * Returns discipline trait modifiers based on the selected discipline.
- * Different disciplines have different trait combinations:
- * - Physical disciplines: Athletic + Stubborn
- * - Mental disciplines: Intelligent + Calm
- * - Other disciplines: Quick Learner
+ * Discipline trait modifiers now come from the shared
+ * ./disciplineTraitGrouping module (Equoria-svilx) — single source of
+ * truth shared with disciplineRecommendation so the Trait-Modifiers panel
+ * and the per-discipline recommendation indicators cannot drift.
  */
-const getDisciplineTraitModifiers = (discipline: string): TraitModifier[] => {
-  // Normalize discipline for comparison (lowercase, no spaces/hyphens)
-  const normalizedDiscipline = discipline.toLowerCase().replace(/[\s-]/g, '');
-
-  // Physical disciplines (racing, show-jumping, barrel-racing)
-  const physicalDisciplines = ['racing', 'showjumping', 'barrelracing', 'steeplechase', 'polo'];
-  if (physicalDisciplines.some((d) => normalizedDiscipline.includes(d))) {
-    return [
-      {
-        traitId: 'athletic',
-        traitName: 'Athletic',
-        effect: 3,
-        description: 'Enhances performance in physical disciplines',
-        affectedDisciplines: ['racing', 'show-jumping', 'barrel-racing'],
-        category: 'positive',
-      },
-      {
-        traitId: 'stubborn',
-        traitName: 'Stubborn',
-        effect: -2,
-        description: 'Reduces training effectiveness',
-        affectedDisciplines: ['all'],
-        category: 'negative',
-      },
-    ];
-  }
-
-  // Mental disciplines (dressage, western-pleasure)
-  const mentalDisciplines = ['dressage', 'westernpleasure', 'saddleseat', 'fineharness', 'gaited'];
-  if (mentalDisciplines.some((d) => normalizedDiscipline.includes(d))) {
-    return [
-      {
-        traitId: 'intelligent',
-        traitName: 'Intelligent',
-        effect: 4,
-        description: 'Learns techniques quickly',
-        affectedDisciplines: ['dressage', 'western-pleasure'],
-        category: 'positive',
-      },
-      {
-        traitId: 'calm',
-        traitName: 'Calm',
-        effect: 0,
-        description: 'Maintains composure under pressure',
-        affectedDisciplines: ['all'],
-        category: 'neutral',
-      },
-    ];
-  }
-
-  // Default: Quick Learner for all others
-  return [
-    {
-      traitId: 'quick-learner',
-      traitName: 'Quick Learner',
-      effect: 2,
-      description: 'Picks up new skills faster',
-      affectedDisciplines: ['all'],
-      category: 'positive',
-    },
-  ];
-};
 
 /**
  * Calculates the net effect of trait modifiers on training gain.
@@ -256,9 +194,7 @@ const TrainingSessionModal = ({
           <div>
             <div className="mb-4 flex items-start justify-between">
               <div>
-                <p className="text-xs uppercase tracking-wide text-slate-400">
-                  Training Complete
-                </p>
+                <p className="text-xs uppercase tracking-wide text-slate-400">Training Complete</p>
                 <h3 className="text-xl font-bold text-[rgb(220,235,255)]">{horse.name}</h3>
               </div>
               <button
@@ -281,9 +217,7 @@ const TrainingSessionModal = ({
             {/* Training Form */}
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs uppercase tracking-wide text-slate-400">
-                  Training Session
-                </p>
+                <p className="text-xs uppercase tracking-wide text-slate-400">Training Session</p>
                 <h3 className="text-xl font-bold text-[rgb(220,235,255)]">{horse.name}</h3>
                 <p className="text-sm text-slate-400">
                   Choose a discipline to train. Eligibility and cooldown are enforced server-side.

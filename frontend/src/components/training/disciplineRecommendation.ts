@@ -26,6 +26,7 @@
  */
 
 import { DISCIPLINE_STAT_MAP, ALL_DISCIPLINES } from './DisciplineSelector';
+import { disciplineTraitEffects } from './disciplineTraitGrouping';
 
 /**
  * Minimal real-horse shape this utility reads (a structural subset of
@@ -57,35 +58,12 @@ export interface RankedDiscipline {
 const WEIGHTS = { primary: 0.5, secondary: 0.3, tertiary: 0.2 } as const;
 
 /**
- * Discipline-group → trait effect, mirroring TrainingSessionModal's
- * getDisciplineTraitModifiers grouping. Kept here as the single source so the
- * selector's per-option indicators match the Trait-Modifiers panel.
+ * The discipline-group → trait-effect mapping (previously duplicated here)
+ * now lives in the shared ./disciplineTraitGrouping module (Equoria-svilx)
+ * and is imported above as `disciplineTraitEffects`, so the selector's
+ * per-option indicators and TrainingSessionModal's Trait-Modifiers panel
+ * derive from one source and cannot drift.
  */
-const PHYSICAL_DISCIPLINES = new Set(
-  ['racing', 'showjumping', 'barrelracing', 'steeplechase', 'polo'].map((d) => d)
-);
-const MENTAL_DISCIPLINES = new Set(
-  ['dressage', 'westernpleasure', 'saddleseat', 'fineharness', 'gaited'].map((d) => d)
-);
-
-function normalizeDiscipline(d: string): string {
-  return d.toLowerCase().replace(/[\s-]/g, '');
-}
-
-/** Traits (lowercased) that benefit / harm a given discipline group. */
-function disciplineTraitEffects(discipline: string): {
-  bonus: string[];
-  penalty: string[];
-} {
-  const n = normalizeDiscipline(discipline);
-  if ([...PHYSICAL_DISCIPLINES].some((p) => n.includes(p))) {
-    return { bonus: ['athletic'], penalty: ['stubborn'] };
-  }
-  if ([...MENTAL_DISCIPLINES].some((m) => n.includes(m))) {
-    return { bonus: ['intelligent'], penalty: [] };
-  }
-  return { bonus: ['quick-learner', 'quick learner'], penalty: [] };
-}
 
 function readStat(horse: RankableHorse, stat: string): number | undefined {
   const statsObj =
