@@ -30,12 +30,27 @@ import DisciplineSelector from './DisciplineSelector';
 import HorseStatsCard from './HorseStatsCard';
 import TrainingResultsDisplay from './TrainingResultsDisplay';
 import TraitModifierList from './TraitModifierList';
+import EligibilityAlternatives from './EligibilityAlternatives';
 import type { TraitModifier } from './TraitModifierBadge';
 
 interface TrainingSessionModalProps {
   horse: TrainableHorse;
   onClose: () => void;
   onCompleted?: (_result: TrainingResult) => void;
+  /**
+   * Equoria-9zluc: the user's real trainable-horses list, used to suggest
+   * currently-eligible alternatives when this horse is ineligible
+   * ("No dead ends" UX-spec rule). Optional — when omitted, the
+   * alternatives block is skipped (the modal still shows the reason).
+   */
+  trainableHorses?: TrainableHorse[];
+  /** Loading state of the trainable-horses query. */
+  trainableHorsesLoading?: boolean;
+  /**
+   * Called when the user picks an eligible alternative horse; the caller
+   * re-targets the flow to that horse.
+   */
+  onSwitchHorse?: (_horse: TrainableHorse) => void;
 }
 
 /**
@@ -122,7 +137,14 @@ const calculateNetEffect = (base: number, modifiers: TraitModifier[]): number =>
   return base + positiveSum - negativeSum;
 };
 
-const TrainingSessionModal = ({ horse, onClose, onCompleted }: TrainingSessionModalProps) => {
+const TrainingSessionModal = ({
+  horse,
+  onClose,
+  onCompleted,
+  trainableHorses,
+  trainableHorsesLoading,
+  onSwitchHorse,
+}: TrainingSessionModalProps) => {
   const [discipline, setDiscipline] = useState<string>('Barrel Racing');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [trainingResult, setTrainingResult] = useState<TrainingResult | null>(null);
@@ -310,6 +332,18 @@ const TrainingSessionModal = ({ horse, onClose, onCompleted }: TrainingSessionMo
                   ? 'Eligible to train'
                   : eligibility.reason || 'Not eligible to train'}
               </div>
+            )}
+
+            {/* Equoria-9zluc — "No dead ends": when this horse is ineligible,
+                suggest the user's real currently-eligible horses instead of
+                stopping at the reason. */}
+            {eligibility && !eligibility.eligible && onSwitchHorse && (
+              <EligibilityAlternatives
+                blockedHorseId={horse.horseId ?? horse.id}
+                trainableHorses={trainableHorses}
+                isLoading={trainableHorsesLoading}
+                onSelectAlternative={onSwitchHorse}
+              />
             )}
 
             {errorMessage && (

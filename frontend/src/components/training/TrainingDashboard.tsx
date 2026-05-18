@@ -420,6 +420,12 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
             // which sets selectedHorse to null and unmounts the modal.
             refetch();
           }}
+          // Equoria-9zluc — "No dead ends": feed the real trainable list so
+          // an ineligible horse can offer eligible alternatives, and let the
+          // user switch the modal's target to one of them.
+          trainableHorses={horses}
+          trainableHorsesLoading={isLoading}
+          onSwitchHorse={(alt) => setSelectedHorse(alt)}
         />
       )}
     </div>
