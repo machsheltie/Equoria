@@ -408,7 +408,7 @@ RATE_LIMIT_MAX_REQUESTS=100
 - Critical vulnerability blocking
 - Test Coverage: GitHub Actions workflows, dependency audit reports
 
-### **A07:2021 - Identification and Authentication Failures** ✅
+### **A07:2021 - Identification and Authentication Failures** ✅ (single-factor — NO MFA)
 
 - Strong password requirements
 - JWT token expiration enforcement
@@ -416,6 +416,14 @@ RATE_LIMIT_MAX_REQUESTS=100
 - Failed login attempt limiting
 - Session management with secure cookies
 - Test Coverage: `backend/modules/services/__tests__/auth-bypass-attempts.test.mjs`, `backend/modules/services/__tests__/rate-limit-enforcement.test.mjs`
+
+> **No MFA (verified 2026-05-18, Equoria-82ru):** There is **zero** MFA/TOTP
+> code. No `totpSecret`/`totpEnabled`/`mfaSecret`/`twoFactorEnabled` field in
+> `packages/database/prisma/schema.prisma`; no MFA controllers/routes in
+> `backend/modules/auth/`; no TOTP library (`speakeasy`/`otplib`) in
+> dependencies. Any prior "MFA infrastructure in place" wording was a
+> false-green and is removed. MFA is an **unstarted** future enhancement
+> tracked as **Equoria-2vwwh** — do not represent MFA as available.
 
 ### **A08:2021 - Software and Data Integrity Failures** ✅
 

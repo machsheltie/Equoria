@@ -297,7 +297,10 @@ ADR-008 when any of its re-evaluation triggers fire.
 
 **Risk Level:** LOW–MEDIUM (no second factor for admin accounts)
 **Recommendation:** Implement TOTP-based MFA for admin accounts before any
-privileged-operation exposure (TODO — no infrastructure currently exists).
+privileged-operation exposure (TODO — no infrastructure currently exists;
+zero MFA code verified 2026-05-18, Equoria-82ru). **Tracked as Equoria-2vwwh**
+(unstarted feature — scoped separately, not closed by this accuracy
+correction).
 
 ---
 
