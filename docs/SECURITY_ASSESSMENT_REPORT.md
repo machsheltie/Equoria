@@ -796,22 +796,32 @@ configured. This is a hard pre-production blocker, not a soft warning.
 
 ### 9.1 Industry Standards Compliance
 
-| Standard                     | Compliance Status          | Notes                                                                                                           |
-| ---------------------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| OWASP Top 10:2021            | ✅ Substantial (corrected) | 9 implemented; A09 DB-backed + globally enforced + retention-bounded (jw10w + 54qq8); A10 N/A (no SSRF surface) |
-| CWE Top 25                   | ✅ 95% Addressed           | 24/25 categories mitigated                                                                                      |
-| NIST Cybersecurity Framework | ✅ Substantial Compliance  | Identify, Protect, Detect, Respond, Recover                                                                     |
-| PCI DSS                      | ⚠️ N/A                     | Not applicable unless payment processing added                                                                  |
-| GDPR                         | ⚠️ Partial                 | Basic requirements met, full audit needed                                                                       |
-| SOC 2                        | ⚠️ Not Certified           | Consider for enterprise customers                                                                               |
+| Standard                     | Compliance Status          | Notes                                                                                                                                                                      |
+| ---------------------------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| OWASP Top 10:2021            | ✅ Substantial (corrected) | 9 implemented; A09 DB-backed + globally enforced + retention-bounded (jw10w + 54qq8); A10 N/A (no SSRF surface)                                                            |
+| CWE Top 25                   | ✅ 95% Addressed           | 24/25 categories mitigated                                                                                                                                                 |
+| NIST Cybersecurity Framework | ✅ Substantial Compliance  | Identify, Protect, Detect, Respond, Recover                                                                                                                                |
+| PCI DSS                      | ⚠️ N/A                     | Not applicable unless payment processing added                                                                                                                             |
+| GDPR                         | ✅ Core rights implemented | Right-to-access (data export) + right-to-erasure endpoints live + privacy policy committed (Equoria-s3rf, 2026-05-18); DPA/legal review still recommended before EU launch |
+| SOC 2                        | ⚠️ Not Certified           | Consider for enterprise customers                                                                                                                                          |
 
 ### 9.2 Regulatory Compliance
 
 **Current Status:**
 
 - **COPPA:** ✅ Ready (age verification not yet implemented)
-- **CCPA:** ✅ Ready (data privacy controls in place)
-- **GDPR:** ⚠️ Needs data processing agreements and privacy policy
+- **CCPA:** ✅ Ready (data privacy controls in place; the export +
+  deletion endpoints below also satisfy CCPA access/deletion requests)
+- **GDPR:** ✅ Core data-subject rights implemented (Equoria-s3rf,
+  2026-05-18) — Article 15/20 data export (`GET /api/v1/account/export`)
+  and Article 17 erasure (`POST /api/v1/account/delete`, password-
+  confirmed, scoped transactional cascade) are live and covered by
+  real-DB integration tests
+  (`backend/modules/users/__tests__/gdprAccountRoutes.integration.test.mjs`);
+  a privacy policy honest to the actual data model is committed at
+  `docs/legal/privacy-policy.md`. **Still recommended before EU launch:**
+  data processing agreements with any sub-processors and a formal legal
+  review of the policy text.
 - **Local Laws:** Varies by deployment region
 
 **Recommendation:** Conduct legal review before international deployment

@@ -194,6 +194,39 @@ const dataHash = crypto
 - **Name Sanitization**: Prevents malicious file names
 - **Content Verification**: MIME type validation
 
+### **8. GDPR / Data-Subject Rights (Equoria-s3rf, 2026-05-18)**
+
+Core GDPR data-subject rights are implemented as authenticated, self-only
+endpoints. Both act exclusively on `req.user.id` (no user-id parameter),
+so cross-user access is structurally impossible.
+
+- **Right to Access / Portability** — `GET /api/v1/account/export`
+  returns a complete machine-readable JSON of the caller's personal data
+  (profile sans password hash, settings, horses, competition history,
+  transactions, notifications, grooms, riders, trainers, messages, forum
+  content, club memberships, XP events, horse sales). Rate-limited
+  (`queryRateLimiter`).
+- **Right to Erasure** — `POST /api/v1/account/delete` requires the
+  account password in the body (destructive-action re-confirmation),
+  then performs a single-transaction, FK-ordered, **strictly userId-scoped**
+  cascade delete of the user's PII + owned data. Anonymises (nulls the
+  user link on) shared records — shows hosted/created — rather than
+  destroying other players' history. Idempotent (repeat → 404, not 500),
+  fail-closed (no partial deletes).
+- **Audit** — both ops are captured by `globalAuditTrail` via the new
+  `account` sensitive prefix (action `account_operation`). Audit rows use
+  a soft (no-FK) user reference so a short, retention-bounded forensic
+  record of the erasure event itself survives by design (documented in
+  the privacy policy as a legitimate-interest exception).
+- **Implementation:**
+  `backend/modules/users/services/gdprAccountService.mjs`,
+  `backend/modules/users/controllers/gdprAccountController.mjs`,
+  `backend/modules/users/routes/gdprAccountRoutes.mjs`.
+- **Privacy policy:** `docs/legal/privacy-policy.md` — written to be
+  honest to the actual Prisma data model, not a generic template.
+- **Tests (real-DB, no mocks):**
+  `backend/modules/users/__tests__/gdprAccountRoutes.integration.test.mjs`.
+
 ---
 
 ## 🛡️ **Common Exploit Prevention**

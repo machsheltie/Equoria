@@ -412,6 +412,9 @@ const AUDITED_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 // any leading `/api` and `/api/v1` stripped (normalized form).
 const SENSITIVE_AUDIT_PREFIXES = [
   { match: p => p.startsWith('auth'), action: 'authentication' },
+  // GDPR self-service account ops (Equoria-s3rf): data export + erasure are
+  // among the highest-sensitivity operations a user can perform.
+  { match: p => p.startsWith('account'), action: 'account_operation' },
   { match: p => p.startsWith('bank'), action: 'transaction' },
   { match: p => p.startsWith('transactions'), action: 'transaction' },
   { match: p => p.startsWith('breeding') || p.startsWith('breed'), action: 'breeding' },
