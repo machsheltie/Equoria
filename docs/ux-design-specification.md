@@ -1283,6 +1283,13 @@ flowchart TD
 
 - **Scouting is real:** Players can see the full field during the 7-day entry window — horse levels, breeds, top stats. Mike's need for strategic entry is satisfied.
 - **No NPCs, no instant results:** Shows are player-created (or club/special event). Entry window = 7 days. Execution = automatic overnight. Results arrive on next login or via While You Were Gone.
+- **Show economics (Equoria-nx8t1, user-decided 2026-05-18 — implemented):**
+  - The creating player chooses the **discipline** and **level**, and sets the **entry fee** and **prize** at creation.
+  - **Prize is funded up front:** the full prize amount is debited from the creator's balance at creation. Creation is rejected (HTTP 400) if the creator cannot afford the prize — no show row and no debit persist.
+  - **Prize floor:** `prize >= 10 × entryFee` (e.g. entry fee 10 → prize must be at least 100). Violations are rejected (HTTP 400) with a clear message.
+  - **Entries are unlimited.** There is no entry cap during the 7-day window.
+  - **Entry fees flow to the creator:** when a player enters a horse they pay the entry fee, and that fee is credited to the show creator's balance immediately (atomic with the entrant's debit). Self-entry by the creator is not self-credited (no-op round-trip).
+  - **Execution:** exactly 7 days after creation (`closeDate = createdAt + 7d`), the nightly overnight cron (`nightlyShowExecution`, 03:00 UTC) picks up every `status='open'` show whose `closeDate <= now`, scores all entrants, distributes the prize pool to the winners (1st/2nd/3rd = 50/30/20%), and marks the show `completed`. Re-running is idempotent (a `status` transition guard prevents double-pay).
 - **No CinematicMoment per win.** Players enter hundreds of shows simultaneously — CinematicMoment on every 1st place would be unbearable. Wins communicated via While You Were Gone summary ("3 horses placed 1st overnight!") and the Results page with score breakdowns.
 - **CinematicMoment reserved for lifetime firsts ONLY:** First-EVER 1st place win (once per player lifetime) and first championship title. These are genuinely rare milestones worth celebrating cinematically.
 - **First Podium moment:** First-ever 1st/2nd/3rd placement in ANY discipline gets a one-time celebration — acknowledges the milestone for newer players. Never repeats.

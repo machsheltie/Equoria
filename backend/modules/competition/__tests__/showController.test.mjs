@@ -584,7 +584,7 @@ describe('POST /api/shows/:id/enter — horse not owned by requesting user', () 
 
 // ─── POST /api/shows/:id/enter — show is full (line 182-183) ─────────────────
 
-describe('POST /api/shows/:id/enter — show is full (maxEntries)', () => {
+describe('POST /api/shows/:id/enter — unlimited entries (Equoria-nx8t1 R3)', () => {
   let fullShowId;
 
   afterAll(async () => {
@@ -594,14 +594,17 @@ describe('POST /api/shows/:id/enter — show is full (maxEntries)', () => {
     }
   });
 
-  it('returns 409 when show is full (line 182-183)', async () => {
-    // Create a show with maxEntries: 1
+  it('accepts entry even when a legacy maxEntries cap would have blocked it', async () => {
+    // Equoria-nx8t1 R3: entries are UNLIMITED. The 7-day deferred-window model
+    // removes the maxEntries cap entirely. Even a row that still carries a
+    // legacy maxEntries:1 value must NOT block additional entries — the
+    // controller no longer reads or enforces maxEntries.
     const fullShow = await prisma.show.create({
       data: {
-        name: `TestFixture-FullShow-${Date.now()}`,
+        name: `TestFixture-UncappedShow-${Date.now()}`,
         discipline: 'Vaulting',
         entryFee: 0,
-        maxEntries: 1,
+        maxEntries: 1, // legacy value — must be ignored by the controller
         levelMin: 1,
         levelMax: 999,
         prize: 0,
@@ -614,7 +617,7 @@ describe('POST /api/shows/:id/enter — show is full (maxEntries)', () => {
     });
     fullShowId = fullShow.id;
 
-    // Enter the first horse (execHorse from exec user)
+    // First horse already entered (would reach the legacy cap of 1).
     await prisma.showEntry.create({
       data: {
         showId: fullShowId,
@@ -624,7 +627,7 @@ describe('POST /api/shows/:id/enter — show is full (maxEntries)', () => {
       },
     });
 
-    // Now try to enter the second horse — show should be full
+    // Second horse must STILL be accepted (201) — no cap is enforced.
     const csrf = await fetchCsrf(app);
     const res = await request(app)
       .post(`/api/shows/${fullShowId}/enter`)
@@ -634,9 +637,11 @@ describe('POST /api/shows/:id/enter — show is full (maxEntries)', () => {
       .set('X-CSRF-Token', csrf.csrfToken)
       .send({ horseId: horse.id });
 
-    expect(res.status).toBe(409);
-    expect(res.body.success).toBe(false);
-    expect(res.body.message).toMatch(/full/i);
+    expect(res.status).toBe(201);
+    expect(res.body.success).toBe(true);
+
+    const count = await prisma.showEntry.count({ where: { showId: fullShowId } });
+    expect(count).toBe(2);
   });
 });
 

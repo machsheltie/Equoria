@@ -40,7 +40,17 @@ const VALID_DISCIPLINES = [
   'Harness Racing',
 ];
 
-// ── BA-2: Create a show ────────────────────────────────────────────────────────
+// ── BA-2 / Equoria-nx8t1: Create a 7-day deferred-window show ──────────────────
+//
+// User spec (2026-05-18): the creating player chooses discipline + level, sets
+// the entryFee and prize, and is debited the FULL prize at creation. The show
+// auto-runs exactly 7 days after createdAt (the nightly cron picks up
+// closeDate <= now AND status='open'). Entries are UNLIMITED (no cap). Entry
+// fees flow to the creator's balance as horses are entered (see enterShow).
+//
+// Constraints enforced here:
+//   - prize >= 10 * entryFee (e.g. entryFee 10 → prize >= 100)
+//   - creator must be able to afford the full prize (else 400, no debit)
 
 export async function createShow(req, res) {
   try {
@@ -49,7 +59,7 @@ export async function createShow(req, res) {
       return res.status(401).json({ success: false, message: 'Authentication required' });
     }
 
-    const { name, discipline, entryFee = 0, maxEntries, description } = req.body;
+    const { name, discipline, level, entryFee = 0, prize = 0, description } = req.body;
 
     if (!name || typeof name !== 'string' || name.trim().length < 2) {
       return res
@@ -59,32 +69,94 @@ export async function createShow(req, res) {
     if (!discipline || !VALID_DISCIPLINES.includes(discipline)) {
       return res.status(400).json({ success: false, message: 'Invalid discipline' });
     }
-    if (typeof entryFee !== 'number' || entryFee < 0 || entryFee > 100_000) {
+    if (
+      typeof entryFee !== 'number' ||
+      !Number.isFinite(entryFee) ||
+      entryFee < 0 ||
+      entryFee > 100_000
+    ) {
       return res.status(400).json({ success: false, message: 'Entry fee must be 0–100,000' });
+    }
+    if (typeof prize !== 'number' || !Number.isFinite(prize) || prize < 0 || prize > 10_000_000) {
+      return res.status(400).json({ success: false, message: 'Prize must be 0–10,000,000' });
+    }
+    // Equoria-nx8t1 R6: prize must be at least 10x the entry fee.
+    if (prize < 10 * entryFee) {
+      return res.status(400).json({
+        success: false,
+        message: `Prize must be at least 10x the entry fee (entry fee ${entryFee} requires a prize of at least ${10 * entryFee})`,
+      });
+    }
+
+    // Equoria-nx8t1 R1: the creator chooses a competition level. We persist it
+    // as a single-level bracket (levelMin == levelMax == chosen level). When no
+    // level is supplied we keep the legacy open bracket so older clients still
+    // work without a breaking change.
+    let levelMin = 1;
+    let levelMax = 999;
+    if (level !== undefined && level !== null) {
+      const lvl = Number(level);
+      if (!Number.isInteger(lvl) || lvl < 1 || lvl > 999) {
+        return res
+          .status(400)
+          .json({ success: false, message: 'Level must be an integer between 1 and 999' });
+      }
+      levelMin = lvl;
+      levelMax = lvl;
     }
 
     const openDate = new Date();
     const closeDate = new Date(openDate.getTime() + 7 * 24 * 60 * 60 * 1000);
 
-    const show = await prisma.show.create({
-      data: {
-        name: name.trim(),
-        discipline,
-        entryFee,
-        maxEntries: maxEntries ?? null,
-        description: description ?? null,
-        levelMin: 1,
-        levelMax: 999,
-        prize: 0,
-        runDate: closeDate,
-        status: 'open',
-        openDate,
-        closeDate,
-        createdByUserId: userId,
-      },
-    });
+    // Equoria-nx8t1 R5: charge the FULL prize to the creator atomically with
+    // the show row. A conditional updateMany (money >= prize) is the atomic
+    // guard against insufficient funds AND a concurrent-spend race: if the
+    // balance dropped between read and write the update affects 0 rows and we
+    // throw INSUFFICIENT_FUNDS, rolling back the transaction so no show row
+    // and no debit persist.
+    let show;
+    try {
+      show = await prisma.$transaction(async tx => {
+        if (prize > 0) {
+          const debited = await tx.user.updateMany({
+            where: { id: userId, money: { gte: prize } },
+            data: { money: { decrement: prize } },
+          });
+          if (debited.count === 0) {
+            throw new Error('INSUFFICIENT_FUNDS');
+          }
+        }
+        return tx.show.create({
+          data: {
+            name: name.trim(),
+            discipline,
+            entryFee,
+            // Equoria-nx8t1 R3: unlimited entries — no maxEntries cap.
+            maxEntries: null,
+            description: description ?? null,
+            levelMin,
+            levelMax,
+            prize,
+            runDate: closeDate,
+            status: 'open',
+            openDate,
+            closeDate,
+            createdByUserId: userId,
+          },
+        });
+      });
+    } catch (txError) {
+      if (txError.message === 'INSUFFICIENT_FUNDS') {
+        return res
+          .status(400)
+          .json({ success: false, message: 'Insufficient funds to fund the prize pool' });
+      }
+      throw txError;
+    }
 
-    logger.info(`Show created: ${show.name} (id=${show.id}) by user ${userId}`);
+    logger.info(
+      `Show created: ${show.name} (id=${show.id}) by user ${userId} — prize ${prize} debited, executes ${closeDate.toISOString()}`,
+    );
     return res.status(201).json({ success: true, data: { show } });
   } catch (error) {
     if (error.code === 'P2002') {
@@ -167,7 +239,13 @@ export async function enterShow(req, res) {
     // Load show
     const show = await prisma.show.findUnique({
       where: { id: showId },
-      include: { _count: { select: { entries: true } } },
+      select: {
+        id: true,
+        status: true,
+        closeDate: true,
+        entryFee: true,
+        createdByUserId: true,
+      },
     });
 
     if (!show) {
@@ -181,9 +259,7 @@ export async function enterShow(req, res) {
     if (show.closeDate && new Date(show.closeDate) <= new Date()) {
       return res.status(409).json({ success: false, message: 'Entry period has closed' });
     }
-    if (show.maxEntries && show._count.entries >= show.maxEntries) {
-      return res.status(409).json({ success: false, message: 'Show is full' });
-    }
+    // Equoria-nx8t1 R3: entries are UNLIMITED — no maxEntries cap is enforced.
 
     // Verify horse ownership via WHERE-scoped findFirst — collapses
     // not-found and cross-user-owned into a single null result, returning
@@ -205,24 +281,50 @@ export async function enterShow(req, res) {
       return res.status(400).json({ success: false, message: 'Injured horses cannot compete' });
     }
 
-    // Check entry fee
-    if (show.entryFee > 0) {
-      const user = await prisma.user.findUnique({ where: { id: userId }, select: { money: true } });
-      if (!user || user.money < show.entryFee) {
+    // Equoria-nx8t1 R7: atomically debit the entrant the entryFee, CREDIT the
+    // show creator the same amount, and create the entry — all in one
+    // transaction so a fee can never be debited without (a) the creator being
+    // credited and (b) the entry row existing. The conditional updateMany
+    // (money >= entryFee) is the atomic insufficient-funds guard and also
+    // closes a concurrent-spend race.
+    let entry;
+    try {
+      entry = await prisma.$transaction(async tx => {
+        if (show.entryFee > 0) {
+          const debited = await tx.user.updateMany({
+            where: { id: userId, money: { gte: show.entryFee } },
+            data: { money: { decrement: show.entryFee } },
+          });
+          if (debited.count === 0) {
+            throw new Error('INSUFFICIENT_FUNDS');
+          }
+          // Credit the creator the entry fee. Self-entry (entrant ===
+          // creator) is intentionally NOT credited — crediting your own
+          // balance the same amount you were just debited is a pure no-op
+          // round-trip, so we skip both the extra write and the self-pay
+          // optics; the net effect is the creator pays the fee like anyone
+          // else for their own horse. createdByUserId can be null for
+          // legacy/system shows; with no creator there is nobody to credit
+          // and the fee is sunk (matches legacy behaviour).
+          if (show.createdByUserId && show.createdByUserId !== userId) {
+            await tx.user.update({
+              where: { id: show.createdByUserId },
+              data: { money: { increment: show.entryFee } },
+            });
+          }
+        }
+        return tx.showEntry.create({
+          data: { showId, horseId, userId, feePaid: show.entryFee },
+        });
+      });
+    } catch (txError) {
+      if (txError.message === 'INSUFFICIENT_FUNDS') {
         return res
           .status(402)
           .json({ success: false, message: 'Insufficient funds for entry fee' });
       }
-      await prisma.user.update({
-        where: { id: userId },
-        data: { money: { decrement: show.entryFee } },
-      });
+      throw txError;
     }
-
-    // Create entry (unique constraint handles duplicate entry)
-    const entry = await prisma.showEntry.create({
-      data: { showId, horseId, userId, feePaid: show.entryFee },
-    });
 
     logger.info(`Horse ${horseId} entered show ${showId} by user ${userId}`);
     return res.status(201).json({ success: true, data: { entry, horseName: horse.name } });
