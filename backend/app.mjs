@@ -242,6 +242,8 @@ adminRouter.use('/', adminRoutes);
 // Middleware imports
 import errorHandler from './middleware/errorHandler.mjs';
 import { requestLogger, errorRequestLogger } from './middleware/requestLogger.mjs';
+// Equoria-jw10w: global, enforced-by-construction DB audit trail (OWASP A09).
+import { globalAuditTrail } from './middleware/auditLog.mjs';
 import { setupSwaggerDocs, addDocumentationHeaders } from './middleware/swaggerSetup.mjs';
 import {
   responseOptimization,
@@ -469,6 +471,15 @@ app.use(cookieParser());
 
 // Request logging
 app.use(requestLogger);
+
+// Equoria-jw10w (OWASP A09): global DB-backed audit trail. Mounted ONCE here
+// so coverage of sensitive mutating routes (auth, financial, breeding,
+// training, admin, grooms) is enforced by construction — not opt-in per
+// route. Reads are not persisted (mutation-scoped by design). The persist
+// callback fires on res 'finish'/'close', after route auth has populated
+// req.user, so authenticated mutations record the acting userId. Fail-soft:
+// an audit-write error never breaks the request.
+app.use(globalAuditTrail);
 
 // Documentation headers
 app.use(addDocumentationHeaders());

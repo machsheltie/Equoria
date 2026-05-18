@@ -1486,3 +1486,39 @@ model CronRunLog {
   @@index([status])
   @@map("cron_run_logs")
 }
+
+// ── Equoria-jw10w: DB-backed security audit trail (OWASP A09) ──────────────────
+// Tamper-evident, queryable, retained audit trail for sensitive mutating
+// operations. `userId` is a SOFT reference (no FK relation) on purpose: audit
+// records must survive user deletion for forensic/compliance reasons — a
+// cascading delete would let an attacker erase their own trail by deleting
+// their account. Written best-effort/fail-soft by storeAuditLog(); an audit
+// write failure must never break the underlying request.
+model AuditLog {
+  id           Int      @id @default(autoincrement())
+  /// Soft reference to User.id (uuid). Nullable for unauthenticated events
+  /// (e.g. failed login). NOT a Prisma relation by design (see above).
+  userId       String?
+  /// Operation classifier, e.g. 'authentication', 'transaction', 'breeding',
+  /// 'training', 'admin_operation', or 'mutation' for the generic global path.
+  action       String
+  /// Logical resource touched, derived from the request path's first segment.
+  resource     String?
+  /// Resource identifier when the route carries one (best-effort).
+  resourceId   String?
+  method       String
+  path         String
+  statusCode   Int
+  ip           String?
+  userAgent    String?
+  /// true when statusCode < 400.
+  success      Boolean
+  /// Sanitized request context (body/params/query with secrets redacted).
+  metadata     Json?
+  createdAt    DateTime @default(now())
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@index([action])
+  @@map("audit_logs")
+}

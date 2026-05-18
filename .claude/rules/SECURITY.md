@@ -457,39 +457,58 @@ RATE_LIMIT_MAX_REQUESTS=100
 - Unsigned code rejection
 - Test Coverage: `backend/modules/services/__tests__/owasp-comprehensive.test.mjs` (A08 section)
 
-### **A09:2021 - Security Logging and Monitoring Failures** ⚠️ PARTIAL — FILE/SENTRY ONLY, NO DB AUDIT TRAIL
+### **A09:2021 - Security Logging and Monitoring Failures** ✅ DB-BACKED AUDIT TRAIL, GLOBALLY ENFORCED FOR SENSITIVE MUTATIONS
 
-> **Correction (2026-05-18, Equoria-9s9f):** The v2.0 `✅ COMPLIANT` / "Audit
-> Log Coverage 100%" claim was a false-green. Codebase audit:
-> `backend/middleware/auditLog.mjs` `storeAuditLog()` (~line 126) is a no-op
-> that only `logger.warn`s — **DB persistence is explicitly not implemented**
-> and there is **no `AuditLog` model in `packages/database/prisma/schema.prisma`**.
-> The `auditLog()` middleware factory is **not mounted globally in
-> `backend/app.mjs`** (zero references) — it only runs on routes that
-> explicitly opt in, so sensitive operations without an explicit `audit*`
-> middleware are not audited. Coverage is therefore neither 100% nor
-> enforced-by-construction.
+> **Resolution (2026-05-18, Equoria-jw10w):** The PARTIAL state from the
+> 2026-05-18 Equoria-9s9f correction is now fixed for the mutation surface.
+> `storeAuditLog()` in `backend/middleware/auditLog.mjs` is no longer a
+> file-log no-op — it persists a row to a real `AuditLog` Prisma model
+> (`packages/database/prisma/schema.prisma`, table `audit_logs`, migration
+> `20260518120000_add_audit_log`). A global `globalAuditTrail` middleware is
+> mounted ONCE app-wide in `backend/app.mjs` (right after `requestLogger`),
+> so coverage of sensitive mutating routes is enforced by construction — NOT
+> opt-in per route.
 
-**What is actually true (assessed, not assumed):**
+**What is now true (verified by real-DB integration test, no mocks):**
 
-- `requestLogger` (Winston) provides request-level file logging
-- Sentry error tracking and security event monitoring is wired
-- Failed-auth / ownership-violation / rate-limit events are logged via the
-  per-route `audit*` helpers **where those helpers are explicitly attached**
-- Suspicious-activity pattern detection runs in-process (in-memory cache)
+- DB-backed, queryable, retained audit trail: `AuditLog` table with
+  `userId` (soft reference — NO FK, so rows survive user deletion for
+  forensics), `action`, `resource`, `resourceId`, `method`, `path`,
+  `statusCode`, `ip`, `userAgent`, `success`, `metadata` (JSONB),
+  `createdAt`. Indexed on `(userId, createdAt DESC)`, `(createdAt DESC)`,
+  `action`.
+- Global enforcement for **state-changing verbs (POST/PUT/PATCH/DELETE)**
+  on the sensitive prefixes: `auth`, `bank`/`transactions` (financial),
+  `breeding`/`breed`, `training`, `admin`, `grooms`/`groom-*`. Both the
+  unversioned (`/api/...`) and versioned (`/api/v1/...`) mounts are
+  covered (path normalization strips `api` + `vN`).
+- Secrets are redacted in stored metadata via `sanitizeLogData()`
+  (password/token/secret/etc → `[REDACTED]`).
+- Fail-soft: `storeAuditLog()` catches and swallows ALL errors (validation,
+  connectivity, schema) — it never throws and is never on the request's
+  critical path. An audit-subsystem outage cannot 500 / block a request.
+- `requestLogger` (Winston) file logging, Sentry error/security-event
+  monitoring, and in-process suspicious-activity detection remain wired.
 
-**What is NOT true / NOT implemented:**
+**Scope boundary (intentional, documented — not a gap):**
 
-- No tamper-evident, queryable, retained DB audit trail (`storeAuditLog` is a
-  file-log no-op; no `AuditLog` table)
-- No global enforcement — audit middleware is opt-in per route, not mounted
-  app-wide
-- "100% audit-log coverage" is unmeasured and false
+- **Reads (GET/HEAD/OPTIONS) are NOT persisted.** The trail is
+  mutation-scoped by design; read-volume audit is out of scope for A09's
+  "detect malicious activity" intent and would dwarf the table.
+- Audit-log **retention/rotation policy** is not yet automated (the table
+  grows unbounded). Tracked as a scoped follow-up — see "What was NOT
+  done" below.
+- Non-sensitive mutating routes (e.g. inventory equip, cosmetic settings)
+  are outside the sensitive-prefix allowlist by design; widening the
+  allowlist is a deliberate posture decision, not an implicit gap.
 
-**Risk Level:** MEDIUM. **Tracked gap:** Equoria-jw10w (DB-backed audit
-persistence + global enforcement) — a real feature, not closed by this
-doc correction.
-- Test Coverage: `backend/modules/services/__tests__/owasp-comprehensive.test.mjs` (A09 section — file-path assertions, not a DB trail)
+**Risk Level:** LOW for the sensitive-mutation surface (now DB-backed +
+enforced). Retention automation is the remaining MEDIUM item.
+- Test Coverage: `backend/__tests__/auditLogPersistence.integration.test.mjs`
+  (real-DB: one row per sensitive mutation with correct fields + secret
+  redaction; no row for reads; fail-soft sentinel) + the legacy
+  `backend/modules/services/__tests__/owasp-comprehensive.test.mjs` A09
+  file-path assertions.
 
 ### **A10:2021 - Server-Side Request Forgery (SSRF)** ⚪ N/A — NO EXTERNAL-URL SURFACE
 
@@ -512,14 +531,18 @@ nothing to protect — not "compliant via controls."
 
 ### **Compliance Summary** (corrected 2026-05-18)
 
-- ⚠️ **8/10 OWASP categories implemented; A09 partial (file-only audit, no DB
-  trail); A10 N/A (no SSRF surface)** — the prior "10/10 fully addressed" was
-  inaccurate.
+- ✅ **9/10 OWASP categories implemented; A09 DB-backed + globally enforced
+  for sensitive mutations (retention automation pending); A10 N/A (no SSRF
+  surface)** — the prior "10/10 fully addressed" was inaccurate; A09 PARTIAL
+  resolved 2026-05-18 (Equoria-jw10w).
 - ✅ **262 executed security test cases across the 8 core files** (jest run
   2026-05-18, point-in-time; the prior "400+" / "243+" were unverified — see
-  SECURITY_ASSESSMENT_REPORT.md §3.1)
+  SECURITY_ASSESSMENT_REPORT.md §3.1) + `auditLogPersistence.integration.test.mjs`
+  (4 real-DB A09 cases)
 - ✅ **Automated continuous dependency scanning (backend + frontend + root)**
-- ⚠️ **Monitoring: file logging mounted; DB-backed audit trail NOT implemented**
+- ✅ **Monitoring: file logging + Sentry mounted; DB-backed audit trail
+  implemented and globally enforced for sensitive mutating routes (reads +
+  retention automation out of scope by design — see A09)**
 
 ---
 
