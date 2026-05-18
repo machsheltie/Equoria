@@ -29,6 +29,8 @@ import {
   CompatibilityPreview,
   type CompatibilityData,
 } from '@/components/breeding/CompatibilityPreview';
+import { mapPredictionToCompatibilityData } from '@/components/breeding/compatibilityFromPrediction';
+import { useGeneticProbability, useInbreedingAnalysis } from '@/hooks/api/useBreedingPrediction';
 import CinematicMoment from '@/components/feedback/CinematicMoment';
 import type { Horse, CompatibilityAnalysis } from '@/types/breeding';
 
@@ -44,69 +46,15 @@ function calculateStudFee(sire: Horse): number {
   return Math.round(basePrice * levelMultiplier);
 }
 
-/** Derive CompatibilityData from horse pair + basic compatibility scores */
-function buildCompatibilityData(
-  sire: Horse,
-  dam: Horse,
-  compatibility: CompatibilityAnalysis | null
-): CompatibilityData | null {
-  if (!sire.stats || !dam.stats) return null;
-
-  const STAT_KEYS = ['speed', 'stamina', 'agility', 'intelligence', 'strength', 'health'] as const;
-  const statRanges: Record<string, { min: number; avg: number; max: number }> = {};
-
-  for (const stat of STAT_KEYS) {
-    const sireVal = (sire.stats as Record<string, number>)[stat] ?? 50;
-    const damVal = (dam.stats as Record<string, number>)[stat] ?? 50;
-    const avg = Math.round((sireVal + damVal) / 2);
-    const spread = Math.abs(sireVal - damVal);
-    statRanges[stat] = {
-      min: Math.max(0, Math.round(avg - spread * 0.3 - 5)),
-      avg,
-      max: Math.min(100, Math.round(avg + spread * 0.3 + 5)),
-    };
-  }
-
-  const sireTraits = (Array.isArray(sire.traits) ? sire.traits : []).map((t) =>
-    typeof t === 'string' ? t : t.name
-  );
-  const damTraits = (Array.isArray(dam.traits) ? dam.traits : []).map((t) =>
-    typeof t === 'string' ? t : t.name
-  );
-  const allTraits = Array.from(new Set([...sireTraits, ...damTraits]));
-
-  const traits = allTraits.map((name) => {
-    const inSire = sireTraits.includes(name);
-    const inDam = damTraits.includes(name);
-    return {
-      name,
-      probability: inSire && inDam ? 0.95 : 0.7,
-      source: (inSire && inDam ? 'both' : inSire ? 'sire' : 'dam') as
-        | 'dam'
-        | 'sire'
-        | 'both'
-        | 'recessive',
-    };
-  });
-
-  // Derive inbreeding coefficient from genetic diversity (inverted, scaled)
-  const inbreedingCoefficient = compatibility
-    ? Math.max(0, Math.round(((100 - compatibility.geneticDiversity) / 100) * 25) / 100)
-    : 0.02;
-
-  // Pedigree overlap from shared parentIds
-  const pedigreeOverlap: Array<{ ancestorName: string; generations: number }> = [];
-  if (sire.parentIds && dam.parentIds) {
-    if (sire.parentIds.sireId && sire.parentIds.sireId === dam.parentIds.sireId) {
-      pedigreeOverlap.push({ ancestorName: 'Shared Paternal Grandsire', generations: 1 });
-    }
-    if (sire.parentIds.damId && sire.parentIds.damId === dam.parentIds.damId) {
-      pedigreeOverlap.push({ ancestorName: 'Shared Maternal Granddam', generations: 1 });
-    }
-  }
-
-  return { statRanges, traits, inbreedingCoefficient, pedigreeOverlap };
-}
+// CompatibilityPreview data is no longer derived client-side. The previous
+// buildCompatibilityData() used hardcoded math (stat = (s+d)/2 ± spread*0.3±5,
+// trait probabilities 0.95/0.7, inbreeding fallback 0.02, synthetic
+// "Shared Grandsire" pedigree) — none of which were the game's real genetics
+// (Equoria-to87r, a 21R "no fake product values" defect). It now comes from
+// the real backend genetic-probability + inbreeding-analysis endpoints via
+// useGeneticProbability / useInbreedingAnalysis, mapped by
+// mapPredictionToCompatibilityData. When prediction is unavailable the
+// preview shows an honest loading/empty state instead of fabricated numbers.
 
 // ── Props ──────────────────────────────────────────────────────────────────────
 
@@ -193,11 +141,32 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
     staleTime: 60000,
   });
 
-  // Derive CompatibilityPreview data from horse stats + compatibility scores
+  // Real backend breeding-genetics prediction (the game's actual inheritance
+  // model) — replaces the removed client-side hardcoded buildCompatibilityData.
+  const sireId = selectedSire?.id ?? 0;
+  const damId = selectedDam?.id ?? 0;
+  const {
+    data: geneticProbability,
+    isLoading: loadingGenetic,
+    error: geneticError,
+  } = useGeneticProbability(sireId, damId);
+  const { data: inbreedingAnalysis, isLoading: loadingInbreeding } = useInbreedingAnalysis(
+    sireId,
+    damId
+  );
+
+  // Map the real responses; null when prediction is unavailable so the
+  // preview renders an honest loading/empty state (no fabricated numbers).
   const previewData: CompatibilityData | null =
     selectedSire && selectedDam
-      ? buildCompatibilityData(selectedSire, selectedDam, compatibilityData ?? null)
+      ? mapPredictionToCompatibilityData(
+          geneticProbability as unknown as Parameters<typeof mapPredictionToCompatibilityData>[0],
+          inbreedingAnalysis as unknown as Parameters<typeof mapPredictionToCompatibilityData>[1]
+        )
       : null;
+  const loadingPreview = Boolean(
+    selectedSire && selectedDam && (loadingGenetic || loadingInbreeding)
+  );
 
   // Determine if this is the user's first-ever breed (milestone check)
   const userRecord = user as unknown as Record<string, unknown> | undefined;
@@ -393,14 +362,28 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
         </div>
       </div>
 
-      {/* 4-tab CompatibilityPreview — shown when both selected */}
+      {/* 4-tab CompatibilityPreview — real backend genetics (Equoria-to87r) */}
       {selectedSire && selectedDam && (
-        <CompatibilityPreview
-          mareName={selectedDam.name}
-          stallionName={selectedSire.name}
-          data={previewData}
-          isLoading={loadingCompatibility}
-        />
+        <>
+          {geneticError && !loadingPreview && (
+            <div
+              role="alert"
+              className="glass-panel rounded-2xl border border-red-500/40 p-4 mb-3 flex items-start gap-2 text-sm text-red-300 font-[var(--font-body)]"
+            >
+              <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" aria-hidden="true" />
+              <span>
+                Breeding genetics prediction is unavailable right now. Compatibility figures are
+                intentionally hidden rather than estimated — try again shortly.
+              </span>
+            </div>
+          )}
+          <CompatibilityPreview
+            mareName={selectedDam.name}
+            stallionName={selectedSire.name}
+            data={previewData}
+            isLoading={loadingPreview}
+          />
+        </>
       )}
 
       {/* Legacy compatibility display (fallback for numeric scores) */}
