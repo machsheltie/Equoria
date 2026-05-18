@@ -32,6 +32,9 @@
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../db/index.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
 
 // Mock logger
 const mockLogger = {
@@ -224,6 +227,7 @@ describe('Horse Aging System', () => {
       // Equoria-son6: stored age in game-years not days
       const horse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Birthday Horse',
           sex: 'Colt',
           dateOfBirth: birth1WeekAgo, // Exactly 1 week ago (1 game-year)
@@ -280,6 +284,7 @@ describe('Horse Aging System', () => {
       // Equoria-son6: Horse.age now stores game-years not days
       const horse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'No Birthday Horse',
           sex: 'Filly',
           dateOfBirth: birth6MonthsAgo, // 6 months ago
@@ -320,6 +325,7 @@ describe('Horse Aging System', () => {
       // Create horse with incorrect stored age
       const horse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Wrong Age Horse',
           sex: 'Colt',
           dateOfBirth: birth1YearAgo, // Should be ~517 days old (accounting for leap year)
@@ -353,6 +359,7 @@ describe('Horse Aging System', () => {
       // Create horse turning 1 year old
       const horse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Milestone Horse',
           sex: 'Filly',
           dateOfBirth: birth1YearAgo, // Exactly 1 year ago
@@ -431,6 +438,7 @@ describe('Horse Aging System', () => {
         // Horse turning 1 game-year old (milestone at day 7)
         prisma.horse.create({
           data: {
+            ...fixtureColor(),
             name: 'Milestone Horse 1',
             sex: 'Colt',
             dateOfBirth: birth1WeekAgo, // 7 days ago → 1 game-year
@@ -445,6 +453,7 @@ describe('Horse Aging System', () => {
         // Horse turning 2 game-years old (15 days = 2 game-years, no milestone)
         prisma.horse.create({
           data: {
+            ...fixtureColor(),
             name: 'Regular Birthday Horse',
             sex: 'Filly',
             dateOfBirth: birth15DaysAgo, // 15 days ago = floor(15/7) = 2 game-years
@@ -456,6 +465,7 @@ describe('Horse Aging System', () => {
         // Horse with no birthday today (but incorrect age) — 31 days = 4 game-years
         prisma.horse.create({
           data: {
+            ...fixtureColor(),
             name: 'No Birthday Horse',
             sex: 'Colt',
             dateOfBirth: birth31DaysAgo, // 31 days ago = floor(31/7) = 4 game-years
@@ -515,6 +525,7 @@ describe('Horse Aging System', () => {
       // Create horse turning 3 (training eligible)
       const horse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Training Ready Horse',
           sex: 'Colt',
           dateOfBirth: birth3WeeksAgo, // 21 days ago = 3 game-years
@@ -562,6 +573,7 @@ describe('Horse Aging System', () => {
       // Create horse turning 21 (retirement age)
       const horse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Retiring Horse',
           sex: 'Mare',
           dateOfBirth: birth21WeeksAgo, // 21 weeks ago (21 years in game time)

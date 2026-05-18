@@ -15,6 +15,9 @@ import {
   triggerWeeklyFlagEvaluation,
 } from '../../../services/weeklyFlagEvaluationService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 let user;
 let foal;
@@ -34,6 +37,7 @@ beforeAll(async () => {
 
   foal = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-WeeklyFlagFoal-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
@@ -44,6 +48,7 @@ beforeAll(async () => {
 
   matureHorse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-WeeklyFlagMature-${Date.now()}`,
       sex: 'Stallion',
       dateOfBirth: new Date(Date.now() - 4 * 365.25 * 24 * 60 * 60 * 1000),
@@ -170,6 +175,7 @@ describe('processHorseForFlagEvaluation — in-loop max-flags break (Equoria-rr7
   beforeAll(async () => {
     mlHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-WF-MaxLoop-${Date.now()}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -204,6 +210,7 @@ describe('processHorseForFlagEvaluation — max-flags branch (Equoria-jkht)', ()
   beforeAll(async () => {
     mfHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-WF-MaxFlags-${Date.now()}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -240,6 +247,7 @@ describe('processHorseForFlagEvaluation — flag-already-in-currentFlags branch 
   beforeAll(async () => {
     afoalWithAloof = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-WF-AlreadyAloof-${Date.now()}`,
         sex: 'Filly',
         dateOfBirth: new Date(),

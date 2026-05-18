@@ -20,6 +20,9 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { generateTraitTimeline, getTraitTimelineSummary } from '../../../services/traitTimelineService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 // ── No-fixture paths — non-existent horse returns empty timeline ──────────────
 
@@ -81,6 +84,7 @@ describe('traitTimelineService — DB fixture branch coverage (Equoria-jkht)', (
 
     ttsHorse1Trait = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-TTS-Horse1-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -91,6 +95,7 @@ describe('traitTimelineService — DB fixture branch coverage (Equoria-jkht)', (
 
     ttsHorse5Traits = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-TTS-Horse5-${ts}`,
         sex: 'Colt',
         dateOfBirth: new Date(),
@@ -289,6 +294,7 @@ describe('traitTimelineService — remaining branch coverage (Equoria-rr7)', () 
     //        rareTraits=0, stable→+1 (line 432) = 4 → 'good' (line 453)
     horseGood = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-TTS-RBR-Good-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -369,6 +375,7 @@ describe('traitTimelineService — remaining branch coverage (Equoria-rr7)', () 
     //        improving→+2 = 6 → 'excellent' (line 450)
     horseExcellent = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-TTS-RBR-Excellent-${ts}`,
         sex: 'Colt',
         dateOfBirth: new Date(),
@@ -418,6 +425,7 @@ describe('traitTimelineService — remaining branch coverage (Equoria-rr7)', () 
     // 3 traits, 1 source type only, stable bond → score=2+0+0+1=3 → 'fair' (line 456)
     horseFair = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-TTS-RBR-Fair-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),

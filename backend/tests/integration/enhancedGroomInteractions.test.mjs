@@ -9,6 +9,10 @@ import prisma from '../../db/index.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
+
 describe('Enhanced Groom Interactions Integration Tests', () => {
   let __csrf__;
   beforeAll(async () => {
@@ -50,6 +54,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
     // Create test horse
     testHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Enhanced Test Horse',
         sex: 'Mare',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
@@ -223,6 +228,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       // Create a second horse for this test to avoid daily limit
       const secondHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Second Test Horse',
           sex: 'Mare',
           dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
@@ -264,6 +270,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       // Create a third horse for this test
       const thirdHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Third Test Horse',
           sex: 'Mare',
           dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old

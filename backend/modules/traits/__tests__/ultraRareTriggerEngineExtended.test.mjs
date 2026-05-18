@@ -22,6 +22,9 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { evaluateUltraRareTriggers, evaluateExoticUnlocks } from '../../../utils/ultraRareTriggerEngine.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 // ── Shared fixture state ──────────────────────────────────────────────────────
 
@@ -90,6 +93,7 @@ beforeAll(async () => {
 
   horseCompetitionResult = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-URTExt-CompResult-${ts}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
@@ -120,6 +124,7 @@ beforeAll(async () => {
 
   horseShadowMilestone = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-URTExt-Shadow-${ts}`,
       sex: 'Colt',
       dateOfBirth: new Date(),
@@ -146,6 +151,7 @@ beforeAll(async () => {
 
   horseGhostwalkerMilestone = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-URTExt-Ghostwalker-${ts}`,
       sex: 'Mare',
       dateOfBirth: new Date(),
@@ -170,6 +176,7 @@ beforeAll(async () => {
 
   horseSoulbondedMilestones = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-URTExt-Soulbonded-${ts}`,
       sex: 'Stallion',
       dateOfBirth: new Date(),
@@ -200,6 +207,7 @@ beforeAll(async () => {
 
   sireHorse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-URTExt-Sire-${ts}`,
       sex: 'Stallion',
       dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
@@ -210,6 +218,7 @@ beforeAll(async () => {
 
   damHorse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-URTExt-Dam-${ts}`,
       sex: 'Mare',
       dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000),
@@ -220,6 +229,7 @@ beforeAll(async () => {
 
   horseFeyKissedParents = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-URTExt-FeyKissed-${ts}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
@@ -235,6 +245,7 @@ beforeAll(async () => {
 
   horseDreamtwinNoSiblings = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-URTExt-Dreamtwin-${ts}`,
       sex: 'Colt',
       dateOfBirth: new Date(),

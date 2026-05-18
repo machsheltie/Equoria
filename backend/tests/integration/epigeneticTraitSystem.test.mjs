@@ -17,6 +17,9 @@ import prisma from '../../db/index.mjs';
 import jwt from 'jsonwebtoken';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
 
 describe('Epigenetic Trait System Integration Tests', () => {
   let __csrf__;
@@ -88,6 +91,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
 
     testHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'EpigeneticTest Foal',
         userId: testUser.id,
         dateOfBirth: foalBirthDate,
@@ -452,6 +456,7 @@ describe('Trait History Service', () => {
 
     testHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'ServiceTest Horse',
         userId: testUser.id,
         dateOfBirth: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days old

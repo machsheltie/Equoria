@@ -14,6 +14,10 @@ import bcrypt from 'bcryptjs';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { randomBytes } from 'node:crypto';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+
 describe('POST /api/v1/auth/advance-onboarding', () => {
   let __csrf__;
   beforeAll(async () => {
@@ -159,6 +163,7 @@ describe('POST /api/v1/auth/advance-onboarding', () => {
 
     await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Uncustomized Starter',
         sex: 'Mare',
         age: 3,

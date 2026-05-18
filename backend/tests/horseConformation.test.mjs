@@ -25,6 +25,9 @@ import {
   hasValidConformationScores,
   validateConformationScores,
 } from '../modules/horses/services/conformationService.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
 
 const PREFIX = 'TestFixture-HorseConformation-';
 
@@ -281,6 +284,7 @@ describe('conformationScores persistence (real DB)', () => {
 
     const horse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `${PREFIX}Persist`,
         sex: 'Colt',
         dateOfBirth: new Date('2020-01-01'),

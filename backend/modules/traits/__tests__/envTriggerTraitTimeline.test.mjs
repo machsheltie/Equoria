@@ -20,6 +20,9 @@ import {
 } from '../../../services/environmentalTriggerSystem.mjs';
 import { generateTraitTimeline, getTraitTimelineSummary } from '../../../services/traitTimelineService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 let user;
 let horse;
@@ -38,6 +41,7 @@ beforeAll(async () => {
 
   horse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-EnvTriggerHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
@@ -255,6 +259,7 @@ describe('age-bracket + residual-sensitivity branches (Equoria-jkht)', () => {
     const makeHorse = (name, daysAgo) =>
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name,
           sex: 'Filly',
           dateOfBirth: new Date(ts - daysAgo * 24 * 60 * 60 * 1000),
@@ -384,6 +389,7 @@ describe('analyzeStressEnvironmentTriggers — stressful interactions (Equoria-j
 
     stressHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-ET-StrHorse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),

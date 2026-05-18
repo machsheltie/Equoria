@@ -20,6 +20,9 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import prisma from '../db/index.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
 
 describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', () => {
   let testHorseId;
@@ -28,6 +31,7 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
     // Create a minimal test horse directly in database for XP testing
     const testHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'XP Test Horse',
         age: 5,
         dateOfBirth: new Date('2019-01-01'),

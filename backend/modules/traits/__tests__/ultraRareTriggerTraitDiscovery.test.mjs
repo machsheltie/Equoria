@@ -10,6 +10,9 @@ import { randomBytes } from 'node:crypto';
 import { evaluateUltraRareTriggers, evaluateExoticUnlocks } from '../../../utils/ultraRareTriggerEngine.mjs';
 import { revealTraits, batchRevealTraits, getDiscoveryProgress } from '../../../utils/traitDiscovery.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 let user;
 let horse;
@@ -28,6 +31,7 @@ beforeAll(async () => {
 
   horse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-UltraTraitHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
@@ -135,6 +139,7 @@ beforeAll(async () => {
   });
   highStressHorse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-HighStressHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
@@ -204,6 +209,7 @@ beforeAll(async () => {
 
   giHorse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-GIHorse-${ts}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
@@ -288,6 +294,7 @@ beforeAll(async () => {
 
   bmHorse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-BMHorse-${ts}`,
       sex: 'Filly',
       dateOfBirth: new Date(),

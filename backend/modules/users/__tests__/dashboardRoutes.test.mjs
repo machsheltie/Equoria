@@ -37,6 +37,9 @@ import prisma from '../../../db/index.mjs';
 import config from '../../../config/config.mjs';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
   let __csrf__;
@@ -99,6 +102,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
     testHorses = await Promise.all([
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'TestDashboard Horse 1',
           age: 5,
           sex: 'Mare',
@@ -112,6 +116,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
       }),
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'TestDashboard Horse 2',
           age: 4,
           sex: 'Stallion',
@@ -125,6 +130,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
       }),
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'TestDashboard Horse 3',
           age: 8,
           sex: 'Stallion',
@@ -344,6 +350,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
       // Create horse with no training/competition history
       await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'TestDashboard Inactive Horse',
           age: 3,
           sex: 'Mare',

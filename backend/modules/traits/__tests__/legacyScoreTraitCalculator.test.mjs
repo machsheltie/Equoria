@@ -20,6 +20,9 @@ import {
   getTraitScoringDefinitions,
 } from '../../../services/legacyScoreTraitCalculator.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 // ── Pure function tests (no DB) ───────────────────────────────────────────────
 
@@ -97,6 +100,7 @@ describe('legacyScoreTraitCalculator — DB branch coverage (Equoria-rr7)', () =
     // 1 post-4y trait (exercises traitsExcluded path), milestone with groomCareConsistency=5
     lstExceptionalHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-LST-ExceptionalHorse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -159,6 +163,7 @@ describe('legacyScoreTraitCalculator — DB branch coverage (Equoria-rr7)', () =
     // No milestone data → groomCareConsistency = 0 < 2, rareTraits = 0
     lstWeakHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-LST-WeakHorse-${ts}`,
         sex: 'Colt',
         dateOfBirth: new Date(),

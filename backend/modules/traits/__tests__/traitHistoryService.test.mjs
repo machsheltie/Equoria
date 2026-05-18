@@ -16,6 +16,9 @@ import {
   analyzeTraitPatterns,
 } from '../../../services/traitHistoryService.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 let user;
 let horse;
@@ -34,6 +37,7 @@ beforeAll(async () => {
 
   horse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-TraitHistHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
@@ -110,6 +114,7 @@ describe('getTraitDevelopmentSummary', () => {
   it('returns zero-summary for horse with no history', async () => {
     const freshHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-TraitHistSummaryHorse-${Date.now()}`,
         sex: 'Colt',
         dateOfBirth: new Date(),
@@ -140,6 +145,7 @@ describe('getBreedingInsights', () => {
   it('returns insights object with low inheritance risk for horse with no traits', async () => {
     const freshHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-TraitHistBreedHorse-${Date.now()}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -219,6 +225,7 @@ describe('traitHistoryService — branch coverage (Equoria-jkht)', () => {
 
     thHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-TH-Horse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -229,6 +236,7 @@ describe('traitHistoryService — branch coverage (Equoria-jkht)', () => {
 
     thModerateHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-TH-ModHorse-${ts}`,
         sex: 'Colt',
         dateOfBirth: new Date(),

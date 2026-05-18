@@ -15,6 +15,9 @@ import {
   getTraitAssignmentSummary,
 } from '../../../utils/traitAssignmentLogic.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 let user;
 let horse;
@@ -34,6 +37,7 @@ beforeAll(async () => {
 
   horse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-TraitAssignLogicHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
@@ -311,6 +315,7 @@ describe('getTraitAssignmentSummary() — eligibility.eligible=true branch (line
 
     eligibleHorse2 = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-EligibleSummaryHorse-${Date.now()}`,
         sex: 'Filly',
         dateOfBirth: thirtyDaysAgo,
@@ -380,6 +385,7 @@ describe('calculateTraitProbabilityWithBonus() — bonus applied (lines 93-110) 
 
     eligibleHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-EligibleBonusHorse-${Date.now()}`,
         sex: 'Filly',
         dateOfBirth: thirtyDaysAgo,

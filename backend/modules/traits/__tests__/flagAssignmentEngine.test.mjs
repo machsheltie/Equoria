@@ -15,6 +15,9 @@ import {
   analyzeTemporalPatterns,
 } from '../../../services/flagAssignmentEngine.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 let user;
 let horse;
@@ -33,6 +36,7 @@ beforeAll(async () => {
 
   horse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-FlagAssignHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
@@ -474,6 +478,7 @@ describe('flagAssignmentEngine — temporal patterns + methodical groom (Equoria
     // ── tmImprovingHorse ──────────────────────────────────────────────────────
     tmImprovingHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-TMImproving-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -504,6 +509,7 @@ describe('flagAssignmentEngine — temporal patterns + methodical groom (Equoria
     // ── tmDecliningHorse ──────────────────────────────────────────────────────
     tmDecliningHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-TMDeclining-${ts}`,
         sex: 'Colt',
         dateOfBirth: new Date(),
@@ -529,6 +535,7 @@ describe('flagAssignmentEngine — temporal patterns + methodical groom (Equoria
     // ── tmPeriodicHorse ───────────────────────────────────────────────────────
     tmPeriodicHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-TMPeriodic-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),

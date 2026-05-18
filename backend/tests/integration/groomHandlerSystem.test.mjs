@@ -9,6 +9,10 @@ import prisma from '../../db/index.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
+
 describe('Groom Handler System Integration Tests', () => {
   let __csrf__;
   beforeAll(async () => {
@@ -47,6 +51,7 @@ describe('Groom Handler System Integration Tests', () => {
     // Create test horse
     testHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Handler Test Horse',
         sex: 'Stallion',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
@@ -125,6 +130,7 @@ describe('Groom Handler System Integration Tests', () => {
       // Create a horse without handler
       const noHandlerHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'No Handler Horse',
           sex: 'Mare',
           dateOfBirth: new Date(Date.now() - 730 * 24 * 60 * 60 * 1000), // 2 years old
@@ -166,6 +172,7 @@ describe('Groom Handler System Integration Tests', () => {
 
       const otherHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Other User Horse',
           sex: 'Stallion',
           dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),

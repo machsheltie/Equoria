@@ -22,6 +22,9 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../db/index.mjs';
 import { getHorseHistory } from '../controllers/horseController.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
 
 const PREFIX = 'TestFixture-HorseHistory-';
 
@@ -58,7 +61,12 @@ beforeAll(async () => {
   await prisma.horse.deleteMany({ where: { name: { startsWith: PREFIX } } });
 
   testHorse = await prisma.horse.create({
-    data: { name: `${PREFIX}Horse`, sex: 'Colt', dateOfBirth: new Date('2020-01-01') },
+    data: {
+      ...fixtureColor(),
+      name: `${PREFIX}Horse`,
+      sex: 'Colt',
+      dateOfBirth: new Date('2020-01-01'),
+    },
   });
 
   testShow = await prisma.show.create({
@@ -117,7 +125,12 @@ describe('ID validation', () => {
 describe('empty history', () => {
   it('returns empty array when horse has no competition history', async () => {
     const emptyHorse = await prisma.horse.create({
-      data: { name: `${PREFIX}Empty`, sex: 'Filly', dateOfBirth: new Date('2020-06-01') },
+      data: {
+        ...fixtureColor(),
+        name: `${PREFIX}Empty`,
+        sex: 'Filly',
+        dateOfBirth: new Date('2020-06-01'),
+      },
     });
 
     try {

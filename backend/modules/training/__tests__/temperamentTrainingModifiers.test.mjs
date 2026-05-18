@@ -20,6 +20,9 @@ import {
 } from '../../../modules/horses/services/temperamentService.mjs';
 import { TEMPERAMENT_TYPES } from '../../../modules/horses/data/breedGeneticProfiles.mjs';
 import { trainHorse } from '../controllers/trainingController.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const SUITE_PREFIX = 'tmod';
 
@@ -50,6 +53,7 @@ async function createBreed() {
 async function createHorse(userId, breedId, overrides = {}) {
   return prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `${SUITE_PREFIX}-h-${randomBytes(4).toString('hex')}`,
       sex: 'Mare',
       dateOfBirth: new Date('2020-01-01'),
@@ -322,6 +326,7 @@ describe('trainHorse() — temperament modifier integration (real DB)', () => {
     const user = await createUser();
     const horse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `${SUITE_PREFIX}-stack-${randomBytes(4).toString('hex')}`,
         sex: 'Mare',
         dateOfBirth: new Date('2020-01-01'),

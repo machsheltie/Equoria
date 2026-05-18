@@ -18,6 +18,9 @@ import {
   generateInteractionMatrix,
 } from '../../../services/traitInteractionMatrix.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 let user;
 let horse;
@@ -36,6 +39,7 @@ beforeAll(async () => {
 
   horse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-TraitMatrixHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
@@ -166,6 +170,7 @@ describe('traitInteractionMatrix — with-flags branch coverage (Equoria-jkht)',
 
     tiSynergyHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-TIM-Synergy-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -179,6 +184,7 @@ describe('traitInteractionMatrix — with-flags branch coverage (Equoria-jkht)',
 
     tiConflictHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-TIM-Conflict-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),

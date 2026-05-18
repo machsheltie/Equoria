@@ -2,6 +2,9 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import { canTrain, getCooldownTimeRemaining, formatCooldown, setCooldown } from '../../../utils/trainingCooldown.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const pastDate = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(); // yesterday
 const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(); // +7 days
@@ -149,6 +152,7 @@ describe('setCooldown — success path (line 84) (Equoria-jkht)', () => {
     fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
     testHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TCooldown_horse_${RUN_ID}`,
         breed: { connect: { id: testBreed.id } },
         user: { connect: { id: testUser.id } },
