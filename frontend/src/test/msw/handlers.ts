@@ -925,13 +925,16 @@ export const handlers = [
     })
   ),
   http.get(`${base}/api/breeding/lineage-analysis/:stallionId/:mareId`, () =>
+    // Real backend shape (Equoria-qfdf9): { lineageTree:{root:{stallion,mare}},
+    // diversityMetrics, performanceAnalysis, visualizationData }. Empty roots
+    // exercise the honest empty-state path in mapLineageToPedigreeTree.
     HttpResponse.json({
       success: true,
       data: {
-        stallionLineage: [],
-        mareLineage: [],
-        commonAncestors: [],
-        generationsSearched: 5,
+        lineageTree: { root: { stallion: null, mare: null } },
+        diversityMetrics: {},
+        performanceAnalysis: {},
+        visualizationData: {},
       },
     })
   ),
@@ -2944,15 +2947,15 @@ export const handlers = [
       },
     })
   ),
-  http.get(`${base}/api/v1/breeding/lineage-analysis/:stallionId/:mareId`, ({ params }) =>
+  http.get(`${base}/api/v1/breeding/lineage-analysis/:stallionId/:mareId`, () =>
+    // Real backend shape (Equoria-qfdf9) — mirrors the unversioned handler.
     HttpResponse.json({
       success: true,
       data: {
-        stallionId: Number(params.stallionId),
-        mareId: Number(params.mareId),
-        commonAncestors: [],
-        inbreedingCoefficient: 0.0,
-        generationsAnalyzed: 4,
+        lineageTree: { root: { stallion: null, mare: null } },
+        diversityMetrics: {},
+        performanceAnalysis: {},
+        visualizationData: {},
       },
     })
   ),

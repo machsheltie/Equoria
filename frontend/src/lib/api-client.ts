@@ -2322,10 +2322,44 @@ export interface InbreedingAnalysis {
   commonAncestors: Array<{ name: string; generation: number }>;
 }
 
+/**
+ * A single ancestor node in the backend lineage tree (Equoria-qfdf9).
+ * Produced by advancedLineageAnalysisService.mjs#buildHorseNode and
+ * recursively nested via sire/dam. The deep stats/traits/discipline
+ * blobs are typed loosely because their inner shape is not consumed by
+ * the pedigree renderer (which reads id/name/generation/sire/dam only —
+ * see components/breeding/pedigreeTreeFromLineage.ts, the canonical
+ * mapper added by Equoria-55bo.2).
+ */
+export interface LineageTreeNode {
+  id: number;
+  name: string;
+  generation: number;
+  stats?: Record<string, number>;
+  traits?: { positive: string[]; negative: string[]; hidden: string[] };
+  disciplineScores?: Record<string, number>;
+  competitionResults?: unknown[];
+  sire: LineageTreeNode | null;
+  dam: LineageTreeNode | null;
+}
+
+/**
+ * Real shape of GET /api/v1/breeding/lineage-analysis/:stallionId/:mareId
+ * AFTER apiClient unwraps the { success, data } envelope. The previous
+ * flat { stallionLineage, mareLineage, commonAncestors } declaration was
+ * fiction — no backend code ever produced it (corrected per Equoria-qfdf9;
+ * real shape surfaced during Equoria-55bo.2).
+ */
 export interface LineageAnalysis {
-  stallionLineage: Array<{ name: string; generation: number }>;
-  mareLineage: Array<{ name: string; generation: number }>;
-  commonAncestors: Array<{ name: string; generation: number }>;
+  lineageTree: {
+    root: {
+      stallion: LineageTreeNode | null;
+      mare: LineageTreeNode | null;
+    };
+  };
+  diversityMetrics: Record<string, unknown>;
+  performanceAnalysis: Record<string, unknown>;
+  visualizationData: Record<string, unknown>;
 }
 
 export interface GeneticProbability {
