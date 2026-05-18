@@ -42,6 +42,39 @@ export const STARTER_KIT_INVENTORY = [
     quantity: 1,
   },
 ];
+// Starter crafting materials — enough to craft at least one Tier 0 recipe (4.3 fix).
+// Tier 0 recipes: simple-bridle (leather:1, dye:1), basic-halter (leather:1),
+//                 cloth-blanket (cloth:2, dye:2, thread:1).
+// Exported for test locking (Equoria-aazk).
+export const STARTER_CRAFTING_MATERIALS = { leather: 2, cloth: 2, dye: 2, metal: 0, thread: 1 };
+
+/**
+ * Build the server-authoritative starter settings for a brand-new account.
+ *
+ * Equoria-aazk: the prior `settings || { ...starterDefaults }` form meant ANY
+ * client-supplied `settings` body skipped the entire starter grant
+ * (inventory + craftingMaterials), leaving the account unable to afford a
+ * Tier 0 recipe. It also let a client attempt to self-seed economy fields
+ * (craftingMaterials, workshopTier, inventory) at registration.
+ *
+ * This builder ALWAYS seeds the economy-sensitive starter fields from server
+ * constants, regardless of any client input. Registration does not honor a
+ * client-supplied `settings` blob: economy state is server-owned, and the
+ * route validator never whitelisted `settings` so it has never actually been
+ * persisted in practice (sanitizeRequestData strips non-validated fields).
+ * Keeping the grant unconditional makes the behavior explicit and removes the
+ * footgun, with default-registration output byte-identical to before.
+ *
+ * @returns {{ completedOnboarding: boolean, inventory: object[], craftingMaterials: object }}
+ */
+export function buildStarterSettings() {
+  return {
+    completedOnboarding: false,
+    inventory: STARTER_KIT_INVENTORY,
+    craftingMaterials: { ...STARTER_CRAFTING_MATERIALS },
+  };
+}
+
 const STARTER_BONUS_COINS = 500;
 const PASSWORD_RESET_TOKEN_TTL_MS = 60 * 60 * 1000;
 
@@ -58,7 +91,7 @@ function hashPasswordResetToken(token) {
  */
 export const register = async (req, res, next) => {
   try {
-    const { username, email, password, firstName, lastName, money, level, xp, settings } = req.body; // Removed 'name' and 'role' from destructuring
+    const { username, email, password, firstName, lastName, money, level, xp } = req.body; // Removed 'name', 'role', and 'settings' (Equoria-aazk: starter settings are server-authoritative)
 
     // Validate input
     if (!username || !email || !password) {
@@ -102,15 +135,9 @@ export const register = async (req, res, next) => {
           money: startingMoney,
           level: level === undefined ? 1 : level,
           xp: xp === undefined ? 0 : xp,
-          settings: settings || {
-            completedOnboarding: false,
-            inventory: STARTER_KIT_INVENTORY,
-            // Starter crafting materials — enough to craft at least one Tier 0 recipe (4.3 fix)
-            // Tier 0 recipes: simple-bridle (leather:1, dye:1, cost:100),
-            //                 basic-halter (leather:1, cost:75),
-            //                 cloth-blanket (cloth:2, dye:2, thread:1, cost:120)
-            craftingMaterials: { leather: 2, cloth: 2, dye: 2, metal: 0, thread: 1 },
-          },
+          // Equoria-aazk: starter settings are ALWAYS server-seeded so a
+          // client-supplied settings body can never skip the crafting grant.
+          settings: buildStarterSettings(),
         },
       });
     } catch (createError) {
