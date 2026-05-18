@@ -45,6 +45,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useUserCompetitionStats } from '@/hooks/api/useUserCompetitionStats';
 import CompetitionResultsList from '@/components/competition/CompetitionResultsList';
 import CompetitionResultsModal from '@/components/competition/CompetitionResultsModal';
+import PerformanceBreakdownPanel from '@/components/competition/PerformanceBreakdownPanel';
 import BalanceUpdateIndicator from '@/components/feedback/BalanceUpdateIndicator';
 import { GoldTabs, GoldTabsList, GoldTabsTrigger, GoldTabsContent } from '@/components/ui/game';
 
@@ -222,8 +223,8 @@ const CompetitionResultsPage = (): JSX.Element => {
 
   // Modal state
   const [selectedCompetitionId, setSelectedCompetitionId] = useState<number | null>(null);
-  // Performance view state is set but render usage pending for performance breakdown modal
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // Set by the results modal's "view performance" action; rendered as a
+  // ScoreBreakdownRadar panel below the results (Equoria-gf8sj).
   const [performanceView, setPerformanceView] = useState<PerformanceViewState | null>(null);
   const [activeTab, setActiveTab] = useState<'my-results' | 'browse'>('my-results');
 
@@ -430,6 +431,17 @@ const CompetitionResultsPage = (): JSX.Element => {
           showPrizeNotification={showPrizeNotification}
           onPrizeNotificationClose={handlePrizeNotificationClose}
         />
+
+        {/* Score breakdown radar — wired from the modal's "view performance"
+            action, populated from the real backend scoringDetails
+            (Equoria-gf8sj, Spec 11.3 ScoreBreakdownRadar). */}
+        {performanceView && (
+          <PerformanceBreakdownPanel
+            competitionId={performanceView.competitionId}
+            horseId={performanceView.horseId}
+            onClose={() => setPerformanceView(null)}
+          />
+        )}
       </main>
     </div>
   );
