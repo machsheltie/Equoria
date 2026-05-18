@@ -276,6 +276,40 @@ describe('riderMarketplaceController (real DB)', () => {
       expect(remainingIds).not.toContain(targetRider.marketplaceId);
     });
 
+    // Equoria-jmn75 (sibling of Equoria-78i38): the ledger write must complete
+    // BEFORE hireRiderFromMarketplace resolves. It was previously
+    // fire-and-forget `recordTransaction(...).catch(...)` — the dangling
+    // promise settled after suite cleanup deleted the user and Jest tore down
+    // the module registry, risking an import-after-teardown ReferenceError.
+    // Sentinel: the ledger row exists the instant the handler returns.
+    it('writes the rider_hire ledger transaction synchronously before the handler resolves', async () => {
+      const user = await createUser(9999);
+      const state = await seedMarketplaceState(user.id);
+      const targetRider = state.offers[0];
+
+      const before = await prisma.userTransaction.count({
+        where: { userId: user.id, category: 'rider_hire' },
+      });
+
+      const h = makeReqRes(user.id, { body: { marketplaceId: targetRider.marketplaceId } });
+      await hireRiderFromMarketplace(h.req, h.res);
+      expect(h.res.statusValue).toBe(201);
+
+      // No await-tick on purpose: with the fire-and-forget bug this is still `before`.
+      const after = await prisma.userTransaction.count({
+        where: { userId: user.id, category: 'rider_hire' },
+      });
+      expect(after).toBe(before + 1);
+
+      const row = await prisma.userTransaction.findFirst({
+        where: { userId: user.id, category: 'rider_hire' },
+        orderBy: { createdAt: 'desc' },
+      });
+      expect(row).not.toBeNull();
+      expect(row.type).toBe('debit');
+      expect(row.amount).toBe(targetRider.weeklyRate);
+    });
+
     it('returns 400 when user has insufficient funds to hire', async () => {
       const user = await createUser(0);
       const state = await seedMarketplaceState(user.id);

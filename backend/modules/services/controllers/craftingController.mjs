@@ -260,16 +260,27 @@ export async function craftItem(req, res) {
     });
     const newBalance = user.money - recipe.cost;
 
-    // Record financial transaction as best-effort (non-blocking)
-    recordTransaction({
-      userId,
-      type: 'debit',
-      amount: recipe.cost,
-      category: 'crafting',
-      description: `Crafted ${recipe.resultName}`,
-      balanceAfter: newBalance,
-      metadata: { recipeId, result: recipe.result },
-    }).catch(err => logger.error(`[craftingController] ledger error: ${err.message}`));
+    // Record financial transaction as best-effort. Equoria-jmn75 (sibling of
+    // Equoria-78i38): this was previously fire-and-forget — the dangling
+    // promise settled after the test's afterAll() deleted the user and Jest
+    // tore down the module registry, risking an import-after-teardown
+    // ReferenceError, and in production let the response return before the
+    // ledger row was written (observability race). The write is now awaited
+    // inside try/catch so it completes in the request lifecycle while a
+    // ledger failure is still swallowed (the craft is already committed).
+    try {
+      await recordTransaction({
+        userId,
+        type: 'debit',
+        amount: recipe.cost,
+        category: 'crafting',
+        description: `Crafted ${recipe.resultName}`,
+        balanceAfter: newBalance,
+        metadata: { recipeId, result: recipe.result },
+      });
+    } catch (err) {
+      logger.error(`[craftingController] ledger error: ${err.message}`);
+    }
 
     logger.info(
       `[craftingController] craftItem: user ${userId} crafted ${recipe.resultName} (recipe: ${recipeId})`,

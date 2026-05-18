@@ -336,6 +336,50 @@ describe('craftItem', () => {
     );
   });
 
+  // Equoria-jmn75 (sibling of Equoria-78i38): the ledger write must complete
+  // BEFORE craftItem resolves. It was previously fire-and-forget
+  // `recordTransaction(...).catch(...)` — the dangling promise settled after
+  // afterAll() deleted the user and Jest tore down the module registry,
+  // risking an import-after-teardown ReferenceError. Sentinel: the ledger row
+  // exists the instant the handler returns (no microtask drain).
+  it('writes the crafting ledger transaction synchronously before the handler resolves', async () => {
+    await setUserState({
+      settings: {
+        workshopTier: 0,
+        craftingMaterials: { leather: 5, cloth: 0, dye: 5, metal: 0, thread: 0 },
+        inventory: [],
+      },
+      money: 500,
+    });
+
+    const before = await prisma.userTransaction.count({
+      where: { userId: testUser.id, category: 'crafting' },
+    });
+
+    const req = makeReq({ body: { recipeId: 'simple-bridle' } });
+    const res = makeRes();
+    await craftItem(req, res);
+    expect(res._body.success).toBe(true);
+
+    // No await-tick on purpose: with the fire-and-forget bug this is still `before`.
+    const after = await prisma.userTransaction.count({
+      where: { userId: testUser.id, category: 'crafting' },
+    });
+    expect(after).toBe(before + 1);
+
+    const row = await prisma.userTransaction.findFirst({
+      where: { userId: testUser.id, category: 'crafting' },
+      orderBy: { createdAt: 'desc' },
+    });
+    expect(row).not.toBeNull();
+    expect(row.type).toBe('debit');
+    expect(row.amount).toBe(100); // simple-bridle cost
+
+    await prisma.userTransaction.deleteMany({
+      where: { userId: testUser.id, category: 'crafting' },
+    });
+  });
+
   it('deducts correct materials on craft', async () => {
     await setUserState({
       settings: {

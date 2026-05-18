@@ -223,15 +223,27 @@ export async function hireRiderFromMarketplace(req, res) {
       select: { money: true },
     });
 
-    recordTransaction({
-      userId,
-      type: 'debit',
-      amount: hiringCost,
-      category: 'rider_hire',
-      description: `Hired rider ${newRider.firstName} ${newRider.lastName}`,
-      balanceAfter: updatedUser.money,
-      metadata: { riderId: newRider.id, marketplaceId },
-    }).catch(err => logger.error(`[riderMarketplace] ledger error: ${err.message}`));
+    // Record financial transaction as best-effort. Equoria-jmn75 (sibling of
+    // Equoria-78i38): this was previously fire-and-forget — the dangling
+    // promise settled after the test's afterAll() deleted the user and Jest
+    // tore down the module registry, risking an import-after-teardown
+    // ReferenceError, and in production let the response return before the
+    // ledger row was written (observability race). The write is now awaited
+    // inside try/catch so it completes in the request lifecycle while a
+    // ledger failure is still swallowed (the hire is already committed).
+    try {
+      await recordTransaction({
+        userId,
+        type: 'debit',
+        amount: hiringCost,
+        category: 'rider_hire',
+        description: `Hired rider ${newRider.firstName} ${newRider.lastName}`,
+        balanceAfter: updatedUser.money,
+        metadata: { riderId: newRider.id, marketplaceId },
+      });
+    } catch (err) {
+      logger.error(`[riderMarketplace] ledger error: ${err.message}`);
+    }
 
     // Remove hired rider from persisted offer list
     const updatedOffers = offers.filter((_, i) => i !== riderIndex);
