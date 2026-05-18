@@ -25,7 +25,7 @@ import PageHero from '@/components/layout/PageHero';
 import { Button } from '@/components/ui/button';
 import { CardGrid } from '@/components/ui/CardGrid';
 import { ItemCard } from '@/components/ui/ItemCard';
-import { FantasyTabs } from '@/components/FantasyTabs';
+import { CelestialTabs } from '@/components/ui/game';
 import {
   GameDialog,
   GameDialogContent,
@@ -294,7 +294,7 @@ const InventoryPage: React.FC = () => {
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         <div data-testid="inventory-grid">
-          <FantasyTabs tabs={tabs} defaultValue="all" />
+          <CelestialTabs tabs={tabs} defaultValue="all" />
         </div>
 
         <div className="mt-10 p-5 rounded-xl glass-panel text-sm text-[var(--text-muted)]">

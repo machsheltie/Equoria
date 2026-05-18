@@ -29,9 +29,9 @@ vi.mock('@/components/horse/HorseCard', () => ({
   default: () => null,
 }));
 
-// Mock FantasyTabs to render the first tab content (all horses)
-vi.mock('../../components/FantasyTabs', () => ({
-  FantasyTabs: ({
+// Mock CelestialTabs to render the first tab content (all horses)
+vi.mock('../../components/ui/game/CelestialTabs', () => ({
+  CelestialTabs: ({
     tabs,
     defaultValue,
   }: {
@@ -39,7 +39,7 @@ vi.mock('../../components/FantasyTabs', () => ({
     defaultValue?: string;
   }) => {
     const selected = tabs.find((tab) => tab.value === defaultValue) || tabs[0];
-    return <div data-testid="fantasy-tabs">{selected?.content}</div>;
+    return <div data-testid="celestial-tabs">{selected?.content}</div>;
   },
 }));
 

@@ -6,7 +6,7 @@
  * - My Horses: Hoof status overview per horse, select a horse for booking
  * - Services: Available farrier procedures; book via two-step (horse → service)
  *
- * Cards now share ItemCard + HorseCard + CardGrid; tabs use FantasyTabs in
+ * Cards now share ItemCard + HorseCard + CardGrid; tabs use CelestialTabs in
  * controlled mode so cross-tab buttons can switch programmatically.
  *
  * Data sources:
@@ -22,7 +22,7 @@ import { Heart, Wrench, Clock, CheckCircle, Leaf, Loader2, AlertCircle } from 'l
 import PageHero from '@/components/layout/PageHero';
 import { CardGrid } from '@/components/ui/CardGrid';
 import { ItemCard } from '@/components/ui/ItemCard';
-import { FantasyTabs } from '@/components/FantasyTabs';
+import { CelestialTabs } from '@/components/ui/game';
 import { HorseCard } from '@/components/horse/HorseCard';
 import { useHorses } from '@/hooks/api/useHorses';
 import { useFarrierServices, useBookFarrierService } from '@/hooks/api/useFarrier';
@@ -364,7 +364,7 @@ const FarrierPage: React.FC = () => {
           </div>
         )}
 
-        <FantasyTabs
+        <CelestialTabs
           value={activeTab}
           onValueChange={(v) => setActiveTab(v as FarrierTab)}
           tabs={[

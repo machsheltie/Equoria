@@ -9,7 +9,7 @@
  * - Services: Shows available vet procedures fetched from /api/vet/services.
  *
  * Cards now share ItemCard / HorseCard / CardGrid so this page no longer
- * renders giant 2-col cards on desktop. Tabs use FantasyTabs (canonical).
+ * renders giant 2-col cards on desktop. Tabs use CelestialTabs (canonical).
  *
  * Data wired to real API hooks:
  *   useHorses()             → /api/horses
@@ -24,7 +24,7 @@ import { Heart, Activity, Clock, CheckCircle, Loader2, Leaf, AlertCircle } from 
 import PageHero from '@/components/layout/PageHero';
 import { CardGrid } from '@/components/ui/CardGrid';
 import { ItemCard } from '@/components/ui/ItemCard';
-import { FantasyTabs } from '@/components/FantasyTabs';
+import { CelestialTabs } from '@/components/ui/game';
 import { HorseCard } from '@/components/horse/HorseCard';
 import { useHorses } from '@/hooks/api/useHorses';
 import { useVetServices, useBookVetAppointment } from '@/hooks/api/useVet';
@@ -333,7 +333,7 @@ const VeterinarianPage: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        <FantasyTabs
+        <CelestialTabs
           value={activeTab}
           onValueChange={(v) => setActiveTab(v as VetTab)}
           tabs={[

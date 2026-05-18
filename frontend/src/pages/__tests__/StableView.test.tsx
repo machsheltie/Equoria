@@ -9,8 +9,8 @@ import * as useAuthModule from '../../hooks/useAuth';
 // StableView renders the shared HorseCard from @/components/horse/HorseCard.
 // Tests assert on rendered DOM output (name, stats, subtitle) — no component mock.
 
-vi.mock('../../components/FantasyTabs', () => ({
-  FantasyTabs: ({
+vi.mock('../../components/ui/game/CelestialTabs', () => ({
+  CelestialTabs: ({
     tabs,
     defaultValue,
   }: {
@@ -18,7 +18,7 @@ vi.mock('../../components/FantasyTabs', () => ({
     defaultValue?: string;
   }) => {
     const selected = tabs.find((tab) => tab.value === defaultValue) || tabs[0];
-    return <div data-testid="fantasy-tabs">{selected?.content}</div>;
+    return <div data-testid="celestial-tabs">{selected?.content}</div>;
   },
 }));
 

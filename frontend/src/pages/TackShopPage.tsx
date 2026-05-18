@@ -27,7 +27,7 @@ import {
 import PageHero from '@/components/layout/PageHero';
 import { CardGrid } from '@/components/ui/CardGrid';
 import { ItemCard } from '@/components/ui/ItemCard';
-import { FantasyTabs } from '@/components/FantasyTabs';
+import { CelestialTabs } from '@/components/ui/game';
 import { HorseCard } from '@/components/horse/HorseCard';
 import {
   useTackInventory,
@@ -657,10 +657,10 @@ const TackShopPage: React.FC = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* My Horses / Shop tabs — FantasyTabs (canonical from StableView).
+        {/* My Horses / Shop tabs — CelestialTabs (canonical from StableView).
             Controlled so HorsesTackTab's "Continue to Shop" and ShopTab's
             "Change horse" can switch tabs programmatically. */}
-        <FantasyTabs
+        <CelestialTabs
           value={activeTab}
           onValueChange={(v) => setActiveTab(v as TackShopTab)}
           tabs={[

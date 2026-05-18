@@ -17,3 +17,4 @@ export * from './GameLabel';
 export * from './GameTooltip';
 export * from './GameScrollArea';
 export * from './GameCollapsible';
+export * from './CelestialTabs';
