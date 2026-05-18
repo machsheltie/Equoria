@@ -42,7 +42,9 @@ import request from 'supertest';
 import { randomBytes } from 'node:crypto';
 
 import app from '../../../app.mjs';
+import prisma from '../../../db/index.mjs';
 import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
+import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 
 const FIXTURE_PREFIX = 'TestFixture-conformation-routes-http';
 
@@ -124,5 +126,122 @@ describe('conformation sub-router HTTP mount (Equoria-pety sentinel)', () => {
       .set('Origin', 'http://localhost:3000');
 
     expect(res.status).toBe(404);
+  });
+});
+
+// ===========================================================================
+// REAL HTTP integration of the POST /execute pipeline (Equoria-1zpd).
+//
+// conformationShowExecution.test.mjs exercises the execute handler through a
+// buildReq/buildRes controller-only harness — that is a component test, not
+// integration. Equoria-1zpd requires conformation show execution to have a
+// real supertest HTTP integration test against the real DB: full middleware
+// chain (authenticateToken → csrfProtection → mutationRateLimiter →
+// validateExecuteBody → handler), real JWT, real CSRF double-submit, real
+// Show/Horse/ShowEntry rows. No bypass headers, no mocks.
+// ===========================================================================
+
+describe('POST /api/v1/competition/conformation/execute — real HTTP pipeline (Equoria-1zpd)', () => {
+  const SUITE = 'TestFixture-conformation-execute-http';
+  let host;
+  let hostToken;
+  let csrf;
+  let show;
+  let horse1;
+  let horse2;
+
+  beforeAll(async () => {
+    const tag = randomBytes(4).toString('hex');
+
+    const created = await createTestUser({
+      username: `${SUITE}-${tag}`,
+      email: `${SUITE}-${tag}@example.com`,
+    });
+    host = created.user;
+    hostToken = created.token;
+
+    horse1 = await createTestHorse({ name: `${SUITE}-H1-${tag}`, userId: host.id });
+    horse2 = await createTestHorse({ name: `${SUITE}-H2-${tag}`, userId: host.id });
+
+    // Real conformation show hosted by the authed user (host authorization
+    // is enforced in-controller via Show.findFirst scoped to hostUserId).
+    show = await prisma.show.create({
+      data: {
+        name: `${SUITE}-Show-${tag}`,
+        discipline: 'Conformation',
+        levelMin: 1,
+        levelMax: 10,
+        entryFee: 50,
+        prize: 0,
+        runDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        showType: 'conformation',
+        status: 'open',
+        hostUserId: host.id,
+      },
+    });
+
+    for (const h of [horse1, horse2]) {
+      await prisma.showEntry.create({
+        data: {
+          show: { connect: { id: show.id } },
+          horse: { connect: { id: h.id } },
+          user: { connect: { id: host.id } },
+          feePaid: 50,
+        },
+      });
+    }
+
+    csrf = await fetchCsrf(app);
+  }, 120000);
+
+  afterAll(async () => {
+    // Scoped cleanup — only rows this suite created.
+    await prisma.showEntry
+      .deleteMany({ where: { showId: show?.id } })
+      .catch(() => {});
+    await prisma.competitionResult
+      .deleteMany({ where: { horseId: { in: [horse1?.id, horse2?.id].filter(Boolean) } } })
+      .catch(() => {});
+    await prisma.show.deleteMany({ where: { name: { startsWith: SUITE } } }).catch(() => {});
+    await cleanupTestData();
+  });
+
+  it('executes the show end-to-end over real HTTP and returns ranked results', async () => {
+    const res = await request(app)
+      .post('/api/v1/competition/conformation/execute')
+      .set('Authorization', `Bearer ${hostToken}`)
+      .set('Origin', 'http://localhost:3000')
+      .set('Cookie', csrf.cookieHeader)
+      .set('X-CSRF-Token', csrf.csrfToken)
+      .send({ showId: show.id });
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.data.showId).toBe(show.id);
+    expect(Array.isArray(res.body.data.results)).toBe(true);
+    expect(res.body.data.results.length).toBe(2);
+
+    // Reward table is deterministic by placement even though scores have
+    // internal randomness: 1st = Blue/10/5%, 2nd = Red/7/3%.
+    const first = res.body.data.results.find(r => r.placement === 1);
+    const second = res.body.data.results.find(r => r.placement === 2);
+    expect(first).toBeDefined();
+    expect(first.ribbon).toBe('Blue');
+    expect(first.titlePoints).toBe(10);
+    expect(second).toBeDefined();
+    expect(second.ribbon).toBe('Red');
+
+    // AC4: conformation distributes no prize money.
+    expect(res.body.data.results[0]).not.toHaveProperty('prizeWon');
+  });
+
+  it('rejects a state-mutating execute with no CSRF token (403, real guard)', async () => {
+    const res = await request(app)
+      .post('/api/v1/competition/conformation/execute')
+      .set('Authorization', `Bearer ${hostToken}`)
+      .set('Origin', 'http://localhost:3000')
+      .send({ showId: show.id });
+
+    expect(res.status).toBe(403);
   });
 });

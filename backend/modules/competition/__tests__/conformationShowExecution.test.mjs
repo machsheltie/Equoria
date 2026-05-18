@@ -1,18 +1,27 @@
 /**
- * Integration tests for conformationShowController.mjs — execute + titles (Story 31F-3) — real DB
+ * conformationShowExecution.test.mjs — controller-harness COMPONENT suite
+ * (real DB, controller-only) — Story 31F-3
+ *
+ * ⚠️ NOT AN INTEGRATION TEST. Equoria-1zpd reclassification: this file was
+ * formerly mislabeled "Integration tests" while its primary path drives
+ * the controller directly through a buildReq/buildRes fake harness
+ * (controller-only — no Express middleware chain, no HTTP, no supertest).
+ * Per .claude/rules test-architecture doctrine a controller-harness suite
+ * is a COMPONENT test, not an integration test, and MUST NOT be cited as
+ * integration or beta-readiness evidence. The real HTTP integration of the
+ * POST /execute pipeline lives in conformationShowRoutesHttp.integration.test.mjs.
+ *
+ * The pure-helper unit assertions (resolveReward / resolveTitle /
+ * applyBreedingValueBoost) were SPLIT OUT into
+ * conformationShowRewards.unit.test.mjs (Equoria-1zpd) — they are pure,
+ * DB-free, harness-free and belong in a unit-named file.
  *
  * NO MOCKS. Equoria-p6fx (no-mocks doctrine epic 2026-04-30): converted from
  * jest.unstable_mockModule of express-validator + ownership middleware +
- * prisma + conformationShowService + logger to a real-DB integration test.
- *
- * Sections:
- *   1. Pure helper unit tests (resolveReward, resolveTitle, applyBreedingValueBoost) —
- *      no mocking ever needed.
- *   2. Real-DB integration tests for executeConformationShowHandler and
- *      getConformationTitles. Real shows + entries + horses + grooms +
- *      assignments. The real service computes scores; tests assert on
- *      response shape and DB state without depending on exact placement
- *      values (which depend on internal scoring randomness).
+ * prisma + conformationShowService + logger to real DB. Real shows +
+ * entries + horses + grooms + assignments; the real service computes
+ * scores; tests assert on response shape and DB state without depending on
+ * exact placement values (which depend on internal scoring randomness).
  *
  * Removed (per doctrine):
  *   - Tests that hardcoded canned _mockExecuteResult arrays — those
@@ -22,7 +31,7 @@
  *     service to throw. Synthetic fault injection forbidden.
  *   - "returns 400 on express-validator errors" — controller-level
  *     validator runs in the route middleware chain, not the handler
- *     itself; covered by route-level tests when the routes are tested.
+ *     itself; covered by the real HTTP integration suite.
  *   - "show already executed returns 400" — covered by service-level
  *     test of executeConformationShow.
  */
@@ -31,12 +40,7 @@ import { describe, it, expect, beforeAll, afterAll, afterEach } from '@jest/glob
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../db/index.mjs';
 import { executeConformationShowHandler, getConformationTitles } from '../controllers/conformationShowController.mjs';
-import {
-  resolveReward,
-  resolveTitle,
-  applyBreedingValueBoost,
-  executeConformationShow,
-} from '../../../services/conformationShowService.mjs';
+import { executeConformationShow } from '../../../services/conformationShowService.mjs';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
@@ -200,81 +204,16 @@ async function cleanupSuite() {
   await prisma.user.deleteMany({ where: { id: { in: userIds } } });
 }
 
-// ===========================================================================
-// Pure helper unit tests (no mocking needed)
-// ===========================================================================
-
-describe('resolveReward (AC1 reward table)', () => {
-  it('returns Blue ribbon + 10 pts + 5% for 1st', () => {
-    expect(resolveReward(1)).toEqual({ ribbon: 'Blue', titlePoints: 10, breedingBoostDelta: 0.05 });
-  });
-  it('returns Red ribbon + 7 pts + 3% for 2nd', () => {
-    expect(resolveReward(2)).toEqual({ ribbon: 'Red', titlePoints: 7, breedingBoostDelta: 0.03 });
-  });
-  it('returns Yellow ribbon + 5 pts + 1% for 3rd', () => {
-    expect(resolveReward(3)).toEqual({ ribbon: 'Yellow', titlePoints: 5, breedingBoostDelta: 0.01 });
-  });
-  it('returns White ribbon + 2 pts + 0% for 4th', () => {
-    expect(resolveReward(4)).toEqual({ ribbon: 'White', titlePoints: 2, breedingBoostDelta: 0 });
-  });
-  it('returns White ribbon + 2 pts + 0% for 10th', () => {
-    expect(resolveReward(10)).toEqual({ ribbon: 'White', titlePoints: 2, breedingBoostDelta: 0 });
-  });
-});
-
-describe('resolveTitle (AC2 thresholds)', () => {
-  it('returns null for 0 points', () => {
-    expect(resolveTitle(0)).toBeNull();
-  });
-  it('returns null for 24 points', () => {
-    expect(resolveTitle(24)).toBeNull();
-  });
-  it('returns Noteworthy at 25 points', () => {
-    expect(resolveTitle(25)).toBe('Noteworthy');
-  });
-  it('returns Noteworthy at 49 points', () => {
-    expect(resolveTitle(49)).toBe('Noteworthy');
-  });
-  it('returns Distinguished at 50 points', () => {
-    expect(resolveTitle(50)).toBe('Distinguished');
-  });
-  it('returns Distinguished at 99 points', () => {
-    expect(resolveTitle(99)).toBe('Distinguished');
-  });
-  it('returns Champion at 100 points', () => {
-    expect(resolveTitle(100)).toBe('Champion');
-  });
-  it('returns Champion at 199 points', () => {
-    expect(resolveTitle(199)).toBe('Champion');
-  });
-  it('returns Grand Champion at 200 points', () => {
-    expect(resolveTitle(200)).toBe('Grand Champion');
-  });
-  it('returns Grand Champion at 500 points', () => {
-    expect(resolveTitle(500)).toBe('Grand Champion');
-  });
-});
-
-describe('applyBreedingValueBoost (AC3 cap)', () => {
-  it('adds 5% for 1st place (0 → 0.05)', () => {
-    expect(applyBreedingValueBoost(0, 0.05)).toBeCloseTo(0.05);
-  });
-  it('caps at 0.15 when adding 5% to 0.14', () => {
-    expect(applyBreedingValueBoost(0.14, 0.05)).toBeCloseTo(0.15);
-  });
-  it('stays at 0.15 when already capped and adding 5%', () => {
-    expect(applyBreedingValueBoost(0.15, 0.05)).toBeCloseTo(0.15);
-  });
-  it('returns unchanged boost for 4th place (delta=0)', () => {
-    expect(applyBreedingValueBoost(0.08, 0)).toBeCloseTo(0.08);
-  });
-  it('caps at 0.15 when overflow would exceed cap', () => {
-    expect(applyBreedingValueBoost(0.13, 0.05)).toBeCloseTo(0.15);
-  });
-});
+// NOTE (Equoria-1zpd): the pure-helper unit tests for resolveReward /
+// resolveTitle / applyBreedingValueBoost were SPLIT OUT of this file into
+// conformationShowRewards.unit.test.mjs. They are pure (no DB, no harness)
+// and belong in a unit-named file, not here.
 
 // ===========================================================================
-// executeConformationShowHandler — real DB integration
+// executeConformationShowHandler — controller-harness component suite
+// (real DB, controller-only via buildReq/buildRes — NOT HTTP supertest;
+//  see conformationShowRoutesHttp.integration.test.mjs for the real HTTP
+//  integration of the POST /execute pipeline)
 // ===========================================================================
 
 describe('executeConformationShowHandler (real DB)', () => {
