@@ -66,6 +66,8 @@ function HorseCard({ horse }: { horse: HorseSummary }) {
     lastShod: horse.lastShod,
     lastVettedDate: horse.lastVettedDate,
     trainingCooldown: typeof horse.trainingCooldown === 'string' ? horse.trainingCooldown : null,
+    // Equoria-55bo.5: batched most-recent competition result (no N+1).
+    latestEvent: horse.latestEvent ?? null,
   });
 
   return (

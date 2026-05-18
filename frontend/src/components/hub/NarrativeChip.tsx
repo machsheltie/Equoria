@@ -107,12 +107,12 @@ export function deriveHorseChip(
  *
  * The spec wants each hub stable card to show the horse's latest one-line
  * story. The richest source ("Won 2nd place in yesterday's show") is the
- * per-horse competition history, but fetching that for every card on the
- * hub is an N+1 query. This derives the chapter from the REAL per-horse
- * fields ALREADY present on HorseSummary (no extra requests, not
- * hardcoded): health, in-foal state, and the most recent care / training
- * timestamp. Competition-event narratives are a tracked enrichment
- * (needs a backend latest-event field — see follow-up).
+ * per-horse competition history. Equoria-55bo.5 added a batched
+ * `latestEvent` field to the HorseSummary list serializer (one query for
+ * the whole page — NOT an N+1), so competition narratives are now a real
+ * source here alongside the REAL per-horse care fields (health, in-foal
+ * state, most recent care / training timestamp). A competition event is
+ * preferred when it is more recent than the latest care event.
  *
  * States (Spec 11.3.12):
  *   - current : a real event within the last 7 days
@@ -127,6 +127,18 @@ export interface LatestChapterInput {
   lastShod?: string | null;
   lastVettedDate?: string | null;
   trainingCooldown?: string | null;
+  /**
+   * Equoria-55bo.5: most-recent competition result from the batched
+   * HorseSummary.latestEvent field (NOT an N+1 fetch). When present and
+   * more recent than the latest care event, it becomes the chapter.
+   */
+  latestEvent?: {
+    type: 'competition';
+    showName: string;
+    discipline: string;
+    placement: string | null;
+    date: string | null;
+  } | null;
 }
 
 export interface LatestChapter {
@@ -158,22 +170,50 @@ export function deriveLatestChapter(
     return { text: 'Expecting a foal', variant: 'active', stale: false };
   }
 
+  // Build a competition-event chapter from the real batched latestEvent
+  // (Equoria-55bo.5). Placement-aware copy mirrors Spec 11.3.12 examples.
+  let competitionEvent: { label: string; at: number; isCompetition: true } | null = null;
+  if (data.latestEvent && data.latestEvent.type === 'competition') {
+    const at = chapterTs(data.latestEvent.date);
+    if (at !== null) {
+      const place = (data.latestEvent.placement ?? '').trim();
+      const disc = data.latestEvent.discipline;
+      const label =
+        place === '1st'
+          ? `Won the ${disc} show`
+          : place
+            ? `Placed ${place} in ${disc}`
+            : `Competed in ${disc}`;
+      competitionEvent = { label, at, isCompetition: true };
+    }
+  }
+
   // Pick the single most recent real care/training event.
-  const events: Array<{ label: string; at: number | null }> = [
+  const careEvents: Array<{ label: string; at: number | null }> = [
     { label: 'Last fed', at: chapterTs(data.lastFedDate) },
     { label: 'Freshly groomed', at: chapterTs(data.lastGroomed) },
     { label: 'Newly shod', at: chapterTs(data.lastShod) },
     { label: 'Visited the vet', at: chapterTs(data.lastVettedDate) },
     { label: 'Wrapped up training', at: chapterTs(data.trainingCooldown) },
   ];
-  const latest = events
+  const latestCare = careEvents
     .filter((e): e is { label: string; at: number } => e.at !== null)
     .sort((a, b) => b.at - a.at)[0];
+
+  // Prefer the competition event when it is more recent than the latest
+  // care event (or when there is no care event at all).
+  const candidates: Array<{ label: string; at: number; isCompetition?: boolean }> = [];
+  if (competitionEvent) candidates.push(competitionEvent);
+  if (latestCare) candidates.push(latestCare);
+  const latest = candidates.sort((a, b) => b.at - a.at)[0];
 
   if (!latest) {
     return { text: 'Just arrived at the stable', variant: 'neutral', stale: false };
   }
 
   const stale = now - latest.at > STALE_AFTER_MS;
-  return { text: latest.label, variant: stale ? 'neutral' : 'cooldown', stale };
+  // A fresh competition win/placement is an "active" highlight; a fresh
+  // care event keeps the existing cooldown styling.
+  const freshVariant: ChipVariant = latest.isCompetition ? 'active' : 'cooldown';
+  return { text: latest.label, variant: stale ? 'neutral' : freshVariant, stale };
 }

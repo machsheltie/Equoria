@@ -401,11 +401,49 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
       HORSE_LIST_TTL,
     );
 
+    // Equoria-55bo.5: attach a lightweight `latestEvent` (most-recent
+    // competition result) so NarrativeChip.deriveLatestChapter can surface
+    // competition narratives ("Won 1st in yesterday's show") WITHOUT an
+    // N+1 per-card fetch. One batched query for the whole page; the most
+    // recent result per horse is selected in JS (results are ordered by
+    // runDate desc so the first seen per horseId is the latest).
+    const horseIds = horses.map(h => h.id);
+    const latestEventByHorse = new Map();
+    if (horseIds.length > 0) {
+      const recentResults = await prisma.competitionResult.findMany({
+        where: { horseId: { in: horseIds } },
+        orderBy: { runDate: 'desc' },
+        select: {
+          horseId: true,
+          showName: true,
+          discipline: true,
+          placement: true,
+          runDate: true,
+        },
+      });
+      for (const r of recentResults) {
+        if (!latestEventByHorse.has(r.horseId)) {
+          latestEventByHorse.set(r.horseId, {
+            type: 'competition',
+            showName: r.showName,
+            discipline: r.discipline,
+            placement: r.placement ?? null,
+            date: r.runDate ? new Date(r.runDate).toISOString() : null,
+          });
+        }
+      }
+    }
+
     res.set('Cache-Control', 'no-store');
     res.json({
       success: true,
       message: `Found ${horses.length} horses`,
-      data: horses.map(h => withAgeYears(withHealth(h))),
+      data: horses.map(h => ({
+        ...withAgeYears(withHealth(h)),
+        // Explicit null (not undefined) so the frontend key always exists
+        // and deriveLatestChapter can branch on its presence.
+        latestEvent: latestEventByHorse.get(h.id) ?? null,
+      })),
     });
   } catch (error) {
     logger.error(`[horseRoutes] Error getting horses: ${error.message}`);

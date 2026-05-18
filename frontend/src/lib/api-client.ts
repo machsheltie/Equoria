@@ -264,6 +264,17 @@ interface HorseSummary {
   inFoalSinceDate?: string | null;
   pregnancySireId?: number | null;
   pregnancyFeedingsByTier?: Record<string, number>;
+  // Equoria-55bo.5: lightweight most-recent competition result, attached by
+  // the list serializer (one batched query, no N+1). Consumed by
+  // NarrativeChip.deriveLatestChapter to surface competition narratives.
+  // Explicit null when the horse has no competition history.
+  latestEvent?: {
+    type: 'competition';
+    showName: string;
+    discipline: string;
+    placement: string | null;
+    date: string | null;
+  } | null;
 }
 
 interface HorseTrainingHistoryEntry {

@@ -60,4 +60,107 @@ describe('deriveLatestChapter (pqzmf, Spec 11.3.12)', () => {
     expect(chip.text).toMatch(/fed/i);
     expect(chip.stale).toBe(false);
   });
+
+  // Equoria-55bo.5: competition-event chapter from the batched latestEvent.
+  describe('competition latestEvent (55bo.5)', () => {
+    it('surfaces a 1st-place win as the chapter with active variant', () => {
+      const now = Date.now();
+      const chip = deriveLatestChapter(
+        {
+          latestEvent: {
+            type: 'competition',
+            showName: 'Spring Classic',
+            discipline: 'Dressage',
+            placement: '1st',
+            date: new Date(now - 1 * DAY).toISOString(),
+          },
+        },
+        now
+      );
+      expect(chip.text).toMatch(/won the dressage show/i);
+      expect(chip.variant).toBe('active');
+      expect(chip.stale).toBe(false);
+    });
+
+    it('surfaces a non-first placement', () => {
+      const now = Date.now();
+      const chip = deriveLatestChapter(
+        {
+          latestEvent: {
+            type: 'competition',
+            showName: 'Autumn Cup',
+            discipline: 'Show Jumping',
+            placement: '2nd',
+            date: new Date(now - 2 * DAY).toISOString(),
+          },
+        },
+        now
+      );
+      expect(chip.text).toMatch(/placed 2nd in show jumping/i);
+    });
+
+    it('prefers the competition event when it is more recent than the latest care event', () => {
+      const now = Date.now();
+      const chip = deriveLatestChapter(
+        {
+          lastFedDate: new Date(now - 4 * DAY).toISOString(),
+          latestEvent: {
+            type: 'competition',
+            showName: 'Recent Show',
+            discipline: 'Cross Country',
+            placement: '3rd',
+            date: new Date(now - 1 * DAY).toISOString(),
+          },
+        },
+        now
+      );
+      expect(chip.text).toMatch(/cross country/i);
+      expect(chip.text).not.toMatch(/fed/i);
+    });
+
+    it('prefers a more-recent care event over an older competition event', () => {
+      const now = Date.now();
+      const chip = deriveLatestChapter(
+        {
+          lastFedDate: new Date(now - 1 * DAY).toISOString(),
+          latestEvent: {
+            type: 'competition',
+            showName: 'Old Show',
+            discipline: 'Dressage',
+            placement: '1st',
+            date: new Date(now - 10 * DAY).toISOString(),
+          },
+        },
+        now
+      );
+      expect(chip.text).toMatch(/fed/i);
+    });
+
+    it('marks an old competition event stale (neutral) past 7 days', () => {
+      const now = Date.now();
+      const chip = deriveLatestChapter(
+        {
+          latestEvent: {
+            type: 'competition',
+            showName: 'Ancient Show',
+            discipline: 'Dressage',
+            placement: '1st',
+            date: new Date(now - 9 * DAY).toISOString(),
+          },
+        },
+        now
+      );
+      expect(chip.stale).toBe(true);
+      expect(chip.variant).toBe('neutral');
+    });
+
+    it('ignores a null latestEvent and falls back to care narratives', () => {
+      const now = Date.now();
+      const chip = deriveLatestChapter(
+        { lastFedDate: new Date(now - 1 * DAY).toISOString(), latestEvent: null },
+        now
+      );
+      expect(chip.text).toMatch(/fed/i);
+    });
+  });
 });
