@@ -7,6 +7,7 @@
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import prisma from '../db/index.mjs';
+import { fixtureColor } from './helpers/fixtureColor.mjs';
 import { clearAllCache } from '../utils/cacheHelper.mjs';
 import * as horseXpController from '../controllers/horseXpController.mjs';
 import { addXpToHorse } from '../models/horseXpModel.mjs';
@@ -33,6 +34,7 @@ function makeRes() {
 async function mkHorse(suffix, opts = {}) {
   return prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `${PREFIX}${suffix}`,
       sex: 'Colt',
       dateOfBirth: new Date('2020-01-01'),

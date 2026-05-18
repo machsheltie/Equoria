@@ -17,6 +17,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import { validateBreeding, validateTraining, validateTransaction } from '../../../middleware/gameIntegrity.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -96,6 +97,7 @@ beforeAll(async () => {
   });
 
   const base = {
+    ...fixtureColor(),
     dateOfBirth: new Date('2018-01-01'),
     age: 6,
     userId: ownerUser.id,

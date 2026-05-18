@@ -7,6 +7,7 @@
 
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../db/index.mjs';
+import { fixtureColor } from './helpers/fixtureColor.mjs';
 import {
   addXpToHorse,
   allocateStatPoint,
@@ -21,6 +22,7 @@ const USER_ID = 'test-user-horse-xp-sys';
 async function mkHorse(suffix, opts = {}) {
   return prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `${PREFIX}${suffix}`,
       sex: 'Colt',
       dateOfBirth: new Date('2020-01-01'),

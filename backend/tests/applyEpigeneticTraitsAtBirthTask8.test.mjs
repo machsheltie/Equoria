@@ -17,6 +17,7 @@
 import { describe, beforeAll, afterAll, expect, it } from '@jest/globals';
 import prisma from '../db/index.mjs';
 import { applyEpigeneticTraitsAtBirth } from '../utils/atBirthTraits.mjs';
+import { fixtureColor } from './helpers/fixtureColor.mjs';
 
 async function traitAppears(fn, traitName, category = 'positive', maxRuns = 50) {
   for (let i = 0; i < maxRuns; i++) {
@@ -56,7 +57,11 @@ describe('Apply Epigenetic Traits At Birth (atBirthTraits.mjs) — DB Integratio
     }
 
     const dateOfBirth = new Date('2018-01-01');
-    const breedData = breed ? { breedId: breed.id } : {};
+    // Equoria-qtyv8: spread fixtureColor() alongside the optional breedId so
+    // every fixture horse below gets a non-NULL colorGenotype + phenotype
+    // (the canonical-DB invariant; color is not the SUT here). `breedData`
+    // is already spread into every create, so this propagates uniformly.
+    const breedData = { ...fixtureColor(), ...(breed ? { breedId: breed.id } : {}) };
 
     sire = await prisma.horse.create({
       data: { name: 'TestFixture-ATB8-Sire', sex: 'Stallion', dateOfBirth, ...breedData },

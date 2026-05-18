@@ -19,6 +19,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { executeClosedShows } from '../shows/showController.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const TAG = `RiderModFix-${randomBytes(4).toString('hex')}`;
 
@@ -42,6 +43,7 @@ beforeAll(async () => {
 
   // Two horses with IDENTICAL stats so any score delta is rider-attributable
   const horseStats = {
+    ...fixtureColor(),
     sex: 'Mare',
     dateOfBirth: new Date('2018-01-01'),
     age: 7,

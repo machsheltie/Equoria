@@ -27,6 +27,7 @@ import {
   getMostCommonDisciplineFromHistory,
   getHighestScoringDiscipline,
 } from '../utils/atBirthTraits.mjs';
+import { fixtureColor } from './helpers/fixtureColor.mjs';
 
 async function traitAppears(fn, traitName, category = 'positive', maxRuns = 50) {
   for (let i = 0; i < maxRuns; i++) {
@@ -301,7 +302,10 @@ describe('At-Birth Traits — DB-dependent tests', () => {
     }
 
     const dateOfBirth = new Date('2018-01-01');
-    const breedData = breed ? { breedId: breed.id } : {};
+    // Equoria-qtyv8: fold fixtureColor() into breedData (already spread into
+    // every create below) so all fixture horses get a non-NULL
+    // colorGenotype + phenotype. Color is not the SUT here.
+    const breedData = { ...fixtureColor(), ...(breed ? { breedId: breed.id } : {}) };
 
     // Feed quality fixtures
     excellentMare = await prisma.horse.create({

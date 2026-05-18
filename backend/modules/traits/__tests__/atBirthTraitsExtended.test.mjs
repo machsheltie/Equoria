@@ -18,6 +18,7 @@ import {
   applyEpigeneticTraitsAtBirth,
 } from '../../../utils/atBirthTraits.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 // ── Fixture 1: owner for all horses in this file ─────────────────────────────
 
@@ -55,6 +56,7 @@ describe('assessFeedQuality() — health-status switch cases', () => {
   beforeAll(async () => {
     const ts = Date.now();
     const base = {
+      ...fixtureColor(),
       sex: 'Mare',
       dateOfBirth: new Date(),
       age: 5,
@@ -175,6 +177,7 @@ describe('getAncestors() — with real parent relationships', () => {
   beforeAll(async () => {
     const ts = Date.now();
     const base = {
+      ...fixtureColor(),
       sex: 'Stallion',
       dateOfBirth: new Date(),
       age: 5,
@@ -242,6 +245,7 @@ describe('detectInbreeding() — inbreeding detected via shared grandparent', ()
   beforeAll(async () => {
     const ts = Date.now();
     const base = {
+      ...fixtureColor(),
       dateOfBirth: new Date(),
       age: 5,
       userId: sharedUser.id,
@@ -309,6 +313,7 @@ describe('applyEpigeneticTraitsAtBirth() — valid sire + dam executes main logi
   beforeAll(async () => {
     const ts = Date.now();
     const base = {
+      ...fixtureColor(),
       dateOfBirth: new Date(),
       age: 5,
       userId: sharedUser.id,
@@ -393,6 +398,7 @@ describe('applyEpigeneticTraitsAtBirth() — inbreeding path sets inbreedingDete
   beforeAll(async () => {
     const ts = Date.now();
     const base = {
+      ...fixtureColor(),
       dateOfBirth: new Date(),
       age: 5,
       userId: sharedUser.id,

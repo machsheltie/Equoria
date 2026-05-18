@@ -30,6 +30,7 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../db/index.mjs';
+import { fixtureColor } from './helpers/fixtureColor.mjs';
 
 describe('Foal Task Log and Streak Data', () => {
   // Reference date anchor for all test date calculations
@@ -82,6 +83,7 @@ describe('Foal Task Log and Streak Data', () => {
     // Create test foal
     testFoal = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Test Foal Task Log',
         sex: 'Colt',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year ago

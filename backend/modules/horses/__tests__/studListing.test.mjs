@@ -13,6 +13,7 @@ import { describe, test, expect, beforeAll, afterAll, afterEach } from '@jest/gl
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../db/index.mjs';
 import { listHorseAtStud, unlistHorseAtStud } from '../controllers/horseController.mjs';
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const SUITE_PREFIX = 'studlist';
 
@@ -40,6 +41,7 @@ async function createBreed() {
 async function createHorse(userId, breedId, sex, overrides = {}) {
   return prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `${SUITE_PREFIX}-h-${randomBytes(4).toString('hex')}`,
       sex,
       dateOfBirth: new Date('2020-01-01'),

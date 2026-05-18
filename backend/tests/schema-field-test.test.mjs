@@ -3,6 +3,7 @@
  */
 
 import prisma from '../db/index.mjs';
+import { fixtureColor } from './helpers/fixtureColor.mjs';
 
 describe('Schema Field Test', () => {
   afterAll(async () => {
@@ -45,6 +46,7 @@ describe('Schema Field Test', () => {
     // Create horse with consecutiveDaysFoalCare field
     const horse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Schema Field Test Horse',
         sex: 'Mare',
         dateOfBirth: new Date('2023-01-01'),
