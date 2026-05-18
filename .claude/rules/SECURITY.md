@@ -330,10 +330,17 @@ RATE_LIMIT_MAX_REQUESTS=100
   - Automated PR comments with vulnerability tables
   - 90-day audit report retention
 - **OWASP ZAP Scanning**:
-  - Baseline scans on every push
-  - API scans using OpenAPI specification
-  - Full scans weekly (scheduled)
-  - SARIF format for GitHub Security integration
+  - Baseline scans on every push — **advisory only**
+    (`continue-on-error: true`, `fail_action: false`): findings are
+    reported/uploaded but do NOT block the PR.
+  - API scans using OpenAPI specification — **advisory**, same config.
+  - Full scans weekly (scheduled).
+  - SARIF format for GitHub Security integration.
+  - Merge-blocking ZAP enforcement is limited to the **"Process ZAP
+    Results"** step, which fails the job only on **HIGH-severity
+    (riskcode 3)** findings. Making the baseline/API scans themselves
+    merge-blocking is a posture decision that is **deferred** (not yet
+    decided — tracked under bd Equoria-dzyse).
 - **Unit Testing**:
   - Unit tests for all validation functions
   - Integration tests for security middleware

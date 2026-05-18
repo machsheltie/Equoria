@@ -538,12 +538,24 @@ a target or a quality claim.
 
 **OWASP ZAP Scanning:**
 
-- Baseline scans on every push
-- API scans using OpenAPI spec
-- Weekly full scans (scheduled)
-- SARIF integration for GitHub Security
+- Baseline scans on every push — **advisory** (`continue-on-error: true`,
+  `fail_action: false`): findings are reported and uploaded but do NOT
+  block the PR.
+- API scans using OpenAPI spec — **advisory**, same configuration as the
+  baseline scan.
+- Weekly full scans (scheduled).
+- SARIF integration for GitHub Security.
+- The only ZAP step that is merge-blocking is **"Process ZAP Results"**,
+  which parses `report_json.json` and fails the job when **HIGH-severity
+  (riskcode 3)** findings are present. MEDIUM/LOW findings and all
+  baseline/API-scan alerts below HIGH are advisory only.
 
-**Status:** ✅ Fully Implemented, All Workflows Active
+**Status:** ✅ Implemented and active. Enforcement is partial by design:
+ZAP baseline/API scans are advisory; only HIGH-severity findings (via the
+"Process ZAP Results" post-processing step) gate a merge. Whether the
+baseline/API scans should themselves be made merge-blocking is a security
+posture decision that is **deferred** (tracked under bd Equoria-dzyse —
+not yet decided).
 
 ### 4.3 Audit Logging System
 
