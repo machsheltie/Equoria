@@ -114,5 +114,61 @@ describe('CompetitionFieldPreview', () => {
       fireEvent.click(button!);
       expect(button).toHaveAttribute('aria-expanded', 'true');
     });
+
+    it('exposes the scouted entry list with role=list / listitem semantics', () => {
+      render(<CompetitionFieldPreview show={baseShow} entries={mockEntries} />);
+      fireEvent.click(screen.getByText(/Scout the Field/));
+
+      const list = screen.getByRole('list', { name: /entered horses/i });
+      expect(list).toBeInTheDocument();
+      const items = screen.getAllByRole('listitem');
+      expect(items).toHaveLength(mockEntries.length);
+    });
+
+    it('includes stat values in each listitem aria-label', () => {
+      render(<CompetitionFieldPreview show={baseShow} entries={mockEntries} />);
+      fireEvent.click(screen.getByText(/Scout the Field/));
+
+      // Thunder has stats { speed: 85, stamina: 70 } — those values must be
+      // present in the accessible name so screen-reader users get the data.
+      const thunderItem = screen.getByRole('listitem', { name: /Thunder/ });
+      expect(thunderItem).toHaveAccessibleName(/speed 85/i);
+      expect(thunderItem).toHaveAccessibleName(/stamina 70/i);
+
+      // Lightning has no stats — label should still be meaningful (no crash,
+      // no "undefined"), and must NOT fabricate stat numbers.
+      const lightningItem = screen.getByRole('listitem', { name: /Lightning/ });
+      expect(lightningItem).toHaveAccessibleName(/Arabian/);
+      expect(lightningItem.getAttribute('aria-label')).not.toMatch(/undefined|NaN/);
+    });
+  });
+
+  describe('compact variant', () => {
+    it('renders a condensed card when variant="compact"', () => {
+      render(<CompetitionFieldPreview show={baseShow} variant="compact" />);
+      const card = screen.getByTestId('competition-field-preview');
+      expect(card).toHaveAttribute('data-variant', 'compact');
+      // Still shows core info (name + entry count) in compact form
+      expect(screen.getByText('Spring Championship')).toBeInTheDocument();
+      expect(screen.getByText('12 / 20')).toBeInTheDocument();
+    });
+
+    it('defaults to the full variant when no variant prop given', () => {
+      render(<CompetitionFieldPreview show={baseShow} />);
+      expect(screen.getByTestId('competition-field-preview')).toHaveAttribute(
+        'data-variant',
+        'full'
+      );
+    });
+
+    it('compact variant still exposes accessible scouted list with stat labels', () => {
+      render(
+        <CompetitionFieldPreview show={baseShow} entries={mockEntries} variant="compact" />
+      );
+      fireEvent.click(screen.getByText(/Scout the Field/));
+      expect(screen.getByRole('list', { name: /entered horses/i })).toBeInTheDocument();
+      const thunderItem = screen.getByRole('listitem', { name: /Thunder/ });
+      expect(thunderItem).toHaveAccessibleName(/speed 85/i);
+    });
   });
 });

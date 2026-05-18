@@ -41,6 +41,36 @@ interface CompetitionFieldPreviewProps {
   show: ShowSummary;
   entries?: EnteredHorse[];
   className?: string;
+  /**
+   * Visual density. `full` (default) is the standalone card. `compact`
+   * renders a condensed inline-in-card variant for tight layouts (e.g.
+   * embedded in a show list row) — smaller padding/typography, header and
+   * radar dropped, but the same data + accessible scout list preserved.
+   */
+  variant?: 'full' | 'compact';
+}
+
+/**
+ * Build a screen-reader accessible label for a single scouted entry.
+ * Includes the horse name, breed (if any), and every stat as
+ * "<stat> <value>" so non-visual users get the same stat data the radar
+ * conveys visually. Never emits "undefined"/"NaN" for missing data.
+ */
+function buildEntryAriaLabel(entry: EnteredHorse, position: number): string {
+  const parts: string[] = [`Entry ${position}: ${entry.name}`];
+  if (entry.breed) {
+    parts.push(entry.breed);
+  }
+  const statEntries = entry.stats ? Object.entries(entry.stats) : [];
+  if (statEntries.length > 0) {
+    const statText = statEntries
+      .map(([stat, value]) => `${stat} ${value}`)
+      .join(', ');
+    parts.push(`stats: ${statText}`);
+  } else {
+    parts.push('no stats available');
+  }
+  return parts.join(', ');
 }
 
 // ── Entry count bar ────────────────────────────────────────────────────────────
@@ -93,28 +123,47 @@ export function CompetitionFieldPreview({
   show,
   entries = [],
   className = '',
+  variant = 'full',
 }: CompetitionFieldPreviewProps) {
   const [scouting, setScouting] = useState(false);
 
   const topEntry = entries[0];
+  const isCompact = variant === 'compact';
 
   return (
     <div
-      className={`glass-panel rounded-xl p-4 space-y-4 border border-[rgba(100,130,165,0.2)] ${className}`}
+      className={`glass-panel rounded-xl border border-[rgba(100,130,165,0.2)] ${
+        isCompact ? 'p-3 space-y-2' : 'p-4 space-y-4'
+      } ${className}`}
       data-testid="competition-field-preview"
+      data-variant={variant}
     >
-      {/* Header */}
-      <div>
-        <p className="text-xs text-[var(--text-muted)] uppercase tracking-widest font-[var(--font-body)] mb-0.5">
-          {show.discipline}
-        </p>
-        <h3
-          className="text-base font-bold text-[var(--text-primary)]"
-          style={{ fontFamily: 'var(--font-heading)' }}
-        >
-          {show.name}
-        </h3>
-      </div>
+      {/* Header — condensed in compact mode (single line, no large heading) */}
+      {isCompact ? (
+        <div className="flex items-baseline justify-between gap-2">
+          <h3
+            className="text-sm font-bold text-[var(--text-primary)] truncate"
+            style={{ fontFamily: 'var(--font-heading)' }}
+          >
+            {show.name}
+          </h3>
+          <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-[var(--font-body)] flex-shrink-0">
+            {show.discipline}
+          </span>
+        </div>
+      ) : (
+        <div>
+          <p className="text-xs text-[var(--text-muted)] uppercase tracking-widest font-[var(--font-body)] mb-0.5">
+            {show.discipline}
+          </p>
+          <h3
+            className="text-base font-bold text-[var(--text-primary)]"
+            style={{ fontFamily: 'var(--font-heading)' }}
+          >
+            {show.name}
+          </h3>
+        </div>
+      )}
 
       {/* Entry count */}
       <EntryCountBar count={show.entryCount ?? 0} max={show.maxEntries} />
@@ -146,8 +195,8 @@ export function CompetitionFieldPreview({
 
           {scouting && (
             <div className="mt-3 space-y-3">
-              {/* Radar for top entry */}
-              {topEntry?.stats && Object.keys(topEntry.stats).length > 0 && (
+              {/* Radar for top entry — dropped in compact mode to save space */}
+              {!isCompact && topEntry?.stats && Object.keys(topEntry.stats).length > 0 && (
                 <div>
                   <p className="text-[10px] text-[var(--text-muted)] font-[var(--font-body)] mb-1">
                     {topEntry.name} · stat profile
@@ -156,18 +205,35 @@ export function CompetitionFieldPreview({
                 </div>
               )}
 
-              {/* Entry list */}
-              <ul className="space-y-1">
+              {/* Entry list — explicit list semantics + per-item accessible
+                  labels carrying stat values so screen-reader users get the
+                  same scouting data the radar shows visually. */}
+              <ul
+                className="space-y-1"
+                role="list"
+                aria-label={`Entered horses for ${show.name}`}
+              >
                 {entries.map((e, i) => (
                   <li
                     key={e.id}
+                    role="listitem"
+                    aria-label={buildEntryAriaLabel(e, i + 1)}
                     className="flex items-center gap-2 text-xs text-[var(--text-muted)] font-[var(--font-body)]"
                   >
-                    <span className="w-5 text-right text-[var(--gold-primary)]/60 font-bold tabular-nums">
+                    <span
+                      className="w-5 text-right text-[var(--gold-primary)]/60 font-bold tabular-nums"
+                      aria-hidden="true"
+                    >
                       {i + 1}.
                     </span>
-                    <span className="text-[var(--text-primary)]">{e.name}</span>
-                    {e.breed && <span className="text-[var(--text-muted)]">· {e.breed}</span>}
+                    <span className="text-[var(--text-primary)]" aria-hidden="true">
+                      {e.name}
+                    </span>
+                    {e.breed && (
+                      <span className="text-[var(--text-muted)]" aria-hidden="true">
+                        · {e.breed}
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>
