@@ -49,13 +49,13 @@ const getSkillBadgeStyle = (skillLevel: string): React.CSSProperties => {
       return {
         background: 'rgba(100,130,165,0.15)',
         border: '1px solid rgba(100,130,165,0.4)',
-        color: 'rgb(148,163,184)',
+        color: 'rgb(var(--mystic-silver))',
       };
     default:
       return {
         background: 'rgba(15,35,70,0.5)',
         border: '1px solid rgba(37,99,235,0.2)',
-        color: 'rgb(148,163,184)',
+        color: 'rgb(var(--mystic-silver))',
       };
   }
 };
@@ -74,7 +74,7 @@ const getPersonalityColor = (personality: string): string => {
     case 'strict':
       return 'text-red-400';
     default:
-      return 'text-[rgb(148,163,184)]';
+      return 'text-slate-400';
   }
 };
 
@@ -103,7 +103,7 @@ const GroomCard = ({
             <h3 className="fantasy-header text-xl text-[rgb(220,235,255)] mb-1">
               {groom.firstName} {groom.lastName}
             </h3>
-            <p className="text-sm text-[rgb(148,163,184)]">{groom.specialty} Specialist</p>
+            <p className="text-sm text-slate-400">{groom.specialty} Specialist</p>
           </div>
           <span
             className="px-3 py-1 rounded-full text-xs uppercase tracking-wider font-bold"
@@ -153,7 +153,7 @@ const GroomCard = ({
             border: 'var(--glass-border-dim)',
           }}
         >
-          <p className="text-sm text-[rgb(148,163,184)] line-clamp-2 italic">"{groom.bio}"</p>
+          <p className="text-sm text-slate-400 line-clamp-2 italic">"{groom.bio}"</p>
         </div>
 
         {/* Pricing */}
@@ -208,7 +208,7 @@ const GroomCard = ({
                 onClick={() => setShowDetails(false)}
                 className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[rgba(37,99,235,0.2)] transition-colors"
               >
-                <X className="w-4 h-4 text-[rgb(148,163,184)]" />
+                <X className="w-4 h-4 text-slate-400" />
               </button>
             </div>
 
@@ -397,7 +397,7 @@ const MarketplacePage = () => {
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center space-y-3">
           <RefreshCw className="w-12 h-12 text-[rgb(37,99,235)] animate-spin mx-auto" />
-          <p className="text-[rgb(148,163,184)]">Loading Marketplace…</p>
+          <p className="text-slate-400">Loading Marketplace…</p>
         </div>
       </div>
     );
@@ -530,9 +530,7 @@ const MarketplacePage = () => {
             <p className="fantasy-header text-xl text-[rgb(220,235,255)] mb-2">
               No Grooms Available
             </p>
-            <p className="text-[rgb(148,163,184)] mb-6">
-              Refresh the marketplace to see new grooms
-            </p>
+            <p className="text-slate-400 mb-6">Refresh the marketplace to see new grooms</p>
             <Button
               onClick={handleRefresh}
               disabled={refreshMutation.isPending}

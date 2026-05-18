@@ -99,7 +99,7 @@ const StatCard = memo(
     >
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm font-medium text-[rgb(148,163,184)]">{title}</p>
+          <p className="text-sm font-medium text-slate-400">{title}</p>
           <p className="text-2xl font-bold text-[rgb(220,235,255)] mt-1">{value}</p>
         </div>
         <div className={`p-3 rounded-full ${iconBgColor}`}>
@@ -143,7 +143,7 @@ StatsError.displayName = 'StatsError';
  * Breadcrumb navigation component
  */
 const Breadcrumbs = memo(() => (
-  <nav className="flex items-center text-sm text-[rgb(148,163,184)] mb-4" aria-label="Breadcrumb">
+  <nav className="flex items-center text-sm text-slate-400 mb-4" aria-label="Breadcrumb">
     <Link to="/" className="flex items-center hover:text-[rgb(220,235,255)] transition-colors">
       <Home className="h-4 w-4 mr-1" aria-hidden="true" />
       Home

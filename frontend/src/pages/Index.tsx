@@ -123,7 +123,7 @@ function HorseCard({ horse }: { horse: HorseSummary }) {
       </div>
 
       {/* Care strip */}
-      <div className="flex gap-1 px-3 py-3 mt-2 border-t border-[rgba(148,163,184,0.08)] overflow-hidden">
+      <div className="flex gap-1 px-3 py-3 mt-2 border-t border-slate-400/[0.08] overflow-hidden">
         <CareChip label="Fed" status={careChipStatus(horse.lastFedDate, 1, 3)} />
         <CareChip label="Shod" status={careChipStatus(horse.lastShod, 7, 14)} />
         <CareChip label="Groomed" status={careChipStatus(horse.lastGroomed, 3, 7)} />

@@ -232,7 +232,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                         ? 'bg-gradient-to-r from-blue-500 to-blue-600'
                         : avgScore >= 40
                           ? 'bg-gradient-to-r from-burnished-gold to-aged-bronze'
-                          : 'bg-gradient-to-r from-[rgba(148,163,184,0.6)] to-[rgba(148,163,184,0.4)]';
+                          : 'bg-gradient-to-r from-slate-400/60 to-slate-400/40';
                   })()}`}
                   style={{
                     width: `${(() => {
@@ -325,7 +325,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                       ? 'bg-gradient-to-r from-burnished-gold to-aged-bronze'
                       : value >= 40
                         ? 'bg-gradient-to-r from-blue-500 to-blue-600'
-                        : 'bg-gradient-to-r from-[rgba(148,163,184,0.6)] to-[rgba(148,163,184,0.4)]';
+                        : 'bg-gradient-to-r from-slate-400/60 to-slate-400/40';
                   })()}`}
                   style={{
                     width: `${(() => {
@@ -433,7 +433,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                         ? 'bg-emerald-500/20 text-emerald-400'
                         : interaction.strength >= 50
                           ? 'bg-burnished-gold/20 text-burnished-gold'
-                          : 'bg-[rgba(37,99,235,0.15)] text-[rgb(148,163,184)]'
+                          : 'bg-[rgba(37,99,235,0.15)] text-slate-400'
                     }`}
                   >
                     Strength: {interaction.strength}
@@ -467,7 +467,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                           : entry.eventType === 'activated'
                             ? 'bg-emerald-500/20 text-emerald-400'
                             : entry.eventType === 'deactivated'
-                              ? 'bg-[rgba(37,99,235,0.15)] text-[rgb(148,163,184)]'
+                              ? 'bg-[rgba(37,99,235,0.15)] text-slate-400'
                               : entry.eventType === 'mutated'
                                 ? 'bg-burnished-gold/20 text-burnished-gold'
                                 : 'bg-blue-500/20 text-blue-400'
