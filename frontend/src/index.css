@@ -629,3 +629,77 @@
 .animate-fade-in {
   animation: fade-in 0.25s ease-out both;
 }
+
+/* ── Spec 11.3.1: StarfieldBackground — global atmospheric layer (Equoria-9x4w) ──
+ *
+ * Pure CSS, zero JS. A fixed full-viewport layer painted behind every page.
+ * Three+ radial-gradient "star sheets" of differing dot size/opacity create
+ * depth; a single low-frequency opacity keyframe gives a subtle twinkle.
+ * Layered base gradient: --bg-deep-space -> --bg-night-sky -> --bg-midnight.
+ */
+@keyframes starfield-twinkle {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+.starfield-bg {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-starfield);
+  pointer-events: none;
+  /* Base sky gradient — sits behind content, never affects its contrast. */
+  background-color: var(--bg-deep-space);
+  background-image:
+    radial-gradient(1.5px 1.5px at 20% 30%, rgba(255, 255, 255, 0.9) 50%, transparent 51%),
+    radial-gradient(1px 1px at 75% 15%, rgba(255, 255, 255, 0.75) 50%, transparent 51%),
+    radial-gradient(1px 1px at 50% 70%, rgba(255, 255, 255, 0.7) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 85% 60%, rgba(255, 255, 255, 0.8) 50%, transparent 51%),
+    radial-gradient(1px 1px at 10% 80%, rgba(255, 255, 255, 0.6) 50%, transparent 51%),
+    radial-gradient(1px 1px at 35% 50%, rgba(255, 255, 255, 0.55) 50%, transparent 51%),
+    linear-gradient(
+      180deg,
+      var(--bg-deep-space) 0%,
+      var(--bg-night-sky) 55%,
+      var(--bg-midnight) 100%
+    );
+  background-repeat: repeat, repeat, repeat, repeat, repeat, repeat, no-repeat;
+  animation: starfield-twinkle 6s ease-in-out infinite;
+  will-change: opacity;
+}
+
+/* Dense (default): tighter star tiling — hub, landing, onboarding. */
+.starfield-bg[data-density='dense'] {
+  background-size:
+    180px 180px,
+    240px 240px,
+    300px 300px,
+    220px 220px,
+    280px 280px,
+    260px 260px,
+    100% 100%;
+}
+
+/* Sparse: larger tiles => fewer visible stars — Results, Messages, etc. */
+.starfield-bg[data-density='sparse'] {
+  background-size:
+    420px 420px,
+    520px 520px,
+    600px 600px,
+    480px 480px,
+    560px 560px,
+    540px 540px,
+    100% 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* Stars stay visible but the twinkle is removed entirely (Spec 11.3.1). */
+  .starfield-bg {
+    animation: none !important;
+    opacity: 0.8;
+  }
+}
