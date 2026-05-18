@@ -452,6 +452,46 @@ const RATE_LIMIT_MAX_BY_ENV = {
   beta: 3000,
   development: 500,
 };
+//
+// ─── Per-environment cap divergence rationale (Equoria-aih8) ─────────────────
+// There are THREE distinct rate limiters with intentionally different
+// per-env caps. They are NOT redundant — each governs a different abuse
+// surface over a different window. This block + the sentinel
+// `backend/__tests__/betaReadinessEnvSentinel.test.mjs` pin the divergence
+// so it cannot silently drift or collapse into a bypass.
+//
+//   Limiter            Source                              Window  beta  beta-readiness  production
+//   apiLimiter         app.mjs RATE_LIMIT_MAX_BY_ENV        15min  3000  1000            100
+//   mutationRateLimiter rateLimiting.mjs                     1min  120   (none → 30)     30
+//   authRateLimiter    rateLimiting.mjs                     15min  200f  200f            200f
+//
+// Why they diverge:
+//  - beta apiLimiter 3000/15min: the Playwright E2E suite runs ~7 min of
+//    sequential requests from one source IP (::1 in CI); register+login+
+//    per-spec calls exceed 500/window. Bumped 500→3000 (Equoria-obwp) so
+//    the suite never self-429s while staying far below an abusive rate.
+//    `beta` is selected by the deployment env, never a per-request header.
+//  - beta-readiness apiLimiter 1000/15min: the readiness gate runs the full
+//    suite against PRODUCTION middleware for parity (auth/CSRF/ownership/
+//    email). Production's 100-cap self-rate-limits before one flow finishes;
+//    1000 lets the gate complete without becoming a rate-limiter test, yet
+//    is an order of magnitude tighter than beta (gate = fewer flows than
+//    the full exploratory E2E pass).
+//  - mutation beta 120/1min: a SEPARATE, narrower surface — back-to-back
+//    stallion/mare/create/feed/breed mutations trip the 30/min prod cap and
+//    cascade fixture failures (Equoria-st9u). 120 = 2 mut/sec, abuse-safe.
+//    `beta-readiness` is deliberately ABSENT from
+//    MUTATION_RATE_LIMIT_MAX_BY_ENV so it inherits production 30/min — the
+//    readiness gate MUST exercise the real mutation cap.
+//  - Global (15min) vs mutation (1min) windows differ, so their numeric
+//    caps are not comparable: 3000/15min ≈ 3.3 req/s aggregate vs
+//    120/1min = 2 mutations/s burst — they measure different things.
+//
+// Bypass-safety invariant: none of these env NAMES enable a header /
+// isTestEnv bypass. Only NODE_ENV=test (or a live Jest worker) short-
+// circuits limiting via TEST_RATE_LIMIT_*. beta / beta-readiness get a
+// HIGHER CAP, never a BYPASS — enforced by the sentinel above.
+// ────────────────────────────────────────────────────────────────────────────
 const apiLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
   max: RATE_LIMIT_MAX_BY_ENV[process.env.NODE_ENV] ?? 100,
