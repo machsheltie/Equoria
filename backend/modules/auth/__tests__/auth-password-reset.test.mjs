@@ -292,4 +292,134 @@ describe('Auth — Password Reset Integration', () => {
       .send({ token: capturedRawToken, newPassword: 'AnotherPass3#' });
     expect(secondReset.status).toBe(400);
   });
+
+  // ────────────────────────────────────────────────────────────────────────
+  // Equoria-8fdv — sentinel-positive for the EXPIRED-token guard.
+  // authController.resetPassword filters with `AND "expiresAt" > NOW()`
+  // (authController.mjs ~842). Plant a token row whose expiresAt is in the
+  // past and assert the reset is rejected AND the password is unchanged.
+  // This FAILS if the `expiresAt > NOW()` clause is removed from the guard.
+  it('resetPassword rejects an expired token with 400 and does not change the password', async () => {
+    const timestamp = Date.now();
+    const email = `${EMAIL_PREFIX}expired_${timestamp}@example.com`;
+    const originalPassword = 'OriginalPass1!';
+    const attemptedNewPassword = 'ShouldNotApply9@';
+
+    const hashedOriginal = await bcrypt.hash(originalPassword, 1);
+    const user = await prisma.user.create({
+      data: {
+        username: `${EMAIL_PREFIX}expired_${timestamp}`,
+        email,
+        password: hashedOriginal,
+        firstName: 'Expired',
+        lastName: 'Test',
+      },
+    });
+
+    // Issue a raw token and insert a matching row that is ALREADY expired.
+    // hashPasswordResetToken is sha256(token).hex (authController.mjs:52-54).
+    const rawToken = randomBytes(32).toString('hex');
+    const crypto = await import('crypto');
+    const tokenHash = crypto.default.createHash('sha256').update(rawToken).digest('hex');
+    await prisma.$executeRawUnsafe(
+      `INSERT INTO password_reset_tokens
+         ("tokenHash", "userId", email, "expiresAt", "ipAddress", "userAgent")
+       VALUES ($1, $2, $3, NOW() - INTERVAL '1 hour', $4, $5)`,
+      tokenHash,
+      user.id,
+      email,
+      '127.0.0.1',
+      'jest-expired-token-test',
+    );
+
+    const resetRes = await request(app)
+      .post('/api/v1/auth/reset-password')
+      .set('Origin', 'http://localhost:3000')
+      .send({ token: rawToken, newPassword: attemptedNewPassword });
+
+    expect(resetRes.status).toBe(400);
+
+    // Password MUST be unchanged — the original still logs in, the
+    // attempted new one does not.
+    const loginOld = await request(app)
+      .post('/api/v1/auth/login')
+      .set('Origin', 'http://localhost:3000')
+      .send({ email, password: originalPassword });
+    expect(loginOld.status).toBe(200);
+
+    const loginAttempted = await request(app)
+      .post('/api/v1/auth/login')
+      .set('Origin', 'http://localhost:3000')
+      .send({ email, password: attemptedNewPassword });
+    expect(loginAttempted.status).toBe(401);
+
+    // The expired token must remain unused (never consumed).
+    const rows = await prisma.$queryRawUnsafe(
+      'SELECT "usedAt" FROM password_reset_tokens WHERE "tokenHash" = $1',
+      tokenHash,
+    );
+    expect(rows[0]?.usedAt).toBeNull();
+  });
+
+  // ────────────────────────────────────────────────────────────────────────
+  // Equoria-8fdv — sentinel-positive for PASSWORD-VALIDATION failure.
+  // authRoutes.mjs ~107-114 enforces newPassword length/complexity before
+  // the controller runs. A valid unused token + a too-short newPassword
+  // must 400 with a validation message AND must NOT mark the token used
+  // (the request is rejected at validation, before the controller's
+  // token-consume transaction). FAILS if the body('newPassword') rule is
+  // removed from the route.
+  it('resetPassword rejects a weak newPassword with 400 and leaves the token unused', async () => {
+    const timestamp = Date.now();
+    const email = `${EMAIL_PREFIX}weakpw_${timestamp}@example.com`;
+    const originalPassword = 'OriginalPass1!';
+
+    const hashedOriginal = await bcrypt.hash(originalPassword, 1);
+    await prisma.user.create({
+      data: {
+        username: `${EMAIL_PREFIX}weakpw_${timestamp}`,
+        email,
+        password: hashedOriginal,
+        firstName: 'WeakPw',
+        lastName: 'Test',
+      },
+    });
+
+    // Real flow: get a genuine, valid, unused token via forgot-password.
+    await request(app)
+      .post('/api/v1/auth/forgot-password')
+      .set('Origin', 'http://localhost:3000')
+      .send({ email });
+    const capturedRawToken = readCapturedResetToken();
+    expect(capturedRawToken).not.toBeNull();
+
+    const crypto = await import('crypto');
+    const tokenHash = crypto.default
+      .createHash('sha256')
+      .update(capturedRawToken)
+      .digest('hex');
+
+    // Too short to satisfy the min:8 / complexity rule.
+    const resetRes = await request(app)
+      .post('/api/v1/auth/reset-password')
+      .set('Origin', 'http://localhost:3000')
+      .send({ token: capturedRawToken, newPassword: 'short' });
+
+    expect(resetRes.status).toBe(400);
+    expect(JSON.stringify(resetRes.body)).toMatch(/password/i);
+
+    // The valid token must NOT have been consumed by the rejected request.
+    const rows = await prisma.$queryRawUnsafe(
+      'SELECT "usedAt" FROM password_reset_tokens WHERE "tokenHash" = $1',
+      tokenHash,
+    );
+    expect(rows[0]?.usedAt).toBeNull();
+
+    // And the original password still works (nothing changed).
+    const loginOld = await request(app)
+      .post('/api/v1/auth/login')
+      .set('Origin', 'http://localhost:3000')
+      .send({ email, password: originalPassword });
+    expect(loginOld.status).toBe(200);
+  });
 });
