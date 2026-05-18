@@ -192,8 +192,23 @@ export const SecurityAlertThresholds = {
 };
 
 /**
- * In-memory event counter for threshold monitoring
- * In production, this should use Redis for distributed tracking
+ * In-memory event counter for threshold monitoring.
+ *
+ * ⚠️ PER-PROCESS, NOT SCALE-ACCURATE (Equoria-rqi7, 2026-05-18).
+ * This is a plain in-process JS Map. Threshold *escalation* (the
+ * count-within-window → critical decision in checkAlertThreshold) is therefore
+ * single-process only:
+ *   - Under horizontal scaling (multiple Railway instances) an attacker whose
+ *     requests load-balance across N instances divides their per-instance
+ *     count by N, so an aggregate-threshold-worth of activity may never trip
+ *     on any single process.
+ *   - The Map resets on every deploy / restart, so a slow attack spanning a
+ *     deploy is not aggregated across the boundary.
+ * Each individual security event is still captured to Sentry regardless; only
+ * the escalation aggregation is best-effort. A Redis-backed shared counter is
+ * the documented remediation if multi-instance escalation accuracy is required
+ * (see docs/SECURITY_ASSESSMENT_REPORT.md A09). Do NOT present threshold
+ * escalation as a scale-accurate alerting control.
  */
 const eventCounters = new Map();
 

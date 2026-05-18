@@ -366,6 +366,22 @@ correction).
     - IDOR attempts: 3 events/10min → critical
     - Privilege escalation: 1 event → immediate critical
     - XSS/SQL injection: 1 event → immediate critical
+  - ⚠️ **Threshold counting is per-process, NOT scale-accurate (Equoria-rqi7,
+    2026-05-18).** `checkAlertThreshold` in `backend/config/sentry.mjs`
+    (`const eventCounters = new Map()`, ~line 198) keeps event history in a
+    plain in-process JS `Map`. Consequences under horizontal scaling (multiple
+    Railway instances) or any restart/deploy:
+    - An attacker whose requests load-balance across N instances divides their
+      event count by N per instance, so an aggregate-threshold-worth of
+      activity may never trip on any single process.
+    - Counters reset to empty on every deploy / instance restart, so a slow
+      attack spanning a deploy is not aggregated across the boundary.
+    - Single-instance Sentry capture of each event still works (every event is
+      reported); only the **escalation-to-critical aggregation** is unreliable
+      at scale. Treat threshold escalation as a best-effort single-process
+      heuristic, **not** a scale-accurate alerting control. A Redis-backed
+      shared counter is the documented remediation path if/when multi-instance
+      escalation accuracy becomes required.
 - **Audit Log Fields:**
   - Timestamp, user ID, IP address, user agent
   - Operation type, resource accessed, success/failure
