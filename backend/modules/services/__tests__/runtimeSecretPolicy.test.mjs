@@ -137,4 +137,39 @@ describe('getSecretValidationError', () => {
     const result = getSecretValidationError('JWT_SECRET', 'test-jwt-secret-key-for-testing-only', 'test');
     expect(result).toBeNull();
   });
+
+  // -------------------------------------------------------------------------
+  // Minimum-length enforcement in deployable environments (Equoria-ft6h)
+  // SECURITY.md documents JWT_SECRET / SESSION_SECRET as "minimum 32 chars".
+  // A too-short-but-non-placeholder secret previously slipped through.
+  // -------------------------------------------------------------------------
+  describe('minimum length in deployable environments (Equoria-ft6h)', () => {
+    it('rejects a short (<32 char) non-placeholder secret in production', () => {
+      const result = getSecretValidationError('JWT_SECRET', 'abc123short', 'production');
+      expect(typeof result).toBe('string');
+      expect(result).toContain('JWT_SECRET');
+      expect(result).toMatch(/32|short|length/i);
+    });
+
+    it('rejects a short non-placeholder secret in beta', () => {
+      const result = getSecretValidationError('SESSION_SECRET', 'tooShortSecret', 'beta');
+      expect(typeof result).toBe('string');
+    });
+
+    it('accepts a 32+ char non-placeholder secret in production', () => {
+      const longSecret = `${'g'.repeat(32)}J3k9mP2xQ8nL5rT7vA1sD4wF6yH0cE`;
+      const result = getSecretValidationError('JWT_SECRET', longSecret, 'production');
+      expect(result).toBeNull();
+    });
+
+    it('does NOT enforce length in development (non-deployable)', () => {
+      const result = getSecretValidationError('JWT_SECRET', 'shortdev', 'development');
+      expect(result).toBeNull();
+    });
+
+    it('does NOT enforce length in test environment', () => {
+      const result = getSecretValidationError('JWT_SECRET', 'shorttest', 'test');
+      expect(result).toBeNull();
+    });
+  });
 });

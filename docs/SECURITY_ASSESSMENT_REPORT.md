@@ -651,16 +651,18 @@ None identified.
 
 ### 8.2 Security Contact Information
 
-> **TODO — NOT CONFIGURED.** Every value below is a placeholder. None is a
-> monitored mailbox or live phone line. Do not present this section as
-> operational. Must be replaced with real, monitored contacts before any
-> production/beta exposure.
+> **🚫 UNCONFIGURED-BLOCKS-PROD / TODO — NOT CONFIGURED.** Every value below
+> is a placeholder. None is a monitored mailbox or live phone line. Do not
+> present this section as operational. Production deployment MUST NOT proceed
+> until these are replaced with real, monitored contacts and this banner is
+> removed. Tracked on the pre-launch checklist (§11.5).
 
-- **Security Team:** `security@equoria.com` — TODO (placeholder, unverified)
-- **Emergency Contact:** `+1-XXX-XXX-XXXX` — TODO (placeholder, not a real line)
-- **Incident Reporting:** `incidents@equoria.com` — TODO (placeholder, unverified)
+- **Security Team:** `security@equoria.com` — TODO / UNCONFIGURED-BLOCKS-PROD (placeholder, unverified)
+- **Emergency Contact:** `+1-XXX-XXX-XXXX` — TODO / UNCONFIGURED-BLOCKS-PROD (placeholder, not a real line)
+- **Incident Reporting:** `incidents@equoria.com` — TODO / UNCONFIGURED-BLOCKS-PROD (placeholder, unverified)
 
-**Status:** ⚠️ BLOCKING for production — contacts are placeholders, not configured.
+**Status:** 🚫 UNCONFIGURED-BLOCKS-PROD — contacts are placeholders, not
+configured. This is a hard pre-production blocker, not a soft warning.
 
 ---
 
@@ -765,7 +767,31 @@ not optional polish.
 4. File + link the blocking SSRF-guard gate before any external-URL feature
 5. Configure Sentry production DSN
 6. Finalize CORS origin whitelist
-7. Conduct pre-launch security checklist review
+7. Conduct pre-launch security checklist review (see §11.5)
+
+---
+
+### 11.5 Pre-Launch Security Checklist (hard blockers)
+
+Every item below is a **hard pre-production blocker**. None may be deferred,
+softened, or marked "done" from intent — verify the real value is set.
+
+- [ ] **Security contact info configured** — replace the placeholders in §8.2
+      and Appendix C (`security@equoria.com`, `incidents@equoria.com`,
+      `+1-XXX-XXX-XXXX`, `development@equoria.com`) with real, monitored
+      contacts; remove the UNCONFIGURED-BLOCKS-PROD banner in §8.2.
+- [ ] **`JWT_SECRET` / `JWT_REFRESH_SECRET` set** — strong, distinct, ≥32 chars.
+      Enforced at startup by `backend/config/config.mjs` +
+      `backend/utils/runtimeSecretPolicy.mjs` (fails fast on missing /
+      placeholder / too-short in production & beta).
+- [ ] **`SESSION_SECRET` set** — strong 32+ char value (documented in
+      `backend/.env.example` and `.claude/rules/SECURITY.md`).
+- [ ] **`BCRYPT_SALT_ROUNDS` >= 12** — note: the application reads
+      `BCRYPT_SALT_ROUNDS`, NOT `BCRYPT_ROUNDS` (SECURITY.md naming is doc
+      drift; `backend/.env.example` documents the canonical name).
+- [ ] **Sentry production DSN configured.**
+- [ ] **CORS origin whitelist finalized** (`ALLOWED_ORIGINS`).
+- [ ] **Production monitoring dashboards configured.**
 
 ---
 
@@ -799,7 +825,7 @@ unit-level scanner/guard/handler coverage.)
 
 ### Appendix C: Security Contacts
 
-- **Internal Security Team:** development@equoria.com
+- **Internal Security Team:** development@equoria.com — _UNCONFIGURED-BLOCKS-PROD (placeholder; see §11.5)_
 - **Sentry Support:** https://sentry.io/support
 - **GitHub Security:** https://docs.github.com/en/code-security
 - **OWASP Resources:** https://owasp.org/
