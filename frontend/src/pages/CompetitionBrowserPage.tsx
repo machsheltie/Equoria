@@ -22,8 +22,15 @@ import { CompetitionList } from '@/components/competition';
 import CompetitionDetailModal, {
   type Competition as ModalCompetition,
 } from '@/components/competition/CompetitionDetailModal';
+import ConformationShowsPanel from '@/components/competition/ConformationShowsPanel';
 import PageHero from '@/components/layout/PageHero';
 import { Button } from '@/components/ui/button';
+
+// Equoria-8g4n (31F-FE-3): the unified browser exposes ridden and
+// conformation shows as tabs so testers reach both from one surface. Tab
+// state lives in the ?tab= search param so /conformation-shows can redirect
+// to /competitions?tab=conformation and deep-link straight to the panel.
+type BrowserTab = 'ridden' | 'conformation';
 
 const CompetitionBrowserPage = (): JSX.Element => {
   const { data, isLoading, error, refetch } = useCompetitions();
@@ -70,6 +77,26 @@ const CompetitionBrowserPage = (): JSX.Element => {
       );
     }
   }, [horseQueryParam, horses, setSearchParams]);
+
+  const activeTab: BrowserTab =
+    searchParams.get('tab') === 'conformation' ? 'conformation' : 'ridden';
+  const selectTab = useCallback(
+    (tab: BrowserTab) => {
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev);
+          if (tab === 'ridden') {
+            next.delete('tab');
+          } else {
+            next.set('tab', tab);
+          }
+          return next;
+        },
+        { replace: true }
+      );
+    },
+    [setSearchParams]
+  );
 
   const enterCompetition = useMutation<
     { entryId: number; horseId: number; showId: number; entryFee: number },
@@ -136,8 +163,49 @@ const CompetitionBrowserPage = (): JSX.Element => {
     [enterCompetition, selectedHorseId]
   );
 
-  // Loading state
-  if (isLoading) {
+  // Equoria-8g4n: tab nav rendered in every state so the conformation tab is
+  // reachable even while the ridden competition list is loading or errored
+  // (the conformation panel manages its own loading/error from the same hook).
+  const tabNav = (
+    <div
+      className="mb-6 flex gap-2 border-b border-[var(--gold-dim)]/20"
+      role="tablist"
+      aria-label="Competition surfaces"
+      data-testid="competition-browser-tabs"
+    >
+      <button
+        type="button"
+        role="tab"
+        aria-selected={activeTab === 'ridden'}
+        onClick={() => selectTab('ridden')}
+        data-testid="tab-ridden"
+        className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+          activeTab === 'ridden'
+            ? 'border-[var(--gold-400)] text-[var(--cream)]'
+            : 'border-transparent text-[var(--text-muted)] hover:text-[var(--cream)]'
+        }`}
+      >
+        Ridden Shows
+      </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={activeTab === 'conformation'}
+        onClick={() => selectTab('conformation')}
+        data-testid="tab-conformation"
+        className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+          activeTab === 'conformation'
+            ? 'border-[var(--gold-400)] text-[var(--cream)]'
+            : 'border-transparent text-[var(--text-muted)] hover:text-[var(--cream)]'
+        }`}
+      >
+        Conformation Shows
+      </button>
+    </div>
+  );
+
+  // Loading state (ridden tab only — conformation panel self-manages).
+  if (isLoading && activeTab === 'ridden') {
     return (
       <div className="min-h-screen" data-testid="competition-browser-page">
         <PageHero
@@ -151,6 +219,7 @@ const CompetitionBrowserPage = (): JSX.Element => {
           role="status"
           aria-label="Loading competitions"
         >
+          {tabNav}
           <div
             className="glass-panel rounded-2xl p-12 flex flex-col items-center justify-center"
             data-testid="loading-spinner"
@@ -163,8 +232,8 @@ const CompetitionBrowserPage = (): JSX.Element => {
     );
   }
 
-  // Error state
-  if (error) {
+  // Error state (ridden tab only — conformation panel self-manages).
+  if (error && activeTab === 'ridden') {
     return (
       <div className="min-h-screen" data-testid="competition-browser-page">
         <PageHero
@@ -174,6 +243,7 @@ const CompetitionBrowserPage = (): JSX.Element => {
           icon={<Trophy className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
         />
         <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
+          {tabNav}
           <div
             className="glass-panel rounded-2xl border-[var(--status-danger)]/30 p-8 text-center"
             data-testid="error-state"
@@ -206,27 +276,37 @@ const CompetitionBrowserPage = (): JSX.Element => {
       />
 
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-12">
-        {/* Filters Section */}
-        <div data-testid="page-header">
-          <CompetitionFilters
-            disciplineFilter={disciplineFilter}
-            dateRangeFilter={dateRangeFilter}
-            entryFeeFilter={entryFeeFilter}
-            onDisciplineChange={setDisciplineFilter}
-            onDateRangeChange={setDateRangeFilter}
-            onEntryFeeChange={setEntryFeeFilter}
-            onClearFilters={handleClearFilters}
-            className="mb-6"
-          />
-        </div>
+        {tabNav}
 
-        {/* Competition List */}
-        <CompetitionList
-          competitions={data || []}
-          isLoading={isLoading}
-          onCompetitionClick={handleCompetitionClick}
-          title="Available Competitions"
-        />
+        {activeTab === 'conformation' ? (
+          <div role="tabpanel" data-testid="conformation-tab-panel">
+            <ConformationShowsPanel />
+          </div>
+        ) : (
+          <div role="tabpanel" data-testid="ridden-tab-panel">
+            {/* Filters Section */}
+            <div data-testid="page-header">
+              <CompetitionFilters
+                disciplineFilter={disciplineFilter}
+                dateRangeFilter={dateRangeFilter}
+                entryFeeFilter={entryFeeFilter}
+                onDisciplineChange={setDisciplineFilter}
+                onDateRangeChange={setDateRangeFilter}
+                onEntryFeeChange={setEntryFeeFilter}
+                onClearFilters={handleClearFilters}
+                className="mb-6"
+              />
+            </div>
+
+            {/* Competition List */}
+            <CompetitionList
+              competitions={data || []}
+              isLoading={isLoading}
+              onCompetitionClick={handleCompetitionClick}
+              title="Available Competitions"
+            />
+          </div>
+        )}
       </main>
 
       {/* Competition Detail Modal */}

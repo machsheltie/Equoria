@@ -1,8 +1,16 @@
 /**
- * Conformation Shows — E2E (Story 21-9 follow-up, Equoria-dij4)
+ * Conformation Shows — E2E (Story 21-9 follow-up, Equoria-dij4;
+ * unified into the competition browser in Equoria-8g4n / 31F-FE-3)
+ *
+ * Conformation shows are now a tab inside CompetitionBrowserPage. The legacy
+ * /conformation-shows URL redirects to /competitions?tab=conformation so
+ * tester bookmarks keep working. The conformation panel reuses the same
+ * data-testids, so the read + gating coverage below is unchanged — it just
+ * lands on the unified surface via the redirect.
  *
  * Covers the conformation-shows browse surface beta testers exercise:
- *   1. /conformation-shows renders with real /api/v1/competitions GET
+ *   1. /conformation-shows redirects to the conformation tab with real
+ *      /api/v1/competitions GET
  *   2. Horse selector + show selector populate from real API data
  *   3. Enter Show button is gated until both selections are made
  *
@@ -23,7 +31,9 @@ test.describe('Conformation Shows', () => {
     test.setTimeout(60000);
   });
 
-  test('AC1: /conformation-shows renders with real competitions API', async ({ page }) => {
+  test('AC1: /conformation-shows redirects to the conformation tab with real competitions API', async ({
+    page,
+  }) => {
     const competitionsResp = page.waitForResponse(
       (resp) => resp.url().includes('/api/v1/competitions') && resp.request().method() === 'GET',
       { timeout: 20000 }
@@ -31,13 +41,19 @@ test.describe('Conformation Shows', () => {
 
     await page.goto('/conformation-shows', { waitUntil: 'domcontentloaded' });
 
-    // PageHero title — proves the protected route loaded under real auth
-    await expect(page.getByRole('heading', { name: 'Conformation Shows' }).first()).toBeVisible({
+    // The legacy URL redirects to the unified competition browser, deep-linked
+    // straight to the conformation tab.
+    await expect(page).toHaveURL(/\/competitions\?tab=conformation/, { timeout: 20000 });
+
+    // PageHero title of the unified browser — proves the protected route
+    // loaded under real auth after the redirect.
+    await expect(page.getByRole('heading', { name: 'Competition Arena' }).first()).toBeVisible({
       timeout: 20000,
     });
 
-    // Page wrapper testid
-    await expect(page.locator('[data-testid="conformation-shows-page"]')).toBeVisible();
+    // The conformation tab panel renders (replaces the old standalone page
+    // wrapper testid).
+    await expect(page.locator('[data-testid="conformation-tab-panel"]')).toBeVisible();
 
     // Real competitions GET completes (the page reuses useCompetitions and
     // filters by showType === 'conformation' client-side)
@@ -47,9 +63,7 @@ test.describe('Conformation Shows', () => {
     }
   });
 
-  test('AC2: horse + show selectors are present and populated from real data', async ({
-    page,
-  }) => {
+  test('AC2: horse + show selectors are present and populated from real data', async ({ page }) => {
     await page.goto('/conformation-shows', { waitUntil: 'domcontentloaded' });
 
     const horseSelect = page.locator('[data-testid="conformation-horse-select"]');

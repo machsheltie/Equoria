@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { BrowserRouter, MockAuthProvider } from '../../test/utils';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import CompetitionBrowserPage from '../CompetitionBrowserPage';
@@ -384,6 +384,82 @@ describe('CompetitionBrowserPage', () => {
       await waitFor(() => {
         expect(refetchMock).toHaveBeenCalled();
       });
+    });
+  });
+
+  // Equoria-8g4n (31F-FE-3): conformation shows unified as a tab inside the
+  // competition browser. Both ridden and conformation must be reachable from
+  // this single surface; the tab switch must not regress the ridden flow.
+  describe('Conformation tab (Equoria-8g4n)', () => {
+    const conformationShow = {
+      id: 901,
+      name: 'Spring Classic Conformation',
+      discipline: 'Conformation',
+      date: '2026-06-01T10:00:00Z',
+      showType: 'conformation',
+      prizePool: 5000,
+      entryFee: 100,
+      description: '',
+      location: 'Arena',
+      maxEntries: 20,
+      currentEntries: 3,
+    };
+    const riddenShow = {
+      id: 1,
+      name: 'Dressage Open',
+      discipline: 'Dressage',
+      date: '2026-06-02T10:00:00Z',
+      showType: 'ridden',
+      prizePool: 4000,
+      entryFee: 80,
+      description: '',
+      location: 'Arena',
+      maxEntries: 20,
+      currentEntries: 5,
+    };
+
+    beforeEach(() => {
+      vi.mocked(useCompetitions).mockReturnValue({
+        data: [riddenShow, conformationShow],
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      } as any);
+    });
+
+    it('renders both ridden and conformation tabs on the unified browser', () => {
+      renderPage();
+      expect(screen.getByTestId('competition-browser-tabs')).toBeInTheDocument();
+      expect(screen.getByTestId('tab-ridden')).toBeInTheDocument();
+      expect(screen.getByTestId('tab-conformation')).toBeInTheDocument();
+      // Ridden is the default tab.
+      expect(screen.getByTestId('ridden-tab-panel')).toBeInTheDocument();
+      expect(screen.queryByTestId('conformation-tab-panel')).not.toBeInTheDocument();
+    });
+
+    it('switches to the conformation panel and lists only conformation shows', async () => {
+      renderPage();
+      fireEvent.click(screen.getByTestId('tab-conformation'));
+
+      const panel = await screen.findByTestId('conformation-tab-panel');
+      expect(panel).toBeInTheDocument();
+      // The conformation panel filters by showType === 'conformation': the
+      // conformation show row is present, the ridden one is not.
+      expect(screen.getByTestId('conformation-show-row-901')).toBeInTheDocument();
+      expect(screen.queryByTestId('conformation-show-row-1')).not.toBeInTheDocument();
+      // Ridden filters/list are not rendered while on the conformation tab.
+      expect(screen.queryByTestId('ridden-tab-panel')).not.toBeInTheDocument();
+    });
+
+    it('returns to the ridden flow without regression when switching back', async () => {
+      renderPage();
+      fireEvent.click(screen.getByTestId('tab-conformation'));
+      expect(await screen.findByTestId('conformation-tab-panel')).toBeInTheDocument();
+
+      fireEvent.click(screen.getByTestId('tab-ridden'));
+      expect(await screen.findByTestId('ridden-tab-panel')).toBeInTheDocument();
+      expect(screen.getByTestId('page-header')).toBeInTheDocument();
+      expect(screen.queryByTestId('conformation-tab-panel')).not.toBeInTheDocument();
     });
   });
 });

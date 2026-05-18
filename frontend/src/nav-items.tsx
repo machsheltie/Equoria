@@ -21,8 +21,10 @@ const StableViewNav = lazy(() => import('./pages/StableView'));
 const ProfilePageNav = lazy(() => import('./pages/ProfilePage'));
 const CompetitionBrowserPage = lazy(() => import('./pages/CompetitionBrowserPage'));
 const CompetitionResultsPage = lazy(() => import('./pages/CompetitionResultsPage'));
-// Equoria-e0cn — conformation show entry surface (route-only; linked from
-// competitions browser as a follow-up).
+// Equoria-e0cn / Equoria-8g4n — conformation shows are now a tab inside
+// CompetitionBrowserPage. ConformationShowsPage survives as a thin redirect
+// (/conformation-shows → /competitions?tab=conformation) so the legacy URL
+// keeps working.
 const ConformationShowsPage = lazy(() => import('./pages/ConformationShowsPage'));
 const PrizeHistoryPage = lazy(() => import('./pages/PrizeHistoryPage'));
 const WorldHubPage = lazy(() => import('./pages/WorldHubPage'));
