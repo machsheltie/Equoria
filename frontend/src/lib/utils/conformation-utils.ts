@@ -70,7 +70,7 @@ export function getQualityRating(score: number): QualityRating {
     return {
       label: 'Average',
       color: 'text-[var(--text-secondary)]',
-      bgColor: 'bg-[rgba(148,163,184,0.08)] border-[rgba(148,163,184,0.3)]',
+      bgColor: 'bg-slate-400/[0.08] border-slate-400/30',
     };
   } else if (clampedScore >= 50) {
     return {

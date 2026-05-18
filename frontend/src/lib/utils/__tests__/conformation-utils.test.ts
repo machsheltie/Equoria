@@ -92,7 +92,7 @@ describe('conformation-utils', () => {
       expect(getQualityRating(95).bgColor).toContain('bg-[rgba(16,185,129');
       expect(getQualityRating(85).bgColor).toContain('bg-[rgba(201,162,39');
       expect(getQualityRating(75).bgColor).toContain('bg-[rgba(245,158,11');
-      expect(getQualityRating(65).bgColor).toContain('bg-[rgba(148,163,184');
+      expect(getQualityRating(65).bgColor).toContain('bg-slate-400/[0.08]');
       expect(getQualityRating(55).bgColor).toContain('bg-[rgba(249,115,22');
       expect(getQualityRating(45).bgColor).toContain('bg-[rgba(239,68,68');
     });
