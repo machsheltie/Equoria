@@ -29,7 +29,7 @@
  *     behaviour.
  */
 
-import prisma from '../db/index.mjs';
+import defaultPrisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 
 /**
@@ -64,9 +64,13 @@ function buildRanker(totals) {
  * Capture one batch of rank snapshots (level, xp, horse-earnings,
  * horse-performance) for every user. Returns the number of users processed.
  *
+ * @param {object} [prismaClient] Optional Prisma client (or $extends proxy)
+ *   for dependency injection in tests / shared call sites. Defaults to the
+ *   module singleton — existing callers are unaffected.
  * @returns {Promise<{captured: number}>}
  */
-export async function captureAllUserRankSnapshots() {
+export async function captureAllUserRankSnapshots(prismaClient = defaultPrisma) {
+  const prisma = prismaClient;
   // ---- 1. Single global reads (no per-user loop) -------------------------
   const [users, xpGroups, earningsGroups, perfGroups] = await Promise.all([
     prisma.user.findMany({ select: { id: true, level: true, xp: true } }),
@@ -141,6 +145,14 @@ export async function captureAllUserRankSnapshots() {
   }
 
   // ---- 4. One bulk insert ------------------------------------------------
+  // Equoria-fiiy: between the user read (step 1) and this insert, a user row
+  // can be deleted (account deletion, concurrent test-fixture cleanup on the
+  // canonical DB). The old per-user loop tolerated this by `continue`-ing on
+  // a missing user; the bulk insert must not regress that into a hard
+  // FK-violation failure of the whole nightly job. On P2003 (foreign-key
+  // violation) we re-read the set of user IDs that still exist and retry the
+  // insert filtered to those rows. A user deleted in the final micro-window
+  // simply gets no snapshot this run — correct behaviour, not an error.
   let captured = 0;
   if (data.length > 0) {
     try {
@@ -150,10 +162,26 @@ export async function captureAllUserRankSnapshots() {
         `[userRankSnapshotService.captureAllUserRankSnapshots] Inserted ${result.count} snapshot rows for ${captured} users`,
       );
     } catch (err) {
-      logger.error(
-        `[userRankSnapshotService.captureAllUserRankSnapshots] Bulk insert failed: ${err.message}`,
+      if (err?.code !== 'P2003') {
+        logger.error(
+          `[userRankSnapshotService.captureAllUserRankSnapshots] Bulk insert failed: ${err.message}`,
+        );
+        throw err;
+      }
+      // A user vanished mid-run. Re-read existing IDs, drop snapshot rows for
+      // the now-missing users, retry once. Still O(1) extra queries — NOT a
+      // per-user loop.
+      logger.warn(
+        '[userRankSnapshotService.captureAllUserRankSnapshots] FK violation (user deleted mid-run); retrying with existing users only',
       );
-      throw err;
+      const existing = await prisma.user.findMany({ select: { id: true } });
+      const existingIds = new Set(existing.map(u => u.id));
+      const filtered = data.filter(row => existingIds.has(row.userId));
+      const result = await prisma.userRankSnapshot.createMany({ data: filtered });
+      captured = filtered.length / 4; // 4 category rows per user
+      logger.info(
+        `[userRankSnapshotService.captureAllUserRankSnapshots] Retry inserted ${result.count} snapshot rows for ${captured} users (post-deletion filter)`,
+      );
     }
   } else {
     logger.info(

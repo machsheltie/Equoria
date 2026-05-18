@@ -7,6 +7,7 @@ import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
 import { getCachedQuery } from '../../../utils/cacheHelper.mjs';
+import { captureAllUserRankSnapshots } from '../../../services/userRankSnapshotService.mjs';
 
 const CACHE_TTL = 300; // 5 minutes
 
@@ -693,68 +694,18 @@ export const getUserRankSummary = async (req, res) => {
  * Admin-only: capture current ranks for all users into user_rank_snapshots.
  * Intended to be called nightly (e.g., via Railway cron or an external scheduler).
  */
-export const captureRankSnapshots = async (req, res) => {
+export const captureRankSnapshots = async (req, res, options = {}) => {
   try {
-    const users = await prisma.user.findMany({ select: { id: true } });
-    let captured = 0;
-
-    for (const { id: userId } of users) {
-      // Re-use the same rank computations from getUserRankSummary
-      const user = await prisma.user.findUnique({
-        where: { id: userId },
-        select: { level: true, xp: true },
-      });
-      if (!user) {
-        continue;
-      }
-
-      const [usersAheadLevel, targetXpAgg, targetEarningsAgg, targetPerfAgg] = await Promise.all([
-        prisma.user.count({
-          where: {
-            OR: [
-              { level: { gt: user.level } },
-              { AND: [{ level: user.level }, { xp: { gt: user.xp } }] },
-            ],
-          },
-        }),
-        prisma.xpEvent.aggregate({ where: { userId }, _sum: { amount: true } }),
-        prisma.horse.aggregate({ where: { userId }, _sum: { totalEarnings: true } }),
-        prisma.competitionResult.aggregate({ where: { horse: { userId } }, _max: { score: true } }),
-      ]);
-
-      const targetXpTotal = targetXpAgg._sum.amount ?? 0;
-      const targetEarnings = targetEarningsAgg._sum.totalEarnings ?? 0;
-      const targetPerf = targetPerfAgg._max.score ? Number(targetPerfAgg._max.score) : 0;
-
-      const [xpAhead, earningsAhead, perfAhead] = await Promise.all([
-        prisma.$queryRaw`SELECT COUNT(*)::int AS cnt FROM (SELECT "userId", COALESCE(SUM(amount),0) AS t FROM xp_events GROUP BY "userId" HAVING COALESCE(SUM(amount),0) > ${targetXpTotal}) sub`,
-        prisma.$queryRaw`SELECT COUNT(*)::int AS cnt FROM (SELECT "userId", COALESCE(SUM("totalEarnings"),0) AS t FROM horses WHERE "userId" IS NOT NULL GROUP BY "userId" HAVING COALESCE(SUM("totalEarnings"),0) > ${targetEarnings}) sub`,
-        prisma.$queryRaw`SELECT COUNT(*)::int AS cnt FROM (SELECT h."userId", MAX(cr.score) AS s FROM competition_results cr JOIN horses h ON cr."horseId"=h.id WHERE h."userId" IS NOT NULL GROUP BY h."userId" HAVING MAX(cr.score) > ${targetPerf}) sub`,
-      ]);
-
-      const rows = [
-        { userId, category: 'level', rank: Number(usersAheadLevel) + 1 },
-        { userId, category: 'xp', rank: Number(xpAhead[0]?.cnt ?? 0) + 1 },
-        { userId, category: 'horse-earnings', rank: Number(earningsAhead[0]?.cnt ?? 0) + 1 },
-        { userId, category: 'horse-performance', rank: Number(perfAhead[0]?.cnt ?? 0) + 1 },
-      ];
-
-      // Typed Prisma create (replaces $executeRaw INSERT — Equoria-3ear).
-      // createMany is faster but doesn't auto-default capturedAt the same way
-      // (the schema's @default(now()) applies per-row); since we only have 4
-      // rows per user, the individual create loop has negligible overhead and
-      // keeps capturedAt timestamps schema-default-driven.
-      for (const row of rows) {
-        await prisma.userRankSnapshot.create({
-          data: {
-            userId: row.userId,
-            category: row.category,
-            rank: row.rank,
-          },
-        });
-      }
-      captured++;
-    }
+    // Equoria-fiiy: previously this route recomputed level/xp/earnings/
+    // performance ranks INSIDE a per-user loop — ~8 DB round-trips per user,
+    // each a full-table aggregate (O(users) × O(full-table) ≈ O(N²)). That is
+    // the exact blowup Equoria-ky0x fixed in userRankSnapshotService via a
+    // single-pass set-based rewrite. Rather than duplicate that algorithm
+    // here (the ky0x service already documents byte-identical rank
+    // semantics), delegate to it — one source of truth, O(N log N), one bulk
+    // insert. `options.prismaClient` is an optional DI seam for the
+    // perf-shape sentinel test.
+    const { captured } = await captureAllUserRankSnapshots(options.prismaClient);
 
     return res.json({ success: true, message: `Captured rank snapshots for ${captured} users` });
   } catch (error) {
