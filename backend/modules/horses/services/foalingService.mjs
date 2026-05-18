@@ -320,9 +320,24 @@ export async function createFoalFromPregnancy({ damId, options = {} } = {}) {
 
   const sireConformation = sire.conformationScores;
   const damConformation = dam.conformationScores;
+  // Equoria-84pu (31F-3 deferred integration): consume the conformation-show
+  // breeding-value boost (Horse.breedingValueBoost, 0.0-0.15 per FR-41). Average
+  // the sire's and dam's boosts so the combined value stays inside the FR-41
+  // 0-0.15 envelope (see generateInheritedConformationScores docs for rationale).
+  // Missing/non-finite parent boosts contribute 0. Only the inherited path
+  // receives the boost: the breed-only fallback has no parent achievement to
+  // reward, so applying a boost there would be unfounded.
+  const sireBoost = Number.isFinite(sire.breedingValueBoost) ? sire.breedingValueBoost : 0;
+  const damBoost = Number.isFinite(dam.breedingValueBoost) ? dam.breedingValueBoost : 0;
+  const combinedBreedingValueBoost = (sireBoost + damBoost) / 2;
   const conformationScores =
     hasValidConformationScores(sireConformation) && hasValidConformationScores(damConformation)
-      ? generateInheritedConformationScores(breedName, sireConformation, damConformation)
+      ? generateInheritedConformationScores(
+          breedName,
+          sireConformation,
+          damConformation,
+          combinedBreedingValueBoost,
+        )
       : generateConformationScores(breedName);
 
   const sireGaitScores = sire.gaitScores;

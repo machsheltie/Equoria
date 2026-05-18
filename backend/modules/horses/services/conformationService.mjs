@@ -111,14 +111,34 @@ export function generateConformationScores(breedName) {
 /**
  * Generate inherited conformation scores for a foal based on parent scores and breed genetics.
  * Formula per region: baseValue = (sireScore * 0.5 + damScore * 0.5) * 0.6 + breedMean * 0.4
- * Final score: clampScore(normalRandom(baseValue, breedStdDev))
+ *   then breeding-value-boost adjusted: boostedBase = baseValue * (1 + combinedBoost)
+ * Final score: clampScore(normalRandom(boostedBase, breedStdDev))
  * Falls back to breed-only generation if either parent's scores are null/missing.
+ *
+ * Equoria-84pu (31F-3 deferred integration): conformation-show winners earn a
+ * Horse.breedingValueBoost (0.0-0.15 per FR-41: +5/+3/+1% per placement, capped
+ * at +15%). This is the read site that consumes it during foal generation. The
+ * sire's and dam's boosts are AVERAGED (combinedBoost = (sire+dam)/2), not
+ * summed, so the effective boost stays inside the same 0-0.15 envelope FR-41
+ * specifies — consistent with the existing 50/50 sire/dam genetic average and
+ * preventing two decorated parents from producing an out-of-design +30%.
+ * The boost is applied multiplicatively to the per-region base value before the
+ * normalRandom draw, so a combined 15% boost shifts the offspring mean ~15%
+ * upward (still clamped to the 0-100 conformation domain).
+ *
  * @param {string|number} breedName - Breed display name (preferred) or legacy canonical-12 numeric id
  * @param {Object|null} sireScores - Sire's conformation scores (8 regions)
  * @param {Object|null} damScores - Dam's conformation scores (8 regions)
+ * @param {number} [combinedBreedingValueBoost=0] - Averaged sire/dam breedingValueBoost
+ *   (0.0-0.15). Non-finite or out-of-range inputs are clamped to [0, 0.15].
  * @returns {Object} Object with 8 region scores (integers 0-100) and overallConformation
  */
-export function generateInheritedConformationScores(breedName, sireScores, damScores) {
+export function generateInheritedConformationScores(
+  breedName,
+  sireScores,
+  damScores,
+  combinedBreedingValueBoost = 0,
+) {
   // Fall back to breed-only generation if either parent's scores are null/missing
   if (!sireScores || !damScores) {
     logger.info(
@@ -134,6 +154,15 @@ export function generateInheritedConformationScores(breedName, sireScores, damSc
       `breedProfiles.json entry for "${breedName}" is missing rating_profiles.conformation.`,
     );
   }
+
+  // Equoria-84pu: sanitize the breeding-value boost. Guard against NaN, negative
+  // values, and values above the FR-41 cap (0.15) coming from corrupted DB rows
+  // or a future formula change. Clamp to [0, 0.15] so a bad value can never
+  // depress or unboundedly inflate offspring conformation.
+  const safeBoost =
+    Number.isFinite(combinedBreedingValueBoost) && combinedBreedingValueBoost > 0
+      ? Math.min(combinedBreedingValueBoost, 0.15)
+      : 0;
 
   const scores = {};
 
@@ -160,7 +189,11 @@ export function generateInheritedConformationScores(breedName, sireScores, damSc
     }
     const parentAvg = (sireVal ?? regionProfile.mean) * 0.5 + (damVal ?? regionProfile.mean) * 0.5;
     const baseValue = parentAvg * 0.6 + regionProfile.mean * 0.4;
-    scores[region] = clampScore(normalRandom(baseValue, regionProfile.std_dev));
+    // Equoria-84pu: apply the averaged sire/dam breeding-value boost
+    // multiplicatively before the random draw. clampScore() keeps the result
+    // inside [0, 100] so the boost never pushes a region out of domain.
+    const boostedBase = baseValue * (1 + safeBoost);
+    scores[region] = clampScore(normalRandom(boostedBase, regionProfile.std_dev));
   }
 
   scores.overallConformation = calculateOverallConformation(scores);

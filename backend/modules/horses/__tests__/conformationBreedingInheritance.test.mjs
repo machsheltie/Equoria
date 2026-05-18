@@ -520,3 +520,80 @@ describe('validateConformationScores', () => {
     expect(result.overallConformation).toBe(60);
   });
 });
+
+// === Equoria-84pu: breedingValueBoost integration into foal conformation ===
+// 31F-3 wrote Horse.breedingValueBoost (0.0-0.15 per FR-41) but no reader
+// consumed it. generateInheritedConformationScores now accepts an optional
+// combinedBreedingValueBoost (averaged sire/dam boost). These are sentinel-
+// positive statistical tests: same parents + breed, boost=0 vs boost=0.15,
+// asserting a MEASURABLE mean-conformation increase. If the boost is ever
+// silently disconnected, the means converge and these fail loudly.
+
+describe('generateInheritedConformationScores — breedingValueBoost (Equoria-84pu)', () => {
+  // Use mid-range parent scores so a 15% multiplicative boost has clear head-
+  // room below the 100 clamp ceiling (60 * 0.6 + breedMean * 0.4 ≈ 55-70 range
+  // for breed 1; *1.15 stays well under 100, so the clamp does not mask the
+  // signal).
+  const sireScores = uniformScores(60);
+  const damScores = uniformScores(60);
+  const SAMPLES = 400;
+
+  function meanOverall(combinedBoost) {
+    let sum = 0;
+    for (let i = 0; i < SAMPLES; i++) {
+      const s = generateInheritedConformationScores(1, sireScores, damScores, combinedBoost);
+      sum += s.overallConformation;
+    }
+    return sum / SAMPLES;
+  }
+
+  test('boost defaults to 0 (backward compatible — omitted arg behaves like no boost)', () => {
+    const meanOmitted = meanOverall(undefined);
+    const meanZero = meanOverall(0);
+    // Within sampling noise of each other (both are the no-boost baseline).
+    expect(Math.abs(meanOmitted - meanZero)).toBeLessThan(3);
+  });
+
+  test('15% combined boost produces measurably higher mean conformation than 0%', () => {
+    const meanNoBoost = meanOverall(0);
+    const meanFullBoost = meanOverall(0.15);
+    // A 15% multiplicative boost on a ~55-70 base must lift the mean by a clear
+    // margin well outside sampling noise (expected lift ≈ 8-10 points).
+    expect(meanFullBoost).toBeGreaterThan(meanNoBoost + 4);
+  });
+
+  test('boost is monotonic: 0 < 0.075 < 0.15 means strictly increase', () => {
+    const m0 = meanOverall(0);
+    const m1 = meanOverall(0.075);
+    const m2 = meanOverall(0.15);
+    expect(m1).toBeGreaterThan(m0);
+    expect(m2).toBeGreaterThan(m1);
+  });
+
+  test('out-of-range / corrupted boost is clamped (negative → 0, >0.15 → 0.15)', () => {
+    const mZero = meanOverall(0);
+    const mNegative = meanOverall(-0.5); // must clamp to 0 → same as baseline
+    expect(Math.abs(mNegative - mZero)).toBeLessThan(3);
+
+    const mCap = meanOverall(0.15);
+    const mOverCap = meanOverall(0.95); // must clamp to 0.15 → same as cap
+    expect(Math.abs(mOverCap - mCap)).toBeLessThan(3);
+  });
+
+  test('NaN boost is treated as 0 (no DB-corruption-driven inflation/deflation)', () => {
+    const mZero = meanOverall(0);
+    const mNaN = meanOverall(NaN);
+    expect(Math.abs(mNaN - mZero)).toBeLessThan(3);
+  });
+
+  test('all scores remain integers in [0,100] even at max boost', () => {
+    for (let i = 0; i < 50; i++) {
+      const s = generateInheritedConformationScores(1, sireScores, damScores, 0.15);
+      for (const region of CONFORMATION_REGIONS) {
+        expect(Number.isInteger(s[region])).toBe(true);
+        expect(s[region]).toBeGreaterThanOrEqual(0);
+        expect(s[region]).toBeLessThanOrEqual(100);
+      }
+    }
+  });
+});
