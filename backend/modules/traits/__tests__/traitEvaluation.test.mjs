@@ -199,10 +199,16 @@ describe('evaluateTraitRevelation', () => {
 // applyGroomTraitInfluence
 // ---------------------------------------------------------------------------
 describe('applyGroomTraitInfluence', () => {
-  // age < 1095 days (3 years) → isEpigenetic = true
-  const youngHorse = { id: 1, age: 30 };
-  // age >= 1095 days → isEpigenetic = false
-  const oldHorse = { id: 2, age: 1200 };
+  // Equoria-if4q: epigenetic eligibility is gated on CANONICAL GAME-YEARS
+  // (getHorseAgeYears(dateOfBirth); 1 game-week = 1 game-year, floor(days/7)),
+  // NOT the legacy days-based EPIGENETIC_AGE_THRESHOLD=3*365. The 'before age
+  // 3' design intent means age-in-game-years < 3.
+  //
+  // 14 real-days-ago dateOfBirth → floor(14/7)=2 game-years → < 3 → epigenetic.
+  // 35 real-days-ago dateOfBirth → floor(35/7)=5 game-years → >= 3 → NOT.
+  const dob = days => new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  const youngHorse = { id: 1, dateOfBirth: dob(14) }; // 2 game-years
+  const oldHorse = { id: 2, dateOfBirth: dob(35) }; // 5 game-years
 
   it('returns updatedInfluences, newPermanentTraits, isEpigenetic', () => {
     const result = applyGroomTraitInfluence(youngHorse, 'brushing', {});
@@ -211,14 +217,29 @@ describe('applyGroomTraitInfluence', () => {
     expect(result).toHaveProperty('isEpigenetic');
   });
 
-  it('isEpigenetic is true for young horse (age < 1095)', () => {
+  it('SENTINEL: 14-real-day-old horse is 2 game-years → epigenetic-eligible (true)', () => {
     const result = applyGroomTraitInfluence(youngHorse, 'brushing', {});
     expect(result.isEpigenetic).toBe(true);
   });
 
-  it('isEpigenetic is false for old horse (age >= 1095)', () => {
+  it('SENTINEL: 35-real-day-old horse is 5 game-years (>=3) → NOT epigenetic (false)', () => {
+    // Pre-fix this FAILED: 35 (legacy days-as-age) < 1095 wrongly returned true,
+    // making every horse epigenetic-eligible forever. Now gated on game-years.
     const result = applyGroomTraitInfluence(oldHorse, 'brushing', {});
     expect(result.isEpigenetic).toBe(false);
+  });
+
+  it('SENTINEL: boundary — exactly 3 game-years (21 real days) is NOT epigenetic', () => {
+    const exactlyThree = { id: 3, dateOfBirth: dob(21) }; // floor(21/7)=3
+    const result = applyGroomTraitInfluence(exactlyThree, 'brushing', {});
+    expect(result.isEpigenetic).toBe(false);
+  });
+
+  it('fallback: numeric horse.age (no dateOfBirth) is treated as GAME-YEARS, not days', () => {
+    // 2 game-years → epigenetic; 5 game-years → not. Proves the constant is
+    // game-years (3), not 1095 days.
+    expect(applyGroomTraitInfluence({ id: 4, age: 2 }, 'brushing', {}).isEpigenetic).toBe(true);
+    expect(applyGroomTraitInfluence({ id: 5, age: 5 }, 'brushing', {}).isEpigenetic).toBe(false);
   });
 
   it('brushing encourages bonded trait (+1)', () => {

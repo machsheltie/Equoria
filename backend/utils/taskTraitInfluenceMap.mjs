@@ -202,8 +202,14 @@ export const TRAIT_INFLUENCE_CONFIG = {
   PERMANENCE_THRESHOLD: 3,
   NEGATIVE_PERMANENCE_THRESHOLD: -3,
 
-  // Age threshold for epigenetic marking
-  EPIGENETIC_AGE_THRESHOLD: 3 * 365, // 3 years in days
+  // Age threshold for epigenetic marking. Equoria-if4q: this is CANONICAL
+  // GAME-YEARS (1 game-week = 1 game-year; getHorseAgeYears/horseAge.mjs), NOT
+  // calendar days. The 'before age 3' design intent means a horse is
+  // epigenetic-eligible while its game-year age is < 3. The previous value
+  // (3 * 365 = 1095 days) was a units bug: game-years never approach 1095, so
+  // every horse was treated as epigenetic-eligible forever. Same defect class
+  // as Equoria-z183/wpqr (epigenetic age drift cluster).
+  EPIGENETIC_AGE_THRESHOLD: 3, // 3 game-years
 
   // Influence values
   ENCOURAGE_VALUE: 1,

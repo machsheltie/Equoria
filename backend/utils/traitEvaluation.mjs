@@ -32,6 +32,7 @@
 import logger from './logger.mjs';
 import { TASK_TRAIT_INFLUENCE_MAP } from '../config/taskInfluenceConfig.mjs';
 import { TRAIT_INFLUENCE_CONFIG, getTaskTraitInfluence } from './taskTraitInfluenceMap.mjs';
+import { getHorseAgeYears } from './horseAge.mjs';
 
 /**
  * Trait definitions with their revelation conditions
@@ -561,7 +562,21 @@ function applyGroomTraitInfluence(horse, taskType, currentTraitInfluences = {}) 
 
     const updatedInfluences = { ...currentTraitInfluences };
     const newPermanentTraits = [];
-    const isEpigenetic = horse.age < TRAIT_INFLUENCE_CONFIG.EPIGENETIC_AGE_THRESHOLD;
+    // Equoria-if4q: epigenetic eligibility is gated on CANONICAL GAME-YEARS,
+    // not the legacy days-based comparison. getHorseAgeYears(dateOfBirth) is the
+    // single source of truth (horseAge.mjs; 1 game-week = 1 game-year). When
+    // dateOfBirth is present we use it; otherwise we fall back to treating a
+    // numeric horse.age as ALREADY-in-game-years (NOT days) — consistent with
+    // the canonical Horse.age semantics (Equoria-son6) and the new
+    // EPIGENETIC_AGE_THRESHOLD=3 (game-years). Same defect class as
+    // Equoria-z183/wpqr (epigenetic age drift cluster).
+    const ageGameYears =
+      horse.dateOfBirth !== null && horse.dateOfBirth !== undefined
+        ? getHorseAgeYears(horse.dateOfBirth)
+        : Number.isFinite(horse.age)
+          ? horse.age
+          : 0;
+    const isEpigenetic = ageGameYears < TRAIT_INFLUENCE_CONFIG.EPIGENETIC_AGE_THRESHOLD;
 
     // Apply encouraging influences (+1)
     influence.encourages.forEach(trait => {

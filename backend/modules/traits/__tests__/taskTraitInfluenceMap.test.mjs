@@ -56,8 +56,14 @@ describe('TRAIT_INFLUENCE_CONFIG', () => {
     expect(TRAIT_INFLUENCE_CONFIG.NEGATIVE_PERMANENCE_THRESHOLD).toBe(-3);
   });
 
-  it('has EPIGENETIC_AGE_THRESHOLD of 3*365', () => {
-    expect(TRAIT_INFLUENCE_CONFIG.EPIGENETIC_AGE_THRESHOLD).toBe(3 * 365);
+  it('has EPIGENETIC_AGE_THRESHOLD of 3 game-years (Equoria-if4q)', () => {
+    // Equoria-if4q: corrected from the buggy 3*365=1095 (calendar days). The
+    // threshold is canonical GAME-YEARS — getHorseAgeYears (1 game-week =
+    // 1 game-year). The old value made every horse epigenetic-eligible forever
+    // because game-year ages never approach 1095. Sentinel: must be exactly 3.
+    expect(TRAIT_INFLUENCE_CONFIG.EPIGENETIC_AGE_THRESHOLD).toBe(3);
+    // Guard against silent reversion back to the days-based bug.
+    expect(TRAIT_INFLUENCE_CONFIG.EPIGENETIC_AGE_THRESHOLD).not.toBe(3 * 365);
   });
 
   it('has ENCOURAGE_VALUE of 1 and DISCOURAGE_VALUE of -1', () => {
