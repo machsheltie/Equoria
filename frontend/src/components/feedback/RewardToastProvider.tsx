@@ -39,7 +39,7 @@ export interface RewardNotification {
    * personal milestone. `false` for routine gains — those are dropped.
    */
   meaningful: boolean;
-  /** Optional auto-dismiss override (ms) — default 4000 (RewardToast default) */
+  /** Optional auto-dismiss override (ms) — default 3000 (DEFAULT_VISIBLE_MS, Spec 11.3.10) */
   duration?: number;
 }
 
