@@ -206,7 +206,18 @@ else
 fi
 
 printf "  Running: Check frontend production code for mock data ...\n"
-if grep -rn "mockApi\|MOCK_\|allMockHorses\|mockSummary" \
+# CANONICAL-SCAN: frontend-mock-data
+# This regex MUST stay byte-identical to the inline copy in
+# .github/workflows/test.yml (beta-readiness-gate job, "Scan frontend
+# production code for mock data" step). Drift between this script and
+# the CI inline scan is asserted by
+# scripts/doctrine-checks/check-beta-readiness-scan-parity.mjs and the
+# split is documented in
+# docs/architecture/adr-010-ci-inline-beta-readiness-scans.md.
+# Tightened from bare `MOCK_` to a declaration-context ERE per
+# Equoria-veql (21R-CI-2). This script previously lagged the workflow
+# (real drift); resynced by Equoria-862l.
+if grep -rEn "mockApi|\b(const|let|var|export\s+(const|let|var))\s+MOCK_[A-Z][A-Z_]*\b|allMockHorses|mockSummary" \
     frontend/src/ \
     --include="*.tsx" --include="*.ts" \
     2>/dev/null | grep -v "__tests__\|\.test\.\|\.spec\." | grep -v "^Binary" | grep -q .; then

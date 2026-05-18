@@ -1,0 +1,108 @@
+# ADR-010: CI Re-implements the Beta-Readiness Static Scans Inline
+
+**Status:** Accepted
+**Date:** 2026-05-18
+**Deciders:** CI / Security / Beta-Readiness
+**Implementation:** `scripts/check-beta-readiness.sh` (canonical signoff),
+`.github/workflows/test.yml` (`beta-readiness-gate` job — inline static
+scans), `scripts/doctrine-checks/check-beta-readiness-scan-parity.mjs`
+(drift assertion)
+**Tracking:** bd `Equoria-862l`
+
+---
+
+## Context
+
+`CLAUDE.md` designates `bash scripts/check-beta-readiness.sh` as the
+**required final beta-readiness signoff**. That script runs all 10 gates:
+the doctrine-checks suite, backend ESLint, `tsc --noEmit`, the full
+backend routes / integration / module Jest suites, the Playwright
+beta-readiness suite, and a set of cheap static scans (HTTP cleanup-route
+scan, integration-test DB-mock scan, frontend mock-data scan, E2E/api-client
+bypass-header scan).
+
+A 2026-05-18 audit (Equoria-862l) found that **no CI workflow invokes
+`scripts/check-beta-readiness.sh`**. Instead, the `beta-readiness-gate`
+job in `.github/workflows/test.yml` **re-implements the cheap static
+scans inline** as fast pre-flight steps (e.g. "Scan frontend production
+code for mock data", "Scan E2E specs and api-client for bypass headers"),
+each with its own copy of the scan regex.
+
+The audit also found a concrete instance of the hazard: the inline
+frontend-mock-data scan had been tightened by Equoria-veql (21R-CI-2)
+from a bare `MOCK_` substring to a declaration-context ERE, but the copy
+in `check-beta-readiness.sh` was **never updated** — it still used the
+old broad pattern. The canonical signoff script and the CI gate had
+silently drifted, and the script was the weaker of the two.
+
+## Decision
+
+**Keep the static scans deliberately duplicated** (inline in CI +
+canonical in the signoff script) rather than having CI invoke the full
+script, AND add an automated drift assertion so the two copies can never
+silently diverge again.
+
+Rationale for NOT having CI invoke `scripts/check-beta-readiness.sh`
+directly from the `beta-readiness-gate` job:
+
+1. The script runs **all 10 gates**, including the full backend Jest
+   suites and the entire Playwright beta-readiness run (tens of minutes).
+   The `beta-readiness-gate` job already runs the Playwright suite as its
+   own dedicated step with job-specific setup (DB migrate, breed seed,
+   browser install). Invoking the whole script there would **double-run**
+   the heavy suites and roughly double the job wall-clock.
+2. The script assumes an environment (local dev / full signoff context,
+   `npm run seed:shows`, interactive signoff YAML mutation) that the CI
+   job does not fully provide. Running it as-is in the gate job would
+   either fail on environment assumptions or require forking its
+   behaviour behind CI-only flags — which is itself a drift vector.
+3. The cheap static scans are valuable **as fast pre-flight gates** that
+   fail in seconds, before the expensive Playwright step. Inlining them
+   preserves that fast-fail property.
+
+The accepted residual risk — that the inline copies and the script
+copies drift — is mitigated, not just documented:
+`scripts/doctrine-checks/check-beta-readiness-scan-parity.mjs` extracts
+the canonical scan regexes from BOTH `scripts/check-beta-readiness.sh`
+and `.github/workflows/test.yml` and asserts each pair is
+**byte-identical**. It runs as part of the doctrine-checks suite
+(`run-all.sh`), which is GATE 1 of `check-beta-readiness.sh` itself and
+also runs on every PR via `doctrine-gate.yml`. Any future one-sided edit
+to a canonical scan fails this gate.
+
+To keep the drift-check able to locate the regexes, each canonical scan
+in `check-beta-readiness.sh` carries a `# CANONICAL-SCAN:` marker
+comment naming its workflow counterpart. The matching inline step in
+`test.yml` must use the identical regex string.
+
+## Consequences
+
+- **Positive:** Fast-fail static gates retained in CI; full signoff
+  semantics retained in the canonical script; "no silent drift path
+  remains" (the 862l acceptance criterion) is enforced by an automated,
+  sentinel-tested gate rather than by reviewer vigilance.
+- **Negative / accepted:** The scan regexes still physically exist in two
+  places. Editing one requires editing the other; the drift-check turns
+  a forgotten mirror-edit into a hard CI failure rather than a silent
+  weakening. This is the explicitly accepted cost of the fast-fail
+  design.
+- **Follow-up not done here:** A deeper refactor that extracts every
+  static scan into a single shared shell library `source`-d by both the
+  script and a thin CI step would eliminate the duplication entirely.
+  That is a larger change (CI step would need to `source` a repo script
+  and the script would need to be safe to source in isolation) and is
+  out of scope for 862l. Filed as a candidate spike rather than bundled
+  (per OPTIMAL_FIX_DISCIPLINE §3/§5).
+
+## Alternatives Considered
+
+1. **CI invokes the full `check-beta-readiness.sh`.** Rejected: doubles
+   the heavy suites, breaks on environment assumptions, removes the
+   fast-fail property (see Decision §1–3).
+2. **Single shared scan library sourced by both.** Deferred: correct
+   long-term shape but a materially larger change than 862l's scope;
+   recorded as a follow-up spike, not silently dropped.
+3. **Document the drift risk only (pure ADR, no check).** Rejected: the
+   862l acceptance criterion explicitly requires that "no silent drift
+   path remains" — a prose caveat is exactly the kind of
+   documentation-only non-fix the 21R doctrine forbids.
