@@ -6,6 +6,11 @@
  */
 
 import js from '@eslint/js';
+// Equoria-dm1i: shared inline plugin (also imported by the repo-root
+// eslint.config.js) providing the warn-level no-raw-test-horse-create
+// sentinel for the NULL-phenotype fixture defect class. See the plugin
+// file's doc-comment for the full rationale.
+import { equoriaTestFixturePlugin } from './eslint-plugins/no-raw-test-horse-create.mjs';
 
 export default [
   {
@@ -205,10 +210,21 @@ export default [
         suspiciousActivityCache: 'readonly', // Test helper
       },
     },
+    plugins: {
+      // Equoria-dm1i: inline plugin providing the warn-level
+      // no-raw-test-horse-create sentinel (defined at top of this file).
+      equoria: equoriaTestFixturePlugin,
+    },
     rules: {
       // Relax some rules for test files
       'no-unused-expressions': 'off',
       'prefer-arrow-callback': 'off',
+
+      // Equoria-dm1i: NULL-phenotype fixture defect-class sentinel.
+      // `warn` so the ~206 legacy raw-create suites do not break the lint
+      // gate, while making the tech debt visible and nudging NEW tests
+      // onto fixtureColor()/createTestHorse(). See plugin doc-comment.
+      'equoria/no-raw-test-horse-create': 'warn',
       // Test files may legitimately import the test-only exports from
       // requestBodySecurity.mjs to set up monkey-patches and contract
       // sentinels. The production-block rule blocks them everywhere else.

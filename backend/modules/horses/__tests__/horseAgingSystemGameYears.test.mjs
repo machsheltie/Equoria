@@ -15,6 +15,9 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { calculateAgeInGameYears, updateHorseAge } from '../../../utils/horseAgingSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-dm1i: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const daysAgo = days => new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
@@ -69,6 +72,7 @@ describe('updateHorseAge writes game-years to Horse.age (Equoria-son6)', () => {
 
     horse14d = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-son6-14d-${ts}`,
         sex: 'Filly',
         dateOfBirth: daysAgo(14),
@@ -79,6 +83,7 @@ describe('updateHorseAge writes game-years to Horse.age (Equoria-son6)', () => {
 
     horse1107d = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-son6-1107d-${ts}`,
         sex: 'Mare',
         dateOfBirth: daysAgo(1107),

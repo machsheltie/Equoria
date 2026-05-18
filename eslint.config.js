@@ -1,6 +1,14 @@
 // ESLint flat config
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
+// Equoria-dm1i: shared inline plugin (defined under backend/, also used by
+// backend/eslint.config.mjs). Registered here so the root lint pass
+// (lint-staged pre-commit + any root `eslint .`) recognises the
+// `equoria/no-raw-test-horse-create` rule and its eslint-disable
+// directives in backend test files — otherwise
+// `reportUnusedDisableDirectives: true` errors on the sentinel-negative
+// test's intentional scoped disable.
+import { equoriaTestFixturePlugin } from './backend/eslint-plugins/no-raw-test-horse-create.mjs';
 
 export default [
   js.configs.recommended,
@@ -96,6 +104,19 @@ export default [
     ],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
+    },
+  },
+  {
+    // Equoria-dm1i: keep the warn-level NULL-phenotype fixture sentinel
+    // consistent across the root lint pass too (backend test files are
+    // linted by both this root config and backend/eslint.config.mjs).
+    // Registering the plugin here makes the rule resolvable so the
+    // sentinel-negative test's scoped eslint-disable directive does not
+    // error under reportUnusedDisableDirectives.
+    files: ['backend/**/*.test.mjs', 'backend/**/*.test.js', 'backend/**/__tests__/**/*.{mjs,js}'],
+    plugins: { equoria: equoriaTestFixturePlugin },
+    rules: {
+      'equoria/no-raw-test-horse-create': 'warn',
     },
   },
 ];

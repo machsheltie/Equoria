@@ -100,3 +100,78 @@ This pattern keeps tests physically adjacent to the code they test and makes dom
 - ✅ When in doubt, mirror the most recent module to land (currently `community`).
 
 Cross-reference: this convention is referenced from `CLAUDE.md` (project structure section). Any restructuring of `backend/modules/<x>/__tests__/` must update both files together.
+
+---
+
+## Test Fixtures — horse creation MUST inject a colorGenotype + phenotype (Equoria-dm1i)
+
+**Rule:** NEW backend tests MUST NOT create a fixture horse with a bare
+`prisma.horse.create({ data: { ... } })` that omits the color fields. Use
+one of the two canonical forms instead.
+
+### Why this exists (the structural defect class)
+
+`createHorse()` (the model fn, Equoria-ennm) auto-generates
+`colorGenotype` + `phenotype`. A raw `prisma.horse.create()` does **not** —
+the row is born with `phenotype = NULL`. The canonical-DB invariant
+`backend/__tests__/horseColorNullSentinel.test.mjs` (Equoria-a429) asserts
+zero NULL-phenotype rows. While each suite's scoped/cascade cleanup
+currently works (so the sentinel stays green), **any** suite whose
+`afterAll` cleanup ever fails (silent `.catch(() => {})`, missing cascade,
+timeout) leaks a NULL-phenotype row and trips the sentinel — this is
+exactly the Equoria-lfj5 16-NULL regression and its g9sa fix. ~206 legacy
+suites still use the raw form; they have no active leak but are latent
+landmines.
+
+### Canonical forms (pick one)
+
+1. **Spread `...fixtureColor()`** into a raw create — preferred when a
+   suite already has its own `prisma.horse.create()` and its own scoped
+   cleanup:
+
+   ```javascript
+   import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+
+   await prisma.horse.create({
+     data: { ...fixtureColor(), name: `TestFixture-foo-${randHex()}`, sex: 'Mare', dateOfBirth: new Date(), userId: user.id },
+   });
+   ```
+
+2. **Use `createTestHorse()`** — preferred for NEW tests; it spreads
+   `fixtureColor()` for you AND records the id for scoped cleanup:
+
+   ```javascript
+   import { createTestHorse, cleanupTestHorses } from '../helpers/createTestHorse.mjs';
+
+   const created = [];
+   const horse = await createTestHorse(prisma, { name: `TestFixture-foo-${randHex()}`, sex: 'Mare', dateOfBirth: new Date(), userId: user.id }, created);
+   afterAll(() => cleanupTestHorses(prisma, created)); // deletes ONLY the ids this suite made
+   ```
+
+   - Helper: `backend/__tests__/helpers/createTestHorse.mjs`
+   - Sentinel test: `backend/__tests__/helpers/createTestHorse.test.mjs`
+   - Underlying generator: `backend/tests/helpers/fixtureColor.mjs`
+     (CI-proven by `backend/tests/fixtureColorGuard.test.mjs`)
+
+### Cleanup discipline (CLAUDE.md §2)
+
+Cleanup MUST be scoped — `where: { id: { in: collectedIds } }` or
+`where: { name: { startsWith: 'TestFixture-...' } }`. A bare
+`prisma.horse.deleteMany()` against the canonical DB is forbidden.
+`cleanupTestHorses()` enforces the id-scoped form.
+
+### Enforcement
+
+A `warn`-level ESLint sentinel `equoria/no-raw-test-horse-create` (inline
+plugin in `backend/eslint.config.mjs`, test-files override block) flags any
+`*.horse.create({ data: { ... } })` in a test whose `data` object has no
+spread element. It is `warn` (not `error`) so the ~206 legacy suites do
+not break `npm run lint` (`eslint .`, no `--max-warnings`), while a NEW
+test added without the spread surfaces in the lint log. The one legitimate
+exception — a sentinel-negative test that MUST use the raw form to prove
+the defect class — uses a scoped
+`// eslint-disable-next-line equoria/no-raw-test-horse-create -- <reason>`.
+
+The bulk migration of the ~206 legacy suites is tracked as a separate
+follow-up issue (NOT bundled with dm1i, per
+`EDGE_CASE_FIX_DISCIPLINE.md` §7 / `OPTIMAL_FIX_DISCIPLINE.md` §3).

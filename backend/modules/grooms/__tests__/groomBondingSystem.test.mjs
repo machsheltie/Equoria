@@ -22,6 +22,9 @@ import {
   checkTaskMutualExclusivity,
 } from '../../../utils/groomBondingSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-dm1i: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 let user;
 let horse;
@@ -41,6 +44,7 @@ beforeAll(async () => {
 
   horse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-GroomBondingHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
