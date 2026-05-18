@@ -1,11 +1,32 @@
 /**
- * FoalDevelopmentTracker (Epic 29-2 — Celestial Night restyle)
+ * FoalDevelopmentTracker (Epic 29-2 — Celestial Night restyle) — CONTAINER
  *
  * Full foal development interface:
  *  - DevelopmentTracker (age-stage timeline + bond score)
  *  - Age-stage-grouped activity selection (out-of-stage activities disabled)
  *  - Trait reveal with CinematicMoment (lifetime-first; Story 18-4 / Epic 29-3)
  *  - Activity log
+ *
+ * ──────────────────────────────────────────────────────────────────────────
+ * RELATIONSHIP TO foal/DevelopmentTracker.tsx (Equoria-rpnq4)
+ *
+ * Two intentionally separate components, NOT a duplicate:
+ *
+ *  - THIS file (breeding/FoalDevelopmentTracker): the CONTAINER /
+ *    orchestrator. Owns all the API hooks (useFoal, useFoalDevelopment,
+ *    useDevelopFoal, useRevealFoalTraits, …), activity selection, the
+ *    trait-reveal CinematicMoment, and the activity log. This is the
+ *    component wired into FoalDetailPage.
+ *
+ *  - foal/DevelopmentTracker: the dumb PRESENTATIONAL "view" it renders —
+ *    pure timeline/bond-bar/activity-list UI with no data fetching. We
+ *    import that component and its Activity type from there.
+ *
+ * If you need data/mutations → you are in the right file (edit here).
+ * If you need to change the timeline/bond-bar LAYOUT → edit
+ * foal/DevelopmentTracker instead. Do NOT merge them without a unified
+ * UX spec agreed up-front.
+ * ──────────────────────────────────────────────────────────────────────────
  */
 
 import { useState, useEffect } from 'react';

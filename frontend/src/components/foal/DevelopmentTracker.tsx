@@ -1,5 +1,5 @@
 /**
- * DevelopmentTracker (Epic 29-1)
+ * DevelopmentTracker (Epic 29-1) — PRESENTATIONAL / "View"
  *
  * Celestial Night foal development tracker.
  *
@@ -11,6 +11,27 @@
  *  - Bond score progress bar with milestone markers at 25 / 50 / 75 / 100
  *  - Available activities for the current stage
  *  - Stage completion badges for past stages
+ *
+ * ──────────────────────────────────────────────────────────────────────────
+ * RELATIONSHIP TO breeding/FoalDevelopmentTracker.tsx (Equoria-rpnq4)
+ *
+ * Two intentionally separate components, NOT a duplicate:
+ *
+ *  - THIS file (foal/DevelopmentTracker): the dumb PRESENTATIONAL "view".
+ *    Pure timeline/bond-bar/activity UI driven entirely by props
+ *    (ACTIVITIES_BY_STAGE + the passed-in foal data). No API hooks, no
+ *    data fetching, no mutations. Reusable and trivially testable.
+ *
+ *  - breeding/FoalDevelopmentTracker: the CONTAINER / orchestrator. Owns
+ *    the API hooks (useFoal, useFoalDevelopment, useDevelopFoal, …),
+ *    activity selection, trait-reveal CinematicMoment, and the activity
+ *    log. It RENDERS this view (imports DevelopmentTracker + its Activity
+ *    type) and is the one wired into FoalDetailPage.
+ *
+ * If you need data/mutations → edit breeding/FoalDevelopmentTracker.
+ * If you need to change the timeline/bond-bar/activity LAYOUT → edit this
+ * file. Do NOT merge them without a unified UX spec agreed up-front.
+ * ──────────────────────────────────────────────────────────────────────────
  */
 
 import React, { useState } from 'react';
