@@ -112,10 +112,31 @@ Verified against `.github/` on 2026-05-18:
 ## 5. OWASP Top 10:2021 Mapping
 
 Control implementation and the test files proving each category are documented
-in `.claude/rules/SECURITY.md` (§ "OWASP Top 10:2021 Compliance"). That section
-is the authority for the control→test mapping; this doc does not duplicate it
-to avoid drift. Summary: all 10 categories (A01–A10) have dedicated test
-coverage in the files listed in §2 above.
+in `.claude/rules/SECURITY.md` (§ "OWASP Top 10:2021 Compliance") and
+`docs/SECURITY_ASSESSMENT_REPORT.md` (§2). Those are the authority for the
+control→test mapping; this doc does not duplicate it to avoid drift.
+
+**Honest summary (do not restate as "10/10" — that was a corrected
+false-green; see SECURITY_ASSESSMENT_REPORT.md §2 and Equoria-9s9f / zuva):**
+
+- **A01–A06, A08:** implemented controls with real HTTP-stack test coverage in
+  the §2 files.
+- **A07:** single-factor only — **no MFA** (zero TOTP/MFA code; tracked
+  Equoria-2vwwh). Auth-failure / rate-limit tests cover the implemented path.
+- **A09:** **PARTIAL** — Winston file logging + Sentry only; **no DB-backed,
+  queryable, tamper-evident audit trail** and the `auditLog()` middleware is
+  opt-in per route, not globally enforced (tracked Equoria-jw10w). The
+  `owasp-comprehensive.test.mjs` A09 block asserts file-path behavior, not a
+  DB trail.
+- **A10:** **N/A** — there is no external-URL/SSRF attack surface in
+  production. The `owasp-comprehensive.test.mjs` A10 `it()` blocks are **empty
+  placeholders** (all bodies commented out, no assertions) for hypothetical
+  future URL-input features — they exercise zero production code and must not
+  be cited as A10 coverage. An SSRF-guard is a prerequisite gate before any
+  user-supplied-URL feature (tracked Equoria-4dva).
+
+So the accurate statement is **8/10 categories implemented, A09 partial, A10
+N/A** — not "all 10 have dedicated coverage".
 
 ---
 
