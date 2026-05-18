@@ -160,6 +160,67 @@ export function getActivitiesForStage(ageStage) {
   return ACTIVITIES_BY_STAGE[ageStage] ?? [];
 }
 
+/**
+ * Return the age stage an activity id belongs to, or null if the id is not a
+ * recognised age-stage activity.
+ *
+ * Equoria-4kzik: age-stage gating used to live ONLY in the frontend
+ * DevelopmentTracker, so a client calling POST /foals/:id/activity directly
+ * could log an age-inappropriate activity (e.g. 'longe_work' on a newborn).
+ * This map is the single source of truth the server uses to enforce the rule.
+ *
+ * @param {string} activityId
+ * @returns {'newborn'|'weanling'|'yearling'|'two_year_old'|null}
+ */
+export function getStageForActivity(activityId) {
+  if (!activityId || typeof activityId !== 'string') {
+    return null;
+  }
+  for (const [stage, activities] of Object.entries(ACTIVITIES_BY_STAGE)) {
+    if (activities.some(a => a.id === activityId)) {
+      return stage;
+    }
+  }
+  return null;
+}
+
+/**
+ * Decide whether an age-stage activity may be performed on a foal of the
+ * given dateOfBirth right now.
+ *
+ * Returns a discriminated result so the caller can produce an honest,
+ * specific rejection reason instead of a generic 400.
+ *
+ * - `{ allowed: true }` — activity belongs to the foal's current age stage.
+ * - `{ allowed: false, reason: 'graduated' }` — horse is 3+ (no longer a foal).
+ * - `{ allowed: false, reason: 'unknown_activity' }` — id is not an age-stage
+ *   activity (could be a day-based enrichment activity handled elsewhere; the
+ *   caller decides whether to defer rather than reject).
+ * - `{ allowed: false, reason: 'wrong_stage', requiredStage, currentStage }` —
+ *   real out-of-stage attempt; this is the integrity violation 4kzik fixes.
+ *
+ * @param {string} activityId
+ * @param {Date|string} dateOfBirth
+ * @returns {{ allowed: boolean, reason?: string, requiredStage?: string, currentStage?: string }}
+ */
+export function validateActivityForFoalAge(activityId, dateOfBirth) {
+  const requiredStage = getStageForActivity(activityId);
+  if (requiredStage === null) {
+    return { allowed: false, reason: 'unknown_activity' };
+  }
+
+  const currentStage = computeAgeStage(dateOfBirth);
+  if (currentStage === null) {
+    return { allowed: false, reason: 'graduated', requiredStage };
+  }
+
+  if (currentStage !== requiredStage) {
+    return { allowed: false, reason: 'wrong_stage', requiredStage, currentStage };
+  }
+
+  return { allowed: true, requiredStage, currentStage };
+}
+
 // ── BB-3: Milestone detection ─────────────────────────────────────────────────
 
 const BOND_MILESTONES = [25, 50, 75, 100];

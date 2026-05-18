@@ -28,6 +28,11 @@ import {
 import { ensureDefaultGroomAssignment } from '../../../utils/groomSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { revealTraits } from '../../../utils/traitDiscovery.mjs';
+import {
+  validateActivityForFoalAge,
+  getActivitiesForStage,
+  computeAgeStage,
+} from '../../../utils/foalAgeUtils.mjs';
 import logger from '../../../utils/logger.mjs';
 
 /**
@@ -89,6 +94,44 @@ export async function completeFoalActivity(req, res) {
     const { foalId } = req.params;
     const { activityType } = req.body;
     logger.info(`[foalController] POST /api/foals/${foalId}/activity - ${activityType}`);
+
+    // Equoria-4kzik: enforce age-stage gating server-side. The frontend
+    // DevelopmentTracker only shows stage-appropriate activities, but a
+    // client could POST an out-of-stage activity directly. requireOwnership
+    // attached the full foal record (incl. dateOfBirth) to req.foal.
+    // Only KNOWN age-stage activities are gated here; an unrecognised
+    // activityType is deferred to completeActivity() (it may be a valid
+    // day-based enrichment activity handled by the separate Task-5 system).
+    const foal = req.foal;
+    const ageCheck = validateActivityForFoalAge(activityType, foal?.dateOfBirth);
+    if (!ageCheck.allowed && ageCheck.reason !== 'unknown_activity') {
+      const currentStage = computeAgeStage(foal?.dateOfBirth);
+      const allowedNow = getActivitiesForStage(currentStage).map(a => a.id);
+      let message;
+      if (ageCheck.reason === 'graduated') {
+        message =
+          `Activity "${activityType}" cannot be performed: this horse has ` +
+          'graduated from the foal development window (age 3+).';
+      } else {
+        message =
+          `Activity "${activityType}" is a ${ageCheck.requiredStage} activity ` +
+          `and cannot be performed on a ${ageCheck.currentStage} foal. ` +
+          `Age-appropriate activities right now: ${allowedNow.join(', ') || 'none'}.`;
+      }
+      logger.warn(
+        `[foalController] Rejected out-of-stage activity "${activityType}" for ` +
+          `foal ${foalId} (required=${ageCheck.requiredStage}, ` +
+          `current=${ageCheck.currentStage ?? 'graduated'})`,
+      );
+      return res.status(400).json({
+        success: false,
+        message,
+        reason: ageCheck.reason,
+        requiredStage: ageCheck.requiredStage,
+        currentStage: ageCheck.currentStage ?? null,
+        allowedActivities: allowedNow,
+      });
+    }
 
     const updatedData = await completeActivity(foalId, activityType);
 
@@ -331,8 +374,17 @@ export async function getFoalActivitiesHandler(req, res) {
       take: 50,
     });
 
+    // Equoria-4kzik: surface the server-enforced age-stage rule so the
+    // client filter becomes a presentation layer over a real backend
+    // constraint (not the source of truth). requireOwnership attached the
+    // foal record to req.foal.
+    const currentStage = computeAgeStage(req.foal?.dateOfBirth);
+    const availableActivities = getActivitiesForStage(currentStage);
+
     res.json({
       success: true,
+      ageStage: currentStage,
+      availableActivities,
       data: activities.map(a => ({
         id: a.id,
         day: a.day,
