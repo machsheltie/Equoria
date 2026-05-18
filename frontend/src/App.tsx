@@ -10,6 +10,7 @@ import OnboardingGuard from '@/components/auth/OnboardingGuard';
 import { initSentry, SentryErrorBoundary } from '@/lib/sentry';
 import GallopingLoader from '@/components/ui/GallopingLoader';
 import StarfieldBackground from '@/components/ui/StarfieldBackground';
+import { RewardToastProvider } from '@/components/feedback';
 import { CelestialThemeProvider } from '@/components/theme/CelestialThemeProvider';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 
@@ -48,52 +49,56 @@ const App = () => (
               including public auth/onboarding pages (Equoria-9x4w, Spec 11.3.1). */}
           <StarfieldBackground />
           <Sonner />
-          <BrowserRouter
-            future={{
-              v7_startTransition: true,
-              v7_relativeSplatPath: true,
-            }}
-          >
-            {/* Applies body.celestial class — reads ?theme= URL param + localStorage */}
-            <CelestialThemeProvider />
-            {/* Return overlay — shown after 4+ hour absence (authenticated users only) */}
-            <Suspense fallback={null}>
-              <WhileYouWereGone />
-            </Suspense>
-            {/* Redirects new users to /onboarding when completedOnboarding === false */}
-            <OnboardingGuard />
-            {/* Guided 10-step spotlight tour — active when completedOnboarding === false && onboardingStep >= 1 */}
-            <Suspense fallback={null}>
-              <OnboardingSpotlight />
-            </Suspense>
-            <Suspense fallback={<GallopingLoader />}>
-              <Routes>
-                {/* Public routes — no nav shell */}
-                <Route path="/onboarding" element={<OnboardingPage />} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
-                <Route path="/verify-email" element={<VerifyEmailPage />} />
-                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-                <Route path="/reset-password" element={<ResetPasswordPage />} />
+          {/* RewardToast trigger layer — meaningful-progress toasts queued
+              globally (Equoria-vcar, Spec 11.3.10). */}
+          <RewardToastProvider>
+            <BrowserRouter
+              future={{
+                v7_startTransition: true,
+                v7_relativeSplatPath: true,
+              }}
+            >
+              {/* Applies body.celestial class — reads ?theme= URL param + localStorage */}
+              <CelestialThemeProvider />
+              {/* Return overlay — shown after 4+ hour absence (authenticated users only) */}
+              <Suspense fallback={null}>
+                <WhileYouWereGone />
+              </Suspense>
+              {/* Redirects new users to /onboarding when completedOnboarding === false */}
+              <OnboardingGuard />
+              {/* Guided 10-step spotlight tour — active when completedOnboarding === false && onboardingStep >= 1 */}
+              <Suspense fallback={null}>
+                <OnboardingSpotlight />
+              </Suspense>
+              <Suspense fallback={<GallopingLoader />}>
+                <Routes>
+                  {/* Public routes — no nav shell */}
+                  <Route path="/onboarding" element={<OnboardingPage />} />
+                  <Route path="/login" element={<LoginPage />} />
+                  <Route path="/register" element={<RegisterPage />} />
+                  <Route path="/verify-email" element={<VerifyEmailPage />} />
+                  <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                  <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-                {/* Authenticated routes — DashboardLayout provides persistent nav */}
-                <Route
-                  element={
-                    <ProtectedRoute>
-                      <DashboardLayout />
-                    </ProtectedRoute>
-                  }
-                >
-                  <Route path="/horses/:id" element={<HorseDetailPage />} />
-                  <Route path="/horses/:id/equip" element={<HorseEquipPage />} />
-                  <Route path="/foals/:id" element={<FoalDetailPage />} />
-                  {navItems.map(({ to, Page }) => (
-                    <Route key={to} path={to} element={<Page />} />
-                  ))}
-                </Route>
-              </Routes>
-            </Suspense>
-          </BrowserRouter>
+                  {/* Authenticated routes — DashboardLayout provides persistent nav */}
+                  <Route
+                    element={
+                      <ProtectedRoute>
+                        <DashboardLayout />
+                      </ProtectedRoute>
+                    }
+                  >
+                    <Route path="/horses/:id" element={<HorseDetailPage />} />
+                    <Route path="/horses/:id/equip" element={<HorseEquipPage />} />
+                    <Route path="/foals/:id" element={<FoalDetailPage />} />
+                    {navItems.map(({ to, Page }) => (
+                      <Route key={to} path={to} element={<Page />} />
+                    ))}
+                  </Route>
+                </Routes>
+              </Suspense>
+            </BrowserRouter>
+          </RewardToastProvider>
         </TooltipProvider>
       </AuthProvider>
     </QueryClientProvider>

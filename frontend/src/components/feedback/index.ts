@@ -26,3 +26,11 @@ export type { XpGainNotificationProps } from './XpGainNotification';
 
 export { default as LevelUpCelebrationModal } from './LevelUpCelebrationModal';
 export type { LevelUpCelebrationModalProps, StatChange } from './LevelUpCelebrationModal';
+
+// RewardToast (Spec 11.3.10) + its trigger layer (Equoria-vcar). Previously
+// orphaned — now exported and wired via RewardToastProvider (mounted in App).
+export { default as RewardToast } from './RewardToast';
+export type { RewardToastProps, RewardType } from './RewardToast';
+
+export { default as RewardToastProvider, useRewardToast } from './RewardToastProvider';
+export type { RewardNotification } from './RewardToastProvider';

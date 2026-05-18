@@ -20,6 +20,7 @@ import XpProgressBar from '../XpProgressBar';
 const XPProgressBar = XpProgressBar;
 import * as useHorseXPHook from '@/hooks/api/useHorseXP';
 import type { HorseXP } from '@/lib/api-client';
+import { RewardToastProvider } from '@/components/feedback';
 
 // Mock the hook
 vi.mock('@/hooks/api/useHorseXP');
@@ -57,7 +58,13 @@ describe('XPProgressBar', () => {
   });
 
   const renderWithProvider = (component: React.ReactElement) => {
-    return render(<QueryClientProvider client={queryClient}>{component}</QueryClientProvider>);
+    // XpProgressBar now consumes useRewardToast (Equoria-vcar) to fire
+    // meaningful-progress toasts — it must run inside a RewardToastProvider.
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <RewardToastProvider>{component}</RewardToastProvider>
+      </QueryClientProvider>
+    );
   };
 
   describe('Level Display (AC-1)', () => {
