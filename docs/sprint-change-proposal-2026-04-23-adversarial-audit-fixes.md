@@ -9,6 +9,25 @@
 
 ---
 
+## Closure Status — SHIPPED & CLOSED
+
+> **`Equoria-ocn9` was CLOSED 2026-05-08** (user-approved; all acceptance criteria
+> verified). All four defects were resolved and shipped across commits
+> `7988b999` / `27214cc6` / `e22c02d0`, plus the subsequent 21R-SEC supersession.
+> The middleware originally proposed as `backend/middleware/requestBodyGuard.mjs`
+> was **superseded by `backend/middleware/requestBodySecurity.mjs`** during the
+> 21R-SEC hardening work (cross-ref **`Equoria-mu6t`**). The two security test
+> files referenced throughout this proposal were relocated from
+> `backend/__tests__/integration/security/` to
+> `backend/modules/services/__tests__/`.
+>
+> All checkboxes below have been reconciled to the actual shipped state
+> (verified 2026-05-18: AC1/AC2/AC3/AC4 all return 0 matches; S7-1..4 fixed in
+> current code; both S6 Decision-Needed items resolved). This document is a
+> historical record — it no longer represents pending work.
+
+---
+
 ## Section 1 — Issue Summary
 
 An adversarial code review of the Epic 21R beta-readiness state surfaced four
@@ -40,11 +59,11 @@ this proposal.
 | `frontend/src/components/HorseListView.tsx`                                  | Quick action handlers route to existing pages with query params.                                                           |
 | `frontend/src/components/training/TrainingDashboard.tsx`                     | Read `?horse=` query param and pre-select that horse.                                                                      |
 | `frontend/src/pages/CompetitionBrowserPage.tsx`                              | Read `?horse=` query param and pre-fill `selectedHorseId`.                                                                 |
-| `backend/middleware/requestBodyGuard.mjs` (NEW)                              | Reject duplicate JSON keys and prototype-pollution payloads at parse time.                                                 |
+| `backend/middleware/requestBodySecurity.mjs` (NEW; shipped name — proposed as `requestBodyGuard.mjs`, superseded per `Equoria-mu6t`) | Reject duplicate JSON keys and prototype-pollution payloads at parse time.                                                 |
 | `backend/app.mjs`                                                            | Replace `express.json()` with the guarded variant.                                                                         |
-| `backend/__tests__/integration/security/parameter-pollution.test.mjs`        | Unskip the two tests; assert 400 for both attack vectors.                                                                  |
-| `backend/__tests__/integration/rate-limit-circuit-breaker.test.mjs`          | Delete `Test Environment Bypasses` describe block (asserts non-existent behavior).                                         |
-| `backend/__tests__/integration/security/rate-limit-no-bypass.test.mjs` (NEW) | Real-path coverage: hammer rate-limited endpoint until 429, verify `Retry-After`, recover after window. No bypass headers. |
+| `backend/modules/services/__tests__/parameter-pollution.test.mjs`            | Unskip the two tests; assert 400 for both attack vectors.                                                                  |
+| `backend/modules/services/__tests__/rate-limit-circuit-breaker.test.mjs`     | Delete `Test Environment Bypasses` describe block (asserts non-existent behavior).                                         |
+| `backend/modules/services/__tests__/rate-limit-no-bypass.test.mjs` (NEW)     | Real-path coverage: hammer rate-limited endpoint until 429, verify `Retry-After`, recover after window. No bypass headers. |
 
 ### Technical Impact
 
@@ -166,6 +185,7 @@ clones.
 ### Change 3 — Body-layer pollution defenses (P1)
 
 **File (NEW):** `backend/middleware/requestBodyGuard.mjs`
+> _Shipped as `backend/middleware/requestBodySecurity.mjs` — superseded during 21R-SEC hardening (cross-ref `Equoria-mu6t`)._
 
 Two-part defense:
 
@@ -198,7 +218,8 @@ app.use(secureJsonBodyParser({ limit: '10mb' }));
 app.use(prototypePollutionGuard());
 ```
 
-**File:** `backend/__tests__/integration/security/parameter-pollution.test.mjs`
+**File:** `backend/modules/services/__tests__/parameter-pollution.test.mjs`
+> _Relocated from `backend/__tests__/integration/security/` during the test reorganization._
 
 - Remove `it.skip(...)` from the two TODO tests (lines 154 + 192).
 - Each must now respond with HTTP 400 and `success: false`.
@@ -212,7 +233,8 @@ pass.
 
 ### Change 4 — Bypass test removal + real-path coverage (P1)
 
-**File:** `backend/__tests__/integration/rate-limit-circuit-breaker.test.mjs`
+**File:** `backend/modules/services/__tests__/rate-limit-circuit-breaker.test.mjs`
+> _Relocated from `backend/__tests__/integration/` during the test reorganization._
 
 - **DELETE** the `Test Environment Bypasses` describe block (lines 199-237).
   The "should bypass rate limiting with test header" test asserts behavior
@@ -220,7 +242,8 @@ pass.
   comments "No test-only bypass logic"); it passes only because mock
   requests don't share a rate-limit key.
 
-**File (NEW):** `backend/__tests__/integration/security/rate-limit-no-bypass.test.mjs`
+**File (NEW):** `backend/modules/services/__tests__/rate-limit-no-bypass.test.mjs`
+> _Shipped under `backend/modules/services/__tests__/` (test reorganization)._
 
 Real-path integration test (no bypass headers, real Express app, real
 middleware):
@@ -249,25 +272,26 @@ test proves the production rate limit works without any escape hatch.
 
 1. SettingsPage:
 
-   - [ ] `grep -n "defaultValue=\"NobleRider\"\\|defaultValue=\"rider@equoria.com\"\\|setSavedAccount" frontend/src/pages/SettingsPage.tsx` returns 0 matches.
-   - [ ] All three buttons (Save Changes / Update Password / Delete Account) call real mutation hooks.
+   - [x] `grep -n "defaultValue=\"NobleRider\"\\|defaultValue=\"rider@equoria.com\"\\|setSavedAccount" frontend/src/pages/SettingsPage.tsx` returns 0 matches. _(verified 2026-05-18: 0 matches)_
+   - [x] All three buttons (Save Changes / Update Password / Delete Account) call real mutation hooks. _(shipped in `7988b999`/`27214cc6`/`e22c02d0`)_
 
 2. Quick actions:
 
-   - [ ] `grep -n "navigate(\\\`/training/\\\${\\|navigate(\\\`/competition/enter/" frontend/src/` returns 0 matches.
-   - [ ] Manual UX verification: from `/stable`, clicking quick-action Train/Compete lands on the right page with the chosen horse selected.
+   - [x] `grep -n "navigate(\\\`/training/\\\${\\|navigate(\\\`/competition/enter/" frontend/src/` returns 0 matches. _(verified 2026-05-18: 0 matches)_
+   - [x] Manual UX verification: from `/stable`, clicking quick-action Train/Compete lands on the right page with the chosen horse selected. _(verified at `Equoria-ocn9` closure 2026-05-08)_
 
 3. Pollution defenses:
 
-   - [ ] `grep -n "it.skip" backend/__tests__/integration/security/parameter-pollution.test.mjs` returns 0 matches.
-   - [ ] `npm test -- parameter-pollution` passes (all tests, no skips).
+   - [x] `grep -n "it.skip" backend/modules/services/__tests__/parameter-pollution.test.mjs` returns 0 matches. _(verified 2026-05-18: 0 matches; path relocated)_
+   - [x] `npm test -- parameter-pollution` passes (all tests, no skips). _(verified at `Equoria-ocn9` closure)_
 
 4. Bypass cleanup:
-   - [ ] `grep -rn "x-test-bypass-rate-limit" backend/__tests__/integration/rate-limit-circuit-breaker.test.mjs` returns 0 matches.
-   - [ ] `npm test -- rate-limit-no-bypass` passes (new file).
+   - [x] `grep -rn "x-test-bypass-rate-limit" backend/modules/services/__tests__/rate-limit-circuit-breaker.test.mjs` returns 0 matches. _(verified 2026-05-18: 0 matches; path relocated)_
+   - [x] `npm test -- rate-limit-no-bypass` passes (new file). _(verified at `Equoria-ocn9` closure)_
 
-**Sign-off:** Per CLAUDE.md, do NOT mark `Equoria-ocn9` closed without
-explicit user approval. Report results with evidence.
+**Sign-off:** `Equoria-ocn9` was CLOSED 2026-05-08 with explicit user approval
+after all acceptance criteria were verified. This section is reconciled to the
+shipped state.
 
 ---
 
@@ -275,26 +299,32 @@ explicit user approval. Report results with evidence.
 
 Three-layer adversarial review (Blind Hunter + Edge Case Hunter + Acceptance Auditor) of commits `7988b999` and `27214cc6` produced 40 raw findings → triaged to 2 decision-needed, 13 patches, 25 dismissed.
 
-### Decision-Needed (resolve before patch phase)
+> **Section 6/7 reconciliation (2026-05-18):** Per Section 7's Acceptance
+> Auditor (2026-04-27), all 2 Decision-Needed and all 13 Patch items below were
+> faithfully addressed in patch commit `e22c02d0`, and the 4 re-review patches
+> were resolved in the subsequent 21R-SEC supersession (`Equoria-mu6t`).
+> Boxes checked accordingly; this is a historical record of resolved work.
 
-- [ ] [Review][Decision] Pre-push hook blocks all pushes when test DB is unreachable — Hook runs full backend suite on every push; with Postgres down, even doc-only pushes are blocked. Add a connectivity probe with a clear failure message? Skip the integration suite when DB is down? Allow user override via env var? Or accept the current "DB must be up to push" stance? [.husky/pre-push:38-45]
-- [ ] [Review][Decision] `rate-limit-no-bypass.test.mjs` exercises a synthetic `/probe` route, not the production `/api/auth/login` mounted limiter — Spec Section 4 said "hammer `/api/auth/login` with invalid credentials … assert `Retry-After` header." Implementation uses a fresh Express app with a fresh `createRateLimiter` on `/probe`. Functionally proves the limiter trips and bypass headers don't help, but does not prove the production-mounted limiter on the real auth route works end-to-end. Acceptable as-is, or add a real-route assertion? [backend/__tests__/integration/security/rate-limit-no-bypass.test.mjs:59-83]
+### Decision-Needed (resolved)
+
+- [x] [Review][Decision] Pre-push hook blocks all pushes when test DB is unreachable — Resolved: DB connectivity probe with clear failure message added (D1; `db-probe.mjs`). [.husky/pre-push:38-45]
+- [x] [Review][Decision] `rate-limit-no-bypass.test.mjs` exercises a synthetic `/probe` route, not the production `/api/auth/login` mounted limiter — Resolved (D2): test rewritten to hit production `/api/v1/auth/login` via supertest. [backend/modules/services/__tests__/rate-limit-no-bypass.test.mjs]
 
 ### Patch (fix before closing Equoria-ocn9)
 
-- [ ] [Review][Patch] Unicode-escape bypass in `detectDuplicateJsonKeys` — Keys are stored as raw escaped substrings, so `{"name":"a","\u006eame":"b"}` is seen as two distinct keys but JSON.parse collapses both to `name`. Fix: JSON-parse each captured key string before adding to the dedupe Set. [backend/middleware/requestBodyGuard.mjs:114]
-- [ ] [Review][Patch] `prototypePollutionGuard` is mounted before `express.urlencoded` — urlencoded payloads with `__proto__[isAdmin]=true` reach controllers without inspection. Fix: also mount the guard after the urlencoded parser. [backend/app.mjs:411-414]
-- [ ] [Review][Patch] `findPollutionKey` is unbounded recursive — A 10 MB deeply-nested JSON body that JSON.parse accepts crashes the worker with `RangeError: Maximum call stack size exceeded` → 500 instead of 400; DoS vector against the very middleware that's supposed to defend. Fix: convert to iterative walk with explicit depth cap (e.g., 200). [backend/middleware/requestBodyGuard.mjs:195]
-- [ ] [Review][Patch] Replacement env-override test only asserts `expect(limiter).toBeDefined()` — Loses the regression coverage of the deleted bypass-header test. Fix: send max+1 requests with `TEST_RATE_LIMIT_MAX_REQUESTS=999999` set against a `useEnvOverride: false` limiter; assert 429 fires at the hardcoded max, not the inflated env value. [backend/__tests__/integration/rate-limit-circuit-breaker.test.mjs:218-237]
-- [ ] [Review][Patch] Pre-push hook docstring claims `--max-old-space-size` applies to workers — It only applies to the parent node process; child workers don't inherit CLI argv. Fix the comment to match reality. [.husky/pre-push:14-30]
-- [ ] [Review][Patch] Deep-link `?horse=` persists in URL after manual selection — User lands on `/training?horse=5`, manually selects horse 7, navigates away, hits back → component remounts and re-selects horse 5. Fix: call `setSearchParams({})` after auto-select. [frontend/src/components/training/TrainingDashboard.tsx:177-192, frontend/src/pages/CompetitionBrowserPage.tsx:48-65]
-- [ ] [Review][Patch] SettingsPage resync effect is broken — Logic only re-syncs when local field is empty. Two failure modes: (a) user clears the field intending to type a new value, profile refetches, server value snaps back, wiping their edit; (b) server normalizes the saved value but local form keeps un-normalized text → next Save sees a diff and re-submits forever. Fix: remove the effect entirely (let React Query be the source of truth) OR track an explicit `dirty` flag. [frontend/src/pages/SettingsPage.tsx:127-131]
-- [ ] [Review][Patch] No success toast on Save Changes — Real mutation wired but only `onError` handled. Users see no confirmation. Fix: add `onSuccess` toast. [frontend/src/pages/SettingsPage.tsx:142-147]
-- [ ] [Review][Patch] Logout failure after change-password leaves user in a zombie state — Server invalidated all sessions; if `logout.mutate()` fails, client still thinks user is logged in. Fix: `window.location.href = '/login'` in `onSettled` regardless of outcome. [frontend/src/pages/SettingsPage.tsx:183-191]
-- [ ] [Review][Patch] Delete-account modal cannot be dismissed by Escape or backdrop click — Required by `role="dialog" aria-modal="true"` ARIA convention. Fix: add Escape keydown handler + backdrop `onClick`. [frontend/src/pages/SettingsPage.tsx:402-420]
-- [ ] [Review][Patch] Delete-account modal has no `autoFocus` and no focus trap — Tabbing escapes the modal. Fix: at minimum add `autoFocus` to the confirm input. [frontend/src/pages/SettingsPage.tsx:402-420]
-- [ ] [Review][Patch] Delete confirm comparison is whitespace-sensitive — Browser autofill trailing space blocks delete. Fix: `.trim()` the input before comparison. [frontend/src/pages/SettingsPage.tsx:210]
-- [ ] [Review][Patch] Pre-push hook hardcodes `node_modules/jest/bin/jest.js` — Cryptic "Cannot find module" on first push from a fresh clone/worktree. Fix: presence check with helpful message, or use `npx jest`. [.husky/pre-push:42]
+- [x] [Review][Patch] Unicode-escape bypass in `detectDuplicateJsonKeys` — Keys are stored as raw escaped substrings, so `{"name":"a","\u006eame":"b"}` is seen as two distinct keys but JSON.parse collapses both to `name`. Fix: JSON-parse each captured key string before adding to the dedupe Set. [backend/middleware/requestBodyGuard.mjs:114]
+- [x] [Review][Patch] `prototypePollutionGuard` is mounted before `express.urlencoded` — urlencoded payloads with `__proto__[isAdmin]=true` reach controllers without inspection. Fix: also mount the guard after the urlencoded parser. [backend/app.mjs:411-414]
+- [x] [Review][Patch] `findPollutionKey` is unbounded recursive — A 10 MB deeply-nested JSON body that JSON.parse accepts crashes the worker with `RangeError: Maximum call stack size exceeded` → 500 instead of 400; DoS vector against the very middleware that's supposed to defend. Fix: convert to iterative walk with explicit depth cap (e.g., 200). [backend/middleware/requestBodyGuard.mjs:195]
+- [x] [Review][Patch] Replacement env-override test only asserts `expect(limiter).toBeDefined()` — Loses the regression coverage of the deleted bypass-header test. Fix: send max+1 requests with `TEST_RATE_LIMIT_MAX_REQUESTS=999999` set against a `useEnvOverride: false` limiter; assert 429 fires at the hardcoded max, not the inflated env value. [backend/__tests__/integration/rate-limit-circuit-breaker.test.mjs:218-237]
+- [x] [Review][Patch] Pre-push hook docstring claims `--max-old-space-size` applies to workers — It only applies to the parent node process; child workers don't inherit CLI argv. Fix the comment to match reality. [.husky/pre-push:14-30]
+- [x] [Review][Patch] Deep-link `?horse=` persists in URL after manual selection — User lands on `/training?horse=5`, manually selects horse 7, navigates away, hits back → component remounts and re-selects horse 5. Fix: call `setSearchParams({})` after auto-select. [frontend/src/components/training/TrainingDashboard.tsx:177-192, frontend/src/pages/CompetitionBrowserPage.tsx:48-65]
+- [x] [Review][Patch] SettingsPage resync effect is broken — Logic only re-syncs when local field is empty. Two failure modes: (a) user clears the field intending to type a new value, profile refetches, server value snaps back, wiping their edit; (b) server normalizes the saved value but local form keeps un-normalized text → next Save sees a diff and re-submits forever. Fix: remove the effect entirely (let React Query be the source of truth) OR track an explicit `dirty` flag. [frontend/src/pages/SettingsPage.tsx:127-131]
+- [x] [Review][Patch] No success toast on Save Changes — Real mutation wired but only `onError` handled. Users see no confirmation. Fix: add `onSuccess` toast. [frontend/src/pages/SettingsPage.tsx:142-147]
+- [x] [Review][Patch] Logout failure after change-password leaves user in a zombie state — Server invalidated all sessions; if `logout.mutate()` fails, client still thinks user is logged in. Fix: `window.location.href = '/login'` in `onSettled` regardless of outcome. [frontend/src/pages/SettingsPage.tsx:183-191]
+- [x] [Review][Patch] Delete-account modal cannot be dismissed by Escape or backdrop click — Required by `role="dialog" aria-modal="true"` ARIA convention. Fix: add Escape keydown handler + backdrop `onClick`. [frontend/src/pages/SettingsPage.tsx:402-420]
+- [x] [Review][Patch] Delete-account modal has no `autoFocus` and no focus trap — Tabbing escapes the modal. Fix: at minimum add `autoFocus` to the confirm input. [frontend/src/pages/SettingsPage.tsx:402-420]
+- [x] [Review][Patch] Delete confirm comparison is whitespace-sensitive — Browser autofill trailing space blocks delete. Fix: `.trim()` the input before comparison. [frontend/src/pages/SettingsPage.tsx:210]
+- [x] [Review][Patch] Pre-push hook hardcodes `node_modules/jest/bin/jest.js` — Cryptic "Cannot find module" on first push from a fresh clone/worktree. Fix: presence check with helpful message, or use `npx jest`. [.husky/pre-push:42]
 
 ### Section 7 — Re-review of `e22c02d0` (bmad-code-review, 2026-04-27)
 
@@ -302,13 +332,13 @@ Three-layer adversarial review of the patch commit produced ~30 raw findings →
 
 #### Patch (fix before final closure of Equoria-ocn9)
 
-- [ ] [Re-Review][Patch] `setSearchParams({}, { replace: true })` wipes ALL query params, not just `?horse=` — A user deep-linked from a marketing email URL like `/training?horse=5&utm_source=email&campaign=launch` loses the `utm_*` analytics params on auto-select. Fix: use the functional form to preserve other params: `setSearchParams((prev) => { const next = new URLSearchParams(prev); next.delete('horse'); return next; }, { replace: true })`. [frontend/src/components/training/TrainingDashboard.tsx:194, frontend/src/pages/CompetitionBrowserPage.tsx:61]
+- [x] [Re-Review][Patch] `setSearchParams({}, { replace: true })` wipes ALL query params, not just `?horse=` — A user deep-linked from a marketing email URL like `/training?horse=5&utm_source=email&campaign=launch` loses the `utm_*` analytics params on auto-select. Fix: use the functional form to preserve other params: `setSearchParams((prev) => { const next = new URLSearchParams(prev); next.delete('horse'); return next; }, { replace: true })`. [frontend/src/components/training/TrainingDashboard.tsx:194, frontend/src/pages/CompetitionBrowserPage.tsx:61]
 
-- [ ] [Re-Review][Patch] Delete-account modal backdrop closes on mousedown-inside / mouseup-outside drag — User clicks-and-holds on the warning text inside the panel to select it, drags mouse onto the backdrop, releases. The `click` event fires on the backdrop (LCA of mousedown+mouseup), triggering `closeDeleteModal`. User loses both their text selection AND the modal. Fix: track mousedown target via state, only close if both mousedown AND mouseup happened on the backdrop. [frontend/src/pages/SettingsPage.tsx:614-628]
+- [x] [Re-Review][Patch] Delete-account modal backdrop closes on mousedown-inside / mouseup-outside drag — User clicks-and-holds on the warning text inside the panel to select it, drags mouse onto the backdrop, releases. The `click` event fires on the backdrop (LCA of mousedown+mouseup), triggering `closeDeleteModal`. User loses both their text selection AND the modal. Fix: track mousedown target via state, only close if both mousedown AND mouseup happened on the backdrop. [frontend/src/pages/SettingsPage.tsx:614-628]
 
-- [ ] [Re-Review][Patch] Pre-push hook DB probe `client.query('SELECT 1')` has no timeout — `connectionTimeoutMillis: 5000` covers `client.connect()` only. If Postgres accepts TCP but is in a hung state (deadlocked admin lock, stuck autovacuum, network proxy that black-holes traffic post-handshake), the probe hangs indefinitely with no shell-level timeout, blocking the push with no actionable error. Fix: add `statement_timeout=5000` to the connection options, OR wrap the query in `Promise.race` with a 5-second reject. [.husky/pre-push:117-137]
+- [x] [Re-Review][Patch] Pre-push hook DB probe `client.query('SELECT 1')` has no timeout — `connectionTimeoutMillis: 5000` covers `client.connect()` only. If Postgres accepts TCP but is in a hung state (deadlocked admin lock, stuck autovacuum, network proxy that black-holes traffic post-handshake), the probe hangs indefinitely with no shell-level timeout, blocking the push with no actionable error. Fix: add `statement_timeout=5000` to the connection options, OR wrap the query in `Promise.race` with a 5-second reject. [.husky/pre-push:117-137]
 
-- [ ] [Re-Review][Patch] `uniqueTestIp` 8-bit hash space is fragile — Verified: today's 7 test names happen to hash to 7 distinct buckets (25, 82, 241, 108, 43, 172, 74), so no collision. But with only 256 possible values, the next test added has ~10% chance of colliding with an existing name (birthday paradox). A collision means two tests share an IP bucket; the second test starts with a counter already decremented from the first, and assertions like `expect(after).toBeLessThan(before)` could pass for the wrong reason or fail if the bucket is already at 0. Fix: switch to a wider hash (e.g., murmur3 32-bit) and spread across all three octets of `198.51.100.x`/`192.0.2.x`/`203.0.113.x` (RFC 5737 test ranges). Alternative: assert at file load that all `uniqueTestIp` outputs in the suite are distinct. [backend/__tests__/integration/security/rate-limit-no-bypass.test.mjs:69-78]
+- [x] [Re-Review][Patch] `uniqueTestIp` 8-bit hash space is fragile — Verified: today's 7 test names happen to hash to 7 distinct buckets (25, 82, 241, 108, 43, 172, 74), so no collision. But with only 256 possible values, the next test added has ~10% chance of colliding with an existing name (birthday paradox). A collision means two tests share an IP bucket; the second test starts with a counter already decremented from the first, and assertions like `expect(after).toBeLessThan(before)` could pass for the wrong reason or fail if the bucket is already at 0. Fix: switch to a wider hash (e.g., murmur3 32-bit) and spread across all three octets of `198.51.100.x`/`192.0.2.x`/`203.0.113.x` (RFC 5737 test ranges). Alternative: assert at file load that all `uniqueTestIp` outputs in the suite are distinct. [backend/__tests__/integration/security/rate-limit-no-bypass.test.mjs:69-78]
 
 #### Dismissed (re-review)
 
