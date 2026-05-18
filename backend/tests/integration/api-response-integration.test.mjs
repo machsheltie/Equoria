@@ -443,7 +443,10 @@ describe('🔄 API Response Integration Tests', () => {
       });
 
       expect(loginResponse.status).toBe(200);
-      expect(loginResponse.body).toHaveProperty('status', 'success');
+      // Equoria-zrwl: canonical success envelope is {success,message,data};
+      // the legacy {status:'success'} shape no longer exists on auth responses.
+      expect(loginResponse.body).toHaveProperty('success', true);
+      expect(loginResponse.body).not.toHaveProperty('status');
       expect(loginResponse.body).toHaveProperty('message');
       expect(loginResponse.body).toHaveProperty('data');
       // Auth endpoints may not have timestamp in root, check for consistent structure
