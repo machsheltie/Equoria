@@ -272,4 +272,58 @@ describe('DisciplineSelector', () => {
       expect(description).not.toBeInTheDocument();
     });
   });
+
+  // Equoria-pfp1w: personalized recommendations + per-discipline trait
+  // indicators. Asserts the selector renders the real ⭐ bonus / ⚠ penalty
+  // badges when traitIndicators are supplied (from the horse's real traits).
+  describe('Trait indicators (Equoria-pfp1w)', () => {
+    it('renders a bonus trait indicator on a discipline', () => {
+      render(
+        <DisciplineSelector
+          selectedDiscipline=""
+          onDisciplineChange={mockOnChange}
+          recommendedDisciplines={['Racing']}
+          traitIndicators={{ Racing: [{ trait: 'athletic', kind: 'bonus' }] }}
+        />
+      );
+      const bonus = screen.getByTestId('trait-indicator-bonus');
+      expect(bonus).toBeInTheDocument();
+      expect(bonus).toHaveTextContent('Athletic');
+    });
+
+    it('renders a penalty trait indicator on a discipline', () => {
+      render(
+        <DisciplineSelector
+          selectedDiscipline=""
+          onDisciplineChange={mockOnChange}
+          recommendedDisciplines={['Racing']}
+          traitIndicators={{ Racing: [{ trait: 'stubborn', kind: 'penalty' }] }}
+        />
+      );
+      expect(screen.getByTestId('trait-indicator-penalty')).toHaveTextContent('Stubborn');
+    });
+
+    it('respects a personalized recommended order (not the static default)', () => {
+      // Steeplechase is NOT in DEFAULT_RECOMMENDED; passing it explicitly
+      // proves the recommended set is caller-driven (personalized), and the
+      // matchScore badge surfaces the horse-specific score.
+      render(
+        <DisciplineSelector
+          selectedDiscipline=""
+          onDisciplineChange={mockOnChange}
+          recommendedDisciplines={['Steeplechase']}
+          matchScores={{ Steeplechase: 91 }}
+        />
+      );
+      expect(screen.getByText('Recommended for this horse')).toBeInTheDocument();
+      expect(screen.getByText('91%')).toBeInTheDocument();
+    });
+
+    it('does not render trait indicator container when none supplied', () => {
+      render(
+        <DisciplineSelector selectedDiscipline="Dressage" onDisciplineChange={mockOnChange} />
+      );
+      expect(screen.queryByTestId('discipline-trait-indicators')).not.toBeInTheDocument();
+    });
+  });
 });

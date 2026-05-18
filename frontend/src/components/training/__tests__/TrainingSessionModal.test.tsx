@@ -61,6 +61,14 @@ vi.mock('@/hooks/api/useTraining', () => ({
   useTrainingSession: () => mockUseTrainingSession(),
 }));
 
+// Equoria-pfp1w: the modal reads real horse stats/traits via useHorse to
+// personalize discipline recommendations. These tests isolate data hooks
+// (mirrors the useTraining mock above); undefined data exercises the honest
+// "no personalized data → popular defaults" fallback path.
+vi.mock('@/hooks/api/useHorses', () => ({
+  useHorse: () => ({ data: undefined }),
+}));
+
 describe('TrainingSessionModal', () => {
   beforeEach(() => {
     vi.clearAllMocks();

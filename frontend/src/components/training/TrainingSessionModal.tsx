@@ -26,6 +26,12 @@ import {
   useTrainingStatus,
 } from '@/hooks/api/useTraining';
 import type { TrainableHorse, TrainingResult } from '@/lib/api-client';
+import { useHorse } from '@/hooks/api/useHorses';
+import {
+  recommendedDisciplineOrder,
+  disciplineMatchScores,
+  disciplineTraitIndicators,
+} from './disciplineRecommendation';
 import DisciplineSelector from './DisciplineSelector';
 import HorseStatsCard from './HorseStatsCard';
 import TrainingResultsDisplay from './TrainingResultsDisplay';
@@ -149,6 +155,20 @@ const TrainingSessionModal = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [trainingResult, setTrainingResult] = useState<TrainingResult | null>(null);
   const [previousScore, setPreviousScore] = useState<number | undefined>(undefined);
+
+  // Real horse stats + traits drive personalized discipline recommendations
+  // (Equoria-pfp1w) — replaces DisciplineSelector's static DEFAULT_RECOMMENDED
+  // fallback. useHorse fetches the full HorseSummary (stats + traits).
+  const { data: horseDetail } = useHorse(horse.id);
+  const personalizedRecommended = useMemo(
+    () => recommendedDisciplineOrder(horseDetail),
+    [horseDetail]
+  );
+  const personalizedMatchScores = useMemo(() => disciplineMatchScores(horseDetail), [horseDetail]);
+  const personalizedTraitIndicators = useMemo(
+    () => disciplineTraitIndicators(horseDetail),
+    [horseDetail]
+  );
 
   const { data: status } = useTrainingStatus(horse.id, discipline);
   const {
@@ -288,7 +308,12 @@ const TrainingSessionModal = ({
               <DisciplineSelector
                 selectedDiscipline={discipline}
                 onDisciplineChange={setDiscipline}
-                description="Select from all 23 available training disciplines"
+                recommendedDisciplines={
+                  personalizedRecommended.length > 0 ? personalizedRecommended : undefined
+                }
+                matchScores={personalizedMatchScores}
+                traitIndicators={personalizedTraitIndicators}
+                description="Ranked for this horse's stats — best matches shown first (all 23 below)"
               />
             </div>
 
