@@ -14,6 +14,7 @@
 import React, { useState } from 'react';
 import { AlertTriangle } from 'lucide-react';
 import { ScoreBreakdownRadar } from '@/components/competition/ScoreBreakdownRadar';
+import type { PedigreeTree, PedigreeTreeNode } from './pedigreeTreeFromLineage';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -34,6 +35,13 @@ export interface CompatibilityData {
   traits: TraitPrediction[];
   inbreedingCoefficient: number; // 0–1
   pedigreeOverlap: Array<{ ancestorName: string; generations: number }>;
+  /**
+   * Real 3-generation ancestor tree from the backend lineage-analysis
+   * endpoint (Equoria-55bo.2). When present the Pedigree tab renders the
+   * recursive sire/dam tree; the flat `pedigreeOverlap` list is only used as
+   * the legacy fallback when no tree is available. Never fabricated.
+   */
+  pedigreeTree?: PedigreeTree | null;
 }
 
 interface CompatibilityPreviewProps {
@@ -217,15 +225,99 @@ function InbreedingTab({ coefficient }: { coefficient: number }) {
 
 // ── Tab: Pedigree ─────────────────────────────────────────────────────────────
 
+/**
+ * Recursive ancestor node — renders the real 3-generation sire/dam tree.
+ * Indentation + a connector rail communicate depth; sire above dam mirrors
+ * standard pedigree-chart convention.
+ */
+function PedigreeNode({ node, depth }: { node: PedigreeTreeNode; depth: number }) {
+  return (
+    <li className="relative" data-testid="pedigree-tree-node">
+      <div
+        className="flex items-center gap-2 rounded-lg px-3 py-1.5 bg-[rgba(10,22,50,0.4)] border border-[rgba(100,130,165,0.15)]"
+        style={{ marginLeft: depth * 14 }}
+      >
+        <span className="text-xs text-[var(--text-primary)] font-[var(--font-body)] truncate">
+          {node.name}
+        </span>
+        <span className="ml-auto text-[10px] text-[var(--text-muted)] font-[var(--font-body)] flex-shrink-0">
+          {depth === 0 ? 'Parent' : depth === 1 ? 'Grandparent' : `Gen ${depth + 1}`}
+        </span>
+      </div>
+      {(node.sire || node.dam) && (
+        <ul className="mt-1 space-y-1 border-l border-[rgba(201,162,39,0.2)] ml-2 pl-1">
+          {node.sire && <PedigreeNode node={node.sire} depth={depth + 1} />}
+          {node.dam && <PedigreeNode node={node.dam} depth={depth + 1} />}
+        </ul>
+      )}
+    </li>
+  );
+}
+
+function PedigreeRoot({ label, node }: { label: string; node: PedigreeTreeNode | null }) {
+  return (
+    <div className="space-y-1" data-testid={`pedigree-root-${label.toLowerCase()}`}>
+      <p className="text-[10px] text-[var(--gold-primary)] font-[var(--font-body)] uppercase tracking-widest">
+        {label}: {node?.name ?? '—'}
+      </p>
+      {node && (node.sire || node.dam) ? (
+        <ul className="space-y-1">
+          {node.sire && <PedigreeNode node={node.sire} depth={0} />}
+          {node.dam && <PedigreeNode node={node.dam} depth={0} />}
+        </ul>
+      ) : (
+        <p className="text-[10px] text-[var(--text-muted)] font-[var(--font-body)] pl-1">
+          No recorded ancestors.
+        </p>
+      )}
+    </div>
+  );
+}
+
 function PedigreeTab({
   overlap,
+  tree,
   mareName,
   stallionName,
 }: {
   overlap: Array<{ ancestorName: string; generations: number }>;
+  tree?: PedigreeTree | null;
   mareName: string;
   stallionName: string;
 }) {
+  // Preferred: render the real 3-generation ancestor tree from the backend
+  // lineage-analysis endpoint (Equoria-55bo.2). Only fall back to the flat
+  // common-ancestor overlap when no real tree is available.
+  if (tree && (tree.stallion || tree.mare)) {
+    return (
+      <div className="space-y-4" data-testid="pedigree-tree">
+        <p className="text-[10px] text-[var(--text-muted)] font-[var(--font-body)] uppercase tracking-widest">
+          3-generation pedigree
+        </p>
+        <PedigreeRoot label="Sire" node={tree.stallion} />
+        <PedigreeRoot label="Dam" node={tree.mare} />
+        {overlap.length > 0 && (
+          <div className="pt-2 border-t border-[rgba(201,162,39,0.12)]">
+            <p className="text-[10px] text-amber-300 font-[var(--font-body)] uppercase tracking-widest mb-1">
+              Common ancestors
+            </p>
+            {overlap.map((a) => (
+              <div
+                key={a.ancestorName}
+                className="flex items-center justify-between text-[10px] text-[var(--text-muted)] font-[var(--font-body)] py-0.5"
+              >
+                <span>{a.ancestorName}</span>
+                <span>
+                  {a.generations} gen{a.generations !== 1 ? 's' : ''} back
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (overlap.length === 0) {
     return (
       <div className="text-center py-4 space-y-1">
@@ -329,6 +421,7 @@ export function CompatibilityPreview({
         ) : (
           <PedigreeTab
             overlap={data.pedigreeOverlap}
+            tree={data.pedigreeTree}
             mareName={mareName}
             stallionName={stallionName}
           />

@@ -124,7 +124,7 @@ describe('CompatibilityPreview', () => {
   });
 
   describe('Pedigree', () => {
-    it('shows "no common ancestors" when overlap is empty', () => {
+    it('shows "no common ancestors" when overlap is empty and no tree', () => {
       const noOverlapData: CompatibilityData = {
         ...sampleData,
         pedigreeOverlap: [],
@@ -132,6 +132,57 @@ describe('CompatibilityPreview', () => {
       render(<CompatibilityPreview mareName="Luna" stallionName="Atlas" data={noOverlapData} />);
       fireEvent.click(screen.getByRole('tab', { name: 'Pedigree' }));
       expect(screen.getByText('No common ancestors')).toBeInTheDocument();
+    });
+
+    // Equoria-55bo.2: when a real 3-generation tree is present the Pedigree
+    // tab must render the recursive ancestor tree, NOT the flat overlap.
+    it('renders the real 3-generation ancestor tree when pedigreeTree is present', () => {
+      const treeData: CompatibilityData = {
+        ...sampleData,
+        pedigreeOverlap: [],
+        pedigreeTree: {
+          stallion: {
+            id: 1,
+            name: 'Atlas',
+            generation: 0,
+            sire: {
+              id: 11,
+              name: 'Atlas Sire',
+              generation: 1,
+              sire: {
+                id: 111,
+                name: 'Atlas GrandSire',
+                generation: 2,
+                sire: null,
+                dam: null,
+              },
+              dam: null,
+            },
+            dam: { id: 12, name: 'Atlas Dam', generation: 1, sire: null, dam: null },
+          },
+          mare: {
+            id: 2,
+            name: 'Luna',
+            generation: 0,
+            sire: { id: 21, name: 'Luna Sire', generation: 1, sire: null, dam: null },
+            dam: null,
+          },
+        },
+      };
+      render(<CompatibilityPreview mareName="Luna" stallionName="Atlas" data={treeData} />);
+      fireEvent.click(screen.getByRole('tab', { name: 'Pedigree' }));
+
+      // Real tree container present; flat "no common ancestors" NOT shown
+      expect(screen.getByTestId('pedigree-tree')).toBeInTheDocument();
+      expect(screen.queryByText('No common ancestors')).not.toBeInTheDocument();
+
+      // 3 generations of real ancestors rendered (proves recursive tree)
+      expect(screen.getByText('Atlas Sire')).toBeInTheDocument();
+      expect(screen.getByText('Atlas Dam')).toBeInTheDocument();
+      expect(screen.getByText('Atlas GrandSire')).toBeInTheDocument();
+      expect(screen.getByText('Luna Sire')).toBeInTheDocument();
+      expect(screen.getByTestId('pedigree-root-sire')).toBeInTheDocument();
+      expect(screen.getByTestId('pedigree-root-dam')).toBeInTheDocument();
     });
   });
 });

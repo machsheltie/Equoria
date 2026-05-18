@@ -30,7 +30,12 @@ import {
   type CompatibilityData,
 } from '@/components/breeding/CompatibilityPreview';
 import { mapPredictionToCompatibilityData } from '@/components/breeding/compatibilityFromPrediction';
-import { useGeneticProbability, useInbreedingAnalysis } from '@/hooks/api/useBreedingPrediction';
+import { mapLineageToPedigreeTree } from '@/components/breeding/pedigreeTreeFromLineage';
+import {
+  useGeneticProbability,
+  useInbreedingAnalysis,
+  useLineageAnalysis,
+} from '@/hooks/api/useBreedingPrediction';
 import CinematicMoment from '@/components/feedback/CinematicMoment';
 import type { Horse, CompatibilityAnalysis } from '@/types/breeding';
 
@@ -154,18 +159,31 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
     sireId,
     damId
   );
+  // Real 3-generation ancestor tree (Equoria-55bo.2) — replaces the flat
+  // common-ancestor overlap in the Pedigree tab with the game's actual
+  // recursive sire/dam lineage from the backend lineage-analysis endpoint.
+  const { data: lineageAnalysis, isLoading: loadingLineage } = useLineageAnalysis(sireId, damId);
 
   // Map the real responses; null when prediction is unavailable so the
   // preview renders an honest loading/empty state (no fabricated numbers).
   const previewData: CompatibilityData | null =
     selectedSire && selectedDam
-      ? mapPredictionToCompatibilityData(
-          geneticProbability as unknown as Parameters<typeof mapPredictionToCompatibilityData>[0],
-          inbreedingAnalysis as unknown as Parameters<typeof mapPredictionToCompatibilityData>[1]
-        )
+      ? (() => {
+          const base = mapPredictionToCompatibilityData(
+            geneticProbability as unknown as Parameters<typeof mapPredictionToCompatibilityData>[0],
+            inbreedingAnalysis as unknown as Parameters<typeof mapPredictionToCompatibilityData>[1]
+          );
+          if (!base) return null;
+          return {
+            ...base,
+            pedigreeTree: mapLineageToPedigreeTree(
+              lineageAnalysis as unknown as Parameters<typeof mapLineageToPedigreeTree>[0]
+            ),
+          };
+        })()
       : null;
   const loadingPreview = Boolean(
-    selectedSire && selectedDam && (loadingGenetic || loadingInbreeding)
+    selectedSire && selectedDam && (loadingGenetic || loadingInbreeding || loadingLineage)
   );
 
   // Determine if this is the user's first-ever breed (milestone check)
