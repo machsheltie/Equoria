@@ -17,6 +17,7 @@
 import { cn, getBreedName } from '@/lib/utils';
 import { getHorseImage } from '@/lib/breed-images';
 import { careChipStatus, trainingCooldownChip } from '@/lib/utils/care-status-utils';
+import { getPregnancyProgress, GESTATION_DAYS } from '@/lib/utils/pregnancyChances';
 import { CareChip } from '@/components/common/CareChip';
 import type { HorseSummary } from '@/lib/api-client';
 
@@ -66,6 +67,15 @@ export function HorseCard({
   const isLegendary = !!(horse as unknown as Record<string, unknown>).isLegendary;
   const traits = horse.traits ?? (horse.trait ? [horse.trait] : []);
   const cooldown = trainingCooldownChip(horse.trainingCooldown);
+  // Equoria-yyn7 — in-foal indicator so users can manage multiple pregnant
+  // mares from list/grid views without drilling into each HorseDetailPage.
+  // Reuses the same gestation math as PregnancyFeedingPanel (no new API call).
+  const pregnancy = getPregnancyProgress(horse.inFoalSinceDate);
+  const pregnancyTooltip = pregnancy
+    ? pregnancy.isOverdue
+      ? `In foal — foaling imminent (Day ${GESTATION_DAYS}+ of ${GESTATION_DAYS})`
+      : `In foal — Day ${pregnancy.gestationDay} of ${GESTATION_DAYS}, ${pregnancy.daysRemaining} ${pregnancy.daysRemaining === 1 ? 'day' : 'days'} remaining`
+    : '';
 
   return (
     <button
@@ -127,6 +137,19 @@ export function HorseCard({
               finalDisplayColor (legacy serializer field) and finally hides
               the chip entirely for legacy horses with no color recorded. */}
           <div className="mt-1 flex flex-wrap gap-1">
+            {/* Equoria-yyn7 — in-foal badge. Hidden when not pregnant. */}
+            {pregnancy ? (
+              <span
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-[var(--radius-sm)] text-[0.6rem] font-semibold bg-[var(--gold-dim)] text-[var(--bg-midnight)] truncate max-w-full"
+                title={pregnancyTooltip}
+                aria-label={pregnancyTooltip}
+                data-testid="horse-card-pregnancy-badge"
+              >
+                {pregnancy.isOverdue
+                  ? '🐴 Foaling'
+                  : `🐴 ${pregnancy.daysRemaining}d`}
+              </span>
+            ) : null}
             {(() => {
               const colorName = horse.phenotype?.colorName ?? horse.finalDisplayColor ?? null;
               if (!colorName) return null;
