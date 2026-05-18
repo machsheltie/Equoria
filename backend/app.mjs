@@ -130,7 +130,7 @@ import performanceMetricsRouter from './utils/performanceMonitor.mjs';
  */
 
 // Import authentication middleware
-import { authenticateToken, requireRole } from './middleware/auth.mjs';
+import { authenticateToken, requireRole, requireAdminMfa } from './middleware/auth.mjs';
 
 // Import CSRF protection middleware
 import { csrfProtection, csrfErrorHandler } from './middleware/csrf.mjs';
@@ -162,6 +162,10 @@ authRouter.use(csrfProtection);
 // Admin router - Requires valid JWT token + admin role
 const adminRouter = express.Router();
 adminRouter.use(authenticateToken, requireRole('admin'));
+// Optional policy (Equoria-te21j): when ADMIN_MFA_REQUIRED is enabled, an
+// admin must have MFA enrolled to use admin routes. No-op when the flag is
+// off (default) so existing admins are not locked out on deploy.
+adminRouter.use(requireAdminMfa);
 // Apply CSRF protection to all state-changing operations (POST/PUT/DELETE/PATCH)
 adminRouter.use(csrfProtection);
 

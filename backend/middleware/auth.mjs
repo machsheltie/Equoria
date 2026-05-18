@@ -305,6 +305,89 @@ export const requireRole = (...roles) => {
 };
 
 /**
+ * Admin MFA Enforcement Middleware (Equoria-te21j, OWASP A07)
+ *
+ * Optional policy: when `ADMIN_MFA_REQUIRED` is enabled, a user with
+ * role=admin MUST have `mfaEnabled` to perform admin actions. Mount this
+ * AFTER `requireRole('admin')` on the admin router so:
+ *   - non-admins are already rejected by requireRole (this never runs for them)
+ *   - only authenticated admins reach this gate
+ *
+ * Default OFF (flag unset/false) so existing admins are NOT locked out the
+ * moment this ships — operators opt in deliberately after admins enroll.
+ * To enable: set env `ADMIN_MFA_REQUIRED=true` (or `1`). Document the rollout
+ * step (have all admins complete /api/v1/auth/mfa/enroll +
+ * /mfa/verify-enrollment) BEFORE flipping the flag, or those admins will be
+ * locked out of admin routes (login itself is unaffected — only admin-scoped
+ * routes are gated, and they can still enroll via the authenticated MFA
+ * endpoints).
+ *
+ * Fail-closed: a DB lookup error returns 500 (does NOT fall through to allow),
+ * mirroring requireRole's Equoria-f8bp fail-closed contract.
+ */
+const ADMIN_MFA_REQUIRED_VALUES = new Set(['true', '1', 'yes', 'on']);
+
+export function isAdminMfaEnforced(env = process.env.ADMIN_MFA_REQUIRED) {
+  return typeof env === 'string' && ADMIN_MFA_REQUIRED_VALUES.has(env.trim().toLowerCase());
+}
+
+export const requireAdminMfa = async (req, res, next) => {
+  try {
+    if (!isAdminMfaEnforced()) {
+      return next(); // policy disabled — no behavioral change
+    }
+    if (!req.user || !req.user.id) {
+      // Should never happen (authenticateToken + requireRole ran first), but
+      // fail closed rather than assume.
+      throw new AppError('Authentication required', 401);
+    }
+
+    let user;
+    try {
+      user = await prisma.user.findUnique({
+        where: { id: req.user.id },
+        select: { mfaEnabled: true },
+      });
+    } catch (lookupError) {
+      logger.error(
+        `[auth] requireAdminMfa DB lookup failed for user ${req.user.id}: ${lookupError.message}`,
+      );
+      return res.status(500).json({
+        success: false,
+        message: 'MFA verification unavailable. Please retry.',
+        status: 'error',
+      });
+    }
+
+    if (!user || user.mfaEnabled !== true) {
+      logger.warn(
+        `[auth] Admin ${req.user.id} blocked from ${req.method} ${req.path}: ADMIN_MFA_REQUIRED is on and MFA is not enabled for this account`,
+      );
+      throw new AppError(
+        'Admin MFA required. Enroll a TOTP authenticator (POST /api/v1/auth/mfa/enroll then /mfa/verify-enrollment) before performing admin actions.',
+        403,
+      );
+    }
+
+    return next();
+  } catch (error) {
+    if (AppError.isAppError(error)) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+        status: error.status,
+      });
+    }
+    logger.error(`[auth] requireAdminMfa error: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Authorization error',
+      status: 'error',
+    });
+  }
+};
+
+/**
  * Generate JWT Token
  * SECURITY: Explicitly specifies HS256 algorithm to match verification requirements
  */

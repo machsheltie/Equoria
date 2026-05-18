@@ -458,9 +458,21 @@ RATE_LIMIT_MAX_REQUESTS=100
 > (persisted value is not plaintext base32; round-trip; tamper rejection;
 > fail-fast key policy).
 >
-> **Remaining (separate follow-up):** MFA is opt-in (not enforced for any
-> account class yet); per-account / admin enforcement is tracked as
-> `Equoria-te21j`.
+> **Admin MFA enforcement — ADDED 2026-05-18 (Equoria-te21j):** an optional
+> policy gates admin-scoped routes (`/api/v1/admin/*`) behind MFA. When env
+> `ADMIN_MFA_REQUIRED` is truthy, an authenticated `role=admin` user without
+> `mfaEnabled` gets a 403 "Admin MFA required" on admin routes (login itself
+> is unaffected; non-admins are unaffected — `requireRole('admin')` rejects
+> them first). Default OFF so existing admins are not locked out on deploy;
+> operators flip the flag only after admins enroll. Middleware:
+> `requireAdminMfa` in `backend/middleware/auth.mjs`, mounted on the
+> `adminRouter` in `backend/app.mjs` after `requireRole('admin')`. Fail-closed
+> on DB lookup error (500, never allow-through). Real-DB integration coverage:
+> `backend/modules/auth/__tests__/adminMfaEnforcement.integration.test.mjs`.
+>
+> **Remaining (separate follow-up):** MFA is still opt-in for non-admin
+> accounts (no global enforcement); broader per-role / mandatory-for-all
+> enforcement is not yet implemented.
 
 ### **A08:2021 - Software and Data Integrity Failures** ✅
 
