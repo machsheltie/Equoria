@@ -12,6 +12,9 @@ import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import prisma from '../../packages/database/prismaClient.mjs';
 import app from '../app.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
 
 const UNIQUE = randomBytes(6).toString('hex');
 const PREFIX = `TestFixture-GroomAssLog-${UNIQUE}-`;
@@ -39,6 +42,7 @@ beforeAll(async () => {
 
   testHorse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `${PREFIX}Horse`,
       sex: 'Mare',
       age: 1,

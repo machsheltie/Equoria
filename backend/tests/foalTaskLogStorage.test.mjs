@@ -28,6 +28,9 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../db/index.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
 
 describe('Foal Task Log Storage', () => {
   // Reference date anchor for all test date calculations
@@ -77,6 +80,7 @@ describe('Foal Task Log Storage', () => {
     // Create test foal
     testFoal = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Test Foal Task Log',
         sex: 'Colt',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year ago

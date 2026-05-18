@@ -40,6 +40,9 @@ import { fileURLToPath } from 'url';
 import { randomBytes } from 'node:crypto';
 import { dirname, join } from 'path';
 import dotenv from 'dotenv';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -171,6 +174,7 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
     // Create test horses
     testHorse1 = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Competition Star',
         age: 5,
         breed: { connect: { id: testBreed.id } },
@@ -194,6 +198,7 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
 
     testHorse2 = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Competition Runner',
         age: 4,
         breed: { connect: { id: testBreed.id } },
@@ -217,6 +222,7 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
 
     testHorse3 = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Competition Novice',
         age: 3,
         breed: { connect: { id: testBreed.id } },

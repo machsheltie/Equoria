@@ -25,6 +25,10 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
+
 describe('Personality Evolution Controller API', () => {
   let __csrf__;
   beforeAll(async () => {
@@ -92,6 +96,7 @@ describe('Personality Evolution Controller API', () => {
     // Create test horse
     testHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         userId: testUser.id,
         breedId: testBreed.id,
         name: 'API Test Horse',

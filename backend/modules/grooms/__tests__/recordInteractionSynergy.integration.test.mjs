@@ -18,6 +18,9 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const TAG = `ng1i-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}`;
@@ -48,6 +51,7 @@ describe('31D-4 (Equoria-ng1i): POST /api/grooms/interact applies temperament-gr
     dob.setFullYear(dob.getFullYear() - 1);
     nervousFoal = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `${TAG}-NervousFoal`,
         sex: 'colt',
         dateOfBirth: dob,
@@ -126,6 +130,7 @@ describe('31D-4 (Equoria-ng1i): POST /api/grooms/interact applies temperament-gr
     dob.setFullYear(dob.getFullYear() - 1);
     const strictFoal = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `${TAG}-NervousFoalStrict`,
         sex: 'colt',
         dateOfBirth: dob,

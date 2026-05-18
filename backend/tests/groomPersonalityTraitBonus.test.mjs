@@ -29,6 +29,10 @@ import { applyPersonalityEffectsToMilestone } from '../utils/personalityModifier
 import { evaluateEnhancedMilestone } from '../utils/enhancedMilestoneEvaluationSystem.mjs';
 
 import { fetchCsrf } from './helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
+
 describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
   let __csrf__;
   beforeAll(async () => {
@@ -67,6 +71,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
     // Create test horse with temperament
     testHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `GPT-TestHorse_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         userId: testUser.id,
         dateOfBirth: new Date(Date.now() - 0 * 24 * 60 * 60 * 1000), // 0 days old (newborn for imprinting)
@@ -334,6 +339,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         // Create horse without temperament
         const horseWithoutTemperament = await prisma.horse.create({
           data: {
+            ...fixtureColor(),
             name: 'NoTemperamentHorse',
             userId: testUser.id,
             dateOfBirth: new Date(),

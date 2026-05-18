@@ -9,6 +9,9 @@ import {
   SKILL_LEVELS,
   PERSONALITY_TRAITS,
 } from '../utils/groomSystem.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
 
 /**
  * Groom System Tests
@@ -256,7 +259,12 @@ describe('assignGroomToFoal — DB integration', () => {
 
   beforeAll(async () => {
     foal = await prisma.horse.create({
-      data: { name: 'TestFixture-GroomSys-Foal', sex: 'Colt', dateOfBirth },
+      data: {
+        ...fixtureColor(),
+        name: 'TestFixture-GroomSys-Foal',
+        sex: 'Colt',
+        dateOfBirth,
+      },
     });
     groom = await prisma.groom.create({
       data: {
@@ -352,7 +360,12 @@ describe('ensureDefaultGroomAssignment — DB integration', () => {
   it('returns existing assignment when one is already active', async () => {
     const dateOfBirth = new Date('2023-01-01');
     const localFoal = await prisma.horse.create({
-      data: { name: 'TestFixture-GroomSys-EnsureFoal1', sex: 'Filly', dateOfBirth },
+      data: {
+        ...fixtureColor(),
+        name: 'TestFixture-GroomSys-EnsureFoal1',
+        sex: 'Filly',
+        dateOfBirth,
+      },
     });
     const localGroom = await prisma.groom.create({
       data: {
@@ -383,7 +396,12 @@ describe('ensureDefaultGroomAssignment — DB integration', () => {
   it('creates default assignment when none exists (test env auto-assigns)', async () => {
     const dateOfBirth = new Date('2023-06-01');
     const localFoal = await prisma.horse.create({
-      data: { name: 'TestFixture-GroomSys-EnsureFoal2', sex: 'Colt', dateOfBirth },
+      data: {
+        ...fixtureColor(),
+        name: 'TestFixture-GroomSys-EnsureFoal2',
+        sex: 'Colt',
+        dateOfBirth,
+      },
     });
 
     let createdGroomId = null;

@@ -39,6 +39,10 @@ import prisma from '../../../db/index.mjs';
 import { invalidateCache } from '../../../utils/cacheHelper.mjs';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+
 /**
  * Extract cookie value from Set-Cookie header array
  */
@@ -225,6 +229,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
       testHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Progress Test Horse',
           breed: { connect: { id: breed.id } },
           user: { connect: { id: testUser.id } },

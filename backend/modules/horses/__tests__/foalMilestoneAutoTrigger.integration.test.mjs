@@ -20,6 +20,9 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { processFoalMilestoneEvaluations } from '../../../utils/horseAgingSystem.mjs';
 import { DEVELOPMENTAL_WINDOWS, MILESTONE_TYPES } from '../../../utils/enhancedMilestoneEvaluationSystem.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const TAG = `3yxz-${randomBytes(4).toString('hex')}`;
 
@@ -52,6 +55,7 @@ describe('Equoria-3yxz: processFoalMilestoneEvaluations auto-writes MilestoneTra
 
     socializationFoal = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `${TAG}-SocializationFoal`,
         sex: 'colt',
         dateOfBirth: dobForAge(3),
@@ -64,6 +68,7 @@ describe('Equoria-3yxz: processFoalMilestoneEvaluations auto-writes MilestoneTra
 
     trustHandlingFoal = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `${TAG}-TrustHandlingFoal`,
         sex: 'filly',
         dateOfBirth: dobForAge(18),
@@ -76,6 +81,7 @@ describe('Equoria-3yxz: processFoalMilestoneEvaluations auto-writes MilestoneTra
 
     agedHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `${TAG}-AgedHorse`,
         sex: 'colt',
         dateOfBirth: dobForAge(1200),

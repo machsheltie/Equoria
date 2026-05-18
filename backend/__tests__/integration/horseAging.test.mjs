@@ -38,6 +38,9 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../db/index.mjs';
 import cronJobService from '../../services/cronJobs.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../tests/helpers/fixtureColor.mjs';
 
 const NAME_PREFIX = 'AgingRegression-';
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
@@ -97,6 +100,7 @@ describe('Horse weekly aging — integration regression (Equoria-j6jv)', () => {
     const dateOfBirth = new Date(Date.now() - daysOld * MS_PER_DAY - BUFFER_MS);
     const horse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `${NAME_PREFIX}${label}-${randomBytes(4).toString('hex')}`,
         sex: 'Colt',
         dateOfBirth,

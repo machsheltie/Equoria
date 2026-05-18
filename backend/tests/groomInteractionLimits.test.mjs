@@ -16,6 +16,9 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../db/index.mjs';
 import { validateFoalInteractionLimits } from '../utils/groomSystem.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
 
 const PREFIX = 'TestFixture-GroomIntLimits-';
 
@@ -26,6 +29,7 @@ let groomId;
 async function mkHorse(suffix, opts = {}) {
   return prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `${PREFIX}${suffix}`,
       sex: 'Colt',
       dateOfBirth: opts.dateOfBirth ?? new Date('2022-01-01'),

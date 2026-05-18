@@ -30,6 +30,9 @@
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../db/index.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
 
 // Mock logger
 const mockLogger = {
@@ -151,6 +154,7 @@ describe('Horse Aging Integration', () => {
       // In Equoria: 1 year = 7 days, so foal should be 6 days old turning 7
       const foal = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Milestone Integration Foal',
           sex: 'Filly',
           dateOfBirth: sevenDaysAgo, // 7 days before reference date (birthday today!)
@@ -254,6 +258,7 @@ describe('Horse Aging Integration', () => {
         // Foal turning 1 year old (milestone)
         prisma.horse.create({
           data: {
+            ...fixtureColor(),
             name: 'Milestone Foal',
             sex: 'Colt',
             dateOfBirth: new Date('2025-05-25T00:00:00Z'), // 7 days ago → game-year 1
@@ -268,6 +273,7 @@ describe('Horse Aging Integration', () => {
         // Horse turning 3 years old (training eligible)
         prisma.horse.create({
           data: {
+            ...fixtureColor(),
             name: 'Training Ready Horse',
             sex: 'Mare',
             dateOfBirth: new Date('2025-05-11T00:00:00Z'), // 21 days ago → game-year 3
@@ -279,6 +285,7 @@ describe('Horse Aging Integration', () => {
         // Horse with no birthday (correct age)
         prisma.horse.create({
           data: {
+            ...fixtureColor(),
             name: 'No Birthday Horse',
             sex: 'Stallion',
             dateOfBirth: new Date('2025-05-01T00:00:00Z'), // 31 days ago → game-year 4
@@ -344,6 +351,7 @@ describe('Horse Aging Integration', () => {
       // Create foal with minimal development
       const foal = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Minimal Development Foal',
           sex: 'Colt',
           dateOfBirth: new Date('2025-05-25T00:00:00Z'), // 7 days ago → game-year 1
@@ -403,6 +411,7 @@ describe('Horse Aging Integration', () => {
       // Create foal with no development history
       const foal = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'No Development Foal',
           sex: 'Filly',
           dateOfBirth: new Date('2025-05-25T00:00:00Z'), // 7 days ago → game-year 1
@@ -442,6 +451,7 @@ describe('Horse Aging Integration', () => {
       // Create horse with valid data
       const horse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Error Test Horse',
           sex: 'Colt',
           dateOfBirth: new Date('2024-06-01'), // ~365 days before the 2025-06-01 reference → game-year 52

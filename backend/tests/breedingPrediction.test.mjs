@@ -25,6 +25,10 @@ import app from '../app.mjs';
 import prisma from '../db/index.mjs';
 
 import { fetchCsrf } from './helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
+
 describe('Breeding Prediction System', () => {
   let __csrf__;
   beforeAll(async () => {
@@ -78,6 +82,7 @@ describe('Breeding Prediction System', () => {
     // Create test stallion (5 years old)
     testStallion = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestStallion_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         sex: 'stallion',
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000), // 5 years old
@@ -91,6 +96,7 @@ describe('Breeding Prediction System', () => {
     // Create test mare (4 years old)
     testMare = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestMare_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         sex: 'mare',
         dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000), // 4 years old

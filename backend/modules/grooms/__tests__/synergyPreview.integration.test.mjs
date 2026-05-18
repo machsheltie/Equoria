@@ -13,6 +13,9 @@ import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const TAG = `ictn-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}`;
@@ -41,6 +44,7 @@ describe('31D-4 (Equoria-ictn): GET /api/grooms/:groomId/horses/:horseId/synergy
     dob.setFullYear(dob.getFullYear() - 1);
     nervousHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `${TAG}-Nervous`,
         sex: 'mare',
         dateOfBirth: dob,

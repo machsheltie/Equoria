@@ -28,6 +28,10 @@ import { generateTestToken } from './helpers/authHelper.mjs';
 // import { GROOM_CONFIG } from '../config/groomConfig.mjs';
 
 import { fetchCsrf } from './helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
+
 describe('Groom Bonding System Integration', () => {
   let __csrf__;
   beforeAll(async () => {
@@ -125,6 +129,7 @@ describe('Groom Bonding System Integration', () => {
 
     testHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Test Horse',
         sex: 'Mare',
         dateOfBirth: birthDate,
@@ -239,6 +244,7 @@ describe('Groom Bonding System Integration', () => {
 
       const youngHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Young Horse',
           sex: 'Colt',
           dateOfBirth: youngBirthDate,

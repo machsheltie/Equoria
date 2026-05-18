@@ -20,6 +20,9 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 const TAG = `5v6g-${randomBytes(4).toString('hex')}-${randomBytes(4).toString('hex')}`;
@@ -49,6 +52,7 @@ describe('Equoria-5v6g: POST /api/grooms/interact auto-updates GroomHorseSynergy
     dob.setFullYear(dob.getFullYear() - 1);
     foal = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `${TAG}-Foal`,
         sex: 'colt',
         dateOfBirth: dob,
@@ -124,6 +128,7 @@ describe('Equoria-5v6g: POST /api/grooms/interact auto-updates GroomHorseSynergy
     dob.setFullYear(dob.getFullYear() - 1);
     const freshFoal = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `${TAG}-FreshFoal`,
         sex: 'colt',
         dateOfBirth: dob,

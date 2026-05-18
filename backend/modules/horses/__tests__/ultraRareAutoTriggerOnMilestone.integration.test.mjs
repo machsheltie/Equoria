@@ -21,6 +21,9 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { evaluateEnhancedMilestone, MILESTONE_TYPES } from '../../../utils/enhancedMilestoneEvaluationSystem.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const TAG = `d4tl-${randomBytes(4).toString('hex')}`;
 
@@ -49,6 +52,7 @@ describe('Equoria-d4tl: evaluateEnhancedMilestone auto-runs ultra-rare evaluatio
     // age 3d → SOCIALIZATION window (1-7)
     foal = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `${TAG}-Foal`,
         sex: 'colt',
         dateOfBirth: dobForAge(3),

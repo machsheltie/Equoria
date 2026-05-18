@@ -26,6 +26,10 @@ import { generateTestToken } from './helpers/authHelper.mjs';
 import bcrypt from 'bcryptjs';
 
 import { fetchCsrf } from './helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
+
 // Import the real app — no mocks
 const app = (await import('../app.mjs')).default;
 
@@ -62,6 +66,7 @@ describe('INTEGRATION: Admin Cron API Routes — Real Database', () => {
     // Create a real foal (age 0) so the foals/development endpoint has data
     testFoal = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `CronTestFoal_${ts}`,
         sex: 'Colt',
         dateOfBirth: new Date(),

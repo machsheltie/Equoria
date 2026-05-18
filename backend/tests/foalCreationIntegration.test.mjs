@@ -33,6 +33,10 @@ import bcrypt from 'bcryptjs';
 
 import { fetchCsrf } from './helpers/csrfHelper.mjs';
 import { createFoalFromPregnancy } from '../modules/horses/services/foalingService.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
+
 // Import the real app — no mocks
 const app = (await import('../app.mjs')).default;
 
@@ -85,6 +89,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     const fiveYearsAgo = new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000);
     testSire = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `FoalTestSire_${ts}`,
         sex: 'Stallion',
         dateOfBirth: fiveYearsAgo,
@@ -103,6 +108,7 @@ describe('INTEGRATION: Foal Creation API — Real Database', () => {
     const fourYearsAgo = new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000);
     testDam = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `FoalTestDam_${ts}`,
         sex: 'Mare',
         dateOfBirth: fourYearsAgo,

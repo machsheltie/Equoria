@@ -24,6 +24,10 @@ import { generateTestToken } from './helpers/authHelper.mjs';
 import bcrypt from 'bcryptjs';
 
 import { fetchCsrf } from './helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
+
 // Import the real app — no mocks
 const app = (await import('../app.mjs')).default;
 
@@ -58,6 +62,7 @@ describe('INTEGRATION: Foal Enrichment API — Real Database', () => {
     // Create a real foal (age 0) owned by the test user
     testFoal = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `EnrichmentFoal_${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
