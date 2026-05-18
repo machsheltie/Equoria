@@ -393,7 +393,18 @@ export async function processGroomingSession(horseId, groomId, groomingTask, dur
 }
 
 /**
- * Update task log with new task completion
+ * Update task log with new task completion.
+ *
+ * ⚠️ Equoria-2emg: The returned taskLog is a DERIVED O(1) COUNT CACHE, NOT the
+ * source of truth. FoalActivity rows are the canonical foal-activity event log.
+ * Every call site that persists this updated taskLog (groomController.recordInteraction)
+ * MUST also create the corresponding canonical FoalActivity row so the cache
+ * stays derivable from the event log. The invariant
+ * `count(FoalActivity where activityType=task) == taskLog[task]` is asserted by
+ * backend/__tests__/integration/foalActivityCanonical.integration.test.mjs.
+ * To recompute the cache from the canonical log, use
+ * backend/utils/foalActivityStore.mjs#reconcileTaskLogFromActivities.
+ *
  * @param {Object|null} currentTaskLog - Current task log object
  * @param {string} taskName - Name of completed task
  * @returns {Object} Updated task log and statistics

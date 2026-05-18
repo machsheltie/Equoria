@@ -457,6 +457,38 @@ export async function recordInteraction(req, res) {
       },
     });
 
+    // Equoria-2emg: FoalActivity is the canonical foal-activity event log.
+    // The groom-interaction path mutates the Horse.taskLog count cache; that
+    // cache MUST be derivable from the canonical event log. Historically this
+    // path wrote ONLY GroomInteraction + the taskLog JSONB counter, so
+    // groom-task events were invisible in FoalActivity (the queryable, ordered
+    // source of truth). Emit the canonical FoalActivity row here so that
+    // count(FoalActivity where activityType = task) == taskLog[task] for every
+    // event going forward. taskLog stays as an O(1) derived cache (it is NOT
+    // dropped — its consumers, the trait/milestone/streak evaluators, need a
+    // cheap count and cannot afford an aggregate query per check; see
+    // Equoria-2emg bd notes for the full game-design rationale and why literal
+    // "rebuild taskLog from FoalActivity" was rejected as data-corrupting).
+    // Fail-soft: the canonical-log write must never 500 the interaction; a
+    // missed row is reconcilable via the scoped backfill script.
+    try {
+      await prisma.foalActivity.create({
+        data: {
+          foalId,
+          day: ageInDays,
+          activityType: interactionType,
+          outcome: effects.quality || 'good',
+          bondingChange: effects.bondingChange,
+          stressChange: effects.stressChange,
+          description: `Groom interaction (${interactionType}) recorded via groom system`,
+        },
+      });
+    } catch (foalActivityError) {
+      logger.error(
+        `[groomController.recordInteraction] Failed to write canonical FoalActivity row for foal ${foalId}: ${foalActivityError.message}`,
+      );
+    }
+
     logger.info(
       `[groomController.recordInteraction] Interaction recorded: ${effects.bondingChange} bonding, ${effects.stressChange} stress`,
       `[groomController.recordInteraction] Interaction recorded: ${effects.bondingChange} bonding, ${effects.stressChange} stress, task: ${interactionType} (count: ${taskLogUpdate.taskCount})`,
