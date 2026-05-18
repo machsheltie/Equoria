@@ -47,6 +47,7 @@ vi.mock('@/contexts/AuthContext', () => ({
 const mockUseLeaderboard = vi.fn();
 const mockUseUserRankSummary = vi.fn();
 const mockUseLeaderboardRefresh = vi.fn();
+const mockUseLeaderboardHorseProfile = vi.fn();
 
 vi.mock('@/hooks/api/useLeaderboard', () => ({
   useLeaderboard: (...args: unknown[]) => mockUseLeaderboard(...args),
@@ -58,6 +59,10 @@ vi.mock('@/hooks/api/useUserRankSummary', () => ({
 
 vi.mock('@/hooks/api/useLeaderboardRefresh', () => ({
   useLeaderboardRefresh: () => mockUseLeaderboardRefresh(),
+}));
+
+vi.mock('@/hooks/api/useLeaderboardHorseProfile', () => ({
+  useLeaderboardHorseProfile: (...args: unknown[]) => mockUseLeaderboardHorseProfile(...args),
 }));
 
 // ---------------------------------------------------------------------------
@@ -132,6 +137,32 @@ const mockLeaderboardData = {
     },
   },
   lastUpdated: '2026-02-03T10:30:00Z',
+};
+
+// Real horse profile the page now fetches via useLeaderboardHorseProfile
+// (Equoria-8nfc). Distinctive values so tests prove REAL data renders, not
+// the old fabricated placeholders (breed 'not recorded', age 0, stats 0).
+const mockHorseProfile = {
+  horseId: 101,
+  name: 'Thunder Strike',
+  breed: 'Arabian',
+  age: 7,
+  sex: 'Mare',
+  stats: {
+    speed: 88,
+    stamina: 91,
+    agility: 76,
+    balance: 70,
+    precision: 82,
+    intelligence: 79,
+    boldness: 84,
+    flexibility: 73,
+    obedience: 80,
+    focus: 86,
+  },
+  totalEarnings: 125000,
+  competitionWins: 12,
+  topThreeFinishes: 21,
 };
 
 const mockUserRankData = {
@@ -231,6 +262,14 @@ function setupDefaultMocks() {
     refreshAll: vi.fn(),
     refreshCategory: vi.fn(),
     isRefreshing: false,
+  });
+
+  mockUseLeaderboardHorseProfile.mockReturnValue({
+    data: mockHorseProfile,
+    isLoading: false,
+    isError: false,
+    error: null,
+    refetch: vi.fn(),
   });
 }
 
@@ -466,6 +505,49 @@ describe('Modal integration', () => {
     // content is OUTSIDE the `horse-detail-modal` wrapper div. Use the
     // BaseModal-provided title testid instead of `within()`.
     expect(screen.getByTestId('base-modal-title')).toHaveTextContent('Thunder Strike');
+  });
+
+  it('renders REAL fetched horse profile (breed/age), not fabricated placeholders (Equoria-8nfc)', async () => {
+    const { user } = renderPage();
+
+    const entries = screen.getAllByTestId('leaderboard-entry');
+    await user.click(entries[0]);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('base-modal')).toBeInTheDocument();
+    });
+
+    // Real persisted breed 'Arabian' must appear — the pre-fix code
+    // hardcoded breed to 'Unknown'/'not recorded' and age to 0. The
+    // absence of 'Arabian' / presence of a 0 age would mean the modal is
+    // still showing synthetic data.
+    expect(screen.getByText(/Arabian/)).toBeInTheDocument();
+    // Sentinel: the old fabricated path would have rendered breed
+    // 'not recorded' even though this horse HAS a breed. Assert it does not.
+    expect(screen.queryByText('not recorded')).not.toBeInTheDocument();
+  });
+
+  it('shows the modal loading state while the real profile is fetching (Equoria-8nfc)', async () => {
+    mockUseLeaderboardHorseProfile.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+    const { user } = renderPage();
+
+    const entries = screen.getAllByTestId('leaderboard-entry');
+    await user.click(entries[0]);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('base-modal')).toBeInTheDocument();
+    });
+
+    // While loading, no fabricated breed/age is shown — the modal renders
+    // its loading skeleton, not invented '0'/'Unknown' data.
+    expect(screen.queryByText(/Arabian/)).not.toBeInTheDocument();
+    expect(screen.queryByText('not recorded')).not.toBeInTheDocument();
   });
 
   it('closes modal when close button is clicked', async () => {

@@ -81,6 +81,45 @@ export interface RankHistoryResponse {
 }
 
 /**
+ * Real horse profile returned by GET /api/leaderboards/horse/:horseId.
+ *
+ * Only the fields the backend actually computes are present here — there are
+ * no fabricated placeholders. Fields the leaderboard horse-profile endpoint
+ * does NOT provide (e.g. owner stable size, achievements, per-competition
+ * history) are intentionally absent and must be sourced elsewhere or shown
+ * as honest empty state by the consumer.
+ */
+export interface LeaderboardHorseProfile {
+  horseId: number;
+  name: string;
+  /** Breed display name, or null when the horse has no breed recorded. */
+  breed: string | null;
+  /** Age in game-years (canonical getHorseAgeYears unit). */
+  age: number;
+  sex: string;
+  stats: {
+    speed: number;
+    stamina: number;
+    agility: number;
+    balance: number;
+    precision: number;
+    intelligence: number;
+    boldness: number;
+    flexibility: number;
+    obedience: number;
+    focus: number;
+  };
+  totalEarnings: number;
+  competitionWins: number;
+  topThreeFinishes: number;
+}
+
+export interface LeaderboardHorseProfileResponse {
+  success: boolean;
+  data: LeaderboardHorseProfile;
+}
+
+/**
  * Custom error class for leaderboard API operations.
  */
 export class LeaderboardApiError extends Error {
@@ -187,4 +226,24 @@ export async function fetchUserRankHistory(
 ): Promise<RankHistoryResponse> {
   const qs = days != null ? `?days=${days}` : '';
   return apiClient.get<RankHistoryResponse>(`/api/leaderboards/rank-history/${userId}${qs}`);
+}
+
+/**
+ * Fetch the real horse profile (breed, age, sex, stats, earnings, competition
+ * tallies) backing a leaderboard entry.
+ *
+ * Used by the leaderboard horse-detail modal so it renders real persisted
+ * data instead of fabricated placeholders (Equoria-8nfc). Returns the
+ * `data` payload directly; throws via apiClient on 404/error.
+ *
+ * @param horseId - Positive integer horse id from the leaderboard entry
+ * @returns Promise<LeaderboardHorseProfile>
+ */
+export async function fetchLeaderboardHorseProfile(
+  horseId: number
+): Promise<LeaderboardHorseProfile> {
+  const res = await apiClient.get<LeaderboardHorseProfileResponse>(
+    `/api/leaderboards/horse/${horseId}`
+  );
+  return res.data;
 }

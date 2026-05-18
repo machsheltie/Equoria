@@ -35,6 +35,8 @@ import type {
 } from '@/components/leaderboard/LeaderboardCategorySelector';
 import type { LeaderboardEntryData } from '@/components/leaderboard/LeaderboardEntry';
 import type { HorseDetailData } from '@/components/leaderboard/LeaderboardHorseDetailModal';
+import { useLeaderboardHorseProfile } from '@/hooks/api/useLeaderboardHorseProfile';
+import type { LeaderboardHorseProfile } from '@/lib/api/leaderboards';
 
 // ---------------------------------------------------------------------------
 // URL State Management Hook
@@ -112,43 +114,54 @@ function useLeaderboardUrlState() {
 // Helper: Build minimal HorseDetailData from a LeaderboardEntryData
 // ---------------------------------------------------------------------------
 
+// HorseDetailData.sex is a fixed union; the backend returns a free string.
+// Map known values through, fall back to 'Stallion' only as a render-safe
+// default for an unrecognised token (not fabricated game data — the real
+// value is shown when it matches the union, which it does for all sexes
+// the schema produces).
+const VALID_SEXES: ReadonlyArray<HorseDetailData['sex']> = [
+  'Stallion',
+  'Mare',
+  'Colt',
+  'Filly',
+  'Rig',
+];
+
+function coerceSex(sex: string | undefined): HorseDetailData['sex'] {
+  return (VALID_SEXES as readonly string[]).includes(sex ?? '')
+    ? (sex as HorseDetailData['sex'])
+    : 'Stallion';
+}
+
 /**
- * Creates a lightweight HorseDetailData object from a leaderboard entry.
- * Real API data would populate all fields; here we fill in sensible defaults
- * so the modal can render immediately while a full fetch could run in the
- * background (future enhancement).
+ * Builds HorseDetailData from the REAL horse profile (breed/age/sex/stats
+ * fetched from GET /api/leaderboards/horse/:horseId) merged with the REAL
+ * leaderboard entry (level + competition tallies + owner identity the
+ * profile endpoint does not return). No fabricated placeholder values:
+ * breed/age/sex/stats are persisted data; competition history and owner
+ * identity come from the genuine leaderboard row. Fields neither source
+ * provides (recentCompetitions, achievements, stableSize) are honest
+ * empties, not invented data (Equoria-8nfc).
  */
-function entryToHorseDetail(entry: LeaderboardEntryData): HorseDetailData {
+function buildHorseDetail(
+  profile: LeaderboardHorseProfile,
+  entry: LeaderboardEntryData
+): HorseDetailData {
+  const totalCompetitions = entry.secondaryStats?.totalCompetitions ?? profile.competitionWins;
   return {
-    horseId: entry.horseId ?? 0,
-    horseName: entry.horseName ?? entry.ownerName,
-    // Equoria-zf80 — literal-string fix only: 'not recorded' over the bare
-    // 'Unknown' anti-pattern (Equoria-iwy3 / 1k4n convention). NOTE: this whole
-    // object is a synthetic placeholder (age/sex/stats all hardcoded) — the
-    // broader fake-data smell is tracked separately in Equoria-8nfc, NOT
-    // bundled here per EDGE_CASE_FIX_DISCIPLINE §7.
-    breed: 'not recorded',
-    age: 0,
-    sex: 'Stallion',
+    horseId: profile.horseId,
+    horseName: profile.name,
+    breed: profile.breed ?? 'not recorded',
+    age: profile.age,
+    sex: coerceSex(profile.sex),
     level: entry.secondaryStats?.level ?? entry.primaryStat,
-    stats: {
-      speed: 0,
-      stamina: 0,
-      agility: 0,
-      balance: 0,
-      precision: 0,
-      intelligence: 0,
-      boldness: 0,
-      flexibility: 0,
-      obedience: 0,
-      focus: 0,
-    },
+    stats: { ...profile.stats },
     competitionHistory: {
-      total: entry.secondaryStats?.totalCompetitions ?? 0,
-      wins: entry.secondaryStats?.wins ?? 0,
-      top3Finishes: 0,
+      total: totalCompetitions,
+      wins: entry.secondaryStats?.wins ?? profile.competitionWins,
+      top3Finishes: profile.topThreeFinishes,
       winRate: entry.secondaryStats?.winRate ?? 0,
-      totalPrizeMoney: entry.secondaryStats?.totalPrizeMoney ?? 0,
+      totalPrizeMoney: entry.secondaryStats?.totalPrizeMoney ?? profile.totalEarnings,
       recentCompetitions: [],
     },
     owner: {
@@ -227,9 +240,22 @@ const LeaderboardsPage = () => {
   const currentPage = leaderboardData?.currentPage ?? page;
   const totalPages = leaderboardData?.totalPages ?? 1;
 
-  const horseDetailData: HorseDetailData | null = selectedEntry
-    ? entryToHorseDetail(selectedEntry)
-    : null;
+  // Fetch the REAL horse profile for the selected entry. Disabled until an
+  // entry with a valid horseId is selected (Equoria-8nfc — no fabricated
+  // placeholder data; the modal shows a loading skeleton then real values).
+  const {
+    data: horseProfile,
+    isLoading: isHorseProfileLoading,
+    isError: isHorseProfileError,
+  } = useLeaderboardHorseProfile(selectedEntry?.horseId, isModalOpen);
+
+  const horseDetailData: HorseDetailData | null =
+    selectedEntry && horseProfile ? buildHorseDetail(horseProfile, selectedEntry) : null;
+
+  // Skeleton while the real profile loads. On error or a missing horseId the
+  // modal falls back to its honest empty state (horseData null, not loading).
+  const isHorseDetailLoading =
+    isModalOpen && !!selectedEntry?.horseId && isHorseProfileLoading && !isHorseProfileError;
 
   return (
     <div className="min-h-screen">
@@ -316,7 +342,7 @@ const LeaderboardsPage = () => {
           isOpen={isModalOpen}
           onClose={handleCloseModal}
           horseData={horseDetailData}
-          isLoading={false}
+          isLoading={isHorseDetailLoading}
           onViewFullProfile={handleViewFullProfile}
         />
       </div>
