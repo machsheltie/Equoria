@@ -23,6 +23,9 @@ import {
   trackGeneticDiversityOverTime,
   generateGeneticDiversityReport,
 } from '../../services/geneticDiversityTrackingService.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
 
 describe('🧬 Genetic Diversity Tracking System', () => {
   let testPopulation, testBreedingPairs, testFounders;
@@ -32,6 +35,7 @@ describe('🧬 Genetic Diversity Tracking System', () => {
     testFounders = await Promise.all([
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Founder Alpha',
           sex: 'Stallion',
           dateOfBirth: new Date('2015-01-01'),
@@ -44,6 +48,7 @@ describe('🧬 Genetic Diversity Tracking System', () => {
       }),
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Founder Beta',
           sex: 'Mare',
           dateOfBirth: new Date('2015-02-01'),
@@ -56,6 +61,7 @@ describe('🧬 Genetic Diversity Tracking System', () => {
       }),
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Founder Gamma',
           sex: 'Stallion',
           dateOfBirth: new Date('2015-03-01'),
@@ -68,6 +74,7 @@ describe('🧬 Genetic Diversity Tracking System', () => {
       }),
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Founder Delta',
           sex: 'Mare',
           dateOfBirth: new Date('2015-04-01'),
@@ -84,6 +91,7 @@ describe('🧬 Genetic Diversity Tracking System', () => {
     const secondGen = await Promise.all([
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Second Gen A',
           sex: 'Stallion',
           dateOfBirth: new Date('2018-01-01'),
@@ -98,6 +106,7 @@ describe('🧬 Genetic Diversity Tracking System', () => {
       }),
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Second Gen B',
           sex: 'Mare',
           dateOfBirth: new Date('2018-02-01'),
@@ -115,6 +124,7 @@ describe('🧬 Genetic Diversity Tracking System', () => {
     // Create third generation with potential inbreeding
     const thirdGen = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Third Gen Inbred',
         sex: 'Mare',
         dateOfBirth: new Date('2021-01-01'),

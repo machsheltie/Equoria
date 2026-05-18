@@ -20,6 +20,9 @@ import {
   identifyGeneticBottlenecks,
   generateBreedingRecommendations,
 } from '../../services/advancedLineageAnalysisService.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
 
 describe('🌳 Advanced Lineage Analysis System', () => {
   let testStallion, testMare, testLineageData;
@@ -135,6 +138,7 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       // Create test horses in database first
       const stallion = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: testStallion.name,
           sex: 'Stallion',
           dateOfBirth: new Date('2020-01-01'),
@@ -148,6 +152,7 @@ describe('🌳 Advanced Lineage Analysis System', () => {
 
       const mare = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: testMare.name,
           sex: 'Mare',
           dateOfBirth: new Date('2020-01-01'),
@@ -186,6 +191,7 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       // Create test horses with parent relationships
       const sire = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Test Sire',
           sex: 'Stallion',
           dateOfBirth: new Date('2018-01-01'),
@@ -198,6 +204,7 @@ describe('🌳 Advanced Lineage Analysis System', () => {
 
       const stallion = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: testStallion.name,
           sex: 'Stallion',
           dateOfBirth: new Date('2020-01-01'),
@@ -212,6 +219,7 @@ describe('🌳 Advanced Lineage Analysis System', () => {
 
       const mare = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: testMare.name,
           sex: 'Mare',
           dateOfBirth: new Date('2020-01-01'),
@@ -347,6 +355,7 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       // Create test horses in database first
       const stallion = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: testStallion.name,
           sex: 'Stallion',
           dateOfBirth: new Date('2020-01-01'),
@@ -360,6 +369,7 @@ describe('🌳 Advanced Lineage Analysis System', () => {
 
       const mare = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: testMare.name,
           sex: 'Mare',
           dateOfBirth: new Date('2020-01-01'),
@@ -415,6 +425,7 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       // Create test horses in database first
       const stallion = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: testStallion.name,
           sex: 'Stallion',
           dateOfBirth: new Date('2020-01-01'),
@@ -428,6 +439,7 @@ describe('🌳 Advanced Lineage Analysis System', () => {
 
       const mare = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: testMare.name,
           sex: 'Mare',
           dateOfBirth: new Date('2020-01-01'),
@@ -471,6 +483,7 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       // Create test horses in database first
       const stallion = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: testStallion.name,
           sex: 'Stallion',
           dateOfBirth: new Date('2020-01-01'),
@@ -484,6 +497,7 @@ describe('🌳 Advanced Lineage Analysis System', () => {
 
       const mare = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: testMare.name,
           sex: 'Mare',
           dateOfBirth: new Date('2020-01-01'),

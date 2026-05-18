@@ -23,6 +23,9 @@ import {
   analyzeBondingPreferences,
   detectTemperamentChanges,
 } from '../../services/horseTemperamentAnalysis.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
 
 describe('Horse Temperament Analysis', () => {
   let testUser;
@@ -78,6 +81,7 @@ describe('Horse Temperament Analysis', () => {
       // Nervous/reactive horse
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Horse Nervous ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'filly',
           dateOfBirth: oneMonthAgo,
@@ -90,6 +94,7 @@ describe('Horse Temperament Analysis', () => {
       // Confident/social horse
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Horse Confident ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'colt',
           dateOfBirth: oneMonthAgo,
@@ -102,6 +107,7 @@ describe('Horse Temperament Analysis', () => {
       // Mixed temperament horse
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Horse Mixed ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'Colt',
           dateOfBirth: oneMonthAgo,
@@ -114,6 +120,7 @@ describe('Horse Temperament Analysis', () => {
       // Developing temperament horse (no flags yet)
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Horse Developing ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'mare',
           dateOfBirth: oneMonthAgo,

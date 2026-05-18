@@ -10,6 +10,9 @@ import { describe, beforeAll, afterAll, beforeEach, expect, it } from '@jest/glo
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import dotenv from 'dotenv';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -51,6 +54,7 @@ describe('Training Cooldown System', () => {
 
     dbHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'TestFixture-Cooldown-Horse',
         sex: 'Mare',
         dateOfBirth: new Date('2018-01-01'),

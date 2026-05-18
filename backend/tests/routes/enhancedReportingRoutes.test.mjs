@@ -21,6 +21,10 @@ import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
+
 describe('Enhanced Reporting API Routes', () => {
   let __csrf__;
   beforeAll(async () => {
@@ -77,6 +81,7 @@ describe('Enhanced Reporting API Routes', () => {
       // Young foal with developing traits
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Foal Report ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'Filly',
           dateOfBirth: oneWeekAgo,
@@ -89,6 +94,7 @@ describe('Enhanced Reporting API Routes', () => {
       // Older foal with established traits
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Horse Report ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'Colt',
           dateOfBirth: oneMonthAgo,
@@ -101,6 +107,7 @@ describe('Enhanced Reporting API Routes', () => {
       // Mature foal with complex traits
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Mature Report ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'Colt',
           dateOfBirth: twoMonthsAgo,
@@ -357,6 +364,7 @@ describe('Enhanced Reporting API Routes', () => {
 
       const otherHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Other Horse Report ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'Colt',
           dateOfBirth: new Date(),

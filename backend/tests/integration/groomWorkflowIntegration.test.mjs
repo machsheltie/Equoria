@@ -15,6 +15,9 @@ import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../db/index.mjs';
 import { hireGroom, assignGroom, recordInteraction } from '../../controllers/groomController.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
 
 // ─── plain response capture ───────────────────────────────────────────────────
 
@@ -133,6 +136,7 @@ describe('Groom Workflow Integration Tests', () => {
 
     testFoal = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `Test Foal ${suffix}`,
         sex: 'Filly',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
@@ -152,6 +156,7 @@ describe('Groom Workflow Integration Tests', () => {
 
     testYoungHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `Test Young Horse ${suffix}`,
         sex: 'Colt',
         dateOfBirth: new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000),
@@ -171,6 +176,7 @@ describe('Groom Workflow Integration Tests', () => {
 
     testAdultHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `Test Adult Horse ${suffix}`,
         sex: 'Mare',
         dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000),

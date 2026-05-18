@@ -16,6 +16,10 @@ import {
 } from '../../services/groomPerformanceService.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
+
 describe('Groom Performance System', () => {
   let __csrf__;
   beforeAll(async () => {
@@ -84,6 +88,7 @@ describe('Groom Performance System', () => {
     // Create test horse with minimal required fields
     testHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Performance Test Horse',
         userId: testUser.id,
         dateOfBirth: new Date('2019-01-01'),

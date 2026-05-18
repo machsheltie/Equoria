@@ -33,6 +33,10 @@ import { dirname, join } from 'path';
 import dotenv from 'dotenv';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -159,6 +163,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
 
       youngHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Training Integration Young Horse',
           age: 2, // Too young for training
           breed: { connect: { id: breed.id } },
@@ -188,6 +193,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
 
       matureHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Training Integration Mature Horse',
           age: 4, // Eligible for training
           breed: { connect: { id: breed.id } },

@@ -9,6 +9,9 @@ import { describe, beforeAll, afterAll, expect, it } from '@jest/globals';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import dotenv from 'dotenv';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -54,6 +57,7 @@ describe('Training Model', () => {
 
     testHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'TestFixture-TM-Horse',
         sex: 'Mare',
         dateOfBirth: new Date('2018-01-01'),
@@ -152,6 +156,7 @@ describe('Training Model', () => {
       const thirtyFiveDaysAgo = new Date(Date.now() - 35 * 24 * 60 * 60 * 1000);
       const youngHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'TestFixture-TM-Horse-35d',
           sex: 'Colt',
           dateOfBirth: thirtyFiveDaysAgo,

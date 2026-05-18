@@ -22,6 +22,10 @@ import {
 } from '../utils/ultraRareMechanicalEffects.mjs';
 
 import { fetchCsrf } from './helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
+
 describe('Ultra-Rare & Exotic Traits System', () => {
   let __csrf__;
   beforeAll(async () => {
@@ -70,6 +74,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
     // Create test horse with comprehensive data
     testHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Ultra Rare Test Horse',
         sex: 'Mare',
         dateOfBirth: new Date('2021-01-01'),
@@ -398,6 +403,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
 
       const otherHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Other Horse',
           sex: 'Stallion',
           dateOfBirth: new Date('2021-01-01'),

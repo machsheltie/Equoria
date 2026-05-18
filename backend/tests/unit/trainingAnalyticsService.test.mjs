@@ -9,6 +9,9 @@
 import { describe, test, expect, beforeAll, beforeEach, afterAll } from '@jest/globals';
 import prisma from '../../db/index.mjs';
 import { trainingAnalyticsService } from '../../services/trainingAnalyticsService.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
 
 describe('Training Analytics Service', () => {
   let testUser;
@@ -62,6 +65,7 @@ describe('Training Analytics Service', () => {
 
         testHorse = await tx.horse.create({
           data: {
+            ...fixtureColor(),
             name: `Training Test Horse ${timestamp}`,
             userId: testUser.id,
             age: 5,
@@ -221,6 +225,7 @@ describe('Training Analytics Service', () => {
     test('should handle horse with no training history', async () => {
       const newHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'No Training Horse',
           userId: testUser.id,
           age: 3,

@@ -23,6 +23,9 @@ import {
   RETIREMENT_REASONS,
   CAREER_CONSTANTS,
 } from '../../services/groomRetirementService.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
 
 describe('Groom Retirement Service', () => {
   let testUser;
@@ -44,6 +47,7 @@ describe('Groom Retirement Service', () => {
     // Create test horse for assignment logs
     testHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `Test Horse ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         sex: 'Stallion',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old

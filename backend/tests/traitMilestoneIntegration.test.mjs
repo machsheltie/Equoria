@@ -21,6 +21,9 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../db/index.mjs';
 import { evaluateEpigeneticTagsFromFoalTasks } from '../utils/traitEvaluation.mjs';
 import { getFoalCareSummary } from '../utils/foalTaskLogManager.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
 
 const PREFIX = 'TestFixture-TraitMilestone-';
 const USER_ID = `${PREFIX}user`;
@@ -47,6 +50,7 @@ beforeAll(async () => {
 
   testFoal = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `${PREFIX}Foal`,
       sex: 'Colt',
       dateOfBirth: new Date(Date.now() - 360 * 24 * 60 * 60 * 1000),

@@ -37,6 +37,9 @@ import { invalidateCache } from '../utils/cacheHelper.mjs';
 
 // Import the actual controller - no complex mocking
 import { canTrain, trainHorse, getTrainingStatus, getTrainableHorses } from '../controllers/trainingController.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
 
 // Test data setup
 let testUser;
@@ -80,6 +83,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
 
     testHorseEligible = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Eligible Horse',
         dateOfBirth: fourYearsAgo,
         age: 4,
@@ -100,6 +104,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
 
     testHorseAdult = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Adult Horse',
         dateOfBirth: threeYearsAgo,
         age: 3,
@@ -121,6 +126,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
 
     testHorseYoung = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Young Horse',
         dateOfBirth: twoYearsAgo,
         age: 2,
@@ -137,6 +143,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
     // Create horse with recent training
     testHorseRecentTraining = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Recently Trained Horse',
         dateOfBirth: fourYearsAgo,
         age: 4,
@@ -242,6 +249,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
 
       const oldTrainingHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Old Training Horse',
           dateOfBirth: new Date(new Date().setFullYear(new Date().getFullYear() - 4)),
           sex: 'Stallion',
@@ -315,6 +323,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
 
       const edgeCaseHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Edge Case Horse',
           dateOfBirth: new Date(new Date().setFullYear(new Date().getFullYear() - 4)),
           sex: 'Mare',
@@ -472,6 +481,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
 
       const expiredCooldownHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Expired Cooldown Horse',
           dateOfBirth: new Date(new Date().setFullYear(new Date().getFullYear() - 4)),
           sex: 'Stallion',
@@ -554,6 +564,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
 
       const expiredCooldownHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Edge Case Horse',
           dateOfBirth: new Date(new Date().setFullYear(new Date().getFullYear() - 4)),
           sex: 'Stallion',

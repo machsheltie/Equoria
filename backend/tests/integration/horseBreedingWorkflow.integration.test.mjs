@@ -24,6 +24,10 @@ import { dirname, join } from 'path';
 import dotenv from 'dotenv';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -163,6 +167,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
       // Create mare with proper schema fields (matching working tests)
       mare = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Integration Test Mare',
           age: 5,
           breed: { connect: { id: breed.id } },
@@ -198,6 +203,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
       // Create stallion with proper schema fields (matching working tests)
       stallion = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Integration Test Stallion',
           age: 6,
           breed: { connect: { id: breed.id } },
@@ -231,6 +237,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
       // Create foal (simulating breeding result) with proper schema fields
       foal = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Integration Test Foal',
           age: 0, // Newborn
           breed: { connect: { id: breed.id } },

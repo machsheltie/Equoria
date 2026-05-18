@@ -44,6 +44,10 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 
 import { fetchCsrf } from './helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
+
 // Custom Jest matcher for toBeOneOf
 expect.extend({
   toBeOneOf(received, expected) {
@@ -97,13 +101,27 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
 
     const dob5yr = new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000);
     const testHorse = await prisma.horse.create({
-      data: { name: `TrainHorse_${ts}`, sex: 'Mare', dateOfBirth: dob5yr, userId: testUserId, age: 5 },
+      data: {
+        ...fixtureColor(),
+        name: `TrainHorse_${ts}`,
+        sex: 'Mare',
+        dateOfBirth: dob5yr,
+        userId: testUserId,
+        age: 5,
+      },
     });
     testHorseId = testHorse.id;
 
     // Second horse so the "allow training" test isn't blocked by a cooldown from earlier tests
     const secondHorse = await prisma.horse.create({
-      data: { name: `TrainHorse2_${ts}`, sex: 'Mare', dateOfBirth: dob5yr, userId: testUserId, age: 5 },
+      data: {
+        ...fixtureColor(),
+        name: `TrainHorse2_${ts}`,
+        sex: 'Mare',
+        dateOfBirth: dob5yr,
+        userId: testUserId,
+        age: 5,
+      },
     });
     secondHorseId = secondHorse.id;
   }, 120000);

@@ -6,6 +6,10 @@ import app from '../app.mjs';
 import prisma from '../db/index.mjs';
 
 import { fetchCsrf } from './helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
+
 // SECURITY FIX (Phase 1, Task 1.1): Removed all x-test-bypass-ownership headers
 // Tests now use proper JWT authentication with real token generation
 
@@ -54,6 +58,7 @@ describe('Trait Discovery API Integration Tests', () => {
     // Create test foals with different conditions (owned by test user)
     const foal1 = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'High Bond Foal',
         age: 0,
         sex: 'Filly',
@@ -72,6 +77,7 @@ describe('Trait Discovery API Integration Tests', () => {
 
     const foal2 = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Low Stats Foal',
         age: 0,
         sex: 'Colt',
@@ -90,6 +96,7 @@ describe('Trait Discovery API Integration Tests', () => {
 
     const foal3 = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Adult Horse',
         age: 5,
         sex: 'Stallion',
@@ -502,6 +509,7 @@ describe('Trait Discovery API Integration Tests', () => {
       // Create a fresh foal with guaranteed hidden traits for this test
       const freshFoal = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Fresh Workflow Foal',
           age: 0,
           sex: 'Filly',

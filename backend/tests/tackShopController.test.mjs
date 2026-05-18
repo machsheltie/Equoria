@@ -30,6 +30,9 @@ import {
   purchaseTackItem,
   unequipDecoration,
 } from '../modules/services/controllers/tackShopController.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
 
 const ts = randomBytes(8).toString('hex');
 let testUser;
@@ -90,6 +93,7 @@ beforeAll(async () => {
 
   testHorse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TackShopHorse_${ts}`,
       sex: 'Mare',
       dateOfBirth: new Date('2020-01-01'),

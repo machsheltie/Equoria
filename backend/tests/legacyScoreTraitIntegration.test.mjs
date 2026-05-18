@@ -23,6 +23,10 @@ import app from '../app.mjs';
 import prisma from '../db/index.mjs';
 
 import { fetchCsrf } from './helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
+
 describe('Legacy Score Trait Integration System', () => {
   let __csrf__;
   beforeAll(async () => {
@@ -80,6 +84,7 @@ describe('Legacy Score Trait Integration System', () => {
     // Create test horse (4 years old to test legacy score calculation)
     testHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `LegacyTraitTest_Horse_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         sex: 'stallion',
         dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000), // 4 years old

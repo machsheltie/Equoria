@@ -22,6 +22,9 @@ import {
   createResult,
   getResultsByUser,
 } from '../models/resultModel.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
 
 const PREFIX = 'TestFixture-ResultModel-';
 const USER_ID = 'test-user-result-model';
@@ -30,6 +33,7 @@ const RUN_DATE = new Date('2024-06-15');
 async function mkHorse(suffix) {
   return prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `${PREFIX}Horse-${suffix}`,
       sex: 'Colt',
       dateOfBirth: new Date('2020-01-01'),

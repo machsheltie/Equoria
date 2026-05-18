@@ -22,6 +22,9 @@ import {
   analyzeGroomEffectiveness,
   calculateCareRiskScore,
 } from '../../services/carePatternAnalyzer.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
 
 describe('Enhanced Care Pattern Analyzer', () => {
   let testUser;
@@ -89,6 +92,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
       // Horse with consistent high-quality care
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Horse Consistent ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'filly',
           dateOfBirth: oneMonthAgo,
@@ -101,6 +105,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
       // Horse with declining care quality
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Horse Declining ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'colt',
           dateOfBirth: twoWeeksAgo,
@@ -113,6 +118,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
       // Horse with improving care quality
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Horse Improving ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'Colt',
           dateOfBirth: oneMonthAgo,

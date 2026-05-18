@@ -6,6 +6,10 @@
 import prisma from '../db/index.mjs';
 
 import { randomBytes } from 'node:crypto';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
+
 describe('Schema Validation', () => {
   let testUser;
   let testBreed;
@@ -86,6 +90,7 @@ describe('Schema Validation', () => {
   it('should create horse with basic required fields', async () => {
     const horse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Schema Test Horse',
         sex: 'Mare',
         dateOfBirth: new Date('2023-01-01'),
@@ -104,6 +109,7 @@ describe('Schema Validation', () => {
   it('should create horse with groom-related fields', async () => {
     const horse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Schema Test Horse 2',
         sex: 'Stallion',
         dateOfBirth: new Date('2022-01-01'),
@@ -151,6 +157,7 @@ describe('Schema Validation', () => {
     // Create horse and groom first
     const horse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Schema Test Horse 3',
         sex: 'Filly',
         dateOfBirth: new Date('2023-06-01'),
@@ -192,6 +199,7 @@ describe('Schema Validation', () => {
     // Create horse and groom first
     const horse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Schema Test Horse 4',
         sex: 'Colt',
         dateOfBirth: new Date('2023-03-01'),

@@ -25,6 +25,9 @@ import {
   getPersonalityEvolutionHistory,
   applyPersonalityEvolutionEffects,
 } from '../../services/personalityEvolutionSystem.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
 
 describe('Personality Evolution System', () => {
   // Anchor dates to keep test data deterministic
@@ -87,6 +90,7 @@ describe('Personality Evolution System', () => {
         // Create test horse
         testHorse = await tx.horse.create({
           data: {
+            ...fixtureColor(),
             userId: testUser.id,
             breedId: testBreed.id,
             name: 'Evolution Test Horse',
@@ -252,6 +256,7 @@ describe('Personality Evolution System', () => {
       // Create new horse for mixed care testing
       const mixedCareHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           userId: testUser.id,
           breedId: testBreed.id,
           name: 'Mixed Care Horse',

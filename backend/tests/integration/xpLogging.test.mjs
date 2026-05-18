@@ -13,6 +13,9 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import bcrypt from 'bcryptjs';
 import { trainHorse } from '../../controllers/trainingController.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
 
 const UNIQUE = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
 
@@ -46,6 +49,7 @@ beforeAll(async () => {
   // Horse must be >= 3 years old to be eligible for training
   testHorse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `XPHorse_${UNIQUE}`,
       sex: 'Mare',
       dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000), // 4 years ago
@@ -110,6 +114,7 @@ describe('XP Logging — Training Workflow', () => {
   it('does not award XP when training is rejected (horse too young)', async () => {
     const youngHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `YoungHorse_${UNIQUE}`,
         sex: 'Stallion',
         dateOfBirth: new Date(), // born today — age 0

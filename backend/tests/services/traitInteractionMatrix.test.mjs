@@ -27,6 +27,9 @@ import {
   modelTemporalInteractions,
   generateInteractionMatrix,
 } from '../../services/traitInteractionMatrix.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
 
 describe('Trait Interaction Matrix', () => {
   let testUser;
@@ -53,6 +56,7 @@ describe('Trait Interaction Matrix', () => {
     testHorses = await Promise.all([
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Horse Synergistic ${testSuffix}`,
           sex: 'filly',
           dateOfBirth: oneMonthAgo,
@@ -64,6 +68,7 @@ describe('Trait Interaction Matrix', () => {
       }),
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Horse Conflicting ${testSuffix}`,
           sex: 'colt',
           dateOfBirth: oneMonthAgo,
@@ -75,6 +80,7 @@ describe('Trait Interaction Matrix', () => {
       }),
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Horse Complex ${testSuffix}`,
           sex: 'Colt',
           dateOfBirth: oneMonthAgo,
@@ -86,6 +92,7 @@ describe('Trait Interaction Matrix', () => {
       }),
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Horse Minimal ${testSuffix}`,
           sex: 'filly',
           dateOfBirth: oneMonthAgo,
@@ -97,6 +104,7 @@ describe('Trait Interaction Matrix', () => {
       }),
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Horse Dominant ${testSuffix}`,
           sex: 'colt',
           dateOfBirth: oneMonthAgo,

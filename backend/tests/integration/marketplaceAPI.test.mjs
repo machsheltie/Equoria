@@ -18,6 +18,10 @@ import { createTestUser } from '../helpers/testAuth.mjs';
 import app from '../../app.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
+
 describe('🛒 INTEGRATION: Marketplace API', () => {
   let __csrf__;
   beforeAll(async () => {
@@ -57,6 +61,7 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
     // Create a horse owned by seller
     testHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `MarketHorse_${ts}`,
         sex: 'mare',
         age: 5,
@@ -430,6 +435,7 @@ describe('🛒 INTEGRATION: Marketplace API', () => {
       const breed = await prisma.breed.findFirst();
       delistHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `DelistHorse_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'stallion',
           age: 4,

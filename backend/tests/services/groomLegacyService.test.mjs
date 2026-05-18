@@ -19,6 +19,9 @@ import {
   getLegacyPerks,
   getUserLegacyHistory,
 } from '../../services/groomLegacyService.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
 
 describe('Groom Legacy Service', () => {
   let testUser;
@@ -52,6 +55,7 @@ describe('Groom Legacy Service', () => {
     }
     testHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: testHorseName,
         sex: 'Stallion',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old

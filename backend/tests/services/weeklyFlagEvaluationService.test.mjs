@@ -19,6 +19,9 @@ import {
   processHorseForFlagEvaluation,
   getEligibleHorsesForFlagEvaluation,
 } from '../../services/weeklyFlagEvaluationService.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
 
 describe('Weekly Flag Evaluation Service', () => {
   let testUser;
@@ -77,6 +80,7 @@ describe('Weekly Flag Evaluation Service', () => {
       // Young foal (1 week old) - eligible for flag evaluation
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Foal Week ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'filly',
           dateOfBirth: oneWeekAgo,
@@ -89,6 +93,7 @@ describe('Weekly Flag Evaluation Service', () => {
       // Young horse (1 month old) - eligible for flag evaluation
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Foal Month ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'colt',
           dateOfBirth: oneMonthAgo,
@@ -101,6 +106,7 @@ describe('Weekly Flag Evaluation Service', () => {
       // 2-year-old horse - still eligible for flag evaluation
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Horse 2yo ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'Colt',
           dateOfBirth: twoYearsAgo,
@@ -113,6 +119,7 @@ describe('Weekly Flag Evaluation Service', () => {
       // 4-year-old horse - NOT eligible for flag evaluation
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Horse 4yo ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'mare',
           dateOfBirth: fourYearsAgo,
@@ -199,6 +206,7 @@ describe('Weekly Flag Evaluation Service', () => {
       // Create a horse with 5 flags already
       const horseWithMaxFlags = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Horse Max Flags ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'filly',
           dateOfBirth: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 1 month old

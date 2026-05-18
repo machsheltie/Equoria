@@ -37,6 +37,10 @@ import prisma from '../../db/index.mjs';
 import config from '../../config/config.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
+
 // Strategic mocking: Only mock external dependencies
 jest.mock('../../utils/logger.mjs', () => ({
   info: jest.fn(),
@@ -201,6 +205,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     testHorses = await Promise.all([
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'TestLeaderboard Champion',
           age: 6,
           sex: 'Stallion',
@@ -213,6 +218,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       }),
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'TestLeaderboard Silver Star',
           age: 5,
           sex: 'Mare',
@@ -225,6 +231,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       }),
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'TestLeaderboard Gold Rush',
           age: 4,
           sex: 'Stallion',

@@ -43,6 +43,10 @@ import dotenv from 'dotenv';
 import { generateTestToken } from './helpers/authHelper.mjs';
 
 import { fetchCsrf } from './helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 let authToken;
@@ -140,6 +144,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
     // Create test horses with User relationships
     adultHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Test Adult Horse',
         age: 4, // Eligible for training
         breedId: breed.id,
@@ -161,6 +166,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
 
     youngHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Test Young Horse',
         age: 2, // Too young for training
         breedId: breed.id,
@@ -182,6 +188,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
 
     trainedHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Test Trained Horse',
         age: 5,
         breedId: breed.id,
@@ -304,6 +311,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
 
       const scoreTestHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Score Test Horse',
           age: 4,
           breedId: (await prisma.breed.findFirst()).id,
@@ -364,6 +372,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
 
       const horse1 = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Accumulation Test Horse 1',
           age: 5,
           breedId: (await prisma.breed.findFirst()).id,
@@ -385,6 +394,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
 
       const horse2 = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Accumulation Test Horse 2',
           age: 6,
           breedId: (await prisma.breed.findFirst()).id,
@@ -465,6 +475,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
 
       const oldTrainedHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Old Trained Horse',
           age: 6,
           breedId: (await prisma.breed.findFirst()).id,
@@ -532,6 +543,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
 
       const xpTestHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'XP Test Horse',
           age: 4,
           breedId: (await prisma.breed.findFirst()).id,
@@ -593,6 +605,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
 
       const logTestHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Log Test Horse',
           age: 5,
           breedId: (await prisma.breed.findFirst()).id,
@@ -684,6 +697,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
 
       const dateTestHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Date Test Horse',
           age: 4,
           breedId: (await prisma.breed.findFirst()).id,

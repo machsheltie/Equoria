@@ -11,6 +11,9 @@ import { randomBytes } from 'node:crypto';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import bcrypt from 'bcryptjs';
 import { getUserById, getUserWithHorses, getUserByEmail } from '../../models/userModel.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
 
 const UNIQUE = `${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`;
 
@@ -46,6 +49,7 @@ beforeAll(async () => {
   for (const name of horseNames) {
     const horse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name,
         sex: 'Mare',
         dateOfBirth: new Date('2019-01-01'),

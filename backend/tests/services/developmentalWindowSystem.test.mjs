@@ -27,6 +27,9 @@ import {
   analyzeCriticalPeriodSensitivity,
   generateDevelopmentalForecast,
 } from '../../services/developmentalWindowSystem.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
 
 describe('Developmental Window System', () => {
   let testUser;
@@ -77,6 +80,7 @@ describe('Developmental Window System', () => {
       // Newborn foal - imprinting window
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Foal Newborn ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'filly',
           dateOfBirth: oneDayAgo,
@@ -89,6 +93,7 @@ describe('Developmental Window System', () => {
       // Week-old foal - early socialization window
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Foal Week ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'colt',
           dateOfBirth: oneWeekAgo,
@@ -101,6 +106,7 @@ describe('Developmental Window System', () => {
       // Two-week-old foal - fear period window
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Foal TwoWeek ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'filly',
           dateOfBirth: twoWeeksAgo,
@@ -113,6 +119,7 @@ describe('Developmental Window System', () => {
       // Month-old foal - curiosity development window
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Foal Month ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'Colt',
           dateOfBirth: oneMonthAgo,
@@ -125,6 +132,7 @@ describe('Developmental Window System', () => {
       // Three-month-old foal - independence development
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Foal ThreeMonth ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'colt',
           dateOfBirth: threeMonthsAgo,
@@ -511,6 +519,7 @@ describe('Developmental Window System', () => {
       const now = new Date();
       sixtyDayHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `TestFixture-DWS-60Day-${Date.now()}`,
           sex: 'Filly',
           dateOfBirth: new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000),
@@ -522,6 +531,7 @@ describe('Developmental Window System', () => {
       });
       youngFearfulHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `TestFixture-DWS-YngFear-${Date.now()}`,
           sex: 'Colt',
           dateOfBirth: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
@@ -648,6 +658,7 @@ describe('Developmental Window System', () => {
       const now = new Date();
       fortyDayHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `TestFixture-DWS-40Day-${Date.now()}`,
           sex: 'Colt',
           dateOfBirth: new Date(now.getTime() - 40 * 24 * 60 * 60 * 1000),
@@ -659,6 +670,7 @@ describe('Developmental Window System', () => {
       });
       newbornHighStressHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `TestFixture-DWS-NBHighStress-${Date.now()}`,
           sex: 'Filly',
           dateOfBirth: new Date(now.getTime() - 1 * 24 * 60 * 60 * 1000),
@@ -774,6 +786,7 @@ describe('Developmental Window System', () => {
       const now = new Date();
       eighteenDayHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `TestFixture-DWS-18Day-${Date.now()}`,
           sex: 'Filly',
           dateOfBirth: new Date(now.getTime() - 18 * 24 * 60 * 60 * 1000),
@@ -785,6 +798,7 @@ describe('Developmental Window System', () => {
       });
       twentyOneDayHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `TestFixture-DWS-21Day-${Date.now()}`,
           sex: 'Colt',
           dateOfBirth: new Date(now.getTime() - 21 * 24 * 60 * 60 * 1000),
@@ -796,6 +810,7 @@ describe('Developmental Window System', () => {
       });
       over135DayHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `TestFixture-DWS-135Day-${Date.now()}`,
           sex: 'Filly',
           dateOfBirth: new Date(now.getTime() - 135 * 24 * 60 * 60 * 1000),

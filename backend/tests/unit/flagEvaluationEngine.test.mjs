@@ -24,6 +24,9 @@
 import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../db/index.mjs';
 import { evaluateHorseFlags, batchEvaluateFlags, getEligibleHorses } from '../../utils/flagEvaluationEngine.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
 
 const PREFIX = 'TestFixture-FlagEngine-';
 const USER_ID = 'test-user-flag-engine';
@@ -50,6 +53,7 @@ const ELIGIBLE_DOB = () => daysAgo(14);
 async function mkHorse(suffix, opts = {}) {
   return prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `${PREFIX}${suffix}`,
       sex: 'Colt',
       dateOfBirth: opts.dateOfBirth ?? ELIGIBLE_DOB(),

@@ -21,6 +21,10 @@ import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
+
 describe('Advanced Epigenetic API Routes', () => {
   let __csrf__;
   beforeAll(async () => {
@@ -76,6 +80,7 @@ describe('Advanced Epigenetic API Routes', () => {
       // Young foal for developmental windows
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Foal API ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'filly',
           dateOfBirth: oneWeekAgo,
@@ -88,6 +93,7 @@ describe('Advanced Epigenetic API Routes', () => {
       // Older foal with traits for interactions
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Test Horse API ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'colt',
           dateOfBirth: oneMonthAgo,
@@ -226,6 +232,7 @@ describe('Advanced Epigenetic API Routes', () => {
 
       const otherHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `Other Horse ${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
           sex: 'colt',
           dateOfBirth: new Date(),

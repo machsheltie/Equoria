@@ -42,6 +42,9 @@ import { body } from 'express-validator';
 import { register, login } from '../controllers/authController.mjs';
 import { authenticateToken } from '../middleware/auth.mjs';
 import prisma from '../db/index.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from './helpers/fixtureColor.mjs';
 
 /**
  * Extract cookie value from Set-Cookie header array
@@ -206,6 +209,7 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
     testHorses = await Promise.all([
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Training Horse 1',
           age: 4,
           breedId: breed.id,
@@ -217,6 +221,7 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
       }),
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Training Horse 2',
           age: 5,
           breedId: breed.id,
@@ -228,6 +233,7 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
       }),
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Young Horse',
           age: 2,
           breedId: breed.id,
