@@ -233,8 +233,8 @@ export async function fetchUserRankHistory(
  * tallies) backing a leaderboard entry.
  *
  * Used by the leaderboard horse-detail modal so it renders real persisted
- * data instead of fabricated placeholders (Equoria-8nfc). Returns the
- * `data` payload directly; throws via apiClient on 404/error.
+ * data instead of fabricated placeholders (Equoria-8nfc). apiClient unwraps
+ * the `{ success, data }` envelope to the profile; throws on 404/error.
  *
  * @param horseId - Positive integer horse id from the leaderboard entry
  * @returns Promise<LeaderboardHorseProfile>
@@ -242,8 +242,12 @@ export async function fetchUserRankHistory(
 export async function fetchLeaderboardHorseProfile(
   horseId: number
 ): Promise<LeaderboardHorseProfile> {
-  const res = await apiClient.get<LeaderboardHorseProfileResponse>(
-    `/api/leaderboards/horse/${horseId}`
-  );
-  return res.data;
+  // apiClient.get already unwraps the standard `{ success, data }` envelope
+  // (returns `data.data` when present), exactly like the sibling fetchers
+  // fetchLeaderboard / fetchUserRankSummary above. The previous `res.data`
+  // here double-unwrapped, yielding `undefined` for the documented
+  // LeaderboardHorseProfileResponse contract — the leaderboard horse-detail
+  // modal therefore never received real data in production OR test
+  // (Equoria-8qnv7). Returning the apiClient result directly fixes both.
+  return apiClient.get<LeaderboardHorseProfile>(`/api/leaderboards/horse/${horseId}`);
 }

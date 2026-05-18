@@ -1918,6 +1918,48 @@ export const handlers = [
     });
   }),
 
+  // Leaderboard horse profile (Equoria-8qnv7) — used by useLeaderboardHorseProfile
+  // when a leaderboard entry is clicked to open LeaderboardHorseDetailModal.
+  // Derives a deterministic profile from the entry id so the name matches the
+  // leaderboard fixture convention (horseId 100+rank → "Horse <rank>").
+  http.get(`${base}/api/leaderboards/horse/:horseId`, ({ params }) => {
+    const horseId = Number(params.horseId);
+    if (!Number.isFinite(horseId) || horseId <= 0) {
+      return HttpResponse.json({ status: 'error', message: 'Horse not found' }, { status: 404 });
+    }
+    // Entry ids in the leaderboard fixture are 100 + rank (see
+    // generateLeaderboardEntry); mirror that so the modal title matches the
+    // clicked entry's visible name.
+    const rank = horseId - 100;
+    const name = rank >= 1 ? `Horse ${rank}` : `Horse ${horseId}`;
+
+    return HttpResponse.json({
+      success: true,
+      data: {
+        horseId,
+        name,
+        breed: 'Arabian',
+        age: 7,
+        sex: 'Mare',
+        stats: {
+          speed: 88,
+          stamina: 91,
+          agility: 76,
+          balance: 70,
+          precision: 82,
+          intelligence: 79,
+          boldness: 84,
+          flexibility: 73,
+          obedience: 80,
+          focus: 86,
+        },
+        totalEarnings: 125000,
+        competitionWins: 12,
+        topThreeFinishes: 21,
+      },
+    });
+  }),
+
   // ── Breeds ──────────────────────────────────────────────────────────────────
   http.get(`${base}/api/v1/breeds`, () => {
     return HttpResponse.json({

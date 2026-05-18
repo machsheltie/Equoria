@@ -411,10 +411,16 @@ describe('Horse Detail Modal Flow', () => {
       expect(screen.getByTestId('base-modal')).toBeInTheDocument();
     });
 
+    // The real horse profile is fetched asynchronously via
+    // useLeaderboardHorseProfile after the modal opens; wait for that data
+    // to populate the title before asserting (no fabricated placeholder —
+    // the modal shows a skeleton until the real values arrive).
+    await waitFor(() => {
+      expect(screen.getByTestId('base-modal-title')).toHaveTextContent(/Horse 1/i);
+    });
+
     // The modal content section should contain horse details
     const modalContent = screen.getByTestId('base-modal-content');
-    // Horse name "Horse 1" should be visible in the modal title (BaseModal renders title)
-    expect(screen.getByTestId('base-modal-title')).toHaveTextContent(/Horse 1/i);
     // Stats section should be present
     expect(within(modalContent).getByTestId('stats-section')).toBeInTheDocument();
     // Competition history section should be present
@@ -434,8 +440,9 @@ describe('Horse Detail Modal Flow', () => {
       expect(screen.getByTestId('horse-detail-modal')).toBeInTheDocument();
     });
 
-    // Click "View Full Profile" button
-    const viewProfileButton = screen.getByTestId('view-full-profile-button');
+    // "View Full Profile" only renders once the real horse profile has
+    // resolved (it depends on horseData being non-null); wait for it.
+    const viewProfileButton = await screen.findByTestId('view-full-profile-button');
     await user.click(viewProfileButton);
 
     // Should navigate to the horse's profile page
