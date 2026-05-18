@@ -436,21 +436,33 @@ RATE_LIMIT_MAX_REQUESTS=100
 - Suspicious activity pattern detection
 - Test Coverage: `__tests__/integration/security/owasp-comprehensive.test.mjs` (A09 section), audit log middleware tests
 
-### **A10:2021 - Server-Side Request Forgery (SSRF)** ✅
+### **A10:2021 - Server-Side Request Forgery (SSRF)** ⚪ N/A — NO EXTERNAL-URL SURFACE
 
-- URL validation for external requests
-- Internal IP address blocking
-- File protocol rejection
-- DNS rebinding prevention (future-proofed)
-- Webhook URL validation (future-proofed)
-- Test Coverage: `__tests__/integration/security/owasp-comprehensive.test.mjs` (A10 section)
+**Corrected 2026-05-18 (Equoria-zuva):** The prior "✅" with bulleted controls
+(URL validation, internal-IP blocking, file:// rejection, DNS-rebinding) was a
+false-green. **No production code implements any of those.** A codebase audit
+found zero URL-validation / internal-IP / SSRF logic outside an
+assertion-free placeholder block in
+`backend/modules/services/__tests__/owasp-comprehensive.test.mjs`. The app has
+no user-supplied-URL feature (no webhook, avatar-by-URL, OAuth redirect, or
+server-side fetch of user input); the only outbound `fetch()` is dev-only
+scripts hitting hardcoded localhost. SSRF is therefore **not applicable** —
+nothing to protect — not "compliant via controls."
 
-### **Compliance Summary**
+- Hard prerequisite gate: before ANY feature that fetches a user-supplied URL
+  ships, a reusable SSRF-guard (scheme allow-list; block loopback /
+  link-local incl. `169.254.169.254` / RFC1918 / `::1`; validate resolved IP
+  post-DNS) MUST be implemented and wired in, with sentinel-positive tests
+  against real production code. Tracked separately as a blocking gate.
 
-- ✅ **10/10 OWASP Top 10 categories fully addressed**
-- ✅ **400+ security test cases implemented**
-- ✅ **Automated continuous security scanning**
-- ✅ **Production-ready security monitoring**
+### **Compliance Summary** (corrected 2026-05-18)
+
+- ⚠️ **8/10 OWASP categories implemented; A09 partial (file-only audit, no DB
+  trail); A10 N/A (no SSRF surface)** — the prior "10/10 fully addressed" was
+  inaccurate.
+- ✅ **243+ verified security test cases** (the prior "400+" was unverified)
+- ✅ **Automated continuous dependency scanning (backend + frontend + root)**
+- ⚠️ **Monitoring: file logging mounted; DB-backed audit trail NOT implemented**
 
 ---
 

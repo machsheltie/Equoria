@@ -1,28 +1,45 @@
 # 🔒 Equoria Security Assessment Report
 
 **Assessment Date:** January 28, 2026
+**Accuracy Correction:** May 18, 2026 (Equoria-zuva, Equoria-ss4r — false-green claims removed; every statement reconciled against the codebase at this commit)
 **Assessor:** Phase 4 Security Hardening Team
-**Version:** 2.0
+**Version:** 2.1 (accuracy-corrected)
 **Classification:** Internal Use
 
 ---
 
+> **Accuracy correction notice (2026-05-18):** An audit found multiple materially
+> inaccurate claims in v2.0 that could have produced a false-green go/no-go
+> decision (cf. `.claude/rules/COMPLETION_VERIFICATION_POLICY.md`). The following
+> were corrected: SSRF (A10) downgraded from "COMPLIANT" to "N/A — no
+> external-URL surface" (no production code consumes user-supplied URLs); MFA
+> "infrastructure in place" claim removed (no MFA schema/code/routes exist);
+> audit-logging coverage corrected (Winston request logging is mounted, but
+> the `auditLog.mjs` DB-persistence path is explicitly _not implemented_); test
+> file paths corrected (`backend/modules/services/__tests__/`, not
+> `backend/__tests__/integration/security/`); fabricated test counts and the
+> unsubstantiated "98.5% coverage" metric replaced with verified counts;
+> frontend-audit contradiction reconciled (the frontend _is_ audited by
+> `security-scan.yml`); placeholder contact details explicitly marked TODO.
+
 ## Executive Summary
 
-This report provides a comprehensive assessment of the Equoria platform's security posture following completion of Phase 4 Security Hardening initiatives. Equoria demonstrates **enterprise-grade security** with full OWASP Top 10:2021 compliance, automated security testing, and production-ready monitoring systems.
+This report assesses the Equoria platform's security posture following Phase 4 Security Hardening. Equoria implements strong, multi-layered security controls (JWT auth, RBAC + ownership checks, parameterized Prisma queries, request-body / query prototype-pollution defenses, Helmet, rate limiting, automated dependency scanning). It is **not** fully OWASP Top 10:2021 "compliant" in the literal sense: SSRF (A10) has no applicable attack surface (correctly N/A, not "compliant via implemented controls"), and several v2.0 maturity claims (global DB-backed audit log, MFA) were overstated and are corrected below.
 
-### Overall Security Rating: **A+ (Excellent)**
+### Overall Security Rating: **B+ — Strong, with corrected scope**
 
-| Category                       | Rating | Status           |
-| ------------------------------ | ------ | ---------------- |
-| Authentication & Authorization | A+     | ✅ Excellent     |
-| Data Protection                | A+     | ✅ Excellent     |
-| Input Validation               | A+     | ✅ Excellent     |
-| Security Testing               | A      | ✅ Very Good     |
-| Monitoring & Logging           | A+     | ✅ Excellent     |
-| Configuration Security         | A      | ✅ Very Good     |
-| Dependency Management          | A+     | ✅ Excellent     |
-| **Overall Grade**              | **A+** | ✅ **Excellent** |
+The rating was lowered from the v2.0 "A+ (Excellent)" because that grade rested on inflated claims. The underlying implemented controls are genuinely strong; the rating reflects honest scope, not a regression in code.
+
+| Category                       | Rating | Status                                            |
+| ------------------------------ | ------ | ------------------------------------------------- |
+| Authentication & Authorization | A      | ✅ Strong (no MFA — see A07)                      |
+| Data Protection                | A      | ✅ Strong                                         |
+| Input Validation               | A+     | ✅ Excellent (proto-pollution defenses verified)  |
+| Security Testing               | B+     | ✅ Good (counts corrected; no coverage % claimed) |
+| Monitoring & Logging           | B      | ⚠️ File logging only — no DB-backed audit trail   |
+| Configuration Security         | A      | ✅ Strong                                         |
+| Dependency Management          | A+     | ✅ Excellent (backend + frontend audited in CI)   |
+| **Overall Grade**              | **B+** | ✅ **Strong (honest scope)**                      |
 
 ---
 
@@ -82,11 +99,10 @@ Equoria implements a multi-layered security approach:
 - Protected route guards
 - Comprehensive audit logging
 
-**Test Coverage:**
+**Test Coverage** (paths: `backend/modules/services/__tests__/`; counts verified 2026-05-18):
 
-- `auth-bypass-attempts.test.mjs` (15 test cases)
-- `ownership-violations.test.mjs` (12 test cases)
-- 100% coverage for authentication middleware
+- `auth-bypass-attempts.test.mjs` (30 test cases)
+- `ownership-violations.test.mjs` (9 test cases)
 
 **Risk Level:** LOW
 **Recommendation:** Continue monitoring access patterns via Sentry
@@ -125,15 +141,15 @@ Equoria implements a multi-layered security approach:
 - NoSQL injection prevention via Prisma type safety
 - Prototype-pollution prevention (CWE-1321) at the request-parsing boundary — see dedicated subsection below.
 
-**Test Coverage:**
+**Test Coverage** (paths: `backend/modules/services/__tests__/`; counts verified 2026-05-18):
 
-- `sql-injection-attempts.test.mjs` (20 test cases)
-- `parameter-pollution.test.mjs` (50 test cases — body, query, headers, content-type)
-- `request-body-silent-catch.test.mjs` (56 test cases — fail-closed scanner contract + sentinel-class dispatch)
+- `sql-injection-attempts.test.mjs` (40 test cases)
+- `parameter-pollution.test.mjs` (51 test cases — body, query, headers, content-type)
+- `request-body-silent-catch.test.mjs` (36 test cases — fail-closed scanner contract + sentinel-class dispatch)
 - `request-body-depth-cap.test.mjs` + `request-body-depth-cap-boundary.test.mjs` (depth-cap enforcement)
 - `request-body-urlencoded-duplicate-key.test.mjs` (urlencoded dup-key bypass closure)
-- `__tests__/middleware/requestBodySecurity.test.mjs` (unit-level coverage of the scanner / guard / handler trio)
-- Input validation tests across all controllers
+- `backend/__tests__/middleware/requestBodySecurity.test.mjs` (unit-level coverage of the scanner / guard / handler trio)
+- Input validation tests across controllers
 
 **Risk Level:** VERY LOW
 **Recommendation:** None - implementation is industry-leading
@@ -155,7 +171,7 @@ Equoria's defense lives at the request-parsing boundary in `backend/middleware/r
 Path params (`req.params`), headers, and cookies are out of scope: each is a flat string-to-string surface populated by the framework, with no nested object structure where prototype-slot keys could appear.
 
 **Risk Level:** VERY LOW
-**Recommendation:** Continue running the `__tests__/integration/security/request-body-*` and `parameter-pollution` test files in CI. The `request-body-silent-catch.test.mjs` source-side coupling sentinel hard-pins the throw pattern, so any regression that re-introduces the legacy string-prefix dispatch fails immediately.
+**Recommendation:** Continue running the `backend/modules/services/__tests__/request-body-*` and `parameter-pollution` test files in CI. The `request-body-silent-catch.test.mjs` source-side coupling sentinel hard-pins the throw pattern, so any regression that re-introduces the legacy string-prefix dispatch fails immediately.
 
 ---
 
@@ -169,9 +185,9 @@ Path params (`req.params`), headers, and cookies are out of scope: each is a fla
 - Game balance cooldowns (7-day training, 30-day breeding)
 - Secure-by-default configurations
 
-**Test Coverage:**
+**Test Coverage** (`backend/modules/services/__tests__/`; verified 2026-05-18):
 
-- `rate-limit-enforcement.test.mjs` (10 test cases)
+- `rate-limit-enforcement.test.mjs` (8 test cases)
 - Integration tests for game mechanics
 - Business logic validation tests
 
@@ -191,9 +207,9 @@ Path params (`req.params`), headers, and cookies are out of scope: each is a fla
 - Error handling without information leakage (no stack traces in production)
 - Server version hiding (X-Powered-By removed)
 
-**Test Coverage:**
+**Test Coverage** (`backend/modules/services/__tests__/owasp-comprehensive.test.mjs`, 28 cases total across all OWASP sections; verified 2026-05-18):
 
-- `owasp-comprehensive.test.mjs` A06 section (15 test cases)
+- `owasp-comprehensive.test.mjs` misconfiguration section
 - Security header validation tests
 - Error message sanitization tests
 
@@ -230,7 +246,7 @@ Path params (`req.params`), headers, and cookies are out of scope: each is a fla
 
 ---
 
-### A07:2021 - Identification and Authentication Failures ✅ COMPLIANT
+### A07:2021 - Identification and Authentication Failures ✅ COMPLIANT (no MFA — see note)
 
 **Implementation:**
 
@@ -240,16 +256,22 @@ Path params (`req.params`), headers, and cookies are out of scope: each is a fla
 - Failed login attempt rate limiting (200 failed attempts/15min; successful auths not counted)
 - Session management with secure httpOnly cookies
 - Password reset with secure token generation
-- Multi-factor authentication ready (infrastructure in place)
 
-**Test Coverage:**
+> **Correction (2026-05-18):** The v2.0 claim "Multi-factor authentication
+> ready (infrastructure in place)" was false and has been removed. There is
+> **no MFA**: no `mfa`/`totp`/`twoFactor` field in
+> `packages/database/prisma/schema.prisma`, no MFA controller/service, and no
+> MFA routes. MFA is an unstarted future enhancement (TODO — not "in place").
 
-- `auth-bypass-attempts.test.mjs` (15 test cases)
-- `rate-limit-enforcement.test.mjs` auth section (5 test cases)
+**Test Coverage** (`backend/modules/services/__tests__/`; verified 2026-05-18):
+
+- `auth-bypass-attempts.test.mjs` (30 test cases)
+- `rate-limit-enforcement.test.mjs` (8 test cases, incl. auth section)
 - Session management tests
 
-**Risk Level:** LOW
-**Recommendation:** Implement MFA for admin accounts (Phase 5)
+**Risk Level:** LOW–MEDIUM (no second factor for admin accounts)
+**Recommendation:** Implement TOTP-based MFA for admin accounts before any
+privileged-operation exposure (TODO — no infrastructure currently exists).
 
 ---
 
@@ -264,28 +286,40 @@ Path params (`req.params`), headers, and cookies are out of scope: each is a fla
 - Hash verification for sensitive data
 - Insecure deserialization prevention (JSON.parse with validation)
 
-**Test Coverage:**
+**Test Coverage** (`backend/modules/services/__tests__/owasp-comprehensive.test.mjs`, 28 cases total; verified 2026-05-18):
 
-- `owasp-comprehensive.test.mjs` A08 section (12 test cases)
+- `owasp-comprehensive.test.mjs` A08 section
 - JWT tampering tests
 - Stat manipulation prevention tests
-- Prototype pollution prevention tests
+- Prototype pollution prevention tests (`parameter-pollution.test.mjs`, 51 cases)
 
 **Risk Level:** LOW
 **Recommendation:** Consider implementing checksum verification for file uploads
 
 ---
 
-### A09:2021 - Security Logging and Monitoring Failures ✅ COMPLIANT
+### A09:2021 - Security Logging and Monitoring Failures ⚠️ PARTIAL (file logging only)
 
-**Implementation:**
+> **Correction (2026-05-18):** The v2.0 "✅ COMPLIANT" / "Audit Log Coverage
+> 100%" claim overstated maturity. **What is true:** `requestLogger` (Winston,
+> structured) IS globally mounted in `backend/app.mjs` (line ~471), so HTTP
+> requests are logged to file. **What is false:** there is no DB-backed audit
+> trail — `backend/middleware/auditLog.mjs` explicitly states "database storage
+> not yet implemented" (line ~128), and `auditLog.mjs` is not mounted as a
+> standalone global middleware in `app.mjs`. High-sensitivity events are written
+> to log files only; they are not queryable, tamper-evident, or retained in the
+> database. Treat audit logging as **file-only, best-effort** until DB
+> persistence ships.
 
-- **Comprehensive Audit Logging:**
-  - Winston logger with structured logging
-  - All authentication events logged
-  - Ownership violations logged
-  - Rate limit violations logged
-  - Suspicious activity pattern detection
+**Implementation (verified):**
+
+- **Request / Event Logging:**
+  - Winston logger with structured logging (globally mounted via `requestLogger`)
+  - Authentication events logged to file
+  - Ownership violations logged to file
+  - Rate limit violations logged to file
+  - Suspicious activity pattern detection (in-memory + log)
+  - ❌ **No** database-persisted audit trail (`auditLog.mjs` DB path = TODO)
 - **Sentry Integration (Phase 4.3):**
   - Error tracking with stack traces
   - Performance monitoring
@@ -305,36 +339,60 @@ Path params (`req.params`), headers, and cookies are out of scope: each is a fla
   - Operation type, resource accessed, success/failure
   - Context data, request/response details
 
-**Test Coverage:**
+**Test Coverage** (`backend/modules/services/__tests__/`; verified 2026-05-18):
 
-- `owasp-comprehensive.test.mjs` A09 section (10 test cases)
-- Audit log middleware tests
+- `owasp-comprehensive.test.mjs` A09 section
+- `auditLog.test.mjs` (audit-log helper unit tests — file path, not DB)
 - Sentry integration tests
 
-**Risk Level:** VERY LOW
-**Recommendation:** Configure Sentry alerts and dashboards in production
+**Risk Level:** MEDIUM (no tamper-evident, queryable, retained audit trail)
+**Recommendation:** Implement DB-backed audit persistence in `auditLog.mjs` and
+mount it globally; configure Sentry alerts/dashboards in production. Until then,
+do not represent audit logging as a compliance control to auditors.
 
 ---
 
-### A10:2021 - Server-Side Request Forgery (SSRF) ✅ COMPLIANT
+### A10:2021 - Server-Side Request Forgery (SSRF) ⚪ N/A — NO EXTERNAL-URL ATTACK SURFACE
 
-**Implementation:**
+> **Correction (2026-05-18, Equoria-zuva):** The v2.0 "✅ COMPLIANT" claim was
+> a false-green. A codebase audit found **zero production code** that validates
+> URLs or blocks internal IPs. The only SSRF-related code was empty placeholder
+> `describe`/`it` blocks in `owasp-comprehensive.test.mjs` (no assertions, all
+> bodies commented out — they exercise no production code). Per
+> `OPTIMAL_FIX_DISCIPLINE.md` §1 the honest fix solves the real problem
+> (accurate posture), which here is: there is no SSRF surface to protect.
 
-- URL validation for external requests
-- Internal IP address blocking (127.0.0.1, localhost, 192.168.x.x, 10.x.x.x)
-- File protocol rejection (file://)
-- AWS metadata endpoint blocking (169.254.169.254)
-- DNS rebinding prevention (future-proofed)
-- Webhook URL validation (future-proofed for Phase 5)
+**Actual status — assessed, not assumed:**
 
-**Test Coverage:**
+- No production endpoint accepts a user-supplied URL that the server then
+  fetches (no webhook, no avatar-by-URL, no OAuth redirect, no proxy/import).
+- The only outbound `fetch()` calls in the repo are in dev-only scripts
+  (`backend/examples/foalEnrichmentDemo.mjs`, `backend/scripts/testAPI.mjs`,
+  `backend/scripts/testAssignment.mjs`) targeting hardcoded localhost — not
+  user input, not shipped, not reachable from the running app.
+- Therefore SSRF is **not applicable**: there is nothing to validate. This is
+  the honest rating, not "compliant via implemented controls."
 
-- `owasp-comprehensive.test.mjs` A10 section (8 test cases)
-- URL validation tests
-- Internal IP blocking tests
+**Hard prerequisite gate for future work:**
 
-**Risk Level:** VERY LOW
-**Recommendation:** Implement URL validation library for Phase 5 webhook features
+- Before ANY feature that fetches a user-supplied URL ships (webhooks,
+  avatar-by-URL, link previews, OAuth redirect, server-side import), a
+  reusable SSRF-guard utility MUST be implemented and wired in: reject
+  `file://`/`gopher://`/non-http(s) schemes; block loopback, link-local
+  (`169.254.0.0/16` incl. `169.254.169.254`), RFC1918 (`10/8`, `172.16/12`,
+  `192.168/16`), `::1`, and validate the _resolved_ IP post-DNS (rebinding).
+  Sentinel-positive tests must prove each is blocked against real production
+  code (not an inline test helper). This is a blocking gate, tracked as
+  **Equoria-4dva**.
+
+**Test Coverage:** None applicable (placeholder-only blocks removed from
+readiness consideration; see SSRF-guard gate above for future requirement).
+
+**Risk Level:** N/A (no attack surface) — escalates to HIGH the moment any
+external-URL feature is added without the prerequisite guard.
+**Recommendation:** SSRF-guard utility tracked as blocking gate **Equoria-4dva**,
+a prerequisite of the first external-URL feature; do not re-rate A10 as
+"compliant" until such a feature exists _with_ the guard.
 
 ---
 
@@ -342,36 +400,51 @@ Path params (`req.params`), headers, and cookies are out of scope: each is a fla
 
 ### 3.1 Test Coverage Summary
 
-| Test Category              | Test Files   | Test Cases     | Status           |
-| -------------------------- | ------------ | -------------- | ---------------- |
-| Authentication             | 3 files      | 50+ cases      | ✅ Passing       |
-| Authorization              | 2 files      | 30+ cases      | ✅ Passing       |
-| Input Validation           | 4 files      | 60+ cases      | ✅ Passing       |
-| SQL Injection              | 1 file       | 20 cases       | ✅ Passing       |
-| XSS Prevention             | 2 files      | 25 cases       | ✅ Passing       |
-| Rate Limiting              | 1 file       | 15 cases       | ✅ Passing       |
-| OWASP Comprehensive        | 1 file       | 80+ cases      | ✅ Passing       |
-| Security Attack Simulation | 1 file       | 50+ cases      | ✅ Passing       |
-| **Total**                  | **15 files** | **400+ cases** | ✅ **Excellent** |
+> **Correction (2026-05-18):** v2.0 counts were fabricated (e.g.
+> owasp-comprehensive "80+" → actual 28; sql-injection "20" → 40; auth-bypass
+> "15" → 30) and the "98.5% Security Test Coverage" figure was unsubstantiated
+> (no coverage instrument produces it). The table below is the verified `it()`
+> / `test()` count per file, generated 2026-05-18. All files live in
+> `backend/modules/services/__tests__/` — **not**
+> `backend/__tests__/integration/security/`.
+
+| Test File (`backend/modules/services/__tests__/`) | Test Cases (verified) |
+| ------------------------------------------------- | --------------------- |
+| `auth-bypass-attempts.test.mjs`                   | 30                    |
+| `ownership-violations.test.mjs`                   | 9                     |
+| `parameter-pollution.test.mjs`                    | 51                    |
+| `rate-limit-enforcement.test.mjs`                 | 8                     |
+| `sql-injection-attempts.test.mjs`                 | 40                    |
+| `owasp-comprehensive.test.mjs`                    | 28                    |
+| `security-attack-simulation.test.mjs`             | 41                    |
+| `request-body-silent-catch.test.mjs`              | 36                    |
+| **Subtotal (these 8 files)**                      | **243**               |
+
+Plus the `request-body-depth-cap*`, `request-body-urlencoded-duplicate-key`,
+`request-body-key-reflection`, `request-body-max-depth-env-validation`,
+`request-body-security-p0-follow`, `auditLog`, and
+`backend/__tests__/middleware/requestBodySecurity.test.mjs` suites. Numbers
+above are exact `it`/`test` counts; no percentage coverage metric is claimed
+because none is measured.
 
 ### 3.2 Security Test Files
 
-**Backend Security Tests:**
+**Backend Security Tests** (actual paths, verified 2026-05-18):
 
-1. `__tests__/integration/security/auth-bypass-attempts.test.mjs`
-2. `__tests__/integration/security/ownership-violations.test.mjs`
-3. `__tests__/integration/security/parameter-pollution.test.mjs`
-4. `__tests__/integration/security/rate-limit-enforcement.test.mjs`
-5. `__tests__/integration/security/sql-injection-attempts.test.mjs`
-6. `__tests__/integration/security/owasp-comprehensive.test.mjs` (NEW - Phase 4.5)
-7. `__tests__/integration/security-attack-simulation.test.mjs`
+1. `backend/modules/services/__tests__/auth-bypass-attempts.test.mjs`
+2. `backend/modules/services/__tests__/ownership-violations.test.mjs`
+3. `backend/modules/services/__tests__/parameter-pollution.test.mjs`
+4. `backend/modules/services/__tests__/rate-limit-enforcement.test.mjs`
+5. `backend/modules/services/__tests__/sql-injection-attempts.test.mjs`
+6. `backend/modules/services/__tests__/owasp-comprehensive.test.mjs`
+7. `backend/modules/services/__tests__/security-attack-simulation.test.mjs`
+8. `backend/modules/services/__tests__/request-body-*.test.mjs` (depth-cap, silent-catch, urlencoded-dup-key, etc.)
 
-**Coverage Metrics:**
+> Note: `backend/__tests__/integration/security/` does **not** exist as the
+> location for these suites. v2.0 stated this path throughout; it was wrong.
 
-- Overall Security Test Coverage: **98.5%**
-- Authentication Coverage: **100%**
-- Authorization Coverage: **100%**
-- Input Validation Coverage: **97%**
+**Coverage Metrics:** No instrumented security-coverage percentage is measured;
+prior "98.5% / 100% / 97%" figures were removed as unsubstantiated.
 
 ---
 
@@ -427,16 +500,18 @@ Path params (`req.params`), headers, and cookies are out of scope: each is a fla
 - Console output in development
 - Production log aggregation ready
 
-**Audit Log Middleware:**
+**Audit Log Middleware (corrected 2026-05-18):**
 
-- All HTTP requests logged
-- Authentication events tracked
-- Ownership violations logged
-- Rate limit violations logged
-- Suspicious activity detection
-- Context-rich log entries
+- HTTP requests logged to file via globally-mounted `requestLogger` (Winston)
+- Authentication / ownership / rate-limit events written to log files
+- Suspicious activity detection (in-memory + file log)
+- ❌ **No DB-persisted audit trail** — `auditLog.mjs` DB storage is explicitly
+  "not yet implemented" and `auditLog.mjs` is not mounted standalone in
+  `app.mjs`. Log files are not tamper-evident, queryable, or retained per a
+  defined audit-retention policy.
 
-**Status:** ✅ Production Ready
+**Status:** ⚠️ File logging production-ready; DB-backed audit trail NOT
+implemented (TODO before representing as an audit control).
 
 ---
 
@@ -449,10 +524,16 @@ Path params (`req.params`), headers, and cookies are out of scope: each is a fla
 All npm dependencies scanned:
 
 - Backend: 0 critical, 0 high, 0 moderate, 0 low
-- Frontend: Not yet implemented (planned Phase 5)
+- Frontend: **audited in CI** — `.github/workflows/security-scan.yml` runs
+  `npm audit` against `./frontend` (steps "Install dependencies (frontend)" /
+  "Run npm audit (frontend)"). The v2.0 line "Frontend: Not yet implemented
+  (planned Phase 5)" was false and self-contradictory and has been corrected:
+  the frontend exists, is part of the build, and is continuously audited.
 - Root: 0 critical, 0 high, 0 moderate, 0 low
 
-Last Scan: January 28, 2026
+> Per-package counts above reflect the prior CI scan; re-run
+> `.github/workflows/security-scan.yml` for current numbers — this document
+> does not assert a fixed count for a moving target.
 
 ### 5.2 Historical Vulnerabilities (Resolved)
 
@@ -518,30 +599,36 @@ None identified.
 
 ### 7.1 Current Security Metrics
 
-| Metric                 | Current Value | Target | Status       |
-| ---------------------- | ------------- | ------ | ------------ |
-| Security Test Coverage | 98.5%         | >95%   | ✅ Exceeds   |
-| OWASP Compliance       | 10/10         | 10/10  | ✅ Excellent |
-| Known Vulnerabilities  | 0             | 0      | ✅ Excellent |
-| Failed Auth Rate       | 2.3%          | <5%    | ✅ Normal    |
-| Rate Limit Hit Rate    | 0.1%          | <1%    | ✅ Normal    |
-| Security Incidents     | 0             | 0      | ✅ Excellent |
-| Automated Scans        | Daily         | Daily  | ✅ Excellent |
-| Audit Log Coverage     | 100%          | 100%   | ✅ Excellent |
+> **Correction (2026-05-18):** Removed unsubstantiated/fabricated metrics.
+> "Security Test Coverage 98.5%" — no instrument measures this. "OWASP 10/10" —
+> A10 is N/A (no surface), not a passed control; A09 is partial. "Audit Log
+> Coverage 100%" — false (no DB audit trail). "Failed Auth Rate 2.3% / Rate
+> Limit Hit Rate 0.1%" — no production telemetry source exists for these (the
+> app is pre-beta); they were invented. Only verifiable rows retained.
+
+| Metric                         | Current Value                         | Status          |
+| ------------------------------ | ------------------------------------- | --------------- |
+| Security test files (verified) | 14+ files, 243+ `it`/`test` cases     | ✅ Substantial  |
+| OWASP Top 10 addressed         | 8 implemented, A09 partial, A10 N/A   | ⚠️ Honest scope |
+| Known dep vulnerabilities      | 0 (per last CI scan; re-run for live) | ✅ Good         |
+| DB-backed audit trail          | Not implemented                       | ⚠️ TODO         |
+| Automated dep scans (CI)       | backend + frontend + root             | ✅ Active       |
+| Production security telemetry  | N/A — app is pre-beta                 | ⚪ N/A          |
 
 ### 7.2 Security Trends
 
-**Positive Trends:**
+**Positive (verifiable):**
 
-- Zero security incidents since inception
-- 400+ security test cases implemented
-- Automated scanning catching vulnerabilities before production
-- Security-first development culture established
+- 243+ security test cases implemented (exact counts in §3.1)
+- Automated dependency scanning (backend + frontend + root) active in CI
+- Strong request-boundary defenses (prototype-pollution, depth-cap) verified
 
-**Areas for Monitoring:**
+**Not measurable yet (app is pre-beta — no production telemetry):**
 
-- Authentication failure rate (currently 2.3% - normal for gaming platforms)
-- Rate limit violations (0.1% - within acceptable range)
+- Authentication failure rate / rate-limit hit rate: no live data source.
+  v2.0's "2.3%" and "0.1%" figures were fabricated and are removed.
+- "Zero security incidents since inception" removed — absence of a reporting
+  pipeline is not evidence of zero incidents.
 
 ---
 
@@ -564,11 +651,16 @@ None identified.
 
 ### 8.2 Security Contact Information
 
-- **Security Team:** security@equoria.com
-- **Emergency Contact:** +1-XXX-XXX-XXXX (to be configured)
-- **Incident Reporting:** incidents@equoria.com
+> **TODO — NOT CONFIGURED.** Every value below is a placeholder. None is a
+> monitored mailbox or live phone line. Do not present this section as
+> operational. Must be replaced with real, monitored contacts before any
+> production/beta exposure.
 
-**Status:** ⚠️ Email addresses need to be configured before production deployment
+- **Security Team:** `security@equoria.com` — TODO (placeholder, unverified)
+- **Emergency Contact:** `+1-XXX-XXX-XXXX` — TODO (placeholder, not a real line)
+- **Incident Reporting:** `incidents@equoria.com` — TODO (placeholder, unverified)
+
+**Status:** ⚠️ BLOCKING for production — contacts are placeholders, not configured.
 
 ---
 
@@ -576,14 +668,14 @@ None identified.
 
 ### 9.1 Industry Standards Compliance
 
-| Standard                     | Compliance Status         | Notes                                          |
-| ---------------------------- | ------------------------- | ---------------------------------------------- |
-| OWASP Top 10:2021            | ✅ 100% Compliant         | All 10 categories fully addressed              |
-| CWE Top 25                   | ✅ 95% Addressed          | 24/25 categories mitigated                     |
-| NIST Cybersecurity Framework | ✅ Substantial Compliance | Identify, Protect, Detect, Respond, Recover    |
-| PCI DSS                      | ⚠️ N/A                    | Not applicable unless payment processing added |
-| GDPR                         | ⚠️ Partial                | Basic requirements met, full audit needed      |
-| SOC 2                        | ⚠️ Not Certified          | Consider for enterprise customers              |
+| Standard                     | Compliance Status         | Notes                                                                   |
+| ---------------------------- | ------------------------- | ----------------------------------------------------------------------- |
+| OWASP Top 10:2021            | ⚠️ Partial (corrected)    | 8 implemented; A09 partial (file-only audit); A10 N/A (no SSRF surface) |
+| CWE Top 25                   | ✅ 95% Addressed          | 24/25 categories mitigated                                              |
+| NIST Cybersecurity Framework | ✅ Substantial Compliance | Identify, Protect, Detect, Respond, Recover                             |
+| PCI DSS                      | ⚠️ N/A                    | Not applicable unless payment processing added                          |
+| GDPR                         | ⚠️ Partial                | Basic requirements met, full audit needed                               |
+| SOC 2                        | ⚠️ Not Certified          | Consider for enterprise customers                                       |
 
 ### 9.2 Regulatory Compliance
 
@@ -637,13 +729,14 @@ None identified.
 
 ### 11.1 Overall Assessment
 
-Equoria demonstrates **exceptional security posture** with enterprise-grade security measures implemented across all critical areas. The platform achieves:
+Equoria implements **strong, verifiable security controls** across most
+critical areas, with honestly-scoped gaps. Verified state:
 
-✅ **100% OWASP Top 10:2021 compliance**
-✅ **400+ comprehensive security test cases**
-✅ **Automated continuous security monitoring**
-✅ **Zero known vulnerabilities**
-✅ **Production-ready security infrastructure**
+✅ **8/10 OWASP categories implemented; A09 partial (file-only audit); A10 N/A (no SSRF surface)**
+✅ **243+ verified security test cases (exact counts in §3.1)**
+✅ **Automated continuous dependency scanning (backend + frontend + root)**
+✅ **0 known dependency vulnerabilities per last CI scan**
+⚠️ **Gaps before production:** DB-backed audit trail (TODO), MFA for admin (TODO), real security contacts (TODO), SSRF-guard gate before any external-URL feature (TODO)
 
 ### 11.2 Security Strengths
 
@@ -655,19 +748,24 @@ Equoria demonstrates **exceptional security posture** with enterprise-grade secu
 
 ### 11.3 Risk Assessment
 
-**Overall Risk Level:** ✅ **LOW**
+**Overall Risk Level:** **LOW–MEDIUM** (strong controls; honest gaps remain)
 
-The Equoria platform is **production-ready** from a security perspective with minimal residual risk. The implemented security measures exceed industry standards for gaming platforms.
+The implemented controls are strong. The platform is **not** approved for
+production by this report alone — the corrected gaps below are prerequisites,
+not optional polish.
 
 ### 11.4 Final Recommendation
 
-**APPROVED FOR PRODUCTION DEPLOYMENT** with the following prerequisites:
+**NOT YET APPROVED FOR PRODUCTION.** Resolve these prerequisites first
+(several were misrepresented as "ready" in v2.0):
 
-1. Configure Sentry production DSN
-2. Finalize CORS origin whitelist
-3. Set up security contact emails
-4. Configure production monitoring dashboards
-5. Conduct pre-launch security checklist review
+1. Implement DB-backed audit persistence and mount it (A09 is currently partial)
+2. Implement MFA for admin accounts (no infrastructure exists today)
+3. Replace placeholder security contacts with real monitored channels
+4. File + link the blocking SSRF-guard gate before any external-URL feature
+5. Configure Sentry production DSN
+6. Finalize CORS origin whitelist
+7. Conduct pre-launch security checklist review
 
 ---
 
@@ -675,15 +773,21 @@ The Equoria platform is **production-ready** from a security perspective with mi
 
 ### Appendix A: Security Test File Listing
 
-All security test files are located in `backend/__tests__/integration/security/`:
+All security test files are located in `backend/modules/services/__tests__/`
+(corrected 2026-05-18 — the v2.0 path `backend/__tests__/integration/security/`
+was wrong; that directory does not hold these suites):
 
 - auth-bypass-attempts.test.mjs
 - ownership-violations.test.mjs
 - parameter-pollution.test.mjs
 - rate-limit-enforcement.test.mjs
 - sql-injection-attempts.test.mjs
-- owasp-comprehensive.test.mjs (NEW - Phase 4.5)
+- owasp-comprehensive.test.mjs
 - security-attack-simulation.test.mjs
+- request-body-\*.test.mjs (depth-cap, silent-catch, urlencoded-dup-key, etc.)
+
+(`backend/__tests__/middleware/requestBodySecurity.test.mjs` holds the
+unit-level scanner/guard/handler coverage.)
 
 ### Appendix B: Security Documentation References
 
@@ -711,4 +815,10 @@ All security test files are located in `backend/__tests__/integration/security/`
 
 ---
 
-_This assessment certifies that the Equoria platform has successfully completed Phase 4 Security Hardening and meets all enterprise-grade security requirements for production deployment._
+_This assessment (v2.1, accuracy-corrected 2026-05-18) records the verified
+security state of the Equoria platform. It does NOT certify production
+readiness: Phase 4 Security Hardening delivered strong controls, but the
+DB-backed audit trail, MFA, real security contacts, and the SSRF-guard
+prerequisite gate remain open. Earlier "certified / approved for production /
+100% compliant" language was inaccurate and has been removed per
+`.claude/rules/COMPLETION_VERIFICATION_POLICY.md`._
