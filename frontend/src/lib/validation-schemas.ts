@@ -360,6 +360,13 @@ export type UpdateProfileFormData = z.infer<typeof updateProfileSchema>;
  * - Contains number: +1 point
  * - Contains special character: +1 point
  *
+ * Equoria-49csj invariant: the 'good' and 'strong' labels are affordances
+ * that tell the user their password is acceptable. They MUST NOT appear for
+ * a password that `passwordSchema` would reject on submit (otherwise the
+ * meter lies — e.g. a 12+ char password with no @$!%*?& char previously
+ * scored 'strong' while the schema rejects it). Any schema-invalid password
+ * is therefore capped at 'fair' (score 2) regardless of its raw point total.
+ *
  * @param password - The password to evaluate
  * @returns Object with score (0-4), label, and color
  *
@@ -385,6 +392,15 @@ export function calculatePasswordStrength(password: string): {
 
   // Normalize to 0-4
   score = Math.min(4, score);
+
+  // Equoria-49csj: a password the form's zod schema will reject must never
+  // be presented as 'good' or 'strong' (those imply "acceptable"). Cap it at
+  // 'fair' (score 2) so the meter cannot contradict the submit-time schema.
+  // Single source of truth: passwordSchema itself — so any future schema rule
+  // change automatically tightens the meter too.
+  if (score > 2 && !passwordSchema.safeParse(password).success) {
+    score = 2;
+  }
 
   // Labels and colors
   const labels: Array<'weak' | 'fair' | 'good' | 'strong'> = [

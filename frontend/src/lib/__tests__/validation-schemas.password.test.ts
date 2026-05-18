@@ -5,21 +5,19 @@
  * schema + strength meter were only exercised indirectly via RegisterPage
  * form submission. This file tests them directly.
  *
- * AC:
+ * AC (Equoria-8d5c):
  *  - hash-suffixed sample is NOT strong-valid and fails passwordSchema
  *  - bang-suffixed sample IS strong-valid and passes passwordSchema
  *  - the special-char set equals the schema set (@$!%*?&)
  *  - loop check: every input scored Strong also passes passwordSchema parse
  *
- * IMPORTANT FINDING (surfaced by the loop check, see Equoria-bug filed):
- * calculatePasswordStrength can return label='strong' for a password that
- * FAILS passwordSchema (a 12+ char password with lower+upper+digit but NO
- * special char scores 4 → 'strong', yet the schema requires a special char).
- * The loop check below is therefore scoped to the set of inputs the strength
- * meter is *intended* to gate on (those a user would plausibly submit through
- * the validated form). The unconditional invariant violation is asserted
- * explicitly in its own test so the divergence is locked + visible rather
- * than hidden by a deliberately-weak corpus.
+ * Equoria-49csj (RESOLVED): the meter/schema divergence Equoria-8d5c
+ * surfaced — calculatePasswordStrength labelled a 12+ char password with no
+ * @$!%*?& char 'strong' while passwordSchema rejects it — is now FIXED.
+ * calculatePasswordStrength caps any schema-invalid password at 'fair'. The
+ * former DEFECT LOCK test is replaced by two arbitrary-corpus invariant
+ * tests (no schema-invalid input is ever 'strong'/'good'; every 'strong'/
+ * 'good' input passes the schema) plus a reconciled regression test.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -63,7 +61,7 @@ describe('passwordSchema (Equoria-8d5c)', () => {
   });
 });
 
-describe('calculatePasswordStrength ↔ passwordSchema consistency (Equoria-8d5c)', () => {
+describe('calculatePasswordStrength ↔ passwordSchema consistency (Equoria-49csj)', () => {
   // Representative corpus of passwords a user would submit through the
   // validated registration/reset form (all contain a schema special char).
   const intendedStrongCorpus = [
@@ -86,14 +84,62 @@ describe('calculatePasswordStrength ↔ passwordSchema consistency (Equoria-8d5c
     }
   });
 
-  it('DEFECT LOCK: a 12+ char password with no special char scores strong but FAILS schema', () => {
-    // Equoria-8d5c finding — surfaced rather than hidden. The strength meter
-    // labels this "strong" (length≥8 +1, length≥12 +1, case +1, digit +1 = 4)
-    // while passwordSchema rejects it (no @$!%*?& char). Locked here so the
-    // divergence is visible; the meter/schema reconciliation is filed as a
-    // separate follow-up (do NOT bundle).
-    const schemaInvalidButStrong = 'Abcdefghij12';
-    expect(calculatePasswordStrength(schemaInvalidButStrong).label).toBe('strong');
-    expect(passwordSchema.safeParse(schemaInvalidButStrong).success).toBe(false);
+  // Equoria-49csj: arbitrary-input corpus (NOT pre-filtered to schema-valid
+  // passwords). Mixes schema-valid, missing-special, too-short, missing-case,
+  // missing-digit, empty. The invariant below must hold for ALL of them.
+  const arbitraryCorpus = [
+    'Abcdefghij12', // 12+, lower+upper+digit, NO special — the original defect
+    'Abcdef1!', // schema-valid
+    'abcdefghij12', // no upper, no special
+    'ABCDEFGHIJ12', // no lower, no special
+    'Abcdefgh', // 8 chars, no digit, no special
+    'Abc1!', // has special+digit+case but only 5 chars (too short)
+    'StrongP@ss12', // schema-valid
+    'NoSpecialButLong1234567890Aa', // long, case, digit, NO special
+    'Aa1#Aa1#Aa1#', // 12+, case, digit, but '#' is OUTSIDE schema special set
+    '', // empty
+    'aaaaaaaaaaaa', // 12 lowercase only
+    'Zz9?aA8&bB7%', // schema-valid
+  ];
+
+  it('INVARIANT: no password that fails passwordSchema is ever labeled strong or good', () => {
+    for (const pw of arbitraryCorpus) {
+      const { label } = calculatePasswordStrength(pw);
+      const schemaOk = passwordSchema.safeParse(pw).success;
+      if (!schemaOk) {
+        expect(
+          label === 'strong' || label === 'good',
+          `"${pw}" fails passwordSchema but was labeled "${label}" (must not be strong/good)`
+        ).toBe(false);
+      }
+    }
+  });
+
+  it('INVARIANT: every password labeled strong (or good) passes passwordSchema', () => {
+    for (const pw of arbitraryCorpus) {
+      const { label } = calculatePasswordStrength(pw);
+      if (label === 'strong' || label === 'good') {
+        expect(
+          passwordSchema.safeParse(pw).success,
+          `"${pw}" labeled "${label}" but failed passwordSchema`
+        ).toBe(true);
+      }
+    }
+  });
+
+  it('reconciled: the formerly-divergent 12+/no-special password is no longer strong/good', () => {
+    // Was the Equoria-8d5c DEFECT LOCK. Now flipped to assert the fix:
+    // 'Abcdefghij12' fails passwordSchema (no @$!%*?&) so it must NOT be
+    // labeled strong or good — the meter no longer lies to the user.
+    const schemaInvalid = 'Abcdefghij12';
+    expect(passwordSchema.safeParse(schemaInvalid).success).toBe(false);
+    const { label } = calculatePasswordStrength(schemaInvalid);
+    expect(label === 'strong' || label === 'good').toBe(false);
+  });
+
+  it('a fully schema-valid 12+ char password is still labeled strong (no false negative)', () => {
+    const good = 'StrongP@ss12';
+    expect(passwordSchema.safeParse(good).success).toBe(true);
+    expect(calculatePasswordStrength(good).label).toBe('strong');
   });
 });
