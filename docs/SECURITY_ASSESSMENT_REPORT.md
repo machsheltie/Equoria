@@ -157,7 +157,7 @@ schedule; ensure `*_PREVIOUS` is always unset after the overlap window closes.
 
 - `sql-injection-attempts.test.mjs` (40 test cases)
 - `parameter-pollution.test.mjs` (51 test cases — prototype-pollution defense on body, query, and content-type; **headers/cookies/params are intentionally out of scope for prototype pollution**, see the scope note in the Prototype Pollution subsection below. The suite also includes generic injection-via-header tests, which are a distinct concern from proto-pollution and are not what "header pollution coverage" would mean.)
-- `request-body-silent-catch.test.mjs` (36 test cases — fail-closed scanner contract + sentinel-class dispatch)
+- `request-body-silent-catch.test.mjs` (55 executed test cases — fail-closed scanner contract + sentinel-class dispatch; static `it(`-count undercounts due to parametrized `it.each` cases, verified by run output 2026-05-18)
 - `request-body-depth-cap.test.mjs` + `request-body-depth-cap-boundary.test.mjs` (depth-cap enforcement)
 - `request-body-urlencoded-duplicate-key.test.mjs` (urlencoded dup-key bypass closure)
 - `backend/modules/services/__tests__/requestBodySecurity.test.mjs` (unit-level coverage of the scanner / guard / handler trio)

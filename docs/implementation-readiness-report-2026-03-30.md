@@ -174,7 +174,7 @@ NFR4: Server uptime 99.9% (production)
 NFR5: App crash rate < 1% of sessions
 NFR6: Test coverage — maintain >90% with balanced mocking approach
 NFR7: Platform: Web only (React 19 + TypeScript + Vite + Express); mobile out-of-scope
-NFR8: Security: bcrypt (10-12 rounds), JWT validation, rate limiting (5 auth attempts/15min)
+NFR8: Security: bcrypt (10-12 rounds), JWT validation, rate limiting (200 failed auth attempts/15min, successful requests not counted — source: backend/middleware/rateLimiting.mjs authRateLimiter)
 NFR9: Scalability: 10,000+ horses per query, strategic indexed queries
 NFR10: Engagement: 15+ min avg session, 3+ sessions/week
 NFR11: Database: PostgreSQL 14+ with Prisma ORM, 43 models, JSONB
