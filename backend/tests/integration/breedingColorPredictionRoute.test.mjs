@@ -27,6 +27,9 @@ import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 import { fetchCsrf, attachCsrf } from '../helpers/csrfHelper.mjs';
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
+import { calculatePhenotype } from '../../modules/horses/services/phenotypeCalculationService.mjs';
+import { generateMarkings } from '../../modules/horses/services/markingGenerationService.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -96,6 +99,16 @@ describe('POST /api/v1/horses/breeding/color-prediction — HTTP integration (Eq
     ownerToken = generateTestToken({ id: owner.id, email: owner.email, role: 'user' });
     strangerToken = generateTestToken({ id: stranger.id, email: stranger.email, role: 'user' });
 
+    // Derive a coherent non-null phenotype from the SAME genotype the
+    // prediction tests assert on. Raw prisma.horse.create() does NOT
+    // auto-generate phenotype (createHorse() does), so without this the
+    // sire/dam fixtures are born with phenotype = NULL — the Equoria-348po /
+    // lfj5 canonical-DB leak class if an interrupted run skips the afterEach
+    // scoped cleanup. colorGenotype stays FULL_GENOTYPE_HET so prediction
+    // semantics are unchanged.
+    const fullBase = calculatePhenotype(FULL_GENOTYPE_HET, null);
+    const fullPhenotype = { ...fullBase, ...generateMarkings(null, fullBase.colorName) };
+
     sire = await prisma.horse.create({
       data: {
         name: `BCPSire_${ts}`,
@@ -104,6 +117,7 @@ describe('POST /api/v1/horses/breeding/color-prediction — HTTP integration (Eq
         age: 6,
         userId: owner.id,
         colorGenotype: FULL_GENOTYPE_HET,
+        phenotype: fullPhenotype,
       },
     });
     createdHorseIds.push(sire.id);
@@ -116,11 +130,19 @@ describe('POST /api/v1/horses/breeding/color-prediction — HTTP integration (Eq
         age: 5,
         userId: owner.id,
         colorGenotype: FULL_GENOTYPE_HET,
+        phenotype: fullPhenotype,
       },
     });
     createdHorseIds.push(dam.id);
 
-    // AC6 — legacy dam with no genotype.
+    // AC6 — legacy dam with no genotype. It MUST have no colorGenotype so the
+    // controller takes the legacy-parent path (returns data:null). But it must
+    // still have a non-null phenotype, otherwise an interrupted run that skips
+    // the afterEach scoped cleanup leaks a NULL-phenotype row and trips the
+    // canonical-DB sentinel (Equoria-348po / lfj5 leak class). fixtureColor()
+    // generates both; we keep only phenotype here. See the
+    // "Equoria-348po sentinel" test below.
+    const { phenotype: legacyPhenotype } = fixtureColor();
     legacyDam = await prisma.horse.create({
       data: {
         name: `BCPLegacyDam_${ts}`,
@@ -128,6 +150,7 @@ describe('POST /api/v1/horses/breeding/color-prediction — HTTP integration (Eq
         dateOfBirth: new Date(Date.now() - 7 * 365.25 * 24 * 60 * 60 * 1000),
         age: 7,
         userId: owner.id,
+        phenotype: legacyPhenotype,
       },
     });
     createdHorseIds.push(legacyDam.id);
@@ -181,6 +204,35 @@ describe('POST /api/v1/horses/breeding/color-prediction — HTTP integration (Eq
     expect(res.body.success).toBe(true);
     expect(res.body.data).toBeNull();
     expect(res.body.message).toMatch(/genetics data/i);
+  });
+
+  // Sentinel-positive (Equoria-348po, OPTIMAL_FIX_DISCIPLINE §2): the legacy
+  // dam fixture is created via raw prisma.horse.create() WITHOUT colorGenotype
+  // (required for the AC6 legacy-path assertion above). Before the 348po fix
+  // it was also created without a phenotype, so it was born with
+  // phenotype = NULL. A crashed/interrupted run that skips the afterEach
+  // scoped cleanup leaks those NULL-phenotype rows into the canonical DB and
+  // trips backend/__tests__/horseColorNullSentinel.test.mjs (the Equoria-lfj5
+  // / 348po leak class). This sentinel asserts every fixture horse this suite
+  // creates has a non-null phenotype while STILL having no colorGenotype on
+  // the legacy dam (so AC6 semantics are unchanged). Comment out the
+  // `...fixtureColor()` spread on legacyDam and this test fails — proving it
+  // catches the real defect, not a placebo.
+  it('Equoria-348po sentinel: every fixture horse has a non-null phenotype (legacy dam keeps no colorGenotype)', async () => {
+    const fixtureHorses = await prisma.horse.findMany({
+      where: { id: { in: [sire.id, dam.id, legacyDam.id] } },
+      select: { id: true, name: true, phenotype: true, colorGenotype: true },
+    });
+    expect(fixtureHorses).toHaveLength(3);
+    for (const h of fixtureHorses) {
+      expect(h.phenotype).not.toBeNull();
+      expect(typeof h.phenotype).toBe('object');
+      expect(h.phenotype.colorName).toEqual(expect.any(String));
+      expect(h.phenotype.colorName.length).toBeGreaterThan(0);
+    }
+    // AC6 invariant must still hold: the legacy dam has NO colorGenotype.
+    const legacy = fixtureHorses.find(h => h.id === legacyDam.id);
+    expect(legacy.colorGenotype).toBeNull();
   });
 
   it('AC: 400 when sireId is missing (express-validator fires)', async () => {
