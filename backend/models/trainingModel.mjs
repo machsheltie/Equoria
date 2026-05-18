@@ -1,5 +1,6 @@
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
+import { getHorseAgeYears } from '../utils/horseAge.mjs';
 
 /**
  * Log a training session for a horse in a specific discipline
@@ -133,10 +134,12 @@ async function getHorseAge(horseId) {
       return null;
     }
 
-    // Calculate age from dateOfBirth
-    const birthDate = new Date(horse.dateOfBirth);
-    const now = new Date();
-    const age = Math.floor((now - birthDate) / (365.25 * 24 * 60 * 60 * 1000));
+    // Equoria-ffsi: age MUST be canonical game-years (1 game-week = 1
+    // game-year, floor(realDays / 7)) — NOT calendar-years. trainingController
+    // gates training eligibility on age >= 3; the old /365.25 calendar math
+    // wrongly blocked horses that are 3+ game-years old (21+ real days) but
+    // < 3 real calendar years. Delegate to the canonical helper.
+    const age = getHorseAgeYears(horse.dateOfBirth);
 
     logger.info(`[trainingModel.getHorseAge] Horse ${parsedHorseId} is ${age} years old`);
 

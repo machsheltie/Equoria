@@ -19,6 +19,7 @@ const { default: prisma } = await import(join(__dirname, '../db/index.mjs'));
 const { logTrainingSession, getLastTrainingDate, getHorseAge } = await import(
   join(__dirname, '../models/trainingModel.mjs')
 );
+const { getHorseAgeYears } = await import(join(__dirname, '../utils/horseAge.mjs'));
 
 describe('Training Model', () => {
   let testUser = null;
@@ -135,13 +136,40 @@ describe('Training Model', () => {
   });
 
   describe('getHorseAge', () => {
-    it('returns the correct horse age from DB', async () => {
+    it('returns the canonical game-year age, not calendar-years (Equoria-ffsi)', async () => {
       const result = await getHorseAge(testHorse.id);
 
-      // Horse born 2018-01-01; expected age is floor((now - birth) / 365.25 days in ms)
-      const birth = new Date('2018-01-01');
-      const expectedAge = Math.floor((Date.now() - birth.getTime()) / (365.25 * 24 * 60 * 60 * 1000));
-      expect(result).toBe(expectedAge);
+      // Equoria convention: 1 game-week (7 real days) = 1 game-year. The
+      // training eligibility gate (age >= 3) MUST use game-years, not
+      // calendar-years. A horse born 2018-01-01 is hundreds of game-years
+      // old; the old /365.25 calendar math returned ~8. Assert game-years.
+      const expectedGameYears = getHorseAgeYears(new Date('2018-01-01'));
+      expect(result).toBe(expectedGameYears);
+
+      // Sentinel: the calendar-year formula returns 0 for a horse born
+      // 35 real days ago, yet it is canonically 5 game-years old (35 / 7).
+      // If getHorseAge ever regresses to calendar math this fails.
+      const thirtyFiveDaysAgo = new Date(Date.now() - 35 * 24 * 60 * 60 * 1000);
+      const youngHorse = await prisma.horse.create({
+        data: {
+          name: 'TestFixture-TM-Horse-35d',
+          sex: 'Colt',
+          dateOfBirth: thirtyFiveDaysAgo,
+          age: 0,
+          userId: testUser.id,
+          breedId: breed.id,
+        },
+      });
+      try {
+        const youngAge = await getHorseAge(youngHorse.id);
+        // 35 real days / 7 = 5 game-years. Calendar math: floor(35/365.25) = 0.
+        expect(youngAge).toBe(5);
+        expect(youngAge).not.toBe(0);
+      } finally {
+        await prisma.horse.deleteMany({
+          where: { name: 'TestFixture-TM-Horse-35d' },
+        });
+      }
     });
 
     it('returns null if horse not found', async () => {
