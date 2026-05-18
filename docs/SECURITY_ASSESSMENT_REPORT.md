@@ -156,7 +156,7 @@ schedule; ensure `*_PREVIOUS` is always unset after the overlap window closes.
 **Test Coverage** (paths: `backend/modules/services/__tests__/`; counts verified 2026-05-18):
 
 - `sql-injection-attempts.test.mjs` (40 test cases)
-- `parameter-pollution.test.mjs` (51 test cases — body, query, headers, content-type)
+- `parameter-pollution.test.mjs` (51 test cases — prototype-pollution defense on body, query, and content-type; **headers/cookies/params are intentionally out of scope for prototype pollution**, see the scope note in the Prototype Pollution subsection below. The suite also includes generic injection-via-header tests, which are a distinct concern from proto-pollution and are not what "header pollution coverage" would mean.)
 - `request-body-silent-catch.test.mjs` (36 test cases — fail-closed scanner contract + sentinel-class dispatch)
 - `request-body-depth-cap.test.mjs` + `request-body-depth-cap-boundary.test.mjs` (depth-cap enforcement)
 - `request-body-urlencoded-duplicate-key.test.mjs` (urlencoded dup-key bypass closure)
@@ -192,7 +192,10 @@ Path params (`req.params`), headers, and cookies are out of scope: each is a fla
 **Implementation:**
 
 - Threat modeling conducted for game mechanics
-- Rate limiting prevents abuse (100 req/15min global, 5 auth/15min)
+- Rate limiting prevents abuse (100 req/15min global; auth: 200 **failed**
+  attempts/15min with `skipSuccessfulRequests: true` — source of truth is
+  `backend/middleware/rateLimiting.mjs` `authRateLimiter`. The prior "5
+  auth/15min" was wrong; corrected 2026-05-18, Equoria-s74b.)
 - Resource duplication prevention (5-second cooldown)
 - Game balance cooldowns (7-day training, 30-day breeding)
 - Secure-by-default configurations
@@ -619,7 +622,13 @@ None identified.
    - Recovery code generation
 
 2. **Security Headers Enhancement**
-   - Content Security Policy (CSP)
+   - ~~Content Security Policy (CSP)~~ — **already implemented** in
+     `backend/middleware/security.mjs` (`helmetConfig.contentSecurityPolicy`
+     with `default-src/script-src 'self'`, `style-src 'self' 'unsafe-inline'`,
+     etc.). Not a future item. The remaining `style-src 'unsafe-inline'`
+     residual + nonce-threading hardening is tracked separately in
+     **Equoria-e3k9** (see ADR-008 / the "Accepted residual" note in the A05
+     section). Corrected 2026-05-18, Equoria-s74b.
    - Subresource Integrity (SRI) for CDN assets
    - Feature Policy restrictions
 

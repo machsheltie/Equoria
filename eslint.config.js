@@ -104,6 +104,24 @@ export default [
     ],
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
+      // Equoria-efaz: flag vi.mock-of-api-client. Mocking the api-client
+      // fakes the entire backend boundary so the test passes even when
+      // the real API/controller/DB is broken — the exact failure mode
+      // CLAUDE.md "Testing Philosophy" forbids. Set to `warn` (mirroring
+      // `equoria/no-raw-test-horse-create`) so the 23 grandfathered
+      // baseline files surface in review without breaking CI; the hard
+      // merge-blocking gate is the doctrine-check
+      // scripts/doctrine-checks/check-no-new-api-client-vi-mock.mjs which
+      // freezes the baseline and fails on any NEW occurrence.
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector:
+            "CallExpression[callee.object.name='vi'][callee.property.name='mock'] > Literal.arguments:first-child[value=/api-client/]",
+          message:
+            'Do NOT add new vi.mock-of-API-client tests (CLAUDE.md Testing Philosophy). Mocking the api-client fakes the backend boundary so the test passes even when the real API/DB is broken. Use a Playwright E2E test against the real backend instead. Existing baseline files are grandfathered; new ones are blocked by scripts/doctrine-checks/check-no-new-api-client-vi-mock.mjs.',
+        },
+      ],
     },
   },
   {
