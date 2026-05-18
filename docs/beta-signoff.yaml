@@ -9,17 +9,23 @@
 #   3. Request project lead sign-off (update signed_off_by + signed_off_date).
 #   4. Deploy to beta testers only after signed_off_by is set.
 #
-# Gate checklist (must all be PASS before signoff):
-#   - backend_lint:        Backend ESLint 0 errors
-#   - frontend_typecheck:  TypeScript noEmit clean
-#   - routes_tests:        All backend route tests passing
-#   - integration_tests:   All real-DB integration tests passing
-#   - module_tests:        All module-colocated tests (backend/modules/**/__tests__/) passing
-#   - e2e_readiness:       Playwright beta-readiness suite (full route coverage) passing
-#   - no_http_cleanup:     No DELETE /test/cleanup routes in HTTP layer
-#   - no_db_mocks:         No jest.mock(prisma) in integration tests
-#   - no_bypass_headers:   No x-test-user/bypass-auth in E2E specs
-#   - no_beta_skips:       No test.skip in beta-relevant tests
+# Gate checklist (must all be PASS before signoff). These are the EXACT 12
+# gate executions performed by scripts/check-beta-readiness.sh, in order, and
+# correspond 1:1 to the keys recorded in last_gate_run.gate_detail below
+# (reconciled 2026-05-18, Equoria-w8se — the prior 10-item list omitted the
+# doctrine-checks and frontend-mock-data gates and used stale names):
+#   1.  Doctrine-checks suite (run-all.sh)            [GATE 1]
+#   2.  Backend ESLint (no errors)                    [GATE 2]
+#   3.  Frontend tsc --noEmit                         [GATE 3]
+#   4.  Routes tests                                  [GATE 4]
+#   5.  Integration tests                             [GATE 4]
+#   6.  Module tests (backend/modules/*/__tests__)    [GATE 4b]
+#   7.  Playwright beta-readiness suite               [GATE 5]
+#   8.  No HTTP test/cleanup routes                   [GATE 6]
+#   9.  No DB mocks in integration tests              [GATE 7]
+#   10. No mock data in frontend production code      [GATE 7]
+#   11. No bypass headers in E2E/api-client           [GATE 8]
+#   12. No test.skip on beta-critical paths           [GATE 9]
 # ============================================================================
 
 last_gate_run:
@@ -58,12 +64,18 @@ signoff:
   signed_off_by: ~
   signed_off_date: ~
   notes: >
-    2026-05-12 12:55:37 — All 11 gates PASS on commit 41354f48.
-    Key fix this run: browser HTTP cache was serving stale profile
-    (completedOnboarding:false) on full-page reload after advance-onboarding
-    set completedOnboarding:true in DB, causing OnboardingGuard to redirect
-    to /onboarding and blocking the bank page load (Gate 5 — bank E2E).
-    Fix: Cache-Control:no-store on getProfile response + cache:no-store in
-    fetchWithAuth so all API fetches bypass browser HTTP cache.
-    Gate 2 (ESLint): fixed duplicate import in flagEvaluationEngine.test.mjs.
-    No skips, no bypass headers, no mock data. Awaiting project lead signoff.
+    2026-05-14 14:57:28 — All 12 gates PASS on commit d0853723 (same commit
+    as last_gate_run; reconciled 2026-05-18, Equoria-w8se — notes previously
+    referenced the older 2026-05-12 commit 41354f48 / 11 gates, which
+    contradicted last_gate_run and would have meant signing off against
+    stale context). Historical context from the 2026-05-12 run (commit
+    41354f48, 11 gates) carried forward because the fixes still hold: browser
+    HTTP cache was serving a stale profile (completedOnboarding:false) on
+    full-page reload after advance-onboarding set completedOnboarding:true in
+    DB, causing OnboardingGuard to redirect to /onboarding and blocking the
+    bank page load (Gate 5 — bank E2E); fixed with Cache-Control:no-store on
+    getProfile + cache:no-store in fetchWithAuth, plus a duplicate-import
+    ESLint fix in flagEvaluationEngine.test.mjs. The 2026-05-14 d0853723 run
+    adds the 12th gate (doctrine-checks suite) and re-verified all of the
+    above. No skips, no bypass headers, no mock data. Awaiting project lead
+    signoff.
