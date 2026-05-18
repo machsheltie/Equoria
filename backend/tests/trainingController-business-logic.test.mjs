@@ -51,6 +51,7 @@ dotenv.config({ path: join(__dirname, '../.env.test') });
 
 // Import without mocking for real integration testing
 const { default: prisma } = await import(join(__dirname, '../db/index.mjs'));
+const { fixtureColor } = await import(join(__dirname, 'helpers/fixtureColor.mjs'));
 const { canTrain, trainHorse, getTrainingStatus, getTrainableHorses, trainRouteHandler } = await import(
   join(__dirname, '../controllers/trainingController.mjs')
 );
@@ -107,10 +108,12 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
             'Controller Trained Horse',
             'Controller Horse 1',
             'Controller Horse 2',
-            // Equoria-lfj5: created mid-test (workflow + fresh-route cases) via
-            // raw prisma.horse.create() with NULL phenotype. Omitted from this
-            // cleanup list before, so they leaked into the canonical DB and
-            // tripped horseColorNullSentinel. See Equoria-g9sa for root cause.
+            // Equoria-g9sa: created mid-test (workflow + fresh-route cases)
+            // via raw prisma.horse.create(). Fixtures now spread
+            // ...fixtureColor() so they are NOT NULL-phenotype even
+            // transiently; these names are still listed here because they
+            // were previously omitted and leaked, tripping
+            // horseColorNullSentinel (Equoria-lfj5). Keep them scoped-cleaned.
             'Workflow Test Horse',
             'Fresh Route Test Horse',
           ],
@@ -185,6 +188,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
     // Create test horses
     adultHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Controller Adult Horse',
         age: 4, // Eligible for training
         breedId: breed.id,
@@ -203,6 +207,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
 
     youngHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Controller Young Horse',
         age: 2, // Too young for training
         breedId: breed.id,
@@ -221,6 +226,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
 
     trainedHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Controller Trained Horse',
         age: 5,
         breedId: breed.id,
@@ -242,6 +248,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
     // Create horses for multi-horse user testing
     await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Controller Horse 1',
         age: 6,
         breedId: breed.id,
@@ -260,6 +267,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
 
     await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Controller Horse 2',
         age: 3, // Just eligible
         breedId: breed.id,
@@ -314,10 +322,12 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
             'Controller Trained Horse',
             'Controller Horse 1',
             'Controller Horse 2',
-            // Equoria-lfj5: created mid-test (workflow + fresh-route cases) via
-            // raw prisma.horse.create() with NULL phenotype. Omitted from this
-            // cleanup list before, so they leaked into the canonical DB and
-            // tripped horseColorNullSentinel. See Equoria-g9sa for root cause.
+            // Equoria-g9sa: created mid-test (workflow + fresh-route cases)
+            // via raw prisma.horse.create(). Fixtures now spread
+            // ...fixtureColor() so they are NOT NULL-phenotype even
+            // transiently; these names are still listed here because they
+            // were previously omitted and leaked, tripping
+            // horseColorNullSentinel (Equoria-lfj5). Keep them scoped-cleaned.
             'Workflow Test Horse',
             'Fresh Route Test Horse',
           ],
@@ -390,6 +400,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
       // Create a fresh horse for training workflow testing
       const workflowHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Workflow Test Horse',
           age: 4,
           breedId: breed.id,
@@ -605,6 +616,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
       // Fixed: Create a fresh horse for this test since adultHorse may be in cooldown
       const freshHorse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: 'Fresh Route Test Horse',
           age: 4,
           breedId: breed.id,

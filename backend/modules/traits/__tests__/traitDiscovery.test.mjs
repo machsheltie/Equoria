@@ -452,12 +452,13 @@ describe('revealTraits() + getDiscoveryProgress() — DB-fixture paths (Equoria-
   }, 30000);
 
   afterAll(async () => {
-    // Equoria-lfj5: explicit SCOPED horse cleanup FIRST. Fixtures use raw
-    // prisma.horse.create() (no createHorse() phenotype auto-gen, see
-    // Equoria-g9sa) so they are NULL-phenotype and must not leak into the
-    // canonical DB (trips horseColorNullSentinel). Scope by THIS suite's own
-    // userId (unique per run) — explicit, not cascade-only, and won't delete a
-    // sibling suite's in-flight TestFixture-TD-* rows that share the prefix.
+    // Equoria-g9sa: explicit SCOPED horse cleanup FIRST. Fixtures use raw
+    // prisma.horse.create() but now spread ...fixtureColor(), so they carry a
+    // valid phenotype and do NOT trip horseColorNullSentinel even transiently.
+    // Cleanup is still scoped by THIS suite's own userId (unique per run) —
+    // explicit, not cascade-only — so a leaked row (Equoria-lfj5 class) cannot
+    // recur, and we won't delete a sibling suite's in-flight TestFixture-TD-*
+    // rows that share the prefix.
     await prisma.horse.deleteMany({ where: { userId: tdUser.id } }).catch(() => {});
     await prisma.user.delete({ where: { id: tdUser.id } }).catch(() => {});
   }, 30000);
