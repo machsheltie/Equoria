@@ -20,27 +20,6 @@ import logger from '../../../utils/logger.mjs';
 
 const router = express.Router();
 
-/**
- * @swagger
- * /api/leaderboard/user-summary/{userId}:
- *   get:
- *     summary: Get user ranking summary across all categories
- *     tags: [Leaderboard]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: userId
- *         required: true
- *         schema:
- *           type: string
- *         description: User ID
- *     responses:
- *       200:
- *         description: User ranking summary
- */
-router.get('/user-summary/:userId', auth, getUserRankSummary);
-
 /** Aliases for frontend compatibility (matches LeaderboardCategorySelector.tsx) */
 router.get('/level', auth, getTopPlayersByLevel);
 router.get('/prize-money', auth, getTopHorsesByEarnings);
