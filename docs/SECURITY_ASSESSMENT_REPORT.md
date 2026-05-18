@@ -426,25 +426,30 @@ a prerequisite of the first external-URL feature; do not re-rate A10 as
 
 ### 3.1 Test Coverage Summary
 
-> **Correction (2026-05-18):** v2.0 counts were fabricated (e.g.
+> **Correction (2026-05-18, Equoria-1w66):** v2.0 counts were fabricated (e.g.
 > owasp-comprehensive "80+" → actual 28; sql-injection "20" → 40; auth-bypass
 > "15" → 30) and the "98.5% Security Test Coverage" figure was unsubstantiated
-> (no coverage instrument produces it). The table below is the verified `it()`
-> / `test()` count per file, generated 2026-05-18. All files live in
-> `backend/modules/services/__tests__/` — **not** the old
-> `integration/security` test directory the v2.0 docs referenced.
+> (no coverage instrument produces it). The table below is the **executed-test
+> count** from an actual Jest run of each file (`jest <file>`, point-in-time
+> 2026-05-18) — not a static `it(`/`test(` text grep. Runtime counts differ
+> from a text grep because `it.each`/`test.each` blocks expand at run time
+> (e.g. `request-body-silent-catch` greps 27 `it(` calls but executes 55
+> cases). All files live in `backend/modules/services/__tests__/` — **not** the
+> old `integration/security` test directory the v2.0 docs referenced. Re-run
+> the same `jest` commands to reverify; this is a point-in-time figure, not a
+> standing guarantee.
 
-| Test File (`backend/modules/services/__tests__/`) | Test Cases (verified) |
-| ------------------------------------------------- | --------------------- |
-| `auth-bypass-attempts.test.mjs`                   | 30                    |
-| `ownership-violations.test.mjs`                   | 9                     |
-| `parameter-pollution.test.mjs`                    | 51                    |
-| `rate-limit-enforcement.test.mjs`                 | 8                     |
-| `sql-injection-attempts.test.mjs`                 | 40                    |
-| `owasp-comprehensive.test.mjs`                    | 28                    |
-| `security-attack-simulation.test.mjs`             | 41                    |
-| `request-body-silent-catch.test.mjs`              | 36                    |
-| **Subtotal (these 8 files)**                      | **243**               |
+| Test File (`backend/modules/services/__tests__/`) | Executed Test Cases (jest run, 2026-05-18) |
+| ------------------------------------------------- | ------------------------------------------ |
+| `auth-bypass-attempts.test.mjs`                   | 30                                         |
+| `ownership-violations.test.mjs`                   | 9                                          |
+| `parameter-pollution.test.mjs`                    | 51                                         |
+| `rate-limit-enforcement.test.mjs`                 | 8                                          |
+| `sql-injection-attempts.test.mjs`                 | 40                                         |
+| `owasp-comprehensive.test.mjs`                    | 28                                         |
+| `security-attack-simulation.test.mjs`             | 41                                         |
+| `request-body-silent-catch.test.mjs`              | 55                                         |
+| **Subtotal (these 8 files, all passing)**         | **262**                                    |
 
 Plus the `request-body-depth-cap*`, `request-body-urlencoded-duplicate-key`,
 `request-body-key-reflection`, `request-body-max-depth-env-validation`,
@@ -471,8 +476,18 @@ because none is measured.
 > does **not** exist as the location for these suites; that path was wrong
 > throughout v2.0 and has been corrected here.
 
-**Coverage Metrics:** No instrumented security-coverage percentage is measured;
-prior "98.5% / 100% / 97%" figures were removed as unsubstantiated.
+**Coverage Metrics (measured, point-in-time 2026-05-18, Equoria-1w66):** The
+prior "98.5% / 100% / 97%" figures were fabricated and have been removed. The
+project's own Istanbul artifact `backend/coverage-security/coverage-summary.json`
+reports, for the _whole backend tree_ under this run: **lines 5.03%, statements
+4.9%, functions 4%, branches 3.97%** (e.g. `middleware/auth.mjs` 10.08% lines,
+`middleware/auditLog.mjs` 0%). These low whole-tree percentages are expected:
+the security suites in §3.1 are black-box HTTP integration tests that exercise
+the running app over the wire, so line/branch instrumentation does not credit
+them the way unit tests would. The defensible security-testing metric for this
+suite is the **executed test count in §3.1 (262 passing cases)**, not a
+line-coverage percentage. Treat the 5.03% as the literal measured value, not as
+a target or a quality claim.
 
 ---
 
@@ -634,20 +649,20 @@ None identified.
 > Limit Hit Rate 0.1%" — no production telemetry source exists for these (the
 > app is pre-beta); they were invented. Only verifiable rows retained.
 
-| Metric                         | Current Value                         | Status          |
-| ------------------------------ | ------------------------------------- | --------------- |
-| Security test files (verified) | 14+ files, 243+ `it`/`test` cases     | ✅ Substantial  |
-| OWASP Top 10 addressed         | 8 implemented, A09 partial, A10 N/A   | ⚠️ Honest scope |
-| Known dep vulnerabilities      | 0 (per last CI scan; re-run for live) | ✅ Good         |
-| DB-backed audit trail          | Not implemented                       | ⚠️ TODO         |
-| Automated dep scans (CI)       | backend + frontend + root             | ✅ Active       |
-| Production security telemetry  | N/A — app is pre-beta                 | ⚪ N/A          |
+| Metric                         | Current Value                                                                     | Status          |
+| ------------------------------ | --------------------------------------------------------------------------------- | --------------- |
+| Security test files (verified) | 14+ files; 262 executed cases across the 8 core files (jest run 2026-05-18, §3.1) | ✅ Substantial  |
+| OWASP Top 10 addressed         | 8 implemented, A09 partial, A10 N/A                                               | ⚠️ Honest scope |
+| Known dep vulnerabilities      | 0 (per last CI scan; re-run for live)                                             | ✅ Good         |
+| DB-backed audit trail          | Not implemented                                                                   | ⚠️ TODO         |
+| Automated dep scans (CI)       | backend + frontend + root                                                         | ✅ Active       |
+| Production security telemetry  | N/A — app is pre-beta                                                             | ⚪ N/A          |
 
 ### 7.2 Security Trends
 
 **Positive (verifiable):**
 
-- 243+ security test cases implemented (exact counts in §3.1)
+- 262 executed security test cases across the 8 core files (jest run 2026-05-18; exact per-file counts in §3.1)
 - Automated dependency scanning (backend + frontend + root) active in CI
 - Strong request-boundary defenses (prototype-pollution, depth-cap) verified
 
@@ -763,7 +778,7 @@ Equoria implements **strong, verifiable security controls** across most
 critical areas, with honestly-scoped gaps. Verified state:
 
 ✅ **8/10 OWASP categories implemented; A09 partial (file-only audit); A10 N/A (no SSRF surface)**
-✅ **243+ verified security test cases (exact counts in §3.1)**
+✅ **262 executed security test cases across the 8 core files, jest run 2026-05-18 (exact counts in §3.1)**
 ✅ **Automated continuous dependency scanning (backend + frontend + root)**
 ✅ **0 known dependency vulnerabilities per last CI scan**
 ⚠️ **Gaps before production:** DB-backed audit trail (TODO), MFA for admin (TODO), real security contacts (TODO), SSRF-guard gate before any external-URL feature (TODO)

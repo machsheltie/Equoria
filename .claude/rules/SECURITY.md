@@ -460,7 +460,9 @@ nothing to protect — not "compliant via controls."
 - ⚠️ **8/10 OWASP categories implemented; A09 partial (file-only audit, no DB
   trail); A10 N/A (no SSRF surface)** — the prior "10/10 fully addressed" was
   inaccurate.
-- ✅ **243+ verified security test cases** (the prior "400+" was unverified)
+- ✅ **262 executed security test cases across the 8 core files** (jest run
+  2026-05-18, point-in-time; the prior "400+" / "243+" were unverified — see
+  SECURITY_ASSESSMENT_REPORT.md §3.1)
 - ✅ **Automated continuous dependency scanning (backend + frontend + root)**
 - ⚠️ **Monitoring: file logging mounted; DB-backed audit trail NOT implemented**
 
@@ -504,9 +506,21 @@ _Version: 2.0 (Phase 4 Security Hardening Complete)_
 - Added Sentry integration for error tracking and security monitoring
 - Implemented automated security testing (Dependabot + npm audit + OWASP ZAP)
 - Added comprehensive OWASP Top 10:2021 compliance section
-- Created comprehensive security test suite (400+ tests)
+- Created comprehensive security test suite (the v2.0 "400+ tests" claim was
+  later found unsubstantiated — corrected 2026-05-18, Equoria-1w66: actual is
+  262 executed cases across the 8 core files; see the Version 2.1 entry below
+  and SECURITY_ASSESSMENT_REPORT.md §3.1)
 - Updated security testing methodology
 - Production security checklist expanded
+
+**Version 2.1 (2026-05-18, Equoria-1w66 / ss4r / zuva):**
+
+- Removed unsubstantiated "98.5% / 100% / 97% coverage" and "400+ tests"
+  false-green claims
+- Replaced with point-in-time executed-test counts (262 across the 8 core
+  files, jest run 2026-05-18) and measured Istanbul coverage (~5% lines —
+  these security suites are integration tests, not coverage-instrumented)
+- Corrected OWASP posture to 8/10 implemented, A09 partial, A10 N/A
 
 **Version 1.0 (2025-01-XX):**
 
