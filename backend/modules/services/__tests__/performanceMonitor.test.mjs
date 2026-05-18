@@ -105,10 +105,9 @@ describe('performanceMonitor router (Equoria-rr7)', () => {
       const median = samples[1];
 
       if (median >= METRICS_SLA_MS) {
-        // eslint-disable-next-line no-console
         console.log(
           `[Equoria-w981] /metrics median warm latency = ${median.toFixed(1)}ms ` +
-            `(samples: ${samples.map((s) => s.toFixed(1)).join(', ')}, budget ${METRICS_SLA_MS}ms)`,
+            `(samples: ${samples.map(s => s.toFixed(1)).join(', ')}, budget ${METRICS_SLA_MS}ms)`,
         );
       }
       expect(median).toBeLessThan(METRICS_SLA_MS);

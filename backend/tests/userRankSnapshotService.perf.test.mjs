@@ -120,7 +120,7 @@ describe('captureAllUserRankSnapshots set-based rewrite (Equoria-ky0x)', () => {
         where: { userId: u.id },
         select: { category: true },
       });
-      const set = new Set(cats.map((c) => c.category));
+      const set = new Set(cats.map(c => c.category));
       expect(set.has('level')).toBe(true);
       expect(set.has('xp')).toBe(true);
       expect(set.has('horse-earnings')).toBe(true);

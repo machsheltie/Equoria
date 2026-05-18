@@ -223,7 +223,9 @@ class CronJobService {
    * shapes (processHorseBirthdays vs transitionElectionStatuses etc.).
    */
   summarizeResult(result) {
-    if (!result || typeof result !== 'object') return null;
+    if (!result || typeof result !== 'object') {
+      return null;
+    }
     const allow = [
       'totalProcessed',
       'birthdaysFound',
@@ -240,7 +242,9 @@ class CronJobService {
     ];
     const out = {};
     for (const k of allow) {
-      if (k in result) out[k] = result[k];
+      if (k in result) {
+        out[k] = result[k];
+      }
     }
     return Object.keys(out).length ? out : null;
   }
@@ -832,10 +836,14 @@ class CronJobService {
       // 30h for daily jobs).
       const finishedAtMs = block.lastFinishedAt ? new Date(block.lastFinishedAt).getTime() : null;
       const staleForMs = finishedAtMs === null ? Infinity : nowMs - finishedAtMs;
-      if (staleForMs <= STALE_ALERT_THRESHOLD_MS) continue;
+      if (staleForMs <= STALE_ALERT_THRESHOLD_MS) {
+        continue;
+      }
 
       // Debounce: one alert per stale streak per job.
-      if (this.staleAlertState.has(jobName)) continue;
+      if (this.staleAlertState.has(jobName)) {
+        continue;
+      }
 
       this.staleAlertState.set(jobName, nowMs);
       toAlert.push({
@@ -848,7 +856,9 @@ class CronJobService {
       });
     }
 
-    if (toAlert.length === 0) return [];
+    if (toAlert.length === 0) {
+      return [];
+    }
 
     try {
       Sentry.withScope(scope => {
@@ -972,7 +982,9 @@ class CronJobService {
       } else {
         stale = nowMs - new Date(lastFinishedAt).getTime() > stalenessMs;
       }
-      if (stale) anyStale = true;
+      if (stale) {
+        anyStale = true;
+      }
 
       perJob[jobName] = {
         lastStartedAt: lastStartedAt ? new Date(lastStartedAt).toISOString() : null,

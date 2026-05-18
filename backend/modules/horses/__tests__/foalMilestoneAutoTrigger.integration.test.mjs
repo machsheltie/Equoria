@@ -19,10 +19,7 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { processFoalMilestoneEvaluations } from '../../../utils/horseAgingSystem.mjs';
-import {
-  DEVELOPMENTAL_WINDOWS,
-  MILESTONE_TYPES,
-} from '../../../utils/enhancedMilestoneEvaluationSystem.mjs';
+import { DEVELOPMENTAL_WINDOWS, MILESTONE_TYPES } from '../../../utils/enhancedMilestoneEvaluationSystem.mjs';
 
 const TAG = `3yxz-${randomBytes(4).toString('hex')}`;
 
@@ -116,7 +113,7 @@ describe('Equoria-3yxz: processFoalMilestoneEvaluations auto-writes MilestoneTra
     expect(socializationLogs.length).toBeGreaterThanOrEqual(1);
     // age 3d → SOCIALIZATION window (1-7d)
     const expectedSocialization = MILESTONE_TYPES.SOCIALIZATION;
-    expect(socializationLogs.map((l) => l.milestoneType)).toContain(expectedSocialization);
+    expect(socializationLogs.map(l => l.milestoneType)).toContain(expectedSocialization);
     const window = DEVELOPMENTAL_WINDOWS[expectedSocialization];
     expect(window.start).toBeLessThanOrEqual(3);
     expect(window.end).toBeGreaterThanOrEqual(3);
@@ -125,7 +122,7 @@ describe('Equoria-3yxz: processFoalMilestoneEvaluations auto-writes MilestoneTra
       where: { horseId: trustHandlingFoal.id },
     });
     expect(trustLogs.length).toBeGreaterThanOrEqual(1);
-    expect(trustLogs.map((l) => l.milestoneType)).toContain(MILESTONE_TYPES.TRUST_HANDLING);
+    expect(trustLogs.map(l => l.milestoneType)).toContain(MILESTONE_TYPES.TRUST_HANDLING);
   }, 60000);
 
   it('is idempotent — re-running the pass does not duplicate rows', async () => {

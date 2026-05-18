@@ -20,7 +20,6 @@
  * No DB required — assessMilestoneProgress is a pure helper over its args.
  */
 
-import { jest } from '@jest/globals';
 import { assessMilestoneProgress } from '../../services/developmentalWindowSystem.mjs';
 
 describe('assessMilestoneProgress — interactionAge in-window filter (Equoria-ka0p)', () => {

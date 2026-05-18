@@ -180,7 +180,12 @@ async function createHorse(horseData) {
     // every other caller. Throws on generation failure so the model layer fails loud.
     let resolvedColorGenotype = colorGenotype;
     let resolvedPhenotype = phenotype;
-    if (resolvedColorGenotype == null || resolvedPhenotype == null) {
+    if (
+      resolvedColorGenotype === null ||
+      resolvedColorGenotype === undefined ||
+      resolvedPhenotype === null ||
+      resolvedPhenotype === undefined
+    ) {
       // Resolve the breed's breedGeneticProfile via raw SQL because the Prisma DMMF
       // may omit the JSONB column. Both call-shapes are supported: scalar breedId
       // or breed: { connect: { id } } / breed: number.
@@ -194,7 +199,7 @@ async function createHorse(horseData) {
       }
 
       let breedGeneticProfile = null;
-      if (resolvedBreedId != null) {
+      if (resolvedBreedId !== null && resolvedBreedId !== undefined) {
         try {
           const breedRows = await prisma.$queryRaw`
             SELECT "breedGeneticProfile"
@@ -210,10 +215,10 @@ async function createHorse(horseData) {
         }
       }
 
-      if (resolvedColorGenotype == null) {
+      if (resolvedColorGenotype === null || resolvedColorGenotype === undefined) {
         resolvedColorGenotype = generateGenotype(breedGeneticProfile);
       }
-      if (resolvedPhenotype == null) {
+      if (resolvedPhenotype === null || resolvedPhenotype === undefined) {
         const baseColor = calculatePhenotype(
           resolvedColorGenotype,
           breedGeneticProfile?.shade_bias ?? null,

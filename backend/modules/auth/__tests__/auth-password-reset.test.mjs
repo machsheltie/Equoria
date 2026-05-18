@@ -386,18 +386,12 @@ describe('Auth — Password Reset Integration', () => {
     });
 
     // Real flow: get a genuine, valid, unused token via forgot-password.
-    await request(app)
-      .post('/api/v1/auth/forgot-password')
-      .set('Origin', 'http://localhost:3000')
-      .send({ email });
+    await request(app).post('/api/v1/auth/forgot-password').set('Origin', 'http://localhost:3000').send({ email });
     const capturedRawToken = readCapturedResetToken();
     expect(capturedRawToken).not.toBeNull();
 
     const crypto = await import('crypto');
-    const tokenHash = crypto.default
-      .createHash('sha256')
-      .update(capturedRawToken)
-      .digest('hex');
+    const tokenHash = crypto.default.createHash('sha256').update(capturedRawToken).digest('hex');
 
     // Too short to satisfy the min:8 / complexity rule.
     const resetRes = await request(app)

@@ -78,12 +78,8 @@ describe('Equoria-5v6g: POST /api/grooms/interact auto-updates GroomHorseSynergy
   }, 60000);
 
   afterAll(async () => {
-    await prisma.groomHorseSynergy
-      .deleteMany({ where: { groomId: groom?.id } })
-      .catch(() => {});
-    await prisma.groomInteraction
-      .deleteMany({ where: { foalId: foal?.id } })
-      .catch(() => {});
+    await prisma.groomHorseSynergy.deleteMany({ where: { groomId: groom?.id } }).catch(() => {});
+    await prisma.groomInteraction.deleteMany({ where: { foalId: foal?.id } }).catch(() => {});
     await prisma.horse.delete({ where: { id: foal?.id } }).catch(() => {});
     await prisma.groom.deleteMany({ where: { userId: user?.id } }).catch(() => {});
     await prisma.user.delete({ where: { id: user?.id } }).catch(() => {});
@@ -173,12 +169,8 @@ describe('Equoria-5v6g: POST /api/grooms/interact auto-updates GroomHorseSynergy
       expect(updated.sessionsTogether).toBe(4);
       expect(updated.synergyScore).toBe(1);
     } finally {
-      await prisma.groomHorseSynergy
-        .deleteMany({ where: { horseId: freshFoal.id } })
-        .catch(() => {});
-      await prisma.groomInteraction
-        .deleteMany({ where: { foalId: freshFoal.id } })
-        .catch(() => {});
+      await prisma.groomHorseSynergy.deleteMany({ where: { horseId: freshFoal.id } }).catch(() => {});
+      await prisma.groomInteraction.deleteMany({ where: { foalId: freshFoal.id } }).catch(() => {});
       await prisma.horse.delete({ where: { id: freshFoal.id } }).catch(() => {});
     }
   }, 30000);

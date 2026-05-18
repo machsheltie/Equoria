@@ -17,10 +17,7 @@
 import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import {
-  processRetirement,
-  RETIREMENT_REASONS,
-} from '../../../services/groomRetirementService.mjs';
+import { processRetirement, RETIREMENT_REASONS } from '../../../services/groomRetirementService.mjs';
 import { LEGACY_PERKS } from '../../../services/groomLegacyService.mjs';
 
 const TAG = `c0vo-${randomBytes(4).toString('hex')}`;
@@ -96,7 +93,7 @@ describe('Equoria-c0vo: processRetirement auto-creates GroomLegacyLog for level-
     expect(legacyRow).not.toBeNull();
     expect(legacyRow.legacyGroomId).toBe(protege.id);
     expect(legacyRow.mentorLevel).toBe(8);
-    const calmPerkIds = LEGACY_PERKS.calm.map((p) => p.id);
+    const calmPerkIds = LEGACY_PERKS.calm.map(p => p.id);
     expect(calmPerkIds).toContain(legacyRow.inheritedPerk);
   }, 30000);
 

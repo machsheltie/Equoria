@@ -72,6 +72,13 @@ export interface Horse {
   // Epic 31D — innate behavioural temperament (one of 11 types). May be null
   // on legacy horses that predate the temperament system (Equoria-8k7k).
   temperament?: string | null;
+  // Epic 31F-FE-2 / Equoria-8xfo — conformation title fields from the
+  // /horses/:id payload. currentTitle is null for never-shown horses;
+  // titlePoints starts at 0; breedingValueBoost is a 0..N multiplier
+  // (0.10 == +10%). Optional because legacy horses predate the title system.
+  currentTitle?: string | null;
+  titlePoints?: number;
+  breedingValueBoost?: number;
   // Epic 31E-3 / Equoria-ga5g — markings generated alongside coat color and
   // stored on Horse.phenotype JSONB by markingGenerationService.mjs. Optional
   // because legacy horses (created before 31E-3) won't have markings on the

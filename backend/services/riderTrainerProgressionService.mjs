@@ -22,11 +22,15 @@ const LEVEL_CAP = 10;
  * Level 1: 0-99, Level 2: 100-299, Level 3: 300-599, etc.
  */
 export function calculateLevel(experience) {
-  if (experience < 100) return 1;
+  if (experience < 100) {
+    return 1;
+  }
   let total = 0;
   for (let level = 1; level <= LEVEL_CAP; level++) {
     const xpForLevel = 100 * level;
-    if (experience < total + xpForLevel) return level;
+    if (experience < total + xpForLevel) {
+      return level;
+    }
     total += xpForLevel;
   }
   return LEVEL_CAP;
@@ -74,7 +78,12 @@ async function awardXpAndRecomputeLevel(client, kind, id, source, xpAmount, pres
   try {
     const current = await client.findUnique({
       where: { id },
-      select: { id: true, experience: true, level: true, ...(kind === 'rider' ? { prestige: true } : {}) },
+      select: {
+        id: true,
+        experience: true,
+        level: true,
+        ...(kind === 'rider' ? { prestige: true } : {}),
+      },
     });
     if (!current) {
       logger.warn(

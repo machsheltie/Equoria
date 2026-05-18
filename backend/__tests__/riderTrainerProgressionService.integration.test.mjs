@@ -87,9 +87,7 @@ describe('Equoria-r1nr: rider/trainer progression service', () => {
   it('awardRiderCompetitionXP(1st place) bumps experience, prestige, and recomputes level', async () => {
     const updated = await awardRiderCompetitionXP(rider.id, 1);
     expect(updated).not.toBeNull();
-    expect(updated.experience).toBe(
-      RIDER_XP_REWARDS.competition_entered + RIDER_XP_REWARDS.placement_1st,
-    );
+    expect(updated.experience).toBe(RIDER_XP_REWARDS.competition_entered + RIDER_XP_REWARDS.placement_1st);
     expect(updated.prestige).toBe(RIDER_PRESTIGE_BUMPS.placement_1st);
     expect(updated.level).toBe(1); // 30 XP is still level 1
   });
@@ -120,9 +118,7 @@ describe('Equoria-r1nr: rider/trainer progression service', () => {
   it('awardTrainerSessionXP(statGain=true) awards both session + stat-gain XP', async () => {
     const updated = await awardTrainerSessionXP(trainer.id, true);
     expect(updated).not.toBeNull();
-    expect(updated.experience).toBe(
-      TRAINER_XP_REWARDS.session_completed + TRAINER_XP_REWARDS.stat_gain_session,
-    );
+    expect(updated.experience).toBe(TRAINER_XP_REWARDS.session_completed + TRAINER_XP_REWARDS.stat_gain_session);
     expect(updated.level).toBe(1);
   });
 

@@ -158,7 +158,7 @@ async function rerollDefaultSignatureHorses() {
 
 async function main() {
   const startedAt = new Date();
-  console.log(`\n=== seed-breed-genetic-profile.mjs ===`);
+  console.log('\n=== seed-breed-genetic-profile.mjs ===');
   console.log(`  Started: ${startedAt.toISOString()}`);
   console.log(`  Mode: ${DRY_RUN ? 'DRY RUN (no writes)' : 'WRITE'}`);
   console.log(`  Skip re-roll: ${SKIP_REROLL}`);
@@ -226,7 +226,7 @@ async function main() {
     console.error(`  Failed to write audit log: ${err.message}`);
   }
 
-  console.log(`\n=== Complete ===\n`);
+  console.log('\n=== Complete ===\n');
   await prisma.$disconnect();
 }
 

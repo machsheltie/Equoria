@@ -249,7 +249,7 @@ async function runRiderTrainerRetirement() {
     logger.info('[cronJobService] Starting rider/trainer auto-retirement pass...');
     const results = await processRiderTrainerRetirement();
     logger.info(
-      `[cronJobService] Rider/trainer auto-retirement complete. ` +
+      '[cronJobService] Rider/trainer auto-retirement complete. ' +
         `Riders retired: ${results.riders.retiredCount}; ` +
         `trainers retired: ${results.trainers.retiredCount}.`,
     );

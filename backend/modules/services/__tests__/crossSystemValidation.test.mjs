@@ -19,7 +19,6 @@ import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 
 describe('Cross-System Boundary Validation', () => {
-  let csrf;
   let testUser;
   let authToken;
   let testBreed;
@@ -27,7 +26,8 @@ describe('Cross-System Boundary Validation', () => {
   let testGroom;
 
   beforeAll(async () => {
-    csrf = await fetchCsrf(app);
+    // csrf cookie/token primed as a side-effect; return value unused here
+    await fetchCsrf(app);
 
     const timestamp = Date.now();
     const suffix = timestamp.toString().slice(-6);
@@ -144,20 +144,14 @@ describe('Cross-System Boundary Validation', () => {
   });
 
   test('Health endpoint contract: GET /health returns success envelope used by Railway probes', async () => {
-    const res = await request(app)
-      .get('/health')
-      .set('Origin', 'http://localhost:3000')
-      .expect(200);
+    const res = await request(app).get('/health').set('Origin', 'http://localhost:3000').expect(200);
 
     expect(res.body.success).toBe(true);
     expect(res.body.message).toBe('Server is healthy');
   });
 
   test('Swagger contract: GET /api-docs/swagger.json exposes OpenAPI v3 paths used by frontend client', async () => {
-    const res = await request(app)
-      .get('/api-docs/swagger.json')
-      .set('Origin', 'http://localhost:3000')
-      .expect(200);
+    const res = await request(app).get('/api-docs/swagger.json').set('Origin', 'http://localhost:3000').expect(200);
 
     expect(res.body).toHaveProperty('openapi');
     expect(res.body).toHaveProperty('paths');

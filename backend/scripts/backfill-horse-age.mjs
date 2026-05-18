@@ -42,10 +42,13 @@ const MS_PER_DAY = 1000 * 60 * 60 * 24;
 function parseArgs(argv) {
   const args = { dryRun: false, limit: null, quiet: false };
   for (const a of argv.slice(2)) {
-    if (a === '--print-only' || a === '--dry-run') args.dryRun = true;
-    else if (a === '--quiet') args.quiet = true;
-    else if (a.startsWith('--limit=')) args.limit = Number(a.slice('--limit='.length));
-    else if (a === '--limit') {
+    if (a === '--print-only' || a === '--dry-run') {
+      args.dryRun = true;
+    } else if (a === '--quiet') {
+      args.quiet = true;
+    } else if (a.startsWith('--limit=')) {
+      args.limit = Number(a.slice('--limit='.length));
+    } else if (a === '--limit') {
       // handled below if value supplied as next token — but keep simple form
     }
   }
@@ -53,9 +56,13 @@ function parseArgs(argv) {
 }
 
 function ageInGameYears(dob, now = new Date()) {
-  if (!dob) return null;
+  if (!dob) {
+    return null;
+  }
   const diffMs = now.getTime() - new Date(dob).getTime();
-  if (diffMs < 0) return 0;
+  if (diffMs < 0) {
+    return 0;
+  }
   const days = Math.floor(diffMs / MS_PER_DAY);
   return Math.floor(days / DAYS_PER_GAME_YEAR);
 }
@@ -69,7 +76,9 @@ async function main() {
   console.log('  backfill-horse-age (Equoria-y7df)');
   console.log(`  Mode: ${args.dryRun ? 'DRY-RUN (no writes)' : 'WET RUN'}`);
   console.log(`  Now:  ${now.toISOString()}`);
-  if (args.limit) console.log(`  Limit: ${args.limit}`);
+  if (args.limit) {
+    console.log(`  Limit: ${args.limit}`);
+  }
   console.log('═══════════════════════════════════════════════════════════');
 
   // BEFORE snapshot
@@ -164,7 +173,9 @@ async function main() {
     }
 
     lastId = batch[batch.length - 1].id;
-    if (args.limit && processed >= args.limit) break;
+    if (args.limit && processed >= args.limit) {
+      break;
+    }
   }
 
   // AFTER snapshot (skip in dry-run since nothing changed)
@@ -189,7 +200,9 @@ async function main() {
   console.log('═══════════════════════════════════════════════════════════');
 
   await prisma.$disconnect();
-  if (failed > 0) process.exit(1);
+  if (failed > 0) {
+    process.exit(1);
+  }
 }
 
 main().catch(err => {

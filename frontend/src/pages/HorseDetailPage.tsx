@@ -424,14 +424,6 @@ const HorseDetailPage: React.FC = () => {
     titlePoints: (horseRaw as unknown as { titlePoints?: number }).titlePoints ?? 0,
     breedingValueBoost:
       (horseRaw as unknown as { breedingValueBoost?: number }).breedingValueBoost ?? 0,
-    // Equoria-gncv — Epic 31D innate behavioural temperament (one of 11 types,
-    // or null on legacy horses that predate the temperament system). This was
-    // previously omitted from the hand-built `horse` object, so the
-    // `horse-temperament-value` line and the `highlightTemperament` prop on
-    // TemperamentReferenceModal ALWAYS fell back regardless of the real DB
-    // value. `getHorseById` returns the full Horse row (no `select`), so the
-    // raw column is always present in the payload when set.
-    temperament: (horseRaw as unknown as { temperament?: string | null }).temperament ?? null,
   };
 
   // Tab configuration

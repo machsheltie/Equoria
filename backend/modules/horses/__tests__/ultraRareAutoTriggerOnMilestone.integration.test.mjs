@@ -20,10 +20,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import {
-  evaluateEnhancedMilestone,
-  MILESTONE_TYPES,
-} from '../../../utils/enhancedMilestoneEvaluationSystem.mjs';
+import { evaluateEnhancedMilestone, MILESTONE_TYPES } from '../../../utils/enhancedMilestoneEvaluationSystem.mjs';
 
 const TAG = `d4tl-${randomBytes(4).toString('hex')}`;
 
@@ -64,9 +61,7 @@ describe('Equoria-d4tl: evaluateEnhancedMilestone auto-runs ultra-rare evaluatio
   }, 60000);
 
   afterAll(async () => {
-    await prisma.ultraRareTraitEvent
-      .deleteMany({ where: { horseId: foal?.id } })
-      .catch(() => {});
+    await prisma.ultraRareTraitEvent.deleteMany({ where: { horseId: foal?.id } }).catch(() => {});
     await prisma.milestoneTraitLog.deleteMany({ where: { horseId: foal?.id } }).catch(() => {});
     await prisma.horse.delete({ where: { id: foal?.id } }).catch(() => {});
     await prisma.user.delete({ where: { id: user?.id } }).catch(() => {});
@@ -91,8 +86,7 @@ describe('Equoria-d4tl: evaluateEnhancedMilestone auto-runs ultra-rare evaluatio
     // If any traits triggered, an equal number of UltraRareTraitEvent rows
     // must now exist for this horse.
     const totalTriggered =
-      result.ultraRareEvaluation.ultraRareResults.length +
-      result.ultraRareEvaluation.exoticResults.length;
+      result.ultraRareEvaluation.ultraRareResults.length + result.ultraRareEvaluation.exoticResults.length;
     const eventRows = await prisma.ultraRareTraitEvent.count({
       where: { horseId: foal.id },
     });

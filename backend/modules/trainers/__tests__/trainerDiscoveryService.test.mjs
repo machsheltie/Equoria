@@ -9,10 +9,7 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import prisma from '../../../../packages/database/prismaClient.mjs';
-import {
-  readDiscoverySlots,
-  writeDiscoverySlots,
-} from '../services/trainerDiscoveryService.mjs';
+import { readDiscoverySlots, writeDiscoverySlots } from '../services/trainerDiscoveryService.mjs';
 
 let trainer;
 
