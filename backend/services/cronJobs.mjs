@@ -8,6 +8,7 @@ import {
 } from '../utils/horseAgingSystem.mjs';
 import { incrementWeeklyCareerWeeks } from './riderTrainerProgressionService.mjs';
 import { purgeExpiredAuditLogs } from './auditLogRetentionService.mjs';
+import { decayHoofConditions } from './hoofConditionDecayService.mjs';
 import { executeClosedShows } from '../modules/competition/shows/showController.mjs';
 import { Sentry } from '../config/sentry.mjs';
 
@@ -82,6 +83,8 @@ const JOB_STALENESS_MS = {
   nightlyShowExecution: 30 * 60 * 60 * 1000,
   // Equoria-54qq8: audit-log retention purge runs nightly at 03:30 UTC.
   auditLogRetention: 30 * 60 * 60 * 1000,
+  // Equoria-gg3v: hoof-condition decay runs nightly at 03:45 UTC.
+  hoofConditionDecay: 30 * 60 * 60 * 1000,
 };
 
 class CronJobService {
@@ -369,6 +372,24 @@ class CronJobService {
       },
     );
 
+    // Equoria-gg3v: nightly hoof-condition decay (farrier re-booking loop).
+    // Runs at 03:45 UTC — after auditLogRetention (03:30) so nightly jobs
+    // stay staggered. Decay-only, scoped updateMany; expected level is a pure
+    // function of elapsed days since lastFarrierDate so the job is idempotent
+    // regardless of how many times it fires. Wrapped in runWithHeartbeat so
+    // /api/admin/cron/health surfaces staleness; errors bubble to the
+    // heartbeat layer and never crash the process.
+    const hoofConditionDecayJob = cron.schedule(
+      '45 3 * * *',
+      async () => {
+        await this.runWithHeartbeat('hoofConditionDecay', () => this.decayHoofConditions());
+      },
+      {
+        scheduled: false,
+        timezone: 'UTC',
+      },
+    );
+
     this.jobs.set('dailyTraitEvaluation', dailyTraitJob);
     this.jobs.set('dailyHorseAging', dailyAgingJob);
     this.jobs.set('dailyFoalMilestoneEvaluation', dailyMilestoneJob);
@@ -376,6 +397,7 @@ class CronJobService {
     this.jobs.set('electionStatusTransition', electionTransitionJob);
     this.jobs.set('nightlyShowExecution', nightlyShowExecutionJob);
     this.jobs.set('auditLogRetention', auditLogRetentionJob);
+    this.jobs.set('hoofConditionDecay', hoofConditionDecayJob);
 
     // Start all jobs
     this.jobs.forEach((job, name) => {
@@ -752,6 +774,39 @@ class CronJobService {
       return result;
     } catch (error) {
       logger.error(`[CronJobService.purgeExpiredAuditLogs] Error: ${error.message}`);
+      throw error;
+    }
+  }
+
+  /**
+   * Equoria-gg3v: nightly hoof-condition decay (farrier re-booking loop).
+   *
+   * Delegates to hoofConditionDecayService.decayHoofConditions(), a
+   * decay-only scoped updateMany that steps a horse's hoofCondition down one
+   * rung per elapsed HOOF_CONDITION_DECAY_DAYS interval since its last
+   * farrier visit. The returned summary ({ decayedCount, decayDays,
+   * transitions }) flows into the heartbeat layer so /api/admin/cron/health
+   * surfaces what decayed.
+   *
+   * Failure mode: errors bubble up so runWithHeartbeat records them; the
+   * cron service does NOT crash. Logged at error level for ops triage.
+   *
+   * @returns {Promise<{ decayedCount: number, decayDays: number,
+   *                      transitions: Array<{from:string,to:string,count:number}> }>}
+   */
+  async decayHoofConditions() {
+    const startTime = Date.now();
+    logger.info('[CronJobService.decayHoofConditions] Starting hoof-condition decay');
+    try {
+      const result = await decayHoofConditions();
+      const duration = Date.now() - startTime;
+      logger.info(
+        `[CronJobService.decayHoofConditions] Completed in ${duration}ms — ` +
+          `decayed ${result.decayedCount} horse(s), interval ${result.decayDays}d`,
+      );
+      return result;
+    } catch (error) {
+      logger.error(`[CronJobService.decayHoofConditions] Error: ${error.message}`);
       throw error;
     }
   }
