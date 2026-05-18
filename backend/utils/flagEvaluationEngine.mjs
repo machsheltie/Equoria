@@ -23,6 +23,17 @@ import {
   FLAG_EVALUATION_AGE_RANGE,
 } from '../config/epigeneticFlagDefinitions.mjs';
 import { analyzeCarePatterns } from './carePatternAnalysis.mjs';
+import { getHorseAgeYears } from './horseAge.mjs';
+
+// Equoria-wpqr: FLAG_EVALUATION_AGE_RANGE is expressed in canonical
+// game-years (1 game-week = 1 game-year = 7 real days). The DB-level
+// getEligibleHorses() window needs a real-day delta, so convert the
+// game-year bound to real days here rather than the old `* 365.25`
+// calendar-year constant. This duplicates DAYS_PER_GAME_YEAR from
+// backend/utils/horseAge.mjs (kept module-private there) as a named
+// constant rather than widening that module's API for one caller.
+const REAL_DAYS_PER_GAME_YEAR = 7;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 /**
  * Evaluate flags for a specific horse
@@ -51,14 +62,20 @@ export async function evaluateHorseFlags(horseId, evaluationDate = new Date()) {
       throw new Error(`Horse with ID ${horseId} not found`);
     }
 
-    // Check age eligibility
-    const ageInYears =
-      (evaluationDate - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24 * 365.25);
+    // Equoria-wpqr: canonical game-years (1 game-week = 1 game-year,
+    // floor(ageDays / 7), date-only UTC) via the single-source-of-truth
+    // helper, NOT raw calendar `/ 365.25` math. The calendar reading made
+    // the FLAG_EVALUATION_AGE_RANGE gate below effectively never reject
+    // real game-aged horses: a 35-real-day-old horse is 5 game-years
+    // (canonically OUT of the 0-3 range) but the old math computed
+    // ageInYears ≈ 0.10 and wrongly treated it as in-range. Mirrors
+    // Equoria-z183 (carePatternAnalysis) / Equoria-8qu4 / Equoria-rkld.
+    const ageInYears = getHorseAgeYears(horse.dateOfBirth, evaluationDate);
 
     if (ageInYears < FLAG_EVALUATION_AGE_RANGE.MIN || ageInYears >= FLAG_EVALUATION_AGE_RANGE.MAX) {
       return {
         success: false,
-        reason: `Horse age ${ageInYears.toFixed(2)} years is outside evaluation range (${FLAG_EVALUATION_AGE_RANGE.MIN}-${FLAG_EVALUATION_AGE_RANGE.MAX} years)`,
+        reason: `Horse age ${ageInYears} game-years is outside evaluation range (${FLAG_EVALUATION_AGE_RANGE.MIN}-${FLAG_EVALUATION_AGE_RANGE.MAX} game-years)`,
         horseId,
         horseName: horse.name,
         currentFlags: horse.epigeneticFlags || [],
@@ -139,7 +156,9 @@ export async function evaluateHorseFlags(horseId, evaluationDate = new Date()) {
       success: true,
       horseId,
       horseName: horse.name,
-      ageInYears: ageInYears.toFixed(2),
+      // Equoria-wpqr: integer canonical game-years (was .toFixed(2) on the
+      // old fractional calendar value — now an integer from getHorseAgeYears).
+      ageInYears,
       currentFlags,
       newFlags,
       totalFlags: currentFlags.length + newFlags.length,
@@ -315,11 +334,22 @@ export async function batchEvaluateFlags(horseIds, evaluationDate = new Date()) 
  */
 export async function getEligibleHorses(evaluationDate = new Date()) {
   try {
+    // Equoria-wpqr: derive the birthdate window from canonical game-years,
+    // not calendar `* 365.25` years. MAX game-years maps to
+    // MAX * 7 real days; a horse born more than that many real days ago is
+    // past the developmental window. MIN game-years (0) maps to "born now
+    // or earlier". Without this conversion a 35-real-day-old horse
+    // (5 game-years, out of range) fell inside a ~3-calendar-year window
+    // and was wrongly returned as eligible. This is a coarse DB pre-filter;
+    // evaluateHorseFlags re-checks each horse with the authoritative
+    // getHorseAgeYears gate.
     const minBirthDate = new Date(
-      evaluationDate.getTime() - FLAG_EVALUATION_AGE_RANGE.MAX * 365.25 * 24 * 60 * 60 * 1000,
+      evaluationDate.getTime() -
+        FLAG_EVALUATION_AGE_RANGE.MAX * REAL_DAYS_PER_GAME_YEAR * MS_PER_DAY,
     );
     const maxBirthDate = new Date(
-      evaluationDate.getTime() - FLAG_EVALUATION_AGE_RANGE.MIN * 365.25 * 24 * 60 * 60 * 1000,
+      evaluationDate.getTime() -
+        FLAG_EVALUATION_AGE_RANGE.MIN * REAL_DAYS_PER_GAME_YEAR * MS_PER_DAY,
     );
 
     const eligibleHorses = await prisma.horse.findMany({

@@ -34,7 +34,16 @@ let groomId;
 
 const daysAgo = n => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
 const yearsAgo = n => new Date(Date.now() - n * 365.25 * 24 * 60 * 60 * 1000);
-const monthsAgo = n => new Date(Date.now() - n * 30 * 24 * 60 * 60 * 1000);
+
+// Equoria-wpqr/z183: epigenetic flag evaluation gates on canonical
+// GAME-years (1 game-week = 1 game-year, floor(ageDays / 7)). A horse is
+// eligible only while < 3 game-years old, i.e. born < 21 real days ago.
+// The previous default fixture (monthsAgo(12) ≈ 360 real days = 51
+// game-years) was only "eligible" because of the now-fixed calendar-year
+// bug. Use a deliberately game-young DOB (14 real days → 2 game-years →
+// eligible) so flag-trigger assertions exercise the real eligible path.
+// Interaction fixtures reach back to daysAgo(6), still after a 14-day birth.
+const ELIGIBLE_DOB = () => daysAgo(14);
 
 // ─── fixtures ─────────────────────────────────────────────────────────────────
 
@@ -43,7 +52,7 @@ async function mkHorse(suffix, opts = {}) {
     data: {
       name: `${PREFIX}${suffix}`,
       sex: 'Colt',
-      dateOfBirth: opts.dateOfBirth ?? monthsAgo(12),
+      dateOfBirth: opts.dateOfBirth ?? ELIGIBLE_DOB(),
       age: opts.age ?? 1,
       userId: USER_ID,
       bondScore: opts.bondScore ?? 50,
@@ -284,6 +293,28 @@ describe('evaluateHorseFlags', () => {
     }
   });
 
+  // Equoria-wpqr SENTINEL-POSITIVE (OPTIMAL_FIX_DISCIPLINE §2):
+  // A 35-real-day-old horse is canonically floor(35 / 7) = 5 game-years
+  // old, outside FLAG_EVALUATION_AGE_RANGE (MAX = 3 game-years) → must be
+  // rejected. The pre-fix calendar math computed
+  // ageInYears = 35 / 365.25 ≈ 0.096 → inside the 0..3 range → it WRONGLY
+  // returned success/eligible. Fails on old calendar math, passes on the
+  // game-years fix.
+  test('SENTINEL: 35-day-old horse is 5 game-years and rejected (old calendar math gave 0.10 yr → wrongly eligible)', async () => {
+    const horse = await mkHorse('WpqrSentinel', { dateOfBirth: daysAgo(35), age: 5 });
+    try {
+      const result = await evaluateHorseFlags(horse.id);
+
+      expect(result.success).toBe(false);
+      expect(result.reason).toContain('outside evaluation range');
+      // Reason reports canonical game-years (5), not calendar 0.10.
+      expect(result.reason).toContain('5');
+      expect(result.newFlags).toHaveLength(0);
+    } finally {
+      await rmHorse(horse.id);
+    }
+  });
+
   test('rejects horse that already has the maximum number of flags (5)', async () => {
     const horse = await mkHorse('MaxFlags', {
       epigeneticFlags: ['brave', 'confident', 'affectionate', 'resilient', 'fearful'],
@@ -436,6 +467,35 @@ describe('getEligibleHorses', () => {
       await rmHorse(eligible.id);
       await rmHorse(tooOld.id);
       await rmHorse(atMax.id);
+    }
+  });
+
+  // Equoria-wpqr SENTINEL-POSITIVE for the getEligibleHorses birthdate
+  // window (flagEvaluationEngine.mjs :337/:340). The window must be derived
+  // from game-years: MAX = 3 game-years = 21 real days, so a horse born 35
+  // real days ago (5 game-years) is OUT of window. The pre-fix code built
+  // the window with `* 365.25 * 24h` (calendar years): minBirthDate would
+  // be ~3 calendar years ago, so a 35-day-old horse fell INSIDE the window
+  // and was wrongly returned as eligible. Fails on old math, passes on fix.
+  test('SENTINEL: 35-day-old horse (5 game-years) excluded from getEligibleHorses (old calendar window wrongly included it)', async () => {
+    const tooOldGameYears = await mkHorse('WpqrEligSentinel', {
+      dateOfBirth: daysAgo(35),
+      age: 5,
+      epigeneticFlags: [],
+    });
+    const stillEligible = await mkHorse('WpqrEligOk', {
+      dateOfBirth: daysAgo(14),
+      age: 2,
+      epigeneticFlags: [],
+    });
+    try {
+      const ids = await getEligibleHorses();
+
+      expect(ids).not.toContain(tooOldGameYears.id); // 5 game-years → out of window
+      expect(ids).toContain(stillEligible.id); // 2 game-years → in window
+    } finally {
+      await rmHorse(tooOldGameYears.id);
+      await rmHorse(stillEligible.id);
     }
   });
 });

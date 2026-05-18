@@ -112,10 +112,16 @@ describe('evaluateHorseFlags', () => {
     }
   });
 
-  it('returns ageInYears as string for eligible horse', async () => {
+  // Equoria-wpqr: ageInYears is now an integer count of canonical
+  // game-years (getHorseAgeYears), not the old fractional calendar-year
+  // string from `.toFixed(2)`. A just-born foal (dob = now) is 0
+  // game-years old and eligible.
+  it('returns ageInYears as an integer number of game-years for eligible horse', async () => {
     const result = await evaluateHorseFlags(foal.id);
     if (result.success) {
-      expect(typeof result.ageInYears).toBe('string');
+      expect(typeof result.ageInYears).toBe('number');
+      expect(Number.isInteger(result.ageInYears)).toBe(true);
+      expect(result.ageInYears).toBe(0);
     }
   });
 });
