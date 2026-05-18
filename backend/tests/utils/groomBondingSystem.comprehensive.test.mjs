@@ -53,73 +53,72 @@ import {
 
 describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
   describe('Age-Based Task Eligibility', () => {
-    it('should return enrichment tasks for newborn foals (0-2 years)', () => {
-      const ageInDays = 5; // 5 days old = 0.7 years in game time
-      const eligibleTasks = getEligibleTasksForAge(ageInDays);
+    // Equoria-iptd: post Equoria-son6, getEligibleTasksForAge takes game-years
+    // directly (no /7 day conversion). The prior fixtures passed stale day
+    // values (5, 10, 25, 7/14/21) under foal/yearling/mature titles while only
+    // asserting length>0 / typeof string — vacuous: the same assertions passed
+    // for ANY age because every band cumulatively includes enrichment tasks.
+    // Strengthened to sentinel-positive: correct game-year fixtures + assert on
+    // the band-specific task SET so a regression in the age→band mapping fails.
+    it('should return ONLY enrichment tasks for newborn foals (0-2 game-years)', () => {
+      const eligibleTasks = getEligibleTasksForAge(0.5); // 0.5 game-years = young foal
 
       expect(Array.isArray(eligibleTasks)).toBe(true);
-      expect(eligibleTasks.length).toBeGreaterThan(0);
-
-      // Should include enrichment tasks for very young foals
-      const hasEnrichmentTasks = eligibleTasks.some(
-        task => task.includes('desensitization') || task.includes('trust_building') || task.includes('early_touch'),
-      );
-      expect(hasEnrichmentTasks).toBe(true);
+      // Enrichment-only band: exactly the foal enrichment task pool, NOT grooming.
+      expect(eligibleTasks).toEqual(expect.arrayContaining(['desensitization', 'trust_building', 'early_touch']));
+      // Sentinel: foal grooming + general grooming tasks must NOT appear at age 0.5.
+      expect(eligibleTasks).not.toContain('hoof_handling'); // foal-grooming (1-3)
+      expect(eligibleTasks).not.toContain('brushing'); // general-grooming (3+)
     });
 
-    it('should return appropriate tasks for young foals (1-2 years)', () => {
-      const ageInDays = 10; // 10 days old = 1.4 years in game time
-      const eligibleTasks = getEligibleTasksForAge(ageInDays);
+    it('should return enrichment + foal-grooming for young foals in overlap (1-2 game-years)', () => {
+      const eligibleTasks = getEligibleTasksForAge(1.5); // 1.5 game-years = overlap band
 
       expect(Array.isArray(eligibleTasks)).toBe(true);
-      expect(eligibleTasks.length).toBeGreaterThan(0);
-
-      // Should include both enrichment and early grooming tasks
-      eligibleTasks.forEach(task => {
-        expect(typeof task).toBe('string');
-        expect(task.length).toBeGreaterThan(0);
-      });
+      // Overlap band: enrichment AND foal-grooming tasks present.
+      expect(eligibleTasks).toContain('desensitization'); // enrichment
+      expect(eligibleTasks).toContain('hoof_handling'); // foal-grooming (1-3)
+      // Sentinel: general (3+) grooming must NOT appear yet at age 1.5.
+      expect(eligibleTasks).not.toContain('brushing');
     });
 
-    it('should return grooming tasks for yearlings (1-2 years)', () => {
-      const ageInDays = 10; // 10 days = 1.4 years in game time
-      const eligibleTasks = getEligibleTasksForAge(ageInDays);
+    it('should NOT include general-grooming tasks for a 2-game-year yearling', () => {
+      const eligibleTasks = getEligibleTasksForAge(2); // 2 game-years
 
       expect(Array.isArray(eligibleTasks)).toBe(true);
-      expect(eligibleTasks.length).toBeGreaterThan(0);
-
-      // Should include grooming tasks appropriate for yearlings
-      eligibleTasks.forEach(task => {
-        expect(typeof task).toBe('string');
-      });
+      expect(eligibleTasks).toContain('hoof_handling'); // foal-grooming (1-3)
+      // Sentinel: 2 < GENERAL_GROOMING_MIN_AGE (3) — general tasks excluded.
+      expect(eligibleTasks).not.toContain('brushing');
+      expect(eligibleTasks).not.toContain('hand-walking');
     });
 
-    it('should return general tasks for mature horses (3+ years)', () => {
-      const ageInDays = 25; // 25 days = 3.6 years in game time
-      const eligibleTasks = getEligibleTasksForAge(ageInDays);
+    it('should return general-grooming tasks for mature horses (3+ game-years)', () => {
+      const eligibleTasks = getEligibleTasksForAge(4); // 4 game-years = mature
 
       expect(Array.isArray(eligibleTasks)).toBe(true);
-      expect(eligibleTasks.length).toBeGreaterThan(0);
-
-      // Should include general care tasks for mature horses
-      eligibleTasks.forEach(task => {
-        expect(typeof task).toBe('string');
-        expect(task.length).toBeGreaterThan(0);
-      });
+      // Mature band includes the full cumulative pool: enrichment + foal + general.
+      expect(eligibleTasks).toContain('desensitization'); // enrichment (still present)
+      expect(eligibleTasks).toContain('hoof_handling'); // foal-grooming
+      expect(eligibleTasks).toContain('brushing'); // general-grooming (3+)
+      expect(eligibleTasks).toContain('hand-walking'); // general-grooming (3+)
     });
 
-    it('should handle age boundary conditions correctly', () => {
-      const boundaryAges = [
-        7, // Exactly 1 year in game time
-        14, // Exactly 2 years in game time
-        21, // Exactly 3 years in game time
-      ];
+    it('should switch task pools exactly at the 3-game-year general-grooming boundary', () => {
+      // Sentinel boundary test: 2.99 (below) vs 3 (at threshold).
+      // Band model (getEligibleTasksForAge): enrichment 0-2, foal-grooming 1-3,
+      // general (= enrichment+foal+general) 3+. Note enrichment is NOT cumulative:
+      // it drops out in the (2,3) window and only returns at the 3+ "all tasks" band.
+      const justUnder = getEligibleTasksForAge(2.99);
+      const atThreshold = getEligibleTasksForAge(3);
 
-      boundaryAges.forEach(age => {
-        const eligibleTasks = getEligibleTasksForAge(age);
-        expect(Array.isArray(eligibleTasks)).toBe(true);
-        expect(eligibleTasks.length).toBeGreaterThanOrEqual(0);
-      });
+      // Below 3: only foal-grooming, no general-grooming, and no enrichment
+      // (2.99 > FOAL_ENRICHMENT_MAX_AGE=2 and < GENERAL_GROOMING_MIN_AGE=3).
+      expect(justUnder).toContain('hoof_handling'); // foal-grooming (1-3)
+      expect(justUnder).not.toContain('brushing'); // general not yet
+      expect(justUnder).not.toContain('desensitization'); // enrichment dropped out at >2
+      // At exactly 3: the 3+ band re-adds enrichment + foal + general.
+      expect(atThreshold).toContain('brushing'); // general-grooming
+      expect(atThreshold).toContain('desensitization'); // enrichment back in 3+ band
     });
   });
 
