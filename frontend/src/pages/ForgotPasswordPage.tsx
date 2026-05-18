@@ -85,7 +85,7 @@ const ForgotPasswordPage: React.FC = () => {
                 sent instructions to reset your password.
               </p>
 
-              <p className="text-xs text-[rgb(148,163,184)]">
+              <p className="text-xs text-slate-400">
                 The link will expire in 1 hour. Check your spam folder if you don't see it.
               </p>
 
@@ -112,7 +112,7 @@ const ForgotPasswordPage: React.FC = () => {
               {/* Back link */}
               <Link
                 to="/login"
-                className="inline-flex items-center gap-1.5 text-xs text-[rgb(148,163,184)] hover:text-white transition-colors"
+                className="inline-flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-colors"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 Back to Login
@@ -123,7 +123,7 @@ const ForgotPasswordPage: React.FC = () => {
                 <h2 className="fantasy-header text-xl" style={{ color: 'var(--gold-500)' }}>
                   Forgot Password?
                 </h2>
-                <p className="text-xs text-[rgb(148,163,184)]">
+                <p className="text-xs text-slate-400">
                   No worries! Enter your email and we'll send you reset instructions.
                 </p>
               </div>
@@ -140,7 +140,7 @@ const ForgotPasswordPage: React.FC = () => {
                 <div className="space-y-1">
                   <label
                     htmlFor="email"
-                    className="block text-xs text-[rgb(148,163,184)] uppercase tracking-wider"
+                    className="block text-xs text-slate-400 uppercase tracking-wider"
                   >
                     Email Address
                   </label>
@@ -169,7 +169,7 @@ const ForgotPasswordPage: React.FC = () => {
               </form>
 
               {/* Sign in link */}
-              <p className="text-center text-xs text-[rgb(148,163,184)] pt-1 border-t border-[rgba(30,55,100,0.5)]">
+              <p className="text-center text-xs text-slate-400 pt-1 border-t border-[rgba(30,55,100,0.5)]">
                 Remember your password?{' '}
                 <Link
                   to="/login"

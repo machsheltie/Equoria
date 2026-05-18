@@ -216,7 +216,7 @@ const VerifyEmailPage: React.FC = () => {
 
         {isAuthenticated ? (
           <div className="space-y-3 pt-1">
-            <p className="text-xs text-[rgb(148,163,184)]">
+            <p className="text-xs text-slate-400">
               Would you like us to send a new verification email?
             </p>
             <Button type="button" className="w-full" onClick={handleResend} disabled={isResending}>
@@ -245,7 +245,7 @@ const VerifyEmailPage: React.FC = () => {
           </div>
         ) : (
           <div className="space-y-2 pt-1">
-            <p className="text-xs text-[rgb(148,163,184)]">
+            <p className="text-xs text-slate-400">
               Please log in to request a new verification email.
             </p>
             <Button type="button" className="w-full" onClick={() => navigate('/login')}>
