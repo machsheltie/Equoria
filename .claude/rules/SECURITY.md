@@ -113,8 +113,8 @@ Equoria's defense lives at the request-parsing boundary in `backend/middleware/r
 
 Tests:
 
-- Unit: `backend/__tests__/middleware/requestBodySecurity.test.mjs`
-- Integration: `backend/__tests__/integration/security/parameter-pollution.test.mjs` (HTTP-chain coverage of all the above), `request-body-silent-catch.test.mjs` (fail-closed + sentinel-class dispatch contract), `request-body-depth-cap.test.mjs` (32-deep cap enforcement), `request-body-urlencoded-duplicate-key.test.mjs`.
+- Unit: `backend/modules/services/__tests__/requestBodySecurity.test.mjs`
+- Integration: `backend/modules/services/__tests__/parameter-pollution.test.mjs` (HTTP-chain coverage of all the above), `backend/modules/services/__tests__/request-body-silent-catch.test.mjs` (fail-closed + sentinel-class dispatch contract), `backend/modules/services/__tests__/request-body-depth-cap.test.mjs` (32-deep cap enforcement), `backend/modules/services/__tests__/request-body-urlencoded-duplicate-key.test.mjs`.
 
 ### **4. Rate Limiting & Anti-Automation**
 
@@ -340,8 +340,8 @@ RATE_LIMIT_MAX_REQUESTS=100
   - Load testing for rate limiting effectiveness
 - **OWASP Top 10 Coverage**:
   - Comprehensive test suite for A01-A10 categories
-  - 400+ security-specific test cases
-  - See `__tests__/integration/security/` for test files
+  - 240+ security-specific test cases (exact counts in SECURITY_ASSESSMENT_REPORT.md §3.1)
+  - See `backend/modules/services/__tests__/` for test files
 
 ### **Manual Testing**
 
@@ -361,7 +361,7 @@ RATE_LIMIT_MAX_REQUESTS=100
 - Resource ownership verification middleware
 - Protected route guards for sensitive endpoints
 - Audit logging for all access attempts
-- Test Coverage: `__tests__/integration/security/auth-bypass-attempts.test.mjs`, `ownership-violations.test.mjs`
+- Test Coverage: `backend/modules/services/__tests__/auth-bypass-attempts.test.mjs`, `backend/modules/services/__tests__/ownership-violations.test.mjs`
 
 ### **A02:2021 - Cryptographic Failures** ✅
 
@@ -379,7 +379,7 @@ RATE_LIMIT_MAX_REQUESTS=100
 - XSS prevention through input sanitization
 - SQL injection prevention via ORM
 - Command injection prevention
-- Test Coverage: `__tests__/integration/security/sql-injection-attempts.test.mjs`, `parameter-pollution.test.mjs`
+- Test Coverage: `backend/modules/services/__tests__/sql-injection-attempts.test.mjs`, `backend/modules/services/__tests__/parameter-pollution.test.mjs`
 
 ### **A04:2021 - Insecure Design** ✅
 
@@ -397,7 +397,7 @@ RATE_LIMIT_MAX_REQUESTS=100
 - Environment-based configuration
 - No default credentials
 - Error handling without information leakage
-- Test Coverage: `__tests__/integration/security/owasp-comprehensive.test.mjs` (A06 section)
+- Test Coverage: `backend/modules/services/__tests__/owasp-comprehensive.test.mjs` (misconfiguration section)
 
 ### **A06:2021 - Vulnerable and Outdated Components** ✅
 
@@ -415,7 +415,7 @@ RATE_LIMIT_MAX_REQUESTS=100
 - Refresh token rotation
 - Failed login attempt limiting
 - Session management with secure cookies
-- Test Coverage: `__tests__/integration/security/auth-bypass-attempts.test.mjs`, `rate-limit-enforcement.test.mjs`
+- Test Coverage: `backend/modules/services/__tests__/auth-bypass-attempts.test.mjs`, `backend/modules/services/__tests__/rate-limit-enforcement.test.mjs`
 
 ### **A08:2021 - Software and Data Integrity Failures** ✅
 
@@ -424,7 +424,7 @@ RATE_LIMIT_MAX_REQUESTS=100
 - Data integrity checks for critical operations
 - Protected stat fields
 - Unsigned code rejection
-- Test Coverage: `__tests__/integration/security/owasp-comprehensive.test.mjs` (A08 section)
+- Test Coverage: `backend/modules/services/__tests__/owasp-comprehensive.test.mjs` (A08 section)
 
 ### **A09:2021 - Security Logging and Monitoring Failures** ✅
 
@@ -434,7 +434,7 @@ RATE_LIMIT_MAX_REQUESTS=100
 - Ownership violation logging
 - Rate limit violation logging
 - Suspicious activity pattern detection
-- Test Coverage: `__tests__/integration/security/owasp-comprehensive.test.mjs` (A09 section), audit log middleware tests
+- Test Coverage: `backend/modules/services/__tests__/owasp-comprehensive.test.mjs` (A09 section), `backend/modules/services/__tests__/auditLog.test.mjs`
 
 ### **A10:2021 - Server-Side Request Forgery (SSRF)** ⚪ N/A — NO EXTERNAL-URL SURFACE
 

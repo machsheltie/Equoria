@@ -16,8 +16,9 @@
 > "infrastructure in place" claim removed (no MFA schema/code/routes exist);
 > audit-logging coverage corrected (Winston request logging is mounted, but
 > the `auditLog.mjs` DB-persistence path is explicitly _not implemented_); test
-> file paths corrected (`backend/modules/services/__tests__/`, not
-> `backend/__tests__/integration/security/`); fabricated test counts and the
+> file paths corrected to `backend/modules/services/__tests__/` (the v2.0
+> docs pointed at a now-nonexistent `integration/security` test directory);
+> fabricated test counts and the
 > unsubstantiated "98.5% coverage" metric replaced with verified counts;
 > frontend-audit contradiction reconciled (the frontend _is_ audited by
 > `security-scan.yml`); placeholder contact details explicitly marked TODO.
@@ -148,7 +149,7 @@ Equoria implements a multi-layered security approach:
 - `request-body-silent-catch.test.mjs` (36 test cases — fail-closed scanner contract + sentinel-class dispatch)
 - `request-body-depth-cap.test.mjs` + `request-body-depth-cap-boundary.test.mjs` (depth-cap enforcement)
 - `request-body-urlencoded-duplicate-key.test.mjs` (urlencoded dup-key bypass closure)
-- `backend/__tests__/middleware/requestBodySecurity.test.mjs` (unit-level coverage of the scanner / guard / handler trio)
+- `backend/modules/services/__tests__/requestBodySecurity.test.mjs` (unit-level coverage of the scanner / guard / handler trio)
 - Input validation tests across controllers
 
 **Risk Level:** VERY LOW
@@ -405,8 +406,8 @@ a prerequisite of the first external-URL feature; do not re-rate A10 as
 > "15" → 30) and the "98.5% Security Test Coverage" figure was unsubstantiated
 > (no coverage instrument produces it). The table below is the verified `it()`
 > / `test()` count per file, generated 2026-05-18. All files live in
-> `backend/modules/services/__tests__/` — **not**
-> `backend/__tests__/integration/security/`.
+> `backend/modules/services/__tests__/` — **not** the old
+> `integration/security` test directory the v2.0 docs referenced.
 
 | Test File (`backend/modules/services/__tests__/`) | Test Cases (verified) |
 | ------------------------------------------------- | --------------------- |
@@ -423,7 +424,8 @@ a prerequisite of the first external-URL feature; do not re-rate A10 as
 Plus the `request-body-depth-cap*`, `request-body-urlencoded-duplicate-key`,
 `request-body-key-reflection`, `request-body-max-depth-env-validation`,
 `request-body-security-p0-follow`, `auditLog`, and
-`backend/__tests__/middleware/requestBodySecurity.test.mjs` suites. Numbers
+`requestBodySecurity.test.mjs` suites (all under
+`backend/modules/services/__tests__/`). Numbers
 above are exact `it`/`test` counts; no percentage coverage metric is claimed
 because none is measured.
 
@@ -440,8 +442,9 @@ because none is measured.
 7. `backend/modules/services/__tests__/security-attack-simulation.test.mjs`
 8. `backend/modules/services/__tests__/request-body-*.test.mjs` (depth-cap, silent-catch, urlencoded-dup-key, etc.)
 
-> Note: `backend/__tests__/integration/security/` does **not** exist as the
-> location for these suites. v2.0 stated this path throughout; it was wrong.
+> Note: the old `integration/security` test directory the v2.0 docs cited
+> does **not** exist as the location for these suites; that path was wrong
+> throughout v2.0 and has been corrected here.
 
 **Coverage Metrics:** No instrumented security-coverage percentage is measured;
 prior "98.5% / 100% / 97%" figures were removed as unsubstantiated.
@@ -774,8 +777,8 @@ not optional polish.
 ### Appendix A: Security Test File Listing
 
 All security test files are located in `backend/modules/services/__tests__/`
-(corrected 2026-05-18 — the v2.0 path `backend/__tests__/integration/security/`
-was wrong; that directory does not hold these suites):
+(corrected 2026-05-18 — the v2.0 docs pointed at a now-nonexistent
+`integration/security` test directory that does not hold these suites):
 
 - auth-bypass-attempts.test.mjs
 - ownership-violations.test.mjs
@@ -786,7 +789,7 @@ was wrong; that directory does not hold these suites):
 - security-attack-simulation.test.mjs
 - request-body-\*.test.mjs (depth-cap, silent-catch, urlencoded-dup-key, etc.)
 
-(`backend/__tests__/middleware/requestBodySecurity.test.mjs` holds the
+(`backend/modules/services/__tests__/requestBodySecurity.test.mjs` holds the
 unit-level scanner/guard/handler coverage.)
 
 ### Appendix B: Security Documentation References

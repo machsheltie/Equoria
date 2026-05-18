@@ -373,40 +373,34 @@ leak sensitive system information.
 ### High-Risk Attack Scenarios Covered
 
 1. **Account Takeover Attacks**
-
    - Brute force login attempts (rate limiting)
    - Password spraying simulation
    - Token manipulation
    - Session hijacking attempts
 
 2. **Data Exfiltration Attacks**
-
    - IDOR enumeration of user data
    - Unauthorized horse data access
    - Competition result scraping
    - Profile information harvesting
 
 3. **Data Manipulation Attacks**
-
    - Unauthorized horse modifications
    - Fraudulent competition entries
    - Profile tampering
    - Breeding system abuse
 
 4. **Privilege Escalation Attacks**
-
    - User-to-admin escalation attempts
    - Admin endpoint access
    - Role manipulation
 
 5. **Denial of Service (DoS) Attacks**
-
    - Rate limit testing
    - Resource exhaustion attempts
    - Rapid-fire requests
 
 6. **Injection Attacks**
-
    - SQL injection (all user inputs)
    - XSS injection (name, bio fields)
    - Command injection attempts
@@ -524,19 +518,16 @@ testing real validation logic.
 ### Recommended Additions
 
 1. **A06: Vulnerable Components**
-
    - Dependency vulnerability testing
    - Outdated package detection
    - CVE scanning integration
 
 2. **A08: Data Integrity Failures**
-
    - Unsigned data verification
    - Insecure deserialization tests
    - Untrusted data processing
 
 3. **A09: Logging Failures**
-
    - Security event logging verification
    - Audit trail completeness
    - Log tampering detection
@@ -578,7 +569,7 @@ npm test -- __tests__/integration/security-attack-simulation.test.mjs
 ## Related Documentation
 
 - **Test File:**
-  `backend/__tests__/integration/security-attack-simulation.test.mjs`
+  `backend/modules/services/__tests__/security-attack-simulation.test.mjs`
 - **Security Architecture:** `docs/product/PRD-08-Security-Architecture.md`
 - **API Documentation:** `docs/api-contracts-backend/security-features.md`
 - **Input Validation:** `docs/api-contracts-backend/input-validation-rules.md`
