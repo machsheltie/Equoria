@@ -106,31 +106,6 @@ describe('Auth — Password Reset Integration', () => {
     expect(typeof capturedRawToken).toBe('string');
     expect(capturedRawToken.length).toBeGreaterThan(16);
 
-    // DIAGNOSTIC: check what's actually in the password_reset_tokens table
-    let diagRows;
-    try {
-      diagRows = await prisma.$queryRawUnsafe(
-        'SELECT "tokenHash", "userId", "usedAt", "expiresAt" FROM password_reset_tokens WHERE "userId" = $1',
-        user.id,
-      );
-    } catch (e) {
-      diagRows = `ERROR: ${e.message}`;
-    }
-
-    console.log('[DIAG] password_reset_tokens rows for user:', JSON.stringify(diagRows));
-
-    // Compute the hash of the captured token so we can verify it matches
-    const crypto = await import('crypto');
-    const expectedHash = crypto.default.createHash('sha256').update(capturedRawToken).digest('hex');
-
-    console.log(
-      '[DIAG] capturedRawToken length:',
-      capturedRawToken?.length,
-      'expectedHash:',
-      expectedHash?.slice(0, 16),
-      '...',
-    );
-
     // 4. Call resetPassword with the captured raw token
     const resetRes = await request(app)
       .post('/api/v1/auth/reset-password')
