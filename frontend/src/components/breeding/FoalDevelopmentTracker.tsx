@@ -42,6 +42,7 @@ import {
   useRevealFoalTraits,
 } from '@/hooks/api/useBreeding';
 import CinematicMoment from '@/components/feedback/CinematicMoment';
+import { useRewardToast } from '@/components/feedback';
 import DevelopmentTracker from '@/components/foal/DevelopmentTracker';
 import type { Activity } from '@/components/foal/DevelopmentTracker';
 
@@ -60,6 +61,8 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
   const developFoal = useDevelopFoal(foalId);
   const graduateFoal = useGraduateFoal(foalId);
 
+  const { notify } = useRewardToast();
+
   const [showLog, setShowLog] = useState(false);
   const [showTraitCinematic, setShowTraitCinematic] = useState(false);
   const [showGraduationCinematic, setShowGraduationCinematic] = useState(false);
@@ -72,12 +75,27 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
     : 0;
   const isGraduationEligible = ageInWeeks >= 104;
 
-  // Cinematic on trait reveal (Story 18-4 / Epic 29-3)
+  // Cinematic on trait reveal (Story 18-4 / Epic 29-3) + reward toast
+  // (Equoria-55bo.1, Spec 11.3.10). Trait discovery is a meaningful
+  // personal-progress event sourced from the real useRevealFoalTraits
+  // mutation result — fired once per successful reveal.
   useEffect(() => {
     if (revealTraits.isSuccess) {
       setShowTraitCinematic(true);
+      const latestTrait =
+        foal?.traits && foal.traits.length > 0
+          ? String(foal.traits[foal.traits.length - 1])
+          : undefined;
+      notify({
+        type: 'trait',
+        title: 'New Trait Discovered!',
+        message: latestTrait
+          ? `${foal?.name ?? 'Your foal'} revealed: ${latestTrait}.`
+          : `${foal?.name ?? 'Your foal'} revealed a new trait.`,
+        meaningful: true,
+      });
     }
-  }, [revealTraits.isSuccess]);
+  }, [revealTraits.isSuccess, foal?.traits, foal?.name, notify]);
 
   // Cinematic on graduation (BB-4)
   useEffect(() => {

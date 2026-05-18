@@ -37,6 +37,7 @@ import {
   useLineageAnalysis,
 } from '@/hooks/api/useBreedingPrediction';
 import CinematicMoment from '@/components/feedback/CinematicMoment';
+import { useRewardToast } from '@/components/feedback';
 import type { Horse, CompatibilityAnalysis } from '@/types/breeding';
 
 // ── Constants ──────────────────────────────────────────────────────────────────
@@ -74,6 +75,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
   const userId = propUserId || user?.id;
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const { notify } = useRewardToast();
 
   // State
   const [selectedSire, setSelectedSire] = useState<Horse | null>(null);
@@ -251,6 +253,25 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
       }
       setSuccessMessage(message);
       setShowConfirmation(false);
+
+      // Reward toast on breeding/foal-birth milestone (Equoria-55bo.1,
+      // Spec 11.3.10). Sourced from the real breeding mutation result —
+      // a pregnancy start or a direct foal birth is a meaningful
+      // milestone. Fired once per successful breed.
+      notify({
+        type: 'foal-born',
+        title:
+          data.kind === 'foal'
+            ? 'A foal is born!'
+            : isFirstBreed
+              ? 'First breeding successful!'
+              : 'Breeding successful!',
+        message:
+          data.kind === 'pregnancy'
+            ? `${selectedDam?.name ?? 'Your mare'} is now in foal.`
+            : `${selectedDam?.name ?? 'Your mare'} and ${selectedSire?.name ?? 'sire'} have a new foal.`,
+        meaningful: true,
+      });
 
       if (isFirstBreed) {
         // Lifetime first: full cinematic (Epic 28-2 / 28-3)

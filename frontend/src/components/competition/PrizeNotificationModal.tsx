@@ -22,6 +22,7 @@ import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { Trophy, Medal, Calendar, Award, Zap, DollarSign } from 'lucide-react';
 import BaseModal from '@/components/common/BaseModal';
 import CinematicMoment from '@/components/feedback/CinematicMoment';
+import { useRewardToast } from '@/components/feedback';
 
 /**
  * Prize data structure containing all information to display
@@ -169,12 +170,38 @@ const PrizeNotificationModal = memo(function PrizeNotificationModal({
 
   // Show cinematic moment for 1st-place wins (Story 18-4)
   const [showCinematic, setShowCinematic] = useState(false);
+  const { notify } = useRewardToast();
 
   useEffect(() => {
     if (isOpen && prizeData.placement === 1) {
       setShowCinematic(true);
     }
   }, [isOpen, prizeData.placement]);
+
+  // Reward toast on a podium finish (Equoria-55bo.1, Spec 11.3.10).
+  // The modal only opens with a real competition result (placement 1-3
+  // from the competition-results pipeline) — a podium is a meaningful
+  // personal achievement. Fired once per modal open: prizeData/notify are
+  // read through a ref so the effect depends only on the isOpen edge and
+  // does not re-fire if a parent re-creates the prizeData object identity.
+  const prizeRef = useRef(prizeData);
+  prizeRef.current = prizeData;
+  const notifyRef = useRef(notify);
+  notifyRef.current = notify;
+  useEffect(() => {
+    if (!isOpen) return;
+    const pd = prizeRef.current;
+    const placementLabel = pd.placement === 1 ? '1st' : pd.placement === 2 ? '2nd' : '3rd';
+    notifyRef.current({
+      type: 'prize',
+      title:
+        pd.placement === 1
+          ? `Won ${pd.competitionName}!`
+          : `${placementLabel} place in ${pd.competitionName}`,
+      message: `${pd.horseName} placed ${placementLabel} in ${pd.discipline}.`,
+      meaningful: true,
+    });
+  }, [isOpen]);
 
   // Auto-dismiss timer — separate from BaseModal's focus/scroll management
   useEffect(() => {
@@ -319,10 +346,7 @@ const PrizeNotificationModal = memo(function PrizeNotificationModal({
             <div className="mt-6 pt-4 border-t border-[rgba(37,99,235,0.2)]">
               <div className="flex items-center gap-2 mb-2">
                 <Award className="h-4 w-4 text-slate-400" aria-hidden="true" />
-                <span
-                  className="text-sm font-medium text-slate-400"
-                  data-testid="competition-name"
-                >
+                <span className="text-sm font-medium text-slate-400" data-testid="competition-name">
                   {competitionName}
                 </span>
               </div>

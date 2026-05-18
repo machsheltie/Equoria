@@ -11,6 +11,7 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import BreedingPairSelection from '../BreedingPairSelection';
+import { RewardToastProvider } from '@/components/feedback';
 import * as apiClient from '@/lib/api-client';
 
 // Mock the auth context
@@ -130,9 +131,11 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
   const renderComponent = () => {
     return render(
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter>
-          <BreedingPairSelection userId="test-user-123" />
-        </MemoryRouter>
+        <RewardToastProvider>
+          <MemoryRouter>
+            <BreedingPairSelection userId="test-user-123" />
+          </MemoryRouter>
+        </RewardToastProvider>
       </QueryClientProvider>
     );
   };
@@ -369,6 +372,14 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
           damId: 2,
           userId: 'test-user-123',
         });
+      });
+
+      // Equoria-55bo.1: a successful breed is a meaningful milestone — the
+      // real onSuccess path must surface a RewardToast (role=status).
+      await waitFor(() => {
+        const status = document.body.querySelector('[role="status"]');
+        expect(status).toBeInTheDocument();
+        expect(status?.textContent).toMatch(/foal is born|breeding successful/i);
       });
     });
 
