@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken';
+import { verifyWithKeyRing, getSigningSecret } from '../utils/jwtKeyRing.mjs';
 import { AppError } from '../errors/index.mjs';
 import logger from '../utils/logger.mjs';
 import prisma from '../db/index.mjs';
@@ -138,7 +139,10 @@ export const authenticateToken = async (req, res, next) => {
 
     let decoded;
     try {
-      decoded = jwt.verify(token, secret, {
+      // Equoria-gjdj: verify against the JWT key ring (current secret first,
+      // then optional JWT_SECRET_PREVIOUS during a rotation overlap window).
+      // Signing still uses the CURRENT secret only — see jwtKeyRing.mjs.
+      decoded = verifyWithKeyRing(token, 'access', {
         algorithms: SAFE_JWT_ALGORITHMS,
         ignoreExpiration: false,
         ignoreNotBefore: false,
@@ -305,8 +309,12 @@ export const requireRole = (...roles) => {
  * SECURITY: Explicitly specifies HS256 algorithm to match verification requirements
  */
 export const generateToken = (payload, expiresIn = '24h') => {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
+  // Equoria-gjdj: sign with the CURRENT access secret via the key ring.
+  // The key ring never returns the previous secret for signing.
+  let secret;
+  try {
+    secret = getSigningSecret('access');
+  } catch {
     throw new AppError('JWT_SECRET not configured', 500);
   }
 

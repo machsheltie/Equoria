@@ -16,6 +16,7 @@
  */
 
 import jwt from 'jsonwebtoken';
+import { verifyWithKeyRing } from './jwtKeyRing.mjs';
 import crypto from 'crypto';
 import prisma from '../../packages/database/prismaClient.mjs';
 import logger from './logger.mjs';
@@ -244,10 +245,13 @@ export async function validateRefreshToken(token) {
       };
     }
 
-    // Verify JWT signature and expiration
+    // Verify JWT signature and expiration.
+    // Equoria-gjdj: verify against the refresh key ring (current secret first,
+    // then optional JWT_REFRESH_SECRET_PREVIOUS during a rotation overlap
+    // window). Refresh tokens are still SIGNED with the current secret only.
     let decoded;
     try {
-      decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+      decoded = verifyWithKeyRing(token, 'refresh');
     } catch (jwtError) {
       return {
         isValid: false,

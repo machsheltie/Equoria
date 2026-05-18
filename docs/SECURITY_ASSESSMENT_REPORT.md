@@ -126,8 +126,19 @@ Equoria implements a multi-layered security approach:
 - JWT token validation tests
 - Refresh token rotation tests
 
+**JWT signing-key rotation (implemented 2026-05-18, Equoria-gjdj):** A
+two-key ring (`backend/utils/jwtKeyRing.mjs`) now signs with the current
+secret and verifies against the current OR an optional previous secret
+(`JWT_SECRET_PREVIOUS` / `JWT_REFRESH_SECRET_PREVIOUS`) during a rotation
+overlap window, so a secret can be rotated without a forced global logout.
+Documented runbook + invariants: `docs/architecture/adr-009-jwt-secret-rotation-keyring.md`.
+Wired into access verify (`auth.mjs`) and refresh verify
+(`tokenRotationService.mjs`); enforced by 14 unit tests
+(`modules/services/__tests__/jwtKeyRing.test.mjs`).
+
 **Risk Level:** LOW
-**Recommendation:** Consider implementing key rotation schedule for JWT_SECRET
+**Recommendation:** Operate the ADR-009 rotation runbook on a periodic
+schedule; ensure `*_PREVIOUS` is always unset after the overlap window closes.
 
 ---
 
