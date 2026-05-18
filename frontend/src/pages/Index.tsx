@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { Sparkles, Star, Dumbbell, Trophy, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { NextActionsBar } from '@/components/hub/NextActionsBar';
+import { NarrativeChip, deriveLatestChapter } from '@/components/hub/NarrativeChip';
 import { useHorses } from '@/hooks/api/useHorses';
 import { Button } from '@/components/ui/button';
 import { ErrorCard } from '@/components/ui/ErrorCard';
@@ -54,6 +55,19 @@ function HorseCard({ horse }: { horse: HorseSummary }) {
 
   const cooldown = trainingCooldownChip(horse.trainingCooldown);
 
+  // "Latest chapter" narrative (Equoria-pqzmf, Spec 11.3.12) — derived from
+  // real per-horse HorseSummary fields, no extra requests. Stale (>7d) chips
+  // fade to a quieter state per spec.
+  const chapter = deriveLatestChapter({
+    healthStatus: horse.healthStatus,
+    inFoalSinceDate: horse.inFoalSinceDate,
+    lastFedDate: horse.lastFedDate,
+    lastGroomed: horse.lastGroomed,
+    lastShod: horse.lastShod,
+    lastVettedDate: horse.lastVettedDate,
+    trainingCooldown: typeof horse.trainingCooldown === 'string' ? horse.trainingCooldown : null,
+  });
+
   return (
     <Link
       to={`/horses/${horse.id}`}
@@ -87,6 +101,14 @@ function HorseCard({ horse }: { horse: HorseSummary }) {
             {horse.name}
           </p>
           <p className="text-[0.75rem] text-[var(--text-secondary)] truncate mb-1.5">{subtitle}</p>
+          {/* Latest-chapter narrative (Equoria-pqzmf, Spec 11.3.12) — stale
+              chapters fade per spec; read naturally by screen readers as
+              part of the card content flow. */}
+          <NarrativeChip
+            text={chapter.text}
+            variant={chapter.variant}
+            className={chapter.stale ? 'opacity-60' : undefined}
+          />
         </div>
       </div>
 

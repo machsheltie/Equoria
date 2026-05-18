@@ -101,3 +101,79 @@ export function deriveHorseChip(
 
   return null;
 }
+
+/**
+ * "Latest chapter" derivation (Equoria-pqzmf, Spec 11.3.12).
+ *
+ * The spec wants each hub stable card to show the horse's latest one-line
+ * story. The richest source ("Won 2nd place in yesterday's show") is the
+ * per-horse competition history, but fetching that for every card on the
+ * hub is an N+1 query. This derives the chapter from the REAL per-horse
+ * fields ALREADY present on HorseSummary (no extra requests, not
+ * hardcoded): health, in-foal state, and the most recent care / training
+ * timestamp. Competition-event narratives are a tracked enrichment
+ * (needs a backend latest-event field — see follow-up).
+ *
+ * States (Spec 11.3.12):
+ *   - current : a real event within the last 7 days
+ *   - stale   : the most recent real event is > 7 days old (card fades it)
+ *   - none    : no recorded events -> "Just arrived at the stable"
+ */
+export interface LatestChapterInput {
+  healthStatus?: string | null;
+  inFoalSinceDate?: string | null;
+  lastFedDate?: string | null;
+  lastGroomed?: string | null;
+  lastShod?: string | null;
+  lastVettedDate?: string | null;
+  trainingCooldown?: string | null;
+}
+
+export interface LatestChapter {
+  text: string;
+  variant: ChipVariant;
+  /** True when the most recent real event is older than 7 days. */
+  stale: boolean;
+}
+
+const STALE_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
+
+function chapterTs(value?: string | null): number | null {
+  if (!value) return null;
+  const t = new Date(value).getTime();
+  return Number.isFinite(t) ? t : null;
+}
+
+export function deriveLatestChapter(
+  data: LatestChapterInput,
+  now: number = Date.now()
+): LatestChapter {
+  // Health and in-foal are "current" status narratives (not time-faded).
+  if (data.healthStatus === 'injured' || data.healthStatus === 'recovering') {
+    return { text: "Recovering — under the vet's care", variant: 'warning', stale: false };
+  }
+
+  const inFoalAt = chapterTs(data.inFoalSinceDate);
+  if (inFoalAt !== null) {
+    return { text: 'Expecting a foal', variant: 'active', stale: false };
+  }
+
+  // Pick the single most recent real care/training event.
+  const events: Array<{ label: string; at: number | null }> = [
+    { label: 'Last fed', at: chapterTs(data.lastFedDate) },
+    { label: 'Freshly groomed', at: chapterTs(data.lastGroomed) },
+    { label: 'Newly shod', at: chapterTs(data.lastShod) },
+    { label: 'Visited the vet', at: chapterTs(data.lastVettedDate) },
+    { label: 'Wrapped up training', at: chapterTs(data.trainingCooldown) },
+  ];
+  const latest = events
+    .filter((e): e is { label: string; at: number } => e.at !== null)
+    .sort((a, b) => b.at - a.at)[0];
+
+  if (!latest) {
+    return { text: 'Just arrived at the stable', variant: 'neutral', stale: false };
+  }
+
+  const stale = now - latest.at > STALE_AFTER_MS;
+  return { text: latest.label, variant: stale ? 'neutral' : 'cooldown', stale };
+}
