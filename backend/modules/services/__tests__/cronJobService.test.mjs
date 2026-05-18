@@ -93,14 +93,35 @@ describe('Cron Job Service (real node-cron + real DB)', () => {
   });
 
   describe('initializeCronJobs() / stopCronJobs() lifecycle', () => {
-    it('should register three scheduled jobs visible via getCronJobStatus', () => {
+    it('should register exactly the canonical scheduled jobs visible via getCronJobStatus', () => {
+      // Shape-based assertion (Equoria-w5fjw): the prior `toBe(3)` magic
+      // number was brittle test-vs-code drift — it broke every time a
+      // legitimate new cron job was added (riderTrainerRetirement,
+      // userRankSnapshot). Assert the EXACT set of canonical job names
+      // instead. Adding/removing a job now requires an intentional edit
+      // to this list (a deliberate signal), not an opaque count bump.
+      const CANONICAL_CRON_JOBS = [
+        'weeklySalaries',
+        'tokenCleanup',
+        'foaling',
+        'riderTrainerRetirement',
+        'userRankSnapshot',
+      ];
+
       initializeCronJobs();
 
       const status = getCronJobStatus();
-      expect(status.totalJobs).toBe(3);
-      expect(status.jobs).toHaveProperty('weeklySalaries');
-      expect(status.jobs).toHaveProperty('tokenCleanup');
-      expect(status.jobs).toHaveProperty('foaling');
+      const actualJobNames = Object.keys(status.jobs).sort();
+
+      // Every canonical job is present (none silently dropped).
+      for (const jobName of CANONICAL_CRON_JOBS) {
+        expect(status.jobs).toHaveProperty(jobName);
+      }
+      // No unexpected jobs registered (none silently added without
+      // updating CANONICAL_CRON_JOBS).
+      expect(actualJobNames).toEqual([...CANONICAL_CRON_JOBS].sort());
+      // totalJobs stays consistent with the registered set.
+      expect(status.totalJobs).toBe(CANONICAL_CRON_JOBS.length);
     });
 
     it('should report running and scheduled flags for each job', () => {
