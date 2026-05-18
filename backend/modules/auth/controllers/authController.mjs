@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 import { AppError, ValidationError } from '../../../errors/index.mjs';
 import * as mfaService from '../services/mfaService.mjs';
+import { encryptField, decryptField } from '../../../utils/fieldEncryption.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../db/index.mjs';
 import { resetAuthRateLimit } from '../../../middleware/authRateLimiter.mjs';
@@ -1511,7 +1512,8 @@ export const mfaEnroll = async (req, res, next) => {
     const { secret, otpauthUrl } = mfaService.generateSecret(user.email);
     await prisma.user.update({
       where: { id: user.id },
-      data: { mfaSecret: secret, mfaEnabled: false },
+      // Encrypt the TOTP shared secret at rest (Equoria-yi13v, A07).
+      data: { mfaSecret: encryptField(secret), mfaEnabled: false },
     });
 
     logger.info('[authController.mfaEnroll] MFA secret staged', { userId: user.id });
@@ -1558,7 +1560,7 @@ export const mfaVerifyEnrollment = async (req, res, next) => {
     if (!user.mfaSecret) {
       throw new AppError('No MFA enrollment in progress. Call /mfa/enroll first.', 400);
     }
-    if (!mfaService.verifyToken(token, user.mfaSecret)) {
+    if (!mfaService.verifyToken(token, decryptField(user.mfaSecret))) {
       throw new AppError('Invalid TOTP token', 401);
     }
 
@@ -1634,7 +1636,7 @@ export const mfaChallenge = async (req, res, next) => {
 
     let verified = false;
     if (token) {
-      verified = mfaService.verifyToken(token, user.mfaSecret);
+      verified = mfaService.verifyToken(token, decryptField(user.mfaSecret));
     }
     if (!verified && recoveryCode) {
       const stored = Array.isArray(user.mfaRecoveryCodes) ? user.mfaRecoveryCodes : [];
@@ -1694,7 +1696,7 @@ export const mfaDisable = async (req, res, next) => {
     if (!user.mfaEnabled || !user.mfaSecret) {
       throw new AppError('MFA is not enabled for this account', 400);
     }
-    if (!mfaService.verifyToken(token, user.mfaSecret)) {
+    if (!mfaService.verifyToken(token, decryptField(user.mfaSecret))) {
       throw new AppError('Invalid TOTP token', 401);
     }
 

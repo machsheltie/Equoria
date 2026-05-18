@@ -442,11 +442,25 @@ RATE_LIMIT_MAX_REQUESTS=100
 >   are issued until the second factor passes.
 > - Real-DB integration coverage: `backend/modules/auth/__tests__/mfa.integration.test.mjs`.
 >
-> **Known at-rest gap (tracked follow-up):** `mfaSecret` is stored
-> unencrypted because the codebase has no encryption util. A compromised DB
-> dump would expose TOTP secrets. This is a real residual risk, not closed
-> by this work — tracked separately. MFA is opt-in (not enforced for any
-> account class yet); per-account / admin enforcement is also a follow-up.
+> **At-rest encryption — RESOLVED 2026-05-18 (Equoria-yi13v):** `mfaSecret`
+> is now encrypted at rest with AES-256-GCM via
+> `backend/utils/fieldEncryption.mjs` (key from `FIELD_ENCRYPTION_KEY`,
+> fail-fast in production/beta if unset/short — mirrors
+> `runtimeSecretPolicy`). The TOTP shared secret is encrypted on write
+> (`/mfa/enroll`) and decrypted only in-memory at the verify boundaries
+> (verify-enrollment, challenge, disable). A compromised DB dump no longer
+> exposes usable TOTP secrets. Tampered ciphertext fails decryption (GCM
+> auth-tag) — fail closed. Legacy pre-encryption plaintext rows are
+> transparently tolerated on read (no data migration required), and any
+> subsequent write re-stores them encrypted. Sentinel coverage:
+> `backend/modules/services/__tests__/fieldEncryption.test.mjs` and
+> `backend/modules/auth/__tests__/mfaSecretEncryptedAtRest.sentinel.test.mjs`
+> (persisted value is not plaintext base32; round-trip; tamper rejection;
+> fail-fast key policy).
+>
+> **Remaining (separate follow-up):** MFA is opt-in (not enforced for any
+> account class yet); per-account / admin enforcement is tracked as
+> `Equoria-te21j`.
 
 ### **A08:2021 - Software and Data Integrity Failures** ✅
 
