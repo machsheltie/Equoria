@@ -39,6 +39,14 @@ model User {
   /// Email verification status
   emailVerified    Boolean           @default(false)
   emailVerifiedAt  DateTime?
+  /// TOTP MFA (OWASP A07, Equoria-2vwwh). Opt-in. mfaSecret is the base32 TOTP
+  /// shared secret. At-rest encryption is NOT yet applied (no encryption util
+  /// exists in the codebase) — tracked as a follow-up. mfaRecoveryCodes is a
+  /// JSON array of { codeHash, usedAt } objects; codes are bcrypt-hashed and
+  /// single-use. mfaEnabled gates the login challenge.
+  mfaSecret        String?
+  mfaEnabled       Boolean           @default(false)
+  mfaRecoveryCodes Json?
   /// Timestamps
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt

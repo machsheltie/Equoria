@@ -98,4 +98,27 @@ router.post('/advance-onboarding', profileRateLimiter, authController.advanceOnb
 // PATCH /auth/profile/preferences
 router.patch('/profile/preferences', profileRateLimiter, authController.updateUserPreferences);
 
+// ── TOTP MFA (Equoria-2vwwh, OWASP A07) — authenticated enrollment/management.
+// The second-factor challenge (/auth/mfa/challenge) is public and lives in
+// authRoutes.mjs because it is part of the login flow (no session yet).
+
+// POST /auth/mfa/enroll
+router.post('/mfa/enroll', authRateLimiter, authController.mfaEnroll);
+
+// POST /auth/mfa/verify-enrollment
+router.post(
+  '/mfa/verify-enrollment',
+  authRateLimiter,
+  [body('token').notEmpty().withMessage('TOTP token is required'), handleValidationErrors],
+  authController.mfaVerifyEnrollment,
+);
+
+// POST /auth/mfa/disable
+router.post(
+  '/mfa/disable',
+  authRateLimiter,
+  [body('token').notEmpty().withMessage('Current TOTP token is required'), handleValidationErrors],
+  authController.mfaDisable,
+);
+
 export default router;

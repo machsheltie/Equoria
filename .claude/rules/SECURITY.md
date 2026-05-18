@@ -415,22 +415,38 @@ RATE_LIMIT_MAX_REQUESTS=100
 - Critical vulnerability blocking
 - Test Coverage: GitHub Actions workflows, dependency audit reports
 
-### **A07:2021 - Identification and Authentication Failures** ✅ (single-factor — NO MFA)
+### **A07:2021 - Identification and Authentication Failures** ✅ — TOTP MFA available (opt-in)
 
 - Strong password requirements
 - JWT token expiration enforcement
 - Refresh token rotation
 - Failed login attempt limiting
 - Session management with secure cookies
-- Test Coverage: `backend/modules/services/__tests__/auth-bypass-attempts.test.mjs`, `backend/modules/services/__tests__/rate-limit-enforcement.test.mjs`
+- **TOTP MFA available (opt-in)** — RFC 6238 TOTP via `otplib`
+- Test Coverage: `backend/modules/services/__tests__/auth-bypass-attempts.test.mjs`, `backend/modules/services/__tests__/rate-limit-enforcement.test.mjs`, `backend/modules/auth/__tests__/mfa.integration.test.mjs`
 
-> **No MFA (verified 2026-05-18, Equoria-82ru):** There is **zero** MFA/TOTP
-> code. No `totpSecret`/`totpEnabled`/`mfaSecret`/`twoFactorEnabled` field in
-> `packages/database/prisma/schema.prisma`; no MFA controllers/routes in
-> `backend/modules/auth/`; no TOTP library (`speakeasy`/`otplib`) in
-> dependencies. Any prior "MFA infrastructure in place" wording was a
-> false-green and is removed. MFA is an **unstarted** future enhancement
-> tracked as **Equoria-2vwwh** — do not represent MFA as available.
+> **TOTP MFA shipped 2026-05-18 (Equoria-2vwwh):** Opt-in TOTP MFA is
+> implemented and live. What is actually in the codebase:
+>
+> - Schema: `User.mfaSecret` (base32 TOTP secret), `User.mfaEnabled`,
+>   `User.mfaRecoveryCodes` (JSON array of bcrypt-hashed, single-use codes) —
+>   migration `20260518120000_add_user_mfa_fields`.
+> - Service: `backend/modules/auth/services/mfaService.mjs` —
+>   `generateSecret` (otpauth:// URL for QR), `verifyToken` (±1 step window),
+>   `generateRecoveryCodes` (10, bcrypt-hashed), `verifyRecoveryCode`
+>   (single-use consumption).
+> - Routes: `POST /api/v1/auth/mfa/enroll` + `/mfa/verify-enrollment` +
+>   `/mfa/disable` (authenticated); `POST /api/v1/auth/mfa/challenge`
+>   (public second factor). `/auth/login` returns `mfaRequired:true` + a
+>   5-minute signed challenge token when `mfaEnabled` — no session tokens
+>   are issued until the second factor passes.
+> - Real-DB integration coverage: `backend/modules/auth/__tests__/mfa.integration.test.mjs`.
+>
+> **Known at-rest gap (tracked follow-up):** `mfaSecret` is stored
+> unencrypted because the codebase has no encryption util. A compromised DB
+> dump would expose TOTP secrets. This is a real residual risk, not closed
+> by this work — tracked separately. MFA is opt-in (not enforced for any
+> account class yet); per-account / admin enforcement is also a follow-up.
 
 ### **A08:2021 - Software and Data Integrity Failures** ✅
 

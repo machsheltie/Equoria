@@ -1,6 +1,8 @@
 ﻿import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import { AppError, ValidationError } from '../../../errors/index.mjs';
+import * as mfaService from '../services/mfaService.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../db/index.mjs';
 import { resetAuthRateLimit } from '../../../middleware/authRateLimiter.mjs';
@@ -306,6 +308,7 @@ export const login = async (req, res, next) => {
         xp: true,
         role: true,
         settings: true,
+        mfaEnabled: true,
       },
     });
 
@@ -317,6 +320,30 @@ export const login = async (req, res, next) => {
 
     if (!isPasswordValid) {
       throw new AppError('Invalid credentials', 401);
+    }
+
+    // OWASP A07 (Equoria-2vwwh): if MFA is enabled, the first factor
+    // (password) is verified but NO session tokens are issued. The client
+    // must complete the second factor at POST /auth/mfa/challenge with the
+    // short-lived signed challenge token below. This deliberately diverges
+    // from the non-MFA path so a password alone never yields a session.
+    if (user.mfaEnabled) {
+      const mfaChallengeToken = jwt.sign(
+        { userId: user.id, type: 'mfa_challenge' },
+        process.env.JWT_SECRET,
+        { algorithm: 'HS256', expiresIn: '5m' },
+      );
+      logger.info('[authController.login] MFA required — challenge issued', {
+        userId: user.id,
+      });
+      return res.status(200).json({
+        success: true,
+        message: 'MFA verification required',
+        data: {
+          mfaRequired: true,
+          mfaChallengeToken,
+        },
+      });
     }
 
     // ✅ CWE-384 MITIGATION: Invalidate ALL existing sessions for this user
@@ -1414,5 +1441,279 @@ export const updateUserPreferences = async (req, res, next) => {
       return next(error);
     }
     return next(new AppError('Failed to update preferences.', 500));
+  }
+};
+
+// ─────────────────────────────────────────────────────────────────────────
+// TOTP MFA (OWASP A07, Equoria-2vwwh)
+// ─────────────────────────────────────────────────────────────────────────
+
+/**
+ * Issue the access/refresh/CSRF triple for a fully-authenticated user and
+ * write the session payload to the response. Shared by the non-MFA login
+ * path and the post-challenge path so both produce identical sessions.
+ */
+async function issueAuthenticatedSession(req, res, user) {
+  // CWE-384: invalidate all existing sessions on a new login.
+  await prisma.refreshToken.deleteMany({ where: { userId: user.id } });
+
+  const tokenPair = await createTokenPair(user.id, undefined, user.role);
+  res.cookie('accessToken', tokenPair.accessToken, COOKIE_OPTIONS.accessToken);
+  res.cookie('refreshToken', tokenPair.refreshToken, COOKIE_OPTIONS.refreshToken);
+  const csrfToken = issueCsrfToken(req, res);
+
+  const ip = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+  resetAuthRateLimit(ip);
+
+  const loginSettings =
+    typeof user.settings === 'object' && user.settings !== null ? user.settings : {};
+
+  return {
+    user: {
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      money: user.money,
+      level: user.level,
+      xp: user.xp,
+      role: user.role,
+      completedOnboarding: loginSettings.completedOnboarding === true,
+      onboardingStep:
+        typeof loginSettings.onboardingStep === 'number' ? loginSettings.onboardingStep : 0,
+    },
+    csrfToken,
+  };
+}
+
+/**
+ * POST /api/v1/auth/mfa/enroll  (authenticated)
+ *
+ * Generates a fresh TOTP secret + otpauth provisioning URL and STAGES it on
+ * the user (mfaSecret set, mfaEnabled stays false). MFA is not active until
+ * the user proves possession via /mfa/verify-enrollment.
+ */
+export const mfaEnroll = async (req, res, next) => {
+  try {
+    if (!req.user || !req.user.id) {
+      throw new AppError('Authentication required', 401);
+    }
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { id: true, email: true, mfaEnabled: true },
+    });
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+    if (user.mfaEnabled) {
+      throw new AppError('MFA is already enabled for this account', 409);
+    }
+
+    const { secret, otpauthUrl } = mfaService.generateSecret(user.email);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { mfaSecret: secret, mfaEnabled: false },
+    });
+
+    logger.info('[authController.mfaEnroll] MFA secret staged', { userId: user.id });
+    return res.status(200).json({
+      success: true,
+      message: 'MFA secret generated. Verify a token to enable.',
+      data: { secret, otpauthUrl },
+    });
+  } catch (error) {
+    logger.error('[authController.mfaEnroll] Error:', error);
+    if (AppError.isAppError(error)) {
+      return next(error);
+    }
+    return next(new AppError('Failed to start MFA enrollment.', 500));
+  }
+};
+
+/**
+ * POST /api/v1/auth/mfa/verify-enrollment  (authenticated)
+ *
+ * Confirms the staged secret by verifying a first TOTP. On success: sets
+ * mfaEnabled=true and returns 10 single-use recovery codes ONCE (hashed at
+ * rest). Idempotency: if already enabled, rejects.
+ */
+export const mfaVerifyEnrollment = async (req, res, next) => {
+  try {
+    if (!req.user || !req.user.id) {
+      throw new AppError('Authentication required', 401);
+    }
+    const { token } = req.body || {};
+    if (!token) {
+      throw new AppError('TOTP token is required', 400);
+    }
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { id: true, mfaSecret: true, mfaEnabled: true },
+    });
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+    if (user.mfaEnabled) {
+      throw new AppError('MFA is already enabled for this account', 409);
+    }
+    if (!user.mfaSecret) {
+      throw new AppError('No MFA enrollment in progress. Call /mfa/enroll first.', 400);
+    }
+    if (!mfaService.verifyToken(token, user.mfaSecret)) {
+      throw new AppError('Invalid TOTP token', 401);
+    }
+
+    const { plaintext, hashed } = await mfaService.generateRecoveryCodes();
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { mfaEnabled: true, mfaRecoveryCodes: hashed },
+    });
+
+    logger.info('[authController.mfaVerifyEnrollment] MFA enabled', { userId: user.id });
+    return res.status(200).json({
+      success: true,
+      message: 'MFA enabled. Store these recovery codes — they are shown only once.',
+      data: { recoveryCodes: plaintext },
+    });
+  } catch (error) {
+    logger.error('[authController.mfaVerifyEnrollment] Error:', error);
+    if (AppError.isAppError(error)) {
+      return next(error);
+    }
+    return next(new AppError('Failed to verify MFA enrollment.', 500));
+  }
+};
+
+/**
+ * POST /api/v1/auth/mfa/challenge  (public — second factor of login)
+ *
+ * Consumes the short-lived signed mfaChallengeToken from /auth/login and
+ * verifies EITHER a TOTP `token` OR a single-use `recoveryCode`. On success,
+ * issues the real session triple (identical to non-MFA login).
+ */
+export const mfaChallenge = async (req, res, next) => {
+  try {
+    const { mfaChallengeToken, token, recoveryCode } = req.body || {};
+    if (!mfaChallengeToken) {
+      throw new AppError('mfaChallengeToken is required', 400);
+    }
+    if (!token && !recoveryCode) {
+      throw new AppError('A TOTP token or a recovery code is required', 400);
+    }
+
+    let payload;
+    try {
+      payload = jwt.verify(mfaChallengeToken, process.env.JWT_SECRET, {
+        algorithms: ['HS256'],
+      });
+    } catch {
+      throw new AppError('MFA challenge expired or invalid. Please log in again.', 401);
+    }
+    if (!payload || payload.type !== 'mfa_challenge' || !payload.userId) {
+      throw new AppError('MFA challenge expired or invalid. Please log in again.', 401);
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        money: true,
+        level: true,
+        xp: true,
+        role: true,
+        settings: true,
+        mfaEnabled: true,
+        mfaSecret: true,
+        mfaRecoveryCodes: true,
+      },
+    });
+    if (!user || !user.mfaEnabled || !user.mfaSecret) {
+      throw new AppError('MFA is not enabled for this account', 401);
+    }
+
+    let verified = false;
+    if (token) {
+      verified = mfaService.verifyToken(token, user.mfaSecret);
+    }
+    if (!verified && recoveryCode) {
+      const stored = Array.isArray(user.mfaRecoveryCodes) ? user.mfaRecoveryCodes : [];
+      const result = await mfaService.verifyRecoveryCode(recoveryCode, stored);
+      if (result.valid) {
+        verified = true;
+        // Persist single-use consumption immediately.
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { mfaRecoveryCodes: result.updatedCodes },
+        });
+      }
+    }
+
+    if (!verified) {
+      throw new AppError('Invalid MFA credentials', 401);
+    }
+
+    const sessionData = await issueAuthenticatedSession(req, res, user);
+    logger.info('[authController.mfaChallenge] MFA challenge passed', { userId: user.id });
+    return res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      data: sessionData,
+    });
+  } catch (error) {
+    logger.error('[authController.mfaChallenge] Error:', error);
+    if (AppError.isAppError(error) || error instanceof ValidationError) {
+      return next(error);
+    }
+    return next(new AppError('MFA challenge failed due to an unexpected error.', 500));
+  }
+};
+
+/**
+ * POST /api/v1/auth/mfa/disable  (authenticated)
+ *
+ * Disables MFA after re-verifying a current TOTP. Clears mfaSecret,
+ * mfaEnabled, and mfaRecoveryCodes so re-enrollment starts clean.
+ */
+export const mfaDisable = async (req, res, next) => {
+  try {
+    if (!req.user || !req.user.id) {
+      throw new AppError('Authentication required', 401);
+    }
+    const { token } = req.body || {};
+    if (!token) {
+      throw new AppError('Current TOTP token is required to disable MFA', 400);
+    }
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { id: true, mfaEnabled: true, mfaSecret: true },
+    });
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+    if (!user.mfaEnabled || !user.mfaSecret) {
+      throw new AppError('MFA is not enabled for this account', 400);
+    }
+    if (!mfaService.verifyToken(token, user.mfaSecret)) {
+      throw new AppError('Invalid TOTP token', 401);
+    }
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { mfaEnabled: false, mfaSecret: null, mfaRecoveryCodes: null },
+    });
+
+    logger.info('[authController.mfaDisable] MFA disabled', { userId: user.id });
+    return res.status(200).json({
+      success: true,
+      message: 'MFA disabled',
+      data: { mfaEnabled: false },
+    });
+  } catch (error) {
+    logger.error('[authController.mfaDisable] Error:', error);
+    if (AppError.isAppError(error)) {
+      return next(error);
+    }
+    return next(new AppError('Failed to disable MFA.', 500));
   }
 };

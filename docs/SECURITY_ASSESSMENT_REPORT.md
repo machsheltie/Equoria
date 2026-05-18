@@ -33,7 +33,7 @@ The rating was lowered from the v2.0 "A+ (Excellent)" because that grade rested 
 
 | Category                       | Rating | Status                                            |
 | ------------------------------ | ------ | ------------------------------------------------- |
-| Authentication & Authorization | A      | ✅ Strong (no MFA — see A07)                      |
+| Authentication & Authorization | A      | ✅ Strong (opt-in TOTP MFA — see A07)             |
 | Data Protection                | A      | ✅ Strong                                         |
 | Input Validation               | A+     | ✅ Excellent (proto-pollution defenses verified)  |
 | Security Testing               | B+     | ✅ Good (counts corrected; no coverage % claimed) |
@@ -275,7 +275,7 @@ ADR-008 when any of its re-evaluation triggers fire.
 
 ---
 
-### A07:2021 - Identification and Authentication Failures ✅ COMPLIANT (no MFA — see note)
+### A07:2021 - Identification and Authentication Failures ✅ — TOTP MFA available (opt-in)
 
 **Implementation:**
 
@@ -285,25 +285,33 @@ ADR-008 when any of its re-evaluation triggers fire.
 - Failed login attempt rate limiting (200 failed attempts/15min; successful auths not counted)
 - Session management with secure httpOnly cookies
 - Password reset with secure token generation
+- **Opt-in TOTP MFA** (RFC 6238 via `otplib`) — enroll / verify-enrollment /
+  challenge / disable; single-use bcrypt-hashed recovery codes; login returns
+  `mfaRequired` + 5-minute signed challenge token when `mfaEnabled` (no
+  session issued until the second factor passes)
 
-> **Correction (2026-05-18):** The v2.0 claim "Multi-factor authentication
-> ready (infrastructure in place)" was false and has been removed. There is
-> **no MFA**: no `mfa`/`totp`/`twoFactor` field in
-> `packages/database/prisma/schema.prisma`, no MFA controller/service, and no
-> MFA routes. MFA is an unstarted future enhancement (TODO — not "in place").
+> **Update (2026-05-18, Equoria-2vwwh):** Opt-in TOTP MFA is now SHIPPED.
+> `User.mfaSecret` / `mfaEnabled` / `mfaRecoveryCodes` (migration
+> `20260518120000_add_user_mfa_fields`); service
+> `backend/modules/auth/services/mfaService.mjs`; routes under
+> `/api/v1/auth/mfa/*`. The prior "no MFA code exists" correction is
+> superseded. **Known residual risk:** `mfaSecret` is stored unencrypted
+> (no encryption util in codebase) — tracked follow-up. MFA is opt-in;
+> admin-account enforcement is a separate tracked follow-up (AC item 5,
+> deferred per EDGE_CASE_FIX_DISCIPLINE §7).
 
-**Test Coverage** (`backend/modules/services/__tests__/`; verified 2026-05-18):
+**Test Coverage** (verified 2026-05-18):
 
-- `auth-bypass-attempts.test.mjs` (30 test cases)
-- `rate-limit-enforcement.test.mjs` (8 test cases, incl. auth section)
+- `backend/modules/services/__tests__/auth-bypass-attempts.test.mjs` (30 test cases)
+- `backend/modules/services/__tests__/rate-limit-enforcement.test.mjs` (8 test cases, incl. auth section)
+- `backend/modules/auth/__tests__/mfa.integration.test.mjs` (10 real-DB integration cases — full MFA lifecycle + non-MFA login unchanged)
 - Session management tests
 
-**Risk Level:** LOW–MEDIUM (no second factor for admin accounts)
-**Recommendation:** Implement TOTP-based MFA for admin accounts before any
-privileged-operation exposure (TODO — no infrastructure currently exists;
-zero MFA code verified 2026-05-18, Equoria-82ru). **Tracked as Equoria-2vwwh**
-(unstarted feature — scoped separately, not closed by this accuracy
-correction).
+**Risk Level:** LOW–MEDIUM (MFA opt-in, not yet enforced for admin; secret
+unencrypted at rest)
+**Recommendation:** (1) Encrypt `mfaSecret` at rest; (2) add admin-account
+MFA enforcement. Both tracked as Equoria-2vwwh follow-ups (scoped separately,
+not closed by this shipped opt-in MFA).
 
 ---
 
@@ -644,10 +652,11 @@ None identified.
 
 ### 6.2 Short-Term Improvements (1-3 months)
 
-1. **Multi-Factor Authentication (MFA)**
-   - Implement TOTP-based MFA for admin accounts
-   - Optional MFA for all user accounts
-   - Recovery code generation
+1. **Multi-Factor Authentication (MFA)** — ✅ opt-in TOTP shipped (Equoria-2vwwh)
+   - ✅ Opt-in TOTP MFA for all user accounts (enroll/verify/challenge/disable)
+   - ✅ Single-use recovery code generation (bcrypt-hashed)
+   - ⏳ Admin-account MFA enforcement (tracked follow-up)
+   - ⏳ Encrypt `mfaSecret` at rest (tracked follow-up)
 
 2. **Security Headers Enhancement**
    - ~~Content Security Policy (CSP)~~ — **already implemented** in
@@ -827,7 +836,7 @@ critical areas, with honestly-scoped gaps. Verified state:
 ✅ **262 executed security test cases across the 8 core files, jest run 2026-05-18 (exact counts in §3.1)**
 ✅ **Automated continuous dependency scanning (backend + frontend + root)**
 ✅ **0 known dependency vulnerabilities per last CI scan**
-⚠️ **Gaps before production:** DB-backed audit trail (TODO), MFA for admin (TODO), real security contacts (TODO), SSRF-guard gate before any external-URL feature (TODO)
+⚠️ **Gaps before production:** DB-backed audit trail (TODO), admin-account MFA enforcement (TODO — opt-in TOTP MFA shipped Equoria-2vwwh; mfaSecret at-rest encryption TODO), real security contacts (TODO), SSRF-guard gate before any external-URL feature (TODO)
 
 ### 11.2 Security Strengths
 
@@ -851,7 +860,7 @@ not optional polish.
 (several were misrepresented as "ready" in v2.0):
 
 1. Implement DB-backed audit persistence and mount it (A09 is currently partial)
-2. Implement MFA for admin accounts (no infrastructure exists today)
+2. Add admin-account MFA enforcement + encrypt mfaSecret at rest (opt-in TOTP MFA shipped Equoria-2vwwh; these two are tracked follow-ups)
 3. Replace placeholder security contacts with real monitored channels
 4. File + link the blocking SSRF-guard gate before any external-URL feature
 5. Configure Sentry production DSN
