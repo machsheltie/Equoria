@@ -162,4 +162,42 @@ describe('BreedSelector', () => {
     );
     expect(screen.getByText(/Born to race, bred for glory/)).toBeInTheDocument();
   });
+
+  // Equoria-55bo.4 — Spec 11.3.4 visual enrichments derived from REAL
+  // statTendencies (mini-radar + top-3 discipline-strength badges).
+  describe('Stat radar + discipline badges (Equoria-55bo.4)', () => {
+    it('renders a stat-tendency mini radar per breed card', () => {
+      render(<BreedSelector breeds={mockBreeds} value={{}} onChange={onChange} />);
+      const radars = screen.getAllByTestId('breed-stat-radar');
+      // one radar per breed card in grid view
+      expect(radars.length).toBe(mockBreeds.length);
+      // radar exposes an accessible label built from the real avg values
+      expect(radars[0]).toHaveAttribute('aria-label', expect.stringContaining('Spd 88'));
+    });
+
+    it('renders top-3 discipline-strength badges derived from real tendencies', () => {
+      render(<BreedSelector breeds={mockBreeds} value={{}} onChange={onChange} />);
+      const badgeGroups = screen.getAllByTestId('breed-discipline-badges');
+      expect(badgeGroups.length).toBeGreaterThan(0);
+      // Thoroughbred (speed 88 / boldness 83) → Racing is a top discipline
+      const firstGroup = badgeGroups[0];
+      expect(firstGroup.textContent).toMatch(/Racing|Steeplechase|Barrel Racing|Gymkhana/);
+      // exactly 3 badges (top-3) — each badge is a direct-child span
+      expect(firstGroup.querySelectorAll(':scope > span').length).toBe(3);
+    });
+
+    it('shows discipline badges in the selected-breed lore panel', () => {
+      render(
+        <BreedSelector
+          breeds={mockBreeds}
+          value={{ breedId: 1, breedName: 'Thoroughbred' }}
+          onChange={onChange}
+        />
+      );
+      // grid cards + lore panel each render a badge group
+      expect(screen.getAllByTestId('breed-discipline-badges').length).toBeGreaterThan(
+        mockBreeds.length
+      );
+    });
+  });
 });
