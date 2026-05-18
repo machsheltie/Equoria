@@ -25,6 +25,7 @@ import CompetitionDetailModal, {
 import ConformationShowsPanel from '@/components/competition/ConformationShowsPanel';
 import PageHero from '@/components/layout/PageHero';
 import { Button } from '@/components/ui/button';
+import { useShowField } from '@/hooks/api/useShowField';
 
 // Equoria-8g4n (31F-FE-3): the unified browser exposes ridden and
 // conformation shows as tabs so testers reach both from one surface. Tab
@@ -44,6 +45,13 @@ const CompetitionBrowserPage = (): JSX.Element => {
   const [selectedCompetition, setSelectedCompetition] = useState<ModalCompetition | null>(null);
   const [selectedHorseId, setSelectedHorseId] = useState<number | ''>('');
   const [entryError, setEntryError] = useState<string | undefined>();
+
+  // Equoria-lfkw1: real scouting field for the open detail modal. Fetched
+  // here (container) and passed into the presentational modal so the modal
+  // stays QueryClient-free.
+  const { data: fieldData, isLoading: fieldLoading } = useShowField(
+    selectedCompetition?.id ?? null
+  );
 
   // Equoria-ocn9: deep-link from /horses → /competitions?horse=ID. When the
   // user owns the horse referenced in the URL, pre-select it so the entry
@@ -320,6 +328,8 @@ const CompetitionBrowserPage = (): JSX.Element => {
         onSelectedHorseIdChange={setSelectedHorseId}
         isSubmitting={enterCompetition.isPending}
         error={entryError}
+        fieldData={fieldData ?? null}
+        fieldLoading={fieldLoading}
       />
     </div>
   );

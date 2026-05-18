@@ -11,7 +11,11 @@ import {
   executeEnhancedCompetition,
   getCompetitionEligibilitySummary,
 } from '../../../logic/enhancedCompetitionSimulation.mjs';
-import { getAllDisciplines, getDisciplineConfig } from '../../../utils/competitionLogic.mjs';
+import {
+  getAllDisciplines,
+  getDisciplineConfig,
+  calculateHorseLevel,
+} from '../../../utils/competitionLogic.mjs';
 import auth from '../../../middleware/auth.mjs';
 import { queryRateLimiter, mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -209,6 +213,162 @@ router.get('/show/:showId/results', queryRateLimiter, async (req, res) => {
     });
   }
 });
+
+/**
+ * GET /show/:showId/entries
+ * Scouting endpoint (Equoria-lfkw1, UX-spec 11.3.5 / Journey 4).
+ *
+ * Returns the REAL list of horses currently entered in an open show so
+ * players can scout the field during the 7-day entry window. Per entered
+ * horse: breed, level, top-3 stats, owner. Plus header data (entry count,
+ * max entries, days remaining, show status).
+ *
+ * Authenticated (the whole /api/competition router is mounted under the
+ * app's authRouter, which applies authenticateToken). Scouting is a
+ * logged-in player action during the 7-day entry window. No ownership data
+ * beyond the owner's display name is exposed.
+ */
+router.get(
+  '/show/:showId/entries',
+  queryRateLimiter,
+  [param('showId').isInt({ min: 1 }).withMessage('Show ID must be a positive integer')],
+  async (req, res) => {
+    try {
+      const validationErrors = validationResult(req);
+      if (!validationErrors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid show ID',
+          errors: validationErrors.array(),
+        });
+      }
+
+      const showId = parseInt(req.params.showId, 10);
+
+      const show = await prisma.show.findUnique({
+        where: { id: showId },
+        select: {
+          id: true,
+          name: true,
+          discipline: true,
+          entryFee: true,
+          maxEntries: true,
+          status: true,
+          closeDate: true,
+        },
+      });
+
+      if (!show) {
+        return res.status(404).json({ success: false, message: 'Show not found' });
+      }
+
+      const STAT_KEYS = [
+        'precision',
+        'strength',
+        'speed',
+        'agility',
+        'endurance',
+        'intelligence',
+        'stamina',
+        'balance',
+        'boldness',
+        'flexibility',
+        'obedience',
+        'focus',
+      ];
+
+      const entries = await prisma.showEntry.findMany({
+        where: { showId },
+        orderBy: { createdAt: 'asc' },
+        select: {
+          id: true,
+          createdAt: true,
+          horse: {
+            select: {
+              id: true,
+              name: true,
+              epigeneticModifiers: true,
+              breed: { select: { name: true } },
+              user: { select: { id: true, username: true } },
+              precision: true,
+              strength: true,
+              speed: true,
+              agility: true,
+              endurance: true,
+              intelligence: true,
+              stamina: true,
+              balance: true,
+              boldness: true,
+              flexibility: true,
+              obedience: true,
+              focus: true,
+            },
+          },
+        },
+      });
+
+      const field = entries.map(e => {
+        const h = e.horse;
+        const allStats = STAT_KEYS.map(k => ({ name: k, value: h?.[k] ?? 0 }));
+        const topStats = [...allStats].sort((a, b) => b.value - a.value).slice(0, 3);
+        // Real, discipline-relative competitive level — the same
+        // calculateHorseLevel() the entry-eligibility check uses, so the
+        // scouted level matches what gates entry (no fabricated number).
+        let level = null;
+        try {
+          level = h ? calculateHorseLevel(h, show.discipline) : null;
+        } catch {
+          level = null;
+        }
+        return {
+          entryId: e.id,
+          enteredAt: e.createdAt,
+          horseId: h?.id,
+          name: h?.name ?? 'Unknown',
+          breed: h?.breed?.name ?? null,
+          level,
+          ownerId: h?.user?.id ?? null,
+          ownerName: h?.user?.username ?? null,
+          topStats,
+        };
+      });
+
+      let daysRemaining = null;
+      if (show.closeDate) {
+        const ms = new Date(show.closeDate).getTime() - Date.now();
+        daysRemaining = ms > 0 ? Math.ceil(ms / (24 * 60 * 60 * 1000)) : 0;
+      }
+
+      logger.info(
+        `[competitionRoutes.GET /show/${showId}/entries] ${field.length} entries (status=${show.status})`,
+      );
+
+      res.json({
+        success: true,
+        show: {
+          id: show.id,
+          name: show.name,
+          discipline: show.discipline,
+          entryFee: show.entryFee,
+          maxEntries: show.maxEntries,
+          status: show.status,
+          closeDate: show.closeDate,
+        },
+        entryCount: field.length,
+        maxEntries: show.maxEntries ?? null,
+        daysRemaining,
+        entries: field,
+      });
+    } catch (error) {
+      logger.error(`[competitionRoutes.GET /show/:showId/entries] Error: ${error.message}`);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
+      });
+    }
+  },
+);
 
 /**
  * GET /horse/:horseId/results

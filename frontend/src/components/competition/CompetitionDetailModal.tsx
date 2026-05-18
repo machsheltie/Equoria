@@ -19,6 +19,8 @@
 import React, { memo } from 'react';
 import { Calendar, DollarSign, Trophy, Users, AlertCircle } from 'lucide-react';
 import BaseModal from '@/components/common/BaseModal';
+import { CompetitionFieldPreview } from './CompetitionFieldPreview';
+import type { ShowFieldResponse } from '@/lib/api-client';
 
 /**
  * Competition data structure for the modal
@@ -59,6 +61,14 @@ export interface CompetitionDetailModalProps {
   isSubmitting?: boolean;
   /** Error message to display */
   error?: string;
+  /**
+   * Equoria-lfkw1: the real scouting field for this show, fetched by the
+   * container (CompetitionBrowserPage) via useShowField. Kept as a prop so
+   * this modal stays presentational (no QueryClient coupling).
+   */
+  fieldData?: ShowFieldResponse | null;
+  /** Loading state of the scouting-field query. */
+  fieldLoading?: boolean;
 }
 
 /**
@@ -114,13 +124,30 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
   onSelectedHorseIdChange,
   isSubmitting = false,
   error,
+  fieldData = null,
+  fieldLoading = false,
 }: CompetitionDetailModalProps) {
+  // Equoria-lfkw1: scouting field is fetched by the container and passed in
+  // as props; this modal stays presentational (no QueryClient coupling, so
+  // existing render-only tests keep working).
+  const fieldShowId = competition && isOpen ? competition.id : null;
+
   // Don't render if no competition
   if (!competition && isOpen) {
     return null;
   }
 
   const prizeDistribution = competition ? calculatePrizeDistribution(competition.prizePool) : null;
+
+  // Map the real backend scouting response into CompetitionFieldPreview's
+  // shape (topStats[] → stats record). No fabricated values.
+  const fieldPreviewEntries =
+    fieldData?.entries.map((e) => ({
+      id: e.horseId,
+      name: e.name,
+      breed: e.breed ?? undefined,
+      stats: Object.fromEntries(e.topStats.map((s) => [s.name, s.value])),
+    })) ?? [];
   const hasRequirements =
     competition?.entryRequirements && competition.entryRequirements.length > 0;
 
@@ -170,6 +197,29 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
           >
             {competition.discipline}
           </span>
+
+          {/* Equoria-lfkw1 — real scouting field (expanded variant in the
+              show detail). Sourced from /competition/show/:id/entries. */}
+          {fieldShowId !== null && (
+            <CompetitionFieldPreview
+              show={{
+                id: competition.id,
+                name: competition.name,
+                discipline: competition.discipline,
+                entryFee: competition.entryFee,
+                maxEntries: fieldData?.maxEntries ?? competition.maxParticipants ?? null,
+                entryCount: fieldData?.entryCount ?? competition.currentParticipants ?? 0,
+                closeDate: fieldData?.show.closeDate ?? null,
+                status: fieldData?.show.status ?? 'open',
+              }}
+              entries={fieldPreviewEntries}
+            />
+          )}
+          {fieldShowId !== null && fieldLoading && !fieldData && (
+            <p className="text-xs text-mystic-silver" data-testid="competition-field-loading">
+              Loading the entered field…
+            </p>
+          )}
 
           {/* Description */}
           {competition.description && (

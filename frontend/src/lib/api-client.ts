@@ -2113,6 +2113,35 @@ export const userProgressApi = {
 /**
  * Competitions API surface
  */
+/** Scouting field response — GET /api/v1/competition/show/:showId/entries */
+export interface ShowFieldEntry {
+  entryId: number;
+  enteredAt: string;
+  horseId: number;
+  name: string;
+  breed: string | null;
+  level: number | null;
+  ownerId: string | null;
+  ownerName: string | null;
+  topStats: Array<{ name: string; value: number }>;
+}
+export interface ShowFieldResponse {
+  success: boolean;
+  show: {
+    id: number;
+    name: string;
+    discipline: string;
+    entryFee: number;
+    maxEntries: number | null;
+    status: string;
+    closeDate: string | null;
+  };
+  entryCount: number;
+  maxEntries: number | null;
+  daysRemaining: number | null;
+  entries: ShowFieldEntry[];
+}
+
 export const competitionsApi = {
   list: () => apiClient.get<Competition[]>('/api/v1/competition'),
   getDisciplines: () =>
@@ -2143,6 +2172,14 @@ export const competitionsApi = {
     apiClient.get<Array<{ horseId: number; horseName: string }>>(
       `/api/competitions/${competitionId}/entries`
     ),
+  /**
+   * Scouting (Equoria-lfkw1, UX-spec 11.3.5 / Journey 4). Returns the REAL
+   * entered field for an open show: per entered horse breed / level /
+   * top-3 stats / owner, plus header (entry count, max, days remaining,
+   * status). Used by CompetitionFieldPreview.
+   */
+  getShowField: (showId: number) =>
+    apiClient.get<ShowFieldResponse>(`/api/v1/competition/show/${showId}/entries`),
   /**
    * Get the current user's horses that are eligible for competition entry.
    * Eligibility filtering (age, health, etc.) is applied per-horse in the

@@ -401,4 +401,81 @@ describe('CompetitionDetailModal', () => {
       expect(icon).toBeInTheDocument();
     });
   });
+
+  // ===== Scouting field preview wiring (Equoria-lfkw1) =====
+  describe('Scouting field preview (Equoria-lfkw1)', () => {
+    const fieldData = {
+      success: true,
+      show: {
+        id: 1,
+        name: 'Spring Grand Prix',
+        discipline: 'Show Jumping',
+        entryFee: 250,
+        maxEntries: 30,
+        status: 'open',
+        closeDate: '2999-04-15T00:00:00Z',
+      },
+      entryCount: 2,
+      maxEntries: 30,
+      daysRemaining: 5,
+      entries: [
+        {
+          entryId: 11,
+          enteredAt: '2026-04-01T00:00:00Z',
+          horseId: 101,
+          name: 'Comet Tail',
+          breed: 'Arabian',
+          level: 4,
+          ownerId: 'u1',
+          ownerName: 'rival_player',
+          topStats: [
+            { name: 'speed', value: 88 },
+            { name: 'stamina', value: 70 },
+            { name: 'agility', value: 65 },
+          ],
+        },
+        {
+          entryId: 12,
+          enteredAt: '2026-04-02T00:00:00Z',
+          horseId: 102,
+          name: 'Night Dancer',
+          breed: 'Thoroughbred',
+          level: 5,
+          ownerId: 'u2',
+          ownerName: 'another_player',
+          topStats: [
+            { name: 'balance', value: 80 },
+            { name: 'focus', value: 60 },
+            { name: 'speed', value: 55 },
+          ],
+        },
+      ],
+    };
+
+    it('renders the field preview from real backend-shaped fieldData', () => {
+      render(<CompetitionDetailModal {...defaultProps} fieldData={fieldData} />);
+      const preview = screen.getByTestId('competition-field-preview');
+      expect(preview).toBeInTheDocument();
+      // The real entered horse names are present (scout the field).
+      fireEvent.click(screen.getByRole('button', { name: /scout the field/i }));
+      expect(screen.getByText('Comet Tail')).toBeInTheDocument();
+      expect(screen.getByText('Night Dancer')).toBeInTheDocument();
+    });
+
+    it('shows a loading message while the field query is pending', () => {
+      render(<CompetitionDetailModal {...defaultProps} fieldData={null} fieldLoading />);
+      expect(screen.getByTestId('competition-field-loading')).toBeInTheDocument();
+    });
+
+    it('does not crash and shows zero-entry field when no entries yet', () => {
+      render(
+        <CompetitionDetailModal
+          {...defaultProps}
+          fieldData={{ ...fieldData, entryCount: 0, entries: [] }}
+        />
+      );
+      expect(screen.getByTestId('competition-field-preview')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /scout the field/i })).toBeNull();
+    });
+  });
 });
