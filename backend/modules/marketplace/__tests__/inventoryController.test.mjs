@@ -12,6 +12,9 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -151,6 +154,7 @@ describe('inventoryController integration', () => {
       // Create horse owned by user
       const horse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `TestFixture-InvHorse-${Date.now()}`,
           sex: 'Filly',
           dateOfBirth: new Date('2022-01-01'),
@@ -246,6 +250,7 @@ describe('inventoryController integration', () => {
     it('returns 200 and unequips item when it was equipped', async () => {
       const horse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `TestFixture-InvHorse-${Date.now()}`,
           sex: 'Filly',
           dateOfBirth: new Date('2022-01-01'),

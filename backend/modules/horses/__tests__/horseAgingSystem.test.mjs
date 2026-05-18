@@ -18,6 +18,9 @@ import {
   processHorseBirthdays,
 } from '../../../utils/horseAgingSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const daysAgo = days => new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
@@ -184,6 +187,7 @@ describe('updateHorseAge() — DB-fixture paths (lines 95-135) (Equoria-jkht)', 
     // Horse born today, stored age=0 → calculatedAge=0 === storedAge → early return (lines 95-107)
     currentAgeHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-HAS-Current-${ts}`,
         sex: 'Colt',
         dateOfBirth: new Date(),
@@ -196,6 +200,7 @@ describe('updateHorseAge() — DB-fixture paths (lines 95-135) (Equoria-jkht)', 
     // Updated for Equoria-son6 game-year semantics (1 week = 1 game year)
     staleAgeHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-HAS-Stale-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
@@ -257,6 +262,7 @@ describe('checkForMilestones() — milestone age 14 DB-fixture paths (lines 250-
     // age=0 (game-years): milestoneAge 0 → not in MILESTONE_AGES → eligible:false → not-eligible branch
     masHorseNotEligible = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-MAS-NotElig-${ts}`,
         sex: 'Colt',
         dateOfBirth: new Date(),
@@ -267,6 +273,7 @@ describe('checkForMilestones() — milestone age 14 DB-fixture paths (lines 250-
     // age=2 (game-years): milestoneAge 2 → in MILESTONE_AGES, no prior milestone → eligible:true → success branch
     masHorseEligible = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-MAS-Eligible-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
@@ -320,6 +327,7 @@ describe('processHorseBirthdays() — dryRun else-branch (lines 416-417) (Equori
     // Updated for Equoria-son6 game-year semantics (1 week = 1 game year)
     pbHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-PB-DryRun-${ts}`,
         sex: 'Colt',
         dateOfBirth: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
@@ -369,6 +377,7 @@ describe('checkForMilestones() — age_1 if(horse) true path, empty traits (Equo
 
     cm1Horse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-CM1-${ts}`,
         sex: 'Colt',
         dateOfBirth: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000),

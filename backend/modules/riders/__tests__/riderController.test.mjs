@@ -23,6 +23,9 @@ import {
   deleteRiderAssignment,
   dismissRider,
 } from '../controllers/riderController.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const SUITE_PREFIX = 'rctrl';
 
@@ -68,6 +71,7 @@ async function createUser() {
 async function createHorse(userId) {
   return prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `${SUITE_PREFIX}-h-${randomBytes(4).toString('hex')}`,
       sex: 'Mare',
       dateOfBirth: new Date('2020-01-01'),

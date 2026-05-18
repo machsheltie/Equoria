@@ -18,6 +18,9 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 describe('System-Wide Data Integrity', () => {
   let csrf;
@@ -54,6 +57,7 @@ describe('System-Wide Data Integrity', () => {
 
     testHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'SWI Test Horse',
         age: 5,
         breed: { connect: { id: testBreed.id } },
@@ -229,6 +233,7 @@ describe('System-Wide Data Integrity', () => {
     // Create a horse and groom owned by the test user
     const tempHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'Cascade Boundary Test Horse',
         age: 4,
         breed: { connect: { id: testBreed.id } },

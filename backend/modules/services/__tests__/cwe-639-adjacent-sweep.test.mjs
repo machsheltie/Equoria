@@ -21,6 +21,9 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createMockToken } from '../../../__tests__/factories/index.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
   let __csrf__;
@@ -68,6 +71,7 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
 
     horseA = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `CweHorseA-${randomBytes(8).toString('hex')}`,
         userId: userA.id,
         sex: 'mare',
@@ -76,6 +80,7 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
     });
     horseB = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `CweHorseB-${randomBytes(8).toString('hex')}`,
         userId: userB.id,
         sex: 'stallion',
@@ -149,6 +154,7 @@ describe('CWE-639 adjacent-locations sweep (Equoria-4o39)', () => {
       // Need at least 2 horseIds (route AC).
       const horseA2 = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `CweHorseA2-${randomBytes(8).toString('hex')}`,
           userId: userA.id,
           sex: 'mare',

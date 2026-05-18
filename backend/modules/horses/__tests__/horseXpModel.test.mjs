@@ -24,6 +24,9 @@ import {
   getHorseXpStatus,
 } from '../../../models/horseXpModel.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 let xpUser;
 let xpHorse;
@@ -46,6 +49,7 @@ beforeAll(async () => {
 
   xpHorse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-HorseXP-Horse-${ts}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
@@ -59,6 +63,7 @@ beforeAll(async () => {
   // Horse pre-seeded with a stat point so allocateStatPoint can succeed
   xpHorseWithPoints = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-HorseXP-WithPoints-${ts}`,
       sex: 'Colt',
       dateOfBirth: new Date(),
@@ -173,6 +178,7 @@ describe('allocateStatPoint() — validation errors', () => {
     // xpHorse starts with 0 available stat points (before addXpToHorse runs)
     const freshHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-HorseXP-NoPoints-${Date.now()}`,
         sex: 'Filly',
         dateOfBirth: new Date(),

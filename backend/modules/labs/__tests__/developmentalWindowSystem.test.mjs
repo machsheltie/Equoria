@@ -19,6 +19,9 @@ import {
   generateDevelopmentalForecast,
 } from '../../../services/developmentalWindowSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 let user;
 let horse;
@@ -37,6 +40,7 @@ beforeAll(async () => {
 
   horse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-DevWindowHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
@@ -232,6 +236,7 @@ describe('developmentalWindowSystem — closed windows + coordinateMultiWindowDe
 
     oldHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-DevWindowOld-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(ts - 35 * 24 * 60 * 60 * 1000),
@@ -350,6 +355,7 @@ describe('developmentalWindowSystem — fear_period branches + evaluateTraitDeve
 
     fearHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-DevWindowFear-${ts}`,
         sex: 'Colt',
         dateOfBirth: new Date(ts - 9 * 24 * 60 * 60 * 1000),
@@ -426,6 +432,7 @@ describe('analyzeCriticalPeriodSensitivity — risk factor branches (Equoria-jkh
 
     stressHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-DevWindowStress-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -509,6 +516,7 @@ describe('assessWindowClosure — futureImpact=moderate for 15-day horse (Equori
 
     horse15 = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-DW15-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(ts - 15 * 24 * 60 * 60 * 1000),
@@ -558,6 +566,7 @@ describe('calculateWindowSensitivity — sensitivityLevel=low for 30-day high-st
 
     horse30 = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-DW30-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(ts - 30 * 24 * 60 * 60 * 1000),
@@ -607,6 +616,7 @@ describe('analyzeCriticalPeriodSensitivity — protective factor branches (Equor
 
     protHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-DWProt-${ts}`,
         sex: 'Colt',
         dateOfBirth: new Date(),
@@ -660,6 +670,7 @@ describe('developmentalWindowSystem — 65-day horse: social_hierarchy closed (E
 
     horse65 = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-DW65-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(ts - 65 * 24 * 60 * 60 * 1000),
@@ -721,6 +732,7 @@ describe('developmentalWindowSystem — 125-day horse: independence_development 
 
     horse125 = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-DW125-${ts}`,
         sex: 'Colt',
         dateOfBirth: new Date(ts - 125 * 24 * 60 * 60 * 1000),

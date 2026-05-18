@@ -20,6 +20,9 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { feedHorse, rollStatBoost } from '../services/horseFeedService.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 // Resolved once at module load — used by the SELECT FOR UPDATE sentinel describe block.
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -157,6 +160,7 @@ describe('feedHorse service — stat-boost integration (real DB)', () => {
     userId = user.id;
     const horse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `SvcHorse${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         sex: 'Stallion',
         dateOfBirth: new Date('2020-01-01'),
@@ -293,6 +297,7 @@ describe('feedHorse service — pregnancy feeding counter (Phase B4, real DB)', 
     // empty counter map, no prior feeding today.
     const dam = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `Dam${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         sex: 'mare',
         dateOfBirth: new Date('2020-01-01'),
@@ -396,6 +401,7 @@ describe('feedHorse service — sequential-feed guard (Equoria-nsr7 / Equoria-5g
     userId = user.id;
     const horse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `ConcHorse${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         sex: 'Stallion',
         dateOfBirth: new Date('2020-01-01'),

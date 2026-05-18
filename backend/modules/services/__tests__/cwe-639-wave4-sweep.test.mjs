@@ -23,6 +23,9 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { createMockToken } from '../../../__tests__/factories/index.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 describe('CWE-639 wave-4 sweep (Equoria-9ov8)', () => {
   let __csrf__;
@@ -70,6 +73,7 @@ describe('CWE-639 wave-4 sweep (Equoria-9ov8)', () => {
     // Horse owned by user A — age 5 to satisfy enterShow age gate
     horseA = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `CweHorseW4A-${randomBytes(8).toString('hex')}`,
         userId: userA.id,
         sex: 'mare',
@@ -81,6 +85,7 @@ describe('CWE-639 wave-4 sweep (Equoria-9ov8)', () => {
     // is the cross-user ownership signal.
     horseB = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `CweHorseW4B-${randomBytes(8).toString('hex')}`,
         userId: userB.id,
         sex: 'stallion',

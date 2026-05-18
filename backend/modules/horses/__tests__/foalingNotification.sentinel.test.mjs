@@ -9,6 +9,9 @@
 import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import prisma from '../../../db/index.mjs';
 import { createFoalFromPregnancy } from '../services/foalingService.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -39,6 +42,7 @@ describe('SENTINEL: foal born → foal_born Notification', () => {
 
     sire = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-FoalNotifSire-${Date.now()}`,
         sex: 'Stallion',
         dateOfBirth: dob,
@@ -50,6 +54,7 @@ describe('SENTINEL: foal born → foal_born Notification', () => {
 
     dam = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-FoalNotifDam-${Date.now()}`,
         sex: 'Mare',
         dateOfBirth: dob,

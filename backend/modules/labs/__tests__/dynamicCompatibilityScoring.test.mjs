@@ -16,6 +16,9 @@ import {
   updateCompatibilityHistory,
 } from '../../../services/dynamicCompatibilityScoring.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 let user;
 let horse;
@@ -35,6 +38,7 @@ beforeAll(async () => {
 
   horse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-DynCompatHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
@@ -248,6 +252,7 @@ describe('analyzeCompatibilityTrends — trend slope branches with DB interactio
 
     improvingHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-DC-Improving-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -258,6 +263,7 @@ describe('analyzeCompatibilityTrends — trend slope branches with DB interactio
 
     decliningHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-DC-Declining-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -268,6 +274,7 @@ describe('analyzeCompatibilityTrends — trend slope branches with DB interactio
 
     stableHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-DC-Stable-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -416,6 +423,7 @@ describe('dynamicCompatibilityScoring — branch coverage (Equoria-jkht)', () =>
 
     branchHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-DC-BranchHorse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -682,6 +690,7 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
 
     rr7Horse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-RR7-Horse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -694,6 +703,7 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
 
     rr7HighBondHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-RR7-HighBond-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -706,6 +716,7 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
 
     rr7StressHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-RR7-Stress-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
@@ -718,6 +729,7 @@ describe('dynamicCompatibilityScoring — extended branch coverage (Equoria-rr7)
 
     rr7NoGroomHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-RR7-NoGroomHorse-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(),

@@ -19,6 +19,9 @@ import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 describe('GET /api/horses/:id/equippable', () => {
   let user;
@@ -75,6 +78,7 @@ describe('GET /api/horses/:id/equippable', () => {
 
     const a = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `EqA${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         sex: 'mare',
         dateOfBirth: new Date('2020-01-01'),
@@ -84,6 +88,7 @@ describe('GET /api/horses/:id/equippable', () => {
     });
     const b = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `EqB${randomBytes(4).toString('hex')}${randomBytes(4).toString('hex')}`,
         sex: 'mare',
         dateOfBirth: new Date('2020-01-01'),

@@ -18,6 +18,9 @@ import {
   applyPersonalityEvolutionEffects,
 } from '../../../services/personalityEvolutionSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 let user;
 let horse;
@@ -37,6 +40,7 @@ beforeAll(async () => {
 
   horse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-PersEvolHorse-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
@@ -300,6 +304,7 @@ describe('personalityEvolutionSystem — evolve path branch coverage (Equoria-jk
 
     evHorseNervous = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-PES-HorseNervous-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(ts - 2 * 365.25 * 24 * 60 * 60 * 1000),
@@ -311,6 +316,7 @@ describe('personalityEvolutionSystem — evolve path branch coverage (Equoria-jk
 
     evHorseDeveloping = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-PES-HorseDeveloping-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(ts - 2 * 365.25 * 24 * 60 * 60 * 1000),
@@ -471,6 +477,7 @@ describe('personalityEvolutionSystem — evolution_criteria_not_met + determineN
     // Dummy horse used ONLY as the foalId target for rr7GroomMixed's 15 mixed interactions
     rr7HorseDummy = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-PES-RR7-HorseDummy-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(ts - 365.25 * 24 * 60 * 60 * 1000),
@@ -483,6 +490,7 @@ describe('personalityEvolutionSystem — evolution_criteria_not_met + determineN
     // → shouldEvolve=true (consistency=1.0 ≥ 0.6), determineNewTemperament returns currentTemperament (line 559)
     rr7HorseSpirited = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-PES-RR7-HorseSpirited-${ts}`,
         sex: 'Filly',
         dateOfBirth: new Date(ts - 2 * 365.25 * 24 * 60 * 60 * 1000),

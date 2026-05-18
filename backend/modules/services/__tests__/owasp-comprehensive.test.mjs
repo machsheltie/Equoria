@@ -23,6 +23,10 @@ import { fileURLToPath } from 'url';
 
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 import { randomBytes } from 'node:crypto';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -83,6 +87,7 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
     // Create test horse
     testHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: 'OWASP Test Horse',
         breed: { connect: { id: testBreed.id } },
         sex: 'Stallion',
@@ -463,6 +468,7 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
           }));
         const otherHorse = await prisma.horse.create({
           data: {
+            ...fixtureColor(),
             name: 'Other User Horse',
             breed: { connect: { id: ownershipTestBreed.id } },
             sex: 'Mare',

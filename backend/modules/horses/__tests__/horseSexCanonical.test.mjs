@@ -24,6 +24,9 @@ import {
   canonicalizeHorseSexOrNull,
   CANONICAL_HORSE_SEX_VALUES,
 } from '../../../../packages/database/horseSexCanonical.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const FIXTURE_NAME_PREFIX = 'TestFixture-CanonicalSex-';
 
@@ -92,6 +95,7 @@ describe('Prisma $extends — canonicalizes sex on every horse write', () => {
   it('horse.create — lowercase "mare" persists as "Mare"', async () => {
     const created = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `${FIXTURE_NAME_PREFIX}lowercase`,
         sex: 'mare',
         dateOfBirth: new Date('2020-01-01'),
@@ -106,6 +110,7 @@ describe('Prisma $extends — canonicalizes sex on every horse write', () => {
   it('horse.create — uppercase "STALLION" persists as "Stallion"', async () => {
     const created = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `${FIXTURE_NAME_PREFIX}uppercase`,
         sex: 'STALLION',
         dateOfBirth: new Date('2020-01-01'),
@@ -118,6 +123,7 @@ describe('Prisma $extends — canonicalizes sex on every horse write', () => {
   it('horse.create — Title Case "Filly" passes through unchanged', async () => {
     const created = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `${FIXTURE_NAME_PREFIX}titlecase`,
         sex: 'Filly',
         dateOfBirth: new Date('2024-01-01'),
@@ -131,6 +137,7 @@ describe('Prisma $extends — canonicalizes sex on every horse write', () => {
     await expect(
       prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `${FIXTURE_NAME_PREFIX}invalid`,
           sex: 'alien',
           dateOfBirth: new Date('2020-01-01'),
@@ -143,6 +150,7 @@ describe('Prisma $extends — canonicalizes sex on every horse write', () => {
   it('horse.update — lowercase "mare" persists as "Mare"', async () => {
     const created = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `${FIXTURE_NAME_PREFIX}update-target`,
         sex: 'colt',
         dateOfBirth: new Date('2024-01-01'),

@@ -35,6 +35,9 @@ import {
   generateEnvironmentalReport,
 } from '../../../services/environmentalTriggerSystem.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 // ── No-fixture pure paths ─────────────────────────────────────────────────────
 
@@ -100,6 +103,7 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
 
     etsHorseNewborn = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-ETS-Newborn-${ts}`,
         sex: 'Filly',
         dateOfBirth: daysAgo(1),
@@ -110,6 +114,7 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
 
     etsHorseYoung = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-ETS-Young-${ts}`,
         sex: 'Colt',
         dateOfBirth: daysAgo(15),
@@ -120,6 +125,7 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
 
     etsHorseDeveloping = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-ETS-Developing-${ts}`,
         sex: 'Filly',
         dateOfBirth: daysAgo(45),
@@ -130,6 +136,7 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
 
     etsHorseMature = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-ETS-Mature-${ts}`,
         sex: 'Colt',
         dateOfBirth: daysAgo(200),
@@ -141,6 +148,7 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
     // 130 days old: past last critical period (ends day 120), daysSinceLastPeriod=10 < 30 → sensitivityLevel=0.3
     etsHorseRecent = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-ETS-Recent-${ts}`,
         sex: 'Filly',
         dateOfBirth: daysAgo(130),
@@ -171,6 +179,7 @@ describe('environmentalTriggerSystem — DB fixture branch coverage (Equoria-jkh
     // 1 day old, stressLevel=8 → ageModifier=0.6, stressModifier=0.6 → finalThreshold=0.18 → sensitivity=0.82>0.7
     etsHorseStressedFoal = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-ETS-StressedFoal-${ts}`,
         sex: 'Colt',
         dateOfBirth: daysAgo(1),

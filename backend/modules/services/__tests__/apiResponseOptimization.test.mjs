@@ -35,6 +35,9 @@ import {
   performanceMonitoring,
 } from '../../../middleware/responseOptimization.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 describe('API Response Optimization System', () => {
   let testUserId;
@@ -68,6 +71,7 @@ describe('API Response Optimization System', () => {
     for (let i = 0; i < 25; i++) {
       const horse = await prisma.horse.create({
         data: {
+          ...fixtureColor(),
           name: `OptimizationHorse${i}_${testRunId}`,
           userId: testUserId,
           breedId: testBreed.id,

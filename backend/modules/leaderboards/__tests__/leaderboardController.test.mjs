@@ -18,6 +18,9 @@ import app from '../../../app.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../../../tests/helpers/authHelper.mjs';
 import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 const ORIGIN = 'http://localhost:3000';
 
@@ -150,6 +153,7 @@ describe('GET /api/leaderboards/win-rate (Equoria-847r)', () => {
     const breed = await prisma.breed.findFirst();
     const horse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-WinRateHorse-${Date.now()}`,
         userId: user.id,
         breedId: breed ? breed.id : null,

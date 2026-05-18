@@ -16,6 +16,9 @@ import flagEvalDefault, {
   getEligibleHorses,
 } from '../../../utils/flagEvaluationEngine.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
+// Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
+// horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
+import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
 
 let user;
 let foal;
@@ -35,6 +38,7 @@ beforeAll(async () => {
 
   foal = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-FlagEvalFoal-${Date.now()}`,
       sex: 'Filly',
       dateOfBirth: new Date(),
@@ -45,6 +49,7 @@ beforeAll(async () => {
 
   matureHorse = await prisma.horse.create({
     data: {
+      ...fixtureColor(),
       name: `TestFixture-FlagEvalMature-${Date.now()}`,
       sex: 'Stallion',
       dateOfBirth: new Date(Date.now() - 4 * 365.25 * 24 * 60 * 60 * 1000),
@@ -93,6 +98,7 @@ describe('evaluateHorseFlags', () => {
   it('returns success:false for horse already at max flags', async () => {
     const maxFlagHorse = await prisma.horse.create({
       data: {
+        ...fixtureColor(),
         name: `TestFixture-FlagEvalMaxFlags-${Date.now()}`,
         sex: 'Filly',
         dateOfBirth: new Date(),
