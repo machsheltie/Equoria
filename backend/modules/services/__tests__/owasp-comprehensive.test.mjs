@@ -26,6 +26,9 @@ import { randomBytes } from 'node:crypto';
 // Equoria-odjt: spread a CI-proven valid colorGenotype+phenotype so fixture
 // horses can never leak as NULL-phenotype rows that trip horseColorNullSentinel.
 import { fixtureColor } from '../../../tests/helpers/fixtureColor.mjs';
+// Equoria-4dva: real production SSRF-guard — A10 tests now exercise this
+// instead of the previous assertion-free placeholder it() bodies.
+import { validateOutboundUrl, assertSafeOutboundUrl } from '../../../utils/ssrfGuard.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -556,58 +559,81 @@ describe('?? OWASP Top 10 - Comprehensive Security Tests', () => {
     });
   });
 
+  // A10 SSRF: the reusable SSRF-guard now EXISTS in production
+  // (backend/utils/ssrfGuard.mjs, Equoria-4dva). These tests exercise that
+  // real production code (no longer assertion-free placeholders). Full
+  // table-driven coverage incl. DNS-rebinding lives in the dedicated
+  // sentinel suite backend/modules/services/__tests__/ssrfGuard.test.mjs;
+  // these assert the production gate is importable and fires here too.
   describe('?? A10:2021 - Server-Side Request Forgery (SSRF)', () => {
-    describe('URL Validation', () => {
-      it('should reject internal IP addresses in URLs', async () => {
-        // Future test: When URL input features are implemented, validate these are blocked:
-        // const internalIPs = [
-        //   'http://127.0.0.1',
-        //   'http://localhost',
-        //   'http://0.0.0.0',
-        //   'http://[::1]',
-        //   'http://169.254.169.254', // AWS metadata endpoint
-        //   'http://192.168.1.1',
-        //   'http://10.0.0.1',
-        //   'http://172.16.0.1',
-        // ];
-        // If application has any URL input endpoints (e.g., webhook, avatar URL)
-        // they should reject internal IPs
-        // This is a preventive test for future URL input features
+    describe('URL Validation (real production guard)', () => {
+      it('should reject internal IP addresses in URLs', () => {
+        const internalIPs = [
+          'http://127.0.0.1/',
+          'http://localhost/',
+          'http://0.0.0.0/',
+          'http://[::1]/',
+          'http://169.254.169.254/latest/meta-data/', // cloud metadata
+          'http://192.168.1.1/',
+          'http://10.0.0.1/',
+          'http://172.16.0.1/',
+          'http://[fc00::1]/',
+          'http://[fe80::1]/',
+        ];
+        for (const url of internalIPs) {
+          expect(validateOutboundUrl(url).ok).toBe(false);
+        }
       });
 
-      it('should reject file:// protocol URLs', async () => {
-        // Future test: When URL input features are implemented, validate these are blocked:
-        // const fileUrls = [
-        //   'file:///etc/passwd',
-        //   'file:///C:/Windows/System32',
-        //   'file://localhost/etc/hosts',
-        // ];
-        // File protocol should be blocked in any URL input
-        // This is a preventive test for future URL input features
+      it('should reject file:// and other non-http(s) protocol URLs', () => {
+        const badSchemes = [
+          'file:///etc/passwd',
+          'file:///C:/Windows/System32',
+          'file://localhost/etc/hosts',
+          'gopher://127.0.0.1:11211/_stats',
+          'ftp://internal.example.com/secret',
+          'data:text/html,<script>alert(1)</script>',
+        ];
+        for (const url of badSchemes) {
+          expect(validateOutboundUrl(url).ok).toBe(false);
+        }
+      });
+
+      it('should allow ordinary public https URLs', () => {
+        expect(validateOutboundUrl('https://api.stripe.com/v1/charges').ok).toBe(true);
+        expect(validateOutboundUrl('https://8.8.8.8/').ok).toBe(true);
       });
     });
 
-    describe('External Request Validation', () => {
-      it('should sanitize redirect URLs', async () => {
-        // If application implements OAuth or external redirects
-        // Redirect URLs should be validated against whitelist
-        // This is a preventive test for future redirect features
+    describe('External Request Validation (fail-closed)', () => {
+      it('should reject malformed redirect/webhook URLs (fail closed)', () => {
+        for (const bad of ['not-a-url', '', null, undefined, 'http://[bad']) {
+          expect(validateOutboundUrl(bad).ok).toBe(false);
+        }
       });
 
-      it('should validate webhook URLs', async () => {
-        // If application implements webhooks
-        // Webhook URLs should not point to internal services
-        // This is a preventive test for future webhook features
+      it('should reject embedded-credential webhook URLs', () => {
+        expect(validateOutboundUrl('https://user:pass@evil.example.com/').ok).toBe(false);
+      });
+
+      it('the async gate rejects a private IP literal without needing DNS', async () => {
+        await expect(assertSafeOutboundUrl('http://192.168.0.1/')).rejects.toMatchObject({
+          statusCode: 400,
+        });
+      });
+
+      it('the async gate allows a public IP literal without needing DNS', async () => {
+        await expect(assertSafeOutboundUrl('https://1.1.1.1/')).resolves.toContain('1.1.1.1');
       });
     });
 
     describe('DNS Rebinding Prevention', () => {
-      it('should prevent DNS rebinding attacks', async () => {
-        // DNS rebinding attack prevention:
-        // - Validate resolved IP addresses
-        // - Check against internal IP ranges after DNS resolution
-        // - Use short TTL for DNS caches
-        // This is a preventive test for future URL-based features
+      it('the async gate performs DNS resolution + per-address re-validation', async () => {
+        // Real DNS: a guaranteed-loopback hostname must be rejected because
+        // it resolves to 127.x — proves resolved-IP re-validation runs.
+        await expect(assertSafeOutboundUrl('http://localhost.localdomain/')).rejects.toMatchObject({ statusCode: 400 });
+        // example.com resolves only to public addresses → allowed.
+        await expect(assertSafeOutboundUrl('https://example.com/')).resolves.toContain('example.com');
       });
     });
   });
