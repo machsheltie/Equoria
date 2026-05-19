@@ -295,10 +295,32 @@ ADR-008 when any of its re-evaluation triggers fire.
 > `20260518120000_add_user_mfa_fields`); service
 > `backend/modules/auth/services/mfaService.mjs`; routes under
 > `/api/v1/auth/mfa/*`. The prior "no MFA code exists" correction is
-> superseded. **Known residual risk:** `mfaSecret` is stored unencrypted
-> (no encryption util in codebase) — tracked follow-up. MFA is opt-in;
-> admin-account enforcement is a separate tracked follow-up (AC item 5,
-> deferred per EDGE_CASE_FIX_DISCIPLINE §7).
+> superseded.
+>
+> **Accuracy re-verification (2026-05-19, Equoria-ss4r against origin/master
+> HEAD):** Two residual-risk claims in the prior revision of this block were
+> **stale** — both gaps are CLOSED in code that landed before the s3rf edit
+> (978713945) that last touched this report, so the report shipped describing
+> a state ~2 commits behind reality:
+>
+> - ✅ **`mfaSecret` IS encrypted at rest (RESOLVED, Equoria-yi13v, commit
+>   7701ed345, 2026-05-18).** `backend/utils/fieldEncryption.mjs` (AES-256-GCM)
+>   exists; `backend/modules/auth/controllers/authController.mjs:1537` writes
+>   `mfaSecret: encryptField(secret)`; sentinel
+>   `backend/modules/auth/__tests__/mfaSecretEncryptedAtRest.sentinel.test.mjs`
+>   asserts the persisted value is not plaintext base32 + round-trips. The
+>   prior "stored unencrypted (no encryption util in codebase)" statement was
+>   false against origin/master.
+> - ✅ **Admin-account MFA enforcement IS implemented (RESOLVED,
+>   Equoria-te21j).** `requireAdminMfa` (`backend/middleware/auth.mjs:334`,
+>   opt-in via env `ADMIN_MFA_REQUIRED`) is mounted on the admin router
+>   (`backend/app.mjs:171`), fail-closed on DB lookup error. The prior
+>   "separate tracked follow-up, deferred" statement was stale; the control
+>   exists (default-off so existing admins aren't locked out — flipping the
+>   flag is an operator action, not unimplemented code).
+>
+> MFA remains opt-in for non-admin accounts (no global mandatory enforcement);
+> that broader posture is a genuine open follow-up.
 
 **Test Coverage** (verified 2026-05-18):
 
@@ -307,11 +329,15 @@ ADR-008 when any of its re-evaluation triggers fire.
 - `backend/modules/auth/__tests__/mfa.integration.test.mjs` (10 real-DB integration cases — full MFA lifecycle + non-MFA login unchanged)
 - Session management tests
 
-**Risk Level:** LOW–MEDIUM (MFA opt-in, not yet enforced for admin; secret
-unencrypted at rest)
-**Recommendation:** (1) Encrypt `mfaSecret` at rest; (2) add admin-account
-MFA enforcement. Both tracked as Equoria-2vwwh follow-ups (scoped separately,
-not closed by this shipped opt-in MFA).
+**Risk Level:** LOW (opt-in TOTP MFA shipped; `mfaSecret` AES-256-GCM
+encrypted at rest — Equoria-yi13v; opt-in admin MFA enforcement available —
+Equoria-te21j. Residual: non-admin MFA is opt-in, no global mandatory
+enforcement.)
+**Recommendation:** (1) ✅ DONE — `mfaSecret` encrypted at rest
+(Equoria-yi13v); (2) ✅ DONE — admin-account MFA enforcement implemented,
+opt-in via `ADMIN_MFA_REQUIRED` (Equoria-te21j); operators flip the flag
+post-rollout. Remaining genuine follow-up: optional global/mandatory MFA for
+all accounts (not yet implemented).
 
 ---
 
@@ -461,26 +487,37 @@ spike (not pre-built — avoids speculative complexity).
 - Therefore SSRF is **not applicable**: there is nothing to validate. This is
   the honest rating, not "compliant via implemented controls."
 
-**Hard prerequisite gate for future work:**
+**Hard prerequisite gate — STATUS: ✅ BUILT AHEAD (re-verified 2026-05-19,
+Equoria-ss4r against origin/master HEAD):**
 
-- Before ANY feature that fetches a user-supplied URL ships (webhooks,
-  avatar-by-URL, link previews, OAuth redirect, server-side import), a
-  reusable SSRF-guard utility MUST be implemented and wired in: reject
-  `file://`/`gopher://`/non-http(s) schemes; block loopback, link-local
-  (`169.254.0.0/16` incl. `169.254.169.254`), RFC1918 (`10/8`, `172.16/12`,
-  `192.168/16`), `::1`, and validate the _resolved_ IP post-DNS (rebinding).
-  Sentinel-positive tests must prove each is blocked against real production
-  code (not an inline test helper). This is a blocking gate, tracked as
-  **Equoria-4dva**.
+- The prior revision said the SSRF-guard utility "MUST be implemented" and
+  was a "blocking gate tracked as Equoria-4dva" (unbuilt). That is **stale**:
+  Equoria-4dva was **delivered** in commit `5a1614fe1` (2026-05-19), which
+  also landed before the s3rf edit that last touched this report — so the
+  report shipped describing the guard as not-yet-built when it already
+  existed.
+- `backend/utils/ssrfGuard.mjs` is a real, fail-closed implementation:
+  blocks loopback (`127.0.0.0/8`, `::1`), link-local incl. the cloud-metadata
+  IP (`169.254.0.0/16` → `169.254.169.254`), and RFC1918
+  (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`). Sentinel coverage:
+  `backend/modules/services/__tests__/ssrfGuard.test.mjs`.
+- This is a **build-ahead** control: there is still no production endpoint
+  that consumes a user-supplied URL, so the guard is not yet wired into a
+  request path (correctly — there is nothing to wire it to). When the first
+  external-URL feature is added, it must call this existing guard; the
+  utility no longer needs to be built first.
 
-**Test Coverage:** None applicable (placeholder-only blocks removed from
-readiness consideration; see SSRF-guard gate above for future requirement).
+**Test Coverage:** `backend/modules/services/__tests__/ssrfGuard.test.mjs`
+(unit-level coverage of the now-existing guard utility). The legacy
+placeholder-only blocks in `owasp-comprehensive.test.mjs` remain excluded
+from readiness consideration.
 
-**Risk Level:** N/A (no attack surface) — escalates to HIGH the moment any
-external-URL feature is added without the prerequisite guard.
-**Recommendation:** SSRF-guard utility tracked as blocking gate **Equoria-4dva**,
-a prerequisite of the first external-URL feature; do not re-rate A10 as
-"compliant" until such a feature exists _with_ the guard.
+**Risk Level:** N/A (no attack surface today; reusable guard now BUILT, so a
+future external-URL feature can adopt it immediately) — escalates to HIGH
+only if such a feature ships **without** calling `ssrfGuard.mjs`.
+**Recommendation:** SSRF-guard utility is delivered (Equoria-4dva,
+`backend/utils/ssrfGuard.mjs`). Do not re-rate A10 as "compliant" until an
+external-URL feature exists _and_ is verified to route through this guard.
 
 ---
 
@@ -874,7 +911,15 @@ critical areas, with honestly-scoped gaps. Verified state:
 ✅ **262 executed security test cases across the 8 core files, jest run 2026-05-18 (exact counts in §3.1) + 4 real-DB A09 audit-trail cases**
 ✅ **Automated continuous dependency scanning (backend + frontend + root)**
 ✅ **0 known dependency vulnerabilities per last CI scan**
-⚠️ **Gaps before production:** admin-account MFA enforcement (TODO — opt-in TOTP MFA shipped Equoria-2vwwh; mfaSecret at-rest encryption TODO), real security contacts (TODO), SSRF-guard gate before any external-URL feature (TODO)
+⚠️ **Gaps before production (re-verified 2026-05-19, Equoria-ss4r):** real
+security contacts (TODO — hard blocker, still placeholders); Sentry production
+DSN (TODO); CORS whitelist finalization (TODO). _Previously listed here but
+now VERIFIED RESOLVED in origin/master code:_ ✅ `mfaSecret` AES-256-GCM
+encrypted at rest (Equoria-yi13v); ✅ opt-in admin-account MFA enforcement
+implemented (Equoria-te21j); ✅ reusable SSRF-guard utility built
+(Equoria-4dva, `backend/utils/ssrfGuard.mjs`). Remaining genuine MFA
+follow-up: optional global/mandatory MFA for non-admin accounts (not
+implemented — opt-in only).
 
 ### 11.2 Security Strengths
 
@@ -901,9 +946,16 @@ not optional polish.
    for sensitive mutations. ✅ DONE (Equoria-54qq8): automated nightly
    audit-log retention purge (scoped DELETE, 90-day default, 7-day floor) —
    unbounded-growth residual resolved
-2. Add admin-account MFA enforcement + encrypt mfaSecret at rest (opt-in TOTP MFA shipped Equoria-2vwwh; these two are tracked follow-ups)
+2. ✅ DONE (Equoria-yi13v): `mfaSecret` encrypted at rest (AES-256-GCM).
+   ✅ DONE (Equoria-te21j): opt-in admin-account MFA enforcement implemented
+   (`ADMIN_MFA_REQUIRED`). Remaining: optional global/mandatory MFA for
+   non-admin accounts (genuine open follow-up; opt-in TOTP shipped
+   Equoria-2vwwh)
 3. Replace placeholder security contacts with real monitored channels
-4. File + link the blocking SSRF-guard gate before any external-URL feature
+   (**hard blocker — still open**)
+4. ✅ DONE (Equoria-4dva): reusable fail-closed SSRF-guard utility built
+   (`backend/utils/ssrfGuard.mjs`). Remaining gate: the first external-URL
+   feature must route through it (no such feature exists today)
 5. Configure Sentry production DSN
 6. Finalize CORS origin whitelist
 7. Conduct pre-launch security checklist review (see §11.5)
