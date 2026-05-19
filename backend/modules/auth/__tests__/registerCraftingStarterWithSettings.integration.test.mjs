@@ -59,6 +59,7 @@ describe('INTEGRATION: register with explicit settings still seeds crafting star
         password: 'StrongP@ssw0rd!23',
         firstName: 'Aazk',
         lastName: 'Tester',
+        dateOfBirth: '1990-01-01', // Equoria-iqzn: COPPA age gate (adult DOB)
         ...(settingsBody !== undefined ? { settings: settingsBody } : {}),
       });
     expect(res.status).toBe(201);

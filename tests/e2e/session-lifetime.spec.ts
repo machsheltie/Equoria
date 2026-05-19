@@ -33,6 +33,8 @@ test.describe('Session lifetime — refresh flow (21R-AUTH-6)', () => {
         username: `${SUITE_PREFIX}${suffix}`,
         firstName: 'Ses',
         lastName: 'LifeE2e',
+        // Equoria-iqzn / Equoria-9tlha: COPPA age gate requires a valid adult DOB.
+        dateOfBirth: '1990-01-01',
       },
       headers: { Origin: 'http://localhost:3000' },
     });

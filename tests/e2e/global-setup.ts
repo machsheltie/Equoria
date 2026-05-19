@@ -35,6 +35,10 @@ async function globalSetup(config: FullConfig) {
     await page.fill('input[name="lastName"]', 'Tester');
     await page.fill('input[name="username"]', username);
     await page.fill('input[name="email"]', email);
+    // Equoria-iqzn / Equoria-9tlha: registration now requires a DOB that
+    // passes the server-authoritative COPPA age gate (>= 13 real years).
+    // Use a fixed adult date so the shared E2E user can be created.
+    await page.fill('input[name="dateOfBirth"]', '1990-01-01');
     await page.fill('input[name="password"]', password);
     await page.fill('input[name="confirmPassword"]', password);
 

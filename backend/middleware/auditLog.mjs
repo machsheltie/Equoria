@@ -377,6 +377,11 @@ export function sanitizeLogData(data) {
     'card',
     'cvv',
     'pin',
+    // Equoria-iqzn: date of birth is sensitive PII (COPPA age-gate input).
+    // Substring match: redacts `dateOfBirth` (-> `dateofbirth` contains
+    // `birth`) and any `dob`-named field from persisted audit metadata.
+    'birth',
+    'dob',
   ];
 
   const sanitized = { ...data };

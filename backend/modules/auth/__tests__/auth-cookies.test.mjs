@@ -32,6 +32,7 @@ describe('Authentication with HttpOnly Cookies', () => {
     password: 'TestPassword123!',
     firstName: 'Cookie',
     lastName: 'Test',
+    dateOfBirth: '1990-01-01', // Equoria-iqzn: COPPA age gate (adult DOB)
   };
   // Rate-limit bypass header removed in Workstream 4; keep empty for chain
   // compatibility with existing .set(rateLimitBypassHeader) call sites.

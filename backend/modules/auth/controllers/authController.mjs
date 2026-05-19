@@ -23,6 +23,7 @@ import { COOKIE_OPTIONS, CLEAR_COOKIE_OPTIONS } from '../../../utils/cookieConfi
 import { issueCsrfToken } from '../../../middleware/csrf.mjs';
 import { evictPasswordChangedAtCache } from '../../../middleware/auth.mjs';
 import { HORSE_STAT_VALUES } from '../../../constants/schema.mjs';
+import { meetsCoppaMinimumAge, COPPA_MIN_AGE_YEARS } from '../../../utils/humanAge.mjs';
 
 // Starter kit seeded for every new user at registration (Story 15-2).
 // Exported for test locking — see backend/modules/auth/__tests__/starterKitInventory.test.mjs
@@ -94,11 +95,27 @@ function hashPasswordResetToken(token) {
  */
 export const register = async (req, res, next) => {
   try {
-    const { username, email, password, firstName, lastName, money, level, xp } = req.body; // Removed 'name', 'role', and 'settings' (Equoria-aazk: starter settings are server-authoritative)
+    const { username, email, password, firstName, lastName, dateOfBirth, money, level, xp } =
+      req.body; // Removed 'name', 'role', and 'settings' (Equoria-aazk: starter settings are server-authoritative)
 
     // Validate input
     if (!username || !email || !password) {
       throw new ValidationError('Username, email, and password are required');
+    }
+
+    // COPPA age gate (Equoria-iqzn). Server-authoritative: enforced here,
+    // BEFORE any user row (PII) is created, regardless of any client-side
+    // check. meetsCoppaMinimumAge fails closed — a missing, invalid, or
+    // future DOB returns false, so an unknown-age request is rejected, never
+    // silently allowed. The codebase has no verifiable-parental-consent
+    // flow, so the COPPA-compliant MVP is a hard age gate (rejection); a
+    // consent flow is explicitly out of scope (documented in SECURITY.md
+    // A07). The message is intentionally non-leaky: it does not echo the
+    // submitted DOB or the computed age.
+    if (!meetsCoppaMinimumAge(dateOfBirth)) {
+      throw new ValidationError(
+        `You must be ${COPPA_MIN_AGE_YEARS} or older to create an account`,
+      );
     }
 
     // Check if user already exists (fast-path check; P2002 catch below handles the
@@ -135,6 +152,10 @@ export const register = async (req, res, next) => {
           password: hashedPassword,
           firstName: firstName || null,
           lastName: lastName || null,
+          // Equoria-iqzn: persisted only after the COPPA age gate above
+          // passed, so every stored row is >= 13. Treated as sensitive PII
+          // (redacted from audit/request logs).
+          dateOfBirth: new Date(dateOfBirth),
           money: startingMoney,
           level: level === undefined ? 1 : level,
           xp: xp === undefined ? 0 : xp,

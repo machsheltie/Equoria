@@ -24,6 +24,12 @@ model User {
   /// First and last name for display purposes
   firstName        String
   lastName         String
+  /// Date of birth — collected at registration for COPPA age-gate enforcement
+  /// (Equoria-iqzn). Server computes real-calendar age and rejects under-13
+  /// registrations BEFORE this row is created, so persisted rows are always
+  /// >= 13. Nullable for legacy accounts created before the age gate existed.
+  /// Treated as sensitive PII: redacted from audit/request logs.
+  dateOfBirth      DateTime?
   /// In-game currency (or balance)
   money            Int               @default(1000)
   /// Current level of the user

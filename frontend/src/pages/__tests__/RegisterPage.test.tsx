@@ -164,6 +164,7 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/email/i), 'invalid-email');
       await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
       await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/date of birth/i), '1990-01-01');
 
       // Submit the form directly
       const form = container.querySelector('form');
@@ -172,6 +173,109 @@ describe('RegisterPage', () => {
       await waitFor(() => {
         expect(screen.getByText(/please enter a valid email address/i)).toBeInTheDocument();
       });
+    });
+
+    // Equoria-iqzn / Equoria-9tlha — COPPA client-side hint sentinels.
+    // The server is authoritative; these prove the form gives an honest
+    // early signal and does not call the API for an under-13 / missing DOB.
+    it('blocks submission and shows an error when date of birth is empty (COPPA)', async () => {
+      const user = userEvent.setup();
+      const TestWrapper = createTestWrapper();
+      const { container } = render(
+        <TestWrapper>
+          <RegisterPage />
+        </TestWrapper>
+      );
+
+      await user.type(screen.getByLabelText(/first name/i), 'John');
+      await user.type(screen.getByLabelText(/last name/i), 'Doe');
+      await user.type(screen.getByLabelText(/username/i), 'johndoe');
+      await user.type(screen.getByLabelText(/email/i), 'john@example.com');
+      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
+      // Intentionally do NOT fill date of birth.
+
+      const form = container.querySelector('form');
+      fireEvent.submit(form!);
+
+      // Zod collects all dateOfBirth issues; RegisterPage surfaces one of
+      // them (required / not-a-valid-date / 13-or-older) for the empty field.
+      // The contract that matters: a DOB error is shown AND the API is not
+      // called for an empty DOB.
+      await waitFor(() => {
+        expect(
+          screen.getByText(/date of birth is required|valid date|13 or older/i)
+        ).toBeInTheDocument();
+      });
+      expect(apiClient.authApi.register).not.toHaveBeenCalled();
+    });
+
+    it('blocks submission and shows an error for an under-13 date of birth (COPPA)', async () => {
+      const user = userEvent.setup();
+      const TestWrapper = createTestWrapper();
+      const { container } = render(
+        <TestWrapper>
+          <RegisterPage />
+        </TestWrapper>
+      );
+
+      // A DOB 5 years ago — clearly under 13.
+      const fiveYearsAgo = new Date();
+      fiveYearsAgo.setUTCFullYear(fiveYearsAgo.getUTCFullYear() - 5);
+      const under13 = fiveYearsAgo.toISOString().slice(0, 10);
+
+      await user.type(screen.getByLabelText(/first name/i), 'John');
+      await user.type(screen.getByLabelText(/last name/i), 'Doe');
+      await user.type(screen.getByLabelText(/username/i), 'johndoe');
+      await user.type(screen.getByLabelText(/email/i), 'john@example.com');
+      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/date of birth/i), under13);
+
+      const form = container.querySelector('form');
+      fireEvent.submit(form!);
+
+      await waitFor(() => {
+        expect(screen.getByText(/13 or older/i)).toBeInTheDocument();
+      });
+      expect(apiClient.authApi.register).not.toHaveBeenCalled();
+    });
+
+    it('allows submission for a 13+ date of birth and forwards it to the API (COPPA)', async () => {
+      const user = userEvent.setup();
+      const TestWrapper = createTestWrapper();
+
+      vi.mocked(apiClient.authApi.register).mockResolvedValueOnce({
+        user: { id: 1, username: 'johndoe', email: 'john@example.com' },
+      });
+
+      render(
+        <TestWrapper>
+          <RegisterPage />
+        </TestWrapper>
+      );
+
+      // Exactly 20 years ago — comfortably over 13.
+      const adult = new Date();
+      adult.setUTCFullYear(adult.getUTCFullYear() - 20);
+      const adultDob = adult.toISOString().slice(0, 10);
+
+      await user.type(screen.getByLabelText(/first name/i), 'John');
+      await user.type(screen.getByLabelText(/last name/i), 'Doe');
+      await user.type(screen.getByLabelText(/username/i), 'johndoe');
+      await user.type(screen.getByLabelText(/email/i), 'john@example.com');
+      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/date of birth/i), adultDob);
+
+      const submitButton = screen.getByRole('button', { name: /begin your journey/i });
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(apiClient.authApi.register).toHaveBeenCalled();
+      });
+      const call = vi.mocked(apiClient.authApi.register).mock.calls[0][0];
+      expect(call).toMatchObject({ dateOfBirth: adultDob });
     });
 
     it('shows error for short password', async () => {
@@ -190,6 +294,7 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'Sh0@t1');
       await user.type(screen.getByLabelText(/confirm password/i), 'Sh0@t1');
+      await user.type(screen.getByLabelText(/date of birth/i), '1990-01-01');
 
       const submitButton = screen.getByRole('button', { name: /begin your journey/i });
       await user.click(submitButton);
@@ -215,6 +320,7 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'password123@');
       await user.type(screen.getByLabelText(/confirm password/i), 'password123@');
+      await user.type(screen.getByLabelText(/date of birth/i), '1990-01-01');
 
       const submitButton = screen.getByRole('button', { name: /begin your journey/i });
       await user.click(submitButton);
@@ -242,6 +348,7 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'PasswordOnly@');
       await user.type(screen.getByLabelText(/confirm password/i), 'PasswordOnly@');
+      await user.type(screen.getByLabelText(/date of birth/i), '1990-01-01');
 
       const submitButton = screen.getByRole('button', { name: /begin your journey/i });
       await user.click(submitButton);
@@ -267,6 +374,7 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
       await user.type(screen.getByLabelText(/confirm password/i), 'DifferentPass123@');
+      await user.type(screen.getByLabelText(/date of birth/i), '1990-01-01');
 
       const submitButton = screen.getByRole('button', { name: /begin your journey/i });
       await user.click(submitButton);
@@ -292,6 +400,7 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
       await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/date of birth/i), '1990-01-01');
 
       const submitButton = screen.getByRole('button', { name: /begin your journey/i });
       await user.click(submitButton);
@@ -317,6 +426,7 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
       await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/date of birth/i), '1990-01-01');
 
       const submitButton = screen.getByRole('button', { name: /begin your journey/i });
       await user.click(submitButton);
@@ -345,6 +455,7 @@ describe('RegisterPage', () => {
       await user.type(emailInput, 'invalid-email');
       await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
       await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/date of birth/i), '1990-01-01');
 
       // Submit form directly
       const form = container.querySelector('form');
@@ -471,6 +582,7 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'SecurePass1#');
       await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass1#');
+      await user.type(screen.getByLabelText(/date of birth/i), '1990-01-01');
 
       // Submit the form — should fail with special char validation error
       const form = container.querySelector('form');
@@ -498,6 +610,7 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'Password1!');
       await user.type(screen.getByLabelText(/confirm password/i), 'Password1!');
+      await user.type(screen.getByLabelText(/date of birth/i), '1990-01-01');
 
       // Submit the form — should NOT show special char error
       const form = container.querySelector('form');
@@ -570,6 +683,7 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
       await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/date of birth/i), '1990-01-01');
 
       const submitButton = screen.getByRole('button', { name: /begin your journey/i });
       await user.click(submitButton);
@@ -601,6 +715,7 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
       await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/date of birth/i), '1990-01-01');
 
       const submitButton = screen.getByRole('button', { name: /begin your journey/i });
       await user.click(submitButton);
@@ -635,6 +750,7 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
       await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/date of birth/i), '1990-01-01');
 
       const submitButton = screen.getByRole('button', { name: /begin your journey/i });
       await user.click(submitButton);
@@ -664,6 +780,7 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
       await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/date of birth/i), '1990-01-01');
 
       // Submit via button click (matches other passing tests)
       const submitButton = screen.getByRole('button', { name: /begin your journey/i });
@@ -709,6 +826,7 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/email/i), 'existing@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
       await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/date of birth/i), '1990-01-01');
 
       await user.click(screen.getByRole('button', { name: /begin your journey/i }));
 
@@ -738,6 +856,7 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/email/i), 'existing@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
       await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/date of birth/i), '1990-01-01');
 
       await user.click(screen.getByRole('button', { name: /begin your journey/i }));
 
@@ -767,6 +886,7 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/email/i), 'inuse@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
       await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/date of birth/i), '1990-01-01');
 
       await user.click(screen.getByRole('button', { name: /begin your journey/i }));
 
@@ -796,6 +916,7 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
       await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/date of birth/i), '1990-01-01');
 
       await user.click(screen.getByRole('button', { name: /begin your journey/i }));
 
@@ -826,6 +947,7 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
       await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/date of birth/i), '1990-01-01');
 
       await user.click(screen.getByRole('button', { name: /begin your journey/i }));
 
@@ -853,6 +975,7 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
       await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/date of birth/i), '1990-01-01');
 
       await user.click(screen.getByRole('button', { name: /begin your journey/i }));
 
@@ -975,6 +1098,7 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
       await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/date of birth/i), '1990-01-01');
 
       const submitButton = screen.getByRole('button', { name: /begin your journey/i });
 
@@ -1058,6 +1182,7 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/email/i), 'invalid-email');
       await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
       await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/date of birth/i), '1990-01-01');
 
       // Submit form directly
       const form = container.querySelector('form');

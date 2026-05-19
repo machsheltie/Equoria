@@ -97,6 +97,7 @@ describe('Email Verification System - Integration Tests', () => {
         password: 'SecurePass123!',
         firstName: 'New',
         lastName: 'User',
+        dateOfBirth: '1990-01-01', // Equoria-iqzn: COPPA age gate (adult DOB)
       };
 
       const response = await request(app)
@@ -125,6 +126,7 @@ describe('Email Verification System - Integration Tests', () => {
         password: 'SecurePass123!',
         firstName: 'New',
         lastName: 'User',
+        dateOfBirth: '1990-01-01', // Equoria-iqzn: COPPA age gate (adult DOB)
       };
 
       const response = await request(app)
@@ -147,6 +149,7 @@ describe('Email Verification System - Integration Tests', () => {
         password: 'SecurePass123!',
         firstName: 'Dev',
         lastName: 'User',
+        dateOfBirth: '1990-01-01', // Equoria-iqzn: COPPA age gate (adult DOB)
       };
 
       const response = await request(app)
@@ -474,6 +477,7 @@ describe('Email Verification System - Integration Tests', () => {
         password: 'SecurePass123!',
         firstName: 'Workflow',
         lastName: 'Test',
+        dateOfBirth: '1990-01-01', // Equoria-iqzn: COPPA age gate (adult DOB)
       };
 
       // Step 1: Register

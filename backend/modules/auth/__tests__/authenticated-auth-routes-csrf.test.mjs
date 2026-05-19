@@ -64,6 +64,7 @@ describe('authenticated auth routes — CSRF enforcement canary', () => {
       password: 'TestPass123!',
       firstName: 'Auth',
       lastName: 'CSRF',
+      dateOfBirth: '1990-01-01', // Equoria-iqzn: COPPA age gate (adult DOB)
     });
 
     expect(res.status).toBe(201);

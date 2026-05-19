@@ -62,6 +62,7 @@ describe('CSRF protection — real browser flow', () => {
       password: 'TestPass123!',
       firstName: 'CSRF',
       lastName: 'Test',
+      dateOfBirth: '1990-01-01', // Equoria-iqzn: COPPA age gate (adult DOB)
     });
 
     expect(res.status).toBe(201);

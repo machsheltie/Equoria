@@ -54,6 +54,9 @@ export const createTestUser = (overrides = {}) => {
     lastName: 'User',
     email: `test_${uid}@example.com`,
     password: 'TestPassword123!',
+    // Equoria-iqzn: registration now enforces a COPPA age gate. Test users
+    // default to a fixed adult DOB so /register POSTs pass the gate.
+    dateOfBirth: '1990-01-01',
     money: 1000, // Added default money
     ...overrides,
   };

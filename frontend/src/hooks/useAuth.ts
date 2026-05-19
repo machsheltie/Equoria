@@ -62,6 +62,9 @@ export interface RegisterData {
   password: string;
   firstName?: string;
   lastName?: string;
+  // Equoria-iqzn / Equoria-9tlha: collected at registration for the
+  // server-authoritative COPPA age gate. ISO date string (YYYY-MM-DD).
+  dateOfBirth?: string;
 }
 
 /**

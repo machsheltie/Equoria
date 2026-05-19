@@ -157,6 +157,7 @@ describe('🔐 Authentication System Integration Tests', () => {
       password: 'TestPassword123!',
       firstName: 'Auth',
       lastName: 'Integration',
+      dateOfBirth: '1990-01-01', // Equoria-iqzn: COPPA age gate (adult DOB)
     };
 
     const registerResponse = await request(app)

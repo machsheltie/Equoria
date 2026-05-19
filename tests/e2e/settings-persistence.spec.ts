@@ -46,6 +46,8 @@ test.describe('Settings preferences persistence (21S-5)', () => {
         username,
         firstName: 'SetPref',
         lastName: 'E2e',
+        // Equoria-iqzn / Equoria-9tlha: COPPA age gate requires a valid adult DOB.
+        dateOfBirth: '1990-01-01',
       },
       headers: { Origin: FRONTEND },
     });

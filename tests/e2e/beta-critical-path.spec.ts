@@ -97,6 +97,8 @@ test.describe('Path 1: New-player critical path', () => {
     await page.fill('input[name="lastName"]', 'Tester');
     await page.fill('input[name="username"]', `beta_cp_${ts}`);
     await page.fill('input[name="email"]', email);
+    // Equoria-iqzn / Equoria-9tlha: COPPA age gate requires a valid adult DOB.
+    await page.fill('input[name="dateOfBirth"]', '1990-01-01');
     await page.fill('input[name="password"]', password);
     await page.fill('input[name="confirmPassword"]', password);
     await page.click('button[type="submit"]');

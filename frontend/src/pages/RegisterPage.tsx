@@ -28,6 +28,7 @@ const RegisterPage: React.FC = () => {
     confirmPassword: '',
     firstName: '',
     lastName: '',
+    dateOfBirth: '',
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -79,6 +80,7 @@ const RegisterPage: React.FC = () => {
         password: result.data.password,
         firstName: result.data.firstName,
         lastName: result.data.lastName,
+        dateOfBirth: result.data.dateOfBirth,
       },
       {
         onSuccess: () => navigate('/verify-email'),
@@ -222,6 +224,31 @@ const RegisterPage: React.FC = () => {
               </div>
               {validationErrors.username && (
                 <p className="text-red-400 text-xs">{validationErrors.username}</p>
+              )}
+            </div>
+
+            {/* Date of Birth — Equoria-iqzn / Equoria-9tlha: required for the
+                server-authoritative COPPA age gate. */}
+            <div className="space-y-1">
+              <label
+                htmlFor="dateOfBirth"
+                className="block text-xs text-[var(--text-secondary)] uppercase tracking-wider"
+              >
+                Date of Birth
+              </label>
+              <input
+                id="dateOfBirth"
+                name="dateOfBirth"
+                type="date"
+                value={formData.dateOfBirth}
+                onChange={handleChange}
+                autoComplete="bday"
+                max={new Date().toISOString().slice(0, 10)}
+                className="celestial-input"
+                style={{ paddingLeft: '0.875rem', borderRadius: '0.5rem' }}
+              />
+              {validationErrors.dateOfBirth && (
+                <p className="text-red-400 text-xs">{validationErrors.dateOfBirth}</p>
               )}
             </div>
 

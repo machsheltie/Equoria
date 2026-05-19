@@ -118,6 +118,49 @@ export const lastNameSchema = z
   .trim();
 
 /**
+ * Date of birth validation schema (Equoria-iqzn / Equoria-9tlha — COPPA)
+ *
+ * Rules:
+ * - Required (non-empty) — the backend rejects a registration with no DOB
+ *   (HTTP 400 "Date of birth is required"), so the form must collect it.
+ * - Must be a real, parseable calendar date (YYYY-MM-DD from <input
+ *   type="date">).
+ * - Client-side COPPA hint: must be at least 13 real calendar years ago.
+ *   This is an HONEST early hint only — the server recomputes the age
+ *   server-authoritatively and is the real gate (a tampered/bypassed
+ *   client cannot create an under-13 account). The client check exists so
+ *   an under-13 user gets a clear message instead of a raw 400.
+ *
+ * Real calendar years (NOT game-years) — COPPA is a real-world legal
+ * threshold, mirrored from backend/utils/humanAge.mjs.
+ */
+const COPPA_MIN_AGE_YEARS = 13;
+
+function isAtLeastCoppaAge(value: string): boolean {
+  const dob = new Date(value);
+  if (Number.isNaN(dob.getTime())) return false;
+  const now = new Date();
+  if (dob.getTime() > now.getTime()) return false;
+  let age = now.getUTCFullYear() - dob.getUTCFullYear();
+  const monthDelta = now.getUTCMonth() - dob.getUTCMonth();
+  const dayDelta = now.getUTCDate() - dob.getUTCDate();
+  if (monthDelta < 0 || (monthDelta === 0 && dayDelta < 0)) {
+    age -= 1;
+  }
+  return age >= COPPA_MIN_AGE_YEARS;
+}
+
+export const dateOfBirthSchema = z
+  .string()
+  .min(1, 'Date of birth is required')
+  .refine((v) => !Number.isNaN(new Date(v).getTime()), {
+    message: 'Date of birth must be a valid date',
+  })
+  .refine((v) => isAtLeastCoppaAge(v), {
+    message: `You must be ${COPPA_MIN_AGE_YEARS} or older to create an account`,
+  });
+
+/**
  * Display name validation schema
  *
  * Rules:
@@ -209,6 +252,7 @@ export const registerSchema = z
     confirmPassword: z.string().min(1, 'Please confirm your password'),
     firstName: firstNameSchema,
     lastName: lastNameSchema,
+    dateOfBirth: dateOfBirthSchema,
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',

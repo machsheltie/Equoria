@@ -55,6 +55,16 @@ router.post(
       .isLength({ min: 1, max: 50 })
       .withMessage('Last name must be between 1 and 50 characters')
       .escape(),
+    // COPPA age gate (Equoria-iqzn). DOB is mandatory and must be a real
+    // date. The authoritative under-13 rejection lives in the controller
+    // (server-side, fail-closed) — this validator only ensures the field is
+    // present and parseable so the controller's age math has valid input.
+    body('dateOfBirth')
+      .notEmpty()
+      .withMessage('Date of birth is required')
+      .bail()
+      .isISO8601()
+      .withMessage('Date of birth must be a valid date (YYYY-MM-DD)'),
     handleValidationErrors,
     sanitizeRequestData,
   ],

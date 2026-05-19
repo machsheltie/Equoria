@@ -2541,6 +2541,9 @@ export const authApi = {
     password: string;
     firstName?: string;
     lastName?: string;
+    // Equoria-iqzn / Equoria-9tlha: ISO date string (YYYY-MM-DD) sent to
+    // the server-authoritative COPPA age gate at POST /api/v1/auth/register.
+    dateOfBirth?: string;
   }) => {
     return apiClient.post<{
       user: {

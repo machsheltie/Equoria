@@ -64,6 +64,7 @@ describe('INTEGRATION: backfill craftingMaterials for pre-fix accounts (Equoria-
         password: 'StrongP@ssw0rd!23',
         firstName: 'Msuh',
         lastName: 'Tester',
+        dateOfBirth: '1990-01-01', // Equoria-iqzn: COPPA age gate (adult DOB)
       });
     expect(res.status).toBe(201);
     const userId = res.body?.data?.user?.id;
