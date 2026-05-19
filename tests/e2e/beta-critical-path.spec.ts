@@ -58,8 +58,13 @@ async function fillOnboardingHorseStep(page: Page, horseName: string) {
 
   // The breed name is exposed on the card's portrait <img alt={breed.name}>.
   // Used by the downstream getHorseBreedName / visible-text persistence checks.
-  const breedName = ((await firstBreedOption.locator('img').first().getAttribute('alt')) ?? '').trim();
-  expect(breedName, 'First breed option must expose a breed name via its portrait alt').toBeTruthy();
+  const breedName = (
+    (await firstBreedOption.locator('img').first().getAttribute('alt')) ?? ''
+  ).trim();
+  expect(
+    breedName,
+    'First breed option must expose a breed name via its portrait alt'
+  ).toBeTruthy();
 
   await firstBreedOption.click();
   await expect(firstBreedOption).toHaveAttribute('aria-checked', 'true');
