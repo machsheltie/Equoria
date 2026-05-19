@@ -2,9 +2,10 @@
  * Automated Accessibility Suite — Equoria-yhg0g (UX spec 13.4 Testing Strategy)
  *
  * Runs @axe-core/playwright against the highest-value beta surfaces using
- * REAL login + REAL backend. There are NO bypass headers, NO x-test-user,
- * NO route interception — this conforms to the CLAUDE.md testing philosophy
- * and the 21R beta-readiness doctrine (no test.skip on beta surfaces).
+ * REAL login + REAL backend. There are NO bypass headers, NO test-user
+ * impersonation headers, NO route interception — this conforms to the
+ * CLAUDE.md testing philosophy and the 21R beta-readiness doctrine
+ * (no test.skip on beta surfaces).
  *
  * Auth model
  * ----------
