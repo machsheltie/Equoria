@@ -19,6 +19,23 @@ import logger from '../utils/logger.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { getHorseAgeDays } from '../utils/horseAge.mjs';
 
+// Equoria-rjs2n: Trait-interaction "maturity" reaches full expression at this
+// many game-days. This is the module's own maturity model — see
+// identifyEmergingPatterns(), where ageInDays >= 90 yields the
+// 'mature_expression' pattern ("Trait interactions have reached mature
+// expression"). The temporal-evolution maturityFactor ramp MUST normalize
+// over this same period so the 0..1 ramp hits ~1.0 exactly when the module
+// declares the horse mature. The previous denominator was the calendar
+// constant 365, which is the same calendar-vs-game-cadence drift class as
+// Equoria-fe9k/z183/wpqr: under /365 a 90-game-day horse (module-"mature")
+// had maturityFactor 0.247, and no horse (retirement = 147 game-days = 21
+// game-years) ever approached 1.0. Game-year cadence is 7 game-days = 1
+// game-year (backend/utils/horseAge.mjs), so 90 game-days ≈ 13 game-years —
+// a deliberate slow behavioral-maturation ramp, distinct from the 7-day
+// age-display cadence (gameYearsFromDays is a floor step-function and is the
+// wrong tool for this continuous ramp).
+const MATURITY_PERIOD_DAYS = 90;
+
 // Trait synergy definitions - traits that enhance each other
 const TRAIT_SYNERGIES = {
   confidence_cluster: {
@@ -909,7 +926,9 @@ function modelInteractionEvolution(traits, timeWindow, ageInDays) {
   // Simulate evolution over time window
   for (let day = 0; day < timeWindow; day += 7) {
     // Weekly snapshots
-    const maturityFactor = Math.min(1.0, (ageInDays + day) / 365); // Maturity over first year
+    // Equoria-rjs2n: normalize over MATURITY_PERIOD_DAYS (game-day maturity
+    // model), NOT the calendar /365. See constant definition above.
+    const maturityFactor = Math.min(1.0, (ageInDays + day) / MATURITY_PERIOD_DAYS);
     const synergies = findTraitSynergies(traits);
     const conflicts = findTraitConflicts(traits);
 
@@ -964,7 +983,7 @@ function identifyEmergingPatterns(traits, ageInDays) {
       description: 'Traits are still forming and highly malleable',
       confidence: 0.8,
     });
-  } else if (ageInDays < 90) {
+  } else if (ageInDays < MATURITY_PERIOD_DAYS) {
     patterns.push({
       pattern: 'stabilization_period',
       description: 'Trait interactions are beginning to stabilize',

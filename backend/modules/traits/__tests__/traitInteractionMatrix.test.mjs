@@ -129,6 +129,56 @@ describe('modelTemporalInteractions', () => {
     expect(result).toBeDefined();
     expect(typeof result).toBe('object');
   });
+
+  // Equoria-rjs2n sentinel: maturityFactor MUST normalize over the 90-game-day
+  // maturity model, not the calendar /365. A horse aged exactly 90 game-days
+  // is "mature_expression" per identifyEmergingPatterns; the evolution ramp's
+  // first snapshot (day=0) must therefore be ~1.0. Under the old /365 bug it
+  // was 90/365 ≈ 0.2466 — this test FAILS on the pre-fix code, proving the
+  // fix is real (OPTIMAL_FIX_DISCIPLINE §2: sentinel-positive, new≠old).
+  it('maturityFactor reaches ~1.0 at the 90-game-day maturity boundary (not /365)', async () => {
+    const ts = Date.now();
+    const rand = () => randomBytes(3).toString('hex');
+    const matureUser = await prisma.user.create({
+      data: {
+        email: `rjs2n-${rand()}-${rand()}@test.com`,
+        username: `rjs2n${rand()}${rand()}`,
+        password: 'irrelevant-hash',
+        firstName: 'Rjs2n',
+        lastName: 'Tester',
+        money: 1000,
+      },
+    });
+    // Exactly 90 game-days old (UTC date-only arithmetic in horseAge.mjs).
+    const dob = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const matureHorse = await prisma.horse.create({
+      data: {
+        ...fixtureColor(),
+        name: `TestFixture-Rjs2nMature-${ts}`,
+        sex: 'Filly',
+        dateOfBirth: dob,
+        age: 0,
+        userId: matureUser.id,
+        epigeneticFlags: ['brave', 'confident'],
+      },
+    });
+
+    try {
+      const result = await modelTemporalInteractions(matureHorse.id, 30);
+      expect(Array.isArray(result.interactionEvolution)).toBe(true);
+      expect(result.interactionEvolution.length).toBeGreaterThan(0);
+
+      const firstSnapshot = result.interactionEvolution[0];
+      // NEW behavior: 90 / 90 = 1.0 (capped). MUST be at full maturity.
+      expect(firstSnapshot.maturityFactor).toBeCloseTo(1.0, 5);
+      // Explicitly assert it is NOT the old /365 value (~0.2466) — proves new≠old.
+      const oldBuggyValue = 90 / 365;
+      expect(firstSnapshot.maturityFactor).not.toBeCloseTo(oldBuggyValue, 2);
+    } finally {
+      await prisma.horse.delete({ where: { id: matureHorse.id } }).catch(() => {});
+      await prisma.user.delete({ where: { id: matureUser.id } }).catch(() => {});
+    }
+  }, 30000);
 });
 
 // ── generateInteractionMatrix ─────────────────────────────────────────────────
