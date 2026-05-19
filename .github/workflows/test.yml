@@ -632,6 +632,129 @@ jobs:
           retention-days: 30
 
   # ──────────────────────────────────────────────────────────────────────────────
+  # JOB 7b — Load Contention (advisory, Equoria-fx5cb / k8t5 follow-up)
+  #
+  # Two real load probes for the concurrent feed+breed+foal contention class
+  # (Equoria-zvp4 / k8t5):
+  #
+  #   1. bulk-foaling-cron driver — imports and invokes the REAL
+  #      runFoalingJob() (the exact entrypoint the nightly cron
+  #      runFoalingJobScheduled uses) CONCURRENTLY against scoped throwaway
+  #      in-foal mares. Asserts the no-double-create invariant. This is the
+  #      bulk cron path the k6 foal-now scenario does NOT exercise.
+  #   2. k6 SMOKE contention harness — drives parallel feed + foal-now bursts
+  #      at one shared in-foal mare against a backgrounded server, asserting
+  #      the atomic-triple conservation invariants via k6 thresholds.
+  #
+  # ADVISORY by job topology: NO other job lists this in `needs`, and
+  # `deployment-gate` does not depend on it — a red result here does NOT
+  # block merge/deploy. But it is NOT `continue-on-error`: a live race makes
+  # the harness exit non-zero and the JOB goes red so the signal is visible
+  # (per .claude/rules/EDGE_CASE_FIX_DISCIPLINE.md §2 — advisory means the
+  # job doesn't gate, not that failures are hidden). Both steps emit JSON
+  # artifacts.
+  # ──────────────────────────────────────────────────────────────────────────────
+  load-contention:
+    name: 'Load Contention (advisory)'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [lint]
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: equoria_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: |
+            backend/package-lock.json
+            packages/database/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd backend && npm ci
+          cd ../packages/database && npm ci
+
+      - name: Setup database
+        working-directory: ./packages/database
+        run: |
+          npx prisma generate --schema=prisma/schema.prisma
+          npx prisma migrate deploy --schema=prisma/schema.prisma
+
+      - name: Seed canonical breeds
+        # The bulk-cron driver selects a breed whose name is a
+        # breedProfiles.json key (createFoalFromPregnancy requires a
+        # profile). seedDatabase.mjs idempotently inserts the canonical
+        # breeds, several of which have profiles.
+        working-directory: ./backend
+        run: npm run seed
+
+      - name: Run bulk-foaling-cron contention driver (real cron path)
+        # Drives the REAL runFoalingJob() concurrently — not a no-op:
+        # asserts no mare double-foals across parallel sweeps. Exits
+        # non-zero (=> red job) if the cron double-create race is live.
+        # Uses the job-level env (DATABASE_URL etc.) — no --env-file needed
+        # since the workflow `env:` block already exports them.
+        working-directory: ./backend
+        run: node tests/load/run-bulk-foaling-cron.mjs
+
+      - name: Install k6
+        uses: grafana/setup-k6-action@v1
+
+      - name: Start backend (background) for k6 harness
+        working-directory: ./backend
+        run: |
+          npm start > /tmp/k6-server.log 2>&1 &
+          echo $! > /tmp/k6-server.pid
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/health || echo 000)
+            if [ "$code" = "200" ]; then echo "server up"; break; fi
+            sleep 2
+          done
+
+      - name: Run k6 concurrent feed+breed+foal SMOKE harness
+        # SMOKE profile (~30s, low concurrency). k6 thresholds exit
+        # non-zero on a torn atomic-triple / double-foal — surfaces the
+        # race, makes the JOB red (advisory: no gate depends on this job).
+        run: |
+          k6 run -e SMOKE=1 -e API_URL=http://localhost:3000 \
+            --summary-export=/tmp/k6-feed-breed-foal-summary.json \
+            backend/tests/load/concurrent-feed-breed-foal.test.js
+
+      - name: Stop backend
+        if: always()
+        run: |
+          if [ -f /tmp/k6-server.pid ]; then kill "$(cat /tmp/k6-server.pid)" || true; fi
+
+      - name: Upload load-contention artifacts
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: load-contention-results
+          path: |
+            ./backend/load-results/
+            /tmp/k6-feed-breed-foal-summary.json
+            /tmp/k6-server.log
+          retention-days: 30
+
+  # ──────────────────────────────────────────────────────────────────────────────
   # JOB 8 — Security Gate (blocking)
   #
   # P0 hardening policy:

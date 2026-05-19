@@ -103,6 +103,7 @@ frontend-test-results.txt
 # === Test Outputs ===
 *.log
 test-results/
+load-results/
 backend/test-*.txt
 backend/*-test-output.txt
 backend/temp*.log
