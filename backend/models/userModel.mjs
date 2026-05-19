@@ -2,6 +2,7 @@ import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 import { DatabaseError } from '../errors/index.mjs';
 import { invalidateCache } from '../utils/cacheHelper.mjs';
+import { eraseUserAccount } from '../modules/users/services/gdprAccountService.mjs';
 
 const DEFAULT_XP_PER_LEVEL = 100;
 
@@ -127,18 +128,39 @@ async function updateUser(id, updateData) {
   }
 }
 
+/**
+ * Deletes a user and all data scoped to that user.
+ *
+ * Delegates to the proven, scoped, transactional cascade in
+ * `gdprAccountService.eraseUserAccount` (Equoria-s3rf) rather than a bare
+ * `prisma.user.delete`. A bare delete fails with a Prisma FK Restrict
+ * violation (P2003) for any non-empty account because the user owns
+ * horses / grooms / forum threads / clubs / etc. whose relations are
+ * `onDelete: Restrict` (Equoria-02nos). Reusing `eraseUserAccount` keeps
+ * the FK-ordered deletion logic in one place (DRY) — this route is
+ * self-scoped via `requireSelfAccess`, matching `eraseUserAccount`'s
+ * self-only contract exactly.
+ *
+ * Idempotent: returns `null` when the user does not exist (the
+ * controller maps `null` → 404), matching the prior P2025 behaviour.
+ *
+ * @param {string} id - The user id (already proven to be the caller's
+ *   own id by the route's `requireSelfAccess` middleware).
+ * @returns {Promise<{ id: string }|null>} A minimal shape on success,
+ *   `null` if the user did not exist.
+ */
 async function deleteUser(id) {
   try {
     if (!id) {
       throw new Error('User ID is required.');
     }
-    return await prisma.user.delete({ where: { id } });
-  } catch (error) {
-    // Handle Prisma "record not found" error specifically
-    if (error.code === 'P2025') {
+    const { deleted } = await eraseUserAccount(id);
+    if (!deleted) {
       logger.error(`[deleteUser] User not found for deletion: ID ${id}`);
       return null; // Return null to indicate user not found
     }
+    return { id };
+  } catch (error) {
     logger.error(`[deleteUser] Error: ${error.message}`);
     throw new DatabaseError(`Delete failed: ${error.message}`);
   }
