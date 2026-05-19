@@ -31,6 +31,8 @@ const credentials = {
   username: `${SUITE_PREFIX}_main`,
   firstName: 'Ses',
   lastName: 'Life',
+  // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
+  dateOfBirth: '1990-01-01',
 };
 
 let testUser;

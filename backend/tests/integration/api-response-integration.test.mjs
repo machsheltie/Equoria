@@ -222,6 +222,8 @@ describe('🔄 API Response Integration Tests', () => {
       password: 'TestPassword123!',
       firstName: 'API',
       lastName: 'Response',
+      // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
+      dateOfBirth: '1990-01-01',
     };
 
     const registerResponse = await request(app)

@@ -122,6 +122,8 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
         lastName: 'Progression',
         email: 'training-integration@example.com',
         password: 'TestPassword123!',
+        // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
+        dateOfBirth: '1990-01-01',
         money: 10000,
         xp: 0,
         level: 1,

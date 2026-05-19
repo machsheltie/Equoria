@@ -501,6 +501,8 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
           password: 'TestPassword123!',
           firstName: 'Other',
           lastName: 'User',
+          // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
+          dateOfBirth: '1990-01-01',
         });
 
       const otherLoginResponse = await request(app)

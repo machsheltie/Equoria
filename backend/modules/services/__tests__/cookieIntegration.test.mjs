@@ -82,6 +82,8 @@ describe('Cookie Integration Tests', () => {
           password: 'TestPass123!',
           firstName: 'Cookie',
           lastName: 'Test',
+          // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
+          dateOfBirth: '1990-01-01',
         });
 
       expect(response.status).toBe(201);
@@ -123,6 +125,8 @@ describe('Cookie Integration Tests', () => {
           password: 'TestPass123!',
           firstName: 'Cookie',
           lastName: 'Test',
+          // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
+          dateOfBirth: '1990-01-01',
         });
 
       expect(response.status).toBe(201);
@@ -162,6 +166,8 @@ describe('Cookie Integration Tests', () => {
           password: 'TestPass123!',
           firstName: 'Cookie',
           lastName: 'Test',
+          // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
+          dateOfBirth: '1990-01-01',
         });
 
       expect(response.status).toBe(201);
@@ -201,6 +207,8 @@ describe('Cookie Integration Tests', () => {
           password: 'TestPass123!',
           firstName: 'Login',
           lastName: 'Test',
+          // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
+          dateOfBirth: '1990-01-01',
         });
 
       testUser = await prisma.user.findUnique({
@@ -291,6 +299,8 @@ describe('Cookie Integration Tests', () => {
           password: 'TestPass123!',
           firstName: 'Refresh',
           lastName: 'Test',
+          // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
+          dateOfBirth: '1990-01-01',
         });
 
       testUser = await prisma.user.findUnique({
@@ -385,6 +395,8 @@ describe('Cookie Integration Tests', () => {
           password: 'TestPass123!',
           firstName: 'Logout',
           lastName: 'Test',
+          // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
+          dateOfBirth: '1990-01-01',
         });
 
       testUser = await prisma.user.findUnique({
@@ -482,6 +494,8 @@ describe('Cookie Integration Tests', () => {
           password: 'TestPass123!',
           firstName: 'Security',
           lastName: 'Test',
+          // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
+          dateOfBirth: '1990-01-01',
         });
 
       testUser = await prisma.user.findUnique({

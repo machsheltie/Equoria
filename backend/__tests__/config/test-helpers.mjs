@@ -37,6 +37,10 @@ export const createUserData = (overrides = {}) => {
     password: 'TestPassword123!',
     firstName: 'Test',
     lastName: 'User',
+    // Equoria-9nwzi: registration enforces a COPPA age gate (iqzn). Default
+    // test users to a fixed adult DOB so /register POSTs pass the gate.
+    // Overridable via `overrides` for tests that exercise the gate itself.
+    dateOfBirth: '1990-01-01',
     ...overrides,
   };
 };

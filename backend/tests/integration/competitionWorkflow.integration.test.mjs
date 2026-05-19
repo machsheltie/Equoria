@@ -110,6 +110,8 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
         lastName: 'User',
         email: 'competition-integration@example.com',
         password: 'TestPassword123!',
+        // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
+        dateOfBirth: '1990-01-01',
         money: 15000,
         xp: 100,
         level: 2,

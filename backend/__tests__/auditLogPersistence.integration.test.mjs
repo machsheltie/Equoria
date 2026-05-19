@@ -75,7 +75,7 @@ describe('Equoria-jw10w: DB-backed audit trail', () => {
     const before = new Date();
     const csrf = await fetchCsrf(app, { origin: DEFAULT_ORIGIN });
     const res = await attachCsrf(supertest(app).post('/api/v1/auth/register').set('Origin', DEFAULT_ORIGIN), csrf).send(
-      { email, username, password, firstName: 'Audit', lastName: 'Trail' },
+      { email, username, password, firstName: 'Audit', lastName: 'Trail', dateOfBirth: '1990-01-01' },
     );
 
     // Registration should succeed (201) — but the audit assertion does not

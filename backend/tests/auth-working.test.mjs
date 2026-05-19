@@ -146,6 +146,8 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
         firstName: 'Auth',
         lastName: 'User',
         name: 'Auth User', // Required by minimal app schema in this file
+        // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
+        dateOfBirth: '1990-01-01',
       };
 
       const response = await request(app)
@@ -180,6 +182,9 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
         firstName: 'Auth',
         lastName: 'User',
         name: 'Auth User',
+        // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201;
+        // the duplicate-email 409 case needs the FIRST register to succeed.
+        dateOfBirth: '1990-01-01',
       };
 
       // First registration
@@ -217,6 +222,8 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
         firstName: 'Auth',
         lastName: 'User',
         name: 'Auth User',
+        // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
+        dateOfBirth: '1990-01-01',
       };
 
       const response = await request(app)
@@ -280,6 +287,8 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
         firstName: 'Auth',
         lastName: 'User',
         name: 'Auth User',
+        // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
+        dateOfBirth: '1990-01-01',
       };
 
       const registerResponse = await request(app)
@@ -346,6 +355,8 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
         firstName: 'Auth',
         lastName: 'User',
         name: 'Auth User',
+        // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
+        dateOfBirth: '1990-01-01',
       };
 
       const registerResponse = await request(app)

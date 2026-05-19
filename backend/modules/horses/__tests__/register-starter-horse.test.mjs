@@ -39,6 +39,8 @@ describe('POST /api/v1/auth/register — starter horse integration', () => {
     password: 'TestPassword123!',
     firstName: 'Starter',
     lastName: 'Horse',
+    // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
+    dateOfBirth: '1990-01-01',
   };
 
   beforeAll(async () => {

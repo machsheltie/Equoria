@@ -60,6 +60,10 @@ describe('Input Validation Integration Tests', () => {
             password: 'ValidPass123!',
             firstName: 'Test',
             lastName: 'User',
+            // Equoria-9nwzi: COPPA age gate (iqzn) — supply an adult DOB so
+            // this "accept valid email" case actually exercises the
+            // success path instead of vacuously passing on a COPPA 400.
+            dateOfBirth: '1990-01-01',
           });
 
         // May be 201 (success), 400 (validation/timing issues), or 409 (duplicate)
@@ -163,6 +167,8 @@ describe('Input Validation Integration Tests', () => {
             password: 'ValidPass123!',
             firstName: 'Test',
             lastName: 'User',
+            // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
+            dateOfBirth: '1990-01-01',
           });
 
         // May be 201 (success) or 409 (duplicate)
@@ -185,6 +191,8 @@ describe('Input Validation Integration Tests', () => {
               password: `ValidPass123${char}`,
               firstName: 'Test',
               lastName: 'User',
+              // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
+              dateOfBirth: '1990-01-01',
             });
 
           // May be 201 (success) or 409 (duplicate)
@@ -249,6 +257,8 @@ describe('Input Validation Integration Tests', () => {
             password: 'ValidPass123!',
             firstName: 'Test',
             lastName: 'User',
+            // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
+            dateOfBirth: '1990-01-01',
           });
 
         // May be 201 (success) or 409 (duplicate)

@@ -706,6 +706,8 @@ describe('Session Lifecycle Management', () => {
         password: 'TestPassword123!',
         firstName: 'Lifecycle',
         lastName: 'Test',
+        // Equoria-9nwzi: COPPA age gate (iqzn) requires an adult DOB for 201.
+        dateOfBirth: '1990-01-01',
       };
 
       const registerResponse = await request(app)
