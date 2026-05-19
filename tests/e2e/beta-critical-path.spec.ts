@@ -5,7 +5,7 @@
  * backend data. No test-only bypass headers that avoid the auth flow,
  * no pre-seeded horses, no test.skip on any critical path.
  *
- * AC3 (required first): register → onboarding → POST /api/auth/advance-onboarding → /stable shows horse
+ * AC3 (required first): register → onboarding → POST /api/v1/auth/advance-onboarding → /stable shows horse
  * AC4: GET /api/horses asserts the customized starter horse exists in the backend
  *
  * Paths covered:
@@ -142,12 +142,16 @@ test.describe('Path 1: New-player critical path', () => {
     await step1Next.click();
     await expect(page.locator('h1')).toContainText("You're Ready!", { timeout: 10000 });
 
-    // ── 6. Step 2 → click "Let's Go!" — intercept POST /api/auth/advance-onboarding ──
+    // ── 6. Step 2 → click "Let's Go!" — intercept POST /api/v1/auth/advance-onboarding ──
     // Onboarding calls advance-onboarding to update the starter horse (name/breed/gender)
-    // that was created atomically by POST /api/auth/register.
+    // that was created atomically by POST /api/v1/auth/register.
+    // Epic-20 migrated all auth endpoints to the /api/v1/ prefix
+    // (frontend/src/lib/api-client.ts:2697). The public auth router is mounted
+    // ONLY at /api/v1/auth (backend/app.mjs:177) — there is no /api/auth legacy
+    // alias for it — so the matcher must use the exact v1 path.
     const advanceOnboardingPromise = page.waitForResponse(
       (res) =>
-        res.url().includes('/api/auth/advance-onboarding') && res.request().method() === 'POST',
+        res.url().includes('/api/v1/auth/advance-onboarding') && res.request().method() === 'POST',
       { timeout: 30000 }
     );
 

@@ -80,9 +80,27 @@ test.describe('Settings preferences persistence (21S-5)', () => {
   });
 
   /**
-   * Helper: log in via the UI login form and wait until authentication
-   * cookies are set and the user lands past the login page.
-   * Handles the onboarding redirect that new users see after first login.
+   * Helper: log in via the UI login form, then deterministically complete the
+   * onboarding wizard so the user is fully onboarded server-side.
+   *
+   * This suite registers the user via the API in beforeAll (no browser), so
+   * the user is authenticated but un-onboarded (completedOnboarding === false,
+   * onboardingStep === 0). LoginPage navigates to `from` (default `/`), NOT
+   * `/onboarding`. OnboardingGuard then redirects `/` → `/onboarding`, but that
+   * redirect runs only AFTER an async profile fetch resolves. The previous
+   * `waitForURL(/(onboarding|$)/)` + `if (url.includes('/onboarding'))` raced
+   * that async redirect: post-login the URL is `/` (login's own navigation), so
+   * the `if` was false, the wizard was skipped, the user stayed un-onboarded,
+   * and the subsequent goto('/settings') was redirected back to /onboarding —
+   * the :164/:238 settings-page-not-visible failure.
+   *
+   * Fix: don't race the guard. After login completes, drive explicitly to
+   * /onboarding (OnboardingGuard does not redirect away from /onboarding —
+   * OnboardingGuard.tsx:32 — the wizard renders for any authenticated
+   * un-onboarded user) and complete it, observing the REAL Epic-20
+   * /api/v1/auth/advance-onboarding response (the public auth router is mounted
+   * ONLY at /api/v1/auth — backend/app.mjs:177 — there is no /api/auth legacy
+   * alias) before returning.
    */
   async function loginViaUI(page: import('@playwright/test').Page) {
     await page.goto(FRONTEND + '/login', { waitUntil: 'load', timeout: 60000 });
@@ -90,13 +108,15 @@ test.describe('Settings preferences persistence (21S-5)', () => {
     await page.fill('input[name="password"]', userPassword);
     await page.click('button[type="submit"]');
 
-    // Wait for post-login navigation — new users land on /onboarding or /
-    await page.waitForURL(new RegExp(`${FRONTEND}/(onboarding|$)`), {
-      timeout: 30000,
-    });
+    // Wait for the login form to navigate away (auth cookies set, SPA routed
+    // off /login). The exact landing route (`/` then guard-redirected, or
+    // `/onboarding`) is irrelevant — we drive to /onboarding explicitly next.
+    await page.waitForURL((url) => !url.href.includes('/login'), { timeout: 30000 });
 
-    // Complete the onboarding wizard if redirected there
-    if (page.url().includes('/onboarding')) {
+    // Deterministically complete onboarding. Navigating straight to
+    // /onboarding sidesteps the OnboardingGuard async-redirect race entirely.
+    await page.goto(FRONTEND + '/onboarding', { waitUntil: 'load', timeout: 30000 });
+    {
       // Step 1 (Welcome) → click Continue
       await expect(page.locator('h1')).toContainText('Welcome to Equoria', { timeout: 15000 });
       await page.locator('[data-testid="onboarding-next"]').click();
@@ -122,9 +142,26 @@ test.describe('Settings preferences persistence (21S-5)', () => {
       await expect(step1Next).toBeEnabled();
       await step1Next.click();
 
-      // Step 3 (Ready) → click Begin / Continue
+      // Step 3 (Ready) → click Begin / Continue.
+      // The Ready step's button fires POST /api/v1/auth/advance-onboarding
+      // which is what flips completedOnboarding server-side. Epic-20 migrated
+      // all auth endpoints to the /api/v1/ prefix and the public auth router
+      // is mounted ONLY at /api/v1/auth (backend/app.mjs:177) — there is no
+      // /api/auth legacy alias for it. We must observe the REAL v1 response
+      // (not just the client-side redirect) before driving on to /settings,
+      // otherwise the subsequent goto can race the persistence write and
+      // OnboardingGuard redirects /settings → /onboarding (the :164/:238
+      // failure this fixes).
       await expect(page.locator('h1')).toContainText("You're Ready!", { timeout: 10000 });
+      const advanceOnboardingPromise = page.waitForResponse(
+        (res) =>
+          res.url().includes('/api/v1/auth/advance-onboarding') &&
+          res.request().method() === 'POST',
+        { timeout: 30000 }
+      );
       await page.locator('[data-testid="onboarding-next"]').click();
+      const advanceOnboardingResponse = await advanceOnboardingPromise;
+      expect(advanceOnboardingResponse.status()).toBe(200);
 
       // Wait for redirect out of /onboarding
       await page.waitForURL((url) => !url.href.includes('/onboarding'), { timeout: 20000 });
