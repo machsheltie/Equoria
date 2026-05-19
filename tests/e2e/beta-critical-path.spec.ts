@@ -27,34 +27,54 @@ test.describe.configure({ mode: 'serial' });
 // Successful registrations/logins are never counted, so no bypass needed.
 
 /** Fill step 1 (Choose Your Horse) of the onboarding wizard.
- *  Selects the first available breed from the native select, chooses Mare,
- *  and sets the horse name. */
+ *  Equoria-zanq / Spec 11.3.4: the breed picker was redesigned from a plain
+ *  <select data-testid="breed-select"> into a WAI-ARIA radiogroup
+ *  (BreedSelector — grid of button[role="radio"] cards, each tagged with
+ *  data-breed-option="<breedId>"). Drives the real radiogroup, captures the
+ *  real backend breed id + name for the unchanged downstream persistence
+ *  assertions, then gender + name. */
 async function fillOnboardingHorseStep(page: Page, horseName: string) {
   await expect(page.locator('h1')).toContainText('Choose Your Horse', { timeout: 10000 });
 
-  // Wait for breed select to load with real options (GET /api/v1/breeds)
-  // The onboarding page renders a native <select data-testid="breed-select">
-  const breedSelect = page.locator('[data-testid="breed-select"]');
-  await breedSelect.waitFor({ state: 'visible', timeout: 20000 });
-  // index 0 is the disabled placeholder; index 1 is the first real breed
-  const options = await breedSelect.locator('option').evaluateAll((nodes) =>
-    nodes.map((node) => ({
-      value: (node as HTMLOptionElement).value,
-      label: (node.textContent ?? '').trim(),
-    }))
-  );
-  const selectedBreed = options[1];
-  await breedSelect.selectOption({ index: 1 });
+  // Wait for the BreedSelector to load with real options (GET /api/v1/breeds)
+  const breedSelector = page.locator('[data-testid="breed-selector"]');
+  await breedSelector.waitFor({ state: 'visible', timeout: 20000 });
+  const breedRadioGroup = breedSelector.locator('[role="radiogroup"][aria-label="Horse breeds"]');
+  const firstBreedOption = breedRadioGroup.locator('[role="radio"][data-breed-option]').first();
+  await firstBreedOption.waitFor({ state: 'visible', timeout: 20000 });
 
-  // Select Mare gender
-  await page.locator('button', { hasText: '♀ Mare' }).click();
+  // Capture the real backend breed id from data-breed-option for the
+  // post-onboarding breedId persistence assertion.
+  const breedOptionAttr = await firstBreedOption.getAttribute('data-breed-option');
+  expect(
+    breedOptionAttr,
+    'First breed option must expose a numeric data-breed-option'
+  ).toBeTruthy();
+  const breedId = Number(breedOptionAttr);
+  expect(
+    Number.isFinite(breedId) && breedId > 0,
+    `data-breed-option must be a positive breed id, got "${breedOptionAttr}"`
+  ).toBe(true);
+
+  // The breed name is exposed on the card's portrait <img alt={breed.name}>.
+  // Used by the downstream getHorseBreedName / visible-text persistence checks.
+  const breedName = ((await firstBreedOption.locator('img').first().getAttribute('alt')) ?? '').trim();
+  expect(breedName, 'First breed option must expose a breed name via its portrait alt').toBeTruthy();
+
+  await firstBreedOption.click();
+  await expect(firstBreedOption).toHaveAttribute('aria-checked', 'true');
+
+  // Select Mare gender — scope to the selector so we never pick up an
+  // unrelated control. The Mare button renders as "♀ Mare"; its accessible
+  // name still matches /Mare/i.
+  await breedSelector.getByRole('button', { name: /Mare/i }).click();
 
   // Enter horse name
   await page.locator('[data-testid="horse-name-input"]').fill(horseName);
 
   return {
-    breedId: Number(selectedBreed.value),
-    breedName: selectedBreed.label,
+    breedId,
+    breedName,
     gender: 'Mare',
   };
 }
@@ -114,7 +134,12 @@ test.describe('Path 1: New-player critical path', () => {
     const selectedHorse = await fillOnboardingHorseStep(page, horseName);
 
     // ── 5. Step 1 → click Continue → step 2 (Ready) ──────────────────────
-    await page.locator('[data-testid="onboarding-next"]').click();
+    // Step 1's Next is disabled until breed+gender+name are all set (see
+    // OnboardingPage isStep1Complete). Wait for it to enable before clicking
+    // so the click can't race the React state update.
+    const step1Next = page.locator('[data-testid="onboarding-next"]');
+    await expect(step1Next).toBeEnabled();
+    await step1Next.click();
     await expect(page.locator('h1')).toContainText("You're Ready!", { timeout: 10000 });
 
     // ── 6. Step 2 → click "Let's Go!" — intercept POST /api/auth/advance-onboarding ──

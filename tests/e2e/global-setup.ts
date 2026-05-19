@@ -69,17 +69,33 @@ async function globalSetup(config: FullConfig) {
 
       // Step 1 (Choose Your Horse) → select breed, gender, name, then click Continue
       await expect(page.locator('h1')).toContainText('Choose Your Horse', { timeout: 10000 });
-      // Wait for breed select to load (native <select data-testid="breed-select">)
-      const breedSelect = page.locator('[data-testid="breed-select"]');
-      await breedSelect.waitFor({ state: 'visible', timeout: 15000 });
-      // index 0 is the disabled placeholder; index 1 is the first real breed
-      await breedSelect.selectOption({ index: 1 });
-      // Select Mare gender
-      await page.locator('button', { hasText: '♀ Mare' }).click();
+      // Equoria-zanq / Spec 11.3.4: the onboarding breed picker was redesigned
+      // from a plain <select data-testid="breed-select"> into a WAI-ARIA
+      // radiogroup (BreedSelector — grid of button[role="radio"] cards, each
+      // tagged with data-breed-option="<breedId>"). Drive the real radiogroup.
+      const breedSelector = page.locator('[data-testid="breed-selector"]');
+      await breedSelector.waitFor({ state: 'visible', timeout: 15000 });
+      const breedRadioGroup = breedSelector.locator(
+        '[role="radiogroup"][aria-label="Horse breeds"]'
+      );
+      const firstBreedOption = breedRadioGroup
+        .locator('[role="radio"][data-breed-option]')
+        .first();
+      await firstBreedOption.waitFor({ state: 'visible', timeout: 15000 });
+      await firstBreedOption.click();
+      await expect(firstBreedOption).toHaveAttribute('aria-checked', 'true');
+      // Gender + name live inside the same BreedSelector. The Mare button
+      // renders as "♀ Mare"; accessible name still matches /Mare/i. Scope to
+      // the selector so we never pick up an unrelated control.
+      await breedSelector.getByRole('button', { name: /Mare/i }).click();
       // Enter horse name
       await page.locator('[data-testid="horse-name-input"]').fill(`E2E Setup Horse ${timestamp}`);
-      // Continue to step 2
-      await page.locator('[data-testid="onboarding-next"]').click();
+      // Step 1's Next is disabled until breed+gender+name are all set (see
+      // OnboardingPage isStep1Complete). Wait for it to enable before clicking
+      // so the click can't race the React state update.
+      const setupStep1Next = page.locator('[data-testid="onboarding-next"]');
+      await expect(setupStep1Next).toBeEnabled();
+      await setupStep1Next.click();
 
       // Step 2 (Ready) -> click "Begin" to customize the starter horse via advance-onboarding.
       await expect(page.locator('h1')).toContainText("You're Ready!", { timeout: 10000 });

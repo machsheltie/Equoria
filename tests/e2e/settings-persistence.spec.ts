@@ -101,16 +101,26 @@ test.describe('Settings preferences persistence (21S-5)', () => {
       await expect(page.locator('h1')).toContainText('Welcome to Equoria', { timeout: 15000 });
       await page.locator('[data-testid="onboarding-next"]').click();
 
-      // Step 2 (Choose Your Horse) → select first breed, pick Mare, name horse
+      // Step 2 (Choose Your Horse) → select first breed, pick Mare, name horse.
+      // Equoria-zanq / Spec 11.3.4: the breed picker is now a WAI-ARIA
+      // radiogroup (BreedSelector — button[role="radio"][data-breed-option]
+      // cards), not a native <select data-testid="breed-select">.
       await expect(page.locator('h1')).toContainText('Choose Your Horse', { timeout: 10000 });
-      const breedSelect = page.locator('[data-testid="breed-select"]');
-      await breedSelect.waitFor({ state: 'visible', timeout: 15000 });
-      await breedSelect.selectOption({ index: 1 });
-      await page.locator('button', { hasText: '♀ Mare' }).click();
+      const breedSelector = page.locator('[data-testid="breed-selector"]');
+      await breedSelector.waitFor({ state: 'visible', timeout: 15000 });
+      const firstBreedOption = breedSelector
+        .locator('[role="radiogroup"][aria-label="Horse breeds"] [role="radio"][data-breed-option]')
+        .first();
+      await firstBreedOption.waitFor({ state: 'visible', timeout: 15000 });
+      await firstBreedOption.click();
+      await expect(firstBreedOption).toHaveAttribute('aria-checked', 'true');
+      await breedSelector.getByRole('button', { name: /Mare/i }).click();
       await page
         .locator('[data-testid="horse-name-input"]')
         .fill(`SetPref Test Horse ${Date.now()}`);
-      await page.locator('[data-testid="onboarding-next"]').click();
+      const step1Next = page.locator('[data-testid="onboarding-next"]');
+      await expect(step1Next).toBeEnabled();
+      await step1Next.click();
 
       // Step 3 (Ready) → click Begin / Continue
       await expect(page.locator('h1')).toContainText("You're Ready!", { timeout: 10000 });

@@ -107,15 +107,15 @@ test.describe('Onboarding Flow', () => {
     // Step indicator shows "Step 2 of 3"
     await expect(page.getByText('Step 2 of 3')).toBeVisible({ timeout: 5000 });
 
-    // BreedSelector should render (may show loading skeleton first, then breed options)
-    // Wait for either the selector or a loading indicator
-    const hasBreedsOrLoading = await page
-      .locator('select, input, [class*="skeleton"], [class*="animate"]')
-      .first()
-      .isVisible({ timeout: 10000 })
-      .catch(() => false);
-
-    expect(hasBreedsOrLoading).toBeTruthy();
+    // Equoria-zanq / Spec 11.3.4: BreedSelector is now a WAI-ARIA radiogroup
+    // (data-testid="breed-selector"), not a native <select>. It should render
+    // (may show a loading skeleton first, then breed radio cards).
+    const breedSelector = page.locator('[data-testid="breed-selector"]');
+    await breedSelector.waitFor({ state: 'visible', timeout: 15000 });
+    const firstBreedOption = breedSelector
+      .locator('[role="radiogroup"][aria-label="Horse breeds"] [role="radio"][data-breed-option]')
+      .first();
+    await expect(firstBreedOption).toBeVisible({ timeout: 15000 });
   });
 
   test('onboarding wizard step 3 shows Ready confirmation', async ({ page }) => {
@@ -128,17 +128,25 @@ test.describe('Onboarding Flow', () => {
     await page.locator('[data-testid="onboarding-next"]').click();
     await expect(page.locator('h1')).toContainText('Choose Your Horse', { timeout: 10000 });
 
-    // Step 2 requires breed, gender, and name before Continue is enabled
-    // Onboarding uses a native <select data-testid="breed-select">, not a listbox
-    const breedSelect = page.locator('[data-testid="breed-select"]');
-    await breedSelect.waitFor({ state: 'visible', timeout: 15000 });
-    // index 0 is the disabled placeholder; index 1 is the first real breed
-    await breedSelect.selectOption({ index: 1 });
-    await page.locator('button', { hasText: '♀ Mare' }).click();
+    // Step 2 requires breed, gender, and name before Continue is enabled.
+    // Equoria-zanq / Spec 11.3.4: onboarding uses a WAI-ARIA radiogroup
+    // (BreedSelector — button[role="radio"][data-breed-option] cards), not a
+    // native <select> or a listbox.
+    const breedSelector = page.locator('[data-testid="breed-selector"]');
+    await breedSelector.waitFor({ state: 'visible', timeout: 15000 });
+    const firstBreedOption = breedSelector
+      .locator('[role="radiogroup"][aria-label="Horse breeds"] [role="radio"][data-breed-option]')
+      .first();
+    await firstBreedOption.waitFor({ state: 'visible', timeout: 15000 });
+    await firstBreedOption.click();
+    await expect(firstBreedOption).toHaveAttribute('aria-checked', 'true');
+    await breedSelector.getByRole('button', { name: /Mare/i }).click();
     await page.locator('[data-testid="horse-name-input"]').fill('Stardust');
 
-    // Advance to step 3
-    await page.locator('[data-testid="onboarding-next"]').click();
+    // Advance to step 3 — wait for Next to enable (gated on breed+gender+name)
+    const step1Next = page.locator('[data-testid="onboarding-next"]');
+    await expect(step1Next).toBeEnabled();
+    await step1Next.click();
 
     // Step 3 heading: "You're Ready!"
     await expect(page.locator('h1')).toContainText("You're Ready!", { timeout: 10000 });
