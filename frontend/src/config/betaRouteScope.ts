@@ -36,6 +36,8 @@ export const BETA_SCOPE: Record<string, BetaScope> = {
 
   '/verify-email': 'beta-live',
   '/horses/:id': 'beta-live',
+  '/horses/:id/equip': 'beta-live',
+  '/foals/:id': 'beta-live',
   '/profile': 'beta-live',
   '/settings': 'beta-live',
   '/bank': 'beta-live',
@@ -44,6 +46,7 @@ export const BETA_SCOPE: Record<string, BetaScope> = {
   '/breeding': 'beta-live',
   '/competitions': 'beta-live',
   '/competition-results': 'beta-live',
+  '/conformation-shows': 'beta-live',
   '/prizes': 'beta-live',
   '/world': 'beta-live',
   '/grooms': 'beta-live',
