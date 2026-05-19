@@ -84,7 +84,9 @@ describe('INTEGRATION: Foal activity age-stage enforcement (Equoria-4kzik)', () 
   afterAll(async () => {
     try {
       for (const f of [newbornFoal, yearlingFoal]) {
-        if (!f) continue;
+        if (!f) {
+          continue;
+        }
         await prisma.foalTrainingHistory.deleteMany({ where: { horseId: f.id } }).catch(() => {});
         await prisma.foalDevelopment.deleteMany({ where: { foalId: f.id } }).catch(() => {});
         await prisma.foalActivity.deleteMany({ where: { foalId: f.id } }).catch(() => {});
