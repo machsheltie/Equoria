@@ -143,8 +143,15 @@ describe('MyStablePage — Hall-of-Fame champion GoldBorderFrame (Equoria-8did5)
     expect(frameWrapper).toBeInTheDocument();
     // ...and it must actually contain the card (frame applied, not just imported)
     expect(within(frameWrapper).getByTestId('hof-entry-101')).toBeInTheDocument();
-    // ...and the GoldBorderFrame's 4 decorative aria-hidden corners are rendered
-    const corners = frameWrapper.querySelectorAll('[aria-hidden="true"]');
+    // ...and the GoldBorderFrame's 4 decorative corners are rendered.
+    // NOTE: query by the corner-specific .gold-corner-animate class, NOT a
+    // broad [aria-hidden="true"] selector. The card wrapped by the frame has
+    // its own legitimately aria-hidden decorative icon (the horse emoji span
+    // in MyStablePage's HOF card), so a broad aria-hidden count is 5, not 4.
+    // The frame itself still renders exactly 4 corners — asserting on the
+    // corner class proves the frame markup without coupling to the card's
+    // internal a11y decorations.
+    const corners = frameWrapper.querySelectorAll('.gold-corner-animate');
     expect(corners).toHaveLength(4);
   });
 
