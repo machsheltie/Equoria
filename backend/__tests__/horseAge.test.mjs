@@ -6,7 +6,7 @@
  * dateOfBirth, plus all the safety paths (null, future, NaN).
  */
 
-import { getHorseAgeDays, getHorseAgeYears, withAgeYears } from '../utils/horseAge.mjs';
+import { getHorseAgeDays, getHorseAgeYears, withAgeYears, gameYearsFromDays } from '../utils/horseAge.mjs';
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
@@ -202,5 +202,33 @@ describe('withAgeYears (serializer decorator)', () => {
     const decorated = withAgeYears(horse, fixedNow);
     expect(decorated.age).toBe(99); // transitional: backend keeps age until lvjy fully rolls out
     expect(decorated.ageYears).toBe(3); // primary signal
+  });
+});
+
+describe('gameYearsFromDays (Equoria-fe9k — canonical days→game-years)', () => {
+  it('converts days to game-years via floor(days / 7)', () => {
+    expect(gameYearsFromDays(0)).toBe(0);
+    expect(gameYearsFromDays(6)).toBe(0);
+    expect(gameYearsFromDays(7)).toBe(1);
+    expect(gameYearsFromDays(14)).toBe(2);
+    expect(gameYearsFromDays(21)).toBe(3);
+    expect(gameYearsFromDays(500)).toBe(71);
+    expect(gameYearsFromDays(1460)).toBe(208);
+  });
+
+  it('sentinel-positive: differs from the legacy /365 calendar result', () => {
+    // 1460 days: game-years = 208, calendar-years = 4. Proves the helper is
+    // NOT calendar math (the exact drift Equoria-fe9k fixes).
+    expect(gameYearsFromDays(1460)).not.toBe(Math.floor(1460 / 365));
+    expect(gameYearsFromDays(500)).not.toBe(Math.floor(500 / 365));
+  });
+
+  it('defensive: non-finite / negative / non-number input → 0', () => {
+    expect(gameYearsFromDays(-5)).toBe(0);
+    expect(gameYearsFromDays(NaN)).toBe(0);
+    expect(gameYearsFromDays(Infinity)).toBe(0);
+    expect(gameYearsFromDays('100')).toBe(0);
+    expect(gameYearsFromDays(null)).toBe(0);
+    expect(gameYearsFromDays(undefined)).toBe(0);
   });
 });

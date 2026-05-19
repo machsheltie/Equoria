@@ -122,6 +122,28 @@ export function getHorseAgeYears(dateOfBirth, now = new Date()) {
 }
 
 /**
+ * Convert an already-known age-in-days value to canonical game-years.
+ *
+ * Equoria-fe9k: some callers do not have a `dateOfBirth` — they hold a
+ * pre-computed days count (e.g. `traitHistory.ageInDays` from the DB, or a
+ * config constant like `AGE_CUTOFF_DAYS`) and only need the days→game-years
+ * conversion for *display*. Those sites historically divided by 365
+ * (calendar-year math), which drifts from the canonical game-year cadence
+ * (1 game-week = 1 game-year). This helper is the single source of truth
+ * for that conversion so no caller re-derives `/ 7` or regresses to `/ 365`.
+ *
+ * @param {number} ageInDays - Age already expressed in (game-)days.
+ * @returns {number} Age in game-years (floor(days / 7)). 0 for non-finite
+ *   or negative input (defensive: bad data should not surface a negative age).
+ */
+export function gameYearsFromDays(ageInDays) {
+  if (typeof ageInDays !== 'number' || !Number.isFinite(ageInDays) || ageInDays < 0) {
+    return 0;
+  }
+  return Math.floor(ageInDays / DAYS_PER_GAME_YEAR);
+}
+
+/**
  * Decorate a horse plain-object with `ageYears` computed from `dateOfBirth`.
  *
  * Used by horse-read serializers (list, overview, single) so the frontend

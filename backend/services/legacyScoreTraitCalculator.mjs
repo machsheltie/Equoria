@@ -22,6 +22,10 @@
 
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
+// Equoria-fe9k: canonical days→game-years conversion. The introspection
+// response previously divided AGE_CUTOFF_DAYS by 365 (calendar-years),
+// drifting from the game-year cadence used everywhere else.
+import { gameYearsFromDays } from '../utils/horseAge.mjs';
 
 // Constants for trait scoring
 const MAX_TRAIT_COUNT_SCORE = 10;
@@ -300,7 +304,11 @@ export function getTraitScoringDefinitions() {
     },
     ageCutoff: {
       days: AGE_CUTOFF_DAYS,
-      years: AGE_CUTOFF_DAYS / 365,
+      // Equoria-fe9k: game-years (floor(days / 7)), NOT calendar-years
+      // (days / 365). Display/introspection field only — the DB filter
+      // above uses the raw `days` value, so this change does not alter
+      // which traits are scored, only the unit reported to clients.
+      years: gameYearsFromDays(AGE_CUTOFF_DAYS),
     },
     rareTraits: RARE_TRAITS,
     negativeTraits: NEGATIVE_TRAITS,

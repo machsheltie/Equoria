@@ -208,9 +208,12 @@ describe('traitTimelineService — DB fixture branch coverage (Equoria-jkht)', (
     const ev200 = result.timelineEvents.find(e => e.ageInDays === 200);
     expect(ev200.ageDescription).toBe('6 months');
 
-    // ageInDays=500 → >365 → "1 years"
+    // Equoria-fe9k: ageInDays=500 → >365 bucket → game-years floor(500/7)=71,
+    // NOT calendar-years floor(500/365)=1. Sentinel-positive: the old /365
+    // result ("1 years") differs from the new game-year result.
     const ev500 = result.timelineEvents.find(e => e.ageInDays === 500);
-    expect(ev500.ageDescription).toBe('1 years');
+    expect(ev500.ageDescription).toBe('71 years');
+    expect(ev500.ageDescription).not.toBe('1 years');
   });
 
   it('5-trait horse: bondTrend=improving, stressTrend=decreasing (first→last δ > 5)', async () => {

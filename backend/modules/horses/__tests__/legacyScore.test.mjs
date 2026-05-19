@@ -102,7 +102,17 @@ describe('getTraitScoringDefinitions', () => {
     const { ageCutoff } = getTraitScoringDefinitions();
     expect(typeof ageCutoff.days).toBe('number');
     expect(typeof ageCutoff.years).toBe('number');
-    expect(ageCutoff.years).toBeCloseTo(ageCutoff.days / 365, 0);
+  });
+
+  // Equoria-fe9k: ageCutoff.years must use canonical game-years
+  // (floor(days / 7)), NOT calendar-years (days / 365). 1460 days /7 = 208.
+  it('ageCutoff.years is game-years (floor(days/7)), not calendar-years (days/365)', () => {
+    const { ageCutoff } = getTraitScoringDefinitions();
+    expect(ageCutoff.years).toBe(Math.floor(ageCutoff.days / 7));
+    // Sentinel-positive: the OLD /365 calendar result differs — proves the
+    // fix actually changed the output (1460/365 ≈ 4 vs 1460/7 = 208).
+    expect(ageCutoff.years).not.toBe(Math.floor(ageCutoff.days / 365));
+    expect(ageCutoff.years).toBe(208);
   });
 
   it('rareTraits is an array of strings', () => {

@@ -23,6 +23,10 @@
 
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
+// Equoria-fe9k: canonical days→game-years conversion (1 game-week = 1
+// game-year). Replaces the legacy `/ 365` calendar-year math so the
+// "years" age bucket matches the rest of the game's age semantics.
+import { gameYearsFromDays } from '../utils/horseAge.mjs';
 
 // Constants for timeline organization
 const AGE_CUTOFF_DAYS = 1460; // 4 years in days
@@ -214,7 +218,13 @@ function formatAgeDescription(ageInDays) {
   if (ageInDays <= 365) {
     return `${Math.floor(ageInDays / 30)} months`;
   }
-  return `${Math.floor(ageInDays / 365)} years`;
+  // Equoria-fe9k: game-years (floor(days / 7)), NOT calendar-years
+  // (floor(days / 365)). The day/week/month buckets above are foal-
+  // development milestone windows expressed in literal elapsed days and
+  // remain unchanged; only the "years" unit is converted, and it must
+  // use the canonical game-year cadence used everywhere else (age gates,
+  // API serializers, leaderboards) so the displayed age is consistent.
+  return `${gameYearsFromDays(ageInDays)} years`;
 }
 
 /**
