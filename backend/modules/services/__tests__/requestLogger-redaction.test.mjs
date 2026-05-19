@@ -388,6 +388,84 @@ describe('errorRequestLogger redaction (21R-OBS-2)', () => {
     });
   });
 
+  describe('dateOfBirth / dob PII redaction (Equoria-iqzn COPPA follow-up)', () => {
+    // iqzn added a COPPA age gate at /auth/register: the client now sends a
+    // `dateOfBirth` in the register body. Pre-this-change, a failed register
+    // (validation error, duplicate email, 5xx) would land the raw DOB in
+    // stdout / SIEM via errorRequestLogger. DOB is sensitive PII; redact it
+    // alongside the existing credential set. Defence-in-depth complement to
+    // the audit-log redaction landed in iqzn/d8be8f34c.
+
+    it('redacts top-level body.dateOfBirth on a failed /auth/register', () => {
+      const req = buildReq({
+        email: 'newuser@example.com',
+        password: 'redact-me-too',
+        dateOfBirth: '1990-04-15',
+      });
+      req.originalUrl = '/api/v1/auth/register';
+
+      errorRequestLogger(new Error('registration validation failed'), req, {}, () => {});
+
+      expect(capturedLines).toHaveLength(1);
+      const line = capturedLines[0];
+      // The raw DOB value MUST NOT appear anywhere in the log line.
+      expect(line).not.toContain('1990-04-15');
+      expect(line).toContain('[REDACTED]');
+      // Non-sensitive field still emitted.
+      expect(line).toContain('"email":"newuser@example.com"');
+    });
+
+    it('redacts the short `dob` alias', () => {
+      const req = buildReq({ email: 'u@x.y', dob: '2000-12-31' });
+
+      errorRequestLogger(new Error('test'), req, {}, () => {});
+
+      expect(capturedLines).toHaveLength(1);
+      const line = capturedLines[0];
+      expect(line).not.toContain('2000-12-31');
+      expect(line).toContain('[REDACTED]');
+    });
+
+    it('redacts snake_case `date_of_birth` (normalisation strips the underscore)', () => {
+      const req = buildReq({ email: 'u@x.y', date_of_birth: '1985-07-09' });
+
+      errorRequestLogger(new Error('test'), req, {}, () => {});
+
+      expect(capturedLines).toHaveLength(1);
+      const line = capturedLines[0];
+      expect(line).not.toContain('1985-07-09');
+      expect(line).toContain('[REDACTED]');
+    });
+
+    it('redacts dateOfBirth nested inside body.user (recursive)', () => {
+      const req = buildReq({
+        user: { email: 'nested@example.com', dateOfBirth: '1992-02-29' },
+      });
+
+      errorRequestLogger(new Error('nested register validation'), req, {}, () => {});
+
+      expect(capturedLines).toHaveLength(1);
+      const line = capturedLines[0];
+      expect(line).not.toContain('1992-02-29');
+      expect(line).toContain('[REDACTED]');
+      expect(line).toContain('"email":"nested@example.com"');
+    });
+
+    it('does NOT over-redact a substring sibling like `dateOfBirthVerified`', () => {
+      // Sentinel-negative guard: exact-key semantics must hold. A
+      // non-credential field whose normalised name is NOT in the set
+      // (dateofbirthverified) must stay visible.
+      const req = buildReq({ dateOfBirthVerified: 'true-not-sensitive' });
+
+      errorRequestLogger(new Error('test'), req, {}, () => {});
+
+      expect(capturedLines).toHaveLength(1);
+      const line = capturedLines[0];
+      expect(line).toContain('"dateOfBirthVerified":"true-not-sensitive"');
+      expect(line).not.toContain('[REDACTED]');
+    });
+  });
+
   describe('non-credential fields are preserved unchanged', () => {
     it('preserves method, url, ip, userAgent, error.message, stack, userId', () => {
       const req = buildReq({ password: 'redact-me' });

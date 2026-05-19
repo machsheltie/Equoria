@@ -47,6 +47,10 @@ const REDACTED_KEYS = new Set([
   'privatekey',
   'creditcard',
   'ssn',
+  // Equoria-iqzn: date of birth is sensitive PII (COPPA age-gate input).
+  // Never log the raw DOB on failed/succeeded auth requests.
+  'dateofbirth',
+  'dob',
 ]);
 
 const REDACTED_MARKER = '[REDACTED]';
