@@ -1,16 +1,15 @@
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import prisma from '../../../db/index.mjs';
-import { getUserById } from '../../../models/userModel.mjs';
-import { enterAndRunShow } from '../controllers/competitionController.mjs';
 import conformationShowRoutes from './conformationShowRoutes.mjs';
 import { getResultsByShow, getResultsByHorse } from '../../../models/resultModel.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
-import {
-  validateCompetitionEntry,
-  executeEnhancedCompetition,
-  getCompetitionEligibilitySummary,
-} from '../../../logic/enhancedCompetitionSimulation.mjs';
+// Equoria-kacla: enterAndRunShow / executeEnhancedCompetition /
+// validateCompetitionEntry are no longer imported — the legacy instant
+// enter-and-run (/enter-show) and on-demand execute (/execute) paths were
+// removed (410 Gone) and /enter now performs a canonical deferred ShowEntry.
+// getCompetitionEligibilitySummary is still used by GET /eligibility.
+import { getCompetitionEligibilitySummary } from '../../../logic/enhancedCompetitionSimulation.mjs';
 import {
   getAllDisciplines,
   getDisciplineConfig,
@@ -21,7 +20,6 @@ import { queryRateLimiter, mutationRateLimiter } from '../../../middleware/rateL
 import logger from '../../../utils/logger.mjs';
 import { recordTransaction } from '../../../services/financialLedgerService.mjs';
 import { parsePaginationParams, buildPaginatedResponse } from '../../../utils/paginationHelper.mjs';
-import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
 
 const router = express.Router();
 
@@ -63,118 +61,34 @@ router.get('/', queryRateLimiter, auth, async (req, res) => {
   }
 });
 
-// Validation middleware for entering a show
-const validateEnterShow = [
-  body('showId').isInt({ min: 1 }).withMessage('Show ID must be a positive integer'),
-  body('horseIds').isArray({ min: 1 }).withMessage('Horse IDs must be a non-empty array'),
-  body('horseIds.*').isInt({ min: 1 }).withMessage('Each horse ID must be a positive integer'),
-];
-
 /**
- * POST /enter-show
- * Enter horses into a show and run the competition
+ * POST /enter-show — REMOVED (Equoria-kacla, 410 Gone)
  *
- * Request body:
- * {
- *   "showId": 1,
- *   "horseIds": [1, 2, 3, 4, 5]
- * }
+ * This was the legacy instant enter-and-run path: it synchronously called
+ * `enterAndRunShow` and returned competition results immediately. That
+ * directly contradicts the canonical 7-day deferred-window show model
+ * (Equoria-nx8t1, commit 68a86c66b): a beta player hitting it got instant,
+ * exploitable results outside the cron-scored window.
  *
- * Response:
- * {
- *   "success": true,
- *   "message": "Competition completed successfully",
- *   "results": [...],
- *   "summary": {
- *     "totalEntries": 5,
- *     "validEntries": 5,
- *     "skippedEntries": 0,
- *     "topThree": [...]
- *   }
- * }
+ * Resolution chosen (OPTIMAL_FIX §1/§5): hard-deprecate with 410 Gone.
+ * Nothing beta-facing called this — the frontend `competitionsApi` never
+ * referenced `/enter-show`; only test mocks/backend tests did. There is no
+ * UI to keep working, so the instant path is removed outright rather than
+ * delegated. Players use `POST /api/shows/create` then
+ * `POST /api/shows/:id/enter`; the nightly cron scores shows at day 7.
+ *
+ * `mutationRateLimiter` is kept so the deprecation response still carries
+ * standard rate-limit headers (locked by competition-rate-limiting.test).
  */
-router.post('/enter-show', mutationRateLimiter, auth, validateEnterShow, async (req, res) => {
-  try {
-    // Check for validation errors
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      logger.warn(
-        `[competitionRoutes.POST /enter-show] Validation errors: ${JSON.stringify(errors.array())}`,
-      );
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: errors.array(),
-      });
-    }
-
-    const { showId, horseIds } = req.body;
-    const userId = req.user.id;
-
-    // IDOR Protection: Batch ownership validation for all horses
-    const { validateBatchOwnership } = await import('../../../middleware/ownership.mjs');
-    const ownedHorses = await validateBatchOwnership('horse', horseIds, userId);
-
-    // Verify all horses are owned by the user
-    if (ownedHorses.length !== horseIds.length) {
-      logger.warn(
-        `[competitionRoutes.POST /enter-show] Ownership violation: user ${userId} attempted to enter ${horseIds.length} horses but only owns ${ownedHorses.length}`,
-      );
-      return res.status(404).json({
-        success: false,
-        message: 'One or more horses not found', // Prevent ownership disclosure
-      });
-    }
-
-    logger.info(
-      `[competitionRoutes.POST /enter-show] Entering ${horseIds.length} horses into show ${showId}`,
-    );
-
-    // Get show details from database
-    const show = await prisma.show.findUnique({
-      where: { id: showId },
-    });
-
-    if (!show) {
-      return res.status(404).json({
-        success: false,
-        message: 'Show not found',
-      });
-    }
-
-    // Call the controller function
-    const result = await enterAndRunShow(horseIds, show);
-
-    // Log the result
-    if (result.success) {
-      logger.info(
-        `[competitionRoutes.POST /enter-show] Competition completed successfully: ${result.summary.validEntries} entries, ${result.summary.skippedEntries} skipped`,
-      );
-    } else {
-      logger.warn(`[competitionRoutes.POST /enter-show] Competition failed: ${result.message}`);
-    }
-
-    // Invalidate competition and leaderboard caches after a successful run
-    if (result.success) {
-      invalidateCachePattern('competition:*').catch(() => {
-        /* non-critical */
-      });
-      invalidateCachePattern('leaderboard:*').catch(() => {
-        /* non-critical */
-      });
-    }
-
-    // Return appropriate status code based on success
-    const statusCode = result.success ? 200 : 400;
-    res.status(statusCode).json(result);
-  } catch (error) {
-    logger.error(`[competitionRoutes.POST /enter-show] Error: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-    });
-  }
+router.post('/enter-show', mutationRateLimiter, auth, (req, res) => {
+  logger.info(
+    `[competitionRoutes.POST /enter-show] 410 Gone — legacy instant path removed (Equoria-kacla); user ${req.user?.id}`,
+  );
+  return res.status(410).json({
+    success: false,
+    message:
+      'The instant enter-and-run competition path has been removed. Shows now use a 7-day deferred window: create a show with POST /api/shows/create, enter horses with POST /api/shows/:id/enter, and the nightly cron scores it 7 days after creation.',
+  });
 });
 
 /**
@@ -463,9 +377,26 @@ router.post(
       // The resolved Horse row is attached to req.horse — no second query.
       const horse = req.horse;
 
-      // Get show details
+      // ── Equoria-kacla: DEFERRED ENTRY ONLY ──────────────────────────────
+      //
+      // This endpoint used to write a pre-scored row into competitionResult
+      // (score 0, placement null) — a parallel, NON-canonical entry record
+      // the nightly cron never reads, AND it never credited the show creator
+      // (violating nx8t1 R7). The frontend `competitionsApi.enter` still
+      // calls this route, so per the 21R doctrine it must keep working — but
+      // on the CORRECT semantics. We now perform the exact canonical
+      // deferred-entry transaction (mirrors showController.enterShow): open +
+      // window guards, ShowEntry row (the table the cron executes), entrant
+      // debited, creator credited. NO instant execution, NO results returned.
       const show = await prisma.show.findUnique({
         where: { id: showId },
+        select: {
+          id: true,
+          status: true,
+          closeDate: true,
+          entryFee: true,
+          createdByUserId: true,
+        },
       });
 
       if (!show) {
@@ -475,109 +406,139 @@ router.post(
         });
       }
 
-      // Get user details
-      const user = await getUserById(userId);
-      if (!user) {
-        return res.status(404).json({
+      // 7-day window guards (nx8t1): only an open show inside its entry
+      // window accepts entries; scoring is exclusively the cron's job.
+      if (show.status !== 'open') {
+        return res.status(409).json({
           success: false,
-          message: 'User not found',
+          message: 'This show is no longer accepting entries',
+        });
+      }
+      if (show.closeDate && new Date(show.closeDate) <= new Date()) {
+        return res.status(409).json({
+          success: false,
+          message: 'Entry period has closed',
         });
       }
 
-      // Validate competition entry using enhanced validation
-      const validation = await validateCompetitionEntry(horse, show, user);
-
-      if (!validation.eligible) {
+      // Health/age eligibility (mirrors canonical enterShow).
+      if (typeof horse.age === 'number' && horse.age < 3) {
         return res.status(400).json({
           success: false,
-          message: 'Horse is not eligible for this competition',
-          errors: validation.errors,
-          eligibilityDetails: {
-            horseLevel: validation.horseLevel,
-            disciplineScore: validation.disciplineScore,
-          },
+          message: 'Horse must be at least 3 years old to compete',
+        });
+      }
+      if (String(horse.healthStatus).toLowerCase() === 'injured') {
+        return res.status(400).json({
+          success: false,
+          message: 'Injured horses cannot compete',
         });
       }
 
-      // Check if horse is already entered
-      const existingEntry = await prisma.competitionResult.findFirst({
-        where: {
-          horseId,
-          showId,
-        },
+      // Already entered? Canonical uniqueness lives on ShowEntry
+      // (@@unique([showId, horseId])).
+      const existingEntry = await prisma.showEntry.findFirst({
+        where: { showId, horseId },
+        select: { id: true },
       });
-
       if (existingEntry) {
-        return res.status(400).json({
+        return res.status(409).json({
           success: false,
           message: 'Horse is already entered in this competition',
         });
       }
 
-      const entry = await prisma.$transaction(
-        async tx => {
-          const updatedUser = await tx.user.update({
-            where: { id: userId },
-            data: {
-              money: { decrement: show.entryFee },
-            },
-            select: { money: true },
-          });
+      // Equoria-nx8t1 R7: atomically debit the entrant the entryFee, CREDIT
+      // the show creator the same amount, and create the canonical ShowEntry
+      // — all in one transaction. The conditional updateMany (money >=
+      // entryFee) is the atomic insufficient-funds guard and closes a
+      // concurrent-spend race.
+      let entry;
+      try {
+        entry = await prisma.$transaction(
+          async tx => {
+            if (show.entryFee > 0) {
+              const debited = await tx.user.updateMany({
+                where: { id: userId, money: { gte: show.entryFee } },
+                data: { money: { decrement: show.entryFee } },
+              });
+              if (debited.count === 0) {
+                throw new Error('INSUFFICIENT_FUNDS');
+              }
+              // Self-entry (entrant === creator) is intentionally NOT
+              // credited — a no-op round-trip. createdByUserId may be null
+              // for legacy/system shows; with no creator the fee is sunk
+              // (matches canonical enterShow behaviour).
+              if (show.createdByUserId && show.createdByUserId !== userId) {
+                await tx.user.update({
+                  where: { id: show.createdByUserId },
+                  data: { money: { increment: show.entryFee } },
+                });
+              }
+            }
 
-          const createdEntry = await tx.competitionResult.create({
-            data: {
-              horseId,
-              showId,
-              score: 0, // Will be updated when competition runs
-              placement: null,
-              discipline: show.discipline,
-              runDate: show.runDate,
-              showName: show.name,
-              prizeWon: 0,
-            },
-          });
+            const createdEntry = await tx.showEntry.create({
+              data: { showId, horseId, userId, feePaid: show.entryFee },
+            });
 
-          if (show.entryFee > 0) {
-            await recordTransaction(
-              {
-                userId,
-                type: 'debit',
-                amount: show.entryFee,
-                category: 'competition_entry',
-                description: `Entry fee for ${show.name}`,
-                balanceAfter: updatedUser.money,
-                metadata: {
-                  horseId,
-                  showId,
-                  entryId: createdEntry.id,
-                  discipline: show.discipline,
+            if (show.entryFee > 0) {
+              const refreshed = await tx.user.findUnique({
+                where: { id: userId },
+                select: { money: true },
+              });
+              await recordTransaction(
+                {
+                  userId,
+                  type: 'debit',
+                  amount: show.entryFee,
+                  category: 'competition_entry',
+                  description: `Entry fee for show ${showId}`,
+                  balanceAfter: refreshed?.money ?? 0,
+                  metadata: {
+                    horseId,
+                    showId,
+                    entryId: createdEntry.id,
+                  },
                 },
-              },
-              tx,
-            );
-          }
+                tx,
+              );
+            }
 
-          return createdEntry;
-        },
-        { timeout: 30000 },
-      );
+            return createdEntry;
+          },
+          { timeout: 30000 },
+        );
+      } catch (txError) {
+        if (txError.message === 'INSUFFICIENT_FUNDS') {
+          return res.status(402).json({
+            success: false,
+            message: 'Insufficient funds for entry fee',
+          });
+        }
+        if (txError.code === 'P2002') {
+          return res.status(409).json({
+            success: false,
+            message: 'Horse is already entered in this competition',
+          });
+        }
+        throw txError;
+      }
 
       logger.info(
-        `[competitionRoutes.POST /enter] Successfully entered horse ${horseId} in show ${showId}`,
+        `[competitionRoutes.POST /enter] Horse ${horseId} entered show ${showId} by user ${userId} (deferred — cron will score at closeDate)`,
       );
 
+      // Same response shape the frontend `competitionsApi.enter` expects:
+      // { entryId, horseId, showId, entryFee }. Crucially NO results /
+      // placement / score — the cron produces those at day 7.
       res.status(201).json({
         success: true,
-        message: 'Horse successfully entered in competition',
+        message: 'Horse entered. The show runs 7 days after it was created.',
         data: {
           entryId: entry.id,
           horseId,
           showId,
           entryFee: show.entryFee,
-          eligibilityDetails: {
-            horseLevel: validation.horseLevel,
-            disciplineScore: validation.disciplineScore,
-          },
         },
       });
     } catch (error) {
@@ -592,127 +553,32 @@ router.post(
 );
 
 /**
- * POST /api/competition/execute
- * Execute a competition with all entered horses
+ * POST /api/competition/execute — REMOVED (Equoria-kacla, 410 Gone)
  *
- * Request body:
- * {
- *   "showId": 1
- * }
+ * This was a host-triggered instant executor: it called
+ * `executeEnhancedCompetition` synchronously, scoring and paying out a show
+ * on demand. That bypasses the canonical 7-day window entirely — a show
+ * creator could score their own show the moment entries existed, defeating
+ * the deferred model (Equoria-nx8t1).
+ *
+ * Resolution (OPTIMAL_FIX §1/§5): hard-deprecate with 410 Gone. The ONLY
+ * sanctioned executor is the nightly cron `executeClosedShows` in
+ * showController.mjs, which runs every show exactly once at `closeDate`
+ * (createdAt + 7d) and is idempotent. Nothing beta-facing called this
+ * endpoint (no frontend reference); removing it closes the on-demand-execute
+ * exploit. `mutationRateLimiter` is kept so the response carries rate-limit
+ * headers (locked by competition-rate-limiting.test).
  */
-router.post(
-  '/execute',
-  mutationRateLimiter,
-  auth,
-  [body('showId').isInt({ min: 1 }).withMessage('Show ID must be a positive integer')],
-  async (req, res) => {
-    try {
-      // Check for validation errors
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        logger.warn(
-          `[competitionRoutes.POST /execute] Validation errors: ${JSON.stringify(errors.array())}`,
-        );
-        return res.status(400).json({
-          success: false,
-          message: 'Validation failed',
-          errors: errors.array(),
-        });
-      }
-
-      const { showId } = req.body;
-      const userId = req.user.id;
-
-      logger.info(
-        `[competitionRoutes.POST /execute] User ${userId} executing competition for show ${showId}`,
-      );
-
-      // CWE-639 (Equoria-c4g3): scope show lookup by hostUserId so non-host
-      // execute attempts are indistinguishable from not-found — same 404 + body.
-      const show = await prisma.show.findFirst({
-        where: { id: showId, hostUserId: userId },
-      });
-
-      if (!show) {
-        return res.status(404).json({
-          success: false,
-          message: 'Show not found',
-        });
-      }
-
-      // Get all entries for this show
-      const entries = await prisma.competitionResult.findMany({
-        where: {
-          showId,
-          placement: null, // Only get entries that haven't been processed yet
-        },
-        include: {
-          horse: {
-            include: {
-              user: true,
-              breed: true,
-            },
-          },
-        },
-      });
-
-      if (entries.length === 0) {
-        return res.status(400).json({
-          success: false,
-          message: 'No entries found for this competition',
-        });
-      }
-
-      // Prepare entries for enhanced competition execution
-      const competitionEntries = entries.map(entry => ({
-        horse: entry.horse,
-        user: entry.horse.user,
-      }));
-
-      logger.info(
-        `[competitionRoutes.POST /execute] Executing competition with ${competitionEntries.length} entries`,
-      );
-
-      // Execute enhanced competition
-      const competitionResult = await executeEnhancedCompetition(show, competitionEntries);
-
-      if (!competitionResult.success) {
-        return res.status(500).json({
-          success: false,
-          message: 'Competition execution failed',
-          error: competitionResult.error,
-        });
-      }
-
-      logger.info(
-        `[competitionRoutes.POST /execute] Competition executed successfully for show ${showId}`,
-      );
-
-      // Return results without scores (hidden from users)
-      res.status(200).json({
-        success: true,
-        message: 'Competition executed successfully',
-        data: {
-          showId,
-          showName: show.name,
-          discipline: show.discipline,
-          totalEntries: competitionResult.totalEntries,
-          results: competitionResult.results, // Already filtered to hide scores
-          statGains: competitionResult.statGains,
-          totalPrizeDistributed: competitionResult.totalPrizeDistributed,
-          totalXPAwarded: competitionResult.totalXPAwarded,
-        },
-      });
-    } catch (error) {
-      logger.error(`[competitionRoutes.POST /execute] Error: ${error.message}`);
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-      });
-    }
-  },
-);
+router.post('/execute', mutationRateLimiter, auth, (req, res) => {
+  logger.info(
+    `[competitionRoutes.POST /execute] 410 Gone — on-demand execution removed (Equoria-kacla); user ${req.user?.id}`,
+  );
+  return res.status(410).json({
+    success: false,
+    message:
+      'On-demand competition execution has been removed. Shows are scored automatically by the nightly cron 7 days after creation (the 7-day deferred-window model). Use POST /api/shows/create and POST /api/shows/:id/enter.',
+  });
+});
 
 /**
  * GET /api/competition/eligibility/:horseId/:discipline

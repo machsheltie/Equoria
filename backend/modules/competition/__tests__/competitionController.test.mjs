@@ -309,10 +309,16 @@ describe('POST /api/competition/enter', () => {
   });
 });
 
-// ─── POST /api/competition/enter-show ────────────────────────────────────────
+// ─── POST /api/competition/enter-show (removed — 410 Gone, Equoria-kacla) ─────
+//
+// The legacy instant enter-and-run path was removed: it returned competition
+// results synchronously, contradicting the 7-day deferred model (nx8t1).
+// Auth still runs first (so unauth → 401); for an authenticated caller the
+// handler returns 410 unconditionally (no validation/ownership branch — the
+// endpoint no longer does any work). Migrated, not skipped (CLAUDE.md).
 
-describe('POST /api/competition/enter-show', () => {
-  it('returns 400 when required fields are missing', async () => {
+describe('POST /api/competition/enter-show (removed — 410 Gone)', () => {
+  it('returns 410 Gone for an authenticated caller (no instant enter-and-run)', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
       .post('/api/competition/enter-show')
@@ -322,11 +328,13 @@ describe('POST /api/competition/enter-show', () => {
       .set('X-CSRF-Token', csrf.csrfToken)
       .send({});
 
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(410);
     expect(res.body.success).toBe(false);
+    expect(res.body.results).toBeUndefined();
+    expect(String(res.body.message)).toMatch(/7-day|deferred|\/api\/shows/i);
   });
 
-  it('returns 404 when horses do not belong to user', async () => {
+  it('returns 410 Gone even with valid-looking body (endpoint removed)', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
       .post('/api/competition/enter-show')
@@ -334,13 +342,14 @@ describe('POST /api/competition/enter-show', () => {
       .set('Authorization', `Bearer ${token}`)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
-      .send({ showId: show.id, horseIds: [999999999] });
+      .send({ showId: show.id, horseIds: [horse.id] });
 
-    expect(res.status).toBe(404);
+    expect(res.status).toBe(410);
     expect(res.body.success).toBe(false);
+    expect(res.body.results).toBeUndefined();
   });
 
-  it('returns 401 without auth', async () => {
+  it('returns 401 without auth (auth gate runs before the deprecation handler)', async () => {
     const csrf = await fetchCsrf(app);
     const res = await request(app)
       .post('/api/competition/enter-show')

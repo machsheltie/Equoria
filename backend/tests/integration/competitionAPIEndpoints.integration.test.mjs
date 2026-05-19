@@ -173,7 +173,11 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
   });
 
   describe('📝 POST /api/competition/enter', () => {
-    test('should successfully enter horse in competition', async () => {
+    // Equoria-kacla: /enter is now a CANONICAL DEFERRED entry (7-day model,
+    // nx8t1). It creates a ShowEntry (the row the nightly cron scores), debits
+    // the entrant, credits the creator, and returns NO instant results /
+    // eligibilityDetails. Migrated from the obsolete instant-entry assertions.
+    test('should successfully enter horse in competition (deferred ShowEntry, no instant results)', async () => {
       const response = await request(app)
         .post('/api/competition/enter')
         .set('Authorization', `Bearer ${authToken}`)
@@ -187,25 +191,33 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
         .expect(201);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe('Horse successfully entered in competition');
       expect(response.body.data.horseId).toBe(testHorse.id);
       expect(response.body.data.showId).toBe(testShow.id);
       expect(response.body.data.entryFee).toBe(testShow.entryFee);
-      expect(response.body.data.eligibilityDetails).toHaveProperty('horseLevel');
-      expect(response.body.data.eligibilityDetails).toHaveProperty('disciplineScore');
+      // No instant results / placement / scores / eligibilityDetails.
+      expect(response.body.results).toBeUndefined();
+      expect(response.body.data.placement).toBeUndefined();
+      expect(response.body.data.score).toBeUndefined();
+      expect(response.body.data.eligibilityDetails).toBeUndefined();
 
-      // Verify entry was created in database
-      const entry = await prisma.competitionResult.findFirst({
+      // Entry lands in the canonical ShowEntry table the cron reads, NOT a
+      // pre-scored competitionResult row.
+      const entry = await prisma.showEntry.findFirst({
         where: {
           horseId: testHorse.id,
           showId: testShow.id,
         },
       });
       expect(entry).toBeTruthy();
-      expect(entry.placement).toBeNull(); // Not yet executed
+      expect(entry.feePaid).toBe(testShow.entryFee);
+
+      const preScored = await prisma.competitionResult.findFirst({
+        where: { horseId: testHorse.id, showId: testShow.id },
+      });
+      expect(preScored).toBeNull(); // No instant execution occurred.
     });
 
-    test('should reject duplicate entry', async () => {
+    test('should reject duplicate entry (409 — canonical ShowEntry uniqueness)', async () => {
       const response = await request(app)
         .post('/api/competition/enter')
         .set('Authorization', `Bearer ${authToken}`)
@@ -216,7 +228,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
           horseId: testHorse.id,
           showId: testShow.id,
         })
-        .expect(400);
+        .expect(409);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Horse is already entered in this competition');
@@ -283,8 +295,13 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
     });
   });
 
-  describe('🏁 POST /api/competition/execute', () => {
-    test('should successfully execute competition', async () => {
+  // Equoria-kacla: POST /api/competition/execute is REMOVED (410 Gone). The
+  // only sanctioned executor is the nightly cron `executeClosedShows`, which
+  // scores each show exactly once at closeDate (createdAt + 7d). The legacy
+  // on-demand-execute tests below were migrated to assert the deprecation
+  // (per nx8t1 precedent: migrate obsolete tests, never skip — CLAUDE.md).
+  describe('🏁 POST /api/competition/execute (removed — 410 Gone, Equoria-kacla)', () => {
+    test('returns 410 Gone instead of instant-executing a competition', async () => {
       const response = await request(app)
         .post('/api/competition/execute')
         .set('Authorization', `Bearer ${authToken}`)
@@ -294,38 +311,19 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
         .send({
           showId: testShow.id,
         })
-        .expect(200);
+        .expect(410);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe('Competition executed successfully');
-      expect(response.body.data.showId).toBe(testShow.id);
-      expect(response.body.data.showName).toBe(testShow.name);
-      expect(response.body.data.discipline).toBe(testShow.discipline);
-      expect(response.body.data.totalEntries).toBeGreaterThan(0);
-      expect(response.body.data.results).toBeInstanceOf(Array);
-      expect(response.body.data).toHaveProperty('totalPrizeDistributed');
-      expect(response.body.data).toHaveProperty('totalXPAwarded');
-
-      // Verify results don't contain scores (hidden from users)
-      response.body.data.results.forEach(result => {
-        expect(result).not.toHaveProperty('score');
-        expect(result).toHaveProperty('placement');
-        expect(result).toHaveProperty('horseName');
-        expect(result).toHaveProperty('userName');
+      expect(response.body.success).toBe(false);
+      expect(String(response.body.message)).toMatch(/7-day|cron|deferred|\/api\/shows/i);
+      // Must NOT have run the competition.
+      expect(response.body.data).toBeUndefined();
+      const preScored = await prisma.competitionResult.findFirst({
+        where: { horseId: testHorse.id, showId: testShow.id },
       });
-
-      // Verify competition results were updated in database
-      const updatedEntry = await prisma.competitionResult.findFirst({
-        where: {
-          horseId: testHorse.id,
-          showId: testShow.id,
-        },
-      });
-      expect(updatedEntry.placement).not.toBeNull(); // Should now have placement
+      expect(preScored).toBeNull();
     });
 
-    test('should reject execution by non-host user (CWE-639 Equoria-c4g3: 404 byte-identical to not-found)', async () => {
-      // Create another user
+    test('returns 410 Gone regardless of caller (no host/non-host distinction now)', async () => {
       const otherUserResult = await createTestUser({
         username: `nonhost_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}`,
         email: `nonhost_${randomBytes(4).toString('hex')}_${randomBytes(4).toString('hex')}@example.com`,
@@ -340,14 +338,12 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
         .send({
           showId: testShow.id,
         })
-        .expect(404);
+        .expect(410);
 
-      // CWE-639: cross-user (non-host) must look identical to not-found.
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Show not found');
     });
 
-    test('should reject invalid show ID', async () => {
+    test('returns 410 Gone for any show ID (endpoint removed)', async () => {
       const response = await request(app)
         .post('/api/competition/execute')
         .set('Authorization', `Bearer ${authToken}`)
@@ -357,10 +353,9 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
         .send({
           showId: 99999,
         })
-        .expect(404);
+        .expect(410);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Show not found');
     });
   });
 

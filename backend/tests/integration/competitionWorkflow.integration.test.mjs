@@ -157,6 +157,18 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
             sex: 'Stallion',
             dateOfBirth: new Date('2019-01-01'),
             healthStatus: 'Excellent',
+            // Equoria-kacla: the canonical cron `executeClosedShows` scores
+            // off the raw stat columns (speed/stamina/agility/precision/
+            // boldness), NOT disciplineScores (which the removed legacy
+            // instant scorer used). These columns default to 0 in the schema,
+            // so a fixture built only with disciplineScores would score 0
+            // under the canonical model. Give the champion real stats so the
+            // end-to-end workflow produces a realistic score/placement/prize.
+            speed: 80,
+            stamina: 78,
+            agility: 76,
+            precision: 74,
+            boldness: 72,
             disciplineScores: {
               Racing: 75,
               Dressage: 68,
@@ -256,90 +268,94 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
         .expect(201);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe('Horse successfully entered in competition');
       expect(response.body.data.horseId).toBe(competitionHorse.id);
       expect(response.body.data.showId).toBe(testShow.id);
       expect(response.body.data.entryFee).toBe(testShow.entryFee);
+      // Equoria-kacla: /enter is now a canonical DEFERRED entry — no instant
+      // results / placement / eligibilityDetails are returned.
+      expect(response.body.results).toBeUndefined();
+      expect(response.body.data.placement).toBeUndefined();
+      expect(response.body.data.eligibilityDetails).toBeUndefined();
 
-      // VERIFY: Entry fee deducted from user account
+      // VERIFY: Entry fee deducted from user account. testShow has no
+      // createdByUserId, so the fee is sunk (matches canonical enterShow) —
+      // net effect is still initialMoney - entryFee for the entrant.
       const updatedUser = await prisma.user.findUnique({ where: { id: testUser.id } });
       expect(updatedUser.money).toBe(initialMoney - testShow.entryFee);
 
-      // VERIFY: Competition entry created in database
-      const entry = await prisma.competitionResult.findFirst({
+      // VERIFY: a CANONICAL ShowEntry row was created (the table the nightly
+      // cron `executeClosedShows` reads), NOT a pre-scored competitionResult.
+      const entry = await prisma.showEntry.findFirst({
         where: {
           horseId: competitionHorse.id,
           showId: testShow.id,
         },
       });
       expect(entry).toBeTruthy();
-      expect(entry.placement).toBeNull(); // Not yet executed
+      expect(entry.feePaid).toBe(testShow.entryFee);
+
+      const preScored = await prisma.competitionResult.findFirst({
+        where: { horseId: competitionHorse.id, showId: testShow.id },
+      });
+      expect(preScored).toBeNull(); // No instant execution occurred.
     });
   });
 
-  describe('🏁 STEP 4: Competition Execution & Scoring', () => {
-    it('should execute competition and calculate results', async () => {
-      // Import competition logic (real business logic)
-      const { calculateCompetitionScore } = await import('../../utils/competitionLogic.mjs');
-
-      const horse = competitionHorse;
-      const show = testShow;
-
-      // Calculate competition score (real algorithm, mocked randomness)
-      const competitionScore = calculateCompetitionScore(
-        horse.disciplineScores[show.discipline],
-        horse.epigeneticModifiers,
-        horse.age,
-        show.discipline,
+  describe('🏁 STEP 4: Competition Execution & Scoring (canonical cron — Equoria-kacla)', () => {
+    it('should execute the show via the canonical nightly cron and produce a real result', async () => {
+      // Equoria-kacla: scoring is NO LONGER done by an on-demand endpoint or
+      // by manually mutating a placeholder competitionResult. The ONLY
+      // sanctioned executor is `executeClosedShows` (showController.mjs),
+      // which runs every show exactly once at closeDate (createdAt + 7d) and
+      // is idempotent. We force the close window into the past and invoke the
+      // real cron — this is the actual production scoring path.
+      const { executeClosedShows } = await import(
+        '../../modules/competition/shows/showController.mjs'
       );
 
-      expect(competitionScore).toBeGreaterThan(0);
-      expect(competitionScore).toBeLessThanOrEqual(100);
-
-      // Update the existing competition result (created during entry)
-      const existingResult = await prisma.competitionResult.findFirst({
-        where: {
-          horseId: horse.id,
-          showId: show.id,
-          placement: null, // Find the placeholder result
-        },
+      await prisma.show.update({
+        where: { id: testShow.id },
+        data: { closeDate: new Date(Date.now() - 60_000), status: 'open' },
       });
 
-      expect(existingResult).toBeTruthy(); // Should exist from entry step
+      await executeClosedShows(null, null);
 
-      // Update with actual competition results
-      competitionResult = await prisma.competitionResult.update({
-        where: { id: existingResult.id },
-        data: {
-          score: competitionScore,
-          placement: '1', // Will be calculated based on all entries
-          prizeWon: show.prize * 0.5, // 50% for first place
-        },
+      // The cron marks the show completed and creates the real result.
+      const after = await prisma.show.findUnique({
+        where: { id: testShow.id },
+        select: { status: true },
+      });
+      expect(after.status).toBe('completed');
+
+      competitionResult = await prisma.competitionResult.findFirst({
+        where: { horseId: competitionHorse.id, showId: testShow.id },
       });
 
-      expect(Number(competitionResult.score)).toBe(competitionScore);
+      expect(competitionResult).toBeTruthy();
+      expect(Number(competitionResult.score)).toBeGreaterThan(0);
+      // Sole entrant → 1st place → 50% of the prize pool.
+      expect(competitionResult.placement).toBe('1');
       expect(Number(competitionResult.prizeWon)).toBeGreaterThan(0);
     });
   });
 
   describe('💰 STEP 5: Prize Distribution & XP Awards', () => {
-    it('should award prize money and XP for competition performance', async () => {
+    it('should have credited prize money via the cron and award participation XP', async () => {
       const initialUser = await prisma.user.findUnique({
         where: { id: testUser.id },
       });
-      const initialMoney = initialUser.money;
       const initialXP = initialUser.xp;
 
-      // Award prize money
+      // Equoria-kacla: prize money is now credited by the canonical cron
+      // `executeClosedShows` in STEP 4 — NOT by a manual test-side increment.
+      // (A manual increment here would double-pay the prize and break the
+      // STEP 9 `initialMoney - entryFee + prizeWon` invariant.) Verify the
+      // cron actually paid the sole entrant the 1st-place share.
       const prizeAmount = Number(competitionResult.prizeWon);
-      const updatedUser = await prisma.user.update({
-        where: { id: testUser.id },
-        data: {
-          money: { increment: prizeAmount },
-        },
-      });
-
-      expect(updatedUser.money).toBe(initialMoney + prizeAmount);
+      expect(prizeAmount).toBeGreaterThan(0);
+      // initialMoney/entryFee/prize bookkeeping: the entrant was debited the
+      // entryFee at entry (STEP 3) and credited prizeWon by the cron (STEP 4).
+      expect(initialUser.money).toBe(initialMoney - testShow.entryFee + prizeAmount);
 
       // Award XP for competition participation
       const xpAmount = Math.floor(Number(competitionResult.score) / 10); // XP based on performance

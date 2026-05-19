@@ -209,9 +209,19 @@ describe('CWE-639 wave-5 sweep (Equoria-9ov8 follow-up triplet)', () => {
     });
   });
 
-  // ─── Equoria-c4g3 ────────────────────────────────────────────────────────
-  describe('competitionRoutes POST /api/v1/competition/execute', () => {
-    it('returns 404 for non-host with byte-identical response to not-exists', async () => {
+  // ─── Equoria-c4g3 → Equoria-kacla ────────────────────────────────────────
+  // POST /api/v1/competition/execute is REMOVED (410 Gone, Equoria-kacla):
+  // on-demand execution was the legacy instant-run that contradicted the
+  // 7-day deferred model. The original CWE-639 concern (a scoped host-only
+  // DB lookup whose 404 must be byte-identical for non-host vs not-exists to
+  // prevent show-ID enumeration) is now MOOT — the endpoint performs NO DB
+  // lookup at all and returns an unconditional, caller-independent,
+  // show-existence-independent 410. That is strictly stronger than the prior
+  // byte-identical-404 guarantee. Migrated (not skipped — CLAUDE.md / nx8t1
+  // precedent) to lock in the no-enumeration property under the new
+  // behaviour.
+  describe('competitionRoutes POST /api/v1/competition/execute (removed — 410 Gone)', () => {
+    it('returns an identical 410 for non-host vs non-existent show (no enumeration surface)', async () => {
       // Show hosted by user B — user A is non-host.
       const show = await prisma.show.create({
         data: {
@@ -227,7 +237,7 @@ describe('CWE-639 wave-5 sweep (Equoria-9ov8 follow-up triplet)', () => {
         },
       });
 
-      // Cross-user (non-host) case: user A executing user B's show
+      // Cross-user (non-host) case: user A "executing" user B's show.
       const resCrossUser = await request(app)
         .post('/api/v1/competition/execute')
         .set('Authorization', `Bearer ${tokenA}`)
@@ -236,11 +246,10 @@ describe('CWE-639 wave-5 sweep (Equoria-9ov8 follow-up triplet)', () => {
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ showId: show.id });
 
-      expect(resCrossUser.status).toBe(404);
+      expect(resCrossUser.status).toBe(410);
       expect(resCrossUser.body.success).toBe(false);
-      expect(resCrossUser.body).toMatchObject({ success: false, message: 'Show not found' });
 
-      // Not-exists case: user A executing a non-existent show
+      // Not-exists case: user A "executing" a non-existent show.
       const resMissing = await request(app)
         .post('/api/v1/competition/execute')
         .set('Authorization', `Bearer ${tokenA}`)
@@ -249,8 +258,9 @@ describe('CWE-639 wave-5 sweep (Equoria-9ov8 follow-up triplet)', () => {
         .set('X-CSRF-Token', __csrf__.csrfToken)
         .send({ showId: NONEXISTENT_SHOW_ID });
 
-      expect(resMissing.status).toBe(404);
-      // Byte-identical sentinel — divergence enables show ID enumeration.
+      expect(resMissing.status).toBe(410);
+      // Byte-identical sentinel — the 410 must not leak whether the show
+      // exists or who the caller is (no enumeration surface at all).
       expect(resMissing.body).toEqual(resCrossUser.body);
     });
   });
