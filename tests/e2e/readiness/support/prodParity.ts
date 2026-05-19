@@ -101,21 +101,37 @@ export async function registerAndCompleteOnboarding(
   await page.locator('[data-testid="onboarding-next"]').click();
 
   await expect(page.locator('h1')).toContainText('Choose Your Horse');
-  const breedSelect = page.locator('[data-testid="breed-select"]');
-  await breedSelect.waitFor({ state: 'visible' });
-  // Capture the first real breed option value (index 0 is a disabled placeholder)
-  const breedOptions = await breedSelect.locator('option').evaluateAll((nodes) =>
-    nodes.map((node) => ({
-      value: (node as HTMLOptionElement).value,
-      label: (node.textContent ?? '').trim(),
-    }))
-  );
-  const selectedBreed = breedOptions[1];
-  const expectedBreedId = Number(selectedBreed.value);
-  await breedSelect.selectOption({ index: 1 });
-  await page.getByRole('button', { name: /Mare/i }).click();
+  // Equoria-zanq / Spec 11.3.4: the onboarding breed picker was redesigned from
+  // a plain <select data-testid="breed-select"> into a WAI-ARIA radiogroup
+  // (BreedSelector — grid of button[role="radio"] cards, each tagged with
+  // data-breed-option="<breedId>"). Drive the real radiogroup UI: select the
+  // first breed option, capture its real backend breed id for the
+  // post-onboarding persistence assertions, then gender + name.
+  const breedSelector = page.locator('[data-testid="breed-selector"]');
+  await breedSelector.waitFor({ state: 'visible' });
+  const breedRadioGroup = breedSelector.locator('[role="radiogroup"][aria-label="Horse breeds"]');
+  const firstBreedOption = breedRadioGroup.locator('[role="radio"][data-breed-option]').first();
+  await firstBreedOption.waitFor({ state: 'visible' });
+  const breedOptionAttr = await firstBreedOption.getAttribute('data-breed-option');
+  expect(breedOptionAttr, 'First breed option must expose a numeric data-breed-option').toBeTruthy();
+  const expectedBreedId = Number(breedOptionAttr);
+  expect(
+    Number.isFinite(expectedBreedId) && expectedBreedId > 0,
+    `data-breed-option must be a positive breed id, got "${breedOptionAttr}"`
+  ).toBe(true);
+  await firstBreedOption.click();
+  await expect(firstBreedOption).toHaveAttribute('aria-checked', 'true');
+  // Gender + name live inside the same BreedSelector. The Mare button renders
+  // as "♀ Mare"; accessible name still matches /Mare/i. Scope to the selector
+  // so we never pick up an unrelated control.
+  await breedSelector.getByRole('button', { name: /Mare/i }).click();
   await page.locator('[data-testid="horse-name-input"]').fill(horseName);
-  await page.locator('[data-testid="onboarding-next"]').click();
+  // Step 1's Next is disabled until breed+gender+name are all set (see
+  // OnboardingPage isStep1Complete). Wait for it to enable before clicking so
+  // the click can't race the React state update.
+  const step1Next = page.locator('[data-testid="onboarding-next"]');
+  await expect(step1Next).toBeEnabled();
+  await step1Next.click();
 
   await expect(page.locator('h1')).toContainText("You're Ready!");
   const advanceResponse = page.waitForResponse(
