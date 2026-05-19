@@ -62,16 +62,32 @@ export default defineConfig({
     },
   ],
   projects: [
+    // Equoria-yhg0g: the automated accessibility suite
+    // (tests/e2e/accessibility.spec.ts, UX spec 13.4) is its own project so
+    // it can run as an independent CI gate without blocking the main E2E
+    // lane initially. It is a REAL runnable suite (no test.skip) using real
+    // login + real backend. Invoke directly with:
+    //   npx playwright test --project=a11y
+    // The default browser projects exclude the a11y spec so it does not
+    // double-run there.
+    {
+      name: 'a11y',
+      testMatch: /accessibility\.spec\.ts$/,
+      use: { ...devices['Desktop Chrome'] },
+    },
     {
       name: 'chromium',
+      testIgnore: /accessibility\.spec\.ts$/,
       use: { ...devices['Desktop Chrome'] },
     },
     {
       name: 'firefox',
+      testIgnore: /accessibility\.spec\.ts$/,
       use: { ...devices['Desktop Firefox'] },
     },
     {
       name: 'webkit',
+      testIgnore: /accessibility\.spec\.ts$/,
       use: { ...devices['Desktop Safari'] },
     },
   ],

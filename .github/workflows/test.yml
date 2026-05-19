@@ -528,6 +528,20 @@ jobs:
         # added back, install the other browsers above.
         run: npx playwright test --project=chromium
 
+      # Equoria-yhg0g (UX spec 13.4): automated accessibility gate.
+      # Separate Playwright project (`a11y`) so it is a distinct, named
+      # step — the main E2E lane result above stays independently
+      # readable. This step is a REAL blocking gate (no continue-on-error,
+      # per .claude/rules/EDGE_CASE_FIX_DISCIPLINE.md §2): it fails the job
+      # if any covered beta surface has a critical/serious axe violation.
+      # `if: always()` so it still runs even if a non-a11y E2E spec above
+      # flaked, keeping the a11y signal independent of the main lane.
+      - name: Run Accessibility (axe) E2E gate
+        if: always()
+        env:
+          BASE_URL: 'http://localhost:3000'
+        run: npx playwright test --project=a11y
+
       - name: Upload Playwright report on failure
         if: always()
         uses: actions/upload-artifact@v4
