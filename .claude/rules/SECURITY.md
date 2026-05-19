@@ -187,12 +187,48 @@ const dataHash = crypto
 
 ### **7. File Upload Security**
 
-#### **File Validation**
+> **Status (2026-05-19, Equoria-9m1u — build-ahead GATE, not yet
+> consumed):** No upload endpoint, multer/formidable, or upload feature
+> exists in the codebase today. The controls below are **implemented as a
+> reusable, fail-closed validation gate** (`backend/utils/uploadGuard.mjs`)
+> built ahead of any consumer — the same build-ahead posture as the SSRF
+> guard (A10 / Equoria-4dva). This is NOT a live request-path control yet
+> (nothing calls it); it is a hard prerequisite that makes the first
+> upload feature safe by construction. **Contract: any future PR that
+> introduces a file-upload endpoint MUST call `assertSafeUpload()` BEFORE
+> persisting, serving, or trusting the bytes**, with sentinel-positive
+> tests. Until an upload feature ships and wires the gate in, treat this
+> section as an enforced prerequisite, not a deployed defense.
 
-- **Size Limits**: 5MB maximum file size
-- **Type Validation**: Only JPEG, PNG, GIF, WebP allowed
-- **Name Sanitization**: Prevents malicious file names
-- **Content Verification**: MIME type validation
+#### **File Validation** (implemented in `backend/utils/uploadGuard.mjs`)
+
+- **Size Limits**: configurable cap, default 5MB; oversize → reject
+- **Type Validation**: MIME allow-list — only `image/jpeg`, `image/png`,
+  `image/gif`, `image/webp`. Declared Content-Type must be allow-listed.
+- **Extension Allow-list**: `.jpg/.jpeg/.png/.gif/.webp`; the extension,
+  declared MIME, and sniffed content type must all agree (mismatch →
+  reject — defeats `evil.jpg` containing PNG/script bytes).
+- **Content Verification (magic-byte sniff)**: the AUTHORITATIVE type is
+  determined by inspecting the actual leading bytes (JPEG `FF D8 FF`,
+  PNG `89 50 4E 47 0D 0A 1A 0A`, GIF `GIF87a/GIF89a`, WebP
+  `RIFF....WEBP`). A script/polyglot disguised as an image is rejected
+  even when the declared MIME and extension look valid. The declared
+  Content-Type is never trusted on its own.
+- **Name Sanitization**: strips directory components and `../`/`..\\`
+  traversal, rejects null bytes and C0/C1/DEL control characters,
+  collapses to a conservative `[A-Za-z0-9._-]` charset, forbids
+  leading-dot / empty / overlong names; returns a safe stored basename.
+- **Integrity Checksum (A08)**: a SHA-256 digest of the bytes is
+  returned for callers to persist alongside the file (at-rest
+  tamper-evidence — addresses the A08 "checksum verification for file
+  uploads" recommendation).
+- **Fail-closed (EDGE_CASE §3)**: empty/oversize/non-Buffer input,
+  unknown magic, type disagreement, unsanitizable name, or ANY
+  unexpected exception → generic `AppError(400)`. No silent catch, no
+  allow-through-on-error.
+- Test coverage: `backend/modules/services/__tests__/uploadGuard.test.mjs`
+  (sentinel-positive: proves the gate FIRES on real spoof/oversize/
+  traversal/null-byte payloads, not merely passes when clean).
 
 ### **8. GDPR / Data-Subject Rights (Equoria-s3rf, 2026-05-18)**
 
