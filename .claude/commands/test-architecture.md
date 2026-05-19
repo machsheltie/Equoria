@@ -40,6 +40,45 @@ Invoke this skill when:
 
 ---
 
+## Test Taxonomy — Integration vs Controller-Harness (Equoria-esgj)
+
+The word "integration" in a file name or `describe` block is a contract,
+not decoration. It MUST mean: the test exercises the **real HTTP chain**
+(supertest `request(app)`) through the real Express middleware pipeline
+against the **real DB**. A test that drives a controller via a fake
+`buildReq`/`buildRes` (or `createMockRequest`/`createMockResponse`)
+object is a **controller-harness test** — it is unit-ish (no router, no
+middleware, no body parsing, no auth/CSRF chain) and MUST NOT be named
+or labeled "integration".
+
+| Category | What it exercises | Naming | Cite as beta-readiness? |
+|----------|-------------------|--------|--------------------------|
+| HTTP integration | `request(app)` → real middleware → real controller → real DB | `*.integration.test.mjs`, `describe('… HTTP …')` | ✅ yes |
+| DB / cross-module integration | real service + real Prisma, no HTTP | `*.integration.test.mjs` (DB-integration sense) | ✅ yes |
+| Controller-harness | controller fn called with fake `buildReq`/`buildRes` | unit name (NO `.integration.`, NO `describe('integration')`) | ❌ never |
+
+Rules:
+
+- A controller-harness suite must live in a unit-named file and MUST NOT
+  be cited as integration or beta-readiness evidence.
+- If a suite needs integration credibility, convert it to supertest
+  (`request(app)`) — do not relabel a harness as integration.
+- See `conformationShowRoutesHttp.integration.test.mjs` (lines ~136–144)
+  for the canonical comment documenting why the harness is rejected in
+  favor of a real HTTP pipeline test.
+- Audit command (should return zero offenders):
+  `grep -rliE "describe\(\s*['\"\`][^'\"\`]*integration" backend --include="*.test.mjs"` then
+  cross-check each hit has `supertest`/`request(app)` or is real-DB
+  service integration.
+
+The buildReq/buildRes harness sweep (Equoria-esgj, 2026-05-19) found
+**zero** mislabeled offenders remaining — prior remediation landed in
+commits `8d33b6b3c` (conformationShowExecution reclassify) and
+`e14ed1351` (21r-5 mock-heavy integration reclassify). This section
+locks the taxonomy so the class cannot silently regress.
+
+---
+
 ## Quick Test Commands
 
 ```bash
