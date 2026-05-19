@@ -662,12 +662,18 @@ not yet decided).
 - ✅ **DB-persisted audit trail (Equoria-jw10w)** — `AuditLog` model +
   `storeAuditLog()` writes rows fail-soft; `globalAuditTrail` mounted
   app-wide in `app.mjs` enforces POST/PUT/PATCH/DELETE coverage on
-  sensitive prefixes. Queryable + retained in DB. Retention/rotation
-  automation is the remaining TODO; reads are mutation-scoped out by design.
+  sensitive prefixes. Queryable + retained in DB. Reads are
+  mutation-scoped out by design.
+- ✅ **Retention/rotation automation IS implemented (Equoria-54qq8)** —
+  `backend/services/auditLogRetentionService.mjs` performs a nightly scoped
+  DELETE of rows older than the retention window (90-day default, 7-day
+  floor). This was previously listed here as "the remaining TODO"; that was
+  stale and contradicted §A09 which already documents it as RESOLVED
+  (corrected 2026-05-19, Equoria-ss4r).
 
 **Status:** ✅ File logging + DB-backed audit trail (globally enforced for
-sensitive mutations) production-ready; retention/rotation automation pending
-(scoped follow-up).
+sensitive mutations) + automated nightly retention purge — all
+production-ready (retention delivered under Equoria-54qq8).
 
 ---
 
@@ -720,8 +726,14 @@ None identified.
 1. **Multi-Factor Authentication (MFA)** — ✅ opt-in TOTP shipped (Equoria-2vwwh)
    - ✅ Opt-in TOTP MFA for all user accounts (enroll/verify/challenge/disable)
    - ✅ Single-use recovery code generation (bcrypt-hashed)
-   - ⏳ Admin-account MFA enforcement (tracked follow-up)
-   - ⏳ Encrypt `mfaSecret` at rest (tracked follow-up)
+   - ✅ Admin-account MFA enforcement implemented — opt-in via
+     `ADMIN_MFA_REQUIRED` (Equoria-te21j; was stale "⏳ tracked follow-up",
+     corrected 2026-05-19 Equoria-ss4r)
+   - ✅ `mfaSecret` encrypted at rest — AES-256-GCM via
+     `backend/utils/fieldEncryption.mjs` (Equoria-yi13v; was stale "⏳
+     tracked follow-up", corrected 2026-05-19 Equoria-ss4r)
+   - ⏳ Optional global/mandatory MFA for non-admin accounts (genuine open
+     follow-up — opt-in only today)
 
 2. **Security Headers Enhancement**
    - ~~Content Security Policy (CSP)~~ — **already implemented** in
@@ -846,7 +858,15 @@ configured. This is a hard pre-production blocker, not a soft warning.
 
 **Current Status:**
 
-- **COPPA:** ✅ Ready (age verification not yet implemented)
+- **COPPA:** ✅ Age verification IMPLEMENTED (Equoria-iqzn) — server-
+  authoritative hard age gate at registration
+  (`backend/modules/auth/controllers/authController.mjs:106-117`,
+  `meetsCoppaMinimumAge` / `COPPA_MIN_AGE_YEARS`); `dateOfBirth` persisted
+  only after the gate passes and treated as sensitive PII (redacted from
+  request logs, commit cbfa10466). Real-DB coverage:
+  `backend/modules/auth/__tests__/coppaAgeVerification.integration.test.mjs`.
+  (Was stale "age verification not yet implemented"; corrected 2026-05-19
+  Equoria-ss4r.)
 - **CCPA:** ✅ Ready (data privacy controls in place; the export +
   deletion endpoints below also satisfy CCPA access/deletion requests)
 - **GDPR:** ✅ Core data-subject rights implemented (Equoria-s3rf,
