@@ -234,29 +234,59 @@ export async function createOptimizedIndexes(options) {
     }
 
     if (options.jsonbFields) {
-      // Create JSONB indexes with correct column names
+      // Create JSONB indexes with correct column names.
+      //
+      // Schema-drift guard (Equoria CI shard-3 fix): the keys here are the
+      // labels callers may pass; the values are the ACTUAL quoted column
+      // names that exist on the `horses` table per packages/database/
+      // prisma/schema.prisma. A label with no real column is intentionally
+      // omitted so we never emit a CREATE INDEX against a non-existent
+      // column on a fresh `equoria_test` DB built from migrations.
       const fieldMapping = {
         epigenetic_flags: '"epigeneticFlags"',
+        epigeneticFlags: '"epigeneticFlags"',
         discipline_scores: '"disciplineScores"',
+        disciplineScores: '"disciplineScores"',
         epigeneticModifiers: '"epigeneticModifiers"',
         ultraRareTraits: '"ultraRareTraits"',
         conformationScores: '"conformationScores"',
+        gaitScores: '"gaitScores"',
+        // NOTE: `stats` has NO column on `horses` — base stats are scalar
+        // Int columns (speed, stamina, …), not a JSONB blob. The closest
+        // real JSONB aggregate is conformationScores; map `stats` there so
+        // a GIN index targets a column that actually exists.
+        stats: '"conformationScores"',
       };
 
       for (const field of options.jsonbFields) {
-        const columnName = fieldMapping[field] || `"${field}"`;
+        const columnName = fieldMapping[field];
+        if (!columnName) {
+          // Unknown label with no real column — skip with a loud log rather
+          // than emit invalid SQL. This is NOT a silent swallow of a real
+          // error: we never generate the bad statement in the first place.
+          logger.warn(
+            `[databaseOptimization] Skipping GIN index for unknown JSONB field "${field}" (no matching column on horses)`,
+          );
+          continue;
+        }
+        const safeName = field.replace(/[^a-zA-Z0-9_]/g, '_');
         indexQueries.push(
-          `CREATE INDEX IF NOT EXISTS idx_horses_${field}_gin ON horses USING GIN (${columnName})`,
+          `CREATE INDEX IF NOT EXISTS idx_horses_${safeName}_gin ON horses USING GIN (${columnName})`,
         );
       }
     }
 
     if (options.compositePatterns) {
-      // Create composite indexes with correct column names
+      // Create composite indexes with correct column names.
+      //
+      // Schema-drift guard: the Horse model's owning FK is `userId`, NOT
+      // `ownerId`. The previous mapping pointed userId/ownerId at the
+      // non-existent `"ownerId"` column, which failed on a fresh
+      // `equoria_test`. All values below are real `horses` columns.
       const columnMapping = {
-        userId: '"ownerId"',
-        user_id: '"ownerId"',
-        ownerId: '"ownerId"',
+        userId: '"userId"',
+        user_id: '"userId"',
+        ownerId: '"userId"',
         breedId: '"breedId"',
         age: 'age',
         trainingCooldown: '"trainingCooldown"',
@@ -265,8 +295,16 @@ export async function createOptimizedIndexes(options) {
       };
 
       for (const pattern of options.compositePatterns) {
-        const mappedColumns = pattern.map(col => columnMapping[col] || `"${col}"`);
-        const indexName = `idx_horses_${pattern.join('_')}`;
+        const unknown = pattern.filter(col => !(col in columnMapping));
+        if (unknown.length > 0) {
+          logger.warn(
+            `[databaseOptimization] Skipping composite index for pattern [${pattern.join(', ')}] — unknown column(s): ${unknown.join(', ')}`,
+          );
+          continue;
+        }
+        const mappedColumns = pattern.map(col => columnMapping[col]);
+        const safeName = pattern.join('_').replace(/[^a-zA-Z0-9_]/g, '_');
+        const indexName = `idx_horses_${safeName}`;
         const indexQuery = `CREATE INDEX IF NOT EXISTS ${indexName} ON horses (${mappedColumns.join(', ')})`;
         indexQueries.push(indexQuery);
       }
@@ -563,8 +601,42 @@ function generateCacheKey(options) {
   return `epigenetic_query_${JSON.stringify(options)}`.replace(/[^a-zA-Z0-9_]/g, '_');
 }
 
+/**
+ * Map a semantic query-pattern label to a CREATE INDEX statement against the
+ * REAL `horses` columns. The label describes the query a caller wants to
+ * optimize ("epigenetic_flags_search") — it is NOT itself a column name. The
+ * previous implementation used the label verbatim as a column, producing
+ * `ON horses ("epigenetic_flags_search")`, which fails with "column does not
+ * exist" on a fresh `equoria_test` DB built from migrations (CI shard-3).
+ *
+ * Each entry below targets columns that actually exist per
+ * packages/database/prisma/schema.prisma. Unknown patterns are skipped (return
+ * null) rather than emitting invalid SQL.
+ */
+const QUERY_PATTERN_INDEX = {
+  // GIN on the epigeneticFlags String[] column for "has trait" lookups.
+  epigenetic_flags_search:
+    'CREATE INDEX IF NOT EXISTS idx_horses_epigenetic_flags_search ON horses USING GIN ("epigeneticFlags")',
+  // GIN on the disciplineScores JSONB column for score filtering.
+  discipline_scores_filter:
+    'CREATE INDEX IF NOT EXISTS idx_horses_discipline_scores_filter ON horses USING GIN ("disciplineScores")',
+  // BTREE composite covering age + training-cooldown status queries.
+  age_and_training_status:
+    'CREATE INDEX IF NOT EXISTS idx_horses_age_and_training_status ON horses (age, "trainingCooldown")',
+  // BTREE on the owning FK (userId — NOT ownerId) for per-user horse lookups.
+  user_horse_lookup:
+    'CREATE INDEX IF NOT EXISTS idx_horses_user_horse_lookup ON horses ("userId")',
+};
+
 function generateIndexQuery(pattern) {
-  return `CREATE INDEX IF NOT EXISTS idx_${pattern} ON horses ("${pattern}")`;
+  const query = QUERY_PATTERN_INDEX[pattern];
+  if (!query) {
+    logger.warn(
+      `[databaseOptimization] Skipping index for unknown query pattern "${pattern}" (no mapping to real columns)`,
+    );
+    return null;
+  }
+  return query;
 }
 
 function generateOptimizationRecommendations() {

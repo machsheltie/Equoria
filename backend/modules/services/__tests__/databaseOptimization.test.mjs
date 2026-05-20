@@ -194,12 +194,14 @@ describe('Database Query Optimization', () => {
       expect(indexResults.created.length).toBeGreaterThan(0);
       expect(indexResults.performanceImpact).toBeDefined();
 
-      // Verify index creation attempts
+      // Sentinel (Equoria CI shard-3 fix): every EMITTED index statement must
+      // CREATE successfully against a fresh `equoria_test` built from
+      // migrations. The prior `['created','failed']` tolerance let a
+      // schema-drift defect (query-pattern labels emitted as bogus column
+      // names) ship undetected. A re-introduced bad column ref now fails here.
       for (const index of indexResults.created) {
-        expect(['created', 'failed']).toContain(index.status);
-        if (index.status === 'created') {
-          expect(index.estimatedSpeedup).toBeGreaterThan(1);
-        }
+        expect(index.status).toBe('created');
+        expect(index.estimatedSpeedup).toBeGreaterThan(1);
       }
     });
 
@@ -213,6 +215,13 @@ describe('Database Query Optimization', () => {
       expect(jsonbIndexes.ginIndexes).toBeInstanceOf(Array);
       expect(jsonbIndexes.btreeIndexes).toBeInstanceOf(Array);
       expect(jsonbIndexes.performanceGains).toBeDefined();
+
+      // Sentinel: emitted JSONB GIN indexes must reference real columns and
+      // create successfully (incl. `stats`, which has no column and is mapped
+      // to the real conformationScores JSONB column).
+      for (const index of jsonbIndexes.created) {
+        expect(index.status).toBe('created');
+      }
     });
 
     test('creates composite indexes for common query patterns', async () => {
@@ -229,6 +238,12 @@ describe('Database Query Optimization', () => {
       expect(compositeIndexes.created.length).toBeGreaterThan(0);
       // Query patterns covered depends on successful index creation
       expect(compositeIndexes.queryPatternsCovered || 0).toBeGreaterThanOrEqual(0);
+
+      // Sentinel: composite indexes must map every column to a real `horses`
+      // column (the owning FK is `userId`, NOT `ownerId`) and create cleanly.
+      for (const index of compositeIndexes.created) {
+        expect(index.status).toBe('created');
+      }
     });
   });
 
