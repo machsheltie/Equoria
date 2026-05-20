@@ -370,8 +370,11 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
   });
 
   describe('PUT /api/users/:id', () => {
-    it('should update an existing user', async () => {
-      const updates = { money: 2500 };
+    it('should update an existing user with an allowlisted field', async () => {
+      // Equoria-qia4j fix: send an allowlisted field (firstName), NOT a privileged
+      // field like money. The prior test sent money: 2500 which was proving the
+      // mass-assignment vulnerability — that test was incorrect by design.
+      const updates = { firstName: 'Updated' };
 
       const response = await request(app)
         .put(`/api/users/${testUserForCrud.id}`)
@@ -386,7 +389,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       expect(response.body.message).toBe('User updated successfully');
       expect(response.body.data).toMatchObject({
         id: testUserForCrud.id,
-        money: updates.money,
+        firstName: updates.firstName,
       });
       expect(response.body.data).toHaveProperty('username');
       expect(response.body.data).toHaveProperty('updatedAt');
@@ -396,7 +399,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const nonExistentUuid = '550e8400-e29b-41d4-a716-446655440001';
       const response = await request(app)
         .put(`/api/users/${nonExistentUuid}`)
-        .send({ money: 100 })
+        .send({ firstName: 'Hacked' })
         .set('Authorization', `Bearer ${authToken}`)
         .set('Origin', 'http://localhost:3000')
         .set('Cookie', __csrf__.cookieHeader)

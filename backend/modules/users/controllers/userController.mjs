@@ -488,13 +488,84 @@ export const createUserController = async (req, res, next) => {
 };
 
 /**
+ * Fields a user is permitted to update on their own profile via
+ * PUT /api/v1/users/:id.
+ *
+ * SECURITY (Equoria-qia4j, CWE-915 / CWE-269): This allowlist is the ONLY
+ * fields that may pass through to Prisma. Everything else in req.body is
+ * silently dropped at this boundary. Do NOT add privileged fields here
+ * (role, money, level, xp, password, mfa*, emailVerified*, etc.) — those
+ * each have dedicated, properly-gated endpoints.
+ */
+const USER_UPDATE_ALLOWLIST = ['username', 'email', 'firstName', 'lastName', 'settings'];
+
+/**
+ * Fields that are sensitive/privileged enough that their presence in a
+ * self-update request body should be logged as a security warning.
+ * (Still stripped — this list triggers the warning only.)
+ */
+const SENSITIVE_BLOCKED_FIELDS = new Set([
+  'role',
+  'money',
+  'level',
+  'xp',
+  'password',
+  'mfaSecret',
+  'mfaEnabled',
+  'mfaRecoveryCodes',
+  'emailVerified',
+  'emailVerifiedAt',
+  'passwordChangedAt',
+]);
+
+/**
  * Update user
- * @route PUT /api/user/:id
+ * @route PUT /api/v1/users/:id
+ *
+ * SECURITY (Equoria-qia4j): Applies a strict server-side allowlist before
+ * passing data to the model. Only USER_UPDATE_ALLOWLIST fields may be set
+ * via this endpoint. If `email` changes, emailVerified/emailVerifiedAt are
+ * also reset inside the same update (prevents pre-verified-email pivot
+ * attacks). Any sensitive/privileged field in the request body triggers a
+ * security warning log but the request is still processed (strip-and-proceed
+ * for forward-compatibility).
  */
 export const updateUserController = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const updates = req.body;
+    const rawBody = req.body || {};
+
+    // ── Step 1: Detect any attempt to set protected/privileged fields ───────
+    const presentSensitiveFields = Object.keys(rawBody).filter(k =>
+      SENSITIVE_BLOCKED_FIELDS.has(k),
+    );
+    if (presentSensitiveFields.length > 0) {
+      logger.warn(
+        `[userController.updateUser] SECURITY: user ${id} attempted to set protected field(s) via self-update: [${presentSensitiveFields.join(', ')}] — stripped before DB write`,
+      );
+    }
+
+    // ── Step 2: Build the allowlisted update object ──────────────────────────
+    const updates = {};
+    for (const key of USER_UPDATE_ALLOWLIST) {
+      if (Object.prototype.hasOwnProperty.call(rawBody, key)) {
+        updates[key] = rawBody[key];
+      }
+    }
+
+    // ── Step 3: If email is changing, reset verification flags in same write ─
+    if (updates.email !== undefined) {
+      // Compare against the current stored email so we only reset when the
+      // value is actually different (avoids resetting on a no-op PUT).
+      const currentUser = await prisma.user.findUnique({
+        where: { id },
+        select: { email: true },
+      });
+      if (currentUser && updates.email !== currentUser.email) {
+        updates.emailVerified = false;
+        updates.emailVerifiedAt = null;
+      }
+    }
 
     logger.info(`[userController.updateUser] Updating user ${id}`);
 
