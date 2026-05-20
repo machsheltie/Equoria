@@ -249,10 +249,7 @@ export function useABTest(
   const variant = useFeatureVariant(testName, variants[0]);
 
   const trackConversion = useCallback(() => {
-    // Track conversion event
-    console.log('[ABTest] Conversion', { testName, variant });
-
-    // In production, send to analytics
+    // TODO: send to analytics when analytics integration is wired
     // analytics.track('ab_conversion', { testName, variant });
   }, [testName, variant]);
 
