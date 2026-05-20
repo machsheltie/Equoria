@@ -30,10 +30,92 @@ import { RedisStore } from 'rate-limit-redis';
 import { createClient } from 'redis';
 import logger from '../utils/logger.mjs';
 import { createRedisCircuitBreaker } from '../utils/redisCircuitBreaker.mjs';
+import { trackSecurityEvent } from '../config/sentry.mjs';
 
 let redisClient = null;
 let redisCircuitBreaker = null;
 let isRedisAvailable = false;
+
+// ─── Fail-closed + alert throttle infrastructure (Equoria-hnud7) ─────────────
+
+/**
+ * Alert throttle map: keyPrefix → last-alert-timestamp (ms).
+ * At most one degradation alert per keyPrefix per ALERT_THROTTLE_MS window.
+ * Exported for white-box testing.
+ */
+export const _alertTimestamps = new Map();
+
+const ALERT_THROTTLE_MS = 60 * 1000; // 60 seconds between alerts per keyPrefix
+
+/**
+ * Pure helper: is Redis intentionally disabled for this process?
+ * True when running in test/jest or when REDIS_DISABLED=true.
+ * In those cases, limiters use in-memory by design — NOT a degradation.
+ * Exported for unit testing.
+ *
+ * @returns {boolean}
+ */
+export function redisIntentionallyDisabled() {
+  const isTestLike =
+    process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
+  const redisDisabledFlag = process.env.REDIS_DISABLED === 'true';
+  return isTestLike || redisDisabledFlag;
+}
+
+/**
+ * Pure helper: should this request be rejected with 503 (fail-closed)?
+ * Contract: returns true IFF ALL of: failClosed=true, redisExpected=true, redisConnected=false.
+ * Exported for unit testing.
+ *
+ * @param {Object} params
+ * @param {boolean} params.failClosed   - Is this limiter configured to fail closed?
+ * @param {boolean} params.redisExpected - Is Redis expected (not intentionally disabled)?
+ * @param {boolean} params.redisConnected - Is Redis actually connected right now?
+ * @returns {boolean}
+ */
+export function shouldFailClosed({ failClosed, redisExpected, redisConnected }) {
+  return failClosed === true && redisExpected === true && redisConnected === false;
+}
+
+/**
+ * Emit a throttled degradation alert when Redis is expected but not connected.
+ * At most once per ALERT_THROTTLE_MS per keyPrefix to avoid log-spam / Sentry DoS.
+ * Logs at error level AND captures a Sentry security event if Sentry is configured.
+ * Exported for white-box testing of the throttle-window gating.
+ *
+ * @param {string} keyPrefix - The rate limiter's keyPrefix (used as throttle key)
+ */
+export function emitDegradationAlert(keyPrefix) {
+  const now = Date.now();
+  const last = _alertTimestamps.get(keyPrefix);
+  if (last !== undefined && now - last < ALERT_THROTTLE_MS) {
+    // Within the throttle window — skip to avoid log-spam
+    return;
+  }
+  _alertTimestamps.set(keyPrefix, now);
+
+  const message = `[RateLimit:${keyPrefix}] DEGRADATION: Redis expected but not connected — fail-closed limiter is rejecting requests with 503`;
+  logger.error(message, {
+    keyPrefix,
+    throttleWindowMs: ALERT_THROTTLE_MS,
+    alertType: 'redis_degradation_fail_closed',
+  });
+
+  // Capture via Sentry if it is configured (graceful: trackSecurityEvent is
+  // a no-op when Sentry DSN is not set because Sentry.withScope is a no-op).
+  try {
+    trackSecurityEvent('rate_limit_exceeded', {
+      details: 'Redis outage — fail-closed economy limiter active',
+      keyPrefix,
+      alertType: 'redis_degradation_fail_closed',
+    }, 'error');
+  } catch (sentryErr) {
+    // Sentry reporting must never block or error the rate-limiting path.
+    logger.warn('[RateLimit] Sentry capture failed during degradation alert', {
+      error: sentryErr?.message,
+    });
+  }
+}
 
 /**
  * Boot-race fix (Equoria-obwp follow-up):
@@ -294,6 +376,17 @@ export function getRateLimitingHealth() {
  * @param {boolean} options.skipSuccessfulRequests - Don't count successful requests
  * @param {boolean} options.skipFailedRequests - Don't count failed requests (4xx/5xx)
  * @param {string} options.keyPrefix - Redis key prefix for this limiter
+ * @param {boolean} [options.failClosed=false] - When true, reject with 503 if Redis is
+ *   expected (not intentionally disabled) but not connected. Use ONLY for economy/financial
+ *   mutation limiters where in-memory fallback across multiple instances defeats the guard.
+ *   Do NOT set for auth, query, or read limiters (never brick login or reads).
+ * @param {Function} [options._redisExpectedFn] - INTERNAL / TEST-ONLY injectable predicate.
+ *   Called per-request to determine whether Redis is expected (i.e. not intentionally disabled).
+ *   Defaults to `() => !redisIntentionallyDisabled()` — production behavior is unchanged when
+ *   this is omitted. Pass only in tests to drive the fail-closed branch via DI without mocking.
+ * @param {Function} [options._redisConnectedFn] - INTERNAL / TEST-ONLY injectable predicate.
+ *   Called per-request to determine whether Redis is currently connected. Defaults to
+ *   `isRedisConnected` — production behavior is unchanged when this is omitted.
  * @returns {Function} Express middleware function
  */
 export function createRateLimiter(options = {}) {
@@ -305,6 +398,11 @@ export function createRateLimiter(options = {}) {
     skipFailedRequests = false,
     keyPrefix = 'rl',
     useEnvOverride = true,
+    failClosed = false, // Equoria-hnud7: economy mutators fail closed on Redis outage
+    // DI hooks for testing the fail-closed wrapper without mocking — default to
+    // the real implementations so production call sites pass nothing and are unaffected.
+    _redisExpectedFn = () => !redisIntentionallyDisabled(),
+    _redisConnectedFn = isRedisConnected,
   } = options;
 
   // Validation
@@ -416,7 +514,51 @@ export function createRateLimiter(options = {}) {
     },
   });
 
-  return limiter;
+  // ── Fail-closed wrapper (Equoria-hnud7) ──────────────────────────────────
+  // For limiters configured with failClosed:true (currently only financialRateLimiter),
+  // wrap the express-rate-limit middleware in a guard that checks on EACH REQUEST
+  // whether Redis is expected-but-down. If so: emit a throttled alert and return 503.
+  // If not (test env, REDIS_DISABLED, or Redis healthy): delegate to the normal limiter.
+  //
+  // Critical safety invariant: the fail-closed path is ONLY entered when
+  //   redisIntentionallyDisabled() === false  (i.e. we're in a real deployment)
+  //   AND isRedisConnected() === false         (Redis is actually down right now)
+  // In jest env, redisIntentionallyDisabled() is always true → 503 is NEVER returned.
+  if (!failClosed) {
+    return limiter;
+  }
+
+  // Wrapper: evaluate at request-time (not module-init time) so a transient
+  // Redis outage during a running process triggers the guard dynamically.
+  // Uses injected predicates (_redisExpectedFn / _redisConnectedFn) so tests
+  // can drive this branch via DI without mocking module internals. Production
+  // call sites pass nothing — defaults are the real functions.
+  const failClosedWrapper = (req, res, next) => {
+    const redisExpected = _redisExpectedFn();
+    const redisConnected = _redisConnectedFn();
+
+    if (shouldFailClosed({ failClosed: true, redisExpected, redisConnected })) {
+      // Emit throttled alert — at most once per ALERT_THROTTLE_MS.
+      // Wrapped try/catch: alert is best-effort telemetry. A synchronous
+      // throw from logger/Map ops must never propagate and downgrade the
+      // clean 503 into an unhandled Express 500. The 503 fires unconditionally.
+      try {
+        emitDegradationAlert(keyPrefix);
+      } catch {
+        /* alert is best-effort; the 503 fail-closed response is the contract */
+      }
+
+      return res.status(503).json({
+        success: false,
+        message: 'Service temporarily unavailable, please retry shortly',
+      });
+    }
+
+    // Redis is healthy or intentionally disabled — proceed normally
+    return limiter(req, res, next);
+  };
+
+  return failClosedWrapper;
 }
 
 /**
@@ -603,6 +745,13 @@ export const financialRateLimiter = createRateLimiter({
   message: 'Financial action limit exceeded. Please wait before making more economy actions.',
   skipSuccessfulRequests: false,
   keyPrefix: 'rl:financial',
+  // Equoria-hnud7: fail CLOSED on Redis outage. Economy mutations on an
+  // in-memory fallback across multiple instances defeat the per-user cap
+  // (each instance has its own counter → effective limit × instance count).
+  // A Redis outage on economy routes returns 503 instead of silently allowing
+  // through unprotected. Auth/read/query limiters keep failClosed:false (default)
+  // so login and read endpoints are never bricked.
+  failClosed: true,
 });
 
 // Redis initialization moved to the TOP of this module as a top-level
@@ -629,4 +778,9 @@ export default {
   getRedisClient,
   closeRedis,
   getRateLimitingHealth,
+  // Equoria-hnud7: pure helpers exported for unit testing + white-box alert testing
+  redisIntentionallyDisabled,
+  shouldFailClosed,
+  _alertTimestamps,
+  emitDegradationAlert, // exported so alert throttle-window can be tested directly
 };
