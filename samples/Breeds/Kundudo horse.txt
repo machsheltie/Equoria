@@ -1,0 +1,115 @@
+INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
+('Kundudo horse', 'Trait', $json${
+  "allowed_alleles": {
+    "E_Extension": ["e/e", "E/e", "E/E"],
+    "A_Agouti": ["a/a", "A/a", "A/A"],
+    "Cr_Cream": ["n/n"],
+    "D_Dun": ["nd1/nd1", "nd1/nd2", "nd2/nd2"],
+    "Z_Silver": ["n/n"],
+    "Ch_Champagne": ["n/n"],
+    "G_Gray": ["g/g", "G/g"],
+    "Rn_Roan": ["rn/rn"],
+    "W_DominantWhite": ["w/w"],
+    "TO_Tobiano": ["to/to"],
+    "O_FrameOvero": ["n/n"],
+    "SB1_Sabino1": ["n/n"],
+    "SW_SplashWhite": ["n/n"],
+    "LP_LeopardComplex": ["lp/lp"],
+    "PATN1_Pattern1": ["patn1/patn1"],
+    "EDXW": ["n/n"],
+    "MFSD12_Mushroom": ["N/N"],
+    "Prl_Pearl": ["N/N"],
+    "BR1_Brindle1": ["N/N"]
+  },
+  "disallowed_combinations": {},
+  "allele_weights": {
+    "E_Extension": {"e/e": 0.30, "E/e": 0.42, "E/E": 0.28},
+    "A_Agouti": {"a/a": 0.38, "A/a": 0.40, "A/A": 0.22},
+    "Cr_Cream": {"n/n": 1.0},
+    "D_Dun": {"nd1/nd1": 0.10, "nd1/nd2": 0.15, "nd2/nd2": 0.75},
+    "Z_Silver": {"n/n": 1.0},
+    "Ch_Champagne": {"n/n": 1.0},
+    "G_Gray": {"g/g": 0.88, "G/g": 0.12},
+    "Rn_Roan": {"rn/rn": 1.0},
+    "W_DominantWhite": {"w/w": 1.0},
+    "TO_Tobiano": {"to/to": 1.0},
+    "O_FrameOvero": {"n/n": 1.0},
+    "SB1_Sabino1": {"n/n": 1.0},
+    "SW_SplashWhite": {"n/n": 1.0},
+    "LP_LeopardComplex": {"lp/lp": 1.0},
+    "PATN1_Pattern1": {"patn1/patn1": 1.0},
+    "EDXW": {"n/n": 1.0},
+    "MFSD12_Mushroom": {"N/N": 1.0},
+    "Prl_Pearl": {"N/N": 1.0},
+    "BR1_Brindle1": {"N/N": 1.0}
+  },
+  "marking_bias": {
+    "face": {"none": 0.55, "star": 0.20, "strip": 0.12, "blaze": 0.05, "snip": 0.08},
+    "legs_general_probability": 0.22,
+    "leg_specific_probabilities": {
+      "coronet": 0.40, "pastern": 0.30, "sock": 0.18, "stocking": 0.12
+    },
+    "max_legs_marked": 4
+  },
+  "boolean_modifiers_prevalence": {
+    "sooty": 0.20,
+    "flaxen": 0.08,
+    "pangare": 0.12,
+    "rabicano": 0.04
+  },
+  "shade_bias": {
+    "Chestnut": {"light": 0.3, "medium": 0.4, "dark": 0.3},
+    "Bay": {"light": 0.3, "standard": 0.4, "dark": 0.3},
+    "Black": {"standard": 0.5, "faded": 0.5},
+    "Steel Gray": {"steel": 1.0},
+    "Rose Gray": {"rose": 1.0},
+    "Steel Dark Dapple Gray": {"steel dapple": 1.0},
+    "Rose Dark Dapple Gray": {"rose dapple": 1.0},
+    "Steel Light Dapple Gray": {"light steel dapple": 1.0},
+    "Rose Light Dapple Gray": {"light rose dapple": 1.0},
+    "White Gray": {"white gray": 1.0},
+    "Fleabitten Gray": {"fleabitten": 1.0},
+    "Sparse Mane/Tail": {"sparse mane/tail": 1.0}
+  },
+  "advanced_markings_bias": {
+    "bloody_shoulder_probability_multiplier": 1.0,
+    "snowflake_probability_multiplier": 0.0,
+    "frost_probability_multiplier": 0.0
+  },
+  "rating_profiles": {
+    "conformation": {
+      "head": { "mean": 66, "std_dev": 8 },
+      "neck": { "mean": 70, "std_dev": 8 },
+      "shoulders": { "mean": 72, "std_dev": 8 },
+      "back": { "mean": 76, "std_dev": 7 },
+      "hindquarters": { "mean": 76, "std_dev": 7 },
+      "legs": { "mean": 82, "std_dev": 6 },
+      "hooves": { "mean": 86, "std_dev": 6 }
+    },
+    "gaits": {
+      "walk": { "mean": 78, "std_dev": 8 },
+      "trot": { "mean": 72, "std_dev": 8 },
+      "canter": { "mean": 72, "std_dev": 8 },
+      "gallop": { "mean": 70, "std_dev": 9 },
+      "gaiting": null
+    },
+    "is_gaited_breed": false
+  },
+  "temperament_weights": {
+    "Spirited": 8,
+    "Nervous": 6,
+    "Calm": 14,
+    "Bold": 16,
+    "Steady": 18,
+    "Independent": 24,
+    "Reactive": 10,
+    "Stubborn": 2,
+    "Playful": 0,
+    "Lazy": 2,
+    "Aggressive": 0
+  }
+}$json$::JSONB)
+ON CONFLICT (name) DO UPDATE SET
+  default_trait = EXCLUDED.default_trait,
+  breed_genetic_profile = EXCLUDED.breed_genetic_profile,
+  updated_at = NOW();

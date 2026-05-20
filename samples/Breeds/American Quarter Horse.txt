@@ -1,0 +1,145 @@
+INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
+('American Quarter Horse', 'Trait', $json${
+  "allowed_alleles": {
+    "E_Extension": ["e/e", "E/e", "E/E"],
+    "A_Agouti": ["a/a", "A/a", "A/A"],
+    "Cr_Cream": ["n/n", "n/Cr", "Cr/Cr"],
+    "D_Dun": ["D/D", "D/nd1", "D/nd2", "nd1/nd1", "nd1/nd2", "nd2/nd2"],
+    "Z_Silver": ["n/n"],
+    "Ch_Champagne": ["n/n", "Ch/n", "Ch/Ch"],
+    "G_Gray": ["g/g", "G/g", "G/G"],
+    "Rn_Roan": ["rn/rn", "Rn/rn", "Rn/Rn"],
+    "W_DominantWhite": ["w/w", "W4/w", "W20/w"],
+    "TO_Tobiano": ["to/to"],
+    "O_FrameOvero": ["n/n", "O/n"],
+    "SB1_Sabino1": ["n/n", "SB1/n"],
+    "SW_SplashWhite": ["n/n", "SW1/n"],
+    "LP_LeopardComplex": ["lp/lp"],
+    "PATN1_Pattern1": ["patn1/patn1"],
+    "EDXW": ["n/n"],
+    "MFSD12_Mushroom": ["N/N"],
+    "Prl_Pearl": ["N/N", "N/Prl", "Prl/Prl", "Cr/Prl"],
+    "BR1_Brindle1": ["N/N"]
+  },
+  "disallowed_combinations": {
+    "W_DominantWhite": ["W4/W4", "W20/W20"]
+  },
+  "allele_weights": {
+    "E_Extension": {"e/e": 0.45, "E/e": 0.40, "E/E": 0.15},
+    "A_Agouti": {"a/a": 0.45, "A/a": 0.35, "A/A": 0.20},
+    "Cr_Cream": {"n/n": 0.82, "n/Cr": 0.16, "Cr/Cr": 0.02},
+    "D_Dun": {"D/D": 0.01, "D/nd1": 0.03, "D/nd2": 0.05, "nd1/nd1": 0.06, "nd1/nd2": 0.10, "nd2/nd2": 0.75},
+    "Z_Silver": {"n/n": 1.0},
+    "Ch_Champagne": {"n/n": 0.985, "Ch/n": 0.013, "Ch/Ch": 0.002},
+    "G_Gray": {"g/g": 0.93, "G/g": 0.065, "G/G": 0.005},
+    "Rn_Roan": {"rn/rn": 0.93, "Rn/rn": 0.065, "Rn/Rn": 0.005},
+    "W_DominantWhite": {"w/w": 0.992, "W4/w": 0.005, "W20/w": 0.003},
+    "TO_Tobiano": {"to/to": 1.0},
+    "O_FrameOvero": {"n/n": 0.97, "O/n": 0.03},
+    "SB1_Sabino1": {"n/n": 0.93, "SB1/n": 0.07},
+    "SW_SplashWhite": {"n/n": 0.97, "SW1/n": 0.03},
+    "LP_LeopardComplex": {"lp/lp": 1.0},
+    "PATN1_Pattern1": {"patn1/patn1": 1.0},
+    "EDXW": {"n/n": 1.0},
+    "MFSD12_Mushroom": {"N/N": 1.0},
+    "Prl_Pearl": {"N/N": 0.992, "N/Prl": 0.007, "Prl/Prl": 0.001, "Cr/Prl": 0.0},
+    "BR1_Brindle1": {"N/N": 1.0}
+  },
+  "marking_bias": {
+    "face": {"none": 0.25, "star": 0.24, "strip": 0.16, "blaze": 0.18, "snip": 0.17},
+    "legs_general_probability": 0.50,
+    "leg_specific_probabilities": {
+      "coronet": 0.25, "pastern": 0.28, "sock": 0.27, "stocking": 0.20
+    },
+    "max_legs_marked": 4
+  },
+  "boolean_modifiers_prevalence": {
+    "sooty": 0.25,
+    "flaxen": 0.10,
+    "pangare": 0.08,
+    "rabicano": 0.04
+  },
+  "shade_bias": {
+    "Chestnut": {"light": 0.3, "medium": 0.4, "dark": 0.3},
+    "Bay": {"light": 0.3, "standard": 0.4, "dark": 0.3},
+    "Black": {"standard": 0.5, "faded": 0.5},
+    "Palomino": {"pale": 0.3, "golden": 0.4, "copper": 0.3},
+    "Buckskin": {"cream": 0.3, "golden": 0.4, "burnished": 0.3},
+    "Smoky Black": {"faded": 0.5, "rich chocolate": 0.5},
+    "Grulla": {"silver gray": 0.3, "standard": 0.4, "burnished": 0.3},
+    "Red Dun": {"strawberry": 0.4, "medium": 0.3, "dark red": 0.3},
+    "Bay Dun": {"light": 0.3, "standard": 0.4, "dark": 0.3},
+    "Cremello": {"ice": 0.5, "peachy": 0.5},
+    "Perlino": {"cream": 0.5, "peachy": 0.5},
+    "Smoky Cream": {"light cream": 0.5, "dark cream": 0.5},
+    "Gold Champagne": {"pale": 0.3, "golden": 0.4, "dark": 0.3},
+    "Amber Champagne": {"light": 0.3, "medium": 0.4, "deep": 0.3},
+    "Classic Champagne": {"faded": 0.3, "standard": 0.4, "rich": 0.3},
+    "Gold Cream Champagne": {"pale": 0.3, "golden": 0.4, "burnished": 0.3},
+    "Amber Cream Champagne": {"light": 0.3, "rich": 0.4, "dark": 0.3},
+    "Classic Cream Champagne": {"light": 0.3, "silver": 0.4, "charcoal": 0.3},
+    "Gold Dun Champagne": {"light": 0.3, "golden": 0.4, "red": 0.3},
+    "Amber Dun Champagne": {"light": 0.3, "tan": 0.4, "burnished": 0.3},
+    "Classic Dun Champagne": {"cool gray": 0.3, "iron": 0.4, "smoky": 0.3},
+    "Blue Roan": {"steel": 0.4, "cool gray": 0.4, "charcoal": 0.2},
+    "Red Roan": {"rose": 0.5, "cherry": 0.3, "rust": 0.2},
+    "Strawberry Roan": {"pinkish": 0.4, "amber": 0.4, "wine": 0.2},
+    "Bay Pearl": {"apricot": 0.4, "dark brown points": 0.6},
+    "Chestnut Pearl": {"light pink-apricot": 1.0},
+    "Black Pearl": {"light tan": 0.4, "dark points": 0.6},
+    "Buckskin Pearl": {"light apricot": 0.4, "reddish-brown points": 0.6},
+    "Palomino Pearl": {"pale apricot": 0.5, "pale mane": 0.5},
+    "Smoky Black Pearl": {"pale tan": 0.4, "dark points": 0.6},
+    "Steel Gray": {"steel": 1.0},
+    "Rose Gray": {"rose": 1.0},
+    "Steel Dark Dapple Gray": {"steel dapple": 1.0},
+    "Rose Dark Dapple Gray": {"rose dapple": 1.0},
+    "Steel Light Dapple Gray": {"light steel dapple": 1.0},
+    "Rose Light Dapple Gray": {"light rose dapple": 1.0},
+    "White Gray": {"white gray": 1.0},
+    "Fleabitten Gray": {"fleabitten": 1.0},
+    "Dominant White": {"white": 1.0},
+    "Sparse Mane/Tail": {"sparse mane/tail": 1.0}
+  },
+  "advanced_markings_bias": {
+    "bloody_shoulder_probability_multiplier": 1.0,
+    "snowflake_probability_multiplier": 0.0,
+    "frost_probability_multiplier": 0.0
+  },
+  "rating_profiles": {
+    "conformation": {
+      "head": { "mean": 80, "std_dev": 7 },
+      "neck": { "mean": 76, "std_dev": 7 },
+      "shoulders": { "mean": 80, "std_dev": 7 },
+      "back": { "mean": 78, "std_dev": 7 },
+      "hindquarters": { "mean": 90, "std_dev": 6 },
+      "legs": { "mean": 78, "std_dev": 7 },
+      "hooves": { "mean": 72, "std_dev": 8 }
+    },
+    "gaits": {
+      "walk": { "mean": 72, "std_dev": 8 },
+      "trot": { "mean": 76, "std_dev": 8 },
+      "canter": { "mean": 82, "std_dev": 8 },
+      "gallop": { "mean": 92, "std_dev": 7 },
+      "gaiting": null
+    },
+    "is_gaited_breed": false
+  },
+  "temperament_weights": {
+    "Spirited": 8,
+    "Nervous": 6,
+    "Calm": 24,
+    "Bold": 12,
+    "Steady": 24,
+    "Independent": 4,
+    "Reactive": 4,
+    "Stubborn": 4,
+    "Playful": 7,
+    "Lazy": 6,
+    "Aggressive": 1
+  }
+}$json$::JSONB)
+ON CONFLICT (name) DO UPDATE SET
+  default_trait = EXCLUDED.default_trait,
+  breed_genetic_profile = EXCLUDED.breed_genetic_profile,
+  updated_at = NOW();

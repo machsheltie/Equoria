@@ -1,0 +1,45 @@
+# CANONICAL GAIT-NAME REGISTRY (Equoria)
+# Purpose: the ONLY allowed strings for `rating_profiles.gaited_gait_registry`.
+# Agents must pick names from this list verbatim — never invent variants.
+#
+# SYSTEM CONTRACT:
+#   - `is_gaited_breed` (bool) is the ONLY field the evaluation engine reads for gait mechanics.
+#   - `rating_profiles.gaits.gaiting` ({mean,std_dev}) is the gaited quality score (same field for ALL gaited breeds).
+#   - `gaited_gait_registry` is DESCRIPTIVE METADATA ONLY. Evaluation never branches on its contents.
+#   - Non-gaited breed: "gaiting": null, "is_gaited_breed": false, OMIT gaited_gait_registry.
+#   - Gaited breed: "gaiting": {"mean":N,"std_dev":M}, "is_gaited_breed": true, gaited_gait_registry: [<names from below>].
+#
+# CANONICAL NAMES:
+Rack
+Slow Gait
+Tölt
+Running Walk
+Flat Walk
+Paso Llano
+Sobreandando
+Fino
+Corto
+Largo
+Fox Trot
+Marcha Batida
+Marcha Picada
+Singlefoot
+Saddle Rack
+Amble
+Pace
+Stepping Pace
+Trocha
+Revaal
+Aphcal
+Rahvaan
+#
+# USAGE NOTES:
+#   - American Saddlebred -> ["Rack", "Slow Gait"]
+#   - Icelandic / Aegidienberger -> ["Tölt"] (Icelandic also adds "Pace" if five-gaited)
+#   - Tennessee Walking Horse -> ["Running Walk", "Flat Walk"]
+#   - Paso Fino -> ["Fino", "Corto", "Largo"]
+#   - Peruvian Paso -> ["Paso Llano", "Sobreandando"]
+#   - Missouri Fox Trotter -> ["Fox Trot"]
+#   - Mangalarga Marchador -> ["Marcha Batida", "Marcha Picada"]
+#   - American Bashkir Curly (gaited lines) -> ["Singlefoot", "Saddle Rack"]
+#   - If a real documented breed gait is missing from this list, ADD it here first, then use it. Never inline an unlisted name.

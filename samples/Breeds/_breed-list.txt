@@ -1,0 +1,312 @@
+Abaga
+Abyssinian
+Adaev
+Aegidienberger
+Akhal-Teke
+Albanian
+Altai
+Alter Real
+American Bashkir Curly
+American Belgian Draft
+American Cream Draft
+American Indian Horse
+American Paint Horse
+American Quarter Horse
+American Saddlebred
+American Warmblood
+Andalusian
+Andravida
+Anglo-Arabian
+Anglo-Kabarda
+Appaloosa
+Arabian
+Ardennais
+Arenberg-Nordkirchen
+Asturcón
+Australian Draught
+Australian Stock Horse
+Austrian Warmblood
+Auvergne
+Auxois
+Axios
+Azerbaijan
+Azteca
+Baise horse
+Bale
+Balikun horse
+Baluchi
+Banker horse
+Barb horse
+Bardigiano
+Bashkir horse
+Basque Mountain Horse
+Bavarian Warmblood
+Belgian Draft
+Belgian Sport Horse
+Belgian Trotter
+Belgian Warmblood
+Bhutia Horse
+Black Forest Horse
+Blazer horse
+Boerperd
+Borana
+Bosnian Mountain Horse
+Boulonnais
+Brandenburger
+Brazilian Sport Horse
+Breton horse
+British Warmblood
+Brumby
+Budyonny
+Burguete horse
+Burmese Horse
+Canadian Pacer
+Canadian horse
+Carolina Marsh Tacky
+Cartujano
+Caspian horse
+Castillonnais
+Catria
+Cerbat Mustang
+Chaidamu horse
+Chakouyi
+Chernomor horse
+Chilean horse
+Chinese Mongolian
+Choctaw horse
+Cleveland Bay
+Clydesdale
+Coldblood Trotter
+Colorado Ranger
+Comtois horse
+Corsican horse
+Costa Rican Saddle Horse
+Criollo
+Croatian Coldblood
+Cuban Criollo
+Cumberland Island
+Czech Warmblood
+Danish Warmblood
+Danube Delta
+Dareshuri
+Datong horse
+Dolehest
+Dongola horse
+Dutch Draft
+Dutch Harness
+Dutch Warmblood
+East Bulgarian
+Estonian Draft
+Estonian Native
+Ethiopian Horse
+Falabella
+Finnhorse
+Fjord horse
+Flemish
+Fleuve
+Florida Cracker Horse
+Foutanké
+Frederiksborger
+Freiberger
+French Trotter
+Friesian
+Furioso-North Star
+Galiceno
+Gelderland
+Giara Horse
+Gidran
+Groningen Horse
+Hackney Horse
+Haflinger
+Hanoverian horse
+Heck horse
+Heihe horse
+Henson horse
+Hequ horse
+Hirzai
+Hispano-Bretón
+Hispano-Árabe
+Holsteiner
+Horro
+Hungarian Warmblood
+Icelandic horse
+Indian Country-bred
+Iomud
+Irish Draught
+Irish Sport (Hunter)
+Italian Heavy Draft
+Italian Trotter
+Jaca Navarra
+Jeju horse
+Jutland horse
+Kabarda (Kabardin)
+Kafa
+Kaimanawa
+Kalmyk horse
+Karabair
+Karabakh (Azer At)
+Karachai horse
+Kathiawari horse
+Kazakh Horse
+Kentucky Mountain Saddle
+Kiger Mustang
+Kinsky horse
+Kisber Felver
+Kiso horse
+Kladruber
+Knabstrupper
+Konik
+Kundudo horse
+Kurdish horse
+Kustanai
+Kyrgyz Horse
+Latvian horse
+Lipizzan
+Lithuanian Heavy Draft
+Ljutomer Trotter
+Lokai
+Losino horse
+Lusitano
+Luxembourg Warmblood
+M'Bayar
+M'Par
+Mallorquín horse
+Malopolski
+Mangalarga
+Mangalarga Marchador
+Maremmano
+Marismeño
+Marwari horse
+Mecklenburger
+Medimurje
+Menorquín horse
+Merens (Merens horse)
+Messara horse
+Miquelon horse
+Monterufolino
+Morab
+Morgan USA
+Mountain Pleasure
+Moyle horse
+Murgese
+Mustang
+Namib Desert Horse
+Nangchen horse
+National Show Horse
+New Altai
+Nez Perce
+Nivernais
+Nokota horse
+Noma horse
+Nonius
+Nooitgedachter
+Nordlandshest
+Noriker horse
+Norman Cob
+Novoalexandrian Draft
+Novokirghiz
+Oberlander Horse
+Ogaden
+Oldenburger
+Orlov Trotter
+Ostfriesen
+Paint Horse
+Pampa horse
+Paso Fino
+Pentro horse
+Percheron
+Persano
+Peruvian Paso
+Pfalz Ardenner
+Pintabian
+Pleven
+Poitevin
+Pony Of The Americas
+Posavac
+Pottok
+Priob
+Pryor Mountain Mustang
+Purosangue Orientale
+Qatgani
+Quarab
+Racking
+Retuerta horse
+Rhenish German Coldblood
+Rhinelander horse
+Riwoche horse
+Rocky Mountain
+Romanian Sport Horse
+Russian Don
+Russian Heavy Draft
+Russian Trotter
+Salernitano
+Samolaco horse
+Sanfratellano
+Santa Cruz Island
+Sarcidano horse
+Sardinian Anglo-Arab
+Schleswig Coldblood
+Selale
+Sella Italiano
+Selle Français
+Senner
+Shagya Arabian
+Shan Horse
+Shire horse
+Siciliano indigeno
+Silesian horse
+Sindhi horse
+Slovenian Coldblood
+Sokolski horse
+Sorraia
+South German Coldblood
+Soviet Heavy Draft
+Spanish Barb
+Spanish Jennet
+Spanish Mustang
+Spanish Trotter
+Spiti Horse
+Spotted Saddle horse
+Standardbred
+Suffolk Punch
+Swedish Ardennes
+Swedish Warmblood
+Swiss Warmblood
+Taishū horse
+Tawleed
+Tennessee Walking
+Tennessee Walking Horse
+Tersk horse
+Thoroughbred
+Tiger Horse
+Tokara horse
+Tolfetano
+Tori horse
+Trait du Nord
+Trakehner
+Tushetian horse
+Tuva horse
+Ukrainian Riding
+Unmol Horse
+Uzunyayla
+Ventasso
+Virginia Highlander
+Vlaamperd
+Vladimir Heavy Draft
+Vyatka horse
+Waler
+Walkaloosa
+Warlander
+Welsh Cob Section D
+Westphalian horse
+Wielkopolski
+Württemberger
+Xilingol horse
+Yakutian horse
+Yili horse
+Yonaguni horse
+Zakynthos horse
+Zangersheide
+Zaniskari
+Zweibrücker
+Žemaitukas
