@@ -60,8 +60,12 @@ async function fetchFeatureFlags(): Promise<Record<string, boolean | string>> {
       {} as Record<string, boolean | string>
     );
   } catch {
-    // Fall back to local defaults on error
-    console.warn('[FeatureFlags] Failed to fetch, using local defaults');
+    // Fall back to local defaults on error.
+    // Only log in dev — avoids leaking internal endpoint names in production DevTools
+    // (Equoria-o7c0x B).
+    if (import.meta.env.DEV) {
+      console.warn('[FeatureFlags] Failed to fetch, using local defaults');
+    }
     return LOCAL_FLAGS;
   }
 }
