@@ -40,8 +40,9 @@ const OPTIONAL_ENV_VARS = [
   'JWT_REFRESH_EXPIRES_IN',
   'TRAINING_COOLDOWN_DAYS',
   'BREEDING_COOLDOWN_DAYS',
-  'SKIP_AUTH_FOR_TESTING',
-  'ENABLE_DEBUG_ROUTES',
+  // SKIP_AUTH_FOR_TESTING and ENABLE_DEBUG_ROUTES removed (Equoria-o7c0x L1):
+  // no functional consumer ever existed for either key. Listing them here
+  // implied they were recognised config; they were not.
   'ENABLE_AUDIT_LOGGING',
   'ENABLE_SECURITY_ALERTS',
 ];
