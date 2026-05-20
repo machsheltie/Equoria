@@ -39,8 +39,10 @@ if (!fs.existsSync(SCAN_ROOT)) {
 // Equoria-efaz). Paths are repo-relative with forward slashes. This list
 // must only ever SHRINK — never append a new path here.
 const BASELINE = new Set([
-  'frontend/src/components/foal/__tests__/EnrichmentActivityPanel.test.tsx',
-  'frontend/src/components/foal/__tests__/MilestoneEvaluationDisplay.test.tsx',
+  // Equoria-f12xy (M2): EnrichmentActivityPanel + MilestoneEvaluationDisplay +
+  // BreedingPredictionsPanel + BreedingPairSelection.story-6-1 migrated off
+  // vi.mock-of-api-client to MSW at the fetch boundary — removed from baseline
+  // (the list may only shrink).
   'frontend/src/contexts/__tests__/AuthContext.test.tsx',
   'frontend/src/hooks/__tests__/useAuth.test.tsx',
   'frontend/src/hooks/__tests__/useHorseCoatGenetics.test.tsx',
@@ -60,8 +62,6 @@ const BASELINE = new Set([
   'frontend/src/pages/__tests__/ProfilePage.test.tsx',
   'frontend/src/pages/__tests__/RegisterPage.test.tsx',
   'frontend/src/pages/__tests__/ResetPasswordPage.test.tsx',
-  'frontend/src/pages/breeding/__tests__/BreedingPairSelection.story-6-1.test.tsx',
-  'frontend/src/pages/breeding/__tests__/BreedingPredictionsPanel.test.tsx',
 ]);
 
 // Matches: vi.mock('@/lib/api-client'), vi.mock("../../lib/api-client"),

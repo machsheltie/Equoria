@@ -4,23 +4,23 @@
  * Verifies the component uses real breedingApi.getFoalActivities and real empty states.
  *
  * Story 21R-2: Remove production frontend mocks from beta-facing code
+ * Equoria-f12xy: Migrated off the api-client module mock to MSW at the
+ *   network (fetch) boundary. The component self-fetches via
+ *   breedingApi.getFoalActivities → GET /api/v1/foals/:id/activities, so MSW
+ *   exercises the real api-client request/response/unwrap path while keeping
+ *   the test hermetic. MSW does not mock the api-client module, so the
+ *   eslint no-restricted-imports api-client-mock rule stays clean.
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { server } from '../../../test/msw/server';
 import EnrichmentActivityPanel from '../EnrichmentActivityPanel';
 import type { Foal } from '@/types/foal';
 
-// Mock the real API boundary
-vi.mock('@/lib/api-client', () => ({
-  breedingApi: {
-    getFoalActivities: vi.fn(async () => [
-      { id: 1, activity: 'Gentle Touch', createdAt: '2026-04-10T10:00:00Z' },
-      { id: 2, activity: 'Sound Exposure', createdAt: '2026-04-09T10:00:00Z' },
-    ]),
-  },
-}));
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const mockFoal: Foal = {
   id: 1,
@@ -33,6 +33,11 @@ const mockFoal: Foal = {
   stressLevel: 25,
 };
 
+const twoActivities = [
+  { id: 1, activity: 'Gentle Touch', createdAt: '2026-04-10T10:00:00Z' },
+  { id: 2, activity: 'Sound Exposure', createdAt: '2026-04-09T10:00:00Z' },
+];
+
 const makeWrapper = () => {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return ({ children }: { children: React.ReactNode }) => (
@@ -42,12 +47,21 @@ const makeWrapper = () => {
 
 describe('EnrichmentActivityPanel', () => {
   it('shows loading state initially', () => {
+    // Never-resolving handler keeps the query in flight so the loading state is observable.
+    server.use(http.get(`${base}/api/v1/foals/:id/activities`, () => new Promise(() => {})));
+
     render(<EnrichmentActivityPanel foal={mockFoal} />, { wrapper: makeWrapper() });
 
     expect(screen.getByTestId('enrichment-activity-loading')).toBeInTheDocument();
   });
 
   it('renders panel with activity history after load', async () => {
+    server.use(
+      http.get(`${base}/api/v1/foals/:id/activities`, () =>
+        HttpResponse.json({ success: true, data: twoActivities })
+      )
+    );
+
     render(<EnrichmentActivityPanel foal={mockFoal} />, { wrapper: makeWrapper() });
 
     await waitFor(() => {
@@ -60,6 +74,12 @@ describe('EnrichmentActivityPanel', () => {
   });
 
   it('does not show beta-exclusion copy for interactive enrichment features', async () => {
+    server.use(
+      http.get(`${base}/api/v1/foals/:id/activities`, () =>
+        HttpResponse.json({ success: true, data: twoActivities })
+      )
+    );
+
     render(<EnrichmentActivityPanel foal={mockFoal} />, { wrapper: makeWrapper() });
 
     await waitFor(() => {
@@ -70,9 +90,10 @@ describe('EnrichmentActivityPanel', () => {
   });
 
   it('shows error state when API fails', async () => {
-    const { breedingApi } = await import('@/lib/api-client');
-    (breedingApi.getFoalActivities as ReturnType<typeof vi.fn>).mockRejectedValueOnce(
-      new Error('Network error')
+    server.use(
+      http.get(`${base}/api/v1/foals/:id/activities`, () =>
+        HttpResponse.json({ status: 'error', message: 'Network error' }, { status: 500 })
+      )
     );
 
     render(<EnrichmentActivityPanel foal={mockFoal} />, { wrapper: makeWrapper() });
@@ -83,8 +104,11 @@ describe('EnrichmentActivityPanel', () => {
   });
 
   it('shows empty history state when no activities returned', async () => {
-    const { breedingApi } = await import('@/lib/api-client');
-    (breedingApi.getFoalActivities as ReturnType<typeof vi.fn>).mockResolvedValueOnce([]);
+    server.use(
+      http.get(`${base}/api/v1/foals/:id/activities`, () =>
+        HttpResponse.json({ success: true, data: [] })
+      )
+    );
 
     render(<EnrichmentActivityPanel foal={mockFoal} />, { wrapper: makeWrapper() });
 
@@ -96,6 +120,12 @@ describe('EnrichmentActivityPanel', () => {
   });
 
   it('does not render mock enrichment status (no mockApi)', async () => {
+    server.use(
+      http.get(`${base}/api/v1/foals/:id/activities`, () =>
+        HttpResponse.json({ success: true, data: twoActivities })
+      )
+    );
+
     render(<EnrichmentActivityPanel foal={mockFoal} />, { wrapper: makeWrapper() });
 
     await waitFor(() => {

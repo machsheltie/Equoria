@@ -3,18 +3,36 @@
  *
  * Story 6-1: Breeding Pair Selection
  * Integration tests for the complete breeding pair selection flow
+ *
+ * Equoria-f12xy: Migrated off the api-client module mock to MSW at the
+ *   network (fetch) boundary. The page self-fetches via horsesApi.list,
+ *   breedingPredictionApi.getBreedingCompatibility, the genetic/inbreeding/
+ *   lineage prediction hooks, and breedingApi.breedFoal — all of which MSW
+ *   intercepts at the HTTP layer (exercising the real api-client
+ *   request/CSRF/unwrap path). The auth-context and useNavigate doubles are
+ *   legitimate routing/context test seams, not api-client mocks, so they
+ *   stay. MSW does not mock the api-client module, so the eslint
+ *   no-restricted-imports api-client-mock rule stays clean.
+ *
+ *   This breeding flow remains covered end-to-end by a real backend +
+ *   real-DB Playwright spec; this hermetic MSW suite keeps the fast
+ *   per-state coverage (loading / error / disabled-button / stud-fee calc /
+ *   modal gating) that an E2E run is too coarse to assert cheaply.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
+import { server } from '../../../test/msw/server';
 import BreedingPairSelection from '../BreedingPairSelection';
 import { RewardToastProvider } from '@/components/feedback';
-import * as apiClient from '@/lib/api-client';
 
-// Mock the auth context
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+// Mock the auth context (legitimate context seam — not the api-client).
 vi.mock('@/contexts/AuthContext', () => ({
   useAuth: () => ({
     user: { id: 'test-user-123' },
@@ -23,22 +41,7 @@ vi.mock('@/contexts/AuthContext', () => ({
   }),
 }));
 
-// Mock the API client.
-// NOTE: getBreedingCompatibility lives on `breedingPredictionApi`
-// (not `breedingApi`) — the page imports it from breedingPredictionApi.
-vi.mock('@/lib/api-client', () => ({
-  horsesApi: {
-    list: vi.fn(),
-  },
-  breedingApi: {
-    breedFoal: vi.fn(),
-  },
-  breedingPredictionApi: {
-    getBreedingCompatibility: vi.fn(),
-  },
-}));
-
-// Mock navigate
+// Mock navigate (legitimate routing seam — not the api-client).
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -110,6 +113,40 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
     recommendations: ['Excellent match', 'Strong genetic diversity'],
   };
 
+  /**
+   * Register the happy-path MSW handlers shared by most tests. Individual
+   * tests override specific endpoints (error / never-resolve / foal-shape)
+   * with a later server.use(...) — last registered handler wins in MSW.
+   */
+  const useDefaultHandlers = () => {
+    server.use(
+      // horsesApi.list → GET /api/v1/horses?t=<timestamp> (path-only match)
+      http.get(`${base}/api/v1/horses`, () =>
+        HttpResponse.json({ success: true, data: mockHorses })
+      ),
+      // breedingPredictionApi.getBreedingCompatibility → POST /api/v1/genetics/breeding-compatibility
+      http.post(`${base}/api/v1/genetics/breeding-compatibility`, () =>
+        HttpResponse.json({ success: true, data: mockCompatibility })
+      ),
+      // breedingApi.breedFoal default → pregnancy-flow contract
+      http.post(`${base}/api/v1/horses/foals`, () =>
+        HttpResponse.json({
+          success: true,
+          message: 'Breeding successful!',
+          data: {
+            pregnancyStarted: true,
+            damId: 2,
+            sireId: 1,
+            foalDueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+          },
+        })
+      )
+      // The genetic-probability / inbreeding-analysis / lineage-analysis
+      // endpoints used by the Pedigree preview are covered by the global
+      // handlers in src/test/msw/handlers.ts — no per-test override needed.
+    );
+  };
+
   beforeEach(() => {
     queryClient = new QueryClient({
       defaultOptions: {
@@ -121,11 +158,7 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
     vi.clearAllMocks();
     mockNavigate.mockClear();
 
-    // Setup default mocks
-    vi.mocked(apiClient.horsesApi.list).mockResolvedValue(mockHorses as any);
-    vi.mocked(apiClient.breedingPredictionApi.getBreedingCompatibility).mockResolvedValue(
-      mockCompatibility as any
-    );
+    useDefaultHandlers();
   });
 
   const renderComponent = () => {
@@ -142,9 +175,8 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
 
   describe('Initial Load', () => {
     it('should display loading state initially', () => {
-      vi.mocked(apiClient.horsesApi.list).mockImplementation(
-        () => new Promise(() => {}) // Never resolves
-      );
+      // Never-resolving horse list keeps the page in its loading state.
+      server.use(http.get(`${base}/api/v1/horses`, () => new Promise(() => {})));
 
       renderComponent();
 
@@ -217,6 +249,16 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
 
     it('should fetch compatibility when both horses selected', async () => {
       const user = userEvent.setup();
+
+      // Capture the compatibility request body to assert the real payload.
+      let compatibilityBody: unknown = null;
+      server.use(
+        http.post(`${base}/api/v1/genetics/breeding-compatibility`, async ({ request }) => {
+          compatibilityBody = await request.json();
+          return HttpResponse.json({ success: true, data: mockCompatibility });
+        })
+      );
+
       renderComponent();
 
       await waitFor(() => {
@@ -231,12 +273,9 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
       const lightningButton = screen.getByLabelText('Select Lightning');
       await user.click(lightningButton);
 
-      // Wait for compatibility to load
+      // Wait for compatibility request to fire with the correct payload.
       await waitFor(() => {
-        expect(apiClient.breedingPredictionApi.getBreedingCompatibility).toHaveBeenCalledWith({
-          stallionId: 1,
-          mareId: 2,
-        });
+        expect(compatibilityBody).toEqual({ stallionId: 1, mareId: 2 });
       });
     });
 
@@ -288,12 +327,9 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
       await user.click(screen.getByLabelText('Select Thunder'));
       await user.click(screen.getByLabelText('Select Lightning'));
 
-      // Wait for the compatibility query to resolve — the modal only renders
-      // after compatibilityData is populated (selectedSire && selectedDam &&
-      // compatibilityData), not when the Initiate button enables.
-      await waitFor(() => {
-        expect(apiClient.breedingPredictionApi.getBreedingCompatibility).toHaveBeenCalled();
-      });
+      // The modal only renders after compatibilityData is populated
+      // (selectedSire && selectedDam && compatibilityData), so wait for the
+      // Compatibility Analysis section before clicking Initiate.
       await waitFor(() => {
         expect(screen.getByText(/Compatibility Analysis/i)).toBeInTheDocument();
       });
@@ -315,21 +351,30 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
 
     it('should call breeding API when confirmed', async () => {
       const user = userEvent.setup();
-      const mockFoal = {
-        foal: {
-          id: 123,
-          name: 'Baby Horse',
-          sireId: 1,
-          damId: 2,
-          dateOfBirth: '2024-02-06',
-          ageInDays: 0,
-          sex: 'Male' as const,
-          userId: 'test-user-123',
-        },
-        message: 'Breeding successful!',
-      };
 
-      vi.mocked(apiClient.breedingApi.breedFoal).mockResolvedValue(mockFoal as any);
+      // Legacy direct-foal response shape + capture of the breed payload.
+      let breedBody: unknown = null;
+      server.use(
+        http.post(`${base}/api/v1/horses/foals`, async ({ request }) => {
+          breedBody = await request.json();
+          return HttpResponse.json({
+            success: true,
+            message: 'Breeding successful!',
+            data: {
+              foal: {
+                id: 123,
+                name: 'Baby Horse',
+                sireId: 1,
+                damId: 2,
+                dateOfBirth: '2024-02-06',
+                ageInDays: 0,
+                sex: 'Male',
+                userId: 'test-user-123',
+              },
+            },
+          });
+        })
+      );
 
       renderComponent();
 
@@ -340,12 +385,7 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
       await user.click(screen.getByLabelText('Select Thunder'));
       await user.click(screen.getByLabelText('Select Lightning'));
 
-      // Wait for compatibility query to resolve AND for the page to render
-      // the Compatibility Analysis section — the BreedingConfirmationModal is
-      // gated on compatibilityData being present (not just both horses selected).
-      await waitFor(() => {
-        expect(apiClient.breedingPredictionApi.getBreedingCompatibility).toHaveBeenCalled();
-      });
+      // The BreedingConfirmationModal is gated on compatibilityData being present.
       await waitFor(() => {
         expect(screen.getByText(/Compatibility Analysis/i)).toBeInTheDocument();
       });
@@ -358,16 +398,15 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
       await user.click(screen.getByRole('button', { name: /Initiate Breeding/i }));
 
       await waitFor(() => {
-        // Modal renders title "Confirm Breeding" AND a footer button with the
-        // same text — query the heading specifically to avoid the duplicate.
         expect(screen.getByRole('heading', { name: 'Confirm Breeding' })).toBeInTheDocument();
       });
 
       const confirmButton = screen.getByRole('button', { name: /Confirm Breeding/i });
       await user.click(confirmButton);
 
+      // The real api-client sends the breed payload to the backend boundary.
       await waitFor(() => {
-        expect(apiClient.breedingApi.breedFoal).toHaveBeenCalledWith({
+        expect(breedBody).toEqual({
           sireId: 1,
           damId: 2,
           userId: 'test-user-123',
@@ -385,21 +424,27 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
 
     it('should navigate to foal page after successful breeding', async () => {
       const user = userEvent.setup();
-      const mockFoal = {
-        foal: {
-          id: 123,
-          name: 'Baby Horse',
-          sireId: 1,
-          damId: 2,
-          dateOfBirth: '2024-02-06',
-          ageInDays: 0,
-          sex: 'Male' as const,
-          userId: 'test-user-123',
-        },
-        message: 'Breeding successful!',
-      };
 
-      vi.mocked(apiClient.breedingApi.breedFoal).mockResolvedValue(mockFoal as any);
+      server.use(
+        http.post(`${base}/api/v1/horses/foals`, () =>
+          HttpResponse.json({
+            success: true,
+            message: 'Breeding successful!',
+            data: {
+              foal: {
+                id: 123,
+                name: 'Baby Horse',
+                sireId: 1,
+                damId: 2,
+                dateOfBirth: '2024-02-06',
+                ageInDays: 0,
+                sex: 'Male',
+                userId: 'test-user-123',
+              },
+            },
+          })
+        )
+      );
 
       renderComponent();
 
@@ -410,12 +455,6 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
       await user.click(screen.getByLabelText('Select Thunder'));
       await user.click(screen.getByLabelText('Select Lightning'));
 
-      // Wait for compatibility query to resolve AND for the page to render
-      // the Compatibility Analysis section — the BreedingConfirmationModal is
-      // gated on compatibilityData being present (not just both horses selected).
-      await waitFor(() => {
-        expect(apiClient.breedingPredictionApi.getBreedingCompatibility).toHaveBeenCalled();
-      });
       await waitFor(() => {
         expect(screen.getByText(/Compatibility Analysis/i)).toBeInTheDocument();
       });
@@ -428,17 +467,15 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
       await user.click(screen.getByRole('button', { name: /Initiate Breeding/i }));
 
       await waitFor(() => {
-        // Modal renders title "Confirm Breeding" AND a footer button with the
-        // same text — query the heading specifically to avoid the duplicate.
         expect(screen.getByRole('heading', { name: 'Confirm Breeding' })).toBeInTheDocument();
       });
 
       const confirmButton = screen.getByRole('button', { name: /Confirm Breeding/i });
       await user.click(confirmButton);
 
-      // Wait for navigation. The component delays navigation by 2s normally
-      // but 3.5s on the first-ever breed (cinematic). Auth mock has no
-      // settings.milestones.firstBreed flag, so this counts as first-breed.
+      // Navigation is delayed by 2s normally but 3.5s on the first-ever breed
+      // (cinematic). The auth mock has no settings.milestones.firstBreed flag,
+      // so this counts as a first breed.
       await waitFor(
         () => {
           expect(mockNavigate).toHaveBeenCalledWith('/foals/123');
@@ -450,7 +487,11 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
 
   describe('Error Handling', () => {
     it('should display error when horses fail to load', async () => {
-      vi.mocked(apiClient.horsesApi.list).mockRejectedValue(new Error('Network error'));
+      server.use(
+        http.get(`${base}/api/v1/horses`, () =>
+          HttpResponse.json({ status: 'error', message: 'Network error' }, { status: 500 })
+        )
+      );
 
       renderComponent();
 
@@ -461,7 +502,12 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
 
     it('should display error message when breeding fails', async () => {
       const user = userEvent.setup();
-      vi.mocked(apiClient.breedingApi.breedFoal).mockRejectedValue(new Error('Insufficient funds'));
+
+      server.use(
+        http.post(`${base}/api/v1/horses/foals`, () =>
+          HttpResponse.json({ status: 'error', message: 'Insufficient funds' }, { status: 400 })
+        )
+      );
 
       renderComponent();
 
@@ -472,12 +518,6 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
       await user.click(screen.getByLabelText('Select Thunder'));
       await user.click(screen.getByLabelText('Select Lightning'));
 
-      // Wait for compatibility query to resolve AND for the page to render
-      // the Compatibility Analysis section — the BreedingConfirmationModal is
-      // gated on compatibilityData being present (not just both horses selected).
-      await waitFor(() => {
-        expect(apiClient.breedingPredictionApi.getBreedingCompatibility).toHaveBeenCalled();
-      });
       await waitFor(() => {
         expect(screen.getByText(/Compatibility Analysis/i)).toBeInTheDocument();
       });
@@ -490,8 +530,6 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
       await user.click(screen.getByRole('button', { name: /Initiate Breeding/i }));
 
       await waitFor(() => {
-        // Modal renders title "Confirm Breeding" AND a footer button with the
-        // same text — query the heading specifically to avoid the duplicate.
         expect(screen.getByRole('heading', { name: 'Confirm Breeding' })).toBeInTheDocument();
       });
 
