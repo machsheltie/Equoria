@@ -203,7 +203,8 @@ describe('INTEGRATION: GET /api/leaderboards/user-summary/:userId (21S-1)', () =
 
       expect(res.status).toBe(200);
       expect(res.body.userId).toBe(emptyUser.id);
-      expect(res.body.userName).toMatch(/Test User/);
+      // Post-Equoria-2gfor fix: userName is the public username handle, not real first+last name.
+      expect(res.body.userName).toBe(emptyUser.username);
 
       // Exactly 4 categories
       expect(Array.isArray(res.body.rankings)).toBe(true);

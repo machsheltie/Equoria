@@ -38,8 +38,7 @@ export const getTopUsersByLevel = async (req, res) => {
             orderBy: [{ level: 'desc' }, { xp: 'desc' }],
             select: {
               id: true,
-              firstName: true,
-              lastName: true,
+              username: true,
               level: true,
               xp: true,
               money: true,
@@ -57,7 +56,7 @@ export const getTopUsersByLevel = async (req, res) => {
       return {
         rank,
         userId: user.id,
-        name: `${user.firstName} ${user.lastName}`.trim(),
+        name: user.username,
         level: user.level,
         xp: user.xp,
         xpToNext,
@@ -132,11 +131,11 @@ export const getTopUsersByXP = async (req, res) => {
     const userIds = xpData.map(item => item.userId);
     const users = await prisma.user.findMany({
       where: { id: { in: userIds } },
-      select: { id: true, firstName: true, lastName: true },
+      select: { id: true, username: true },
     });
 
     const userMap = Object.fromEntries(
-      users.map(u => [u.id, `${u.firstName} ${u.lastName}`.trim()]),
+      users.map(u => [u.id, u.username]),
     );
 
     const rankedUsers = xpData.map((item, index) => ({
@@ -212,7 +211,7 @@ export const getTopHorsesByPerformance = async (req, res) => {
             id: true,
             name: true,
             breed: { select: { name: true } },
-            user: { select: { firstName: true, lastName: true } },
+            user: { select: { username: true } },
           },
         });
 
@@ -225,9 +224,7 @@ export const getTopHorsesByPerformance = async (req, res) => {
             horseId: entry.horseId,
             name: horse?.name || 'Unknown',
             breed: horse?.breed?.name || 'Unknown',
-            owner: horse?.user
-              ? `${horse.user.firstName} ${horse.user.lastName}`.trim()
-              : 'Unknown',
+            owner: horse?.user?.username || 'Unknown',
             maxScore: entry._max.score !== null ? Number(entry._max.score) : 0,
           };
         });
@@ -273,7 +270,7 @@ export const getTopHorsesByEarnings = async (req, res) => {
               totalEarnings: true,
               userId: true,
               user: {
-                select: { firstName: true, lastName: true },
+                select: { username: true },
               },
               breed: {
                 select: { name: true },
@@ -294,7 +291,7 @@ export const getTopHorsesByEarnings = async (req, res) => {
       horseId: horse.id,
       name: horse.name,
       earnings: horse.totalEarnings,
-      ownerName: horse.user ? `${horse.user.firstName} ${horse.user.lastName}`.trim() : 'Unknown',
+      ownerName: horse.user?.username || 'Unknown',
       breedName: horse.breed.name,
     }));
 
@@ -337,11 +334,11 @@ export const getTopUsersByHorseEarnings = async (req, res) => {
     const userIds = result.map(r => r.userId);
     const users = await prisma.user.findMany({
       where: { id: { in: userIds } },
-      select: { id: true, firstName: true, lastName: true },
+      select: { id: true, username: true },
     });
 
     const userMap = Object.fromEntries(
-      users.map(u => [u.id, `${u.firstName} ${u.lastName}`.trim()]),
+      users.map(u => [u.id, u.username]),
     );
 
     const rankings = result.map((entry, index) => ({
@@ -389,7 +386,7 @@ export const getRecentWinners = async (req, res) => {
             horse: {
               select: {
                 name: true,
-                user: { select: { firstName: true, lastName: true } },
+                user: { select: { username: true } },
               },
             },
           },
@@ -402,9 +399,7 @@ export const getRecentWinners = async (req, res) => {
       show: entry.showName,
       runDate: entry.runDate,
       horse: { name: entry.horse?.name || 'Unknown Horse' },
-      owner: entry.horse?.user
-        ? `${entry.horse.user.firstName} ${entry.horse.user.lastName}`.trim()
-        : 'Unknown Owner',
+      owner: entry.horse?.user?.username || 'Unknown Owner',
       competition: { discipline: entry.discipline },
     }));
 
@@ -489,7 +484,7 @@ export const getUserRankSummary = async (req, res) => {
     //    during beta. (Frontend hook type is `UserRankSummaryResponse | null`.)
     const targetUser = await prisma.user.findUnique({
       where: { id: userId },
-      select: { id: true, firstName: true, lastName: true, level: true, xp: true },
+      select: { id: true, username: true, level: true, xp: true },
     });
 
     if (!targetUser) {
@@ -501,7 +496,7 @@ export const getUserRankSummary = async (req, res) => {
       });
     }
 
-    const userName = `${targetUser.firstName} ${targetUser.lastName}`.trim() || 'Unknown';
+    const userName = targetUser.username || 'Unknown';
 
     // Total users — used as totalEntries for level + xp categories
     const totalUsers = await prisma.user.count();
