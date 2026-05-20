@@ -118,8 +118,14 @@ describe('analyzeQueryPerformance — calculateAverageTime existing-entry branch
 
 describe('createOptimizedIndexes — queryPatterns branch', () => {
   it('creates B-tree indexes from queryPatterns', async () => {
+    // Equoria-gyxfd schema-drift fix: queryPatterns are semantic LABELS
+    // mapped (via QUERY_PATTERN_INDEX) to CREATE INDEX statements against
+    // REAL `horses` columns — they are NOT raw column names. `'name'` is
+    // not a mapped label (the old assertion silently produced 0 indexes).
+    // Use `user_horse_lookup`, the canonical B-tree label that targets the
+    // real owning FK column `"userId"`.
     const result = await createOptimizedIndexes({
-      queryPatterns: ['name'],
+      queryPatterns: ['user_horse_lookup'],
     });
     expect(Array.isArray(result.created)).toBe(true);
     expect(result.created.length).toBeGreaterThanOrEqual(1);
@@ -148,8 +154,11 @@ describe('createOptimizedIndexes — compositePatterns branch', () => {
     });
     const btreeIndexes = result.btreeIndexes;
     expect(Array.isArray(btreeIndexes)).toBe(true);
-    // composite indexes contain ownerId (mapped from userId) not GIN
-    const hasComposite = btreeIndexes.some(i => i.query.includes('ownerId'));
+    // Equoria-gyxfd schema-drift fix: the Horse owning FK is `userId`, NOT
+    // `ownerId`. The columnMapping now resolves the `userId`/`ownerId`
+    // label aliases to the REAL quoted column `"userId"`, so the emitted
+    // composite index targets `"userId"` (not the non-existent `ownerId`).
+    const hasComposite = btreeIndexes.some(i => i.query.includes('userId'));
     expect(hasComposite).toBe(true);
   });
 });
@@ -165,7 +174,10 @@ describe('createOptimizedIndexes — empty options', () => {
 describe('createOptimizedIndexes — all three options', () => {
   it('creates all index types and returns performanceGains', async () => {
     const result = await createOptimizedIndexes({
-      queryPatterns: ['name'],
+      // Equoria-gyxfd: use a mapped pattern label (not the raw column name
+      // `'name'`, which maps to nothing) so the queryPatterns branch
+      // actually emits an index and the three-types-each ≥3 count holds.
+      queryPatterns: ['user_horse_lookup'],
       jsonbFields: ['epigenetic_flags'],
       compositePatterns: [['userId', 'age']],
     });
