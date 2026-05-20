@@ -624,8 +624,7 @@ const QUERY_PATTERN_INDEX = {
   age_and_training_status:
     'CREATE INDEX IF NOT EXISTS idx_horses_age_and_training_status ON horses (age, "trainingCooldown")',
   // BTREE on the owning FK (userId — NOT ownerId) for per-user horse lookups.
-  user_horse_lookup:
-    'CREATE INDEX IF NOT EXISTS idx_horses_user_horse_lookup ON horses ("userId")',
+  user_horse_lookup: 'CREATE INDEX IF NOT EXISTS idx_horses_user_horse_lookup ON horses ("userId")',
 };
 
 function generateIndexQuery(pattern) {
