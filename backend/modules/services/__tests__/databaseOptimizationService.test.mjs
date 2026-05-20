@@ -315,3 +315,166 @@ describe('benchmarkDatabaseOperations — default (no options)', () => {
     expect(result.errorRate).toBe(0);
   });
 });
+
+// == Equoria-qhogt: prototype-chain bypass sentinel (SECURITY) ==
+//
+// These tests prove that prototype-inherited keys ('constructor', '__proto__')
+// can NEVER bypass the allowlist checks and produce injected DDL.
+//
+// Tests operate ENTIRELY on return values -- they NEVER execute malicious
+// SQL against the DB. The fix must skip prototype keys at generation time,
+// before any query is pushed to indexQueries[].
+
+describe('createOptimizedIndexes -- prototype-chain bypass sentinel (Equoria-qhogt)', () => {
+  // compositePatterns path
+  it('compositePatterns: skips constructor key -- no injected function in query string', async () => {
+    const result = await createOptimizedIndexes({
+      compositePatterns: [['constructor']],
+    });
+    const badEntries = result.created.filter(
+      entry =>
+        (entry.query || '').includes('function') ||
+        (entry.query || '').includes('[native code]') ||
+        (entry.query || '').includes('prototype'),
+    );
+    expect(badEntries).toHaveLength(0);
+    expect(result.created).toHaveLength(0);
+  });
+
+  it('compositePatterns: skips __proto__ key -- no injected content in query string', async () => {
+    const result = await createOptimizedIndexes({
+      compositePatterns: [['__proto__']],
+    });
+    const badEntries = result.created.filter(
+      entry =>
+        (entry.query || '').includes('function') ||
+        (entry.query || '').includes('[native code]') ||
+        (entry.query || '').includes('prototype'),
+    );
+    expect(badEntries).toHaveLength(0);
+    expect(result.created).toHaveLength(0);
+  });
+
+  it('compositePatterns: mixed real+prototype -- whole pattern skipped, no injected content', async () => {
+    const result = await createOptimizedIndexes({
+      compositePatterns: [['userId', 'constructor']],
+    });
+    const badEntries = result.created.filter(
+      entry =>
+        (entry.query || '').includes('function') ||
+        (entry.query || '').includes('[native code]') ||
+        (entry.query || '').includes('prototype'),
+    );
+    expect(badEntries).toHaveLength(0);
+    expect(result.created).toHaveLength(0);
+  });
+
+  // jsonbFields path
+  it('jsonbFields: skips constructor key -- no injected function in GIN query string', async () => {
+    const result = await createOptimizedIndexes({
+      jsonbFields: ['constructor'],
+    });
+    const badEntries = result.created.filter(
+      entry =>
+        (entry.query || '').includes('function') ||
+        (entry.query || '').includes('[native code]') ||
+        (entry.query || '').includes('prototype'),
+    );
+    expect(badEntries).toHaveLength(0);
+    expect(result.created).toHaveLength(0);
+  });
+
+  it('jsonbFields: skips __proto__ key -- no injected content in GIN query string', async () => {
+    const result = await createOptimizedIndexes({
+      jsonbFields: ['__proto__'],
+    });
+    const badEntries = result.created.filter(
+      entry =>
+        (entry.query || '').includes('function') ||
+        (entry.query || '').includes('[native code]') ||
+        (entry.query || '').includes('prototype'),
+    );
+    expect(badEntries).toHaveLength(0);
+    expect(result.created).toHaveLength(0);
+  });
+
+  it('jsonbFields: mixed real+prototype -- real field succeeds, prototype key is skipped', async () => {
+    const result = await createOptimizedIndexes({
+      jsonbFields: ['epigeneticFlags', 'constructor'],
+    });
+    const ginEntries = result.created.filter(e => (e.query || '').includes('GIN'));
+    expect(ginEntries.length).toBeGreaterThanOrEqual(1);
+    expect(ginEntries[0].query).toContain('"epigeneticFlags"');
+    const badEntries = result.created.filter(
+      entry =>
+        (entry.query || '').includes('function') ||
+        (entry.query || '').includes('[native code]') ||
+        (entry.query || '').includes('prototype'),
+    );
+    expect(badEntries).toHaveLength(0);
+  });
+
+  // queryPatterns path
+  it('queryPatterns: skips __proto__ key -- no injected object content in query string', async () => {
+    const result = await createOptimizedIndexes({
+      queryPatterns: ['__proto__'],
+    });
+    const badEntries = result.created.filter(
+      entry =>
+        (entry.query || '').includes('function') ||
+        (entry.query || '').includes('[native code]') ||
+        (entry.query || '').includes('prototype') ||
+        (entry.query || '').includes('[object'),
+    );
+    expect(badEntries).toHaveLength(0);
+    expect(result.created).toHaveLength(0);
+  });
+
+  it('queryPatterns: skips constructor key -- no injected function in query string', async () => {
+    const result = await createOptimizedIndexes({
+      queryPatterns: ['constructor'],
+    });
+    const badEntries = result.created.filter(
+      entry =>
+        (entry.query || '').includes('function') ||
+        (entry.query || '').includes('[native code]') ||
+        (entry.query || '').includes('prototype'),
+    );
+    expect(badEntries).toHaveLength(0);
+    expect(result.created).toHaveLength(0);
+  });
+
+  // positive regression: real columns/patterns still work
+  it('positive regression: jsonbFields epigeneticFlags still generates valid GIN index', async () => {
+    const result = await createOptimizedIndexes({
+      jsonbFields: ['epigeneticFlags'],
+    });
+    expect(result.created.length).toBeGreaterThanOrEqual(1);
+    const gin = result.created.find(e => (e.query || '').includes('GIN'));
+    expect(gin).toBeDefined();
+    expect(gin.query).toContain('"epigeneticFlags"');
+    expect(gin.query).not.toMatch(/function|native code|prototype/);
+  });
+
+  it('positive regression: compositePatterns userId+breedId still generates valid composite index', async () => {
+    const result = await createOptimizedIndexes({
+      compositePatterns: [['userId', 'breedId']],
+    });
+    expect(result.created.length).toBeGreaterThanOrEqual(1);
+    const composite = result.created.find(e => (e.query || '').includes('"userId"'));
+    expect(composite).toBeDefined();
+    expect(composite.query).toContain('"breedId"');
+    expect(composite.query).not.toMatch(/function|native code|prototype/);
+  });
+
+  it('positive regression: queryPattern user_horse_lookup still generates valid B-tree index', async () => {
+    const result = await createOptimizedIndexes({
+      queryPatterns: ['user_horse_lookup'],
+    });
+    expect(result.created.length).toBeGreaterThanOrEqual(1);
+    const idx = result.created.find(e => (e.query || '').includes('user_horse_lookup'));
+    expect(idx).toBeDefined();
+    expect(idx.query).toContain('"userId"');
+    expect(idx.query).not.toMatch(/function|native code|prototype/);
+  });
+});

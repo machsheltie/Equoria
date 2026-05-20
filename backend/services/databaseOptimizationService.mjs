@@ -259,13 +259,27 @@ export async function createOptimizedIndexes(options) {
       };
 
       for (const field of options.jsonbFields) {
-        const columnName = fieldMapping[field];
-        if (!columnName) {
+        // Equoria-qhogt: use Object.hasOwn so prototype-inherited keys
+        // (e.g. 'constructor', '__proto__') are never treated as own entries.
+        // Then verify the resolved value is a plain string before interpolating
+        // it into DDL — even a future map change cannot produce a non-string.
+        if (!Object.hasOwn(fieldMapping, field)) {
           // Unknown label with no real column — skip with a loud log rather
           // than emit invalid SQL. This is NOT a silent swallow of a real
           // error: we never generate the bad statement in the first place.
           logger.warn(
             `[databaseOptimization] Skipping GIN index for unknown JSONB field "${field}" (no matching column on horses)`,
+          );
+          continue;
+        }
+        const columnName = fieldMapping[field];
+        if (typeof columnName !== 'string') {
+          // Defence-in-depth: own-property check passed but value is not a
+          // string (should never happen with the static map above, but guards
+          // against future map mutations or prototype-pollution of the map
+          // object itself).
+          logger.warn(
+            `[databaseOptimization] Skipping GIN index for field "${field}" — resolved column name is not a string`,
           );
           continue;
         }
@@ -295,7 +309,11 @@ export async function createOptimizedIndexes(options) {
       };
 
       for (const pattern of options.compositePatterns) {
-        const unknown = pattern.filter(col => !(col in columnMapping));
+        // Equoria-qhogt: use Object.hasOwn so prototype-inherited keys
+        // (e.g. 'constructor', '__proto__') are never treated as known columns.
+        // The previous `col in columnMapping` traversed the prototype chain and
+        // let inherited Object.prototype keys pass through as "known".
+        const unknown = pattern.filter(col => !Object.hasOwn(columnMapping, col));
         if (unknown.length > 0) {
           logger.warn(
             `[databaseOptimization] Skipping composite index for pattern [${pattern.join(', ')}] — unknown column(s): ${unknown.join(', ')}`,
@@ -303,6 +321,15 @@ export async function createOptimizedIndexes(options) {
           continue;
         }
         const mappedColumns = pattern.map(col => columnMapping[col]);
+        // Defence-in-depth: verify every resolved column value is a string
+        // before interpolating into DDL. Own-property check above makes this
+        // redundant for the static map, but guards against future mutations.
+        if (mappedColumns.some(c => typeof c !== 'string')) {
+          logger.warn(
+            `[databaseOptimization] Skipping composite index for pattern [${pattern.join(', ')}] — one or more resolved column names are not strings`,
+          );
+          continue;
+        }
         const safeName = pattern.join('_').replace(/[^a-zA-Z0-9_]/g, '_');
         const indexName = `idx_horses_${safeName}`;
         const indexQuery = `CREATE INDEX IF NOT EXISTS ${indexName} ON horses (${mappedColumns.join(', ')})`;
@@ -329,11 +356,26 @@ export async function createOptimizedIndexes(options) {
       }
     }
 
+    // Equoria-qhogt: guard idx.query with typeof to prevent a .includes()
+    // crash if a non-string ever reaches createdIndexes (defence-in-depth;
+    // the three allowlist fixes above already prevent non-strings from
+    // entering indexQueries, but this makes the return path safe too).
+    // Observability: warn if any entry somehow has a non-string query — that
+    // would mean an upstream guard regressed.  The entries are still excluded
+    // from both arrays (behavior unchanged); the warn makes the regression
+    // visible instead of silently masking it (EDGE_CASE_FIX_DISCIPLINE §3).
+    const nonStringEntries = createdIndexes.filter(idx => typeof idx.query !== 'string');
+    if (nonStringEntries.length > 0) {
+      logger.warn(
+        `[databaseOptimization] ${nonStringEntries.length} createdIndexes entr${nonStringEntries.length === 1 ? 'y' : 'ies'} had a non-string query — upstream allowlist guard may have regressed. Affected statuses: ${nonStringEntries.map(idx => idx.status ?? 'unknown').join(', ')}`,
+      );
+    }
+
     return {
       created: createdIndexes,
       performanceImpact: calculateIndexImpact(createdIndexes),
-      ginIndexes: createdIndexes.filter(idx => idx.query.includes('GIN')),
-      btreeIndexes: createdIndexes.filter(idx => !idx.query.includes('GIN')),
+      ginIndexes: createdIndexes.filter(idx => typeof idx.query === 'string' && idx.query.includes('GIN')),
+      btreeIndexes: createdIndexes.filter(idx => typeof idx.query === 'string' && !idx.query.includes('GIN')),
       queryPatternsCovered: options.queryPatterns?.length || 0,
       performanceGains: estimatePerformanceGains(createdIndexes),
     };
@@ -628,10 +670,23 @@ const QUERY_PATTERN_INDEX = {
 };
 
 function generateIndexQuery(pattern) {
-  const query = QUERY_PATTERN_INDEX[pattern];
-  if (!query) {
+  // Equoria-qhogt: use Object.hasOwn so prototype-inherited keys
+  // ('constructor', '__proto__', 'toString', etc.) are never treated as
+  // known patterns. The previous direct bracket access let inherited keys
+  // return a non-string truthy value (e.g. the Object constructor function)
+  // that would be pushed straight into $executeRawUnsafe.
+  if (!Object.hasOwn(QUERY_PATTERN_INDEX, pattern)) {
     logger.warn(
       `[databaseOptimization] Skipping index for unknown query pattern "${pattern}" (no mapping to real columns)`,
+    );
+    return null;
+  }
+  const query = QUERY_PATTERN_INDEX[pattern];
+  // Defence-in-depth: own-property check passed but value must be a string.
+  // Catches any future mutation of QUERY_PATTERN_INDEX that stores a non-string.
+  if (typeof query !== 'string') {
+    logger.warn(
+      `[databaseOptimization] Skipping index for pattern "${pattern}" — resolved query is not a string`,
     );
     return null;
   }
