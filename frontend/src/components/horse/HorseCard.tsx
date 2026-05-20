@@ -19,6 +19,7 @@ import { getHorseImage } from '@/lib/breed-images';
 import { careChipStatus, trainingCooldownChip } from '@/lib/utils/care-status-utils';
 import { getPregnancyProgress, GESTATION_DAYS } from '@/lib/utils/pregnancyChances';
 import { CareChip } from '@/components/common/CareChip';
+import { GoldBorderFrame } from '@/components/ui/GoldBorderFrame';
 import type { HorseSummary } from '@/lib/api-client';
 
 const STAT_KEYS: { label: string; key: keyof HorseSummary['stats'] }[] = [
@@ -77,7 +78,14 @@ export function HorseCard({
       : `In foal — Day ${pregnancy.gestationDay} of ${GESTATION_DAYS}, ${pregnancy.daysRemaining} ${pregnancy.daysRemaining === 1 ? 'day' : 'days'} remaining`
     : '';
 
-  return (
+  // Equoria-55bo.6 — championship frame. Spec 11.3.13 reserves the ornate
+  // GoldBorderFrame for championship horses. `hasChampionship` is REAL
+  // backend-derived data (the horse has >=1 actual 1st-place
+  // CompetitionResult — see the GET /horses list serializer), NOT a
+  // hardcoded "featured" flag. Cards for non-champion horses render bare.
+  const isChampion = horse.hasChampionship === true;
+
+  const card = (
     <button
       type="button"
       onClick={onClick}
@@ -233,6 +241,18 @@ export function HorseCard({
         </div>
       )}
     </button>
+  );
+
+  if (!isChampion) {
+    return card;
+  }
+
+  // Champion (>=1 real 1st-place win): wrap in the ornate GoldBorderFrame so
+  // the championship horse is visually highlighted per Spec 11.3.13.
+  return (
+    <div data-testid={`horse-card-champion-frame-${horse.id}`}>
+      <GoldBorderFrame className="rounded-[var(--radius-lg)]">{card}</GoldBorderFrame>
+    </div>
   );
 }
 

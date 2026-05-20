@@ -18,6 +18,7 @@ import { getHorseImage } from '@/lib/breed-images';
 import { getBreedName } from '@/lib/utils';
 import { CooldownTimer } from '@/components/common/CooldownTimer';
 import { CareChip } from '@/components/common/CareChip';
+import { GoldBorderFrame } from '@/components/ui/GoldBorderFrame';
 import {
   careChipStatus,
   trainingCooldownChip,
@@ -55,6 +56,12 @@ function HorseCard({ horse }: { horse: HorseSummary }) {
 
   const cooldown = trainingCooldownChip(horse.trainingCooldown);
 
+  // Equoria-55bo.6 — championship frame. `hasChampionship` is REAL
+  // backend-derived data (>=1 actual 1st-place CompetitionResult, counted by
+  // the GET /horses list serializer), NOT a hardcoded "featured" flag. Per
+  // Spec 11.3.13 the ornate GoldBorderFrame is reserved for champions.
+  const isChampion = horse.hasChampionship === true;
+
   // "Latest chapter" narrative (Equoria-pqzmf, Spec 11.3.12) — derived from
   // real per-horse HorseSummary fields, no extra requests. Stale (>7d) chips
   // fade to a quieter state per spec.
@@ -70,10 +77,10 @@ function HorseCard({ horse }: { horse: HorseSummary }) {
     latestEvent: horse.latestEvent ?? null,
   });
 
-  return (
+  const card = (
     <Link
       to={`/horses/${horse.id}`}
-      className="bg-[var(--glass-bg)] border border-[rgba(200,168,78,0.2)] rounded-[var(--radius-lg)] overflow-hidden transition-all duration-[250ms] hover:border-[var(--glass-hover)] hover:shadow-[var(--glow-gold)] hover:-translate-y-0.5 group [backdrop-filter:blur(10px)_saturate(1.3)_brightness(1.2)] shadow-[0_0_12px_rgba(200,168,78,0.06)]"
+      className="bg-[var(--glass-bg)] border border-[rgba(200,168,78,0.2)] rounded-[var(--radius-lg)] overflow-hidden transition-all duration-[250ms] hover:border-[var(--glass-hover)] hover:shadow-[var(--glow-gold)] hover:-translate-y-0.5 group [backdrop-filter:blur(10px)_saturate(1.3)_brightness(1.2)] shadow-[0_0_12px_rgba(200,168,78,0.06)] block"
       aria-label={`View ${horse.name}`}
     >
       {/* Top: portrait + info */}
@@ -155,6 +162,18 @@ function HorseCard({ horse }: { horse: HorseSummary }) {
         <CareChip label={cooldown.label} status={cooldown.status} />
       </div>
     </Link>
+  );
+
+  if (!isChampion) {
+    return card;
+  }
+
+  // Champion (>=1 real 1st-place win): wrap in the ornate GoldBorderFrame per
+  // Spec 11.3.13 so the dashboard champion card is visually highlighted.
+  return (
+    <div data-testid={`dashboard-horse-card-champion-frame-${horse.id}`}>
+      <GoldBorderFrame className="rounded-[var(--radius-lg)]">{card}</GoldBorderFrame>
+    </div>
   );
 }
 

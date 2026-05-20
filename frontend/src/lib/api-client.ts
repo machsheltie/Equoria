@@ -275,6 +275,13 @@ interface HorseSummary {
     placement: string | null;
     date: string | null;
   } | null;
+  // Equoria-55bo.6: real per-horse championship signal, derived by the list
+  // serializer from the horse's actual 1st-place CompetitionResult rows
+  // (counted in the same batched query as latestEvent, no N+1). Drives the
+  // ornate GoldBorderFrame on non-HoF stable/dashboard cards (Spec 11.3.13).
+  // NOT a hardcoded "featured" flag — hasChampionship === firstPlaceWins > 0.
+  firstPlaceWins?: number;
+  hasChampionship?: boolean;
 }
 
 interface HorseTrainingHistoryEntry {

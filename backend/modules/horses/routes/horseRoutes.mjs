@@ -409,6 +409,12 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
     // runDate desc so the first seen per horseId is the latest).
     const horseIds = horses.map(h => h.id);
     const latestEventByHorse = new Map();
+    // Equoria-55bo.6: real per-horse championship signal for GoldBorderFrame
+    // on the non-HoF stable/dashboard cards (Spec 11.3.13). Counted from the
+    // SAME single batched competitionResult query that powers latestEvent —
+    // no extra query, no N+1. `placement` is stored as a label string ('1st',
+    // '2nd', …), so a 1st-place win is `placement === '1st'`.
+    const firstPlaceWinsByHorse = new Map();
     if (horseIds.length > 0) {
       const recentResults = await prisma.competitionResult.findMany({
         where: { horseId: { in: horseIds } },
@@ -431,6 +437,11 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
             date: r.runDate ? new Date(r.runDate).toISOString() : null,
           });
         }
+        // Normalize the placement label before comparing so '1st', '1ST',
+        // or stray whitespace all count as a real 1st-place win.
+        if (typeof r.placement === 'string' && r.placement.trim().toLowerCase() === '1st') {
+          firstPlaceWinsByHorse.set(r.horseId, (firstPlaceWinsByHorse.get(r.horseId) ?? 0) + 1);
+        }
       }
     }
 
@@ -438,12 +449,21 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
     res.json({
       success: true,
       message: `Found ${horses.length} horses`,
-      data: horses.map(h => ({
-        ...withAgeYears(withHealth(h)),
-        // Explicit null (not undefined) so the frontend key always exists
-        // and deriveLatestChapter can branch on its presence.
-        latestEvent: latestEventByHorse.get(h.id) ?? null,
-      })),
+      data: horses.map(h => {
+        const firstPlaceWins = firstPlaceWinsByHorse.get(h.id) ?? 0;
+        return {
+          ...withAgeYears(withHealth(h)),
+          // Explicit null (not undefined) so the frontend key always exists
+          // and deriveLatestChapter can branch on its presence.
+          latestEvent: latestEventByHorse.get(h.id) ?? null,
+          // Equoria-55bo.6: real championship signal derived from actual
+          // 1st-place CompetitionResult rows (NOT a hardcoded flag). The
+          // frontend wraps a qualifying card in GoldBorderFrame when
+          // hasChampionship is true. firstPlaceWins is the underlying count.
+          firstPlaceWins,
+          hasChampionship: firstPlaceWins > 0,
+        };
+      }),
     });
   } catch (error) {
     logger.error(`[horseRoutes] Error getting horses: ${error.message}`);
