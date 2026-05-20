@@ -11,30 +11,30 @@
  * - Query parameter encoding for special characters
  *
  * Story 5-5: Leaderboards - Task 5
+ *
+ * Network boundary stubbed with MSW per-test `server.use(...)` overrides
+ * (Equoria-f12xy) instead of vi.mock'ing the api-client. This exercises the
+ * REAL api-client (request building, `{ success, data }` unwrap, error
+ * construction) end-to-end. The previous `apiClient.get` mock-call
+ * assertions (`mock.calls[0][0]`, `toHaveBeenCalledWith`) are reframed as
+ * MSW request inspection — the path + query string the functions build land
+ * on the wire and are captured there, proving the same URL construction.
+ *
+ * Error reframe: the real client throws `{ message, status, statusCode }`
+ * where `statusCode` is derived from the HTTP response status (not echoed
+ * from the body). The old tests asserted `.rejects.toEqual(apiError)` against
+ * a hand-built object; the equivalent real-client assertion is
+ * `.rejects.toMatchObject({ message, statusCode })`.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
+import { http, HttpResponse } from 'msw';
 import { fetchLeaderboard, fetchUserRankSummary } from '../leaderboards';
+import { server } from '../../../test/msw/server';
 
-// Mock the API client module
-vi.mock('@/lib/api-client', () => ({
-  apiClient: {
-    get: vi.fn(),
-  },
-}));
-
-// Import the mocked module for assertions
-import { apiClient } from '@/lib/api-client';
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 describe('fetchLeaderboard', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   // Test 1: Constructs correct URL with all parameters
   it('should construct the correct URL with category, period, discipline, page, and limit', async () => {
     const mockResponse = {
@@ -47,7 +47,16 @@ describe('fetchLeaderboard', () => {
       lastUpdated: '2026-02-03T10:00:00Z',
     };
 
-    vi.mocked(apiClient.get).mockResolvedValue(mockResponse);
+    let capturedPath = '';
+    let capturedQuery: URLSearchParams | undefined;
+    server.use(
+      http.get(`${base}/api/leaderboards/discipline`, ({ request }) => {
+        const url = new URL(request.url);
+        capturedPath = url.pathname;
+        capturedQuery = url.searchParams;
+        return HttpResponse.json({ data: mockResponse });
+      })
+    );
 
     await fetchLeaderboard({
       category: 'discipline',
@@ -57,14 +66,11 @@ describe('fetchLeaderboard', () => {
       limit: 50,
     });
 
-    expect(apiClient.get).toHaveBeenCalledTimes(1);
-
-    const calledUrl = vi.mocked(apiClient.get).mock.calls[0][0];
-    expect(calledUrl).toContain('/api/leaderboards/discipline');
-    expect(calledUrl).toContain('period=weekly');
-    expect(calledUrl).toContain('discipline=show-jumping');
-    expect(calledUrl).toContain('page=2');
-    expect(calledUrl).toContain('limit=50');
+    expect(capturedPath).toBe('/api/leaderboards/discipline');
+    expect(capturedQuery?.get('period')).toBe('weekly');
+    expect(capturedQuery?.get('discipline')).toBe('show-jumping');
+    expect(capturedQuery?.get('page')).toBe('2');
+    expect(capturedQuery?.get('limit')).toBe('50');
   });
 
   // Test 2: Constructs URL without optional parameters
@@ -79,45 +85,48 @@ describe('fetchLeaderboard', () => {
       lastUpdated: '2026-02-03T10:00:00Z',
     };
 
-    vi.mocked(apiClient.get).mockResolvedValue(mockResponse);
+    let capturedSearch = '';
+    let capturedPath = '';
+    server.use(
+      http.get(`${base}/api/leaderboards/level`, ({ request }) => {
+        const url = new URL(request.url);
+        capturedPath = url.pathname;
+        capturedSearch = url.search;
+        return HttpResponse.json({ data: mockResponse });
+      })
+    );
 
     await fetchLeaderboard({
       category: 'level',
       period: 'monthly',
     });
 
-    const calledUrl = vi.mocked(apiClient.get).mock.calls[0][0];
-    expect(calledUrl).toBe('/api/leaderboards/level?period=monthly');
+    // Was: expect(calledUrl).toBe('/api/leaderboards/level?period=monthly')
+    expect(capturedPath).toBe('/api/leaderboards/level');
+    expect(capturedSearch).toBe('?period=monthly');
   });
 
   // Test 3: Handles API errors correctly
   it('should propagate API errors from the client', async () => {
-    const apiError = {
-      message: 'Internal server error',
-      status: 'error',
-      statusCode: 500,
-    };
-
-    vi.mocked(apiClient.get).mockRejectedValue(apiError);
+    server.use(
+      http.get(`${base}/api/leaderboards/level`, () =>
+        HttpResponse.json({ message: 'Internal server error', status: 'error' }, { status: 500 })
+      )
+    );
 
     await expect(
       fetchLeaderboard({
         category: 'level',
         period: 'all-time',
       })
-    ).rejects.toEqual(apiError);
+    ).rejects.toMatchObject({
+      message: 'Internal server error',
+      statusCode: 500,
+    });
   });
 });
 
 describe('fetchUserRankSummary', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   // Test 4: Constructs correct URL for user rank summary
   it('should construct the correct URL with the userId', async () => {
     const mockResponse = {
@@ -127,25 +136,31 @@ describe('fetchUserRankSummary', () => {
       bestRankings: [],
     };
 
-    vi.mocked(apiClient.get).mockResolvedValue(mockResponse);
+    let capturedPath = '';
+    server.use(
+      http.get(`${base}/api/leaderboards/user-summary/user-123`, ({ request }) => {
+        capturedPath = new URL(request.url).pathname;
+        return HttpResponse.json({ data: mockResponse });
+      })
+    );
 
     const result = await fetchUserRankSummary('user-123');
 
-    expect(apiClient.get).toHaveBeenCalledTimes(1);
-    expect(apiClient.get).toHaveBeenCalledWith('/api/leaderboards/user-summary/user-123');
+    expect(capturedPath).toBe('/api/leaderboards/user-summary/user-123');
     expect(result).toEqual(mockResponse);
   });
 
   // Test 5: Handles errors correctly
   it('should propagate API errors from the client', async () => {
-    const apiError = {
+    server.use(
+      http.get(`${base}/api/leaderboards/user-summary/nonexistent-user`, () =>
+        HttpResponse.json({ message: 'User not found', status: 'error' }, { status: 404 })
+      )
+    );
+
+    await expect(fetchUserRankSummary('nonexistent-user')).rejects.toMatchObject({
       message: 'User not found',
-      status: 'error',
       statusCode: 404,
-    };
-
-    vi.mocked(apiClient.get).mockRejectedValue(apiError);
-
-    await expect(fetchUserRankSummary('nonexistent-user')).rejects.toEqual(apiError);
+    });
   });
 });

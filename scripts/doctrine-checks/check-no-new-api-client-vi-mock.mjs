@@ -48,8 +48,9 @@ const BASELINE = new Set([
   // useGameNotifications, useHorseById, useProgression, useTraining) were
   // migrated off vi.mock-of-api-client to MSW network-boundary stubs — removed
   // from baseline (the list may only shrink).
-  'frontend/src/hooks/api/__tests__/useTransactionHistory.test.ts',
-  'frontend/src/lib/api/__tests__/leaderboards.test.ts',
+  // Equoria-f12xy (agent-M4): the final 2 .ts suites (useTransactionHistory,
+  // leaderboards) were migrated off vi.mock-of-api-client to MSW
+  // network-boundary stubs — removed from baseline (the list may only shrink).
   'frontend/src/pages/__tests__/ForgotPasswordPage.test.tsx',
   'frontend/src/pages/__tests__/HorseDetailPage.ProgressionTab.test.tsx',
   'frontend/src/pages/__tests__/LoginPage.beta.test.tsx',
