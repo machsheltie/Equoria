@@ -66,6 +66,15 @@ jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
   },
 }));
 
+// deleteUser delegates to gdprAccountService.eraseUserAccount (Equoria-s3rf):
+// a bare prisma.user.delete fails P2003 (FK Restrict) for any non-empty account.
+// Mock the collaborator so this unit test exercises userModel's delegation +
+// null/{id} mapping contract, not the full transactional cascade (covered by
+// the gdprAccountService real-DB integration tests).
+jest.unstable_mockModule(join(__dirname, '../modules/users/services/gdprAccountService.mjs'), () => ({
+  eraseUserAccount: jest.fn(),
+}));
+
 // Import userModel functions after mocks are set up
 const {
   createUser,
@@ -82,6 +91,9 @@ const {
 const mockPrisma = (await import(join(__dirname, '../db/index.mjs'))).default;
 const mockLogger = (await import(join(__dirname, '../utils/logger.mjs'))).default;
 const { DatabaseError } = await import(join(__dirname, '../errors/index.mjs'));
+const { eraseUserAccount: mockEraseUserAccount } = await import(
+  join(__dirname, '../modules/users/services/gdprAccountService.mjs')
+);
 
 describe('👤 UNIT: User Model - Database Operations & Business Logic', () => {
   beforeEach(() => {
@@ -269,24 +281,25 @@ describe('👤 UNIT: User Model - Database Operations & Business Logic', () => {
   });
 
   describe('deleteUser', () => {
+    // deleteUser now delegates to eraseUserAccount (Equoria-s3rf). User ids are
+    // strings (UUIDs); eraseUserAccount returns { deleted: boolean }. deleteUser
+    // maps { deleted: true } -> { id }, { deleted: false } -> null.
     it('should delete user successfully', async () => {
-      const deletedUser = { id: 1, username: 'testuser' };
-      mockPrisma.user.delete.mockResolvedValue(deletedUser);
+      mockEraseUserAccount.mockResolvedValue({ deleted: true });
 
-      const result = await deleteUser(1);
-      expect(mockPrisma.user.delete).toHaveBeenCalledWith({ where: { id: 1 } });
-      expect(result).toEqual(deletedUser);
+      const result = await deleteUser('user-1');
+      expect(mockEraseUserAccount).toHaveBeenCalledWith('user-1');
+      expect(result).toEqual({ id: 'user-1' });
     });
 
     it('should throw DatabaseError if ID is not provided', async () => {
       await expect(deleteUser(null)).rejects.toThrow(new DatabaseError('Delete failed: User ID is required.'));
     });
 
-    it('should handle Prisma delete errors (user not found)', async () => {
-      const prismaError = { code: 'P2025', message: 'Record to delete not found.' };
-      mockPrisma.user.delete.mockRejectedValue(prismaError);
+    it('should return null when the user does not exist (idempotent erase)', async () => {
+      mockEraseUserAccount.mockResolvedValue({ deleted: false });
 
-      const result = await deleteUser(99);
+      const result = await deleteUser('user-99');
       expect(result).toBeNull(); // Returns null when user not found
     });
   });

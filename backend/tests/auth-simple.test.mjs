@@ -131,6 +131,7 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
       password: 'TestPassword123!',
       firstName: 'Test', // Added
       lastName: 'User', // Added
+      dateOfBirth: '1990-01-01', // COPPA age gate (Equoria-iqzn): adult DOB required on success-path register
     };
 
     const response = await request(app)
@@ -156,6 +157,7 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
       password: 'TestPassword123!',
       firstName: 'LoginTest', // Added
       lastName: 'User', // Added
+      dateOfBirth: '1990-01-01', // COPPA age gate (Equoria-iqzn): adult DOB required on success-path register
     };
 
     await request(app).post('/register').set('Origin', 'http://localhost:3000').send(userData);

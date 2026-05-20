@@ -77,9 +77,13 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
     });
     testBreedId = testBreed.id;
 
-    // Create eligible horse (4 years old)
-    const fourYearsAgo = new Date();
-    fourYearsAgo.setFullYear(fourYearsAgo.getFullYear() - 4);
+    // Game-year aging convention (Equoria-vdw5/ffsi): 1 game-year = 7 real
+    // days, so getHorseAge() == floor(realDays / 7). Back-date dateOfBirth in
+    // GAME-years (N * 7 days ago), not calendar years — otherwise a horse stored
+    // as age:4 would compute to ~208 game-years and break the horseAge assertions.
+    const GAME_YEAR_MS = 7 * 24 * 60 * 60 * 1000;
+    // 4 game-years old: 28 days ago (eligible: age >= 3)
+    const fourYearsAgo = new Date(Date.now() - 4 * GAME_YEAR_MS);
 
     testHorseEligible = await prisma.horse.create({
       data: {
@@ -98,9 +102,8 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
     });
     testHorse4Years = testHorseEligible;
 
-    // Create additional adult horse (3 years old)
-    const threeYearsAgo = new Date();
-    threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
+    // Create additional adult horse (3 game-years old): 21 days ago (eligible)
+    const threeYearsAgo = new Date(Date.now() - 3 * GAME_YEAR_MS);
 
     testHorseAdult = await prisma.horse.create({
       data: {
@@ -118,11 +121,11 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
       },
     });
 
-    // Create young horse (2 years old — add 2-day buffer so Math.floor reliably returns 2
-    // even near the anniversary date, where 730/365.25 < 2 without the buffer)
-    const twoYearsAgo = new Date();
-    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
-    twoYearsAgo.setDate(twoYearsAgo.getDate() - 2);
+    // Create young horse (2 game-years old, under the age:3 training gate).
+    // 14 days = exactly 2 game-years; add a 1-day buffer (15 days) so floor()
+    // reliably returns 2 and never rounds down to 1 near the boundary, while
+    // staying below 21 days (3 game-years) so the horse remains under-age.
+    const twoYearsAgo = new Date(Date.now() - (2 * GAME_YEAR_MS + 24 * 60 * 60 * 1000));
 
     testHorseYoung = await prisma.horse.create({
       data: {
@@ -251,7 +254,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         data: {
           ...fixtureColor(),
           name: 'Old Training Horse',
-          dateOfBirth: new Date(new Date().setFullYear(new Date().getFullYear() - 4)),
+          dateOfBirth: new Date(Date.now() - 4 * 7 * 24 * 60 * 60 * 1000), // 4 game-years (28 days) — Equoria-vdw5/ffsi
           sex: 'Stallion',
           userId: testUser.id,
           breedId: testBreedId,
@@ -325,7 +328,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         data: {
           ...fixtureColor(),
           name: 'Edge Case Horse',
-          dateOfBirth: new Date(new Date().setFullYear(new Date().getFullYear() - 4)),
+          dateOfBirth: new Date(Date.now() - 4 * 7 * 24 * 60 * 60 * 1000), // 4 game-years (28 days) — Equoria-vdw5/ffsi
           sex: 'Mare',
           userId: testUser.id,
           breedId: testBreedId,
@@ -483,7 +486,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         data: {
           ...fixtureColor(),
           name: 'Expired Cooldown Horse',
-          dateOfBirth: new Date(new Date().setFullYear(new Date().getFullYear() - 4)),
+          dateOfBirth: new Date(Date.now() - 4 * 7 * 24 * 60 * 60 * 1000), // 4 game-years (28 days) — Equoria-vdw5/ffsi
           sex: 'Stallion',
           userId: testUser.id,
           breedId: testBreedId,
@@ -566,7 +569,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         data: {
           ...fixtureColor(),
           name: 'Edge Case Horse',
-          dateOfBirth: new Date(new Date().setFullYear(new Date().getFullYear() - 4)),
+          dateOfBirth: new Date(Date.now() - 4 * 7 * 24 * 60 * 60 * 1000), // 4 game-years (28 days) — Equoria-vdw5/ffsi
           sex: 'Stallion',
           userId: testUser.id,
           breedId: testBreedId,
