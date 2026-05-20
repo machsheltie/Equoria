@@ -30,7 +30,7 @@
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
 const TEST_JWT_SECRET = process.env.JWT_SECRET;
 
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
+import { describe, it, expect, afterAll, beforeEach } from '@jest/globals';
 import { randomBytes } from 'node:crypto';
 import jwt from 'jsonwebtoken';
 import prisma from '../../db/index.mjs';
