@@ -76,6 +76,7 @@ import CompetitionHistory from '@/components/competition/CompetitionHistory';
 import { useHorseCompetitionHistory } from '@/hooks/api/useHorseCompetitionHistory';
 import { useHorseUltraRareTraits } from '@/hooks/api/useUltraRareTraits';
 import CinematicMoment from '@/components/feedback/CinematicMoment';
+import { hasSeenEvent, markEventSeen } from '@/lib/traitEventSeen';
 // Shared types for page + lazy tabs
 import type { Horse, HorseStats } from './horse-detail/HorseDetailPageTypes';
 
@@ -187,8 +188,9 @@ const HorseDetailPage: React.FC = () => {
   // Equoria-gt6j — surface UltraRareTraitEvent reveals. The backend
   // (Equoria-d4tl) auto-populates UltraRareTraitEvent rows on milestone
   // boundaries; here we show a one-time CinematicMoment for the most recent
-  // event the player hasn't seen yet. "Seen" is tracked per-event-id in
-  // localStorage so the reveal fires exactly once, even across reloads.
+  // event the player hasn't seen yet. "Seen" is tracked in a single bounded
+  // localStorage key via traitEventSeen (Equoria-o7c0x L7) so storage cannot
+  // grow unboundedly (capped at URT_SEEN_MAX=100 ids, FIFO eviction).
   const { data: ultraRareData } = useHorseUltraRareTraits(
     !isLoading && !isError && !!horseRaw ? Number(id) : undefined
   );
@@ -202,23 +204,17 @@ const HorseDetailPage: React.FC = () => {
     if (!events || events.length === 0) return;
     // recentEvents is ordered by timestamp desc — index 0 is the newest.
     const latest = events[0];
-    const storageKey = `urt-seen-${latest.id}`;
-    try {
-      if (localStorage.getItem(storageKey)) return;
-      setUltraRareReveal({ id: latest.id, traitName: latest.traitName });
-    } catch {
-      // localStorage unavailable (private mode / SSR) — show once this session.
-      setUltraRareReveal({ id: latest.id, traitName: latest.traitName });
-    }
+    // hasSeenEvent reads a single bounded key (not one key per id).
+    // It is fail-safe: returns false if localStorage is unavailable.
+    if (hasSeenEvent(localStorage, latest.id)) return;
+    setUltraRareReveal({ id: latest.id, traitName: latest.traitName });
   }, [ultraRareData]);
 
   const dismissUltraRareReveal = useCallback(() => {
     if (ultraRareReveal) {
-      try {
-        localStorage.setItem(`urt-seen-${ultraRareReveal.id}`, '1');
-      } catch {
-        /* localStorage unavailable — reveal simply won't persist as seen */
-      }
+      // markEventSeen writes to a single bounded key (FIFO cap = 100 ids).
+      // It is fail-safe: silently skips on storage write error.
+      markEventSeen(localStorage, ultraRareReveal.id);
     }
     setUltraRareReveal(null);
   }, [ultraRareReveal]);
