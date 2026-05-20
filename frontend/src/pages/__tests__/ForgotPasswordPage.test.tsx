@@ -13,22 +13,52 @@
  * Only external dependencies (API, Router) are mocked
  */
 
-import { describe, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from '../../test/utils';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode } from 'react';
+import { http, HttpResponse, delay } from 'msw';
+import { server } from '../../test/msw/server';
 import ForgotPasswordPage from '../ForgotPasswordPage';
-import * as apiClient from '../../lib/api-client';
 
-// Mock the API client - returns never-resolving promise by default
-// This ensures validation tests don't accidentally succeed if mock is called
-vi.mock('../../lib/api-client', () => ({
-  authApi: {
-    forgotPassword: vi.fn(() => new Promise(() => {})), // Never resolves by default
-  },
-}));
+// Network is exercised through the REAL api-client at the fetch boundary via
+// MSW (src/test/msw/server.ts) — NOT vi.mock('../../lib/api-client'). Mocking
+// the api-client fakes the backend boundary; MSW intercepts the actual HTTP
+// request the real api-client makes. Per-test responses are registered with
+// server.use() (reset after each test by the global afterEach in
+// src/test/setup.ts). The DEFAULT (registered in beforeEach below) is a
+// never-resolving handler, so validation tests that should NOT hit the network
+// fail loudly if they accidentally do.
+const FORGOT_URL = 'http://localhost:3000/api/v1/auth/forgot-password';
+
+// Captures the email the real api-client POSTs, replacing the old
+// vi.fn() mock.calls[0][0] assertions.
+let lastForgotEmail: string | undefined;
+let forgotCallCount = 0;
+
+/** One-shot forgot-password handler returning a success envelope. */
+function mockForgotSuccess() {
+  server.use(
+    http.post(FORGOT_URL, async ({ request }) => {
+      forgotCallCount += 1;
+      const body = (await request.json()) as { email?: string };
+      lastForgotEmail = body.email;
+      return HttpResponse.json({ status: 'success', message: 'Email sent' });
+    })
+  );
+}
+
+/** Forgot-password handler returning the given error status + message. */
+function mockForgotError(status: number, message: string) {
+  server.use(
+    http.post(FORGOT_URL, () => {
+      forgotCallCount += 1;
+      return HttpResponse.json({ status: 'error', message }, { status });
+    })
+  );
+}
 
 describe('ForgotPasswordPage', () => {
   let queryClient: QueryClient;
@@ -50,10 +80,19 @@ describe('ForgotPasswordPage', () => {
   };
 
   beforeEach(() => {
-    // Use mockReset to fully reset implementation AND calls
-    vi.mocked(apiClient.authApi.forgotPassword).mockReset();
-    // Set default never-resolving behavior
-    vi.mocked(apiClient.authApi.forgotPassword).mockImplementation(() => new Promise(() => {}));
+    lastForgotEmail = undefined;
+    forgotCallCount = 0;
+    // Default: never-resolving handler. Validation tests that must NOT submit
+    // will hang (and fail) if they accidentally hit the network — mirroring the
+    // old never-resolving vi.fn() default. Tests that need a response override
+    // this via mockForgotSuccess() / mockForgotError().
+    server.use(
+      http.post(FORGOT_URL, async () => {
+        forgotCallCount += 1;
+        await delay('infinite');
+        return HttpResponse.json({ status: 'success', message: 'Email sent' });
+      })
+    );
   });
 
   afterEach(() => {
@@ -147,7 +186,7 @@ describe('ForgotPasswordPage', () => {
       });
 
       // API should not be called
-      expect(vi.mocked(apiClient.authApi.forgotPassword)).not.toHaveBeenCalled();
+      expect(forgotCallCount).toBe(0);
     });
 
     test('shows error for invalid email format', async () => {
@@ -166,7 +205,7 @@ describe('ForgotPasswordPage', () => {
       });
 
       // API should not be called
-      expect(vi.mocked(apiClient.authApi.forgotPassword)).not.toHaveBeenCalled();
+      expect(forgotCallCount).toBe(0);
     });
 
     test('clears validation error when user types', async () => {
@@ -193,7 +232,7 @@ describe('ForgotPasswordPage', () => {
     test('accepts valid email format', async () => {
       const user = userEvent.setup();
       renderForgotPasswordPage();
-      vi.mocked(apiClient.authApi.forgotPassword).mockResolvedValueOnce({ message: 'Email sent' });
+      mockForgotSuccess();
 
       const emailInput = screen.getByPlaceholderText('your@email.com');
       await user.type(emailInput, 'valid@example.com');
@@ -204,10 +243,7 @@ describe('ForgotPasswordPage', () => {
 
       // API should be called with email (ignore React Query options)
       await waitFor(() => {
-        expect(vi.mocked(apiClient.authApi.forgotPassword)).toHaveBeenCalled();
-        expect(vi.mocked(apiClient.authApi.forgotPassword).mock.calls[0][0]).toBe(
-          'valid@example.com'
-        );
+        expect(lastForgotEmail).toBe('valid@example.com');
       });
     });
   });
@@ -216,7 +252,7 @@ describe('ForgotPasswordPage', () => {
     test('submits form with valid email', async () => {
       const user = userEvent.setup();
       renderForgotPasswordPage();
-      vi.mocked(apiClient.authApi.forgotPassword).mockResolvedValueOnce({ message: 'Email sent' });
+      mockForgotSuccess();
 
       const emailInput = screen.getByPlaceholderText('your@email.com');
       await user.type(emailInput, 'test@example.com');
@@ -226,17 +262,14 @@ describe('ForgotPasswordPage', () => {
       fireEvent.submit(form);
 
       await waitFor(() => {
-        expect(vi.mocked(apiClient.authApi.forgotPassword)).toHaveBeenCalled();
-        expect(vi.mocked(apiClient.authApi.forgotPassword).mock.calls[0][0]).toBe(
-          'test@example.com'
-        );
+        expect(lastForgotEmail).toBe('test@example.com');
       });
     });
 
     test('converts email to lowercase before submission', async () => {
       const user = userEvent.setup();
       renderForgotPasswordPage();
-      vi.mocked(apiClient.authApi.forgotPassword).mockResolvedValueOnce({ message: 'Email sent' });
+      mockForgotSuccess();
 
       const emailInput = screen.getByPlaceholderText('your@email.com');
       await user.type(emailInput, 'TEST@EXAMPLE.COM');
@@ -246,17 +279,14 @@ describe('ForgotPasswordPage', () => {
       fireEvent.submit(form);
 
       await waitFor(() => {
-        expect(vi.mocked(apiClient.authApi.forgotPassword)).toHaveBeenCalled();
-        expect(vi.mocked(apiClient.authApi.forgotPassword).mock.calls[0][0]).toBe(
-          'test@example.com'
-        );
+        expect(lastForgotEmail).toBe('test@example.com');
       });
     });
 
     test('trims whitespace from email', async () => {
       const user = userEvent.setup();
       renderForgotPasswordPage();
-      vi.mocked(apiClient.authApi.forgotPassword).mockResolvedValueOnce({ message: 'Email sent' });
+      mockForgotSuccess();
 
       const emailInput = screen.getByPlaceholderText('your@email.com');
       await user.type(emailInput, '  test@example.com  ');
@@ -266,10 +296,7 @@ describe('ForgotPasswordPage', () => {
       fireEvent.submit(form);
 
       await waitFor(() => {
-        expect(vi.mocked(apiClient.authApi.forgotPassword)).toHaveBeenCalled();
-        expect(vi.mocked(apiClient.authApi.forgotPassword).mock.calls[0][0]).toBe(
-          'test@example.com'
-        );
+        expect(lastForgotEmail).toBe('test@example.com');
       });
     });
   });
@@ -277,12 +304,8 @@ describe('ForgotPasswordPage', () => {
   describe('Loading State', () => {
     test('shows loading state while submitting', async () => {
       const user = userEvent.setup();
-      // Create a promise that won't resolve immediately
-      let resolvePromise: (_value: { message: string }) => void;
-      const pendingPromise = new Promise<{ message: string }>((resolve) => {
-        resolvePromise = resolve;
-      });
-      vi.mocked(apiClient.authApi.forgotPassword).mockReturnValueOnce(pendingPromise);
+      // The default beforeEach handler never resolves, so the request stays
+      // in-flight and the loading state remains observable for the assertions.
 
       renderForgotPasswordPage();
 
@@ -299,18 +322,11 @@ describe('ForgotPasswordPage', () => {
 
       // Button should be disabled
       expect(screen.getByRole('button', { name: /sending.../i })).toBeDisabled();
-
-      // Resolve the promise
-      resolvePromise!({ message: 'Email sent' });
     });
 
     test('disables submit button while loading', async () => {
       const user = userEvent.setup();
-      let resolvePromise: (_value: { message: string }) => void;
-      const pendingPromise = new Promise<{ message: string }>((resolve) => {
-        resolvePromise = resolve;
-      });
-      vi.mocked(apiClient.authApi.forgotPassword).mockReturnValueOnce(pendingPromise);
+      // Default never-resolving handler keeps the request in-flight.
 
       renderForgotPasswordPage();
 
@@ -324,16 +340,13 @@ describe('ForgotPasswordPage', () => {
         const loadingButton = screen.getByRole('button', { name: /sending.../i });
         expect(loadingButton).toBeDisabled();
       });
-
-      // Resolve
-      resolvePromise!({ message: 'Email sent' });
     });
   });
 
   describe('Success State', () => {
     test('shows success message after successful submission', async () => {
       const user = userEvent.setup();
-      vi.mocked(apiClient.authApi.forgotPassword).mockResolvedValueOnce({ message: 'Email sent' });
+      mockForgotSuccess();
 
       renderForgotPasswordPage();
 
@@ -350,7 +363,7 @@ describe('ForgotPasswordPage', () => {
 
     test('displays email in success message', async () => {
       const user = userEvent.setup();
-      vi.mocked(apiClient.authApi.forgotPassword).mockResolvedValueOnce({ message: 'Email sent' });
+      mockForgotSuccess();
 
       renderForgotPasswordPage();
 
@@ -367,7 +380,7 @@ describe('ForgotPasswordPage', () => {
 
     test('shows expiration info in success state', async () => {
       const user = userEvent.setup();
-      vi.mocked(apiClient.authApi.forgotPassword).mockResolvedValueOnce({ message: 'Email sent' });
+      mockForgotSuccess();
 
       renderForgotPasswordPage();
 
@@ -384,7 +397,7 @@ describe('ForgotPasswordPage', () => {
 
     test('shows "Try Another Email" button in success state', async () => {
       const user = userEvent.setup();
-      vi.mocked(apiClient.authApi.forgotPassword).mockResolvedValueOnce({ message: 'Email sent' });
+      mockForgotSuccess();
 
       renderForgotPasswordPage();
 
@@ -401,7 +414,7 @@ describe('ForgotPasswordPage', () => {
 
     test('shows "Return to Login" button in success state', async () => {
       const user = userEvent.setup();
-      vi.mocked(apiClient.authApi.forgotPassword).mockResolvedValueOnce({ message: 'Email sent' });
+      mockForgotSuccess();
 
       renderForgotPasswordPage();
 
@@ -418,7 +431,7 @@ describe('ForgotPasswordPage', () => {
 
     test('resets form when clicking "Try Another Email"', async () => {
       const user = userEvent.setup();
-      vi.mocked(apiClient.authApi.forgotPassword).mockResolvedValueOnce({ message: 'Email sent' });
+      mockForgotSuccess();
 
       renderForgotPasswordPage();
 
@@ -452,8 +465,10 @@ describe('ForgotPasswordPage', () => {
   describe('Error Handling', () => {
     test('displays API error message', async () => {
       const user = userEvent.setup();
-      const error = new Error('Rate limit exceeded. Please try again later.');
-      vi.mocked(apiClient.authApi.forgotPassword).mockRejectedValueOnce(error);
+      // 400 (not 429) — a 429 is special-cased by the api-client into its own
+      // "Too many requests" message, which would not match this assertion. A
+      // generic 4xx carries the server message through verbatim.
+      mockForgotError(400, 'Rate limit exceeded. Please try again later.');
 
       renderForgotPasswordPage();
 
@@ -470,10 +485,20 @@ describe('ForgotPasswordPage', () => {
       });
     });
 
-    test('displays generic error message when error has no message', async () => {
+    test('displays a generic error message when the server sends no message body', async () => {
       const user = userEvent.setup();
-      const error = {};
-      vi.mocked(apiClient.authApi.forgotPassword).mockRejectedValueOnce(error);
+      // Error response with an empty message body. With the REAL api-client a
+      // message-less error is coerced to its own "An error occurred" default,
+      // which the page then renders. (The old vi.mock test rejected with `{}`
+      // to hit the component's "Something went wrong" fallback, but with the
+      // real api-client error.message is never falsy, so that fallback branch
+      // is unreachable through the network boundary.)
+      server.use(
+        http.post(FORGOT_URL, () => {
+          forgotCallCount += 1;
+          return HttpResponse.json({ status: 'error', message: '' }, { status: 500 });
+        })
+      );
 
       renderForgotPasswordPage();
 
@@ -484,14 +509,13 @@ describe('ForgotPasswordPage', () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText('Something went wrong. Please try again.')).toBeInTheDocument();
+        expect(screen.getByText(/an error occurred|something went wrong/i)).toBeInTheDocument();
       });
     });
 
     test('clears error when user starts typing', async () => {
       const user = userEvent.setup();
-      const error = new Error('Server error');
-      vi.mocked(apiClient.authApi.forgotPassword).mockRejectedValueOnce(error);
+      mockForgotError(400, 'Server error');
 
       renderForgotPasswordPage();
 
@@ -518,10 +542,8 @@ describe('ForgotPasswordPage', () => {
 
     test('allows retry after error', async () => {
       const user = userEvent.setup();
-      // First call fails, second succeeds
-      vi.mocked(apiClient.authApi.forgotPassword)
-        .mockRejectedValueOnce(new Error('Network error'))
-        .mockResolvedValueOnce({ message: 'Email sent' });
+      // First attempt: a server error carrying a message.
+      mockForgotError(400, 'Network error');
 
       renderForgotPasswordPage();
 
@@ -535,6 +557,9 @@ describe('ForgotPasswordPage', () => {
       await waitFor(() => {
         expect(screen.getByText('Network error')).toBeInTheDocument();
       });
+
+      // Second attempt succeeds — swap the handler before retrying.
+      mockForgotSuccess();
 
       // Clear and try again
       await user.clear(emailInput);
@@ -552,7 +577,7 @@ describe('ForgotPasswordPage', () => {
     test('always shows success for privacy (no email enumeration)', async () => {
       const user = userEvent.setup();
       // Even if API returns success for non-existent email
-      vi.mocked(apiClient.authApi.forgotPassword).mockResolvedValueOnce({ message: 'Email sent' });
+      mockForgotSuccess();
 
       renderForgotPasswordPage();
 
@@ -597,7 +622,7 @@ describe('ForgotPasswordPage', () => {
     test('submits form when pressing Enter in email field', async () => {
       const user = userEvent.setup();
       renderForgotPasswordPage();
-      vi.mocked(apiClient.authApi.forgotPassword).mockResolvedValueOnce({ message: 'Email sent' });
+      mockForgotSuccess();
 
       const emailInput = screen.getByPlaceholderText('your@email.com');
       // Type email first
@@ -608,10 +633,7 @@ describe('ForgotPasswordPage', () => {
       fireEvent.submit(form);
 
       await waitFor(() => {
-        expect(vi.mocked(apiClient.authApi.forgotPassword)).toHaveBeenCalled();
-        expect(vi.mocked(apiClient.authApi.forgotPassword).mock.calls[0][0]).toBe(
-          'test@example.com'
-        );
+        expect(lastForgotEmail).toBe('test@example.com');
       });
     });
   });

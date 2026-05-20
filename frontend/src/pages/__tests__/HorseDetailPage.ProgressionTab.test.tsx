@@ -16,8 +16,31 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, MockAuthProvider } from '../../test/utils';
 import userEvent from '@testing-library/user-event';
+import { http, HttpResponse, delay } from 'msw';
+import { server } from '@/test/msw/server';
 import HorseDetailPage from '../HorseDetailPage';
-import { horsesApi } from '@/lib/api-client';
+
+// Network is exercised through the REAL api-client (horsesApi.*) at the fetch
+// boundary via MSW (src/test/msw/server.ts) — NOT vi.mock('@/lib/api-client').
+// Mocking horsesApi fakes the backend boundary so the test passes even when the
+// real API contract is broken. MSW intercepts the actual HTTP requests the real
+// horsesApi methods make. Per-endpoint responses + call counts are managed by
+// the helpers below; default handlers are installed in beforeEach and reset by
+// the global afterEach in src/test/setup.ts. Full real-network coverage of the
+// horse progression tab lives in Playwright E2E
+// (tests/e2e/celestial-night-features.spec.ts and horse-detail-coat-genetics.spec.ts).
+const BASE = 'http://localhost:3000';
+const horseUrl = (suffix = '') => `${BASE}/api/v1/horses/:id${suffix}`;
+
+// Call counters replacing the old vi.fn() toHaveBeenCalled* assertions. Keyed by
+// logical endpoint so a test can assert "getXP was called once" etc.
+const calls: Record<string, number> = {};
+function resetCalls() {
+  for (const k of Object.keys(calls)) delete calls[k];
+}
+function bump(key: string) {
+  calls[key] = (calls[key] ?? 0) + 1;
+}
 
 // Mock Chart.js
 vi.mock('react-chartjs-2', () => ({
@@ -52,27 +75,6 @@ HTMLCanvasElement.prototype.getContext = vi.fn(() => ({
   rect: vi.fn(),
   clip: vi.fn(),
 })) as any;
-
-// Mock api-client module
-// Default mocks return empty resolved promises, overridden in beforeEach
-vi.mock('@/lib/api-client', () => ({
-  horsesApi: {
-    get: vi.fn().mockResolvedValue({}),
-    getXP: vi.fn().mockResolvedValue({}),
-    getXPHistory: vi.fn().mockResolvedValue({}),
-    getAge: vi.fn().mockResolvedValue({}),
-    getStats: vi.fn().mockResolvedValue({}),
-    getProgression: vi.fn().mockResolvedValue({}),
-    getStatHistory: vi.fn().mockResolvedValue({}),
-    getRecentGains: vi.fn().mockResolvedValue({}),
-    getTrainingHistory: vi.fn().mockResolvedValue({}),
-  },
-  apiClient: {},
-  trainingApi: {},
-  breedingApi: {},
-  breedingPredictionApi: {},
-  authApi: {},
-}));
 
 // Mock genetics hooks
 vi.mock('../hooks/useHorseGenetics', () => ({
@@ -134,37 +136,6 @@ const mockProgression = {
   totalXP: 12450,
   progressPercentage: 49,
   recentLevelUps: [{ level: 5, timestamp: '2025-12-01T10:00:00Z', xpGained: 1500 }],
-};
-
-const mockStatHistory = {
-  horseId: 1,
-  horseName: 'Thunder',
-  timeRange: '30d',
-  statData: [
-    {
-      timestamp: '2025-12-01T00:00:00Z',
-      speed: 85,
-      stamina: 78,
-      agility: 82,
-      strength: 75,
-      intelligence: 70,
-      temperament: 80,
-    },
-  ],
-};
-
-const mockRecentGains = {
-  horseId: 1,
-  horseName: 'Thunder',
-  days: 30,
-  gains: [
-    {
-      stat: 'speed',
-      change: 5,
-      percentage: 6.25,
-      timestamp: '2025-12-01T10:00:00Z',
-    },
-  ],
 };
 
 const mockXP = {
@@ -296,25 +267,71 @@ const createWrapper = () => {
   );
 };
 
+// ── MSW handler installers ───────────────────────────────────────────────────
+// Each returns a JSON envelope { status, data } so the real api-client unwraps
+// `.data`. `:id` matches any horse id; query strings (e.g. ?t=) are ignored by
+// MSW path matching. `once: true` lets a per-test handler take precedence for a
+// single request and then fall through to the default installed in beforeEach.
+
+type HandlerOpts = { once?: boolean; delayMs?: number };
+
+function ok(key: string, data: unknown, opts: HandlerOpts = {}) {
+  return async () => {
+    bump(key);
+    if (opts.delayMs) await delay(opts.delayMs);
+    return HttpResponse.json({ status: 'success', data });
+  };
+}
+
+function fail(key: string, message: string, status = 500) {
+  return () => {
+    bump(key);
+    return HttpResponse.json({ status: 'error', message }, { status });
+  };
+}
+
+function useHorseGet(handler: ReturnType<typeof ok> | ReturnType<typeof fail>, once = false) {
+  server.use(http.get(horseUrl(), handler, once ? { once: true } : undefined));
+}
+function useGetXP(handler: ReturnType<typeof ok> | ReturnType<typeof fail>, once = false) {
+  server.use(http.get(horseUrl('/xp'), handler, once ? { once: true } : undefined));
+}
+function useGetXPHistory(handler: ReturnType<typeof ok> | ReturnType<typeof fail>, once = false) {
+  server.use(http.get(horseUrl('/xp-history'), handler, once ? { once: true } : undefined));
+}
+function useGetAge(handler: ReturnType<typeof ok> | ReturnType<typeof fail>, once = false) {
+  server.use(http.get(horseUrl('/age'), handler, once ? { once: true } : undefined));
+}
+function useGetStats(handler: ReturnType<typeof ok> | ReturnType<typeof fail>, once = false) {
+  server.use(http.get(horseUrl('/stats'), handler, once ? { once: true } : undefined));
+}
+function useGetTrainingHistory(
+  handler: ReturnType<typeof ok> | ReturnType<typeof fail>,
+  once = false
+) {
+  server.use(http.get(horseUrl('/training-history'), handler, once ? { once: true } : undefined));
+}
+
+/** Install the happy-path default handlers for every endpoint this tab uses. */
+function installDefaultHandlers() {
+  useHorseGet(ok('get', mockHorse));
+  useGetXP(ok('getXP', mockXP));
+  useGetXPHistory(ok('getXPHistory', mockXPHistory));
+  useGetAge(ok('getAge', mockHorseAge));
+  useGetStats(ok('getStats', mockHorseStats));
+  useGetTrainingHistory(ok('getTrainingHistory', mockTrainingHistory));
+  // ScoreProgressionPanel reads training-history & stats which are covered above.
+}
+
 describe('HorseDetailPage - Progression Tab', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    global.fetch = vi.fn(() =>
-      Promise.resolve({
-        ok: true,
-        json: async () => ({ data: mockHorse }),
-      } as Response)
-    );
-
-    // Configure mocked API methods - React Query hooks will call these
-    vi.mocked(horsesApi.get).mockImplementation(() => Promise.resolve(mockHorse as any));
-    vi.mocked(horsesApi.getXP).mockImplementation(() => Promise.resolve(mockXP));
-    vi.mocked(horsesApi.getXPHistory).mockImplementation(() => Promise.resolve(mockXPHistory));
-    vi.mocked(horsesApi.getAge).mockImplementation(() => Promise.resolve(mockHorseAge));
-    vi.mocked(horsesApi.getStats).mockImplementation(() => Promise.resolve(mockHorseStats));
-    vi.mocked(horsesApi.getTrainingHistory).mockImplementation(() =>
-      Promise.resolve(mockTrainingHistory as any)
-    );
+    resetCalls();
+    // Default happy-path handlers for all endpoints this tab consumes. Tests
+    // that need a different response for one endpoint install a higher-priority
+    // (often once:true) handler BEFORE rendering — MSW resolves the most recent
+    // matching handler first.
+    installDefaultHandlers();
   });
 
   describe('Tab Navigation', () => {
@@ -403,13 +420,13 @@ describe('HorseDetailPage - Progression Tab', () => {
       // Verify all API calls were made
       await waitFor(() => {
         // XPProgressBar uses useHorseXP
-        expect(horsesApi.getXP).toHaveBeenCalledWith(1);
+        expect(calls.getXP).toBeGreaterThan(0);
         // StatProgressionChart and RecentGains use useHorseXPHistory
-        expect(horsesApi.getXPHistory).toHaveBeenCalled();
+        expect(calls.getXPHistory).toBeGreaterThan(0);
         // AgeUpCounter uses useHorseAge
-        expect(horsesApi.getAge).toHaveBeenCalledWith(1);
+        expect(calls.getAge).toBeGreaterThan(0);
         // TrainingRecommendations uses useHorseStats
-        expect(horsesApi.getStats).toHaveBeenCalledWith(1);
+        expect(calls.getStats).toBeGreaterThan(0);
       });
     });
 
@@ -475,7 +492,7 @@ describe('HorseDetailPage - Progression Tab', () => {
       await waitFor(
         () => {
           // RecentGains uses useHorseXPHistory which calls getXPHistory
-          expect(horsesApi.getXPHistory).toHaveBeenCalled();
+          expect(calls.getXPHistory).toBeGreaterThan(0);
 
           // Component should display XP event data (not stat names)
           expect(screen.getByText(/Training session completed/i)).toBeInTheDocument();
@@ -521,7 +538,7 @@ describe('HorseDetailPage - Progression Tab', () => {
       await waitFor(
         () => {
           // Check that API was called
-          expect(horsesApi.getStats).toHaveBeenCalledWith(1);
+          expect(calls.getStats).toBeGreaterThan(0);
 
           // Should show recommendations for stats below potential
           const allStaminaTexts = screen.queryAllByText(/stamina/i);
@@ -536,14 +553,9 @@ describe('HorseDetailPage - Progression Tab', () => {
     it('should show loading skeleton while fetching progression data', async () => {
       const user = userEvent.setup();
 
-      // Delay API responses
-      vi.mocked(horsesApi.getXP).mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve(mockXP), 100))
-      );
-      vi.mocked(horsesApi.getXPHistory).mockResolvedValue(mockXPHistory);
-      vi.mocked(horsesApi.getXPHistory).mockResolvedValue(mockXPHistory);
-      vi.mocked(horsesApi.getAge).mockResolvedValue(mockHorseAge);
-      vi.mocked(horsesApi.getStats).mockResolvedValue(mockHorseStats);
+      // Delay the XP response so the loading state is observable. once:true so
+      // it applies to the first request, then the default handler takes over.
+      useGetXP(ok('getXP', mockXP, { delayMs: 100 }), true);
 
       render(<HorseDetailPage />, { wrapper: createWrapper() });
 
@@ -571,12 +583,9 @@ describe('HorseDetailPage - Progression Tab', () => {
       // Delay one specific API response to test independent loading states.
       // 800ms gives the preceding waitFor calls time to complete before the
       // delay expires, preventing the race that caused flakiness with 100ms.
-      vi.mocked(horsesApi.getXP).mockResolvedValue(mockXP);
-      vi.mocked(horsesApi.getXPHistory).mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve(mockXPHistory), 800))
-      );
-      vi.mocked(horsesApi.getAge).mockResolvedValue(mockHorseAge);
-      vi.mocked(horsesApi.getStats).mockResolvedValue(mockHorseStats);
+      // once:true so only the first request is delayed (the chart + RecentGains
+      // both call getXPHistory; the delayed one drives the loading assertion).
+      useGetXPHistory(ok('getXPHistory', mockXPHistory, { delayMs: 800 }), true);
 
       render(<HorseDetailPage />, { wrapper: createWrapper() });
 
@@ -607,11 +616,8 @@ describe('HorseDetailPage - Progression Tab', () => {
   describe('Error Handling', () => {
     it('should display error message when progression data fails to load', async () => {
       const user = userEvent.setup();
-      vi.mocked(horsesApi.getXP).mockRejectedValue(new Error('Failed to fetch progression data'));
-      vi.mocked(horsesApi.getXPHistory).mockResolvedValue(mockXPHistory);
-      vi.mocked(horsesApi.getXPHistory).mockResolvedValue(mockXPHistory);
-      vi.mocked(horsesApi.getAge).mockResolvedValue(mockHorseAge);
-      vi.mocked(horsesApi.getStats).mockResolvedValue(mockHorseStats);
+      // getXP returns a 500 carrying the message the component surfaces.
+      useGetXP(fail('getXP', 'Failed to fetch progression data'));
 
       render(<HorseDetailPage />, { wrapper: createWrapper() });
 
@@ -628,10 +634,7 @@ describe('HorseDetailPage - Progression Tab', () => {
 
     it('should display error for stat history failure', async () => {
       const user = userEvent.setup();
-      vi.mocked(horsesApi.getXP).mockResolvedValue(mockXP);
-      vi.mocked(horsesApi.getXPHistory).mockRejectedValue(new Error('Failed to fetch XP history'));
-      vi.mocked(horsesApi.getAge).mockResolvedValue(mockHorseAge);
-      vi.mocked(horsesApi.getStats).mockResolvedValue(mockHorseStats);
+      useGetXPHistory(fail('getXPHistory', 'Failed to fetch XP history'));
 
       render(<HorseDetailPage />, { wrapper: createWrapper() });
 
@@ -650,11 +653,8 @@ describe('HorseDetailPage - Progression Tab', () => {
 
     it('should handle partial data failures gracefully', async () => {
       const user = userEvent.setup();
-      // Some APIs succeed, one fails
-      vi.mocked(horsesApi.getXP).mockResolvedValue(mockXP);
-      vi.mocked(horsesApi.getXPHistory).mockRejectedValue(new Error('Failed to fetch XP history'));
-      vi.mocked(horsesApi.getAge).mockResolvedValue(mockHorseAge);
-      vi.mocked(horsesApi.getStats).mockResolvedValue(mockHorseStats);
+      // Some endpoints succeed (defaults), one fails: getXPHistory → 500.
+      useGetXPHistory(fail('getXPHistory', 'Failed to fetch XP history'));
 
       render(<HorseDetailPage />, { wrapper: createWrapper() });
 
@@ -677,17 +677,9 @@ describe('HorseDetailPage - Progression Tab', () => {
 
     it('should provide retry button for failed data fetches', async () => {
       const user = userEvent.setup();
-      let callCount = 0;
-      vi.mocked(horsesApi.getXP).mockImplementation(() => {
-        callCount++;
-        if (callCount === 1) {
-          return Promise.reject(new Error('Failed to fetch'));
-        }
-        return Promise.resolve(mockXP);
-      });
-      vi.mocked(horsesApi.getXPHistory).mockResolvedValue(mockXPHistory);
-      vi.mocked(horsesApi.getAge).mockResolvedValue(mockHorseAge);
-      vi.mocked(horsesApi.getStats).mockResolvedValue(mockHorseStats);
+      // First getXP request fails (once:true); the retry falls through to the
+      // default success handler installed in beforeEach.
+      useGetXP(fail('getXP', 'Failed to fetch'), true);
 
       render(<HorseDetailPage />, { wrapper: createWrapper() });
 
@@ -716,10 +708,6 @@ describe('HorseDetailPage - Progression Tab', () => {
   describe('Responsive Layout', () => {
     it('should render components in correct grid layout', async () => {
       const user = userEvent.setup();
-      vi.mocked(horsesApi.getXP).mockResolvedValue(mockXP);
-      vi.mocked(horsesApi.getXPHistory).mockResolvedValue(mockXPHistory);
-      vi.mocked(horsesApi.getAge).mockResolvedValue(mockHorseAge);
-      vi.mocked(horsesApi.getStats).mockResolvedValue(mockHorseStats);
 
       render(<HorseDetailPage />, { wrapper: createWrapper() });
 
@@ -760,11 +748,6 @@ describe('HorseDetailPage - Progression Tab', () => {
   describe('Data Refresh', () => {
     it('should refresh progression data when tab is switched away and back', async () => {
       const user = userEvent.setup();
-      vi.mocked(horsesApi.getXP).mockResolvedValue(mockXP);
-      vi.mocked(horsesApi.getXPHistory).mockResolvedValue(mockXPHistory);
-      vi.mocked(horsesApi.getXPHistory).mockResolvedValue(mockXPHistory);
-      vi.mocked(horsesApi.getAge).mockResolvedValue(mockHorseAge);
-      vi.mocked(horsesApi.getStats).mockResolvedValue(mockHorseStats);
 
       render(<HorseDetailPage />, { wrapper: createWrapper() });
 
@@ -791,29 +774,23 @@ describe('HorseDetailPage - Progression Tab', () => {
       });
 
       // Should use cached data (no additional API calls beyond initial fetch)
-      expect(horsesApi.getXP).toHaveBeenCalledTimes(1);
+      expect(calls.getXP).toBe(1);
     });
   });
 
   describe('Empty State', () => {
     it('should show "no data" message when no progression data exists', async () => {
       const user = userEvent.setup();
-      vi.mocked(horsesApi.getXP).mockResolvedValue({
-        ...mockProgression,
-        currentXP: 0,
-        totalXP: 0,
-        recentLevelUps: [],
-      });
-      vi.mocked(horsesApi.getXPHistory).mockResolvedValue({
-        ...mockStatHistory,
-        statData: [],
-      });
-      vi.mocked(horsesApi.getXPHistory).mockResolvedValue({
-        ...mockRecentGains,
-        gains: [],
-      });
-      vi.mocked(horsesApi.getAge).mockResolvedValue(mockHorseAge);
-      vi.mocked(horsesApi.getStats).mockResolvedValue(mockHorseStats);
+      // Empty progression + empty XP history → the chart and RecentGains render
+      // their "no data" empty states.
+      useGetXP(ok('getXP', { ...mockProgression, currentXP: 0, totalXP: 0, recentLevelUps: [] }));
+      useGetXPHistory(
+        ok('getXPHistory', {
+          events: [],
+          count: 0,
+          pagination: { limit: 10, offset: 0, hasMore: false },
+        })
+      );
 
       render(<HorseDetailPage />, { wrapper: createWrapper() });
 
@@ -834,10 +811,6 @@ describe('HorseDetailPage - Progression Tab', () => {
   describe('ScoreProgressionPanel Integration', () => {
     it('should render ScoreProgressionPanel in the Progression tab', async () => {
       const user = userEvent.setup();
-      vi.mocked(horsesApi.getXP).mockResolvedValue(mockXP);
-      vi.mocked(horsesApi.getXPHistory).mockResolvedValue(mockXPHistory);
-      vi.mocked(horsesApi.getAge).mockResolvedValue(mockHorseAge);
-      vi.mocked(horsesApi.getStats).mockResolvedValue(mockHorseStats);
 
       render(<HorseDetailPage />, { wrapper: createWrapper() });
 
@@ -855,10 +828,6 @@ describe('HorseDetailPage - Progression Tab', () => {
 
     it('should pass correct horse ID to ScoreProgressionPanel', async () => {
       const user = userEvent.setup();
-      vi.mocked(horsesApi.getXP).mockResolvedValue(mockXP);
-      vi.mocked(horsesApi.getXPHistory).mockResolvedValue(mockXPHistory);
-      vi.mocked(horsesApi.getAge).mockResolvedValue(mockHorseAge);
-      vi.mocked(horsesApi.getStats).mockResolvedValue(mockHorseStats);
 
       render(<HorseDetailPage />, { wrapper: createWrapper() });
 
@@ -881,11 +850,6 @@ describe('HorseDetailPage - Progression Tab', () => {
 
     it('should display discipline distribution section', async () => {
       const user = userEvent.setup();
-      vi.mocked(horsesApi.getXP).mockResolvedValue(mockXP);
-      vi.mocked(horsesApi.getXPHistory).mockResolvedValue(mockXPHistory);
-      vi.mocked(horsesApi.getAge).mockResolvedValue(mockHorseAge);
-      vi.mocked(horsesApi.getStats).mockResolvedValue(mockHorseStats);
-      vi.mocked(horsesApi.getTrainingHistory).mockResolvedValue(mockTrainingHistory as any);
 
       render(<HorseDetailPage />, { wrapper: createWrapper() });
 
@@ -907,11 +871,6 @@ describe('HorseDetailPage - Progression Tab', () => {
 
     it('should display score caps and bonuses information', async () => {
       const user = userEvent.setup();
-      vi.mocked(horsesApi.getXP).mockResolvedValue(mockXP);
-      vi.mocked(horsesApi.getXPHistory).mockResolvedValue(mockXPHistory);
-      vi.mocked(horsesApi.getAge).mockResolvedValue(mockHorseAge);
-      vi.mocked(horsesApi.getStats).mockResolvedValue(mockHorseStats);
-      vi.mocked(horsesApi.getTrainingHistory).mockResolvedValue(mockTrainingHistory as any);
 
       render(<HorseDetailPage />, { wrapper: createWrapper() });
 
@@ -936,10 +895,6 @@ describe('HorseDetailPage - Progression Tab', () => {
   describe('Tab Navigation - Additional Tests', () => {
     it('should maintain active tab state after content loads', async () => {
       const user = userEvent.setup();
-      vi.mocked(horsesApi.getXP).mockResolvedValue(mockXP);
-      vi.mocked(horsesApi.getXPHistory).mockResolvedValue(mockXPHistory);
-      vi.mocked(horsesApi.getAge).mockResolvedValue(mockHorseAge);
-      vi.mocked(horsesApi.getStats).mockResolvedValue(mockHorseStats);
 
       render(<HorseDetailPage />, { wrapper: createWrapper() });
 
@@ -961,10 +916,6 @@ describe('HorseDetailPage - Progression Tab', () => {
 
     it('should deselect Progression tab when switching to another tab', async () => {
       const user = userEvent.setup();
-      vi.mocked(horsesApi.getXP).mockResolvedValue(mockXP);
-      vi.mocked(horsesApi.getXPHistory).mockResolvedValue(mockXPHistory);
-      vi.mocked(horsesApi.getAge).mockResolvedValue(mockHorseAge);
-      vi.mocked(horsesApi.getStats).mockResolvedValue(mockHorseStats);
 
       render(<HorseDetailPage />, { wrapper: createWrapper() });
 
@@ -986,11 +937,6 @@ describe('HorseDetailPage - Progression Tab', () => {
 
   describe('State Management', () => {
     it('should initialize with Overview tab active by default', async () => {
-      vi.mocked(horsesApi.getXP).mockResolvedValue(mockXP);
-      vi.mocked(horsesApi.getXPHistory).mockResolvedValue(mockXPHistory);
-      vi.mocked(horsesApi.getAge).mockResolvedValue(mockHorseAge);
-      vi.mocked(horsesApi.getStats).mockResolvedValue(mockHorseStats);
-
       render(<HorseDetailPage />, { wrapper: createWrapper() });
 
       await waitFor(() => {
@@ -1008,10 +954,6 @@ describe('HorseDetailPage - Progression Tab', () => {
 
     it('should update tab state correctly when switching tabs', async () => {
       const user = userEvent.setup();
-      vi.mocked(horsesApi.getXP).mockResolvedValue(mockXP);
-      vi.mocked(horsesApi.getXPHistory).mockResolvedValue(mockXPHistory);
-      vi.mocked(horsesApi.getAge).mockResolvedValue(mockHorseAge);
-      vi.mocked(horsesApi.getStats).mockResolvedValue(mockHorseStats);
 
       render(<HorseDetailPage />, { wrapper: createWrapper() });
 
@@ -1046,10 +988,6 @@ describe('HorseDetailPage - Progression Tab', () => {
 
     it('should preserve tab state during re-renders', async () => {
       const user = userEvent.setup();
-      vi.mocked(horsesApi.getXP).mockResolvedValue(mockXP);
-      vi.mocked(horsesApi.getXPHistory).mockResolvedValue(mockXPHistory);
-      vi.mocked(horsesApi.getAge).mockResolvedValue(mockHorseAge);
-      vi.mocked(horsesApi.getStats).mockResolvedValue(mockHorseStats);
 
       const { rerender } = render(<HorseDetailPage />, { wrapper: createWrapper() });
 
@@ -1072,11 +1010,6 @@ describe('HorseDetailPage - Progression Tab', () => {
 
   describe('Accessibility', () => {
     it('should have proper ARIA roles for tab navigation', async () => {
-      vi.mocked(horsesApi.getXP).mockResolvedValue(mockXP);
-      vi.mocked(horsesApi.getXPHistory).mockResolvedValue(mockXPHistory);
-      vi.mocked(horsesApi.getAge).mockResolvedValue(mockHorseAge);
-      vi.mocked(horsesApi.getStats).mockResolvedValue(mockHorseStats);
-
       render(<HorseDetailPage />, { wrapper: createWrapper() });
 
       await waitFor(() => {
@@ -1097,10 +1030,6 @@ describe('HorseDetailPage - Progression Tab', () => {
 
     it('should have proper ARIA attributes for tab panel content', async () => {
       const user = userEvent.setup();
-      vi.mocked(horsesApi.getXP).mockResolvedValue(mockXP);
-      vi.mocked(horsesApi.getXPHistory).mockResolvedValue(mockXPHistory);
-      vi.mocked(horsesApi.getAge).mockResolvedValue(mockHorseAge);
-      vi.mocked(horsesApi.getStats).mockResolvedValue(mockHorseStats);
 
       render(<HorseDetailPage />, { wrapper: createWrapper() });
 

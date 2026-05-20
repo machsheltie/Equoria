@@ -21,12 +21,10 @@ vi.mock('@/config/betaRouteScope', async (importOriginal) => {
   };
 });
 
-// Mock API client
-vi.mock('../../lib/api-client', () => ({
-  authApi: {
-    login: vi.fn(),
-  },
-}));
+// No api-client mock: these are render-only assertions (the form is never
+// submitted), so the REAL api-client import is harmless and no network request
+// is made. Mocking the api-client here would only fake a boundary that is
+// never crossed. (Migration of Equoria-f12xy — option (a).)
 
 // Mock react-router-dom navigation hooks
 vi.mock('react-router-dom', async () => {

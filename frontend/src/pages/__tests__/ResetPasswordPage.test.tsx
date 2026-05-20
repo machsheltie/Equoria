@@ -23,15 +23,45 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from '../../test/utils';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode } from 'react';
+import { http, HttpResponse, delay } from 'msw';
+import { server } from '../../test/msw/server';
 import ResetPasswordPage from '../ResetPasswordPage';
-import * as apiClient from '../../lib/api-client';
 
-// Mock the API client
-vi.mock('../../lib/api-client', () => ({
-  authApi: {
-    resetPassword: vi.fn(() => new Promise(() => {})), // Never resolves by default
-  },
-}));
+// Network is exercised through the REAL api-client at the fetch boundary via
+// MSW (src/test/msw/server.ts) — NOT vi.mock('../../lib/api-client'). Mocking
+// the api-client fakes the backend boundary; MSW intercepts the actual HTTP
+// request the real api-client makes. Per-test responses are registered with
+// server.use() (reset after each test by the global afterEach in
+// src/test/setup.ts). The DEFAULT (registered in beforeEach below) is a
+// never-resolving handler, so validation tests that should NOT submit fail
+// loudly if they accidentally hit the network.
+const RESET_URL = 'http://localhost:3000/api/v1/auth/reset-password';
+
+// Captures the body the real api-client POSTs ({ token, newPassword }) +
+// counts real calls, replacing the old vi.fn() mock.calls assertions.
+let lastResetBody: { token?: string; newPassword?: string } | null = null;
+let resetCallCount = 0;
+
+/** One-shot reset-password handler returning a success envelope. */
+function mockResetSuccess() {
+  server.use(
+    http.post(RESET_URL, async ({ request }) => {
+      resetCallCount += 1;
+      lastResetBody = (await request.json()) as { token?: string; newPassword?: string };
+      return HttpResponse.json({ status: 'success', message: 'Password reset successful' });
+    })
+  );
+}
+
+/** Reset-password handler returning the given error status + message. */
+function mockResetError(status: number, message: string) {
+  server.use(
+    http.post(RESET_URL, () => {
+      resetCallCount += 1;
+      return HttpResponse.json({ status: 'error', message }, { status });
+    })
+  );
+}
 
 // Mock useNavigate
 const mockNavigate = vi.fn();
@@ -67,9 +97,19 @@ describe('ResetPasswordPage', () => {
   };
 
   beforeEach(() => {
-    vi.mocked(apiClient.authApi.resetPassword).mockReset();
-    vi.mocked(apiClient.authApi.resetPassword).mockImplementation(() => new Promise(() => {}));
+    lastResetBody = null;
+    resetCallCount = 0;
     mockNavigate.mockReset();
+    // Default: never-resolving handler so a test that must NOT submit will hang
+    // (and fail) if it accidentally hits the network. Tests needing a response
+    // override via mockResetSuccess() / mockResetError().
+    server.use(
+      http.post(RESET_URL, async () => {
+        resetCallCount += 1;
+        await delay('infinite');
+        return HttpResponse.json({ status: 'success', message: 'Password reset successful' });
+      })
+    );
   });
 
   afterEach(() => {
@@ -411,7 +451,7 @@ describe('ResetPasswordPage', () => {
       fireEvent.submit(form);
 
       await waitFor(() => {
-        expect(vi.mocked(apiClient.authApi.resetPassword)).not.toHaveBeenCalled();
+        expect(resetCallCount).toBe(0);
       });
     });
   });
@@ -420,9 +460,7 @@ describe('ResetPasswordPage', () => {
     test('submits form with valid passwords', async () => {
       const user = userEvent.setup();
       renderResetPasswordPage('test-token-123');
-      vi.mocked(apiClient.authApi.resetPassword).mockResolvedValueOnce({
-        message: 'Password reset',
-      });
+      mockResetSuccess();
 
       const passwordInput = screen.getByPlaceholderText('Create a new password');
       const confirmInput = screen.getByPlaceholderText('Confirm your new password');
@@ -434,20 +472,17 @@ describe('ResetPasswordPage', () => {
       fireEvent.submit(form);
 
       await waitFor(() => {
-        expect(vi.mocked(apiClient.authApi.resetPassword)).toHaveBeenCalled();
-        expect(vi.mocked(apiClient.authApi.resetPassword).mock.calls[0]).toEqual([
-          'test-token-123',
-          'ValidPass123!',
-        ]);
+        expect(lastResetBody).not.toBeNull();
       });
+      // The real api-client serializes resetPassword(token, newPassword) into a
+      // { token, newPassword } JSON body.
+      expect(lastResetBody).toEqual({ token: 'test-token-123', newPassword: 'ValidPass123!' });
     });
 
     test('sends token from URL to API', async () => {
       const user = userEvent.setup();
       renderResetPasswordPage('my-unique-token');
-      vi.mocked(apiClient.authApi.resetPassword).mockResolvedValueOnce({
-        message: 'Password reset',
-      });
+      mockResetSuccess();
 
       const passwordInput = screen.getByPlaceholderText('Create a new password');
       const confirmInput = screen.getByPlaceholderText('Confirm your new password');
@@ -459,19 +494,17 @@ describe('ResetPasswordPage', () => {
       fireEvent.submit(form);
 
       await waitFor(() => {
-        expect(vi.mocked(apiClient.authApi.resetPassword).mock.calls[0][0]).toBe('my-unique-token');
+        expect(lastResetBody).not.toBeNull();
       });
+      expect(lastResetBody?.token).toBe('my-unique-token');
     });
   });
 
   describe('Loading State', () => {
     test('shows loading state while submitting', async () => {
       const user = userEvent.setup();
-      let resolvePromise: (_value: { message: string }) => void;
-      const pendingPromise = new Promise<{ message: string }>((resolve) => {
-        resolvePromise = resolve;
-      });
-      vi.mocked(apiClient.authApi.resetPassword).mockReturnValueOnce(pendingPromise);
+      // The default beforeEach handler never resolves, so the request stays
+      // in-flight and the loading state remains observable.
 
       renderResetPasswordPage('valid-token');
 
@@ -489,17 +522,13 @@ describe('ResetPasswordPage', () => {
       });
 
       expect(screen.getByRole('button', { name: /resetting.../i })).toBeDisabled();
-
-      resolvePromise!({ message: 'Password reset' });
     });
   });
 
   describe('Success State', () => {
     test('shows success message after successful reset', async () => {
       const user = userEvent.setup();
-      vi.mocked(apiClient.authApi.resetPassword).mockResolvedValueOnce({
-        message: 'Password reset',
-      });
+      mockResetSuccess();
 
       renderResetPasswordPage('valid-token');
 
@@ -519,9 +548,7 @@ describe('ResetPasswordPage', () => {
 
     test('shows confirmation text in success state', async () => {
       const user = userEvent.setup();
-      vi.mocked(apiClient.authApi.resetPassword).mockResolvedValueOnce({
-        message: 'Password reset',
-      });
+      mockResetSuccess();
 
       renderResetPasswordPage('valid-token');
 
@@ -543,9 +570,7 @@ describe('ResetPasswordPage', () => {
 
     test('shows "Go to Login" button in success state', async () => {
       const user = userEvent.setup();
-      vi.mocked(apiClient.authApi.resetPassword).mockResolvedValueOnce({
-        message: 'Password reset',
-      });
+      mockResetSuccess();
 
       renderResetPasswordPage('valid-token');
 
@@ -565,9 +590,7 @@ describe('ResetPasswordPage', () => {
 
     test('navigates to login when clicking "Go to Login"', async () => {
       const user = userEvent.setup();
-      vi.mocked(apiClient.authApi.resetPassword).mockResolvedValueOnce({
-        message: 'Password reset',
-      });
+      mockResetSuccess();
 
       renderResetPasswordPage('valid-token');
 
@@ -594,8 +617,7 @@ describe('ResetPasswordPage', () => {
   describe('Error Handling', () => {
     test('displays API error message', async () => {
       const user = userEvent.setup();
-      const error = new Error('Invalid or expired token');
-      vi.mocked(apiClient.authApi.resetPassword).mockRejectedValueOnce(error);
+      mockResetError(400, 'Invalid or expired token');
 
       renderResetPasswordPage('expired-token');
 
@@ -613,10 +635,20 @@ describe('ResetPasswordPage', () => {
       });
     });
 
-    test('displays generic error message when error has no message', async () => {
+    test('displays a generic error message when the server sends no message body', async () => {
       const user = userEvent.setup();
-      const error = {};
-      vi.mocked(apiClient.authApi.resetPassword).mockRejectedValueOnce(error);
+      // Error response with an empty message body. With the REAL api-client a
+      // message-less error is coerced to its own "An error occurred" default,
+      // which the page renders. (The old vi.mock test rejected with `{}` to hit
+      // the component's "Failed to reset password..." fallback, but with the
+      // real api-client error.message is never falsy, so that branch is
+      // unreachable through the network boundary.)
+      server.use(
+        http.post(RESET_URL, () => {
+          resetCallCount += 1;
+          return HttpResponse.json({ status: 'error', message: '' }, { status: 500 });
+        })
+      );
 
       renderResetPasswordPage('valid-token');
 
@@ -630,17 +662,14 @@ describe('ResetPasswordPage', () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(
-          screen.getByText('Failed to reset password. The link may have expired.')
-        ).toBeInTheDocument();
+        expect(screen.getByText(/an error occurred|failed to reset password/i)).toBeInTheDocument();
       });
     });
 
     test('allows retry after error', async () => {
       const user = userEvent.setup();
-      vi.mocked(apiClient.authApi.resetPassword)
-        .mockRejectedValueOnce(new Error('Network error'))
-        .mockResolvedValueOnce({ message: 'Password reset' });
+      // First attempt: a server error carrying a message.
+      mockResetError(400, 'Network error');
 
       renderResetPasswordPage('valid-token');
 
@@ -656,6 +685,9 @@ describe('ResetPasswordPage', () => {
       await waitFor(() => {
         expect(screen.getByText('Network error')).toBeInTheDocument();
       });
+
+      // Second attempt succeeds — swap the handler before retrying.
+      mockResetSuccess();
 
       // Retry
       await user.click(submitButton);

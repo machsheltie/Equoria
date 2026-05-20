@@ -14,6 +14,8 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React, { ReactNode } from 'react';
+import { http, HttpResponse } from 'msw';
+import { server } from '@/test/msw/server';
 import { TestRouter } from '@/test/utils';
 
 vi.mock('@/components/layout/PageHero', () => ({
@@ -42,15 +44,14 @@ vi.mock('@/hooks/api/useGameNotifications', () => ({
   useMarkGameNotificationsRead: () => ({ mutate: mockMarkAllReadMutate, isPending: false }),
 }));
 
-vi.mock('@/lib/api-client', async () => {
-  const actual = await vi.importActual('@/lib/api-client');
-  return {
-    ...(actual as object),
-    usersApi: {
-      search: vi.fn().mockResolvedValue({ users: [] }),
-    },
-  };
-});
+// The compose modal's recipient picker calls the REAL usersApi.search, which
+// GETs /api/v1/users/search?username=... . Rather than vi.mock the api-client
+// (which would fake the backend boundary and trip the no-api-client-vi-mock
+// doctrine), intercept the actual HTTP request at the fetch boundary with MSW
+// (registered in beforeEach below). The list-data hooks above are mocked
+// because they are the component's data seam; full real-network coverage of
+// messaging lives in Playwright E2E (tests/e2e/community.spec.ts).
+const USER_SEARCH_URL = 'http://localhost:3000/api/v1/users/search';
 
 import MessagesPage from '../MessagesPage';
 
@@ -110,6 +111,11 @@ function setupDefaultMocks() {
 beforeEach(() => {
   vi.clearAllMocks();
   setupDefaultMocks();
+  // Recipient search returns no matches by default; the compose-modal test only
+  // needs the request to succeed (not error under onUnhandledRequest:'error').
+  server.use(
+    http.get(USER_SEARCH_URL, () => HttpResponse.json({ status: 'success', data: { users: [] } }))
+  );
 });
 
 describe('MessagesPage', () => {

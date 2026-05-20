@@ -20,13 +20,14 @@ import ProfilePage from '../ProfilePage';
 import * as useAuthModule from '../../hooks/useAuth';
 import * as useUserProgressModule from '../../hooks/api/useUserProgress';
 
-// Mock the API client
-vi.mock('../../lib/api-client', () => ({
-  authApi: {
-    getProfile: vi.fn(),
-    updateProfile: vi.fn(),
-  },
-}));
+// NOTE: there is no vi.mock('../../lib/api-client') here. This suite drives the
+// component entirely through its data hooks (useProfile / useUpdateProfile /
+// useActivityFeed / useUserProgress), which are mocked below. The component
+// never touches the api-client directly in these tests, so the previous
+// api-client mock was dead code that only tripped the no-api-client-vi-mock
+// doctrine rule. Mocking the hooks (the component's real seam) is the correct
+// boundary; the real network behavior of those hooks is covered by Playwright
+// E2E (tests/e2e/auth.spec.ts and friends).
 
 // Mock useProfile and useUpdateProfile hooks
 vi.mock('../../hooks/useAuth', async () => {

@@ -17,15 +17,67 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode } from 'react';
 import { TestRouter } from '@/test/utils';
+import { http, HttpResponse, delay } from 'msw';
+import { server } from '@/test/msw/server';
 import LoginPage from '../LoginPage';
-import * as apiClient from '@/lib/api-client';
 
-// Mock the API client
-vi.mock('../../lib/api-client', () => ({
-  authApi: {
-    login: vi.fn(),
-  },
-}));
+// Network is exercised through the REAL api-client at the fetch boundary via
+// MSW (src/test/msw/server.ts) — NOT vi.mock('@/lib/api-client'). Mocking the
+// api-client fakes the backend boundary so the test passes even when the real
+// API contract is broken; MSW intercepts the actual HTTP request the real
+// api-client makes, so the request shape + response handling are genuinely
+// exercised. Per-test responses are registered with server.use() (reset after
+// each test by the global afterEach in src/test/setup.ts).
+const LOGIN_URL = 'http://localhost:3000/api/v1/auth/login';
+
+// Captures the request body the real api-client POSTs, so "calls API with
+// correct data" can assert against it without mocking the api-client itself.
+let lastLoginBody: unknown = null;
+// Counts how many times the real api-client actually hit /api/v1/auth/login,
+// replacing the old vi.fn() call-count assertions.
+let loginCallCount = 0;
+
+beforeEach(() => {
+  lastLoginBody = null;
+  loginCallCount = 0;
+});
+
+/** Register a one-shot login handler returning a successful session envelope. */
+function mockLoginSuccess() {
+  server.use(
+    http.post(LOGIN_URL, async ({ request }) => {
+      loginCallCount += 1;
+      lastLoginBody = await request.json();
+      return HttpResponse.json({
+        status: 'success',
+        data: { user: { id: 1, username: 'johndoe', email: 'john@example.com' } },
+      });
+    })
+  );
+}
+
+/** Register a login handler that never resolves (in-flight / loading state). */
+function mockLoginPending() {
+  server.use(
+    http.post(LOGIN_URL, async () => {
+      loginCallCount += 1;
+      await delay('infinite');
+      return HttpResponse.json({ status: 'success', data: { user: { id: 1 } } });
+    })
+  );
+}
+
+/** Register a login handler returning the given error status + message. */
+function mockLoginError(status: number, message?: string) {
+  server.use(
+    http.post(LOGIN_URL, () => {
+      loginCallCount += 1;
+      return message
+        ? HttpResponse.json({ status: 'error', message }, { status })
+        : new HttpResponse(null, { status });
+    })
+  );
+}
 
 // Mock useNavigate and useLocation
 const mockNavigate = vi.fn();
@@ -271,10 +323,8 @@ describe('LoginPage', () => {
       const user = userEvent.setup();
       const TestWrapper = createTestWrapper();
 
-      // Mock slow API response
-      vi.mocked(apiClient.authApi.login).mockImplementation(
-        () => new Promise((resolve) => setTimeout(resolve, 1000))
-      );
+      // Slow (never-resolving) API response so the in-flight state is observable
+      mockLoginPending();
 
       render(
         <TestWrapper>
@@ -299,9 +349,7 @@ describe('LoginPage', () => {
       const user = userEvent.setup();
       const TestWrapper = createTestWrapper();
 
-      vi.mocked(apiClient.authApi.login).mockImplementation(
-        () => new Promise((resolve) => setTimeout(resolve, 1000))
-      );
+      mockLoginPending();
 
       render(
         <TestWrapper>
@@ -326,13 +374,7 @@ describe('LoginPage', () => {
       const TestWrapper = createTestWrapper();
 
       // default state already set in beforeEach; explicit here for clarity
-      vi.mocked(apiClient.authApi.login).mockResolvedValueOnce({
-        user: {
-          id: 1,
-          username: 'johndoe',
-          email: 'john@example.com',
-        },
-      });
+      mockLoginSuccess();
 
       render(
         <TestWrapper>
@@ -358,13 +400,7 @@ describe('LoginPage', () => {
 
       // Set for ALL calls during this test (re-renders on typing also call useLocation)
       mockUseLocation.mockReturnValue({ pathname: '/login', state: { from: '/stable' } });
-      vi.mocked(apiClient.authApi.login).mockResolvedValueOnce({
-        user: {
-          id: 1,
-          username: 'johndoe',
-          email: 'john@example.com',
-        },
-      });
+      mockLoginSuccess();
 
       render(
         <TestWrapper>
@@ -387,9 +423,7 @@ describe('LoginPage', () => {
       const user = userEvent.setup();
       const TestWrapper = createTestWrapper();
 
-      vi.mocked(apiClient.authApi.login).mockResolvedValueOnce({
-        user: { id: 1, username: 'johndoe', email: 'john@example.com' },
-      });
+      mockLoginSuccess();
 
       render(
         <TestWrapper>
@@ -404,12 +438,11 @@ describe('LoginPage', () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(apiClient.authApi.login).toHaveBeenCalled();
+        expect(lastLoginBody).not.toBeNull();
       });
 
-      // Verify the call arguments contain expected data
-      const mockCall = vi.mocked(apiClient.authApi.login).mock.calls[0][0];
-      expect(mockCall).toMatchObject({
+      // Verify the body the real api-client POSTed to /api/v1/auth/login
+      expect(lastLoginBody).toMatchObject({
         email: 'john@example.com',
         password: 'SecurePass123',
       });
@@ -421,10 +454,7 @@ describe('LoginPage', () => {
       const user = userEvent.setup();
       const TestWrapper = createTestWrapper();
 
-      vi.mocked(apiClient.authApi.login).mockRejectedValueOnce({
-        message: 'Invalid email or password',
-        statusCode: 401,
-      });
+      mockLoginError(401, 'Invalid email or password');
 
       render(
         <TestWrapper>
@@ -447,10 +477,7 @@ describe('LoginPage', () => {
       const user = userEvent.setup();
       const TestWrapper = createTestWrapper();
 
-      vi.mocked(apiClient.authApi.login).mockRejectedValueOnce({
-        message: 'Internal server error',
-        statusCode: 500,
-      });
+      mockLoginError(500, 'Internal server error');
 
       render(
         <TestWrapper>
@@ -473,7 +500,12 @@ describe('LoginPage', () => {
       const user = userEvent.setup();
       const TestWrapper = createTestWrapper();
 
-      vi.mocked(apiClient.authApi.login).mockRejectedValueOnce(new Error('Network error'));
+      // Simulate a real transport-level network failure (no HTTP response).
+      // The real api-client surfaces the underlying fetch error message; the
+      // component renders it in the error alert. We assert the alert is shown
+      // (a non-empty error message), which is the user-facing contract — the
+      // exact transport wording is environment-dependent and not the point.
+      server.use(http.post(LOGIN_URL, () => HttpResponse.error()));
 
       render(
         <TestWrapper>
@@ -487,16 +519,34 @@ describe('LoginPage', () => {
 
       await user.click(screen.getByRole('button', { name: /^enter$/i }));
 
+      // The api-client surfaces the transport failure as a non-empty message;
+      // since it is non-empty, the component shows it verbatim (not the
+      // literal fallback). Assert the error paragraph appears with content.
       await waitFor(() => {
-        expect(screen.getByText(/network error|login failed/i)).toBeInTheDocument();
+        const alert = document.querySelector('p.text-red-400.text-center');
+        expect(alert).toBeTruthy();
+        expect((alert?.textContent ?? '').trim().length).toBeGreaterThan(0);
       });
     });
 
-    it('displays default error message when error has no message', async () => {
+    it('displays a generic error message when the server sends no message body', async () => {
       const user = userEvent.setup();
       const TestWrapper = createTestWrapper();
 
-      vi.mocked(apiClient.authApi.login).mockRejectedValueOnce({});
+      // Error status with an empty message body. With the REAL api-client, a
+      // message-less error response is coerced to the api-client's own
+      // "An error occurred" default (see fetchWithAuth non-2xx handling), which
+      // the component then renders. (The old vi.mock test asserted the
+      // component's "Login failed" fallback, but that fallback is only reached
+      // when error.message is falsy — unreachable through the real api-client,
+      // which always supplies a non-empty message. Asserting it here would have
+      // verified a branch the real backend boundary cannot produce.)
+      server.use(
+        http.post(LOGIN_URL, () => {
+          loginCallCount += 1;
+          return HttpResponse.json({ status: 'error', message: '' }, { status: 500 });
+        })
+      );
 
       render(
         <TestWrapper>
@@ -511,7 +561,7 @@ describe('LoginPage', () => {
       await user.click(screen.getByRole('button', { name: /^enter$/i }));
 
       await waitFor(() => {
-        expect(screen.getByText(/login failed/i)).toBeInTheDocument();
+        expect(screen.getByText(/an error occurred|login failed/i)).toBeInTheDocument();
       });
     });
   });
@@ -597,18 +647,15 @@ describe('LoginPage', () => {
       await user.click(submitButton);
 
       // API should not be called
-      expect(apiClient.authApi.login).not.toHaveBeenCalled();
+      expect(loginCallCount).toBe(0);
     });
 
     it('handles rapid form submissions', async () => {
       const user = userEvent.setup();
       const TestWrapper = createTestWrapper();
 
-      let callCount = 0;
-      vi.mocked(apiClient.authApi.login).mockImplementation(() => {
-        callCount++;
-        return new Promise((resolve) => setTimeout(() => resolve({ user: { id: 1 } }), 500));
-      });
+      // Slow (pending) handler increments loginCallCount on each real request.
+      mockLoginPending();
 
       render(
         <TestWrapper>
@@ -643,7 +690,7 @@ describe('LoginPage', () => {
 
       // Should only submit once due to disabled state
       await waitFor(() => {
-        expect(callCount).toBe(1);
+        expect(loginCallCount).toBe(1);
       });
     });
 
@@ -665,7 +712,7 @@ describe('LoginPage', () => {
       await user.click(toggleButton);
 
       // API should not be called
-      expect(apiClient.authApi.login).not.toHaveBeenCalled();
+      expect(loginCallCount).toBe(0);
     });
   });
 

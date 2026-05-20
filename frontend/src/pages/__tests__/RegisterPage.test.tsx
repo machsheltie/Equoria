@@ -18,15 +18,74 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from '../../test/utils';
 import { ReactNode } from 'react';
+import { http, HttpResponse, delay } from 'msw';
+import { server } from '../../test/msw/server';
 import RegisterPage from '../RegisterPage';
-import * as apiClient from '../../lib/api-client';
 
-// Mock the API client
-vi.mock('../../lib/api-client', () => ({
-  authApi: {
-    register: vi.fn(),
-  },
-}));
+// Network is exercised through the REAL api-client at the fetch boundary via
+// MSW (src/test/msw/server.ts) — NOT vi.mock('../../lib/api-client'). Mocking
+// the api-client fakes the backend boundary so the test passes even when the
+// real API contract is broken; MSW intercepts the actual HTTP request the real
+// api-client makes. Per-test responses are registered with server.use() (reset
+// after each test by the global afterEach in src/test/setup.ts).
+const REGISTER_URL = 'http://localhost:3000/api/v1/auth/register';
+
+// Captures the body the real api-client POSTs + counts real calls, replacing
+// the old vi.fn() call assertions.
+let lastRegisterBody: unknown = null;
+let registerCallCount = 0;
+
+beforeEach(() => {
+  lastRegisterBody = null;
+  registerCallCount = 0;
+});
+
+/** One-shot register handler returning a successful user envelope. */
+function mockRegisterSuccess() {
+  server.use(
+    http.post(REGISTER_URL, async ({ request }) => {
+      registerCallCount += 1;
+      lastRegisterBody = await request.json();
+      return HttpResponse.json(
+        {
+          status: 'success',
+          data: {
+            user: {
+              id: 1,
+              username: 'johndoe',
+              email: 'john@example.com',
+              money: 500,
+              level: 1,
+              xp: 0,
+            },
+          },
+        },
+        { status: 201 }
+      );
+    })
+  );
+}
+
+/** Register handler that never resolves (in-flight / loading state). */
+function mockRegisterPending() {
+  server.use(
+    http.post(REGISTER_URL, async () => {
+      registerCallCount += 1;
+      await delay('infinite');
+      return HttpResponse.json({ status: 'success', data: { user: { id: 1 } } }, { status: 201 });
+    })
+  );
+}
+
+/** Register handler returning the given error status + message. */
+function mockRegisterError(status: number, message: string) {
+  server.use(
+    http.post(REGISTER_URL, () => {
+      registerCallCount += 1;
+      return HttpResponse.json({ status: 'error', message }, { status });
+    })
+  );
+}
 
 // Mock useNavigate
 const mockNavigate = vi.fn();
@@ -60,8 +119,6 @@ describe('RegisterPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockNavigate.mockClear();
-    // Reset API mock implementation to prevent state leakage between tests
-    vi.mocked(apiClient.authApi.register).mockReset();
   });
 
   afterEach(() => {
@@ -207,7 +264,7 @@ describe('RegisterPage', () => {
           screen.getByText(/date of birth is required|valid date|13 or older/i)
         ).toBeInTheDocument();
       });
-      expect(apiClient.authApi.register).not.toHaveBeenCalled();
+      expect(registerCallCount).toBe(0);
     });
 
     it('blocks submission and shows an error for an under-13 date of birth (COPPA)', async () => {
@@ -238,16 +295,14 @@ describe('RegisterPage', () => {
       await waitFor(() => {
         expect(screen.getByText(/13 or older/i)).toBeInTheDocument();
       });
-      expect(apiClient.authApi.register).not.toHaveBeenCalled();
+      expect(registerCallCount).toBe(0);
     });
 
     it('allows submission for a 13+ date of birth and forwards it to the API (COPPA)', async () => {
       const user = userEvent.setup();
       const TestWrapper = createTestWrapper();
 
-      vi.mocked(apiClient.authApi.register).mockResolvedValueOnce({
-        user: { id: 1, username: 'johndoe', email: 'john@example.com' },
-      });
+      mockRegisterSuccess();
 
       render(
         <TestWrapper>
@@ -272,10 +327,9 @@ describe('RegisterPage', () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(apiClient.authApi.register).toHaveBeenCalled();
+        expect(lastRegisterBody).not.toBeNull();
       });
-      const call = vi.mocked(apiClient.authApi.register).mock.calls[0][0];
-      expect(call).toMatchObject({ dateOfBirth: adultDob });
+      expect(lastRegisterBody).toMatchObject({ dateOfBirth: adultDob });
     });
 
     it('shows error for short password', async () => {
@@ -665,10 +719,8 @@ describe('RegisterPage', () => {
       const user = userEvent.setup();
       const TestWrapper = createTestWrapper();
 
-      // Mock slow API response
-      vi.mocked(apiClient.authApi.register).mockImplementation(
-        () => new Promise((resolve) => setTimeout(resolve, 1000))
-      );
+      // Slow (never-resolving) API response so the in-flight state is observable
+      mockRegisterPending();
 
       render(
         <TestWrapper>
@@ -698,9 +750,7 @@ describe('RegisterPage', () => {
       const user = userEvent.setup();
       const TestWrapper = createTestWrapper();
 
-      vi.mocked(apiClient.authApi.register).mockImplementation(
-        () => new Promise((resolve) => setTimeout(resolve, 1000))
-      );
+      mockRegisterPending();
 
       render(
         <TestWrapper>
@@ -729,13 +779,7 @@ describe('RegisterPage', () => {
       const user = userEvent.setup();
       const TestWrapper = createTestWrapper();
 
-      vi.mocked(apiClient.authApi.register).mockResolvedValueOnce({
-        user: {
-          id: 1,
-          username: 'johndoe',
-          email: 'john@example.com',
-        },
-      });
+      mockRegisterSuccess();
 
       render(
         <TestWrapper>
@@ -764,9 +808,7 @@ describe('RegisterPage', () => {
       const user = userEvent.setup();
       const TestWrapper = createTestWrapper();
 
-      vi.mocked(apiClient.authApi.register).mockResolvedValueOnce({
-        user: { id: 1, username: 'johndoe', email: 'john@example.com' },
-      });
+      mockRegisterSuccess();
 
       render(
         <TestWrapper>
@@ -787,13 +829,12 @@ describe('RegisterPage', () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        // Verify API was called
-        expect(apiClient.authApi.register).toHaveBeenCalled();
+        // Verify the real api-client actually POSTed to /api/v1/auth/register
+        expect(lastRegisterBody).not.toBeNull();
       });
 
-      // Verify the call arguments contain expected data
-      const mockCall = vi.mocked(apiClient.authApi.register).mock.calls[0][0];
-      expect(mockCall).toMatchObject({
+      // Verify the request body the real api-client sent
+      expect(lastRegisterBody).toMatchObject({
         email: 'john@example.com',
         username: 'johndoe',
         password: 'SecurePass123@',
@@ -808,10 +849,7 @@ describe('RegisterPage', () => {
       const user = userEvent.setup();
       const TestWrapper = createTestWrapper();
 
-      vi.mocked(apiClient.authApi.register).mockRejectedValueOnce({
-        message: 'User with this email already exists',
-        statusCode: 400,
-      });
+      mockRegisterError(400, 'User with this email already exists');
 
       render(
         <TestWrapper>
@@ -839,10 +877,7 @@ describe('RegisterPage', () => {
       const user = userEvent.setup();
       const TestWrapper = createTestWrapper();
 
-      vi.mocked(apiClient.authApi.register).mockRejectedValueOnce({
-        message: 'Email is already taken',
-        statusCode: 400,
-      });
+      mockRegisterError(400, 'Email is already taken');
 
       render(
         <TestWrapper>
@@ -869,10 +904,7 @@ describe('RegisterPage', () => {
       const user = userEvent.setup();
       const TestWrapper = createTestWrapper();
 
-      vi.mocked(apiClient.authApi.register).mockRejectedValueOnce({
-        message: 'Email is already in use',
-        statusCode: 400,
-      });
+      mockRegisterError(400, 'Email is already in use');
 
       render(
         <TestWrapper>
@@ -899,10 +931,7 @@ describe('RegisterPage', () => {
       const user = userEvent.setup();
       const TestWrapper = createTestWrapper();
 
-      vi.mocked(apiClient.authApi.register).mockRejectedValueOnce({
-        message: 'Username is already taken',
-        statusCode: 400,
-      });
+      mockRegisterError(400, 'Username is already taken');
 
       render(
         <TestWrapper>
@@ -929,10 +958,7 @@ describe('RegisterPage', () => {
       const user = userEvent.setup();
       const TestWrapper = createTestWrapper();
 
-      vi.mocked(apiClient.authApi.register).mockRejectedValueOnce({
-        message: 'Internal server error',
-        statusCode: 500,
-      });
+      mockRegisterError(500, 'Internal server error');
 
       render(
         <TestWrapper>
@@ -960,7 +986,11 @@ describe('RegisterPage', () => {
       const user = userEvent.setup();
       const TestWrapper = createTestWrapper();
 
-      vi.mocked(apiClient.authApi.register).mockRejectedValueOnce(new Error('Network error'));
+      // Simulate a real transport-level network failure (no HTTP response).
+      // The real api-client surfaces a non-empty error message which the
+      // component renders. Assert the error paragraph appears with content —
+      // the exact transport wording is environment-dependent.
+      server.use(http.post(REGISTER_URL, () => HttpResponse.error()));
 
       render(
         <TestWrapper>
@@ -980,7 +1010,9 @@ describe('RegisterPage', () => {
       await user.click(screen.getByRole('button', { name: /begin your journey/i }));
 
       await waitFor(() => {
-        expect(screen.getByText(/network error|registration failed/i)).toBeInTheDocument();
+        const alert = document.querySelector('p.text-red-400.text-center');
+        expect(alert).toBeTruthy();
+        expect((alert?.textContent ?? '').trim().length).toBeGreaterThan(0);
       });
     });
   });
@@ -1072,18 +1104,15 @@ describe('RegisterPage', () => {
       await user.click(submitButton);
 
       // API should not be called
-      expect(apiClient.authApi.register).not.toHaveBeenCalled();
+      expect(registerCallCount).toBe(0);
     });
 
     it('handles rapid form submissions', async () => {
       const user = userEvent.setup();
       const TestWrapper = createTestWrapper();
 
-      let callCount = 0;
-      vi.mocked(apiClient.authApi.register).mockImplementation(() => {
-        callCount++;
-        return new Promise((resolve) => setTimeout(() => resolve({ user: { id: 1 } }), 500));
-      });
+      // Slow (pending) handler increments registerCallCount on each real request.
+      mockRegisterPending();
 
       render(
         <TestWrapper>
@@ -1122,7 +1151,7 @@ describe('RegisterPage', () => {
 
       // Should only submit once due to disabled state
       await waitFor(() => {
-        expect(callCount).toBe(1);
+        expect(registerCallCount).toBe(1);
       });
     });
   });
