@@ -309,9 +309,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
       // which runs every show exactly once at closeDate (createdAt + 7d) and
       // is idempotent. We force the close window into the past and invoke the
       // real cron — this is the actual production scoring path.
-      const { executeClosedShows } = await import(
-        '../../modules/competition/shows/showController.mjs'
-      );
+      const { executeClosedShows } = await import('../../modules/competition/shows/showController.mjs');
 
       await prisma.show.update({
         where: { id: testShow.id },

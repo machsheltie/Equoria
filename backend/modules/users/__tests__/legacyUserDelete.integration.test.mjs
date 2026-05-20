@@ -39,11 +39,7 @@ import { randomBytes } from 'node:crypto';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import prisma from '../../../db/index.mjs';
-import {
-  createTestUser,
-  createTestHorse,
-  cleanupTestData,
-} from '../../../tests/helpers/testAuth.mjs';
+import { createTestUser, createTestHorse, cleanupTestData } from '../../../tests/helpers/testAuth.mjs';
 import { fetchCsrf } from '../../../tests/helpers/csrfHelper.mjs';
 
 const PASSWORD = 'TestPassword123!';
@@ -177,18 +173,12 @@ describe('INTEGRATION: legacy DELETE /api/v1/users/:id (Equoria-02nos)', () => {
     // User + owned graph gone (FK-safe cascade)
     expect(await prisma.user.findUnique({ where: { id: subject.user.id } })).toBeNull();
     expect(await prisma.horse.findUnique({ where: { id: horse.id } })).toBeNull();
-    expect(
-      await prisma.userTransaction.findMany({ where: { userId: subject.user.id } }),
-    ).toHaveLength(0);
-    expect(
-      await prisma.notification.findMany({ where: { userId: subject.user.id } }),
-    ).toHaveLength(0);
+    expect(await prisma.userTransaction.findMany({ where: { userId: subject.user.id } })).toHaveLength(0);
+    expect(await prisma.notification.findMany({ where: { userId: subject.user.id } })).toHaveLength(0);
     expect(await prisma.groom.findUnique({ where: { id: groom.id } })).toBeNull();
     expect(await prisma.rider.findUnique({ where: { id: rider.id } })).toBeNull();
     expect(await prisma.trainer.findUnique({ where: { id: trainer.id } })).toBeNull();
-    expect(
-      await prisma.directMessage.findMany({ where: { senderId: subject.user.id } }),
-    ).toHaveLength(0);
+    expect(await prisma.directMessage.findMany({ where: { senderId: subject.user.id } })).toHaveLength(0);
     expect(await prisma.forumThread.findUnique({ where: { id: thread.id } })).toBeNull();
     expect(await prisma.club.findUnique({ where: { id: club.id } })).toBeNull();
 

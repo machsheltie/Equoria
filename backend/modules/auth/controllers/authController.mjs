@@ -113,9 +113,7 @@ export const register = async (req, res, next) => {
     // A07). The message is intentionally non-leaky: it does not echo the
     // submitted DOB or the computed age.
     if (!meetsCoppaMinimumAge(dateOfBirth)) {
-      throw new ValidationError(
-        `You must be ${COPPA_MIN_AGE_YEARS} or older to create an account`,
-      );
+      throw new ValidationError(`You must be ${COPPA_MIN_AGE_YEARS} or older to create an account`);
     }
 
     // Check if user already exists (fast-path check; P2002 catch below handles the

@@ -52,15 +52,9 @@ describe('INTEGRATION: COPPA age verification at registration (Equoria-iqzn)', (
 
   afterAll(async () => {
     if (createdUserIds.length) {
-      await prisma.refreshToken
-        .deleteMany({ where: { userId: { in: createdUserIds } } })
-        .catch(() => {});
-      await prisma.emailVerificationToken
-        .deleteMany({ where: { userId: { in: createdUserIds } } })
-        .catch(() => {});
-      await prisma.auditLog
-        .deleteMany({ where: { userId: { in: createdUserIds } } })
-        .catch(() => {});
+      await prisma.refreshToken.deleteMany({ where: { userId: { in: createdUserIds } } }).catch(() => {});
+      await prisma.emailVerificationToken.deleteMany({ where: { userId: { in: createdUserIds } } }).catch(() => {});
+      await prisma.auditLog.deleteMany({ where: { userId: { in: createdUserIds } } }).catch(() => {});
       await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } }).catch(() => {});
     }
     // Sweep audit rows for the rejected (no-userId) attempts created by this

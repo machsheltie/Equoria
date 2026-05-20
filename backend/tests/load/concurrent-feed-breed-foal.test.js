@@ -178,10 +178,7 @@ export function setup() {
   // 2. CSRF token (required by csrfProtection on authRouter mutations).
   res = mustOk(http.get(`${API_URL}/api/v1/auth/csrf-token`, { jar }), 'csrf-token');
   const csrfBody = res.json();
-  const csrfToken =
-    (csrfBody && csrfBody.csrfToken) ||
-    (csrfBody && csrfBody.data && csrfBody.data.csrfToken) ||
-    '';
+  const csrfToken = (csrfBody && csrfBody.csrfToken) || (csrfBody && csrfBody.data && csrfBody.data.csrfToken) || '';
   if (!csrfToken || csrfToken.length < 20) {
     fail(`CSRF token missing/short: ${res.body}`);
   }
@@ -216,11 +213,10 @@ export function setup() {
 
   // 5. Buy feed inventory.
   mustOk(
-    http.post(
-      `${API_URL}/api/v1/feed-shop/purchase`,
-      JSON.stringify({ feedTier: FEED_TIER, packs: PACKS_TO_BUY }),
-      { headers: H, jar },
-    ),
+    http.post(`${API_URL}/api/v1/feed-shop/purchase`, JSON.stringify({ feedTier: FEED_TIER, packs: PACKS_TO_BUY }), {
+      headers: H,
+      jar,
+    }),
     'feed-shop purchase',
   );
 
@@ -256,8 +252,8 @@ export function setup() {
 
   // Read the mare's baseline state for post-run conservation math.
   res = mustOk(http.get(`${API_URL}/api/v1/horses`, { jar }), 'GET /api/v1/horses baseline');
-  const horses = (res.json().data || res.json()).filter ? (res.json().data || res.json()) : [];
-  const mare = (Array.isArray(horses) ? horses : []).find((h) => h.id === mareId) || {};
+  const horses = (res.json().data || res.json()).filter ? res.json().data || res.json() : [];
+  const mare = (Array.isArray(horses) ? horses : []).find(h => h.id === mareId) || {};
   const baselinePregCount = sumCounters(mare.pregnancyFeedingsByTier);
 
   return {
@@ -274,7 +270,9 @@ export function setup() {
 }
 
 function sumCounters(obj) {
-  if (!obj || typeof obj !== 'object') { return 0; }
+  if (!obj || typeof obj !== 'object') {
+    return 0;
+  }
   return Object.values(obj).reduce((a, b) => a + (Number(b) || 0), 0);
 }
 
@@ -282,11 +280,10 @@ function sumCounters(obj) {
 // user, so all feed mutations contend on the same inventory + mare row.
 function vuSession(data) {
   const jar = http.cookieJar();
-  http.post(
-    `${API_URL}/api/v1/auth/login`,
-    JSON.stringify({ email: data.email, password: data.password }),
-    { headers: { 'Content-Type': 'application/json' }, jar },
-  );
+  http.post(`${API_URL}/api/v1/auth/login`, JSON.stringify({ email: data.email, password: data.password }), {
+    headers: { 'Content-Type': 'application/json' },
+    jar,
+  });
   const res = http.get(`${API_URL}/api/v1/auth/csrf-token`, { jar });
   const b = res.json();
   const csrf = (b && b.csrfToken) || (b && b.data && b.data.csrfToken) || data.csrfToken;
@@ -303,21 +300,13 @@ export function feedContention(data) {
 
   // Rewind the same-day feed gate so the feed call isn't trivially rejected.
   // (Owner-scoped fixture endpoint, Equoria-4sqr.)
-  http.post(
-    `${API_URL}/api/v1/horses/${data.mareId}/reset-last-fed`,
-    JSON.stringify({ days: 1 }),
-    { headers, jar },
-  );
+  http.post(`${API_URL}/api/v1/horses/${data.mareId}/reset-last-fed`, JSON.stringify({ days: 1 }), { headers, jar });
 
   const res = http.post(`${API_URL}/api/v1/horses/${data.mareId}/feed`, null, { headers, jar });
 
   if (res.status === 200 || res.status === 201) {
     feedSuccess.add(1);
-  } else if (
-    res.status >= 400 &&
-    res.status < 500 &&
-    /already fed|fed today/i.test(res.body || '')
-  ) {
+  } else if (res.status >= 400 && res.status < 500 && /already fed|fed today/i.test(res.body || '')) {
     feedAlreadyFed.add(1);
   } else {
     feedError.add(1);
@@ -388,19 +377,16 @@ export function foalRace(data) {
  */
 export function teardown(data) {
   const jar = http.cookieJar();
-  http.post(
-    `${API_URL}/api/v1/auth/login`,
-    JSON.stringify({ email: data.email, password: data.password }),
-    { headers: { 'Content-Type': 'application/json' }, jar },
-  );
+  http.post(`${API_URL}/api/v1/auth/login`, JSON.stringify({ email: data.email, password: data.password }), {
+    headers: { 'Content-Type': 'application/json' },
+    jar,
+  });
 
   const horsesRes = http.get(`${API_URL}/api/v1/horses`, { jar });
   const payload = horsesRes.json();
   const horses = Array.isArray(payload) ? payload : payload.data || [];
-  const mareRows = horses.filter((h) => h.id === data.mareId);
-  const foalRows = horses.filter(
-    (h) => h.name && h.name.indexOf(`LoadFixture Foal ${data.stamp}`) === 0,
-  );
+  const mareRows = horses.filter(h => h.id === data.mareId);
+  const foalRows = horses.filter(h => h.name && h.name.indexOf(`LoadFixture Foal ${data.stamp}`) === 0);
 
   // ── Invariant 3: at most one foal materialised from this single pregnancy.
   const foalsCreated = foalRows.length;
@@ -418,12 +404,13 @@ export function teardown(data) {
   let remainingUnits = null;
   if (eqRes.status === 200) {
     const eqBody = eqRes.json();
-    const feeds =
-      (eqBody.data && (eqBody.data.feeds || eqBody.data.feed)) || eqBody.feeds || [];
+    const feeds = (eqBody.data && (eqBody.data.feeds || eqBody.data.feed)) || eqBody.feeds || [];
     const tierRow = (Array.isArray(feeds) ? feeds : []).find(
-      (f) => f.tier === FEED_TIER || f.id === FEED_TIER || f.feedType === FEED_TIER,
+      f => f.tier === FEED_TIER || f.id === FEED_TIER || f.feedType === FEED_TIER,
     );
-    if (tierRow) { remainingUnits = tierRow.quantity ?? tierRow.units ?? null; }
+    if (tierRow) {
+      remainingUnits = tierRow.quantity ?? tierRow.units ?? null;
+    }
   }
 
   // ── Atomic-triple evaluation (pure DB math, no per-VU counters).
@@ -458,8 +445,7 @@ export function teardown(data) {
   );
 
   check(null, {
-    'atomic-triple holds (inventory-consumed == pregnancy-delta)': () =>
-      tripleViolation === 0,
+    'atomic-triple holds (inventory-consumed == pregnancy-delta)': () => tripleViolation === 0,
     'no definite pregnancy lost-increment': () => pregLostIncrement === 0,
   });
 }

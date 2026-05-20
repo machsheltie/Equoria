@@ -86,10 +86,7 @@ export async function deriveTaskCountsFromActivities(foalId) {
       // pre-8yhe3 row, which can only be groom-origin (the sole canonical
       // taskLog-feeding writer before this column). Enrichment-source rows are
       // excluded so a namespace collision cannot corrupt the count.
-      OR: [
-        { source: FOAL_ACTIVITY_SOURCE.GROOM_INTERACTION },
-        { source: null },
-      ],
+      OR: [{ source: FOAL_ACTIVITY_SOURCE.GROOM_INTERACTION }, { source: null }],
     },
     _count: { _all: true },
   });

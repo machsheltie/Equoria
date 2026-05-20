@@ -149,16 +149,16 @@ async function main() {
     const advancedNow = new Date(Date.now() + ADVANCE_DAYS * 24 * 60 * 60 * 1000);
     const sweepResults = await Promise.all(
       Array.from({ length: PARALLEL_SWEEPS }, () =>
-        runFoalingJob({ now: advancedNow }).catch((err) => ({
+        runFoalingJob({ now: advancedNow }).catch(err => ({
           foalsBorn: 0,
           errors: [{ damId: null, error: err.message }],
         })),
       ),
     );
-    summary.sweepResults = sweepResults.map((r) => ({
+    summary.sweepResults = sweepResults.map(r => ({
       foalsBorn: r.foalsBorn,
       errorCount: r.errors?.length ?? 0,
-      errors: (r.errors ?? []).slice(0, 5).map((e) => ({ damId: e.damId, error: e.error })),
+      errors: (r.errors ?? []).slice(0, 5).map(e => ({ damId: e.damId, error: e.error })),
     }));
     summary.totalFoalsBorn = sweepResults.reduce((s, r) => s + (r.foalsBorn ?? 0), 0);
 
@@ -175,7 +175,7 @@ async function main() {
         select: { id: true, createdAt: true },
       });
       const recent = allFoals.filter(
-        (f) => Date.now() - new Date(f.createdAt).getTime() < 10 * 60 * 1000,
+        f => Date.now() - new Date(f.createdAt).getTime() < 10 * 60 * 1000,
       );
       // record recent foal ids for scoped cleanup
       for (const f of recent) {
@@ -225,13 +225,11 @@ async function main() {
   const outPath = join(outDir, 'bulk-foaling-cron-summary.json');
   await writeFile(outPath, JSON.stringify(summary, null, 2));
 
-  // eslint-disable-next-line no-console -- CI driver intentionally prints summary
   console.log(`[bulk-foaling-cron] summary -> ${outPath}`);
-  // eslint-disable-next-line no-console -- CI driver intentionally prints result
+
   console.log(JSON.stringify(summary, null, 2));
 
   if (!summary.passed) {
-    // eslint-disable-next-line no-console -- surface the failure reason
     console.error(
       summary.error
         ? `[bulk-foaling-cron] SETUP/RUN ERROR: ${summary.error}`

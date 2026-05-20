@@ -196,9 +196,7 @@ describe('POST /api/v1/competition/conformation/execute — real HTTP pipeline (
 
   afterAll(async () => {
     // Scoped cleanup — only rows this suite created.
-    await prisma.showEntry
-      .deleteMany({ where: { showId: show?.id } })
-      .catch(() => {});
+    await prisma.showEntry.deleteMany({ where: { showId: show?.id } }).catch(() => {});
     await prisma.competitionResult
       .deleteMany({ where: { horseId: { in: [horse1?.id, horse2?.id].filter(Boolean) } } })
       .catch(() => {});
