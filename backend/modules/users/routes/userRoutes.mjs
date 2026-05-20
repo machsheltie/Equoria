@@ -119,7 +119,8 @@ const requireSelfAccess = (idParam = 'id') => {
   };
 };
 
-/** GET /api/users/search?username=&limit=&page= — find users by username prefix (paginated) */
+/** GET /api/users/search?username=&limit=&page= — find users by username PREFIX (case-insensitive, paginated).
+ *  Returns only { id, username } — no PII (Equoria-o7c0x L3). */
 router.get('/search', queryRateLimiter, authenticateToken, async (req, res) => {
   const q = (req.query.username ?? '').trim();
   if (!q || q.length < 2) {

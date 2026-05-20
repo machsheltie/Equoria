@@ -45,8 +45,10 @@ import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import AppError from '../../../errors/AppError.mjs';
 
-// Safe field selection for user search results — only expose public, non-sensitive fields
-const USER_SEARCH_SELECT = { id: true, username: true, firstName: true, lastName: true };
+// Safe field selection for user search results — id and username (social handle) only.
+// firstName/lastName are real-name PII; they must NOT be returned from a search endpoint
+// that any authenticated user can query (CWE-200/CWE-359, Equoria-o7c0x L3).
+const USER_SEARCH_SELECT = { id: true, username: true };
 
 /**
  * Get comprehensive user progress information
@@ -813,7 +815,11 @@ export async function searchUsers(q, { limit = 10, skip = 0 } = {}) {
   const safeLimit = Math.min(Math.max(1, limit), 50);
   const safeSkip = Math.max(0, skip);
 
-  const where = { username: { contains: q, mode: 'insensitive' } };
+  // Use startsWith (prefix) rather than contains (substring) to limit harvest
+  // potential — a substring match over all usernames with a 2-char query would
+  // allow an authenticated user to enumerate the full user table.
+  // (CWE-200/CWE-359, Equoria-o7c0x L3)
+  const where = { username: { startsWith: q, mode: 'insensitive' } };
 
   const [users, total] = await Promise.all([
     prisma.user.findMany({
