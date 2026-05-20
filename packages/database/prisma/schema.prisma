@@ -553,12 +553,22 @@ model FoalActivity {
   bondingChange Int
   stressChange  Int
   description   String
+  /// Stream-source discriminator (Equoria-8yhe3). ENFORCES the disjointness of
+  /// the two FoalActivity writers so the taskLog-count derivation can never
+  /// silently absorb a foreign stream. Values: 'groom_interaction' (the
+  /// taskLog-driving groom path) and 'enrichment_activity' (the legacy foal
+  /// enrichment-day system, which does NOT feed taskLog). Nullable for legacy
+  /// pre-8yhe3 rows: a NULL source is treated as 'groom_interaction' by the
+  /// derivation (the only writer that wrote canonical rows before this column
+  /// existed was recordInteraction). See foalActivityStore.mjs.
+  source        String?
   /// Foreign key
   foalId        Int
   /// Timestamps
   createdAt     DateTime @default(now())
   foal          Horse    @relation(fields: [foalId], references: [id], onDelete: Cascade)
 
+  @@index([foalId, source])
   @@map("foal_activities")
 }
 

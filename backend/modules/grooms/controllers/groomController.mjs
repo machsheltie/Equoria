@@ -34,6 +34,7 @@ import {
 import { DEVELOPMENTAL_WINDOWS } from '../../../utils/enhancedMilestoneEvaluationSystem.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
+import { FOAL_ACTIVITY_SOURCE } from '../../../utils/foalActivityStore.mjs';
 import { awardGroomXP, updateGroomSynergy } from '../../../services/groomProgressionService.mjs';
 import { invalidateCachePattern } from '../../../utils/cacheHelper.mjs';
 import { parsePaginationParams } from '../../../utils/paginationHelper.mjs';
@@ -481,6 +482,10 @@ export async function recordInteraction(req, res) {
           bondingChange: effects.bondingChange,
           stressChange: effects.stressChange,
           description: `Groom interaction (${interactionType}) recorded via groom system`,
+          // Equoria-8yhe3: tag this as the taskLog-driving groom stream so the
+          // count derivation only ever aggregates these rows (enrichment rows
+          // carry a different source and are excluded by construction).
+          source: FOAL_ACTIVITY_SOURCE.GROOM_INTERACTION,
         },
       });
     } catch (foalActivityError) {

@@ -1,6 +1,7 @@
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 import { hasGraduated } from '../utils/foalAgeUtils.mjs';
+import { FOAL_ACTIVITY_SOURCE } from '../utils/foalActivityStore.mjs';
 
 /**
  * Get foal development data including current status and activity history
@@ -310,6 +311,11 @@ async function completeActivity(foalId, activityType) {
         bondingChange: outcome.bondingChange,
         stressChange: outcome.stressChange,
         description: outcome.description,
+        // Equoria-8yhe3: tag this as the legacy ENRICHMENT stream. It does NOT
+        // feed Horse.taskLog; the source discriminator guarantees the taskLog
+        // count derivation excludes these rows even if an enrichment
+        // activityType ever collides with a groom interactionType string.
+        source: FOAL_ACTIVITY_SOURCE.ENRICHMENT_ACTIVITY,
       },
     });
 
