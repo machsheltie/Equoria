@@ -271,7 +271,12 @@ export function generateStableOverview(horses) {
   let totalStress = 0;
 
   horses.forEach(horse => {
-    const ageInDays = getHorseAgeDays(horse.dateOfBirth);
+    // Equoria-l06yb (Option 1, 2026-05-20): elapsed-time age-distribution
+    // buckets on getHorseAgeDays() (elapsed calendar days), aligned with the
+    // foalAgeUtils.mjs elapsed-time model. Display/aggregation only (no game-
+    // mechanic gating). Intentionally NOT game-year boundaries — do not re-
+    // derive to days/7 or every horse collapses into 'newborn'.
+    const ageInDays = getHorseAgeDays(horse.dateOfBirth); // elapsed calendar days
     const ageCategory =
       ageInDays < 30
         ? 'newborn'
@@ -339,7 +344,10 @@ export function analyzeDevelopmentalStages(horses) {
   };
 
   horses.forEach(horse => {
-    const ageInDays = getHorseAgeDays(horse.dateOfBirth);
+    // Equoria-l06yb (Option 1, 2026-05-20): elapsed-time developmental-stage
+    // buckets on getHorseAgeDays() (elapsed calendar days). Display/aggregation
+    // only. Intentionally NOT game-year boundaries — see getStableOverview().
+    const ageInDays = getHorseAgeDays(horse.dateOfBirth); // elapsed calendar days
 
     if (ageInDays < 14) {
       stages.critical++;
@@ -737,9 +745,14 @@ export async function generateComprehensiveReport(horse) {
 
 /**
  * Helper function to get age category
+ *
+ * Equoria-l06yb (Option 1, 2026-05-20): elapsed-time foal-development windows
+ * on getHorseAgeDays() (elapsed calendar days), aligned with foalAgeUtils.mjs.
+ * Display/aggregation only. Intentionally NOT game-year boundaries — do not
+ * re-derive to days/7.
  */
 function getAgeCategory(dateOfBirth) {
-  const ageInDays = getHorseAgeDays(dateOfBirth);
+  const ageInDays = getHorseAgeDays(dateOfBirth); // elapsed calendar days
 
   if (ageInDays < 30) {
     return 'newborn';
@@ -755,9 +768,13 @@ function getAgeCategory(dateOfBirth) {
 
 /**
  * Helper function to get developmental stage
+ *
+ * Equoria-l06yb (Option 1, 2026-05-20): elapsed-time developmental-phase
+ * windows on getHorseAgeDays() (elapsed calendar days). Display only.
+ * Intentionally NOT game-year boundaries.
  */
 function getDevelopmentalStage(dateOfBirth) {
-  const ageInDays = getHorseAgeDays(dateOfBirth);
+  const ageInDays = getHorseAgeDays(dateOfBirth); // elapsed calendar days
 
   if (ageInDays < 14) {
     return 'critical_period';

@@ -629,24 +629,45 @@ function calculateBaseScore(flagDef, carePatterns) {
 
 /**
  * Calculate age-based sensitivity modifier
+ *
+ * Equoria-l06yb (user decision 2026-05-20, "Option 1 — elapsed-time model"):
+ * These thresholds are INTENTIONALLY elapsed-time (real-day) developmental
+ * windows, NOT game-year boundaries. `getHorseAgeDays()` returns literal
+ * elapsed calendar days (see backend/utils/horseAge.mjs / foalAgeUtils.mjs
+ * elapsed-time foal-development model: newborn<28d, weanling<182d,
+ * yearling<364d, two_year_old<728d), so a flag's trigger SENSITIVITY decays
+ * over a horse's real-elapsed neuro-development — mirroring the foal-window
+ * model — rather than over game-cadence years.
+ *
+ * REACHABILITY (verified against the canonical DB 2026-05-20): the bottom
+ * `>365 → 0.8×` "mature" tier is fully REACHABLE — 99.6% of real horses are
+ * >365 elapsed days old (sampled 6084 horses, max 4157 days). It is NOT dead
+ * logic. The flagAssignmentEngine ageModifier-branch tests
+ * (modules/traits/__tests__/flagAssignmentEngine.test.mjs) prove the 0.8×
+ * tier fires for a 400-day horse.
+ *
+ * DO NOT "fix" these to game-cadence (days/7). Under game-years a horse maxes
+ * at ~21 game-years (147 game-days → 21 game-years), so days/7 values would
+ * never approach 365/180/90 and EVERY upper tier would become dead — the exact
+ * regression this comment exists to prevent.
  */
 function calculateAgeModifier(horse) {
-  const ageInDays = getHorseAgeDays(horse.dateOfBirth);
+  const ageInDays = getHorseAgeDays(horse.dateOfBirth); // elapsed calendar days
 
-  // Younger horses are more sensitive to flag triggers
+  // Younger horses are more sensitive to flag triggers (elapsed-time windows)
   if (ageInDays <= 30) {
     return 1.5;
-  } // Very young (0-1 month)
+  } // Very young (~0-1 elapsed month)
   if (ageInDays <= 90) {
     return 1.3;
-  } // Young (1-3 months)
+  } // Young (~1-3 elapsed months)
   if (ageInDays <= 180) {
     return 1.1;
-  } // Moderate (3-6 months)
+  } // Moderate (~3-6 elapsed months)
   if (ageInDays <= 365) {
     return 1.0;
-  } // Older (6-12 months)
-  return 0.8; // Mature (1+ years)
+  } // Older (~6-12 elapsed months)
+  return 0.8; // Mature (1+ elapsed years) — reachable: 99.6% of real horses
 }
 
 /**

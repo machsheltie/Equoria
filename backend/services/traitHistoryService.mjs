@@ -339,7 +339,15 @@ export async function analyzeTraitPatterns(horseIds) {
 
 /**
  * Helper function to determine age stage
- * @param {number} ageInDays - Age in days
+ *
+ * Equoria-l06yb (Option 1, 2026-05-20): elapsed-time developmental-stage
+ * windows. `ageInDays` here is the STORED traitHistory.ageInDays (the
+ * elapsed-calendar-day count captured at log time, the fe9k-documented
+ * "pre-computed days" case), aligned with the foalAgeUtils.mjs elapsed-time
+ * model. Produces a developmentalStages COUNT for a summary (display/
+ * aggregation only). Intentionally NOT game-year boundaries — do not
+ * re-derive to days/7 or the 365/730/1095 buckets become unreachable.
+ * @param {number} ageInDays - Age in elapsed calendar days
  * @returns {string} Age stage name
  */
 function getAgeStage(ageInDays) {

@@ -206,6 +206,11 @@ export async function generateTraitTimeline(horseId) {
  * @returns {string} Human-readable age description
  */
 function formatAgeDescription(ageInDays) {
+  // Equoria-l06yb (Option 1, 2026-05-20): the day/week/month buckets below are
+  // INTENTIONALLY elapsed-time foal-development windows (aligned with
+  // foalAgeUtils.mjs), NOT game-year boundaries — confirmed correct as-is, no
+  // change needed. Only the "years" unit (below) is converted to game-years
+  // via the fe9k fix. Do not "fix" the day/week/month windows to game-cadence.
   if (ageInDays <= 7) {
     return `Day ${ageInDays}`;
   }

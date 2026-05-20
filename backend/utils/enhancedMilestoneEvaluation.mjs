@@ -30,12 +30,33 @@ export async function evaluateEnhancedMilestone(
   currentGroom,
   milestoneData,
 ) {
-  const ageInDays = getHorseAgeDays(horse.dateOfBirth);
+  const ageInDays = getHorseAgeDays(horse.dateOfBirth); // elapsed calendar days
 
   // Base milestone evaluation
   const baseMilestone = await evaluateBaseMilestone(horse, milestoneData);
 
-  // Only apply enhanced evaluation for horses under 3 years
+  // Only apply enhanced (groom/epigenetic) evaluation for horses under 3 years.
+  //
+  // Equoria-l06yb (user decision 2026-05-20, "Option 1 — elapsed-time model"):
+  // 1095 is INTENTIONALLY an elapsed-time (~3 real-year) window boundary, NOT a
+  // game-year value. `getHorseAgeDays()` returns literal elapsed calendar days
+  // (see backend/utils/horseAge.mjs and the foalAgeUtils.mjs elapsed-time
+  // foal-development model), so this gate fires for any horse that has lived
+  // >= 1095 real days — restricting enhanced trait development to the
+  // developmental window, exactly as intended.
+  //
+  // This gate is REACHABLE and FUNCTIONAL (verified against the canonical DB
+  // 2026-05-20): 99.6% of real horses are >= 1095 elapsed days, so the early
+  // return correctly skips enhanced eval for the adult majority. It is NOT a
+  // no-op. Boundary sentinel: modules/horses/__tests__/
+  // enhancedMilestoneEvaluationTest.test.mjs ("Equoria-l06yb sentinel") pins
+  // that 1094d runs enhanced eval and 1095d is gated out.
+  //
+  // DO NOT "fix" this to a game-cadence value (e.g. days/7, or 21 game-days for
+  // "3 game-years"). Under game-years a horse maxes at ~21 game-years and
+  // ageInDays/7 would never approach 1095, making the gate ALWAYS-FALSE — so
+  // enhanced foal eval would wrongly fire on every adult horse. That is the
+  // regression this comment exists to prevent.
   if (ageInDays >= 1095) {
     return baseMilestone;
   }
@@ -428,8 +449,12 @@ async function evaluateBaseMilestone(horse, _milestoneData) {
   };
 }
 
+// Equoria-l06yb (Option 1, 2026-05-20): elapsed-time foal-development windows
+// on getHorseAgeDays() (elapsed calendar days), aligned with foalAgeUtils.mjs.
+// These are display/category labels (consumed by the base-milestone shape);
+// do NOT re-derive to game-cadence (days/7) or the upper buckets become dead.
 function getAgeCategory(horse) {
-  const ageInDays = getHorseAgeDays(horse.dateOfBirth);
+  const ageInDays = getHorseAgeDays(horse.dateOfBirth); // elapsed calendar days
 
   if (ageInDays < 180) {
     return 'foal';
@@ -446,8 +471,11 @@ function getAgeCategory(horse) {
   return 'mature';
 }
 
+// Equoria-l06yb (Option 1, 2026-05-20): elapsed-time developmental-phase
+// windows on getHorseAgeDays() (elapsed calendar days). Intentionally NOT
+// game-year boundaries — see the gate comment in evaluateEnhancedMilestone().
 function getDevelopmentalStage(horse) {
-  const ageInDays = getHorseAgeDays(horse.dateOfBirth);
+  const ageInDays = getHorseAgeDays(horse.dateOfBirth); // elapsed calendar days
 
   if (ageInDays < 30) {
     return 'imprinting';

@@ -57,6 +57,54 @@ describe('evaluateEnhancedMilestone — mature horse (age >= 3 years)', () => {
   });
 });
 
+// ── Equoria-l06yb: 1095-day enhanced-eval gate boundary sentinel ──────────────
+// The `if (ageInDays >= 1095) return baseMilestone` gate at
+// enhancedMilestoneEvaluation.mjs:39 gates whether ENHANCED (groom/epigenetic)
+// milestone evaluation runs. Under the Option-1 elapsed-time model
+// (user 2026-05-20, Equoria-l06yb): getHorseAgeDays() returns literal elapsed
+// calendar days (NOT game-years), so the gate fires for any horse that has
+// lived >= 1095 real days. This sentinel pins the boundary so a future reader
+// cannot silently "fix" the threshold to a game-cadence value (e.g. 21 game-
+// days) — which WOULD make the gate fire on training-age foals and break the
+// foal-development window. The presence-vs-absence of the enhanced-only
+// `epigeneticFlags` field distinguishes the two code paths: base-only result
+// (gated out) has no `epigeneticFlags`; enhanced result does.
+describe('evaluateEnhancedMilestone — 1095d gate boundary (Equoria-l06yb sentinel)', () => {
+  const makeHorse = (ageInDays, id) => ({
+    id,
+    name: `TestGateBoundary-${ageInDays}`,
+    dateOfBirth: new Date(Date.now() - ageInDays * 24 * 60 * 60 * 1000),
+    age: Math.floor(ageInDays / 7),
+    epigeneticModifiers: { positive: [], negative: [], hidden: [] },
+    bondScore: 50,
+    stressLevel: 30,
+  });
+
+  it('horse at 1094 days (just under gate) RUNS enhanced eval', async () => {
+    // fake id → ultra-rare trigger fails gracefully, but the enhanced path still
+    // executes and attaches the enhanced-only `epigeneticFlags` field.
+    const result = await evaluateEnhancedMilestone(
+      makeHorse(1094, 999999901),
+      { interactions: [] },
+      null,
+      makeMilestoneData(),
+    );
+    expect(result).toHaveProperty('epigeneticFlags');
+  });
+
+  it('horse at exactly 1095 days (gate boundary) is GATED OUT (base only)', async () => {
+    const result = await evaluateEnhancedMilestone(
+      makeHorse(1095, 999999902),
+      { interactions: [] },
+      null,
+      makeMilestoneData(),
+    );
+    // gated → base milestone shape, no enhanced-only field
+    expect(result).not.toHaveProperty('epigeneticFlags');
+    expect(result.ageCategory).toBe('mature');
+  });
+});
+
 describe('evaluateEnhancedMilestone — newborn foal (graceful ultra-rare failure)', () => {
   const newbornHorse = {
     id: 999999996, // fake ID — ultra-rare trigger fails gracefully via try-catch
