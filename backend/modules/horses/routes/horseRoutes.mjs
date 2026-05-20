@@ -323,8 +323,21 @@ router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, asyn
     const { userId: queryUserId, breedId, limit = 200, offset = 0 } = req.query;
 
     const where = {};
-    // Use userId from query if provided, otherwise default to the authenticated user's ID
-    const effectiveUserId = queryUserId || req.user?.id;
+    // CWE-639 / IDOR fix (Equoria-tzyv8): scope results to the authenticated
+    // user unless the caller is an admin.
+    //
+    // Decision (option a — silent self-scope): a non-admin's ?userId param is
+    // silently ignored and always replaced with req.user.id. This avoids
+    // breaking callers that pass their own userId as a React Query cache-key
+    // discriminator (e.g. BreedingPairSelection.tsx, horseListLatestEvent tests)
+    // and is backward-compatible. Option (b) — 403 on cross-user userId — was
+    // considered but would break those legitimate same-user callers without a
+    // coordinated frontend change. Admins (role === 'admin') retain the
+    // override so support tooling can query any user's horses.
+    const isAdmin = req.user.role === 'admin';
+    const effectiveUserId = isAdmin
+      ? (queryUserId || req.user.id)    // admin: honour the override; fall back to self
+      : req.user.id;                    // non-admin: always self — never trust client userId
     if (effectiveUserId) {
       // Match by userId (schema standard)
       where.userId = effectiveUserId;
