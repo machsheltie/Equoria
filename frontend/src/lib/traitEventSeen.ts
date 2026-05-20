@@ -62,6 +62,55 @@ export function hasSeenEvent(storage: StorageLike, eventId: number): boolean {
 }
 
 /**
+ * Regex matching ONLY the OLD per-event-id key format: `urt-seen-<digits>`.
+ *
+ * Critically, this does NOT match the current consolidated key `urt-seen-ids`
+ * because `ids` is not a digit-only string (`\d+` requires [0-9]+).
+ * Verified: `OLD_URT_SEEN_PATTERN.test('urt-seen-ids')` → false.
+ * (Equoria-o7c0x C)
+ */
+const OLD_URT_SEEN_PATTERN = /^urt-seen-\d+$/;
+
+/**
+ * One-time idempotent cleanup: removes orphaned per-id localStorage keys left
+ * by the pre-L7 implementation (keys of the form `urt-seen-<digits>`).
+ *
+ * The L7 fix consolidated all seen-ids into the single bounded key `urt-seen-ids`.
+ * Existing users may have dozens of orphaned old-format keys that are never read
+ * and grow unboundedly until cleared.
+ *
+ * Safety guarantees:
+ * - Never removes `urt-seen-ids` (the current consolidated key) — the regex
+ *   `^urt-seen-\d+$` requires a digit-only suffix; `ids` does not match.
+ * - Never removes unrelated keys (matches only the `urt-seen-<digits>` prefix).
+ * - Fully wrapped: any localStorage error (SecurityError, private mode) is
+ *   silently swallowed — this must never throw or break the page.
+ * - Idempotent: safe to call multiple times; a second call finds nothing to remove.
+ *
+ * Accepts an optional `storage` argument (defaults to `window.localStorage`) so
+ * tests can inject a fake without touching the real browser storage.
+ */
+export function purgeOrphanedUrtSeenKeys(storage?: Storage): void {
+  try {
+    const store = storage ?? window.localStorage;
+    const toDelete: string[] = [];
+
+    for (let i = 0; i < store.length; i++) {
+      const key = store.key(i);
+      if (key !== null && OLD_URT_SEEN_PATTERN.test(key)) {
+        toDelete.push(key);
+      }
+    }
+
+    for (const key of toDelete) {
+      store.removeItem(key);
+    }
+  } catch {
+    /* localStorage inaccessible (SecurityError in sandboxed iframe etc.) — silently skip */
+  }
+}
+
+/**
  * Mark an event as seen.
  * Appends the id to the seen-set and evicts the oldest entries if the
  * array exceeds URT_SEEN_MAX.  Writes atomically (read-modify-write).
