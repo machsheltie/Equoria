@@ -2,19 +2,39 @@
  * Prizes Claim E2E Smoke Test
  *
  * Verifies the /prizes claim write flow works end-to-end with production parity
- * (no bypass headers, real API calls).
+ * (no bypass headers, real API calls) against the canonical 7-day deferred-window
+ * show model (Equoria-nx8t1 / Equoria-kacla). The legacy instant enter-and-run
+ * path (POST /enter-show) was removed (410 Gone), so this spec exercises the REAL
+ * deferred flow: create → enter → cron-execute → claim.
  *
  * Flow:
- *   1. Register a new player and complete onboarding (provides a starter mare)
- *   2. Create a show and enter the horse via POST /api/v1/competition/enter-show
- *      (this immediately runs the competition and produces a CompetitionResult)
- *   3. Find the competition result ID from the response
- *   4. Navigate to /prizes to confirm the page loads without errors
- *   5. POST /api/v1/competition/:id/claim-prizes — claim the result
- *   6. Assert claim response contains the expected fields
- *   7. Cleanup: delete the show and result records
+ *   1. Register a new player and complete onboarding (provides a starter mare,
+ *      age 3, healthStatus 'Excellent' — passes the /enter age + health gates).
+ *   2. Create a player-run show with a real prize via POST /api/v1/shows/create
+ *      (the creator is debited the full prize at creation; entryFee 0 so the
+ *      entrant pays nothing).
+ *   3. Enter the starter horse via POST /api/v1/competition/enter — the canonical
+ *      deferred entry that writes a ShowEntry (the row the nightly cron scores).
+ *      NO instant result is produced.
+ *   4. Advance the show's closeDate into the past (real DB write — a TIME
+ *      precondition only; scoring, prize distribution, and claim all run through
+ *      real production code). A real e2e test cannot wait 7 real days, and the
+ *      cron's selection predicate is `status='open' AND closeDate <= now`, so the
+ *      canonical, non-bypass way to drive it in a test is to make closeDate past
+ *      (mirrors backend sevenDayShowModel.test.mjs R8).
+ *   5. Drive the REAL cron executor via POST /api/v1/shows/execute — the only
+ *      sanctioned scorer (showController.executeClosedShows). This genuinely
+ *      scores every entrant, distributes prize money, and writes a real
+ *      CompetitionResult row. NOT an instant-execute, NOT a faked result.
+ *   6. Read the real persisted CompetitionResult for our horse from the DB.
+ *   7. Navigate to /prizes to confirm the page loads without errors.
+ *   8. POST /api/v1/competition/:id/claim-prizes — claim the real result.
+ *   9. Assert the claim response echoes the real persisted prize money / placement
+ *      / discipline, and that the prize money was genuinely credited to the
+ *      player's balance by the cron.
+ *  10. Cleanup: delete the show, entries, result, and horse records.
  *
- * Issue: Equoria-qc11
+ * Issue: Equoria-qc11 (original) / Equoria-fg7wq (deferred-model rewrite)
  */
 
 import { test, expect } from '@playwright/test';
@@ -29,10 +49,15 @@ import {
   visitLiveRoute,
 } from './support/prodParity';
 
+const SHOW_PRIZE = 100; // real prize pool; 1st place takes 50% = 50
+
 test.afterAll(async () => {
   try {
     await prisma.competitionResult.deleteMany({
       where: { showName: { startsWith: 'Prizes Readiness Show' } },
+    });
+    await prisma.showEntry.deleteMany({
+      where: { show: { name: { startsWith: 'Prizes Readiness Show' } } },
     });
     await prisma.show.deleteMany({
       where: { name: { startsWith: 'Prizes Readiness Show' } },
@@ -40,31 +65,32 @@ test.afterAll(async () => {
     await prisma.horse.deleteMany({
       where: { name: { startsWith: 'PrizesTest Horse' } },
     });
-    // Rider assignments and hired riders are cleaned up automatically when
-    // the horse is deleted (cascade) — no explicit cleanup needed here.
   } finally {
     await prisma.$disconnect();
   }
 });
 
-test('prizes claim write flow: enter competition and claim result with no bypass headers', async ({
+test('prizes claim write flow: deferred 7-day show executes via cron and prize is claimed with no bypass headers', async ({
   page,
 }) => {
   const guard = installProductionParityNetworkGuard(page);
   const suffix = `${Date.now()}_prizes`;
 
-  // Step 1: Register fresh player — provides a starter mare
+  // Step 1: Register fresh player — provides a starter mare (age 3, healthy).
   const player = await registerAndCompleteOnboarding(page, suffix, `PrizesTest Horse ${suffix}`);
   const starterHorseId = Number(player.horse.id);
   expect(starterHorseId).toBeGreaterThan(0);
 
-  // Step 2: Create a show for the competition (use Dressage — no entry fee so no balance drain)
+  // Step 2: Create a 7-day deferred-window show with a real prize. Dressage with
+  // entryFee 0 means the entrant pays nothing; the creator (this player) is
+  // debited the full prize (SHOW_PRIZE) at creation. prize >= 10 * entryFee is
+  // trivially satisfied (entryFee 0).
   const showJson = await expectOk(
     await csrfRequest(page, 'POST', '/api/v1/shows/create', {
       name: `Prizes Readiness Show ${suffix}`,
       discipline: 'Dressage',
       entryFee: 0,
-      maxEntries: 20,
+      prize: SHOW_PRIZE,
       description: 'Prizes readiness claim smoke test',
     }),
     'POST /api/v1/shows/create'
@@ -72,113 +98,102 @@ test('prizes claim write flow: enter competition and claim result with no bypass
   const show = unwrapData<{ show: { id: number } }>(showJson).show;
   expect(show.id).toBeGreaterThan(0);
 
-  // Step 2b: Feed the starter horse so it passes the critical-health gate.
-  // The competition engine (enterAndRunShow) checks getDisplayedHealth() for each
-  // horse, which is worseOf(feedHealth, vetHealth). A horse with lastFedDate=null
-  // always has feedHealth='critical', blocking competition entry regardless of
-  // healthStatus. We must purchase feed, equip it, and feed the horse before entry.
-  const feedCatalog = unwrapData<Array<{ id: string }>>(
-    await expectOk(
-      await page.request.get('/api/v1/feed-shop/catalog'),
-      'GET /api/v1/feed-shop/catalog'
-    )
-  );
-  const feedTier = feedCatalog[0].id;
-  await expectOk(
-    await csrfRequest(page, 'POST', '/api/v1/feed-shop/purchase', {
-      feedTier,
-      packs: 1,
-    }),
-    'POST /api/v1/feed-shop/purchase'
-  );
-  await expectOk(
-    await csrfRequest(page, 'POST', `/api/v1/horses/${starterHorseId}/equip-feed`, {
-      feedType: feedTier,
-    }),
-    'POST /api/v1/horses/:id/equip-feed'
-  );
-  await expectOk(
-    await csrfRequest(page, 'POST', `/api/v1/horses/${starterHorseId}/feed`, {}),
-    'POST /api/v1/horses/:id/feed'
-  );
-
-  // Step 2c: Hire a rider and assign to the starter horse.
-  // The competition engine (enterAndRunShow) requires each competing horse to
-  // have a non-null rider object (hasValidRider check). A freshly created horse
-  // has no rider, so we must hire one from the marketplace and assign it before
-  // entering the show.
-  const riderMarket = unwrapData<{ riders: Array<{ marketplaceId: string; weeklyRate: number }> }>(
-    await expectOk(
-      await page.request.get('/api/v1/riders/marketplace'),
-      'GET /api/v1/riders/marketplace'
-    )
-  );
-  expect(
-    riderMarket.riders.length,
-    'Rider marketplace must have at least one rider'
-  ).toBeGreaterThan(0);
-  const cheapestRider = riderMarket.riders.reduce((cheapest, rider) =>
-    rider.weeklyRate < cheapest.weeklyRate ? rider : cheapest
-  );
-  const riderHireResult = unwrapData<{ rider: { id: number } }>(
-    await expectOk(
-      await csrfRequest(page, 'POST', '/api/v1/riders/marketplace/hire', {
-        marketplaceId: cheapestRider.marketplaceId,
-      }),
-      'POST /api/v1/riders/marketplace/hire'
-    )
-  );
-  await expectOk(
-    await csrfRequest(page, 'POST', '/api/v1/riders/assignments', {
-      riderId: riderHireResult.rider.id,
+  // Step 3: Enter the starter horse via the canonical deferred-entry endpoint.
+  // This writes a ShowEntry (the row the cron scores) and returns NO instant
+  // result. The starter horse is age 3 and 'Excellent' health, so it passes the
+  // /enter age (>= 3) and not-injured gates.
+  const enterJson = await expectOk(
+    await csrfRequest(page, 'POST', '/api/v1/competition/enter', {
       horseId: starterHorseId,
-      notes: 'Prizes readiness smoke test',
-    }),
-    'POST /api/v1/riders/assignments'
-  );
-
-  // Step 3: Enter and immediately run the show
-  // enter-show both enters AND runs the competition in one request, returning savedResults
-  const enterRunJson = await expectOk(
-    await csrfRequest(page, 'POST', '/api/v1/competition/enter-show', {
       showId: show.id,
-      horseIds: [starterHorseId],
     }),
-    'POST /api/v1/competition/enter-show'
+    'POST /api/v1/competition/enter'
   );
+  const entry = unwrapData<{ entryId: number; horseId: number; showId: number }>(enterJson);
+  expect(entry.entryId, 'Deferred entry must persist a ShowEntry id').toBeGreaterThan(0);
+  expect(entry.horseId).toBe(starterHorseId);
+  // Critically: the deferred entry response carries NO results/placement/score.
+  expect(
+    (enterJson as Record<string, unknown>).results,
+    'Deferred entry must NOT return instant results'
+  ).toBeUndefined();
 
-  // The response does NOT go through the standard { data: ... } wrapper —
-  // enterAndRunShow returns the result object directly.
-  const enterRunResult = enterRunJson as {
-    success: boolean;
-    results: Array<{ id: number; horseId: number; placement: string; prizeWon: number }>;
-    summary: Record<string, unknown>;
-  };
-  expect(enterRunResult.success, 'enter-show must succeed: ' + JSON.stringify(enterRunResult)).toBe(
-    true
+  // Step 4: Advance the show's closeDate into the past so the real cron executor
+  // selects it (`status='open' AND closeDate <= now`). This is a TIME precondition
+  // only — no scoring/payout logic is bypassed. A real e2e cannot wait 7 days;
+  // this mirrors the canonical backend pattern in sevenDayShowModel.test.mjs R8.
+  await prisma.show.update({
+    where: { id: show.id },
+    data: { closeDate: new Date(Date.now() - 60 * 60 * 1000) }, // 1h ago
+  });
+
+  // Capture the entrant's balance before execution so we can prove the cron
+  // genuinely credited the prize money (not a faked claim response).
+  const entrantBefore = await prisma.horse.findUnique({
+    where: { id: starterHorseId },
+    select: { user: { select: { id: true, money: true } } },
+  });
+  const ownerUserId = entrantBefore!.user!.id;
+  const balanceBefore = Number(entrantBefore!.user!.money);
+
+  // Step 5: Drive the REAL nightly cron executor (the only sanctioned scorer).
+  // It scores every entrant from raw stats, distributes the prize pool, and
+  // writes real CompetitionResult rows.
+  const execJson = await expectOk(
+    await csrfRequest(page, 'POST', '/api/v1/shows/execute'),
+    'POST /api/v1/shows/execute'
+  );
+  const execData = unwrapData<{ executed: number }>(execJson);
+  expect(
+    execData.executed,
+    'Cron must report at least one executed show'
+  ).toBeGreaterThanOrEqual(1);
+
+  // The show must now be 'completed' with an executedAt timestamp.
+  const executedShow = await prisma.show.findUnique({
+    where: { id: show.id },
+    select: { status: true, executedAt: true },
+  });
+  expect(executedShow!.status, 'Show must be marked completed by the cron').toBe('completed');
+  expect(executedShow!.executedAt, 'Show must have an executedAt timestamp').not.toBeNull();
+
+  // Step 6: Read the real persisted CompetitionResult the cron wrote for our horse.
+  const persistedResult = await prisma.competitionResult.findFirst({
+    where: { horseId: starterHorseId, showId: show.id },
+    select: { id: true, prizeWon: true, placement: true, discipline: true },
+  });
+  expect(
+    persistedResult,
+    `Cron must have written a CompetitionResult for horse ${starterHorseId}`
+  ).toBeTruthy();
+  const competitionResultId = persistedResult!.id;
+  expect(competitionResultId).toBeGreaterThan(0);
+  // Single entrant ⇒ 1st place ⇒ 50% of the prize pool.
+  const expectedPrize = Math.floor(SHOW_PRIZE * 0.5);
+  expect(
+    Number(persistedResult!.prizeWon),
+    'Persisted prize for the sole 1st-place entrant must be 50% of the pool'
+  ).toBe(expectedPrize);
+
+  // Prove the cron genuinely credited the prize money to the player's balance.
+  const balanceAfter = Number(
+    (await prisma.user.findUnique({ where: { id: ownerUserId }, select: { money: true } }))!.money
   );
   expect(
-    Array.isArray(enterRunResult.results) && enterRunResult.results.length > 0,
-    'enter-show must return at least one competition result'
-  ).toBe(true);
+    balanceAfter,
+    'Cron must have credited the real prize money to the player balance'
+  ).toBe(balanceBefore + expectedPrize);
 
-  // Find the result belonging to our horse
-  const ourResult = enterRunResult.results.find((r) => r.horseId === starterHorseId);
-  expect(ourResult, `Competition result for horse ${starterHorseId} must be present`).toBeTruthy();
-  const competitionResultId = ourResult!.id;
-  expect(competitionResultId).toBeGreaterThan(0);
-
-  // Step 4: Navigate to /prizes page — must load without error
+  // Step 7: Navigate to /prizes page — must load without error.
   await visitLiveRoute(page, '/prizes');
 
-  // Step 5: Claim the prize via POST /api/v1/competition/:id/claim-prizes
+  // Step 8: Claim the prize via POST /api/v1/competition/:id/claim-prizes.
   const claimJson = await expectOk(
     await csrfRequest(page, 'POST', `/api/v1/competition/${competitionResultId}/claim-prizes`),
     `POST /api/v1/competition/${competitionResultId}/claim-prizes`
   );
 
-  // Step 6: Assert the claim response contains expected fields
-  // The controller returns { success, message, data: { competitionResultId, ... } }
+  // Step 9: Assert the claim response echoes the REAL persisted result.
   const claimData = unwrapData<{
     competitionResultId: number;
     competitionName: string;
@@ -193,10 +208,12 @@ test('prizes claim write flow: enter competition and claim result with no bypass
   expect(claimData.competitionResultId, 'Claim response must echo the competitionResultId').toBe(
     competitionResultId
   );
-  expect(typeof claimData.prizeMoney, 'prizeMoney must be a number').toBe('number');
+  expect(claimData.prizeMoney, 'Claim prizeMoney must match the persisted prize').toBe(
+    expectedPrize
+  );
   expect(claimData.horseId, 'Claim response must identify the horse').toBe(starterHorseId);
   expect(typeof claimData.placement, 'Claim response must include placement').toBe('string');
-  expect(claimData.discipline, 'Claim response must include discipline').toBe('Dressage');
+  expect(claimData.discipline, 'Claim response must include the real discipline').toBe('Dressage');
 
   guard.assertClean();
 });
