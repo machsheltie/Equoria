@@ -19,7 +19,9 @@ import type { ApiError } from '../lib/api-client';
 
 /** Set VITE_DEV_BYPASS_AUTH=true in .env to skip login during local review.
  *  Production guard: bypass is ONLY active in development mode to prevent
- *  accidental admin impersonation if the env var leaks into a production build. */
+ *  accidental privilege escalation if the env var leaks into a production build.
+ *  Defense-in-depth (Equoria-o7c0x L6): bypass user is 'user' role, not 'admin',
+ *  so a misconfigured dev build cannot grant admin UI surfaces. */
 const DEV_BYPASS = import.meta.env.DEV === true && import.meta.env.VITE_DEV_BYPASS_AUTH === 'true';
 
 const DEV_USER: User = {
@@ -28,7 +30,7 @@ const DEV_USER: User = {
   email: 'dev@equoria.local',
   firstName: 'Dev',
   lastName: 'User',
-  role: 'admin',
+  role: 'user',
   money: 5000,
   level: 5,
   xp: 1000,
@@ -161,7 +163,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // Memoize context value to prevent unnecessary re-renders
   const contextValue = useMemo<AuthContextValue>(() => {
-    // Dev bypass: return a mock admin user so login can be skipped during local review
+    // Dev bypass: return a mock user so login can be skipped during local review.
+    // Role is 'user' (not 'admin') for defense-in-depth (Equoria-o7c0x L6).
     if (DEV_BYPASS) {
       return {
         user: DEV_USER,
@@ -172,11 +175,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         logout: () => {},
         isLoggingOut: false,
         refetchProfile: async () => {},
-        userRole: 'admin' as UserRole,
-        hasRole: (role: UserRole) => role === 'admin',
-        hasAnyRole: (roles: UserRole[]) => roles.includes('admin'),
-        isAdmin: true,
-        isModerator: true,
+        userRole: 'user' as UserRole,
+        hasRole: (role: UserRole) => role === 'user',
+        hasAnyRole: (roles: UserRole[]) => roles.includes('user'),
+        isAdmin: false,
+        isModerator: false,
       };
     }
     return {
