@@ -5,180 +5,162 @@
  * Verifies proper cache management and error handling
  *
  * Phase 1, Day 1-2: HttpOnly Cookie Migration
+ *
+ * Network boundary stubbed with MSW per-test `server.use(...)` overrides
+ * (Equoria-f12xy) instead of vi.mock'ing the api-client. This exercises the
+ * REAL api-client auth flow — including the CSRF round-trip on mutations and
+ * the single 401→refresh→retry path — so the cache-invalidation, no-retry,
+ * and no-token-storage contracts are validated against the actual client.
+ * The user-facing login/register/logout journeys are additionally covered by
+ * the auth Playwright E2E specs (tests/e2e/); these unit tests lock the hooks'
+ * cache/security logic that an E2E cannot observe directly.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode } from 'react';
 import { useProfile, useLogin, useRegister, useLogout, useIsAuthenticated } from '../useAuth';
-import * as apiClient from '../../lib/api-client';
+import { server } from '../../test/msw/server';
 
-// Mock the API client
-vi.mock('../../lib/api-client', () => ({
-  authApi: {
-    getProfile: vi.fn(),
-    login: vi.fn(),
-    register: vi.fn(),
-    logout: vi.fn(),
-  },
-}));
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+/** Profile 401 + a failing refresh so the client does NOT retry getProfile. */
+function stubProfileUnauthorized(message = 'Invalid or expired token') {
+  let profileCalls = 0;
+  server.use(
+    http.get(`${base}/api/v1/auth/profile`, () => {
+      profileCalls += 1;
+      return HttpResponse.json({ message, status: 'error' }, { status: 401 });
+    }),
+    // Refresh fails → client throws the 401 instead of retrying.
+    http.post(`${base}/api/v1/auth/refresh-token`, () =>
+      HttpResponse.json({ message: 'no session' }, { status: 401 })
+    )
+  );
+  return () => profileCalls;
+}
 
 describe('useAuth Hooks - Cookie-Based Authentication', () => {
   let queryClient: QueryClient;
-  let wrapper: ({ _children }: { children: ReactNode }) => JSX.Element;
+  let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
 
   beforeEach(() => {
-    // Create fresh query client for each test
     queryClient = new QueryClient({
       defaultOptions: {
-        queries: {
-          retry: false,
-        },
-        mutations: {
-          retry: false,
-        },
+        queries: { retry: false },
+        mutations: { retry: false },
       },
     });
 
-    // Wrapper with QueryClientProvider
     wrapper = ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     );
-
-    // Clear all mocks
-    vi.clearAllMocks();
   });
 
   describe('useProfile - Get Current User', () => {
     it('should fetch user profile using httpOnly cookies', async () => {
       const mockUser = {
-        user: {
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-        },
+        user: { id: 1, username: 'testuser', email: 'test@example.com' },
       };
 
-      vi.mocked(apiClient.authApi.getProfile).mockResolvedValueOnce(mockUser);
+      server.use(
+        http.get(`${base}/api/v1/auth/profile`, () => HttpResponse.json({ data: mockUser }))
+      );
 
       const { result } = renderHook(() => useProfile(), { wrapper });
 
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-      });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
       expect(result.current.data).toEqual(mockUser);
-      expect(apiClient.authApi.getProfile).toHaveBeenCalledTimes(1);
     });
 
     it('should handle 401 Unauthorized (expired/invalid cookies)', async () => {
-      vi.mocked(apiClient.authApi.getProfile).mockRejectedValueOnce({
-        statusCode: 401,
-        message: 'Invalid or expired token',
-      });
+      stubProfileUnauthorized();
 
       const { result } = renderHook(() => useProfile(), { wrapper });
 
-      await waitFor(() => {
-        expect(result.current.isError).toBe(true);
-      });
+      await waitFor(() => expect(result.current.isError).toBe(true));
 
-      expect(result.current.error).toMatchObject({
-        statusCode: 401,
-      });
+      expect(result.current.error).toMatchObject({ statusCode: 401 });
     });
 
     it('should NOT retry on 401 errors (invalid cookies)', async () => {
-      vi.mocked(apiClient.authApi.getProfile).mockRejectedValue({
-        statusCode: 401,
-        message: 'Invalid token',
-      });
+      const getCalls = stubProfileUnauthorized('Invalid token');
 
       const { result } = renderHook(() => useProfile(), { wrapper });
 
-      await waitFor(() => {
-        expect(result.current.isError).toBe(true);
-      });
+      await waitFor(() => expect(result.current.isError).toBe(true));
 
-      // Should only call once (no retries for 401)
-      expect(apiClient.authApi.getProfile).toHaveBeenCalledTimes(1);
+      // React Query retry:false → exactly one getProfile attempt. (The client's
+      // internal 401→refresh→retry is suppressed because refresh also 401s.)
+      expect(getCalls()).toBe(1);
     });
 
     it('should cache profile data for 5 minutes', async () => {
       const mockUser = {
-        user: {
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-        },
+        user: { id: 1, username: 'testuser', email: 'test@example.com' },
       };
-
-      vi.mocked(apiClient.authApi.getProfile).mockResolvedValue(mockUser);
+      let getCalls = 0;
+      server.use(
+        http.get(`${base}/api/v1/auth/profile`, () => {
+          getCalls += 1;
+          return HttpResponse.json({ data: mockUser });
+        })
+      );
 
       const { result, rerender } = renderHook(() => useProfile(), { wrapper });
 
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-      });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
       // Rerender should use cache
       rerender();
 
-      expect(apiClient.authApi.getProfile).toHaveBeenCalledTimes(1);
+      expect(getCalls).toBe(1);
     });
   });
 
   describe('useLogin - Login with Cookies', () => {
     it('should login and invalidate profile cache', async () => {
       const mockResponse = {
-        user: {
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-        },
+        user: { id: 1, username: 'testuser', email: 'test@example.com' },
       };
-
-      vi.mocked(apiClient.authApi.login).mockResolvedValueOnce(mockResponse);
+      server.use(
+        http.post(`${base}/api/v1/auth/login`, () => HttpResponse.json({ data: mockResponse }))
+      );
 
       // Seed stale profile data to verify invalidation clears it
       queryClient.setQueryData(['profile'], { user: { id: 99, username: 'stale' } });
 
       const { result } = renderHook(() => useLogin(), { wrapper });
 
-      result.current.mutate({
-        email: 'test@example.com',
-        password: 'password123',
-      });
+      result.current.mutate({ email: 'test@example.com', password: 'password123' });
 
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-      });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
       expect(result.current.data).toEqual(mockResponse);
 
-      // Profile cache should be invalidated (not set to login response)
-      // React Query marks it stale so a fresh getProfile fetch will follow
+      // Profile cache should be invalidated.
       const cacheState = queryClient.getQueryState(['profile']);
       expect(cacheState?.isInvalidated).toBe(true);
     });
 
     it('should handle login errors (invalid credentials)', async () => {
-      vi.mocked(apiClient.authApi.login).mockRejectedValueOnce({
-        statusCode: 401,
-        message: 'Invalid email or password',
-      });
+      server.use(
+        http.post(`${base}/api/v1/auth/login`, () =>
+          HttpResponse.json(
+            { message: 'Invalid email or password', status: 'error' },
+            { status: 401 }
+          )
+        )
+      );
 
       const { result } = renderHook(() => useLogin(), { wrapper });
 
-      result.current.mutate({
-        email: 'wrong@example.com',
-        password: 'wrongpassword',
-      });
+      result.current.mutate({ email: 'wrong@example.com', password: 'wrongpassword' });
 
-      await waitFor(() => {
-        expect(result.current.isError).toBe(true);
-      });
+      await waitFor(() => expect(result.current.isError).toBe(true));
 
       expect(result.current.error).toMatchObject({
         statusCode: 401,
@@ -188,28 +170,19 @@ describe('useAuth Hooks - Cookie-Based Authentication', () => {
 
     it('should NOT expose tokens (httpOnly cookies used)', async () => {
       const mockResponse = {
-        user: {
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-        },
+        user: { id: 1, username: 'testuser', email: 'test@example.com' },
         // NO token or refreshToken in response
       };
-
-      vi.mocked(apiClient.authApi.login).mockResolvedValueOnce(mockResponse);
+      server.use(
+        http.post(`${base}/api/v1/auth/login`, () => HttpResponse.json({ data: mockResponse }))
+      );
 
       const { result } = renderHook(() => useLogin(), { wrapper });
 
-      result.current.mutate({
-        email: 'test@example.com',
-        password: 'password123',
-      });
+      result.current.mutate({ email: 'test@example.com', password: 'password123' });
 
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-      });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-      // Verify no tokens in response data
       expect((result.current.data as any)?.token).toBeUndefined();
       expect((result.current.data as any)?.refreshToken).toBeUndefined();
     });
@@ -227,10 +200,10 @@ describe('useAuth Hooks - Cookie-Based Authentication', () => {
           xp: 0,
         },
       };
+      server.use(
+        http.post(`${base}/api/v1/auth/register`, () => HttpResponse.json({ data: mockResponse }))
+      );
 
-      vi.mocked(apiClient.authApi.register).mockResolvedValueOnce(mockResponse);
-
-      // Seed stale profile data to verify invalidation clears it
       queryClient.setQueryData(['profile'], { user: { id: 99, username: 'stale' } });
 
       const { result } = renderHook(() => useRegister(), { wrapper });
@@ -241,22 +214,23 @@ describe('useAuth Hooks - Cookie-Based Authentication', () => {
         password: 'password123',
       });
 
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-      });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
       expect(result.current.data).toEqual(mockResponse);
 
-      // Profile cache should be invalidated (not set to register response)
       const cacheState = queryClient.getQueryState(['profile']);
       expect(cacheState?.isInvalidated).toBe(true);
     });
 
     it('should handle registration errors (duplicate email)', async () => {
-      vi.mocked(apiClient.authApi.register).mockRejectedValueOnce({
-        statusCode: 400,
-        message: 'User with this email already exists',
-      });
+      server.use(
+        http.post(`${base}/api/v1/auth/register`, () =>
+          HttpResponse.json(
+            { message: 'User with this email already exists', status: 'error' },
+            { status: 400 }
+          )
+        )
+      );
 
       const { result } = renderHook(() => useRegister(), { wrapper });
 
@@ -266,21 +240,19 @@ describe('useAuth Hooks - Cookie-Based Authentication', () => {
         password: 'password123',
       });
 
-      await waitFor(() => {
-        expect(result.current.isError).toBe(true);
-      });
+      await waitFor(() => expect(result.current.isError).toBe(true));
 
-      expect(result.current.error).toMatchObject({
-        statusCode: 400,
-      });
+      expect(result.current.error).toMatchObject({ statusCode: 400 });
     });
   });
 
   describe('useLogout - Clear Cookies', () => {
     it('should logout and clear all cached data', async () => {
-      const mockResponse = { message: 'Logout successful' };
-
-      vi.mocked(apiClient.authApi.logout).mockResolvedValueOnce(mockResponse);
+      server.use(
+        http.post(`${base}/api/v1/auth/logout`, () =>
+          HttpResponse.json({ data: { message: 'Logout successful' } })
+        )
+      );
 
       // Seed profile cache
       queryClient.setQueryData(['profile'], {
@@ -291,75 +263,64 @@ describe('useAuth Hooks - Cookie-Based Authentication', () => {
 
       result.current.mutate();
 
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-      });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-      // Verify all cache was cleared
+      // onSettled calls queryClient.clear() → profile cache gone.
       const profileCache = queryClient.getQueryData(['profile']);
       expect(profileCache).toBeUndefined();
     });
 
     it('should call logout endpoint to clear httpOnly cookies', async () => {
-      vi.mocked(apiClient.authApi.logout).mockResolvedValueOnce({
-        message: 'Logout successful',
-      });
+      let logoutCalls = 0;
+      server.use(
+        http.post(`${base}/api/v1/auth/logout`, () => {
+          logoutCalls += 1;
+          return HttpResponse.json({ data: { message: 'Logout successful' } });
+        })
+      );
 
       const { result } = renderHook(() => useLogout(), { wrapper });
 
       result.current.mutate();
 
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-      });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-      expect(apiClient.authApi.logout).toHaveBeenCalledTimes(1);
+      expect(logoutCalls).toBe(1);
     });
   });
 
   describe('useIsAuthenticated - Check Auth Status', () => {
     it('should return true when user is authenticated', async () => {
       const mockUser = {
-        user: {
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-        },
+        user: { id: 1, username: 'testuser', email: 'test@example.com' },
       };
-
-      vi.mocked(apiClient.authApi.getProfile).mockResolvedValueOnce(mockUser);
+      server.use(
+        http.get(`${base}/api/v1/auth/profile`, () => HttpResponse.json({ data: mockUser }))
+      );
 
       const { result } = renderHook(() => useIsAuthenticated(), { wrapper });
 
-      await waitFor(() => {
-        expect(result.current).toBe(true);
-      });
+      await waitFor(() => expect(result.current).toBe(true));
     });
 
     it('should return false when user is not authenticated', async () => {
-      vi.mocked(apiClient.authApi.getProfile).mockRejectedValueOnce({
-        statusCode: 401,
-        message: 'Invalid token',
-      });
+      stubProfileUnauthorized('Invalid token');
 
       const { result } = renderHook(() => useIsAuthenticated(), { wrapper });
 
-      await waitFor(() => {
-        expect(result.current).toBe(false);
-      });
+      await waitFor(() => expect(result.current).toBe(false));
     });
 
     it('should return false when profile query fails', async () => {
-      vi.mocked(apiClient.authApi.getProfile).mockRejectedValueOnce({
-        statusCode: 500,
-        message: 'Server error',
-      });
+      server.use(
+        http.get(`${base}/api/v1/auth/profile`, () =>
+          HttpResponse.json({ message: 'Server error', status: 'error' }, { status: 500 })
+        )
+      );
 
       const { result } = renderHook(() => useIsAuthenticated(), { wrapper });
 
-      await waitFor(() => {
-        expect(result.current).toBe(false);
-      });
+      await waitFor(() => expect(result.current).toBe(false));
     });
   });
 
@@ -368,42 +329,31 @@ describe('useAuth Hooks - Cookie-Based Authentication', () => {
       const setItemSpy = vi.spyOn(Storage.prototype, 'setItem');
 
       const mockResponse = {
-        user: {
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-        },
+        user: { id: 1, username: 'testuser', email: 'test@example.com' },
       };
-
-      vi.mocked(apiClient.authApi.login).mockResolvedValueOnce(mockResponse);
+      server.use(
+        http.post(`${base}/api/v1/auth/login`, () => HttpResponse.json({ data: mockResponse }))
+      );
 
       const { result } = renderHook(() => useLogin(), { wrapper });
 
-      result.current.mutate({
-        email: 'test@example.com',
-        password: 'password123',
-      });
+      result.current.mutate({ email: 'test@example.com', password: 'password123' });
 
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-      });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-      // Verify NO localStorage usage
       expect(setItemSpy).not.toHaveBeenCalled();
+      setItemSpy.mockRestore();
     });
 
     it('should NOT store tokens in sessionStorage', async () => {
       const setItemSpy = vi.spyOn(sessionStorage, 'setItem');
 
       const mockResponse = {
-        user: {
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-        },
+        user: { id: 1, username: 'testuser', email: 'test@example.com' },
       };
-
-      vi.mocked(apiClient.authApi.register).mockResolvedValueOnce(mockResponse);
+      server.use(
+        http.post(`${base}/api/v1/auth/register`, () => HttpResponse.json({ data: mockResponse }))
+      );
 
       const { result } = renderHook(() => useRegister(), { wrapper });
 
@@ -413,12 +363,10 @@ describe('useAuth Hooks - Cookie-Based Authentication', () => {
         password: 'password123',
       });
 
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-      });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-      // Verify NO sessionStorage usage
       expect(setItemSpy).not.toHaveBeenCalled();
+      setItemSpy.mockRestore();
     });
   });
 });

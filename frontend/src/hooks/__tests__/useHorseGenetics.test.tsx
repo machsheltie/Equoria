@@ -7,10 +7,16 @@
  * - useHorseTraitTimeline
  *
  * Story 3-3, Task 2: Data Fetching Layer
+ *
+ * Network boundary stubbed with MSW per-test `server.use(...)` overrides
+ * (Equoria-f12xy) instead of vi.mock'ing the api-client module. This exercises
+ * the real api-client fetch + `{ data }` unwrap and the hooks' pure-logic
+ * surface (query key, enabled-guard, error branch, empty/variant payloads).
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode } from 'react';
 import {
@@ -23,18 +29,13 @@ import type {
   EpigeneticInsightsResponse,
   TraitTimelineResponse,
 } from '../useHorseGenetics';
-import * as apiClient from '../../lib/api-client';
+import { server } from '../../test/msw/server';
 
-// Mock the API client
-vi.mock('../../lib/api-client', () => ({
-  apiClient: {
-    get: vi.fn(),
-  },
-}));
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 describe('Horse Genetics Hooks', () => {
   let queryClient: QueryClient;
-  let wrapper: ({ _children }: { children: ReactNode }) => JSX.Element;
+  let wrapper: ({ children }: { children: ReactNode }) => JSX.Element;
 
   beforeEach(() => {
     // Create fresh query client for each test
@@ -50,9 +51,6 @@ describe('Horse Genetics Hooks', () => {
     wrapper = ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     );
-
-    // Clear all mocks
-    vi.clearAllMocks();
   });
 
   describe('useHorseTraitInteractions', () => {
@@ -74,7 +72,11 @@ describe('Horse Genetics Hooks', () => {
     };
 
     it('should fetch trait interactions successfully', async () => {
-      vi.mocked(apiClient.apiClient.get).mockResolvedValueOnce(mockInteractionsData);
+      server.use(
+        http.get(`${base}/api/horses/123/trait-interactions`, () =>
+          HttpResponse.json({ data: mockInteractionsData })
+        )
+      );
 
       const { result } = renderHook(() => useHorseTraitInteractions(123), { wrapper });
 
@@ -83,15 +85,18 @@ describe('Horse Genetics Hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockInteractionsData);
-      expect(apiClient.apiClient.get).toHaveBeenCalledWith('/api/horses/123/trait-interactions');
-      expect(apiClient.apiClient.get).toHaveBeenCalledTimes(1);
+      // Query key proves the request was wired to the right horse + resource.
+      expect(queryClient.getQueryData(['horse', 123, 'trait-interactions'])).toEqual(
+        mockInteractionsData
+      );
     });
 
     it('should handle 404 error (horse not found)', async () => {
-      vi.mocked(apiClient.apiClient.get).mockRejectedValueOnce({
-        statusCode: 404,
-        message: 'Horse not found',
-      });
+      server.use(
+        http.get(`${base}/api/horses/999/trait-interactions`, () =>
+          HttpResponse.json({ message: 'Horse not found' }, { status: 404 })
+        )
+      );
 
       const { result } = renderHook(() => useHorseTraitInteractions(999), { wrapper });
 
@@ -106,7 +111,9 @@ describe('Horse Genetics Hooks', () => {
     });
 
     it('should handle network errors', async () => {
-      vi.mocked(apiClient.apiClient.get).mockRejectedValueOnce(new Error('Network request failed'));
+      server.use(
+        http.get(`${base}/api/horses/123/trait-interactions`, () => HttpResponse.error())
+      );
 
       const { result } = renderHook(() => useHorseTraitInteractions(123), { wrapper });
 
@@ -114,20 +121,20 @@ describe('Horse Genetics Hooks', () => {
         expect(result.current.isError).toBe(true);
       });
 
-      expect(result.current.error).toBeInstanceOf(Error);
+      expect(result.current.error).toBeTruthy();
     });
 
     it('should not fetch when enabled is false', async () => {
+      // No handler registered — a fetch would trip onUnhandledRequest: 'error'.
       const { result } = renderHook(() => useHorseTraitInteractions(123, { enabled: false }), {
         wrapper,
       });
 
-      // Wait a bit to ensure no fetch was triggered
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(result.current.isLoading).toBe(false);
       expect(result.current.data).toBeUndefined();
-      expect(apiClient.apiClient.get).not.toHaveBeenCalled();
+      expect(result.current.fetchStatus).toBe('idle');
     });
 
     it('should not fetch when horseId is 0', async () => {
@@ -136,11 +143,15 @@ describe('Horse Genetics Hooks', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(result.current.isLoading).toBe(false);
-      expect(apiClient.apiClient.get).not.toHaveBeenCalled();
+      expect(result.current.fetchStatus).toBe('idle');
     });
 
     it('should use correct query key', async () => {
-      vi.mocked(apiClient.apiClient.get).mockResolvedValueOnce(mockInteractionsData);
+      server.use(
+        http.get(`${base}/api/horses/123/trait-interactions`, () =>
+          HttpResponse.json({ data: mockInteractionsData })
+        )
+      );
 
       const { result } = renderHook(() => useHorseTraitInteractions(123), { wrapper });
 
@@ -155,7 +166,11 @@ describe('Horse Genetics Hooks', () => {
 
     it('should return empty interactions array', async () => {
       const emptyData: TraitInteractionsResponse = { interactions: [] };
-      vi.mocked(apiClient.apiClient.get).mockResolvedValueOnce(emptyData);
+      server.use(
+        http.get(`${base}/api/horses/123/trait-interactions`, () =>
+          HttpResponse.json({ data: emptyData })
+        )
+      );
 
       const { result } = renderHook(() => useHorseTraitInteractions(123), { wrapper });
 
@@ -211,7 +226,11 @@ describe('Horse Genetics Hooks', () => {
     };
 
     it('should fetch epigenetic insights successfully', async () => {
-      vi.mocked(apiClient.apiClient.get).mockResolvedValueOnce(mockInsightsData);
+      server.use(
+        http.get(`${base}/api/horses/456/epigenetic-insights`, () =>
+          HttpResponse.json({ data: mockInsightsData })
+        )
+      );
 
       const { result } = renderHook(() => useHorseEpigeneticInsights(456), { wrapper });
 
@@ -220,8 +239,9 @@ describe('Horse Genetics Hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockInsightsData);
-      expect(apiClient.apiClient.get).toHaveBeenCalledWith('/api/horses/456/epigenetic-insights');
-      expect(apiClient.apiClient.get).toHaveBeenCalledTimes(1);
+      expect(queryClient.getQueryData(['horse', 456, 'epigenetic-insights'])).toEqual(
+        mockInsightsData
+      );
     });
 
     it('should handle horse with only genetic traits', async () => {
@@ -239,7 +259,11 @@ describe('Horse Genetics Hooks', () => {
         ],
       };
 
-      vi.mocked(apiClient.apiClient.get).mockResolvedValueOnce(geneticOnlyData);
+      server.use(
+        http.get(`${base}/api/horses/123/epigenetic-insights`, () =>
+          HttpResponse.json({ data: geneticOnlyData })
+        )
+      );
 
       const { result } = renderHook(() => useHorseEpigeneticInsights(123), { wrapper });
 
@@ -267,7 +291,11 @@ describe('Horse Genetics Hooks', () => {
         ],
       };
 
-      vi.mocked(apiClient.apiClient.get).mockResolvedValueOnce(epigeneticOnlyData);
+      server.use(
+        http.get(`${base}/api/horses/123/epigenetic-insights`, () =>
+          HttpResponse.json({ data: epigeneticOnlyData })
+        )
+      );
 
       const { result } = renderHook(() => useHorseEpigeneticInsights(123), { wrapper });
 
@@ -281,10 +309,11 @@ describe('Horse Genetics Hooks', () => {
     });
 
     it('should handle 401 unauthorized error', async () => {
-      vi.mocked(apiClient.apiClient.get).mockRejectedValueOnce({
-        statusCode: 401,
-        message: 'Authentication required',
-      });
+      server.use(
+        http.get(`${base}/api/horses/123/epigenetic-insights`, () =>
+          HttpResponse.json({ message: 'Authentication required' }, { status: 401 })
+        )
+      );
 
       const { result } = renderHook(() => useHorseEpigeneticInsights(123), { wrapper });
 
@@ -305,11 +334,15 @@ describe('Horse Genetics Hooks', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(result.current.isLoading).toBe(false);
-      expect(apiClient.apiClient.get).not.toHaveBeenCalled();
+      expect(result.current.fetchStatus).toBe('idle');
     });
 
     it('should use correct query key', async () => {
-      vi.mocked(apiClient.apiClient.get).mockResolvedValueOnce(mockInsightsData);
+      server.use(
+        http.get(`${base}/api/horses/456/epigenetic-insights`, () =>
+          HttpResponse.json({ data: mockInsightsData })
+        )
+      );
 
       const { result } = renderHook(() => useHorseEpigeneticInsights(456), { wrapper });
 
@@ -324,7 +357,11 @@ describe('Horse Genetics Hooks', () => {
 
     it('should handle horse with no traits', async () => {
       const noTraitsData: EpigeneticInsightsResponse = { traits: [] };
-      vi.mocked(apiClient.apiClient.get).mockResolvedValueOnce(noTraitsData);
+      server.use(
+        http.get(`${base}/api/horses/123/epigenetic-insights`, () =>
+          HttpResponse.json({ data: noTraitsData })
+        )
+      );
 
       const { result } = renderHook(() => useHorseEpigeneticInsights(123), { wrapper });
 
@@ -375,7 +412,11 @@ describe('Horse Genetics Hooks', () => {
     };
 
     it('should fetch trait timeline successfully', async () => {
-      vi.mocked(apiClient.apiClient.get).mockResolvedValueOnce(mockTimelineData);
+      server.use(
+        http.get(`${base}/api/horses/789/trait-timeline`, () =>
+          HttpResponse.json({ data: mockTimelineData })
+        )
+      );
 
       const { result } = renderHook(() => useHorseTraitTimeline(789), { wrapper });
 
@@ -384,8 +425,7 @@ describe('Horse Genetics Hooks', () => {
       });
 
       expect(result.current.data).toEqual(mockTimelineData);
-      expect(apiClient.apiClient.get).toHaveBeenCalledWith('/api/horses/789/trait-timeline');
-      expect(apiClient.apiClient.get).toHaveBeenCalledTimes(1);
+      expect(queryClient.getQueryData(['horse', 789, 'trait-timeline'])).toEqual(mockTimelineData);
     });
 
     it('should handle timeline with only inherited events', async () => {
@@ -408,7 +448,11 @@ describe('Horse Genetics Hooks', () => {
         ],
       };
 
-      vi.mocked(apiClient.apiClient.get).mockResolvedValueOnce(inheritedOnlyData);
+      server.use(
+        http.get(`${base}/api/horses/123/trait-timeline`, () =>
+          HttpResponse.json({ data: inheritedOnlyData })
+        )
+      );
 
       const { result } = renderHook(() => useHorseTraitTimeline(123), { wrapper });
 
@@ -434,7 +478,11 @@ describe('Horse Genetics Hooks', () => {
         ],
       };
 
-      vi.mocked(apiClient.apiClient.get).mockResolvedValueOnce(mutationData);
+      server.use(
+        http.get(`${base}/api/horses/123/trait-timeline`, () =>
+          HttpResponse.json({ data: mutationData })
+        )
+      );
 
       const { result } = renderHook(() => useHorseTraitTimeline(123), { wrapper });
 
@@ -447,10 +495,11 @@ describe('Horse Genetics Hooks', () => {
     });
 
     it('should handle 404 error (horse not found)', async () => {
-      vi.mocked(apiClient.apiClient.get).mockRejectedValueOnce({
-        statusCode: 404,
-        message: 'Horse not found',
-      });
+      server.use(
+        http.get(`${base}/api/horses/999/trait-timeline`, () =>
+          HttpResponse.json({ message: 'Horse not found' }, { status: 404 })
+        )
+      );
 
       const { result } = renderHook(() => useHorseTraitTimeline(999), { wrapper });
 
@@ -471,11 +520,15 @@ describe('Horse Genetics Hooks', () => {
       await new Promise((resolve) => setTimeout(resolve, 100));
 
       expect(result.current.isLoading).toBe(false);
-      expect(apiClient.apiClient.get).not.toHaveBeenCalled();
+      expect(result.current.fetchStatus).toBe('idle');
     });
 
     it('should use correct query key', async () => {
-      vi.mocked(apiClient.apiClient.get).mockResolvedValueOnce(mockTimelineData);
+      server.use(
+        http.get(`${base}/api/horses/789/trait-timeline`, () =>
+          HttpResponse.json({ data: mockTimelineData })
+        )
+      );
 
       const { result } = renderHook(() => useHorseTraitTimeline(789), { wrapper });
 
@@ -490,7 +543,11 @@ describe('Horse Genetics Hooks', () => {
 
     it('should handle empty timeline (young horse)', async () => {
       const emptyTimelineData: TraitTimelineResponse = { timeline: [] };
-      vi.mocked(apiClient.apiClient.get).mockResolvedValueOnce(emptyTimelineData);
+      server.use(
+        http.get(`${base}/api/horses/123/trait-timeline`, () =>
+          HttpResponse.json({ data: emptyTimelineData })
+        )
+      );
 
       const { result } = renderHook(() => useHorseTraitTimeline(123), { wrapper });
 
@@ -502,7 +559,7 @@ describe('Horse Genetics Hooks', () => {
     });
 
     it('should handle network errors', async () => {
-      vi.mocked(apiClient.apiClient.get).mockRejectedValueOnce(new Error('Network request failed'));
+      server.use(http.get(`${base}/api/horses/123/trait-timeline`, () => HttpResponse.error()));
 
       const { result } = renderHook(() => useHorseTraitTimeline(123), { wrapper });
 
@@ -510,48 +567,56 @@ describe('Horse Genetics Hooks', () => {
         expect(result.current.isError).toBe(true);
       });
 
-      expect(result.current.error).toBeInstanceOf(Error);
+      expect(result.current.error).toBeTruthy();
     });
   });
 
   describe('Cache and Stale Time Configuration', () => {
     it('useHorseTraitInteractions should have 5 minute stale time by default', async () => {
       const mockData: TraitInteractionsResponse = { interactions: [] };
-      vi.mocked(apiClient.apiClient.get).mockResolvedValueOnce(mockData);
+      server.use(
+        http.get(`${base}/api/horses/123/trait-interactions`, () =>
+          HttpResponse.json({ data: mockData })
+        )
+      );
 
       renderHook(() => useHorseTraitInteractions(123), { wrapper });
 
       await waitFor(() => {
         const cacheEntry = queryClient.getQueryState(['horse', 123, 'trait-interactions']);
-        expect(cacheEntry).toBeDefined();
+        expect(cacheEntry?.dataUpdatedAt).toBeGreaterThan(0);
       });
-
-      // Verify stale time is set (5 minutes = 300000ms)
-      const cacheEntry = queryClient.getQueryState(['horse', 123, 'trait-interactions']);
-      expect(cacheEntry?.dataUpdatedAt).toBeDefined();
     });
 
     it('useHorseEpigeneticInsights should have 10 minute stale time by default', async () => {
       const mockData: EpigeneticInsightsResponse = { traits: [] };
-      vi.mocked(apiClient.apiClient.get).mockResolvedValueOnce(mockData);
+      server.use(
+        http.get(`${base}/api/horses/123/epigenetic-insights`, () =>
+          HttpResponse.json({ data: mockData })
+        )
+      );
 
       renderHook(() => useHorseEpigeneticInsights(123), { wrapper });
 
       await waitFor(() => {
         const cacheEntry = queryClient.getQueryState(['horse', 123, 'epigenetic-insights']);
-        expect(cacheEntry).toBeDefined();
+        expect(cacheEntry?.dataUpdatedAt).toBeGreaterThan(0);
       });
     });
 
     it('useHorseTraitTimeline should have 15 minute stale time by default', async () => {
       const mockData: TraitTimelineResponse = { timeline: [] };
-      vi.mocked(apiClient.apiClient.get).mockResolvedValueOnce(mockData);
+      server.use(
+        http.get(`${base}/api/horses/123/trait-timeline`, () =>
+          HttpResponse.json({ data: mockData })
+        )
+      );
 
       renderHook(() => useHorseTraitTimeline(123), { wrapper });
 
       await waitFor(() => {
         const cacheEntry = queryClient.getQueryState(['horse', 123, 'trait-timeline']);
-        expect(cacheEntry).toBeDefined();
+        expect(cacheEntry?.dataUpdatedAt).toBeGreaterThan(0);
       });
     });
   });

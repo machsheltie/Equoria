@@ -7,26 +7,70 @@
  * - Protecting routes that require authentication
  * - Preserving intended destination for post-login redirect
  *
- * Following TDD with minimal mocking approach for authentic validation
+ * Network boundary stubbed with MSW per-test `server.use(...)` overrides
+ * (Equoria-f12xy) instead of vi.mock'ing the api-client. The guard composes
+ * the real AuthProvider (profile + verification-status queries) against the
+ * stubbed fetch boundary; unauthenticated cases force the 401→refresh path to
+ * fail so the guard settles into shouldRedirect. The login-page redirect that
+ * a tester actually experiences is covered by the auth Playwright E2E
+ * (tests/e2e/); these unit tests lock the guard's pure redirect-decision logic.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, useLocation } from '../../test/utils';
 import { ReactNode } from 'react';
 import { AuthProvider, useAuth } from '../../contexts/AuthContext';
 import { useSessionGuard } from '../useSessionGuard';
-import * as apiClient from '../../lib/api-client';
+import { server } from '../../test/msw/server';
 
-// Mock the API client
-vi.mock('../../lib/api-client', () => ({
-  authApi: {
-    getProfile: vi.fn(),
-    logout: vi.fn(),
-    getVerificationStatus: vi.fn(),
-  },
-}));
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+const AUTH_USER = { id: 1, username: 'testuser', email: 'test@example.com' };
+
+/** Authenticated session (profile + verification). */
+function stubAuthenticated(verified = true) {
+  server.use(
+    http.get(`${base}/api/v1/auth/profile`, () => HttpResponse.json({ data: { user: AUTH_USER } })),
+    http.get(`${base}/api/v1/auth/verification-status`, () =>
+      HttpResponse.json({
+        data: {
+          verified,
+          email: 'test@example.com',
+          verifiedAt: verified ? '2024-01-01T00:00:00Z' : null,
+        },
+      })
+    )
+  );
+}
+
+/** Unauthenticated: profile 401 + failing refresh + verification 401. */
+function stubUnauthenticated() {
+  server.use(
+    http.get(`${base}/api/v1/auth/profile`, () =>
+      HttpResponse.json(
+        { message: 'Session expired. Please log in again.', status: 'error' },
+        { status: 401 }
+      )
+    ),
+    http.get(`${base}/api/v1/auth/verification-status`, () =>
+      HttpResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    ),
+    http.post(`${base}/api/v1/auth/refresh-token`, () =>
+      HttpResponse.json({ message: 'no session' }, { status: 401 })
+    )
+  );
+}
+
+/** Profile/verification that never resolve — keeps the guard in loading. */
+function stubNeverResolves() {
+  server.use(
+    http.get(`${base}/api/v1/auth/profile`, () => new Promise<Response>(() => {})),
+    http.get(`${base}/api/v1/auth/verification-status`, () => new Promise<Response>(() => {}))
+  );
+}
 
 /**
  * Component to display current location
@@ -134,7 +178,6 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
         },
       },
     });
-    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -143,9 +186,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
 
   describe('Session Validation', () => {
     it('should show loading while checking session', async () => {
-      // Never resolve to keep loading state
-      vi.mocked(apiClient.authApi.getProfile).mockReturnValue(new Promise(() => {}));
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockReturnValue(new Promise(() => {}));
+      stubNeverResolves();
 
       const Wrapper = createWrapper();
       render(<ProtectedPage />, { wrapper: Wrapper });
@@ -154,20 +195,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
     });
 
     it('should allow access when user is authenticated', async () => {
-      const mockUser = {
-        user: {
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-        },
-      };
-
-      vi.mocked(apiClient.authApi.getProfile).mockResolvedValueOnce(mockUser);
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockResolvedValueOnce({
-        verified: true,
-        email: 'test@example.com',
-        verifiedAt: '2024-01-01T00:00:00Z',
-      });
+      stubAuthenticated();
 
       const Wrapper = createWrapper();
       render(<ProtectedPage />, { wrapper: Wrapper });
@@ -178,15 +206,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
     });
 
     it('should indicate redirect needed when session is expired', async () => {
-      vi.mocked(apiClient.authApi.getProfile).mockRejectedValueOnce({
-        statusCode: 401,
-        message: 'Session expired. Please log in again.',
-        status: 'error',
-      });
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockRejectedValueOnce({
-        statusCode: 401,
-        message: 'Unauthorized',
-      });
+      stubUnauthenticated();
 
       const Wrapper = createWrapper();
       render(<ProtectedPage />, { wrapper: Wrapper });
@@ -197,15 +217,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
     });
 
     it('should provide session expired message', async () => {
-      vi.mocked(apiClient.authApi.getProfile).mockRejectedValueOnce({
-        statusCode: 401,
-        message: 'Session expired. Please log in again.',
-        status: 'error',
-      });
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockRejectedValueOnce({
-        statusCode: 401,
-        message: 'Unauthorized',
-      });
+      stubUnauthenticated();
 
       const Wrapper = createWrapper();
       render(<ProtectedPage />, { wrapper: Wrapper });
@@ -220,20 +232,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
 
   describe('Email Verification Requirement', () => {
     it('should allow access when email is verified', async () => {
-      const mockUser = {
-        user: {
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-        },
-      };
-
-      vi.mocked(apiClient.authApi.getProfile).mockResolvedValueOnce(mockUser);
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockResolvedValueOnce({
-        verified: true,
-        email: 'test@example.com',
-        verifiedAt: '2024-01-01T00:00:00Z',
-      });
+      stubAuthenticated(true);
 
       const Wrapper = createWrapper();
       render(<VerificationRequiredPage />, { wrapper: Wrapper });
@@ -244,20 +243,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
     });
 
     it('should indicate redirect when email is not verified', async () => {
-      const mockUser = {
-        user: {
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-        },
-      };
-
-      vi.mocked(apiClient.authApi.getProfile).mockResolvedValueOnce(mockUser);
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockResolvedValueOnce({
-        verified: false,
-        email: 'test@example.com',
-        verifiedAt: null,
-      });
+      stubAuthenticated(false);
 
       const Wrapper = createWrapper();
       render(<VerificationRequiredPage />, { wrapper: Wrapper });
@@ -268,20 +254,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
     });
 
     it('should show email verification message when not verified', async () => {
-      const mockUser = {
-        user: {
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-        },
-      };
-
-      vi.mocked(apiClient.authApi.getProfile).mockResolvedValueOnce(mockUser);
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockResolvedValueOnce({
-        verified: false,
-        email: 'test@example.com',
-        verifiedAt: null,
-      });
+      stubAuthenticated(false);
 
       const Wrapper = createWrapper();
       render(<VerificationRequiredPage />, { wrapper: Wrapper });
@@ -296,20 +269,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
 
   describe('Guest Access (Unauthenticated Required)', () => {
     it('should indicate redirect when authenticated user accesses guest-only page', async () => {
-      const mockUser = {
-        user: {
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-        },
-      };
-
-      vi.mocked(apiClient.authApi.getProfile).mockResolvedValueOnce(mockUser);
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockResolvedValueOnce({
-        verified: true,
-        email: 'test@example.com',
-        verifiedAt: '2024-01-01T00:00:00Z',
-      });
+      stubAuthenticated();
 
       function GuestOnlyPage() {
         const { isLoading, shouldRedirect, redirectPath } = useSessionGuard({
@@ -337,14 +297,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
     });
 
     it('should allow guest access when not authenticated', async () => {
-      vi.mocked(apiClient.authApi.getProfile).mockRejectedValueOnce({
-        statusCode: 401,
-        message: 'Not authenticated',
-      });
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockRejectedValueOnce({
-        statusCode: 401,
-        message: 'Not authenticated',
-      });
+      stubUnauthenticated();
 
       function GuestOnlyPage() {
         const { isLoading, shouldRedirect } = useSessionGuard({
@@ -374,14 +327,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
 
   describe('Redirect Path Handling', () => {
     it('should provide login path as default redirect for unauthenticated users', async () => {
-      vi.mocked(apiClient.authApi.getProfile).mockRejectedValueOnce({
-        statusCode: 401,
-        message: 'Not authenticated',
-      });
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockRejectedValueOnce({
-        statusCode: 401,
-        message: 'Not authenticated',
-      });
+      stubUnauthenticated();
 
       function TestComponent() {
         const { shouldRedirect, redirectPath } = useSessionGuard();
@@ -402,14 +348,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
     });
 
     it('should preserve current path for post-login redirect', async () => {
-      vi.mocked(apiClient.authApi.getProfile).mockRejectedValueOnce({
-        statusCode: 401,
-        message: 'Not authenticated',
-      });
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockRejectedValueOnce({
-        statusCode: 401,
-        message: 'Not authenticated',
-      });
+      stubUnauthenticated();
 
       function TestComponent() {
         const { shouldRedirect, redirectState } = useSessionGuard();
@@ -430,14 +369,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
     });
 
     it('should provide custom redirect path when specified', async () => {
-      vi.mocked(apiClient.authApi.getProfile).mockRejectedValueOnce({
-        statusCode: 401,
-        message: 'Not authenticated',
-      });
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockRejectedValueOnce({
-        statusCode: 401,
-        message: 'Not authenticated',
-      });
+      stubUnauthenticated();
 
       function TestComponent() {
         const { shouldRedirect, redirectPath } = useSessionGuard({
@@ -462,20 +394,18 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
 
   describe('Multiple Guard Instances', () => {
     it('should share auth state across multiple guard instances', async () => {
-      const mockUser = {
-        user: {
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-        },
-      };
-
-      vi.mocked(apiClient.authApi.getProfile).mockResolvedValue(mockUser);
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockResolvedValue({
-        verified: true,
-        email: 'test@example.com',
-        verifiedAt: '2024-01-01T00:00:00Z',
-      });
+      let profileCalls = 0;
+      server.use(
+        http.get(`${base}/api/v1/auth/profile`, () => {
+          profileCalls += 1;
+          return HttpResponse.json({ data: { user: AUTH_USER } });
+        }),
+        http.get(`${base}/api/v1/auth/verification-status`, () =>
+          HttpResponse.json({
+            data: { verified: true, email: 'test@example.com', verifiedAt: '2024-01-01T00:00:00Z' },
+          })
+        )
+      );
 
       function MultiGuardPage() {
         const guard1 = useSessionGuard();
@@ -497,22 +427,18 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
         expect(screen.getByTestId('guard2-loading')).toHaveTextContent('ready');
       });
 
-      // Should only call API once due to caching
-      expect(apiClient.authApi.getProfile).toHaveBeenCalledTimes(1);
+      // Should only call API once due to caching (shared profile query).
+      expect(profileCalls).toBe(1);
     });
   });
 
   describe('Error Handling', () => {
     it('should handle network errors gracefully', async () => {
-      vi.mocked(apiClient.authApi.getProfile).mockRejectedValueOnce({
-        statusCode: 0,
-        message: 'Network error',
-        status: 'error',
-      });
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockRejectedValueOnce({
-        statusCode: 0,
-        message: 'Network error',
-      });
+      server.use(
+        http.get(`${base}/api/v1/auth/profile`, () => HttpResponse.error()),
+        http.post(`${base}/api/v1/auth/refresh-token`, () => HttpResponse.error()),
+        http.get(`${base}/api/v1/auth/verification-status`, () => HttpResponse.error())
+      );
 
       function TestComponent() {
         const { isLoading, shouldRedirect, sessionMessage } = useSessionGuard();
@@ -538,15 +464,17 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
     });
 
     it('should handle server errors (500)', async () => {
-      vi.mocked(apiClient.authApi.getProfile).mockRejectedValueOnce({
-        statusCode: 500,
-        message: 'Internal server error',
-        status: 'error',
-      });
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockRejectedValueOnce({
-        statusCode: 500,
-        message: 'Internal server error',
-      });
+      server.use(
+        http.get(`${base}/api/v1/auth/profile`, () =>
+          HttpResponse.json(
+            { message: 'Internal server error', status: 'error' },
+            { status: 500 }
+          )
+        ),
+        http.get(`${base}/api/v1/auth/verification-status`, () =>
+          HttpResponse.json({ message: 'Internal server error' }, { status: 500 })
+        )
+      );
 
       function TestComponent() {
         const { isLoading, shouldRedirect, sessionMessage } = useSessionGuard();

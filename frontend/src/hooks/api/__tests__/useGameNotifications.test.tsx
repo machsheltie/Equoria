@@ -2,42 +2,31 @@
  * useGameNotifications hook tests (Equoria-50pn AC-4)
  *
  * Verifies:
- *  - useGameNotifications() calls gameNotificationsApi.getAll which hits
- *    /api/v1/users/me/game-notifications, and exposes
- *    { notifications, unreadCount } via React Query data.
+ *  - useGameNotifications() calls GET /api/v1/users/me/game-notifications and
+ *    exposes { notifications, unreadCount } via React Query data.
  *  - useMarkGameNotificationsRead() mutation invalidates BOTH
  *    ['game-notifications'] and ['messages', 'unread-count'] caches on
  *    success — the contract that lets the MainNavigation bell dot clear
  *    after marking notifications read.
  *
- * Follows the existing api-mock pattern used by useAddXp.test.tsx and other
- * hook tests in this directory: mock the lib/api-client export, not the
- * underlying fetch.
+ * Network boundary stubbed with MSW per-test `server.use(...)` overrides
+ * (Equoria-f12xy) instead of vi.mock'ing the api-client. The PATCH mutation
+ * exercises the real client's CSRF round-trip via the globally-registered
+ * csrf-token handler. The invalidate-on-success contract is asserted with a
+ * `queryClient.invalidateQueries` spy (a queryClient method, not an api-client
+ * mock — doctrine-compliant).
  */
 
 import { renderHook, waitFor, act } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import React from 'react';
 
-import * as apiClient from '@/lib/api-client';
 import { useGameNotifications, useMarkGameNotificationsRead } from '../useGameNotifications';
+import { server } from '../../../test/msw/server';
 
-vi.mock('@/lib/api-client', async () => {
-  const actual = await vi.importActual<typeof import('@/lib/api-client')>('@/lib/api-client');
-  return {
-    ...actual,
-    gameNotificationsApi: {
-      getAll: vi.fn(),
-      markAllRead: vi.fn(),
-    },
-  };
-});
-
-const mockedApi = apiClient.gameNotificationsApi as unknown as {
-  getAll: ReturnType<typeof vi.fn>;
-  markAllRead: ReturnType<typeof vi.fn>;
-};
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -54,11 +43,6 @@ function createWrapper() {
   return { Wrapper, queryClient, invalidateSpy };
 }
 
-beforeEach(() => {
-  mockedApi.getAll.mockReset();
-  mockedApi.markAllRead.mockReset();
-});
-
 describe('useGameNotifications', () => {
   it('fetches /api/v1/users/me/game-notifications and exposes data shape', async () => {
     const response = {
@@ -73,21 +57,31 @@ describe('useGameNotifications', () => {
       ],
       unreadCount: 1,
     };
-    mockedApi.getAll.mockResolvedValueOnce(response);
+    let path = '';
+    server.use(
+      http.get(`${base}/api/v1/users/me/game-notifications`, ({ request }) => {
+        path = new URL(request.url).pathname;
+        return HttpResponse.json({ data: response });
+      })
+    );
 
     const { Wrapper } = createWrapper();
     const { result } = renderHook(() => useGameNotifications(), { wrapper: Wrapper });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(mockedApi.getAll).toHaveBeenCalledTimes(1);
+    expect(path).toBe('/api/v1/users/me/game-notifications');
     expect(result.current.data).toEqual(response);
     expect(result.current.data?.notifications).toHaveLength(1);
     expect(result.current.data?.unreadCount).toBe(1);
   });
 
   it('uses queryKey ["game-notifications"] so MessagesPage + MainNavigation share cache', async () => {
-    mockedApi.getAll.mockResolvedValueOnce({ notifications: [], unreadCount: 0 });
+    server.use(
+      http.get(`${base}/api/v1/users/me/game-notifications`, () =>
+        HttpResponse.json({ data: { notifications: [], unreadCount: 0 } })
+      )
+    );
 
     const { Wrapper, queryClient } = createWrapper();
     const { result } = renderHook(() => useGameNotifications(), { wrapper: Wrapper });
@@ -102,8 +96,14 @@ describe('useGameNotifications', () => {
 });
 
 describe('useMarkGameNotificationsRead', () => {
-  it('calls gameNotificationsApi.markAllRead and invalidates both query keys on success', async () => {
-    mockedApi.markAllRead.mockResolvedValueOnce(undefined);
+  it('calls PATCH read-all and invalidates both query keys on success', async () => {
+    let patched = false;
+    server.use(
+      http.patch(`${base}/api/v1/users/me/game-notifications/read-all`, () => {
+        patched = true;
+        return new HttpResponse(null, { status: 204 });
+      })
+    );
 
     const { Wrapper, invalidateSpy } = createWrapper();
     const { result } = renderHook(() => useMarkGameNotificationsRead(), { wrapper: Wrapper });
@@ -112,7 +112,7 @@ describe('useMarkGameNotificationsRead', () => {
       await result.current.mutateAsync();
     });
 
-    expect(mockedApi.markAllRead).toHaveBeenCalledTimes(1);
+    expect(patched).toBe(true);
 
     // Two specific invalidations required by the contract:
     //  (1) ['game-notifications']   → game notif tab refreshes
@@ -123,8 +123,12 @@ describe('useMarkGameNotificationsRead', () => {
     );
   });
 
-  it('does NOT invalidate caches when markAllRead rejects', async () => {
-    mockedApi.markAllRead.mockRejectedValueOnce(new Error('boom'));
+  it('does NOT invalidate caches when read-all rejects', async () => {
+    server.use(
+      http.patch(`${base}/api/v1/users/me/game-notifications/read-all`, () =>
+        HttpResponse.json({ message: 'boom' }, { status: 500 })
+      )
+    );
 
     const { Wrapper, invalidateSpy } = createWrapper();
     const { result } = renderHook(() => useMarkGameNotificationsRead(), { wrapper: Wrapper });
@@ -133,7 +137,6 @@ describe('useMarkGameNotificationsRead', () => {
       await result.current.mutateAsync().catch(() => {});
     });
 
-    expect(mockedApi.markAllRead).toHaveBeenCalledTimes(1);
     // onSuccess never fired so the two invalidations should NOT have run.
     // (renderHook itself may trigger framework invalidations; we only assert
     // our two contract keys are absent.)

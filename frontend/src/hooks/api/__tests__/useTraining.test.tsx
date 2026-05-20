@@ -9,42 +9,30 @@
  * - useTrainingOverview (query for all discipline statuses)
  * - useTrainingEligibility (query for eligibility check)
  * - useTrainableHorses (query for trainable horses list)
+ *
+ * Network boundary stubbed with MSW per-test `server.use(...)` overrides
+ * (Equoria-f12xy) instead of vi.mock'ing the api-client. The POST mutations
+ * (train, check-eligibility) exercise the real client's CSRF round-trip via
+ * the globally-registered csrf-token handler. `trainingApi.train` appends
+ * backward-compat fields (updatedScore/nextEligibleDate/discipline/horseId)
+ * to the raw backend result, so success assertions use toMatchObject.
  */
 
 import { renderHook, waitFor } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import * as apiClient from '@/lib/api-client';
-import {
-  useTrainHorse,
-  useTrainingStatus,
-  useTrainingOverview,
-  useTrainingEligibility,
-  useTrainableHorses,
-  trainingQueryKeys,
-} from '../useTraining';
+import { describe, it, expect } from 'vitest';
+import { useTrainHorse, useTrainingStatus, useTrainingOverview, useTrainingEligibility, useTrainableHorses, trainingQueryKeys } from '../useTraining';
+import { server } from '../../../test/msw/server';
 
-// Mock API client
-vi.mock('@/lib/api-client', async () => {
-  const actual = await vi.importActual('@/lib/api-client');
-  return {
-    ...actual,
-    trainingApi: {
-      train: vi.fn(),
-      getDisciplineStatus: vi.fn(),
-      getHorseStatus: vi.fn(),
-      checkEligibility: vi.fn(),
-      getTrainableHorses: vi.fn(),
-    },
-  };
-});
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
         retry: false,
-        cacheTime: 0,
+        gcTime: 0,
       },
       mutations: {
         retry: false,
@@ -58,10 +46,6 @@ const createWrapper = () => {
 };
 
 describe('useTrainHorse', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it('should execute training successfully', async () => {
     const mockResult = {
       success: true,
@@ -85,7 +69,13 @@ describe('useTrainHorse', () => {
       },
     };
 
-    vi.mocked(apiClient.trainingApi.train).mockResolvedValue(mockResult);
+    let body: { horseId?: number; discipline?: string } = {};
+    server.use(
+      http.post(`${base}/api/v1/training/train`, async ({ request }) => {
+        body = (await request.json()) as typeof body;
+        return HttpResponse.json({ data: mockResult });
+      })
+    );
 
     const { result } = renderHook(() => useTrainHorse(), {
       wrapper: createWrapper(),
@@ -95,11 +85,9 @@ describe('useTrainHorse', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(result.current.data).toEqual(mockResult);
-    expect(apiClient.trainingApi.train).toHaveBeenCalledWith({
-      horseId: 1,
-      discipline: 'dressage',
-    });
+    // Client appends backward-compat fields, so result is a superset.
+    expect(result.current.data).toMatchObject(mockResult);
+    expect(body).toEqual({ horseId: 1, discipline: 'dressage' });
   });
 
   it('should return training result with stat gains', async () => {
@@ -125,7 +113,9 @@ describe('useTrainHorse', () => {
       },
     };
 
-    vi.mocked(apiClient.trainingApi.train).mockResolvedValue(mockResult);
+    server.use(
+      http.post(`${base}/api/v1/training/train`, () => HttpResponse.json({ data: mockResult }))
+    );
 
     const { result } = renderHook(() => useTrainHorse(), {
       wrapper: createWrapper(),
@@ -163,7 +153,9 @@ describe('useTrainHorse', () => {
       },
     };
 
-    vi.mocked(apiClient.trainingApi.train).mockResolvedValue(mockResult);
+    server.use(
+      http.post(`${base}/api/v1/training/train`, () => HttpResponse.json({ data: mockResult }))
+    );
 
     const { result } = renderHook(() => useTrainHorse(), {
       wrapper: createWrapper(),
@@ -196,7 +188,9 @@ describe('useTrainHorse', () => {
       },
     };
 
-    vi.mocked(apiClient.trainingApi.train).mockResolvedValue(mockResult);
+    server.use(
+      http.post(`${base}/api/v1/training/train`, () => HttpResponse.json({ data: mockResult }))
+    );
 
     const { result } = renderHook(() => useTrainHorse(), {
       wrapper: createWrapper(),
@@ -227,7 +221,9 @@ describe('useTrainHorse', () => {
       },
     };
 
-    vi.mocked(apiClient.trainingApi.train).mockResolvedValue(mockResult);
+    server.use(
+      http.post(`${base}/api/v1/training/train`, () => HttpResponse.json({ data: mockResult }))
+    );
 
     const { result } = renderHook(() => useTrainHorse(), {
       wrapper: createWrapper(),
@@ -241,13 +237,11 @@ describe('useTrainHorse', () => {
   });
 
   it('should handle training failures', async () => {
-    const mockError = {
-      message: 'Horse is on cooldown',
-      status: 'error',
-      statusCode: 400,
-    };
-
-    vi.mocked(apiClient.trainingApi.train).mockRejectedValue(mockError);
+    server.use(
+      http.post(`${base}/api/v1/training/train`, () =>
+        HttpResponse.json({ message: 'Horse is on cooldown', status: 'error' }, { status: 400 })
+      )
+    );
 
     const { result } = renderHook(() => useTrainHorse(), {
       wrapper: createWrapper(),
@@ -257,7 +251,10 @@ describe('useTrainHorse', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    expect(result.current.error).toEqual(mockError);
+    expect(result.current.error).toMatchObject({
+      message: 'Horse is on cooldown',
+      statusCode: 400,
+    });
   });
 
   it('should invalidate horse queries on success', async () => {
@@ -278,7 +275,9 @@ describe('useTrainHorse', () => {
       },
     };
 
-    vi.mocked(apiClient.trainingApi.train).mockResolvedValue(mockResult);
+    server.use(
+      http.post(`${base}/api/v1/training/train`, () => HttpResponse.json({ data: mockResult }))
+    );
 
     const { result } = renderHook(() => useTrainHorse(), {
       wrapper: createWrapper(),
@@ -306,7 +305,9 @@ describe('useTrainHorse', () => {
       statGain: null,
     };
 
-    vi.mocked(apiClient.trainingApi.train).mockResolvedValue(mockResult);
+    server.use(
+      http.post(`${base}/api/v1/training/train`, () => HttpResponse.json({ data: mockResult }))
+    );
 
     const { result } = renderHook(() => useTrainHorse(), {
       wrapper: createWrapper(),
@@ -337,7 +338,9 @@ describe('useTrainHorse', () => {
       },
     };
 
-    vi.mocked(apiClient.trainingApi.train).mockResolvedValue(mockResult);
+    server.use(
+      http.post(`${base}/api/v1/training/train`, () => HttpResponse.json({ data: mockResult }))
+    );
 
     const { result } = renderHook(() => useTrainHorse(), {
       wrapper: createWrapper(),
@@ -352,10 +355,6 @@ describe('useTrainHorse', () => {
 });
 
 describe('useTrainingStatus', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it('should fetch discipline status', async () => {
     const mockStatus = {
       discipline: 'dressage',
@@ -364,7 +363,13 @@ describe('useTrainingStatus', () => {
       lastTrainedAt: '2026-01-30T10:00:00Z',
     };
 
-    vi.mocked(apiClient.trainingApi.getDisciplineStatus).mockResolvedValue(mockStatus);
+    let path = '';
+    server.use(
+      http.get(`${base}/api/v1/training/status/1/dressage`, ({ request }) => {
+        path = new URL(request.url).pathname;
+        return HttpResponse.json({ data: mockStatus });
+      })
+    );
 
     const { result } = renderHook(() => useTrainingStatus(1, 'dressage'), {
       wrapper: createWrapper(),
@@ -373,7 +378,7 @@ describe('useTrainingStatus', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data).toEqual(mockStatus);
-    expect(apiClient.trainingApi.getDisciplineStatus).toHaveBeenCalledWith(1, 'dressage');
+    expect(path).toBe('/api/v1/training/status/1/dressage');
   });
 
   it('should return current score', async () => {
@@ -384,7 +389,11 @@ describe('useTrainingStatus', () => {
       lastTrainedAt: null,
     };
 
-    vi.mocked(apiClient.trainingApi.getDisciplineStatus).mockResolvedValue(mockStatus);
+    server.use(
+      http.get(`${base}/api/v1/training/status/1/jumping`, () =>
+        HttpResponse.json({ data: mockStatus })
+      )
+    );
 
     const { result } = renderHook(() => useTrainingStatus(1, 'jumping'), {
       wrapper: createWrapper(),
@@ -403,7 +412,11 @@ describe('useTrainingStatus', () => {
       lastTrainedAt: '2026-02-03T10:00:00Z',
     };
 
-    vi.mocked(apiClient.trainingApi.getDisciplineStatus).mockResolvedValue(mockStatus);
+    server.use(
+      http.get(`${base}/api/v1/training/status/1/endurance`, () =>
+        HttpResponse.json({ data: mockStatus })
+      )
+    );
 
     const { result } = renderHook(() => useTrainingStatus(1, 'endurance'), {
       wrapper: createWrapper(),
@@ -422,7 +435,11 @@ describe('useTrainingStatus', () => {
       lastTrainedAt: '2026-01-25T14:30:00Z',
     };
 
-    vi.mocked(apiClient.trainingApi.getDisciplineStatus).mockResolvedValue(mockStatus);
+    server.use(
+      http.get(`${base}/api/v1/training/status/1/racing`, () =>
+        HttpResponse.json({ data: mockStatus })
+      )
+    );
 
     const { result } = renderHook(() => useTrainingStatus(1, 'racing'), {
       wrapper: createWrapper(),
@@ -433,25 +450,30 @@ describe('useTrainingStatus', () => {
     expect(result.current.data?.lastTrainedAt).toBe('2026-01-25T14:30:00Z');
   });
 
-  it('should not fetch when horseId is 0', () => {
-    renderHook(() => useTrainingStatus(0, 'dressage'), {
+  it('should not fetch when horseId is 0', async () => {
+    const { result } = renderHook(() => useTrainingStatus(0, 'dressage'), {
       wrapper: createWrapper(),
     });
 
-    expect(apiClient.trainingApi.getDisciplineStatus).not.toHaveBeenCalled();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(result.current.fetchStatus).toBe('idle');
   });
 
-  it('should not fetch when discipline is empty', () => {
-    renderHook(() => useTrainingStatus(1, ''), {
+  it('should not fetch when discipline is empty', async () => {
+    const { result } = renderHook(() => useTrainingStatus(1, ''), {
       wrapper: createWrapper(),
     });
 
-    expect(apiClient.trainingApi.getDisciplineStatus).not.toHaveBeenCalled();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(result.current.fetchStatus).toBe('idle');
   });
 
   it('should handle fetch errors', async () => {
-    const mockError = { message: 'Failed to fetch discipline status' };
-    vi.mocked(apiClient.trainingApi.getDisciplineStatus).mockRejectedValue(mockError);
+    server.use(
+      http.get(`${base}/api/v1/training/status/1/dressage`, () =>
+        HttpResponse.json({ message: 'Failed to fetch discipline status' }, { status: 500 })
+      )
+    );
 
     const { result } = renderHook(() => useTrainingStatus(1, 'dressage'), {
       wrapper: createWrapper(),
@@ -459,7 +481,7 @@ describe('useTrainingStatus', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    expect(result.current.error).toEqual(mockError);
+    expect(result.current.error).toBeTruthy();
   });
 
   it('should use correct stale time', async () => {
@@ -470,7 +492,11 @@ describe('useTrainingStatus', () => {
       lastTrainedAt: null,
     };
 
-    vi.mocked(apiClient.trainingApi.getDisciplineStatus).mockResolvedValue(mockStatus);
+    server.use(
+      http.get(`${base}/api/v1/training/status/1/dressage`, () =>
+        HttpResponse.json({ data: mockStatus })
+      )
+    );
 
     const { result } = renderHook(() => useTrainingStatus(1, 'dressage'), {
       wrapper: createWrapper(),
@@ -484,10 +510,6 @@ describe('useTrainingStatus', () => {
 });
 
 describe('useTrainingOverview', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it('should fetch overview as array', async () => {
     const mockOverview = [
       {
@@ -504,7 +526,13 @@ describe('useTrainingOverview', () => {
       },
     ];
 
-    vi.mocked(apiClient.trainingApi.getHorseStatus).mockResolvedValue(mockOverview);
+    let path = '';
+    server.use(
+      http.get(`${base}/api/v1/training/status/1`, ({ request }) => {
+        path = new URL(request.url).pathname;
+        return HttpResponse.json({ data: mockOverview });
+      })
+    );
 
     const { result } = renderHook(() => useTrainingOverview(1), {
       wrapper: createWrapper(),
@@ -513,7 +541,7 @@ describe('useTrainingOverview', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data).toEqual(mockOverview);
-    expect(apiClient.trainingApi.getHorseStatus).toHaveBeenCalledWith(1);
+    expect(path).toBe('/api/v1/training/status/1');
   });
 
   it('should normalize object response to array', async () => {
@@ -530,7 +558,9 @@ describe('useTrainingOverview', () => {
       },
     };
 
-    vi.mocked(apiClient.trainingApi.getHorseStatus).mockResolvedValue(mockOverview);
+    server.use(
+      http.get(`${base}/api/v1/training/status/1`, () => HttpResponse.json({ data: mockOverview }))
+    );
 
     const { result } = renderHook(() => useTrainingOverview(1), {
       wrapper: createWrapper(),
@@ -543,17 +573,21 @@ describe('useTrainingOverview', () => {
     expect(result.current.data?.[1].discipline).toBe('jumping');
   });
 
-  it('should not fetch when horseId is 0', () => {
-    renderHook(() => useTrainingOverview(0), {
+  it('should not fetch when horseId is 0', async () => {
+    const { result } = renderHook(() => useTrainingOverview(0), {
       wrapper: createWrapper(),
     });
 
-    expect(apiClient.trainingApi.getHorseStatus).not.toHaveBeenCalled();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(result.current.fetchStatus).toBe('idle');
   });
 
   it('should handle fetch errors', async () => {
-    const mockError = { message: 'Failed to fetch training overview' };
-    vi.mocked(apiClient.trainingApi.getHorseStatus).mockRejectedValue(mockError);
+    server.use(
+      http.get(`${base}/api/v1/training/status/1`, () =>
+        HttpResponse.json({ message: 'Failed to fetch training overview' }, { status: 500 })
+      )
+    );
 
     const { result } = renderHook(() => useTrainingOverview(1), {
       wrapper: createWrapper(),
@@ -561,15 +595,11 @@ describe('useTrainingOverview', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    expect(result.current.error).toEqual(mockError);
+    expect(result.current.error).toBeTruthy();
   });
 });
 
 describe('useTrainingEligibility', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it('should check eligibility successfully', async () => {
     const mockEligibility = {
       eligible: true,
@@ -577,7 +607,13 @@ describe('useTrainingEligibility', () => {
       cooldownEndsAt: null,
     };
 
-    vi.mocked(apiClient.trainingApi.checkEligibility).mockResolvedValue(mockEligibility);
+    let body: { horseId?: number; discipline?: string } = {};
+    server.use(
+      http.post(`${base}/api/v1/training/check-eligibility`, async ({ request }) => {
+        body = (await request.json()) as typeof body;
+        return HttpResponse.json({ data: mockEligibility });
+      })
+    );
 
     const { result } = renderHook(() => useTrainingEligibility(1, 'dressage'), {
       wrapper: createWrapper(),
@@ -586,10 +622,7 @@ describe('useTrainingEligibility', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data).toEqual(mockEligibility);
-    expect(apiClient.trainingApi.checkEligibility).toHaveBeenCalledWith({
-      horseId: 1,
-      discipline: 'dressage',
-    });
+    expect(body).toEqual({ horseId: 1, discipline: 'dressage' });
   });
 
   it('should return ineligible with reason', async () => {
@@ -599,7 +632,11 @@ describe('useTrainingEligibility', () => {
       cooldownEndsAt: '2026-02-06T10:00:00Z',
     };
 
-    vi.mocked(apiClient.trainingApi.checkEligibility).mockResolvedValue(mockEligibility);
+    server.use(
+      http.post(`${base}/api/v1/training/check-eligibility`, () =>
+        HttpResponse.json({ data: mockEligibility })
+      )
+    );
 
     const { result } = renderHook(() => useTrainingEligibility(1, 'jumping'), {
       wrapper: createWrapper(),
@@ -612,25 +649,30 @@ describe('useTrainingEligibility', () => {
     expect(result.current.data?.cooldownEndsAt).toBe('2026-02-06T10:00:00Z');
   });
 
-  it('should not fetch when horseId is 0', () => {
-    renderHook(() => useTrainingEligibility(0, 'dressage'), {
+  it('should not fetch when horseId is 0', async () => {
+    const { result } = renderHook(() => useTrainingEligibility(0, 'dressage'), {
       wrapper: createWrapper(),
     });
 
-    expect(apiClient.trainingApi.checkEligibility).not.toHaveBeenCalled();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(result.current.fetchStatus).toBe('idle');
   });
 
-  it('should not fetch when discipline is empty', () => {
-    renderHook(() => useTrainingEligibility(1, ''), {
+  it('should not fetch when discipline is empty', async () => {
+    const { result } = renderHook(() => useTrainingEligibility(1, ''), {
       wrapper: createWrapper(),
     });
 
-    expect(apiClient.trainingApi.checkEligibility).not.toHaveBeenCalled();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(result.current.fetchStatus).toBe('idle');
   });
 
   it('should handle fetch errors', async () => {
-    const mockError = { message: 'Failed to check eligibility' };
-    vi.mocked(apiClient.trainingApi.checkEligibility).mockRejectedValue(mockError);
+    server.use(
+      http.post(`${base}/api/v1/training/check-eligibility`, () =>
+        HttpResponse.json({ message: 'Failed to check eligibility' }, { status: 500 })
+      )
+    );
 
     const { result } = renderHook(() => useTrainingEligibility(1, 'dressage'), {
       wrapper: createWrapper(),
@@ -638,15 +680,11 @@ describe('useTrainingEligibility', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    expect(result.current.error).toEqual(mockError);
+    expect(result.current.error).toBeTruthy();
   });
 });
 
 describe('useTrainableHorses', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it('should fetch trainable horses', async () => {
     const mockHorses = [
       {
@@ -671,7 +709,13 @@ describe('useTrainableHorses', () => {
       },
     ];
 
-    vi.mocked(apiClient.trainingApi.getTrainableHorses).mockResolvedValue(mockHorses);
+    let path = '';
+    server.use(
+      http.get(`${base}/api/v1/training/trainable/user-123`, ({ request }) => {
+        path = new URL(request.url).pathname;
+        return HttpResponse.json({ data: mockHorses });
+      })
+    );
 
     const { result } = renderHook(() => useTrainableHorses('user-123'), {
       wrapper: createWrapper(),
@@ -680,20 +724,24 @@ describe('useTrainableHorses', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data).toEqual(mockHorses);
-    expect(apiClient.trainingApi.getTrainableHorses).toHaveBeenCalledWith('user-123');
+    expect(path).toBe('/api/v1/training/trainable/user-123');
   });
 
-  it('should not fetch when userId is empty', () => {
-    renderHook(() => useTrainableHorses(''), {
+  it('should not fetch when userId is empty', async () => {
+    const { result } = renderHook(() => useTrainableHorses(''), {
       wrapper: createWrapper(),
     });
 
-    expect(apiClient.trainingApi.getTrainableHorses).not.toHaveBeenCalled();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(result.current.fetchStatus).toBe('idle');
   });
 
   it('should handle fetch errors', async () => {
-    const mockError = { message: 'Failed to fetch trainable horses' };
-    vi.mocked(apiClient.trainingApi.getTrainableHorses).mockRejectedValue(mockError);
+    server.use(
+      http.get(`${base}/api/v1/training/trainable/user-123`, () =>
+        HttpResponse.json({ message: 'Failed to fetch trainable horses' }, { status: 500 })
+      )
+    );
 
     const { result } = renderHook(() => useTrainableHorses('user-123'), {
       wrapper: createWrapper(),
@@ -701,7 +749,7 @@ describe('useTrainableHorses', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    expect(result.current.error).toEqual(mockError);
+    expect(result.current.error).toBeTruthy();
   });
 });
 

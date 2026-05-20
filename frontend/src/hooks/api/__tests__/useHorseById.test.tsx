@@ -16,25 +16,19 @@
  * Strategy: drive cache invalidation directly via queryClient.invalidateQueries
  * with the same keys the real mutation hooks use. Avoids cross-hook coupling
  * while still exercising the real cache-invalidation surface useHorse depends
- * on.
+ * on. Network boundary stubbed with MSW per-test `server.use(...)` overrides
+ * (Equoria-f12xy) instead of vi.mock'ing the api-client — the GET /horses/:id
+ * fetch + `{ data }` unwrap path is exercised for real, and successive calls
+ * return updated payloads via a response counter to prove refetch.
  */
 import { renderHook, waitFor } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { horsesApi } from '@/lib/api-client';
+import { describe, it, expect } from 'vitest';
 import { useHorse, horseQueryKeys } from '../useHorses';
+import { server } from '../../../test/msw/server';
 
-vi.mock('@/lib/api-client', async () => {
-  const actual = await vi.importActual<typeof import('@/lib/api-client')>('@/lib/api-client');
-  return {
-    ...actual,
-    horsesApi: {
-      ...actual.horsesApi,
-      get: vi.fn(),
-      list: vi.fn(),
-    },
-  };
-});
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const mockHorse = {
   id: 42,
@@ -43,7 +37,7 @@ const mockHorse = {
   age: 4,
   sex: 'gelding' as const,
   ownerId: 1,
-} as unknown as Awaited<ReturnType<typeof horsesApi.get>>;
+};
 
 const createWrapper = (client: QueryClient) => {
   const Wrapper = ({ children }: { children: React.ReactNode }) => (
@@ -59,26 +53,32 @@ const newClient = () =>
     },
   });
 
+/**
+ * Register a GET /horses/42 handler that returns `responses[i]` on the i-th
+ * call, clamping at the last entry. Also returns a getter for the call count.
+ */
+function stubHorseSequence(responses: unknown[]) {
+  let calls = 0;
+  server.use(
+    http.get(`${base}/api/v1/horses/42`, () => {
+      const idx = Math.min(calls, responses.length - 1);
+      calls += 1;
+      return HttpResponse.json({ data: responses[idx] });
+    })
+  );
+  return () => calls;
+}
+
 describe('useHorse — cache invalidation', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   it('refetches when horseQueryKeys.detail(id) is invalidated (simulates useTrainHorse onSuccess)', async () => {
     const updatedHorse = { ...mockHorse, healthRating: 'Excellent' };
-    vi.mocked(horsesApi.get)
-      .mockResolvedValueOnce(mockHorse)
-      .mockResolvedValueOnce(updatedHorse);
+    const getCalls = stubHorseSequence([mockHorse, updatedHorse]);
 
     const client = newClient();
     const { result } = renderHook(() => useHorse(42), { wrapper: createWrapper(client) });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(horsesApi.get).toHaveBeenCalledTimes(1);
+    expect(getCalls()).toBe(1);
     expect(result.current.data).toEqual(mockHorse);
 
     // useTrainHorse onSuccess invalidates horseQueryKeys.detail(horseId) AND
@@ -86,15 +86,13 @@ describe('useHorse — cache invalidation', () => {
     // queryKey is wired to receive that invalidation signal.
     await client.invalidateQueries({ queryKey: horseQueryKeys.detail(42) });
 
-    await waitFor(() => expect(horsesApi.get).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(getCalls()).toBe(2));
     await waitFor(() => expect(result.current.data).toEqual(updatedHorse));
   });
 
   it('refetches when horseQueryKeys.all is invalidated (training mutation broad fallback)', async () => {
     const updatedHorse = { ...mockHorse, name: 'Thunder II' };
-    vi.mocked(horsesApi.get)
-      .mockResolvedValueOnce(mockHorse)
-      .mockResolvedValueOnce(updatedHorse);
+    const getCalls = stubHorseSequence([mockHorse, updatedHorse]);
 
     const client = newClient();
     const { result, rerender } = renderHook(() => useHorse(42), {
@@ -102,25 +100,25 @@ describe('useHorse — cache invalidation', () => {
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(horsesApi.get).toHaveBeenCalledTimes(1);
+    expect(getCalls()).toBe(1);
 
     // useTrainHorse also invalidates horseQueryKeys.all — verify the broader
     // invalidation reaches the detail query via prefix matching.
     await client.invalidateQueries({ queryKey: horseQueryKeys.all });
 
-    await waitFor(() => expect(horsesApi.get).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(getCalls()).toBe(2));
     rerender();
     await waitFor(() => expect(result.current.data?.name).toBe('Thunder II'));
   });
 
   it('does NOT refetch when only a competition mutation invalidation fires (no horse-key overlap)', async () => {
-    vi.mocked(horsesApi.get).mockResolvedValueOnce(mockHorse);
+    const getCalls = stubHorseSequence([mockHorse]);
 
     const client = newClient();
     const { result } = renderHook(() => useHorse(42), { wrapper: createWrapper(client) });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(horsesApi.get).toHaveBeenCalledTimes(1);
+    expect(getCalls()).toBe(1);
 
     // useEnterCompetition invalidates: competitionFilteredQueryKeys.all,
     // competitionDetailsQueryKeys.detail, horseEligibilityQueryKeys.all,
@@ -135,15 +133,16 @@ describe('useHorse — cache invalidation', () => {
 
     // Still exactly one call — competition-side invalidations did not reach
     // the horse-detail query.
-    expect(horsesApi.get).toHaveBeenCalledTimes(1);
+    expect(getCalls()).toBe(1);
   });
 
-  it('does not fetch when horseId is 0 (enabled guard)', () => {
-    vi.mocked(horsesApi.get).mockResolvedValueOnce(mockHorse);
+  it('does not fetch when horseId is 0 (enabled guard)', async () => {
+    // No handler registered — a fetch would trip onUnhandledRequest: 'error'.
     const client = newClient();
     const { result } = renderHook(() => useHorse(0), { wrapper: createWrapper(client) });
 
-    expect(horsesApi.get).not.toHaveBeenCalled();
+    expect(result.current.fetchStatus).toBe('idle');
+    await new Promise((r) => setTimeout(r, 30));
     expect(result.current.fetchStatus).toBe('idle');
   });
 });

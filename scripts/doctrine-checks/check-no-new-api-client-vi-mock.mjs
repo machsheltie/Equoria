@@ -43,15 +43,11 @@ const BASELINE = new Set([
   // BreedingPredictionsPanel + BreedingPairSelection.story-6-1 migrated off
   // vi.mock-of-api-client to MSW at the fetch boundary — removed from baseline
   // (the list may only shrink).
-  'frontend/src/contexts/__tests__/AuthContext.test.tsx',
-  'frontend/src/hooks/__tests__/useAuth.test.tsx',
-  'frontend/src/hooks/__tests__/useHorseCoatGenetics.test.tsx',
-  'frontend/src/hooks/__tests__/useHorseGenetics.test.tsx',
-  'frontend/src/hooks/__tests__/useSessionGuard.test.tsx',
-  'frontend/src/hooks/api/__tests__/useGameNotifications.test.tsx',
-  'frontend/src/hooks/api/__tests__/useHorseById.test.tsx',
-  'frontend/src/hooks/api/__tests__/useProgression.test.tsx',
-  'frontend/src/hooks/api/__tests__/useTraining.test.tsx',
+  // Equoria-f12xy (agent-M3): the 9 hook/context suites (AuthContext, useAuth,
+  // useHorseCoatGenetics, useHorseGenetics, useSessionGuard,
+  // useGameNotifications, useHorseById, useProgression, useTraining) were
+  // migrated off vi.mock-of-api-client to MSW network-boundary stubs — removed
+  // from baseline (the list may only shrink).
   'frontend/src/hooks/api/__tests__/useTransactionHistory.test.ts',
   'frontend/src/lib/api/__tests__/leaderboards.test.ts',
   'frontend/src/pages/__tests__/ForgotPasswordPage.test.tsx',

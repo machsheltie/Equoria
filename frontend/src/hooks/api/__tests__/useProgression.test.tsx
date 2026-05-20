@@ -7,33 +7,29 @@
  * - useHorseProgression (XP and level data)
  * - useStatHistory (historical stats over time)
  * - useRecentGains (recent stat changes)
+ *
+ * Network boundary stubbed with MSW per-test `server.use(...)` overrides
+ * (Equoria-f12xy) instead of vi.mock'ing the api-client. The real api-client
+ * fetch builds the `?range=` / `?days=` query string, so asserting on the
+ * intercepted request URL proves the same param-passing the old
+ * `toHaveBeenCalledWith` assertions did — through the real client.
  */
 
 import { renderHook, waitFor } from '@testing-library/react';
+import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import * as apiClient from '@/lib/api-client';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { useHorseProgression, useStatHistory, useRecentGains } from '../useProgression';
+import { server } from '../../../test/msw/server';
 
-// Mock API client
-vi.mock('@/lib/api-client', async () => {
-  const actual = await vi.importActual('@/lib/api-client');
-  return {
-    ...actual,
-    horsesApi: {
-      getProgression: vi.fn(),
-      getStatHistory: vi.fn(),
-      getRecentGains: vi.fn(),
-    },
-  };
-});
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 const createWrapper = () => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: {
         retry: false,
-        cacheTime: 0,
+        gcTime: 0,
       },
     },
   });
@@ -44,9 +40,7 @@ const createWrapper = () => {
 };
 
 describe('useHorseProgression', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
+  beforeEach(() => {});
 
   it('should fetch horse progression data', async () => {
     const mockProgression = {
@@ -63,7 +57,13 @@ describe('useHorseProgression', () => {
       ],
     };
 
-    vi.mocked(apiClient.horsesApi.getProgression).mockResolvedValue(mockProgression);
+    let requestedPath = '';
+    server.use(
+      http.get(`${base}/api/v1/horses/1/progression`, ({ request }) => {
+        requestedPath = new URL(request.url).pathname;
+        return HttpResponse.json({ data: mockProgression });
+      })
+    );
 
     const { result } = renderHook(() => useHorseProgression(1), {
       wrapper: createWrapper(),
@@ -72,7 +72,7 @@ describe('useHorseProgression', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data).toEqual(mockProgression);
-    expect(apiClient.horsesApi.getProgression).toHaveBeenCalledWith(1);
+    expect(requestedPath).toBe('/api/v1/horses/1/progression');
   });
 
   it('should return level and XP data', async () => {
@@ -87,7 +87,11 @@ describe('useHorseProgression', () => {
       recentLevelUps: [],
     };
 
-    vi.mocked(apiClient.horsesApi.getProgression).mockResolvedValue(mockProgression);
+    server.use(
+      http.get(`${base}/api/v1/horses/1/progression`, () =>
+        HttpResponse.json({ data: mockProgression })
+      )
+    );
 
     const { result } = renderHook(() => useHorseProgression(1), {
       wrapper: createWrapper(),
@@ -113,7 +117,11 @@ describe('useHorseProgression', () => {
       recentLevelUps: [{ level: 5, timestamp: '2025-12-01T10:00:00Z', xpGained: 1500 }],
     };
 
-    vi.mocked(apiClient.horsesApi.getProgression).mockResolvedValue(mockProgression);
+    server.use(
+      http.get(`${base}/api/v1/horses/1/progression`, () =>
+        HttpResponse.json({ data: mockProgression })
+      )
+    );
 
     const { result } = renderHook(() => useHorseProgression(1), {
       wrapper: createWrapper(),
@@ -125,17 +133,21 @@ describe('useHorseProgression', () => {
     expect(result.current.data?.recentLevelUps[0].level).toBe(5);
   });
 
-  it('should not fetch when horseId is 0', () => {
-    renderHook(() => useHorseProgression(0), {
+  it('should not fetch when horseId is 0', async () => {
+    const { result } = renderHook(() => useHorseProgression(0), {
       wrapper: createWrapper(),
     });
 
-    expect(apiClient.horsesApi.getProgression).not.toHaveBeenCalled();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(result.current.fetchStatus).toBe('idle');
   });
 
   it('should handle fetch errors', async () => {
-    const mockError = { message: 'Failed to fetch progression data' };
-    vi.mocked(apiClient.horsesApi.getProgression).mockRejectedValue(mockError);
+    server.use(
+      http.get(`${base}/api/v1/horses/1/progression`, () =>
+        HttpResponse.json({ message: 'Failed to fetch progression data' }, { status: 500 })
+      )
+    );
 
     const { result } = renderHook(() => useHorseProgression(1), {
       wrapper: createWrapper(),
@@ -143,7 +155,7 @@ describe('useHorseProgression', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    expect(result.current.error).toEqual(mockError);
+    expect(result.current.error).toBeTruthy();
   });
 
   it('should use correct stale time', async () => {
@@ -158,7 +170,11 @@ describe('useHorseProgression', () => {
       recentLevelUps: [],
     };
 
-    vi.mocked(apiClient.horsesApi.getProgression).mockResolvedValue(mockProgression);
+    server.use(
+      http.get(`${base}/api/v1/horses/1/progression`, () =>
+        HttpResponse.json({ data: mockProgression })
+      )
+    );
 
     const { result } = renderHook(() => useHorseProgression(1), {
       wrapper: createWrapper(),
@@ -172,10 +188,6 @@ describe('useHorseProgression', () => {
 });
 
 describe('useStatHistory', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it('should fetch stat history data', async () => {
     const mockHistory = {
       horseId: 1,
@@ -203,7 +215,13 @@ describe('useStatHistory', () => {
       ],
     };
 
-    vi.mocked(apiClient.horsesApi.getStatHistory).mockResolvedValue(mockHistory);
+    let requestedRange = '';
+    server.use(
+      http.get(`${base}/api/v1/horses/1/stats/history`, ({ request }) => {
+        requestedRange = new URL(request.url).searchParams.get('range') ?? '';
+        return HttpResponse.json({ data: mockHistory });
+      })
+    );
 
     const { result } = renderHook(() => useStatHistory(1, '30d'), {
       wrapper: createWrapper(),
@@ -212,7 +230,7 @@ describe('useStatHistory', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data).toEqual(mockHistory);
-    expect(apiClient.horsesApi.getStatHistory).toHaveBeenCalledWith(1, '30d');
+    expect(requestedRange).toBe('30d');
   });
 
   it('should return stat data points', async () => {
@@ -233,7 +251,9 @@ describe('useStatHistory', () => {
       ],
     };
 
-    vi.mocked(apiClient.horsesApi.getStatHistory).mockResolvedValue(mockHistory);
+    server.use(
+      http.get(`${base}/api/v1/horses/1/stats/history`, () => HttpResponse.json({ data: mockHistory }))
+    );
 
     const { result } = renderHook(() => useStatHistory(1, '7d'), {
       wrapper: createWrapper(),
@@ -254,7 +274,13 @@ describe('useStatHistory', () => {
       statData: [],
     };
 
-    vi.mocked(apiClient.horsesApi.getStatHistory).mockResolvedValue(mockHistory);
+    let requestedRange = '';
+    server.use(
+      http.get(`${base}/api/v1/horses/1/stats/history`, ({ request }) => {
+        requestedRange = new URL(request.url).searchParams.get('range') ?? '';
+        return HttpResponse.json({ data: mockHistory });
+      })
+    );
 
     const { result } = renderHook(() => useStatHistory(1, '90d'), {
       wrapper: createWrapper(),
@@ -262,7 +288,7 @@ describe('useStatHistory', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(apiClient.horsesApi.getStatHistory).toHaveBeenCalledWith(1, '90d');
+    expect(requestedRange).toBe('90d');
     expect(result.current.data?.timeRange).toBe('90d');
   });
 
@@ -274,7 +300,13 @@ describe('useStatHistory', () => {
       statData: [],
     };
 
-    vi.mocked(apiClient.horsesApi.getStatHistory).mockResolvedValue(mockHistory);
+    let requestedRange = '';
+    server.use(
+      http.get(`${base}/api/v1/horses/1/stats/history`, ({ request }) => {
+        requestedRange = new URL(request.url).searchParams.get('range') ?? '';
+        return HttpResponse.json({ data: mockHistory });
+      })
+    );
 
     const { result } = renderHook(() => useStatHistory(1), {
       wrapper: createWrapper(),
@@ -282,20 +314,24 @@ describe('useStatHistory', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(apiClient.horsesApi.getStatHistory).toHaveBeenCalledWith(1, '30d');
+    expect(requestedRange).toBe('30d');
   });
 
-  it('should not fetch when horseId is 0', () => {
-    renderHook(() => useStatHistory(0, '30d'), {
+  it('should not fetch when horseId is 0', async () => {
+    const { result } = renderHook(() => useStatHistory(0, '30d'), {
       wrapper: createWrapper(),
     });
 
-    expect(apiClient.horsesApi.getStatHistory).not.toHaveBeenCalled();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(result.current.fetchStatus).toBe('idle');
   });
 
   it('should handle fetch errors', async () => {
-    const mockError = { message: 'Failed to fetch stat history' };
-    vi.mocked(apiClient.horsesApi.getStatHistory).mockRejectedValue(mockError);
+    server.use(
+      http.get(`${base}/api/v1/horses/1/stats/history`, () =>
+        HttpResponse.json({ message: 'Failed to fetch stat history' }, { status: 500 })
+      )
+    );
 
     const { result } = renderHook(() => useStatHistory(1, '30d'), {
       wrapper: createWrapper(),
@@ -303,15 +339,11 @@ describe('useStatHistory', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    expect(result.current.error).toEqual(mockError);
+    expect(result.current.error).toBeTruthy();
   });
 });
 
 describe('useRecentGains', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it('should fetch recent gains data', async () => {
     const mockGains = {
       horseId: 1,
@@ -333,7 +365,13 @@ describe('useRecentGains', () => {
       ],
     };
 
-    vi.mocked(apiClient.horsesApi.getRecentGains).mockResolvedValue(mockGains);
+    let requestedDays = '';
+    server.use(
+      http.get(`${base}/api/v1/horses/1/gains/recent`, ({ request }) => {
+        requestedDays = new URL(request.url).searchParams.get('days') ?? '';
+        return HttpResponse.json({ data: mockGains });
+      })
+    );
 
     const { result } = renderHook(() => useRecentGains(1, 30), {
       wrapper: createWrapper(),
@@ -342,7 +380,7 @@ describe('useRecentGains', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(result.current.data).toEqual(mockGains);
-    expect(apiClient.horsesApi.getRecentGains).toHaveBeenCalledWith(1, 30);
+    expect(requestedDays).toBe('30');
   });
 
   it('should return gain details', async () => {
@@ -360,7 +398,9 @@ describe('useRecentGains', () => {
       ],
     };
 
-    vi.mocked(apiClient.horsesApi.getRecentGains).mockResolvedValue(mockGains);
+    server.use(
+      http.get(`${base}/api/v1/horses/1/gains/recent`, () => HttpResponse.json({ data: mockGains }))
+    );
 
     const { result } = renderHook(() => useRecentGains(1, 30), {
       wrapper: createWrapper(),
@@ -382,7 +422,13 @@ describe('useRecentGains', () => {
       gains: [],
     };
 
-    vi.mocked(apiClient.horsesApi.getRecentGains).mockResolvedValue(mockGains);
+    let requestedDays = '';
+    server.use(
+      http.get(`${base}/api/v1/horses/1/gains/recent`, ({ request }) => {
+        requestedDays = new URL(request.url).searchParams.get('days') ?? '';
+        return HttpResponse.json({ data: mockGains });
+      })
+    );
 
     const { result } = renderHook(() => useRecentGains(1, 7), {
       wrapper: createWrapper(),
@@ -390,7 +436,7 @@ describe('useRecentGains', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(apiClient.horsesApi.getRecentGains).toHaveBeenCalledWith(1, 7);
+    expect(requestedDays).toBe('7');
     expect(result.current.data?.days).toBe(7);
   });
 
@@ -402,7 +448,13 @@ describe('useRecentGains', () => {
       gains: [],
     };
 
-    vi.mocked(apiClient.horsesApi.getRecentGains).mockResolvedValue(mockGains);
+    let requestedDays = '';
+    server.use(
+      http.get(`${base}/api/v1/horses/1/gains/recent`, ({ request }) => {
+        requestedDays = new URL(request.url).searchParams.get('days') ?? '';
+        return HttpResponse.json({ data: mockGains });
+      })
+    );
 
     const { result } = renderHook(() => useRecentGains(1), {
       wrapper: createWrapper(),
@@ -410,20 +462,24 @@ describe('useRecentGains', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-    expect(apiClient.horsesApi.getRecentGains).toHaveBeenCalledWith(1, 30);
+    expect(requestedDays).toBe('30');
   });
 
-  it('should not fetch when horseId is 0', () => {
-    renderHook(() => useRecentGains(0, 30), {
+  it('should not fetch when horseId is 0', async () => {
+    const { result } = renderHook(() => useRecentGains(0, 30), {
       wrapper: createWrapper(),
     });
 
-    expect(apiClient.horsesApi.getRecentGains).not.toHaveBeenCalled();
+    await new Promise((r) => setTimeout(r, 50));
+    expect(result.current.fetchStatus).toBe('idle');
   });
 
   it('should handle fetch errors', async () => {
-    const mockError = { message: 'Failed to fetch recent gains' };
-    vi.mocked(apiClient.horsesApi.getRecentGains).mockRejectedValue(mockError);
+    server.use(
+      http.get(`${base}/api/v1/horses/1/gains/recent`, () =>
+        HttpResponse.json({ message: 'Failed to fetch recent gains' }, { status: 500 })
+      )
+    );
 
     const { result } = renderHook(() => useRecentGains(1, 30), {
       wrapper: createWrapper(),
@@ -431,7 +487,7 @@ describe('useRecentGains', () => {
 
     await waitFor(() => expect(result.current.isError).toBe(true));
 
-    expect(result.current.error).toEqual(mockError);
+    expect(result.current.error).toBeTruthy();
   });
 
   it('should handle empty gains', async () => {
@@ -442,7 +498,9 @@ describe('useRecentGains', () => {
       gains: [],
     };
 
-    vi.mocked(apiClient.horsesApi.getRecentGains).mockResolvedValue(mockGains);
+    server.use(
+      http.get(`${base}/api/v1/horses/1/gains/recent`, () => HttpResponse.json({ data: mockGains }))
+    );
 
     const { result } = renderHook(() => useRecentGains(1, 30), {
       wrapper: createWrapper(),

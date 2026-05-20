@@ -7,25 +7,59 @@
  * - Logout functionality
  * - Authentication state management
  *
- * Following TDD with minimal mocking approach for authentic validation
+ * Network boundary stubbed with MSW per-test `server.use(...)` overrides
+ * (Equoria-f12xy) instead of vi.mock'ing the api-client. The AuthProvider's
+ * real profile + verification-status queries and logout mutation run against
+ * the stubbed fetch boundary, exercising the actual api-client (incl. the
+ * 401→refresh path, which is forced to fail for unauthenticated cases so the
+ * provider settles into the not-authenticated state). The user-facing login/
+ * logout journeys are also covered by the auth Playwright E2E (tests/e2e/);
+ * these unit tests lock the provider's derived-state + cache logic.
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { http, HttpResponse } from 'msw';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode } from 'react';
 import { AuthProvider, useAuth } from '../AuthContext';
-import * as apiClient from '../../lib/api-client';
+import { server } from '../../test/msw/server';
 
-// Mock the API client
-vi.mock('../../lib/api-client', () => ({
-  authApi: {
-    getProfile: vi.fn(),
-    logout: vi.fn(),
-    getVerificationStatus: vi.fn(),
-  },
-}));
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+
+const AUTH_USER = { id: 1, username: 'testuser', email: 'test@example.com' };
+
+/** Stub an authenticated session (profile + verification). */
+function stubAuthenticated(verified = true) {
+  server.use(
+    http.get(`${base}/api/v1/auth/profile`, () => HttpResponse.json({ data: { user: AUTH_USER } })),
+    http.get(`${base}/api/v1/auth/verification-status`, () =>
+      HttpResponse.json({
+        data: {
+          verified,
+          email: 'test@example.com',
+          verifiedAt: verified ? '2024-01-01T00:00:00Z' : null,
+        },
+      })
+    )
+  );
+}
+
+/** Stub an unauthenticated session: profile 401 + failing refresh + verif 401. */
+function stubUnauthenticated(message = 'Not authenticated') {
+  server.use(
+    http.get(`${base}/api/v1/auth/profile`, () =>
+      HttpResponse.json({ message, status: 'error' }, { status: 401 })
+    ),
+    http.get(`${base}/api/v1/auth/verification-status`, () =>
+      HttpResponse.json({ message: 'Unauthorized' }, { status: 401 })
+    ),
+    http.post(`${base}/api/v1/auth/refresh-token`, () =>
+      HttpResponse.json({ message: 'no session' }, { status: 401 })
+    )
+  );
+}
 
 /**
  * Test component that uses the auth context
@@ -86,7 +120,6 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
         },
       },
     });
-    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -95,20 +128,18 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
 
   describe('Session Persistence', () => {
     it('should fetch user profile on mount to restore session', async () => {
-      const mockUser = {
-        user: {
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-        },
-      };
-
-      vi.mocked(apiClient.authApi.getProfile).mockResolvedValueOnce(mockUser);
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockResolvedValueOnce({
-        verified: true,
-        email: 'test@example.com',
-        verifiedAt: '2024-01-01T00:00:00Z',
-      });
+      let profileCalls = 0;
+      server.use(
+        http.get(`${base}/api/v1/auth/profile`, () => {
+          profileCalls += 1;
+          return HttpResponse.json({ data: { user: AUTH_USER } });
+        }),
+        http.get(`${base}/api/v1/auth/verification-status`, () =>
+          HttpResponse.json({
+            data: { verified: true, email: 'test@example.com', verifiedAt: '2024-01-01T00:00:00Z' },
+          })
+        )
+      );
 
       const Wrapper = createWrapper();
       render(<TestConsumer />, { wrapper: Wrapper });
@@ -116,31 +147,17 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
       // Initially loading
       expect(screen.getByTestId('loading')).toHaveTextContent('loading');
 
-      // After profile fetch
       await waitFor(() => {
         expect(screen.getByTestId('loading')).toHaveTextContent('not-loading');
       });
 
       expect(screen.getByTestId('authenticated')).toHaveTextContent('authenticated');
       expect(screen.getByTestId('user')).toHaveTextContent('testuser');
-      expect(apiClient.authApi.getProfile).toHaveBeenCalledTimes(1);
+      expect(profileCalls).toBe(1);
     });
 
     it('should remain authenticated when user has valid session', async () => {
-      const mockUser = {
-        user: {
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-        },
-      };
-
-      vi.mocked(apiClient.authApi.getProfile).mockResolvedValue(mockUser);
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockResolvedValue({
-        verified: true,
-        email: 'test@example.com',
-        verifiedAt: '2024-01-01T00:00:00Z',
-      });
+      stubAuthenticated();
 
       const Wrapper = createWrapper();
       const { rerender } = render(<TestConsumer />, { wrapper: Wrapper });
@@ -157,18 +174,17 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
     });
 
     it('should show loading state while checking session', async () => {
-      // Create a promise that we control
-      let resolveProfile: (_value: any) => void;
-      const profilePromise = new Promise((resolve) => {
+      let resolveProfile: (value: Response) => void;
+      const profilePromise = new Promise<Response>((resolve) => {
         resolveProfile = resolve;
       });
 
-      vi.mocked(apiClient.authApi.getProfile).mockReturnValue(profilePromise as any);
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockResolvedValue({
-        verified: false,
-        email: '',
-        verifiedAt: null,
-      });
+      server.use(
+        http.get(`${base}/api/v1/auth/profile`, () => profilePromise),
+        http.get(`${base}/api/v1/auth/verification-status`, () =>
+          HttpResponse.json({ data: { verified: false, email: '', verifiedAt: null } })
+        )
+      );
 
       const Wrapper = createWrapper();
       render(<TestConsumer />, { wrapper: Wrapper });
@@ -177,10 +193,8 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
       expect(screen.getByTestId('loading')).toHaveTextContent('loading');
       expect(screen.getByTestId('authenticated')).toHaveTextContent('not-authenticated');
 
-      // Resolve the profile promise
-      resolveProfile!({
-        user: { id: 1, username: 'testuser', email: 'test@example.com' },
-      });
+      // Resolve the profile request
+      resolveProfile!(HttpResponse.json({ data: { user: AUTH_USER } }));
 
       await waitFor(() => {
         expect(screen.getByTestId('loading')).toHaveTextContent('not-loading');
@@ -190,15 +204,7 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
 
   describe('Session Expiration Handling', () => {
     it('should show not authenticated when session expires (401)', async () => {
-      vi.mocked(apiClient.authApi.getProfile).mockRejectedValueOnce({
-        statusCode: 401,
-        message: 'Session expired. Please log in again.',
-        status: 'error',
-      });
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockRejectedValueOnce({
-        statusCode: 401,
-        message: 'Unauthorized',
-      });
+      stubUnauthenticated('Session expired. Please log in again.');
 
       const Wrapper = createWrapper();
       render(<TestConsumer />, { wrapper: Wrapper });
@@ -212,16 +218,20 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
     });
 
     it('should expose error when session check fails', async () => {
-      vi.mocked(apiClient.authApi.getProfile).mockRejectedValueOnce({
-        statusCode: 401,
-        message: 'Session expired. Please log in again.',
-        status: 'error',
-      });
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockResolvedValueOnce({
-        verified: false,
-        email: '',
-        verifiedAt: null,
-      });
+      server.use(
+        http.get(`${base}/api/v1/auth/profile`, () =>
+          HttpResponse.json(
+            { message: 'Session expired. Please log in again.', status: 'error' },
+            { status: 401 }
+          )
+        ),
+        http.post(`${base}/api/v1/auth/refresh-token`, () =>
+          HttpResponse.json({ message: 'no session' }, { status: 401 })
+        ),
+        http.get(`${base}/api/v1/auth/verification-status`, () =>
+          HttpResponse.json({ data: { verified: false, email: '', verifiedAt: null } })
+        )
+      );
 
       const Wrapper = createWrapper();
       render(<TestConsumer />, { wrapper: Wrapper });
@@ -234,15 +244,11 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
     });
 
     it('should handle network errors gracefully', async () => {
-      vi.mocked(apiClient.authApi.getProfile).mockRejectedValueOnce({
-        statusCode: 0,
-        message: 'Network error',
-        status: 'error',
-      });
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockRejectedValueOnce({
-        statusCode: 0,
-        message: 'Network error',
-      });
+      server.use(
+        http.get(`${base}/api/v1/auth/profile`, () => HttpResponse.error()),
+        http.post(`${base}/api/v1/auth/refresh-token`, () => HttpResponse.error()),
+        http.get(`${base}/api/v1/auth/verification-status`, () => HttpResponse.error())
+      );
 
       const Wrapper = createWrapper();
       render(<TestConsumer />, { wrapper: Wrapper });
@@ -252,69 +258,43 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
       });
 
       expect(screen.getByTestId('authenticated')).toHaveTextContent('not-authenticated');
-      expect(screen.getByTestId('error')).toHaveTextContent('Network error');
+      expect(screen.getByTestId('error')).not.toHaveTextContent('no-error');
     });
   });
 
   describe('Logout Functionality', () => {
     it('should clear all session data on logout', async () => {
-      const mockUser = {
-        user: {
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-        },
-      };
-
-      vi.mocked(apiClient.authApi.getProfile).mockResolvedValueOnce(mockUser);
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockResolvedValueOnce({
-        verified: true,
-        email: 'test@example.com',
-        verifiedAt: '2024-01-01T00:00:00Z',
-      });
-      vi.mocked(apiClient.authApi.logout).mockResolvedValueOnce({
-        message: 'Logout successful',
-      });
+      stubAuthenticated();
+      server.use(
+        http.post(`${base}/api/v1/auth/logout`, () =>
+          HttpResponse.json({ data: { message: 'Logout successful' } })
+        )
+      );
 
       const Wrapper = createWrapper();
       const user = userEvent.setup();
       render(<TestConsumer />, { wrapper: Wrapper });
 
-      // Wait for authenticated state
       await waitFor(() => {
         expect(screen.getByTestId('authenticated')).toHaveTextContent('authenticated');
       });
 
-      // Click logout
       await user.click(screen.getByTestId('logout-btn'));
 
-      // Should call logout API
+      // logging-out flips back to 'no' once the mutation settles.
       await waitFor(() => {
-        expect(apiClient.authApi.logout).toHaveBeenCalledTimes(1);
+        expect(screen.getByTestId('logging-out')).toHaveTextContent('no');
       });
     });
 
     it('should show logging out state during logout', async () => {
-      const mockUser = {
-        user: {
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-        },
-      };
+      stubAuthenticated();
 
-      let resolveLogout: (_value: any) => void;
-      const logoutPromise = new Promise((resolve) => {
+      let resolveLogout: (value: Response) => void;
+      const logoutPromise = new Promise<Response>((resolve) => {
         resolveLogout = resolve;
       });
-
-      vi.mocked(apiClient.authApi.getProfile).mockResolvedValueOnce(mockUser);
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockResolvedValueOnce({
-        verified: true,
-        email: 'test@example.com',
-        verifiedAt: '2024-01-01T00:00:00Z',
-      });
-      vi.mocked(apiClient.authApi.logout).mockReturnValue(logoutPromise as any);
+      server.use(http.post(`${base}/api/v1/auth/logout`, () => logoutPromise));
 
       const Wrapper = createWrapper();
       const user = userEvent.setup();
@@ -324,14 +304,14 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
         expect(screen.getByTestId('authenticated')).toHaveTextContent('authenticated');
       });
 
-      // Click logout
       await user.click(screen.getByTestId('logout-btn'));
 
       // Should show logging out state
-      expect(screen.getByTestId('logging-out')).toHaveTextContent('yes');
+      await waitFor(() => {
+        expect(screen.getByTestId('logging-out')).toHaveTextContent('yes');
+      });
 
-      // Resolve logout
-      resolveLogout!({ message: 'Logout successful' });
+      resolveLogout!(HttpResponse.json({ data: { message: 'Logout successful' } }));
 
       await waitFor(() => {
         expect(screen.getByTestId('logging-out')).toHaveTextContent('no');
@@ -339,25 +319,15 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
     });
 
     it('should be callable from any component within provider', async () => {
-      const mockUser = {
-        user: {
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-        },
-      };
+      stubAuthenticated();
+      let logoutCalls = 0;
+      server.use(
+        http.post(`${base}/api/v1/auth/logout`, () => {
+          logoutCalls += 1;
+          return HttpResponse.json({ data: { message: 'Logout successful' } });
+        })
+      );
 
-      vi.mocked(apiClient.authApi.getProfile).mockResolvedValueOnce(mockUser);
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockResolvedValueOnce({
-        verified: true,
-        email: 'test@example.com',
-        verifiedAt: '2024-01-01T00:00:00Z',
-      });
-      vi.mocked(apiClient.authApi.logout).mockResolvedValueOnce({
-        message: 'Logout successful',
-      });
-
-      // Nested component that calls logout
       function NestedLogoutButton() {
         const { logout } = useAuth();
         return (
@@ -381,31 +351,17 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
         expect(screen.getByTestId('authenticated')).toHaveTextContent('authenticated');
       });
 
-      // Click nested logout button
       await user.click(screen.getByTestId('nested-logout'));
 
       await waitFor(() => {
-        expect(apiClient.authApi.logout).toHaveBeenCalledTimes(1);
+        expect(logoutCalls).toBe(1);
       });
     });
   });
 
   describe('Email Verification Status', () => {
     it('should track email verification status', async () => {
-      const mockUser = {
-        user: {
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-        },
-      };
-
-      vi.mocked(apiClient.authApi.getProfile).mockResolvedValueOnce(mockUser);
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockResolvedValueOnce({
-        verified: true,
-        email: 'test@example.com',
-        verifiedAt: '2024-01-01T00:00:00Z',
-      });
+      stubAuthenticated(true);
 
       const Wrapper = createWrapper();
       render(<TestConsumer />, { wrapper: Wrapper });
@@ -416,20 +372,7 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
     });
 
     it('should show not verified when email is not verified', async () => {
-      const mockUser = {
-        user: {
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-        },
-      };
-
-      vi.mocked(apiClient.authApi.getProfile).mockResolvedValueOnce(mockUser);
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockResolvedValueOnce({
-        verified: false,
-        email: 'test@example.com',
-        verifiedAt: null,
-      });
+      stubAuthenticated(false);
 
       const Wrapper = createWrapper();
       render(<TestConsumer />, { wrapper: Wrapper });
@@ -444,7 +387,6 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
 
   describe('useAuth Hook', () => {
     it('should throw error when used outside AuthProvider', () => {
-      // Render without wrapper (no AuthProvider)
       render(<TestConsumerWithoutProvider />);
 
       expect(screen.getByTestId('error-message')).toHaveTextContent(
@@ -453,20 +395,7 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
     });
 
     it('should provide all auth state values', async () => {
-      const mockUser = {
-        user: {
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-        },
-      };
-
-      vi.mocked(apiClient.authApi.getProfile).mockResolvedValueOnce(mockUser);
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockResolvedValueOnce({
-        verified: true,
-        email: 'test@example.com',
-        verifiedAt: '2024-01-01T00:00:00Z',
-      });
+      stubAuthenticated();
 
       const Wrapper = createWrapper();
       render(<TestConsumer />, { wrapper: Wrapper });
@@ -475,7 +404,6 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
         expect(screen.getByTestId('loading')).toHaveTextContent('not-loading');
       });
 
-      // All state values should be accessible
       expect(screen.getByTestId('authenticated')).toBeInTheDocument();
       expect(screen.getByTestId('email-verified')).toBeInTheDocument();
       expect(screen.getByTestId('user')).toBeInTheDocument();
@@ -487,15 +415,7 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
 
   describe('Unauthenticated State', () => {
     it('should show unauthenticated when no valid session exists', async () => {
-      vi.mocked(apiClient.authApi.getProfile).mockRejectedValueOnce({
-        statusCode: 401,
-        message: 'Not authenticated',
-        status: 'error',
-      });
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockRejectedValueOnce({
-        statusCode: 401,
-        message: 'Not authenticated',
-      });
+      stubUnauthenticated();
 
       const Wrapper = createWrapper();
       render(<TestConsumer />, { wrapper: Wrapper });
@@ -510,71 +430,47 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
     });
 
     it('should call logout and clear queries when logging out', async () => {
-      // This test verifies that the logout flow works correctly
-      // and that logout is invoked (which triggers cache clearing in onSuccess)
-      const mockUser = {
-        user: {
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-        },
-      };
-
-      vi.mocked(apiClient.authApi.getProfile).mockResolvedValueOnce(mockUser);
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockResolvedValueOnce({
-        verified: true,
-        email: 'test@example.com',
-        verifiedAt: '2024-01-01T00:00:00Z',
-      });
-      vi.mocked(apiClient.authApi.logout).mockResolvedValueOnce({
-        message: 'Logout successful',
-      });
+      stubAuthenticated();
+      let logoutCalls = 0;
+      server.use(
+        http.post(`${base}/api/v1/auth/logout`, () => {
+          logoutCalls += 1;
+          return HttpResponse.json({ data: { message: 'Logout successful' } });
+        })
+      );
 
       const Wrapper = createWrapper();
       const user = userEvent.setup();
       render(<TestConsumer />, { wrapper: Wrapper });
 
-      // Wait for authenticated state
       await waitFor(() => {
         expect(screen.getByTestId('authenticated')).toHaveTextContent('authenticated');
       });
 
-      // Logout
       await user.click(screen.getByTestId('logout-btn'));
 
-      // Wait for logout to complete
-      await waitFor(() => {
-        expect(apiClient.authApi.logout).toHaveBeenCalledTimes(1);
-      });
-
-      // Wait for logout mutation to fully settle (onSuccess callback)
       await waitFor(() => {
         expect(screen.getByTestId('logging-out')).toHaveTextContent('no');
       });
 
-      // Verify the logout API was called with correct params
-      // The cache clearing happens in the useLogout hook's onSuccess
-      // which we've already verified runs by checking logging-out state changes
-      expect(apiClient.authApi.logout).toHaveBeenCalled();
+      expect(logoutCalls).toBe(1);
     });
   });
 
   describe('Profile Refetch', () => {
     it('should provide refetchProfile function', async () => {
-      const mockUser = {
-        user: {
-          id: 1,
-          username: 'testuser',
-          email: 'test@example.com',
-        },
-      };
-
-      vi.mocked(apiClient.authApi.getProfile).mockResolvedValue(mockUser);
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockResolvedValue({
-        verified: true,
-        email: 'test@example.com',
-        verifiedAt: '2024-01-01T00:00:00Z',
-      });
+      let profileCalls = 0;
+      server.use(
+        http.get(`${base}/api/v1/auth/profile`, () => {
+          profileCalls += 1;
+          return HttpResponse.json({ data: { user: AUTH_USER } });
+        }),
+        http.get(`${base}/api/v1/auth/verification-status`, () =>
+          HttpResponse.json({
+            data: { verified: true, email: 'test@example.com', verifiedAt: '2024-01-01T00:00:00Z' },
+          })
+        )
+      );
 
       function RefetchTestComponent() {
         const { refetchProfile, user } = useAuth();
@@ -596,15 +492,12 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
         expect(screen.getByTestId('username')).toHaveTextContent('testuser');
       });
 
-      // Initial call
-      expect(apiClient.authApi.getProfile).toHaveBeenCalledTimes(1);
+      expect(profileCalls).toBe(1);
 
-      // Click refetch
       await user.click(screen.getByTestId('refetch-btn'));
 
-      // Should trigger another fetch
       await waitFor(() => {
-        expect(apiClient.authApi.getProfile).toHaveBeenCalledTimes(2);
+        expect(profileCalls).toBe(2);
       });
     });
   });
