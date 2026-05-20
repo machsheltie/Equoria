@@ -653,6 +653,13 @@ jobs:
   # (per .claude/rules/EDGE_CASE_FIX_DISCIPLINE.md §2 — advisory means the
   # job doesn't gate, not that failures are hidden). Both steps emit JSON
   # artifacts.
+  #
+  # Equoria-j2i9o (fx5cb follow-up) hardened the backgrounded-server sub-step
+  # for the k6 harness against CI-runner pitfalls: explicit PORT (required by
+  # server.mjs env validation), readiness poll on /ready (real DB ping, not
+  # the /health liveness probe), explicit fail-with-server-log if the server
+  # never boots, and a graceful-then-SIGKILL teardown. See the
+  # 'Start backend (background) for k6 harness' step comment for detail.
   # ──────────────────────────────────────────────────────────────────────────────
   load-contention:
     name: 'Load Contention (advisory)'
@@ -720,14 +727,64 @@ jobs:
 
       - name: Start backend (background) for k6 harness
         working-directory: ./backend
+        # Hardened against the classic backgrounded-server-in-CI failure
+        # modes (Equoria-j2i9o, fx5cb follow-up):
+        #
+        #   1. PORT must be set explicitly. server.mjs runs
+        #      validateEnvironment() at startup, and PORT is a REQUIRED env
+        #      var in REQUIRED_ENV_VARS (utils/validateEnvironment.mjs) — it
+        #      reads process.env.PORT directly (not the `|| 3000` runtime
+        #      default). The workflow-level `env:` block does NOT export PORT,
+        #      so without this the server would fail-fast on boot and k6 would
+        #      run against a dead port. Set deterministically to 3000 (matches
+        #      API_URL below and the k6 default).
+        #   2. Readiness gate polls /ready (real `SELECT 1` DB ping), NOT
+        #      /health. /health is the lightweight liveness probe in app.mjs —
+        #      it returns 200 as soon as the process binds, BEFORE the DB is
+        #      proven reachable. The k6 harness self-provisions a user and
+        #      drives DB-backed mutations in setup(), so it must not start
+        #      until the DB round-trips. /ready returns 503 until the DB
+        #      answers, then 200 — exactly the precondition k6 needs.
+        #   3. Explicit fail-with-diagnostics if the server never becomes
+        #      ready, instead of silently falling through into k6 against a
+        #      dead/half-up server (which produces a confusing k6 failure that
+        #      masks the real "server didn't boot" cause). The server log is
+        #      dumped so the boot error (env validation, DB connect, port in
+        #      use) is visible directly in this step's output. The step exits
+        #      non-zero — advisory job goes red, signal is visible (no
+        #      continue-on-error per .claude/rules/EDGE_CASE_FIX_DISCIPLINE.md §2).
+        env:
+          PORT: '3000'
         run: |
+          set -uo pipefail
           npm start > /tmp/k6-server.log 2>&1 &
           echo $! > /tmp/k6-server.pid
+          ready=0
+          # ~60s budget (30 × 2s). Server cold-boot + first Prisma connect on
+          # ubuntu-latest is comfortably under this; the postgres service is
+          # already health-gated by the job `services:` block before steps run.
           for i in $(seq 1 30); do
-            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/health || echo 000)
-            if [ "$code" = "200" ]; then echo "server up"; break; fi
+            # If the backgrounded process has already exited, stop waiting —
+            # boot failed (e.g. env validation) and no amount of polling fixes it.
+            if ! kill -0 "$(cat /tmp/k6-server.pid)" 2>/dev/null; then
+              echo "::error::Backend process exited during startup (PID gone). Server log:"
+              cat /tmp/k6-server.log || true
+              exit 1
+            fi
+            code=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000/ready || echo 000)
+            if [ "$code" = "200" ]; then
+              echo "Backend ready (GET /ready -> 200) after ~$((i * 2))s"
+              ready=1
+              break
+            fi
+            echo "waiting for backend readiness... attempt $i/30 (GET /ready -> $code)"
             sleep 2
           done
+          if [ "$ready" != "1" ]; then
+            echo "::error::Backend never became ready (GET /ready != 200 within ~60s). Server log:"
+            cat /tmp/k6-server.log || true
+            exit 1
+          fi
 
       - name: Run k6 concurrent feed+breed+foal SMOKE harness
         # SMOKE profile (~30s, low concurrency). k6 thresholds exit
@@ -740,8 +797,21 @@ jobs:
 
       - name: Stop backend
         if: always()
+        # SIGTERM triggers the graceful shutdown handler in server.mjs (closes
+        # the HTTP server, cron, Redis, Prisma; force-exits after 10s). `|| true`
+        # so a missing/already-dead PID never reds the teardown step. Best-effort
+        # SIGKILL fallback in case graceful shutdown stalls, so the runner does
+        # not leak a backgrounded node process or hang on job completion.
         run: |
-          if [ -f /tmp/k6-server.pid ]; then kill "$(cat /tmp/k6-server.pid)" || true; fi
+          if [ -f /tmp/k6-server.pid ]; then
+            PID="$(cat /tmp/k6-server.pid)"
+            kill "$PID" 2>/dev/null || true
+            for i in $(seq 1 6); do
+              if ! kill -0 "$PID" 2>/dev/null; then break; fi
+              sleep 1
+            done
+            kill -9 "$PID" 2>/dev/null || true
+          fi
 
       - name: Upload load-contention artifacts
         uses: actions/upload-artifact@v4
