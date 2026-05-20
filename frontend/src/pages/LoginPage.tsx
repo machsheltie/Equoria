@@ -12,6 +12,7 @@ import { loginSchema, type LoginFormData } from '../lib/validation-schemas';
 import { useLogin } from '../hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { usePageBackground, PageBackground } from '@/components/layout/PageBackground';
+import { safeRedirectTarget } from '../lib/safeRedirect';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -46,8 +47,12 @@ const LoginPage: React.FC = () => {
     }
     login(result.data, {
       onSuccess: () => {
-        const from = (location.state as { from?: string })?.from ?? '/';
-        navigate(from, { replace: true });
+        const rawFrom = (location.state as { from?: string })?.from;
+        // CWE-601: validate redirect target before navigating (Equoria-rxkna).
+        // safeRedirectTarget rejects protocol-relative, absolute, and
+        // scheme-based paths, falling back to '/' on failure.
+        const destination = safeRedirectTarget(rawFrom, '/');
+        navigate(destination, { replace: true });
       },
     });
   };
