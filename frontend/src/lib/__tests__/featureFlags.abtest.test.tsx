@@ -41,10 +41,9 @@ describe('useABTest — no console.log on trackConversion (Equoria-o7c0x L5)', (
   });
 
   it('trackConversion does not call console.log (no variant-assignment leak)', async () => {
-    const { result } = renderHook(
-      () => useABTest('FF_AB_TEST_EXAMPLE', ['control', 'variant_a']),
-      { wrapper }
-    );
+    const { result } = renderHook(() => useABTest('FF_AB_TEST_EXAMPLE', ['control', 'variant_a']), {
+      wrapper,
+    });
 
     await act(async () => {
       result.current.trackConversion();
@@ -54,10 +53,9 @@ describe('useABTest — no console.log on trackConversion (Equoria-o7c0x L5)', (
   });
 
   it('returns the variant string from the hook (functional smoke-test)', () => {
-    const { result } = renderHook(
-      () => useABTest('FF_AB_TEST_EXAMPLE', ['control', 'variant_a']),
-      { wrapper }
-    );
+    const { result } = renderHook(() => useABTest('FF_AB_TEST_EXAMPLE', ['control', 'variant_a']), {
+      wrapper,
+    });
 
     // With no backend flag set the hook falls back to the first variant (default)
     expect(typeof result.current.variant).toBe('string');

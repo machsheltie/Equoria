@@ -28,24 +28,40 @@ import type { StorageLike } from '../traitEventSeen';
 function makeFakeStorage(initial?: Record<string, string>): Storage {
   const data: Record<string, string> = { ...initial };
   return {
-    get length() { return Object.keys(data).length; },
-    key(index: number) { return Object.keys(data)[index] ?? null; },
-    getItem(key: string) { return data[key] ?? null; },
-    setItem(key: string, value: string) { data[key] = value; },
-    removeItem(key: string) { delete data[key]; },
-    clear() { for (const k of Object.keys(data)) delete data[k]; },
+    get length() {
+      return Object.keys(data).length;
+    },
+    key(index: number) {
+      return Object.keys(data)[index] ?? null;
+    },
+    getItem(key: string) {
+      return data[key] ?? null;
+    },
+    setItem(key: string, value: string) {
+      data[key] = value;
+    },
+    removeItem(key: string) {
+      delete data[key];
+    },
+    clear() {
+      for (const k of Object.keys(data)) delete data[k];
+    },
     // Expose raw data for assertions (not part of Storage interface but convenient)
     _data: data,
   } as unknown as Storage & { _data: Record<string, string> };
 }
 
 /** Minimal in-memory storage for isolation. */
-function makeStorage(initial?: Record<string, string>): StorageLike & { _data: Record<string, string> } {
+function makeStorage(
+  initial?: Record<string, string>
+): StorageLike & { _data: Record<string, string> } {
   const data: Record<string, string> = { ...initial };
   return {
     _data: data,
     getItem: (key: string) => data[key] ?? null,
-    setItem: (key: string, value: string) => { data[key] = value; },
+    setItem: (key: string, value: string) => {
+      data[key] = value;
+    },
   };
 }
 
@@ -141,14 +157,16 @@ describe('markEventSeen', () => {
 
     // DEDUP still works on the retained ids.
     expect(hasSeenEvent(store, total)).toBe(true); // last one retained
-    expect(hasSeenEvent(store, 1)).toBe(false);   // evicted
-    expect(hasSeenEvent(store, 20)).toBe(false);  // evicted
+    expect(hasSeenEvent(store, 1)).toBe(false); // evicted
+    expect(hasSeenEvent(store, 20)).toBe(false); // evicted
   });
 
   it('does not throw when storage.setItem throws (fail-safe)', () => {
     const brokenStore: StorageLike = {
       getItem: () => null,
-      setItem: () => { throw new Error('QuotaExceededError'); },
+      setItem: () => {
+        throw new Error('QuotaExceededError');
+      },
     };
     expect(() => markEventSeen(brokenStore, 1)).not.toThrow();
   });
@@ -179,7 +197,7 @@ describe('purgeOrphanedUrtSeenKeys', () => {
     const store = makeFakeStorage({
       'urt-seen-146323': '1',
       'urt-seen-99': '1',
-      [URT_SEEN_KEY]: seenIdsValue,   // must NOT be removed
+      [URT_SEEN_KEY]: seenIdsValue, // must NOT be removed
     });
 
     purgeOrphanedUrtSeenKeys(store);
@@ -194,7 +212,7 @@ describe('purgeOrphanedUrtSeenKeys', () => {
     const store = makeFakeStorage({
       'urt-seen-1': '1',
       'some-other-key': 'value',
-      'theme': 'dark',
+      theme: 'dark',
     });
 
     purgeOrphanedUrtSeenKeys(store);

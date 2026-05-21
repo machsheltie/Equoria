@@ -101,7 +101,7 @@ export function isSafeRedirectPath(path: unknown): path is string {
   // Since the real security gate is the leading-"/" check above, anchoring
   // the scheme check to the start is both correct and has zero false positives.
   const lower = decoded.toLowerCase();
-  if (DANGEROUS_SCHEMES.some(s => lower.startsWith(s))) return false;
+  if (DANGEROUS_SCHEMES.some((s) => lower.startsWith(s))) return false;
 
   return true;
 }
@@ -119,9 +119,6 @@ export function isSafeRedirectPath(path: unknown): path is string {
  * @param from     - The candidate path from location.state.from (may be undefined/null)
  * @param fallback - Safe path to use when `from` fails validation
  */
-export function safeRedirectTarget(
-  from: string | undefined | null,
-  fallback: string
-): string {
+export function safeRedirectTarget(from: string | undefined | null, fallback: string): string {
   return isSafeRedirectPath(from) ? from : fallback;
 }

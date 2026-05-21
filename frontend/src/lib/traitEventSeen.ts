@@ -124,7 +124,8 @@ export function markEventSeen(storage: StorageLike, eventId: number): void {
 
     // Append and evict from the front if over cap.
     const updated = [...current, eventId];
-    const bounded = updated.length > URT_SEEN_MAX ? updated.slice(updated.length - URT_SEEN_MAX) : updated;
+    const bounded =
+      updated.length > URT_SEEN_MAX ? updated.slice(updated.length - URT_SEEN_MAX) : updated;
 
     storage.setItem(URT_SEEN_KEY, JSON.stringify(bounded));
   } catch {

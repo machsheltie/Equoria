@@ -41,7 +41,11 @@ import * as Sentry from '@sentry/react';
  *                 receives the 0.1 rate, matching the behaviour before this
  *                 function was extracted.
  */
-export function buildSentryConfig(dsn: string, mode: string, isProd: boolean): Sentry.BrowserOptions {
+export function buildSentryConfig(
+  dsn: string,
+  mode: string,
+  isProd: boolean
+): Sentry.BrowserOptions {
   return {
     dsn,
     environment: mode,

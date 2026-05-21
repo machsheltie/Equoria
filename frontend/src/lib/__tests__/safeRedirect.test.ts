@@ -234,9 +234,7 @@ describe('safeRedirectTarget', () => {
   });
 
   it('accepts /horses/42?tab=training with custom fallback', () => {
-    expect(safeRedirectTarget('/horses/42?tab=training', '/home')).toBe(
-      '/horses/42?tab=training'
-    );
+    expect(safeRedirectTarget('/horses/42?tab=training', '/home')).toBe('/horses/42?tab=training');
   });
 
   it('returns fallback for %2f%2fevil.com', () => {
