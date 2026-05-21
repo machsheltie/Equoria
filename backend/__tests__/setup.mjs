@@ -69,12 +69,33 @@ async function cleanupDatabase() {
     return;
   }
 
+  // HARD GUARD (Equoria-seahi / CLAUDE.md §2): .env.test points at the
+  // CANONICAL (production) Equoria DB. A whole-table reset against canonical
+  // would destroy every real user account + refresh token. Refuse to run any
+  // reset against a DATABASE_URL that does not name a dedicated test database
+  // (must contain "equoria_test"). This makes the escape hatch impossible to
+  // mis-trigger against real data even if the env var is set by accident.
+  const dbUrl = process.env.DATABASE_URL ?? '';
+  if (!dbUrl.includes('equoria_test')) {
+    throw new Error(
+      'DANGER (Equoria-seahi): TEST_DB_RESET_PER_TEST=true requested a whole-table ' +
+        'reset, but DATABASE_URL does not point at a dedicated test DB ' +
+        '(expected substring "equoria_test"). Refusing to wipe the canonical DB. ' +
+        'Use a sidecar test database for per-test resets.',
+    );
+  }
+
   try {
-    // Delete in correct order: children before parents
-    // RefreshToken has FK to User, so delete it first
-    await prisma.refreshToken.deleteMany({});
-    await prisma.user.deleteMany({});
-    // Add more tables here as needed, children before parents
+    // Even on a confirmed test DB, deletes are SCOPED to fixture rows only
+    // (test email) — never a bare deleteMany({}). Children before parents
+    // (RefreshToken FK -> User).
+    await prisma.refreshToken.deleteMany({
+      where: { user: { email: { contains: 'test' } } },
+    });
+    await prisma.user.deleteMany({
+      where: { email: { contains: 'test' } },
+    });
+    // Add more tables here as needed, children before parents (scoped only).
   } catch (error) {
     // Ignore "table does not exist" errors
     if (!error.message?.includes('does not exist')) {

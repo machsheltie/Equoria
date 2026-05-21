@@ -215,8 +215,14 @@ export const createMockResponse = () => {
  */
 export const cleanupDatabase = async () => {
   try {
-    // Delete in correct order to respect foreign key constraints
-    await prisma.refreshToken.deleteMany({});
+    // Scoped cleanup ONLY (Equoria-seahi / CLAUDE.md §2): tests run against the
+    // CANONICAL DB, so a bare deleteMany({}) would wipe real users + tokens.
+    // Delete in correct order to respect foreign key constraints. Refresh
+    // tokens are scoped via their owning user's test email (mirrors the
+    // globalTeardown pattern) so non-fixture tokens are never touched.
+    await prisma.refreshToken.deleteMany({
+      where: { user: { email: { contains: 'test' } } },
+    });
     await prisma.user.deleteMany({
       where: {
         email: {
@@ -352,7 +358,13 @@ export const createTestTokenFamily = async user => {
  */
 export const cleanupAllRefreshTokens = async () => {
   try {
-    await prisma.refreshToken.deleteMany({});
+    // Scoped cleanup ONLY (Equoria-seahi / CLAUDE.md §2): the canonical DB is
+    // the test DB, so an unscoped deleteMany({}) here would destroy every real
+    // user's refresh tokens. Scope to tokens owned by fixture users (test
+    // email). Non-fixture tokens are left intact.
+    await prisma.refreshToken.deleteMany({
+      where: { user: { email: { contains: 'test' } } },
+    });
   } catch (error) {
     console.error('Refresh token cleanup error:', error);
   }
