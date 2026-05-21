@@ -178,7 +178,7 @@ jobs:
           NODE_OPTIONS: '--max-old-space-size=4096 --experimental-vm-modules'
         run: >
           npx jest
-          --testPathPattern="__tests__/integration/session-lifetime"
+          --testPathPattern="modules/health/__tests__/session-lifetime"
           --forceExit
           --runInBand
 
