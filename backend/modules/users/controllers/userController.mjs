@@ -44,6 +44,7 @@ import { getCachedQuery, invalidateCache } from '../../../utils/cacheHelper.mjs'
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import AppError from '../../../errors/AppError.mjs';
+import { validateSettingsPayload } from '../services/settingsValidation.mjs';
 
 // Safe field selection for user search results — id and username (social handle) only.
 // firstName/lastName are real-name PII; they must NOT be returned from a search endpoint
@@ -553,6 +554,44 @@ export const updateUserController = async (req, res, next) => {
       if (Object.prototype.hasOwnProperty.call(rawBody, key)) {
         updates[key] = rawBody[key];
       }
+    }
+
+    // ── Step 2b: Shape-validate `settings` contents (Equoria-bddjw) ──────────
+    // The top-level `settings` key is allow-listed, but its CONTENTS were
+    // previously written verbatim — letting a client inject arbitrary nested
+    // keys / oversized blobs and clobber server-owned state (economy,
+    // onboarding, milestones, inventory). Constrain the client-writable
+    // surface to the SAME known-key allowlist the sibling /auth/profile +
+    // /auth/profile/preferences paths enforce (shared ALLOWED_PREFERENCE_KEYS),
+    // then MERGE into the stored settings so server-owned keys are preserved.
+    if (updates.settings !== undefined) {
+      const validatedSettings = validateSettingsPayload(updates.settings);
+      const currentUser = await prisma.user.findUnique({
+        where: { id },
+        select: { settings: true },
+      });
+      if (!currentUser) {
+        return res.status(404).json({
+          success: false,
+          message: 'User not found',
+        });
+      }
+      const currentSettings =
+        typeof currentUser.settings === 'object' && currentUser.settings !== null
+          ? currentUser.settings
+          : {};
+      // Shallow-merge each validated top-level key into existing settings so
+      // server-owned keys (onboarding/milestones/inventory/economy) survive.
+      const mergedSettings = { ...currentSettings };
+      for (const [key, value] of Object.entries(validatedSettings)) {
+        mergedSettings[key] = {
+          ...(typeof currentSettings[key] === 'object' && currentSettings[key] !== null
+            ? currentSettings[key]
+            : {}),
+          ...value,
+        };
+      }
+      updates.settings = mergedSettings;
     }
 
     // ── Step 3: If email is changing, reset verification flags in same write ─

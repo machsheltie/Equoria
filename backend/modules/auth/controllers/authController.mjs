@@ -1360,7 +1360,7 @@ export const advanceOnboarding = async (req, res, next) => {
  * Story 21S-5 — when adding a new preference, extend this list AND the
  * frontend types; unknown keys are rejected by the validator.
  */
-const ALLOWED_PREFERENCE_KEYS = [
+export const ALLOWED_PREFERENCE_KEYS = [
   // Email notifications
   'emailCompetition',
   'emailBreeding',

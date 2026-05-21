@@ -139,13 +139,17 @@ describe('PUT /api/v1/users/:id — mass-assignment protection (Equoria-qia4j)',
     expect(fresh.lastName).toBe('LegitSurname'); // ALLOWLISTED
   });
 
-  it('MUST allow updating settings (allowlisted)', async () => {
-    const newSettings = { theme: 'dark' };
+  it('MUST allow updating settings with known-key contents (allowlisted)', async () => {
+    // Equoria-bddjw: `settings` is allow-listed AND its CONTENTS are now
+    // shape-validated against the same known-key surface as /auth/profile.
+    // `theme` (the old free-form value) is no longer accepted; use a valid
+    // notifications/display shape instead.
+    const newSettings = { display: { highContrast: true } };
     const { res, fresh } = await doPut({ settings: newSettings });
 
     expect(res.status).toBe(200);
-    // Settings may be merged or replaced — at minimum the key must be present
-    expect(fresh.settings).toMatchObject(newSettings); // ALLOWLISTED
+    // Validated subset is merged into the stored settings JSON.
+    expect(fresh.settings).toMatchObject(newSettings); // ALLOWLISTED + shape-valid
   });
 
   // ─── Email-change resets verification flags ────────────────────────────────
