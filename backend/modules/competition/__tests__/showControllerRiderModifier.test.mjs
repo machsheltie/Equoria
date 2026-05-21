@@ -188,7 +188,10 @@ describe('executeClosedShows — RiderAssignment modifier (Equoria-5bkh)', () =>
     });
 
     // ONE execute call scores all RUNS shows (each entry = independent luck).
-    await executeClosedShows(null, null);
+    // Equoria-rsss0: scope to this suite's shows so the global executor does
+    // not sweep up a parallel competition suite's past-due open shows (and so
+    // a sibling's global executor is not the only thing keeping this robust).
+    await executeClosedShows({ body: { showIds: myShowIds } }, null);
 
     // Tally results scoped to OUR shows only (real DB may hold other shows).
     // NOTE on duplicates: executeClosedShows queries `status:'open'` globally

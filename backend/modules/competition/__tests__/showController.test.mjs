@@ -702,14 +702,33 @@ describe('POST /api/shows/execute — executeClosedShows', () => {
       .set('Authorization', `Bearer ${execToken}`)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
+      // Equoria-rsss0: scope the execute scan to ONLY this suite's two past
+      // shows so this call never claims a parallel competition suite's open
+      // shows. Without this scope the global scan made `executed`
+      // non-deterministic under a parallel run.
+      .send({ showIds: [pastShowId, pastShowNoEntriesId] });
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(typeof res.body.data.executed).toBe('number');
-    // At least our two past shows should have been executed
-    expect(res.body.data.executed).toBeGreaterThanOrEqual(1);
     expect(typeof res.body.data.message).toBe('string');
+
+    // The durable, race-free invariant: after this scoped execute BOTH of this
+    // suite's shows are no longer 'open' — they have been claimed/completed by
+    // a sanctioned executor. We assert state rather than the `executed` counter
+    // because in production (and under a parallel test run) the nightly cron /
+    // showScheduler is ALSO a sanctioned executor that may legitimately claim a
+    // due show first; in that case THIS call's `executed` is < 2 even though
+    // the work was correctly done exactly once. State is the honest assertion;
+    // the counter is inherently shared across concurrent sanctioned executors.
+    const shows = await prisma.show.findMany({
+      where: { id: { in: [pastShowId, pastShowNoEntriesId] } },
+      select: { id: true, status: true },
+    });
+    expect(shows).toHaveLength(2);
+    for (const s of shows) {
+      expect(['completed', 'executing']).toContain(s.status);
+    }
   });
 
   it('pastShow status is completed after execute', async () => {
@@ -732,8 +751,11 @@ describe('POST /api/shows/execute — executeClosedShows', () => {
   });
 
   it('returns 200 with executed=0 when no shows need execution (all already completed)', async () => {
-    // After the first execute call, both past shows are now 'completed'
-    // A second call should return executed=0
+    // After the first execute call, both of THIS suite's past shows are now
+    // 'completed'. A second call scoped to those same ids must return
+    // executed=0. Equoria-rsss0: scoping to our ids (rather than a global
+    // scan) is what makes this `toBe(0)` deterministic under a parallel run —
+    // a sibling suite's still-open shows can no longer inflate the count.
     const csrf = await fetchCsrf(app);
     const res = await request(app)
       .post('/api/shows/execute')
@@ -741,11 +763,11 @@ describe('POST /api/shows/execute — executeClosedShows', () => {
       .set('Authorization', `Bearer ${execToken}`)
       .set('Cookie', csrf.cookieHeader)
       .set('X-CSRF-Token', csrf.csrfToken)
-      .send({});
+      .send({ showIds: [pastShowId, pastShowNoEntriesId] });
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
-    // All shows already completed, so 0 additional executions
+    // Our two shows already completed, so 0 additional executions.
     expect(res.body.data.executed).toBe(0);
   });
 

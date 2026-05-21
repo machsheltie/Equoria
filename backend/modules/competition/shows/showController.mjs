@@ -348,14 +348,39 @@ export async function enterShow(req, res) {
  * Sets firstEverWin milestone flag if applicable.
  *
  * Called by the scheduled task or POST /api/v1/shows/execute (admin).
+ *
+ * Equoria-rsss0 (test-isolation): the HTTP path accepts an OPTIONAL
+ * `req.body.showIds` array. When supplied, the closeable-show scan is
+ * narrowed to those specific ids (still gated on `status:'open'` AND
+ * `closeDate <= now`, so a non-due or non-open id in the list is a no-op).
+ * This lets a test scope its execute call to ONLY the shows it created, so
+ * parallel competition suites no longer claim/score each other's open shows.
+ * When `showIds` is omitted (every production caller — the cron and the
+ * scheduler pass `null`/`undefined` req, so `req?.body?.showIds` is
+ * `undefined`) the scan is the original unfiltered global scan — production
+ * behaviour is byte-for-byte unchanged.
  */
 export async function executeClosedShows(req, res) {
   try {
     const now = new Date();
 
+    // Optional, test-only scoping filter (see fn doc). A valid array of
+    // numeric ids narrows the scan; anything else (undefined, null, empty,
+    // non-array, no numeric members) leaves the scan global — identical to
+    // the pre-existing production behaviour.
+    const rawShowIds = req?.body?.showIds;
+    const scopedShowIds = Array.isArray(rawShowIds)
+      ? rawShowIds.filter(id => Number.isInteger(id))
+      : null;
+
+    const where = { status: 'open', closeDate: { lte: now } };
+    if (scopedShowIds && scopedShowIds.length > 0) {
+      where.id = { in: scopedShowIds };
+    }
+
     // Find all shows ready to execute
     const shows = await prisma.show.findMany({
-      where: { status: 'open', closeDate: { lte: now } },
+      where,
       include: {
         entries: {
           include: {

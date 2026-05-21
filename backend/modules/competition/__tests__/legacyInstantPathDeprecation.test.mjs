@@ -285,7 +285,9 @@ describe('Equoria-kacla: canonical /api/shows 7-day path still works (no nx8t1 r
       where: { id: show.id },
       data: { closeDate: new Date(Date.now() - 60000), status: 'open' },
     });
-    await executeClosedShows(null, null);
+    // Equoria-rsss0: scope to this test's show so the global executor does
+    // not claim a parallel competition suite's past-due open shows.
+    await executeClosedShows({ body: { showIds: [show.id] } }, null);
 
     const after = await prisma.show.findUnique({
       where: { id: show.id },

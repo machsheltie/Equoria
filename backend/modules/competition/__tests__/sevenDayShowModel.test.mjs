@@ -369,7 +369,9 @@ describe('R8: cron executes only past-window open shows; idempotent', () => {
       where: { id: entrant.id },
       select: { money: true },
     });
-    await executeClosedShows(undefined, undefined);
+    // Equoria-rsss0: scope to this suite's show so a parallel competition
+    // suite's past-due open shows are not swept up by this global executor.
+    await executeClosedShows({ body: { showIds: [pastShowId] } }, undefined);
     const show = await prisma.show.findUnique({ where: { id: pastShowId } });
     expect(show.status).toBe('completed');
     expect(show.executedAt).not.toBeNull();
@@ -389,7 +391,8 @@ describe('R8: cron executes only past-window open shows; idempotent', () => {
     const resultsBefore = await prisma.competitionResult.count({
       where: { showId: pastShowId },
     });
-    await executeClosedShows(undefined, undefined);
+    // Equoria-rsss0: scoped to this suite's show (see above).
+    await executeClosedShows({ body: { showIds: [pastShowId] } }, undefined);
     const entrantAfter = await prisma.user.findUnique({
       where: { id: entrant.id },
       select: { money: true },

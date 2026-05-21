@@ -127,7 +127,16 @@ describe('executeClosedShows — concurrent invocation does not double-score (Eq
     // Fire two executors concurrently for the same closeable show. With the
     // non-atomic check-then-set both pass the 'is open?' gate and both score
     // the show. The atomic updateMany claim makes the second a no-op.
-    await Promise.all([executeClosedShows(undefined, undefined), executeClosedShows(undefined, undefined)]);
+    //
+    // Equoria-rsss0: scope BOTH executors to this suite's single race show.
+    // The double-score race is per-show (the atomic claim is a per-row
+    // updateMany), so scoping to [raceShowId] preserves the race semantics
+    // EXACTLY while preventing this suite's global scan from claiming a
+    // parallel competition suite's past-due open shows. The synthetic
+    // `{ body: { showIds } }` first arg drives the same optional filter the
+    // HTTP route exposes; `res` stays undefined so the service path runs.
+    const scoped = { body: { showIds: [raceShowId] } };
+    await Promise.all([executeClosedShows(scoped, undefined), executeClosedShows(scoped, undefined)]);
 
     // EXACTLY ONE competitionResult row for our entrant in this show.
     const results = await prisma.competitionResult.findMany({
