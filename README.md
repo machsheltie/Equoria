@@ -41,6 +41,12 @@ npm --prefix frontend install
 # 2. Backend env
 cp backend/.env.example backend/.env
 # Edit backend/.env: set DATABASE_URL + JWT_SECRET
+#
+# For the COMPLETE, canonical list of every environment variable the codebase
+# reads (backend + frontend + test/CI), grouped required vs optional with a
+# safe placeholder and one-line comment each, see `.env.example` at the repo
+# root. Component-scoped copies live at backend/.env.example and
+# frontend/.env.example.
 
 # 3. Apply migrations
 npm --prefix packages/database run migrate:deploy
