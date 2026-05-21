@@ -345,6 +345,29 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "light": 0.3,
       "standard": 0.4,
       "dark": 0.3
+    },
+    "Chestnut Pearl": {
+      "light pink-apricot": 1
+    },
+    "Bay Pearl": {
+      "apricot": 0.4,
+      "dark brown points": 0.6
+    },
+    "Black Pearl": {
+      "light tan": 0.4,
+      "dark points": 0.6
+    },
+    "Palomino Pearl": {
+      "pale apricot": 0.5,
+      "pale mane": 0.5
+    },
+    "Buckskin Pearl": {
+      "light apricot": 0.4,
+      "reddish-brown points": 0.6
+    },
+    "Smoky Black Pearl": {
+      "pale tan": 0.4,
+      "dark points": 0.6
     }
   },
   "advanced_markings_bias": {

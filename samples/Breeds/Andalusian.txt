@@ -230,6 +230,18 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     },
     "Sparse Mane/Tail": {
       "sparse mane/tail": 1
+    },
+    "Palomino Pearl": {
+      "pale apricot": 0.5,
+      "pale mane": 0.5
+    },
+    "Buckskin Pearl": {
+      "light apricot": 0.4,
+      "reddish-brown points": 0.6
+    },
+    "Smoky Black Pearl": {
+      "pale tan": 0.4,
+      "dark points": 0.6
     }
   },
   "advanced_markings_bias": {
