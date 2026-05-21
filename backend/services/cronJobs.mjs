@@ -10,6 +10,7 @@ import { incrementWeeklyCareerWeeks } from './riderTrainerProgressionService.mjs
 import { purgeExpiredAuditLogs } from './auditLogRetentionService.mjs';
 import { decayHoofConditions } from './hoofConditionDecayService.mjs';
 import { executeClosedShows } from '../modules/competition/shows/showController.mjs';
+import { createNotification } from '../utils/notificationService.mjs';
 import { Sentry } from '../config/sentry.mjs';
 
 /**
@@ -562,6 +563,14 @@ class CronJobService {
       // Log the action for auditing
       await this.logTraitRevelation(foal.id, foal.name, newTraits, currentDay);
 
+      // Equoria-yy1a5: notify the foal's owner when one or more VISIBLE traits
+      // were revealed by the nightly job. Hidden traits remain a discovery and
+      // intentionally do NOT notify. Owner is foal.userId (the canonical owner
+      // field — Horse has no ownerId). Fire-and-forget at the service level:
+      // createNotification already swallows its own errors, but guard anyway so
+      // a notification failure never aborts the trait persistence.
+      await this.notifyTraitRevelation(foal, newTraits, currentDay);
+
       logger.info(
         `[CronJobService.evaluateFoalTraits] Updated foal ${foal.id} with ${totalNewTraits} new traits`,
       );
@@ -623,6 +632,54 @@ class CronJobService {
       `[CronJobService.advanceFoalDevelopmentDay] Foal ${foalId} development day ${currentDay} -> ${nextDay}`,
     );
     return nextDay;
+  }
+
+  /**
+   * Equoria-yy1a5: Fire a player-facing notification when the nightly job
+   * reveals one or more VISIBLE traits for a foal.
+   *
+   * The generic notification infra (notificationService.createNotification)
+   * writes a durable Notification row AND publishes a live user event over the
+   * SSE bus. We use the 'trait_discovery' type (the same discriminator the labs
+   * reporting timeline and the docs "Trait Discovery Events" enhancement use).
+   *
+   * Only VISIBLE traits (positive + negative) notify — hidden traits remain an
+   * undiscovered surprise by design, so a run that reveals only hidden traits
+   * fires no notification. If the foal has no owner (userId null) we skip.
+   *
+   * Best-effort: createNotification swallows its own errors; we additionally
+   * guard so a notification failure never aborts the surrounding trait
+   * persistence flow.
+   *
+   * @param {Object} foal - foal record (needs id, name, userId)
+   * @param {Object} newTraits - { positive: [], negative: [], hidden: [] }
+   * @param {number} currentDay - development day the reveal happened on
+   */
+  async notifyTraitRevelation(foal, newTraits, currentDay) {
+    try {
+      const ownerUserId = foal.userId;
+      if (!ownerUserId) {
+        return;
+      }
+      const visibleTraits = [...(newTraits.positive || []), ...(newTraits.negative || [])];
+      if (visibleTraits.length === 0) {
+        // Only hidden traits revealed — intentionally no notification.
+        return;
+      }
+      await createNotification(ownerUserId, 'trait_discovery', {
+        foalId: foal.id,
+        foalName: foal.name,
+        traits: visibleTraits,
+        developmentDay: currentDay,
+      });
+      logger.info(
+        `[CronJobService.notifyTraitRevelation] Notified owner ${ownerUserId} of ${visibleTraits.length} revealed trait(s) for foal ${foal.id}`,
+      );
+    } catch (error) {
+      logger.error(
+        `[CronJobService.notifyTraitRevelation] Error notifying owner for foal ${foal?.id}: ${error.message}`,
+      );
+    }
   }
 
   /**
