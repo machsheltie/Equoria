@@ -44,14 +44,14 @@ jest.mock('../backend/utils/logger.mjs', () => ({
 // Import real modules
 import prisma from '../backend/db/index.mjs';
 import { addXpToUser, getUserProgress } from '../backend/controllers/progressionController.mjs';
+import { cleanupProgressionFixtures } from './helpers/scopedTestCleanup.mjs';
 
 describe('📈 INTEGRATION: Progression Controller - Real Database Operations', () => {
   let testUsers = [];
 
   beforeEach(async () => {
-    // Clean up test data
-    await prisma.xpEvent.deleteMany({});
-    await prisma.user.deleteMany({});
+    // Scoped cleanup — canonical DB (CLAUDE.md §2); never wipe all users.
+    await cleanupProgressionFixtures(prisma);
 
     // Create test users with different XP and levels
     const user1 = await prisma.user.create({
@@ -101,9 +101,8 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
   });
 
   afterEach(async () => {
-    // Clean up test data
-    await prisma.xpEvent.deleteMany({});
-    await prisma.user.deleteMany({});
+    // Scoped cleanup — canonical DB (CLAUDE.md §2); never wipe all users.
+    await cleanupProgressionFixtures(prisma);
     jest.clearAllMocks();
   });
 
