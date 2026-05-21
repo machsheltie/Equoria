@@ -70,8 +70,11 @@ const KNOWN_OFFENDER_ALLOWLIST = new Set([
 
 // Unscoped deleteMany: `deleteMany()` or `deleteMany({})` (only whitespace
 // inside the parens / braces). A scoped call — `deleteMany({ where: ... })` —
-// has non-whitespace before the closing brace and is NOT matched.
+// has non-whitespace before the closing brace and is NOT matched. `\s` covers
+// newlines, so a call split across lines (`deleteMany(\n{}\n)`) is still
+// matched when the regex is run against the whole-file source.
 const UNSCOPED_DELETE_MANY = /\.deleteMany\(\s*(?:\{\s*\})?\s*\)/;
+const UNSCOPED_DELETE_MANY_GLOBAL = /\.deleteMany\(\s*(?:\{\s*\})?\s*\)/g;
 
 function collectFiles(rootDir) {
   let entries;
@@ -115,20 +118,37 @@ function scanAll() {
       } catch {
         continue;
       }
+      // Blank out comment-only lines (preserving line count) so doc/comment
+      // mentions of `deleteMany()` — e.g. this file's own header or
+      // CLAUDE.md-style warnings — never count as offenders, in BOTH the
+      // per-line and whole-file passes.
       const lines = src.split('\n');
-      const hits = [];
-      lines.forEach((line, i) => {
-        // Skip comment-only lines so doc/comment mentions of `deleteMany()`
-        // (e.g. this very file's header, or CLAUDE.md-style warnings) do not
-        // count as offenders.
+      const codeLines = lines.map((line) => {
         const trimmed = line.trim();
         if (trimmed.startsWith('*') || trimmed.startsWith('//') || trimmed.startsWith('/*')) {
-          return;
+          return '';
         }
+        return line;
+      });
+
+      const hits = [];
+      codeLines.forEach((line, i) => {
         if (UNSCOPED_DELETE_MANY.test(line)) {
           hits.push(i + 1);
         }
       });
+
+      // Whole-file pass (over comment-stripped source) catches a call split
+      // across multiple lines (`deleteMany(\n{}\n)`) that the per-line pass
+      // above misses. If whole-file matches exceed the per-line hits, the
+      // surplus are multiline; record the offender with an approximate
+      // "multiline" marker since exact line attribution is not meaningful.
+      const codeSrc = codeLines.join('\n');
+      UNSCOPED_DELETE_MANY_GLOBAL.lastIndex = 0;
+      const wholeFileCount = (codeSrc.match(UNSCOPED_DELETE_MANY_GLOBAL) || []).length;
+      if (wholeFileCount > hits.length) {
+        hits.push('multiline');
+      }
       if (hits.length) offenders.push({ rel, lines: hits });
     }
   }
