@@ -15,6 +15,7 @@
 
 import logger from '../utils/logger.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
+import { asFlagArray } from '../utils/jsonbArrayGuard.mjs';
 
 // Temperament classification definitions
 const TEMPERAMENT_CLASSIFICATIONS = {
@@ -144,10 +145,10 @@ export async function analyzeHorseTemperament(horseId) {
       // Use interaction-based analysis
       dataSource = 'interactions';
       reliabilityScore = Math.min(1.0, interactions.length / 20); // Max reliability at 20+ interactions
-    } else if (horse.epigeneticFlags.length > 0) {
+    } else if (asFlagArray(horse.epigeneticFlags).length > 0) {
       // Use flag-based analysis
       dataSource = 'flags_and_stats';
-      reliabilityScore = Math.min(0.8, horse.epigeneticFlags.length / 5); // Max 0.8 reliability from flags
+      reliabilityScore = Math.min(0.8, asFlagArray(horse.epigeneticFlags).length / 5); // Max 0.8 reliability from flags
     } else {
       // Use basic stats only
       dataSource = 'basic_stats';
@@ -170,7 +171,7 @@ export async function analyzeHorseTemperament(horseId) {
       reliabilityScore,
       analysisDate: new Date(),
       interactionCount: interactions.length,
-      flagCount: horse.epigeneticFlags.length,
+      flagCount: asFlagArray(horse.epigeneticFlags).length,
     };
   } catch (error) {
     logger.error(`Error analyzing horse temperament for horse ${horseId}:`, error);
@@ -185,7 +186,9 @@ export async function analyzeHorseTemperament(horseId) {
  */
 export async function classifyTemperamentFromFlags(flags) {
   try {
-    if (!flags || flags.length === 0) {
+    // JSONB column may be null / non-array on legacy or bare-created rows.
+    flags = asFlagArray(flags);
+    if (flags.length === 0) {
       return {
         primaryTemperament: 'undetermined',
         temperamentTraits: [],
@@ -617,23 +620,24 @@ async function performTemperamentAnalysis(horse, interactions, dataSource) {
   if (dataSource === 'interactions' && interactions.length >= 5) {
     // Interaction-based analysis
     analysis = analyzeFromInteractions(horse, interactions);
-  } else if (dataSource === 'flags_and_stats' && horse.epigeneticFlags.length > 0) {
+  } else if (dataSource === 'flags_and_stats' && asFlagArray(horse.epigeneticFlags).length > 0) {
     // Flag-based analysis
-    const flagClassification = await classifyTemperamentFromFlags(horse.epigeneticFlags);
+    const horseFlags = asFlagArray(horse.epigeneticFlags);
+    const flagClassification = await classifyTemperamentFromFlags(horseFlags);
     analysis.primaryTemperament = flagClassification.primaryTemperament;
     analysis.traits = flagClassification.temperamentTraits;
 
     // Supplement with basic stats
     analysis.confidenceLevel = Math.max(0.1, Math.min(0.9, horse.bondScore / 40));
     analysis.stressResilience = Math.max(0.1, Math.min(0.9, (10 - horse.stressLevel) / 10));
-    analysis.socialTendency = horse.epigeneticFlags.includes('social')
+    analysis.socialTendency = horseFlags.includes('social')
       ? 0.8
-      : horse.epigeneticFlags.includes('antisocial')
+      : horseFlags.includes('antisocial')
         ? 0.2
         : 0.5;
-    analysis.adaptability = horse.epigeneticFlags.includes('curious')
+    analysis.adaptability = horseFlags.includes('curious')
       ? 0.7
-      : horse.epigeneticFlags.includes('fearful')
+      : horseFlags.includes('fearful')
         ? 0.3
         : 0.5;
   } else {
@@ -764,9 +768,10 @@ function calculateRecoveryRate(interactions) {
  * Determine stress response type
  */
 function determineStressResponseType(horse, avgStressChange, stressSpikes, stressReductions) {
-  if (horse.epigeneticFlags.includes('reactive') || avgStressChange > 1) {
+  const horseFlags = asFlagArray(horse.epigeneticFlags);
+  if (horseFlags.includes('reactive') || avgStressChange > 1) {
     return 'reactive';
-  } else if (horse.epigeneticFlags.includes('fearful') || stressSpikes > stressReductions) {
+  } else if (horseFlags.includes('fearful') || stressSpikes > stressReductions) {
     return 'high_sensitivity';
   } else if (stressReductions > stressSpikes) {
     return 'resilient';

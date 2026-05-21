@@ -14,6 +14,7 @@
 
 import logger from '../utils/logger.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
+import { asFlagArray } from '../utils/jsonbArrayGuard.mjs';
 
 // Personality trait definitions
 const PERSONALITY_TRAIT_DEFINITIONS = {
@@ -403,11 +404,11 @@ export async function analyzePersonalityCompatibility(groomId, horseId) {
 
       if (compatibility > 0.2) {
         strengths.push(
-          `${trait.name}: ${trait.description} - works well with ${horse.epigeneticFlags.join(', ') || 'neutral temperament'}`,
+          `${trait.name}: ${trait.description} - works well with ${asFlagArray(horse.epigeneticFlags).join(', ') || 'neutral temperament'}`,
         );
       } else if (compatibility < -0.1) {
         challenges.push(
-          `${trait.name}: May be too ${trait.name} for ${horse.epigeneticFlags.join(', ') || 'this horse'}`,
+          `${trait.name}: May be too ${trait.name} for ${asFlagArray(horse.epigeneticFlags).join(', ') || 'this horse'}`,
         );
       }
     });
@@ -417,10 +418,10 @@ export async function analyzePersonalityCompatibility(groomId, horseId) {
       recommendations.push('Consider using a different groom personality type for this horse');
       recommendations.push('If using this groom, focus on gentle, low-stress interactions');
 
-      if (horse.epigeneticFlags.includes('fearful')) {
+      if (asFlagArray(horse.epigeneticFlags).includes('fearful')) {
         recommendations.push('This horse would benefit from a calm, patient groom');
       }
-      if (horse.epigeneticFlags.includes('reactive')) {
+      if (asFlagArray(horse.epigeneticFlags).includes('reactive')) {
         recommendations.push('Avoid energetic or stimulating approaches with this horse');
       }
     } else if (overallScore > 0.7) {
@@ -608,7 +609,9 @@ function applyExperienceModifiers(effects, traitStrength) {
  * Calculate trait compatibility with horse flags
  */
 function calculateTraitCompatibility(trait, horseFlags) {
-  if (!horseFlags || horseFlags.length === 0) {
+  // JSONB column may be null / non-array on legacy or bare-created rows.
+  horseFlags = asFlagArray(horseFlags);
+  if (horseFlags.length === 0) {
     return 0.1; // Neutral compatibility for horses with no flags
   }
 
@@ -635,7 +638,7 @@ function calculateTraitCompatibility(trait, horseFlags) {
  * Calculate overall compatibility between groom and horse
  */
 function calculateOverallCompatibility(groomTraits, horse) {
-  if (!horse.epigeneticFlags || horse.epigeneticFlags.length === 0) {
+  if (asFlagArray(horse.epigeneticFlags).length === 0) {
     return 0.6; // Neutral compatibility for horses with no flags
   }
 

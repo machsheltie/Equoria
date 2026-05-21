@@ -17,6 +17,7 @@ import logger from '../utils/logger.mjs';
 import _prisma from '../../packages/database/prismaClient.mjs';
 import { generateEnvironmentalReport } from './environmentalTriggerSystem.mjs';
 import { getHorseAgeDays } from '../utils/horseAge.mjs';
+import { asFlagArray } from '../utils/jsonbArrayGuard.mjs';
 
 /**
  * Generate insights from trait history data
@@ -291,7 +292,7 @@ export function generateStableOverview(horses) {
     totalBond += horse.bondScore;
     totalStress += horse.stressLevel;
 
-    horse.epigeneticFlags.forEach(trait => {
+    asFlagArray(horse.epigeneticFlags).forEach(trait => {
       overview.traitCounts[trait] = (overview.traitCounts[trait] || 0) + 1;
     });
   });
@@ -315,7 +316,7 @@ export function analyzeTraitDistribution(horses) {
   };
 
   horses.forEach(horse => {
-    horse.epigeneticFlags.forEach(trait => {
+    asFlagArray(horse.epigeneticFlags).forEach(trait => {
       distribution.totalTraits++;
       distribution.uniqueTraits.add(trait);
       distribution.traitFrequency[trait] = (distribution.traitFrequency[trait] || 0) + 1;
@@ -451,10 +452,10 @@ export async function generateHorseComparison(horses) {
       id: horse.id,
       name: horse.name,
       age: getHorseAgeDays(horse.dateOfBirth),
-      traitCount: horse.epigeneticFlags.length,
+      traitCount: asFlagArray(horse.epigeneticFlags).length,
       bondScore: horse.bondScore,
       stressLevel: horse.stressLevel,
-      traits: horse.epigeneticFlags,
+      traits: asFlagArray(horse.epigeneticFlags),
     })),
     averages: {
       traitCount: 0,
@@ -485,8 +486,8 @@ export function identifyTraitSimilarities(horses) {
       const horse1 = horses[i];
       const horse2 = horses[j];
 
-      const commonTraits = horse1.epigeneticFlags.filter(trait =>
-        horse2.epigeneticFlags.includes(trait),
+      const commonTraits = asFlagArray(horse1.epigeneticFlags).filter(trait =>
+        asFlagArray(horse2.epigeneticFlags).includes(trait),
       );
 
       if (commonTraits.length > 0) {
@@ -496,7 +497,10 @@ export function identifyTraitSimilarities(horses) {
           commonTraits,
           similarityScore:
             commonTraits.length /
-            Math.max(horse1.epigeneticFlags.length, horse2.epigeneticFlags.length),
+            Math.max(
+              asFlagArray(horse1.epigeneticFlags).length,
+              asFlagArray(horse2.epigeneticFlags).length,
+            ),
         });
       }
     }
@@ -516,12 +520,12 @@ export function identifyTraitDifferences(horses) {
       const horse1 = horses[i];
       const horse2 = horses[j];
 
-      const uniqueToHorse1 = horse1.epigeneticFlags.filter(
-        trait => !horse2.epigeneticFlags.includes(trait),
+      const uniqueToHorse1 = asFlagArray(horse1.epigeneticFlags).filter(
+        trait => !asFlagArray(horse2.epigeneticFlags).includes(trait),
       );
 
-      const uniqueToHorse2 = horse2.epigeneticFlags.filter(
-        trait => !horse1.epigeneticFlags.includes(trait),
+      const uniqueToHorse2 = asFlagArray(horse2.epigeneticFlags).filter(
+        trait => !asFlagArray(horse1.epigeneticFlags).includes(trait),
       );
 
       if (uniqueToHorse1.length > 0 || uniqueToHorse2.length > 0) {
@@ -530,7 +534,8 @@ export function identifyTraitDifferences(horses) {
           horse2: { id: horse2.id, name: horse2.name, uniqueTraits: uniqueToHorse2 },
           differenceScore:
             (uniqueToHorse1.length + uniqueToHorse2.length) /
-            (horse1.epigeneticFlags.length + horse2.epigeneticFlags.length),
+            (asFlagArray(horse1.epigeneticFlags).length +
+              asFlagArray(horse2.epigeneticFlags).length),
         });
       }
     }
@@ -544,7 +549,9 @@ export function identifyTraitDifferences(horses) {
  */
 export function generateHorseRankings(horses) {
   const rankings = {
-    byTraitCount: [...horses].sort((a, b) => b.epigeneticFlags.length - a.epigeneticFlags.length),
+    byTraitCount: [...horses].sort(
+      (a, b) => asFlagArray(b.epigeneticFlags).length - asFlagArray(a.epigeneticFlags).length,
+    ),
     byBondScore: [...horses].sort((a, b) => b.bondScore - a.bondScore),
     byStressLevel: [...horses].sort((a, b) => a.stressLevel - b.stressLevel), // Lower stress is better
   };
@@ -553,7 +560,7 @@ export function generateHorseRankings(horses) {
     byTraitCount: rankings.byTraitCount.map((horse, index) => ({
       rank: index + 1,
       horse: { id: horse.id, name: horse.name },
-      value: horse.epigeneticFlags.length,
+      value: asFlagArray(horse.epigeneticFlags).length,
     })),
     byBondScore: rankings.byBondScore.map((horse, index) => ({
       rank: index + 1,
@@ -688,14 +695,14 @@ export async function generateSummaryReport(horse) {
       id: horse.id,
       name: horse.name,
       age: getHorseAgeDays(horse.dateOfBirth),
-      traitCount: horse.epigeneticFlags.length,
-      traits: horse.epigeneticFlags,
+      traitCount: asFlagArray(horse.epigeneticFlags).length,
+      traits: asFlagArray(horse.epigeneticFlags),
     },
     scores: {
       bondScore: horse.bondScore,
       stressLevel: horse.stressLevel,
     },
-    summary: `${horse.name} has ${horse.epigeneticFlags.length} epigenetic traits and shows ${horse.bondScore > 30 ? 'excellent' : horse.bondScore > 20 ? 'good' : 'developing'} bonding.`,
+    summary: `${horse.name} has ${asFlagArray(horse.epigeneticFlags).length} epigenetic traits and shows ${horse.bondScore > 30 ? 'excellent' : horse.bondScore > 20 ? 'good' : 'developing'} bonding.`,
   };
 }
 
@@ -802,7 +809,7 @@ function generateBasicRecommendations(horse) {
     recommendations.push('Increase bonding through positive interactions');
   }
 
-  if (horse.epigeneticFlags.length < 3) {
+  if (asFlagArray(horse.epigeneticFlags).length < 3) {
     recommendations.push('Provide enrichment activities to encourage trait development');
   }
 

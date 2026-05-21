@@ -14,6 +14,7 @@ import {
 } from './epigeneticFlags.mjs';
 import { evaluateUltraRareTriggers, evaluateExoticUnlocks } from './ultraRareTriggerEngine.mjs';
 import { getHorseAgeDays } from './horseAge.mjs';
+import { asFlagArray } from './jsonbArrayGuard.mjs';
 // Note: Using existing trait effects system instead of separate definitions
 
 /**
@@ -216,6 +217,8 @@ function calculatePersonalityBonuses(currentGroom, horse, groomCareHistory) {
  * @returns {Array} Enhanced trait recommendations with scores
  */
 function applyEnhancedScoring(baseTraits, epigeneticFlags, careBonus, personalityBonuses, _horse) {
+  // JSONB-sourced flag arrays may be null / non-array; normalize defensively.
+  epigeneticFlags = asFlagArray(epigeneticFlags);
   const enhancedTraits = [];
 
   // Process base traits with enhancements
@@ -289,7 +292,7 @@ function applyEnhancedScoring(baseTraits, epigeneticFlags, careBonus, personalit
 function calculateEpigeneticFlagInfluence(traitName, epigeneticFlags) {
   let totalInfluence = 0;
 
-  epigeneticFlags.forEach(flagName => {
+  asFlagArray(epigeneticFlags).forEach(flagName => {
     const flag = EPIGENETIC_FLAGS[flagName];
     if (flag?.effects?.traitProbability?.[traitName]) {
       totalInfluence += flag.effects.traitProbability[traitName];

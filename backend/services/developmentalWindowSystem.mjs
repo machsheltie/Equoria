@@ -19,6 +19,7 @@
 import logger from '../utils/logger.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 import { getHorseAgeDays } from '../utils/horseAge.mjs';
+import { asFlagArray } from '../utils/jsonbArrayGuard.mjs';
 
 // Critical developmental windows (in days from birth)
 const DEVELOPMENTAL_WINDOWS = {
@@ -662,7 +663,7 @@ export async function analyzeCriticalPeriodSensitivity(horseId) {
     if (horse.bondScore < 20) {
       riskFactors.push('Poor bonding relationship');
     }
-    if (currentAge < 30 && horse.epigeneticFlags.includes('fearful')) {
+    if (currentAge < 30 && asFlagArray(horse.epigeneticFlags).includes('fearful')) {
       riskFactors.push('Early fear trait development');
     }
     if (currentAge < 14 && horse.stressLevel > 4) {
@@ -677,7 +678,7 @@ export async function analyzeCriticalPeriodSensitivity(horseId) {
     if (horse.bondScore > 25) {
       protectiveFactors.push('Strong bonding relationship');
     }
-    if (horse.epigeneticFlags.includes('confident')) {
+    if (asFlagArray(horse.epigeneticFlags).includes('confident')) {
       protectiveFactors.push('Confidence trait present');
     }
 
@@ -1221,7 +1222,7 @@ async function generateTraitPredictions(horseId, upcomingWindows, horse) {
   const commonTraits = ['confident', 'brave', 'curious', 'social', 'calm', 'fearful'];
 
   for (const trait of commonTraits) {
-    const currentProbability = horse.epigeneticFlags.includes(trait) ? 0.8 : 0.2;
+    const currentProbability = asFlagArray(horse.epigeneticFlags).includes(trait) ? 0.8 : 0.2;
     let projectedProbability = currentProbability;
     let developmentWindow = null;
 
