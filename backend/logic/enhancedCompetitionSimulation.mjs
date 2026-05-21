@@ -231,6 +231,30 @@ export async function executeEnhancedCompetition(show, entries) {
         },
       });
 
+      // Equoria-9o63c: fire a placement notification on ANY top-3 finish,
+      // regardless of whether a stat was gained that run. This is the sibling
+      // fix to Equoria-pi4nk in competitionController.mjs — that path fired
+      // its only competition notification inside `if (statGains)`, so a
+      // top-3 horse that gained no stat (the common case — stat gain is a
+      // 3-10% RNG roll) received ZERO notifications. The same gap existed
+      // here. competition_placement is a DISTINCT type from
+      // competition_stat_gain: placement and stat-gain are different game
+      // events. A horse that both places AND gains a stat receives two
+      // notifications; a horse that places without a stat gain now receives
+      // the placement notification it previously never got. Payload mirrors
+      // pi4nk's shape ({ horseName, placement, discipline, showName,
+      // prizeWon }). Only the top three valid scorers are assigned a
+      // placement <= 3, so this guard is the top-3 condition.
+      if (placement <= 3) {
+        await createNotification(user.id, 'competition_placement', {
+          horseName: horse.name,
+          placement: placementString,
+          discipline: show.discipline,
+          showName: show.name,
+          prizeWon,
+        });
+      }
+
       // Apply stat gain to horse if awarded
       if (statGain) {
         const updateData = {};
