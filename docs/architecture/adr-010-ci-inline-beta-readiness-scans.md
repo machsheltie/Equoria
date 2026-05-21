@@ -70,10 +70,27 @@ and `.github/workflows/test.yml` and asserts each pair is
 also runs on every PR via `doctrine-gate.yml`. Any future one-sided edit
 to a canonical scan fails this gate.
 
-To keep the drift-check able to locate the regexes, each canonical scan
-in `check-beta-readiness.sh` carries a `# CANONICAL-SCAN:` marker
-comment naming its workflow counterpart. The matching inline step in
-`test.yml` must use the identical regex string.
+The drift assertion covers **all four** duplicated scans (Equoria-v9v14;
+the original 862l implementation asserted only scans 3 and 4, leaving a
+silent-drift path for the HTTP cleanup-route and integration-test
+DB-mock scans). Each scan is located by a unique content marker that
+appears verbatim inside its grep regex on both sides:
+
+| #   | Scan                         | Marker                |
+| --- | ---------------------------- | --------------------- |
+| 1   | HTTP cleanup-route           | `test/cleanup`        |
+| 2   | integration-test DB-mock     | `unstable_mockModule` |
+| 3   | frontend mock-data           | `allMockHorses`       |
+| 4   | E2E/api-client bypass-header | `x-test-skip-csrf`    |
+
+The extractor tolerates the shell line-continuation form
+(`grep -rn \` then the regex on the next line) used by scans 1 and 2.
+Adding a new duplicated scan under the assertion is a one-line edit to
+the `CANONICAL_SCANS` table in the parity script. The matching inline
+step in `test.yml` must use the identical regex string. The assertion is
+sentinel-tested by
+`backend/__tests__/scripts/betaReadinessScanParity.sentinel.test.mjs`,
+which proves it FIRES when any of the four pairs is mutated on one side.
 
 ## Consequences
 
