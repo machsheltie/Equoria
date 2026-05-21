@@ -78,6 +78,7 @@ describe('Color & Genetics Routes — performance NFRs (Equoria-z594)', () => {
 
     perfToken = generateTestToken(perfUser);
 
+    // eslint-disable-next-line equoria/no-raw-test-horse-create -- perf fixture deliberately sets a full 17-locus colorGenotype + non-null phenotype so the populated-branch JSONB roundtrip latency is what gets measured; a fixtureColor() spread would override the chosen genotype. No NULL-phenotype risk.
     perfHorse = await prisma.horse.create({
       data: {
         name: `CGPerfHorse_${ts}`,
@@ -122,7 +123,6 @@ describe('Color & Genetics Routes — performance NFRs (Equoria-z594)', () => {
 
     expect(res.status).toBe(200);
     if (elapsed >= GENETICS_BUDGET_MS) {
-      // eslint-disable-next-line no-console
       console.log(`[z594] genetics warm latency = ${elapsed.toFixed(1)}ms (budget ${GENETICS_BUDGET_MS}ms)`);
     }
     expect(elapsed).toBeLessThan(GENETICS_BUDGET_MS);
@@ -138,7 +138,6 @@ describe('Color & Genetics Routes — performance NFRs (Equoria-z594)', () => {
 
     expect(res.status).toBe(200);
     if (elapsed >= COLOR_BUDGET_MS) {
-      // eslint-disable-next-line no-console
       console.log(`[z594] color warm latency = ${elapsed.toFixed(1)}ms (budget ${COLOR_BUDGET_MS}ms)`);
     }
     expect(elapsed).toBeLessThan(COLOR_BUDGET_MS);

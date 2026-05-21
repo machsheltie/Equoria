@@ -13,6 +13,7 @@ import { randomBytes } from 'node:crypto';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
+import { fixtureColor } from '../helpers/fixtureColor.mjs';
 
 import { fetchCsrf } from '../helpers/csrfHelper.mjs';
 describe('Horse Routes Integration Tests', () => {
@@ -46,6 +47,7 @@ describe('Horse Routes Integration Tests', () => {
       });
       const h1 = await tx.horse.create({
         data: {
+          ...fixtureColor(),
           name: `TrainableHorse_${ts}`,
           sex: 'Mare',
           dateOfBirth: new Date(Date.now() - 4 * 365.25 * 24 * 60 * 60 * 1000),
@@ -55,6 +57,7 @@ describe('Horse Routes Integration Tests', () => {
       });
       const h2 = await tx.horse.create({
         data: {
+          ...fixtureColor(),
           name: `FoalHorse_${ts}`,
           sex: 'Stallion',
           dateOfBirth: new Date(Date.now() - 1 * 365.25 * 24 * 60 * 60 * 1000),

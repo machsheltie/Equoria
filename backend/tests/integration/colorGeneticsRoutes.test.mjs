@@ -66,6 +66,7 @@ describe('Color & Genetics Routes — HTTP integration (31E-4 / Equoria-5j0z)', 
     otherToken = generateTestToken(otherUser);
 
     // Horse with full color data — exercises the populated branch.
+    // eslint-disable-next-line equoria/no-raw-test-horse-create -- populated-branch fixture sets an explicit colorGenotype + phenotype on purpose (the route reads these back and the assertions match them exactly); a fixtureColor() spread would override them. No NULL-phenotype risk.
     horseWithColor = await prisma.horse.create({
       data: {
         name: `CGColorHorse_${ts}`,
@@ -92,6 +93,7 @@ describe('Color & Genetics Routes — HTTP integration (31E-4 / Equoria-5j0z)', 
     createdHorseIds.push(horseWithColor.id);
 
     // Legacy horse (no color data) — exercises the null-data response branch.
+    // eslint-disable-next-line equoria/no-raw-test-horse-create -- the /color route gates data:null on phenotype IS NULL and /genetics on colorGenotype IS NULL (horseController.mjs:1161,1303); this fixture MUST be born with BOTH null to exercise those legacy branches (assertions at lines ~145/201 expect data:null). A fixtureColor() spread would defeat the test. Scoped id-in afterEach cleanup contains the row.
     legacyHorse = await prisma.horse.create({
       data: {
         name: `CGLegacyHorse_${ts}`,
