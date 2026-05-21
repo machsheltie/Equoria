@@ -71,7 +71,7 @@ The contract is now:
 The exported surface from `backend/middleware/csrf.mjs` is:
 
 - `csrfProtection` — re-export of `doubleCsrfProtection`. Mounted on every authenticated and
-  admin router (`backend/app.mjs:159` for `authRouter`, `backend/app.mjs:165` for `adminRouter`).
+  admin router (`backend/app.mjs:163` for `authRouter`, `backend/app.mjs:173` for `adminRouter`).
 - `csrfErrorHandler` — translates the library's `EBADCSRFTOKEN` error into the API's canonical
   `{ success: false, message, code: 'INVALID_CSRF_TOKEN' }` envelope at HTTP 403.
 - `getCsrfToken` — handler for `GET /auth/csrf-token`.
@@ -96,14 +96,14 @@ This is a deliberate trade-off: see _Consequences > Negative_ below.
   see commit `6da8925e` stat: `4 files changed, 186 insertions(+), 853 deletions(-)`).
 - **One contract to reason about.** The cookie name, header name, ignored-methods list, error
   shape, and HMAC algorithm now have exactly one source of truth (`csrf-csrf` library
-  configuration in `csrf.mjs:48-61`).
+  configuration in `csrf.mjs:60-73`).
 - **No server-side session state.** The auth chain remains stateless, consistent with
   Equoria's stateless-JWT model.
 - **IP rotation no longer invalidates CSRF tokens mid-session.** Mobile users moving between
   Wi-Fi and cellular, or users behind carrier-grade NAT, can keep using the same token instead
   of being forced through a re-fetch + retry cycle.
 - **Test-bypass awareness has been excised from production.** Production code no longer
-  recognises `x-test-skip-csrf` in any form. The header still appears in three test files
+  recognises `x-test-skip-csrf` in any form. The header still appears in four test files
   as a _sentinel_ (asserting the bypass is ignored, not invoking it) — see _Adjacent locations_
   below for why those occurrences are intentional.
 
@@ -112,16 +112,18 @@ This is a deliberate trade-off: see _Consequences > Negative_ below.
 - **CSRF tokens are not bound to the user's IP.** A constant HMAC salt means a token captured
   from User A's traffic could in principle be replayed by User B if User B also possesses
   User A's CSRF cookie. This trade-off is acceptable because:
-  - The CSRF cookie is intentionally **not** `HttpOnly` (`backend/utils/cookieConfig.mjs:99`,
+  - The CSRF cookie is intentionally **not** `HttpOnly` (`backend/utils/cookieConfig.mjs:172`,
     `httpOnly: false`) — the double-submit pattern requires the client's first-party JS to
     read the cookie value and copy it into the `X-CSRF-Token` request header.
   - The same-origin policy prevents _cross_-origin scripts from reading the cookie. An attacker
     page on `evil.example` cannot read the cookie set on the Equoria origin, so it cannot
     fabricate a matching `X-CSRF-Token` header — which is the actual security guarantee of
     the double-submit pattern.
-  - `sameSite: 'strict'` in production (`cookieConfig.mjs:35, :101`) blocks the cookie from
-    being attached to cross-site requests at all, providing defence-in-depth.
-  - The HMAC binds the token to `JWT_SECRET`, not to session identity (`cookieConfig.mjs:90-91`),
+  - `sameSite: 'strict'` in production (`cookieConfig.mjs:55` sets the policy; applied to the
+    CSRF cookie at `cookieConfig.mjs:174`) blocks the cookie from being attached to cross-site
+    requests at all, providing defence-in-depth.
+  - The HMAC binds the token to `JWT_SECRET`, not to session identity (`csrf.mjs:61-62`:
+    `getSecret: () => requireJwtSecret()` + `getSessionIdentifier: () => CSRF_SESSION_SALT`),
     so a token issued in one process is verifiable by any process sharing the secret without
     requiring shared session state.
   - IP binding adds nothing once same-origin + `sameSite=strict` are enforced — and it breaks
@@ -131,7 +133,9 @@ This is a deliberate trade-off: see _Consequences > Negative_ below.
 - **`req.session` references remain in `backend/middleware/sessionManagement.mjs`.** That
   module is a separate concern (rate-limit-window tracking, multi-session enforcement) and
   uses an in-memory store, not Express session. The aju issue scoped its `req.session`
-  removal to `csrf.mjs:26-47` only; sessionManagement is out of scope for this ADR.
+  removal to the now-deleted custom wrapper formerly in `csrf.mjs` only (that code no longer
+  exists in the module); sessionManagement is out of scope for this ADR and still carries its
+  own `req.session` references (`backend/middleware/sessionManagement.mjs`, ~12 occurrences).
 
 ### Neutral
 
@@ -139,7 +143,7 @@ This is a deliberate trade-off: see _Consequences > Negative_ below.
   exposes `withAuthCsrf` for state-changing requests, which fetches a real token via
   `GET /auth/csrf-token` before issuing the mutation. Tests that fail to use it now correctly
   fail with 403 — that is the intended behaviour, not a regression.
-- **Three test files still mention `x-test-skip-csrf` literally.** Those references are
+- **Four test files still mention `x-test-skip-csrf` literally.** Those references are
   sentinels — they assert that the bypass is _ignored_, not that it works. See _Adjacent
   locations_ for the audit list.
 
@@ -172,14 +176,15 @@ This is a deliberate trade-off: see _Consequences > Negative_ below.
 
 ## Adjacent Locations / Sentinel References
 
-`x-test-skip-csrf` still appears as a literal string in three places. None of them is a
-live bypass; all three are intentional doctrine sentinels:
+`x-test-skip-csrf` still appears as a literal string in four places. None of them is a
+live bypass; all four are intentional doctrine sentinels:
 
-| File                                                                           | Purpose                                                                                                            |
-| ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
-| `backend/__tests__/integration/csrf-integration.test.mjs:5`                    | Comment documenting that the integration tests must NOT set the header — exercises the real enforcement path.      |
-| `backend/__tests__/integration/security/rate-limit-no-bypass.test.mjs:30, :58` | Sentinel test that asserts the bypass header is ignored at runtime. Removing this would lose the regression guard. |
-| `backend/tests/helpers/testAuth.mjs:17`                                        | Comment confirming the helper no longer sets the header.                                                           |
+| File                                                                       | Purpose                                                                                                                                                                                      |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `backend/modules/auth/__tests__/csrf-integration.test.mjs:5`               | Comment documenting that the integration tests must NOT set the header — exercises the real enforcement path.                                                                                |
+| `backend/modules/services/__tests__/rate-limit-no-bypass.test.mjs:30, :59` | Sentinel test that asserts the bypass header is ignored at runtime. Removing this would lose the regression guard.                                                                           |
+| `backend/__tests__/middleware/bypassHeaderHardening.test.mjs:81, :91, :93` | Sentinel (Equoria-v0d6) — structural assertion that `csrf.mjs` contains no `x-test-skip-csrf`, plus behavioural assertion that a POST setting the header but no token is still rejected 403. |
+| `backend/tests/helpers/testAuth.mjs:25`                                    | Comment confirming the helper no longer sets the header.                                                                                                                                     |
 
 These are protected by the doctrine-checks scan (Equoria-5nqe / Equoria-ocy3 work) — any
 attempt to _use_ the header in production code or in a non-sentinel test will fail CI.
@@ -190,23 +195,39 @@ The sentinels themselves are excluded from the bypass-header gate via the docume
 
 ## What Was NOT Done in This ADR
 
-Listed for transparency per `.claude/rules/OPTIMAL_FIX_DISCIPLINE.md` §6:
+Listed for transparency per `.claude/rules/OPTIMAL_FIX_DISCIPLINE.md` §6. (Two items below
+were open when this ADR was written and have since been completed — updated for accuracy.)
 
-- **Route mount consolidation.** Authentication routes are still served from both `/api/auth/*`
-  (legacy) and `/api/v1/auth/*` (canonical). Consolidating to `/api/v1/auth/*` only is tracked
-  separately as `Equoria-grt` (21R-AUTH-7).
-- **Session-lifetime regression tests + nightly CI job.** Tracked separately as `Equoria-o5f`
-  (21R-AUTH-6).
+- **Route mount consolidation — since completed (`Equoria-grt` / 21R-AUTH-7).** The public auth
+  endpoints (login/register/csrf-token) are now mounted only at `/api/v1/auth`
+  (`backend/app.mjs:177`); the legacy `/api/auth` public mount was removed. Note that the
+  authenticated `authRouter` (which carries `/auth/*` mutations like profile/logout) is still
+  dual-mounted at both `/api/v1` and `/api` (`backend/app.mjs:710-711`), so authenticated auth
+  mutations remain reachable under both prefixes — full single-prefix consolidation of the
+  authenticated surface is the residual.
+- **Session-lifetime regression tests + nightly CI job — since completed (`Equoria-o5f` /
+  21R-AUTH-6).** The regression suite lives at
+  `backend/modules/health/__tests__/session-lifetime.test.mjs` (real credentials, real DB, no
+  bypass headers), and a nightly `session-lifetime-nightly` CI job is configured on a 2am UTC
+  cron (`.github/workflows/ci-cd.yml:123-191`). NOTE: that job's
+  `--testPathPattern="__tests__/integration/session-lifetime"` does not match the suite's
+  current `modules/health/__tests__/` location — the pattern appears to predate the module
+  co-location move and may need updating (out of scope for this ADR; flagged for the CI owner).
 - **`req.session` removal from `sessionManagement.mjs`.** Out of scope; that module's session
   references are an in-memory rate-limit/multi-session store, not the fake `req.session`
   formerly read by csrf.mjs. No defect there.
 - **Old unit-style `__tests__/middleware/csrf.test.mjs`.** Already deleted in commit
   `07970fd5` ("test(csrf): add async withAuthCsrf helpers + delete dead mock tests",
-  2026-04-22) along with two sibling mock-heavy suites (`bypassHeaderHardening.test.mjs`
-  and `unit/security/csrf-validation.test.mjs`) — 950 lines of mock-based coverage
-  removed in favour of the real-flow integration suite at
-  `backend/__tests__/integration/csrf-integration.test.mjs`, which exercises the live
+  2026-04-22) along with two sibling mock-heavy suites (the original mock-based
+  `bypassHeaderHardening.test.mjs` and `unit/security/csrf-validation.test.mjs`) — 950 lines
+  of mock-based coverage removed in favour of the real-flow integration suite, now at
+  `backend/modules/auth/__tests__/csrf-integration.test.mjs` (moved under module co-location;
+  formerly `backend/__tests__/integration/csrf-integration.test.mjs`), which exercises the live
   enforcement path against the real Express app and is the canonical replacement.
+  (`__tests__/middleware/csrf.test.mjs` and `unit/security/csrf-validation.test.mjs` remain
+  absent; a NEW real-app sentinel of the same name as the old mock suite,
+  `backend/__tests__/middleware/bypassHeaderHardening.test.mjs`, was later added under
+  Equoria-v0d6 — it is a structural+behavioural sentinel, not the deleted mock suite.)
 
 ---
 
@@ -216,9 +237,10 @@ Listed for transparency per `.claude/rules/OPTIMAL_FIX_DISCIPLINE.md` §6:
 - **Cookie-seeding (piggyback) commit:** `25551e77` — `feat(auth): seed CSRF cookie on register/login/refresh (21R-AUTH-3)`
 - **Cookie-parser fallback fix:** `19bd38b8` — `fix(auth): make issueCsrfToken a no-op when cookie-parser is absent (21R-AUTH-3)`
 - **Live module:** `backend/middleware/csrf.mjs`
-- **Mount points:** `backend/app.mjs:135` (import), `:159` (authRouter), `:165` (adminRouter)
-- **Integration coverage:** `backend/__tests__/integration/csrf-integration.test.mjs`
-- **Production-parity sentinel:** `backend/__tests__/integration/security/rate-limit-no-bypass.test.mjs`
+- **Mount points:** `backend/app.mjs:139` (import), `:163` (authRouter `csrfProtection`), `:173` (adminRouter `csrfProtection`); CSRF error handler at `:779`
+- **Integration coverage:** `backend/modules/auth/__tests__/csrf-integration.test.mjs`
+- **Production-parity sentinel:** `backend/modules/services/__tests__/rate-limit-no-bypass.test.mjs`
+- **Bypass-header hardening sentinel (Equoria-v0d6):** `backend/__tests__/middleware/bypassHeaderHardening.test.mjs`
 - **Test helper (real-token path):** `backend/tests/helpers/testAuth.mjs` (`withAuthCsrf`)
 - **Doctrine references:** `CLAUDE.md` §"21R Beta Readiness Doctrine", `.claude/rules/EDGE_CASE_FIX_DISCIPLINE.md` §3 (no silent catches), `.claude/rules/OPTIMAL_FIX_DISCIPLINE.md` §3 (adjacent-locations check)
 - **Library:** [`csrf-csrf` on npm](https://www.npmjs.com/package/csrf-csrf)
