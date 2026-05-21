@@ -53,9 +53,18 @@ async function createUser(userData) {
     logger.info(`[createUser] User created: ${newUser.username}`);
     return newUser;
   } catch (error) {
+    // Handle Prisma "unique constraint violation" (duplicate email/username).
+    // Re-throw with `.code` PRESERVED so the global error handler keys off
+    // `err.code === 'P2002'` and renders a clean 409/400 conflict — NOT a 500.
+    // Wrapping into a generic Error / DatabaseError drops `.code` and produces
+    // a 500 (Equoria-iqdc7; mirrors the updateUser fix Equoria-g5x66). This
+    // matches the P2002 contract used elsewhere (updateUser, showController,
+    // conformationShowController, tokenRotationService) where the raw
+    // `error.code` is the contract between the throwing layer and the mapper.
     if (error.code === 'P2002') {
       const field = error.meta?.target?.join(', ') || 'field';
-      throw new Error(`Duplicate value for ${field}.`);
+      logger.error(`[createUser] Duplicate value for ${field}.`);
+      throw error;
     }
     logger.error(`[createUser] Error: ${error.message}`);
     throw new DatabaseError(`Create user failed: ${error.message}`);

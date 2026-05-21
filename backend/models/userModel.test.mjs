@@ -163,16 +163,25 @@ describe('👤 UNIT: User Model - Database Operations & Business Logic', () => {
       await expect(createUser(incompleteData)).rejects.toThrow('Username, email, and password are required.');
     });
 
-    it('should throw error on unique constraint violation for username', async () => {
+    it('should re-throw P2002 with .code preserved on unique constraint violation for username (Equoria-iqdc7)', async () => {
+      // createUser must re-throw the raw Prisma error so `.code` survives for
+      // the global error handler to map to a clean 409/400 — NOT wrap it into a
+      // generic Error/DatabaseError that drops `.code` (Equoria-iqdc7).
       const dbError = { code: 'P2002', meta: { target: ['username'] } };
       mockPrisma.user.create.mockRejectedValue(dbError);
-      await expect(createUser(baseUserData)).rejects.toThrow('Duplicate value for username.');
+      await expect(createUser(baseUserData)).rejects.toMatchObject({
+        code: 'P2002',
+        meta: { target: ['username'] },
+      });
     });
 
-    it('should throw error on unique constraint violation for email', async () => {
+    it('should re-throw P2002 with .code preserved on unique constraint violation for email (Equoria-iqdc7)', async () => {
       const dbError = { code: 'P2002', meta: { target: ['email'] } };
       mockPrisma.user.create.mockRejectedValue(dbError);
-      await expect(createUser(baseUserData)).rejects.toThrow('Duplicate value for email.');
+      await expect(createUser(baseUserData)).rejects.toMatchObject({
+        code: 'P2002',
+        meta: { target: ['email'] },
+      });
     });
 
     it('should throw DatabaseError for other Prisma errors', async () => {
