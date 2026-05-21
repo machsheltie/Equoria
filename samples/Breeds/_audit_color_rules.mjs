@@ -62,6 +62,7 @@ const APPYS = [
   'Heavy Frost Roan Varnish',
 ];
 const DWHITE = ['Dominant White'];
+const CHAMP = ['Gold Champagne', 'Amber Champagne', 'Classic Champagne'];
 
 const has = (alleles, gene, pred) => (alleles[gene] || []).some(pred);
 const creamAllele = (a) => has(a, 'Cr_Cream', (x) => x.includes('Cr'));
@@ -109,6 +110,8 @@ for (const f of files.sort()) {
   if (APPYS.some((s) => shSet.has(s)) && !lpAllele(a)) E.push('appaloosa shade but NO LP allele');
   if (DWHITE.some((s) => shSet.has(s)) && !wAllele(a))
     E.push('Dominant White shade but NO W allele');
+  if (CHAMP.some((s) => shSet.has(s)) && !champAllele(a))
+    E.push('champagne shade but NO Ch allele');
 
   // ---- HARD: LP <-> snowflake/frost multiplier consistency ----
   const lp = lpAllele(a);
@@ -148,7 +151,8 @@ for (const f of files.sort()) {
   if (lpAllele(a) && !APPYS.some((s) => shSet.has(s))) W.push('LP allele but no appaloosa shade');
   if (wAllele(a) && !DWHITE.some((s) => shSet.has(s)))
     W.push('W allele but no Dominant White shade');
-  if (champAllele(a)) W.push('Champagne allele present (no champagne shade vocab — verify intent)');
+  if (champAllele(a) && !CHAMP.some((s) => shSet.has(s)))
+    W.push('Ch allele but no champagne shade');
   if (pearlAllele(a) && !shSet.has('Sparse Mane/Tail'))
     W.push('Pearl allele present (verify pearl handling)');
 

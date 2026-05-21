@@ -247,6 +247,39 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     },
     "Sparse Mane/Tail": {
       "sparse mane/tail": 1
+    },
+    "Smoky Black": {
+      "faded": 0.5,
+      "rich chocolate": 0.5
+    },
+    "Red Dun": {
+      "strawberry": 0.4,
+      "medium": 0.3,
+      "dark red": 0.3
+    },
+    "Steel Gray": {
+      "steel": 1
+    },
+    "Rose Gray": {
+      "rose": 1
+    },
+    "Steel Dark Dapple Gray": {
+      "steel dapple": 1
+    },
+    "Rose Dark Dapple Gray": {
+      "rose dapple": 1
+    },
+    "Steel Light Dapple Gray": {
+      "light steel dapple": 1
+    },
+    "Rose Light Dapple Gray": {
+      "light rose dapple": 1
+    },
+    "White Gray": {
+      "white gray": 1
+    },
+    "Fleabitten Gray": {
+      "fleabitten": 1
     }
   },
   "advanced_markings_bias": {

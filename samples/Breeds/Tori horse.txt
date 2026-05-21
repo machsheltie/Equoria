@@ -27,8 +27,7 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "n/n"
     ],
     "G_Gray": [
-      "g/g",
-      "G/g"
+      "g/g"
     ],
     "Rn_Roan": [
       "rn/rn"
@@ -95,8 +94,7 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "n/n": 1
     },
     "G_Gray": {
-      "g/g": 0.97,
-      "G/g": 0.03
+      "g/g": 1
     },
     "Rn_Roan": {
       "rn/rn": 1
@@ -180,6 +178,15 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     },
     "Sparse Mane/Tail": {
       "sparse mane/tail": 1
+    },
+    "Buckskin": {
+      "cream": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Smoky Black": {
+      "faded": 0.5,
+      "rich chocolate": 0.5
     }
   },
   "advanced_markings_bias": {

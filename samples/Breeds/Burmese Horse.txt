@@ -1,101 +1,292 @@
 INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
 ('Burmese Horse', 'Trait', $json${
   "allowed_alleles": {
-    "E_Extension": ["e/e", "E/e", "E/E"],
-    "A_Agouti": ["a/a", "A/a", "A/A"],
-    "Cr_Cream": ["n/n", "n/Cr"],
-    "D_Dun": ["nd1/nd1", "nd1/nd2", "nd2/nd2"],
-    "Z_Silver": ["n/n"],
-    "Ch_Champagne": ["n/n"],
-    "G_Gray": ["g/g", "G/g", "G/G"],
-    "Rn_Roan": ["rn/rn", "Rn/rn"],
-    "W_DominantWhite": ["w/w"],
-    "TO_Tobiano": ["to/to"],
-    "O_FrameOvero": ["n/n"],
-    "SB1_Sabino1": ["n/n"],
-    "SW_SplashWhite": ["n/n"],
-    "LP_LeopardComplex": ["lp/lp"],
-    "PATN1_Pattern1": ["patn1/patn1"],
-    "EDXW": ["n/n"],
-    "MFSD12_Mushroom": ["N/N"],
-    "Prl_Pearl": ["N/N"],
-    "BR1_Brindle1": ["N/N"]
+    "E_Extension": [
+      "e/e",
+      "E/e",
+      "E/E"
+    ],
+    "A_Agouti": [
+      "a/a",
+      "A/a",
+      "A/A"
+    ],
+    "Cr_Cream": [
+      "n/n",
+      "n/Cr"
+    ],
+    "D_Dun": [
+      "nd1/nd1",
+      "nd1/nd2",
+      "nd2/nd2"
+    ],
+    "Z_Silver": [
+      "n/n"
+    ],
+    "Ch_Champagne": [
+      "n/n"
+    ],
+    "G_Gray": [
+      "g/g",
+      "G/g",
+      "G/G"
+    ],
+    "Rn_Roan": [
+      "rn/rn",
+      "Rn/rn"
+    ],
+    "W_DominantWhite": [
+      "w/w"
+    ],
+    "TO_Tobiano": [
+      "to/to"
+    ],
+    "O_FrameOvero": [
+      "n/n"
+    ],
+    "SB1_Sabino1": [
+      "n/n"
+    ],
+    "SW_SplashWhite": [
+      "n/n"
+    ],
+    "LP_LeopardComplex": [
+      "lp/lp"
+    ],
+    "PATN1_Pattern1": [
+      "patn1/patn1"
+    ],
+    "EDXW": [
+      "n/n"
+    ],
+    "MFSD12_Mushroom": [
+      "N/N"
+    ],
+    "Prl_Pearl": [
+      "N/N"
+    ],
+    "BR1_Brindle1": [
+      "N/N"
+    ]
   },
   "disallowed_combinations": {},
   "allele_weights": {
-    "E_Extension": {"e/e": 0.32, "E/e": 0.42, "E/E": 0.26},
-    "A_Agouti": {"a/a": 0.32, "A/a": 0.42, "A/A": 0.26},
-    "Cr_Cream": {"n/n": 0.94, "n/Cr": 0.06},
-    "D_Dun": {"nd1/nd1": 0.10, "nd1/nd2": 0.15, "nd2/nd2": 0.75},
-    "Z_Silver": {"n/n": 1.0},
-    "Ch_Champagne": {"n/n": 1.0},
-    "G_Gray": {"g/g": 0.820, "G/g": 0.150, "G/G": 0.030},
-    "Rn_Roan": {"rn/rn": 0.94, "Rn/rn": 0.06},
-    "W_DominantWhite": {"w/w": 1.0},
-    "TO_Tobiano": {"to/to": 1.0},
-    "O_FrameOvero": {"n/n": 1.0},
-    "SB1_Sabino1": {"n/n": 1.0},
-    "SW_SplashWhite": {"n/n": 1.0},
-    "LP_LeopardComplex": {"lp/lp": 1.0},
-    "PATN1_Pattern1": {"patn1/patn1": 1.0},
-    "EDXW": {"n/n": 1.0},
-    "MFSD12_Mushroom": {"N/N": 1.0},
-    "Prl_Pearl": {"N/N": 1.0},
-    "BR1_Brindle1": {"N/N": 1.0}
+    "E_Extension": {
+      "e/e": 0.32,
+      "E/e": 0.42,
+      "E/E": 0.26
+    },
+    "A_Agouti": {
+      "a/a": 0.32,
+      "A/a": 0.42,
+      "A/A": 0.26
+    },
+    "Cr_Cream": {
+      "n/n": 0.94,
+      "n/Cr": 0.06
+    },
+    "D_Dun": {
+      "nd1/nd1": 0.1,
+      "nd1/nd2": 0.15,
+      "nd2/nd2": 0.75
+    },
+    "Z_Silver": {
+      "n/n": 1
+    },
+    "Ch_Champagne": {
+      "n/n": 1
+    },
+    "G_Gray": {
+      "g/g": 0.82,
+      "G/g": 0.15,
+      "G/G": 0.03
+    },
+    "Rn_Roan": {
+      "rn/rn": 0.94,
+      "Rn/rn": 0.06
+    },
+    "W_DominantWhite": {
+      "w/w": 1
+    },
+    "TO_Tobiano": {
+      "to/to": 1
+    },
+    "O_FrameOvero": {
+      "n/n": 1
+    },
+    "SB1_Sabino1": {
+      "n/n": 1
+    },
+    "SW_SplashWhite": {
+      "n/n": 1
+    },
+    "LP_LeopardComplex": {
+      "lp/lp": 1
+    },
+    "PATN1_Pattern1": {
+      "patn1/patn1": 1
+    },
+    "EDXW": {
+      "n/n": 1
+    },
+    "MFSD12_Mushroom": {
+      "N/N": 1
+    },
+    "Prl_Pearl": {
+      "N/N": 1
+    },
+    "BR1_Brindle1": {
+      "N/N": 1
+    }
   },
   "marking_bias": {
-    "face": {"none": 0.50, "star": 0.22, "strip": 0.14, "blaze": 0.06, "snip": 0.08},
+    "face": {
+      "none": 0.5,
+      "star": 0.22,
+      "strip": 0.14,
+      "blaze": 0.06,
+      "snip": 0.08
+    },
     "legs_general_probability": 0.28,
     "leg_specific_probabilities": {
-      "coronet": 0.36, "pastern": 0.30, "sock": 0.20, "stocking": 0.14
+      "coronet": 0.36,
+      "pastern": 0.3,
+      "sock": 0.2,
+      "stocking": 0.14
     },
     "max_legs_marked": 4
   },
   "boolean_modifiers_prevalence": {
     "sooty": 0.25,
-    "flaxen": 0.10,
+    "flaxen": 0.1,
     "pangare": 0.12,
     "rabicano": 0.05
   },
   "shade_bias": {
-    "Chestnut": {"light": 0.3, "medium": 0.4, "dark": 0.3},
-    "Bay": {"light": 0.3, "standard": 0.4, "dark": 0.3},
-    "Black": {"standard": 0.5, "faded": 0.5},
-    "Palomino": {"pale": 0.3, "golden": 0.4, "copper": 0.3},
-    "Buckskin": {"cream": 0.3, "golden": 0.4, "burnished": 0.3},
-    "Red Roan": {"rose": 0.5, "cherry": 0.3, "rust": 0.2},
-    "Blue Roan": {"steel": 0.4, "cool gray": 0.4, "charcoal": 0.2},
-    "Strawberry Roan": {"pinkish": 0.4, "amber": 0.4, "wine": 0.2},
-    "Steel Gray": {"steel": 1.0},
-    "Rose Gray": {"rose": 1.0},
-    "Steel Dark Dapple Gray": {"steel dapple": 1.0},
-    "Rose Dark Dapple Gray": {"rose dapple": 1.0},
-    "Steel Light Dapple Gray": {"light steel dapple": 1.0},
-    "Rose Light Dapple Gray": {"light rose dapple": 1.0},
-    "White Gray": {"white gray": 1.0},
-    "Fleabitten Gray": {"fleabitten": 1.0},
-    "Sparse Mane/Tail": {"sparse mane/tail": 1.0}
+    "Chestnut": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3
+    },
+    "Bay": {
+      "light": 0.3,
+      "standard": 0.4,
+      "dark": 0.3
+    },
+    "Black": {
+      "standard": 0.5,
+      "faded": 0.5
+    },
+    "Palomino": {
+      "pale": 0.3,
+      "golden": 0.4,
+      "copper": 0.3
+    },
+    "Buckskin": {
+      "cream": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Red Roan": {
+      "rose": 0.5,
+      "cherry": 0.3,
+      "rust": 0.2
+    },
+    "Blue Roan": {
+      "steel": 0.4,
+      "cool gray": 0.4,
+      "charcoal": 0.2
+    },
+    "Strawberry Roan": {
+      "pinkish": 0.4,
+      "amber": 0.4,
+      "wine": 0.2
+    },
+    "Steel Gray": {
+      "steel": 1
+    },
+    "Rose Gray": {
+      "rose": 1
+    },
+    "Steel Dark Dapple Gray": {
+      "steel dapple": 1
+    },
+    "Rose Dark Dapple Gray": {
+      "rose dapple": 1
+    },
+    "Steel Light Dapple Gray": {
+      "light steel dapple": 1
+    },
+    "Rose Light Dapple Gray": {
+      "light rose dapple": 1
+    },
+    "White Gray": {
+      "white gray": 1
+    },
+    "Fleabitten Gray": {
+      "fleabitten": 1
+    },
+    "Sparse Mane/Tail": {
+      "sparse mane/tail": 1
+    },
+    "Smoky Black": {
+      "faded": 0.5,
+      "rich chocolate": 0.5
+    }
   },
   "advanced_markings_bias": {
-    "bloody_shoulder_probability_multiplier": 1.0,
-    "snowflake_probability_multiplier": 0.0,
-    "frost_probability_multiplier": 0.0
+    "bloody_shoulder_probability_multiplier": 1,
+    "snowflake_probability_multiplier": 0,
+    "frost_probability_multiplier": 0
   },
   "rating_profiles": {
     "conformation": {
-      "head": { "mean": 70, "std_dev": 8 },
-      "neck": { "mean": 70, "std_dev": 8 },
-      "shoulders": { "mean": 70, "std_dev": 8 },
-      "back": { "mean": 76, "std_dev": 7 },
-      "hindquarters": { "mean": 74, "std_dev": 7 },
-      "legs": { "mean": 80, "std_dev": 7 },
-      "hooves": { "mean": 84, "std_dev": 6 }
+      "head": {
+        "mean": 70,
+        "std_dev": 8
+      },
+      "neck": {
+        "mean": 70,
+        "std_dev": 8
+      },
+      "shoulders": {
+        "mean": 70,
+        "std_dev": 8
+      },
+      "back": {
+        "mean": 76,
+        "std_dev": 7
+      },
+      "hindquarters": {
+        "mean": 74,
+        "std_dev": 7
+      },
+      "legs": {
+        "mean": 80,
+        "std_dev": 7
+      },
+      "hooves": {
+        "mean": 84,
+        "std_dev": 6
+      }
     },
     "gaits": {
-      "walk": { "mean": 76, "std_dev": 8 },
-      "trot": { "mean": 68, "std_dev": 9 },
-      "canter": { "mean": 62, "std_dev": 9 },
-      "gallop": { "mean": 56, "std_dev": 9 },
+      "walk": {
+        "mean": 76,
+        "std_dev": 8
+      },
+      "trot": {
+        "mean": 68,
+        "std_dev": 9
+      },
+      "canter": {
+        "mean": 62,
+        "std_dev": 9
+      },
+      "gallop": {
+        "mean": 56,
+        "std_dev": 9
+      },
       "gaiting": null
     },
     "is_gaited_breed": false

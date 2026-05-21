@@ -204,6 +204,16 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     },
     "Sparse Mane/Tail": {
       "sparse mane/tail": 1
+    },
+    "Blue Roan": {
+      "steel": 0.4,
+      "cool gray": 0.4,
+      "charcoal": 0.2
+    },
+    "Strawberry Roan": {
+      "pinkish": 0.4,
+      "amber": 0.4,
+      "wine": 0.2
     }
   },
   "advanced_markings_bias": {

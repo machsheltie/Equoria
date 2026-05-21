@@ -260,6 +260,18 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
     },
     "Sparse Mane/Tail": {
       "sparse mane/tail": 1
+    },
+    "Cremello": {
+      "ice": 0.5,
+      "peachy": 0.5
+    },
+    "Perlino": {
+      "cream": 0.5,
+      "peachy": 0.5
+    },
+    "Smoky Cream": {
+      "light cream": 0.5,
+      "dark cream": 0.5
     }
   },
   "advanced_markings_bias": {

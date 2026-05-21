@@ -30,8 +30,7 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "G/g"
     ],
     "Rn_Roan": [
-      "rn/rn",
-      "Rn/rn"
+      "rn/rn"
     ],
     "W_DominantWhite": [
       "w/w"
@@ -98,8 +97,7 @@ INSERT INTO breeds (name, default_trait, breed_genetic_profile) VALUES
       "G/g": 0.12
     },
     "Rn_Roan": {
-      "rn/rn": 0.98,
-      "Rn/rn": 0.02
+      "rn/rn": 1
     },
     "W_DominantWhite": {
       "w/w": 1
