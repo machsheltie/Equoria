@@ -538,7 +538,10 @@ class CronJobService {
         logger.info(
           `[CronJobService.evaluateFoalTraits] No new traits revealed for foal ${foal.id}`,
         );
-        return { traitsRevealed: 0, reason: 'no_new_traits' };
+        // Equoria-3lb8q: still advance development day so the foal reaches the
+        // next minAge gate on the next nightly run, even on a no-reveal night.
+        const advancedDay = await this.advanceFoalDevelopmentDay(foal.id, currentDay);
+        return { traitsRevealed: 0, reason: 'no_new_traits', currentDay: advancedDay };
       }
 
       // Merge new traits with existing traits
@@ -563,10 +566,15 @@ class CronJobService {
         `[CronJobService.evaluateFoalTraits] Updated foal ${foal.id} with ${totalNewTraits} new traits`,
       );
 
+      // Equoria-3lb8q: advance development day AFTER persisting this day's
+      // reveals, so the foal reaches the next minAge gate on the next run.
+      const advancedDay = await this.advanceFoalDevelopmentDay(foal.id, currentDay);
+
       return {
         traitsRevealed: totalNewTraits,
         newTraits,
         updatedTraits,
+        currentDay: advancedDay,
       };
     } catch (error) {
       logger.error(
@@ -574,6 +582,47 @@ class CronJobService {
       );
       throw error;
     }
+  }
+
+  /**
+   * Equoria-3lb8q: Advance a foal's development day by one (capped at 6) AFTER
+   * the current night's trait evaluation has run for the existing day.
+   *
+   * DECISION (b) — automatic advance: prior to this, foalDevelopment.currentDay
+   * was written in exactly one place (the manual advance-foal-development
+   * endpoint, foalController.mjs). With no automatic process incrementing it,
+   * an unattended foal stayed at day 0 forever, so the day-2..6-gated traits
+   * (intelligent/bold/athletic/trainability_boost/fragile/aggressive/lazy/
+   * legendary_bloodline, etc.) could NEVER satisfy their minAge automatically —
+   * the nightly job could only ever reveal day-0/1 traits.
+   *
+   * Advancing at the END of evaluateFoalTraits (not the start) means each
+   * nightly run evaluates the CURRENT day's gate first, then steps the foal one
+   * day forward, so a foal reaches each successive minAge gate on successive
+   * nights. We upsert because some foals predate the FoalDevelopment row.
+   *
+   * Cap at 6 — beyond day 6 the foal is development-complete (the day>6 skip at
+   * the top of evaluateFoalTraits). A foal already at >=6 is not advanced.
+   *
+   * @param {number} foalId
+   * @param {number} currentDay - the day that was just evaluated
+   * @returns {Promise<number>} the new currentDay
+   */
+  async advanceFoalDevelopmentDay(foalId, currentDay) {
+    const FINAL_DEVELOPMENT_DAY = 6;
+    if (currentDay >= FINAL_DEVELOPMENT_DAY) {
+      return currentDay;
+    }
+    const nextDay = currentDay + 1;
+    await prisma.foalDevelopment.upsert({
+      where: { foalId },
+      update: { currentDay: nextDay },
+      create: { foalId, currentDay: nextDay },
+    });
+    logger.info(
+      `[CronJobService.advanceFoalDevelopmentDay] Foal ${foalId} development day ${currentDay} -> ${nextDay}`,
+    );
+    return nextDay;
   }
 
   /**
