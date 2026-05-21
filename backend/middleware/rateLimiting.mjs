@@ -56,8 +56,7 @@ const ALERT_THROTTLE_MS = 60 * 1000; // 60 seconds between alerts per keyPrefix
  * @returns {boolean}
  */
 export function redisIntentionallyDisabled() {
-  const isTestLike =
-    process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
+  const isTestLike = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
   const redisDisabledFlag = process.env.REDIS_DISABLED === 'true';
   return isTestLike || redisDisabledFlag;
 }
@@ -104,11 +103,15 @@ export function emitDegradationAlert(keyPrefix) {
   // Capture via Sentry if it is configured (graceful: trackSecurityEvent is
   // a no-op when Sentry DSN is not set because Sentry.withScope is a no-op).
   try {
-    trackSecurityEvent('rate_limit_exceeded', {
-      details: 'Redis outage — fail-closed economy limiter active',
-      keyPrefix,
-      alertType: 'redis_degradation_fail_closed',
-    }, 'error');
+    trackSecurityEvent(
+      'rate_limit_exceeded',
+      {
+        details: 'Redis outage — fail-closed economy limiter active',
+        keyPrefix,
+        alertType: 'redis_degradation_fail_closed',
+      },
+      'error',
+    );
   } catch (sentryErr) {
     // Sentry reporting must never block or error the rate-limiting path.
     logger.warn('[RateLimit] Sentry capture failed during degradation alert', {
@@ -696,6 +699,15 @@ export const breedingRateLimiter = createRateLimiter({
   message: 'Breeding limit exceeded. Please wait before starting another breeding.',
   skipSuccessfulRequests: false,
   keyPrefix: 'rl:breeding',
+  // Equoria-8ukii (owner-approved): fail CLOSED on Redis outage. Breeding
+  // mutations create DB entities (foals) and move breeding-fee economics. On
+  // an in-memory fallback across multiple instances the per-user cap is
+  // defeated (each instance has its own counter → effective limit × instance
+  // count), enabling foal/economy spam during a Redis outage. A Redis outage
+  // on breeding routes returns 503 instead of silently allowing through
+  // unprotected. Mirrors financialRateLimiter exactly. NOTE: failClosed never
+  // triggers in jest/test env (redisIntentionallyDisabled()=true).
+  failClosed: true,
 });
 
 /**
@@ -709,6 +721,15 @@ export const competitionRateLimiter = createRateLimiter({
   message: 'Competition entry limit exceeded.',
   skipSuccessfulRequests: false,
   keyPrefix: 'rl:competition',
+  // Equoria-8ukii (owner-approved): fail CLOSED on Redis outage. Competition
+  // entries deduct entry fees (economy mutation). On an in-memory fallback
+  // across multiple instances the per-user cap is defeated (each instance has
+  // its own counter → effective limit × instance count), enabling entry-fee
+  // economy abuse during a Redis outage. A Redis outage on competition-entry
+  // routes returns 503 instead of silently allowing through unprotected.
+  // Mirrors financialRateLimiter exactly. NOTE: failClosed never triggers in
+  // jest/test env (redisIntentionallyDisabled()=true).
+  failClosed: true,
 });
 
 /**

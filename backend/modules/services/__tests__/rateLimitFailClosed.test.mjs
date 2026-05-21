@@ -43,6 +43,12 @@ const {
   _alertTimestamps, // exported for white-box alert-throttle testing
   createRateLimiter,
   emitDegradationAlert, // exported for direct throttle-window testing (Equoria-hnud7 follow-up)
+  // Equoria-8ukii: the real exported economy limiters, asserted to be fail-closed.
+  financialRateLimiter,
+  breedingRateLimiter,
+  competitionRateLimiter,
+  mutationRateLimiter, // non-failClosed control — must NOT be wrapped
+  trainingRateLimiter, // non-failClosed control (game-balance, deliberately untouched)
 } = await import('../../../middleware/rateLimiting.mjs');
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -180,8 +186,7 @@ describe('redisIntentionallyDisabled', () => {
     // If either condition is true, redisIntentionallyDisabled() must return true.
     // This is the make-or-break regression guard: if this fails, the whole
     // test-safety invariant is broken and financialRateLimiter would 503 in tests.
-    const isTestLike =
-      process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
+    const isTestLike = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
     expect(isTestLike).toBe(true); // verify we are actually in a test env
     expect(redisIntentionallyDisabled()).toBe(true);
   });
@@ -207,7 +212,7 @@ describe('Failing-first sentinel: fail-closed decision for economy mutations', (
     // Scenario: production environment, Redis was expected, but it is NOT connected.
     // This is the exact scenario where financialRateLimiter must 503.
     const result = shouldFailClosed({
-      failClosed: true,   // economy/financial limiter config
+      failClosed: true, // economy/financial limiter config
       redisExpected: true, // not test-like, not REDIS_DISABLED
       redisConnected: false, // Redis is down
     });
@@ -218,7 +223,7 @@ describe('Failing-first sentinel: fail-closed decision for economy mutations', (
     // queryRateLimiter, authRateLimiter etc. have failClosed=false.
     // Even with Redis down, they should NOT fail closed.
     const result = shouldFailClosed({
-      failClosed: false,  // non-economy limiter
+      failClosed: false, // non-economy limiter
       redisExpected: true,
       redisConnected: false,
     });
@@ -292,7 +297,9 @@ describe('Regression: financialRateLimiter does NOT fail-closed in jest env', ()
       json: () => {},
       send: () => {},
     };
-    const next = () => { nextCalled = true; };
+    const next = () => {
+      nextCalled = true;
+    };
 
     await new Promise(resolve => {
       financialRateLimiter(req, res, (...args) => {
@@ -314,11 +321,13 @@ describe('Regression: financialRateLimiter does NOT fail-closed in jest env', ()
     const isIntentionallyDisabled = redisIntentionallyDisabled();
     const redisExpected = !isIntentionallyDisabled;
     expect(redisExpected).toBe(false); // we are in jest env
-    expect(shouldFailClosed({
-      failClosed: true, // economy limiter
-      redisExpected,    // false, because we're in jest
-      redisConnected: false,
-    })).toBe(false);
+    expect(
+      shouldFailClosed({
+        failClosed: true, // economy limiter
+        redisExpected, // false, because we're in jest
+        redisConnected: false,
+      }),
+    ).toBe(false);
   });
 });
 
@@ -383,13 +392,26 @@ function makeStubRequestTriple(userId = 'di-test-user-1') {
       captured.jsonBody = body;
       return this;
     },
-    setHeader() { return this; },
-    getHeader() { return null; },
-    set() { return this; },
-    send(body) { captured.jsonBody = body; return this; },
-    end() { return this; },
+    setHeader() {
+      return this;
+    },
+    getHeader() {
+      return null;
+    },
+    set() {
+      return this;
+    },
+    send(body) {
+      captured.jsonBody = body;
+      return this;
+    },
+    end() {
+      return this;
+    },
   };
-  const next = () => { captured.nextCalled = true; };
+  const next = () => {
+    captured.nextCalled = true;
+  };
   return { req, res, next, captured };
 }
 
@@ -404,7 +426,7 @@ describe('503 response mapping — DI-driven wrapper (non-vacuous, Equoria-hnud7
       max: 100,
       keyPrefix: 'rl:di-503-test',
       failClosed: true,
-      _redisExpectedFn: () => true,   // DI: Redis is expected
+      _redisExpectedFn: () => true, // DI: Redis is expected
       _redisConnectedFn: () => false, // DI: Redis is NOT connected
     });
 
@@ -441,7 +463,10 @@ describe('503 response mapping — DI-driven wrapper (non-vacuous, Equoria-hnud7
     const { req, res, captured } = makeStubRequestTriple('di-healthy-user');
     // express-rate-limit calls next() asynchronously — wrap in a Promise.
     await new Promise(resolve => {
-      healthyMiddleware(req, res, () => { captured.nextCalled = true; resolve(); });
+      healthyMiddleware(req, res, () => {
+        captured.nextCalled = true;
+        resolve();
+      });
       setTimeout(resolve, 80);
     });
 
@@ -473,7 +498,11 @@ describe('throw-still-503 — alerting throw must not prevent the 503 response',
     // .get() call inside emitDegradationAlert throws a TypeError.
     // We save the real Map and restore it after the test.
     const realMap = _alertTimestamps;
-    const poison = { get() { throw new TypeError('SIMULATED_ALERT_THROW'); } };
+    const poison = {
+      get() {
+        throw new TypeError('SIMULATED_ALERT_THROW');
+      },
+    };
 
     // We cannot reassign the exported binding, so we swap the entries out by
     // clearing and setting a non-function property on the map itself.
@@ -507,14 +536,16 @@ describe('throw-still-503 — alerting throw must not prevent the 503 response',
       max: 100,
       keyPrefix: TEST_KEY,
       failClosed: true,
-      _redisExpectedFn: () => true,   // outage: Redis expected
+      _redisExpectedFn: () => true, // outage: Redis expected
       _redisConnectedFn: () => false, // outage: Redis down
     });
 
     // Poison the Map so emitDegradationAlert's `.get(keyPrefix)` throws.
     // We do this by replacing the Map's `get` method on the instance.
     const origGet = _alertTimestamps.get.bind(_alertTimestamps);
-    _alertTimestamps.get = () => { throw new TypeError('SIMULATED_ALERT_THROW'); };
+    _alertTimestamps.get = () => {
+      throw new TypeError('SIMULATED_ALERT_THROW');
+    };
 
     const { req, res, next, captured } = makeStubRequestTriple('throw-503-user');
 
@@ -564,7 +595,10 @@ describe('Non-failClosed limiter delegates even under Redis outage', () => {
     const { req, res, captured } = makeStubRequestTriple('di-nonfailclosed-user');
     // express-rate-limit calls next() asynchronously — wrap in a Promise.
     await new Promise(resolve => {
-      middleware(req, res, () => { captured.nextCalled = true; resolve(); });
+      middleware(req, res, () => {
+        captured.nextCalled = true;
+        resolve();
+      });
       setTimeout(resolve, 80);
     });
 
@@ -596,7 +630,10 @@ describe('Healthy Redis — fail-closed wrapper delegates to underlying limiter'
     const { req, res, captured } = makeStubRequestTriple('di-healthy-path-user');
     // express-rate-limit calls next() asynchronously — wrap in a Promise.
     await new Promise(resolve => {
-      middleware(req, res, () => { captured.nextCalled = true; resolve(); });
+      middleware(req, res, () => {
+        captured.nextCalled = true;
+        resolve();
+      });
       setTimeout(resolve, 80);
     });
 
@@ -613,14 +650,17 @@ describe('Healthy Redis — fail-closed wrapper delegates to underlying limiter'
       max: 100,
       keyPrefix: 'rl:di-disabled-path-test',
       failClosed: true,
-      _redisExpectedFn: () => false,  // not expected — like jest env
+      _redisExpectedFn: () => false, // not expected — like jest env
       _redisConnectedFn: () => false, // also not connected
     });
 
     const { req, res, captured } = makeStubRequestTriple('di-disabled-path-user');
     // express-rate-limit calls next() asynchronously — wrap in a Promise.
     await new Promise(resolve => {
-      middleware(req, res, () => { captured.nextCalled = true; resolve(); });
+      middleware(req, res, () => {
+        captured.nextCalled = true;
+        resolve();
+      });
       setTimeout(resolve, 80);
     });
 
@@ -709,5 +749,202 @@ describe('emitDegradationAlert — direct throttle-window gating (Equoria-hnud7 
     // t2 must be a fresh timestamp (after t1) — the "expired" window allowed
     // the second alert to fire and overwrite with the current time.
     expect(t2).toBeGreaterThan(t1);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 10. Equoria-8ukii — breeding + competition limiters extended to fail closed
+//
+// The owner approved extending the failClosed contract (previously only on
+// financialRateLimiter) to BOTH breedingRateLimiter (creates DB foals + moves
+// breeding-fee economics) AND competitionRateLimiter (deducts entry fees).
+// mutationRateLimiter (too broad) and trainingRateLimiter (game-balance, not
+// financial) are deliberately NOT extended.
+//
+// Two layers of sentinel coverage, mirroring the financial sentinel structure:
+//
+//  (A) EXPORT-WIRING sentinel — proves the REAL exported limiters carry
+//      failClosed:true. A failClosed:true limiter returns the failClosedWrapper
+//      (a plain arrow fn with NO .resetKey/.getKey). A failClosed:false limiter
+//      returns the raw express-rate-limit middleware, which DOES expose
+//      .resetKey + .getKey. So: economy limiters must lack those props;
+//      non-economy controls (mutation, training) must have them. If failClosed
+//      is removed from breeding/competition, they revert to the raw limiter,
+//      gain .resetKey, and these assertions FAIL — the non-vacuity guarantee.
+//
+//  (B) DI BEHAVIOR sentinel — proves a breeding/competition-prefixed limiter
+//      built with failClosed:true actually emits 503 on a simulated Redis
+//      outage (injected predicates), and stays clean (no 503) when Redis is
+//      healthy. This exercises the real failClosedWrapper 503 line for these
+//      keyPrefixes (mirrors section 6's financial DI test).
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('Equoria-8ukii — breeding + competition limiters fail closed (export-wiring sentinel)', () => {
+  // Helper: a failClosed-wrapped limiter is a plain arrow fn (no .resetKey).
+  // A non-failClosed (raw express-rate-limit) limiter HAS .resetKey + .getKey.
+  const isFailClosedWrapped = mw =>
+    typeof mw === 'function' && typeof mw.resetKey !== 'function' && typeof mw.getKey !== 'function';
+
+  it('SENTINEL: financialRateLimiter is fail-closed-wrapped (baseline — must already hold)', () => {
+    expect(isFailClosedWrapped(financialRateLimiter)).toBe(true);
+  });
+
+  it('SENTINEL: breedingRateLimiter is fail-closed-wrapped (fails if failClosed removed)', () => {
+    // If `failClosed: true` is removed from breedingRateLimiter in
+    // rateLimiting.mjs, createRateLimiter returns the raw express-rate-limit
+    // middleware which exposes .resetKey/.getKey → this assertion FAILS.
+    expect(isFailClosedWrapped(breedingRateLimiter)).toBe(true);
+  });
+
+  it('SENTINEL: competitionRateLimiter is fail-closed-wrapped (fails if failClosed removed)', () => {
+    expect(isFailClosedWrapped(competitionRateLimiter)).toBe(true);
+  });
+
+  it('SENTINEL non-vacuity: mutationRateLimiter is NOT wrapped (proves the probe distinguishes)', () => {
+    // mutationRateLimiter has failClosed:false (default) → raw limiter with
+    // .resetKey. This proves isFailClosedWrapped is not trivially true for
+    // every middleware — so the breeding/competition assertions above are
+    // meaningful, not vacuous.
+    expect(isFailClosedWrapped(mutationRateLimiter)).toBe(false);
+  });
+
+  it('SENTINEL: trainingRateLimiter is NOT wrapped (deliberately untouched — game-balance)', () => {
+    // Per task scope: training is game-balance, not financial — must stay
+    // failClosed:false. If someone over-extends failClosed to training, this fails.
+    expect(isFailClosedWrapped(trainingRateLimiter)).toBe(false);
+  });
+});
+
+describe('Equoria-8ukii — breeding limiter DI behavior under Redis outage', () => {
+  it('breeding-prefixed failClosed limiter emits 503 on simulated outage (Redis expected, down)', () => {
+    const middleware = createRateLimiter({
+      windowMs: 60 * 1000,
+      max: 10,
+      keyPrefix: 'rl:breeding-di-503-test',
+      failClosed: true,
+      _redisExpectedFn: () => true, // outage: Redis expected
+      _redisConnectedFn: () => false, // outage: Redis down
+    });
+
+    const { req, res, next, captured } = makeStubRequestTriple('breeding-di-503-user');
+    middleware(req, res, next);
+
+    expect(captured.statusCode).toBe(503);
+    expect(captured.jsonBody).toEqual({
+      success: false,
+      message: 'Service temporarily unavailable, please retry shortly',
+    });
+    expect(captured.nextCalled).toBe(false);
+
+    _alertTimestamps.delete('rl:breeding-di-503-test');
+  });
+
+  it('breeding-prefixed failClosed limiter does NOT 503 when Redis is healthy', async () => {
+    const middleware = createRateLimiter({
+      windowMs: 60 * 1000,
+      max: 10,
+      keyPrefix: 'rl:breeding-di-healthy-test',
+      failClosed: true,
+      _redisExpectedFn: () => true,
+      _redisConnectedFn: () => true, // healthy — no 503
+    });
+
+    const { req, res, captured } = makeStubRequestTriple('breeding-di-healthy-user');
+    await new Promise(resolve => {
+      middleware(req, res, () => {
+        captured.nextCalled = true;
+        resolve();
+      });
+      setTimeout(resolve, 80);
+    });
+
+    expect(captured.statusCode).not.toBe(503);
+    expect(captured.nextCalled).toBe(true);
+  });
+});
+
+describe('Equoria-8ukii — competition limiter DI behavior under Redis outage', () => {
+  it('competition-prefixed failClosed limiter emits 503 on simulated outage (Redis expected, down)', () => {
+    const middleware = createRateLimiter({
+      windowMs: 60 * 1000,
+      max: 20,
+      keyPrefix: 'rl:competition-di-503-test',
+      failClosed: true,
+      _redisExpectedFn: () => true, // outage: Redis expected
+      _redisConnectedFn: () => false, // outage: Redis down
+    });
+
+    const { req, res, next, captured } = makeStubRequestTriple('competition-di-503-user');
+    middleware(req, res, next);
+
+    expect(captured.statusCode).toBe(503);
+    expect(captured.jsonBody).toEqual({
+      success: false,
+      message: 'Service temporarily unavailable, please retry shortly',
+    });
+    expect(captured.nextCalled).toBe(false);
+
+    _alertTimestamps.delete('rl:competition-di-503-test');
+  });
+
+  it('competition-prefixed failClosed limiter does NOT 503 when Redis is healthy', async () => {
+    const middleware = createRateLimiter({
+      windowMs: 60 * 1000,
+      max: 20,
+      keyPrefix: 'rl:competition-di-healthy-test',
+      failClosed: true,
+      _redisExpectedFn: () => true,
+      _redisConnectedFn: () => true, // healthy — no 503
+    });
+
+    const { req, res, captured } = makeStubRequestTriple('competition-di-healthy-user');
+    await new Promise(resolve => {
+      middleware(req, res, () => {
+        captured.nextCalled = true;
+        resolve();
+      });
+      setTimeout(resolve, 80);
+    });
+
+    expect(captured.statusCode).not.toBe(503);
+    expect(captured.nextCalled).toBe(true);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// 11. Equoria-8ukii — jest-env regression: real exported breeding + competition
+//     limiters do NOT 503 in jest env (AC: no spurious 503 in tests).
+//
+// In jest env redisIntentionallyDisabled()=true → the wrapper's _redisExpectedFn
+// default returns false → shouldFailClosed=false → the limiter delegates to the
+// in-memory limiter and calls next(). This proves the failClosed change cannot
+// brick the real breeding/competition routes in the test environment.
+// ────────────────────────────────────────────────────────────────────────────
+
+describe('Equoria-8ukii — real exported breeding/competition limiters do NOT 503 in jest env', () => {
+  it('breedingRateLimiter calls next() (no 503) in jest env', async () => {
+    const { req, res, captured } = makeStubRequestTriple('breeding-jest-regression-user');
+    await new Promise(resolve => {
+      breedingRateLimiter(req, res, () => {
+        captured.nextCalled = true;
+        resolve();
+      });
+      setTimeout(resolve, 80);
+    });
+    expect(captured.statusCode).not.toBe(503);
+    expect(captured.nextCalled).toBe(true);
+  });
+
+  it('competitionRateLimiter calls next() (no 503) in jest env', async () => {
+    const { req, res, captured } = makeStubRequestTriple('competition-jest-regression-user');
+    await new Promise(resolve => {
+      competitionRateLimiter(req, res, () => {
+        captured.nextCalled = true;
+        resolve();
+      });
+      setTimeout(resolve, 80);
+    });
+    expect(captured.statusCode).not.toBe(503);
+    expect(captured.nextCalled).toBe(true);
   });
 });
