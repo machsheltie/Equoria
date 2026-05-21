@@ -42,7 +42,6 @@ kubectl rollout undo deployment/equoria
 
 ```bash
 # Pre-deployment verification
-node verify-naming-fixes.mjs
 node test-server-startup.mjs
 
 # Run full test suite
