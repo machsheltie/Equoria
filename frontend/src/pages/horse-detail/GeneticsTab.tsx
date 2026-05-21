@@ -453,27 +453,30 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
             Trait Development Timeline ({timelineData.timeline.length})
           </h3>
           <div className="space-y-3">
-            {timelineData.timeline.map((entry) => (
+            {timelineData.timeline.map((entry) => {
+              // Equoria-yzar3: eventType is a humanized label derived from the
+              // real backend `type` discriminator (e.g. 'Trait Discovery',
+              // 'Significant Interaction'). It is GUARANTEED defined by the
+              // hook mapper, but we still guard the .charAt access so a future
+              // shape regression can never crash the whole Genetics tab.
+              const eventLabel = entry.eventType ?? 'Event';
+              const eventTypeKey = eventLabel.toLowerCase();
+              const badgeClass = eventTypeKey.includes('discover')
+                ? 'bg-purple-500/20 text-purple-400'
+                : eventTypeKey.includes('interaction')
+                  ? 'bg-emerald-500/20 text-emerald-400'
+                  : eventTypeKey.includes('mutat')
+                    ? 'bg-burnished-gold/20 text-burnished-gold'
+                    : 'bg-blue-500/20 text-blue-400';
+              return (
               <div
                 key={entry.id}
                 className="p-4 bg-[rgba(15,35,70,0.4)] rounded-lg border-l-4 border-[rgba(37,99,235,0.5)]"
               >
                 <div className="flex items-start justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full font-semibold ${
-                        entry.eventType === 'discovered'
-                          ? 'bg-purple-500/20 text-purple-400'
-                          : entry.eventType === 'activated'
-                            ? 'bg-emerald-500/20 text-emerald-400'
-                            : entry.eventType === 'deactivated'
-                              ? 'bg-[rgba(37,99,235,0.15)] text-slate-400'
-                              : entry.eventType === 'mutated'
-                                ? 'bg-burnished-gold/20 text-burnished-gold'
-                                : 'bg-blue-500/20 text-blue-400'
-                      }`}
-                    >
-                      {entry.eventType.charAt(0).toUpperCase() + entry.eventType.slice(1)}
+                    <span className={`text-xs px-2 py-1 rounded-full font-semibold ${badgeClass}`}>
+                      {eventLabel}
                     </span>
                     <span className="text-sm font-semibold text-[rgb(220,235,255)]">
                       {entry.traitName}
@@ -494,7 +497,8 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                   </div>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
