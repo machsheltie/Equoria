@@ -19,6 +19,7 @@
 import cronJobService from '../../../services/cronJobs.mjs';
 import { runFoalingJob } from '../../horses/services/foalingService.mjs';
 import { updateHorseAge } from '../../../utils/horseAgingSystem.mjs';
+import { pruneOldNotifications } from '../../../utils/notificationService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 
@@ -263,6 +264,92 @@ export async function triggerFoaling(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to run foaling job',
+      error: error.message,
+    });
+  }
+}
+
+/**
+ * POST /api/v1/admin/notifications/backfill-prune
+ *
+ * One-time backfill for ADR-007 (notification-retention-policy). The
+ * prune-on-write policy (Equoria-1fqs) only trims a user's notifications when
+ * that user's NEXT notification is created. Accounts that have not inserted a
+ * new notification since the cap shipped keep their pre-cap backlog forever.
+ *
+ * This admin-only endpoint iterates over ALL users and calls the existing,
+ * already-scoped `pruneOldNotifications(userId)` for each — reclaiming storage
+ * immediately. It introduces NO new delete logic: every delete is the existing
+ * per-user, id-scoped two-step prune. No unscoped deleteMany.
+ *
+ * Users are streamed in keyset-paginated batches (ordered by id) so the whole
+ * user table is never loaded into memory at once.
+ *
+ * Body: { batchSize?: number }  — users per page (default 500, 1–5000).
+ *
+ * Returns: { usersProcessed, usersPruned, rowsPruned }.
+ */
+export async function backfillPruneNotifications(req, res) {
+  try {
+    const batchSize = Number(req.body?.batchSize ?? 500);
+    if (!Number.isInteger(batchSize) || batchSize < 1 || batchSize > 5000) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'batchSize must be an integer between 1 and 5000' });
+    }
+
+    logger.info(
+      `[adminController] POST /api/v1/admin/notifications/backfill-prune — batchSize=${batchSize}`,
+    );
+
+    let usersProcessed = 0;
+    let usersPruned = 0;
+    let rowsPruned = 0;
+    let cursorId = null;
+
+    // Keyset pagination over the user id (string UUID). Ordering by id is
+    // stable and avoids the OFFSET drift that occurs if rows change mid-scan.
+    for (;;) {
+      const users = await prisma.user.findMany({
+        ...(cursorId ? { cursor: { id: cursorId }, skip: 1 } : {}),
+        take: batchSize,
+        orderBy: { id: 'asc' },
+        select: { id: true },
+      });
+
+      if (users.length === 0) {
+        break;
+      }
+
+      for (const { id } of users) {
+        // Reuse the existing per-user, id-scoped prune. Never throws; returns
+        // the count of rows it deleted for this user.
+        const deleted = await pruneOldNotifications(id);
+        usersProcessed += 1;
+        if (deleted > 0) {
+          usersPruned += 1;
+          rowsPruned += deleted;
+        }
+      }
+
+      cursorId = users[users.length - 1].id;
+      if (users.length < batchSize) {
+        break;
+      }
+    }
+
+    res.json({
+      success: true,
+      message: `Notification backfill prune complete. Processed ${usersProcessed} user(s), pruned ${rowsPruned} row(s) across ${usersPruned} user(s).`,
+      data: { usersProcessed, usersPruned, rowsPruned },
+    });
+  } catch (error) {
+    logger.error(
+      `[adminController] POST /api/v1/admin/notifications/backfill-prune error: ${error.message}`,
+    );
+    res.status(500).json({
+      success: false,
+      message: 'Failed to run notification backfill prune',
       error: error.message,
     });
   }

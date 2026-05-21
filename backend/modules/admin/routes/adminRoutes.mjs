@@ -19,6 +19,7 @@ import {
   manualHorseAging,
   setHorseAge,
   triggerFoaling,
+  backfillPruneNotifications,
 } from '../controllers/adminController.mjs';
 
 const router = express.Router();
@@ -42,5 +43,9 @@ router.post('/horses/:id/set-age', setHorseAge);
 
 // ── Foaling ───────────────────────────────────────────────────────────────────
 router.post('/foaling/trigger', triggerFoaling);
+
+// ── Notifications ───────────────────────────────────────────────────────────────
+// ADR-007 one-time backfill: prune every user's notifications down to the cap.
+router.post('/notifications/backfill-prune', backfillPruneNotifications);
 
 export default router;
