@@ -170,6 +170,28 @@ describe('Email Verification System - Integration Tests', () => {
       expect(token).toBeDefined();
       expect(token.tokenHash).toMatch(/^[a-f0-9]{64}$/);
     });
+
+    it('should_store_hash_not_raw_verification_token_at_rest', async () => {
+      // Equoria-7lfth sentinel-positive: ADR-006 claims verification tokens
+      // are hashed at rest, but the only existing stored-value check is a
+      // format regex (/^[a-f0-9]{64}$/) — which a stubbed identity hash on a
+      // hex-ish raw token could silently pass. This mirrors the refresh-token
+      // negative sentinel (token-rotation.test.mjs:144) with an explicit
+      // assertion that the DB value is NOT the raw token AND IS exactly the
+      // SHA-256 digest. If hashVerificationToken() ever degrades to identity,
+      // this test fails before plaintext verification tokens re-enter the DB.
+      const rawToken = await seedTestVerificationToken();
+
+      const tokenRecord = await prisma.emailVerificationToken.findUnique({
+        where: { tokenHash: hashVerificationToken(rawToken) },
+      });
+
+      expect(tokenRecord).toBeDefined();
+      // Negative: stored value must NOT equal the raw token.
+      expect(tokenRecord.tokenHash).not.toBe(rawToken);
+      // Positive: stored value IS exactly the SHA-256 hex digest of the raw.
+      expect(tokenRecord.tokenHash).toBe(hashVerificationToken(rawToken));
+    });
   });
 
   describe('GET /auth/verify-email', () => {
