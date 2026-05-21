@@ -17,7 +17,11 @@
  */
 
 import { doubleCsrf } from 'csrf-csrf';
-import { COOKIE_OPTIONS, applyHostPrefixGuard } from '../utils/cookieConfig.mjs';
+import {
+  COOKIE_OPTIONS,
+  CLEAR_COOKIE_OPTIONS,
+  applyHostPrefixGuard,
+} from '../utils/cookieConfig.mjs';
 import config from '../config/config.mjs';
 import logger from '../utils/logger.mjs';
 
@@ -34,6 +38,24 @@ const CSRF_COOKIE_NAME = config.env === 'production' ? '__Host-csrf' : '_csrf';
 // domain". For the non-production `_csrf` name the guard is a no-op, so a
 // Domain attribute remains legal there.
 const CSRF_COOKIE_OPTIONS = applyHostPrefixGuard(CSRF_COOKIE_NAME, COOKIE_OPTIONS.csrfToken);
+
+// Equoria-q7rxy: the CLEAR (delete) path must mirror the Set path. A cookie is
+// only deleted when the clearCookie attributes match the original cookie's
+// attributes; a `__Host-` cookie was set with NO Domain and Path=/, so its
+// deletion must also omit Domain and use Path=/. The raw
+// CLEAR_COOKIE_OPTIONS.csrfToken still carries COOKIE_DOMAIN, which — if set —
+// would leak onto a `res.clearCookie('__Host-csrf', ...)`, causing the browser
+// to NOT match the delete to the host-locked cookie and leaving a stale CSRF
+// cookie alive past logout / password change. Routing through the SAME
+// applyHostPrefixGuard keyed on the actual cookie name strips Domain (and
+// re-asserts secure/Path=/) for `__Host-csrf` and is a no-op for the
+// non-production `_csrf` name (where a Domain attribute is legal). Auth handlers
+// that clear the CSRF cookie MUST use CLEAR_CSRF_COOKIE_OPTIONS, not the raw
+// CLEAR_COOKIE_OPTIONS.csrfToken.
+const CLEAR_CSRF_COOKIE_OPTIONS = applyHostPrefixGuard(
+  CSRF_COOKIE_NAME,
+  CLEAR_COOKIE_OPTIONS.csrfToken,
+);
 
 // Stable HMAC salt. The pure double-submit security guarantee comes from the
 // same-origin policy preventing cross-origin scripts from reading the cookie,
@@ -72,7 +94,7 @@ const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
   },
 });
 
-export { CSRF_COOKIE_NAME, CSRF_COOKIE_OPTIONS };
+export { CSRF_COOKIE_NAME, CSRF_COOKIE_OPTIONS, CLEAR_CSRF_COOKIE_OPTIONS };
 
 /**
  * Issue a CSRF token + matching cookie on the current response.

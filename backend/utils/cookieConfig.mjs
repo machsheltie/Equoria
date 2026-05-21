@@ -219,6 +219,17 @@ export const CLEAR_COOKIE_OPTIONS = {
     path: '/',
     domain: COOKIE_DOMAIN,
   },
+  // Equoria-q7rxy: the production CSRF cookie is `__Host-csrf`, which forbids a
+  // Domain attribute. To DELETE a `__Host-` cookie the clear options must ALSO
+  // omit Domain and use Path=/ (browsers match the deletion to the original
+  // cookie's attributes). The raw `domain: COOKIE_DOMAIN` retained here is the
+  // operator-configured value; middleware/csrf.mjs routes these options through
+  // `applyHostPrefixGuard()` (exported as CLEAR_CSRF_COOKIE_OPTIONS) keyed on
+  // the actual cookie name, stripping `domain` for `__Host-csrf`. Auth handlers
+  // that clear the CSRF cookie MUST use that guarded export, not this raw
+  // object directly, or logout/clear of the host-locked cookie will silently
+  // fail when COOKIE_DOMAIN is set. The raw domain is harmless here: it only
+  // survives onto the non-prefixed `_csrf` cookie used in non-production envs.
   csrfToken: {
     httpOnly: false,
     secure: isProduction,
